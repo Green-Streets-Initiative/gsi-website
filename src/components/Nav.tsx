@@ -29,6 +29,9 @@ export default function Nav() {
           <Link href="/programs" className="text-sm font-medium text-white/60 transition-colors hover:text-white">
             Programs
           </Link>
+          <Link href="/commute-calculator" className="text-sm font-medium text-white/60 transition-colors hover:text-white">
+            Calculator
+          </Link>
           <Link href="/about" className="text-sm font-medium text-white/60 transition-colors hover:text-white">
             About
           </Link>
@@ -61,6 +64,7 @@ export default function Nav() {
           <div className="flex flex-col gap-4">
             <Link href="/shift" className="text-sm font-medium text-white/70" onClick={() => setMenuOpen(false)}>Shift app</Link>
             <Link href="/programs" className="text-sm font-medium text-white/70" onClick={() => setMenuOpen(false)}>Programs</Link>
+            <Link href="/commute-calculator" className="text-sm font-medium text-white/70" onClick={() => setMenuOpen(false)}>Calculator</Link>
             <Link href="/about" className="text-sm font-medium text-white/70" onClick={() => setMenuOpen(false)}>About</Link>
             <Link href="/contact" className="text-sm font-medium text-white/70" onClick={() => setMenuOpen(false)}>Contact</Link>
             <Link href="#waitlist" className="mt-2 inline-block rounded-full bg-lime px-4 py-2 text-sm font-semibold text-navy" onClick={() => setMenuOpen(false)}>Join waitlist</Link>
