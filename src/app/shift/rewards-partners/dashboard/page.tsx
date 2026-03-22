@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { supabase } from '@/lib/supabase'
@@ -25,7 +25,23 @@ type Reward = {
   redemption_frequency: string | null
 }
 
-export default function DashboardPage() {
+export default function DashboardPageWrapper() {
+  return (
+    <Suspense fallback={
+      <>
+        <Nav />
+        <main style={{ paddingTop: '60px' }} className="flex min-h-screen items-center justify-center bg-[#191A2E]">
+          <div className="text-white/50">Loading&hellip;</div>
+        </main>
+        <Footer />
+      </>
+    }>
+      <DashboardPage />
+    </Suspense>
+  )
+}
+
+function DashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [sponsor, setSponsor] = useState<Sponsor | null>(null)
@@ -90,8 +106,28 @@ export default function DashboardPage() {
     setLoading(false)
   }, [router])
 
+  const searchParams = useSearchParams()
+
   useEffect(() => {
     async function checkAuth() {
+      // Check for magic link token in URL (from custom sponsor-magic-link flow)
+      const tokenHash = searchParams.get('token_hash')
+      const type = searchParams.get('type')
+
+      if (tokenHash && type === 'magiclink') {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'magiclink',
+        })
+        if (error) {
+          console.error('Magic link verification failed:', error.message)
+          router.push('/shift/rewards-partners')
+          return
+        }
+        // Clean URL after successful verification
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user?.email) {
         router.push('/shift/rewards-partners')
@@ -101,7 +137,7 @@ export default function DashboardPage() {
       fetchData(session.user.email)
     }
     checkAuth()
-  }, [fetchData, router])
+  }, [fetchData, router, searchParams])
 
   async function handleSignOut() {
     await supabase.auth.signOut()
