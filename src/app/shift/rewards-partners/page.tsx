@@ -88,6 +88,8 @@ export default function RewardsPartnersPage() {
   const [submitted, setSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const formRef = useRef<HTMLDivElement>(null)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginSent, setLoginSent] = useState(false)
   const [loginLoading, setLoginLoading] = useState(false)
@@ -140,6 +142,26 @@ export default function RewardsPartnersPage() {
     setSubmitError('')
 
     try {
+      let logoPath: string | null = null
+
+      if (logoFile) {
+        const sanitizedName = form.business_name
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+        const ext = logoFile.name.split('.').pop() || 'png'
+        logoPath = `logos/${Date.now()}-${sanitizedName}.${ext}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('sponsor-logos')
+          .upload(logoPath, logoFile, { contentType: logoFile.type })
+
+        if (uploadError) {
+          throw new Error('Logo upload failed')
+        }
+      }
+
       const res = await fetch(
         'https://xyqcpgwbqrhykpgpqbdi.supabase.co/functions/v1/sponsor-intake',
         {
@@ -162,6 +184,7 @@ export default function RewardsPartnersPage() {
             signer_title: form.signer_title.trim(),
             agreement_accepted: true,
             website_url: form.website_url.trim() || null,
+            logo_url: logoPath,
           }),
         }
       )
@@ -440,6 +463,58 @@ export default function RewardsPartnersPage() {
                       value={form.business_name}
                       onChange={(v) => update('business_name', v)}
                     />
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
+                        Business logo
+                      </label>
+                      <div className="flex items-center gap-4">
+                        {logoPreview ? (
+                          <img
+                            src={logoPreview}
+                            alt="Logo preview"
+                            className="h-16 w-16 rounded-xl border border-[rgba(25,26,46,0.12)] object-contain"
+                          />
+                        ) : (
+                          <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-[rgba(25,26,46,0.2)] bg-white text-[#8A8DA8]">
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                            </svg>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept=".png,.jpg,.jpeg,.svg,.webp"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] ?? null
+                              setLogoFile(file)
+                              if (file) {
+                                const url = URL.createObjectURL(file)
+                                setLogoPreview(url)
+                              } else {
+                                setLogoPreview(null)
+                              }
+                            }}
+                            className="w-full text-sm text-[#4A4D68] file:mr-3 file:rounded-full file:border-0 file:bg-[#191A2E]/[0.06] file:px-4 file:py-2 file:text-sm file:font-medium file:text-[#191A2E] file:cursor-pointer hover:file:bg-[#191A2E]/[0.1]"
+                          />
+                          {logoFile && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLogoFile(null)
+                                setLogoPreview(null)
+                              }}
+                              className="mt-1 text-xs text-[#8A8DA8] underline hover:text-[#4A4D68]"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="mt-1.5 text-xs text-[#8A8DA8]">
+                        Optional — square images work best.
+                      </p>
+                    </div>
                     <AddressAutocomplete
                       value={form.address}
                       onChange={(v) => update('address', v)}

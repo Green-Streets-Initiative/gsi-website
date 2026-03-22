@@ -75,7 +75,7 @@ export default function DashboardPage() {
       .from('rewards')
       .select('id, name, description, redemption_frequency')
       .eq('sponsor_id', sponsorData.id)
-      .eq('is_active', true)
+      .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
