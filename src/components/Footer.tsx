@@ -44,6 +44,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/shift/rewards-partners" className="text-sm text-white/55 transition-colors hover:text-white">
+                  Rewards partners
+                </Link>
+              </li>
+              <li>
                 <Link href="/shift/events" className="text-sm text-white/55 transition-colors hover:text-white">
                   Flagship events
                 </Link>
