@@ -6,12 +6,13 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 
 /* ── Constants ── */
-const VEHICLES: Record<string, { mpg: number; maint: number }> = {
+const VEHICLES: Record<string, { mpg: number; maint: number; isEV?: boolean; costPerMile?: number }> = {
   small_sedan:  { mpg: 32, maint: 0.102 },
   medium_sedan: { mpg: 28, maint: 0.109 },
   compact_suv:  { mpg: 27, maint: 0.104 },
   medium_suv:   { mpg: 24, maint: 0.110 },
   pickup:       { mpg: 20, maint: 0.114 },
+  ev:           { mpg: 0,  maint: 0.06, isEV: true, costPerMile: 0.048 },
 }
 
 const MODES: Record<string, { met: number; mph: number | null; label: string; healthNote: string }> = {
@@ -23,8 +24,10 @@ const MODES: Record<string, { met: number; mph: number | null; label: string; he
 }
 
 const DRIVE_MPH = 14
-const MBTA_SINGLE = 2.40
-const MBTA_MONTHLY = 90
+const MBTA_SUBWAY_SINGLE = 2.40
+const MBTA_SUBWAY_MONTHLY = 90
+const MBTA_BUS_SINGLE = 1.70
+const MBTA_BUS_MONTHLY = 55
 const WEEKS = 52
 const CO2_PER_MILE = 0.404
 const BODY_WEIGHT_LBS = 165
@@ -39,14 +42,6 @@ const PARKING_ANCHORS = [
   { label: 'Somerville $14', val: 14 },
   { label: 'Inner suburbs $12', val: 12 },
 ]
-
-const CTA_COPY: Record<string, string> = {
-  bike: 'Shift helps you find the best bike route for your commute and keeps a running picture of the time, money, and miles you\'re gaining as you go.',
-  ebike: 'Shift helps you find the best route for your e-bike commute — and keeps a running picture of the time, money, and miles you\'re gaining.',
-  walk: 'Shift helps you discover what an active commute actually looks like for your route, and shows you the real results of your choices over time.',
-  mbta: 'Shift helps you find the fastest transit route for your commute and tracks every active leg — walking, biking, or riding — in one picture.',
-  commuter_rail: 'Shift helps you make the most of your rail commute — including the first and last miles, where active modes often make the biggest difference.',
-}
 
 const FAQ = [
   {
@@ -85,8 +80,15 @@ export default function CommuteCalculator() {
   const [gasPrice, setGasPrice] = useState(3.59)
   const [parkMode, setParkMode] = useState('free')
   const [parkingCost, setParkingCost] = useState(15)
+  const [commuteMode, setCommuteMode] = useState('drive')
+  const [rideshareDaily, setRideshareDaily] = useState(30)
   const [altMode, setAltMode] = useState('bike')
   const [railZone, setRailZone] = useState(140)
+  const [mbtaType, setMbtaType] = useState('subway')
+  const [hasEmployerSubsidy, setHasEmployerSubsidy] = useState(false)
+  const [employerSubsidy, setEmployerSubsidy] = useState(0)
+  const [waitlistEmail, setWaitlistEmail] = useState('')
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false)
 
   // Cap shift days to drive days
   useEffect(() => {
@@ -101,29 +103,56 @@ export default function CommuteCalculator() {
     const sd = Math.min(shiftDays, driveDays)
     const milesRound = distance * 2
     const annualMiles = milesRound * sd * WEEKS
+    const isRideshare = commuteMode === 'rideshare'
 
     // Money
-    const fuelSavings = annualMiles * (gasPrice / v.mpg)
-    const maintSavings = annualMiles * v.maint
+    let fuelSavings = 0
+    let maintSavings = 0
+    let rideshareSavings = 0
+    let fuelLabel = '⛽ Fuel savings'
+
+    if (isRideshare) {
+      rideshareSavings = rideshareDaily * sd * WEEKS
+    } else if (v.isEV) {
+      fuelSavings = annualMiles * v.costPerMile!
+      fuelLabel = '⚡ Electricity savings'
+      maintSavings = annualMiles * v.maint
+    } else {
+      fuelSavings = annualMiles * (gasPrice / v.mpg)
+      maintSavings = annualMiles * v.maint
+    }
+
     let parkingSavings = 0
-    if (parkMode !== 'free') {
+    if (parkMode !== 'free' && !isRideshare) {
       parkingSavings = parkingCost * sd * WEEKS
     }
 
     let transitCost = 0
     let transitLabel = ''
     if (altMode === 'mbta') {
+      const single = mbtaType === 'bus' ? MBTA_BUS_SINGLE : MBTA_SUBWAY_SINGLE
+      const monthly = mbtaType === 'bus' ? MBTA_BUS_MONTHLY : MBTA_SUBWAY_MONTHLY
       const monthlyTrips = sd * 2 * (WEEKS / 12)
-      const perRide = MBTA_SINGLE * 2 * sd * WEEKS
-      const monthly = MBTA_MONTHLY * 12
-      if (monthlyTrips > 38) { transitCost = monthly; transitLabel = 'Monthly LinkPass' }
-      else { transitCost = perRide; transitLabel = 'Per-ride fares' }
+      const perRideAnnual = single * 2 * sd * WEEKS
+      const passAnnual = monthly * 12
+      if (monthlyTrips > (monthly / single)) { transitCost = passAnnual; transitLabel = mbtaType === 'bus' ? 'Monthly bus pass' : 'Monthly LinkPass' }
+      else { transitCost = perRideAnnual; transitLabel = 'Per-ride fares' }
+      // Employer subsidy
+      if (hasEmployerSubsidy && employerSubsidy > 0) {
+        const subsidyAnnual = employerSubsidy * 12
+        transitCost = Math.max(0, transitCost - subsidyAnnual)
+      }
     } else if (altMode === 'commuter_rail') {
       transitCost = railZone * 12
+      if (hasEmployerSubsidy && employerSubsidy > 0) {
+        const subsidyAnnual = employerSubsidy * 12
+        transitCost = Math.max(0, transitCost - subsidyAnnual)
+      }
       transitLabel = 'Monthly pass'
     }
 
-    const net = fuelSavings + maintSavings + parkingSavings - transitCost
+    const grossSavings = isRideshare ? rideshareSavings : (fuelSavings + maintSavings + parkingSavings)
+    const net = grossSavings - transitCost
 
     // Time
     const driveMins = Math.round((distance / DRIVE_MPH) * 60)
@@ -149,15 +178,16 @@ export default function CommuteCalculator() {
     }
 
     // CO2
-    const co2 = annualMiles * CO2_PER_MILE
+    const co2 = annualMiles * (v.isEV ? CO2_PER_MILE * 0.35 : CO2_PER_MILE) // EVs still offset grid emissions partially
 
     return {
       net, fuelSavings, maintSavings, parkingSavings, transitCost, transitLabel,
+      fuelLabel, rideshareSavings, isRideshare,
       driveMins, altMins, timeNote, mode,
       isActive, activeMins, weeklyCals, gymEquiv,
       annualMiles, co2,
     }
-  }, [distance, driveDays, shiftDays, vehicle, gasPrice, parkMode, parkingCost, altMode, railZone])
+  }, [distance, driveDays, shiftDays, vehicle, gasPrice, parkMode, parkingCost, altMode, railZone, commuteMode, rideshareDaily, mbtaType, hasEmployerSubsidy, employerSubsidy])
 
   const r = calc()
   const effectiveShift = Math.min(shiftDays, driveDays)
@@ -216,8 +246,32 @@ export default function CommuteCalculator() {
                   <Hint>Enter address details for a real time comparison — coming soon</Hint>
                 </Field>
 
+                {/* Commute mode */}
+                <Field label="How you currently commute">
+                  <RadioPills
+                    name="commute-mode"
+                    value={commuteMode}
+                    onChange={setCommuteMode}
+                    options={[
+                      { value: 'drive', label: 'Drive' },
+                      { value: 'rideshare', label: 'Rideshare (Uber/Lyft)' },
+                    ]}
+                  />
+                  {commuteMode === 'rideshare' && (
+                    <div className="mt-3.5">
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">Average daily rideshare cost</label>
+                      <div className="flex items-center gap-2">
+                        <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                        <NumInput value={rideshareDaily} onChange={setRideshareDaily} min={5} max={200} step={1} width="88px" fontSize="1rem" />
+                        <span className="text-[0.8rem] text-white/45">per day (round trip)</span>
+                      </div>
+                      <div className="mt-1 text-[0.65rem] text-white/25">Average Uber/Lyft cost for your commute, both ways</div>
+                    </div>
+                  )}
+                </Field>
+
                 {/* Drive days */}
-                <Field label="Days per week you currently drive">
+                <Field label={commuteMode === 'rideshare' ? 'Days per week you currently rideshare' : 'Days per week you currently drive'}>
                   <div className="mb-2.5 font-display text-base font-bold text-[#BAF14D]">
                     {driveDays} day{driveDays > 1 ? 's' : ''}/week
                   </div>
@@ -237,29 +291,42 @@ export default function CommuteCalculator() {
                   </Hint>
                 </Field>
 
-                {/* Vehicle */}
-                <Field label="Vehicle type">
-                  <Select value={vehicle} onChange={setVehicle} options={[
-                    { value: 'small_sedan', label: 'Small sedan (Civic, Corolla)' },
-                    { value: 'medium_sedan', label: 'Medium sedan (Camry, Accord)' },
-                    { value: 'compact_suv', label: 'Compact SUV (RAV4, CR-V)' },
-                    { value: 'medium_suv', label: 'Medium SUV (Explorer, Highlander)' },
-                    { value: 'pickup', label: 'Pickup truck (F-150, Silverado)' },
-                  ]} />
-                </Field>
+                {/* Vehicle — hidden for rideshare */}
+                {commuteMode === 'drive' && (
+                  <Field label="Vehicle type">
+                    <Select value={vehicle} onChange={setVehicle} options={[
+                      { value: 'small_sedan', label: 'Small sedan (Civic, Corolla)' },
+                      { value: 'medium_sedan', label: 'Medium sedan (Camry, Accord)' },
+                      { value: 'compact_suv', label: 'Compact SUV (RAV4, CR-V)' },
+                      { value: 'medium_suv', label: 'Medium SUV (Explorer, Highlander)' },
+                      { value: 'pickup', label: 'Pickup truck (F-150, Silverado)' },
+                      { value: 'ev', label: 'Electric vehicle (Tesla, Leaf, etc.)' },
+                    ]} />
+                  </Field>
+                )}
 
-                {/* Gas price */}
-                <Field label="Gas price">
-                  <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
-                    <NumInput value={gasPrice} onChange={setGasPrice} min={2} max={8} step={0.01} width="88px" fontSize="1rem" />
-                    <span className="text-[0.8rem] text-white/45">per gallon</span>
-                  </div>
-                  <div className="mt-1 text-[0.65rem] text-white/25">MA average as of March 2026 — adjust for your local price</div>
-                </Field>
+                {/* Gas price — hidden for rideshare and EV */}
+                {commuteMode === 'drive' && vehicle !== 'ev' && (
+                  <Field label="Gas price">
+                    <div className="flex items-center gap-2">
+                      <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                      <NumInput value={gasPrice} onChange={setGasPrice} min={2} max={8} step={0.01} width="88px" fontSize="1rem" />
+                      <span className="text-[0.8rem] text-white/45">per gallon</span>
+                    </div>
+                    <div className="mt-1 text-[0.65rem] text-white/25">MA average as of March 2026 — adjust for your local price</div>
+                  </Field>
+                )}
 
-                {/* Parking */}
-                <Field label="Your parking situation">
+                {/* EV note */}
+                {commuteMode === 'drive' && vehicle === 'ev' && (
+                  <Field label="Electricity cost">
+                    <div className="text-sm text-white/50">$0.048/mile based on Massachusetts residential electricity rates</div>
+                    <div className="mt-1 text-[0.65rem] text-white/25">Using average MA rate of ~$0.28/kWh and ~3.5 mi/kWh efficiency</div>
+                  </Field>
+                )}
+
+                {/* Parking — hidden for rideshare */}
+                {commuteMode === 'drive' && <Field label="Your parking situation">
                   <RadioPills
                     name="parking"
                     value={parkMode}
@@ -290,7 +357,7 @@ export default function CommuteCalculator() {
                       )}
                     </div>
                   )}
-                </Field>
+                </Field>}
 
                 {/* Alt mode */}
                 <Field label="How you'd get there instead" last>
@@ -306,8 +373,43 @@ export default function CommuteCalculator() {
                       { value: 'commuter_rail', label: 'Commuter rail' },
                     ]}
                   />
+                  {altMode === 'mbta' && (
+                    <div className="mt-3.5 flex flex-col gap-3.5">
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">Service type</label>
+                        <RadioPills
+                          name="mbta-type"
+                          value={mbtaType}
+                          onChange={setMbtaType}
+                          options={[
+                            { value: 'subway', label: 'Subway + bus (LinkPass $90/mo)' },
+                            { value: 'bus', label: 'Local bus only ($55/mo)' },
+                          ]}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">Does your employer subsidize your pass?</label>
+                        <RadioPills
+                          name="employer-subsidy"
+                          value={hasEmployerSubsidy ? 'yes' : 'no'}
+                          onChange={v => setHasEmployerSubsidy(v === 'yes')}
+                          options={[
+                            { value: 'no', label: 'No' },
+                            { value: 'yes', label: 'Yes' },
+                          ]}
+                        />
+                        {hasEmployerSubsidy && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                            <NumInput value={employerSubsidy} onChange={setEmployerSubsidy} min={0} max={300} step={5} width="88px" fontSize="1rem" />
+                            <span className="text-[0.8rem] text-white/45">per month</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   {altMode === 'commuter_rail' && (
-                    <div className="mt-3.5">
+                    <div className="mt-3.5 flex flex-col gap-3.5">
                       <Select value={String(railZone)} onChange={v => setRailZone(Number(v))} options={[
                         { value: '90', label: 'Zone 1A — $90/mo' },
                         { value: '140', label: 'Zone 2–3 — $140/mo' },
@@ -315,6 +417,25 @@ export default function CommuteCalculator() {
                         { value: '243', label: 'Zone 6–7 — $243/mo' },
                         { value: '329', label: 'Zone 8–10 — $329/mo' },
                       ]} />
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">Does your employer subsidize your pass?</label>
+                        <RadioPills
+                          name="employer-subsidy-rail"
+                          value={hasEmployerSubsidy ? 'yes' : 'no'}
+                          onChange={v => setHasEmployerSubsidy(v === 'yes')}
+                          options={[
+                            { value: 'no', label: 'No' },
+                            { value: 'yes', label: 'Yes' },
+                          ]}
+                        />
+                        {hasEmployerSubsidy && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                            <NumInput value={employerSubsidy} onChange={setEmployerSubsidy} min={0} max={300} step={5} width="88px" fontSize="1rem" />
+                            <span className="text-[0.8rem] text-white/45">per month</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </Field>
@@ -339,13 +460,19 @@ export default function CommuteCalculator() {
 
                     {/* Breakdown */}
                     <div className="flex flex-col gap-2">
-                      <ResultRow label="⛽ Fuel savings" value={`+${fmt(r.fuelSavings)}`} type="pos" />
-                      <ResultRow label="🔧 Maintenance savings" value={`+${fmt(r.maintSavings)}`} type="pos" />
-                      {parkMode !== 'free' && (
-                        <ResultRow label="🅿️ Parking savings" value={`+${fmt(r.parkingSavings)}`} type="pos" />
+                      {r.isRideshare ? (
+                        <ResultRow label="🚗 Rideshare savings" value={`+${fmt(r.rideshareSavings)}`} type="pos" />
+                      ) : (
+                        <>
+                          <ResultRow label={r.fuelLabel} value={`+${fmt(r.fuelSavings)}`} type="pos" />
+                          <ResultRow label="🔧 Maintenance savings" value={`+${fmt(r.maintSavings)}`} type="pos" />
+                          {parkMode !== 'free' && (
+                            <ResultRow label="🅿️ Parking savings" value={`+${fmt(r.parkingSavings)}`} type="pos" />
+                          )}
+                        </>
                       )}
-                      {!r.isActive && (
-                        <ResultRow label="🚇 Transit pass cost" value={`-${fmt(r.transitCost)}`} type="neg" />
+                      {!r.isActive && r.transitCost > 0 && (
+                        <ResultRow label={`🚇 ${r.transitLabel}`} value={`-${fmt(r.transitCost)}`} type="neg" />
                       )}
                     </div>
 
@@ -411,15 +538,33 @@ export default function CommuteCalculator() {
                       </div>
                     </div>
 
-                    {/* CTA */}
+                    {/* Waitlist CTA */}
                     <div className="mt-auto rounded-[14px] border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-6 py-5">
-                      <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight">Find your shift</div>
+                      <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight">Ready to try it?</div>
                       <div className="mb-3.5 text-[0.8rem] leading-relaxed text-white/50">
-                        {CTA_COPY[altMode] || CTA_COPY.bike}
+                        Shift helps you build the habit — log your first active trip, track your progress, and see your real savings add up over time.
                       </div>
-                      <Link href="#waitlist" className="inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85">
-                        Join the waitlist →
-                      </Link>
+                      {!waitlistSubmitted ? (
+                        <form onSubmit={e => { e.preventDefault(); if (waitlistEmail) setWaitlistSubmitted(true) }}
+                          className="flex items-center gap-2">
+                          <input
+                            type="email"
+                            placeholder="Your email address"
+                            value={waitlistEmail}
+                            onChange={e => setWaitlistEmail(e.target.value)}
+                            required
+                            className="min-w-0 flex-1 rounded-lg border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder-white/40 outline-none transition-colors focus:border-[#BAF14D]"
+                          />
+                          <button type="submit" className="shrink-0 rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85">
+                            Join the waitlist
+                          </button>
+                        </form>
+                      ) : (
+                        <div className="flex items-center gap-2 rounded-lg border border-[rgba(186,241,77,0.2)] bg-[rgba(186,241,77,0.08)] px-4 py-2.5">
+                          <span className="text-sm font-semibold text-[#BAF14D]">&#10003;</span>
+                          <span className="text-sm text-white/70">You&apos;re on the list — we&apos;ll be in touch.</span>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
