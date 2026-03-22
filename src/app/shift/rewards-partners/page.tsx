@@ -204,12 +204,17 @@ export default function RewardsPartnersPage() {
     if (!loginEmail.trim()) return
     setLoginLoading(true)
 
-    await supabase.auth.signInWithOtp({
-      email: loginEmail.trim(),
-      options: {
-        emailRedirectTo: `${window.location.origin}/shift/rewards-partners/dashboard`,
-      },
-    })
+    await fetch(
+      'https://xyqcpgwbqrhykpgpqbdi.supabase.co/functions/v1/sponsor-magic-link',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: loginEmail.trim(),
+          redirect_to: `${window.location.origin}/shift/rewards-partners/dashboard`,
+        }),
+      }
+    )
 
     setLoginSent(true)
     setLoginLoading(false)
