@@ -136,11 +136,7 @@ export default function RewardsPartnersPage() {
         'https://xyqcpgwbqrhykpgpqbdi.supabase.co/functions/v1/sponsor-intake',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             business_name: form.business_name.trim(),
             address: form.address.trim(),
@@ -453,11 +449,24 @@ export default function RewardsPartnersPage() {
                       onChange={(v) => update('website_url', v)}
                       placeholder="https://"
                     />
-                    <Field
-                      label="How did you hear about Shift?"
-                      value={form.referral_source}
-                      onChange={(v) => update('referral_source', v)}
-                    />
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
+                        How did you hear about Shift?
+                      </label>
+                      <select
+                        value={form.referral_source}
+                        onChange={(e) => update('referral_source', e.target.value)}
+                        className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
+                      >
+                        <option value="">Select one (optional)</option>
+                        <option value="Email from Green Streets">Email from Green Streets</option>
+                        <option value="Another business owner">Another business owner</option>
+                        <option value="Bicycle Benefits">Bicycle Benefits</option>
+                        <option value="Social media">Social media</option>
+                        <option value="Community event">Community event</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
                     <button
                       onClick={() => setStep(2)}
                       disabled={!isStep1Valid()}
