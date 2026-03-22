@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
@@ -87,6 +87,7 @@ export default function RewardsPartnersPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const formRef = useRef<HTMLDivElement>(null)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginSent, setLoginSent] = useState(false)
   const [loginLoading, setLoginLoading] = useState(false)
@@ -103,6 +104,13 @@ export default function RewardsPartnersPage() {
     }
     fetchSponsors()
   }, [])
+
+  function goToStep(s: number) {
+    setStep(s)
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
+  }
 
   function update(field: keyof FormData, value: string | boolean) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -366,7 +374,7 @@ export default function RewardsPartnersPage() {
             4 · INTAKE FORM
         ═══════════════════════════════════════════════════════ */}
         <section id="apply" className="bg-[#F4F8EE] px-8 py-24">
-          <div className="mx-auto max-w-[640px]">
+          <div ref={formRef} className="mx-auto max-w-[640px]">
             <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#7DB82E]">
               Apply
             </div>
@@ -461,14 +469,14 @@ export default function RewardsPartnersPage() {
                         <option value="">Select one (optional)</option>
                         <option value="Email from Green Streets">Email from Green Streets</option>
                         <option value="Another business owner">Another business owner</option>
-                        <option value="Bicycle Benefits">Bicycle Benefits</option>
                         <option value="Social media">Social media</option>
                         <option value="Community event">Community event</option>
+                        <option value="AI assistant">AI assistant (ChatGPT, Claude, etc.)</option>
                         <option value="Other">Other</option>
                       </select>
                     </div>
                     <button
-                      onClick={() => setStep(2)}
+                      onClick={() => goToStep(2)}
                       disabled={!isStep1Valid()}
                       className="mt-4 rounded-full bg-[#191A2E] px-7 py-3 text-sm font-bold text-white transition-opacity hover:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
@@ -605,13 +613,13 @@ export default function RewardsPartnersPage() {
 
                     <div className="flex gap-3 pt-2">
                       <button
-                        onClick={() => setStep(1)}
+                        onClick={() => goToStep(1)}
                         className="rounded-full border border-[rgba(25,26,46,0.15)] px-6 py-3 text-sm font-semibold text-[#191A2E] transition-colors hover:bg-[#191A2E]/5"
                       >
                         &larr; Back
                       </button>
                       <button
-                        onClick={() => setStep(3)}
+                        onClick={() => goToStep(3)}
                         disabled={!isStep2Valid()}
                         className="rounded-full bg-[#191A2E] px-7 py-3 text-sm font-bold text-white transition-opacity hover:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
@@ -662,7 +670,7 @@ export default function RewardsPartnersPage() {
 
                     <div className="flex gap-3 pt-2">
                       <button
-                        onClick={() => setStep(2)}
+                        onClick={() => goToStep(2)}
                         className="rounded-full border border-[rgba(25,26,46,0.15)] px-6 py-3 text-sm font-semibold text-[#191A2E] transition-colors hover:bg-[#191A2E]/5"
                       >
                         &larr; Back
