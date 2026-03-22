@@ -217,6 +217,7 @@ export default function RewardsPartnersPage() {
 
   function getLogoUrl(logoPath: string | null) {
     if (!logoPath) return null
+    if (logoPath.startsWith('http')) return logoPath
     return supabase.storage.from('sponsor-logos').getPublicUrl(logoPath).data.publicUrl
   }
 
@@ -323,11 +324,17 @@ export default function RewardsPartnersPage() {
                       className="flex flex-col items-center gap-3 rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-5 transition-shadow hover:shadow-md"
                     >
                       {logo ? (
-                        <img
-                          src={logo}
-                          alt={sponsor.name}
-                          className="h-16 w-16 rounded-lg object-contain"
-                        />
+                        <div className="flex h-16 w-full items-center justify-center">
+                          <img
+                            src={logo}
+                            alt={sponsor.name}
+                            className="max-h-16 max-w-full rounded-lg object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                              e.currentTarget.parentElement!.innerHTML = `<div class="flex h-16 w-16 items-center justify-center rounded-lg" style="background:rgba(25,26,46,0.06)"><span class="text-center font-bold text-xs" style="color:rgba(25,26,46,0.6)">${sponsor.name.slice(0, 2).toUpperCase()}</span></div>`
+                            }}
+                          />
+                        </div>
                       ) : (
                         <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[#191A2E]/[0.06]">
                           <span className="text-center font-display text-xs font-bold leading-tight text-[#191A2E]/60">
