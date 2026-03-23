@@ -184,7 +184,7 @@ export default function RewardsPartnersPage() {
             signer_title: form.signer_title.trim(),
             agreement_accepted: true,
             website_url: form.website_url.trim() || null,
-            logo_url: logoPath,
+            logo_url: getLogoUrl(logoPath),
           }),
         }
       )
