@@ -49,7 +49,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/shift/events" className="text-sm text-white/55 transition-colors hover:text-white">
+                <Link href="/events/shift-your-summer" className="text-sm text-white/55 transition-colors hover:text-white">
                   Flagship events
                 </Link>
               </li>

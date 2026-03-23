@@ -1,7 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async redirects() {
+    return [
+      {
+        source: '/shift/leaderboard',
+        destination: '/events/shift-your-summer',
+        permanent: true,
+      },
+    ]
+  },
 };
 
 export default nextConfig;

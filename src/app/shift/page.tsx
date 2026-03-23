@@ -269,6 +269,27 @@ export default function ShiftPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
+            5½ · FLAGSHIP EVENTS
+        ══════════════════════════════════════════════════════════ */}
+        <section className="bg-[#191A2E] px-8 py-24">
+          <div className="mx-auto max-w-[1120px]">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">Events</div>
+            <h2 className="mb-4 max-w-[640px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+              Compete. Move. Win.
+            </h2>
+            <p className="mb-8 max-w-[560px] text-[1.0625rem] leading-[1.65] text-white/55">
+              Shift flagship events bring the whole city together. Track your commute, climb the leaderboard, and win real prizes.
+            </p>
+            <Link
+              href="/events/shift-your-summer"
+              className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+            >
+              See the leaderboard &rarr;
+            </Link>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════
             6 · FOR LOCAL BUSINESSES
         ══════════════════════════════════════════════════════════ */}
         <section className="bg-[#191A2E] px-8 py-24">
