@@ -62,7 +62,7 @@ const tiers = [
 
 export default function ShiftSection() {
   return (
-    <section className="relative overflow-hidden bg-[#191A2E] px-8 py-24">
+    <section className="relative overflow-hidden bg-[#191A2E] px-8 py-12">
       <div className="pointer-events-none absolute -left-[10%] -top-[20%] h-[800px] w-[800px] rounded-full bg-[radial-gradient(circle,rgba(41,102,229,0.08)_0%,transparent_60%)]" />
 
       <div className="relative z-10 mx-auto max-w-[1120px]">

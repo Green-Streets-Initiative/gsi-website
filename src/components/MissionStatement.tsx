@@ -1,6 +1,6 @@
 export default function MissionStatement() {
   return (
-    <section className="bg-[#F4F8EE] px-8 py-24">
+    <section className="bg-[#F4F8EE] px-8 py-12">
       <div className="mx-auto max-w-[820px]">
         <p className="mb-8 font-display text-xs font-bold uppercase tracking-[0.15em] text-[#8A8DA8]">
           Every trip counts.

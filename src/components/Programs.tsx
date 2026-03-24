@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export default function Programs() {
   return (
-    <section className="bg-white px-8 py-24">
+    <section className="bg-white px-8 py-12">
       <div className="mx-auto max-w-[1120px]">
         <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#7DB82E]">
           Programs

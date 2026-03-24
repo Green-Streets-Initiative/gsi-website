@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export default function HowItWorks() {
   return (
-    <section className="bg-[#F4F8EE] px-8 py-24">
+    <section className="bg-[#F4F8EE] px-8 py-12">
       <div className="mx-auto max-w-[1120px]">
         <div className="mb-12 grid items-end gap-12 lg:grid-cols-2">
           <div>
@@ -22,7 +22,7 @@ export default function HowItWorks() {
                 icon: '💰',
                 text: (
                   <>
-                    <strong className="font-semibold text-[#191A2E]">Save money and time.</strong> Active trips are faster in traffic, and the average Boston commuter saves hundreds each month in parking and transit costs.
+                    <strong className="font-semibold text-[#191A2E]">Save money and time.</strong> Walking, biking, or taking transit instead of driving saves the average Boston commuter hundreds each month in gas, maintenance, and parking.
                   </>
                 ),
               },

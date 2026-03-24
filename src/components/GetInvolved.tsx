@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export default function GetInvolved() {
   return (
-    <section className="bg-[#F4F8EE] px-8 py-24">
+    <section className="bg-[#F4F8EE] px-8 py-12">
       <div className="mx-auto max-w-[1120px]">
         <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#7DB82E]">
           Get involved
