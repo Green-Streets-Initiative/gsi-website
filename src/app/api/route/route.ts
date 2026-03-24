@@ -44,17 +44,15 @@ async function fetchGoogleRoute(
     travelMode: mode,
   }
 
+  // Use 8:30 AM next weekday for all modes — shows rush hour conditions
+  const now = new Date()
+  const next = new Date(now)
+  next.setDate(now.getDate() + ((8 - now.getDay()) % 7 || 7)) // next Monday
+  next.setHours(8, 30, 0, 0)
+  body.departureTime = next.toISOString()
+
   if (mode === 'DRIVE') {
     body.routingPreference = 'TRAFFIC_AWARE'
-  }
-
-  if (mode === 'TRANSIT') {
-    // Use 8:30 AM next weekday for consistent transit results
-    const now = new Date()
-    const next = new Date(now)
-    next.setDate(now.getDate() + ((8 - now.getDay()) % 7 || 7)) // next Monday
-    next.setHours(8, 30, 0, 0)
-    body.departureTime = next.toISOString()
   }
 
   try {

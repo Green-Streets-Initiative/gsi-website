@@ -242,7 +242,7 @@ export default function CommuteCalculator() {
       if (altMode === 'ebike') {
         timeNote = 'Powered by Google Maps. E-bike times may be faster than shown.'
       } else if (diff > 3) {
-        timeNote = 'Powered by Google Maps with current traffic conditions.'
+        timeNote = 'Powered by Google Maps with rush hour traffic.'
       } else if (diff < -3) {
         timeNote = 'Powered by Google Maps. Transit times vary by departure.'
       } else {
@@ -619,7 +619,7 @@ export default function CommuteCalculator() {
                           <div className="font-display text-xl font-bold text-white">
                             {routeLoading ? '…' : `${r.isRealRouting ? '' : '~'}${r.driveMins} min`}
                           </div>
-                          <div className="mt-0.5 text-[10px] text-white/30">{r.isRealRouting ? 'each way, with traffic' : 'each way, in traffic'}</div>
+                          <div className="mt-0.5 text-[10px] text-white/30">{r.isRealRouting ? 'each way, rush hour' : 'each way, in traffic'}</div>
                         </div>
                         <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
                           <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/45">{r.mode.label}</div>
