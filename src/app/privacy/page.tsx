@@ -17,11 +17,11 @@ export default function PrivacyPage() {
           <h1 className="font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Privacy Policy
           </h1>
-          <p className="mt-3 text-sm text-white/50">
+          <p className="mt-3 text-sm text-white">
             Shift by Green Streets Initiative &middot; Last updated March 2026
           </p>
-          <p className="mt-1 text-sm text-white/50">
-            Contact: <a href="mailto:privacy@gogreenstreets.org" className="text-lime/70 hover:text-lime">privacy@gogreenstreets.org</a>
+          <p className="mt-1 text-sm text-white">
+            Contact: <a href="mailto:privacy@gogreenstreets.org" className="text-lime">privacy@gogreenstreets.org</a>
           </p>
 
           <hr className="my-10 border-white/[0.08]" />
@@ -250,7 +250,7 @@ export default function PrivacyPage() {
               </Ul>
               <P>
                 To exercise any of these rights, contact us
-                at <a href="mailto:privacy@gogreenstreets.org" className="text-lime/70 hover:text-lime">privacy@gogreenstreets.org</a>.
+                at <a href="mailto:privacy@gogreenstreets.org" className="text-lime">privacy@gogreenstreets.org</a>.
                 We will respond within 30 days.
               </P>
             </Section>
@@ -265,7 +265,7 @@ export default function PrivacyPage() {
               <P>
                 If you believe we have inadvertently collected information from a child under 13
                 without appropriate consent, please contact us immediately
-                at <a href="mailto:privacy@gogreenstreets.org" className="text-lime/70 hover:text-lime">privacy@gogreenstreets.org</a> and
+                at <a href="mailto:privacy@gogreenstreets.org" className="text-lime">privacy@gogreenstreets.org</a> and
                 we will delete the information promptly.
               </P>
             </Section>
@@ -300,7 +300,7 @@ export default function PrivacyPage() {
               <P>
                 Green Streets Initiative<br />
                 Cambridge, MA<br />
-                <a href="mailto:privacy@gogreenstreets.org" className="text-lime/70 hover:text-lime">privacy@gogreenstreets.org</a>
+                <a href="mailto:privacy@gogreenstreets.org" className="text-lime">privacy@gogreenstreets.org</a>
               </P>
               <P>
                 If you have questions about this policy or how your data is handled, please reach out.
@@ -327,13 +327,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function H3({ children }: { children: React.ReactNode }) {
-  return <h3 className="mt-6 mb-2 font-display text-base font-semibold text-white/90">{children}</h3>
+  return <h3 className="mt-6 mb-2 font-display text-base font-semibold text-white">{children}</h3>
 }
 
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="text-[0.9375rem] leading-[1.7] text-white/60">{children}</p>
+  return <p className="text-[0.9375rem] leading-[1.7] text-white">{children}</p>
 }
 
 function Ul({ children }: { children: React.ReactNode }) {
-  return <ul className="list-disc space-y-1.5 pl-5 text-[0.9375rem] leading-[1.7] text-white/60">{children}</ul>
+  return <ul className="list-disc space-y-1.5 pl-5 text-[0.9375rem] leading-[1.7] text-white">{children}</ul>
 }

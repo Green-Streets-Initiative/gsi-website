@@ -15,7 +15,7 @@ export default function WaitlistForm({ className }: WaitlistFormProps) {
       <div className={className}>
         <div className="mx-auto flex max-w-[440px] items-center justify-center gap-2 rounded-full border border-[rgba(186,241,77,0.2)] bg-[rgba(186,241,77,0.08)] px-6 py-3.5">
           <span className="text-sm font-semibold text-[#BAF14D]">&#10003;</span>
-          <span className="text-sm text-white/70">You&apos;re on the list &mdash; we&apos;ll be in touch.</span>
+          <span className="text-sm text-white">You&apos;re on the list &mdash; we&apos;ll be in touch.</span>
         </div>
       </div>
     )

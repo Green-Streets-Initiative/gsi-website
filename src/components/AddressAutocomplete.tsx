@@ -148,12 +148,12 @@ export default function AddressAutocomplete({
   return (
     <div ref={containerRef} className="relative">
       {label && (
-        <label className={`mb-1.5 block text-sm font-medium ${isDark ? 'text-white/60' : 'text-[#191A2E]'}`}>
+        <label className={`mb-1.5 block text-sm font-medium ${isDark ? 'text-white' : 'text-[#191A2E]'}`}>
           {label}
         </label>
       )}
       {!label && (
-        <label className={`mb-1.5 block text-sm font-medium ${isDark ? 'text-white/60' : 'text-[#191A2E]'}`}>
+        <label className={`mb-1.5 block text-sm font-medium ${isDark ? 'text-white' : 'text-[#191A2E]'}`}>
           Address <span className={isDark ? 'text-lime' : 'text-[#E05252]'}>*</span>
         </label>
       )}
@@ -186,7 +186,7 @@ export default function AddressAutocomplete({
                 onClick={() => selectPrediction(p)}
                 className={`w-full px-4 py-2.5 text-left text-[0.875rem] transition-colors ${
                   isDark
-                    ? 'text-white/80 hover:bg-white/[0.06]'
+                    ? 'text-white hover:bg-white/[0.06]'
                     : 'text-[#191A2E] hover:bg-[#F4F8EE]'
                 }`}
               >

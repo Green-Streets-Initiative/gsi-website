@@ -76,14 +76,14 @@ export default function ShiftSection() {
             <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
               Move better.<br />One trip at a time.
             </h2>
-            <p className="mb-10 max-w-[560px] text-[1.0625rem] leading-[1.65] text-white/60">
+            <p className="mb-10 max-w-[560px] text-[1.0625rem] leading-[1.65] text-white">
               Lasting behavior change follows a pattern. Shift is engineered around it — from the moment someone is open to change, through the habit that sticks.
             </p>
 
             {/* BCE diagram */}
             <div>
               {/* Journey to first shift */}
-              <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest text-white/50">
+              <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest text-white">
                 Journey to first shift
               </p>
               <div className="mb-5 flex items-stretch">
@@ -91,17 +91,17 @@ export default function ShiftSection() {
                   <div key={step.name} className="flex min-w-0 flex-1 items-stretch">
                     <div className="flex-1 rounded-lg border border-white/10 border-t-[#BAF14D] border-t-2 bg-white/[0.05] p-3">
                       <p className="font-display text-[13px] font-bold text-white">{step.name}</p>
-                      <p className="mt-1 text-[11px] leading-snug text-white/45">{step.sub}</p>
+                      <p className="mt-1 text-[11px] leading-snug text-white">{step.sub}</p>
                     </div>
                     {i < journeySteps.length - 1 && (
-                      <span className="flex shrink-0 items-center px-1.5 text-sm text-white/50">→</span>
+                      <span className="flex shrink-0 items-center px-1.5 text-sm text-white">→</span>
                     )}
                   </div>
                 ))}
               </div>
 
               {/* Behavior change engine */}
-              <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest text-white/50">
+              <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest text-white">
                 Behavior change engine
               </p>
               <div className="mb-4 flex items-stretch">
@@ -110,7 +110,7 @@ export default function ShiftSection() {
                     <div className="flex-1 rounded-lg border border-[rgba(41,102,229,0.2)] bg-[rgba(41,102,229,0.1)] px-2 py-3 text-center">
                       <p className="mb-1 text-[14px]">{step.icon}</p>
                       <p className="font-display text-xs font-bold text-white">{step.name}</p>
-                      <p className="mt-0.5 text-[10px] leading-snug text-white/45">{step.sub}</p>
+                      <p className="mt-0.5 text-[10px] leading-snug text-white">{step.sub}</p>
                     </div>
                     {i < engineSteps.length - 1 && (
                       <span className="flex shrink-0 items-center px-1 text-sm text-[rgba(41,102,229,0.5)]">→</span>
@@ -122,20 +122,20 @@ export default function ShiftSection() {
               {/* Incentives bar */}
               <div className="mt-2 flex flex-wrap items-center gap-4 rounded-lg border border-[rgba(186,241,77,0.18)] bg-[rgba(186,241,77,0.07)] px-3.5 py-2.5">
                 <span className="font-display text-xs font-bold text-[#BAF14D]">&uarr; Incentives &amp; community</span>
-                <span className="text-[11px] text-white/45">Tiers · leaderboards · local rewards · Walk/Ride Day events</span>
+                <span className="text-[11px] text-white">Tiers · leaderboards · local rewards · Walk/Ride Day events</span>
               </div>
 
               {/* Outcome bar */}
               <div className="mt-2 rounded-lg border-[1.5px] border-[rgba(186,241,77,0.3)] bg-[rgba(186,241,77,0.12)] px-3.5 py-3">
                 <p className="font-display text-sm font-extrabold text-[#BAF14D]">Sustained mode shift</p>
-                <p className="mt-0.5 text-[11px] text-white/50">Habit formation · ongoing engagement · measurable community impact</p>
+                <p className="mt-0.5 text-[11px] text-white">Habit formation · ongoing engagement · measurable community impact</p>
               </div>
             </div>
           </div>
 
           {/* Right — tiers progression */}
           <div>
-            <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-white/50">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-white">
               Your progression
             </p>
 
@@ -153,7 +153,7 @@ export default function ShiftSection() {
                   </div>
                   <div className="flex-1">
                     <p className="font-display text-[13px] font-bold text-white">{tier.name}</p>
-                    <p className="text-[11px] text-white/40">{tier.req}</p>
+                    <p className="text-[11px] text-white">{tier.req}</p>
                   </div>
                   <div className="w-[120px]">
                     <div className="h-[5px] rounded-full bg-white/10">

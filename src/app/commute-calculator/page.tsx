@@ -307,28 +307,28 @@ export default function CommuteCalculator() {
 
         {/* Hero */}
         <div className="mx-auto max-w-[780px] px-8 pt-16">
-          <div className="mb-5 text-[11px] font-semibold uppercase tracking-widest text-white/45">
+          <div className="mb-5 text-[11px] font-semibold uppercase tracking-widest text-white">
             <Link href="/" className="text-[#BAF14D] no-underline hover:underline">Home</Link>
             {' / '}Commute Calculator
           </div>
           <h1 className="mb-5 font-display text-[clamp(2rem,4vw,3rem)] font-extrabold leading-[1.1] tracking-tighter text-white">
             What if your commute <em className="not-italic text-[#BAF14D]">worked for you</em>?
           </h1>
-          <p className="mb-8 max-w-[640px] text-[1.0625rem] leading-[1.7] text-white/70">
+          <p className="mb-8 max-w-[640px] text-[1.0625rem] leading-[1.7] text-white">
             Most people haven&apos;t done the math on their commute. Not just what it costs — but what it could look like if there were a better way. This calculator shows you the money you&apos;d keep, the time you&apos;d reclaim, and the health benefits you&apos;d gain by going active, even a few days a week.
           </p>
           <div className="flex flex-wrap gap-8">
             <div>
               <div className="font-display text-[2rem] font-extrabold leading-none tracking-tighter text-[#BAF14D]">$11,577</div>
-              <div className="mt-1 text-[0.78rem] leading-snug text-white/45">Average annual cost to own and drive a new car (AAA 2025)</div>
+              <div className="mt-1 text-[0.78rem] leading-snug text-white">Average annual cost to own and drive a new car (AAA 2025)</div>
             </div>
             <div>
               <div className="font-display text-[2rem] font-extrabold leading-none tracking-tighter text-[#BAF14D]">$3.59</div>
-              <div className="mt-1 text-[0.78rem] leading-snug text-white/45">Current Massachusetts average gas price per gallon (AAA, March 2026)</div>
+              <div className="mt-1 text-[0.78rem] leading-snug text-white">Current Massachusetts average gas price per gallon (AAA, March 2026)</div>
             </div>
             <div>
               <div className="font-display text-[2rem] font-extrabold leading-none tracking-tighter text-[#BAF14D]">$90</div>
-              <div className="mt-1 text-[0.78rem] leading-snug text-white/45">Monthly MBTA LinkPass — unlimited subway and bus</div>
+              <div className="mt-1 text-[0.78rem] leading-snug text-white">Monthly MBTA LinkPass — unlimited subway and bus</div>
             </div>
           </div>
         </div>
@@ -337,7 +337,7 @@ export default function CommuteCalculator() {
 
         {/* Calculator */}
         <div className="mx-auto max-w-[1000px] px-8">
-          <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.12em] text-white/45">Commute calculator</div>
+          <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">Commute calculator</div>
           <div className="overflow-hidden rounded-[20px] border border-white/[0.12] bg-[#242538]">
             <div className="grid gap-0 md:grid-cols-2">
 
@@ -369,7 +369,7 @@ export default function CommuteCalculator() {
                 <Field label="One-way distance">
                   <div className="flex items-center gap-3">
                     <NumInput value={distance} onChange={setDistance} min={0.5} max={60} step={0.5} />
-                    <span className="text-[0.8rem] text-white/45">miles each way</span>
+                    <span className="text-[0.8rem] text-white">miles each way</span>
                   </div>
                   <Hint>{homePlaceData && workPlaceData ? 'Distance auto-set from routing — adjust to override' : 'Enter addresses above for real routing, or set distance manually'}</Hint>
                 </Field>
@@ -387,13 +387,13 @@ export default function CommuteCalculator() {
                   />
                   {commuteMode === 'rideshare' && (
                     <div className="mt-3.5">
-                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">Average daily rideshare cost</label>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Average daily rideshare cost</label>
                       <div className="flex items-center gap-2">
                         <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
                         <NumInput value={rideshareDaily} onChange={setRideshareDaily} min={5} max={200} step={1} width="88px" fontSize="1rem" />
-                        <span className="text-[0.8rem] text-white/45">per day (round trip)</span>
+                        <span className="text-[0.8rem] text-white">per day (round trip)</span>
                       </div>
-                      <div className="mt-1 text-[0.65rem] text-white/50">Average Uber/Lyft cost for your commute, both ways</div>
+                      <div className="mt-1 text-[0.65rem] text-white">Average Uber/Lyft cost for your commute, both ways</div>
                     </div>
                   )}
                 </Field>
@@ -439,17 +439,17 @@ export default function CommuteCalculator() {
                     <div className="flex items-center gap-2">
                       <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
                       <NumInput value={gasPrice} onChange={setGasPrice} min={2} max={8} step={0.01} width="88px" fontSize="1rem" />
-                      <span className="text-[0.8rem] text-white/45">per gallon</span>
+                      <span className="text-[0.8rem] text-white">per gallon</span>
                     </div>
-                    <div className="mt-1 text-[0.65rem] text-white/50">MA average as of March 2026 — adjust for your local price</div>
+                    <div className="mt-1 text-[0.65rem] text-white">MA average as of March 2026 — adjust for your local price</div>
                   </Field>
                 )}
 
                 {/* EV note */}
                 {commuteMode === 'drive' && vehicle === 'ev' && (
                   <Field label="Electricity cost">
-                    <div className="text-sm text-white/50">$0.048/mile based on Massachusetts residential electricity rates</div>
-                    <div className="mt-1 text-[0.65rem] text-white/50">Using average MA rate of ~$0.28/kWh and ~3.5 mi/kWh efficiency</div>
+                    <div className="text-sm text-white">$0.048/mile based on Massachusetts residential electricity rates</div>
+                    <div className="mt-1 text-[0.65rem] text-white">Using average MA rate of ~$0.28/kWh and ~3.5 mi/kWh efficiency</div>
                   </Field>
                 )}
 
@@ -470,14 +470,14 @@ export default function CommuteCalculator() {
                       <div className="flex items-center gap-2">
                         <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
                         <NumInput value={parkingCost} onChange={setParkingCost} min={0} max={80} step={1} width="78px" fontSize="1rem" />
-                        <span className="text-[0.8rem] text-white/45">per day</span>
+                        <span className="text-[0.8rem] text-white">per day</span>
                       </div>
                       {parkMode === 'full' && (
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <span className="text-[0.63rem] text-white/20">Area medians:</span>
+                          <span className="text-[0.63rem] text-white">Area medians:</span>
                           {PARKING_ANCHORS.map(a => (
                             <button key={a.val} onClick={() => setParkingCost(a.val)}
-                              className="rounded-md border border-white/[0.12] bg-white/[0.06] px-2 py-1 text-[0.65rem] font-semibold text-white/40 transition-colors hover:bg-white/10 hover:text-white/80">
+                              className="rounded-md border border-white/[0.12] bg-white/[0.06] px-2 py-1 text-[0.65rem] font-semibold text-white transition-colors hover:bg-white/10 hover:text-white">
                               {a.label}
                             </button>
                           ))}
@@ -504,7 +504,7 @@ export default function CommuteCalculator() {
                   {altMode === 'mbta' && (
                     <div className="mt-3.5 flex flex-col gap-3.5">
                       <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">Service type</label>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Service type</label>
                         <RadioPills
                           name="mbta-type"
                           value={mbtaType}
@@ -516,7 +516,7 @@ export default function CommuteCalculator() {
                         />
                       </div>
                       <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">Does your employer subsidize your pass?</label>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Does your employer subsidize your pass?</label>
                         <RadioPills
                           name="employer-subsidy"
                           value={hasEmployerSubsidy ? 'yes' : 'no'}
@@ -530,7 +530,7 @@ export default function CommuteCalculator() {
                           <div className="mt-2 flex items-center gap-2">
                             <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
                             <NumInput value={employerSubsidy} onChange={setEmployerSubsidy} min={0} max={300} step={5} width="88px" fontSize="1rem" />
-                            <span className="text-[0.8rem] text-white/45">per month</span>
+                            <span className="text-[0.8rem] text-white">per month</span>
                           </div>
                         )}
                       </div>
@@ -546,7 +546,7 @@ export default function CommuteCalculator() {
                         { value: '329', label: 'Zone 8–10 — $329/mo' },
                       ]} />
                       <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">Does your employer subsidize your pass?</label>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Does your employer subsidize your pass?</label>
                         <RadioPills
                           name="employer-subsidy-rail"
                           value={hasEmployerSubsidy ? 'yes' : 'no'}
@@ -560,7 +560,7 @@ export default function CommuteCalculator() {
                           <div className="mt-2 flex items-center gap-2">
                             <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
                             <NumInput value={employerSubsidy} onChange={setEmployerSubsidy} min={0} max={300} step={5} width="88px" fontSize="1rem" />
-                            <span className="text-[0.8rem] text-white/45">per month</span>
+                            <span className="text-[0.8rem] text-white">per month</span>
                           </div>
                         )}
                       </div>
@@ -628,21 +628,21 @@ export default function CommuteCalculator() {
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
-                          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/45">Driving</div>
+                          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white">Driving</div>
                           <div className="font-display text-xl font-bold text-white">
                             {routeLoading ? '…' : `${r.isRealRouting ? '' : '~'}${r.driveMins} min`}
                           </div>
-                          <div className="mt-0.5 text-[10px] text-white/50">{r.isRealRouting ? 'each way, rush hour' : 'each way, in traffic'}</div>
+                          <div className="mt-0.5 text-[10px] text-white">{r.isRealRouting ? 'each way, rush hour' : 'each way, in traffic'}</div>
                         </div>
                         <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
-                          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/45">{r.mode.label}</div>
+                          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white">{r.mode.label}</div>
                           <div className="font-display text-xl font-bold text-white">
                             {routeLoading ? '…' : r.altMins !== null ? `${r.isRealRouting ? '' : '~'}${r.altMins} min` : 'varies'}
                           </div>
-                          <div className="mt-0.5 text-[10px] text-white/50">{r.mode.healthNote || 'each way'}</div>
+                          <div className="mt-0.5 text-[10px] text-white">{r.mode.healthNote || 'each way'}</div>
                         </div>
                       </div>
-                      <div className="mt-2.5 text-center text-[0.72rem] text-white/45">
+                      <div className="mt-2.5 text-center text-[0.72rem] text-white">
                         {r.timeNote}
                       </div>
                     </div>
@@ -654,15 +654,15 @@ export default function CommuteCalculator() {
                         <div className="grid grid-cols-3 gap-2">
                           <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
                             <div className="font-display text-lg font-bold text-[#EDB93C]">{r.activeMins}</div>
-                            <div className="mt-0.5 text-[10px] leading-snug text-white/50">active minutes per week</div>
+                            <div className="mt-0.5 text-[10px] leading-snug text-white">active minutes per week</div>
                           </div>
                           <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
                             <div className="font-display text-lg font-bold text-[#EDB93C]">{r.weeklyCals.toLocaleString()}</div>
-                            <div className="mt-0.5 text-[10px] leading-snug text-white/50">calories burned per week</div>
+                            <div className="mt-0.5 text-[10px] leading-snug text-white">calories burned per week</div>
                           </div>
                           <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
                             <div className="font-display text-lg font-bold text-[#EDB93C]">{r.gymEquiv}×</div>
-                            <div className="mt-0.5 text-[10px] leading-snug text-white/50">gym sessions/week equivalent</div>
+                            <div className="mt-0.5 text-[10px] leading-snug text-white">gym sessions/week equivalent</div>
                           </div>
                         </div>
                       </div>
@@ -671,24 +671,24 @@ export default function CommuteCalculator() {
                     {/* Quick facts */}
                     <div className="grid grid-cols-2 gap-2">
                       <div className="rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-4 py-3">
-                        <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-white/45">Miles active per year</div>
+                        <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-white">Miles active per year</div>
                         <div className="font-display text-lg font-bold text-white">{Math.round(r.annualMiles).toLocaleString()}</div>
-                        <div className="mt-0.5 text-[10px] text-white/50">under your own power</div>
+                        <div className="mt-0.5 text-[10px] text-white">under your own power</div>
                       </div>
                       <div className="rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-4 py-3">
-                        <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-white/45">CO₂ avoided</div>
+                        <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-white">CO₂ avoided</div>
                         <div className="font-display text-lg font-bold text-white">{fmtCO2(r.co2)}</div>
-                        <div className="mt-0.5 text-[10px] text-white/50">per year</div>
+                        <div className="mt-0.5 text-[10px] text-white">per year</div>
                       </div>
                     </div>
                     <div className="rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-4 py-3 text-center">
-                      <div className="text-sm text-white/60">{co2Equivalency(r.co2)}</div>
+                      <div className="text-sm text-white">{co2Equivalency(r.co2)}</div>
                     </div>
 
                     {/* Waitlist CTA */}
                     <div className="mt-auto rounded-[14px] border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-6 py-5">
                       <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight text-white">Ready to try it?</div>
-                      <div className="mb-3.5 text-[0.8rem] leading-relaxed text-white/50">
+                      <div className="mb-3.5 text-[0.8rem] leading-relaxed text-white">
                         Shift helps you build the habit — log your first active trip, track your progress, and see your real savings add up over time.
                       </div>
                       {!waitlistSubmitted ? (
@@ -709,7 +709,7 @@ export default function CommuteCalculator() {
                       ) : (
                         <div className="flex items-center gap-2 rounded-lg border border-[rgba(186,241,77,0.2)] bg-[rgba(186,241,77,0.08)] px-4 py-2.5">
                           <span className="text-sm font-semibold text-[#BAF14D]">&#10003;</span>
-                          <span className="text-sm text-white/70">You&apos;re on the list — we&apos;ll be in touch.</span>
+                          <span className="text-sm text-white">You&apos;re on the list — we&apos;ll be in touch.</span>
                         </div>
                       )}
                     </div>
@@ -723,10 +723,10 @@ export default function CommuteCalculator() {
         {/* Methodology */}
         <div className="mx-auto mt-8 max-w-[860px] px-8">
           <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-5 py-4">
-            <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/50">How this is calculated</div>
-            <div className="text-[0.77rem] leading-[1.65] text-white/50">
-              Fuel savings use your vehicle&apos;s EPA combined MPG estimate and the current Massachusetts average gas price from AAA. Maintenance savings apply the AAA 2025 variable rate per mile (~10–11¢/mile by vehicle type), covering oil changes, tire wear, and related repairs — costs that genuinely decrease when you drive less. <strong className="font-semibold text-white/50">Fixed costs like insurance, depreciation, registration, and finance charges are excluded</strong> — those don&apos;t change based on how many days you drive, so including them would overstate your actual savings. MBTA fares are current as of March 2026 from{' '}
-              <a href="https://www.mbta.com/fares" target="_blank" rel="noopener noreferrer" className="text-white/40 underline">mbta.com/fares</a>; the calculator automatically compares monthly pass vs. per-ride cost and uses whichever is cheaper for your frequency. Health estimates use MET values from the American College of Sports Medicine: cycling at a moderate pace (~12 mph) is approximately 8 METs; brisk walking is approximately 4 METs. Boston-area parking medians from SpotAngels (February 2026). Time estimates are speed-based approximations — real door-to-door routing via Google Maps is coming soon.
+            <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white">How this is calculated</div>
+            <div className="text-[0.77rem] leading-[1.65] text-white">
+              Fuel savings use your vehicle&apos;s EPA combined MPG estimate and the current Massachusetts average gas price from AAA. Maintenance savings apply the AAA 2025 variable rate per mile (~10–11¢/mile by vehicle type), covering oil changes, tire wear, and related repairs — costs that genuinely decrease when you drive less. <strong className="font-semibold text-white">Fixed costs like insurance, depreciation, registration, and finance charges are excluded</strong> — those don&apos;t change based on how many days you drive, so including them would overstate your actual savings. MBTA fares are current as of March 2026 from{' '}
+              <a href="https://www.mbta.com/fares" target="_blank" rel="noopener noreferrer" className="text-white underline">mbta.com/fares</a>; the calculator automatically compares monthly pass vs. per-ride cost and uses whichever is cheaper for your frequency. Health estimates use MET values from the American College of Sports Medicine: cycling at a moderate pace (~12 mph) is approximately 8 METs; brisk walking is approximately 4 METs. Boston-area parking medians from SpotAngels (February 2026). Time estimates are speed-based approximations — real door-to-door routing via Google Maps is coming soon.
             </div>
           </div>
         </div>
@@ -739,7 +739,7 @@ export default function CommuteCalculator() {
           {FAQ.map((item, i) => (
             <div key={i} className="border-t border-white/[0.07] py-6 last:border-b">
               <div className="mb-2.5 font-display font-semibold text-white">{item.q}</div>
-              <div className="text-[0.9rem] leading-[1.75] text-white/60" dangerouslySetInnerHTML={{ __html: item.a }} />
+              <div className="text-[0.9rem] leading-[1.75] text-white" dangerouslySetInnerHTML={{ __html: item.a }} />
             </div>
           ))}
         </div>
@@ -754,14 +754,14 @@ export default function CommuteCalculator() {
 function Field({ label, children, last }: { label: string; children: React.ReactNode; last?: boolean }) {
   return (
     <div className={last ? '' : 'mb-6'}>
-      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">{label}</label>
+      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">{label}</label>
       {children}
     </div>
   )
 }
 
 function Hint({ children }: { children: React.ReactNode }) {
-  return <div className="mt-1 text-[0.7rem] leading-snug text-white/50">{children}</div>
+  return <div className="mt-1 text-[0.7rem] leading-snug text-white">{children}</div>
 }
 
 function NumInput({ value, onChange, min, max, step, width, fontSize }: {
@@ -791,7 +791,7 @@ function RangeInput({ value, onChange, min, max, labels }: {
         style={{ height: '6px' }}
       />
       <div className="mt-1 flex justify-between">
-        {labels.map(l => <span key={l} className="text-[10px] text-white/50">{l}</span>)}
+        {labels.map(l => <span key={l} className="text-[10px] text-white">{l}</span>)}
       </div>
     </div>
   )
@@ -820,7 +820,7 @@ function RadioPills({ name, value, onChange, options }: {
         <label key={o.value} className={`cursor-pointer whitespace-nowrap rounded-full border-[1.5px] px-3.5 py-1.5 text-xs font-semibold transition-all ${
           value === o.value
             ? 'border-[#BAF14D] bg-[#BAF14D] text-[#191A2E]'
-            : 'border-white/[0.12] text-white/50 hover:border-white/25'
+            : 'border-white/[0.12] text-white hover:border-white/25'
         }`}>
           <input type="radio" name={name} value={o.value} checked={value === o.value}
             onChange={() => onChange(o.value)} className="sr-only" />
@@ -832,10 +832,10 @@ function RadioPills({ name, value, onChange, options }: {
 }
 
 function ResultRow({ label, value, type }: { label: string; value: string; type: 'pos' | 'neg' | 'neu' }) {
-  const color = type === 'pos' ? 'text-[#BAF14D]' : type === 'neg' ? 'text-[#FF6B6B]' : 'text-white/70'
+  const color = type === 'pos' ? 'text-[#BAF14D]' : type === 'neg' ? 'text-[#FF6B6B]' : 'text-white'
   return (
     <div className="flex items-center justify-between rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-3.5 py-2.5">
-      <span className="text-[0.8rem] text-white/50">{label}</span>
+      <span className="text-[0.8rem] text-white">{label}</span>
       <span className={`font-display text-[0.9rem] font-bold transition-all duration-300 ${color}`}>{value}</span>
     </div>
   )

@@ -142,11 +142,11 @@ export default function ContactForm() {
       <div className="rounded-2xl bg-card p-8 text-center sm:p-12">
         <div className="mb-4 text-4xl">&#10003;</div>
         <h2 className="font-display text-2xl font-bold text-white">Message sent</h2>
-        <p className="mt-3 text-white/70">
+        <p className="mt-3 text-white">
           Thanks, {firstName}. We&apos;ll be in touch within 2 business days.
         </p>
         <div className="mt-8 space-y-3 text-sm">
-          <p className="text-white/50">In the meantime:</p>
+          <p className="text-white">In the meantime:</p>
           <div className="flex flex-col items-center gap-2">
             <Link href="/shift" className="text-lime hover:underline">
               Learn about the Shift app &rarr;
@@ -256,7 +256,7 @@ export default function ContactForm() {
           <Field label="Grade levels served">
             <div className="flex flex-wrap gap-3">
               {GRADE_LEVELS.map(level => (
-                <label key={level} className="flex cursor-pointer items-center gap-2 text-sm text-white/80">
+                <label key={level} className="flex cursor-pointer items-center gap-2 text-sm text-white">
                   <input
                     type="checkbox"
                     checked={gradeLevels.includes(level)}
@@ -292,7 +292,7 @@ export default function ContactForm() {
               className="form-input"
             />
           </Field>
-          <p className="text-sm text-white/50">
+          <p className="text-sm text-white">
             Prefer to apply directly?{' '}
             <Link href="/shift/rewards-partners" className="text-lime hover:underline">
               Complete the rewards partner application &rarr;
@@ -356,7 +356,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-medium text-white/80">
+      <label className="mb-1.5 block text-sm font-medium text-white">
         {label}
         {required && <span className="ml-0.5 text-lime">*</span>}
       </label>

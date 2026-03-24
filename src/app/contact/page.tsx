@@ -19,28 +19,28 @@ export default function ContactPage() {
           <h1 className="font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Get in touch
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-white/60">
+          <p className="mt-4 text-base leading-relaxed text-white">
             Whether you&apos;re an employer, a school, a local business, or just curious about
             Shift — we&apos;d love to hear from you. We&apos;ll get back to you within 2 business days.
           </p>
         </div>
 
         {/* Form */}
-        <Suspense fallback={<div className="rounded-2xl bg-card p-10 text-center text-white/40">Loading…</div>}>
+        <Suspense fallback={<div className="rounded-2xl bg-card p-10 text-center text-white">Loading…</div>}>
           <ContactForm />
         </Suspense>
 
         {/* Below-form info */}
         <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div className="text-center sm:text-left">
-            <p className="text-xs font-medium uppercase tracking-wider text-white/40">Email us directly</p>
-            <a href="mailto:info@gogreenstreets.org" className="mt-1 block text-sm text-white/70 hover:text-white">
+            <p className="text-xs font-medium uppercase tracking-wider text-white">Email us directly</p>
+            <a href="mailto:info@gogreenstreets.org" className="mt-1 block text-sm text-white hover:text-white">
               info@gogreenstreets.org
             </a>
           </div>
           <div className="text-center sm:text-left">
-            <p className="text-xs font-medium uppercase tracking-wider text-white/40">Based in</p>
-            <p className="mt-1 text-sm text-white/70">Cambridge, MA</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-white">Based in</p>
+            <p className="mt-1 text-sm text-white">Cambridge, MA</p>
           </div>
         </div>
       </div>

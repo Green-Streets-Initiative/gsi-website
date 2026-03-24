@@ -26,7 +26,7 @@ export default function CountdownTimer({ targetDate }: CountdownTimerProps) {
 
   return (
     <div className="flex items-center gap-3 sm:gap-5">
-      <span className="text-sm font-semibold uppercase tracking-wider text-white/40">
+      <span className="text-sm font-semibold uppercase tracking-wider text-white">
         Starts in
       </span>
       <Unit value={timeLeft.days} label="days" />
@@ -46,7 +46,7 @@ function Unit({ value, label }: { value: number; label: string }) {
       <span className="font-display text-3xl font-extrabold tabular-nums text-[#BAF14D] sm:text-4xl">
         {String(value).padStart(2, '0')}
       </span>
-      <span className="mt-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-white/50">
+      <span className="mt-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-white">
         {label}
       </span>
     </div>
@@ -55,7 +55,7 @@ function Unit({ value, label }: { value: number; label: string }) {
 
 function Separator() {
   return (
-    <span className="mb-3 text-xl font-bold text-white/20">:</span>
+    <span className="mb-3 text-xl font-bold text-white">:</span>
   )
 }
 

@@ -256,7 +256,7 @@ export default function RewardsPartnersPage() {
               Reach active commuters in your neighborhood.
             </h1>
 
-            <p className="mb-12 max-w-[620px] text-lg leading-[1.7] text-white/60">
+            <p className="mb-12 max-w-[620px] text-lg leading-[1.7] text-white">
               Join the Shift rewards network — put your business in front of people who walk, bike, and ride transit every day. Free to join. No POS integration. No complicated setup.
             </p>
 
@@ -282,7 +282,7 @@ export default function RewardsPartnersPage() {
                   <h3 className="mb-2 font-display text-sm font-bold text-[#BAF14D]">
                     {item.title}
                   </h3>
-                  <p className="text-[0.875rem] leading-[1.6] text-white/50">{item.desc}</p>
+                  <p className="text-[0.875rem] leading-[1.6] text-white">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -398,7 +398,7 @@ export default function RewardsPartnersPage() {
                   <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">
                     {s.title}
                   </h3>
-                  <p className="text-[0.9375rem] leading-[1.6] text-white/50">{s.desc}</p>
+                  <p className="text-[0.9375rem] leading-[1.6] text-white">{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -785,13 +785,13 @@ export default function RewardsPartnersPage() {
             <h2 className="mb-2 font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold leading-[1.1] tracking-tight text-white">
               Already a rewards partner?
             </h2>
-            <p className="mb-8 text-[0.9375rem] leading-[1.65] text-white/55">
+            <p className="mb-8 text-[0.9375rem] leading-[1.65] text-white">
               Log in to update your offer, edit your contact info, or manage your listing.
             </p>
 
             {loginSent ? (
               <div className="rounded-[18px] border border-[rgba(186,241,77,0.2)] bg-[rgba(186,241,77,0.08)] p-6">
-                <p className="text-sm text-white/70">
+                <p className="text-sm text-white">
                   If that email is associated with a Shift rewards partner account, you&apos;ll
                   receive a login link shortly. Check your inbox.
                 </p>

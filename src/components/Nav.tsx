@@ -11,34 +11,31 @@ export default function Nav() {
       <div className="mx-auto flex h-[60px] w-full max-w-[1120px] items-center justify-between px-8">
 
         {/* Brand */}
-        <Link href="/" className="flex items-center gap-2.5 no-underline">
-          <svg width="22" height="17" viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
-            <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
-          </svg>
-          <span className="font-display text-[1.0625rem] font-semibold tracking-tight text-white">
-            <span className="text-lime">Green Streets</span>{' '}Initiative
+        <Link href="/" className="flex items-center no-underline">
+          <span className="text-[1.0625rem] tracking-[0.3px]" style={{ fontFamily: "'Trebuchet MS', 'Lucida Grande', Verdana, sans-serif" }}>
+            <span className="font-bold text-[#52B788]">Green Streets</span>{' '}
+            <span className="font-normal text-white">Initiative</span>
           </span>
         </Link>
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-8 md:flex">
-          <Link href="/shift" className="text-sm font-medium text-white/60 transition-colors hover:text-white">
+          <Link href="/shift" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
             Shift app
           </Link>
-          <Link href="/events/shift-your-summer" className="text-sm font-medium text-lime/80 transition-colors hover:text-lime">
+          <Link href="/events/shift-your-summer" className="text-sm font-medium text-lime transition-opacity hover:opacity-80">
             Shift Your Summer
           </Link>
-          <Link href="/programs" className="text-sm font-medium text-white/60 transition-colors hover:text-white">
+          <Link href="/programs" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
             Programs
           </Link>
-          <Link href="/commute-calculator" className="text-sm font-medium text-white/60 transition-colors hover:text-white">
+          <Link href="/commute-calculator" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
             Calculator
           </Link>
-          <Link href="/about" className="text-sm font-medium text-white/60 transition-colors hover:text-white">
+          <Link href="/about" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
             About
           </Link>
-          <Link href="/contact" className="text-sm font-medium text-white/60 transition-colors hover:text-white">
+          <Link href="/contact" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
             Contact
           </Link>
           <Link
@@ -65,12 +62,12 @@ export default function Nav() {
       {menuOpen && (
         <div className="border-t border-white/[0.07] px-6 py-4 md:hidden">
           <div className="flex flex-col gap-4">
-            <Link href="/shift" className="text-sm font-medium text-white/70" onClick={() => setMenuOpen(false)}>Shift app</Link>
-            <Link href="/events/shift-your-summer" className="text-sm font-medium text-lime/80" onClick={() => setMenuOpen(false)}>Shift Your Summer</Link>
-            <Link href="/programs" className="text-sm font-medium text-white/70" onClick={() => setMenuOpen(false)}>Programs</Link>
-            <Link href="/commute-calculator" className="text-sm font-medium text-white/70" onClick={() => setMenuOpen(false)}>Calculator</Link>
-            <Link href="/about" className="text-sm font-medium text-white/70" onClick={() => setMenuOpen(false)}>About</Link>
-            <Link href="/contact" className="text-sm font-medium text-white/70" onClick={() => setMenuOpen(false)}>Contact</Link>
+            <Link href="/shift" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Shift app</Link>
+            <Link href="/events/shift-your-summer" className="text-sm font-medium text-lime" onClick={() => setMenuOpen(false)}>Shift Your Summer</Link>
+            <Link href="/programs" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Programs</Link>
+            <Link href="/commute-calculator" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Calculator</Link>
+            <Link href="/about" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>About</Link>
+            <Link href="/contact" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Contact</Link>
             <Link href="#waitlist" className="mt-2 inline-block rounded-full bg-lime px-4 py-2 text-sm font-semibold text-navy" onClick={() => setMenuOpen(false)}>Join waitlist</Link>
           </div>
         </div>

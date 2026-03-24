@@ -17,7 +17,7 @@ export default function RefreshButton() {
     <button
       onClick={handleRefresh}
       disabled={refreshing}
-      className="inline-flex items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.05] px-5 py-2.5 text-sm font-semibold text-white/60 transition-colors hover:border-white/20 hover:text-white disabled:opacity-50"
+      className="inline-flex items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.05] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:border-white/20 disabled:opacity-50"
     >
       <svg
         viewBox="0 0 16 16"

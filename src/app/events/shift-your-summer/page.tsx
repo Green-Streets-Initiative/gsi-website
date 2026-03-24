@@ -88,7 +88,7 @@ function shiftRateColor(pct: number) {
   if (pct >= 80) return 'text-[#EDB93C]'
   if (pct >= 60) return 'text-[#BAF14D]'
   if (pct >= 40) return 'text-[#2966E5]'
-  return 'text-white/60'
+  return 'text-white'
 }
 
 function rankBorder(rank: number) {
@@ -208,7 +208,7 @@ function ComingSoon() {
           <h1 className="mb-6 font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
             The next challenge is coming.
           </h1>
-          <p className="mx-auto mb-10 max-w-[580px] text-lg leading-[1.7] text-white/60">
+          <p className="mx-auto mb-10 max-w-[580px] text-lg leading-[1.7] text-white">
             Shift flagship events bring Greater Boston commuters together to compete, move, and win real prizes. Join the waitlist to be first to know when the next event launches.
           </p>
           <WaitlistForm />
@@ -221,12 +221,12 @@ function ComingSoon() {
           <h2 className="mb-4 font-display text-2xl font-bold tracking-tight text-white">
             What are flagship events?
           </h2>
-          <p className="mb-8 text-[1.0625rem] leading-[1.7] text-white/55">
+          <p className="mb-8 text-[1.0625rem] leading-[1.7] text-white">
             Multi-month, city-wide challenges where commuters across Greater Boston compete to shift trips from driving to walking, biking, and transit. Top finishers win real prizes from local sponsors.
           </p>
           <Link
             href="/shift"
-            className="text-sm font-semibold text-[#BAF14D]/70 transition-colors hover:text-[#BAF14D]"
+            className="text-sm font-semibold text-[#BAF14D]"
           >
             Learn more about Shift &rarr;
           </Link>
@@ -260,10 +260,10 @@ function UpcomingEvent({
             <h1 className="mb-4 font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
               {competition.name}
             </h1>
-            <p className="mb-5 text-lg leading-[1.7] text-white/60">
+            <p className="mb-5 text-lg leading-[1.7] text-white">
               {competition.description}
             </p>
-            <p className="mb-3 text-sm font-semibold text-white/40">
+            <p className="mb-3 text-sm font-semibold text-white">
               {formatDateRange(competition.starts_at, competition.ends_at)}
             </p>
             <MetricBadge metric={competition.metric} />
@@ -282,7 +282,7 @@ function UpcomingEvent({
             <h2 className="mb-3 font-display text-2xl font-bold tracking-tight text-white">
               Be the first on the board
             </h2>
-            <p className="mb-8 text-[1.0625rem] leading-[1.7] text-white/50">
+            <p className="mb-8 text-[1.0625rem] leading-[1.7] text-white">
               The challenge hasn&apos;t started yet. Download Shift and be ready to compete from day one.
             </p>
             <CtaButtons />
@@ -329,10 +329,10 @@ function ActiveEvent({
               <h1 className="mb-4 font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
                 {competition.name}
               </h1>
-              <p className="mb-5 text-lg leading-[1.7] text-white/60">
+              <p className="mb-5 text-lg leading-[1.7] text-white">
                 {competition.description}
               </p>
-              <p className="mb-3 text-sm font-semibold text-white/40">
+              <p className="mb-3 text-sm font-semibold text-white">
                 {formatDateRange(competition.starts_at, competition.ends_at)}
               </p>
               <MetricBadge metric={competition.metric} />
@@ -346,11 +346,11 @@ function ActiveEvent({
                 <span className="font-display text-3xl font-extrabold text-white">
                   {participantCount.toLocaleString()}
                 </span>
-                <span className="ml-2 text-sm text-white/40">people competing</span>
+                <span className="ml-2 text-sm text-white">people competing</span>
               </div>
               {leader && (
                 <div className="rounded-[14px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
-                  <span className="text-sm text-white/40">#1 right now: </span>
+                  <span className="text-sm text-white">#1 right now: </span>
                   <span className="font-display text-lg font-bold text-white">
                     {leader.display_name}
                   </span>
@@ -373,7 +373,7 @@ function ActiveEvent({
               <h2 className="font-display text-2xl font-bold tracking-tight text-white">
                 Live standings
               </h2>
-              <p className="mt-1 text-sm text-white/40">
+              <p className="mt-1 text-sm text-white">
                 Updated when you load this page.
               </p>
             </div>
@@ -384,7 +384,7 @@ function ActiveEvent({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-white/50">
+                  <tr className="border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-white">
                     <th className="w-16 py-3.5 pr-2 text-right pl-5">Rank</th>
                     <th className="py-3.5 px-4">Name</th>
                     <th className="py-3.5 px-4 text-right">Shift Rate</th>
@@ -406,7 +406,7 @@ function ActiveEvent({
                         <td className="py-3 pr-2 text-right pl-5">
                           <span
                             className={`font-display text-base font-bold ${
-                              rank <= 3 ? 'text-[#EDB93C]' : 'text-white/50'
+                              rank <= 3 ? 'text-[#EDB93C]' : 'text-white'
                             }`}
                           >
                             {rank}
@@ -418,7 +418,7 @@ function ActiveEvent({
                         <td className={`py-3 px-4 text-right font-display font-bold ${shiftRateColor(entry.pct_non_car)}`}>
                           {Math.round(entry.pct_non_car)}%
                         </td>
-                        <td className="hidden py-3 px-4 text-right text-white/50 md:table-cell pr-5">
+                        <td className="hidden py-3 px-4 text-right text-white md:table-cell pr-5">
                           {entry.non_car_trips}
                         </td>
                       </tr>
@@ -437,14 +437,14 @@ function ActiveEvent({
                               : ''
                           } border-b border-white/[0.05] last:border-b-0`}
                         >
-                          <td className="py-3 pr-2 text-right text-white/20 pl-5">
+                          <td className="py-3 pr-2 text-right text-white pl-5">
                             {standings.length + i + 1}
                           </td>
-                          <td className="py-3 px-4 text-white/20">&mdash;</td>
-                          <td className="py-3 px-4 text-right text-white/20">
+                          <td className="py-3 px-4 text-white">&mdash;</td>
+                          <td className="py-3 px-4 text-right text-white">
                             &mdash;
                           </td>
-                          <td className="hidden py-3 px-4 text-right text-white/20 md:table-cell pr-5">
+                          <td className="hidden py-3 px-4 text-right text-white md:table-cell pr-5">
                             &mdash;
                           </td>
                         </tr>
@@ -455,7 +455,7 @@ function ActiveEvent({
             </div>
 
             {standings.length < 10 && (
-              <p className="border-t border-white/[0.06] px-6 py-4 text-center text-sm text-white/40">
+              <p className="border-t border-white/[0.06] px-6 py-4 text-center text-sm text-white">
                 The board is just getting started. Be one of the first.
               </p>
             )}
@@ -484,7 +484,7 @@ function PrizesSection({ prizes }: { prizes: Prize[] }) {
     if (n === 1) return 'text-[#EDB93C] border-[#EDB93C]/20 bg-[#EDB93C]/5'
     if (n === 2) return 'text-[#C0C0C0] border-[#C0C0C0]/20 bg-[#C0C0C0]/5'
     if (n === 3) return 'text-[#CD7F32] border-[#CD7F32]/20 bg-[#CD7F32]/5'
-    return 'text-white/60 border-white/10 bg-white/[0.03]'
+    return 'text-white border-white/10 bg-white/[0.03]'
   }
 
   return (
@@ -502,11 +502,11 @@ function PrizesSection({ prizes }: { prizes: Prize[] }) {
               <div className="mb-3 text-sm font-bold uppercase tracking-wider">
                 {placeLabel(prize.place)}
               </div>
-              <p className="text-[0.9375rem] leading-[1.6] text-white/70">
+              <p className="text-[0.9375rem] leading-[1.6] text-white">
                 {prize.description}
               </p>
               {prize.value_amount != null && prize.value_amount > 0 && (
-                <p className="mt-2 text-sm text-white/40">
+                <p className="mt-2 text-sm text-white">
                   ~${prize.value_amount}
                 </p>
               )}
@@ -536,7 +536,7 @@ function SponsorsSection({ sponsors }: { sponsors: Sponsorship[] }) {
                 className="h-12 max-w-[160px] object-contain brightness-0 invert opacity-70 hover:opacity-100 transition-opacity"
               />
             ) : (
-              <span className="text-lg font-semibold text-white/60 hover:text-white transition-colors">
+              <span className="text-lg font-semibold text-white hover:text-white transition-colors">
                 {sponsor.name}
               </span>
             )
@@ -594,7 +594,7 @@ function HowToJoin() {
               <h3 className="mb-2 font-display text-base font-bold text-white">
                 {s.title}
               </h3>
-              <p className="text-[0.9375rem] leading-[1.6] text-white/50">
+              <p className="text-[0.9375rem] leading-[1.6] text-white">
                 {s.body}
               </p>
             </div>
@@ -614,14 +614,14 @@ function CtaSection() {
         </h2>
         {APP_LAUNCHED ? (
           <>
-            <p className="mb-10 text-lg leading-relaxed text-white/55">
+            <p className="mb-10 text-lg leading-relaxed text-white">
               Download Shift, join the challenge, and start earning your spot on the board.
             </p>
             <AppStoreButtons />
           </>
         ) : (
           <>
-            <p className="mb-10 text-lg leading-relaxed text-white/55">
+            <p className="mb-10 text-lg leading-relaxed text-white">
               Shift launches this summer. Join the waitlist and we&apos;ll notify you the moment the challenge goes live.
             </p>
             <WaitlistForm />
@@ -667,7 +667,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 
 function MetricBadge({ metric }: { metric: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.05] px-3.5 py-1.5 text-xs font-semibold text-white/50">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.05] px-3.5 py-1.5 text-xs font-semibold text-white">
       <svg viewBox="0 0 12 12" width="12" height="12" fill="currentColor">
         <path d="M6 0l1.76 3.57L12 4.14 8.82 7.02l.94 4.98L6 10.02 2.24 12l.94-4.98L0 4.14l4.24-.57z" />
       </svg>
@@ -683,7 +683,7 @@ function PresentedBy({ sponsors }: { sponsors: Sponsorship[] }) {
   if (!sponsor) return null
 
   return (
-    <div className="mt-6 flex items-center gap-3 text-sm text-white/50">
+    <div className="mt-6 flex items-center gap-3 text-sm text-white">
       <span>Presented by</span>
       {sponsor.logo_url ? (
         <img
@@ -692,7 +692,7 @@ function PresentedBy({ sponsors }: { sponsors: Sponsorship[] }) {
           className="h-6 max-w-[120px] object-contain brightness-0 invert opacity-60"
         />
       ) : (
-        <span className="font-semibold text-white/50">{sponsor.name}</span>
+        <span className="font-semibold text-white">{sponsor.name}</span>
       )}
     </div>
   )

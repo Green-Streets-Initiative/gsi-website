@@ -24,8 +24,8 @@
     --gray: #8A8DA8;
     --dim: rgba(255, 255, 255, 0.07);
     --dim2: rgba(255, 255, 255, 0.12);
-    --text: rgba(255, 255, 255, 0.88);
-    --muted: rgba(255, 255, 255, 0.45);
+    --text: #FFFFFF;
+    --muted: #FFFFFF;
   }
 
   html {

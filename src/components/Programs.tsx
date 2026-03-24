@@ -20,7 +20,7 @@ export default function Programs() {
             <h3 className="mb-2 font-display text-[1.375rem] font-extrabold tracking-tight text-white">
               Shift — the app
             </h3>
-            <p className="mb-6 text-[15px] leading-relaxed text-white/60">
+            <p className="mb-6 text-[15px] leading-relaxed text-white">
               A behavior-change app that makes walking, biking, and transit feel
               rewarding, competitive, and social. Available on iOS and Android —
               coming soon.

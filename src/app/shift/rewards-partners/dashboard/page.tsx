@@ -31,7 +31,7 @@ export default function DashboardPageWrapper() {
       <>
         <Nav />
         <main style={{ paddingTop: '60px' }} className="flex min-h-screen items-center justify-center bg-[#191A2E]">
-          <div className="text-white/50">Loading&hellip;</div>
+          <div className="text-white">Loading&hellip;</div>
         </main>
         <Footer />
       </>
@@ -219,7 +219,7 @@ function DashboardPage() {
       <>
         <Nav />
         <main style={{ paddingTop: '60px' }} className="flex min-h-screen items-center justify-center bg-[#191A2E]">
-          <div className="text-white/50">Loading&hellip;</div>
+          <div className="text-white">Loading&hellip;</div>
         </main>
         <Footer />
       </>
@@ -244,7 +244,7 @@ function DashboardPage() {
                 className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-bold ${
                   sponsor.status === 'active'
                     ? 'bg-[#BAF14D]/15 text-[#BAF14D]'
-                    : 'bg-white/10 text-white/50'
+                    : 'bg-white/10 text-white'
                 }`}
               >
                 {sponsor.status === 'active' ? 'Active' : 'Paused'}
@@ -252,7 +252,7 @@ function DashboardPage() {
             </div>
             <button
               onClick={handleSignOut}
-              className="rounded-full border border-white/[0.12] px-4 py-2 text-sm font-medium text-white/60 transition-colors hover:text-white"
+              className="rounded-full border border-white/[0.12] px-4 py-2 text-sm font-medium text-white"
             >
               Sign out
             </button>
@@ -263,13 +263,13 @@ function DashboardPage() {
             <h2 className="mb-5 font-display text-base font-bold text-white">Current offer</h2>
 
             {!reward ? (
-              <p className="text-[0.9375rem] text-white/50">
+              <p className="text-[0.9375rem] text-white">
                 Your offer is under review. We&apos;ll notify you when it&apos;s live in the catalog.
               </p>
             ) : editingOffer ? (
               <div className="space-y-4">
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-white/70">
+                  <label className="mb-1.5 block text-sm font-medium text-white">
                     Offer description
                   </label>
                   <textarea
@@ -281,12 +281,12 @@ function DashboardPage() {
                     rows={3}
                     className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/45 focus:border-[#BAF14D]"
                   />
-                  <div className="mt-1 text-right text-xs text-white/50">
+                  <div className="mt-1 text-right text-xs text-white">
                     {offerDesc.length}/200
                   </div>
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-white/70">
+                  <label className="mb-1.5 block text-sm font-medium text-white">
                     Offer limits
                   </label>
                   <input
@@ -298,7 +298,7 @@ function DashboardPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-white/70">
+                  <label className="mb-1.5 block text-sm font-medium text-white">
                     Redemption frequency
                   </label>
                   <select
@@ -327,7 +327,7 @@ function DashboardPage() {
                       setOfferFrequency(reward.redemption_frequency || '')
                       setEditingOffer(false)
                     }}
-                    className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white/60 transition-colors hover:text-white"
+                    className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white"
                   >
                     Cancel
                   </button>
@@ -335,11 +335,11 @@ function DashboardPage() {
               </div>
             ) : (
               <div>
-                <p className="mb-1 text-[0.9375rem] font-medium text-white/80">{reward.name}</p>
+                <p className="mb-1 text-[0.9375rem] font-medium text-white">{reward.name}</p>
                 {reward.description && (
-                  <p className="text-sm text-white/45">{reward.description}</p>
+                  <p className="text-sm text-white">{reward.description}</p>
                 )}
-                <p className="mt-1 text-sm text-white/45">
+                <p className="mt-1 text-sm text-white">
                   Limit:{' '}
                   {reward.redemption_frequency === 'daily'
                     ? 'Once per day'
@@ -351,7 +351,7 @@ function DashboardPage() {
                 </p>
                 <button
                   onClick={() => setEditingOffer(true)}
-                  className="mt-4 rounded-full border border-white/[0.12] px-5 py-2 text-sm font-medium text-white/60 transition-colors hover:text-white"
+                  className="mt-4 rounded-full border border-white/[0.12] px-5 py-2 text-sm font-medium text-white"
                 >
                   Edit offer
                 </button>
@@ -373,16 +373,16 @@ function DashboardPage() {
                   onChange={(v) => setContactForm({ ...contactForm, contact_name: v })}
                 />
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-white/70">
+                  <label className="mb-1.5 block text-sm font-medium text-white">
                     Email address
                   </label>
                   <input
                     type="email"
                     value={userEmail}
                     disabled
-                    className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-[0.9375rem] text-white/40 outline-none"
+                    className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-[0.9375rem] text-white outline-none"
                   />
-                  <p className="mt-1 text-xs text-white/50">
+                  <p className="mt-1 text-xs text-white">
                     To change your login email, contact us at info@gogreenstreets.org
                   </p>
                 </div>
@@ -420,7 +420,7 @@ function DashboardPage() {
                       })
                       setEditingContact(false)
                     }}
-                    className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white/60 transition-colors hover:text-white"
+                    className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white"
                   >
                     Cancel
                   </button>
@@ -437,7 +437,7 @@ function DashboardPage() {
                 </dl>
                 <button
                   onClick={() => setEditingContact(true)}
-                  className="mt-5 rounded-full border border-white/[0.12] px-5 py-2 text-sm font-medium text-white/60 transition-colors hover:text-white"
+                  className="mt-5 rounded-full border border-white/[0.12] px-5 py-2 text-sm font-medium text-white"
                 >
                   Edit
                 </button>
@@ -456,7 +456,7 @@ function DashboardPage() {
                 <button
                   onClick={toggleStatus}
                   disabled={statusAction}
-                  className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white/60 transition-colors hover:text-white disabled:opacity-40"
+                  className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white disabled:opacity-40"
                 >
                   Pause my listing
                 </button>
@@ -469,7 +469,7 @@ function DashboardPage() {
               </div>
             ) : (
               <div>
-                <p className="mb-4 text-sm text-white/50">
+                <p className="mb-4 text-sm text-white">
                   Your listing is paused. Shift users won&apos;t see your offer until you
                   reactivate.
                 </p>
@@ -500,7 +500,7 @@ function DashboardPage() {
               <h3 className="mb-3 font-display text-lg font-bold text-white">
                 End your partnership?
               </h3>
-              <p className="mb-6 text-sm leading-relaxed text-white/55">
+              <p className="mb-6 text-sm leading-relaxed text-white">
                 Are you sure? This will permanently remove your listing from the Shift rewards
                 catalog. This action can&apos;t be undone.
               </p>
@@ -514,7 +514,7 @@ function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setShowEndModal(false)}
-                  className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white/60 transition-colors hover:text-white"
+                  className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white"
                 >
                   Cancel
                 </button>
@@ -543,7 +543,7 @@ function DashField({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-medium text-white/70">{label}</label>
+      <label className="mb-1.5 block text-sm font-medium text-white">{label}</label>
       <input
         type="text"
         value={value}
@@ -558,8 +558,8 @@ function DashField({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-4">
-      <dt className="w-20 shrink-0 text-sm text-white/40">{label}</dt>
-      <dd className="text-sm text-white/75">{value}</dd>
+      <dt className="w-20 shrink-0 text-sm text-white">{label}</dt>
+      <dd className="text-sm text-white">{value}</dd>
     </div>
   )
 }
