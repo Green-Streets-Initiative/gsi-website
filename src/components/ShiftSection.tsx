@@ -155,10 +155,10 @@ export default function ShiftSection() {
                     <p className="font-display text-[13px] font-bold text-white">{tier.name}</p>
                     <p className="text-[11px] text-white/40">{tier.req}</p>
                   </div>
-                  <div className="w-[70px]">
-                    <div className="h-[3px] rounded-full bg-white/10">
+                  <div className="w-[120px]">
+                    <div className="h-[5px] rounded-full bg-white/10">
                       <div
-                        className="h-[3px] rounded-full"
+                        className="h-[5px] rounded-full"
                         style={{ width: tier.fill, background: tier.barColor, opacity: tier.barOpacity }}
                       />
                     </div>
