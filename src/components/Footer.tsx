@@ -111,6 +111,16 @@ export default function Footer() {
                   Donate
                 </Link>
               </li>
+              <li>
+                <Link href="/privacy" className="text-sm text-white/55 transition-colors hover:text-white">
+                  Privacy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="text-sm text-white/55 transition-colors hover:text-white">
+                  Terms
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
