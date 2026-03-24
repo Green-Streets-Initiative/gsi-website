@@ -34,6 +34,19 @@ const MODES: Record<string, { met: number; mph: number | null; label: string; he
 }
 
 const DRIVE_MPH = 14
+
+/** Translate CO₂ kg into a relatable equivalency (from Shift app's impact engine) */
+function co2Equivalency(kg: number): string {
+  const grams = kg * 1000
+  if (grams < 5000) {
+    const bags = grams / 1000
+    if (bags < 1.5) return 'Like keeping a bag of trash out of a landfill'
+    return `Like keeping ${Math.round(bags)} bags of trash out of a landfill`
+  }
+  const trees = grams / 22000
+  if (trees < 1.5) return 'Like planting a tree for a year'
+  return `Like planting ${Math.round(trees)} trees for a year`
+}
 const MBTA_SUBWAY_SINGLE = 2.40
 const MBTA_SUBWAY_MONTHLY = 90
 const MBTA_BUS_SINGLE = 1.70
@@ -629,7 +642,7 @@ export default function CommuteCalculator() {
                           <div className="mt-0.5 text-[10px] text-white/30">{r.mode.healthNote || 'each way'}</div>
                         </div>
                       </div>
-                      <div className="mt-2.5 text-center text-[0.72rem] text-[rgba(41,102,229,0.6)]">
+                      <div className="mt-2.5 text-center text-[0.72rem] text-white/45">
                         {r.timeNote}
                       </div>
                     </div>
@@ -667,6 +680,9 @@ export default function CommuteCalculator() {
                         <div className="font-display text-lg font-bold text-white">{fmtCO2(r.co2)}</div>
                         <div className="mt-0.5 text-[10px] text-white/25">per year</div>
                       </div>
+                    </div>
+                    <div className="rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-4 py-3 text-center">
+                      <div className="text-sm text-white/60">{co2Equivalency(r.co2)}</div>
                     </div>
 
                     {/* Waitlist CTA */}
