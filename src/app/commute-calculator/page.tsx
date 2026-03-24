@@ -1,9 +1,19 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import AddressAutocomplete from '@/components/AddressAutocomplete'
+
+type PlaceData = { placeId: string; lat: number; lng: number }
+type RouteResult = { durationMins: number; distanceMiles: number } | null
+type RouteResponse = { routes: Record<string, RouteResult>; cached: boolean }
+
+const MODE_TO_GOOGLE: Record<string, string> = {
+  bike: 'BICYCLE', ebike: 'BICYCLE', walk: 'WALK',
+  mbta: 'TRANSIT', commuter_rail: 'TRANSIT',
+}
 
 /* ── Constants ── */
 const VEHICLES: Record<string, { mpg: number; maint: number; isEV?: boolean; costPerMile?: number }> = {
@@ -90,6 +100,68 @@ export default function CommuteCalculator() {
   const [waitlistEmail, setWaitlistEmail] = useState('')
   const [waitlistSubmitted, setWaitlistSubmitted] = useState(false)
 
+  // Routing state
+  const [homeAddress, setHomeAddress] = useState('')
+  const [workAddress, setWorkAddress] = useState('')
+  const [homePlaceData, setHomePlaceData] = useState<PlaceData | null>(null)
+  const [workPlaceData, setWorkPlaceData] = useState<PlaceData | null>(null)
+  const [routeData, setRouteData] = useState<RouteResponse | null>(null)
+  const [routeLoading, setRouteLoading] = useState(false)
+  const [routeError, setRouteError] = useState(false)
+  const routeAbortRef = useRef<AbortController | null>(null)
+
+  // Fetch routing when both addresses and alt mode are set
+  useEffect(() => {
+    if (!homePlaceData || !workPlaceData) {
+      setRouteData(null)
+      return
+    }
+
+    const googleMode = MODE_TO_GOOGLE[altMode]
+    if (!googleMode) return
+
+    // Abort previous request
+    routeAbortRef.current?.abort()
+    const controller = new AbortController()
+    routeAbortRef.current = controller
+
+    const timer = setTimeout(async () => {
+      setRouteLoading(true)
+      setRouteError(false)
+      try {
+        const res = await fetch('/api/route', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            origin: { lat: homePlaceData.lat, lng: homePlaceData.lng },
+            destination: { lat: workPlaceData.lat, lng: workPlaceData.lng },
+            modes: ['DRIVE', googleMode],
+          }),
+          signal: controller.signal,
+        })
+        if (!res.ok) throw new Error('Route fetch failed')
+        const data: RouteResponse = await res.json()
+        setRouteData(data)
+        // Update distance from the driving route
+        if (data.routes.DRIVE) {
+          setDistance(Math.round(data.routes.DRIVE.distanceMiles * 2) / 2) // round to nearest 0.5
+        }
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          setRouteError(true)
+          setRouteData(null)
+        }
+      } finally {
+        setRouteLoading(false)
+      }
+    }, 500) // debounce
+
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [homePlaceData, workPlaceData, altMode])
+
   // Cap shift days to drive days
   useEffect(() => {
     if (shiftDays > driveDays) setShiftDays(driveDays)
@@ -154,16 +226,39 @@ export default function CommuteCalculator() {
     const grossSavings = isRideshare ? rideshareSavings : (fuelSavings + maintSavings + parkingSavings)
     const net = grossSavings - transitCost
 
-    // Time
-    const driveMins = Math.round((distance / DRIVE_MPH) * 60)
+    // Time — use real routing when available, fall back to speed estimates
+    const googleMode = MODE_TO_GOOGLE[altMode]
+    const hasRealRoute = routeData?.routes?.DRIVE && routeData?.routes?.[googleMode]
+    let driveMins: number
     let altMins: number | null = null
-    let timeNote = 'Real door-to-door transit routing coming soon via Google Maps.'
-    if (mode.mph) {
-      altMins = Math.round((distance / mode.mph) * 60)
+    let timeNote: string
+    let isRealRouting = false
+
+    if (hasRealRoute) {
+      driveMins = routeData.routes.DRIVE!.durationMins
+      altMins = routeData.routes[googleMode]!.durationMins
+      isRealRouting = true
       const diff = driveMins - altMins
-      if (diff > 3) timeNote = 'Based on typical speeds — real routing may show you arrive even faster. Full comparison coming soon.'
-      else if (diff < -3) timeNote = 'Based on typical speeds — actual transit time varies. Full routing comparison coming soon.'
-      else timeNote = 'Travel times are similar based on typical speeds. Real routing may show differences. Coming soon.'
+      if (altMode === 'ebike') {
+        timeNote = 'Powered by Google Maps. E-bike times may be faster than shown.'
+      } else if (diff > 3) {
+        timeNote = 'Powered by Google Maps with current traffic conditions.'
+      } else if (diff < -3) {
+        timeNote = 'Powered by Google Maps. Transit times vary by departure.'
+      } else {
+        timeNote = 'Powered by Google Maps. Travel times are similar for this route.'
+      }
+    } else {
+      driveMins = Math.round((distance / DRIVE_MPH) * 60)
+      if (mode.mph) {
+        altMins = Math.round((distance / mode.mph) * 60)
+        const diff = driveMins - altMins
+        if (diff > 3) timeNote = 'Based on typical speeds — enter addresses above for real routing.'
+        else if (diff < -3) timeNote = 'Based on typical speeds — actual transit time varies.'
+        else timeNote = 'Travel times are similar based on typical speeds.'
+      } else {
+        timeNote = 'Enter addresses above for real door-to-door routing via Google Maps.'
+      }
     }
 
     // Health
@@ -183,11 +278,11 @@ export default function CommuteCalculator() {
     return {
       net, fuelSavings, maintSavings, parkingSavings, transitCost, transitLabel,
       fuelLabel, rideshareSavings, isRideshare,
-      driveMins, altMins, timeNote, mode,
+      driveMins, altMins, timeNote, isRealRouting, mode,
       isActive, activeMins, weeklyCals, gymEquiv,
       annualMiles, co2,
     }
-  }, [distance, driveDays, shiftDays, vehicle, gasPrice, parkMode, parkingCost, altMode, railZone, commuteMode, rideshareDaily, mbtaType, hasEmployerSubsidy, employerSubsidy])
+  }, [distance, driveDays, shiftDays, vehicle, gasPrice, parkMode, parkingCost, altMode, railZone, commuteMode, rideshareDaily, mbtaType, hasEmployerSubsidy, employerSubsidy, routeData])
 
   const r = calc()
   const effectiveShift = Math.min(shiftDays, driveDays)
@@ -237,13 +332,33 @@ export default function CommuteCalculator() {
               <div className="border-b border-white/[0.07] p-9 md:border-b-0 md:border-r">
                 <div className="mb-7 font-display text-[0.9375rem] font-bold text-white">Your commute today</div>
 
+                {/* Addresses for real routing */}
+                <div className="mb-5 space-y-3">
+                  <AddressAutocomplete
+                    value={homeAddress}
+                    onChange={(val) => { setHomeAddress(val); if (!val) setHomePlaceData(null) }}
+                    onPlaceSelected={setHomePlaceData}
+                    label="Home address"
+                    variant="dark"
+                    placeholder="Where do you live?"
+                  />
+                  <AddressAutocomplete
+                    value={workAddress}
+                    onChange={(val) => { setWorkAddress(val); if (!val) setWorkPlaceData(null) }}
+                    onPlaceSelected={setWorkPlaceData}
+                    label="Work address"
+                    variant="dark"
+                    placeholder="Where do you work?"
+                  />
+                </div>
+
                 {/* Distance */}
                 <Field label="One-way distance">
                   <div className="flex items-center gap-3">
                     <NumInput value={distance} onChange={setDistance} min={0.5} max={60} step={0.5} />
                     <span className="text-[0.8rem] text-white/45">miles each way</span>
                   </div>
-                  <Hint>Enter address details for a real time comparison — coming soon</Hint>
+                  <Hint>{homePlaceData && workPlaceData ? 'Distance auto-set from routing — adjust to override' : 'Enter addresses above for real routing, or set distance manually'}</Hint>
                 </Field>
 
                 {/* Commute mode */}
@@ -480,20 +595,36 @@ export default function CommuteCalculator() {
                     <div className="rounded-[14px] border border-[rgba(41,102,229,0.25)] bg-[rgba(41,102,229,0.08)] px-6 py-5">
                       <div className="mb-3.5 flex items-center justify-between">
                         <div className="font-display text-sm font-bold text-white">Time comparison</div>
-                        <div className="rounded border border-[rgba(41,102,229,0.25)] bg-[rgba(41,102,229,0.12)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[rgba(41,102,229,0.7)]">
-                          Real routing coming soon
-                        </div>
+                        {r.isRealRouting ? (
+                          <div className="rounded border border-[rgba(186,241,77,0.25)] bg-[rgba(186,241,77,0.1)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[rgba(186,241,77,0.7)]">
+                            Google Maps
+                          </div>
+                        ) : routeLoading ? (
+                          <div className="rounded border border-[rgba(41,102,229,0.25)] bg-[rgba(41,102,229,0.12)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[rgba(41,102,229,0.7)]">
+                            Loading routes…
+                          </div>
+                        ) : routeError ? (
+                          <div className="rounded border border-[rgba(255,140,53,0.25)] bg-[rgba(255,140,53,0.1)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[rgba(255,140,53,0.7)]">
+                            Estimated
+                          </div>
+                        ) : (
+                          <div className="rounded border border-[rgba(41,102,229,0.25)] bg-[rgba(41,102,229,0.12)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[rgba(41,102,229,0.7)]">
+                            Enter addresses for routing
+                          </div>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
                           <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/45">Driving</div>
-                          <div className="font-display text-xl font-bold text-white">~{r.driveMins} min</div>
-                          <div className="mt-0.5 text-[10px] text-white/30">each way, in traffic</div>
+                          <div className="font-display text-xl font-bold text-white">
+                            {routeLoading ? '…' : `${r.isRealRouting ? '' : '~'}${r.driveMins} min`}
+                          </div>
+                          <div className="mt-0.5 text-[10px] text-white/30">{r.isRealRouting ? 'each way, with traffic' : 'each way, in traffic'}</div>
                         </div>
                         <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
                           <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/45">{r.mode.label}</div>
                           <div className="font-display text-xl font-bold text-white">
-                            {r.altMins !== null ? `~${r.altMins} min` : 'varies'}
+                            {routeLoading ? '…' : r.altMins !== null ? `${r.isRealRouting ? '' : '~'}${r.altMins} min` : 'varies'}
                           </div>
                           <div className="mt-0.5 text-[10px] text-white/30">{r.mode.healthNote || 'each way'}</div>
                         </div>
