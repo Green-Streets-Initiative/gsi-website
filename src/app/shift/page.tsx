@@ -82,10 +82,7 @@ export default function ShiftPage() {
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-sm font-extrabold text-[#7DB82E]">1</div>
                 <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-[#191A2E]">It just works</h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
-                  Grant location and motion access once. Shift detects your walks and bike rides in the background. No tapping required — your streak keeps going even if you never open the app.
-                </p>
-                <p className="mt-3 text-[0.8rem] leading-relaxed text-[#8A8DA8]">
-                  Note: bus and train trips currently need a single tap to confirm.
+                  Grant location and motion access once. Shift detects your walks, bike rides, and transit trips in the background. No tapping required — your streak keeps going even if you never open the app.
                 </p>
               </div>
 

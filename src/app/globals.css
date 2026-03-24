@@ -39,6 +39,15 @@
   }
 }
 
+@keyframes animate-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: animate-in 0.25s ease-out;
+}
+
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-10px); }
@@ -47,6 +56,39 @@
 @keyframes ticker {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
+}
+
+@layer components {
+  .form-input {
+    display: block;
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background-color: rgba(255, 255, 255, 0.06);
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    color: white;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .form-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .form-input:focus {
+    border-color: #BAF14D;
+  }
+
+  .form-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Select arrow color fix for dark bg */
+  select.form-input {
+    appearance: auto;
+  }
 }
 
 @layer utilities {

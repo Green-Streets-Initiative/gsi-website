@@ -204,7 +204,7 @@ export default function CommuteCalculator() {
             {' / '}Commute Calculator
           </div>
           <h1 className="mb-5 font-display text-[clamp(2rem,4vw,3rem)] font-extrabold leading-[1.1] tracking-tighter text-white">
-            What could your commute <em className="not-italic text-[#BAF14D]">give you</em> instead?
+            What if your commute <em className="not-italic text-[#BAF14D]">worked for you</em>?
           </h1>
           <p className="mb-8 max-w-[640px] text-[1.0625rem] leading-[1.7] text-white/70">
             Most people haven&apos;t done the math on their commute. Not just what it costs — but what it could look like if there were a better way. This calculator shows you the money you&apos;d keep, the time you&apos;d reclaim, and the health benefits you&apos;d gain by going active, even a few days a week.
@@ -540,7 +540,7 @@ export default function CommuteCalculator() {
 
                     {/* Waitlist CTA */}
                     <div className="mt-auto rounded-[14px] border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-6 py-5">
-                      <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight">Ready to try it?</div>
+                      <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight text-white">Ready to try it?</div>
                       <div className="mb-3.5 text-[0.8rem] leading-relaxed text-white/50">
                         Shift helps you build the habit — log your first active trip, track your progress, and see your real savings add up over time.
                       </div>
