@@ -168,7 +168,7 @@ export default function AddressAutocomplete({
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
         className={isDark
-          ? 'w-full rounded-xl border border-white/[0.12] bg-white/[0.06] px-4 py-3 text-[0.9375rem] text-white outline-none transition-colors placeholder:text-white/35 focus:border-[#BAF14D]'
+          ? 'w-full rounded-xl border border-white/[0.12] bg-white/[0.06] px-4 py-3 text-[0.9375rem] text-white outline-none transition-colors placeholder:text-white/45 focus:border-[#BAF14D]'
           : 'w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]'
         }
       />

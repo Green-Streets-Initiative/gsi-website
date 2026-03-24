@@ -19,7 +19,7 @@ export default function Footer() {
 
           {/* Shift app */}
           <div>
-            <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/30">
+            <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/50">
               Shift app
             </h4>
             <ul className="flex flex-col gap-2.5">
@@ -58,7 +58,7 @@ export default function Footer() {
 
           {/* Programs */}
           <div>
-            <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/30">
+            <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/50">
               Programs
             </h4>
             <ul className="flex flex-col gap-2.5">
@@ -82,7 +82,7 @@ export default function Footer() {
 
           {/* Organization */}
           <div>
-            <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/30">
+            <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/50">
               Organization
             </h4>
             <ul className="flex flex-col gap-2.5">
@@ -115,7 +115,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-white/[0.07] pt-8 text-xs text-white/30 md:flex-row">
+        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-white/[0.07] pt-8 text-xs text-white/50 md:flex-row">
           <p>&copy; 2026 Green Streets Initiative. Cambridge, MA. 501(c)(3) nonprofit.</p>
           <div className="flex gap-6">
             <Link href="/privacy" className="transition-colors hover:text-white/50">

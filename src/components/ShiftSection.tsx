@@ -83,7 +83,7 @@ export default function ShiftSection() {
             {/* BCE diagram */}
             <div>
               {/* Journey to first shift */}
-              <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest text-white/35">
+              <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest text-white/50">
                 Journey to first shift
               </p>
               <div className="mb-5 flex items-stretch">
@@ -94,14 +94,14 @@ export default function ShiftSection() {
                       <p className="mt-1 text-[11px] leading-snug text-white/45">{step.sub}</p>
                     </div>
                     {i < journeySteps.length - 1 && (
-                      <span className="flex shrink-0 items-center px-1.5 text-sm text-white/25">→</span>
+                      <span className="flex shrink-0 items-center px-1.5 text-sm text-white/50">→</span>
                     )}
                   </div>
                 ))}
               </div>
 
               {/* Behavior change engine */}
-              <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest text-white/35">
+              <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest text-white/50">
                 Behavior change engine
               </p>
               <div className="mb-4 flex items-stretch">
@@ -135,7 +135,7 @@ export default function ShiftSection() {
 
           {/* Right — tiers progression */}
           <div>
-            <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-white/35">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-white/50">
               Your progression
             </p>
 

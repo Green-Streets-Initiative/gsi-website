@@ -279,9 +279,9 @@ function DashboardPage() {
                     }}
                     maxLength={200}
                     rows={3}
-                    className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/30 focus:border-[#BAF14D]"
+                    className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/45 focus:border-[#BAF14D]"
                   />
-                  <div className="mt-1 text-right text-xs text-white/30">
+                  <div className="mt-1 text-right text-xs text-white/50">
                     {offerDesc.length}/200
                   </div>
                 </div>
@@ -294,7 +294,7 @@ function DashboardPage() {
                     value={offerLimits}
                     onChange={(e) => setOfferLimits(e.target.value)}
                     placeholder="e.g. One per customer per week"
-                    className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/30 focus:border-[#BAF14D]"
+                    className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/45 focus:border-[#BAF14D]"
                   />
                 </div>
                 <div>
@@ -382,7 +382,7 @@ function DashboardPage() {
                     disabled
                     className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-[0.9375rem] text-white/40 outline-none"
                   />
-                  <p className="mt-1 text-xs text-white/30">
+                  <p className="mt-1 text-xs text-white/50">
                     To change your login email, contact us at info@gogreenstreets.org
                   </p>
                 </div>
@@ -549,7 +549,7 @@ function DashField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/30 focus:border-[#BAF14D]"
+        className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/45 focus:border-[#BAF14D]"
       />
     </div>
   )

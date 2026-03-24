@@ -384,7 +384,7 @@ function ActiveEvent({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-white/30">
+                  <tr className="border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-white/50">
                     <th className="w-16 py-3.5 pr-2 text-right pl-5">Rank</th>
                     <th className="py-3.5 px-4">Name</th>
                     <th className="py-3.5 px-4 text-right">Shift Rate</th>
@@ -683,7 +683,7 @@ function PresentedBy({ sponsors }: { sponsors: Sponsorship[] }) {
   if (!sponsor) return null
 
   return (
-    <div className="mt-6 flex items-center gap-3 text-sm text-white/30">
+    <div className="mt-6 flex items-center gap-3 text-sm text-white/50">
       <span>Presented by</span>
       {sponsor.logo_url ? (
         <img

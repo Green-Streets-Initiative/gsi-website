@@ -46,7 +46,7 @@ function Unit({ value, label }: { value: number; label: string }) {
       <span className="font-display text-3xl font-extrabold tabular-nums text-[#BAF14D] sm:text-4xl">
         {String(value).padStart(2, '0')}
       </span>
-      <span className="mt-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-white/30">
+      <span className="mt-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-white/50">
         {label}
       </span>
     </div>

@@ -393,7 +393,7 @@ export default function CommuteCalculator() {
                         <NumInput value={rideshareDaily} onChange={setRideshareDaily} min={5} max={200} step={1} width="88px" fontSize="1rem" />
                         <span className="text-[0.8rem] text-white/45">per day (round trip)</span>
                       </div>
-                      <div className="mt-1 text-[0.65rem] text-white/25">Average Uber/Lyft cost for your commute, both ways</div>
+                      <div className="mt-1 text-[0.65rem] text-white/50">Average Uber/Lyft cost for your commute, both ways</div>
                     </div>
                   )}
                 </Field>
@@ -441,7 +441,7 @@ export default function CommuteCalculator() {
                       <NumInput value={gasPrice} onChange={setGasPrice} min={2} max={8} step={0.01} width="88px" fontSize="1rem" />
                       <span className="text-[0.8rem] text-white/45">per gallon</span>
                     </div>
-                    <div className="mt-1 text-[0.65rem] text-white/25">MA average as of March 2026 — adjust for your local price</div>
+                    <div className="mt-1 text-[0.65rem] text-white/50">MA average as of March 2026 — adjust for your local price</div>
                   </Field>
                 )}
 
@@ -449,7 +449,7 @@ export default function CommuteCalculator() {
                 {commuteMode === 'drive' && vehicle === 'ev' && (
                   <Field label="Electricity cost">
                     <div className="text-sm text-white/50">$0.048/mile based on Massachusetts residential electricity rates</div>
-                    <div className="mt-1 text-[0.65rem] text-white/25">Using average MA rate of ~$0.28/kWh and ~3.5 mi/kWh efficiency</div>
+                    <div className="mt-1 text-[0.65rem] text-white/50">Using average MA rate of ~$0.28/kWh and ~3.5 mi/kWh efficiency</div>
                   </Field>
                 )}
 
@@ -632,14 +632,14 @@ export default function CommuteCalculator() {
                           <div className="font-display text-xl font-bold text-white">
                             {routeLoading ? '…' : `${r.isRealRouting ? '' : '~'}${r.driveMins} min`}
                           </div>
-                          <div className="mt-0.5 text-[10px] text-white/30">{r.isRealRouting ? 'each way, rush hour' : 'each way, in traffic'}</div>
+                          <div className="mt-0.5 text-[10px] text-white/50">{r.isRealRouting ? 'each way, rush hour' : 'each way, in traffic'}</div>
                         </div>
                         <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
                           <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/45">{r.mode.label}</div>
                           <div className="font-display text-xl font-bold text-white">
                             {routeLoading ? '…' : r.altMins !== null ? `${r.isRealRouting ? '' : '~'}${r.altMins} min` : 'varies'}
                           </div>
-                          <div className="mt-0.5 text-[10px] text-white/30">{r.mode.healthNote || 'each way'}</div>
+                          <div className="mt-0.5 text-[10px] text-white/50">{r.mode.healthNote || 'each way'}</div>
                         </div>
                       </div>
                       <div className="mt-2.5 text-center text-[0.72rem] text-white/45">
@@ -654,15 +654,15 @@ export default function CommuteCalculator() {
                         <div className="grid grid-cols-3 gap-2">
                           <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
                             <div className="font-display text-lg font-bold text-[#EDB93C]">{r.activeMins}</div>
-                            <div className="mt-0.5 text-[10px] leading-snug text-white/35">active minutes per week</div>
+                            <div className="mt-0.5 text-[10px] leading-snug text-white/50">active minutes per week</div>
                           </div>
                           <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
                             <div className="font-display text-lg font-bold text-[#EDB93C]">{r.weeklyCals.toLocaleString()}</div>
-                            <div className="mt-0.5 text-[10px] leading-snug text-white/35">calories burned per week</div>
+                            <div className="mt-0.5 text-[10px] leading-snug text-white/50">calories burned per week</div>
                           </div>
                           <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
                             <div className="font-display text-lg font-bold text-[#EDB93C]">{r.gymEquiv}×</div>
-                            <div className="mt-0.5 text-[10px] leading-snug text-white/35">gym sessions/week equivalent</div>
+                            <div className="mt-0.5 text-[10px] leading-snug text-white/50">gym sessions/week equivalent</div>
                           </div>
                         </div>
                       </div>
@@ -673,12 +673,12 @@ export default function CommuteCalculator() {
                       <div className="rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-4 py-3">
                         <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-white/45">Miles active per year</div>
                         <div className="font-display text-lg font-bold text-white">{Math.round(r.annualMiles).toLocaleString()}</div>
-                        <div className="mt-0.5 text-[10px] text-white/25">under your own power</div>
+                        <div className="mt-0.5 text-[10px] text-white/50">under your own power</div>
                       </div>
                       <div className="rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-4 py-3">
                         <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-white/45">CO₂ avoided</div>
                         <div className="font-display text-lg font-bold text-white">{fmtCO2(r.co2)}</div>
-                        <div className="mt-0.5 text-[10px] text-white/25">per year</div>
+                        <div className="mt-0.5 text-[10px] text-white/50">per year</div>
                       </div>
                     </div>
                     <div className="rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-4 py-3 text-center">
@@ -723,8 +723,8 @@ export default function CommuteCalculator() {
         {/* Methodology */}
         <div className="mx-auto mt-8 max-w-[860px] px-8">
           <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-5 py-4">
-            <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/25">How this is calculated</div>
-            <div className="text-[0.77rem] leading-[1.65] text-white/30">
+            <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/50">How this is calculated</div>
+            <div className="text-[0.77rem] leading-[1.65] text-white/50">
               Fuel savings use your vehicle&apos;s EPA combined MPG estimate and the current Massachusetts average gas price from AAA. Maintenance savings apply the AAA 2025 variable rate per mile (~10–11¢/mile by vehicle type), covering oil changes, tire wear, and related repairs — costs that genuinely decrease when you drive less. <strong className="font-semibold text-white/50">Fixed costs like insurance, depreciation, registration, and finance charges are excluded</strong> — those don&apos;t change based on how many days you drive, so including them would overstate your actual savings. MBTA fares are current as of March 2026 from{' '}
               <a href="https://www.mbta.com/fares" target="_blank" rel="noopener noreferrer" className="text-white/40 underline">mbta.com/fares</a>; the calculator automatically compares monthly pass vs. per-ride cost and uses whichever is cheaper for your frequency. Health estimates use MET values from the American College of Sports Medicine: cycling at a moderate pace (~12 mph) is approximately 8 METs; brisk walking is approximately 4 METs. Boston-area parking medians from SpotAngels (February 2026). Time estimates are speed-based approximations — real door-to-door routing via Google Maps is coming soon.
             </div>
@@ -761,7 +761,7 @@ function Field({ label, children, last }: { label: string; children: React.React
 }
 
 function Hint({ children }: { children: React.ReactNode }) {
-  return <div className="mt-1 text-[0.7rem] leading-snug text-white/30">{children}</div>
+  return <div className="mt-1 text-[0.7rem] leading-snug text-white/50">{children}</div>
 }
 
 function NumInput({ value, onChange, min, max, step, width, fontSize }: {
@@ -791,7 +791,7 @@ function RangeInput({ value, onChange, min, max, labels }: {
         style={{ height: '6px' }}
       />
       <div className="mt-1 flex justify-between">
-        {labels.map(l => <span key={l} className="text-[10px] text-white/25">{l}</span>)}
+        {labels.map(l => <span key={l} className="text-[10px] text-white/50">{l}</span>)}
       </div>
     </div>
   )
