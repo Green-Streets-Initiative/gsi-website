@@ -188,11 +188,16 @@ export default function RewardsPartnersPage() {
           }),
         }
       )
-      if (!res.ok) throw new Error('Submit failed')
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        throw new Error(errorData?.error || 'Submit failed')
+      }
       setSubmitted(true)
-    } catch {
+    } catch (err: any) {
       setSubmitError(
-        'Something went wrong — please try again or email us at info@gogreenstreets.org.'
+        err?.message && err.message !== 'Submit failed'
+          ? err.message
+          : 'Something went wrong — please try again or email us at info@gogreenstreets.org.'
       )
     } finally {
       setSubmitting(false)
