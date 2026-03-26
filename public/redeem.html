@@ -40,7 +40,7 @@
 </head>
 <body>
   <div class="card" id="card">
-    <div class="logo"><svg viewBox="0 0 210 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M126,7 L142,20 L126,33 L126,26 L136,20 L126,14Z" fill="#BAF14D"/><path d="M149,7 L165,20 L149,33 L149,26 L159,20 L149,14Z" fill="#2966E5"/></svg><span class="by-line">by <span style="color:#52B788;font-weight:700">Green Streets</span> Initiative</span></div>
+    <div class="logo"><svg viewBox="0 0 168 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M104,7 L120,20 L104,33 L104,26 L114,20 L104,14Z" fill="#BAF14D"/><path d="M127,7 L143,20 L127,33 L127,26 L137,20 L127,14Z" fill="#2966E5"/></svg><span class="by-line">by <span style="color:#52B788;font-weight:700">Green Streets</span> Initiative</span></div>
     <p class="loading">Loading...</p>
   </div>
 
@@ -58,7 +58,7 @@
 
     function renderError(msg) {
       card.innerHTML = `
-        <div class="logo"><svg viewBox="0 0 210 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M126,7 L142,20 L126,33 L126,26 L136,20 L126,14Z" fill="#BAF14D"/><path d="M149,7 L165,20 L149,33 L149,26 L159,20 L149,14Z" fill="#2966E5"/></svg><span class="by-line">by <span style="color:#52B788;font-weight:700">Green Streets</span> Initiative</span></div>
+        <div class="logo"><svg viewBox="0 0 168 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M104,7 L120,20 L104,33 L104,26 L114,20 L104,14Z" fill="#BAF14D"/><path d="M127,7 L143,20 L127,33 L127,26 L137,20 L127,14Z" fill="#2966E5"/></svg><span class="by-line">by <span style="color:#52B788;font-weight:700">Green Streets</span> Initiative</span></div>
         <div class="check">❌</div>
         <h1 class="error">Invalid</h1>
         <p>${msg}</p>
@@ -67,7 +67,7 @@
 
     function renderVerified(data, wasAlready) {
       card.innerHTML = `
-        <div class="logo"><svg viewBox="0 0 210 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M126,7 L142,20 L126,33 L126,26 L136,20 L126,14Z" fill="#BAF14D"/><path d="M149,7 L165,20 L149,33 L149,26 L159,20 L149,14Z" fill="#2966E5"/></svg><span class="by-line">by <span style="color:#52B788;font-weight:700">Green Streets</span> Initiative</span></div>
+        <div class="logo"><svg viewBox="0 0 168 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M104,7 L120,20 L104,33 L104,26 L114,20 L104,14Z" fill="#BAF14D"/><path d="M127,7 L143,20 L127,33 L127,26 L137,20 L127,14Z" fill="#2966E5"/></svg><span class="by-line">by <span style="color:#52B788;font-weight:700">Green Streets</span> Initiative</span></div>
         <div class="check">✅</div>
         <h1 class="${wasAlready ? 'warning' : 'success'}">${wasAlready ? 'Already Verified' : 'Redemption Confirmed!'}</h1>
         <div class="detail">
@@ -88,7 +88,7 @@
 
     function renderConfirm(data) {
       card.innerHTML = `
-        <div class="logo"><svg viewBox="0 0 210 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M126,7 L142,20 L126,33 L126,26 L136,20 L126,14Z" fill="#BAF14D"/><path d="M149,7 L165,20 L149,33 L149,26 L159,20 L149,14Z" fill="#2966E5"/></svg><span class="by-line">by <span style="color:#52B788;font-weight:700">Green Streets</span> Initiative</span></div>
+        <div class="logo"><svg viewBox="0 0 168 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M104,7 L120,20 L104,33 L104,26 L114,20 L104,14Z" fill="#BAF14D"/><path d="M127,7 L143,20 L127,33 L127,26 L137,20 L127,14Z" fill="#2966E5"/></svg><span class="by-line">by <span style="color:#52B788;font-weight:700">Green Streets</span> Initiative</span></div>
         <h1>Verify Redemption</h1>
         <div class="detail">
           <div class="detail-label">Reward</div>
