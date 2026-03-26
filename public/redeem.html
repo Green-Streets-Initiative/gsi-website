@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verify Redemption — Shift by Green Streets Initiative</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0d1117; color: #e6e6e6;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #1a1f2e; border-radius: 20px; padding: 32px;
+      max-width: 420px; width: 100%; text-align: center;
+      border: 2px solid #2a2f3e;
+    }
+    .logo { font-size: 14px; color: #888; margin-bottom: 20px; }
+    .logo span { color: #B8F226; font-weight: 700; }
+    h1 { font-size: 24px; color: #B8F226; margin-bottom: 16px; }
+    .detail { margin: 12px 0; }
+    .detail-label { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+    .detail-value { font-size: 18px; font-weight: 600; margin-top: 4px; }
+    .success { color: #4ade80; }
+    .warning { color: #fbbf24; }
+    .error { color: #f87171; }
+    .check { font-size: 48px; margin-bottom: 12px; }
+    .btn {
+      background: #B8F226; color: #000; border: none;
+      padding: 16px 32px; border-radius: 12px; font-size: 18px;
+      font-weight: 700; cursor: pointer; width: 100%; margin-top: 24px;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .loading { color: #888; font-size: 16px; }
+    .note { color: #888; font-size: 13px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="logo"><span>Shift &gt;&gt;</span> by Green Streets Initiative</div>
+    <p class="loading">Loading...</p>
+  </div>
+
+  <script>
+    const API_BASE = 'https://xyqcpgwbqrhykpgpqbdi.supabase.co/functions/v1/reward-verify';
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const card = document.getElementById('card');
+
+    function formatDate(iso) {
+      const d = new Date(iso);
+      return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+        + ' · ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+
+    function renderError(msg) {
+      card.innerHTML = `
+        <div class="logo"><span>Shift &gt;&gt;</span> by Green Streets Initiative</div>
+        <div class="check">❌</div>
+        <h1 class="error">Invalid</h1>
+        <p>${msg}</p>
+      `;
+    }
+
+    function renderVerified(data, wasAlready) {
+      card.innerHTML = `
+        <div class="logo"><span>Shift &gt;&gt;</span> by Green Streets Initiative</div>
+        <div class="check">✅</div>
+        <h1 class="${wasAlready ? 'warning' : 'success'}">${wasAlready ? 'Already Verified' : 'Redemption Confirmed!'}</h1>
+        <div class="detail">
+          <div class="detail-label">Reward</div>
+          <div class="detail-value">${data.reward_name}</div>
+        </div>
+        <div class="detail">
+          <div class="detail-label">Customer</div>
+          <div class="detail-value">${data.customer_name}</div>
+        </div>
+        <div class="detail">
+          <div class="detail-label">Redeemed</div>
+          <div class="detail-value">${formatDate(data.redeemed_at)}</div>
+        </div>
+        ${wasAlready ? '<p class="note">This reward has already been confirmed.</p>' : ''}
+      `;
+    }
+
+    function renderConfirm(data) {
+      card.innerHTML = `
+        <div class="logo"><span>Shift &gt;&gt;</span> by Green Streets Initiative</div>
+        <h1>Verify Redemption</h1>
+        <div class="detail">
+          <div class="detail-label">Reward</div>
+          <div class="detail-value">${data.reward_name}</div>
+        </div>
+        ${data.sponsor_name ? `<div class="detail"><div class="detail-label">From</div><div class="detail-value">${data.sponsor_name}</div></div>` : ''}
+        <div class="detail">
+          <div class="detail-label">Customer</div>
+          <div class="detail-value">${data.customer_name}</div>
+        </div>
+        <div class="detail">
+          <div class="detail-label">Reserved</div>
+          <div class="detail-value">${formatDate(data.redeemed_at)}</div>
+        </div>
+        <button class="btn" id="confirmBtn" onclick="confirmRedemption()">Confirm Redemption</button>
+      `;
+    }
+
+    async function confirmRedemption() {
+      const btn = document.getElementById('confirmBtn');
+      btn.disabled = true;
+      btn.textContent = 'Confirming...';
+
+      try {
+        const res = await fetch(API_BASE + '?code=' + code, { method: 'POST' });
+        const data = await res.json();
+
+        if (data.success && (data.status === 'verified' || data.status === 'already_verified')) {
+          renderVerified(data, data.status === 'already_verified');
+        } else {
+          renderError(data.message || 'Verification failed. Please try again.');
+        }
+      } catch (e) {
+        renderError('Network error. Please try again.');
+      }
+    }
+
+    async function init() {
+      if (!code) {
+        renderError('This link is missing a redemption code.');
+        return;
+      }
+
+      try {
+        const res = await fetch(API_BASE + '?code=' + code);
+        const data = await res.json();
+
+        if (!data.success) {
+          renderError('This redemption code is not valid.');
+          return;
+        }
+
+        if (data.status === 'verified') {
+          renderVerified(data, true);
+        } else {
+          renderConfirm(data);
+        }
+      } catch (e) {
+        renderError('Could not load redemption details.');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
