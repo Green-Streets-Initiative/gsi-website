@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cashier Guide — Shift Rewards by Green Streets Initiative</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff; color: #191A2E;
+      max-width: 640px; margin: 0 auto; padding: 40px 32px;
+    }
+    .header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 32px; padding-bottom: 20px;
+      border-bottom: 2px solid #191A2E;
+    }
+    .header svg { height: 32px; width: auto; }
+    .header .by-line { font-size: 13px; color: #6B7280; }
+    .header .by-line span { color: #2D6A4F; font-weight: 700; }
+    h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    .subtitle { font-size: 16px; color: #6B7280; margin-bottom: 32px; }
+    .step {
+      display: flex; align-items: flex-start; gap: 16px;
+      margin-bottom: 24px; padding: 20px;
+      background: #f9fafb; border-radius: 12px;
+    }
+    .step-number {
+      background: #BAF14D; color: #191A2E;
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; flex-shrink: 0;
+    }
+    .step-content h3 { font-size: 16px; margin-bottom: 4px; }
+    .step-content p { font-size: 14px; color: #374151; line-height: 1.5; }
+    .fallback {
+      margin-top: 24px; padding: 16px 20px;
+      background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: 10px;
+    }
+    .fallback h3 { font-size: 14px; color: #92400e; margin-bottom: 4px; }
+    .fallback p { font-size: 13px; color: #78716c; line-height: 1.5; }
+    .footer {
+      margin-top: 40px; padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 13px; color: #9CA3AF; text-align: center;
+    }
+    .footer a { color: #2966E5; }
+    .print-btn {
+      display: inline-block; margin-top: 24px; padding: 10px 24px;
+      background: #191A2E; color: #fff; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
+    }
+    @media print {
+      .print-btn { display: none; }
+      body { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <svg viewBox="0 0 168 40" xmlns="http://www.w3.org/2000/svg">
+      <text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#191A2E">Shift</text>
+      <path d="M104,7 L120,20 L104,33 L104,26 L114,20 L104,14Z" fill="#BAF14D"/>
+      <path d="M127,7 L143,20 L127,33 L127,26 L137,20 L127,14Z" fill="#2966E5"/>
+    </svg>
+    <div>
+      <div class="by-line">by <span>Green Streets</span> Initiative</div>
+    </div>
+  </div>
+
+  <h1>Cashier Guide</h1>
+  <p class="subtitle">How to process a Shift rewards redemption</p>
+
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <h3>Customer shows QR code</h3>
+      <p>The customer will open the Shift app on their phone and show you a QR code on their screen.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <h3>Scan with your phone camera</h3>
+      <p>Open the camera app on your phone (iPhone or Android) and point it at the QR code. A link will appear — tap it to open the verification page.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <h3>Tap "Confirm Redemption"</h3>
+      <p>The web page will show the reward details and the customer's name. Tap the green <strong>Confirm Redemption</strong> button. Once confirmed, the reward is complete.</p>
+    </div>
+  </div>
+
+  <div class="fallback">
+    <h3>Can't scan the QR code?</h3>
+    <p>Ask the customer to show the reward details screen in the app. You can verify the reward name, customer name, and timestamp visually. Each QR code can only be used once, so screenshots cannot be reused.</p>
+  </div>
+
+  <div class="footer">
+    <p>Questions? Contact <a href="mailto:info@gogreenstreets.org">info@gogreenstreets.org</a></p>
+    <button class="print-btn" onclick="window.print()">🖨️ Print this guide</button>
+  </div>
+</body>
+</html>
