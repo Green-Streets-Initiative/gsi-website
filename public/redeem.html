@@ -17,8 +17,9 @@
       max-width: 420px; width: 100%; text-align: center;
       border: 2px solid #2a2f3e;
     }
-    .logo { font-size: 14px; color: #888; margin-bottom: 20px; }
-    .logo span { color: #B8F226; font-weight: 700; }
+    .logo { margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .logo svg { height: 28px; width: auto; }
+    .logo .by-line { font-size: 12px; color: #888; margin-top: 2px; }
     h1 { font-size: 24px; color: #B8F226; margin-bottom: 16px; }
     .detail { margin: 12px 0; }
     .detail-label { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
@@ -39,7 +40,7 @@
 </head>
 <body>
   <div class="card" id="card">
-    <div class="logo"><span>Shift &gt;&gt;</span> by Green Streets Initiative</div>
+    <div class="logo"><svg viewBox="0 0 210 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M126,7 L142,20 L126,33 L126,26 L136,20 L126,14Z" fill="#BAF14D"/><path d="M149,7 L165,20 L149,33 L149,26 L159,20 L149,14Z" fill="#2966E5"/></svg><span class="by-line">by <span style="color:#52B788;font-weight:700">Green Streets</span> Initiative</span></div>
     <p class="loading">Loading...</p>
   </div>
 
@@ -57,7 +58,7 @@
 
     function renderError(msg) {
       card.innerHTML = `
-        <div class="logo"><span>Shift &gt;&gt;</span> by Green Streets Initiative</div>
+        <div class="logo"><svg viewBox="0 0 210 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M126,7 L142,20 L126,33 L126,26 L136,20 L126,14Z" fill="#BAF14D"/><path d="M149,7 L165,20 L149,33 L149,26 L159,20 L149,14Z" fill="#2966E5"/></svg><span class="by-line">by <span style="color:#52B788;font-weight:700">Green Streets</span> Initiative</span></div>
         <div class="check">❌</div>
         <h1 class="error">Invalid</h1>
         <p>${msg}</p>
@@ -66,7 +67,7 @@
 
     function renderVerified(data, wasAlready) {
       card.innerHTML = `
-        <div class="logo"><span>Shift &gt;&gt;</span> by Green Streets Initiative</div>
+        <div class="logo"><svg viewBox="0 0 210 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M126,7 L142,20 L126,33 L126,26 L136,20 L126,14Z" fill="#BAF14D"/><path d="M149,7 L165,20 L149,33 L149,26 L159,20 L149,14Z" fill="#2966E5"/></svg><span class="by-line">by <span style="color:#52B788;font-weight:700">Green Streets</span> Initiative</span></div>
         <div class="check">✅</div>
         <h1 class="${wasAlready ? 'warning' : 'success'}">${wasAlready ? 'Already Verified' : 'Redemption Confirmed!'}</h1>
         <div class="detail">
@@ -87,7 +88,7 @@
 
     function renderConfirm(data) {
       card.innerHTML = `
-        <div class="logo"><span>Shift &gt;&gt;</span> by Green Streets Initiative</div>
+        <div class="logo"><svg viewBox="0 0 210 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M126,7 L142,20 L126,33 L126,26 L136,20 L126,14Z" fill="#BAF14D"/><path d="M149,7 L165,20 L149,33 L149,26 L159,20 L149,14Z" fill="#2966E5"/></svg><span class="by-line">by <span style="color:#52B788;font-weight:700">Green Streets</span> Initiative</span></div>
         <h1>Verify Redemption</h1>
         <div class="detail">
           <div class="detail-label">Reward</div>
