@@ -357,6 +357,13 @@ export default function ShiftPage() {
                 <span className="text-xs font-semibold text-white">Google Play</span>
               </div>
             </div>
+
+            <p className="mt-6 text-sm text-white/60">
+              Local business?{' '}
+              <Link href="/shift/rewards-partners" className="font-semibold text-[#BAF14D] hover:underline">
+                Join our rewards network &rarr;
+              </Link>
+            </p>
           </div>
         </section>
 

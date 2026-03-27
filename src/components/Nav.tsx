@@ -21,7 +21,7 @@ export default function Nav() {
         {/* Desktop nav */}
         <div className="hidden items-center gap-8 md:flex">
           <Link href="/shift" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
-            Shift app
+            Shift
           </Link>
           <Link href="/events/shift-your-summer" className="text-sm font-medium text-lime transition-opacity hover:opacity-80">
             Shift Your Summer
@@ -65,7 +65,7 @@ export default function Nav() {
       {menuOpen && (
         <div className="border-t border-white/[0.07] px-6 py-4 md:hidden">
           <div className="flex flex-col gap-4">
-            <Link href="/shift" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Shift app</Link>
+            <Link href="/shift" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Shift</Link>
             <Link href="/events/shift-your-summer" className="text-sm font-medium text-lime" onClick={() => setMenuOpen(false)}>Shift Your Summer</Link>
             <Link href="/programs" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Programs</Link>
             <Link href="/commute-calculator" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Calculator</Link>
