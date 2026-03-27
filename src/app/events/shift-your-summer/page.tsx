@@ -6,6 +6,7 @@ import CountdownTimer from '@/components/CountdownTimer'
 import RefreshButton from '@/components/RefreshButton'
 import WaitlistForm from '@/components/WaitlistForm'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import LeaderboardTabs, { type GroupStanding } from './LeaderboardTabs'
 
 // This is a live leaderboard — always fetch fresh data, never use cached HTML.
 export const dynamic = 'force-dynamic'
@@ -56,6 +57,7 @@ interface Competition {
   starts_at: string
   ends_at: string
   is_public: boolean
+  matchup_group_ids: string[] | null
   sponsor_name: string | null
   sponsor_logo_url: string | null
   prizes_json: unknown
@@ -92,12 +94,6 @@ function shiftRateColor(pct: number) {
   return 'text-white'
 }
 
-function rankBorder(rank: number) {
-  if (rank === 1) return 'border-l-[3px] border-l-[#EDB93C]'
-  if (rank === 2) return 'border-l-[3px] border-l-[#C0C0C0]'
-  if (rank === 3) return 'border-l-[3px] border-l-[#CD7F32]'
-  return 'border-l-[3px] border-l-transparent'
-}
 
 /* ── page ──────────────────────────────────────────────────── */
 
@@ -112,7 +108,7 @@ export default async function ShiftYourSummerPage() {
     .from('competitions')
     .select(`
       id, name, description, metric, starts_at, ends_at,
-      is_public, sponsor_name, sponsor_logo_url, prizes_json,
+      is_public, matchup_group_ids, sponsor_name, sponsor_logo_url, prizes_json,
       event_sponsorships (
         id, sponsorship_level,
         sponsors (
@@ -138,14 +134,21 @@ export default async function ShiftYourSummerPage() {
 
   // Fetch additional data for active/upcoming states
   let standings: Standing[] = []
+  let groupStandings: GroupStanding[] = []
   let participantCount = 0
   let prizes: Prize[] = []
 
   if (competition && state === 'active') {
-    const [standingsRes, countRes, prizesRes] = await Promise.all([
-      supabase.rpc('get_competition_standings', {
-        p_competition_id: competition.id,
-      }),
+    const groupIds = competition.matchup_group_ids ?? []
+    const [standingsRes, groupStandingsRes, countRes, prizesRes] = await Promise.all([
+      supabase.rpc('get_competition_standings', { p_competition_id: competition.id }),
+      groupIds.length > 0
+        ? supabase.rpc('get_event_standings', {
+            p_competition_id: competition.id,
+            p_group_ids: groupIds,
+            p_days: 90,
+          })
+        : Promise.resolve({ data: [] }),
       supabase
         .from('competition_participants')
         .select('*', { count: 'exact', head: true })
@@ -158,6 +161,14 @@ export default async function ShiftYourSummerPage() {
         .order('place', { ascending: true }),
     ])
     standings = (standingsRes.data ?? []).slice(0, 25)
+    groupStandings = ((groupStandingsRes as any).data ?? []).map((row: any) => ({
+      groupId: row.group_id,
+      groupName: row.group_name,
+      groupType: row.group_type,
+      shiftRate: Number(row.shift_rate) || 0,
+      activeTrips: Number(row.active_trips) || 0,
+      memberCount: Number(row.member_count) || 0,
+    }))
     participantCount = countRes.count ?? 0
     prizes = prizesRes.data ?? []
   } else if (competition && state === 'upcoming') {
@@ -171,6 +182,8 @@ export default async function ShiftYourSummerPage() {
   }
 
   const sponsors: Sponsorship[] = competition?.event_sponsorships ?? []
+  const geoStandings = groupStandings.filter(s => s.groupType === 'town' || s.groupType === 'neighborhood')
+  const corpStandings = groupStandings.filter(s => s.groupType === 'workplace' || s.groupType === 'school')
 
   return (
     <>
@@ -188,6 +201,8 @@ export default async function ShiftYourSummerPage() {
           <ActiveEvent
             competition={competition}
             standings={standings}
+            geoStandings={geoStandings}
+            corpStandings={corpStandings}
             participantCount={participantCount}
             prizes={prizes}
             sponsors={sponsors}
@@ -307,12 +322,16 @@ function UpcomingEvent({
 function ActiveEvent({
   competition,
   standings,
+  geoStandings,
+  corpStandings,
   participantCount,
   prizes,
   sponsors,
 }: {
   competition: Competition
   standings: Standing[]
+  geoStandings: GroupStanding[]
+  corpStandings: GroupStanding[]
   participantCount: number
   prizes: Prize[]
   sponsors: Sponsorship[]
@@ -322,10 +341,10 @@ function ActiveEvent({
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#191A2E] px-8 py-24 md:py-32">
+      <section className="relative overflow-hidden bg-[#191A2E] px-8 py-16 md:py-24">
         <GradientBg />
         <div className="relative mx-auto max-w-[1120px]">
-          <div className="grid gap-12 md:grid-cols-2 md:items-center">
+          <div className="grid gap-10 md:grid-cols-2 md:items-start">
             <div>
               <Eyebrow>
                 Flagship Event &middot; {new Date(competition.starts_at).getFullYear()}
@@ -366,109 +385,37 @@ function ActiveEvent({
               <PresentedBy sponsors={sponsors} />
             </div>
           </div>
+
+          {/* Sponsors inline below hero content */}
+          {sponsors.length > 0 && <SponsorsInline sponsors={sponsors} />}
         </div>
       </section>
 
       {/* Leaderboard */}
-      <section className="bg-[#191A2E] px-8 py-20">
+      <section className="bg-[#191A2E] px-8 pb-16 pt-4">
         <div className="mx-auto max-w-[900px]">
-          <div className="mb-3 flex items-end justify-between">
+          <div className="mb-4 flex items-end justify-between">
             <div>
               <h2 className="font-display text-2xl font-bold tracking-tight text-white">
                 Live standings
               </h2>
-              <p className="mt-1 text-sm text-white">
+              <p className="mt-1 text-sm text-white/50">
                 Updated when you load this page.
               </p>
             </div>
             <RefreshButton />
           </div>
 
-          <div className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#242538]">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-white">
-                    <th className="w-16 py-3.5 pr-2 text-right pl-5">Rank</th>
-                    <th className="py-3.5 px-4">Name</th>
-                    <th className="py-3.5 px-4 text-right">Shift Rate</th>
-                    <th className="hidden py-3.5 px-4 text-right md:table-cell pr-5">
-                      Active Trips
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {standings.map((entry, i) => {
-                    const rank = i + 1
-                    return (
-                      <tr
-                        key={entry.user_id}
-                        className={`${rankBorder(rank)} ${
-                          i % 2 === 1 ? 'bg-white/[0.02]' : ''
-                        } border-b border-white/[0.05] last:border-b-0`}
-                      >
-                        <td className="py-3 pr-2 text-right pl-5">
-                          <span
-                            className={`font-display text-base font-bold ${
-                              rank <= 3 ? 'text-[#EDB93C]' : 'text-white'
-                            }`}
-                          >
-                            {rank}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 font-medium text-white">
-                          {entry.display_name}
-                        </td>
-                        <td className={`py-3 px-4 text-right font-display font-bold ${shiftRateColor(entry.pct_non_car)}`}>
-                          {Math.round(entry.pct_non_car)}%
-                        </td>
-                        <td className="hidden py-3 px-4 text-right text-white md:table-cell pr-5">
-                          {entry.non_car_trips}
-                        </td>
-                      </tr>
-                    )
-                  })}
-
-                  {/* Filler rows if fewer than 10 entries */}
-                  {standings.length < 10 &&
-                    Array.from({ length: Math.max(0, 10 - standings.length) }).map(
-                      (_, i) => (
-                        <tr
-                          key={`filler-${i}`}
-                          className={`border-l-[3px] border-l-transparent ${
-                            (standings.length + i) % 2 === 1
-                              ? 'bg-white/[0.02]'
-                              : ''
-                          } border-b border-white/[0.05] last:border-b-0`}
-                        >
-                          <td className="py-3 pr-2 text-right text-white pl-5">
-                            {standings.length + i + 1}
-                          </td>
-                          <td className="py-3 px-4 text-white">&mdash;</td>
-                          <td className="py-3 px-4 text-right text-white">
-                            &mdash;
-                          </td>
-                          <td className="hidden py-3 px-4 text-right text-white md:table-cell pr-5">
-                            &mdash;
-                          </td>
-                        </tr>
-                      )
-                    )}
-                </tbody>
-              </table>
-            </div>
-
-            {standings.length < 10 && (
-              <p className="border-t border-white/[0.06] px-6 py-4 text-center text-sm text-white">
-                The board is just getting started. Be one of the first.
-              </p>
-            )}
-          </div>
+          <LeaderboardTabs
+            geoStandings={geoStandings}
+            corpStandings={corpStandings}
+            individualStandings={standings}
+            participantCount={participantCount}
+          />
         </div>
       </section>
 
       {prizes.length > 0 && <PrizesSection prizes={prizes} />}
-      {sponsors.length > 0 && <SponsorsSection sponsors={sponsors} />}
       <HowToJoin />
       <CtaSection />
     </>
@@ -538,6 +485,28 @@ function SponsorLogo({ sponsor, className }: { sponsor: Sponsor; className: stri
     </a>
   ) : (
     <div>{inner}</div>
+  )
+}
+
+/** Compact sponsor row shown inside the hero for the active-event layout */
+function SponsorsInline({ sponsors }: { sponsors: Sponsorship[] }) {
+  const presenting = sponsors.filter(s => s.sponsorship_level === 'presenting' && s.sponsors)
+  const communityPartners = sponsors.filter(s => s.sponsorship_level === 'community_partner' && s.sponsors)
+  const supporting = sponsors.filter(s => s.sponsorship_level === 'supporting' && s.sponsors)
+  if (sponsors.length === 0) return null
+
+  return (
+    <div className="mt-10 border-t border-white/[0.08] pt-8 flex flex-wrap items-center gap-x-10 gap-y-4">
+      {presenting.map(s => (
+        <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-8 max-w-[140px]" />
+      ))}
+      {communityPartners.map(s => (
+        <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-6 max-w-[110px]" />
+      ))}
+      {supporting.map(s => (
+        <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-4 max-w-[80px]" />
+      ))}
+    </div>
   )
 }
 
