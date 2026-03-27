@@ -65,7 +65,7 @@ function GroupStandingsTable({ standings }: { standings: GroupStanding[] }) {
               </td>
               <td className="px-4 py-3">
                 <span className="font-medium text-white">{s.groupName}</span>
-                <span className="ml-2 text-xs text-white/40">{s.activeTrips} active trips</span>
+                <span className="ml-2 text-xs text-white/60">{s.activeTrips} active trips</span>
               </td>
               <td className={`px-4 py-3 text-right font-display font-bold ${shiftRateColor(s.shiftRate)}`}>
                 {Math.round(s.shiftRate)}%
@@ -122,16 +122,16 @@ function IndividualStandingsTable({ standings, participantCount }: { standings: 
                 key={`filler-${i}`}
                 className={`border-b border-white/[0.05] last:border-b-0 ${(standings.length + i) % 2 === 1 ? 'bg-white/[0.02]' : ''}`}
               >
-                <td className="py-3 pl-5 pr-2 text-right text-white/30">{standings.length + i + 1}</td>
-                <td className="px-4 py-3 text-white/30">&mdash;</td>
-                <td className="px-4 py-3 text-right text-white/30">&mdash;</td>
-                <td className="hidden px-4 py-3 text-right text-white/30 md:table-cell pr-5">&mdash;</td>
+                <td className="py-3 pl-5 pr-2 text-right text-white/40">{standings.length + i + 1}</td>
+                <td className="px-4 py-3 text-white/40">&mdash;</td>
+                <td className="px-4 py-3 text-right text-white/40">&mdash;</td>
+                <td className="hidden px-4 py-3 text-right text-white/40 md:table-cell pr-5">&mdash;</td>
               </tr>
             ))}
         </tbody>
       </table>
       {standings.length < 10 && (
-        <p className="border-t border-white/[0.06] px-6 py-4 text-center text-sm text-white/40">
+        <p className="border-t border-white/[0.06] px-6 py-4 text-center text-sm text-white/60">
           The board is just getting started. Be one of the first.
         </p>
       )}

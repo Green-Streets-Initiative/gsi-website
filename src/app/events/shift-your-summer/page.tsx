@@ -503,7 +503,7 @@ function SponsorsInline({ sponsors }: { sponsors: Sponsorship[] }) {
     <div className="mt-10 border-t border-white/[0.08] pt-8 flex flex-wrap gap-x-12 gap-y-6">
       {presenting.length > 0 && (
         <div className="flex flex-col gap-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Presenting Sponsor</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-white/60">Presenting Sponsor</p>
           <div className="flex flex-wrap items-center gap-6">
             {presenting.map(s => (
               <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-8 max-w-[140px]" />
@@ -513,7 +513,7 @@ function SponsorsInline({ sponsors }: { sponsors: Sponsorship[] }) {
       )}
       {communityPartners.length > 0 && (
         <div className="flex flex-col gap-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Community Partners</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-white/60">Community Partners</p>
           <div className="flex flex-wrap items-center gap-6">
             {communityPartners.map(s => (
               <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-6 max-w-[110px]" />
@@ -523,7 +523,7 @@ function SponsorsInline({ sponsors }: { sponsors: Sponsorship[] }) {
       )}
       {supporting.length > 0 && (
         <div className="flex flex-col gap-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Supporting Sponsors</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-white/60">Supporting Sponsors</p>
           <div className="flex flex-wrap items-center gap-6">
             {supporting.map(s => (
               <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-4 max-w-[80px]" />
@@ -698,7 +698,7 @@ function MetricBadge({ metric }: { metric: string }) {
         <path d="M6 0l1.76 3.57L12 4.14 8.82 7.02l.94 4.98L6 10.02 2.24 12l.94-4.98L0 4.14l4.24-.57z" />
       </svg>
       {metricLabel(metric)}
-      <span className="ml-0.5 text-white/40">?</span>
+      <span className="ml-0.5 text-white/60">?</span>
       {/* Tooltip */}
       <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-64 -translate-x-1/2 rounded-lg border border-white/[0.1] bg-[#1a1b30] px-3.5 py-2.5 text-xs font-normal leading-relaxed text-white/80 opacity-0 shadow-xl transition-opacity group-hover:opacity-100">
         Shift Rate is the percentage of your trips taken by active modes — walking, biking, or transit. Higher is better.
