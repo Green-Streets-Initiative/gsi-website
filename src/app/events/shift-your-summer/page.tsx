@@ -364,24 +364,7 @@ function ActiveEvent({
               </div>
             </div>
 
-            <div className="flex flex-col gap-4">
-              <div className="rounded-[14px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
-                <span className="font-display text-3xl font-extrabold text-white">
-                  {participantCount.toLocaleString()}
-                </span>
-                <span className="ml-2 text-sm text-white">people competing</span>
-              </div>
-              {leader && (
-                <div className="rounded-[14px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
-                  <span className="text-sm text-white">#1 right now: </span>
-                  <span className="font-display text-lg font-bold text-white">
-                    {leader.display_name}
-                  </span>
-                  <span className="ml-2 text-sm text-[#EDB93C]">
-                    {Math.round(leader.pct_non_car)}% Shift Rate
-                  </span>
-                </div>
-              )}
+            <div>
               <PresentedBy sponsors={sponsors} />
             </div>
           </div>
@@ -404,6 +387,27 @@ function ActiveEvent({
               </p>
             </div>
             <RefreshButton />
+          </div>
+
+          {/* Stats row above leaderboard */}
+          <div className="mb-4 flex flex-wrap gap-3">
+            <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-4 py-2.5">
+              <span className="font-display text-lg font-extrabold text-white">
+                {participantCount.toLocaleString()}
+              </span>
+              <span className="ml-1.5 text-sm text-white/60">people participating</span>
+            </div>
+            {leader && (
+              <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-4 py-2.5">
+                <span className="text-sm text-white/60">#1 right now: </span>
+                <span className="font-display text-sm font-bold text-white">
+                  {leader.display_name}
+                </span>
+                <span className="ml-1.5 text-sm text-[#EDB93C]">
+                  {Math.round(leader.pct_non_car)}% Shift Rate
+                </span>
+              </div>
+            )}
           </div>
 
           <LeaderboardTabs
@@ -488,7 +492,7 @@ function SponsorLogo({ sponsor, className }: { sponsor: Sponsor; className: stri
   )
 }
 
-/** Compact sponsor row shown inside the hero for the active-event layout */
+/** Compact sponsor block shown inside the hero for the active-event layout */
 function SponsorsInline({ sponsors }: { sponsors: Sponsorship[] }) {
   const presenting = sponsors.filter(s => s.sponsorship_level === 'presenting' && s.sponsors)
   const communityPartners = sponsors.filter(s => s.sponsorship_level === 'community_partner' && s.sponsors)
@@ -496,16 +500,37 @@ function SponsorsInline({ sponsors }: { sponsors: Sponsorship[] }) {
   if (sponsors.length === 0) return null
 
   return (
-    <div className="mt-10 border-t border-white/[0.08] pt-8 flex flex-wrap items-center gap-x-10 gap-y-4">
-      {presenting.map(s => (
-        <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-8 max-w-[140px]" />
-      ))}
-      {communityPartners.map(s => (
-        <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-6 max-w-[110px]" />
-      ))}
-      {supporting.map(s => (
-        <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-4 max-w-[80px]" />
-      ))}
+    <div className="mt-10 border-t border-white/[0.08] pt-8 flex flex-wrap gap-x-12 gap-y-6">
+      {presenting.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Presenting Sponsor</p>
+          <div className="flex flex-wrap items-center gap-6">
+            {presenting.map(s => (
+              <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-8 max-w-[140px]" />
+            ))}
+          </div>
+        </div>
+      )}
+      {communityPartners.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Community Partners</p>
+          <div className="flex flex-wrap items-center gap-6">
+            {communityPartners.map(s => (
+              <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-6 max-w-[110px]" />
+            ))}
+          </div>
+        </div>
+      )}
+      {supporting.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Supporting Sponsors</p>
+          <div className="flex flex-wrap items-center gap-6">
+            {supporting.map(s => (
+              <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-4 max-w-[80px]" />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -668,11 +693,17 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 
 function MetricBadge({ metric }: { metric: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.05] px-3.5 py-1.5 text-xs font-semibold text-white">
+    <span className="group relative inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.05] px-3.5 py-1.5 text-xs font-semibold text-white cursor-default">
       <svg viewBox="0 0 12 12" width="12" height="12" fill="currentColor">
         <path d="M6 0l1.76 3.57L12 4.14 8.82 7.02l.94 4.98L6 10.02 2.24 12l.94-4.98L0 4.14l4.24-.57z" />
       </svg>
       {metricLabel(metric)}
+      <span className="ml-0.5 text-white/40">?</span>
+      {/* Tooltip */}
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-64 -translate-x-1/2 rounded-lg border border-white/[0.1] bg-[#1a1b30] px-3.5 py-2.5 text-xs font-normal leading-relaxed text-white/80 opacity-0 shadow-xl transition-opacity group-hover:opacity-100">
+        Shift Rate is the percentage of your trips taken by active modes — walking, biking, or transit. Higher is better.
+        <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#1a1b30]" />
+      </span>
     </span>
   )
 }
