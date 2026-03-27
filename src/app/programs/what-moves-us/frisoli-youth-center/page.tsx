@@ -20,11 +20,21 @@ const videos = [
   { name: 'Joey', id: '703c7d_aeb12709b3ce48ea8a734c1bfc27c7c0' },
   { name: 'Sa\'ryah', id: '703c7d_5e641961bf114c4d926c5aa3a106388a' },
   { name: 'Maereg', id: '703c7d_29b73947c5ba415780fbb81b8e8e62f1' },
+  { name: 'JoJo', id: '703c7d_37732a963e2c4f01933a6e96f4944620' },
+  { name: 'Siana', id: '703c7d_f6e3adfd16874ca0a4b4cf3a63060f80' },
+  { name: 'Larry (Teen Director)', id: '703c7d_3ef8dcdbc36944a8b305eec5a9d215fa' },
+  { name: 'Desmond', id: '703c7d_b0f30d0b5b90444e95f30920091138e1' },
+  { name: 'Izabella', id: '703c7d_9a4bc401b6bf46f0815b09ae6b289f97' },
+  { name: 'Yobel', id: '703c7d_07b9f26603104e7594db5c44f72c18f4' },
+  { name: 'Kayla', id: '703c7d_05babbe566c04626807a1093132823c3' },
+  { name: 'Jarrell', id: '703c7d_3c385c3bb1b0489089a5339e7ef2158f' },
+  { name: 'Kyeleah', id: '703c7d_88a074e419b445f69c71734ef6c65dde' },
+  { name: 'Noah', id: '703c7d_fbbe5218cf36440bad09dfd5284c00cb' },
 ]
 
 const stats = [
   { value: '200+', label: 'Cambridge youth surveyed' },
-  { value: '19', label: 'Video conversations' },
+  { value: '20', label: 'Video conversations' },
   { value: '11–18', label: 'Years of age' },
 ]
 
@@ -113,9 +123,6 @@ export default function FrisoliPage() {
                 </div>
               ))}
             </div>
-            <p className="mt-6 text-sm text-white/40">
-              Showing 10 of 20 video conversations. Additional conversations were recorded with JoJo, Siana, Larry (Teen Director), Desmond, Izabella, Yobel, Kayla, Jarrell, Kyeleah, and Noah.
-            </p>
           </div>
         </section>
 
