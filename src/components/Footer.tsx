@@ -103,7 +103,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/get-involved/volunteer" className="text-sm text-white transition-colors hover:text-white">
+                <Link href="/get-involved" className="text-sm text-white transition-colors hover:text-white">
                   Volunteer
                 </Link>
               </li>

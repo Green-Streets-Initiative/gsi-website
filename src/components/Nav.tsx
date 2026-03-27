@@ -35,6 +35,9 @@ export default function Nav() {
           <Link href="/about" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
             About
           </Link>
+          <Link href="/get-involved" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
+            Get involved
+          </Link>
           <Link href="/contact" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
             Contact
           </Link>
@@ -67,6 +70,7 @@ export default function Nav() {
             <Link href="/programs" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Programs</Link>
             <Link href="/commute-calculator" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Calculator</Link>
             <Link href="/about" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>About</Link>
+            <Link href="/get-involved" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Get involved</Link>
             <Link href="/contact" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Contact</Link>
             <Link href="#waitlist" className="mt-2 inline-block rounded-full bg-lime px-4 py-2 text-sm font-semibold text-navy" onClick={() => setMenuOpen(false)}>Join waitlist</Link>
           </div>
