@@ -150,15 +150,28 @@ export default function RewardsPartnersPage() {
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-|-$/g, '')
-        const ext = logoFile.name.split('.').pop() || 'png'
+        const ext = (logoFile.name.split('.').pop() || 'png').toLowerCase()
         logoPath = `logos/${Date.now()}-${sanitizedName}.${ext}`
+
+        // Browsers often report wrong MIME types (e.g. SVG as application/xml)
+        const mimeMap: Record<string, string> = {
+          svg: 'image/svg+xml',
+          png: 'image/png',
+          jpg: 'image/jpeg',
+          jpeg: 'image/jpeg',
+          webp: 'image/webp',
+        }
+        const contentType = mimeMap[ext] || logoFile.type
 
         const { error: uploadError } = await supabase.storage
           .from('sponsor-logos')
-          .upload(logoPath, logoFile, { contentType: logoFile.type })
+          .upload(logoPath, logoFile, { contentType })
 
         if (uploadError) {
-          throw new Error('Logo upload failed')
+          console.error('Logo upload error:', uploadError)
+          // Don't block submission — logo can be added later by admin
+          logoPath = null
+          setSubmitError(`Logo upload failed (${uploadError.message}). Your application will be submitted without a logo.`)
         }
       }
 
