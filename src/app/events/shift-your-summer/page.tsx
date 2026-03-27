@@ -7,6 +7,9 @@ import RefreshButton from '@/components/RefreshButton'
 import WaitlistForm from '@/components/WaitlistForm'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
+// This is a live leaderboard — always fetch fresh data, never use cached HTML.
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Shift Your Summer — Live Leaderboard | Green Streets Initiative',
   description:
@@ -66,11 +69,9 @@ type PageState = 'upcoming' | 'active' | 'coming-soon'
 const APP_LAUNCHED = process.env.NEXT_PUBLIC_APP_LAUNCHED === 'true'
 
 function formatDateRange(start: string, end: string) {
-  const s = new Date(start)
-  const e = new Date(end)
-  const opts: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric' }
-  const startStr = s.toLocaleDateString('en-US', opts)
-  const endStr = e.toLocaleDateString('en-US', { ...opts, year: 'numeric' })
+  const opts: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', timeZone: 'America/New_York' }
+  const startStr = new Date(start).toLocaleDateString('en-US', opts)
+  const endStr = new Date(end).toLocaleDateString('en-US', { ...opts, year: 'numeric' })
   return `${startStr} \u2013 ${endStr}`
 }
 
