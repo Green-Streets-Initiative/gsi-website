@@ -105,7 +105,9 @@ export default async function ShiftYourSummerPage() {
   const now = new Date().toISOString()
 
   // Fetch the most relevant public flagship event
-  const { data: competition } = await supabase
+  // Cast to Competition: Supabase infers FK joins as arrays but PostgREST returns
+  // a single object for forward FKs (event_sponsorships.sponsor_id → sponsors.id)
+  const { data: competitionRaw } = await supabase
     .from('competitions')
     .select(`
       id, name, description, metric, starts_at, ends_at,
@@ -123,6 +125,7 @@ export default async function ShiftYourSummerPage() {
     .order('starts_at', { ascending: true })
     .limit(1)
     .single()
+  const competition = competitionRaw as unknown as Competition | null
 
   // Determine page state
   let state: PageState = 'coming-soon'
