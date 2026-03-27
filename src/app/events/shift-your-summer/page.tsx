@@ -518,43 +518,71 @@ function PrizesSection({ prizes }: { prizes: Prize[] }) {
   )
 }
 
-function SponsorsSection({ sponsors }: { sponsors: Sponsorship[] }) {
-  return (
-    <section className="bg-[#191A2E] px-8 py-20">
-      <div className="mx-auto max-w-[900px]">
-        <h2 className="mb-10 font-display text-2xl font-bold tracking-tight text-white">
-          Presented by
-        </h2>
-        <div className="flex flex-wrap items-center gap-8">
-          {sponsors.map(s => {
-            const sponsor = s.sponsors
-            if (!sponsor) return null
-            const inner = sponsor.logo_url ? (
-              <img
-                src={sponsor.logo_url}
-                alt={sponsor.name}
-                className="h-12 max-w-[160px] object-contain brightness-0 invert opacity-70 hover:opacity-100 transition-opacity"
-              />
-            ) : (
-              <span className="text-lg font-semibold text-white hover:text-white transition-colors">
-                {sponsor.name}
-              </span>
-            )
+function SponsorLogo({ sponsor, className }: { sponsor: Sponsor; className: string }) {
+  const inner = sponsor.logo_url ? (
+    <img
+      src={sponsor.logo_url}
+      alt={sponsor.name}
+      className={`object-contain brightness-0 invert opacity-70 hover:opacity-100 transition-opacity ${className}`}
+    />
+  ) : (
+    <span className="font-semibold text-white">{sponsor.name}</span>
+  )
+  return sponsor.website_url ? (
+    <a href={sponsor.website_url} target="_blank" rel="noopener noreferrer">
+      {inner}
+    </a>
+  ) : (
+    <div>{inner}</div>
+  )
+}
 
-            return sponsor.website_url ? (
-              <a
-                key={s.id}
-                href={sponsor.website_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {inner}
-              </a>
-            ) : (
-              <div key={s.id}>{inner}</div>
-            )
-          })}
-        </div>
+function SponsorsSection({ sponsors }: { sponsors: Sponsorship[] }) {
+  const presenting = sponsors.filter(s => s.sponsorship_level === 'presenting' && s.sponsors)
+  const communityPartners = sponsors.filter(s => s.sponsorship_level === 'community_partner' && s.sponsors)
+  const supporting = sponsors.filter(s => s.sponsorship_level === 'supporting' && s.sponsors)
+
+  if (sponsors.length === 0) return null
+
+  return (
+    <section className="bg-[#191A2E] px-8 py-20 border-t border-white/[0.08]">
+      <div className="mx-auto max-w-[900px] space-y-12">
+        {presenting.length > 0 && (
+          <div>
+            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/50">
+              Presenting Sponsor
+            </p>
+            <div className="flex flex-wrap items-center gap-10">
+              {presenting.map(s => (
+                <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-14 max-w-[200px]" />
+              ))}
+            </div>
+          </div>
+        )}
+        {communityPartners.length > 0 && (
+          <div>
+            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/50">
+              Community Partners
+            </p>
+            <div className="flex flex-wrap items-center gap-8">
+              {communityPartners.map(s => (
+                <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-9 max-w-[140px]" />
+              ))}
+            </div>
+          </div>
+        )}
+        {supporting.length > 0 && (
+          <div>
+            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/50">
+              Supporting Partners
+            </p>
+            <div className="flex flex-wrap items-center gap-6">
+              {supporting.map(s => (
+                <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-6 max-w-[100px]" />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )
@@ -678,8 +706,8 @@ function MetricBadge({ metric }: { metric: string }) {
 
 function PresentedBy({ sponsors }: { sponsors: Sponsorship[] }) {
   if (sponsors.length === 0) return null
-  const title = sponsors.find(s => s.sponsorship_level === 'title')
-  const sponsor = title?.sponsors ?? sponsors[0]?.sponsors
+  const presenting = sponsors.find(s => s.sponsorship_level === 'presenting')
+  const sponsor = presenting?.sponsors ?? sponsors[0]?.sponsors
   if (!sponsor) return null
 
   return (
