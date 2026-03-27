@@ -42,7 +42,7 @@ interface Sponsor {
 interface Sponsorship {
   id: string
   sponsorship_level: string
-  sponsors: Sponsor[]
+  sponsors: Sponsor | null
 }
 
 interface Competition {
@@ -527,7 +527,7 @@ function SponsorsSection({ sponsors }: { sponsors: Sponsorship[] }) {
         </h2>
         <div className="flex flex-wrap items-center gap-8">
           {sponsors.map(s => {
-            const sponsor = s.sponsors[0]
+            const sponsor = s.sponsors
             if (!sponsor) return null
             const inner = sponsor.logo_url ? (
               <img
@@ -679,7 +679,7 @@ function MetricBadge({ metric }: { metric: string }) {
 function PresentedBy({ sponsors }: { sponsors: Sponsorship[] }) {
   if (sponsors.length === 0) return null
   const title = sponsors.find(s => s.sponsorship_level === 'title')
-  const sponsor = title?.sponsors[0] ?? sponsors[0]?.sponsors[0]
+  const sponsor = title?.sponsors ?? sponsors[0]?.sponsors
   if (!sponsor) return null
 
   return (
