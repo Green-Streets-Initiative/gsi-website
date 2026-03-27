@@ -32,8 +32,9 @@ export default function PrivacyPage() {
               <P>
                 Shift is a mobile application operated by Green Streets Initiative
                 (&ldquo;GSI,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;),
-                a nonprofit organization dedicated to reducing vehicle miles traveled in our
-                communities. This Privacy Policy explains how we collect, use, store, and protect
+                a nonprofit organization dedicated to helping people shift trips to healthier,
+                cheaper, cleaner alternatives — and measuring the impact, trip by trip, community
+                by community. This Privacy Policy explains how we collect, use, store, and protect
                 your personal information when you use the Shift app.
               </P>
             </Section>
