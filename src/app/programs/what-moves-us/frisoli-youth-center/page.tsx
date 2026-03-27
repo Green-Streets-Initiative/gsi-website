@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import { MEDIA_BASE } from '@/lib/media'
 
 export const metadata = {
   title: 'What Moves Frisoli Youth Center — Green Streets Initiative',
@@ -95,15 +96,15 @@ export default function FrisoliPage() {
             <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
               Video conversations
             </h2>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {videos.map((video) => (
                 <div key={video.id} className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-white/[0.04]">
-                  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                  <div className="relative w-full" style={{ paddingBottom: '100%' }}>
                     <video
                       controls
                       preload="metadata"
-                      className="absolute inset-0 h-full w-full object-cover"
-                      src={`https://video.wixstatic.com/video/${video.id}/480p/mp4/file.mp4`}
+                      className="absolute inset-0 h-full w-full bg-black object-contain"
+                      src={`${MEDIA_BASE}/videos/frisoli-youth-center/${video.id}.mp4`}
                     />
                   </div>
                   <div className="px-6 py-4">
@@ -143,7 +144,7 @@ export default function FrisoliPage() {
             </h2>
             <div className="flex flex-col gap-4 sm:flex-row">
               <a
-                href="https://www.gogreenstreets.org/_files/ugd/703c7d_472dbe0387dc48fabd6250fbb02f6326.pdf"
+                href={`${MEDIA_BASE}/docs/frisoli-survey-questions.pdf`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
@@ -152,7 +153,7 @@ export default function FrisoliPage() {
                 Survey questions (PDF)
               </a>
               <a
-                href="https://www.gogreenstreets.org/_files/ugd/703c7d_83e2d4da7a614246a83ec1e77cea4f66.pdf"
+                href={`${MEDIA_BASE}/docs/frisoli-survey-data.pdf`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"

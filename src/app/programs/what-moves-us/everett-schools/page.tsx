@@ -1,12 +1,33 @@
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import { MEDIA_BASE } from '@/lib/media'
 
 export const metadata = {
   title: 'What Moves Everett Schools — Green Streets Initiative',
   description:
     'A groundbreaking study examining commuting habits across the Everett Public School District. Surveys, video conversations, and a final report.',
 }
+
+const videos = [
+  { name: 'Anastasia', quote: 'I like seeing the world on a bike.', id: '703c7d_ae166f2a50c24d498aa2ad110a055771' },
+  { name: 'Noah', quote: '', id: '703c7d_a7beabd46362412889ced1655c12f6d5' },
+  { name: 'Adam', quote: 'Walking lets me get my cardio in.', id: '703c7d_b8a60cd9d6d943b5b213221932164b35' },
+  { name: 'Sheila', quote: 'Be aware of what bus stop you\'re getting off at.', id: '703c7d_5e912ef9fb3c4db599a430fe4d3eb76c' },
+  { name: 'Andy', quote: 'If you don\'t like your current mode, try something else!', id: '703c7d_6a5bc91bae7149de866b8c73fc96aeae' },
+  { name: 'Kaylee', quote: 'Riding the bus makes me a lot happier.', id: '703c7d_286497af642747d59f73f1f33e965211' },
+  { name: 'Pratyush', quote: 'I want to try skateboarding.', id: '703c7d_9614119d47a6477380e7c3686b2c4cc6' },
+  { name: 'Stacie & Elsie', quote: 'I like to talk with the big kids and look out the window.', id: '703c7d_029c977a7f0340c18f1df252eb7b27c6' },
+  { name: 'Elisangela', quote: 'My son is 10 years old and I bring him to school.', id: '703c7d_94533ef1a7c149319ce6b209cf6f39da' },
+  { name: 'Maria', quote: 'Kids value being outside and independent.', id: '703c7d_6641bd9b7f68410ab29ce0f4a78fa139' },
+  { name: 'Shane', quote: 'Cycling provides a great way to start the day.', id: '703c7d_6dbf4aa059864c70bdfb98348b8d2bc2' },
+  { name: 'Yeylin', quote: 'Riding the bus gives me time to read.', id: '703c7d_c703f18eae7a41ada71e506107b84008' },
+  { name: 'Joshua', quote: '', id: '703c7d_b66a9a1ef2d444309e23577177577514' },
+  { name: 'Mariana', quote: 'I\'d like to try bicycling because it looks fun.', id: '703c7d_17329d45aa874803b531df1b6fd77318' },
+  { name: 'Jaskaran', quote: 'Maybe next year I will switch to cycling.', id: '703c7d_cc834434099349fbb1359006cae5b533' },
+  { name: 'Kien', quote: 'Some of my favorite moments are riding the train with friends.', id: '703c7d_7f92fd92d267419da4f8ebe2e6fa8eae' },
+  { name: 'Luc', quote: 'Students should be able to ride the bus for free.', id: '703c7d_09a0023bd38e460aab714f0047e1256a' },
+]
 
 const stats = [
   { value: '7,300', label: 'Students in district (PK–12)' },
@@ -90,22 +111,29 @@ export default function EverettSchoolsPage() {
           </div>
         </section>
 
-        {/* Quotes from participants */}
+        {/* Video conversations */}
         <section className="bg-[#191A2E] px-8 py-24">
           <div className="mx-auto max-w-[1120px]">
             <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
               In their own words
             </h2>
-            <div className="grid gap-6 md:grid-cols-2">
-              {quotes.map((q) => (
-                <div
-                  key={q.name}
-                  className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
-                >
-                  <p className="mb-4 text-[1.0625rem] italic leading-[1.65] text-white">
-                    &ldquo;{q.quote}&rdquo;
-                  </p>
-                  <p className="text-sm font-semibold text-[#BAF14D]">{q.name}</p>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {videos.map((video) => (
+                <div key={video.id} className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-white/[0.04]">
+                  <div className="relative w-full" style={{ paddingBottom: '100%' }}>
+                    <video
+                      controls
+                      preload="metadata"
+                      className="absolute inset-0 h-full w-full bg-black object-contain"
+                      src={`${MEDIA_BASE}/videos/everett-schools/${video.id}.mp4`}
+                    />
+                  </div>
+                  <div className="px-6 py-4">
+                    <span className="font-display text-sm font-bold text-white">{video.name}</span>
+                    {video.quote && (
+                      <p className="mt-1 text-sm italic text-white/50">&ldquo;{video.quote}&rdquo;</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -137,7 +165,7 @@ export default function EverettSchoolsPage() {
             </h2>
             <div className="flex flex-col gap-4 sm:flex-row">
               <a
-                href="https://www.gogreenstreets.org/_files/ugd/703c7d_309177cd37c14133a272fbd480f4fa6b.pdf"
+                href={`${MEDIA_BASE}/docs/everett-schools-final-report.pdf`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"

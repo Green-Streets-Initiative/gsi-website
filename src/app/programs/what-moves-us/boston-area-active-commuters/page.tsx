@@ -1,12 +1,47 @@
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import { MEDIA_BASE } from '@/lib/media'
 
 export const metadata = {
   title: 'What Moves Boston Area Active Commuters — Green Streets Initiative',
   description:
     'The pilot What Moves Us project — interviews with Metro Boston folks who commute by foot, bike, bus, train, and every mode in between.',
 }
+
+const videos = [
+  { name: 'Susan Sheng', topic: 'Tips', id: '703c7d_5f592894ba4441dc944242b8931870d1' },
+  { name: 'Wade', topic: 'Tips', id: '703c7d_b7971f5994284f2db2e97ccdbbbc784a' },
+  { name: 'Peter', topic: 'Tips', id: '703c7d_6deafb06e3aa4da09e8faab226a9e76d' },
+  { name: 'Cassandra', topic: 'Tips', id: '703c7d_97333cd9e60f496fbafea1bdb31a0771' },
+  { name: 'David Schrieber', topic: 'Tips', id: '703c7d_99c31b47e37c4265af1188b7a14b26d8' },
+  { name: 'Leslie', topic: 'Tips', id: '703c7d_71392bead93b41f5bc3cf63a0fd869ac' },
+  { name: 'Harriotte', topic: 'Why you enjoy the T', id: '703c7d_ff29c1f279d34366b7a5429efe0730a7' },
+  { name: 'Mia', topic: 'Why do you enjoy walking?', id: '703c7d_f00cd1a2cab249e48e2c4b63b497ef82' },
+  { name: 'Mike', topic: 'Why do you enjoy walking?', id: '703c7d_be163aadc88644a78648f792f75a559c' },
+  { name: 'Lena', topic: 'What do you enjoy about your commute?', id: '703c7d_6801b6b3d352433398e1e7f497bb044e' },
+  { name: 'Eric', topic: 'Enjoy the T', id: '703c7d_0d092134ec994a4e80093c137ef97873' },
+  { name: 'Christian', topic: 'Why do you enjoy your commute?', id: '703c7d_89e2641fb5a140ffbcaefc18636c2c70' },
+  { name: 'SuSi', topic: 'Why do you enjoy your commute?', id: '703c7d_f2b4d49037c048b9ab39a138b6b14140' },
+  { name: 'Scott', topic: 'Why do you enjoy biking?', id: '703c7d_392253d90c664ee0972e4f7b25f32348' },
+  { name: 'Matthew', topic: 'Changes to your commute', id: '703c7d_3d6272e97ceb4a6c9be91d13e34c0c5c' },
+  { name: 'Anya', topic: 'Changes to your commute', id: '703c7d_1b109f09e888486eb838d753851a7e21' },
+  { name: 'Bonnie', topic: 'Changes to your commute', id: '703c7d_01179a9ab4c1437dab663ee4bafcad69' },
+  { name: 'Sophie', topic: 'Changes to your commute', id: '703c7d_cb1718d3c39a4db4a099b0c073070660' },
+  { name: 'Anne', topic: 'Changes to your commute', id: '703c7d_d62cfaa9a9314bf8b5332a8a30ac7ca1' },
+  { name: 'Gwen', topic: 'Changes to your commute', id: '703c7d_48550a4ca69c45f490cfa0bcc74d86a8' },
+  { name: 'Perry', topic: 'Changes to your commute', id: '703c7d_9337e031c3ee4f5aaa20558cfb164788' },
+  { name: 'Morgan', topic: 'Changes to your commute', id: '703c7d_d371e26cae084e8597d161b198c48bac' },
+  { name: 'Bill', topic: 'How I started biking', id: '703c7d_4df9113009e74635842a805959b39039' },
+  { name: 'Jacklyn', topic: 'How I started using transit', id: '703c7d_fcadc762eef44dc081d1aecfef17cf97' },
+  { name: 'Gabby', topic: 'How I started taking the T/bus', id: '703c7d_99650f462ea7438fb69c26511090328b' },
+  { name: 'David Anderson', topic: 'How I started biking', id: '703c7d_3a7abe9ccf194e53a4f19d5d6444fcc2' },
+  { name: 'Stephanie', topic: 'How I started biking', id: '703c7d_be8ffcb487634ff39a73c015f81e989e' },
+  { name: 'Rachel', topic: 'How I started biking', id: '703c7d_f72c8eb2a31440368fe819a61dc05817' },
+  { name: 'Jennifer L', topic: 'Why do you enjoy your commute?', id: '703c7d_8fd0e0a5ce324939b8b283c8a55edf27' },
+  { name: 'Mary', topic: 'How I started biking', id: '703c7d_f75dfe06befe47beb89319b60d4a5416' },
+  { name: 'YW', topic: 'Tips', id: '703c7d_9fa2fd3c2f37434098e0ca67da8fa7ab' },
+]
 
 const questionThemes = [
   'What changes would you like to see that would make your commute better?',
@@ -90,7 +125,7 @@ export default function BostonAreaCommutersPage() {
         <section className="bg-[#191A2E] px-8 py-24">
           <div className="mx-auto grid max-w-[1120px] gap-6 sm:grid-cols-3">
             <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8 text-center">
-              <div className="mb-2 font-display text-3xl font-extrabold tracking-tight text-[#BAF14D]">23+</div>
+              <div className="mb-2 font-display text-3xl font-extrabold tracking-tight text-[#BAF14D]">31</div>
               <div className="text-sm text-white/60">Video interviews</div>
             </div>
             <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8 text-center">
@@ -98,34 +133,36 @@ export default function BostonAreaCommutersPage() {
               <div className="text-sm text-white/60">Transportation modes represented</div>
             </div>
             <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8 text-center">
-              <div className="mb-2 font-display text-3xl font-extrabold tracking-tight text-[#BAF14D]">36</div>
-              <div className="text-sm text-white/60">Gallery items (videos + quotes)</div>
+              <div className="mb-2 font-display text-3xl font-extrabold tracking-tight text-[#BAF14D]">4</div>
+              <div className="text-sm text-white/60">Interview themes</div>
             </div>
           </div>
         </section>
 
-        {/* Featured quotes */}
+        {/* Video conversations */}
         <section className="bg-[#191A2E] px-8 pb-24">
           <div className="mx-auto max-w-[1120px]">
             <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
-              Featured voices
+              Video interviews
             </h2>
-            <div className="grid gap-6 md:grid-cols-2">
-              {featuredQuotes.map((q) => (
-                <div
-                  key={q.name}
-                  className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
-                >
-                  <p className="mb-4 text-[1.0625rem] italic leading-[1.65] text-white">
-                    &ldquo;{q.quote}&rdquo;
-                  </p>
-                  <p className="text-sm font-semibold text-[#BAF14D]">{q.name}</p>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {videos.map((video) => (
+                <div key={video.id} className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-white/[0.04]">
+                  <div className="relative w-full" style={{ paddingBottom: '100%' }}>
+                    <video
+                      controls
+                      preload="metadata"
+                      className="absolute inset-0 h-full w-full bg-black object-contain"
+                      src={`${MEDIA_BASE}/videos/boston-area-active-commuters/${video.id}.mp4`}
+                    />
+                  </div>
+                  <div className="px-6 py-4">
+                    <span className="font-display text-sm font-bold text-white">{video.name}</span>
+                    <span className="ml-2 text-xs text-white/40">{video.topic}</span>
+                  </div>
                 </div>
               ))}
             </div>
-            <p className="mt-8 text-[0.9375rem] leading-[1.6] text-white/60">
-              The full collection includes 23+ video interviews with walkers, cyclists, bus riders, train commuters, and multimodal commuters across the Metro Boston area — alongside inspirational quotes about green transportation.
-            </p>
           </div>
         </section>
 

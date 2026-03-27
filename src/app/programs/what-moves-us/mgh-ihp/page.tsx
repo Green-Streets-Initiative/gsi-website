@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import { MEDIA_BASE } from '@/lib/media'
 
 export const metadata = {
   title: 'What Moves MGH IHP — Green Streets Initiative',
@@ -78,12 +79,12 @@ export default function MghIhpPage() {
             <div className="grid gap-6 md:grid-cols-2">
               {videos.map((video) => (
                 <div key={video.id} className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-white/[0.04]">
-                  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                  <div className="relative w-full" style={{ paddingBottom: '100%' }}>
                     <video
                       controls
                       preload="metadata"
-                      className="absolute inset-0 h-full w-full object-cover"
-                      src={`https://video.wixstatic.com/video/${video.id}/720p/mp4/file.mp4`}
+                      className="absolute inset-0 h-full w-full bg-black object-contain"
+                      src={`${MEDIA_BASE}/videos/mgh-ihp/${video.id}.mp4`}
                     />
                   </div>
                   <div className="px-6 py-4">
