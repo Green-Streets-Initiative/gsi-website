@@ -30,7 +30,7 @@ const tierIcons = {
       <path d="M17 5L29 16L17 27L17 22L23 16L17 10Z" fill="#BAF14D" />
     </svg>
   ),
-  Leader: (
+  Pacesetter: (
     <svg viewBox="0 0 32 32" width="18" height="18">
       <path d="M1 5L9.5 16L1 27L1 23L5 16L1 9Z" fill="#EDB93C" />
       <path d="M11 5L19.5 16L11 27L11 23L15 16L11 9Z" fill="#EDB93C" />
@@ -56,7 +56,7 @@ const tiers = [
   { name: 'Starter', req: '0 trips', fill: '5%', badgeBg: 'rgba(144,144,160,0.15)', barColor: '#9090A0', barOpacity: 0.5 },
   { name: 'Mover', req: '25 trips', fill: '25%', badgeBg: 'rgba(41,102,229,0.12)', barColor: '#2966E5', barOpacity: 1 },
   { name: 'Shifter', req: '100 trips', fill: '50%', badgeBg: 'rgba(186,241,77,0.15)', barColor: '#BAF14D', barOpacity: 1 },
-  { name: 'Leader', req: '250 trips', fill: '75%', badgeBg: 'rgba(237,185,60,0.15)', barColor: '#EDB93C', barOpacity: 1 },
+  { name: 'Pacesetter', req: '250 trips', fill: '75%', badgeBg: 'rgba(237,185,60,0.15)', barColor: '#EDB93C', barOpacity: 1 },
   { name: 'Trailblazer', req: '500 trips', fill: '95%', badgeBg: 'rgba(41,102,229,0.15)', barColor: '#7BA8FF', barOpacity: 1 },
 ]
 
