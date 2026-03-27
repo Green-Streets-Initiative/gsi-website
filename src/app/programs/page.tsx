@@ -114,12 +114,20 @@ export default function ProgramsPage() {
               </div>
             </div>
 
-            <Link
-              href="/programs/what-moves-us"
-              className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-            >
-              Learn more &rarr;
-            </Link>
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <Link
+                href="/programs/what-moves-us"
+                className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+              >
+                See past campaigns &rarr;
+              </Link>
+              <Link
+                href="/contact?inquiry=general"
+                className="inline-block rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                Commission a campaign &rarr;
+              </Link>
+            </div>
           </div>
         </section>
 
