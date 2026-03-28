@@ -108,13 +108,51 @@ export default function ShiftPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
-            3 · BUILT FOR COMMUTERS
+            3 · YOUR COMMUTE COACH
         ══════════════════════════════════════════════════════════ */}
         <section className="bg-[#191A2E] px-8 py-24">
           <div className="mx-auto max-w-[1120px]">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">Your commute coach</div>
+            <h2 className="mb-4 max-w-[560px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+              More than a tracker.
+            </h2>
+            <p className="mb-14 max-w-[560px] text-[1.0625rem] leading-[1.65] text-white">
+              Shift learns how you move and helps you move better — with practical guides, smart nudges, and real-world events matched to your commute.
+            </p>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Guides that meet you where you are</h3>
+                <p className="text-[0.9375rem] leading-[1.6] text-white">
+                  Wondering how Blue Bikes work? Nervous about your first bus ride? Not sure what to wear on a bike commute? Shift serves short, practical guides matched to the barriers you actually face — swipeable, 1–3 minute reads with local info and next steps.
+                </p>
+              </div>
+
+              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Nudges, not nagging</h3>
+                <p className="text-[0.9375rem] leading-[1.6] text-white">
+                  After a short trip, Shift might suggest a route that&apos;s faster on foot. When you haven&apos;t tried transit in a while, it&apos;ll surface a nearby stop you didn&apos;t know about. One nudge per day, max — always relevant, always easy to dismiss.
+                </p>
+              </div>
+
+              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Events that make the first time easy</h3>
+                <p className="text-[0.9375rem] leading-[1.6] text-white">
+                  Guided rides, e-bike demos, walking tours, transit buddy meetups — real-world group experiences near you that take the uncertainty out of trying something new. Show up, try it, see how it feels.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════
+            4 · BUILT FOR COMMUTERS
+        ══════════════════════════════════════════════════════════ */}
+        <section className="bg-[#242538] px-8 py-24">
+          <div className="mx-auto max-w-[1120px]">
             <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">Built for commuters</div>
             <h2 className="mb-14 max-w-[560px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
-              For the commuter who suspects there&apos;s a better way.
+              Built around what actually changes behavior.
             </h2>
 
             <div className="grid gap-6 md:grid-cols-3">
@@ -122,7 +160,7 @@ export default function ShiftPage() {
                 <div className="mb-4 text-2xl">💰</div>
                 <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Save real money</h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  The average Boston commuter spends $8k+ on their car each year. Active trips put that money back — and earn you rewards on top.
+                  Active trips put money back in your pocket — and earn you rewards from local businesses on top.
                 </p>
               </div>
 
@@ -135,10 +173,10 @@ export default function ShiftPage() {
               </div>
 
               <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <div className="mb-4 text-2xl">🏆</div>
-                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Your commute, working for you</h3>
+                <div className="mb-4 text-2xl">🔍</div>
+                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Discover what works for you</h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  Every active trip earns points redeemable for real rewards from local businesses. The more you shift, the more you earn.
+                  Shift finds transit routes and bike-share options connecting your home and work that you haven&apos;t tried yet. Every week, new suggestions based on where you actually go.
                 </p>
               </div>
             </div>
@@ -146,7 +184,7 @@ export default function ShiftPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
-            4 · FOR EMPLOYERS
+            5 · FOR EMPLOYERS
         ══════════════════════════════════════════════════════════ */}
         <section className="bg-[#242538] px-8 py-24">
           <div className="mx-auto max-w-[1120px]">
