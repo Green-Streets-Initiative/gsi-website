@@ -44,7 +44,7 @@ export default function ShiftPage() {
             </h1>
 
             <p className="mx-auto mb-10 max-w-[580px] text-lg leading-[1.7] text-white">
-              The Shift app detects your walks and bike rides automatically — no tapping, no logging, no thinking about it. Your commute earns you real rewards while you move.
+              The Shift app detects your walks, bike rides, and transit trips automatically — no tapping, no logging, no thinking about it. Your commute earns you real rewards while you move.
             </p>
 
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
