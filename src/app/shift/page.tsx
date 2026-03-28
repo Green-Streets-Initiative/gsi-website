@@ -166,7 +166,7 @@ export default function ShiftPage() {
                     'Higher in-office attendance — employees who enjoy their commute come in more',
                     'A genuine wellness benefit with real participation data',
                     'ESG and sustainability reporting — verified active trip data by mode',
-                    'Reduced parking demand',
+                    'Real commute data — mode share, participation trends, and patterns over time',
                   ].map((item, i) => (
                     <li key={i} className="flex gap-3 text-[0.9375rem] leading-[1.6] text-white">
                       <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#2966E5]" />

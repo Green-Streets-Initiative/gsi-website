@@ -143,7 +143,7 @@ export default function ProgramsPage() {
               Corporate Challenge
             </h2>
             <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
-              A team-based commute competition that gets employees out of their cars and into active trips. Verified data, private leaderboards, and end-of-challenge impact reporting — all powered by Shift.
+              A team-based commute competition that motivates employees to try walking, biking, and transit. Verified data, private leaderboards, and end-of-challenge impact reporting — all powered by Shift.
             </p>
 
             <div className="mb-10 grid gap-6 md:grid-cols-3">
@@ -185,7 +185,52 @@ export default function ProgramsPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
-            5 · BRIDGE STRIP
+            5 · SHIFT FOR SCHOOLS
+        ══════════════════════════════════════════════════════════ */}
+        <section className="bg-[#F4F8EE] px-8 py-24">
+          <div className="mx-auto max-w-[1120px]">
+            <div className="grid items-start gap-12 md:grid-cols-2">
+              <div>
+                <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#52B788]">
+                  School program
+                </div>
+                <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
+                  Shift for Schools
+                </h2>
+                <p className="mb-8 text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
+                  The simplest school wellness program. No student apps, no accounts, no data on kids — just a wall chart, stickers, and one Friday photo. Shift handles the leaderboards, reports, and parent communications.
+                </p>
+                <Link
+                  href="/shift/schools"
+                  className="inline-block rounded-full bg-[#191A2E] px-7 py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-85"
+                >
+                  Learn more &rarr;
+                </Link>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {[
+                  { label: 'K–8 grade bands' },
+                  { label: 'Under 5 minutes/week for teachers' },
+                  { label: 'COPPA-clean by design' },
+                  { label: 'Free for participating schools' },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-white p-6"
+                  >
+                    <span className="font-display text-base font-bold tracking-tight text-[#191A2E]">
+                      {stat.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════
+            6 · BRIDGE STRIP
         ══════════════════════════════════════════════════════════ */}
         <section className="bg-[#191A2E] px-8 py-24">
           <div className="mx-auto max-w-[640px] text-center">
@@ -196,7 +241,7 @@ export default function ProgramsPage() {
               Every program runs on Shift.
             </h2>
             <p className="mb-8 text-[1.0625rem] leading-[1.65] text-white">
-              Walk/Ride Days, What Moves Us, and Corporate Challenge all connect through the Shift app — one platform that tracks trips, rewards active commuters, and generates the data communities need.
+              Walk/Ride Days, What Moves Us, Corporate Challenge, and Shift for Schools all connect through the Shift app — one platform that tracks trips, rewards active commuters, and generates the data communities need.
             </p>
             <Link
               href="/shift"

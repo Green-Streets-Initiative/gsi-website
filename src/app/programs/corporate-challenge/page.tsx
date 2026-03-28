@@ -26,10 +26,10 @@ export default function CorporateChallengePage() {
               Corporate Challenge
             </h1>
             <p className="mb-6 max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
-              A team-based commute competition that gets employees out of their cars and into active trips. Run a month-long challenge or a year-round standing program — Shift handles the tracking, leaderboards, and reporting.
+              A team-based commute competition that motivates employees to try walking, biking, and transit. Run a month-long challenge or a year-round standing program — Shift handles the tracking, leaderboards, and reporting.
             </p>
             <p className="max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
-              Reduce parking demand, hit sustainability targets, and give your team a wellness benefit that works.
+              Hit sustainability targets, build team culture, and give your employees a wellness benefit that works.
             </p>
           </div>
         </section>

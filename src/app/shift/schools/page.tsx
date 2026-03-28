@@ -240,23 +240,7 @@ export default function ShiftSchoolsPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
-            5 · FRAMING NOTE
-        ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24">
-          <div className="mx-auto max-w-[800px]">
-            <div className="rounded-[18px] border border-[rgba(237,185,60,0.15)] bg-[rgba(237,185,60,0.05)] p-8 md:p-10">
-              <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">
-                A note on framing
-              </h3>
-              <p className="text-[0.9375rem] leading-[1.65] text-white">
-                We lead with health, time outdoors, and community independence — not environmental messaging. Students learn about the physical benefits of active transportation. CO₂ impact is available as a secondary data point for older grades.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            6 · SCHOOL FAQ
+            5 · SCHOOL FAQ
         ══════════════════════════════════════════════════════════ */}
         <section className="bg-[#191A2E] px-8 py-24">
           <div className="mx-auto max-w-[800px]">

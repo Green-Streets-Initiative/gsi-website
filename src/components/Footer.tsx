@@ -78,6 +78,11 @@ export default function Footer() {
                   Corporate Challenge
                 </Link>
               </li>
+              <li>
+                <Link href="/shift/schools" className="text-sm text-white transition-colors hover:text-white">
+                  Shift for Schools
+                </Link>
+              </li>
             </ul>
           </div>
 

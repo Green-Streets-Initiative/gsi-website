@@ -104,8 +104,8 @@ export default function ShiftEmployersPage() {
                   body: 'Verified trip data by mode, total CO₂ avoided, and participation rates — ready for your sustainability reports and wellness program documentation.',
                 },
                 {
-                  title: 'Reduced parking demand',
-                  body: 'As more employees shift to active commuting, parking pressure drops. Track the shift over time with real data, not surveys.',
+                  title: 'Real commute data',
+                  body: 'See how your team moves — mode share, participation trends, and commute patterns over time. Real data, not surveys.',
                 },
               ].map((card) => (
                 <div

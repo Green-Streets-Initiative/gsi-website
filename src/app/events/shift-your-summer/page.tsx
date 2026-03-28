@@ -118,6 +118,7 @@ export default async function ShiftYourSummerPage() {
     `)
     .eq('is_public', true)
     .is('group_id', null)
+    .like('name', '%Shift Your Summer%')
     .gte('ends_at', now)
     .order('starts_at', { ascending: true })
     .limit(1)

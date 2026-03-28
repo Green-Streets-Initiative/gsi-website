@@ -38,7 +38,7 @@ export default function HowItWorks() {
                 icon: '🏙️',
                 text: (
                   <>
-                    <strong className="font-semibold text-[#191A2E]">Move your community.</strong> Every trip you shift is one less car on the road — less congestion, cleaner air, a more livable city.
+                    <strong className="font-semibold text-[#191A2E]">Move your community.</strong> Every active trip builds momentum — for your neighborhood, your city, and the people around you.
                   </>
                 ),
               },
