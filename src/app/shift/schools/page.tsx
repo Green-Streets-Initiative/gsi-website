@@ -82,12 +82,20 @@ export default function ShiftSchoolsPage() {
             <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
               No apps on students&apos; phones. No accounts. No data on kids. Just a wall chart, stickers, and one photo every Friday. Shift handles the rest.
             </p>
-            <Link
-              href="/contact?inquiry=school"
-              className="inline-block rounded-full bg-[#191A2E] px-7 py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-85"
-            >
-              Bring it to your school &rarr;
-            </Link>
+            <div className="flex flex-wrap items-center gap-4">
+              <Link
+                href="/contact?inquiry=school"
+                className="inline-block rounded-full bg-[#191A2E] px-7 py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-85"
+              >
+                Bring it to your school &rarr;
+              </Link>
+              <Link
+                href="/shift/schools/find"
+                className="inline-block rounded-full border-2 border-[#191A2E] px-7 py-3 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-75"
+              >
+                Find your school &rarr;
+              </Link>
+            </div>
           </div>
         </section>
 
