@@ -4,7 +4,6 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import CountdownTimer from '@/components/CountdownTimer'
 import RefreshButton from '@/components/RefreshButton'
-import WaitlistForm from '@/components/WaitlistForm'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import LeaderboardTabs, { type GroupStanding } from './LeaderboardTabs'
 
@@ -229,9 +228,14 @@ function ComingSoon() {
             The next challenge is coming.
           </h1>
           <p className="mx-auto mb-10 max-w-[580px] text-lg leading-[1.7] text-white">
-            Shift flagship events bring Massachusetts commuters together to compete, move, and win real prizes. Join the waitlist to be first to know when the next event launches.
+            Shift flagship events bring Massachusetts commuters together to compete, move, and win real prizes. Download the app to get started.
           </p>
-          <WaitlistForm />
+          <Link
+            href="/shift"
+            className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+          >
+            Download the app
+          </Link>
         </div>
       </section>
 
@@ -649,9 +653,14 @@ function CtaSection() {
         ) : (
           <>
             <p className="mb-10 text-lg leading-relaxed text-white">
-              Shift launches this summer. Join the waitlist and we&apos;ll notify you the moment the challenge goes live.
+              Shift launches this summer. Download the app now so you&apos;re ready when the challenge goes live.
             </p>
-            <WaitlistForm />
+            <Link
+              href="/shift"
+              className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+            >
+              Download the app
+            </Link>
           </>
         )}
       </div>

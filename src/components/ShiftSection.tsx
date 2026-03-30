@@ -169,10 +169,10 @@ export default function ShiftSection() {
 
             <div className="mt-8">
               <Link
-                href="#waitlist"
+                href="/shift"
                 className="inline-block rounded-full bg-[#BAF14D] px-6 py-3 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
               >
-                Join the waitlist →
+                Download the app →
               </Link>
             </div>
           </div>

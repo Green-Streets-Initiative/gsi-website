@@ -66,7 +66,7 @@ export default function HowItWorks() {
               Track your active trips, build your Shift Rate, climb the neighborhood leaderboard. Earn status, save money, and see your health improve — all without thinking about it.
             </p>
             <Link
-              href="#waitlist"
+              href="/shift"
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#191A2E] transition-[gap] hover:gap-2.5"
             >
               Get the app

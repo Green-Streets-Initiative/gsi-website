@@ -110,8 +110,6 @@ export default function CommuteCalculator() {
   const [mbtaType, setMbtaType] = useState('subway')
   const [hasEmployerSubsidy, setHasEmployerSubsidy] = useState(false)
   const [employerSubsidy, setEmployerSubsidy] = useState(0)
-  const [waitlistEmail, setWaitlistEmail] = useState('')
-  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false)
 
   // Routing state
   const [homeAddress, setHomeAddress] = useState('')
@@ -691,27 +689,12 @@ export default function CommuteCalculator() {
                       <div className="mb-3.5 text-[0.8rem] leading-relaxed text-white">
                         Shift helps you build the habit — log your first active trip, track your progress, and see your real savings add up over time.
                       </div>
-                      {!waitlistSubmitted ? (
-                        <form onSubmit={e => { e.preventDefault(); if (waitlistEmail) setWaitlistSubmitted(true) }}
-                          className="flex items-center gap-2">
-                          <input
-                            type="email"
-                            placeholder="Your email address"
-                            value={waitlistEmail}
-                            onChange={e => setWaitlistEmail(e.target.value)}
-                            required
-                            className="min-w-0 flex-1 rounded-lg border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder-white/40 outline-none transition-colors focus:border-[#BAF14D]"
-                          />
-                          <button type="submit" className="shrink-0 rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85">
-                            Join the waitlist
-                          </button>
-                        </form>
-                      ) : (
-                        <div className="flex items-center gap-2 rounded-lg border border-[rgba(186,241,77,0.2)] bg-[rgba(186,241,77,0.08)] px-4 py-2.5">
-                          <span className="text-sm font-semibold text-[#BAF14D]">&#10003;</span>
-                          <span className="text-sm text-white">You&apos;re on the list — we&apos;ll be in touch.</span>
-                        </div>
-                      )}
+                      <a
+                        href="/shift"
+                        className="inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                      >
+                        Download the app &rarr;
+                      </a>
                     </div>
                   </>
                 )}

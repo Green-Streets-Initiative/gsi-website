@@ -266,15 +266,14 @@ export default function GetInvolvedPage() {
                   Thanks{firstName ? `, ${firstName}` : ''}.
                 </h2>
                 <p className="mt-3 text-[0.9375rem] leading-relaxed text-white">
-                  We&apos;ll be in touch within a week. In the meantime — if you haven&apos;t
-                  already, join the Shift waitlist so you&apos;re ready to go when the app
-                  launches.
+                  We&apos;ll be in touch within a week. In the meantime, download the
+                  Shift app and take your first active trip.
                 </p>
                 <Link
-                  href="/#waitlist"
+                  href="/shift"
                   className="mt-6 inline-block rounded-full bg-lime px-6 py-2.5 text-sm font-semibold text-navy transition-opacity hover:opacity-85"
                 >
-                  Join the waitlist &rarr;
+                  Download the app &rarr;
                 </Link>
               </div>
             ) : (
@@ -423,14 +422,14 @@ export default function GetInvolvedPage() {
               Not ready to commit? Start with the app.
             </h2>
             <p className="mt-3 text-[0.9375rem] leading-relaxed text-white">
-              The best way to understand what GSI does is to try it yourself. Join the Shift
-              waitlist and take your first active trip.
+              The best way to understand what GSI does is to try it yourself. Download
+              the Shift app and take your first active trip.
             </p>
             <Link
-              href="/#waitlist"
+              href="/shift"
               className="mt-6 inline-block rounded-full bg-lime px-6 py-2.5 text-sm font-semibold text-navy transition-opacity hover:opacity-85"
             >
-              Join the waitlist &rarr;
+              Download the app &rarr;
             </Link>
           </div>
         </section>

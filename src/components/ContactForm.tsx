@@ -154,8 +154,8 @@ export default function ContactForm() {
             <Link href="/programs" className="text-lime hover:underline">
               See our programs &rarr;
             </Link>
-            <Link href="/#waitlist" className="text-lime hover:underline">
-              Join the waitlist &rarr;
+            <Link href="/shift" className="text-lime hover:underline">
+              Download the app &rarr;
             </Link>
           </div>
         </div>
