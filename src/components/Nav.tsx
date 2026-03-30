@@ -32,9 +32,6 @@ export default function Nav() {
           <Link href="/commute-calculator" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
             Calculator
           </Link>
-          <Link href="/about" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
-            About
-          </Link>
           <Link href="/get-involved" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
             Get involved
           </Link>
