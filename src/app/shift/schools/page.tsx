@@ -18,7 +18,7 @@ const schoolFaqItems = [
   {
     question: 'Do students need phones or accounts?',
     answer:
-      'No. The program is COPPA-clean by design. No student phones, no accounts, no apps. Students use a physical wall chart with stickers or magnets — one per student, one per day.',
+      'No. The program is COPPA-clean by design. No student phones, no accounts, no apps. Teachers tally a quick show of hands on a wall chart — no student data is collected.',
   },
   {
     question: 'How much time does it take for teachers?',
@@ -80,7 +80,7 @@ export default function ShiftSchoolsPage() {
               The simplest school wellness program you&apos;ve ever run.
             </h1>
             <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
-              No apps on students&apos; phones. No accounts. No data on kids. Just a wall chart, stickers, and one photo every Friday. Shift handles the rest.
+              No apps on students&apos; phones. No accounts. No data on kids. Just a wall chart, a show of hands, and one photo every Friday. Shift handles the rest.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link
@@ -233,7 +233,7 @@ export default function ShiftSchoolsPage() {
               <div className="flex flex-col gap-6">
                 {[
                   { label: 'Teacher time', value: 'Under 5 minutes per week' },
-                  { label: 'Student interaction', value: 'Physical chart + stickers only' },
+                  { label: 'Student interaction', value: 'Show of hands + wall chart tally' },
                   { label: 'Parent involvement', value: 'Optional weekly email + Shift app' },
                   { label: 'Cost to school', value: 'Free' },
                 ].map((row) => (

@@ -198,7 +198,7 @@ export default function ProgramsPage() {
                   Shift for Schools
                 </h2>
                 <p className="mb-8 text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
-                  The simplest school wellness program. No student apps, no accounts, no data on kids — just a wall chart, stickers, and one Friday photo. Shift handles the leaderboards, reports, and parent communications.
+                  The simplest school wellness program. No student apps, no accounts, no data on kids — just a wall chart, a show of hands, and one Friday photo. Shift handles the leaderboards, reports, and parent communications.
                 </p>
                 <Link
                   href="/shift/schools"
