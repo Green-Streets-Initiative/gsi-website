@@ -5,7 +5,7 @@ import Footer from '@/components/Footer'
 export const metadata = {
   title: 'Programs — Green Streets Initiative',
   description:
-    'Walk/Ride Days, What Moves Us, and Corporate Challenge — community programs that help Greater Boston commuters shift how they move.',
+    'Walk/Ride Days, What Moves Us, and Corporate Challenge — community programs that help Massachusetts commuters shift how they move.',
 }
 
 export default function ProgramsPage() {
@@ -23,7 +23,7 @@ export default function ProgramsPage() {
               Programs
             </div>
             <h1 className="mx-auto mb-6 max-w-[720px] font-display text-[clamp(2.25rem,5vw,3.5rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              How we get Greater Boston moving.
+              How we get Massachusetts moving.
             </h1>
             <p className="mx-auto max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
               Beyond the app, Green Streets Initiative runs community programs that build awareness, generate data, and create the moments that turn one active trip into a lasting habit.
@@ -46,7 +46,7 @@ export default function ProgramsPage() {
                   Walk/Ride Days
                 </h2>
                 <p className="mb-4 text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
-                  Every last Friday of the month, Greater Boston comes together to walk, bike, and take transit. Since 2006, Walk/Ride Days have connected employers, schools, and neighborhoods around one simple idea: try an active trip.
+                  Every last Friday of the month, Massachusetts comes together to walk, bike, and take transit. Since 2006, Walk/Ride Days have connected employers, schools, and neighborhoods around one simple idea: try an active trip.
                 </p>
                 <p className="mb-8 text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
                   No sign-up, no cost, no minimum commitment. Just pick a Friday and move.
@@ -63,7 +63,7 @@ export default function ProgramsPage() {
               <div className="flex flex-col gap-4">
                 {[
                   { label: 'Last Friday of every month' },
-                  { label: 'Greater Boston–wide' },
+                  { label: 'Statewide' },
                   { label: 'Free to participate' },
                 ].map((stat) => (
                   <div

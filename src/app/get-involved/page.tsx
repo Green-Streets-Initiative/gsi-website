@@ -195,7 +195,7 @@ export default function GetInvolvedPage() {
             Get involved
           </p>
           <h1 className="font-display text-3xl font-bold tracking-tight text-white sm:text-5xl">
-            Move Greater Boston with us.
+            Move Massachusetts with us.
           </h1>
           <p className="mt-5 max-w-[640px] text-base leading-relaxed text-white">
             Green Streets Initiative runs on community energy. Whether you have two hours a

@@ -251,7 +251,7 @@ export default function ShiftPage() {
               The simplest school wellness program you&apos;ve ever run.
             </h2>
             <p className="mb-12 max-w-[640px] text-[1.0625rem] leading-[1.65] text-white">
-              No student apps. No accounts. No data on kids. Just a wall chart, some stickers, and one email from the teacher.
+              No student apps. No accounts. No data on kids. Just a wall chart, a show of hands, and one email from the teacher.
             </p>
 
             <div className="mb-12 grid gap-6 md:grid-cols-3">
@@ -284,7 +284,8 @@ export default function ShiftPage() {
                   'Auto-generated leaderboards at classroom, grade, and school level',
                   'Weekly impact reports for PTAs and school boards',
                   'A parent bridge — weekly email connecting families to their classroom\'s results',
-                  'Piloting in Greater Boston schools in 2026',
+                  'Safe route planning assistance for families and schools',
+                  'Piloting in Massachusetts schools in 2026',
                 ].map((item, i) => (
                   <li key={i} className="flex gap-3 text-[0.9375rem] leading-[1.6] text-white">
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#EDB93C]" />

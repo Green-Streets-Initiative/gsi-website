@@ -229,7 +229,7 @@ function ComingSoon() {
             The next challenge is coming.
           </h1>
           <p className="mx-auto mb-10 max-w-[580px] text-lg leading-[1.7] text-white">
-            Shift flagship events bring Greater Boston commuters together to compete, move, and win real prizes. Join the waitlist to be first to know when the next event launches.
+            Shift flagship events bring Massachusetts commuters together to compete, move, and win real prizes. Join the waitlist to be first to know when the next event launches.
           </p>
           <WaitlistForm />
         </div>
@@ -242,7 +242,7 @@ function ComingSoon() {
             What are flagship events?
           </h2>
           <p className="mb-8 text-[1.0625rem] leading-[1.7] text-white">
-            Multi-month, city-wide challenges where commuters across Greater Boston compete to shift trips from driving to walking, biking, and transit. Top finishers win real prizes from local sponsors.
+            Multi-month, city-wide challenges where commuters across Massachusetts compete to shift trips from driving to walking, biking, and transit. Top finishers win real prizes from local sponsors.
           </p>
           <Link
             href="/shift"

@@ -329,7 +329,7 @@ export default function RewardsPartnersPage() {
                 Who&apos;s already in the network
               </h2>
               <p className="mb-12 max-w-[560px] text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
-                These businesses offer rewards to Shift users across Greater Boston.
+                These businesses offer rewards to Shift users across Massachusetts.
               </p>
 
               <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">

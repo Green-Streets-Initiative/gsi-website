@@ -5,7 +5,7 @@ import Footer from '@/components/Footer'
 export const metadata = {
   title: 'Walk/Ride Days — Green Streets Initiative',
   description:
-    "Join Greater Boston's monthly active commuting day. Every last Friday since 2006. Free to participate.",
+    "Join Massachusetts's monthly active commuting day. Every last Friday since 2006. Free to participate.",
 }
 
 export default function WalkRideDaysPage() {
@@ -26,14 +26,14 @@ export default function WalkRideDaysPage() {
               Walk/Ride Days
             </h1>
             <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
-              Every last Friday of the month, Greater Boston comes together to walk, bike, and take transit. Since 2006, Walk/Ride Days have connected employers, schools, and neighborhoods around one simple idea: try an active trip.
+              Every last Friday of the month, Massachusetts comes together to walk, bike, and take transit. Since 2006, Walk/Ride Days have connected employers, schools, and neighborhoods around one simple idea: try an active trip.
             </p>
 
             {/* Stat callouts */}
             <div className="mb-10 grid gap-4 sm:grid-cols-3">
               {[
                 'Last Friday of every month',
-                'Greater Boston–wide',
+                'Statewide',
                 'Free to participate',
               ].map((label) => (
                 <div

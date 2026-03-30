@@ -5,7 +5,7 @@ import Footer from '@/components/Footer'
 export const metadata = {
   title: 'Participant Voices — Green Streets Initiative',
   description:
-    'Walk/Ride Day participants share how active commuting has changed their lives. Stories from workplaces across Greater Boston.',
+    'Walk/Ride Day participants share how active commuting has changed their lives. Stories from workplaces across Massachusetts.',
 }
 
 const testimonials = [
@@ -82,7 +82,7 @@ export default function ParticipantVoicesPage() {
               Participant Voices
             </h1>
             <p className="mb-2 text-sm font-medium text-white/50">
-              Greater Boston workplaces
+              Massachusetts workplaces
             </p>
           </div>
         </section>

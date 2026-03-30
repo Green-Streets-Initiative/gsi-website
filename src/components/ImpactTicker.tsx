@@ -41,7 +41,7 @@ async function fetchStats(): Promise<ImpactStats | null> {
 
 const FALLBACK_ITEMS = [
   '4,200+ active trips this month',
-  '12 Greater Boston neighborhoods',
+  '12 Massachusetts neighborhoods',
   '$18,400 saved by commuters',
   '2.6 metric tons of CO₂ avoided',
   'Helping active commuters since 2006',
@@ -54,7 +54,7 @@ export default async function ImpactTicker() {
   const items = stats
     ? [
         `${approx(stats.trips_this_month)} active trips this month`,
-        `${stats.neighborhood_count} Greater Boston neighborhoods`,
+        `${stats.neighborhood_count} Massachusetts neighborhoods`,
         `${dollars(stats.total_dollars_saved)} saved by commuters`,
         `${co2(stats.total_co2_metric_tons)} metric tons of CO₂ avoided`,
         'Helping active commuters since 2006',

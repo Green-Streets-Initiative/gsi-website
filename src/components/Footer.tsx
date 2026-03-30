@@ -14,7 +14,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="mt-3 text-sm leading-relaxed text-white">
-              Helping people move better in Greater Boston since 2006.
+              Helping people move better in Massachusetts since 2006.
             </p>
           </div>
 

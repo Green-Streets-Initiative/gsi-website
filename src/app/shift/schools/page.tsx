@@ -6,7 +6,7 @@ import FAQ from '@/components/FAQ'
 export const metadata = {
   title: 'Shift for Schools — Green Streets Initiative',
   description:
-    'The simplest school wellness program. No student apps, no accounts, no data on kids. Wall chart, stickers, one Friday photo. Free for schools in Greater Boston.',
+    'The simplest school wellness program. No student apps, no accounts, no data on kids. Wall chart, a show of hands, one Friday photo. Free for schools in Massachusetts.',
 }
 
 const schoolFaqItems = [
@@ -112,12 +112,12 @@ export default function ShiftSchoolsPage() {
                 {
                   day: 'Monday',
                   title: 'Post the chart',
-                  body: 'Teacher puts up the weekly tracking chart in the classroom. One row per student, one column per day.',
+                  body: 'Teacher puts up the weekly tracking chart in the classroom. One tally column per travel mode, one row per day.',
                 },
                 {
                   day: 'Daily',
-                  title: 'Students mark arrival',
-                  body: 'As students arrive, they place a sticker on their row — walk, bike, bus, or car. Takes under 2 minutes.',
+                  title: 'Quick show of hands',
+                  body: 'Teacher asks "Who walked? Biked? Took the bus? Got driven?" and tallies the results on the chart. Takes under 2 minutes.',
                 },
                 {
                   day: 'Friday',
@@ -176,12 +176,16 @@ export default function ShiftSchoolsPage() {
                   body: 'A weekly email connecting families to classroom results and the school leaderboard. Parents see what their kids are doing — and can join Shift themselves.',
                 },
                 {
+                  title: 'Safe route planning',
+                  body: 'Volunteer-assessed walking and biking routes help families find the safest paths to school — with photo documentation and safety scores.',
+                },
+                {
                   title: 'COPPA-clean by design',
-                  body: 'No student accounts, no devices, no location data. The program runs on physical charts and stickers. Student privacy is built into the design, not bolted on.',
+                  body: 'No student accounts, no devices, no location data. The program runs on physical charts and a show of hands. Student privacy is built into the design, not bolted on.',
                 },
                 {
                   title: 'All materials provided free',
-                  body: 'Charts, stickers, worksheets, training, and ongoing support — all provided by GSI at no cost to the school.',
+                  body: 'Charts, worksheets, training, and ongoing support — all provided by GSI at no cost to the school.',
                 },
               ].map((card) => (
                 <div
@@ -214,7 +218,7 @@ export default function ShiftSchoolsPage() {
                   { label: 'Grade bands', value: 'K–8 (K–2, 3–5, 6–8)' },
                   { label: 'Competition cycle', value: 'Monthly' },
                   { label: 'Modes tracked', value: 'Walk, bike, bus, car' },
-                  { label: 'Pilot', value: 'Greater Boston schools, 2026' },
+                  { label: 'Pilot', value: 'Massachusetts schools, 2026' },
                 ].map((row) => (
                   <div key={row.label}>
                     <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#EDB93C]">

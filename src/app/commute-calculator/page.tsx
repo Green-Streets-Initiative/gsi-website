@@ -89,7 +89,7 @@ const FAQ = [
   },
   {
     q: 'How much does parking cost in Boston and Cambridge?',
-    a: 'Daily parking rates in Greater Boston vary significantly by neighborhood. Downtown Boston and the Seaport typically run <strong>$28–$35 per day</strong>. Back Bay and the South End average $22–$28. Cambridge near Kendall Square runs $18–$25. Somerville, Medford, and inner suburban areas typically range from $10–$16. Monthly garage parking in downtown Boston averages $350–$500/month. Many employers subsidize or provide free parking — which is why this calculator asks about your actual situation rather than assuming you pay market rate.',
+    a: 'Daily parking rates in the Boston area vary significantly by neighborhood. Downtown Boston and the Seaport typically run <strong>$28–$35 per day</strong>. Back Bay and the South End average $22–$28. Cambridge near Kendall Square runs $18–$25. Somerville, Medford, and inner suburban areas typically range from $10–$16. Monthly garage parking in downtown Boston averages $350–$500/month. Many employers subsidize or provide free parking — which is why this calculator asks about your actual situation rather than assuming you pay market rate.',
   },
 ]
 

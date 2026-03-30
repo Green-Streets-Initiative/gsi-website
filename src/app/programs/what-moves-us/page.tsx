@@ -5,7 +5,7 @@ import Footer from '@/components/Footer'
 export const metadata = {
   title: 'What Moves Us — Green Streets Initiative',
   description:
-    'Community storytelling that gives commuters a voice in how streets are designed. Video and audio stories from Greater Boston neighborhoods, schools, and workplaces.',
+    'Community storytelling that gives commuters a voice in how streets are designed. Video and audio stories from Massachusetts neighborhoods, schools, and workplaces.',
 }
 
 const campaigns = [
@@ -66,7 +66,7 @@ const campaigns = [
   {
     slug: 'participant-voices',
     name: 'Participant Voices',
-    location: 'Greater Boston',
+    location: 'Massachusetts',
     year: '',
     description:
       'Walk/Ride Day participants share how active commuting has changed their lives — stories from workplaces across the region.',
@@ -89,13 +89,13 @@ export default function WhatMovesUsPage() {
               What Moves Us
             </div>
             <h1 className="mb-6 max-w-[720px] font-display text-[clamp(2.25rem,5vw,3.5rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              Real stories from Greater Boston commuters.
+              Real stories from Massachusetts commuters.
             </h1>
             <p className="mb-6 max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
               What Moves Us captures the voices of people who walk, bike, ride transit, and carpool — in their own words and community languages. These stories give commuters a voice in how streets are designed and transportation is planned.
             </p>
             <p className="max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
-              Since 2021, we&apos;ve partnered with schools, workplaces, youth centers, and municipalities to produce campaign-based storytelling projects across Greater Boston.
+              Since 2021, we&apos;ve partnered with schools, workplaces, youth centers, and municipalities to produce campaign-based storytelling projects across Massachusetts.
             </p>
           </div>
         </section>
