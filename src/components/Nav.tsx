@@ -42,6 +42,12 @@ export default function Nav() {
             Contact
           </Link>
           <Link
+            href="/donate"
+            className="rounded-full border border-white/[0.2] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/[0.05]"
+          >
+            Donate
+          </Link>
+          <Link
             href="#waitlist"
             className="rounded-full bg-lime px-4 py-2 text-sm font-semibold text-navy transition-opacity hover:opacity-85"
           >
@@ -72,7 +78,8 @@ export default function Nav() {
             <Link href="/about" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>About</Link>
             <Link href="/get-involved" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Get involved</Link>
             <Link href="/contact" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Contact</Link>
-            <Link href="#waitlist" className="mt-2 inline-block rounded-full bg-lime px-4 py-2 text-sm font-semibold text-navy" onClick={() => setMenuOpen(false)}>Join waitlist</Link>
+            <Link href="/donate" className="mt-2 inline-block rounded-full border border-white/[0.2] px-4 py-2 text-center text-sm font-semibold text-white" onClick={() => setMenuOpen(false)}>Donate</Link>
+            <Link href="#waitlist" className="inline-block rounded-full bg-lime px-4 py-2 text-center text-sm font-semibold text-navy" onClick={() => setMenuOpen(false)}>Join waitlist</Link>
           </div>
         </div>
       )}
