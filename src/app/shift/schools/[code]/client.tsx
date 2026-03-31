@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 interface Props {
@@ -27,6 +27,32 @@ interface StandingsData {
     gradeName: string
     classrooms: ClassroomStanding[]
   }[]
+}
+
+interface PublishedCorridor {
+  id: string
+  name: string
+  recommended_modes: string | null
+  mode_rationale: string | null
+  family_description: string | null
+  estimated_walk_minutes: number
+  estimated_bike_minutes: number
+  distance_miles: number
+  google_maps_url_walk: string | null
+  google_maps_url_bike: string | null
+  priority_rank: number
+}
+
+interface PublishedRouteData {
+  published_at: string | null
+  corridors: PublishedCorridor[]
+}
+
+const MODE_BADGE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
+  walk_and_bike: { label: 'Walk & Bike', bg: 'bg-green-100', text: 'text-green-700' },
+  walk_only: { label: 'Walk Only', bg: 'bg-blue-100', text: 'text-blue-700' },
+  bike_with_caution: { label: 'Bike with Caution', bg: 'bg-amber-100', text: 'text-amber-700' },
+  bike_not_recommended: { label: 'Bike Not Recommended', bg: 'bg-red-100', text: 'text-red-700' },
 }
 
 // Shift chevron SVG mark
@@ -56,6 +82,34 @@ export default function SchoolPortalClient({
   const [codeError, setCodeError] = useState('')
   const [loading, setLoading] = useState(false)
   const [standings, setStandings] = useState<StandingsData | null>(null)
+  const [routeData, setRouteData] = useState<PublishedRouteData | null>(null)
+
+  // Fetch published routes on mount (public info, no code needed)
+  useEffect(() => {
+    async function loadRoutes() {
+      const { data: assessment } = await supabase
+        .from('route_assessments')
+        .select('id, published_at, route_corridors(*)')
+        .eq('school_id', schoolId)
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (assessment) {
+        const corridors = ((assessment as any).route_corridors ?? [])
+          .filter((c: any) => c.published)
+          .sort((a: any, b: any) => (a.priority_rank ?? 99) - (b.priority_rank ?? 99))
+        if (corridors.length > 0) {
+          setRouteData({
+            published_at: (assessment as any).published_at,
+            corridors,
+          })
+        }
+      }
+    }
+    loadRoutes()
+  }, [schoolId])
 
   async function handleVerify() {
     const trimmed = codeInput.trim().toUpperCase()
@@ -263,6 +317,115 @@ export default function SchoolPortalClient({
               </div>
             )}
           </>
+        )}
+
+        {/* Safe Routes section */}
+        {routeData && routeData.corridors.length > 0 && (
+          <div className="space-y-4">
+            <div className="text-center">
+              <h2 className="font-display text-lg font-bold text-[#191A2E]">
+                Safe Routes to School
+              </h2>
+              {routeData.published_at && (
+                <p className="mt-1 text-sm text-[#6B7280]">
+                  Routes assessed{' '}
+                  {new Date(routeData.published_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                  })}
+                </p>
+              )}
+            </div>
+
+            {/* Stale assessment warning */}
+            {routeData.published_at &&
+              Date.now() - new Date(routeData.published_at).getTime() > 365 * 24 * 60 * 60 * 1000 && (
+                <div className="rounded-xl bg-amber-50 border border-amber-200 px-5 py-3 text-center">
+                  <p className="text-sm text-amber-700">
+                    These routes were last assessed over a year ago. Conditions may have changed.
+                  </p>
+                </div>
+              )}
+
+            {routeData.corridors.map((corridor) => {
+              const badge = MODE_BADGE_STYLES[corridor.recommended_modes ?? ''] ?? {
+                label: corridor.recommended_modes ?? '—',
+                bg: 'bg-gray-100',
+                text: 'text-gray-600',
+              }
+              const showCycling =
+                corridor.recommended_modes === 'walk_and_bike' ||
+                corridor.recommended_modes === 'bike_with_caution'
+
+              return (
+                <div key={corridor.id} className="overflow-hidden rounded-xl bg-white shadow-sm">
+                  <div className="px-5 py-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-display text-base font-bold text-[#191A2E]">
+                        {corridor.name}
+                      </h3>
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.bg} ${badge.text}`}
+                      >
+                        {badge.label}
+                      </span>
+                    </div>
+
+                    <div className="flex gap-4 text-sm text-[#6B7280] mb-3">
+                      <span>{corridor.distance_miles} mi</span>
+                      <span>{corridor.estimated_walk_minutes} min walk</span>
+                      {corridor.estimated_bike_minutes > 0 && (
+                        <span>{corridor.estimated_bike_minutes} min bike</span>
+                      )}
+                    </div>
+
+                    {corridor.mode_rationale && (
+                      <p className="text-sm text-[#4A4D68] mb-3">{corridor.mode_rationale}</p>
+                    )}
+
+                    {corridor.family_description && (
+                      <p className="text-sm text-[#6B7280] mb-3">{corridor.family_description}</p>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                      {corridor.google_maps_url_walk && (
+                        <a
+                          href={corridor.google_maps_url_walk}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-[#2966E5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#2966E5]/90"
+                        >
+                          Open in Google Maps (Walking)
+                        </a>
+                      )}
+                      {showCycling && corridor.google_maps_url_bike && (
+                        <a
+                          href={corridor.google_maps_url_bike}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#2966E5] px-4 py-2 text-sm font-semibold text-[#2966E5] transition hover:bg-[#2966E5]/5"
+                        >
+                          Open in Google Maps (Cycling)
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* PDF download */}
+            <div className="text-center">
+              <a
+                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-asset?asset_type=route_map&school_id=${schoolId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-medium text-[#2966E5] transition hover:text-[#2966E5]/80"
+              >
+                Download Route Map PDF
+              </a>
+            </div>
+          </div>
         )}
 
         {/* Join section */}

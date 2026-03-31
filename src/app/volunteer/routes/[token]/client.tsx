@@ -47,6 +47,8 @@ interface FormData {
   crosswalk_time: RadioValue
   crosswalk_visibility: RadioValue
   crosswalk_visibility_note: string
+  crossing_guards_present: RadioValue
+  crossing_guard_locations: string
   // Section 3: Traffic
   traffic_drivers_respect: RadioValue
   traffic_drivers_note: string
@@ -79,6 +81,7 @@ const DEFAULT_FORM: FormData = {
   sidewalk_parking: null, sidewalk_condition: null, sidewalk_condition_note: '',
   crosswalk_marked: null, crosswalk_signals: null, crosswalk_time: null,
   crosswalk_visibility: null, crosswalk_visibility_note: '',
+  crossing_guards_present: null, crossing_guard_locations: '',
   traffic_drivers_respect: null, traffic_drivers_note: '', traffic_speed: null,
   traffic_volume: null,
   bike_protected: null, bike_low_speed: null, bike_hazards: [], bike_overall_rating: null,
@@ -258,10 +261,24 @@ export default function VolunteerAssessmentClient(props: Props) {
   return (
     <main className="min-h-screen bg-[#F4F8EE]">
       {/* Header */}
-      <div className="bg-[#191A2E] px-4 py-5 text-center">
-        <p className="text-sm font-medium text-white/50">Shift for Schools</p>
-        <h1 className="mt-1 text-lg font-bold text-white">{props.schoolName}</h1>
+      <div className="bg-[#191A2E] px-4 py-6 text-center">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <span className="font-display text-xl font-extrabold text-white">Shift</span>
+          <span className="inline-flex items-center gap-[3px] relative" style={{ top: '-1px' }}>
+            <svg viewBox="0 0 9 15" width="11" height="17" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0,0 L9,7.5 L0,15 L0,11 L5.5,7.5 L0,4Z" fill="#BAF14D" />
+            </svg>
+            <svg viewBox="0 0 9 15" width="11" height="17" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0,0 L9,7.5 L0,15 L0,11 L5.5,7.5 L0,4Z" fill="#2966E5" />
+            </svg>
+          </span>
+          <span className="text-xs font-medium text-white/50">for Schools</span>
+        </div>
+        <h1 className="text-lg font-bold text-white">{props.schoolName}</h1>
         <p className="text-xs text-white/40">{props.schoolCity}</p>
+        <p className="mt-2 text-[10px] text-white/30">
+          by <span className="font-bold">Green Streets</span> Initiative
+        </p>
       </div>
       <div className="h-[3px] bg-[#52B788]" />
 
@@ -332,6 +349,8 @@ export default function VolunteerAssessmentClient(props: Props) {
           <RadioGroup label="Crossing signals give enough time?" value={form.crosswalk_time} options={[...YN, { value: 'na', label: 'No signals' }]} onChange={(v) => set('crosswalk_time', v as RadioValue)} />
           <RadioGroup label="Can you see oncoming traffic clearly before crossing?" value={form.crosswalk_visibility} options={YN} onChange={(v) => set('crosswalk_visibility', v as RadioValue)} />
           <ConditionalNote show={form.crosswalk_visibility === 'no'} value={form.crosswalk_visibility_note} onChange={(v) => set('crosswalk_visibility_note', v)} placeholder="Describe obstruction..." />
+          <RadioGroup label="Are crossing guards present along this route?" value={form.crossing_guards_present} options={YN} onChange={(v) => set('crossing_guards_present', v as RadioValue)} />
+          <ConditionalNote show={form.crossing_guards_present === 'yes'} value={form.crossing_guard_locations} onChange={(v) => set('crossing_guard_locations', v)} placeholder="Where are crossing guards stationed? (e.g., intersection of Elm St and Highland Ave)" />
 
           <SectionHeader title="Section 3: Traffic Conditions" />
           <RadioGroup label="Do drivers respect pedestrians — yielding, not blocking?" value={form.traffic_drivers_respect} options={YN} onChange={(v) => set('traffic_drivers_respect', v as RadioValue)} />
@@ -401,16 +420,16 @@ export default function VolunteerAssessmentClient(props: Props) {
           <SectionHeader title="Section 6: Overall Assessment" />
           <ScoreSlider label="Overall walking safety (1-10)" value={form.walk_score} onChange={(v) => set('walk_score', v)} />
           <ScoreSlider label="Overall biking safety (1-10)" value={form.bike_score} onChange={(v) => set('bike_score', v)} />
-          <RadioGroup label="Recommended age for independent walking:" value={form.walk_age} options={[
-            { value: 'k2_adult', label: 'K-2 with adult' },
-            { value: '35_buddy', label: '3-5 with buddy' },
+          <RadioGroup label="Recommended grade level for independent walking:" value={form.walk_age} options={[
+            { value: 'k2_adult', label: 'Grades K-2 with adult' },
+            { value: '35_buddy', label: 'Grades 3-5 with buddy' },
             { value: '6_independent', label: 'Grade 6+ independently' },
           ]} onChange={(v) => set('walk_age', v as WalkAge)} />
-          <RadioGroup label="Recommended age for independent biking:" value={form.bike_age} options={[
+          <RadioGroup label="Recommended grade level for independent biking:" value={form.bike_age} options={[
             { value: 'not_recommended', label: 'Not recommended' },
-            { value: '35_adult', label: '3-5 with adult' },
-            { value: '6_buddy', label: '6+ with buddy' },
-            { value: '6_independent', label: '6+ independently' },
+            { value: '35_adult', label: 'Grades 3-5 with adult' },
+            { value: '6_buddy', label: 'Grade 6+ with buddy' },
+            { value: '6_independent', label: 'Grade 6+ independently' },
           ]} onChange={(v) => set('bike_age', v as BikeAge)} />
 
           <div className="mb-4">
