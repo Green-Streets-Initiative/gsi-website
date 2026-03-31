@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 interface FAQItem {
   question: string
-  answer: string
+  answer: React.ReactNode
 }
 
 interface FAQProps {
@@ -72,13 +72,13 @@ export default function FAQ({ items, theme = 'dark' }: FAQProps) {
               style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
             >
               <div className="overflow-hidden" style={{ minHeight: 0 }}>
-                <p
+                <div
                   className={`pb-5 text-[0.9375rem] leading-[1.65] ${
                     isDark ? 'text-white/80' : 'text-[#4A4D68]'
                   }`}
                 >
                   {item.answer}
-                </p>
+                </div>
               </div>
             </div>
           </div>
