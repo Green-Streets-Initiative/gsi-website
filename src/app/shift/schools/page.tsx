@@ -48,7 +48,7 @@ const schoolFaqItems = [
   {
     question: 'What modes does the program track?',
     answer:
-      'Walk, bike, bus, and car — represented by simple icons on the chart. The program never shames car trips. It celebrates active ones.',
+      'Walk, bike, bus, and car — represented by simple icons on the chart. All modes are welcome, but active modes are encouraged and celebrated.',
   },
   {
     question: 'How does the leaderboard competition work?',
