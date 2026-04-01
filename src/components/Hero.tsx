@@ -74,13 +74,14 @@ export default function Hero() {
                 <div className="flex flex-col gap-2 rounded-3xl bg-[#191A2E] p-3.5">
 
                   {/* App header */}
-                  <div className="mb-1 text-center">
-                    <div className="inline-flex items-center justify-center gap-1.5">
-                      <span className="font-display text-base font-bold text-lime">Shift</span>
-                      <svg viewBox="0 0 36 28" width="16" height="9" className="mt-px shrink-0">
+                  <div className="mb-1">
+                    <div className="flex items-center gap-1">
+                      <span className="font-display text-[11px] font-bold text-lime">Shift</span>
+                      <svg viewBox="0 0 36 28" width="12" height="7" className="mt-px shrink-0">
                         <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
                         <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
                       </svg>
+                      <span className="text-[7px] text-white/40">by Green Streets Initiative</span>
                     </div>
                   </div>
 
@@ -143,7 +144,8 @@ export default function Hero() {
                   {/* Streak card */}
                   <div className="flex items-center gap-2 rounded-xl bg-[#242538] p-2.5">
                     <svg viewBox="0 0 24 24" width="16" height="16" className="shrink-0">
-                      <path d="M12 2c0 4-3 6-3 10a5 5 0 0 0 10 0c0-3-2-5-3-7-1 2-3 3-3 3s-1-3-1-6z" fill="#FF8C35" />
+                      <path d="M12 23c-4.97 0-8-3.03-8-7 0-3.5 2.5-6.5 4-8 .5 2.5 2 4 2 4s1.5-3 1.5-5c3 2.5 4.5 5.5 4.5 9 0 3.97-3.03 7-4 7z" fill="#FF8C35" />
+                      <path d="M12 23c-2.21 0-4-1.79-4-4 0-1.5 1-3.5 2-4.5.3 1 .8 1.8.8 1.8s.7-1.2.7-2.3c1.5 1.2 2.5 3 2.5 5 0 2.21-1.79 4-2 4z" fill="#EDB93C" />
                     </svg>
                     <div className="flex-1">
                       <p className="text-[10px] font-bold text-[#BAF14D]">14 days</p>
