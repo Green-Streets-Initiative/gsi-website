@@ -74,9 +74,9 @@ export default function Hero() {
                 <div className="flex flex-col gap-2 rounded-3xl bg-[#191A2E] p-3.5">
 
                   {/* App header */}
-                  <div className="mb-1">
-                    <div className="flex items-center gap-1">
-                      <span className="font-display text-[11px] font-bold text-lime">Shift</span>
+                  <div className="mb-1 text-center">
+                    <div className="inline-flex items-center justify-center gap-1">
+                      <span className="font-display text-[11px] font-bold text-white">Shift</span>
                       <svg viewBox="0 0 36 28" width="12" height="7" className="mt-px shrink-0">
                         <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
                         <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
@@ -104,7 +104,7 @@ export default function Hero() {
                     <div className="mb-1.5 h-1 rounded-full bg-white/10">
                       <div className="h-full w-[72%] rounded-full bg-[#2966E5]" />
                     </div>
-                    <p className="text-[7px] text-white/40">38% vs. 20% Shift Rate required for Shifter &nbsp;&#10003; met</p>
+                    <p className="text-[7px] text-white/40">38% vs. 30% Shift Rate required for Pacesetter &nbsp;&#10003; met</p>
                     <p className="mt-0.5 text-[7px] text-white/40">Earning 3 point(s) per active trip</p>
                   </div>
 
@@ -115,8 +115,8 @@ export default function Hero() {
                       <path d="M9,6 L17,12 L9,18Z" fill="#191A2E" />
                     </svg>
                     <div className="flex-1">
-                      <p className="text-[10px] font-bold text-[#BAF14D]">840 pts</p>
-                      <p className="text-[7px] text-white/50">50 more pts to unlock a reward</p>
+                      <p className="text-[10px] font-bold text-[#BAF14D]">63 pts</p>
+                      <p className="text-[7px] text-white/50">See available rewards</p>
                     </div>
                     <svg viewBox="0 0 16 16" width="8" height="8" className="shrink-0">
                       <path d="M6 3l5 5-5 5" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
@@ -143,9 +143,8 @@ export default function Hero() {
 
                   {/* Streak card */}
                   <div className="flex items-center gap-2 rounded-xl bg-[#242538] p-2.5">
-                    <svg viewBox="0 0 24 24" width="16" height="16" className="shrink-0">
-                      <path d="M12 23c-4.97 0-8-3.03-8-7 0-3.5 2.5-6.5 4-8 .5 2.5 2 4 2 4s1.5-3 1.5-5c3 2.5 4.5 5.5 4.5 9 0 3.97-3.03 7-4 7z" fill="#FF8C35" />
-                      <path d="M12 23c-2.21 0-4-1.79-4-4 0-1.5 1-3.5 2-4.5.3 1 .8 1.8.8 1.8s.7-1.2.7-2.3c1.5 1.2 2.5 3 2.5 5 0 2.21-1.79 4-2 4z" fill="#EDB93C" />
+                    <svg viewBox="0 0 256 256" width="16" height="16" className="shrink-0">
+                      <path d="M176.69,48.72a225,225,0,0,0-42.52-35,12,12,0,0,0-12.34,0,225,225,0,0,0-42.52,35C51,78.47,36,111.42,36,144a92,92,0,0,0,184,0C220,111.42,205,78.47,176.69,48.72ZM100,184c0-13.33,5.53-26.26,16.45-38.45A93,93,0,0,1,128,134.72a93,93,0,0,1,11.55,10.83C150.47,157.74,156,170.67,156,184a28,28,0,0,1-56,0Zm79.84,3.94c.09-1.3.16-2.61.16-3.94,0-46.26-44-73.17-45.83-74.29a12,12,0,0,0-12.34,0C120,110.83,76,137.74,76,184c0,1.33.07,2.64.16,3.94A67.68,67.68,0,0,1,60,144c0-26.52,12.21-52.86,36.28-78.3A213.07,213.07,0,0,1,128,38.39C145.82,50.86,196,90.71,196,144A67.68,67.68,0,0,1,179.84,187.94Z" fill="#FF8C35" />
                     </svg>
                     <div className="flex-1">
                       <p className="text-[10px] font-bold text-[#BAF14D]">14 days</p>
