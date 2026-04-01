@@ -9,14 +9,14 @@ import { useRef, useState } from 'react'
 
 const ROLES = [
   {
-    name: 'Walk/Ride Day Ambassador',
-    program: 'Walk/Ride Days',
+    name: 'Shift Ambassador',
+    program: 'Shift App',
     programColor: 'bg-lime text-navy',
     description:
-      'Show up on the last Friday of the month and help commuters discover active transportation firsthand.',
-    timeAsk: '2 hours/month',
+      'Help people in your community discover the Shift app and log their first trip.',
+    timeAsk: '2–4 hours/month',
     session:
-      'You pick a spot — a busy bus stop, a bike lane entrance, a train station — show up Friday morning, and encourage people to log their trip in Shift. Materials provided.',
+      'You go where the drivers are \u2014 school pickup lines, community events, farmers markets, neighborhood meetings \u2014 and start a different kind of conversation. Not \u201cyou should bike more,\u201d but \u201cdid you know you\u2019re probably already walking enough to earn rewards?\u201d You help people download the app, log their first trip, and see what their short trips add up to. Success isn\u2019t talking to people who already bike. It\u2019s the person who had no idea their quarter-mile walk to the coffee shop counted.\n\nTraining included.',
   },
   {
     name: 'Story Collector',
@@ -26,17 +26,37 @@ const ROLES = [
       'Help commuters share their stories at community events and farmers markets during active campaigns.',
     timeAsk: '2–4 hours per event, occasional',
     session:
-      'You table at a local event with a tablet and a brief script. People record short video or audio responses about how they get around. You help them feel comfortable and get it done.',
+      'You show up at a local event with your phone and a brief script. Inspire warm, short stories or audio snapshots about how people get around, how they got started, how it makes them feel. Then hand over the file \u2014 we do the rest.',
   },
   {
-    name: 'School Champion',
+    name: 'Rewards Partner Scout',
+    program: 'Shift App',
+    programColor: 'bg-lime text-navy',
+    description:
+      'Help recruit local businesses to offer rewards for Shift app users in your neighborhood.',
+    timeAsk: '2–3 hours/month',
+    session:
+      'You know the coffee shop owner, the bike shop, the bookstore on the corner. We need people who can walk in, explain why offering a small discount to active commuters is good for their business, and make an introduction. You don\u2019t close the deal \u2014 you open the door. We\u2019ll give you a one-pager and a simple script. You bring the relationships.',
+  },
+  {
+    name: 'Neighborhood Lead',
+    program: 'Shift App',
+    programColor: 'bg-lime text-navy',
+    description:
+      'Be the face of Shift in your neighborhood \u2014 drive adoption, organize challenges, and climb the leaderboard.',
+    timeAsk: '3–5 hours/month',
+    session:
+      'Every neighborhood on the Shift leaderboard needs someone behind it. You recruit neighbors to join, organize informal challenges (\u201cCan we beat Porter Square this month?\u201d), share results on local listservs and group chats, and keep the energy going. You\u2019re the reason your neighborhood shows up \u2014 and stays on the board.',
+  },
+  {
+    name: 'School Coordinator',
     program: 'School Program',
     programColor: 'bg-[#2966E5] text-white',
     description:
-      'Be the inside voice that brings the Shift school program to a school you\u2019re already connected to.',
-    timeAsk: '3–5 hours to get started, then occasional check-ins',
+      'Be the point person who brings the Shift school program to a school you\u2019re connected to.',
+    timeAsk: 'Sufficient to get started: three one-hour check-ins',
     session:
-      'You\u2019re a parent, neighbor, or community member connected to a target school. You introduce the program to the right administrator, make the connection to GSI, and help smooth the launch. You don\u2019t run the program — you open the door.',
+      'You\u2019re a parent, neighbor, or community member with a connection to a target school. You introduce the program to the right stakeholders, make the connection to GSI, help smooth the launch. You don\u2019t run the program \u2014 you open the door and help it get started.\n\nTraining included.',
   },
   {
     name: 'Safe Route Mapper',
@@ -91,9 +111,9 @@ const ROLES = [
 ]
 
 const CLUSTERS = [
-  { label: 'In your community', start: 0, end: 2 },
-  { label: 'For schools', start: 2, end: 5 },
-  { label: 'Behind the scenes', start: 5, end: 8 },
+  { label: 'In your community', start: 0, end: 4 },
+  { label: 'For schools', start: 4, end: 7 },
+  { label: 'Behind the scenes', start: 7, end: 10 },
 ]
 
 /* ── Page component ── */
