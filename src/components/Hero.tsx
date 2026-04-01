@@ -90,19 +90,36 @@ export default function Hero() {
                   {/* Tier card */}
                   <div className="rounded-xl bg-[#242538] p-2.5">
                     <div className="mb-1.5 flex items-center gap-1.5">
-                      <svg viewBox="0 0 24 24" width="14" height="14">
+                      <svg viewBox="0 0 24 24" width="12" height="12">
                         <path d="M4,2 L12,12 L4,22 L4,16 L9,12 L4,8Z" fill="#BAF14D" />
                         <path d="M11,2 L19,12 L11,22 L11,16 L16,12 L11,8Z" fill="#BAF14D" />
                       </svg>
-                      <span className="text-[10px] font-bold text-[#BAF14D]">Shifter</span>
+                      <span className="text-[10px] font-bold text-white">Shifter</span>
                     </div>
-                    <div className="flex items-center gap-0.5">
-                      <div className="h-1 flex-1 rounded-full bg-white/10">
-                        <div className="h-full w-[72%] rounded-full bg-[#BAF14D]" />
-                      </div>
-                      <span className="text-[8px] text-white/50">72 / 100</span>
+                    <div className="mb-1 flex items-center justify-between text-[7px] text-white/50">
+                      <span>72 of 100 trips</span>
+                      <span>needed for Pacesetter</span>
                     </div>
-                    <p className="mt-1 text-[8px] text-white/40">28 trips to Pacesetter</p>
+                    <div className="mb-1.5 h-1 rounded-full bg-white/10">
+                      <div className="h-full w-[72%] rounded-full bg-[#2966E5]" />
+                    </div>
+                    <p className="text-[7px] text-white/40">38% vs. 20% Shift Rate required for Shifter &nbsp;&#10003; met</p>
+                    <p className="mt-0.5 text-[7px] text-white/40">Earning 3 point(s) per active trip</p>
+                  </div>
+
+                  {/* Points balance */}
+                  <div className="flex items-center gap-2 rounded-xl bg-[#242538] p-2.5">
+                    <svg viewBox="0 0 24 24" width="16" height="16" className="shrink-0">
+                      <circle cx="12" cy="12" r="11" fill="#BAF14D" />
+                      <path d="M9,6 L17,12 L9,18Z" fill="#191A2E" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-[10px] font-bold text-[#BAF14D]">840 pts</p>
+                      <p className="text-[7px] text-white/50">50 more pts to unlock a reward</p>
+                    </div>
+                    <svg viewBox="0 0 16 16" width="8" height="8" className="shrink-0">
+                      <path d="M6 3l5 5-5 5" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </div>
 
                   {/* Shift Rate ring */}
@@ -110,63 +127,52 @@ export default function Hero() {
                     <div className="relative h-[42px] w-[42px] shrink-0">
                       <svg viewBox="0 0 36 36" className="h-[42px] w-[42px] -rotate-90">
                         <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
-                        <circle cx="18" cy="18" r="14" fill="none" stroke="#BAF14D" strokeWidth="3" strokeDasharray="62 26" strokeLinecap="round" />
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="#EDB93C" strokeWidth="3" strokeDasharray="33 55" strokeLinecap="round" />
                       </svg>
-                      <span className="absolute inset-0 flex items-center justify-center font-display text-[10px] font-bold text-[#BAF14D]">71%</span>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-white">Shift Rate</p>
-                      <p className="text-[8px] text-white/50">Last 7 days &middot; &uarr; from 58%</p>
-                    </div>
-                  </div>
-
-                  {/* Stats row */}
-                  <div className="flex gap-1.5">
-                    {[
-                      { icon: '\uD83D\uDD25', val: '14', label: 'Day streak' },
-                      { icon: '\uD83D\uDCB0', val: '$62', label: 'Saved' },
-                      { icon: '\uD83C\uDF3F', val: '18kg', label: 'CO\u2082 avoided' },
-                    ].map((s) => (
-                      <div key={s.label} className="flex-1 rounded-lg bg-[#242538] p-2">
-                        <p className="text-[10px]">{s.icon}</p>
-                        <p className="font-display text-[11px] font-bold text-[#BAF14D]">{s.val}</p>
-                        <p className="text-[7px] text-white/60">{s.label}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Points balance */}
-                  <div className="flex items-center gap-2 rounded-xl bg-[#242538] p-2.5">
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#BAF14D]">
-                      <span className="text-[8px] font-bold text-[#191A2E]">P</span>
+                      <span className="absolute inset-0 flex items-center justify-center font-display text-[10px] font-bold text-[#EDB93C]">38%</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-[10px] font-bold text-[#BAF14D]">840 pts</p>
-                      <p className="text-[7px] text-white/50">50 pts to next reward</p>
+                      <p className="text-[10px] font-bold text-white">Shift Rate</p>
+                      <p className="text-[8px] text-white/50">This week</p>
                     </div>
+                    <svg viewBox="0 0 16 16" width="8" height="8" className="shrink-0">
+                      <path d="M6 3l5 5-5 5" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </div>
 
-                  {/* Impact row */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {[
-                      { val: '62', label: 'Active trips' },
-                      { val: '3h 20m', label: 'Active minutes' },
-                    ].map((s) => (
-                      <div key={s.label} className="rounded-lg bg-[#242538] p-2 text-center">
-                        <p className="font-display text-[11px] font-bold text-white">{s.val}</p>
-                        <p className="text-[7px] text-white/50">{s.label}</p>
-                      </div>
-                    ))}
+                  {/* Streak card */}
+                  <div className="flex items-center gap-2 rounded-xl bg-[#242538] p-2.5">
+                    <svg viewBox="0 0 24 24" width="16" height="16" className="shrink-0">
+                      <path d="M12 2c0 4-3 6-3 10a5 5 0 0 0 10 0c0-3-2-5-3-7-1 2-3 3-3 3s-1-3-1-6z" fill="#FF8C35" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-[10px] font-bold text-[#BAF14D]">14 days</p>
+                      <p className="text-[7px] text-white/50">Active streak</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-display text-[11px] font-bold text-white">21</p>
+                      <p className="text-[7px] text-white/50">Best</p>
+                    </div>
                   </div>
 
                   {/* Tab bar */}
                   <div className="mt-1 flex justify-around border-t border-white/[0.07] pt-2">
-                    {['Home', 'Log', 'Community', 'Profile'].map((item) => (
-                      <div key={item} className="text-center">
-                        <div className={`mx-auto mb-0.5 h-1 w-1 rounded-full ${item === 'Home' ? 'bg-lime' : ''}`} />
-                        <span className={`text-[7px] ${item === 'Home' ? 'text-lime' : 'text-white/50'}`}>{item}</span>
-                      </div>
-                    ))}
+                    <div className="flex flex-col items-center gap-0.5">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="#BAF14D"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4" stroke="#BAF14D" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                      <span className="text-[7px] text-lime">Home</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none"><path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7 5.93M9 12H4m5 0a5 5 0 015-5m-5 5a5 5 0 005 5" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" /></svg>
+                      <span className="text-[7px] text-white/40">Log</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                      <span className="text-[7px] text-white/40">Community</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                      <span className="text-[7px] text-white/40">Profile</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -176,9 +182,9 @@ export default function Hero() {
                 <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/70">Somerville &mdash; this month</p>
                 <div className="flex flex-col gap-1">
                   {[
-                    { name: 'Davis Square', rate: '82%', width: '82%' },
-                    { name: 'Union Square', rate: '71%', width: '71%' },
-                    { name: 'Porter Square', rate: '64%', width: '64%' },
+                    { name: 'Davis Square', rate: '34%', width: '34%' },
+                    { name: 'Union Square', rate: '28%', width: '28%' },
+                    { name: 'Porter Square', rate: '22%', width: '22%' },
                   ].map((t) => (
                     <div key={t.name} className="flex items-center gap-2">
                       <span className="w-[72px] shrink-0 text-[10px] font-semibold text-white">{t.name}</span>
