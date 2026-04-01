@@ -23,7 +23,7 @@ const schoolFaqItems = [
   {
     question: 'How much time does it take for teachers?',
     answer:
-      'Under 5 minutes per week. Post the chart on Monday, let students self-log as they arrive (under 2 minutes), and photograph the chart on Friday. Shift handles data entry, leaderboards, reports, and parent communications.',
+      'Under 5 minutes per week. Post the chart on Monday, take a quick show of hands to tally how students got to school (under 2 minutes), and photograph the chart on Friday. Shift handles data entry, leaderboards, reports, and parent communications.',
   },
   {
     question: 'What does the school get?',
