@@ -447,6 +447,15 @@ export default function SchoolPortalClient({
           </div>
         </div>
 
+        {/* SRTS Alliance Partner */}
+        <div className="text-center">
+          <img
+            src="/srts-alliance-partner.jpg"
+            alt="Massachusetts Safe Routes to School — Alliance Partner"
+            className="mx-auto h-auto w-[140px] opacity-60"
+          />
+        </div>
+
         {/* Footer */}
         <p className="text-center text-xs text-[#6B7280]">
           Shift for Schools by Green Streets Initiative &middot; gogreenstreets.org

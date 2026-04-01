@@ -96,6 +96,16 @@ export default function ShiftSchoolsPage() {
                 Find your school &rarr;
               </Link>
             </div>
+            <div className="mt-10">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[#4A4D68]/60">
+                Alliance Partner
+              </p>
+              <img
+                src="/srts-alliance-partner.jpg"
+                alt="Massachusetts Safe Routes to School"
+                className="h-auto w-[180px]"
+              />
+            </div>
           </div>
         </section>
 
