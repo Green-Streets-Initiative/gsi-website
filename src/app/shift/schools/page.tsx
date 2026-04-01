@@ -58,7 +58,7 @@ const schoolFaqItems = [
   {
     question: 'What is the benefit framing for students and families?',
     answer:
-      'We lead with health, time outdoors, and community independence — not environmental messaging. Curriculum materials teach the physical benefits of active transportation. CO₂ impact is available as a secondary data point for older grades.',
+      'We lead with health, cognitive benefits, time outdoors, and community independence. Curriculum materials connect active transportation to physical wellbeing, focus, and readiness to learn. Environmental impact is woven in naturally — older grades explore CO₂ data as part of math and science integration.',
   },
 ]
 
