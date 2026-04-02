@@ -79,8 +79,19 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
       .update({
         training_completed: true,
         training_completed_at: new Date().toISOString(),
+        lifecycle_phase: 'onboarded',
       })
       .eq('id', props.volunteerId)
+
+    // Notify GSI admin of completion (fire-and-forget)
+    supabase.functions.invoke('training-complete-notify', {
+      body: {
+        volunteer_id: props.volunteerId,
+        track_title: track.title,
+        volunteer_name: volunteerName,
+        school_name: schoolName,
+      },
+    }).catch(() => {})
 
     setCertified(true)
   }
