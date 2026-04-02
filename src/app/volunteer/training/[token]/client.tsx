@@ -311,6 +311,12 @@ function ModuleView({
   onBack: () => void
 }) {
   const [phase, setPhase] = useState<'learn' | 'quiz'>('learn')
+
+  // Scroll to top on phase change (learn → quiz, retake)
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [phase])
+
   const videoRef = useRef<HTMLVideoElement>(null)
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
   const [urlLoading, setUrlLoading] = useState(false)
