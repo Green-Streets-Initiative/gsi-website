@@ -49,6 +49,8 @@ export interface TrainingPortalProps {
   track: TrackData
   modules: (ModuleData & { questions: QuestionData[]; completion: ModuleCompletion | null })[]
   prerequisiteMet: boolean
+  backgroundCheckStatus: string
+  coriRequired: boolean
 }
 
 async function getTrainingData(token: string) {
@@ -116,7 +118,7 @@ async function getTrainingData(token: string) {
   // 4. Get volunteer info for display
   const { data: volunteer } = await supabase
     .from('volunteer_profiles')
-    .select('display_name, school_id, schools!inner(name)')
+    .select('display_name, role, school_id, background_check_status, schools!inner(name)')
     .eq('id', assignment.volunteer_id)
     .single()
 
@@ -209,6 +211,8 @@ async function getTrainingData(token: string) {
       }
     })),
     prerequisiteMet,
+    backgroundCheckStatus: (volunteer as any)?.background_check_status ?? 'not_required',
+    coriRequired: ['parent_volunteer', 'route_volunteer'].includes((volunteer as any)?.role ?? ''),
   } satisfies TrainingPortalProps
 }
 

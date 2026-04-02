@@ -116,6 +116,7 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
 
   // ── Certified ──
   if (certified) {
+    const needsCori = props.coriRequired && props.backgroundCheckStatus !== 'approved'
     return (
       <main className="min-h-screen bg-[#F4F8EE] flex items-center justify-center p-6">
         <div className="max-w-lg text-center">
@@ -133,8 +134,18 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
               Your certification is valid for {track.recertificationMonths}{" "}months. You&apos;ll receive a reminder before it expires.
             </p>
           )}
+
+          {/* CORI upload section */}
+          {needsCori && (
+            <CoriUploadSection
+              volunteerId={props.volunteerId}
+            />
+          )}
+
           <p className="mt-4 text-sm text-[#6B7280]">
-            You can close this page. Your coordinator has been notified.
+            {needsCori
+              ? 'Your coordinator will be notified once your background check is reviewed.'
+              : 'You can close this page. Your coordinator has been notified.'}
           </p>
         </div>
       </main>
@@ -735,6 +746,101 @@ function GuideDownloadButton({ storagePath }: { storagePath: string }) {
       )}
       Download Reference Guide
     </button>
+  )
+}
+
+
+// ── CORI Upload Section ────────────────────────────────────────
+
+function CoriUploadSection({ volunteerId }: { volunteerId: string }) {
+  const [uploading, setUploading] = useState(false)
+  const [uploaded, setUploaded] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
+      setError('Please upload a PDF, JPEG, or PNG file.')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File must be under 10 MB.')
+      return
+    }
+
+    setUploading(true)
+    setError(null)
+
+    const ext = file.name.split('.').pop() ?? 'pdf'
+    const storagePath = `${volunteerId}/cori-${Date.now()}.${ext}`
+
+    const { error: uploadErr } = await supabase.storage
+      .from('volunteer-documents')
+      .upload(storagePath, file, { contentType: file.type })
+
+    if (uploadErr) {
+      setError('Upload failed. Please try again.')
+      setUploading(false)
+      return
+    }
+
+    // Update volunteer profile
+    await supabase
+      .from('volunteer_profiles')
+      .update({
+        cori_document_path: storagePath,
+        cori_uploaded_at: new Date().toISOString(),
+        background_check_status: 'pending',
+      })
+      .eq('id', volunteerId)
+
+    setUploading(false)
+    setUploaded(true)
+  }
+
+  if (uploaded) {
+    return (
+      <div className="mt-6 rounded-xl bg-blue-50 p-5 ring-1 ring-blue-200">
+        <p className="font-semibold text-blue-800">Background check submitted</p>
+        <p className="mt-1 text-sm text-blue-700">
+          Your CORI clearance document has been uploaded and is pending review.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-6 rounded-xl bg-amber-50 p-5 ring-1 ring-amber-200 text-left">
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png"
+        className="hidden"
+        onChange={handleUpload}
+      />
+      <p className="font-semibold text-amber-800">One more step: Background Check</p>
+      <p className="mt-1 text-sm text-amber-700">
+        Massachusetts requires a CORI background check for volunteers working with students.
+        Your school district handles this — contact your School Coordinator to get cleared,
+        then upload your clearance letter here.
+      </p>
+      {error && (
+        <p className="mt-2 text-sm text-red-600">{error}</p>
+      )}
+      <button
+        onClick={() => fileRef.current?.click()}
+        disabled={uploading}
+        className="mt-3 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-700 disabled:opacity-50"
+      >
+        {uploading ? 'Uploading...' : 'Upload CORI Clearance'}
+      </button>
+      <p className="mt-2 text-xs text-amber-600">
+        Accepted: PDF, JPEG, or PNG (max 10 MB)
+      </p>
+    </div>
   )
 }
 
