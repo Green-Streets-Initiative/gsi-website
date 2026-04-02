@@ -113,7 +113,9 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
           </div>
           <h1 className="text-2xl font-bold text-[#191A2E]">Certification Complete!</h1>
           <p className="mt-3 text-[#6B7280]">
-            Congratulations, {volunteerName}! You&apos;ve completed the <strong>{track.title}</strong> for {schoolName}.
+            Congratulations, {volunteerName}! You&apos;ve completed
+            <br /><strong>{track.title}</strong>
+            <br />for {schoolName}.
           </p>
           {track.recertificationMonths && (
             <p className="mt-2 text-sm text-[#6B7280]">
