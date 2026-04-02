@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { TrainingPortalProps } from './page'
 
@@ -29,6 +29,11 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
     }
   )
   const [certified, setCertified] = useState(false)
+
+  // Scroll to top when opening/closing a module
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [activeModuleIndex])
 
   // Determine which modules are unlocked (sequential)
   const isModuleUnlocked = useCallback((index: number) => {
@@ -293,7 +298,7 @@ function ModuleView({
   onComplete: (quizPassed: boolean | null, quizScore: number | null) => void
   onBack: () => void
 }) {
-  const [phase, setPhase] = useState<'learn' | 'quiz' | 'results'>('learn')
+  const [phase, setPhase] = useState<'learn' | 'quiz'>('learn')
   const videoRef = useRef<HTMLVideoElement>(null)
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
   const [urlLoading, setUrlLoading] = useState(false)
@@ -372,7 +377,7 @@ function ModuleView({
       quiz_score: score,
     }, { onConflict: 'volunteer_id,module_id' })
     setSaving(false)
-    if (passed) setPhase('results')
+    // Stay on quiz phase so volunteer can review answers — they click Continue manually
   }
 
   function handleRetake() {
@@ -551,46 +556,35 @@ function ModuleView({
                 }`}>
                   {quizScore !== null && quizScore >= 80
                     ? 'You passed! 🎉'
-                    : 'Not quite — review the explanations and try again.'}
+                    : 'Not quite — review the explanations above and try again.'}
                 </p>
-                {quizScore !== null && quizScore >= 80 ? (
-                  <button
-                    onClick={() => onComplete(true, quizScore)}
-                    className="mt-4 rounded-xl bg-[#2966E5] px-8 py-3 text-sm font-semibold text-white hover:bg-[#2966E5]/90 transition"
-                  >
-                    Continue →
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleRetake}
-                    className="mt-4 rounded-xl bg-[#191A2E] px-8 py-3 text-sm font-semibold text-white hover:bg-[#191A2E]/90 transition"
-                  >
-                    Retake Quiz
-                  </button>
+                {quizScore !== null && quizScore >= 80 && (
+                  <p className="mt-2 text-sm text-green-600">
+                    Scroll up to review your answers. Correct answers are shown in green.
+                  </p>
                 )}
+                <div className="mt-4 flex items-center justify-center gap-3">
+                  {quizScore !== null && quizScore >= 80 ? (
+                    <button
+                      onClick={() => onComplete(true, quizScore)}
+                      className="rounded-xl bg-[#2966E5] px-8 py-3 text-sm font-semibold text-white hover:bg-[#2966E5]/90 transition"
+                    >
+                      Continue →
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleRetake}
+                      className="rounded-xl bg-[#191A2E] px-8 py-3 text-sm font-semibold text-white hover:bg-[#191A2E]/90 transition"
+                    >
+                      Retake Quiz
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
         )}
 
-        {/* ── Results Phase ── */}
-        {phase === 'results' && (
-          <div className="rounded-xl bg-green-50 p-8 text-center ring-1 ring-green-200">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
-              <span className="text-2xl">✓</span>
-            </div>
-            <h2 className="text-lg font-bold text-green-800">Module Complete</h2>
-            <p className="mt-2 text-sm text-green-700">
-              You passed with {quizScore}%.
-            </p>
-            <button
-              onClick={() => onComplete(true, quizScore)}
-              className="mt-6 rounded-xl bg-[#2966E5] px-8 py-3 text-sm font-semibold text-white hover:bg-[#2966E5]/90 transition"
-            >
-              Back to Track Overview
-            </button>
-          </div>
-        )}
       </div>
     </main>
   )
