@@ -117,8 +117,7 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
           </p>
           {track.recertificationMonths && (
             <p className="mt-2 text-sm text-[#6B7280]">
-              Your certification is valid for {track.recertificationMonths} months.
-              You&apos;ll receive a reminder before it expires.
+              Your certification is valid for {track.recertificationMonths}{" "}months. You&apos;ll receive a reminder before it expires.
             </p>
           )}
           <p className="mt-4 text-sm text-[#6B7280]">
