@@ -177,12 +177,15 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
         </div>
       </div>
 
-      {/* Track description */}
-      {track.description && (
-        <div className="mx-auto max-w-2xl px-6 pt-6">
+      {/* Track description + guide download */}
+      <div className="mx-auto max-w-2xl px-6 pt-6">
+        {track.description && (
           <p className="text-sm text-[#6B7280]">{track.description}</p>
-        </div>
-      )}
+        )}
+        {track.guidePdfStoragePath && (
+          <GuideDownloadButton storagePath={track.guidePdfStoragePath} />
+        )}
+      </div>
 
       {/* Module list */}
       <div className="mx-auto max-w-2xl px-6 py-6 space-y-3">
@@ -222,12 +225,11 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
                     {mod.title}
                   </h3>
                   <div className="mt-1 flex items-center gap-3 text-xs text-[#9CA3AF]">
-                    {mod.videoDurationSeconds && (
-                      <span>{Math.ceil(mod.videoDurationSeconds / 60)} min video</span>
+                    {mod.contentMarkdown && <span>Reading</span>}
+                    {mod.screenshots.length > 0 && (
+                      <span>{mod.screenshots.length} screenshot{mod.screenshots.length !== 1 ? 's' : ''}</span>
                     )}
-                    {!mod.videoStoragePath && (
-                      <span>Video coming soon</span>
-                    )}
+                    {mod.videoStoragePath && <span>Video</span>}
                     <span>{mod.quizRequired ? 'Quiz' : 'Acknowledgment'}</span>
                     {isComplete && (
                       <span className="text-green-600">
@@ -291,11 +293,11 @@ function ModuleView({
   onComplete: (quizPassed: boolean | null, quizScore: number | null) => void
   onBack: () => void
 }) {
-  const [phase, setPhase] = useState<'video' | 'quiz' | 'results'>('video')
-  const [videoProgress, setVideoProgress] = useState(0) // 0-1
+  const [phase, setPhase] = useState<'learn' | 'quiz' | 'results'>('learn')
   const videoRef = useRef<HTMLVideoElement>(null)
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
   const [urlLoading, setUrlLoading] = useState(false)
+  const [videoExpanded, setVideoExpanded] = useState(false)
 
   // Quiz state
   const [answers, setAnswers] = useState<Map<string, string>>(new Map())
@@ -303,8 +305,8 @@ function ModuleView({
   const [quizScore, setQuizScore] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const videoReady = videoProgress >= 0.9
   const hasVideo = !!mod.videoStoragePath
+  const hasContent = !!mod.contentMarkdown || mod.screenshots.length > 0
 
   // Load signed URL for video
   async function loadVideoUrl() {
@@ -312,25 +314,15 @@ function ModuleView({
     setUrlLoading(true)
     const { data } = await supabase.storage
       .from('training-videos')
-      .createSignedUrl(mod.videoStoragePath, 4 * 60 * 60) // 4 hours
+      .createSignedUrl(mod.videoStoragePath, 4 * 60 * 60)
     if (data?.signedUrl) setSignedUrl(data.signedUrl)
     setUrlLoading(false)
-  }
-
-  // Track video progress
-  function handleTimeUpdate() {
-    if (!videoRef.current) return
-    const { currentTime, duration } = videoRef.current
-    if (duration > 0) {
-      setVideoProgress(currentTime / duration)
-    }
   }
 
   function handleAdvanceToQuiz() {
     if (mod.quizRequired && mod.questions.length > 0) {
       setPhase('quiz')
     } else {
-      // Acknowledgment module — complete immediately
       handleAcknowledge()
     }
   }
@@ -352,8 +344,6 @@ function ModuleView({
 
   async function handleQuizSubmit() {
     if (answers.size < mod.questions.length) return
-
-    // Score
     let correct = 0
     for (const q of mod.questions) {
       if (answers.get(q.id) === q.correctOptionId) correct++
@@ -361,12 +351,9 @@ function ModuleView({
     const score = Math.round((correct / mod.questions.length) * 100)
     setQuizScore(score)
     setSubmitted(true)
-
     const passed = score >= 80
-
     setSaving(true)
 
-    // Get current attempt count
     const { data: existing } = await supabase
       .from('volunteer_module_completions')
       .select('quiz_attempts')
@@ -375,7 +362,6 @@ function ModuleView({
       .single()
 
     const attempts = (existing?.quiz_attempts ?? 0) + 1
-
     await supabase.from('volunteer_module_completions').upsert({
       volunteer_id: volunteerId,
       module_id: mod.id,
@@ -385,12 +371,8 @@ function ModuleView({
       quiz_attempts: attempts,
       quiz_score: score,
     }, { onConflict: 'volunteer_id,module_id' })
-
     setSaving(false)
-
-    if (passed) {
-      setPhase('results')
-    }
+    if (passed) setPhase('results')
   }
 
   function handleRetake() {
@@ -419,79 +401,97 @@ function ModuleView({
       </div>
 
       <div className="mx-auto max-w-2xl px-6 py-6">
-        {/* ── Video Phase ── */}
-        {phase === 'video' && (
+        {/* ── Learn Phase ── */}
+        {phase === 'learn' && (
           <div className="space-y-6">
-            {hasVideo ? (
-              <>
-                <div className="overflow-hidden rounded-xl bg-black shadow-lg">
-                  {!signedUrl && !urlLoading && (
-                    <button
-                      onClick={loadVideoUrl}
-                      className="flex h-64 w-full items-center justify-center bg-[#242538] text-white transition hover:bg-[#2f3049]"
-                    >
-                      <div className="text-center">
-                        <span className="text-4xl">▶</span>
-                        <p className="mt-2 text-sm text-[#8A8DA8]">Click to load video</p>
-                      </div>
-                    </button>
-                  )}
-                  {urlLoading && (
-                    <div className="flex h-64 w-full items-center justify-center bg-[#242538]">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#52B788] border-t-transparent" />
-                    </div>
-                  )}
-                  {signedUrl && (
-                    <video
-                      ref={videoRef}
-                      src={signedUrl}
-                      controls
-                      onTimeUpdate={handleTimeUpdate}
-                      className="w-full"
-                    />
-                  )}
-                </div>
+            {/* Inline content */}
+            {mod.contentMarkdown && (
+              <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-[#E5E7EB]">
+                <MarkdownContent text={mod.contentMarkdown} />
+              </div>
+            )}
 
-                {/* Progress indicator */}
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-[#6B7280]">
-                    {videoReady ? (
-                      <span className="text-green-600 font-medium">✓ Video complete — you can continue</span>
-                    ) : (
-                      <span>Watch at least 90% of the video to continue</span>
+            {/* Screenshots */}
+            {mod.screenshots.length > 0 && (
+              <div className="space-y-4">
+                {mod.screenshots.map((s, i) => (
+                  <div key={i} className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
+                    <img
+                      src={s.url}
+                      alt={s.caption || `Screenshot ${i + 1}`}
+                      className="w-full rounded-lg"
+                      loading="lazy"
+                    />
+                    {s.caption && (
+                      <p className="mt-2 text-center text-xs text-[#6B7280] italic">
+                        {s.caption}
+                      </p>
                     )}
                   </div>
-                  <div className="text-xs text-[#9CA3AF]">
-                    {Math.round(videoProgress * 100)}%
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* No video uploaded yet — allow proceeding */
+                ))}
+              </div>
+            )}
+
+            {/* No content yet placeholder */}
+            {!hasContent && !hasVideo && (
               <div className="rounded-xl bg-white p-8 text-center shadow-sm ring-1 ring-[#E5E7EB]">
-                <span className="text-4xl">🎬</span>
-                <h2 className="mt-4 font-semibold text-[#191A2E]">Video Coming Soon</h2>
+                <span className="text-3xl">📝</span>
+                <h2 className="mt-3 font-semibold text-[#191A2E]">Content Coming Soon</h2>
                 <p className="mt-2 text-sm text-[#6B7280]">
-                  The training video for this module is still being produced.
+                  Training material for this module is being prepared.
                   You can proceed to the {mod.quizRequired ? 'quiz' : 'acknowledgment'} now.
                 </p>
               </div>
             )}
 
-            {/* Continue button */}
+            {/* Optional video (collapsible) */}
+            {hasVideo && (
+              <div className="rounded-xl bg-white shadow-sm ring-1 ring-[#E5E7EB] overflow-hidden">
+                <button
+                  onClick={() => {
+                    setVideoExpanded(!videoExpanded)
+                    if (!videoExpanded) loadVideoUrl()
+                  }}
+                  className="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-[#F9FAFB] transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">🎬</span>
+                    <div>
+                      <p className="text-sm font-medium text-[#191A2E]">Watch the video</p>
+                      <p className="text-xs text-[#9CA3AF]">
+                        {mod.videoDurationSeconds
+                          ? `${Math.ceil(mod.videoDurationSeconds / 60)} min · Optional`
+                          : 'Optional'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[#9CA3AF]">{videoExpanded ? '▾' : '▸'}</span>
+                </button>
+                {videoExpanded && (
+                  <div className="border-t border-[#E5E7EB] p-4">
+                    {urlLoading && (
+                      <div className="flex h-48 items-center justify-center">
+                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#52B788] border-t-transparent" />
+                      </div>
+                    )}
+                    {signedUrl && (
+                      <video ref={videoRef} src={signedUrl} controls className="w-full rounded-lg" />
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Continue button — always enabled */}
             <button
               onClick={handleAdvanceToQuiz}
-              disabled={hasVideo && !videoReady && !!signedUrl}
-              className={`w-full rounded-xl py-3 text-sm font-semibold transition ${
-                !hasVideo || videoReady
-                  ? 'bg-[#2966E5] text-white hover:bg-[#2966E5]/90'
-                  : 'bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed'
-              }`}
+              disabled={saving}
+              className="w-full rounded-xl bg-[#2966E5] py-3 text-sm font-semibold text-white transition hover:bg-[#2966E5]/90 disabled:opacity-50"
             >
               {saving
                 ? 'Saving...'
                 : mod.quizRequired
-                ? 'Continue to Quiz'
+                ? 'Continue to Quiz →'
                 : 'I Acknowledge'}
             </button>
           </div>
@@ -527,7 +527,6 @@ function ModuleView({
               />
             ))}
 
-            {/* Submit / Results */}
             {!submitted ? (
               <button
                 onClick={handleQuizSubmit}
@@ -546,9 +545,7 @@ function ModuleView({
                   ? 'bg-green-50 ring-1 ring-green-200'
                   : 'bg-red-50 ring-1 ring-red-200'
               }`}>
-                <p className="text-2xl font-bold">
-                  {quizScore}%
-                </p>
+                <p className="text-2xl font-bold">{quizScore}%</p>
                 <p className={`mt-1 font-medium ${
                   quizScore !== null && quizScore >= 80 ? 'text-green-700' : 'text-red-700'
                 }`}>
@@ -556,7 +553,6 @@ function ModuleView({
                     ? 'You passed! 🎉'
                     : 'Not quite — review the explanations and try again.'}
                 </p>
-
                 {quizScore !== null && quizScore >= 80 ? (
                   <button
                     onClick={() => onComplete(true, quizScore)}
@@ -577,7 +573,7 @@ function ModuleView({
           </div>
         )}
 
-        {/* ── Results Phase (brief, then returns to overview) ── */}
+        {/* ── Results Phase ── */}
         {phase === 'results' && (
           <div className="rounded-xl bg-green-50 p-8 text-center ring-1 ring-green-200">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
@@ -597,6 +593,136 @@ function ModuleView({
         )}
       </div>
     </main>
+  )
+}
+
+
+// ── Markdown Content Renderer ──────────────────────────────────
+
+function MarkdownContent({ text }: { text: string }) {
+  const lines = text.split('\n')
+  const elements: React.ReactNode[] = []
+  let listItems: string[] = []
+  let key = 0
+
+  function flushList() {
+    if (listItems.length > 0) {
+      elements.push(
+        <ul key={key++} className="list-disc pl-5 space-y-1 text-sm text-[#374151] leading-relaxed">
+          {listItems.map((item, i) => (
+            <li key={i}>{renderInline(item)}</li>
+          ))}
+        </ul>
+      )
+      listItems = []
+    }
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+
+    // Heading
+    if (trimmed.startsWith('## ')) {
+      flushList()
+      elements.push(
+        <h3 key={key++} className="text-base font-bold text-[#191A2E] mt-4 first:mt-0">
+          {renderInline(trimmed.slice(3))}
+        </h3>
+      )
+    } else if (trimmed.startsWith('### ')) {
+      flushList()
+      elements.push(
+        <h4 key={key++} className="text-sm font-bold text-[#191A2E] mt-3">
+          {renderInline(trimmed.slice(4))}
+        </h4>
+      )
+    }
+    // List item
+    else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      listItems.push(trimmed.slice(2))
+    }
+    // Numbered list
+    else if (/^\d+\.\s/.test(trimmed)) {
+      listItems.push(trimmed.replace(/^\d+\.\s/, ''))
+    }
+    // Empty line
+    else if (trimmed === '') {
+      flushList()
+    }
+    // Paragraph
+    else {
+      flushList()
+      elements.push(
+        <p key={key++} className="text-sm text-[#374151] leading-relaxed">
+          {renderInline(trimmed)}
+        </p>
+      )
+    }
+  }
+  flushList()
+
+  return <div className="space-y-3">{elements}</div>
+}
+
+function renderInline(text: string): React.ReactNode {
+  // Bold: **text**
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-semibold text-[#191A2E]">{part.slice(2, -2)}</strong>
+    }
+    // Link: [text](url)
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g
+    const segments: React.ReactNode[] = []
+    let lastIndex = 0
+    let match
+    while ((match = linkRegex.exec(part)) !== null) {
+      if (match.index > lastIndex) segments.push(part.slice(lastIndex, match.index))
+      segments.push(
+        <a key={`${i}-${match.index}`} href={match[2]} className="text-[#2966E5] underline" target="_blank" rel="noopener noreferrer">
+          {match[1]}
+        </a>
+      )
+      lastIndex = match.index + match[0].length
+    }
+    if (segments.length > 0) {
+      if (lastIndex < part.length) segments.push(part.slice(lastIndex))
+      return <span key={i}>{segments}</span>
+    }
+    return part
+  })
+}
+
+
+// ── Guide Download Button ──────────────────────────────────────
+
+function GuideDownloadButton({ storagePath }: { storagePath: string }) {
+  const [loading, setLoading] = useState(false)
+
+  async function handleDownload() {
+    setLoading(true)
+    const { data } = await supabase.storage
+      .from('training-videos') // PDFs stored alongside videos
+      .createSignedUrl(storagePath, 60 * 60) // 1 hour
+    if (data?.signedUrl) {
+      window.open(data.signedUrl, '_blank')
+    }
+    setLoading(false)
+  }
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={loading}
+      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#2966E5] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2966E5]/90 disabled:opacity-50"
+    >
+      {loading ? (
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+      ) : (
+        <span>📄</span>
+      )}
+      Download Reference Guide
+    </button>
   )
 }
 

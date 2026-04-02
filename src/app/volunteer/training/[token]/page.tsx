@@ -9,12 +9,15 @@ interface TrackData {
   description: string | null
   recertificationMonths: number | null
   prerequisiteTrackId: string | null
+  guidePdfStoragePath: string | null
 }
 
 interface ModuleData {
   id: string
   moduleNumber: number
   title: string
+  contentMarkdown: string | null
+  screenshots: { url: string; caption: string }[]
   videoStoragePath: string | null
   videoDurationSeconds: number | null
   quizRequired: boolean
@@ -58,7 +61,8 @@ async function getTrainingData(token: string) {
       id, volunteer_id, track_id, token, token_expires_at, assigned_at,
       training_tracks!inner (
         id, track_number, title, description,
-        recertification_months, prerequisite_track_id
+        recertification_months, prerequisite_track_id,
+        guide_pdf_storage_path
       )
     `)
     .eq('token', token)
@@ -119,7 +123,7 @@ async function getTrainingData(token: string) {
   // 5. Get modules for this track
   const { data: modules } = await supabase
     .from('training_modules')
-    .select('id, module_number, title, video_storage_path, video_duration_seconds, quiz_required, sequence_order')
+    .select('id, module_number, title, content_markdown, screenshots, video_storage_path, video_duration_seconds, quiz_required, sequence_order')
     .eq('track_id', assignment.track_id)
     .order('sequence_order', { ascending: true })
 
@@ -164,15 +168,28 @@ async function getTrainingData(token: string) {
       description: track.description,
       recertificationMonths: track.recertification_months,
       prerequisiteTrackId: track.prerequisite_track_id,
+      guidePdfStoragePath: track.guide_pdf_storage_path,
     },
-    modules: (modules ?? []).map((m: any) => ({
-      id: m.id,
-      moduleNumber: m.module_number,
-      title: m.title,
-      videoStoragePath: m.video_storage_path,
-      videoDurationSeconds: m.video_duration_seconds,
-      quizRequired: m.quiz_required,
-      sequenceOrder: m.sequence_order,
+    modules: await Promise.all((modules ?? []).map(async (m: any) => {
+      // Generate public URLs for screenshots
+      const rawScreenshots = (m.screenshots ?? []) as { storage_path: string; caption: string; sort_order: number }[]
+      const screenshotUrls = rawScreenshots
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((s) => ({
+          url: supabase.storage.from('training-screenshots').getPublicUrl(s.storage_path).data.publicUrl,
+          caption: s.caption,
+        }))
+
+      return {
+        id: m.id,
+        moduleNumber: m.module_number,
+        title: m.title,
+        contentMarkdown: m.content_markdown,
+        screenshots: screenshotUrls,
+        videoStoragePath: m.video_storage_path,
+        videoDurationSeconds: m.video_duration_seconds,
+        quizRequired: m.quiz_required,
+        sequenceOrder: m.sequence_order,
       questions: (questionMap.get(m.id) ?? []).map((q: any) => ({
         id: q.id,
         questionText: q.question_text,
@@ -189,6 +206,7 @@ async function getTrainingData(token: string) {
             quizScore: completionMap.get(m.id).quiz_score,
           }
         : null,
+      }
     })),
     prerequisiteMet,
   } satisfies TrainingPortalProps
