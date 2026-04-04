@@ -119,10 +119,15 @@
         if (data.success && (data.status === 'verified' || data.status === 'already_verified')) {
           renderVerified(data, data.status === 'already_verified');
         } else {
-          renderError(data.message || 'Verification failed. Please try again.');
+          const reason = data.error === 'insufficient_points'
+            ? 'Customer no longer has enough points to redeem this reward.'
+            : data.error === 'invalid_code'
+              ? 'This redemption code was not found. The customer may need to re-redeem from the app.'
+              : data.message || 'Verification failed. Please try again.';
+          renderError(reason);
         }
       } catch (e) {
-        renderError('Network error. Please try again.');
+        renderError('Network error. Check your connection and try again.');
       }
     }
 
@@ -134,20 +139,33 @@
 
       try {
         const res = await fetch(API_BASE + '?code=' + code);
+
+        if (!res.ok) {
+          renderError('Could not reach the verification server (HTTP ' + res.status + '). Please try again in a moment.');
+          return;
+        }
+
         const data = await res.json();
 
         if (!data.success) {
-          renderError('This redemption code is not valid.');
+          const reason = data.error === 'invalid_code'
+            ? 'This redemption code was not found. It may have expired, or the customer may need to re-redeem from the app.'
+            : data.error === 'missing_code'
+              ? 'This link is missing a redemption code.'
+              : 'This redemption code is not valid (error: ' + (data.error || 'unknown') + ').';
+          renderError(reason);
           return;
         }
 
         if (data.status === 'verified') {
           renderVerified(data, true);
+        } else if (data.status === 'expired') {
+          renderError('This redemption has expired. The customer can re-redeem from the app.');
         } else {
           renderConfirm(data);
         }
       } catch (e) {
-        renderError('Could not load redemption details.');
+        renderError('Could not connect to the verification server. Check your internet connection and try again.');
       }
     }
 
