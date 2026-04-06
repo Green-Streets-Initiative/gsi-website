@@ -7,8 +7,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const STICKER_PRINT_FILE_URL =
   'https://gogreenstreets.org/assets/print/shift-sticker-final-PRINT.pdf'
 
-// Replace with actual Printful variant ID after creating the product in the dashboard
-const STICKER_VARIANT_ID = 0
+// Kiss-Cut Vinyl Decals, Satin, 3"x4" (Printful catalog product 974)
+const STICKER_VARIANT_ID = 24971
 
 interface StickerOrderRequest {
   partner_id: string
