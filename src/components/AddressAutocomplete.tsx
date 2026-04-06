@@ -14,11 +14,19 @@ type PlaceData = {
   lng: number
 }
 
+type ParsedAddress = {
+  line1: string
+  city: string
+  state: string
+  zip: string
+}
+
 type Props = {
   value: string
   onChange: (address: string) => void
   onCityDetected?: (city: string) => void
   onPlaceSelected?: (place: PlaceData) => void
+  onAddressParsed?: (parsed: ParsedAddress) => void
   label?: string
   variant?: 'light' | 'dark'
   placeholder?: string
@@ -31,6 +39,7 @@ export default function AddressAutocomplete({
   onChange,
   onCityDetected,
   onPlaceSelected,
+  onAddressParsed,
   label,
   variant = 'light',
   placeholder = 'Start typing an address…',
@@ -96,14 +105,14 @@ export default function AddressAutocomplete({
     setOpen(false)
     setPredictions([])
 
-    // Fetch place details for lat/lng and city
-    const needsDetails = onPlaceSelected || onCityDetected
+    // Fetch place details for lat/lng, city, and structured address
+    const needsDetails = onPlaceSelected || onCityDetected || onAddressParsed
     if (!needsDetails) return
 
     try {
       const fields = [
         onPlaceSelected ? 'location' : '',
-        onCityDetected ? 'addressComponents' : '',
+        (onCityDetected || onAddressParsed) ? 'addressComponents' : '',
       ].filter(Boolean).join(',')
 
       const res = await fetch(
@@ -121,12 +130,31 @@ export default function AddressAutocomplete({
         })
       }
 
-      if (onCityDetected && data.addressComponents) {
-        const cityComponent = data.addressComponents.find(
-          (c: { types: string[] }) => c.types.includes('locality')
-        )
-        if (cityComponent?.longText) {
-          onCityDetected(cityComponent.longText)
+      if (data.addressComponents) {
+        const find = (type: string): string =>
+          data.addressComponents.find(
+            (c: { types: string[] }) => c.types.includes(type)
+          )?.longText || ''
+
+        const findShort = (type: string): string =>
+          data.addressComponents.find(
+            (c: { types: string[] }) => c.types.includes(type)
+          )?.shortText || ''
+
+        if (onCityDetected) {
+          const city = find('locality')
+          if (city) onCityDetected(city)
+        }
+
+        if (onAddressParsed) {
+          const streetNumber = find('street_number')
+          const route = find('route')
+          onAddressParsed({
+            line1: [streetNumber, route].filter(Boolean).join(' '),
+            city: find('locality'),
+            state: findShort('administrative_area_level_1'),
+            zip: find('postal_code'),
+          })
         }
       }
     } catch {

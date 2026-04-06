@@ -17,6 +17,9 @@ type FormData = {
   business_name: string
   address: string
   city: string
+  address_line1: string
+  address_state: string
+  address_zip: string
   website_url: string
   referral_source: string
   offer_description: string
@@ -29,12 +32,16 @@ type FormData = {
   contact_phone: string
   signer_name: string
   agreement_accepted: boolean
+  sticker_requested: boolean
 }
 
 const INITIAL_FORM: FormData = {
   business_name: '',
   address: '',
   city: 'Cambridge',
+  address_line1: '',
+  address_state: '',
+  address_zip: '',
   website_url: '',
   referral_source: '',
   offer_description: '',
@@ -47,6 +54,7 @@ const INITIAL_FORM: FormData = {
   contact_phone: '',
   signer_name: '',
   agreement_accepted: false,
+  sticker_requested: false,
 }
 
 const AGREEMENT_TEXT = `Shift Rewards Partner Agreement
@@ -184,6 +192,9 @@ export default function RewardsPartnersPage() {
             business_name: form.business_name.trim(),
             address: form.address.trim(),
             city: form.city.trim(),
+            address_line1: form.address_line1 || null,
+            address_state: form.address_state || null,
+            address_zip: form.address_zip || null,
             contact_name: form.contact_name.trim(),
             contact_email: form.contact_email.trim(),
             contact_phone: form.contact_phone.trim() || null,
@@ -198,6 +209,8 @@ export default function RewardsPartnersPage() {
             agreement_accepted: true,
             website_url: form.website_url.trim() || null,
             logo_url: getLogoUrl(logoPath),
+            sticker_requested: form.sticker_requested,
+            sticker_requested_at: form.sticker_requested ? new Date().toISOString() : null,
           }),
         }
       )
@@ -549,6 +562,14 @@ export default function RewardsPartnersPage() {
                       value={form.address}
                       onChange={(v) => update('address', v)}
                       onCityDetected={(city) => update('city', city)}
+                      onAddressParsed={(parsed) => {
+                        setForm(prev => ({
+                          ...prev,
+                          address_line1: parsed.line1,
+                          address_state: parsed.state,
+                          address_zip: parsed.zip,
+                        }))
+                      }}
                     />
                     <Field
                       label="City"
@@ -580,6 +601,22 @@ export default function RewardsPartnersPage() {
                         <option value="Other">Other</option>
                       </select>
                     </div>
+                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[rgba(25,26,46,0.08)] bg-[rgba(25,26,46,0.03)] p-4">
+                      <input
+                        type="checkbox"
+                        checked={form.sticker_requested}
+                        onChange={(e) => update('sticker_requested', e.target.checked)}
+                        className="mt-0.5 h-5 w-5 shrink-0 accent-[#191A2E]"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-[#191A2E]">
+                          Send me a free Shift Rewards Partner window sticker
+                        </span>
+                        <p className="mt-0.5 text-xs text-[#8A8DA8]">
+                          Shipped within 5&ndash;7 business days to your business address
+                        </p>
+                      </div>
+                    </label>
                     <button
                       onClick={() => goToStep(2)}
                       disabled={!isStep1Valid()}
