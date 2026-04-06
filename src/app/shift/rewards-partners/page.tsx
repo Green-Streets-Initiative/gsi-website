@@ -187,7 +187,10 @@ export default function RewardsPartnersPage() {
         'https://xyqcpgwbqrhykpgpqbdi.supabase.co/functions/v1/sponsor-intake',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          },
           body: JSON.stringify({
             business_name: form.business_name.trim(),
             address: form.address.trim(),
