@@ -177,7 +177,15 @@ export default function RewardsPartnersPage() {
         }
         const contentType = mimeMap[ext] || logoFile.type
 
-        const { error: uploadError } = await supabase.storage
+        // Use a fresh anon client for the upload to avoid stale session
+        // tokens from the partner dashboard overriding the anon role
+        const { createClient } = await import('@supabase/supabase-js')
+        const anonClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          { auth: { persistSession: false } },
+        )
+        const { error: uploadError } = await anonClient.storage
           .from('sponsor-logos')
           .upload(logoPath, logoFile, { contentType })
 
