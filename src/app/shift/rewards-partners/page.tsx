@@ -98,6 +98,8 @@ export default function RewardsPartnersPage() {
   const formRef = useRef<HTMLDivElement>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [logoError, setLogoError] = useState('')
+  const [logoUploadFailed, setLogoUploadFailed] = useState(false)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginSent, setLoginSent] = useState(false)
   const [loginLoading, setLoginLoading] = useState(false)
@@ -179,7 +181,7 @@ export default function RewardsPartnersPage() {
           console.error('Logo upload error:', uploadError)
           // Don't block submission — logo can be added later by admin
           logoPath = null
-          setSubmitError(`Logo upload failed (${uploadError.message}). Your application will be submitted without a logo.`)
+          setLogoUploadFailed(true)
         }
       }
 
@@ -465,6 +467,13 @@ export default function RewardsPartnersPage() {
                   Check your email — we&apos;ll send a confirmation and a link to your partner
                   dashboard once you&apos;re approved.
                 </p>
+                {logoUploadFailed && (
+                  <p className="mt-4 rounded-lg border border-[#E05252]/20 bg-[#E05252]/5 px-4 py-3 text-sm text-[#E05252]">
+                    Your logo couldn&apos;t be uploaded. You can add it later from your partner
+                    dashboard, or email it to{' '}
+                    <a href="mailto:info@gogreenstreets.org" className="underline">info@gogreenstreets.org</a>.
+                  </p>
+                )}
               </div>
             ) : (
               <>
@@ -533,11 +542,28 @@ export default function RewardsPartnersPage() {
                             accept=".png,.jpg,.jpeg,.svg,.webp"
                             onChange={(e) => {
                               const file = e.target.files?.[0] ?? null
-                              setLogoFile(file)
                               if (file) {
-                                const url = URL.createObjectURL(file)
-                                setLogoPreview(url)
+                                const maxSize = 5 * 1024 * 1024
+                                const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
+                                if (file.size > maxSize) {
+                                  setLogoError('Logo must be under 5 MB')
+                                  setLogoFile(null)
+                                  setLogoPreview(null)
+                                  e.target.value = ''
+                                  return
+                                }
+                                if (!allowedTypes.includes(file.type)) {
+                                  setLogoError('Logo must be a PNG, JPG, SVG, or WebP file')
+                                  setLogoFile(null)
+                                  setLogoPreview(null)
+                                  e.target.value = ''
+                                  return
+                                }
+                                setLogoError('')
+                                setLogoFile(file)
+                                setLogoPreview(URL.createObjectURL(file))
                               } else {
+                                setLogoFile(null)
                                 setLogoPreview(null)
                               }
                             }}
@@ -557,8 +583,11 @@ export default function RewardsPartnersPage() {
                           )}
                         </div>
                       </div>
+                      {logoError && (
+                        <p className="mt-1.5 text-xs font-medium text-[#E05252]">{logoError}</p>
+                      )}
                       <p className="mt-1.5 text-xs text-[#8A8DA8]">
-                        Optional — square images work best.
+                        Optional — square images work best. Max 5 MB.
                       </p>
                     </div>
                     <AddressAutocomplete
