@@ -22,6 +22,7 @@ type Group = {
   tier: string
   access_starts_at: string | null
   access_ends_at: string | null
+  public_leaderboard: boolean
 }
 
 type Challenge = {
@@ -134,7 +135,7 @@ function PortalPage() {
       const { data: groupData } = await supabase
         .from('groups')
         .select(
-          'id, name, slug, status, admin_name, admin_email, admin_phone, website_url, logo_url, invite_code, tier, access_starts_at, access_ends_at'
+          'id, name, slug, status, admin_name, admin_email, admin_phone, website_url, logo_url, invite_code, tier, access_starts_at, access_ends_at, public_leaderboard'
         )
         .eq('admin_email', email)
         .limit(1)
@@ -173,7 +174,7 @@ function PortalPage() {
       if (challengeRes.data) {
         setChallenge({
           ...challengeRes.data,
-          public_leaderboard: groupData.status === 'active',
+          public_leaderboard: groupData.public_leaderboard ?? false,
         })
         setChallengeForm({
           name: challengeRes.data.name,
@@ -181,7 +182,7 @@ function PortalPage() {
           ends_at: challengeRes.data.ends_at.split('T')[0],
           metric: challengeRes.data.metric,
           prize_description: challengeRes.data.prize_description || '',
-          public_leaderboard: false,
+          public_leaderboard: groupData.public_leaderboard ?? false,
         })
       }
 
@@ -276,13 +277,50 @@ function PortalPage() {
       }
     }
 
-    // Handle public leaderboard opt-in
-    if (challengeForm.public_leaderboard) {
+    // Handle public leaderboard opt-in — wire to matchup_group_ids
+    const wasPublic = group.public_leaderboard ?? false
+    const wantsPublic = challengeForm.public_leaderboard
+
+    if (wantsPublic !== wasPublic) {
+      // Update the group's public_leaderboard flag
       await supabase
         .from('groups')
-        .update({ public_leaderboard: true })
+        .update({ public_leaderboard: wantsPublic })
         .eq('id', group.id)
-      setGroup({ ...group, status: group.status })
+
+      // Find the active flagship competition
+      const now = new Date().toISOString()
+      const { data: flagship } = await supabase
+        .from('competitions')
+        .select('id, matchup_group_ids')
+        .eq('is_public', true)
+        .is('group_id', null)
+        .gte('ends_at', now)
+        .order('starts_at', { ascending: true })
+        .limit(1)
+        .single()
+
+      if (flagship) {
+        const currentIds: string[] = flagship.matchup_group_ids ?? []
+        let newIds: string[]
+
+        if (wantsPublic && !currentIds.includes(group.id)) {
+          newIds = [...currentIds, group.id]
+        } else if (!wantsPublic) {
+          newIds = currentIds.filter((id) => id !== group.id)
+        } else {
+          newIds = currentIds
+        }
+
+        if (newIds !== currentIds) {
+          await supabase
+            .from('competitions')
+            .update({ matchup_group_ids: newIds })
+            .eq('id', flagship.id)
+        }
+      }
+
+      setGroup({ ...group, public_leaderboard: wantsPublic })
     }
 
     setEditingChallenge(false)
@@ -299,6 +337,197 @@ function PortalPage() {
     setChallenge(null)
     setShowEndModal(false)
     setEndingChallenge(false)
+  }
+
+  /* ── PDF generation ──────────────────────────────────────── */
+
+  async function downloadInvitationPdf() {
+    if (!group) return
+    // Use ES build to avoid Node.js fflate worker issue with Turbopack
+    // @ts-expect-error — no type declarations for the direct ES bundle
+    const { jsPDF } = await import('jspdf/dist/jspdf.es.min.js')
+    const doc = new jsPDF({ unit: 'pt', format: 'letter' })
+    const w = doc.internal.pageSize.getWidth()
+    const centerX = w / 2
+
+    // Header bar
+    doc.setFillColor(25, 26, 46) // #191A2E
+    doc.rect(0, 0, w, 90, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(28)
+    doc.setTextColor(255, 255, 255)
+    doc.text('Shift', 50, 55)
+    doc.setFontSize(11)
+    doc.setTextColor(186, 241, 77) // #BAF14D
+    doc.text('Green Streets Initiative', 50, 73)
+
+    // Main content
+    doc.setTextColor(25, 26, 46)
+    doc.setFontSize(24)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Join your team on Shift', centerX, 160, { align: 'center' })
+
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'normal')
+    doc.text(group.name, centerX, 195, { align: 'center' })
+
+    // Invite code box
+    doc.setFillColor(245, 245, 245)
+    doc.roundedRect(centerX - 130, 230, 260, 70, 8, 8, 'F')
+    doc.setFont('courier', 'bold')
+    doc.setFontSize(36)
+    doc.setTextColor(25, 26, 46)
+    doc.text(group.invite_code, centerX, 275, { align: 'center' })
+
+    // Label
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(11)
+    doc.setTextColor(120, 120, 120)
+    doc.text('Your invite code', centerX, 325, { align: 'center' })
+
+    // Instructions
+    doc.setTextColor(25, 26, 46)
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('How to join', centerX, 380, { align: 'center' })
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(12)
+    const steps = [
+      '1.  Download the Shift app from the App Store or Google Play',
+      '2.  Open the app and create your account',
+      `3.  Enter your invite code: ${group.invite_code}`,
+    ]
+    steps.forEach((step, i) => {
+      doc.text(step, centerX, 415 + i * 28, { align: 'center' })
+    })
+
+    // What is Shift?
+    doc.setFontSize(13)
+    doc.setFont('helvetica', 'bold')
+    doc.text('What is Shift?', centerX, 520, { align: 'center' })
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(11)
+    doc.setTextColor(80, 80, 80)
+    const desc = doc.splitTextToSize(
+      'Shift tracks your commute automatically and rewards you for walking, biking, and taking transit. ' +
+        'Earn points, compete with your team, and help reduce congestion and emissions.',
+      420
+    )
+    doc.text(desc, centerX, 545, { align: 'center' })
+
+    // Footer
+    doc.setDrawColor(220, 220, 220)
+    doc.line(50, 680, w - 50, 680)
+    doc.setFontSize(10)
+    doc.setTextColor(150, 150, 150)
+    doc.text('gogreenstreets.org', centerX, 705, { align: 'center' })
+    doc.text('Shift by Green Streets Initiative', centerX, 720, { align: 'center' })
+
+    const slug = group.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+    doc.save(`${slug}-shift-invitation.pdf`)
+  }
+
+  async function downloadImpactReportPdf() {
+    if (!group) return
+    // Use ES build to avoid Node.js fflate worker issue with Turbopack
+    // @ts-expect-error — no type declarations for the direct ES bundle
+    const { jsPDF } = await import('jspdf/dist/jspdf.es.min.js')
+    const doc = new jsPDF({ unit: 'pt', format: 'letter' })
+    const w = doc.internal.pageSize.getWidth()
+    const centerX = w / 2
+    const today = new Date().toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    })
+
+    // Header bar
+    doc.setFillColor(25, 26, 46)
+    doc.rect(0, 0, w, 90, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(28)
+    doc.setTextColor(255, 255, 255)
+    doc.text('Shift', 50, 55)
+    doc.setFontSize(11)
+    doc.setTextColor(186, 241, 77)
+    doc.text('Green Streets Initiative', 50, 73)
+
+    // Title
+    doc.setTextColor(25, 26, 46)
+    doc.setFontSize(22)
+    doc.setFont('helvetica', 'bold')
+    doc.text(group.name, centerX, 140, { align: 'center' })
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Shift Challenge Impact Report', centerX, 168, { align: 'center' })
+    doc.setFontSize(12)
+    doc.setTextColor(120, 120, 120)
+    doc.text(today, centerX, 192, { align: 'center' })
+
+    // Challenge info
+    if (challenge) {
+      doc.setFontSize(11)
+      doc.setTextColor(80, 80, 80)
+      doc.text(
+        `${challenge.name}  ·  ${formatDate(challenge.starts_at)} – ${formatDate(challenge.ends_at)}`,
+        centerX,
+        225,
+        { align: 'center' }
+      )
+    }
+
+    // Stats table
+    const stats = [
+      { label: 'Employees joined', value: memberCount > 0 ? String(memberCount) : '\u2014' },
+      { label: 'Active trips logged', value: '\u2014' },
+      { label: 'Miles shifted', value: '\u2014' },
+      { label: 'CO\u2082 avoided (kg)', value: '\u2014' },
+      { label: 'Most popular mode', value: '\u2014' },
+      { label: 'Average Shift Rate', value: '\u2014' },
+    ]
+
+    const tableTop = challenge ? 260 : 240
+    const rowH = 38
+    const colLabel = 80
+    const colValue = w - 80
+
+    doc.setDrawColor(230, 230, 230)
+    stats.forEach((stat, i) => {
+      const y = tableTop + i * rowH
+      if (i > 0) doc.line(colLabel, y, colValue, y)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(12)
+      doc.setTextColor(100, 100, 100)
+      doc.text(stat.label, colLabel, y + 24)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(25, 26, 46)
+      doc.text(stat.value, colValue, y + 24, { align: 'right' })
+    })
+
+    // Note
+    const noteY = tableTop + stats.length * rowH + 30
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(150, 150, 150)
+    const note = doc.splitTextToSize(
+      'This report reflects aggregate data only. Individual employee trip data is never disclosed to employers. ' +
+        'Trip metrics will populate as employees join your group and log trips in the Shift app.',
+      w - 160
+    )
+    doc.text(note, centerX, noteY, { align: 'center' })
+
+    // Footer
+    doc.setDrawColor(220, 220, 220)
+    doc.line(50, 680, w - 50, 680)
+    doc.setFontSize(10)
+    doc.setTextColor(150, 150, 150)
+    doc.text('gogreenstreets.org', centerX, 705, { align: 'center' })
+    doc.text('Shift by Green Streets Initiative', centerX, 720, { align: 'center' })
+
+    const slug = group.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+    const dateSlug = new Date().toISOString().split('T')[0]
+    doc.save(`${slug}-shift-impact-report-${dateSlug}.pdf`)
   }
 
   async function saveAccount() {
@@ -520,7 +749,10 @@ function PortalPage() {
             )}
 
             {isTierAtLeast('standard') ? (
-              <button className="mt-4 rounded-full border border-white/[0.12] px-5 py-2 text-sm font-medium text-white">
+              <button
+                onClick={downloadInvitationPdf}
+                className="mt-4 rounded-full border border-white/[0.12] px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-85"
+              >
                 Download employee invitation
               </button>
             ) : (
@@ -782,10 +1014,10 @@ function PortalPage() {
 
             {isTierAtLeast('standard') ? (
               <button
-                disabled
-                className="mt-4 rounded-full border border-white/[0.12] px-5 py-2 text-sm font-medium text-white/40"
+                onClick={downloadImpactReportPdf}
+                className="mt-4 rounded-full border border-white/[0.12] px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-85"
               >
-                Download impact report (coming soon)
+                Download impact report
               </button>
             ) : (
               <p className="mt-4 text-sm text-white/40">
