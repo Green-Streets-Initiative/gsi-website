@@ -1,0 +1,975 @@
+'use client'
+
+import { Suspense, useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Nav from '@/components/Nav'
+import Footer from '@/components/Footer'
+import { supabase } from '@/lib/supabase'
+
+/* ── types ─────────────────────────────────────────────────── */
+
+type Group = {
+  id: string
+  name: string
+  slug: string | null
+  status: string
+  admin_name: string | null
+  admin_email: string
+  admin_phone: string | null
+  website_url: string | null
+  logo_url: string | null
+  invite_code: string
+  tier: string
+  access_starts_at: string | null
+  access_ends_at: string | null
+}
+
+type Challenge = {
+  id: string
+  name: string
+  metric: string
+  starts_at: string
+  ends_at: string
+  prize_description: string | null
+  public_leaderboard: boolean
+}
+
+/* ── helpers ───────────────────────────────────────────────── */
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'America/New_York',
+  })
+}
+
+const METRIC_LABELS: Record<string, string> = {
+  pct_non_car: 'Shift Rate',
+  trips: 'Total active trips',
+  active_days: 'Active days',
+  miles: 'Miles shifted',
+}
+
+/* ── wrapper ───────────────────────────────────────────────── */
+
+export default function PortalPageWrapper() {
+  return (
+    <Suspense
+      fallback={
+        <>
+          <Nav />
+          <main
+            style={{ paddingTop: '60px' }}
+            className="flex min-h-screen items-center justify-center bg-[#191A2E]"
+          >
+            <div className="text-white">Loading&hellip;</div>
+          </main>
+          <Footer />
+        </>
+      }
+    >
+      <PortalPage />
+    </Suspense>
+  )
+}
+
+/* ── main component ────────────────────────────────────────── */
+
+function PortalPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [loading, setLoading] = useState(true)
+  const [group, setGroup] = useState<Group | null>(null)
+  const [challenge, setChallenge] = useState<Challenge | null>(null)
+  const [memberCount, setMemberCount] = useState(0)
+
+  // Invite code copy state
+  const [copied, setCopied] = useState(false)
+
+  // Challenge form state
+  const [editingChallenge, setEditingChallenge] = useState(false)
+  const [challengeForm, setChallengeForm] = useState({
+    name: '',
+    starts_at: '',
+    ends_at: '',
+    metric: 'pct_non_car',
+    prize_description: '',
+    public_leaderboard: false,
+  })
+  const [savingChallenge, setSavingChallenge] = useState(false)
+
+  // Account settings state
+  const [editingAccount, setEditingAccount] = useState(false)
+  const [accountForm, setAccountForm] = useState({
+    name: '',
+    admin_name: '',
+    admin_phone: '',
+    website_url: '',
+  })
+  const [savingAccount, setSavingAccount] = useState(false)
+
+  // Logo state
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [logoError, setLogoError] = useState('')
+
+  // End challenge modal
+  const [showEndModal, setShowEndModal] = useState(false)
+  const [endingChallenge, setEndingChallenge] = useState(false)
+
+  // Leaderboard period
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState<'7' | '30' | 'all'>('30')
+
+  /* ── data fetching ───────────────────────────────────────── */
+
+  const fetchData = useCallback(
+    async (email: string) => {
+      // Link employer to auth user (enables RLS)
+      try {
+        await supabase.rpc('link_employer_on_login')
+      } catch {}
+
+      const { data: groupData } = await supabase
+        .from('groups')
+        .select(
+          'id, name, slug, status, admin_name, admin_email, admin_phone, website_url, logo_url, invite_code, tier, access_starts_at, access_ends_at'
+        )
+        .eq('admin_email', email)
+        .limit(1)
+        .single()
+
+      if (!groupData) {
+        router.push('/shift/employers')
+        return
+      }
+
+      setGroup(groupData)
+      setAccountForm({
+        name: groupData.name || '',
+        admin_name: groupData.admin_name || '',
+        admin_phone: groupData.admin_phone || '',
+        website_url: groupData.website_url || '',
+      })
+
+      // Fetch active challenge for this group
+      const now = new Date().toISOString()
+      const [challengeRes, memberRes] = await Promise.all([
+        supabase
+          .from('competitions')
+          .select('id, name, metric, starts_at, ends_at, prize_description')
+          .eq('group_id', groupData.id)
+          .gte('ends_at', now)
+          .order('starts_at', { ascending: false })
+          .limit(1)
+          .single(),
+        supabase
+          .from('group_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('group_id', groupData.id),
+      ])
+
+      if (challengeRes.data) {
+        setChallenge({
+          ...challengeRes.data,
+          public_leaderboard: groupData.status === 'active',
+        })
+        setChallengeForm({
+          name: challengeRes.data.name,
+          starts_at: challengeRes.data.starts_at.split('T')[0],
+          ends_at: challengeRes.data.ends_at.split('T')[0],
+          metric: challengeRes.data.metric,
+          prize_description: challengeRes.data.prize_description || '',
+          public_leaderboard: false,
+        })
+      }
+
+      setMemberCount(memberRes.count ?? 0)
+      setLoading(false)
+    },
+    [router]
+  )
+
+  /* ── auth flow ───────────────────────────────────────────── */
+
+  useEffect(() => {
+    async function checkAuth() {
+      const tokenHash = searchParams.get('token_hash')
+      const type = searchParams.get('type')
+
+      if (tokenHash && type === 'magiclink') {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'magiclink',
+        })
+        if (error) {
+          console.error('Magic link verification failed:', error.message)
+          router.push('/shift/employers')
+          return
+        }
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session?.user?.email) {
+        router.push('/shift/employers')
+        return
+      }
+      fetchData(session.user.email)
+    }
+    checkAuth()
+  }, [fetchData, router, searchParams])
+
+  /* ── actions ─────────────────────────────────────────────── */
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    router.push('/shift/employers')
+  }
+
+  function copyInviteCode() {
+    if (!group) return
+    navigator.clipboard.writeText(group.invite_code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function saveChallenge() {
+    if (!group || !challengeForm.name.trim() || !challengeForm.starts_at || !challengeForm.ends_at)
+      return
+    setSavingChallenge(true)
+
+    const payload = {
+      group_id: group.id,
+      name: challengeForm.name.trim(),
+      metric: challengeForm.metric,
+      starts_at: new Date(challengeForm.starts_at).toISOString(),
+      ends_at: new Date(challengeForm.ends_at + 'T23:59:59').toISOString(),
+      is_public: false,
+      event_type: 'employer',
+      prize_description: challengeForm.prize_description.trim() || null,
+    }
+
+    if (challenge) {
+      // Update existing
+      await supabase.from('competitions').update(payload).eq('id', challenge.id)
+      setChallenge({
+        ...challenge,
+        name: payload.name,
+        metric: payload.metric,
+        starts_at: payload.starts_at,
+        ends_at: payload.ends_at,
+        prize_description: payload.prize_description,
+      })
+    } else {
+      // Create new
+      const { data } = await supabase
+        .from('competitions')
+        .insert(payload)
+        .select('id, name, metric, starts_at, ends_at, prize_description')
+        .single()
+      if (data) {
+        setChallenge({ ...data, public_leaderboard: false })
+      }
+    }
+
+    // Handle public leaderboard opt-in
+    if (challengeForm.public_leaderboard) {
+      await supabase
+        .from('groups')
+        .update({ public_leaderboard: true })
+        .eq('id', group.id)
+      setGroup({ ...group, status: group.status })
+    }
+
+    setEditingChallenge(false)
+    setSavingChallenge(false)
+  }
+
+  async function endChallenge() {
+    if (!challenge) return
+    setEndingChallenge(true)
+    await supabase
+      .from('competitions')
+      .update({ ends_at: new Date().toISOString() })
+      .eq('id', challenge.id)
+    setChallenge(null)
+    setShowEndModal(false)
+    setEndingChallenge(false)
+  }
+
+  async function saveAccount() {
+    if (!group) return
+    setSavingAccount(true)
+
+    let newLogoUrl = group.logo_url
+
+    if (logoFile) {
+      const ext = (logoFile.name.split('.').pop() || 'png').toLowerCase()
+      const mimeMap: Record<string, string> = {
+        svg: 'image/svg+xml',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        webp: 'image/webp',
+      }
+      const contentType = mimeMap[ext] || logoFile.type
+      const path = `logos/${Date.now()}-${group.id.slice(0, 8)}.${ext}`
+
+      const { createClient } = await import('@supabase/supabase-js')
+      const anonClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false } }
+      )
+      const { error: uploadErr } = await anonClient.storage
+        .from('employer-logos')
+        .upload(path, logoFile, { contentType })
+
+      if (!uploadErr) {
+        newLogoUrl = anonClient.storage.from('employer-logos').getPublicUrl(path).data.publicUrl
+      }
+    }
+
+    await supabase
+      .from('groups')
+      .update({
+        name: accountForm.name.trim(),
+        admin_name: accountForm.admin_name.trim() || null,
+        admin_phone: accountForm.admin_phone.trim() || null,
+        website_url: accountForm.website_url.trim() || null,
+        logo_url: newLogoUrl,
+      })
+      .eq('id', group.id)
+
+    setGroup({
+      ...group,
+      name: accountForm.name.trim(),
+      admin_name: accountForm.admin_name.trim() || null,
+      admin_phone: accountForm.admin_phone.trim() || null,
+      website_url: accountForm.website_url.trim() || null,
+      logo_url: newLogoUrl,
+    })
+    setLogoFile(null)
+    setLogoPreview(null)
+    setEditingAccount(false)
+    setSavingAccount(false)
+  }
+
+  function handleLogoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setLogoError('')
+
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      setLogoError('Logo must be PNG, JPG, SVG, or WebP')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoError('Logo must be under 5 MB')
+      return
+    }
+
+    setLogoFile(file)
+    setLogoPreview(URL.createObjectURL(file))
+  }
+
+  /* ── access check ────────────────────────────────────────── */
+
+  function hasAccess(g: Group): boolean {
+    if (g.status !== 'active' && g.status !== 'cancelled') return false
+    if (!g.access_ends_at) return true
+    return new Date(g.access_ends_at) > new Date()
+  }
+
+  function isTierAtLeast(required: 'basic' | 'standard' | 'premium'): boolean {
+    if (!group) return false
+    const order = { basic: 0, standard: 1, premium: 2 }
+    return (order[group.tier as keyof typeof order] ?? 0) >= order[required]
+  }
+
+  /* ── loading / empty states ──────────────────────────────── */
+
+  if (loading) {
+    return (
+      <>
+        <Nav />
+        <main
+          style={{ paddingTop: '60px' }}
+          className="flex min-h-screen items-center justify-center bg-[#191A2E]"
+        >
+          <div className="text-white">Loading&hellip;</div>
+        </main>
+        <Footer />
+      </>
+    )
+  }
+
+  if (!group) return null
+
+  /* ── expired access ──────────────────────────────────────── */
+
+  if (!hasAccess(group)) {
+    return (
+      <>
+        <Nav />
+        <main style={{ paddingTop: '60px' }} className="min-h-screen bg-[#191A2E]">
+          <div className="mx-auto max-w-[800px] px-8 py-16 text-center">
+            <h1 className="mb-4 font-display text-2xl font-extrabold text-white">
+              Your access has expired
+            </h1>
+            <p className="mb-8 text-[0.9375rem] text-white">
+              Contact us at info@gogreenstreets.org to renew your subscription.
+            </p>
+            <button
+              onClick={handleSignOut}
+              className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white"
+            >
+              Sign out
+            </button>
+          </div>
+        </main>
+        <Footer />
+      </>
+    )
+  }
+
+  /* ── main render ─────────────────────────────────────────── */
+
+  return (
+    <>
+      <Nav />
+      <main style={{ paddingTop: '60px' }} className="min-h-screen bg-[#191A2E]">
+        <div className="mx-auto max-w-[800px] px-8 py-16">
+          {/* Cancelled banner */}
+          {group.status === 'cancelled' && group.access_ends_at && (
+            <div className="mb-6 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-5 py-3 text-sm text-[#EDB93C]">
+              Your subscription has been cancelled. Access ends on{' '}
+              {formatDate(group.access_ends_at)}.
+            </div>
+          )}
+
+          {/* ── Header ─────────────────────────────────────── */}
+          <div className="mb-10 flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              {group.logo_url && (
+                <img
+                  src={group.logo_url}
+                  alt=""
+                  className="h-12 w-12 rounded-lg object-contain"
+                />
+              )}
+              <div>
+                <h1 className="font-display text-[clamp(1.75rem,3vw,2.25rem)] font-extrabold tracking-tight text-white">
+                  {group.name}
+                </h1>
+                <span
+                  className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-bold ${
+                    group.status === 'active'
+                      ? 'bg-[#BAF14D]/15 text-[#BAF14D]'
+                      : group.status === 'cancelled'
+                        ? 'bg-[#EDB93C]/15 text-[#EDB93C]'
+                        : 'bg-white/10 text-white'
+                  }`}
+                >
+                  {group.status === 'active'
+                    ? 'Active'
+                    : group.status === 'cancelled'
+                      ? 'Cancelled'
+                      : 'Inactive'}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="rounded-full border border-white/[0.12] px-4 py-2 text-sm font-medium text-white"
+            >
+              Sign out
+            </button>
+          </div>
+
+          {/* ── Section 1: Invite code ─────────────────────── */}
+          <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+            <h2 className="mb-5 font-display text-base font-bold text-white">Your invite code</h2>
+
+            <div className="mb-4 flex items-center gap-4">
+              <span className="font-mono text-3xl font-extrabold tracking-[0.2em] text-[#BAF14D]">
+                {group.invite_code}
+              </span>
+              <button
+                onClick={copyInviteCode}
+                className="rounded-full border border-white/[0.12] px-4 py-2 text-sm font-medium text-white transition-colors"
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+
+            <p className="text-[0.9375rem] leading-[1.6] text-white">
+              Share this code with your employees. They&apos;ll enter it in the Shift app during
+              onboarding or from the Community tab to join your group.
+            </p>
+
+            {memberCount > 0 && (
+              <p className="mt-3 text-sm text-white/60">
+                {memberCount} employee{memberCount !== 1 ? 's' : ''} joined
+              </p>
+            )}
+
+            {isTierAtLeast('standard') ? (
+              <button className="mt-4 rounded-full border border-white/[0.12] px-5 py-2 text-sm font-medium text-white">
+                Download employee invitation
+              </button>
+            ) : (
+              <p className="mt-4 text-sm text-white/40">
+                Employee invitation PDF available on Standard and above.{' '}
+                <a href="mailto:info@gogreenstreets.org" className="underline">
+                  Contact us to upgrade
+                </a>
+                .
+              </p>
+            )}
+          </section>
+
+          {/* ── Section 2: Your challenge ──────────────────── */}
+          <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+            <h2 className="mb-5 font-display text-base font-bold text-white">Your challenge</h2>
+
+            {editingChallenge ? (
+              /* ── Challenge form (Section 3) ────────────── */
+              <div className="space-y-4">
+                <DashField
+                  label="Challenge name"
+                  value={challengeForm.name}
+                  onChange={(v) => setChallengeForm({ ...challengeForm, name: v })}
+                  placeholder="e.g. Summer Active Commute Challenge 2026"
+                  required
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-white">
+                      Start date <span className="text-[#E05252]">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={challengeForm.starts_at}
+                      onChange={(e) =>
+                        setChallengeForm({ ...challengeForm, starts_at: e.target.value })
+                      }
+                      className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D] [color-scheme:dark]"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-white">
+                      End date <span className="text-[#E05252]">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={challengeForm.ends_at}
+                      onChange={(e) =>
+                        setChallengeForm({ ...challengeForm, ends_at: e.target.value })
+                      }
+                      className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D] [color-scheme:dark]"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-white">
+                    Metric <span className="text-[#E05252]">*</span>
+                  </label>
+                  <select
+                    value={challengeForm.metric}
+                    onChange={(e) =>
+                      setChallengeForm({ ...challengeForm, metric: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D]"
+                  >
+                    <option value="pct_non_car">Shift Rate (% active trips) — recommended</option>
+                    <option value="trips">Total active trips</option>
+                    <option value="active_days">Active days</option>
+                    <option value="miles">Miles shifted</option>
+                  </select>
+                </div>
+                <DashField
+                  label="Prize description (optional)"
+                  value={challengeForm.prize_description}
+                  onChange={(v) => setChallengeForm({ ...challengeForm, prize_description: v })}
+                  placeholder="e.g. Gift cards for top 3 finishers"
+                />
+
+                {/* Public leaderboard toggle */}
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={challengeForm.public_leaderboard}
+                      onChange={(e) =>
+                        setChallengeForm({
+                          ...challengeForm,
+                          public_leaderboard: e.target.checked,
+                        })
+                      }
+                      className="mt-1 h-4 w-4 rounded accent-[#BAF14D]"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-white">
+                        Include our company in the Shift Your Summer public leaderboard
+                      </span>
+                      <p className="mt-1 text-xs leading-[1.5] text-white/50">
+                        If enabled, your company will appear on the Corporate Challenge tab at
+                        gogreenstreets.org/events/shift-your-summer alongside other participating
+                        employers. Individual employee data is never shown publicly — only your
+                        company&apos;s aggregate Shift Rate and trip count.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={saveChallenge}
+                    disabled={
+                      !challengeForm.name.trim() ||
+                      !challengeForm.starts_at ||
+                      !challengeForm.ends_at ||
+                      savingChallenge
+                    }
+                    className="rounded-full bg-[#BAF14D] px-5 py-2.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85 disabled:opacity-40"
+                  >
+                    {savingChallenge
+                      ? 'Saving\u2026'
+                      : challenge
+                        ? 'Save changes'
+                        : 'Create challenge'}
+                  </button>
+                  <button
+                    onClick={() => setEditingChallenge(false)}
+                    className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : challenge ? (
+              /* ── Active challenge view ─────────────────── */
+              <div>
+                <h3 className="mb-1 text-lg font-bold text-white">{challenge.name}</h3>
+                <p className="mb-1 text-sm text-white/60">
+                  {formatDate(challenge.starts_at)} &ndash; {formatDate(challenge.ends_at)}
+                </p>
+                <p className="mb-4 text-sm text-white/60">
+                  {METRIC_LABELS[challenge.metric] || challenge.metric}
+                  {challenge.prize_description && ` · Prize: ${challenge.prize_description}`}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setChallengeForm({
+                        name: challenge.name,
+                        starts_at: challenge.starts_at.split('T')[0],
+                        ends_at: challenge.ends_at.split('T')[0],
+                        metric: challenge.metric,
+                        prize_description: challenge.prize_description || '',
+                        public_leaderboard: false,
+                      })
+                      setEditingChallenge(true)
+                    }}
+                    className="rounded-full border border-white/[0.12] px-5 py-2 text-sm font-medium text-white"
+                  >
+                    Edit challenge
+                  </button>
+                  <button
+                    onClick={() => setShowEndModal(true)}
+                    className="rounded-full border border-[#E05252]/30 px-5 py-2 text-sm font-medium text-[#E05252]"
+                  >
+                    End challenge early
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* ── No challenge ──────────────────────────── */
+              <div>
+                <p className="mb-4 text-[0.9375rem] text-white">
+                  You haven&apos;t set up a challenge yet.
+                </p>
+                <button
+                  onClick={() => {
+                    setChallengeForm({
+                      name: '',
+                      starts_at: '',
+                      ends_at: '',
+                      metric: 'pct_non_car',
+                      prize_description: '',
+                      public_leaderboard: false,
+                    })
+                    setEditingChallenge(true)
+                  }}
+                  className="rounded-full bg-[#BAF14D] px-5 py-2.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                >
+                  Create a challenge &rarr;
+                </button>
+              </div>
+            )}
+          </section>
+
+          {/* ── Section 4: Employee leaderboard (placeholder) */}
+          <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+            <h2 className="mb-5 font-display text-base font-bold text-white">
+              Employee leaderboard
+            </h2>
+
+            {/* Period toggle (rendered but inactive) */}
+            <div className="mb-4 flex gap-2">
+              {(
+                [
+                  ['7', '7 days'],
+                  ['30', '30 days'],
+                  ['all', 'Full challenge'],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setLeaderboardPeriod(key)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    leaderboardPeriod === key
+                      ? 'bg-[#BAF14D] text-[#191A2E]'
+                      : 'border border-white/[0.12] text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <p className="py-6 text-center text-sm text-white/50">
+              No employee trip data yet. Once employees join your group and log trips in the Shift
+              app, their standings will appear here.
+            </p>
+
+            <p className="text-xs leading-[1.5] text-white/30">
+              This leaderboard is visible only to you as the group administrator. Employees cannot
+              see each other&apos;s data except through the shared in-app leaderboard.
+            </p>
+          </section>
+
+          {/* ── Section 5: Impact stats (placeholder) ──────── */}
+          <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+            <h2 className="mb-5 font-display text-base font-bold text-white">Impact report</h2>
+
+            <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
+              {[
+                { label: 'Employees joined', value: memberCount > 0 ? String(memberCount) : '\u2014' },
+                { label: 'Active trips', value: '\u2014' },
+                { label: 'Miles shifted', value: '\u2014' },
+                { label: 'CO\u2082 avoided (kg)', value: '\u2014' },
+                { label: 'Most popular mode', value: '\u2014' },
+                { label: 'Avg Shift Rate', value: '\u2014' },
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-xl bg-white/[0.06] p-4 text-center">
+                  <div className="text-2xl font-extrabold text-white">{stat.value}</div>
+                  <div className="mt-1 text-xs text-white/60">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-sm text-white/50">
+              Impact data will appear here once your challenge is underway and employees start
+              logging trips.
+            </p>
+
+            {isTierAtLeast('standard') ? (
+              <button
+                disabled
+                className="mt-4 rounded-full border border-white/[0.12] px-5 py-2 text-sm font-medium text-white/40"
+              >
+                Download impact report (coming soon)
+              </button>
+            ) : (
+              <p className="mt-4 text-sm text-white/40">
+                Impact report PDF available on Standard and above.{' '}
+                <a href="mailto:info@gogreenstreets.org" className="underline">
+                  Contact us to upgrade
+                </a>
+                .
+              </p>
+            )}
+          </section>
+
+          {/* ── Section 6: Account settings ────────────────── */}
+          <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+            <h2 className="mb-5 font-display text-base font-bold text-white">Account settings</h2>
+
+            {editingAccount ? (
+              <div className="space-y-4">
+                <DashField
+                  label="Company name"
+                  value={accountForm.name}
+                  onChange={(v) => setAccountForm({ ...accountForm, name: v })}
+                  required
+                />
+                <DashField
+                  label="Admin name"
+                  value={accountForm.admin_name}
+                  onChange={(v) => setAccountForm({ ...accountForm, admin_name: v })}
+                />
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-white">Admin email</label>
+                  <p className="text-[0.9375rem] text-white/60">{group.admin_email}</p>
+                  <p className="mt-1 text-xs text-white/40">
+                    Contact GSI at info@gogreenstreets.org to change your email.
+                  </p>
+                </div>
+                <DashField
+                  label="Admin phone"
+                  value={accountForm.admin_phone}
+                  onChange={(v) => setAccountForm({ ...accountForm, admin_phone: v })}
+                />
+                <DashField
+                  label="Website URL"
+                  value={accountForm.website_url}
+                  onChange={(v) => setAccountForm({ ...accountForm, website_url: v })}
+                  placeholder="https://"
+                />
+
+                {/* Logo upload */}
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-white">Logo</label>
+                  {(logoPreview || group.logo_url) && (
+                    <img
+                      src={logoPreview || group.logo_url || ''}
+                      alt=""
+                      className="mb-3 h-16 w-16 rounded-lg object-contain"
+                    />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                    onChange={handleLogoSelect}
+                    className="block w-full text-sm text-white/60 file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white"
+                  />
+                  {logoError && <p className="mt-1 text-sm text-[#E05252]">{logoError}</p>}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={saveAccount}
+                    disabled={!accountForm.name.trim() || savingAccount}
+                    className="rounded-full bg-[#BAF14D] px-5 py-2.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85 disabled:opacity-40"
+                  >
+                    {savingAccount ? 'Saving\u2026' : 'Save changes'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAccountForm({
+                        name: group.name || '',
+                        admin_name: group.admin_name || '',
+                        admin_phone: group.admin_phone || '',
+                        website_url: group.website_url || '',
+                      })
+                      setLogoFile(null)
+                      setLogoPreview(null)
+                      setEditingAccount(false)
+                    }}
+                    className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="space-y-3">
+                  <InfoRow label="Company" value={group.name} />
+                  <InfoRow label="Admin" value={group.admin_name || '\u2014'} />
+                  <InfoRow label="Email" value={group.admin_email} />
+                  <InfoRow label="Phone" value={group.admin_phone || '\u2014'} />
+                  <InfoRow label="Website" value={group.website_url || '\u2014'} />
+                  <InfoRow label="Tier" value={group.tier.charAt(0).toUpperCase() + group.tier.slice(1)} />
+                </div>
+                <button
+                  onClick={() => setEditingAccount(true)}
+                  className="mt-5 rounded-full border border-white/[0.12] px-5 py-2 text-sm font-medium text-white"
+                >
+                  Edit settings
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+      <Footer />
+
+      {/* ── End challenge modal ─────────────────────────────── */}
+      {showEndModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-[420px] rounded-[18px] bg-[#242538] p-8">
+            <h3 className="mb-3 font-display text-lg font-bold text-white">End challenge early?</h3>
+            <p className="mb-6 text-sm leading-relaxed text-white">
+              This will end your current challenge immediately. Employee standings will be finalized
+              as of now. This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={endChallenge}
+                disabled={endingChallenge}
+                className="rounded-full bg-[#E05252] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-85 disabled:opacity-40"
+              >
+                {endingChallenge ? 'Ending\u2026' : 'End challenge'}
+              </button>
+              <button
+                onClick={() => setShowEndModal(false)}
+                className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+/* ── shared helpers ────────────────────────────────────────── */
+
+function DashField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  required,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  required?: boolean
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-medium text-white">
+        {label}
+        {required && <span className="text-[#E05252]"> *</span>}
+      </label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/45 focus:border-[#BAF14D]"
+      />
+    </div>
+  )
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between border-b border-white/[0.04] pb-2">
+      <span className="text-sm text-white/50">{label}</span>
+      <span className="text-sm font-medium text-white">{value}</span>
+    </div>
+  )
+}

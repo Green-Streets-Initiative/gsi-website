@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import FAQ from '@/components/FAQ'
+import EmployerLogin from './EmployerLogin'
 
 export const metadata = {
   title: 'Shift for Employers — Green Streets Initiative',
@@ -230,7 +231,12 @@ export default function ShiftEmployersPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
-            6 · CLOSING CTA
+            6 · EMPLOYER LOGIN
+        ══════════════════════════════════════════════════════════ */}
+        <EmployerLogin />
+
+        {/* ══════════════════════════════════════════════════════════
+            7 · CLOSING CTA
         ══════════════════════════════════════════════════════════ */}
         <section className="bg-[#191A2E] px-8 pb-24 md:pb-32">
           <div className="mx-auto max-w-[640px] text-center">
