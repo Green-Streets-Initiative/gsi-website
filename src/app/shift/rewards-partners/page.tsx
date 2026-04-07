@@ -33,6 +33,8 @@ type FormData = {
   signer_name: string
   agreement_accepted: boolean
   sticker_requested: boolean
+  location_lat: number | null
+  location_lng: number | null
 }
 
 const INITIAL_FORM: FormData = {
@@ -55,6 +57,8 @@ const INITIAL_FORM: FormData = {
   signer_name: '',
   agreement_accepted: false,
   sticker_requested: false,
+  location_lat: null,
+  location_lng: null,
 }
 
 const AGREEMENT_TEXT = `Shift Rewards Partner Agreement
@@ -216,6 +220,8 @@ export default function RewardsPartnersPage() {
             logo_url: getLogoUrl(logoPath),
             sticker_requested: form.sticker_requested,
             sticker_requested_at: form.sticker_requested ? new Date().toISOString() : null,
+            location_lat: form.location_lat,
+            location_lng: form.location_lng,
           }),
         }
       )
@@ -600,6 +606,13 @@ export default function RewardsPartnersPage() {
                           address_line1: parsed.line1,
                           address_state: parsed.state,
                           address_zip: parsed.zip,
+                        }))
+                      }}
+                      onPlaceSelected={(place) => {
+                        setForm(prev => ({
+                          ...prev,
+                          location_lat: place.lat,
+                          location_lng: place.lng,
                         }))
                       }}
                     />
