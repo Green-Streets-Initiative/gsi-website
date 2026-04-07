@@ -89,7 +89,7 @@ function DashboardPage() {
 
   const fetchData = useCallback(async (email: string) => {
     // Link sponsor to auth user (enables RLS for redemptions)
-    await supabase.rpc('link_sponsor_on_login').catch(() => {})
+    try { await supabase.rpc('link_sponsor_on_login') } catch {}
 
     const { data: sponsorData } = await supabase
       .from('sponsors')
