@@ -1,55 +1,43 @@
 -- ============================================================
--- Shift Employer Platform — groups + group_members
--- Phase 1 foundation tables for employer challenges
+-- Shift Employer Platform — ALTER groups + group_members
+-- Phase 1: add employer portal columns to existing tables
+--
+-- Existing schema (from Shift app):
+--   groups: id, name, description, type (enum), visibility (enum),
+--           created_by, invite_code, created_at, neighborhood_id
+--   group_members: group_id, user_id, role (enum), joined_at
 -- ============================================================
 
--- ── groups table ─────────────────────────────────────────────
+-- ── Add employer portal columns to groups ───────────────────
 
-CREATE TABLE groups (
-  id                      UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name                    TEXT NOT NULL,
-  slug                    TEXT UNIQUE NOT NULL,
-  group_type              TEXT NOT NULL DEFAULT 'workplace',
-                          -- 'workplace' | 'school' | 'neighborhood'
+ALTER TABLE groups
+  ADD COLUMN IF NOT EXISTS slug                    TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS logo_url                TEXT,
+  ADD COLUMN IF NOT EXISTS website_url             TEXT,
+  ADD COLUMN IF NOT EXISTS city                    TEXT,
+  ADD COLUMN IF NOT EXISTS state                   TEXT DEFAULT 'MA',
 
-  logo_url                TEXT,
-  website_url             TEXT,
-  city                    TEXT,
-  state                   TEXT DEFAULT 'MA',
+  ADD COLUMN IF NOT EXISTS admin_name              TEXT,
+  ADD COLUMN IF NOT EXISTS admin_email             TEXT,
+  ADD COLUMN IF NOT EXISTS admin_phone             TEXT,
 
-  -- Admin contact (portal login)
-  admin_name              TEXT,
-  admin_email             TEXT NOT NULL,
-  admin_phone             TEXT,
+  ADD COLUMN IF NOT EXISTS public_leaderboard      BOOLEAN DEFAULT false,
 
-  -- Invite code for employee joining
-  invite_code             TEXT UNIQUE NOT NULL DEFAULT '',
-  -- Default '' is overwritten by trigger; NOT NULL + UNIQUE enforced
+  ADD COLUMN IF NOT EXISTS tier                    TEXT DEFAULT 'basic',
+  ADD COLUMN IF NOT EXISTS access_starts_at        TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS access_ends_at          TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS status                  TEXT DEFAULT 'pending',
 
-  -- Public leaderboard visibility (opt-in)
-  public_leaderboard      BOOLEAN DEFAULT false,
-
-  -- Platform access
-  tier                    TEXT DEFAULT 'basic',
-                          -- 'basic' | 'standard' | 'premium'
-  access_starts_at        TIMESTAMPTZ,
-  access_ends_at          TIMESTAMPTZ,
-  status                  TEXT DEFAULT 'pending',
-                          -- 'pending' | 'active' | 'inactive' | 'cancelled'
-
-  -- Supabase Auth link
-  user_id                 UUID REFERENCES auth.users(id),
+  -- Supabase Auth link (employer admin who logs into the portal)
+  ADD COLUMN IF NOT EXISTS user_id                 UUID REFERENCES auth.users(id),
 
   -- Stripe (populated in Phase 5)
-  stripe_customer_id      TEXT UNIQUE,
-  stripe_subscription_id  TEXT UNIQUE,
-  stripe_status           TEXT,
+  ADD COLUMN IF NOT EXISTS stripe_customer_id      TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS stripe_subscription_id  TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS stripe_status           TEXT,
 
-  -- Metadata
-  notes                   TEXT,
-  created_at              TIMESTAMPTZ DEFAULT now(),
-  updated_at              TIMESTAMPTZ DEFAULT now()
-);
+  ADD COLUMN IF NOT EXISTS notes                   TEXT,
+  ADD COLUMN IF NOT EXISTS updated_at              TIMESTAMPTZ DEFAULT now();
 
 COMMENT ON TABLE groups IS 'Employer/school/neighborhood groups for Shift challenges';
 COMMENT ON COLUMN groups.invite_code IS '6-char alphanumeric code employees use to join';
@@ -57,12 +45,32 @@ COMMENT ON COLUMN groups.public_leaderboard IS 'When true, group appears on the 
 COMMENT ON COLUMN groups.user_id IS 'FK to auth.users — the employer admin who logs into the portal';
 
 
+-- ── Add id column to group_members (existing PK is composite) ──
+
+ALTER TABLE group_members
+  ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid();
+
+-- Add unique constraint on (group_id, user_id) if not already present
+-- The existing table may already enforce this via PK or unique constraint
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'group_members'::regclass
+    AND contype IN ('p', 'u')
+    AND array_length(conkey, 1) = 2
+  ) THEN
+    ALTER TABLE group_members ADD CONSTRAINT group_members_group_user_unique UNIQUE (group_id, user_id);
+  END IF;
+END $$;
+
+
 -- ── Invite code auto-generation trigger ─────────────────────
+-- Only generates if invite_code is NULL or empty on INSERT
 
 CREATE OR REPLACE FUNCTION generate_invite_code()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Only generate if no code was explicitly provided
   IF NEW.invite_code IS NULL OR NEW.invite_code = '' THEN
     NEW.invite_code := upper(substring(md5(random()::text) from 1 for 6));
   END IF;
@@ -70,6 +78,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Drop existing trigger if any, then create
+DROP TRIGGER IF EXISTS set_invite_code ON groups;
 CREATE TRIGGER set_invite_code
   BEFORE INSERT ON groups
   FOR EACH ROW EXECUTE FUNCTION generate_invite_code();
@@ -85,22 +95,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS groups_updated_at ON groups;
 CREATE TRIGGER groups_updated_at
   BEFORE UPDATE ON groups
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
-
--- ── group_members table ─────────────────────────────────────
-
-CREATE TABLE group_members (
-  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  group_id    UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  joined_at   TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(group_id, user_id)
-);
-
-COMMENT ON TABLE group_members IS 'Tracks which users belong to which employer/group';
 
 
 -- ── RLS: groups ─────────────────────────────────────────────
@@ -108,57 +106,72 @@ COMMENT ON TABLE group_members IS 'Tracks which users belong to which employer/g
 ALTER TABLE groups ENABLE ROW LEVEL SECURITY;
 
 -- Employer admin can read/write their own group
-CREATE POLICY "employer_own_group" ON groups
-  FOR ALL USING (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "employer_own_group" ON groups
+    FOR ALL USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- GSI admin (role set in user_metadata) can manage all groups
-CREATE POLICY "gsiadmin_all_groups" ON groups
-  FOR ALL USING (
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
-  );
+-- GSI admin can manage all groups (uses existing is_gsi_admin() function)
+DO $$ BEGIN
+  CREATE POLICY "gsiadmin_all_groups" ON groups
+    FOR ALL USING (is_gsi_admin());
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Public leaderboard page needs to read groups that opted in
-CREATE POLICY "anon_read_public_groups" ON groups
-  FOR SELECT USING (public_leaderboard = true);
+DO $$ BEGIN
+  CREATE POLICY "anon_read_public_groups" ON groups
+    FOR SELECT USING (public_leaderboard = true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 
 -- ── RLS: group_members ──────────────────────────────────────
 
 ALTER TABLE group_members ENABLE ROW LEVEL SECURITY;
 
--- Users can see their own memberships
-CREATE POLICY "own_memberships" ON group_members
-  FOR SELECT USING (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "own_memberships" ON group_members
+    FOR SELECT USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- Group admin can see all members in their group
-CREATE POLICY "group_admin_members" ON group_members
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM groups
-      WHERE groups.id = group_members.group_id
-      AND groups.user_id = auth.uid()
-    )
-  );
+DO $$ BEGIN
+  CREATE POLICY "group_admin_members" ON group_members
+    FOR SELECT USING (
+      EXISTS (
+        SELECT 1 FROM groups
+        WHERE groups.id = group_members.group_id
+        AND groups.user_id = auth.uid()
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- Authenticated users can join a group (insert their own membership)
-CREATE POLICY "user_join_group" ON group_members
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "user_join_group" ON group_members
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- Users can leave a group (delete their own membership)
-CREATE POLICY "user_leave_group" ON group_members
-  FOR DELETE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "user_leave_group" ON group_members
+    FOR DELETE USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- GSI admin can manage all memberships
-CREATE POLICY "gsiadmin_all_members" ON group_members
-  FOR ALL USING (
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
-  );
+DO $$ BEGIN
+  CREATE POLICY "gsiadmin_all_members" ON group_members
+    FOR ALL USING (is_gsi_admin());
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 
--- ── Indexes ─────────────────────────────────────────────────
+-- ── Indexes (IF NOT EXISTS) ─────────────────────────────────
 
-CREATE INDEX idx_groups_admin_email ON groups (admin_email);
-CREATE INDEX idx_groups_invite_code ON groups (invite_code);
-CREATE INDEX idx_groups_status ON groups (status);
-CREATE INDEX idx_group_members_user_id ON group_members (user_id);
-CREATE INDEX idx_group_members_group_id ON group_members (group_id);
+CREATE INDEX IF NOT EXISTS idx_groups_admin_email ON groups (admin_email);
+CREATE INDEX IF NOT EXISTS idx_groups_invite_code ON groups (invite_code);
+CREATE INDEX IF NOT EXISTS idx_groups_status ON groups (status);
+CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members (user_id);
+CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members (group_id);
