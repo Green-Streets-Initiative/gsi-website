@@ -14,8 +14,8 @@ const impactCards = [
     body: 'Shift is free to download and use. Every active commuter who joins, every school that runs the program, every neighborhood that climbs the leaderboard \u2014 none of it costs them anything. Donations make that possible.',
   },
   {
-    title: 'We measure what others assume.',
-    body: 'Most transportation initiatives run on estimated impact. GSI verifies it \u2014 trip by trip, neighborhood by neighborhood. Donors fund infrastructure that produces real data for real decisions.',
+    title: 'Every trip is measured.',
+    body: 'GSI verifies impact trip by trip, neighborhood by neighborhood \u2014 not estimates, but real data. Donors fund the infrastructure that turns every trip into actionable insight for communities and policymakers.',
   },
   {
     title: 'We\u2019re just getting started.',
