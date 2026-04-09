@@ -44,6 +44,7 @@ interface RecruitmentAsset {
 
 interface Assets {
   submit_url: string
+  field_recorder_url: string | null
   qr_code_svg: string
   social_share_text: string | null
   flyer_url: string | null
@@ -314,6 +315,14 @@ export default function FunderDashboardPage() {
                 label="Submission Intake URL"
                 value={assets.submit_url}
               />
+
+              {/* Field recorder URL */}
+              {assets.field_recorder_url && (
+                <CopyableAssetCard
+                  label="Field Recorder URL"
+                  value={assets.field_recorder_url}
+                />
+              )}
 
               {/* Social share text */}
               {assets.social_share_text && (
