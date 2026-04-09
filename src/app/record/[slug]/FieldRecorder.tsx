@@ -314,11 +314,20 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
 
   const header = (
     <header className="flex items-center justify-between border-b border-white/10 bg-[#191A2E] px-6 py-4">
-      <span className="font-display text-lg font-bold text-white">
-        Green Streets Initiative
+      {/* GSI wordmark: Trebuchet MS, "Green Streets" bold + "Initiative" regular */}
+      <span className="text-lg tracking-wide text-white" style={{ fontFamily: "'Trebuchet MS', sans-serif" }}>
+        <span className="font-bold">Green Streets</span>{' '}
+        <span className="font-normal">Initiative</span>
       </span>
-      <span className="font-display text-sm font-semibold text-[#BAF14D]">
-        Shift
+      {/* Shift wordmark: Bricolage Grotesque + chevrons */}
+      <span className="flex items-center gap-1">
+        <span className="font-display text-sm font-extrabold tracking-tight text-white">
+          Shift
+        </span>
+        <svg viewBox="0 0 40 26" className="h-4 w-6" aria-hidden="true">
+          <path d="M0,0 L16,13 L0,26 L0,19 L10,13 L0,7Z" fill="#BAF14D" />
+          <path d="M20,0 L36,13 L20,26 L20,19 L30,13 L20,7Z" fill="#2966E5" />
+        </svg>
       </span>
     </header>
   )
