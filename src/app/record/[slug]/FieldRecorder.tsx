@@ -38,6 +38,11 @@ function getFileExtension(mimeType: string): string {
   return 'webm'
 }
 
+/** Strip codec params from MIME type (e.g. "video/webm;codecs=vp9,opus" -> "video/webm") */
+function baseMimeType(mimeType: string): string {
+  return mimeType.split(';')[0]
+}
+
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
@@ -134,6 +139,8 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
     }
 
     recorder.onstop = () => {
+      // Stop the camera so playback isn't competing with the live stream
+      stopCamera()
       const blob = new Blob(chunksRef.current, { type: mimeType })
       const url = URL.createObjectURL(blob)
       // Estimate duration from elapsed timer
@@ -236,7 +243,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
         } else {
           const ext = getFileExtension(clip.mimeType)
           formData.append(`clip_${promptId}`, clip.blob, `clip.${ext}`)
-          formData.append(`clip_${promptId}_mime`, clip.mimeType)
+          formData.append(`clip_${promptId}_mime`, baseMimeType(clip.mimeType))
           formData.append(`clip_${promptId}_duration`, String(clip.duration))
         }
         clipIndex++
@@ -536,11 +543,28 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
         {header}
         <main className="flex flex-1 items-center justify-center px-4 py-6">
           <div className="mx-auto w-full max-w-lg">
-            {/* Progress */}
+            {/* Top bar: back button + progress + voice toggle */}
             <div className="mb-4 flex items-center justify-between">
-              <span className="text-xs font-medium text-[#8A8DA8]">
-                Prompt {promptNumber} of {totalPrompts}
-              </span>
+              <div className="flex items-center gap-3">
+                {!isRecording && (
+                  <button
+                    onClick={() => {
+                      stopCamera()
+                      if (recordedUrl) URL.revokeObjectURL(recordedUrl)
+                      setRecordedBlob(null)
+                      setRecordedUrl(null)
+                      setStep('intro')
+                    }}
+                    className="text-xs text-[#8A8DA8] hover:text-white"
+                    title="Exit"
+                  >
+                    &larr; Exit
+                  </button>
+                )}
+                <span className="text-xs font-medium text-[#8A8DA8]">
+                  Prompt {promptNumber} of {totalPrompts}
+                </span>
+              </div>
               {/* Voice-only toggle */}
               <button
                 onClick={() => {
@@ -561,11 +585,16 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
               <p className="font-display text-lg font-bold text-white leading-snug">
                 {currentPrompt?.prompt_text}
               </p>
-              {currentPrompt?.hint_text && (
-                <p className="mt-2 text-sm text-[#8A8DA8]">
-                  {currentPrompt.hint_text}
-                </p>
-              )}
+              <div className="mt-2 flex items-center gap-3">
+                {currentPrompt?.hint_text && (
+                  <p className="text-sm text-[#8A8DA8]">
+                    {currentPrompt.hint_text}
+                  </p>
+                )}
+                <span className="flex-shrink-0 rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-[#8A8DA8]">
+                  {maxDuration}s max
+                </span>
+              </div>
             </div>
 
             {/* Error banner */}
