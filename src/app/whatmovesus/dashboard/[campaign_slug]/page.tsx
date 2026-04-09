@@ -9,7 +9,6 @@ import {
   Cell,
   ResponsiveContainer,
   Tooltip,
-  Legend,
 } from 'recharts'
 
 // ── Types ───────────────────────────────────────────────────
@@ -38,12 +37,17 @@ interface RecruitSource {
   label: string
 }
 
+interface RecruitmentAsset {
+  type: string
+  url: string
+}
+
 interface Assets {
   submit_url: string
   qr_code_svg: string
   social_share_text: string | null
   flyer_url: string | null
-  recruitment_assets: Array<{ type: string; url: string }>
+  recruitment_assets: RecruitmentAsset[]
 }
 
 interface Submission {
@@ -82,11 +86,9 @@ interface ClipDetail {
 
 // ── Constants ───────────────────────────────────────────────
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-
 const STATUS_COLORS: Record<string, string> = {
   active: 'bg-green-500/20 text-green-400',
-  draft: 'bg-white/10 text-white/50',
+  draft: 'bg-white/20 text-white/80',
   closed: 'bg-amber-500/20 text-amber-400',
   processing: 'bg-blue-500/20 text-blue-400',
   complete: 'bg-lime/20 text-lime',
@@ -104,6 +106,13 @@ const SOURCE_LABELS: Record<string, string> = {
   unknown: 'Unknown',
 }
 
+const ASSET_LABELS: Record<string, string> = {
+  email_template: 'Email Template',
+  flyer_pdf: 'Flyer',
+  social_card: 'Social Card',
+  qr_code: 'QR Code',
+}
+
 // ── Main Component ──────────────────────────────────────────
 
 export default function FunderDashboardPage() {
@@ -116,23 +125,6 @@ export default function FunderDashboardPage() {
     {},
   )
   const [clipLoading, setClipLoading] = useState<string | null>(null)
-
-  const getToken = useCallback(() => {
-    // Token is in httpOnly cookie — not accessible from JS.
-    // We pass it via the Edge Function which reads from cookie.
-    // Actually, the middleware sets x-wmu-token header but that's
-    // only available server-side. We'll pass the token from cookie
-    // by having the Edge Function accept it from the cookie too.
-    // Since the cookie is httpOnly, we can't read it from JS.
-    // Instead, we'll use a Next.js API route to proxy, OR
-    // we read the token from the URL on first load before redirect.
-    //
-    // Simplest approach: store token in sessionStorage on first visit
-    // (middleware redirects, but we can also keep it client-side).
-    // Actually, the cleanest approach: use a Next.js route handler
-    // that reads the cookie and proxies to the Edge Function.
-    return null
-  }, [])
 
   const fetchDashboard = useCallback(
     async (pageNum: number) => {
@@ -253,12 +245,12 @@ export default function FunderDashboardPage() {
                   <StatusBadge status={campaign.status} />
                 </div>
                 {campaign.funder_name && (
-                  <p className="mb-1 text-sm text-white/50">
+                  <p className="mb-1 text-sm text-white/90">
                     {campaign.funder_name}
                   </p>
                 )}
                 {(campaign.collection_start || campaign.collection_end) && (
-                  <p className="text-sm text-white/40">
+                  <p className="text-sm text-white/80">
                     {formatDateRange(
                       campaign.collection_start,
                       campaign.collection_end,
@@ -266,7 +258,7 @@ export default function FunderDashboardPage() {
                   </p>
                 )}
                 {campaign.description && (
-                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/60">
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/90">
                     {campaign.description.slice(0, 280)}
                   </p>
                 )}
@@ -292,7 +284,7 @@ export default function FunderDashboardPage() {
               />
             </div>
             {funnel.started > 0 && (
-              <p className="mt-4 text-xs text-white/40">
+              <p className="mt-4 text-sm text-white/90">
                 Completion rate:{' '}
                 {Math.round((funnel.completed / funnel.started) * 100)}%
               </p>
@@ -317,37 +309,23 @@ export default function FunderDashboardPage() {
               Recruitment Assets
             </h2>
             <div className="grid gap-4 md:grid-cols-2">
-              <AssetCard
+              {/* Submission intake URL */}
+              <CopyableAssetCard
                 label="Submission Intake URL"
                 value={assets.submit_url}
-                copyable
               />
+
+              {/* Social share text */}
               {assets.social_share_text && (
-                <AssetCard
+                <CopyableAssetCard
                   label="Social Share Text"
                   value={assets.social_share_text}
-                  copyable
                 />
               )}
-              <AssetCard
-                label="QR Code"
-                value=""
-                qrSvg={assets.qr_code_svg}
-              />
-              {assets.flyer_url && (
-                <AssetCard
-                  label="Campaign Flyer"
-                  value={assets.flyer_url}
-                  downloadable
-                />
-              )}
+
+              {/* Database recruitment assets with proper handling per type */}
               {assets.recruitment_assets.map((a) => (
-                <AssetCard
-                  key={a.type}
-                  label={formatAssetType(a.type)}
-                  value={a.url}
-                  downloadable
-                />
+                <RecruitmentAssetCard key={a.type} asset={a} />
               ))}
             </div>
           </div>
@@ -359,13 +337,13 @@ export default function FunderDashboardPage() {
             <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-lime">
               Submissions
             </h2>
-            <p className="mb-6 text-xs text-white/40">
+            <p className="mb-6 text-sm text-white/90">
               {pagination.total} total submission
               {pagination.total !== 1 ? 's' : ''}
             </p>
 
             {submissions.length === 0 ? (
-              <p className="py-12 text-center text-sm text-white/40">
+              <p className="py-12 text-center text-sm text-white">
                 No submissions yet
               </p>
             ) : (
@@ -373,7 +351,7 @@ export default function FunderDashboardPage() {
                 <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
                   <table className="w-full text-left text-sm">
                     <thead>
-                      <tr className="border-b border-white/[0.07] text-xs uppercase tracking-wider text-white/40">
+                      <tr className="border-b border-white/[0.07] text-xs uppercase tracking-wider text-white/80">
                         <th className="px-4 py-3 font-medium">Name</th>
                         <th className="px-4 py-3 font-medium">Date</th>
                         <th className="px-4 py-3 font-medium">Status</th>
@@ -402,11 +380,11 @@ export default function FunderDashboardPage() {
                     <button
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       disabled={page === 1}
-                      className="rounded-lg border border-white/[0.1] px-3 py-1.5 text-xs text-white/60 transition hover:bg-white/[0.05] disabled:opacity-30"
+                      className="rounded-lg border border-white/[0.15] px-3 py-1.5 text-xs text-white transition hover:bg-white/[0.05] disabled:opacity-30"
                     >
                       Previous
                     </button>
-                    <span className="text-xs text-white/40">
+                    <span className="text-xs text-white/90">
                       Page {page} of {totalPages}
                     </span>
                     <button
@@ -414,7 +392,7 @@ export default function FunderDashboardPage() {
                         setPage((p) => Math.min(totalPages, p + 1))
                       }
                       disabled={page === totalPages}
-                      className="rounded-lg border border-white/[0.1] px-3 py-1.5 text-xs text-white/60 transition hover:bg-white/[0.05] disabled:opacity-30"
+                      className="rounded-lg border border-white/[0.15] px-3 py-1.5 text-xs text-white transition hover:bg-white/[0.05] disabled:opacity-30"
                     >
                       Next
                     </button>
@@ -433,7 +411,7 @@ export default function FunderDashboardPage() {
 // ── Sub-components ──────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
-  const color = STATUS_COLORS[status] || 'bg-white/10 text-white/50'
+  const color = STATUS_COLORS[status] || 'bg-white/20 text-white/80'
   return (
     <span
       className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${color}`}
@@ -446,7 +424,7 @@ function StatusBadge({ status }: { status: string }) {
 function FunnelCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4">
-      <p className="mb-1 text-xs text-white/40">{label}</p>
+      <p className="mb-1 text-xs text-white/80">{label}</p>
       <p className="font-display text-2xl font-bold tracking-tight text-white">
         {value.toLocaleString()}
       </p>
@@ -465,7 +443,7 @@ function RecruitSourceChart({
   }))
 
   if (chartData.length === 0) {
-    return <p className="text-sm text-white/40">No recruitment data yet</p>
+    return <p className="text-sm text-white">No recruitment data yet</p>
   }
 
   const total = chartData.reduce((sum, d) => sum + d.value, 0)
@@ -512,9 +490,9 @@ function RecruitSourceChart({
                 backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
               }}
             />
-            <span className="text-sm text-white/70">{d.name}</span>
+            <span className="text-sm text-white">{d.name}</span>
             <span className="text-sm font-medium text-white">{d.value}</span>
-            <span className="text-xs text-white/30">
+            <span className="text-xs text-white/80">
               ({Math.round((d.value / total) * 100)}%)
             </span>
           </div>
@@ -524,77 +502,113 @@ function RecruitSourceChart({
   )
 }
 
-function AssetCard({
+/** Simple copy-to-clipboard card for URLs and text */
+function CopyableAssetCard({
   label,
   value,
-  copyable,
-  downloadable,
-  qrSvg,
 }: {
   label: string
   value: string
-  copyable?: boolean
-  downloadable?: boolean
-  qrSvg?: string
 }) {
   const [copied, setCopied] = useState(false)
 
-  const handleCopy = async (text: string) => {
-    await navigator.clipboard.writeText(text)
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(value)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
   return (
     <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4">
-      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-white/40">
+      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-white/80">
         {label}
       </p>
-      {qrSvg ? (
-        <div className="flex items-center gap-4">
-          <div
-            className="h-24 w-24 rounded-lg bg-white p-2"
-            dangerouslySetInnerHTML={{ __html: qrSvg }}
-          />
+      <div className="flex items-center gap-2">
+        <p className="min-w-0 flex-1 truncate text-sm text-white">
+          {value}
+        </p>
+        <button
+          onClick={handleCopy}
+          className="flex-shrink-0 rounded-lg border border-white/[0.15] px-3 py-1 text-xs text-white transition hover:bg-white/[0.05]"
+        >
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Recruitment asset card with type-specific actions:
+ * - email_template / flyer_pdf → Preview (opens rendered HTML in new window) + Copy Source
+ * - social_card → View in new tab
+ * - qr_code → Download link
+ */
+function RecruitmentAssetCard({ asset }: { asset: RecruitmentAsset }) {
+  const [copied, setCopied] = useState(false)
+  const label = ASSET_LABELS[asset.type] || asset.type
+
+  const isHtmlAsset =
+    asset.type === 'email_template' || asset.type === 'flyer_pdf'
+
+  const handlePreview = async () => {
+    try {
+      const resp = await fetch(asset.url)
+      const html = await resp.text()
+      const win = window.open('', '_blank')
+      if (win) {
+        win.document.write(html)
+        win.document.close()
+      }
+    } catch {
+      window.open(asset.url, '_blank')
+    }
+  }
+
+  const handleCopySource = async () => {
+    try {
+      const resp = await fetch(asset.url)
+      const html = await resp.text()
+      await navigator.clipboard.writeText(html)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback: copy the URL
+      await navigator.clipboard.writeText(asset.url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4">
+      <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/80">
+        {label}
+      </p>
+      {isHtmlAsset ? (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              const blob = new Blob([qrSvg], { type: 'image/svg+xml' })
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url
-              a.download = 'qr-code.svg'
-              a.click()
-              URL.revokeObjectURL(url)
-            }}
-            className="text-xs font-medium text-lime hover:underline"
+            onClick={handlePreview}
+            className="rounded-lg border border-white/[0.15] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/[0.05]"
           >
-            Download SVG
+            {asset.type === 'flyer_pdf' ? 'Preview / Print' : 'Preview'}
+          </button>
+          <button
+            onClick={handleCopySource}
+            className="rounded-lg border border-white/[0.15] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/[0.05]"
+          >
+            {copied ? 'Copied!' : 'Copy source'}
           </button>
         </div>
       ) : (
-        <div className="flex items-center gap-2">
-          <p className="min-w-0 flex-1 truncate text-sm text-white/70">
-            {value}
-          </p>
-          {copyable && (
-            <button
-              onClick={() => handleCopy(value)}
-              className="flex-shrink-0 rounded-lg border border-white/[0.1] px-3 py-1 text-xs text-white/60 transition hover:bg-white/[0.05]"
-            >
-              {copied ? 'Copied!' : 'Copy'}
-            </button>
-          )}
-          {downloadable && (
-            <a
-              href={value}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-shrink-0 rounded-lg border border-white/[0.1] px-3 py-1 text-xs text-white/60 transition hover:bg-white/[0.05]"
-            >
-              Download
-            </a>
-          )}
-        </div>
+        <a
+          href={asset.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block rounded-lg border border-white/[0.15] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/[0.05]"
+        >
+          {asset.type === 'qr_code' ? 'Download' : 'View'}
+        </a>
       )}
     </div>
   )
@@ -619,15 +633,15 @@ function SubmissionRow({
         onClick={onToggle}
         className="cursor-pointer border-b border-white/[0.04] transition hover:bg-white/[0.03]"
       >
-        <td className="px-4 py-3 text-white/80">{submission.display_name}</td>
-        <td className="px-4 py-3 text-white/50">
+        <td className="px-4 py-3 text-white">{submission.display_name}</td>
+        <td className="px-4 py-3 text-white/90">
           {formatDate(submission.submitted_at)}
         </td>
         <td className="px-4 py-3">
           <StatusBadge status={submission.status} />
         </td>
-        <td className="px-4 py-3 text-white/50">{submission.clip_count}</td>
-        <td className="px-4 py-3 text-white/50">
+        <td className="px-4 py-3 text-white/90">{submission.clip_count}</td>
+        <td className="px-4 py-3 text-white/90">
           {submission.recruit_source
             ? SOURCE_LABELS[submission.recruit_source] ||
               submission.recruit_source
@@ -640,7 +654,7 @@ function SubmissionRow({
             {clipLoading ? (
               <div className="flex items-center gap-2 py-4">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-lime border-t-transparent" />
-                <span className="text-xs text-white/40">Loading clips…</span>
+                <span className="text-xs text-white">Loading clips…</span>
               </div>
             ) : clips && clips.length > 0 ? (
               <div className="space-y-4">
@@ -649,7 +663,7 @@ function SubmissionRow({
                 ))}
               </div>
             ) : (
-              <p className="py-2 text-xs text-white/40">No clips available</p>
+              <p className="py-2 text-xs text-white">No clips available</p>
             )}
           </td>
         </tr>
@@ -662,12 +676,12 @@ function ClipCard({ clip }: { clip: ClipDetail }) {
   return (
     <div className="rounded-lg border border-white/[0.07] bg-white/[0.03] p-4">
       {clip.prompt_text && (
-        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-lime/70">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-lime">
           {clip.prompt_text}
         </p>
       )}
       {clip.skipped ? (
-        <p className="text-xs italic text-white/30">Skipped</p>
+        <p className="text-xs italic text-white/80">Skipped</p>
       ) : (
         <>
           {clip.media_url && (
@@ -688,7 +702,7 @@ function ClipCard({ clip }: { clip: ClipDetail }) {
                 />
               )}
               {clip.duration_seconds && (
-                <p className="mt-1 text-xs text-white/30">
+                <p className="mt-1 text-xs text-white/80">
                   {formatDuration(clip.duration_seconds)}
                 </p>
               )}
@@ -696,10 +710,10 @@ function ClipCard({ clip }: { clip: ClipDetail }) {
           )}
           {clip.transcript_text && (
             <div className="rounded-lg bg-white/[0.03] p-3">
-              <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-white/30">
+              <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-white/80">
                 Transcript
               </p>
-              <p className="text-sm leading-relaxed text-white/60">
+              <p className="text-sm leading-relaxed text-white">
                 {clip.transcript_text}
               </p>
             </div>
@@ -751,14 +765,4 @@ function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
   return `${m}:${String(s).padStart(2, '0')}`
-}
-
-function formatAssetType(type: string): string {
-  const labels: Record<string, string> = {
-    email_template: 'Email Template',
-    flyer_pdf: 'Flyer PDF',
-    social_card: 'Social Card',
-    qr_code: 'QR Code',
-  }
-  return labels[type] || type
 }
