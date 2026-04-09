@@ -82,7 +82,52 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Database error' }, { status: 500 })
   }
 
-  // 2. Send Resend notification
+  // 2. Sync to CRM contacts table
+  try {
+    const nameParts = body.name.trim().split(' ')
+    const firstName = nameParts[0] || null
+    const lastName = nameParts.slice(1).join(' ') || null
+
+    const { data: existingContact } = await supabase
+      .from('contacts')
+      .select('id')
+      .ilike('email', body.email.trim())
+      .maybeSingle()
+
+    let contactId = existingContact?.id
+
+    if (!contactId) {
+      const { data: newContact } = await supabase
+        .from('contacts')
+        .insert({
+          first_name: firstName,
+          last_name: lastName,
+          email: body.email.trim(),
+          classification_status: 'unclassified',
+          loops_subscribed: true,
+          source: 'manual',
+          notes: `Volunteer inquiry. Roles: ${body.roles.join(', ')}${body.about ? '. About: ' + body.about.trim() : ''}`,
+        })
+        .select('id')
+        .single()
+      contactId = newContact?.id
+    }
+
+    if (contactId) {
+      await supabase.from('interactions').insert({
+        contact_id: contactId,
+        type: 'note',
+        direction: 'inbound',
+        subject: 'Volunteer form submission',
+        body: `Roles: ${body.roles.join(', ')}${body.about ? '\n\n' + body.about.trim() : ''}`,
+        occurred_at: new Date().toISOString(),
+      })
+    }
+  } catch (crmError) {
+    console.error('CRM sync error:', crmError)
+  }
+
+  // 3. Send Resend notification
   try {
     await resend.emails.send({
       from: 'Shift Website <noreply@gogreenstreets.org>',

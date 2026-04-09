@@ -97,7 +97,106 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Database error' }, { status: 500 })
   }
 
-  // 2. Send Resend notification
+  // 2. Sync to CRM contacts table
+  try {
+    const nameParts = body.name.trim().split(' ')
+    const firstName = nameParts[0] || null
+    const lastName = nameParts.slice(1).join(' ') || null
+
+    // Check if contact already exists
+    const { data: existingContact } = await supabase
+      .from('contacts')
+      .select('id')
+      .ilike('email', body.email.trim())
+      .maybeSingle()
+
+    let contactId = existingContact?.id
+
+    // Determine org name from inquiry type
+    const orgName = body.companyName?.trim() || body.schoolName?.trim() || body.businessName?.trim() || null
+
+    // Create/match organization
+    let orgId: string | null = null
+    if (orgName) {
+      const { data: existingOrg } = await supabase
+        .from('organizations')
+        .select('id')
+        .ilike('name', orgName)
+        .maybeSingle()
+
+      if (existingOrg) {
+        orgId = existingOrg.id
+      } else {
+        const { data: newOrg } = await supabase
+          .from('organizations')
+          .insert({ name: orgName })
+          .select('id')
+          .single()
+        orgId = newOrg?.id ?? null
+      }
+    }
+
+    if (!contactId) {
+      // Create new CRM contact
+      const { data: newContact } = await supabase
+        .from('contacts')
+        .insert({
+          first_name: firstName,
+          last_name: lastName,
+          email: body.email.trim(),
+          neighborhood: body.neighborhood?.trim() || null,
+          organization_id: orgId,
+          classification_status: 'unclassified',
+          loops_subscribed: true,
+          source: 'manual',
+          notes: `Website form inquiry: ${body.inquiryType}`,
+        })
+        .select('id')
+        .single()
+      contactId = newContact?.id
+    }
+
+    // Log as an interaction so it shows up in the CRM and triage digest
+    if (contactId) {
+      await supabase.from('interactions').insert({
+        contact_id: contactId,
+        organization_id: orgId,
+        type: 'note',
+        direction: 'inbound',
+        subject: `Website form: ${body.inquiryType}`,
+        body: body.message.trim(),
+        occurred_at: new Date().toISOString(),
+      })
+    }
+
+    // If rewards partner inquiry, add to pipeline
+    if (body.inquiryType === 'Rewards partner (local business)' && contactId) {
+      const { data: stages } = await supabase
+        .from('pipeline_stages')
+        .select('id')
+        .eq('relationship_type_id', 'rewards_partner')
+        .order('sort_order')
+        .limit(1)
+
+      if (stages?.[0]) {
+        await supabase.from('contact_relationships').insert({
+          contact_id: contactId,
+          organization_id: orgId,
+          relationship_type_id: 'rewards_partner',
+          stage_id: stages[0].id,
+          status: 'active',
+          started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          notes: 'Inbound from website contact form',
+        })
+      }
+    }
+  } catch (crmError) {
+    // Don't fail the form submission if CRM sync fails
+    console.error('CRM sync error:', crmError)
+  }
+
+  // 3. Send Resend notification
   try {
     await resend.emails.send({
       from: 'Shift Website <noreply@gogreenstreets.org>',
