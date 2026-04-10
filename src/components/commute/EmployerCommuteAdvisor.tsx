@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import RecommendationCard from '@/components/commute/RecommendationCard'
@@ -255,7 +254,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
               <span className="font-normal text-white/60">Initiative</span>
             </span>
             {group.logo_url ? (
-              <Image src={group.logo_url} alt={group.name} width={120} height={36} className="h-9 w-auto object-contain" />
+              <img src={group.logo_url} alt={group.name} className="h-9 w-auto object-contain" />
             ) : (
               <span className="font-display text-[1rem] font-bold text-white">{group.name}</span>
             )}
