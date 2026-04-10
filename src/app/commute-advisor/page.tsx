@@ -783,12 +783,12 @@ export default function CommuteCalculator() {
                   onSelect={handleBarrierSelect}
                 />
 
-                {/* Getting started — always appears after barrier selection */}
+                {/* Guides — appears after barrier selection, fetches matching micro_guide */}
                 {selectedBarrier && (
                   <GettingStarted
-                    guide={recommendation.content.guide}
+                    modes={recommendation.primary.modes}
+                    barrier={selectedBarrier}
                     event={recommendation.content.event}
-                    barrierIsHabit={selectedBarrier === 'habit'}
                   />
                 )}
 

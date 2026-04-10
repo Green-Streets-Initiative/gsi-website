@@ -346,23 +346,34 @@ function buildBikeReasons(
 ): string[] {
   const reasons: string[] = []
   const mins = bikeMinutes(distanceMiles)
-  reasons.push(`${distanceMiles.toFixed(1)} miles — about ${mins} minutes by bike`)
+  const driveMins = Math.round((distanceMiles / 14) * 60) // 14 mph avg Boston driving
 
+  // Time comparison — the most persuasive argument
+  if (mins <= driveMins + 5) {
+    reasons.push(`About ${mins} minutes by bike — comparable to driving in Boston traffic (~${driveMins} min)`)
+  } else {
+    reasons.push(`About ${mins} minutes by bike — ${distanceMiles.toFixed(1)} miles each way`)
+  }
+
+  // Cost argument
   if (hasBluebikes && nearestOriginStation) {
     reasons.push(
-      `Free with your own bike, or Bluebikes station ${nearestOriginStation.distance_miles} mi from your address`
+      `Saves ~$8–15/day vs. driving (gas + parking). Free with your own bike, or Bluebikes station ${nearestOriginStation.distance_miles} mi away`
     )
   } else {
-    reasons.push('Free if you already own a bike')
+    reasons.push('Saves ~$8–15/day vs. driving — zero fuel, maintenance, or parking costs')
   }
 
+  // Infrastructure / safety argument
   if (bikeInfraQuality === 'protected') {
-    reasons.push('Protected bike infrastructure detected near your route')
+    reasons.push('Protected bike lane along this corridor — separated from traffic')
   } else if (bikeInfraQuality === 'shared') {
-    reasons.push('Shared lane — moderate traffic, suitable for most riders')
+    reasons.push('Bike lane available along this route — moderate traffic, suitable for most riders')
+  } else {
+    reasons.push('Burns 400–500 calories per ride — like a gym session built into your day')
   }
 
-  return reasons.slice(0, 3)
+  return reasons
 }
 
 function buildTransitReasons(
@@ -372,23 +383,28 @@ function buildTransitReasons(
 ): string[] {
   const reasons: string[] = []
 
+  // Route specificity
   if (originStops.length > 0 && destStops.length > 0) {
     const originStop = originStops[0]
     const destStop = destStops[0]
     reasons.push(
-      `${originStop.route_names[0] || 'MBTA'} from ${originStop.name} to ${destStop.name}`
+      `${originStop.route_names[0] || 'MBTA'} from ${originStop.name} to ${destStop.name} — no driving, no parking`
     )
-  }
-
-  reasons.push('$2.40 per ride, or $90/month for an unlimited LinkPass')
-
-  if (distanceMiles > 4) {
-    reasons.push('No parking costs or gas expenses')
   } else {
-    reasons.push('Reliable schedule, no traffic stress')
+    reasons.push('No driving, no parking — read, relax, or work during your commute')
   }
 
-  return reasons.slice(0, 3)
+  // Cost comparison
+  reasons.push('$2.40 per ride or $90/month unlimited — saves hundreds vs. driving + parking each month')
+
+  // Practical benefit
+  if (distanceMiles > 4) {
+    reasons.push('Skip Boston traffic entirely — predictable schedule regardless of congestion')
+  } else {
+    reasons.push('Reliable schedule — no searching for parking, no traffic stress')
+  }
+
+  return reasons
 }
 
 function buildMultimodalReasons(
@@ -401,20 +417,26 @@ function buildMultimodalReasons(
   const bikeToTransitMiles = nearestOriginStation ? nearestOriginStation.distance_miles + 0.5 : 1
   const transitMiles = distanceMiles - bikeToTransitMiles
   const bikeMins = bikeMinutes(bikeToTransitMiles)
-  const transitMins = Math.round((transitMiles / 20) * 60) // rough transit speed
-  reasons.push(`${bikeMins} min bike + ${transitMins} min transit = ${bikeMins + transitMins} min door to door`)
+  const transitMins = Math.round((transitMiles / 20) * 60)
+  const totalMins = bikeMins + transitMins
+  const driveMins = Math.round((distanceMiles / 14) * 60)
 
+  // Time comparison
+  reasons.push(`${bikeMins} min bike + ${transitMins} min transit = ~${totalMins} min door to door${totalMins <= driveMins + 5 ? ' — competitive with driving' : ''}`)
+
+  // Cost
+  reasons.push('Costs $2.40–5.90/day vs. $15–40/day driving (gas + parking) — saves $200+/month')
+
+  // Practical
   if (nearestOriginStation && nearestOriginStation.num_bikes_available > 0) {
     reasons.push(
-      `${nearestOriginStation.num_bikes_available} bikes at ${nearestOriginStation.name} (${nearestOriginStation.distance_miles} mi)`
+      `Bluebikes station ${nearestOriginStation.distance_miles} mi from your address with ${nearestOriginStation.num_bikes_available} bikes available now`
     )
+  } else if (originStops.length > 0) {
+    reasons.push(`${originStops[0].route_names[0] || 'MBTA'} from ${originStops[0].name} — exercise built into your commute`)
   }
 
-  if (originStops.length > 0) {
-    reasons.push(`${originStops[0].route_names[0] || 'MBTA'} from ${originStops[0].name}`)
-  }
-
-  return reasons.slice(0, 3)
+  return reasons
 }
 
 /* ── Decision tree ── */
