@@ -10,17 +10,18 @@ function cacheKey(lat: number, lng: number, radius: number): string {
   return `${lat.toFixed(3)},${lng.toFixed(3)},${radius}`
 }
 
-// MassDOT ArcGIS endpoints for bike infrastructure
-const BIKE_FACILITIES_URL =
-  'https://gis.massdot.state.ma.us/arcgis/rest/services/Bike/BikeTrails_Facilities/MapServer/0/query'
-const CRASH_CLUSTERS_URL =
-  'https://gis.massdot.state.ma.us/arcgis/rest/services/CrashData/CrashClusters/MapServer/0/query'
+// Correct MassDOT ArcGIS endpoints (verified against gis.massdot.state.ma.us catalog)
+const BIKE_INVENTORY_URL =
+  'https://gis.massdot.state.ma.us/arcgis/rest/services/Multimodal/BikeInventory/MapServer/0/query'
+const CRASH_DATA_URL =
+  'https://gis.massdot.state.ma.us/arcgis/rest/services/CrashClosedYear/CrashClosedYear2019/MapServer/0/query'
 
 async function queryArcGIS(
   url: string,
   lat: number,
   lng: number,
-  radiusMeters: number
+  radiusMeters: number,
+  outFields: string = '*'
 ): Promise<{ features: Array<{ attributes: Record<string, unknown> }> }> {
   const params = new URLSearchParams({
     geometry: JSON.stringify({ x: lng, y: lat, spatialReference: { wkid: 4326 } }),
@@ -28,7 +29,7 @@ async function queryArcGIS(
     spatialRel: 'esriSpatialRelIntersects',
     distance: String(radiusMeters),
     units: 'esriSRUnit_Meter',
-    outFields: '*',
+    outFields,
     returnGeometry: 'false',
     f: 'json',
   })
@@ -38,6 +39,13 @@ async function queryArcGIS(
   return res.json()
 }
 
+// MassDOT BikeInventory Fac_Type coded values
+// 1 = Bike lane, 2 = Separated bike lane, 3 = Sign-posted route,
+// 4 = Paved bike shoulder, 5 = Shared use path, 6 = TBD,
+// 7 = Bike/ped priority roadway, 8 = Hybrid, 9 = Marked shared lane
+const PROTECTED_CODES = new Set([2, 5])       // Separated lane, shared use path
+const SHARED_CODES = new Set([1, 4, 7, 8, 9]) // Bike lane, shoulder, priority, hybrid, sharrow
+
 function classifyInfrastructure(
   features: Array<{ attributes: Record<string, unknown> }>
 ): { quality: MassDOTResponse['bike_infra_quality']; hasProtected: boolean; hasShared: boolean } {
@@ -45,20 +53,10 @@ function classifyInfrastructure(
   let hasShared = false
 
   for (const f of features) {
-    const facilityType = String(f.attributes.FACILITY_TYPE || f.attributes.ExistFacil || '').toLowerCase()
-    if (
-      facilityType.includes('protected') ||
-      facilityType.includes('separated') ||
-      facilityType.includes('shared use path') ||
-      facilityType.includes('cycle track')
-    ) {
-      hasProtected = true
-    } else if (
-      facilityType.includes('bike lane') ||
-      facilityType.includes('shared') ||
-      facilityType.includes('sharrow')
-    ) {
-      hasShared = true
+    const facType = f.attributes.Fac_Type
+    if (typeof facType === 'number') {
+      if (PROTECTED_CODES.has(facType)) hasProtected = true
+      else if (SHARED_CODES.has(facType)) hasShared = true
     }
   }
 
@@ -88,8 +86,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const [bikeResult, crashResult] = await Promise.allSettled([
-      queryArcGIS(BIKE_FACILITIES_URL, lat, lng, radiusMeters),
-      queryArcGIS(CRASH_CLUSTERS_URL, lat, lng, radiusMeters),
+      queryArcGIS(BIKE_INVENTORY_URL, lat, lng, radiusMeters, 'Fac_Type,Local_Name,Priority_Trail'),
+      queryArcGIS(CRASH_DATA_URL, lat, lng, radiusMeters, 'OBJECTID'),
     ])
 
     const bikeFeatures =
