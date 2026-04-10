@@ -8,7 +8,7 @@ export default function Nav() {
 
   return (
     <nav className="fixed left-0 right-0 top-0 z-50 border-b border-white/[0.08] backdrop-blur-xl" style={{ background: 'rgba(25,26,46,0.96)' }}>
-      <div className="mx-auto flex h-[60px] w-full max-w-[1120px] items-center justify-between px-8">
+      <div className="mx-auto flex h-[60px] w-full max-w-[1200px] items-center justify-between px-6 lg:px-8">
 
         {/* Brand */}
         <Link href="/" className="flex items-center no-underline">
@@ -19,34 +19,34 @@ export default function Nav() {
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden items-center gap-8 md:flex">
-          <Link href="/shift" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
+        <div className="hidden items-center gap-4 xl:gap-5 lg:flex">
+          <Link href="/shift" className="whitespace-nowrap text-[0.8125rem] font-medium text-white transition-opacity hover:opacity-80">
             Shift
           </Link>
-          <Link href="/events/shift-your-summer" className="text-sm font-medium text-lime transition-opacity hover:opacity-80">
+          <Link href="/events/shift-your-summer" className="whitespace-nowrap text-[0.8125rem] font-medium text-lime transition-opacity hover:opacity-80">
             Shift Your Summer
           </Link>
-          <Link href="/programs" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
+          <Link href="/programs" className="whitespace-nowrap text-[0.8125rem] font-medium text-white transition-opacity hover:opacity-80">
             Programs
           </Link>
-          <Link href="/commute-advisor" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
+          <Link href="/commute-advisor" className="whitespace-nowrap text-[0.8125rem] font-medium text-white transition-opacity hover:opacity-80">
             Commute Advisor
           </Link>
-          <Link href="/get-involved" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
+          <Link href="/get-involved" className="whitespace-nowrap text-[0.8125rem] font-medium text-white transition-opacity hover:opacity-80">
             Get involved
           </Link>
-          <Link href="/contact" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
+          <Link href="/contact" className="whitespace-nowrap text-[0.8125rem] font-medium text-white transition-opacity hover:opacity-80">
             Contact
           </Link>
           <Link
             href="/donate"
-            className="rounded-full border border-white/[0.2] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/[0.05]"
+            className="whitespace-nowrap rounded-full border border-white/[0.2] px-3.5 py-1.5 text-[0.8125rem] font-semibold text-white transition-colors hover:bg-white/[0.05]"
           >
             Donate
           </Link>
           <Link
             href="/shift"
-            className="rounded-full bg-lime px-4 py-2 text-sm font-semibold text-navy transition-opacity hover:opacity-85"
+            className="whitespace-nowrap rounded-full bg-lime px-3.5 py-1.5 text-[0.8125rem] font-semibold text-navy transition-opacity hover:opacity-85"
           >
             Get the app
           </Link>
@@ -54,7 +54,7 @@ export default function Nav() {
 
         {/* Mobile menu button */}
         <button
-          className="flex flex-col gap-1.5 md:hidden"
+          className="flex flex-col gap-1.5 lg:hidden"
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Toggle menu"
         >
@@ -66,7 +66,7 @@ export default function Nav() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="border-t border-white/[0.07] px-6 py-4 md:hidden">
+        <div className="border-t border-white/[0.07] px-6 py-4 lg:hidden">
           <div className="flex flex-col gap-4">
             <Link href="/shift" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Shift</Link>
             <Link href="/events/shift-your-summer" className="text-sm font-medium text-lime" onClick={() => setMenuOpen(false)}>Shift Your Summer</Link>
