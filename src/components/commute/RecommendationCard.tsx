@@ -35,6 +35,7 @@ interface RecommendationCardProps {
   distanceCategory: string
   onRefresh?: () => void
   loading?: boolean
+  routeTimeMinutes?: number | null
 }
 
 export default function RecommendationCard({
@@ -42,7 +43,16 @@ export default function RecommendationCard({
   secondary,
   onRefresh,
   loading,
+  routeTimeMinutes,
 }: RecommendationCardProps) {
+  // Override first reason bullet with Google Maps time if available
+  const displayReasons = [...primary.reasons]
+  if (routeTimeMinutes && displayReasons.length > 0) {
+    const modeLabel = primary.modes.includes('walk') ? 'on foot'
+      : primary.modes.includes('bike') || primary.modes.includes('ebike') ? 'by bike'
+      : 'by transit'
+    displayReasons[0] = `${primary.reasons[0]?.match(/^[\d.]+ miles/)?.[0] || ''} — about ${routeTimeMinutes} minutes ${modeLabel}`.replace(/^ — /, '')
+  }
   return (
     <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
       {/* Header */}
@@ -85,7 +95,7 @@ export default function RecommendationCard({
 
       {/* Reasons */}
       <ul className="mb-6 space-y-2.5">
-        {primary.reasons.map((reason, i) => (
+        {displayReasons.map((reason, i) => (
           <li key={i} className="flex items-start gap-2.5 text-[0.9375rem] leading-snug text-white">
             <svg className="mt-0.5 h-4 w-4 shrink-0 text-[#BAF14D]" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />

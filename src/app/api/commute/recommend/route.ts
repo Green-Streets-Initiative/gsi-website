@@ -349,15 +349,9 @@ function buildBikeReasons(
   reasons.push(`${distanceMiles.toFixed(1)} miles — about ${mins} minutes by bike`)
 
   if (hasBluebikes && nearestOriginStation) {
-    if (nearestOriginStation.num_bikes_available > 0) {
-      reasons.push(
-        `${nearestOriginStation.num_bikes_available} bikes available at ${nearestOriginStation.name} (${nearestOriginStation.distance_miles} mi)`
-      )
-    } else {
-      reasons.push(
-        `Bluebikes station ${nearestOriginStation.distance_miles} mi from your address — no bike ownership needed`
-      )
-    }
+    reasons.push(
+      `Free with your own bike, or Bluebikes station ${nearestOriginStation.distance_miles} mi from your address`
+    )
   } else {
     reasons.push('Free if you already own a bike')
   }
@@ -476,7 +470,7 @@ function recommend(
       return {
         primary: {
           modes: ['bike'],
-          label: hasBluebikes ? 'Bluebikes' : 'Bike',
+          label: 'Bike',
           reasons: buildBikeReasons(distanceMiles, hasBluebikes, bikeInfraQuality, nearestOrigin),
           time_estimate_minutes: bikeMins,
           cost_estimate_daily: hasBluebikes ? 3.5 : 0,

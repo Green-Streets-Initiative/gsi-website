@@ -126,6 +126,9 @@ export default function CommuteCalculator() {
   const [routeError, setRouteError] = useState(false)
   const routeAbortRef = useRef<AbortController | null>(null)
 
+  // Step flow
+  const [step, setStep] = useState(1)
+
   // Recommendation state
   const [recommendation, setRecommendation] = useState<RecommendationResponse | null>(null)
   const [recLoading, setRecLoading] = useState(false)
@@ -264,10 +267,12 @@ export default function CommuteCalculator() {
       }
 
       setRecommendation(data)
-      // Smooth scroll to recommendation
-      setTimeout(() => {
-        recommendRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 100)
+      // Sync altMode to recommended mode for savings calculation
+      const recMode = data.primary?.modes?.[0]
+      if (recMode === 'walk') setAltMode('walk')
+      else if (recMode === 'bike') setAltMode('bike')
+      else if (recMode === 'ebike') setAltMode('ebike')
+      else if (recMode === 'transit' || recMode === 'bus') setAltMode('mbta')
     } catch {
       setRecError('Unable to load recommendation. Please try again.')
     } finally {
@@ -275,20 +280,20 @@ export default function CommuteCalculator() {
     }
   }, [homePlaceData, workPlaceData, distance])
 
-  // Trigger recommendation when addresses change
-  useEffect(() => {
-    if (homePlaceData && workPlaceData) {
-      setSelectedBarrier(null)
-      fetchRecommendation()
-    }
-  }, [homePlaceData, workPlaceData, fetchRecommendation])
-
-  // Handle barrier selection
+  // Handle barrier selection — always show GettingStarted, don't re-fetch entire recommendation
   const handleBarrierSelect = (barrier: BarrierCode) => {
     setSelectedBarrier(barrier)
-    if (barrier !== 'habit' && homePlaceData && workPlaceData) {
-      fetchRecommendation(barrier)
-    }
+  }
+
+  // Handle "See my options" — transition to Step 3 and fetch recommendation
+  const handleSeeOptions = () => {
+    setStep(3)
+    setSelectedBarrier(null)
+    fetchRecommendation()
+    // Scroll to top of results
+    setTimeout(() => {
+      recommendRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
   }
 
   // Refresh live data
@@ -421,169 +426,176 @@ export default function CommuteCalculator() {
   const r = calc()
   const effectiveShift = Math.min(shiftDays, driveDays)
 
+  // Get Google Maps route time for the recommended mode
+  const getRouteTimeForMode = useCallback(() => {
+    if (!routeData || !recommendation) return null
+    const recMode = recommendation.primary.modes[0]
+    const googleKey = recMode === 'walk' ? 'WALK'
+      : (recMode === 'bike' || recMode === 'ebike') ? 'BICYCLE'
+      : 'TRANSIT'
+    return routeData.routes[googleKey]?.durationMins ?? null
+  }, [routeData, recommendation])
+
   return (
     <>
       <Nav />
       <main className="bg-[#191A2E]" style={{ paddingTop: '60px' }}>
 
-        {/* Hero */}
-        <div className="mx-auto max-w-[780px] px-8 pt-16">
-          <div className="mb-5 text-[11px] font-semibold uppercase tracking-widest text-white">
-            <Link href="/" className="text-[#BAF14D] no-underline hover:underline">Home</Link>
-            {' / '}Commute Advisor
-          </div>
-          <h1 className="mb-5 font-display text-[clamp(2rem,4vw,3rem)] font-extrabold leading-[1.1] tracking-tighter text-white">
-            What if your commute <em className="not-italic text-[#BAF14D]">worked for you</em>?
+        {/* Hero — compact */}
+        <div className="mx-auto max-w-[640px] px-8 pb-8 pt-12 text-center">
+          <h1 className="mb-3 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.15] tracking-tighter text-white">
+            Find your <em className="not-italic text-[#BAF14D]">best commute</em>
           </h1>
-          <p className="mb-8 max-w-[640px] text-[1.0625rem] leading-[1.7] text-white">
-            Most people haven&apos;t done the math on their commute. Not just what it costs — but what it could look like if there were a better way. This calculator shows you the money you&apos;d keep, the time you&apos;d reclaim, and the health benefits you&apos;d gain by going active, even a few days a week.
+          <p className="text-[1rem] leading-relaxed text-white/70">
+            Tell us where you&apos;re going and we&apos;ll recommend the fastest, cheapest way to get there.
           </p>
-          <div className="flex flex-wrap gap-8">
-            <div>
-              <div className="font-display text-[2rem] font-extrabold leading-none tracking-tighter text-[#BAF14D]">$11,577</div>
-              <div className="mt-1 text-[0.78rem] leading-snug text-white">Average annual cost to own and drive a new car (AAA 2025)</div>
-            </div>
-            <div>
-              <div className="font-display text-[2rem] font-extrabold leading-none tracking-tighter text-[#BAF14D]">$3.59</div>
-              <div className="mt-1 text-[0.78rem] leading-snug text-white">Current Massachusetts average gas price per gallon (AAA, March 2026)</div>
-            </div>
-            <div>
-              <div className="font-display text-[2rem] font-extrabold leading-none tracking-tighter text-[#BAF14D]">$90</div>
-              <div className="mt-1 text-[0.78rem] leading-snug text-white">Monthly MBTA LinkPass — unlimited subway and bus</div>
-            </div>
-          </div>
         </div>
 
-        <hr className="mx-auto my-10 max-w-[780px] border-white/[0.07]" />
+        {/* Step indicator */}
+        <div className="mx-auto mb-6 flex max-w-[480px] items-center justify-center gap-2 px-8">
+          {[1, 2, 3].map((s) => (
+            <div key={s} className="flex items-center gap-2">
+              <button
+                onClick={() => s < step && setStep(s)}
+                disabled={s > step}
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                  s === step ? 'bg-[#BAF14D] text-[#191A2E]'
+                  : s < step ? 'bg-[#BAF14D]/20 text-[#BAF14D] hover:bg-[#BAF14D]/30'
+                  : 'bg-white/[0.08] text-white/30'
+                }`}
+              >
+                {s < step ? '✓' : s}
+              </button>
+              {s < 3 && <div className={`h-px w-12 ${s < step ? 'bg-[#BAF14D]/30' : 'bg-white/[0.08]'}`} />}
+            </div>
+          ))}
+        </div>
 
-        {/* Calculator */}
-        <div className="mx-auto max-w-[1000px] px-8">
-          <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">Commute Advisor</div>
-          <div className="overflow-hidden rounded-[20px] border border-white/[0.12] bg-[#242538]">
-            <div className="grid gap-0 md:grid-cols-2">
+        {/* ── STEP 1: Where's your commute? ── */}
+        {step === 1 && (
+          <div className="mx-auto max-w-[520px] px-8">
+            <div className="overflow-hidden rounded-[20px] border border-white/[0.12] bg-[#242538] p-8">
+              <div className="mb-6 font-display text-[1.125rem] font-bold text-white">Where&apos;s your commute?</div>
 
-              {/* ── INPUTS ── */}
-              <div className="border-b border-white/[0.07] p-9 md:border-b-0 md:border-r">
-                <div className="mb-7 font-display text-[0.9375rem] font-bold text-white">Your commute today</div>
+              <div className="mb-5 space-y-3">
+                <AddressAutocomplete
+                  value={homeAddress}
+                  onChange={(val) => { setHomeAddress(val); if (!val) setHomePlaceData(null) }}
+                  onPlaceSelected={setHomePlaceData}
+                  label="Home address"
+                  variant="dark"
+                  placeholder="Where do you live?"
+                />
+                <AddressAutocomplete
+                  value={workAddress}
+                  onChange={(val) => { setWorkAddress(val); if (!val) setWorkPlaceData(null) }}
+                  onPlaceSelected={setWorkPlaceData}
+                  label="Work address"
+                  variant="dark"
+                  placeholder="Where do you work?"
+                />
+              </div>
 
-                {/* Addresses for real routing */}
-                <div className="mb-5 space-y-3">
-                  <AddressAutocomplete
-                    value={homeAddress}
-                    onChange={(val) => { setHomeAddress(val); if (!val) setHomePlaceData(null) }}
-                    onPlaceSelected={setHomePlaceData}
-                    label="Home address"
-                    variant="dark"
-                    placeholder="Where do you live?"
-                  />
-                  <AddressAutocomplete
-                    value={workAddress}
-                    onChange={(val) => { setWorkAddress(val); if (!val) setWorkPlaceData(null) }}
-                    onPlaceSelected={setWorkPlaceData}
-                    label="Work address"
-                    variant="dark"
-                    placeholder="Where do you work?"
-                  />
+              <Field label="Or enter distance manually">
+                <div className="flex items-center gap-3">
+                  <NumInput value={distance} onChange={setDistance} min={0.5} max={60} step={0.5} />
+                  <span className="text-[0.8rem] text-white">miles each way</span>
                 </div>
-
-                {/* Distance */}
-                <Field label="One-way distance">
-                  <div className="flex items-center gap-3">
-                    <NumInput value={distance} onChange={setDistance} min={0.5} max={60} step={0.5} />
-                    <span className="text-[0.8rem] text-white">miles each way</span>
-                  </div>
-                  <Hint>{homePlaceData && workPlaceData ? 'Distance auto-set from routing — adjust to override' : 'Enter addresses above for real routing, or set distance manually'}</Hint>
-                  {!homePlaceData && !workPlaceData && (
-                    <button
-                      onClick={() => fetchRecommendation()}
-                      className="mt-3 w-full rounded-xl bg-[#BAF14D]/[0.12] py-2.5 text-[0.8125rem] font-semibold text-[#BAF14D] transition-colors hover:bg-[#BAF14D]/[0.2]"
-                    >
-                      Get my recommendation
-                    </button>
-                  )}
-                </Field>
-
-                {/* Commute mode */}
-                <Field label="How you currently commute">
-                  <RadioPills
-                    name="commute-mode"
-                    value={commuteMode}
-                    onChange={setCommuteMode}
-                    options={[
-                      { value: 'drive', label: 'Drive' },
-                      { value: 'rideshare', label: 'Rideshare (Uber/Lyft)' },
-                    ]}
-                  />
-                  {commuteMode === 'rideshare' && (
-                    <div className="mt-3.5">
-                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Average daily rideshare cost</label>
-                      <div className="flex items-center gap-2">
-                        <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
-                        <NumInput value={rideshareDaily} onChange={setRideshareDaily} min={5} max={200} step={1} width="88px" fontSize="1rem" />
-                        <span className="text-[0.8rem] text-white">per day (round trip)</span>
-                      </div>
-                      <div className="mt-1 text-[0.65rem] text-white">Average Uber/Lyft cost for your commute, both ways</div>
-                    </div>
-                  )}
-                </Field>
-
-                {/* Drive days */}
-                <Field label={commuteMode === 'rideshare' ? 'Days per week you currently rideshare' : 'Days per week you currently drive'}>
-                  <div className="mb-2.5 font-display text-base font-bold text-[#BAF14D]">
-                    {driveDays} day{driveDays > 1 ? 's' : ''}/week
-                  </div>
-                  <RangeInput value={driveDays} onChange={setDriveDays} min={1} max={5} labels={['1','2','3','4','5']} />
-                </Field>
-
-                {/* Shift days */}
-                <Field label="Active commute days per week">
-                  <div className="mb-2.5 font-display text-base font-bold text-[#BAF14D]">
-                    {effectiveShift} day{effectiveShift > 1 ? 's' : ''}/week
-                  </div>
-                  <RangeInput value={effectiveShift} onChange={setShiftDays} min={1} max={5} labels={['1','2','3','4','5']} />
-                  <Hint>
-                    {effectiveShift === driveDays
-                      ? `You'd go fully active — ${driveDays} day${driveDays > 1 ? 's' : ''} a week`
-                      : `You'd still drive ${driveDays - effectiveShift} day${driveDays - effectiveShift > 1 ? 's' : ''} a week`}
-                  </Hint>
-                </Field>
-
-                {/* Vehicle — hidden for rideshare */}
-                {commuteMode === 'drive' && (
-                  <Field label="Vehicle type">
-                    <Select value={vehicle} onChange={setVehicle} options={[
-                      { value: 'small_sedan', label: 'Small sedan (Civic, Corolla)' },
-                      { value: 'medium_sedan', label: 'Medium sedan (Camry, Accord)' },
-                      { value: 'compact_suv', label: 'Compact SUV (RAV4, CR-V)' },
-                      { value: 'medium_suv', label: 'Medium SUV (Explorer, Highlander)' },
-                      { value: 'pickup', label: 'Pickup truck (F-150, Silverado)' },
-                      { value: 'ev', label: 'Electric vehicle (Tesla, Leaf, etc.)' },
-                    ]} />
-                  </Field>
+                {homePlaceData && workPlaceData && (
+                  <Hint>Distance auto-set from addresses — adjust to override</Hint>
                 )}
+              </Field>
 
-                {/* Gas price — hidden for rideshare and EV */}
-                {commuteMode === 'drive' && vehicle !== 'ev' && (
-                  <Field label="Gas price">
+              <button
+                onClick={() => setStep(2)}
+                disabled={!homePlaceData && !workPlaceData && distance <= 0}
+                className="mt-4 w-full rounded-xl bg-[#BAF14D] py-3 text-[0.9375rem] font-bold text-[#191A2E] transition-opacity hover:opacity-90 disabled:opacity-30"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 2: How do you get there now? ── */}
+        {step === 2 && (
+          <div className="mx-auto max-w-[520px] px-8">
+            <div className="overflow-hidden rounded-[20px] border border-white/[0.12] bg-[#242538] p-8">
+              <div className="mb-6 font-display text-[1.125rem] font-bold text-white">How do you get there now?</div>
+
+              <Field label="Current commute mode">
+                <RadioPills
+                  name="commute-mode"
+                  value={commuteMode}
+                  onChange={setCommuteMode}
+                  options={[
+                    { value: 'drive', label: 'Drive' },
+                    { value: 'rideshare', label: 'Rideshare (Uber/Lyft)' },
+                  ]}
+                />
+                {commuteMode === 'rideshare' && (
+                  <div className="mt-3.5">
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Average daily rideshare cost</label>
                     <div className="flex items-center gap-2">
                       <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
-                      <NumInput value={gasPrice} onChange={setGasPrice} min={2} max={8} step={0.01} width="88px" fontSize="1rem" />
-                      <span className="text-[0.8rem] text-white">per gallon</span>
+                      <NumInput value={rideshareDaily} onChange={setRideshareDaily} min={5} max={200} step={1} width="88px" fontSize="1rem" />
+                      <span className="text-[0.8rem] text-white">per day (round trip)</span>
                     </div>
-                    <div className="mt-1 text-[0.65rem] text-white">MA average as of March 2026 — adjust for your local price</div>
-                  </Field>
+                  </div>
                 )}
+              </Field>
 
-                {/* EV note */}
-                {commuteMode === 'drive' && vehicle === 'ev' && (
-                  <Field label="Electricity cost">
-                    <div className="text-sm text-white">$0.048/mile based on Massachusetts residential electricity rates</div>
-                    <div className="mt-1 text-[0.65rem] text-white">Using average MA rate of ~$0.28/kWh and ~3.5 mi/kWh efficiency</div>
-                  </Field>
-                )}
+              <Field label="Days per week">
+                <div className="mb-2.5 font-display text-base font-bold text-[#BAF14D]">
+                  {driveDays} day{driveDays > 1 ? 's' : ''}/week
+                </div>
+                <RangeInput value={driveDays} onChange={setDriveDays} min={1} max={5} labels={['1','2','3','4','5']} />
+              </Field>
 
-                {/* Parking — hidden for rideshare */}
-                {commuteMode === 'drive' && <Field label="Your parking situation">
+              <Field label="Days you'd go active instead">
+                <div className="mb-2.5 font-display text-base font-bold text-[#BAF14D]">
+                  {effectiveShift} day{effectiveShift > 1 ? 's' : ''}/week
+                </div>
+                <RangeInput value={effectiveShift} onChange={setShiftDays} min={1} max={5} labels={['1','2','3','4','5']} />
+                <Hint>
+                  {effectiveShift === driveDays
+                    ? `You'd go fully active — ${driveDays} day${driveDays > 1 ? 's' : ''} a week`
+                    : `You'd still drive ${driveDays - effectiveShift} day${driveDays - effectiveShift > 1 ? 's' : ''} a week`}
+                </Hint>
+              </Field>
+
+              {commuteMode === 'drive' && (
+                <Field label="Vehicle type">
+                  <Select value={vehicle} onChange={setVehicle} options={[
+                    { value: 'small_sedan', label: 'Small sedan (Civic, Corolla)' },
+                    { value: 'medium_sedan', label: 'Medium sedan (Camry, Accord)' },
+                    { value: 'compact_suv', label: 'Compact SUV (RAV4, CR-V)' },
+                    { value: 'medium_suv', label: 'Medium SUV (Explorer, Highlander)' },
+                    { value: 'pickup', label: 'Pickup truck (F-150, Silverado)' },
+                    { value: 'ev', label: 'Electric vehicle (Tesla, Leaf, etc.)' },
+                  ]} />
+                </Field>
+              )}
+
+              {commuteMode === 'drive' && vehicle !== 'ev' && (
+                <Field label="Gas price">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <NumInput value={gasPrice} onChange={setGasPrice} min={2} max={8} step={0.01} width="88px" fontSize="1rem" />
+                    <span className="text-[0.8rem] text-white">per gallon</span>
+                  </div>
+                  <Hint>MA average as of March 2026</Hint>
+                </Field>
+              )}
+
+              {commuteMode === 'drive' && vehicle === 'ev' && (
+                <Field label="Electricity cost">
+                  <div className="text-sm text-white">$0.048/mile based on MA residential rates</div>
+                </Field>
+              )}
+
+              {commuteMode === 'drive' && (
+                <Field label="Parking">
                   <RadioPills
                     name="parking"
                     value={parkMode}
@@ -614,306 +626,194 @@ export default function CommuteCalculator() {
                       )}
                     </div>
                   )}
-                </Field>}
-
-                {/* Alt mode */}
-                <Field label="How you'd get there instead" last>
-                  <RadioPills
-                    name="alt-mode"
-                    value={altMode}
-                    onChange={setAltMode}
-                    options={[
-                      { value: 'bike', label: 'Bike' },
-                      { value: 'ebike', label: 'E-bike / scooter' },
-                      { value: 'walk', label: 'Walk' },
-                      { value: 'mbta', label: 'MBTA' },
-                      { value: 'commuter_rail', label: 'Commuter rail' },
-                    ]}
-                  />
-                  {altMode === 'mbta' && (
-                    <div className="mt-3.5 flex flex-col gap-3.5">
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Service type</label>
-                        <RadioPills
-                          name="mbta-type"
-                          value={mbtaType}
-                          onChange={setMbtaType}
-                          options={[
-                            { value: 'subway', label: 'Subway + bus (LinkPass $90/mo)' },
-                            { value: 'bus', label: 'Local bus only ($55/mo)' },
-                          ]}
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Does your employer subsidize your pass?</label>
-                        <RadioPills
-                          name="employer-subsidy"
-                          value={hasEmployerSubsidy ? 'yes' : 'no'}
-                          onChange={v => setHasEmployerSubsidy(v === 'yes')}
-                          options={[
-                            { value: 'no', label: 'No' },
-                            { value: 'yes', label: 'Yes' },
-                          ]}
-                        />
-                        {hasEmployerSubsidy && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
-                            <NumInput value={employerSubsidy} onChange={setEmployerSubsidy} min={0} max={300} step={5} width="88px" fontSize="1rem" />
-                            <span className="text-[0.8rem] text-white">per month</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {altMode === 'commuter_rail' && (
-                    <div className="mt-3.5 flex flex-col gap-3.5">
-                      <Select value={String(railZone)} onChange={v => setRailZone(Number(v))} options={[
-                        { value: '90', label: 'Zone 1A — $90/mo' },
-                        { value: '140', label: 'Zone 2–3 — $140/mo' },
-                        { value: '185', label: 'Zone 4–5 — $185/mo' },
-                        { value: '243', label: 'Zone 6–7 — $243/mo' },
-                        { value: '329', label: 'Zone 8–10 — $329/mo' },
-                      ]} />
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Does your employer subsidize your pass?</label>
-                        <RadioPills
-                          name="employer-subsidy-rail"
-                          value={hasEmployerSubsidy ? 'yes' : 'no'}
-                          onChange={v => setHasEmployerSubsidy(v === 'yes')}
-                          options={[
-                            { value: 'no', label: 'No' },
-                            { value: 'yes', label: 'Yes' },
-                          ]}
-                        />
-                        {hasEmployerSubsidy && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
-                            <NumInput value={employerSubsidy} onChange={setEmployerSubsidy} min={0} max={300} step={5} width="88px" fontSize="1rem" />
-                            <span className="text-[0.8rem] text-white">per month</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </Field>
+              )}
+
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={() => setStep(1)}
+                  className="rounded-xl border border-white/[0.12] px-6 py-3 text-[0.9375rem] font-semibold text-white transition-colors hover:bg-white/[0.05]"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleSeeOptions}
+                  className="flex-1 rounded-xl bg-[#BAF14D] py-3 text-[0.9375rem] font-bold text-[#191A2E] transition-opacity hover:opacity-90"
+                >
+                  See my options
+                </button>
               </div>
+            </div>
+          </div>
+        )}
 
-              {/* ── RESULTS ── */}
-              <div className="flex flex-col gap-4 p-9">
-                <div className="mb-3 font-display text-[0.9375rem] font-bold text-white">What you&apos;d gain</div>
+        {/* ── STEP 3: Results ── */}
+        {step === 3 && (
+          <div ref={recommendRef} className="mx-auto max-w-[640px] px-8">
+            {/* Loading */}
+            {recLoading && !recommendation && (
+              <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7 text-center">
+                <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-[#BAF14D]" />
+                <p className="text-sm text-white/60">Analyzing your commute...</p>
+              </div>
+            )}
 
+            {outsideMA && (
+              <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
+                <p className="text-[0.9375rem] text-white">
+                  Our recommendation engine is optimized for Massachusetts commutes. For other locations, try{' '}
+                  <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" className="text-[#BAF14D] underline">Google Maps</a>{' '}
+                  or a local transit app.
+                </p>
+                <button onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-[#BAF14D]">← Start over</button>
+              </div>
+            )}
+
+            {recError && (
+              <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
+                <p className="text-[0.9375rem] text-white/70">{recError}</p>
+                <button onClick={handleSeeOptions} className="mt-3 text-sm font-semibold text-[#BAF14D]">Try again</button>
+              </div>
+            )}
+
+            {recommendation && (
+              <div className="animate-in space-y-5">
+                {/* Recommendation */}
+                <RecommendationCard
+                  primary={recommendation.primary}
+                  secondary={recommendation.secondary}
+                  distanceMiles={recommendation.distance_miles}
+                  distanceCategory={recommendation.distance_category}
+                  onRefresh={handleRefresh}
+                  loading={recLoading}
+                  routeTimeMinutes={getRouteTimeForMode()}
+                />
+
+                {!homePlaceData && (
+                  <p className="text-center text-[0.8125rem] text-white/40">
+                    Enter your home and work addresses in Step 1 for live transit and Bluebikes availability.
+                  </p>
+                )}
+
+                {/* Map */}
+                {homePlaceData && workPlaceData && (
+                  <CommuteMap
+                    originLat={homePlaceData.lat}
+                    originLng={homePlaceData.lng}
+                    destLat={workPlaceData.lat}
+                    destLng={workPlaceData.lng}
+                    bluebikesOrigin={recommendation.map_data.bluebikes_origin}
+                    bluebikesDestStations={recommendation.map_data.bluebikes_dest}
+                    mbtaStops={recommendation.map_data.mbta_stops}
+                    onRefresh={handleRefresh}
+                  />
+                )}
+
+                {/* Savings breakdown */}
                 {r && (
-                  <>
-                    {/* Money hero */}
-                    <div className="rounded-[14px] border border-[rgba(186,241,77,0.2)] bg-[rgba(186,241,77,0.08)] px-6 py-5 text-center">
-                      <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[rgba(186,241,77,0.55)]">Annual savings</div>
-                      <div className="font-display text-[2.75rem] font-extrabold leading-none tracking-tighter text-[#BAF14D] transition-all duration-300">
+                  <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
+                    <div className="mb-4 font-display text-[0.9375rem] font-bold text-white">Estimated annual savings</div>
+
+                    <div className="mb-4 rounded-[14px] border border-[rgba(186,241,77,0.2)] bg-[rgba(186,241,77,0.08)] px-6 py-4 text-center">
+                      <div className="font-display text-[2.25rem] font-extrabold leading-none tracking-tighter text-[#BAF14D]">
                         {fmt(r.net)}
                       </div>
-                      <div className="mt-1 text-[0.78rem] text-[rgba(186,241,77,0.45)]">
-                        {r.net >= 0 ? 'staying in your pocket every year' : 'transit cost is higher than your fuel savings at this distance'}
+                      <div className="mt-1 text-[0.75rem] text-[rgba(186,241,77,0.5)]">
+                        {r.net >= 0 ? 'per year' : 'transit cost exceeds fuel savings at this distance'}
                       </div>
                     </div>
 
-                    {/* Breakdown */}
-                    <div className="flex flex-col gap-2">
+                    <div className="mb-4 flex flex-col gap-2">
                       {r.isRideshare ? (
-                        <ResultRow label="🚗 Rideshare savings" value={`+${fmt(r.rideshareSavings)}`} type="pos" />
+                        <ResultRow label="Rideshare savings" value={`+${fmt(r.rideshareSavings)}`} type="pos" />
                       ) : (
                         <>
                           <ResultRow label={r.fuelLabel} value={`+${fmt(r.fuelSavings)}`} type="pos" />
-                          <ResultRow label="🔧 Maintenance savings" value={`+${fmt(r.maintSavings)}`} type="pos" />
+                          <ResultRow label="Maintenance savings" value={`+${fmt(r.maintSavings)}`} type="pos" />
                           {parkMode !== 'free' && (
-                            <ResultRow label="🅿️ Parking savings" value={`+${fmt(r.parkingSavings)}`} type="pos" />
+                            <ResultRow label="Parking savings" value={`+${fmt(r.parkingSavings)}`} type="pos" />
                           )}
                         </>
                       )}
                       {!r.isActive && r.transitCost > 0 && (
-                        <ResultRow label={`🚇 ${r.transitLabel}`} value={`-${fmt(r.transitCost)}`} type="neg" />
+                        <ResultRow label={r.transitLabel} value={`-${fmt(r.transitCost)}`} type="neg" />
                       )}
                     </div>
 
-                    {/* Time panel */}
-                    <div className="rounded-[14px] border border-[rgba(41,102,229,0.25)] bg-[rgba(41,102,229,0.08)] px-6 py-5">
-                      <div className="mb-3.5 flex items-center justify-between">
-                        <div className="font-display text-sm font-bold text-white">Time comparison</div>
-                        {r.isRealRouting ? (
-                          <div className="rounded border border-[rgba(186,241,77,0.25)] bg-[rgba(186,241,77,0.1)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[rgba(186,241,77,0.7)]">
-                            Google Maps
-                          </div>
-                        ) : routeLoading ? (
-                          <div className="rounded border border-[rgba(41,102,229,0.25)] bg-[rgba(41,102,229,0.12)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[rgba(41,102,229,0.7)]">
-                            Loading routes…
-                          </div>
-                        ) : routeError ? (
-                          <div className="rounded border border-[rgba(255,140,53,0.25)] bg-[rgba(255,140,53,0.1)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[rgba(255,140,53,0.7)]">
-                            Estimated
-                          </div>
-                        ) : (
-                          <div className="rounded border border-[rgba(41,102,229,0.25)] bg-[rgba(41,102,229,0.12)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[rgba(41,102,229,0.7)]">
-                            Enter addresses for routing
-                          </div>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
-                          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white">Driving</div>
-                          <div className="font-display text-xl font-bold text-white">
-                            {routeLoading ? '…' : `${r.isRealRouting ? '' : '~'}${r.driveMins} min`}
-                          </div>
-                          <div className="mt-0.5 text-[10px] text-white">{r.isRealRouting ? 'each way, rush hour' : 'each way, in traffic'}</div>
-                        </div>
-                        <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
-                          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white">{r.mode.label}</div>
-                          <div className="font-display text-xl font-bold text-white">
-                            {routeLoading ? '…' : r.altMins !== null ? `${r.isRealRouting ? '' : '~'}${r.altMins} min` : 'varies'}
-                          </div>
-                          <div className="mt-0.5 text-[10px] text-white">{r.mode.healthNote || 'each way'}</div>
+                    {/* Time comparison */}
+                    <div className="mb-4 grid grid-cols-2 gap-2">
+                      <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/60">Driving</div>
+                        <div className="font-display text-lg font-bold text-white">
+                          {routeLoading ? '…' : `${r.isRealRouting ? '' : '~'}${r.driveMins} min`}
                         </div>
                       </div>
-                      <div className="mt-2.5 text-center text-[0.72rem] text-white">
-                        {r.timeNote}
+                      <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/60">{r.mode.label}</div>
+                        <div className="font-display text-lg font-bold text-white">
+                          {routeLoading ? '…' : r.altMins !== null ? `${r.isRealRouting ? '' : '~'}${r.altMins} min` : 'varies'}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Health panel */}
+                    {/* Health */}
                     {r.isActive && (
-                      <div className="rounded-[14px] border border-[rgba(237,185,60,0.2)] bg-[rgba(237,185,60,0.08)] px-6 py-5">
-                        <div className="mb-3.5 font-display text-sm font-bold text-white">Health benefits</div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
-                            <div className="font-display text-lg font-bold text-[#EDB93C]">{r.activeMins}</div>
-                            <div className="mt-0.5 text-[10px] leading-snug text-white">active minutes per week</div>
-                          </div>
-                          <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
-                            <div className="font-display text-lg font-bold text-[#EDB93C]">{r.weeklyCals.toLocaleString()}</div>
-                            <div className="mt-0.5 text-[10px] leading-snug text-white">calories burned per week</div>
-                          </div>
-                          <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
-                            <div className="font-display text-lg font-bold text-[#EDB93C]">{r.gymEquiv}×</div>
-                            <div className="mt-0.5 text-[10px] leading-snug text-white">gym sessions/week equivalent</div>
-                          </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
+                          <div className="font-display text-base font-bold text-[#EDB93C]">{r.activeMins}</div>
+                          <div className="mt-0.5 text-[9px] leading-snug text-white/60">active min/week</div>
+                        </div>
+                        <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
+                          <div className="font-display text-base font-bold text-[#EDB93C]">{r.weeklyCals.toLocaleString()}</div>
+                          <div className="mt-0.5 text-[9px] leading-snug text-white/60">cal/week</div>
+                        </div>
+                        <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
+                          <div className="font-display text-base font-bold text-[#EDB93C]">{fmtCO2(r.co2)}</div>
+                          <div className="mt-0.5 text-[9px] leading-snug text-white/60">CO₂ saved/yr</div>
                         </div>
                       </div>
                     )}
-
-                    {/* Quick facts */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-4 py-3">
-                        <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-white">Miles active per year</div>
-                        <div className="font-display text-lg font-bold text-white">{Math.round(r.annualMiles).toLocaleString()}</div>
-                        <div className="mt-0.5 text-[10px] text-white">under your own power</div>
-                      </div>
-                      <div className="rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-4 py-3">
-                        <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-white">CO₂ avoided</div>
-                        <div className="font-display text-lg font-bold text-white">{fmtCO2(r.co2)}</div>
-                        <div className="mt-0.5 text-[10px] text-white">per year</div>
-                      </div>
-                    </div>
-                    <div className="rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-4 py-3 text-center">
-                      <div className="text-sm text-white">{co2Equivalency(r.co2)}</div>
-                    </div>
-
-                    {/* Waitlist CTA */}
-                    <div className="mt-auto rounded-[14px] border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-6 py-5">
-                      <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight text-white">Ready to try it?</div>
-                      <div className="mb-3.5 text-[0.8rem] leading-relaxed text-white">
-                        Shift helps you build the habit — log your first active trip, track your progress, and see your real savings add up over time.
-                      </div>
-                      <a
-                        href="/shift"
-                        className="inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-                      >
-                        Download the app &rarr;
-                      </a>
-                    </div>
-                  </>
+                  </div>
                 )}
+
+                {/* Barrier selector */}
+                <BarrierSelector
+                  modes={recommendation.primary.modes}
+                  selected={selectedBarrier}
+                  onSelect={handleBarrierSelect}
+                />
+
+                {/* Getting started — always appears after barrier selection */}
+                {selectedBarrier && (
+                  <GettingStarted
+                    guide={recommendation.content.guide}
+                    event={recommendation.content.event}
+                    barrierIsHabit={selectedBarrier === 'habit'}
+                  />
+                )}
+
+                {/* Start earning CTA */}
+                <div className="rounded-2xl border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-7 py-6">
+                  <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight text-white">Start earning</div>
+                  <div className="mb-3.5 text-[0.8rem] leading-relaxed text-white">
+                    Every active trip earns you points toward rewards from local businesses.
+                  </div>
+                  <a href="/shift" className="inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85">
+                    Download the app &rarr;
+                  </a>
+                </div>
+
+                {/* Edit inputs */}
+                <button
+                  onClick={() => setStep(1)}
+                  className="w-full rounded-xl border border-white/[0.08] py-3 text-[0.8125rem] font-semibold text-white/50 transition-colors hover:border-white/[0.15] hover:text-white/70"
+                >
+                  ← Edit your commute details
+                </button>
               </div>
-            </div>
+            )}
           </div>
-        </div>
-
-        {/* ── RECOMMENDATION ── */}
-        <div ref={recommendRef} className="mx-auto mt-8 max-w-[1000px] px-8">
-          {recLoading && !recommendation && (
-            <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7 text-center">
-              <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-[#BAF14D]" />
-              <p className="text-sm text-white/60">Analyzing your commute...</p>
-            </div>
-          )}
-
-          {outsideMA && (
-            <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
-              <p className="text-[0.9375rem] text-white">
-                Our recommendation engine is optimized for Massachusetts commutes. For other locations, try{' '}
-                <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" className="text-[#BAF14D] underline">
-                  Google Maps
-                </a>{' '}
-                or a local transit app.
-              </p>
-            </div>
-          )}
-
-          {recError && (
-            <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
-              <p className="text-[0.9375rem] text-white/70">{recError}</p>
-              <button onClick={handleRefresh} className="mt-3 text-sm font-semibold text-[#BAF14D]">
-                Try again
-              </button>
-            </div>
-          )}
-
-          {recommendation && (
-            <div className="animate-in">
-              <RecommendationCard
-                primary={recommendation.primary}
-                secondary={recommendation.secondary}
-                distanceMiles={recommendation.distance_miles}
-                distanceCategory={recommendation.distance_category}
-                onRefresh={handleRefresh}
-                loading={recLoading}
-              />
-
-              {/* Manual distance note */}
-              {!homePlaceData && (
-                <p className="mt-3 text-center text-[0.8125rem] text-white/40">
-                  Enter your home and work addresses above for live transit and Bluebikes availability.
-                </p>
-              )}
-
-              {/* Map — only if addresses entered */}
-              {homePlaceData && workPlaceData && (
-                <CommuteMap
-                  originLat={homePlaceData.lat}
-                  originLng={homePlaceData.lng}
-                  destLat={workPlaceData.lat}
-                  destLng={workPlaceData.lng}
-                  bluebikesOrigin={recommendation.map_data.bluebikes_origin}
-                  bluebikesDestStations={recommendation.map_data.bluebikes_dest}
-                  mbtaStops={recommendation.map_data.mbta_stops}
-                  onRefresh={handleRefresh}
-                />
-              )}
-
-              {/* Barrier selector */}
-              <BarrierSelector
-                modes={recommendation.primary.modes}
-                selected={selectedBarrier}
-                onSelect={handleBarrierSelect}
-              />
-
-              {/* Getting started — appears after barrier selection */}
-              {selectedBarrier && (
-                <GettingStarted
-                  guide={recommendation.content.guide}
-                  event={recommendation.content.event}
-                  barrierIsHabit={selectedBarrier === 'habit'}
-                />
-              )}
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Methodology */}
         <div className="mx-auto mt-8 max-w-[860px] px-8">
