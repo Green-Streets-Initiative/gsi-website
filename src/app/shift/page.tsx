@@ -53,7 +53,7 @@ export default function ShiftPage() {
             </div>
 
             <div className="mt-6">
-              <Link href="/commute-calculator" className="text-sm font-semibold text-[#BAF14D]">
+              <Link href="/commute-advisor" className="text-sm font-semibold text-[#BAF14D]">
                 See your savings →
               </Link>
             </div>

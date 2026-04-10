@@ -29,8 +29,8 @@ export default function Nav() {
           <Link href="/programs" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
             Programs
           </Link>
-          <Link href="/commute-calculator" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
-            Calculator
+          <Link href="/commute-advisor" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
+            Commute Advisor
           </Link>
           <Link href="/get-involved" className="text-sm font-medium text-white transition-opacity hover:opacity-80">
             Get involved
@@ -71,7 +71,7 @@ export default function Nav() {
             <Link href="/shift" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Shift</Link>
             <Link href="/events/shift-your-summer" className="text-sm font-medium text-lime" onClick={() => setMenuOpen(false)}>Shift Your Summer</Link>
             <Link href="/programs" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Programs</Link>
-            <Link href="/commute-calculator" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Calculator</Link>
+            <Link href="/commute-advisor" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Commute Advisor</Link>
             <Link href="/about" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>About</Link>
             <Link href="/get-involved" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Get involved</Link>
             <Link href="/contact" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Contact</Link>

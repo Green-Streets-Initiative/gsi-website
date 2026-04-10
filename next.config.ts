@@ -115,7 +115,12 @@ const nextConfig: NextConfig = {
       // Old misc pages
       {
         source: '/transportation-resources',
-        destination: '/commute-calculator',
+        destination: '/commute-advisor',
+        permanent: true,
+      },
+      {
+        source: '/commute-calculator',
+        destination: '/commute-advisor',
         permanent: true,
       },
       {

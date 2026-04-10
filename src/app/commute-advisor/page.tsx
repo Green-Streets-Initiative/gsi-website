@@ -5,6 +5,11 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
+import RecommendationCard from '@/components/commute/RecommendationCard'
+import CommuteMap from '@/components/commute/CommuteMap'
+import BarrierSelector from '@/components/commute/BarrierSelector'
+import GettingStarted from '@/components/commute/GettingStarted'
+import type { RecommendationResponse, BarrierCode } from '@/lib/types/commute'
 
 type PlaceData = { placeId: string; lat: number; lng: number }
 type RouteResult = { durationMins: number; distanceMiles: number } | null
@@ -121,6 +126,14 @@ export default function CommuteCalculator() {
   const [routeError, setRouteError] = useState(false)
   const routeAbortRef = useRef<AbortController | null>(null)
 
+  // Recommendation state
+  const [recommendation, setRecommendation] = useState<RecommendationResponse | null>(null)
+  const [recLoading, setRecLoading] = useState(false)
+  const [recError, setRecError] = useState<string | null>(null)
+  const [selectedBarrier, setSelectedBarrier] = useState<BarrierCode | null>(null)
+  const [outsideMA, setOutsideMA] = useState(false)
+  const recommendRef = useRef<HTMLDivElement>(null)
+
   // Fetch routing when both addresses and alt mode are set
   useEffect(() => {
     if (!homePlaceData || !workPlaceData) {
@@ -172,6 +185,116 @@ export default function CommuteCalculator() {
       controller.abort()
     }
   }, [homePlaceData, workPlaceData, altMode])
+
+  // Fetch recommendation when both addresses are set
+  const fetchRecommendation = useCallback(async (barrier?: BarrierCode | null) => {
+    if (!homePlaceData || !workPlaceData) {
+      // Manual distance fallback — show simplified recommendation
+      if (distance > 0) {
+        setRecLoading(true)
+        setRecError(null)
+        setOutsideMA(false)
+        try {
+          // Build a simplified recommendation locally for manual distance
+          const distMiles = distance
+          const category = distMiles < 2 ? 'short' : distMiles < 6 ? 'medium' : 'long' as const
+          let modes: ('walk' | 'bike' | 'ebike' | 'transit')[]
+          let label: string
+          let reasons: string[]
+          let timeMins: number
+          let costDaily: number
+
+          if (distMiles < 1.5) {
+            modes = ['walk']; label = 'Walk'
+            timeMins = Math.round((distMiles / 3.5) * 60)
+            costDaily = 0
+            reasons = [`${distMiles.toFixed(1)} miles — about ${timeMins} minutes on foot`, 'No cost, no wait, no parking', 'Counts as active transportation in Shift']
+          } else if (distMiles < 6) {
+            modes = ['bike']; label = 'Bike'
+            timeMins = Math.round((distMiles / 11) * 60)
+            costDaily = 0
+            reasons = [`${distMiles.toFixed(1)} miles — about ${timeMins} minutes by bike`, 'Free if you already own a bike', 'Great exercise and stress relief']
+          } else if (distMiles < 12) {
+            modes = ['transit']; label = 'MBTA Transit'
+            timeMins = Math.round(distMiles * 4)
+            costDaily = 2.4
+            reasons = [`$2.40 per ride, or $90/month for an unlimited LinkPass`, 'No parking costs or gas expenses', 'Reliable schedule, no traffic stress']
+          } else {
+            modes = ['transit']; label = 'MBTA Transit'
+            timeMins = Math.round(distMiles * 4)
+            costDaily = 2.4
+            reasons = ['$2.40 per ride, or $90/month for an unlimited LinkPass', 'No parking costs or gas expenses', 'Reliable schedule, no traffic stress']
+          }
+
+          setRecommendation({
+            primary: { modes, label, reasons, time_estimate_minutes: timeMins, cost_estimate_daily: costDaily, google_maps_url: '' },
+            secondary: null,
+            map_data: { bluebikes_origin: [], bluebikes_dest: [], mbta_stops: [], bike_infra_quality: 'unknown' },
+            content: { guide: null, event: null },
+            distance_miles: distMiles,
+            distance_category: category,
+          })
+        } finally {
+          setRecLoading(false)
+        }
+      }
+      return
+    }
+
+    setRecLoading(true)
+    setRecError(null)
+    setOutsideMA(false)
+
+    try {
+      const params = new URLSearchParams({
+        origin_lat: String(homePlaceData.lat),
+        origin_lng: String(homePlaceData.lng),
+        dest_lat: String(workPlaceData.lat),
+        dest_lng: String(workPlaceData.lng),
+      })
+      if (barrier) params.set('barrier', barrier)
+
+      const res = await fetch(`/api/commute/recommend?${params}`)
+      const data = await res.json()
+
+      if (data.error === 'outside_ma') {
+        setOutsideMA(true)
+        setRecommendation(null)
+        return
+      }
+
+      setRecommendation(data)
+      // Smooth scroll to recommendation
+      setTimeout(() => {
+        recommendRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    } catch {
+      setRecError('Unable to load recommendation. Please try again.')
+    } finally {
+      setRecLoading(false)
+    }
+  }, [homePlaceData, workPlaceData, distance])
+
+  // Trigger recommendation when addresses change
+  useEffect(() => {
+    if (homePlaceData && workPlaceData) {
+      setSelectedBarrier(null)
+      fetchRecommendation()
+    }
+  }, [homePlaceData, workPlaceData, fetchRecommendation])
+
+  // Handle barrier selection
+  const handleBarrierSelect = (barrier: BarrierCode) => {
+    setSelectedBarrier(barrier)
+    if (barrier !== 'habit' && homePlaceData && workPlaceData) {
+      fetchRecommendation(barrier)
+    }
+  }
+
+  // Refresh live data
+  const handleRefresh = () => {
+    fetchRecommendation(selectedBarrier)
+  }
 
   // Cap shift days to drive days
   useEffect(() => {
@@ -307,7 +430,7 @@ export default function CommuteCalculator() {
         <div className="mx-auto max-w-[780px] px-8 pt-16">
           <div className="mb-5 text-[11px] font-semibold uppercase tracking-widest text-white">
             <Link href="/" className="text-[#BAF14D] no-underline hover:underline">Home</Link>
-            {' / '}Commute Calculator
+            {' / '}Commute Advisor
           </div>
           <h1 className="mb-5 font-display text-[clamp(2rem,4vw,3rem)] font-extrabold leading-[1.1] tracking-tighter text-white">
             What if your commute <em className="not-italic text-[#BAF14D]">worked for you</em>?
@@ -335,7 +458,7 @@ export default function CommuteCalculator() {
 
         {/* Calculator */}
         <div className="mx-auto max-w-[1000px] px-8">
-          <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">Commute calculator</div>
+          <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">Commute Advisor</div>
           <div className="overflow-hidden rounded-[20px] border border-white/[0.12] bg-[#242538]">
             <div className="grid gap-0 md:grid-cols-2">
 
@@ -370,6 +493,14 @@ export default function CommuteCalculator() {
                     <span className="text-[0.8rem] text-white">miles each way</span>
                   </div>
                   <Hint>{homePlaceData && workPlaceData ? 'Distance auto-set from routing — adjust to override' : 'Enter addresses above for real routing, or set distance manually'}</Hint>
+                  {!homePlaceData && !workPlaceData && (
+                    <button
+                      onClick={() => fetchRecommendation()}
+                      className="mt-3 w-full rounded-xl bg-[#BAF14D]/[0.12] py-2.5 text-[0.8125rem] font-semibold text-[#BAF14D] transition-colors hover:bg-[#BAF14D]/[0.2]"
+                    >
+                      Get my recommendation
+                    </button>
+                  )}
                 </Field>
 
                 {/* Commute mode */}
@@ -701,6 +832,87 @@ export default function CommuteCalculator() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* ── RECOMMENDATION ── */}
+        <div ref={recommendRef} className="mx-auto mt-8 max-w-[1000px] px-8">
+          {recLoading && !recommendation && (
+            <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7 text-center">
+              <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-[#BAF14D]" />
+              <p className="text-sm text-white/60">Analyzing your commute...</p>
+            </div>
+          )}
+
+          {outsideMA && (
+            <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
+              <p className="text-[0.9375rem] text-white">
+                Our recommendation engine is optimized for Massachusetts commutes. For other locations, try{' '}
+                <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" className="text-[#BAF14D] underline">
+                  Google Maps
+                </a>{' '}
+                or a local transit app.
+              </p>
+            </div>
+          )}
+
+          {recError && (
+            <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
+              <p className="text-[0.9375rem] text-white/70">{recError}</p>
+              <button onClick={handleRefresh} className="mt-3 text-sm font-semibold text-[#BAF14D]">
+                Try again
+              </button>
+            </div>
+          )}
+
+          {recommendation && (
+            <div className="animate-in">
+              <RecommendationCard
+                primary={recommendation.primary}
+                secondary={recommendation.secondary}
+                distanceMiles={recommendation.distance_miles}
+                distanceCategory={recommendation.distance_category}
+                onRefresh={handleRefresh}
+                loading={recLoading}
+              />
+
+              {/* Manual distance note */}
+              {!homePlaceData && (
+                <p className="mt-3 text-center text-[0.8125rem] text-white/40">
+                  Enter your home and work addresses above for live transit and Bluebikes availability.
+                </p>
+              )}
+
+              {/* Map — only if addresses entered */}
+              {homePlaceData && workPlaceData && (
+                <CommuteMap
+                  originLat={homePlaceData.lat}
+                  originLng={homePlaceData.lng}
+                  destLat={workPlaceData.lat}
+                  destLng={workPlaceData.lng}
+                  bluebikesOrigin={recommendation.map_data.bluebikes_origin}
+                  bluebikesDestStations={recommendation.map_data.bluebikes_dest}
+                  mbtaStops={recommendation.map_data.mbta_stops}
+                  onRefresh={handleRefresh}
+                />
+              )}
+
+              {/* Barrier selector */}
+              <BarrierSelector
+                modes={recommendation.primary.modes}
+                selected={selectedBarrier}
+                onSelect={handleBarrierSelect}
+              />
+
+              {/* Getting started — appears after barrier selection */}
+              {selectedBarrier && (
+                <GettingStarted
+                  guide={recommendation.content.guide}
+                  event={recommendation.content.event}
+                  barrierIsHabit={selectedBarrier === 'habit'}
+                />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Methodology */}
