@@ -4,7 +4,9 @@ import { Suspense, useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
+import type { EmployerBenefits, ShuttleRoute } from '@/lib/types/commute'
 
 /* ── types ─────────────────────────────────────────────────── */
 
@@ -101,6 +103,14 @@ function PortalPage() {
   })
   const [savingChallenge, setSavingChallenge] = useState(false)
 
+  // Commute Advisor config state
+  const [benefitsForm, setBenefitsForm] = useState<EmployerBenefits>({})
+  const [savingBenefits, setSavingBenefits] = useState(false)
+  const [benefitsSaved, setBenefitsSaved] = useState(false)
+  const [advisorLinkCopied, setAdvisorLinkCopied] = useState(false)
+  type AdvisorPlaceData = { placeId: string; lat: number; lng: number } | null
+  const [advisorPlaceData, setAdvisorPlaceData] = useState<AdvisorPlaceData>(null)
+
   // Account settings state
   const [editingAccount, setEditingAccount] = useState(false)
   const [accountForm, setAccountForm] = useState({
@@ -135,7 +145,7 @@ function PortalPage() {
       const { data: groupData } = await supabase
         .from('groups')
         .select(
-          'id, name, slug, status, admin_name, admin_email, admin_phone, website_url, logo_url, invite_code, tier, access_starts_at, access_ends_at, public_leaderboard'
+          'id, name, slug, status, admin_name, admin_email, admin_phone, website_url, logo_url, invite_code, tier, access_starts_at, access_ends_at, public_leaderboard, employer_benefits'
         )
         .eq('admin_email', email)
         .limit(1)
@@ -153,6 +163,12 @@ function PortalPage() {
         admin_phone: groupData.admin_phone || '',
         website_url: groupData.website_url || '',
       })
+      // Initialize benefits form from stored data
+      const eb = (groupData.employer_benefits || {}) as EmployerBenefits
+      setBenefitsForm(eb)
+      if (eb.destination_lat && eb.destination_lng) {
+        setAdvisorPlaceData({ placeId: '', lat: eb.destination_lat, lng: eb.destination_lng })
+      }
 
       // Fetch active challenge for this group
       const now = new Date().toISOString()
@@ -945,6 +961,226 @@ function PortalPage() {
                 </button>
               </div>
             )}
+          </section>
+
+          {/* ── Section: Commute Advisor ──────────────────── */}
+          <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+            <h2 className="mb-2 font-display text-base font-bold text-white">Commute Advisor</h2>
+            <p className="mb-4 text-[0.8125rem] text-white/50">
+              Customize the Commute Advisor for your employees. Share this link in your onboarding kit or HR portal:
+            </p>
+            {group.slug && (
+              <div className="mb-6 flex items-center gap-2">
+                <div className="flex-1 rounded-lg bg-white/[0.06] px-3 py-2 text-[0.8125rem] text-white/70">
+                  gogreenstreets.org/commute-advisor/{group.slug}
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`https://www.gogreenstreets.org/commute-advisor/${group.slug}`)
+                    setAdvisorLinkCopied(true)
+                    setTimeout(() => setAdvisorLinkCopied(false), 2000)
+                  }}
+                  className="rounded-lg border border-white/[0.12] px-3 py-2 text-[0.8125rem] font-semibold text-white transition-colors hover:bg-white/[0.05]"
+                >
+                  {advisorLinkCopied ? 'Copied!' : 'Copy link'}
+                </button>
+                <a
+                  href={`/commute-advisor/${group.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-white/[0.12] px-3 py-2 text-[0.8125rem] font-semibold text-white transition-colors hover:bg-white/[0.05]"
+                >
+                  Preview
+                </a>
+              </div>
+            )}
+
+            {/* Workplace address */}
+            <div className="mb-5">
+              <AddressAutocomplete
+                value={benefitsForm.destination_address || ''}
+                onChange={(val) => setBenefitsForm({ ...benefitsForm, destination_address: val || null })}
+                onPlaceSelected={(place) => {
+                  setAdvisorPlaceData(place)
+                  setBenefitsForm({
+                    ...benefitsForm,
+                    destination_address: '', // will be set by onChange
+                    destination_lat: place.lat,
+                    destination_lng: place.lng,
+                  })
+                }}
+                label="Workplace address"
+                variant="dark"
+                placeholder="Office address for pre-fill"
+              />
+            </div>
+
+            {/* Transit benefits */}
+            <div className="mb-5">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Monthly transit subsidy ($)</label>
+              <input
+                type="number"
+                value={benefitsForm.transit_subsidy_monthly ?? ''}
+                onChange={e => setBenefitsForm({ ...benefitsForm, transit_subsidy_monthly: parseFloat(e.target.value) || null })}
+                placeholder="0"
+                className="w-32 rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2 text-sm text-white transition-colors focus:border-[#BAF14D] focus:outline-none"
+              />
+            </div>
+            <div className="mb-5">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Subsidy type</label>
+              <select
+                value={benefitsForm.transit_subsidy_type || ''}
+                onChange={e => setBenefitsForm({ ...benefitsForm, transit_subsidy_type: (e.target.value || null) as EmployerBenefits['transit_subsidy_type'] })}
+                className="w-full rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2 text-sm text-white transition-colors focus:border-[#BAF14D] focus:outline-none"
+              >
+                <option value="">None</option>
+                <option value="pre_tax">Pre-tax benefit</option>
+                <option value="direct">Direct subsidy</option>
+              </select>
+            </div>
+            <div className="mb-5">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Subsidy display label</label>
+              <input
+                type="text"
+                value={benefitsForm.transit_subsidy_label || ''}
+                onChange={e => setBenefitsForm({ ...benefitsForm, transit_subsidy_label: e.target.value || null })}
+                placeholder="e.g., Pre-tax transit benefit (saves ~$15/month in taxes)"
+                className="w-full rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder-white/30 transition-colors focus:border-[#BAF14D] focus:outline-none"
+              />
+            </div>
+
+            {/* Bike benefits */}
+            <div className="mb-4 flex flex-col gap-3">
+              <label className="flex items-center gap-3">
+                <input type="checkbox" checked={benefitsForm.bluebikes_subsidized || false}
+                  onChange={e => setBenefitsForm({ ...benefitsForm, bluebikes_subsidized: e.target.checked })}
+                  className="h-4 w-4 rounded border-white/20 bg-white/10 accent-[#BAF14D]" />
+                <span className="text-sm text-white">Bluebikes membership subsidized</span>
+              </label>
+              {benefitsForm.bluebikes_subsidized && (
+                <input type="text" value={benefitsForm.bluebikes_subsidy_label || ''}
+                  onChange={e => setBenefitsForm({ ...benefitsForm, bluebikes_subsidy_label: e.target.value || null })}
+                  placeholder="e.g., Free Bluebikes annual membership for all employees"
+                  className="w-full rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder-white/30 transition-colors focus:border-[#BAF14D] focus:outline-none" />
+              )}
+              <label className="flex items-center gap-3">
+                <input type="checkbox" checked={benefitsForm.bike_parking || false}
+                  onChange={e => setBenefitsForm({ ...benefitsForm, bike_parking: e.target.checked })}
+                  className="h-4 w-4 rounded border-white/20 bg-white/10 accent-[#BAF14D]" />
+                <span className="text-sm text-white">Bike parking available</span>
+              </label>
+              {benefitsForm.bike_parking && (
+                <input type="text" value={benefitsForm.bike_parking_details || ''}
+                  onChange={e => setBenefitsForm({ ...benefitsForm, bike_parking_details: e.target.value || null })}
+                  placeholder="e.g., Secure cage, Level B1, Building A"
+                  className="w-full rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder-white/30 transition-colors focus:border-[#BAF14D] focus:outline-none" />
+              )}
+              <label className="flex items-center gap-3">
+                <input type="checkbox" checked={benefitsForm.showers || false}
+                  onChange={e => setBenefitsForm({ ...benefitsForm, showers: e.target.checked })}
+                  className="h-4 w-4 rounded border-white/20 bg-white/10 accent-[#BAF14D]" />
+                <span className="text-sm text-white">Showers available</span>
+              </label>
+              {benefitsForm.showers && (
+                <input type="text" value={benefitsForm.shower_details || ''}
+                  onChange={e => setBenefitsForm({ ...benefitsForm, shower_details: e.target.value || null })}
+                  placeholder="e.g., 2nd floor locker rooms, Building A"
+                  className="w-full rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder-white/30 transition-colors focus:border-[#BAF14D] focus:outline-none" />
+              )}
+              <label className="flex items-center gap-3">
+                <input type="checkbox" checked={benefitsForm.free_parking || false}
+                  onChange={e => setBenefitsForm({ ...benefitsForm, free_parking: e.target.checked })}
+                  className="h-4 w-4 rounded border-white/20 bg-white/10 accent-[#BAF14D]" />
+                <span className="text-sm text-white">Free parking offered</span>
+              </label>
+            </div>
+
+            {/* Shuttle routes */}
+            <div className="mb-5">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Shuttle routes</label>
+              {(benefitsForm.shuttle_routes || []).map((route: ShuttleRoute, i: number) => (
+                <div key={i} className="mb-3 rounded-lg border border-white/[0.08] bg-white/[0.03] p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[0.75rem] font-semibold text-white/50">Route {i + 1}</span>
+                    <button onClick={() => {
+                      const updated = [...(benefitsForm.shuttle_routes || [])]
+                      updated.splice(i, 1)
+                      setBenefitsForm({ ...benefitsForm, shuttle_routes: updated })
+                    }} className="text-[0.75rem] text-[#FF6B6B] hover:underline">Remove</button>
+                  </div>
+                  <div className="space-y-2">
+                    <input type="text" value={route.name} placeholder="Route name"
+                      onChange={e => { const u = [...(benefitsForm.shuttle_routes || [])]; u[i] = { ...u[i], name: e.target.value }; setBenefitsForm({ ...benefitsForm, shuttle_routes: u }) }}
+                      className="w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-sm text-white placeholder-white/30 focus:border-[#BAF14D] focus:outline-none" />
+                    <input type="text" value={route.from_stop} placeholder="From stop (e.g., South Station)"
+                      onChange={e => { const u = [...(benefitsForm.shuttle_routes || [])]; u[i] = { ...u[i], from_stop: e.target.value }; setBenefitsForm({ ...benefitsForm, shuttle_routes: u }) }}
+                      className="w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-sm text-white placeholder-white/30 focus:border-[#BAF14D] focus:outline-none" />
+                    <input type="text" value={route.schedule} placeholder="Schedule"
+                      onChange={e => { const u = [...(benefitsForm.shuttle_routes || [])]; u[i] = { ...u[i], schedule: e.target.value }; setBenefitsForm({ ...benefitsForm, shuttle_routes: u }) }}
+                      className="w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-sm text-white placeholder-white/30 focus:border-[#BAF14D] focus:outline-none" />
+                  </div>
+                </div>
+              ))}
+              {(benefitsForm.shuttle_routes || []).length < 3 && (
+                <button onClick={() => setBenefitsForm({
+                  ...benefitsForm,
+                  shuttle_routes: [...(benefitsForm.shuttle_routes || []), { name: '', from_stop: '', schedule: '', details: '' }]
+                })} className="text-[0.8125rem] font-semibold text-[#BAF14D] hover:underline">
+                  + Add shuttle route
+                </button>
+              )}
+            </div>
+
+            {/* HR Contact */}
+            <div className="mb-5 grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">HR contact name</label>
+                <input type="text" value={benefitsForm.hr_contact_name || ''}
+                  onChange={e => setBenefitsForm({ ...benefitsForm, hr_contact_name: e.target.value || null })}
+                  placeholder="Sarah Johnson"
+                  className="w-full rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder-white/30 transition-colors focus:border-[#BAF14D] focus:outline-none" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">HR contact email</label>
+                <input type="email" value={benefitsForm.hr_contact_email || ''}
+                  onChange={e => setBenefitsForm({ ...benefitsForm, hr_contact_email: e.target.value || null })}
+                  placeholder="benefits@company.com"
+                  className="w-full rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder-white/30 transition-colors focus:border-[#BAF14D] focus:outline-none" />
+              </div>
+            </div>
+
+            {/* Other benefits */}
+            <div className="mb-6">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Other benefits</label>
+              <textarea value={benefitsForm.other_benefits || ''}
+                onChange={e => setBenefitsForm({ ...benefitsForm, other_benefits: e.target.value || null })}
+                placeholder="Any other commute benefits not listed above"
+                rows={2}
+                className="w-full rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder-white/30 transition-colors focus:border-[#BAF14D] focus:outline-none" />
+            </div>
+
+            {/* Save */}
+            <button
+              onClick={async () => {
+                if (!group) return
+                setSavingBenefits(true)
+                setBenefitsSaved(false)
+                // Include lat/lng from place data
+                const toSave = { ...benefitsForm }
+                if (advisorPlaceData) {
+                  toSave.destination_lat = advisorPlaceData.lat
+                  toSave.destination_lng = advisorPlaceData.lng
+                }
+                await supabase.from('groups').update({ employer_benefits: toSave }).eq('id', group.id)
+                setSavingBenefits(false)
+                setBenefitsSaved(true)
+                setTimeout(() => setBenefitsSaved(false), 3000)
+              }}
+              disabled={savingBenefits}
+              className="rounded-xl bg-[#BAF14D] px-6 py-2.5 text-[0.875rem] font-bold text-[#191A2E] transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {savingBenefits ? 'Saving...' : benefitsSaved ? 'Saved!' : 'Save benefits'}
+            </button>
           </section>
 
           {/* ── Section 4: Employee leaderboard (placeholder) */}

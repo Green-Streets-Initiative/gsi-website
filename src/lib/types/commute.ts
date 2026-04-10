@@ -67,6 +67,44 @@ export interface EventWithDetails {
   }
 }
 
+export interface ShuttleRoute {
+  name: string
+  from_stop: string
+  schedule: string
+  details: string
+}
+
+export interface EmployerBenefits {
+  destination_address?: string | null
+  destination_lat?: number | null
+  destination_lng?: number | null
+  transit_subsidy_monthly?: number | null
+  transit_subsidy_type?: 'pre_tax' | 'direct' | null
+  transit_subsidy_label?: string | null
+  bluebikes_subsidized?: boolean
+  bluebikes_subsidy_type?: 'full' | 'partial' | null
+  bluebikes_subsidy_label?: string | null
+  bike_parking?: boolean
+  bike_parking_details?: string | null
+  showers?: boolean
+  shower_details?: string | null
+  free_parking?: boolean
+  parking_cost_monthly?: number | null
+  shuttle_routes?: ShuttleRoute[]
+  other_benefits?: string | null
+  hr_contact_name?: string | null
+  hr_contact_email?: string | null
+}
+
+export interface EmployerGroup {
+  id: string
+  name: string
+  slug: string
+  logo_url: string | null
+  tier: string
+  employer_benefits: EmployerBenefits
+}
+
 export interface RecommendationResponse {
   primary: RecommendationPrimary
   secondary: RecommendationSecondary | null
