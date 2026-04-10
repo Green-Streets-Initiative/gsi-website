@@ -38,7 +38,7 @@ export default function DemoGeneratorPage() {
   // Preview Clearbit logo when domain changes
   const handleDomainBlur = () => {
     if (!domain) { setLogoUrl(null); setLogoError(false); return }
-    const cleaned = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+    const cleaned = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').trim()
     const url = `https://logo.clearbit.com/${cleaned}`
     setLogoUrl(url)
     setLogoError(false)
@@ -106,7 +106,7 @@ export default function DemoGeneratorPage() {
             <div className="mb-5">
               <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">Company domain *</label>
               <input type="text" value={domain} onChange={e => setDomain(e.target.value)} onBlur={handleDomainBlur}
-                placeholder="libertymutual.com"
+                placeholder="libertymutual.com (just the domain, no https://)"
                 className="w-full rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder-white/30 transition-colors focus:border-[#BAF14D] focus:outline-none" />
               {/* Logo preview */}
               {logoUrl && (
