@@ -175,6 +175,10 @@ function findNearbyStations(
 }
 
 /* ── MBTA V3 ── */
+const MBTA_ROUTE_TYPE_MAP: Record<number, MBTAStop['route_type']> = {
+  0: 'light_rail', 1: 'subway', 2: 'commuter_rail', 3: 'bus',
+}
+
 async function fetchMBTAStopsNear(lat: number, lng: number): Promise<MBTAStop[]> {
   const key = `${lat.toFixed(2)},${lng.toFixed(2)}`
   const cached = mbtaStopsCache.get(key)
@@ -184,60 +188,77 @@ async function fetchMBTAStopsNear(lat: number, lng: number): Promise<MBTAStop[]>
   const headers: Record<string, string> = apiKey ? { 'x-api-key': apiKey } : {}
 
   try {
-    const url = `https://api-v3.mbta.com/stops?filter[latitude]=${lat}&filter[longitude]=${lng}&filter[radius]=0.01&include=route&page[limit]=10`
+    // Filter to Light Rail (0), Heavy Rail (1), Commuter Rail (2) — exclude Bus (3)
+    const url = `https://api-v3.mbta.com/stops?filter[latitude]=${lat}&filter[longitude]=${lng}&filter[radius]=0.02&filter[route_type]=0,1,2&page[limit]=20`
     const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) })
     if (!res.ok) return []
     const json = await res.json()
 
-    // Build route info map from included data
-    const routeMap = new Map<string, { name: string; color: string }>()
-    if (json.included) {
-      for (const inc of json.included) {
-        if (inc.type === 'route') {
-          routeMap.set(inc.id, {
-            name: inc.attributes?.long_name || inc.attributes?.short_name || inc.id,
-            color: inc.attributes?.color ? `#${inc.attributes.color}` : '#888888',
-          })
-        }
-      }
-    }
+    if (!json.data || json.data.length === 0) return []
 
-    const stops: MBTAStop[] = (json.data || []).map((s: Record<string, unknown>) => {
+    // Build unique stops using parent station IDs for dedup and route lookup
+    const seenParents = new Set<string>()
+    const stops: (MBTAStop & { parentId: string })[] = []
+
+    for (const s of json.data as Array<Record<string, unknown>>) {
       const attrs = s.attributes as Record<string, unknown>
-      // Get routes for this stop
-      const routeIds: string[] = []
-      const routeNames: string[] = []
-      let lineColor = '#888888'
-
-      // Relationships may have route data
+      const name = attrs.name as string
       const rels = s.relationships as Record<string, unknown> | undefined
-      if (rels?.route) {
-        const routeData = (rels.route as Record<string, unknown>).data
-        if (routeData && typeof routeData === 'object' && 'id' in routeData) {
-          const rid = (routeData as { id: string }).id
-          routeIds.push(rid)
-          const route = routeMap.get(rid)
-          if (route) {
-            routeNames.push(route.name)
-            lineColor = route.color
-          }
-        }
-      }
+      const parentId = (rels?.parent_station as Record<string, unknown>)?.data
+        ? ((rels?.parent_station as Record<string, unknown>).data as { id: string }).id
+        : s.id as string
 
-      return {
-        id: s.id as string,
-        name: attrs.name as string,
+      // Deduplicate by parent station (inbound/outbound share parent)
+      if (seenParents.has(parentId)) continue
+      seenParents.add(parentId)
+
+      stops.push({
+        id: parentId,
+        parentId,
+        name,
         lat: attrs.latitude as number,
         lng: attrs.longitude as number,
-        route_ids: routeIds,
-        route_names: routeNames,
-        line_color: lineColor,
+        route_ids: [],
+        route_names: [],
+        line_color: '#888888',
+        route_type: 'unknown',
         distance_miles: haversine(lat, lng, attrs.latitude as number, attrs.longitude as number),
-      }
-    })
+      })
+    }
 
-    mbtaStopsCache.set(key, { data: stops, expires: Date.now() + 86400_000 })
-    return stops
+    // Fetch routes per parent station (use parent ID for accurate results)
+    const stopsToEnrich = stops.slice(0, 5)
+    const routeFetches = stopsToEnrich.map(async (stop) => {
+      try {
+        const rUrl = `https://api-v3.mbta.com/routes?filter[stop]=${stop.parentId}&filter[type]=0,1,2`
+        const rRes = await fetch(rUrl, { headers, signal: AbortSignal.timeout(3000) })
+        if (!rRes.ok) return
+        const rJson = await rRes.json()
+        for (const r of rJson.data || []) {
+          const rid = r.id as string
+          const rAttrs = r.attributes as Record<string, unknown>
+          const routeType = MBTA_ROUTE_TYPE_MAP[rAttrs.type as number] || 'unknown'
+          const routeName = (rAttrs.long_name || rAttrs.short_name || rid) as string
+          const color = rAttrs.color ? `#${rAttrs.color}` : '#888888'
+
+          stop.route_ids.push(rid)
+          stop.route_names.push(routeName)
+          // Prefer subway/light_rail color over commuter rail
+          if (stop.route_type === 'unknown' || routeType === 'subway' || routeType === 'light_rail') {
+            stop.line_color = color
+            stop.route_type = routeType
+          }
+        }
+      } catch { /* skip enrichment for this stop */ }
+    })
+    await Promise.all(routeFetches)
+
+    stops.sort((a, b) => a.distance_miles - b.distance_miles)
+
+    // Strip internal parentId before caching/returning
+    const cleaned: MBTAStop[] = stops.map(({ parentId: _, ...rest }) => rest)
+    mbtaStopsCache.set(key, { data: cleaned, expires: Date.now() + 86400_000 })
+    return cleaned
   } catch {
     return []
   }
@@ -663,14 +684,27 @@ export async function GET(req: NextRequest) {
     fetchEvent(primaryModeStr),
   ])
 
-  // Combine MBTA stops (deduplicated)
+  // Filter MBTA stops to only those on shared routes (connecting origin → destination)
+  // Deduplicate by name (inbound/outbound stops share names but have different IDs)
+  const sharedRouteSet = new Set(mbtaResult.sharedRoutes)
   const allMBTAStops = [...mbtaResult.originStops, ...mbtaResult.destStops]
-  const seenStopIds = new Set<string>()
-  const uniqueStops = allMBTAStops.filter((s) => {
-    if (seenStopIds.has(s.id)) return false
-    seenStopIds.add(s.id)
-    return true
+  const seenStopNames = new Set<string>()
+  let relevantStops = allMBTAStops.filter((s) => {
+    if (seenStopNames.has(s.name)) return false
+    seenStopNames.add(s.name)
+    // Keep stops that serve a shared route
+    return s.route_ids.some((rid) => sharedRouteSet.has(rid))
   })
+  // If no shared routes found, fall back to closest rail stops from each end
+  if (relevantStops.length === 0) {
+    const seenNames2 = new Set<string>()
+    relevantStops = allMBTAStops
+      .filter((s) => { if (seenNames2.has(s.name)) return false; seenNames2.add(s.name); return true })
+      .sort((a, b) => a.distance_miles - b.distance_miles)
+      .slice(0, 4)
+  }
+  // Limit to top 5 most relevant stops
+  const uniqueStops = relevantStops.slice(0, 5)
 
   const response: RecommendationResponse = {
     primary,

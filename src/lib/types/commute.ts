@@ -23,6 +23,7 @@ export interface MBTAStop {
   route_ids: string[]
   route_names: string[]
   line_color: string
+  route_type: 'subway' | 'light_rail' | 'commuter_rail' | 'bus' | 'unknown'
   distance_miles: number
 }
 

@@ -189,12 +189,16 @@ export default function CommuteMap({
               <span>{s.num_docks_available} docks at {s.name} ({s.distance_miles} mi from work)</span>
             </div>
           ))}
-          {mbtaStops.map((s) => (
-            <div key={s.id} className="flex items-center gap-2.5 text-[0.8125rem] text-white/80">
-              <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.line_color }} />
-              <span>{s.route_names[0] || 'MBTA'} at {s.name} ({s.distance_miles.toFixed(1)} mi)</span>
-            </div>
-          ))}
+          {mbtaStops.slice(0, 3).map((s) => {
+            const typeLabel = s.route_type === 'light_rail' || s.route_type === 'subway' ? 'Rail' : s.route_type === 'commuter_rail' ? 'Commuter Rail' : ''
+            const lineName = s.route_names[0] || 'MBTA'
+            return (
+              <div key={s.id} className="flex items-center gap-2.5 text-[0.8125rem] text-white/80">
+                <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.line_color }} />
+                <span>{lineName} at {s.name}{typeLabel ? ` (${typeLabel})` : ''} — {s.distance_miles.toFixed(1)} mi</span>
+              </div>
+            )
+          })}
         </div>
       </div>
     )
