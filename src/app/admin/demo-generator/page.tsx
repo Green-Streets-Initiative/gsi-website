@@ -39,11 +39,11 @@ export default function DemoGeneratorPage() {
   const handleDomainBlur = () => {
     if (!domain) { setLogoUrl(null); setLogoError(false); return }
     const cleaned = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').trim()
-    const url = `https://logo.clearbit.com/${cleaned}`
+    // Try Google's high-res favicon service (no API key needed, always works)
+    const url = `https://www.google.com/s2/favicons?domain=${cleaned}&sz=128`
     setLogoUrl(url)
     setLogoError(false)
-    // Test if logo exists
-    const img = new Image()
+    const img = new window.Image()
     img.onload = () => setLogoError(false)
     img.onerror = () => setLogoError(true)
     img.src = url
@@ -116,7 +116,7 @@ export default function DemoGeneratorPage() {
                   ) : (
                     <>
                       <img src={logoUrl} alt="Company logo" className="h-8 w-auto rounded bg-white p-1" onError={() => setLogoError(true)} />
-                      <span className="text-[0.8rem] text-white/50">Logo from Clearbit</span>
+                      <span className="text-[0.8rem] text-white/50">Company logo</span>
                     </>
                   )}
                 </div>
