@@ -136,56 +136,61 @@ export default function CommuteMap({
     for (const m of markersRef.current) m.setMap(null)
     markersRef.current = []
 
-    // SVG icon helper
-    function svgIcon(svg: string, size = 20) {
+    // SVG icon helper — width/height must match the SVG dimensions
+    function svgIcon(svg: string, w: number, h: number) {
       return {
         url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
-        scaledSize: new google.maps.Size(size, size),
-        anchor: new google.maps.Point(size / 2, size / 2),
+        scaledSize: new google.maps.Size(w, h),
+        anchor: new google.maps.Point(w / 2, h / 2),
       }
     }
 
-    // Origin marker (lime dot with label)
-    const originSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#BAF14D" stroke="#191A2E" stroke-width="3"/></svg>`
+    // Origin marker (lime dot with "H" label)
+    const originSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="12" fill="#BAF14D" stroke="#191A2E" stroke-width="3"/><text x="14" y="19" text-anchor="middle" fill="#191A2E" font-size="13" font-weight="800" font-family="sans-serif">H</text></svg>`
     markersRef.current.push(new google.maps.Marker({
       map, position: { lat: originLat, lng: originLng },
-      icon: svgIcon(originSvg, 24), title: 'Home', zIndex: 100,
+      icon: svgIcon(originSvg, 28, 28), title: 'Home', zIndex: 100,
     }))
 
-    // Destination marker (white dot)
-    const destSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#FFFFFF" stroke="#191A2E" stroke-width="3"/></svg>`
+    // Destination marker (white dot with "W" label)
+    const destSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="12" fill="#FFFFFF" stroke="#191A2E" stroke-width="3"/><text x="14" y="19" text-anchor="middle" fill="#191A2E" font-size="13" font-weight="800" font-family="sans-serif">W</text></svg>`
     markersRef.current.push(new google.maps.Marker({
       map, position: { lat: destLat, lng: destLng },
-      icon: svgIcon(destSvg, 24), title: 'Work', zIndex: 100,
+      icon: svgIcon(destSvg, 28, 28), title: 'Work', zIndex: 100,
     }))
 
-    // Bluebikes origin stations
+    // Bluebikes origin stations (green pill with "N bikes")
     for (const station of bluebikesOrigin) {
-      const bikeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="18"><rect rx="9" width="28" height="18" fill="#22c55e" stroke="#191A2E" stroke-width="1.5"/><text x="14" y="13" text-anchor="middle" fill="#fff" font-size="9" font-weight="700" font-family="sans-serif">${station.num_bikes_available}</text></svg>`
+      const label = `${station.num_bikes_available} bikes`
+      const w = label.length * 7 + 16
+      const bikeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="22"><rect rx="11" width="${w}" height="22" fill="#22c55e" stroke="#191A2E" stroke-width="2"/><text x="${w / 2}" y="15.5" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">${label}</text></svg>`
       markersRef.current.push(new google.maps.Marker({
         map, position: { lat: station.lat, lng: station.lng },
-        icon: svgIcon(bikeSvg, 28), title: `${station.name} — ${station.num_bikes_available} bikes`,
+        icon: svgIcon(bikeSvg, w, 22), title: `${station.name} — ${label} available`,
         zIndex: 50,
       }))
     }
 
-    // Bluebikes dest stations
+    // Bluebikes dest stations (green pill with "N docks")
     for (const station of bluebikesDestStations) {
-      const dockSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="18"><rect rx="9" width="28" height="18" fill="#22c55e" stroke="#191A2E" stroke-width="1.5"/><text x="14" y="13" text-anchor="middle" fill="#fff" font-size="9" font-weight="700" font-family="sans-serif">${station.num_docks_available}</text></svg>`
+      const label = `${station.num_docks_available} docks`
+      const w = label.length * 7 + 16
+      const dockSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="22"><rect rx="11" width="${w}" height="22" fill="#22c55e" stroke="#191A2E" stroke-width="2"/><text x="${w / 2}" y="15.5" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">${label}</text></svg>`
       markersRef.current.push(new google.maps.Marker({
         map, position: { lat: station.lat, lng: station.lng },
-        icon: svgIcon(dockSvg, 28), title: `${station.name} — ${station.num_docks_available} docks`,
+        icon: svgIcon(dockSvg, w, 22), title: `${station.name} — ${label} available`,
         zIndex: 50,
       }))
     }
 
-    // MBTA stops (colored by line)
+    // MBTA stops (colored dot with line initial)
     for (const stop of mbtaStops) {
       const color = stop.line_color || '#888'
-      const stopSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><circle cx="8" cy="8" r="6" fill="${color}" stroke="#191A2E" stroke-width="2"/></svg>`
+      const initial = (stop.route_names[0] || 'T').charAt(0)
+      const stopSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="8" fill="${color}" stroke="#191A2E" stroke-width="2"/><text x="10" y="14.5" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" font-family="sans-serif">${initial}</text></svg>`
       markersRef.current.push(new google.maps.Marker({
         map, position: { lat: stop.lat, lng: stop.lng },
-        icon: svgIcon(stopSvg, 16),
+        icon: svgIcon(stopSvg, 20, 20),
         title: `${stop.route_names[0] || 'MBTA'} — ${stop.name}`,
         zIndex: 40,
       }))
@@ -193,7 +198,7 @@ export default function CommuteMap({
 
     // Bike parking spots (near destination)
     for (const spot of bikeParking) {
-      const parkSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><rect x="1" y="1" rx="2" width="12" height="12" fill="#2966E5" stroke="#191A2E" stroke-width="1.5"/><text x="7" y="10.5" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" font-family="sans-serif">P</text></svg>`
+      const parkSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"><rect x="1" y="1" rx="3" width="16" height="16" fill="#2966E5" stroke="#191A2E" stroke-width="2"/><text x="9" y="13.5" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">P</text></svg>`
       const label = [
         spot.type !== 'rack' ? spot.type : null,
         spot.capacity ? `${spot.capacity} spots` : null,
@@ -201,7 +206,7 @@ export default function CommuteMap({
       ].filter(Boolean).join(', ')
       markersRef.current.push(new google.maps.Marker({
         map, position: { lat: spot.lat, lng: spot.lng },
-        icon: svgIcon(parkSvg, 14),
+        icon: svgIcon(parkSvg, 18, 18),
         title: `Bike parking${label ? ` (${label})` : ''}`,
         zIndex: 30,
       }))
@@ -254,6 +259,36 @@ export default function CommuteMap({
   return (
     <div className="overflow-hidden rounded-2xl border border-white/[0.12]">
       <div ref={mapRef} className="h-[280px] w-full bg-[#1d1e33]" />
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-white/[0.07] bg-[#242538] px-5 py-2.5">
+        <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/50">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#BAF14D] text-[8px] font-bold text-[#191A2E]">H</span>
+          Home
+        </div>
+        <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/50">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[8px] font-bold text-[#191A2E]">W</span>
+          Work
+        </div>
+        {(bluebikesOrigin.length > 0 || bluebikesDestStations.length > 0) && (
+          <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/50">
+            <span className="h-3.5 rounded-full bg-[#22c55e] px-1.5 text-[8px] font-bold leading-[14px] text-white">0</span>
+            Bluebikes
+          </div>
+        )}
+        {mbtaStops.length > 0 && (
+          <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/50">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#888] text-[8px] font-bold text-white">T</span>
+            MBTA
+          </div>
+        )}
+        {bikeParking.length > 0 && (
+          <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/50">
+            <span className="flex h-4 w-4 items-center justify-center rounded bg-[#2966E5] text-[8px] font-bold text-white">P</span>
+            Bike parking
+          </div>
+        )}
+      </div>
 
       {/* Live status row */}
       <div className="flex flex-wrap gap-x-6 gap-y-2 border-t border-white/[0.07] bg-[#242538] px-5 py-3">
