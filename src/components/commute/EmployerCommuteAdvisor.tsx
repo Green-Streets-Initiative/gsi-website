@@ -91,7 +91,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
   const [recommendation, setRecommendation] = useState<RecommendationResponse | null>(null)
   const [recLoading, setRecLoading] = useState(false)
   const [recError, setRecError] = useState<string | null>(null)
-  const [selectedBarrier, setSelectedBarrier] = useState<BarrierCode | null>(null)
+  const [selectedBarriers, setSelectedBarriers] = useState<BarrierCode[]>([])
   const [outsideMA, setOutsideMA] = useState(false)
   const recommendRef = useRef<HTMLDivElement>(null)
 
@@ -149,11 +149,10 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
   }, [homePlaceData, workPlaceData])
 
   const handleSeeOptions = () => {
-    setStep(3); setSelectedBarrier(null); fetchRecommendation()
+    setStep(3); setSelectedBarriers([]); fetchRecommendation()
     setTimeout(() => recommendRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
   }
-  const handleBarrierSelect = (b: BarrierCode) => setSelectedBarrier(b)
-  const handleRefresh = () => fetchRecommendation(selectedBarrier)
+  const handleRefresh = () => fetchRecommendation()
 
   useEffect(() => { if (shiftDays > driveDays) setShiftDays(driveDays) }, [driveDays, shiftDays])
 
@@ -217,15 +216,22 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
 
   // Employer-specific barrier override
   const getBarrierOverride = (barrier: BarrierCode): string | null => {
-    if (barrier === 'logistics' && benefits.showers) {
-      return `${group.name} has showers${benefits.shower_details ? ` (${benefits.shower_details})` : ''} and ${benefits.bike_parking ? 'secure bike storage' : 'bike facilities'} at the office. No need to worry about arriving sweaty.`
+    if (barrier === 'sweating' && benefits.showers) {
+      return `${group.name} has showers${benefits.shower_details ? ` (${benefits.shower_details})` : ''} at the office. No need to worry about arriving sweaty.`
+    }
+    if (barrier === 'bike_parking' && benefits.bike_parking) {
+      return `Secure bike parking${benefits.bike_parking_details ? ` at ${benefits.bike_parking_details}` : ''} means your bike is safe while you're at work.`
     }
     if (barrier === 'safety' && benefits.bike_parking) {
-      return `Secure bike parking${benefits.bike_parking_details ? ` at ${benefits.bike_parking_details}` : ''} means your bike is safe while you're at work.`
+      return `${group.name} provides secure bike parking${benefits.bike_parking_details ? ` at ${benefits.bike_parking_details}` : ''} for employees.`
     }
     if (barrier === 'time' && benefits.shuttle_routes && benefits.shuttle_routes.length > 0) {
       const shuttle = benefits.shuttle_routes[0]
       return `${group.name} runs a free shuttle from ${shuttle.from_stop}. ${shuttle.schedule}`
+    }
+    if (barrier === 'planning' && benefits.shuttle_routes && benefits.shuttle_routes.length > 0) {
+      const shuttle = benefits.shuttle_routes[0]
+      return `${group.name} has a free shuttle from ${shuttle.from_stop} — ${shuttle.details || 'no reservation needed'}.`
     }
     return null
   }
@@ -485,23 +491,25 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
 
                 {/* Barrier selector with employer overrides */}
                 <BarrierSelector
-                  modes={recommendation.primary.modes} selected={selectedBarrier}
-                  onSelect={handleBarrierSelect} />
+                  modes={recommendation.primary.modes} selected={selectedBarriers}
+                  onSelect={setSelectedBarriers} />
 
-                {selectedBarrier && (
+                {selectedBarriers.length > 0 && (
                   <>
-                    {/* Employer-specific barrier response */}
-                    {getBarrierOverride(selectedBarrier) && (
-                      <div className="rounded-2xl border border-[rgba(186,241,77,0.15)] bg-[rgba(186,241,77,0.06)] p-6">
-                        <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#BAF14D]/60">
-                          Good news from {group.name}
+                    {/* Employer-specific barrier responses */}
+                    {selectedBarriers.filter(b => b !== 'habit').map(b => {
+                      const override = getBarrierOverride(b)
+                      if (!override) return null
+                      return (
+                        <div key={b} className="rounded-2xl border border-[rgba(186,241,77,0.15)] bg-[rgba(186,241,77,0.06)] p-6">
+                          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#BAF14D]/60">
+                            Good news from {group.name}
+                          </div>
+                          <p className="text-[0.9375rem] leading-relaxed text-white">{override}</p>
                         </div>
-                        <p className="text-[0.9375rem] leading-relaxed text-white">
-                          {getBarrierOverride(selectedBarrier)}
-                        </p>
-                      </div>
-                    )}
-                    <GettingStarted modes={recommendation.primary.modes} barrier={selectedBarrier}
+                      )
+                    })}
+                    <GettingStarted modes={recommendation.primary.modes} barriers={selectedBarriers}
                       event={recommendation.content.event} />
                   </>
                 )}

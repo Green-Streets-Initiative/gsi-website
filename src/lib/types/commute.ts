@@ -2,7 +2,7 @@ export type Mode = 'walk' | 'bike' | 'ebike' | 'transit' | 'bus'
 
 export type BikeInfraQuality = 'protected' | 'shared' | 'none' | 'unknown'
 export type DistanceCategory = 'short' | 'medium' | 'long'
-export type BarrierCode = 'safety' | 'routes' | 'logistics' | 'weather' | 'time' | 'carrying' | 'habit'
+export type BarrierCode = 'safety' | 'routes' | 'sweating' | 'gear' | 'bike_parking' | 'planning' | 'weather' | 'time' | 'carrying' | 'habit'
 
 export interface BluebikeStation {
   station_id: string

@@ -99,44 +99,72 @@ const FAQ = [
   },
 ]
 
+/* ── Session persistence ── */
+const SESSION_KEY = 'commute-advisor-state'
+
+function loadSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
 /* ── Component ── */
 export default function CommuteCalculator() {
-  // Inputs
-  const [distance, setDistance] = useState(7)
-  const [driveDays, setDriveDays] = useState(5)
-  const [shiftDays, setShiftDays] = useState(3)
-  const [vehicle, setVehicle] = useState('medium_sedan')
-  const [gasPrice, setGasPrice] = useState(3.59)
-  const [parkMode, setParkMode] = useState('free')
-  const [parkingCost, setParkingCost] = useState(15)
-  const [commuteMode, setCommuteMode] = useState('drive')
-  const [rideshareDaily, setRideshareDaily] = useState(30)
-  const [altMode, setAltMode] = useState('bike')
-  const [railZone, setRailZone] = useState(140)
-  const [mbtaType, setMbtaType] = useState('subway')
-  const [hasEmployerSubsidy, setHasEmployerSubsidy] = useState(false)
-  const [employerSubsidy, setEmployerSubsidy] = useState(0)
+  const saved = useRef(loadSession())
+  const s = saved.current
 
-  // Routing state
-  const [homeAddress, setHomeAddress] = useState('')
-  const [workAddress, setWorkAddress] = useState('')
-  const [homePlaceData, setHomePlaceData] = useState<PlaceData | null>(null)
-  const [workPlaceData, setWorkPlaceData] = useState<PlaceData | null>(null)
+  // Inputs — restore from session if available
+  const [distance, setDistance] = useState(s?.distance ?? 7)
+  const [driveDays, setDriveDays] = useState(s?.driveDays ?? 5)
+  const [shiftDays, setShiftDays] = useState(s?.shiftDays ?? 3)
+  const [vehicle, setVehicle] = useState(s?.vehicle ?? 'medium_sedan')
+  const [gasPrice, setGasPrice] = useState(s?.gasPrice ?? 3.59)
+  const [parkMode, setParkMode] = useState(s?.parkMode ?? 'free')
+  const [parkingCost, setParkingCost] = useState(s?.parkingCost ?? 15)
+  const [commuteMode, setCommuteMode] = useState(s?.commuteMode ?? 'drive')
+  const [rideshareDaily, setRideshareDaily] = useState(s?.rideshareDaily ?? 30)
+  const [altMode, setAltMode] = useState(s?.altMode ?? 'bike')
+  const [railZone, setRailZone] = useState(s?.railZone ?? 140)
+  const [mbtaType, setMbtaType] = useState(s?.mbtaType ?? 'subway')
+  const [hasEmployerSubsidy, setHasEmployerSubsidy] = useState(s?.hasEmployerSubsidy ?? false)
+  const [employerSubsidy, setEmployerSubsidy] = useState(s?.employerSubsidy ?? 0)
+
+  // Routing state — restore addresses and placeData
+  const [homeAddress, setHomeAddress] = useState(s?.homeAddress ?? '')
+  const [workAddress, setWorkAddress] = useState(s?.workAddress ?? '')
+  const [homePlaceData, setHomePlaceData] = useState<PlaceData | null>(s?.homePlaceData ?? null)
+  const [workPlaceData, setWorkPlaceData] = useState<PlaceData | null>(s?.workPlaceData ?? null)
   const [routeData, setRouteData] = useState<RouteResponse | null>(null)
   const [routeLoading, setRouteLoading] = useState(false)
   const [routeError, setRouteError] = useState(false)
   const routeAbortRef = useRef<AbortController | null>(null)
 
-  // Step flow
-  const [step, setStep] = useState(1)
+  // Step flow — restore step
+  const [step, setStep] = useState(s?.step ?? 1)
 
-  // Recommendation state
-  const [recommendation, setRecommendation] = useState<RecommendationResponse | null>(null)
+  // Recommendation state — restore recommendation and barriers
+  const [recommendation, setRecommendation] = useState<RecommendationResponse | null>(s?.recommendation ?? null)
   const [recLoading, setRecLoading] = useState(false)
   const [recError, setRecError] = useState<string | null>(null)
-  const [selectedBarrier, setSelectedBarrier] = useState<BarrierCode | null>(null)
+  const [selectedBarriers, setSelectedBarriers] = useState<BarrierCode[]>(s?.selectedBarriers ?? [])
   const [outsideMA, setOutsideMA] = useState(false)
   const recommendRef = useRef<HTMLDivElement>(null)
+
+  // Save state to sessionStorage on changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+        distance, driveDays, shiftDays, vehicle, gasPrice, parkMode, parkingCost,
+        commuteMode, rideshareDaily, altMode, railZone, mbtaType, hasEmployerSubsidy, employerSubsidy,
+        homeAddress, workAddress, homePlaceData, workPlaceData,
+        step, recommendation, selectedBarriers,
+      }))
+    } catch { /* sessionStorage full or unavailable */ }
+  }, [distance, driveDays, shiftDays, vehicle, gasPrice, parkMode, parkingCost,
+      commuteMode, rideshareDaily, altMode, railZone, mbtaType, hasEmployerSubsidy, employerSubsidy,
+      homeAddress, workAddress, homePlaceData, workPlaceData,
+      step, recommendation, selectedBarriers])
 
   // Fetch routing when both addresses and alt mode are set
   useEffect(() => {
@@ -280,14 +308,10 @@ export default function CommuteCalculator() {
   }, [homePlaceData, workPlaceData, distance])
 
   // Handle barrier selection — always show GettingStarted, don't re-fetch entire recommendation
-  const handleBarrierSelect = (barrier: BarrierCode) => {
-    setSelectedBarrier(barrier)
-  }
-
   // Handle "See my options" — transition to Step 3 and fetch recommendation
   const handleSeeOptions = () => {
     setStep(3)
-    setSelectedBarrier(null)
+    setSelectedBarriers([])
     fetchRecommendation()
     // Scroll to top of results
     setTimeout(() => {
@@ -297,7 +321,7 @@ export default function CommuteCalculator() {
 
   // Refresh live data
   const handleRefresh = () => {
-    fetchRecommendation(selectedBarrier)
+    fetchRecommendation()
   }
 
   // Cap shift days to drive days
@@ -797,18 +821,18 @@ export default function CommuteCalculator() {
                   </div>
                 )}
 
-                {/* Barrier selector */}
+                {/* Barrier selector (multi-select) */}
                 <BarrierSelector
                   modes={recommendation.primary.modes}
-                  selected={selectedBarrier}
-                  onSelect={handleBarrierSelect}
+                  selected={selectedBarriers}
+                  onSelect={setSelectedBarriers}
                 />
 
-                {/* Guides — appears after barrier selection, fetches matching micro_guide */}
-                {selectedBarrier && (
+                {/* Guides — appears after barrier selection */}
+                {selectedBarriers.length > 0 && (
                   <GettingStarted
                     modes={recommendation.primary.modes}
-                    barrier={selectedBarrier}
+                    barriers={selectedBarriers}
                     event={recommendation.content.event}
                   />
                 )}
