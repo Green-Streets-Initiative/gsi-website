@@ -285,18 +285,51 @@ async function checkMBTARouteFeasibility(
   }
 }
 
-/* ── MassDOT ── */
+/* ── MassDOT (direct ArcGIS call, not via proxy) ── */
+const MASSDOT_BIKE_URL = 'https://gis.massdot.state.ma.us/arcgis/rest/services/Multimodal/BikeInventory/MapServer/0/query'
+const MASSDOT_PROTECTED_CODES = new Set([2, 5])  // Separated bike lane, shared use path
+const MASSDOT_SHARED_CODES = new Set([1, 4, 7, 8, 9]) // Bike lane, shoulder, priority, hybrid, sharrow
+const massdotCache = new Map<string, { data: MassDOTResponse; expires: number }>()
+
 async function fetchMassDOT(lat: number, lng: number): Promise<MassDOTResponse> {
+  const key = `${lat.toFixed(3)},${lng.toFixed(3)}`
+  const cached = massdotCache.get(key)
+  if (cached && cached.expires > Date.now()) return cached.data
+
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000'
-    const res = await fetch(
-      `${baseUrl}/api/massdot-proxy?lat=${lat}&lng=${lng}&radius=0.5`,
-      { signal: AbortSignal.timeout(8000) }
-    )
-    if (!res.ok) throw new Error('MassDOT proxy failed')
-    return res.json()
+    const radiusMeters = 0.5 * 1609.34
+    const params = new URLSearchParams({
+      geometry: JSON.stringify({ x: lng, y: lat, spatialReference: { wkid: 4326 } }),
+      geometryType: 'esriGeometryPoint',
+      spatialRel: 'esriSpatialRelIntersects',
+      distance: String(radiusMeters),
+      units: 'esriSRUnit_Meter',
+      outFields: 'Fac_Type',
+      returnGeometry: 'false',
+      f: 'json',
+    })
+    const res = await fetch(`${MASSDOT_BIKE_URL}?${params}`, { signal: AbortSignal.timeout(8000) })
+    if (!res.ok) throw new Error(`ArcGIS ${res.status}`)
+    const json = await res.json()
+
+    let hasProtected = false
+    let hasShared = false
+    for (const f of json.features || []) {
+      const ft = f.attributes?.Fac_Type
+      if (typeof ft === 'number') {
+        if (MASSDOT_PROTECTED_CODES.has(ft)) hasProtected = true
+        else if (MASSDOT_SHARED_CODES.has(ft)) hasShared = true
+      }
+    }
+
+    const data: MassDOTResponse = {
+      bike_infra_quality: hasProtected ? 'protected' : hasShared ? 'shared' : (json.features?.length > 0 ? 'shared' : 'none'),
+      has_protected_lane: hasProtected,
+      has_shared_lane: hasShared,
+      crash_clusters: 0,
+    }
+    massdotCache.set(key, { data, expires: Date.now() + 3600_000 })
+    return data
   } catch {
     return { bike_infra_quality: 'unknown', has_protected_lane: false, has_shared_lane: false, crash_clusters: 0 }
   }
