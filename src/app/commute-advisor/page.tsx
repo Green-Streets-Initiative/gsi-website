@@ -675,7 +675,18 @@ export default function CommuteCalculator() {
               </div>
             )}
 
-            {recommendation && (
+            {recommendation && (() => {
+              // Build Google Routes times map (used by both card and table)
+              const googleTimes: Record<string, number> = {}
+              if (routeData?.routes) {
+                if (routeData.routes.DRIVE) googleTimes.drive = routeData.routes.DRIVE.durationMins + 5 // +5 min parking
+                if (routeData.routes.BICYCLE) { googleTimes.bike = routeData.routes.BICYCLE.durationMins; googleTimes.ebike = Math.round(routeData.routes.BICYCLE.durationMins * 0.75) }
+                if (routeData.routes.WALK) googleTimes.walk = routeData.routes.WALK.durationMins
+                if (routeData.routes.TRANSIT) googleTimes.transit = routeData.routes.TRANSIT.durationMins
+              }
+              const hasGoogleTimes = Object.keys(googleTimes).length > 0
+
+              return (
               <div className="animate-in space-y-5">
                 {/* Recommendation */}
                 <RecommendationCard
@@ -686,25 +697,17 @@ export default function CommuteCalculator() {
                   onRefresh={handleRefresh}
                   loading={recLoading}
                   routeTimeMinutes={getRouteTimeForMode()}
+                  routeTimes={hasGoogleTimes ? googleTimes : undefined}
                 />
 
-                {/* Mode comparison table — use Google Routes times when available */}
-                {recommendation.comparisons && recommendation.comparisons.length > 1 && (() => {
-                  const rt: Record<string, number> = {}
-                  if (routeData?.routes) {
-                    if (routeData.routes.DRIVE) rt.drive = routeData.routes.DRIVE.durationMins
-                    if (routeData.routes.BICYCLE) { rt.bike = routeData.routes.BICYCLE.durationMins; rt.ebike = Math.round(routeData.routes.BICYCLE.durationMins * 0.75) }
-                    if (routeData.routes.WALK) rt.walk = routeData.routes.WALK.durationMins
-                    if (routeData.routes.TRANSIT) rt.transit = routeData.routes.TRANSIT.durationMins
-                  }
-                  return (
-                    <ModeComparisonTable
-                      comparisons={recommendation.comparisons}
-                      winnerMode={recommendation.comparisons[0]?.mode || ''}
-                      routeTimes={Object.keys(rt).length > 0 ? rt : undefined}
-                    />
-                  )
-                })()}
+                {/* Mode comparison table */}
+                {recommendation.comparisons && recommendation.comparisons.length > 1 && (
+                  <ModeComparisonTable
+                    comparisons={recommendation.comparisons}
+                    winnerMode={recommendation.comparisons[0]?.mode || ''}
+                    routeTimes={hasGoogleTimes ? googleTimes : undefined}
+                  />
+                )}
 
                 {!homePlaceData && (
                   <p className="text-center text-[0.8125rem] text-white/40">
@@ -829,7 +832,7 @@ export default function CommuteCalculator() {
                   ← Edit your commute details
                 </button>
               </div>
-            )}
+              )})()}
           </div>
         )}
 

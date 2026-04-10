@@ -42,6 +42,7 @@ interface RecommendationCardProps {
   onRefresh?: () => void
   loading?: boolean
   routeTimeMinutes?: number | null
+  routeTimes?: Record<string, number> // Google Maps times keyed by mode
 }
 
 export default function RecommendationCard({
@@ -50,6 +51,7 @@ export default function RecommendationCard({
   onRefresh,
   loading,
   routeTimeMinutes,
+  routeTimes,
 }: RecommendationCardProps) {
   // Override first reason bullet with Google Maps time if available
   const displayReasons = [...primary.reasons]
@@ -138,7 +140,15 @@ export default function RecommendationCard({
               ))}
             </div>
             <span className="text-white/70">{secondary.label}</span>
-            <span>— {secondary.time_estimate_minutes} minutes</span>
+            <span>— {(() => {
+              // Use Google Routes time for secondary mode if available
+              const secMode = secondary.modes[0] || 'drive'
+              const modeKey = secMode === 'ebike' ? 'bike' : secMode
+              const driveTime = routeTimes?.drive
+              // For drive, add parking time if using route data
+              if (secondary.modes.length === 0 && driveTime) return `${driveTime + 5} minutes`
+              return `${routeTimes?.[modeKey] ?? secondary.time_estimate_minutes} minutes`
+            })()} </span>
           </div>
         </div>
       )}

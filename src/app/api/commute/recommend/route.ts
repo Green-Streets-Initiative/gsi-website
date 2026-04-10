@@ -426,8 +426,9 @@ function buildComparisons(
   const milesRound = distanceMiles * 2
   const candidates: ScoredMode[] = []
 
-  // DRIVE — always viable
-  const driveMins = Math.round((distanceMiles / DRIVE_MPH) * 60)
+  // DRIVE — always viable. Add ~5 min for parking (find spot + walk from garage)
+  const PARKING_TIME = 5
+  const driveMins = Math.round((distanceMiles / DRIVE_MPH) * 60) + PARKING_TIME
   const driveDailyCost = milesRound * DRIVE_COST_PER_MILE + PARKING_DAILY
   candidates.push({
     mode: 'drive',

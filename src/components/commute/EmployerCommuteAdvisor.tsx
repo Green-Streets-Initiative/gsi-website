@@ -420,25 +420,31 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                 <RecommendationCard
                   primary={recommendation.primary} secondary={recommendation.secondary}
                   distanceMiles={recommendation.distance_miles} distanceCategory={recommendation.distance_category}
-                  onRefresh={handleRefresh} loading={recLoading} routeTimeMinutes={getRouteTimeForMode()} />
+                  onRefresh={handleRefresh} loading={recLoading} routeTimeMinutes={getRouteTimeForMode()}
+                  routeTimes={routeData?.routes ? Object.fromEntries(
+                    [['drive', routeData.routes.DRIVE ? routeData.routes.DRIVE.durationMins + 5 : undefined],
+                     ['bike', routeData.routes.BICYCLE?.durationMins],
+                     ['ebike', routeData.routes.BICYCLE ? Math.round(routeData.routes.BICYCLE.durationMins * 0.75) : undefined],
+                     ['walk', routeData.routes.WALK?.durationMins],
+                     ['transit', routeData.routes.TRANSIT?.durationMins]]
+                    .filter(([, v]) => v !== undefined)
+                  ) : undefined} />
 
-                {/* Mode comparison table — use Google Routes times when available */}
-                {recommendation.comparisons && recommendation.comparisons.length > 1 && (() => {
-                  const rt: Record<string, number> = {}
-                  if (routeData?.routes) {
-                    if (routeData.routes.DRIVE) rt.drive = routeData.routes.DRIVE.durationMins
-                    if (routeData.routes.BICYCLE) { rt.bike = routeData.routes.BICYCLE.durationMins; rt.ebike = Math.round(routeData.routes.BICYCLE.durationMins * 0.75) }
-                    if (routeData.routes.WALK) rt.walk = routeData.routes.WALK.durationMins
-                    if (routeData.routes.TRANSIT) rt.transit = routeData.routes.TRANSIT.durationMins
-                  }
-                  return (
-                    <ModeComparisonTable
-                      comparisons={recommendation.comparisons}
-                      winnerMode={recommendation.comparisons[0]?.mode || ''}
-                      routeTimes={Object.keys(rt).length > 0 ? rt : undefined}
-                    />
-                  )
-                })()}
+                {/* Mode comparison table */}
+                {recommendation.comparisons && recommendation.comparisons.length > 1 && (
+                  <ModeComparisonTable
+                    comparisons={recommendation.comparisons}
+                    winnerMode={recommendation.comparisons[0]?.mode || ''}
+                    routeTimes={routeData?.routes ? Object.fromEntries(
+                      [['drive', routeData.routes.DRIVE ? routeData.routes.DRIVE.durationMins + 5 : undefined],
+                       ['bike', routeData.routes.BICYCLE?.durationMins],
+                       ['ebike', routeData.routes.BICYCLE ? Math.round(routeData.routes.BICYCLE.durationMins * 0.75) : undefined],
+                       ['walk', routeData.routes.WALK?.durationMins],
+                       ['transit', routeData.routes.TRANSIT?.durationMins]]
+                      .filter(([, v]) => v !== undefined)
+                    ) : undefined}
+                  />
+                )}
 
                 {homePlaceData && workPlaceData && (
                   <CommuteMap
