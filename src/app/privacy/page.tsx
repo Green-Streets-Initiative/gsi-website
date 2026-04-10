@@ -21,7 +21,7 @@ export default function PrivacyPage() {
             Shift by Green Streets Initiative &middot; Last updated March 2026
           </p>
           <p className="mt-1 text-sm text-white">
-            Contact: <a href="mailto:privacy@gogreenstreets.org" className="text-lime">privacy@gogreenstreets.org</a>
+            Contact: <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>
           </p>
 
           <hr className="my-10 border-white/[0.08]" />
@@ -156,7 +156,7 @@ export default function PrivacyPage() {
               <P>
                 <strong>Retention:</strong> Campaign recordings are retained for the duration of the
                 project they were collected for, typically 12–24 months. You may request deletion of
-                your recordings at any time in app settings or by contacting privacy@gogreenstreets.org.
+                your recordings at any time in app settings or by contacting info@gogreenstreets.org.
               </P>
               <P>
                 <strong>What is never shared:</strong> Your individual trip data, Shift Rate, or
@@ -244,14 +244,14 @@ export default function PrivacyPage() {
               <Ul>
                 <li><strong>Access:</strong> You may request a copy of the personal data we hold about you.</li>
                 <li><strong>Correction:</strong> You may update your account information at any time within the app.</li>
-                <li><strong>Deletion:</strong> You may delete your account and associated data at any time from the Profile screen in the app, or by contacting us at privacy@gogreenstreets.org.</li>
+                <li><strong>Deletion:</strong> You may delete your account and associated data at any time from the Profile screen in the app, or by contacting us at info@gogreenstreets.org.</li>
                 <li><strong>Location permissions:</strong> You may revoke background location permission at any time in your device settings. Note that revoking background location will disable automatic trip detection; you can still use the app to log trips manually.</li>
                 <li><strong>Notifications:</strong> You may adjust or disable notifications at any time in the app&apos;s notification settings or in your device settings.</li>
                 <li><strong>Data portability:</strong> You may request an export of your trip history and account data in a machine-readable format.</li>
               </Ul>
               <P>
                 To exercise any of these rights, contact us
-                at <a href="mailto:privacy@gogreenstreets.org" className="text-lime">privacy@gogreenstreets.org</a>.
+                at <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>.
                 We will respond within 30 days.
               </P>
             </Section>
@@ -266,7 +266,7 @@ export default function PrivacyPage() {
               <P>
                 If you believe we have inadvertently collected information from a child under 13
                 without appropriate consent, please contact us immediately
-                at <a href="mailto:privacy@gogreenstreets.org" className="text-lime">privacy@gogreenstreets.org</a> and
+                at <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a> and
                 we will delete the information promptly.
               </P>
             </Section>
@@ -301,7 +301,7 @@ export default function PrivacyPage() {
               <P>
                 Green Streets Initiative<br />
                 Cambridge, MA<br />
-                <a href="mailto:privacy@gogreenstreets.org" className="text-lime">privacy@gogreenstreets.org</a>
+                <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>
               </P>
               <P>
                 If you have questions about this policy or how your data is handled, please reach out.

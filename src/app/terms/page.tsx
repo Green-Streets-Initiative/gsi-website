@@ -148,7 +148,7 @@ export default function TermsPage() {
                 governed by the consent agreement you accept within that program, which may allow
                 your content to be shared with third-party planning organizations. You may
                 withdraw consent and request deletion of your submissions at any time by
-                contacting <a href="mailto:privacy@gogreenstreets.org" className="text-lime">privacy@gogreenstreets.org</a>.
+                contacting <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>.
               </P>
               <P>
                 You represent that any content you submit does not violate the rights of any
