@@ -16,7 +16,11 @@ export default function GettingStarted({ modes, barrier, event }: GettingStarted
   const [guide, setGuide] = useState<ContentItem | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const primaryMode = modes[0] === 'ebike' ? 'bike' : modes[0]
+  // Map recommendation mode to content_items primary_mode values
+  const modeToContentMode: Record<string, string> = {
+    bike: 'cycling', ebike: 'cycling', walk: 'walking', transit: 'transit', bus: 'transit',
+  }
+  const primaryMode = modeToContentMode[modes[0]] || modes[0]
 
   // Fetch guide from Supabase when barrier or mode changes
   useEffect(() => {

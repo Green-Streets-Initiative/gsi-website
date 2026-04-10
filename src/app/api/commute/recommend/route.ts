@@ -651,7 +651,11 @@ export async function GET(req: NextRequest) {
   )
 
   // Determine primary mode string for content queries
-  const primaryModeStr = primary.modes[0] === 'ebike' ? 'bike' : primary.modes[0]
+  // Map recommendation mode to content_items primary_mode values
+  const modeToContentMode: Record<string, string> = {
+    bike: 'cycling', ebike: 'cycling', walk: 'walking', transit: 'transit', bus: 'transit',
+  }
+  const primaryModeStr = modeToContentMode[primary.modes[0]] || primary.modes[0]
 
   // Fetch content in parallel
   const [guide, event] = await Promise.all([
