@@ -481,7 +481,12 @@ function buildComparisons(
 
   // TRANSIT — viable if MBTA connects origin and dest
   if (hasMBTARoute) {
-    const tMins = Math.round(distanceMiles * 4) // rough estimate
+    // Realistic door-to-door estimate: walk to station + wait + ride + walk from station
+    const walkToStationMins = originStops.length > 0 ? Math.round((originStops[0].distance_miles / 3.5) * 60) : 5
+    const avgWaitMins = 6 // avg headway for subway/light rail
+    const rideMins = Math.max(5, Math.round((distanceMiles / 20) * 60)) // ~20mph avg train speed
+    const walkFromStationMins = destStops.length > 0 ? Math.round((destStops[0].distance_miles / 3.5) * 60) : 5
+    const tMins = walkToStationMins + avgWaitMins + rideMins + walkFromStationMins
     const tCost = 4.80 // round trip
     const tAnnual = 90 * 12 // monthly pass
     const transitLabel = originStops.length > 0

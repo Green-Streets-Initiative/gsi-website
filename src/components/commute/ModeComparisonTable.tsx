@@ -11,9 +11,10 @@ const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`
 interface ModeComparisonTableProps {
   comparisons: ModeComparison[]
   winnerMode: string
+  routeTimes?: Record<string, number> // Google Maps times keyed by mode: { drive: 25, bike: 22, transit: 40 }
 }
 
-export default function ModeComparisonTable({ comparisons, winnerMode }: ModeComparisonTableProps) {
+export default function ModeComparisonTable({ comparisons, winnerMode, routeTimes }: ModeComparisonTableProps) {
   if (comparisons.length < 2) return null
 
   return (
@@ -47,7 +48,7 @@ export default function ModeComparisonTable({ comparisons, winnerMode }: ModeCom
                     </div>
                   </td>
                   <td className={`py-2.5 pr-4 text-right font-semibold ${isWinner ? 'text-white' : 'text-white/70'}`}>
-                    {c.time_minutes} min
+                    {routeTimes?.[c.mode] ?? c.time_minutes} min
                   </td>
                   <td className={`py-2.5 pr-4 text-right font-semibold ${isWinner ? 'text-white' : 'text-white/70'}`}>
                     {c.daily_cost === 0 ? 'Free' : `$${c.daily_cost.toFixed(2)}`}

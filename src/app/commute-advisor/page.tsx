@@ -688,13 +688,23 @@ export default function CommuteCalculator() {
                   routeTimeMinutes={getRouteTimeForMode()}
                 />
 
-                {/* Mode comparison table */}
-                {recommendation.comparisons && recommendation.comparisons.length > 1 && (
-                  <ModeComparisonTable
-                    comparisons={recommendation.comparisons}
-                    winnerMode={recommendation.comparisons[0]?.mode || ''}
-                  />
-                )}
+                {/* Mode comparison table — use Google Routes times when available */}
+                {recommendation.comparisons && recommendation.comparisons.length > 1 && (() => {
+                  const rt: Record<string, number> = {}
+                  if (routeData?.routes) {
+                    if (routeData.routes.DRIVE) rt.drive = routeData.routes.DRIVE.durationMins
+                    if (routeData.routes.BICYCLE) { rt.bike = routeData.routes.BICYCLE.durationMins; rt.ebike = Math.round(routeData.routes.BICYCLE.durationMins * 0.75) }
+                    if (routeData.routes.WALK) rt.walk = routeData.routes.WALK.durationMins
+                    if (routeData.routes.TRANSIT) rt.transit = routeData.routes.TRANSIT.durationMins
+                  }
+                  return (
+                    <ModeComparisonTable
+                      comparisons={recommendation.comparisons}
+                      winnerMode={recommendation.comparisons[0]?.mode || ''}
+                      routeTimes={Object.keys(rt).length > 0 ? rt : undefined}
+                    />
+                  )
+                })()}
 
                 {!homePlaceData && (
                   <p className="text-center text-[0.8125rem] text-white/40">
