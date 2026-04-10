@@ -167,7 +167,37 @@ export default function CommuteMap({
   const nearestStop = mbtaStops[0]
 
   if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
-    return null
+    // Fallback: show station/stop info without a map
+    const hasData = nearestBike || nearestStop || bluebikesOrigin.length > 0 || mbtaStops.length > 0
+    if (!hasData) return null
+
+    return (
+      <div className="overflow-hidden rounded-2xl border border-white/[0.12] bg-[#242538]">
+        <div className="border-b border-white/[0.07] px-5 py-3">
+          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/50">Nearby transit</div>
+        </div>
+        <div className="flex flex-col gap-3 px-5 py-4">
+          {bluebikesOrigin.map((s) => (
+            <div key={s.station_id} className="flex items-center gap-2.5 text-[0.8125rem] text-white/80">
+              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-green-500" />
+              <span>{s.num_bikes_available} bikes at {s.name} ({s.distance_miles} mi from home)</span>
+            </div>
+          ))}
+          {bluebikesDestStations.map((s) => (
+            <div key={s.station_id} className="flex items-center gap-2.5 text-[0.8125rem] text-white/80">
+              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-green-500" />
+              <span>{s.num_docks_available} docks at {s.name} ({s.distance_miles} mi from work)</span>
+            </div>
+          ))}
+          {mbtaStops.map((s) => (
+            <div key={s.id} className="flex items-center gap-2.5 text-[0.8125rem] text-white/80">
+              <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.line_color }} />
+              <span>{s.route_names[0] || 'MBTA'} at {s.name} ({s.distance_miles.toFixed(1)} mi)</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
