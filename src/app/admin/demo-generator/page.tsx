@@ -39,8 +39,11 @@ export default function DemoGeneratorPage() {
   const handleDomainBlur = () => {
     if (!domain) { setLogoUrl(null); setLogoError(false); return }
     const cleaned = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').trim()
-    // Try Google's high-res favicon service (no API key needed, always works)
-    const url = `https://www.google.com/s2/favicons?domain=${cleaned}&sz=128`
+    // Logo.dev — high-quality brand logos (Clearbit successor)
+    const token = process.env.NEXT_PUBLIC_LOGO_DEV_TOKEN || ''
+    const url = token
+      ? `https://img.logo.dev/${cleaned}?token=${token}&size=128&format=png`
+      : `https://www.google.com/s2/favicons?domain=${cleaned}&sz=128`
     setLogoUrl(url)
     setLogoError(false)
     const img = new window.Image()
