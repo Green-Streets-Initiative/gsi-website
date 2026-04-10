@@ -53,10 +53,11 @@ function co2Equivalency(kg: number): string {
   if (trees < 1.5) return 'Like planting a tree for a year'
   return `Like planting ${Math.round(trees)} trees for a year`
 }
-const MBTA_SUBWAY_SINGLE = 2.40
-const MBTA_SUBWAY_MONTHLY = 90
-const MBTA_BUS_SINGLE = 1.70
-const MBTA_BUS_MONTHLY = 55
+// Default pricing — overridden by /api/pricing on mount
+let MBTA_SUBWAY_SINGLE = 2.40
+let MBTA_SUBWAY_MONTHLY = 90
+let MBTA_BUS_SINGLE = 1.70
+let MBTA_BUS_MONTHLY = 55
 const WEEKS = 52
 const CO2_PER_MILE = 0.404
 const BODY_WEIGHT_LBS = 165
@@ -115,7 +116,7 @@ export default function CommuteCalculator() {
   const s = saved.current
 
   // Inputs — restore from session if available
-  const [distance, setDistance] = useState(s?.distance ?? 7)
+  const [distance, setDistance] = useState(s?.distance ?? 0)
   const [driveDays, setDriveDays] = useState(s?.driveDays ?? 5)
   const [shiftDays, setShiftDays] = useState(s?.shiftDays ?? 3)
   const [vehicle, setVehicle] = useState(s?.vehicle ?? 'medium_sedan')
@@ -150,6 +151,17 @@ export default function CommuteCalculator() {
   const [selectedBarriers, setSelectedBarriers] = useState<BarrierCode[]>(s?.selectedBarriers ?? [])
   const [outsideMA, setOutsideMA] = useState(false)
   const recommendRef = useRef<HTMLDivElement>(null)
+
+  // Fetch dynamic pricing on mount
+  useEffect(() => {
+    fetch('/api/pricing').then(r => r.json()).then((p: Record<string, number>) => {
+      if (p.gas_price_ma && !s?.gasPrice) setGasPrice(p.gas_price_ma)
+      if (p.mbta_subway_single) MBTA_SUBWAY_SINGLE = p.mbta_subway_single
+      if (p.mbta_subway_monthly) MBTA_SUBWAY_MONTHLY = p.mbta_subway_monthly
+      if (p.mbta_bus_single) MBTA_BUS_SINGLE = p.mbta_bus_single
+      if (p.mbta_bus_monthly) MBTA_BUS_MONTHLY = p.mbta_bus_monthly
+    }).catch(() => { /* use defaults */ })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save state to sessionStorage on changes
   useEffect(() => {
@@ -607,7 +619,7 @@ export default function CommuteCalculator() {
                     <NumInput value={gasPrice} onChange={setGasPrice} min={2} max={8} step={0.01} width="88px" fontSize="1rem" />
                     <span className="text-[0.8rem] text-white">per gallon</span>
                   </div>
-                  <Hint>MA average as of March 2026</Hint>
+                  <Hint>Current MA average — updated regularly</Hint>
                 </Field>
               )}
 
@@ -865,8 +877,8 @@ export default function CommuteCalculator() {
           <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-5 py-4">
             <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white">How this is calculated</div>
             <div className="text-[0.77rem] leading-[1.65] text-white">
-              Fuel savings use your vehicle&apos;s EPA combined MPG estimate and the current Massachusetts average gas price from AAA. Maintenance savings apply the AAA 2025 variable rate per mile (~10–11¢/mile by vehicle type), covering oil changes, tire wear, and related repairs — costs that genuinely decrease when you drive less. <strong className="font-semibold text-white">Fixed costs like insurance, depreciation, registration, and finance charges are excluded</strong> — those don&apos;t change based on how many days you drive, so including them would overstate your actual savings. MBTA fares are current as of March 2026 from{' '}
-              <a href="https://www.mbta.com/fares" target="_blank" rel="noopener noreferrer" className="text-white underline">mbta.com/fares</a>; the calculator automatically compares monthly pass vs. per-ride cost and uses whichever is cheaper for your frequency. Health estimates use MET values from the American College of Sports Medicine: cycling at a moderate pace (~12 mph) is approximately 8 METs; brisk walking is approximately 4 METs. Boston-area parking medians from SpotAngels (February 2026). Time estimates are speed-based approximations — real door-to-door routing via Google Maps is coming soon.
+              Door-to-door travel times are powered by Google Maps with rush hour traffic data (Monday 8:30 AM departure). When addresses are entered, all mode comparisons use real routing — including driving time with parking. Fuel savings use your vehicle&apos;s EPA combined MPG estimate and the current Massachusetts average gas price. Maintenance savings apply the AAA variable rate per mile (~10–11¢/mile by vehicle type). <strong className="font-semibold text-white">Fixed costs like insurance, depreciation, and registration are excluded</strong> — those don&apos;t change based on how many days you drive. MBTA fares from{' '}
+              <a href="https://www.mbta.com/fares" target="_blank" rel="noopener noreferrer" className="text-white underline">mbta.com/fares</a>; the advisor compares monthly pass vs. per-ride cost and uses whichever is cheaper. Health estimates use MET values from the American College of Sports Medicine. Gas prices, MBTA fares, and parking costs are updated regularly from public sources.
             </div>
           </div>
         </div>

@@ -62,7 +62,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
   const isPremium = group.tier === 'premium'
 
   // Inputs
-  const [distance, setDistance] = useState(7)
+  const [distance, setDistance] = useState(0)
   const [driveDays, setDriveDays] = useState(5)
   const [shiftDays, setShiftDays] = useState(3)
   const [vehicle, setVehicle] = useState('medium_sedan')

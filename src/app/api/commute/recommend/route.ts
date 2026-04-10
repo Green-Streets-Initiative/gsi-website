@@ -392,13 +392,29 @@ async function fetchEvent(primaryMode: string): Promise<EventWithDetails | null>
 
 /* ── Comparison-based recommendation engine ── */
 
-// Driving cost estimates (Boston area averages)
-const DRIVE_MPH = 14      // avg Boston rush hour speed
-const GAS_PRICE = 3.59    // MA average per gallon
-const AVG_MPG = 28        // medium sedan
-const MAINT_PER_MILE = 0.109
-const PARKING_DAILY = 18  // Boston metro average for non-free parking
-const DRIVE_COST_PER_MILE = (GAS_PRICE / AVG_MPG) + MAINT_PER_MILE  // ~0.237/mi
+// Driving cost defaults — overridden by pricing_data table
+const DRIVE_MPH = 14
+let CACHED_PRICING: { gas: number; parking: number; maint: number; expires: number } | null = null
+
+async function getPricing(): Promise<{ gas: number; parking: number; maint: number; costPerMile: number }> {
+  if (CACHED_PRICING && CACHED_PRICING.expires > Date.now()) {
+    const c = CACHED_PRICING
+    return { gas: c.gas, parking: c.parking, maint: c.maint, costPerMile: (c.gas / 28) + c.maint }
+  }
+  try {
+    const { data } = await supabase.from('pricing_data').select('key, value')
+    if (data) {
+      const map: Record<string, number> = {}
+      for (const r of data) map[r.key] = Number(r.value)
+      const gas = map.gas_price_ma ?? 3.59
+      const parking = map.parking_daily_boston ?? 18
+      const maint = map.maint_per_mile ?? 0.109
+      CACHED_PRICING = { gas, parking, maint, expires: Date.now() + 3600_000 }
+      return { gas, parking, maint, costPerMile: (gas / 28) + maint }
+    }
+  } catch { /* use defaults */ }
+  return { gas: 3.59, parking: 18, maint: 0.109, costPerMile: (3.59 / 28) + 0.109 }
+}
 
 interface ScoredMode {
   mode: Mode | 'drive'
@@ -421,7 +437,8 @@ function buildComparisons(
   destLat: number, destLng: number,
   bluebikesOrigin: BluebikeStation[],
   originStops: MBTAStop[],
-  destStops: MBTAStop[]
+  destStops: MBTAStop[],
+  pricing: { costPerMile: number; parking: number }
 ): ScoredMode[] {
   const milesRound = distanceMiles * 2
   const candidates: ScoredMode[] = []
@@ -429,7 +446,7 @@ function buildComparisons(
   // DRIVE — always viable. Add ~5 min for parking (find spot + walk from garage)
   const PARKING_TIME = 5
   const driveMins = Math.round((distanceMiles / DRIVE_MPH) * 60) + PARKING_TIME
-  const driveDailyCost = milesRound * DRIVE_COST_PER_MILE + PARKING_DAILY
+  const driveDailyCost = milesRound * pricing.costPerMile + pricing.parking
   candidates.push({
     mode: 'drive',
     label: 'Drive',
@@ -593,11 +610,12 @@ export async function GET(req: NextRequest) {
   const distanceMiles = haversine(originLat, originLng, destLat, destLng)
 
   // Fetch all data in parallel
-  const [stationInfos, stationStatus, mbtaResult, massdotResult] = await Promise.all([
+  const [stationInfos, stationStatus, mbtaResult, massdotResult, pricing] = await Promise.all([
     fetchBluebikesStationInfo(),
     fetchBluebikesStationStatus(),
     checkMBTARouteFeasibility(originLat, originLng, destLat, destLng),
     fetchMassDOT(originLat, originLng),
+    getPricing(),
   ])
 
   // Process Bluebikes
@@ -610,7 +628,8 @@ export async function GET(req: NextRequest) {
   const comparisons = buildComparisons(
     distanceMiles, hasBluebikesOrigin, hasBlubikesDest, mbtaResult.feasible,
     massdotResult.bike_infra_quality, originLat, originLng, destLat, destLng,
-    bluebikesOrigin, mbtaResult.originStops, mbtaResult.destStops
+    bluebikesOrigin, mbtaResult.originStops, mbtaResult.destStops,
+    { costPerMile: pricing.costPerMile, parking: pricing.parking }
   )
 
   const winner = comparisons[0]
