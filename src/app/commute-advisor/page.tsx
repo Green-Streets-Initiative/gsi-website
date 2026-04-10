@@ -705,6 +705,7 @@ export default function CommuteCalculator() {
                     bluebikesOrigin={recommendation.map_data.bluebikes_origin}
                     bluebikesDestStations={recommendation.map_data.bluebikes_dest}
                     mbtaStops={recommendation.map_data.mbta_stops}
+                    recommendedModes={recommendation.primary.modes}
                     onRefresh={handleRefresh}
                   />
                 )}
