@@ -226,9 +226,8 @@ async function fetchMBTAStopsNear(lat: number, lng: number): Promise<MBTAStop[]>
       })
     }
 
-    // Fetch routes per parent station (use parent ID for accurate results)
-    const stopsToEnrich = stops.slice(0, 5)
-    const routeFetches = stopsToEnrich.map(async (stop) => {
+    // Fetch routes per parent station (enrich all — needed for route feasibility matching)
+    const routeFetches = stops.map(async (stop) => {
       try {
         const rUrl = `https://api-v3.mbta.com/routes?filter[stop]=${stop.parentId}&filter[type]=0,1,2`
         const rRes = await fetch(rUrl, { headers, signal: AbortSignal.timeout(3000) })
