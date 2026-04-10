@@ -189,7 +189,7 @@ async function fetchMBTAStopsNear(lat: number, lng: number): Promise<MBTAStop[]>
 
   try {
     // Filter to Light Rail (0), Heavy Rail (1), Commuter Rail (2) — exclude Bus (3)
-    const url = `https://api-v3.mbta.com/stops?filter[latitude]=${lat}&filter[longitude]=${lng}&filter[radius]=0.02&filter[route_type]=0,1,2&page[limit]=20`
+    const url = `https://api-v3.mbta.com/stops?filter[latitude]=${lat}&filter[longitude]=${lng}&filter[radius]=0.02&filter[route_type]=0,1,2&page[limit]=50`
     const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) })
     if (!res.ok) return []
     const json = await res.json()
