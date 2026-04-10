@@ -9,6 +9,7 @@ import RecommendationCard from '@/components/commute/RecommendationCard'
 import CommuteMap from '@/components/commute/CommuteMap'
 import BarrierSelector from '@/components/commute/BarrierSelector'
 import GettingStarted from '@/components/commute/GettingStarted'
+import ModeComparisonTable from '@/components/commute/ModeComparisonTable'
 import type { RecommendationResponse, BarrierCode } from '@/lib/types/commute'
 
 type PlaceData = { placeId: string; lat: number; lng: number }
@@ -192,49 +193,47 @@ export default function CommuteCalculator() {
   // Fetch recommendation when both addresses are set
   const fetchRecommendation = useCallback(async (barrier?: BarrierCode | null) => {
     if (!homePlaceData || !workPlaceData) {
-      // Manual distance fallback — show simplified recommendation
+      // Manual distance fallback — comparison-based estimate
       if (distance > 0) {
         setRecLoading(true)
         setRecError(null)
         setOutsideMA(false)
         try {
-          // Build a simplified recommendation locally for manual distance
-          const distMiles = distance
-          const category = distMiles < 2 ? 'short' : distMiles < 6 ? 'medium' : 'long' as const
-          let modes: ('walk' | 'bike' | 'ebike' | 'transit')[]
-          let label: string
-          let reasons: string[]
-          let timeMins: number
-          let costDaily: number
+          const d = distance
+          const category = d < 2 ? 'short' : d < 6 ? 'medium' : 'long' as const
+          const driveMins = Math.round((d / 14) * 60)
+          const driveCostDaily = d * 2 * 0.237 + 18 // gas+maint+parking
 
-          if (distMiles < 1.5) {
-            modes = ['walk']; label = 'Walk'
-            timeMins = Math.round((distMiles / 3.5) * 60)
-            costDaily = 0
-            reasons = [`${distMiles.toFixed(1)} miles — about ${timeMins} minutes on foot`, 'No cost, no wait, no parking', 'Counts as active transportation in Shift']
-          } else if (distMiles < 6) {
-            modes = ['bike']; label = 'Bike'
-            timeMins = Math.round((distMiles / 11) * 60)
-            costDaily = 0
-            reasons = [`${distMiles.toFixed(1)} miles — about ${timeMins} minutes by bike`, 'Free if you already own a bike', 'Great exercise and stress relief']
-          } else if (distMiles < 12) {
-            modes = ['transit']; label = 'MBTA Transit'
-            timeMins = Math.round(distMiles * 4)
-            costDaily = 2.4
-            reasons = [`$2.40 per ride, or $90/month for an unlimited LinkPass`, 'No parking costs or gas expenses', 'Reliable schedule, no traffic stress']
-          } else {
-            modes = ['transit']; label = 'MBTA Transit'
-            timeMins = Math.round(distMiles * 4)
-            costDaily = 2.4
-            reasons = ['$2.40 per ride, or $90/month for an unlimited LinkPass', 'No parking costs or gas expenses', 'Reliable schedule, no traffic stress']
-          }
+          // Build candidates
+          type Candidate = { mode: string; label: string; mins: number; cost: number; reasons: string[] }
+          const candidates: Candidate[] = [
+            { mode: 'drive', label: 'Drive', mins: driveMins, cost: driveCostDaily,
+              reasons: [`${driveMins} min each way`, `~$${Math.round(driveCostDaily)}/day including gas, maintenance, and parking`, 'Door-to-door flexibility'] }
+          ]
+          if (d < 2) candidates.push({ mode: 'walk', label: 'Walk', mins: Math.round((d / 3.5) * 60), cost: 0,
+            reasons: [`${Math.round((d / 3.5) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(driveCostDaily)}/day driving`, 'Zero cost, built-in exercise'] })
+          if (d < 8) candidates.push({ mode: 'bike', label: 'Bike', mins: Math.round((d / 11) * 60), cost: 0,
+            reasons: [`${Math.round((d / 11) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(driveCostDaily)}/day driving — saves ~$${Math.round(driveCostDaily * 260)}/year`, 'Built-in exercise, no parking needed'] })
+          if (d >= 4 && d < 12) candidates.push({ mode: 'ebike', label: 'E-bike', mins: Math.round((d / 15) * 60), cost: 0,
+            reasons: [`${Math.round((d / 15) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(driveCostDaily)}/day driving`, 'Arrive without sweating'] })
+          candidates.push({ mode: 'transit', label: 'MBTA Transit', mins: Math.round(d * 4), cost: 4.8,
+            reasons: [`${Math.round(d * 4)} min vs. ${driveMins} min driving`, `$4.80/day vs. ~$${Math.round(driveCostDaily)}/day driving`, 'Read or work during your commute'] })
+
+          // Sort: cheapest first, then fastest
+          candidates.sort((a, b) => (a.cost - b.cost) || (a.mins - b.mins))
+          const winner = candidates[0]
+          const runnerUp = candidates.length > 1 ? candidates[1] : null
+
+          const modes = winner.mode === 'drive' ? [] : [winner.mode] as ('walk' | 'bike' | 'ebike' | 'transit')[]
 
           setRecommendation({
-            primary: { modes, label, reasons, time_estimate_minutes: timeMins, cost_estimate_daily: costDaily, google_maps_url: '' },
-            secondary: null,
+            primary: { modes, label: winner.label, reasons: winner.reasons, time_estimate_minutes: winner.mins, cost_estimate_daily: winner.cost, google_maps_url: '' },
+            secondary: runnerUp ? { modes: runnerUp.mode === 'drive' ? [] as unknown as ('walk' | 'bike' | 'ebike' | 'transit' | 'bus')[] : [runnerUp.mode as 'walk' | 'bike' | 'ebike' | 'transit'], label: runnerUp.label, time_estimate_minutes: runnerUp.mins } : null,
             map_data: { bluebikes_origin: [], bluebikes_dest: [], mbta_stops: [], bike_infra_quality: 'unknown' },
             content: { guide: null, event: null },
-            distance_miles: distMiles,
+            comparisons: candidates.map(c => ({ mode: c.mode as 'walk' | 'bike' | 'ebike' | 'transit' | 'bus' | 'drive', label: c.label, time_minutes: c.mins, daily_cost: c.cost, annual_cost: Math.round(c.cost * 260), pros: c.reasons })),
+            drive_comparison: { time_minutes: driveMins, daily_cost: driveCostDaily, annual_cost: Math.round(driveCostDaily * 260) },
+            distance_miles: d,
             distance_category: category,
           })
         } finally {
@@ -688,6 +687,14 @@ export default function CommuteCalculator() {
                   loading={recLoading}
                   routeTimeMinutes={getRouteTimeForMode()}
                 />
+
+                {/* Mode comparison table */}
+                {recommendation.comparisons && recommendation.comparisons.length > 1 && (
+                  <ModeComparisonTable
+                    comparisons={recommendation.comparisons}
+                    winnerMode={recommendation.comparisons[0]?.mode || ''}
+                  />
+                )}
 
                 {!homePlaceData && (
                   <p className="text-center text-[0.8125rem] text-white/40">

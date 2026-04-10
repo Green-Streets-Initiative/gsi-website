@@ -2,9 +2,15 @@
 
 import type { RecommendationPrimary, RecommendationSecondary, Mode } from '@/lib/types/commute'
 
-function ModeIcon({ mode, className = '' }: { mode: Mode; className?: string }) {
+function ModeIcon({ mode, className = '' }: { mode: Mode | 'drive'; className?: string }) {
   const base = `inline-block ${className}`
   switch (mode) {
+    case 'drive':
+      return (
+        <svg className={base} width="28" height="28" viewBox="0 0 256 256" fill="currentColor">
+          <path d="M240,112H229.2L201.42,49.5A16,16,0,0,0,186.8,40H69.2a16,16,0,0,0-14.62,9.5L26.8,112H16a8,8,0,0,0,0,16h8v80a16,16,0,0,0,16,16H64a16,16,0,0,0,16-16V192h96v16a16,16,0,0,0,16,16h24a16,16,0,0,0,16-16V128h8a8,8,0,0,0,0-16ZM69.2,56H186.8l24.89,56H44.31ZM80,160a12,12,0,1,1,12-12A12,12,0,0,1,80,160Zm96,0a12,12,0,1,1,12-12A12,12,0,0,1,176,160Z" />
+        </svg>
+      )
     case 'walk':
       return (
         <svg className={base} width="28" height="28" viewBox="0 0 256 256" fill="currentColor">
@@ -84,6 +90,7 @@ export default function RecommendationCard({
       {/* Mode icons + label */}
       <div className="mb-4 flex items-center gap-3">
         <div className="flex items-center gap-1 text-[#BAF14D]">
+          {primary.modes.length === 0 && <ModeIcon mode="drive" />}
           {primary.modes.map((mode) => (
             <ModeIcon key={mode} mode={mode} />
           ))}

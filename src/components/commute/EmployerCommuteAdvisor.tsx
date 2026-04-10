@@ -9,6 +9,7 @@ import BarrierSelector from '@/components/commute/BarrierSelector'
 import GettingStarted from '@/components/commute/GettingStarted'
 import EmployerBenefits from '@/components/commute/EmployerBenefits'
 import EmployerSavingsComparison from '@/components/commute/EmployerSavingsComparison'
+import ModeComparisonTable from '@/components/commute/ModeComparisonTable'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import type { EmployerGroup, RecommendationResponse, BarrierCode } from '@/lib/types/commute'
@@ -420,6 +421,14 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                   primary={recommendation.primary} secondary={recommendation.secondary}
                   distanceMiles={recommendation.distance_miles} distanceCategory={recommendation.distance_category}
                   onRefresh={handleRefresh} loading={recLoading} routeTimeMinutes={getRouteTimeForMode()} />
+
+                {/* Mode comparison table */}
+                {recommendation.comparisons && recommendation.comparisons.length > 1 && (
+                  <ModeComparisonTable
+                    comparisons={recommendation.comparisons}
+                    winnerMode={recommendation.comparisons[0]?.mode || ''}
+                  />
+                )}
 
                 {homePlaceData && workPlaceData && (
                   <CommuteMap

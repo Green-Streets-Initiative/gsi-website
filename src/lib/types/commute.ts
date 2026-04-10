@@ -105,6 +105,15 @@ export interface EmployerGroup {
   employer_benefits: EmployerBenefits
 }
 
+export interface ModeComparison {
+  mode: Mode | 'drive'
+  label: string
+  time_minutes: number
+  daily_cost: number
+  annual_cost: number
+  pros: string[]
+}
+
 export interface RecommendationResponse {
   primary: RecommendationPrimary
   secondary: RecommendationSecondary | null
@@ -118,6 +127,8 @@ export interface RecommendationResponse {
     guide: ContentItem | null
     event: EventWithDetails | null
   }
+  comparisons: ModeComparison[]
+  drive_comparison: { time_minutes: number; daily_cost: number; annual_cost: number }
   distance_miles: number
   distance_category: DistanceCategory
 }

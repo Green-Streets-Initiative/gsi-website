@@ -391,110 +391,28 @@ async function fetchEvent(primaryMode: string): Promise<EventWithDetails | null>
   return data as EventWithDetails | null
 }
 
-/* ── Reason builders ── */
-function buildBikeReasons(
-  distanceMiles: number,
-  hasBluebikes: boolean,
-  bikeInfraQuality: BikeInfraQuality,
-  nearestOriginStation: BluebikeStation | null
-): string[] {
-  const reasons: string[] = []
-  const mins = bikeMinutes(distanceMiles)
-  const driveMins = Math.round((distanceMiles / 14) * 60) // 14 mph avg Boston driving
+/* ── Comparison-based recommendation engine ── */
 
-  // Time comparison — the most persuasive argument
-  if (mins <= driveMins + 5) {
-    reasons.push(`About ${mins} minutes by bike — comparable to driving in Boston traffic (~${driveMins} min)`)
-  } else {
-    reasons.push(`About ${mins} minutes by bike — ${distanceMiles.toFixed(1)} miles each way`)
-  }
+// Driving cost estimates (Boston area averages)
+const DRIVE_MPH = 14      // avg Boston rush hour speed
+const GAS_PRICE = 3.59    // MA average per gallon
+const AVG_MPG = 28        // medium sedan
+const MAINT_PER_MILE = 0.109
+const PARKING_DAILY = 18  // Boston metro average for non-free parking
+const DRIVE_COST_PER_MILE = (GAS_PRICE / AVG_MPG) + MAINT_PER_MILE  // ~0.237/mi
 
-  // Cost argument
-  if (hasBluebikes && nearestOriginStation) {
-    reasons.push(
-      `Saves ~$8–15/day vs. driving (gas + parking). Free with your own bike, or Bluebikes station ${nearestOriginStation.distance_miles} mi away`
-    )
-  } else {
-    reasons.push('Saves ~$8–15/day vs. driving — zero fuel, maintenance, or parking costs')
-  }
-
-  // Infrastructure / safety argument
-  if (bikeInfraQuality === 'protected') {
-    reasons.push('Protected bike lane along this corridor — separated from traffic')
-  } else if (bikeInfraQuality === 'shared') {
-    reasons.push('Bike lane available along this route — moderate traffic, suitable for most riders')
-  } else {
-    reasons.push('Burns 400–500 calories per ride — like a gym session built into your day')
-  }
-
-  return reasons
+interface ScoredMode {
+  mode: Mode | 'drive'
+  label: string
+  timeMins: number
+  dailyCost: number
+  annualCost: number
+  score: number
+  pros: string[]
+  googleMapsUrl: string
 }
 
-function buildTransitReasons(
-  distanceMiles: number,
-  originStops: MBTAStop[],
-  destStops: MBTAStop[]
-): string[] {
-  const reasons: string[] = []
-
-  // Route specificity
-  if (originStops.length > 0 && destStops.length > 0) {
-    const originStop = originStops[0]
-    const destStop = destStops[0]
-    reasons.push(
-      `${originStop.route_names[0] || 'MBTA'} from ${originStop.name} to ${destStop.name} — no driving, no parking`
-    )
-  } else {
-    reasons.push('No driving, no parking — read, relax, or work during your commute')
-  }
-
-  // Cost comparison
-  reasons.push('$2.40 per ride or $90/month unlimited — saves hundreds vs. driving + parking each month')
-
-  // Practical benefit
-  if (distanceMiles > 4) {
-    reasons.push('Skip Boston traffic entirely — predictable schedule regardless of congestion')
-  } else {
-    reasons.push('Reliable schedule — no searching for parking, no traffic stress')
-  }
-
-  return reasons
-}
-
-function buildMultimodalReasons(
-  distanceMiles: number,
-  nearestOriginStation: BluebikeStation | null,
-  originStops: MBTAStop[]
-): string[] {
-  const reasons: string[] = []
-
-  const bikeToTransitMiles = nearestOriginStation ? nearestOriginStation.distance_miles + 0.5 : 1
-  const transitMiles = distanceMiles - bikeToTransitMiles
-  const bikeMins = bikeMinutes(bikeToTransitMiles)
-  const transitMins = Math.round((transitMiles / 20) * 60)
-  const totalMins = bikeMins + transitMins
-  const driveMins = Math.round((distanceMiles / 14) * 60)
-
-  // Time comparison
-  reasons.push(`${bikeMins} min bike + ${transitMins} min transit = ~${totalMins} min door to door${totalMins <= driveMins + 5 ? ' — competitive with driving' : ''}`)
-
-  // Cost
-  reasons.push('Costs $2.40–5.90/day vs. $15–40/day driving (gas + parking) — saves $200+/month')
-
-  // Practical
-  if (nearestOriginStation && nearestOriginStation.num_bikes_available > 0) {
-    reasons.push(
-      `Bluebikes station ${nearestOriginStation.distance_miles} mi from your address with ${nearestOriginStation.num_bikes_available} bikes available now`
-    )
-  } else if (originStops.length > 0) {
-    reasons.push(`${originStops[0].route_names[0] || 'MBTA'} from ${originStops[0].name} — exercise built into your commute`)
-  }
-
-  return reasons
-}
-
-/* ── Decision tree ── */
-function recommend(
+function buildComparisons(
   distanceMiles: number,
   hasBluebikesOrigin: boolean,
   hasBlubikesDest: boolean,
@@ -503,154 +421,145 @@ function recommend(
   originLat: number, originLng: number,
   destLat: number, destLng: number,
   bluebikesOrigin: BluebikeStation[],
-  bluebikesDestStations: BluebikeStation[],
   originStops: MBTAStop[],
   destStops: MBTAStop[]
-): { primary: RecommendationPrimary; secondary: RecommendationSecondary | null } {
-  const nearestOrigin = bluebikesOrigin[0] || null
-  const googleUrl = buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['walk'])
+): ScoredMode[] {
+  const milesRound = distanceMiles * 2
+  const candidates: ScoredMode[] = []
 
-  // WALK
-  if (distanceMiles < DISTANCE.SHORT) {
-    const mins = walkMinutes(distanceMiles)
-    return {
-      primary: {
-        modes: ['walk'],
-        label: 'Walk',
-        reasons: [
-          `${distanceMiles.toFixed(1)} miles — about ${mins} minutes on foot`,
-          'No cost, no wait, no parking',
-          'Counts as active transportation in Shift',
-        ],
-        time_estimate_minutes: mins,
-        cost_estimate_daily: 0,
-        google_maps_url: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['walk']),
-      },
-      secondary: null,
-    }
+  // DRIVE — always viable
+  const driveMins = Math.round((distanceMiles / DRIVE_MPH) * 60)
+  const driveDailyCost = milesRound * DRIVE_COST_PER_MILE + PARKING_DAILY
+  candidates.push({
+    mode: 'drive',
+    label: 'Drive',
+    timeMins: driveMins,
+    dailyCost: Math.round(driveDailyCost * 100) / 100,
+    annualCost: Math.round(driveDailyCost * 260), // 260 workdays
+    score: 0,
+    pros: ['Door-to-door flexibility', 'Weather independent', 'Can carry anything'],
+    googleMapsUrl: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['transit']), // use transit to get driving directions
+  })
+
+  // WALK — viable under 2 mi
+  if (distanceMiles < 2) {
+    const wMins = walkMinutes(distanceMiles)
+    candidates.push({
+      mode: 'walk', label: 'Walk', timeMins: wMins, dailyCost: 0, annualCost: 0, score: 0,
+      pros: ['Zero cost', 'No equipment needed', 'Built-in exercise'],
+      googleMapsUrl: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['walk']),
+    })
   }
 
-  // BIKE (owned or Bluebikes)
-  if (distanceMiles < DISTANCE.MEDIUM) {
+  // BIKE — viable under 8 mi (or with good infra)
+  if (distanceMiles < 8 || (distanceMiles < 12 && bikeInfraQuality !== 'none')) {
+    const bMins = bikeMinutes(distanceMiles)
     const hasBluebikes = hasBluebikesOrigin && hasBlubikesDest
-    if (hasBluebikes || bikeInfraQuality !== 'none') {
-      const bikeMins = bikeMinutes(distanceMiles)
-      const transitSecondary: RecommendationSecondary | null = hasMBTARoute && originStops.length > 0
-        ? {
-            modes: ['transit'],
-            label: `${originStops[0].route_names[0] || 'MBTA'} from ${originStops[0].name}`,
-            time_estimate_minutes: Math.round(distanceMiles * 4), // rough estimate
-          }
-        : null
+    const bCost = hasBluebikes ? 3.5 : 0
+    const bikeAnnual = hasBluebikes ? Math.round(3.5 * 260) : 0
+    const pros: string[] = []
+    if (bikeInfraQuality === 'protected') pros.push('Protected bike lane along this corridor')
+    else if (bikeInfraQuality === 'shared') pros.push('Bike lane available along this route')
+    if (hasBluebikes) pros.push(`Bluebikes station ${bluebikesOrigin[0]?.distance_miles || '< 0.5'} mi from home`)
+    else pros.push('Free with your own bike')
+    pros.push('Built-in exercise — saves gym time')
+    candidates.push({
+      mode: 'bike', label: 'Bike', timeMins: bMins, dailyCost: bCost, annualCost: bikeAnnual, score: 0,
+      pros: pros.slice(0, 3),
+      googleMapsUrl: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['bike']),
+    })
+  }
 
-      return {
-        primary: {
-          modes: ['bike'],
-          label: 'Bike',
-          reasons: buildBikeReasons(distanceMiles, hasBluebikes, bikeInfraQuality, nearestOrigin),
-          time_estimate_minutes: bikeMins,
-          cost_estimate_daily: hasBluebikes ? 3.5 : 0,
-          google_maps_url: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['bike']),
-        },
-        secondary: transitSecondary,
-      }
+  // E-BIKE — viable under 12 mi
+  if (distanceMiles >= 4 && distanceMiles < 12) {
+    const eMins = ebikeMinutes(distanceMiles)
+    candidates.push({
+      mode: 'ebike', label: 'E-bike', timeMins: eMins, dailyCost: 0, annualCost: 0, score: 0,
+      pros: ['Faster than regular bike, arrive without sweating', 'Zero fuel cost', 'E-bikes available at many Bluebikes stations'],
+      googleMapsUrl: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['bike']),
+    })
+  }
+
+  // TRANSIT — viable if MBTA connects origin and dest
+  if (hasMBTARoute) {
+    const tMins = Math.round(distanceMiles * 4) // rough estimate
+    const tCost = 4.80 // round trip
+    const tAnnual = 90 * 12 // monthly pass
+    const transitLabel = originStops.length > 0
+      ? `${originStops[0].route_names[0] || 'MBTA'} from ${originStops[0].name}`
+      : 'MBTA Transit'
+    const pros: string[] = []
+    if (originStops.length > 0 && destStops.length > 0) {
+      pros.push(`${originStops[0].route_names[0] || 'Transit'} connects your home area to your workplace`)
     }
-    if (hasMBTARoute) {
-      const transitMins = Math.round(distanceMiles * 4)
-      return {
-        primary: {
-          modes: ['transit'],
-          label: originStops.length > 0
-            ? `${originStops[0].route_names[0] || 'MBTA'} from ${originStops[0].name}`
-            : 'MBTA Transit',
-          reasons: buildTransitReasons(distanceMiles, originStops, destStops),
-          time_estimate_minutes: transitMins,
-          cost_estimate_daily: 2.4,
-          google_maps_url: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['transit']),
-        },
-        secondary: bikeInfraQuality !== 'none'
-          ? { modes: ['bike'], label: 'Bike', time_estimate_minutes: bikeMinutes(distanceMiles) }
-          : null,
-      }
+    pros.push('$90/month unlimited — predictable cost')
+    pros.push('Read, relax, or work during your commute')
+    candidates.push({
+      mode: 'transit', label: transitLabel, timeMins: tMins, dailyCost: tCost, annualCost: tAnnual, score: 0,
+      pros: pros.slice(0, 3),
+      googleMapsUrl: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['transit']),
+    })
+  }
+
+  // Score each mode: 0.5 * time + 0.3 * cost + 0.2 * convenience
+  const maxTime = Math.max(...candidates.map(c => c.timeMins))
+  const maxCost = Math.max(...candidates.map(c => c.dailyCost), 1) // avoid div by 0
+
+  for (const c of candidates) {
+    const timeScore = maxTime > 0 ? 1 - (c.timeMins / maxTime) : 0.5
+    const costScore = maxCost > 0 ? 1 - (c.dailyCost / maxCost) : 0.5
+
+    // Convenience score
+    let convScore = 0.5
+    if (c.mode === 'drive') convScore = 0.7 // door-to-door, weather independent
+    if (c.mode === 'bike' && bikeInfraQuality === 'protected') convScore = 0.6
+    if (c.mode === 'bike' && bikeInfraQuality === 'shared') convScore = 0.4
+    if (c.mode === 'bike' && bikeInfraQuality === 'none') convScore = 0.2
+    if (c.mode === 'walk') convScore = 0.8 // simplest possible
+    if (c.mode === 'transit') convScore = 0.5
+    if (c.mode === 'ebike') convScore = 0.5
+
+    c.score = 0.5 * timeScore + 0.3 * costScore + 0.2 * convScore
+  }
+
+  // Sort by score descending
+  candidates.sort((a, b) => b.score - a.score)
+  return candidates
+}
+
+function buildReasons(winner: ScoredMode, driveCost: number, driveTime: number, distanceMiles: number): string[] {
+  const reasons: string[] = []
+  const fmtCost = (n: number) => `$${n.toFixed(0)}`
+
+  // Reason 1: time comparison
+  if (winner.mode === 'drive') {
+    reasons.push(`${winner.timeMins} min each way — fastest option for this ${distanceMiles.toFixed(1)}-mile commute`)
+  } else if (winner.timeMins <= driveTime + 3) {
+    reasons.push(`${winner.timeMins} min vs. ${driveTime} min driving — comparable time, less stress`)
+  } else if (winner.timeMins > driveTime) {
+    reasons.push(`${winner.timeMins} min vs. ${driveTime} min driving — ${winner.timeMins - driveTime} min longer, but no traffic variability`)
+  } else {
+    reasons.push(`${winner.timeMins} min vs. ${driveTime} min driving — ${driveTime - winner.timeMins} min faster`)
+  }
+
+  // Reason 2: cost comparison
+  if (winner.mode === 'drive') {
+    reasons.push(`~${fmtCost(winner.dailyCost)}/day including gas, maintenance, and parking`)
+  } else {
+    const savings = driveCost - winner.dailyCost
+    if (savings > 1) {
+      reasons.push(`${fmtCost(winner.dailyCost)}/day vs. ${fmtCost(driveCost)}/day driving — saves ~${fmtCost(savings * 260)}/year`)
+    } else {
+      reasons.push(`${fmtCost(winner.dailyCost)}/day — similar cost to driving at ${fmtCost(driveCost)}/day`)
     }
   }
 
-  // BIKE + TRANSIT (multimodal)
-  if (distanceMiles >= DISTANCE.MEDIUM && hasMBTARoute) {
-    if (hasBluebikesOrigin) {
-      const multimodalMins = bikeMinutes(1.5) + Math.round((distanceMiles - 1.5) * 3)
-      return {
-        primary: {
-          modes: ['bike', 'transit'],
-          label: originStops.length > 0
-            ? `Bike to ${originStops[0].name}, then ${originStops[0].route_names[0] || 'transit'}`
-            : 'Bike + Transit',
-          reasons: buildMultimodalReasons(distanceMiles, nearestOrigin, originStops),
-          time_estimate_minutes: multimodalMins,
-          cost_estimate_daily: 5.9,
-          google_maps_url: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['transit']),
-        },
-        secondary: {
-          modes: ['transit'],
-          label: originStops.length > 0
-            ? `${originStops[0].route_names[0] || 'MBTA'} from ${originStops[0].name}`
-            : 'Transit only',
-          time_estimate_minutes: Math.round(distanceMiles * 4),
-        },
-      }
-    }
-    // Transit only
-    const transitMins = Math.round(distanceMiles * 4)
-    return {
-      primary: {
-        modes: ['transit'],
-        label: originStops.length > 0
-          ? `${originStops[0].route_names[0] || 'MBTA'} from ${originStops[0].name}`
-          : 'MBTA Transit',
-        reasons: buildTransitReasons(distanceMiles, originStops, destStops),
-        time_estimate_minutes: transitMins,
-        cost_estimate_daily: 2.4,
-        google_maps_url: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['transit']),
-      },
-      secondary: null,
-    }
+  // Reason 3: mode-specific advantage
+  if (winner.pros.length > 0) {
+    reasons.push(winner.pros[0])
   }
 
-  // E-BIKE (long distance, no good transit)
-  if (distanceMiles < DISTANCE.LONG && !hasMBTARoute) {
-    const mins = ebikeMinutes(distanceMiles)
-    return {
-      primary: {
-        modes: ['ebike'],
-        label: 'E-bike',
-        reasons: [
-          `${distanceMiles.toFixed(1)} miles — manageable with an e-bike`,
-          'Arrives fresh, no sweat concerns',
-          hasBluebikesOrigin
-            ? 'Bluebikes e-bikes available at many stations'
-            : 'E-bikes cover distance faster with less effort',
-        ],
-        time_estimate_minutes: mins,
-        cost_estimate_daily: 0,
-        google_maps_url: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['bike']),
-      },
-      secondary: null,
-    }
-  }
-
-  // TRANSIT (long distance fallback)
-  const transitMins = Math.round(distanceMiles * 4)
-  return {
-    primary: {
-      modes: ['transit'],
-      label: 'MBTA Transit',
-      reasons: buildTransitReasons(distanceMiles, originStops, destStops),
-      time_estimate_minutes: transitMins,
-      cost_estimate_daily: 2.4,
-      google_maps_url: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['transit']),
-    },
-    secondary: null,
-  }
+  return reasons
 }
 
 /* ── Route handler ── */
@@ -692,24 +601,42 @@ export async function GET(req: NextRequest) {
   const hasBluebikesOrigin = bluebikesOrigin.length > 0
   const hasBlubikesDest = bluebikesDestStations.length > 0
 
-  // Run recommendation
-  const { primary, secondary } = recommend(
-    distanceMiles,
-    hasBluebikesOrigin,
-    hasBlubikesDest,
-    mbtaResult.feasible,
-    massdotResult.bike_infra_quality,
-    originLat, originLng, destLat, destLng,
-    bluebikesOrigin, bluebikesDestStations,
-    mbtaResult.originStops, mbtaResult.destStops
+  // Run comparison-based recommendation
+  const comparisons = buildComparisons(
+    distanceMiles, hasBluebikesOrigin, hasBlubikesDest, mbtaResult.feasible,
+    massdotResult.bike_infra_quality, originLat, originLng, destLat, destLng,
+    bluebikesOrigin, mbtaResult.originStops, mbtaResult.destStops
   )
 
-  // Determine primary mode string for content queries
-  // Map recommendation mode to content_items primary_mode values
-  const modeToContentMode: Record<string, string> = {
-    bike: 'cycling', ebike: 'cycling', walk: 'walking', transit: 'transit', bus: 'transit',
+  const winner = comparisons[0]
+  const runnerUp = comparisons.length > 1 ? comparisons[1] : null
+  const driveEntry = comparisons.find(c => c.mode === 'drive')!
+
+  const reasons = buildReasons(winner, driveEntry.dailyCost, driveEntry.timeMins, distanceMiles)
+
+  const primary: RecommendationPrimary = {
+    modes: winner.mode === 'drive' ? ['transit'] : [winner.mode as Mode], // UI mode type
+    label: winner.label,
+    reasons,
+    time_estimate_minutes: winner.timeMins,
+    cost_estimate_daily: winner.dailyCost,
+    google_maps_url: winner.googleMapsUrl,
   }
-  const primaryModeStr = modeToContentMode[primary.modes[0]] || primary.modes[0]
+  // For drive recommendations, override modes to show drive
+  if (winner.mode === 'drive') {
+    primary.modes = [] as unknown as Mode[] // drive isn't in Mode type — handled in UI
+    primary.label = 'Drive'
+  }
+
+  const secondary: RecommendationSecondary | null = runnerUp && runnerUp.mode !== winner.mode
+    ? { modes: runnerUp.mode === 'drive' ? [] as unknown as Mode[] : [runnerUp.mode as Mode], label: runnerUp.label, time_estimate_minutes: runnerUp.timeMins }
+    : null
+
+  // Map to content mode for guide queries
+  const modeToContentMode: Record<string, string> = {
+    bike: 'cycling', ebike: 'cycling', walk: 'walking', transit: 'transit', bus: 'transit', drive: 'transit',
+  }
+  const primaryModeStr = modeToContentMode[winner.mode] || 'transit'
 
   // Fetch content in parallel
   const [guide, event] = await Promise.all([
@@ -749,6 +676,19 @@ export async function GET(req: NextRequest) {
       bike_infra_quality: massdotResult.bike_infra_quality,
     },
     content: { guide, event },
+    comparisons: comparisons.map(c => ({
+      mode: c.mode,
+      label: c.label,
+      time_minutes: c.timeMins,
+      daily_cost: c.dailyCost,
+      annual_cost: c.annualCost,
+      pros: c.pros,
+    })),
+    drive_comparison: {
+      time_minutes: driveEntry.timeMins,
+      daily_cost: driveEntry.dailyCost,
+      annual_cost: driveEntry.annualCost,
+    },
     distance_miles: Math.round(distanceMiles * 100) / 100,
     distance_category: getDistanceCategory(distanceMiles),
   }
