@@ -731,11 +731,19 @@ export default function CommuteCalculator() {
               let displayPrimary = recommendation.primary
               let displaySecondary = recommendation.secondary
               if (transitSteps && transitSteps.length > 0) {
+                function formatStep(step: TransitStep) {
+                  const vt = step.vehicleType
+                  const vType = vt === 'BUS' ? 'Bus' : vt === 'COMMUTER_RAIL' ? 'Commuter Rail' : ''
+                  const name = step.lineShortName || step.lineName
+                  return vType ? `${vType} ${name}` : name
+                }
                 const mainStep = transitSteps[0]
-                const vType = mainStep.vehicleType === 'BUS' ? 'Bus' : mainStep.vehicleType === 'SUBWAY' || mainStep.vehicleType === 'HEAVY_RAIL' ? 'Train' : mainStep.vehicleType === 'COMMUTER_RAIL' ? 'Commuter Rail' : ''
-                const transitLabel = transitSteps.length === 1
-                  ? `${vType} ${mainStep.lineShortName || mainStep.lineName} from ${mainStep.departureStop}`
-                  : `${vType} ${mainStep.lineShortName || mainStep.lineName} → ${transitSteps[1].lineShortName || transitSteps[1].lineName}`
+                let transitLabel: string
+                if (transitSteps.length === 1) {
+                  transitLabel = `${formatStep(mainStep)} from ${mainStep.departureStop}`
+                } else {
+                  transitLabel = transitSteps.map(formatStep).join(' → ')
+                }
 
                 // Override primary if it's the transit recommendation
                 if (recommendation.primary.label === 'MBTA Transit' || recommendation.primary.modes.includes('transit')) {
@@ -765,9 +773,11 @@ export default function CommuteCalculator() {
                 {recommendation.comparisons && recommendation.comparisons.length > 1 && (() => {
                   let comps = recommendation.comparisons
                   if (transitSteps && transitSteps.length > 0) {
-                    const mainStep = transitSteps[0]
-                    const vType = mainStep.vehicleType === 'BUS' ? 'Bus' : mainStep.vehicleType === 'SUBWAY' || mainStep.vehicleType === 'HEAVY_RAIL' ? 'Train' : ''
-                    const tLabel = `${vType} ${mainStep.lineShortName || mainStep.lineName}`.trim()
+                    const tLabel = transitSteps.map(s => {
+                      const vt = s.vehicleType === 'BUS' ? 'Bus' : ''
+                      const name = s.lineShortName || s.lineName
+                      return vt ? `${vt} ${name}` : name
+                    }).join(' → ')
                     comps = comps.map(c => c.mode === 'transit' ? { ...c, label: tLabel || c.label } : c)
                   }
                   return (

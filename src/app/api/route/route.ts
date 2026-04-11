@@ -65,6 +65,15 @@ async function fetchGoogleRoute(
     body.routingPreference = 'TRAFFIC_AWARE'
   }
 
+  if (mode === 'TRANSIT') {
+    // Prefer fewer transfers — direct bus is better than train+bus for short trips
+    body.transitPreferences = {
+      routingPreference: 'FEWER_TRANSFERS',
+    }
+    // Request alternative routes to pick the fastest
+    body.computeAlternativeRoutes = true
+  }
+
   try {
     // Request transit step details for TRANSIT mode
     const fieldMask = mode === 'TRANSIT'
@@ -87,27 +96,47 @@ async function fetchGoogleRoute(
     }
 
     const data = await res.json()
-    const route = data.routes?.[0]
+    const allRoutes = data.routes || []
+    if (allRoutes.length === 0) return null
+
+    // For transit with alternatives, pick the fastest route
+    let bestRoute = allRoutes[0]
+    if (mode === 'TRANSIT' && allRoutes.length > 1) {
+      bestRoute = allRoutes.reduce((best: Record<string, unknown>, r: Record<string, unknown>) => {
+        const bestDur = parseDuration((best.duration as string) || '99999s')
+        const rDur = parseDuration((r.duration as string) || '99999s')
+        return rDur < bestDur ? r : best
+      }, allRoutes[0])
+    }
+
+    const route = bestRoute
     if (!route?.duration || !route?.distanceMeters) return null
 
     const result: RouteResult = {
-      durationMins: parseDuration(route.duration),
-      distanceMiles: metersToMiles(route.distanceMeters),
+      durationMins: parseDuration(route.duration as string),
+      distanceMiles: metersToMiles(route.distanceMeters as number),
     }
 
     // Extract transit step details (line names, vehicle types)
-    if (mode === 'TRANSIT' && route.legs?.[0]?.steps) {
+    if (mode === 'TRANSIT') {
+      const legs = (route as Record<string, unknown>).legs as Array<Record<string, unknown>> | undefined
+      const steps = (legs?.[0]?.steps as Array<Record<string, unknown>>) || []
       const transitSteps: TransitStep[] = []
-      for (const step of route.legs[0].steps) {
-        const td = step.transitDetails
+      for (const step of steps) {
+        const td = step.transitDetails as Record<string, unknown> | undefined
         if (td) {
+          const line = td.transitLine as Record<string, unknown> | undefined
+          const vehicle = line?.vehicle as Record<string, unknown> | undefined
+          const stopDetails = td.stopDetails as Record<string, unknown> | undefined
+          const depStop = stopDetails?.departureStop as Record<string, unknown> | undefined
+          const arrStop = stopDetails?.arrivalStop as Record<string, unknown> | undefined
           transitSteps.push({
-            lineName: td.transitLine?.name || td.transitLine?.nameShort || '',
-            lineShortName: td.transitLine?.nameShort || td.transitLine?.name || '',
-            vehicleType: td.transitLine?.vehicle?.type || 'UNKNOWN',
-            numStops: td.stopCount || 0,
-            departureStop: td.stopDetails?.departureStop?.name || '',
-            arrivalStop: td.stopDetails?.arrivalStop?.name || '',
+            lineName: (line?.name || line?.nameShort || '') as string,
+            lineShortName: (line?.nameShort || line?.name || '') as string,
+            vehicleType: (vehicle?.type || 'UNKNOWN') as string,
+            numStops: (td.stopCount || 0) as number,
+            departureStop: (depStop?.name || '') as string,
+            arrivalStop: (arrStop?.name || '') as string,
           })
         }
       }
