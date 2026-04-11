@@ -468,20 +468,18 @@ function buildComparisons(
     })
   }
 
-  // BIKE — viable under 8 mi (or with good infra)
+  // BIKE — viable under 8 mi (or with good infra). Cost = $0 for own bike
   if (distanceMiles < 8 || (distanceMiles < 12 && bikeInfraQuality !== 'none')) {
     const bMins = bikeMinutes(distanceMiles)
     const hasBluebikes = hasBluebikesOrigin && hasBlubikesDest
-    const bCost = hasBluebikes ? 3.5 : 0
-    const bikeAnnual = hasBluebikes ? Math.round(3.5 * 260) : 0
     const pros: string[] = []
     if (bikeInfraQuality === 'protected') pros.push('Protected bike lane along this corridor')
     else if (bikeInfraQuality === 'shared') pros.push('Bike lane available along this route')
-    if (hasBluebikes) pros.push(`Bluebikes station ${bluebikesOrigin[0]?.distance_miles || '< 0.5'} mi from home`)
+    if (hasBluebikes) pros.push(`Free with your own bike, or Bluebikes station ${bluebikesOrigin[0]?.distance_miles || '< 0.5'} mi away`)
     else pros.push('Free with your own bike')
     pros.push('Built-in exercise — saves gym time')
     candidates.push({
-      mode: 'bike', label: 'Bike', timeMins: bMins, dailyCost: bCost, annualCost: bikeAnnual, score: 0,
+      mode: 'bike', label: 'Bike', timeMins: bMins, dailyCost: 0, annualCost: 0, score: 0,
       pros: pros.slice(0, 3),
       googleMapsUrl: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, ['bike']),
     })
