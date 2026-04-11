@@ -176,7 +176,10 @@ export async function POST(req: Request) {
   }
 
   for (const mode of modes) {
-    if (cacheMap.has(mode)) {
+    // Always fetch TRANSIT fresh — cache doesn't store transit step details
+    if (mode === 'TRANSIT') {
+      modesToFetch.push(mode)
+    } else if (cacheMap.has(mode)) {
       routes[mode] = cacheMap.get(mode)!
       anyCached = true
     } else {
