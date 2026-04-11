@@ -237,7 +237,7 @@ export default function RewardsPartnersPage() {
           },
           body: JSON.stringify({
             business_name: form.business_name.trim(),
-            address: `${form.address.trim()}, ${form.city.trim()}, ${form.address_state.trim()} ${form.address_zip.trim()}`.trim(),
+            address: `${(form.address_line1 || form.address).trim()}, ${form.city.trim()}, ${form.address_state.trim()} ${form.address_zip.trim()}`,
             city: form.city.trim(),
             address_line1: form.address_line1 || form.address.trim(),
             address_state: form.address_state.trim() || null,
