@@ -66,6 +66,7 @@ function DashboardPage() {
 
   const [editingContact, setEditingContact] = useState(false)
   const [contactForm, setContactForm] = useState({
+    name: '',
     contact_name: '',
     contact_phone: '',
     address: '',
@@ -104,6 +105,7 @@ function DashboardPage() {
 
     setSponsor(sponsorData)
     setContactForm({
+      name: sponsorData.name || '',
       contact_name: sponsorData.contact_name || '',
       contact_phone: sponsorData.contact_phone || '',
       address: sponsorData.address || '',
@@ -244,6 +246,7 @@ function DashboardPage() {
     await supabase
       .from('sponsors')
       .update({
+        name: contactForm.name.trim(),
         contact_name: contactForm.contact_name.trim(),
         contact_phone: contactForm.contact_phone.trim() || null,
         address: contactForm.address.trim(),
@@ -254,6 +257,7 @@ function DashboardPage() {
 
     setSponsor({
       ...sponsor,
+      name: contactForm.name.trim(),
       contact_name: contactForm.contact_name.trim(),
       contact_phone: contactForm.contact_phone.trim() || null,
       address: contactForm.address.trim(),
@@ -368,19 +372,7 @@ function DashboardPage() {
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-white">
-                    Offer limits
-                  </label>
-                  <input
-                    type="text"
-                    value={offerLimits}
-                    onChange={(e) => setOfferLimits(e.target.value)}
-                    placeholder="e.g. One per customer per week"
-                    className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/45 focus:border-[#BAF14D]"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-white">
-                    Redemption frequency
+                    Redemption limit
                   </label>
                   <select
                     value={offerFrequency}
@@ -388,9 +380,10 @@ function DashboardPage() {
                     className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D]"
                   >
                     <option value="">No limit</option>
-                    <option value="daily">Once per day</option>
-                    <option value="weekly">Once per week</option>
-                    <option value="monthly">Once per month</option>
+                    <option value="once_per_visit">Once per visit</option>
+                    <option value="once_per_day">Once per day</option>
+                    <option value="once_per_week">Once per week</option>
+                    <option value="once_per_month">Once per month</option>
                   </select>
                 </div>
                 <div className="flex gap-3">
@@ -417,18 +410,9 @@ function DashboardPage() {
             ) : (
               <div>
                 <p className="mb-1 text-[0.9375rem] font-medium text-white">{reward.name}</p>
-                {reward.description && (
-                  <p className="text-sm text-white">{reward.description}</p>
-                )}
                 <p className="mt-1 text-sm text-white">
                   Limit:{' '}
-                  {reward.redemption_frequency === 'daily'
-                    ? 'Once per day'
-                    : reward.redemption_frequency === 'weekly'
-                      ? 'Once per week'
-                      : reward.redemption_frequency === 'monthly'
-                        ? 'Once per month'
-                        : 'None'}
+                  {{ once_per_visit: 'Once per visit', once_per_day: 'Once per day', once_per_week: 'Once per week', once_per_month: 'Once per month', daily: 'Once per day', weekly: 'Once per week', monthly: 'Once per month' }[reward.redemption_frequency ?? ''] ?? 'None'}
                 </p>
                 <button
                   onClick={() => setEditingOffer(true)}
@@ -542,6 +526,11 @@ function DashboardPage() {
 
             {editingContact ? (
               <div className="space-y-4">
+                <DashField
+                  label="Business name"
+                  value={contactForm.name}
+                  onChange={(v) => setContactForm({ ...contactForm, name: v })}
+                />
                 {/* Logo upload */}
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-white">Logo</label>
@@ -627,6 +616,7 @@ function DashboardPage() {
                   <button
                     onClick={() => {
                       setContactForm({
+                        name: sponsor.name || '',
                         contact_name: sponsor.contact_name || '',
                         contact_phone: sponsor.contact_phone || '',
                         address: sponsor.address || '',
@@ -655,11 +645,28 @@ function DashboardPage() {
                   </div>
                 )}
                 <dl className="space-y-3">
-                  <InfoRow label="Name" value={sponsor.contact_name} />
+                  <InfoRow label="Business" value={sponsor.name} />
+                  <InfoRow label="Contact" value={sponsor.contact_name} />
                   <InfoRow label="Email" value={sponsor.contact_email} />
                   <InfoRow label="Phone" value={sponsor.contact_phone || '—'} />
                   <InfoRow label="Address" value={sponsor.address} />
-                  <InfoRow label="Website" value={sponsor.website_url || '—'} />
+                  <div className="flex gap-4">
+                    <dt className="w-20 shrink-0 text-sm text-white">Website</dt>
+                    <dd className="text-sm">
+                      {sponsor.website_url ? (
+                        <a
+                          href={sponsor.website_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#BAF14D] underline underline-offset-2"
+                        >
+                          {sponsor.website_url}
+                        </a>
+                      ) : (
+                        <span className="text-white">—</span>
+                      )}
+                    </dd>
+                  </div>
                 </dl>
                 <button
                   onClick={() => setEditingContact(true)}
