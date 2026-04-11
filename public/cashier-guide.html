@@ -21,6 +21,14 @@
     .header .by-line span { color: #2D6A4F; font-weight: 700; }
     h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
     .subtitle { font-size: 16px; color: #6B7280; margin-bottom: 32px; }
+    .offer-card {
+      margin-bottom: 28px; padding: 20px;
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      border-radius: 12px;
+    }
+    .offer-card .partner-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .offer-card .discount { font-size: 16px; color: #15803d; font-weight: 600; }
+    .offer-card .limit { font-size: 13px; color: #6B7280; margin-top: 6px; }
     .step {
       display: flex; align-items: flex-start; gap: 16px;
       margin-bottom: 24px; padding: 20px;
@@ -70,41 +78,74 @@
     </div>
   </div>
 
-  <h1>Cashier Guide</h1>
-  <p class="subtitle">How to process a Shift rewards redemption</p>
+  <h1>Cashier Quick Guide</h1>
+  <p class="subtitle">A customer says "I have Shift" — here's what to do</p>
+
+  <div id="offer-card" class="offer-card" style="display:none;">
+    <div class="partner-name" id="partner-name"></div>
+    <div class="discount" id="partner-discount"></div>
+    <div class="limit" id="partner-limit"></div>
+  </div>
 
   <div class="step">
     <div class="step-number">1</div>
     <div class="step-content">
-      <h3>Customer shows QR code</h3>
-      <p>The customer will open the Shift app on their phone and show you a QR code on their screen.</p>
+      <h3>Ask to see their badge</h3>
+      <p>The customer will open the Shift app and show you a full-screen badge on their phone.</p>
     </div>
   </div>
 
   <div class="step">
     <div class="step-number">2</div>
     <div class="step-content">
-      <h3>Scan with your phone camera</h3>
-      <p>Open the camera app on your phone (iPhone or Android) and point it at the QR code. A link will appear — tap it to open the verification page.</p>
+      <h3>Check that it's live</h3>
+      <p>The badge has a <strong>moving animation</strong> and a <strong>clock that ticks every second</strong>. If it's a still image or screenshot, it won't move — don't accept it.</p>
     </div>
   </div>
 
   <div class="step">
     <div class="step-number">3</div>
     <div class="step-content">
-      <h3>Tap "Confirm Redemption"</h3>
-      <p>The web page will show the reward details and the customer's name. Tap the green <strong>Confirm Redemption</strong> button. Once confirmed, the reward is complete.</p>
+      <h3>Apply the discount</h3>
+      <p id="step3-detail">Apply the discount as you normally would. That's it — no scanning, no codes, no app on your end.</p>
     </div>
   </div>
 
   <div class="fallback">
-    <h3>Can't scan the QR code?</h3>
-    <p>Ask the customer to show the reward details screen in the app. You can verify the reward name, customer name, and timestamp visually. Each QR code can only be used once, so screenshots cannot be reused.</p>
+    <h3>How to spot a fake</h3>
+    <p>A real Shift badge has a glowing animation and a live timestamp that updates every second. Screenshots are static — the animation won't move and the time won't change. If in doubt, ask the customer to tap the badge — it should respond with a brief animation.</p>
   </div>
 
   <div class="footer">
     <p>Questions? Contact <a href="mailto:info@gogreenstreets.org">info@gogreenstreets.org</a></p>
     <button class="print-btn" onclick="window.print()">🖨️ Print this guide</button>
   </div>
+
+  <script>
+    // Load partner-specific details from URL params
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get('name');
+    const discount = params.get('discount');
+    const limit = params.get('limit');
+
+    if (name || discount) {
+      document.getElementById('offer-card').style.display = 'block';
+      if (name) document.getElementById('partner-name').textContent = name;
+      if (discount) {
+        document.getElementById('partner-discount').textContent = discount;
+        document.getElementById('step3-detail').textContent =
+          `Apply "${discount}" as you normally would. That's it — no scanning, no codes, no app on your end.`;
+      }
+      if (limit && limit !== 'none') {
+        const labels = {
+          once_per_visit: 'Once per visit',
+          once_per_day: 'Once per day',
+          once_per_week: 'Once per week',
+          once_per_month: 'Once per month'
+        };
+        document.getElementById('partner-limit').textContent = labels[limit] || limit;
+      }
+    }
+  </script>
 </body>
 </html>
