@@ -497,23 +497,21 @@ function buildComparisons(
     })
   }
 
-  // TRANSIT — viable if MBTA connects origin and dest
-  if (hasMBTARoute) {
-    // Realistic door-to-door estimate: walk to station + wait + ride + walk from station
-    const walkToStationMins = originStops.length > 0 ? Math.round((originStops[0].distance_miles / 3.5) * 60) : 5
-    const avgWaitMins = 6 // avg headway for subway/light rail
-    const rideMins = Math.max(5, Math.round((distanceMiles / 20) * 60)) // ~20mph avg train speed
-    const walkFromStationMins = destStops.length > 0 ? Math.round((destStops[0].distance_miles / 3.5) * 60) : 5
-    const tMins = walkToStationMins + avgWaitMins + rideMins + walkFromStationMins
-    const tCost = 4.80 // round trip
-    const tAnnual = 90 * 12 // monthly pass
-    const transitLabel = originStops.length > 0
-      ? `${originStops[0].route_names[0] || 'MBTA'} from ${originStops[0].name}`
-      : 'MBTA Transit'
+  // TRANSIT — always include as a candidate; Google Routes on the client
+  // validates the actual best transit option (including buses + transfers)
+  {
+    // Realistic door-to-door estimate: walk + wait + ride + walk
+    const walkToMins = originStops.length > 0 ? Math.round((originStops[0].distance_miles / 3.5) * 60) : 5
+    const avgWaitMins = 7
+    const rideMins = Math.max(5, Math.round((distanceMiles / 15) * 60)) // ~15mph avg including stops
+    const walkFromMins = destStops.length > 0 ? Math.round((destStops[0].distance_miles / 3.5) * 60) : 5
+    const tMins = walkToMins + avgWaitMins + rideMins + walkFromMins
+    const tCost = 4.80
+    const tAnnual = 90 * 12
+    // Use generic label — client overrides with Google Routes data which knows the actual best route
+    const transitLabel = 'MBTA Transit'
     const pros: string[] = []
-    if (originStops.length > 0 && destStops.length > 0) {
-      pros.push(`${originStops[0].route_names[0] || 'Transit'} connects your home area to your workplace`)
-    }
+    pros.push('Transit option available — exact route shown after entering addresses')
     pros.push('$90/month unlimited — predictable cost')
     pros.push('Read, relax, or work during your commute')
     candidates.push({

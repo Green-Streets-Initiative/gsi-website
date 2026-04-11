@@ -185,9 +185,6 @@ export default function CommuteCalculator() {
       return
     }
 
-    const googleMode = MODE_TO_GOOGLE[altMode]
-    if (!googleMode) return
-
     // Abort previous request
     routeAbortRef.current?.abort()
     const controller = new AbortController()
@@ -197,13 +194,18 @@ export default function CommuteCalculator() {
       setRouteLoading(true)
       setRouteError(false)
       try {
+        // Fetch all modes for comprehensive comparison
+        const modes = new Set(['DRIVE', 'TRANSIT', 'BICYCLE', 'WALK'])
+        const googleMode = MODE_TO_GOOGLE[altMode]
+        if (googleMode) modes.add(googleMode)
+
         const res = await fetch('/api/route', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             origin: { lat: homePlaceData.lat, lng: homePlaceData.lng },
             destination: { lat: workPlaceData.lat, lng: workPlaceData.lng },
-            modes: ['DRIVE', googleMode],
+            modes: [...modes],
           }),
           signal: controller.signal,
         })
@@ -228,7 +230,7 @@ export default function CommuteCalculator() {
       clearTimeout(timer)
       controller.abort()
     }
-  }, [homePlaceData, workPlaceData, altMode])
+  }, [homePlaceData, workPlaceData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch recommendation when both addresses are set
   const fetchRecommendation = useCallback(async (barrier?: BarrierCode | null) => {
