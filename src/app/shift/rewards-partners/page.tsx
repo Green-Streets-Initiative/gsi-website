@@ -40,7 +40,7 @@ type FormData = {
 const INITIAL_FORM: FormData = {
   business_name: '',
   address: '',
-  city: 'Cambridge',
+  city: '',
   address_line1: '',
   address_state: '',
   address_zip: '',
