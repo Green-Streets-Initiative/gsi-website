@@ -22,10 +22,10 @@ type FormData = {
   address_zip: string
   website_url: string
   referral_source: string
-  offer_description: string
-  redemption_frequency: string
-  total_redemption_cap: string
-  expiration_date: string
+  discount_description: string
+  discount_type: string
+  discount_value: string
+  preferred_minimum_tier: string
   contact_name: string
   signer_title: string
   contact_email: string
@@ -46,10 +46,10 @@ const INITIAL_FORM: FormData = {
   address_zip: '',
   website_url: '',
   referral_source: '',
-  offer_description: '',
-  redemption_frequency: '',
-  total_redemption_cap: '',
-  expiration_date: '',
+  discount_description: '',
+  discount_type: '',
+  discount_value: '',
+  preferred_minimum_tier: 'mover',
   contact_name: '',
   signer_title: '',
   contact_email: '',
@@ -67,10 +67,10 @@ Green Streets Initiative — ${new Date().getFullYear()}
 By submitting this application, you ("Partner") agree to the following terms with Green Streets Initiative ("GSI"), a 501(c)(3) nonprofit organization based in Cambridge, Massachusetts.
 
 1. Program participation
-Partner agrees to honor the offer described in this application ("the Offer") to verified Shift app users who present a valid redemption confirmation on their device. GSI will display the Offer in the Shift rewards catalog once this application is reviewed and approved.
+Partner agrees to honor the discount described in this application ("the Discount") to Shift app users who present a valid, animated tier badge on their device. The Shift app displays a live, dynamic verification screen (not a static image or screenshot) that confirms the user's active commuter status. GSI will list the Discount in the Shift partner directory once this application is reviewed and approved.
 
-2. Offer terms
-Partner may set reasonable limits on the Offer (e.g., one per customer per week). GSI is not responsible for disputes between Partner and customers regarding Offer redemption. Partner may update or remove the Offer at any time via the partner dashboard.
+2. Discount terms
+Partner may discontinue the Discount at any time by contacting GSI. GSI is not responsible for disputes between Partner and customers regarding Discount usage. Partner may update the Discount details via the partner dashboard.
 
 3. No cost to Partner
 Participation in the Shift rewards network is free. GSI does not charge Partner for listing, impressions, or redemptions.
@@ -114,7 +114,7 @@ export default function RewardsPartnersPage() {
         .from('sponsors')
         .select('name, logo_url, website_url')
         .eq('status', 'active')
-        .in('sponsor_type', ['community_reward', 'local'])
+        .in('sponsor_type', ['community_reward', 'local', 'merchant_partner'])
         .order('agreement_signed_at', { ascending: true })
       if (data) setSponsors(data)
     }
@@ -137,8 +137,14 @@ export default function RewardsPartnersPage() {
   }
 
   function isStep2Valid() {
+    const hasDiscount = form.discount_description.trim() && form.discount_type
+    const hasValueIfNeeded =
+      form.discount_type === 'freebie' ||
+      form.discount_type === 'custom' ||
+      (form.discount_value && Number(form.discount_value) > 0)
     return (
-      form.offer_description.trim() &&
+      hasDiscount &&
+      hasValueIfNeeded &&
       form.contact_name.trim() &&
       form.signer_title.trim() &&
       form.contact_email.trim() &&
@@ -215,11 +221,13 @@ export default function RewardsPartnersPage() {
             contact_name: form.contact_name.trim(),
             contact_email: form.contact_email.trim(),
             contact_phone: form.contact_phone.trim() || null,
-            offer_description: form.offer_description.trim(),
-            offer_limits: null,
-            redemption_frequency: form.redemption_frequency || null,
-            total_redemption_cap: form.total_redemption_cap ? parseInt(form.total_redemption_cap, 10) : null,
-            expiration_date: form.expiration_date || null,
+            // New discount fields
+            discount_description: form.discount_description.trim(),
+            discount_type: form.discount_type || null,
+            discount_value: form.discount_value ? Number(form.discount_value) : null,
+            preferred_minimum_tier: form.preferred_minimum_tier || 'mover',
+            // Legacy field — map discount_description for backward compat
+            offer_description: form.discount_description.trim(),
             referral_source: form.referral_source.trim() || null,
             signer_name: form.signer_name.trim(),
             signer_title: form.signer_title.trim(),
@@ -318,7 +326,7 @@ export default function RewardsPartnersPage() {
                 },
                 {
                   title: 'Foot traffic that\u2019s earned',
-                  desc: 'Shift users redeem points by coming in. They\u2019re motivated, local, and regular.',
+                  desc: 'Shift users show a badge on their phone to get your discount. They\u2019re motivated, local, and regular.',
                 },
                 {
                   title: 'Monthly impact reports',
@@ -435,7 +443,7 @@ export default function RewardsPartnersPage() {
                 {
                   num: '3',
                   title: 'Users come in',
-                  desc: 'Shift users see your offer in the app, earn points on active trips, and redeem at your location by showing their phone. Your staff confirms the screen and honors the offer. That\u2019s it.',
+                  desc: 'Shift users see your discount in the app and show an animated badge on their phone. Your staff glances at it to confirm it\u2019s live and applies the discount. No scanning, no codes, no app on your end.',
                 },
               ].map((s) => (
                 <div
@@ -663,10 +671,11 @@ export default function RewardsPartnersPage() {
                       />
                       <div>
                         <span className="text-sm font-medium text-[#191A2E]">
-                          Send me a free Shift Rewards Partner window sticker
+                          Send me a free Shift partner window sticker
                         </span>
                         <p className="mt-0.5 text-xs text-[#8A8DA8]">
-                          Shipped within 5&ndash;7 business days to your business address
+                          Display in your storefront to let customers know you offer Shift discounts.
+                          Shipped within 5&ndash;7 business days.
                         </p>
                       </div>
                     </label>
@@ -680,93 +689,97 @@ export default function RewardsPartnersPage() {
                   </div>
                 )}
 
-                {/* Step 2 — Your offer */}
+                {/* Step 2 — Your discount */}
                 {step === 2 && (
                   <div className="space-y-5">
                     <h3 className="font-display text-lg font-bold text-[#191A2E]">
-                      Your offer
+                      Your discount
                     </h3>
                     <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
-                      Tell us what you&apos;d like to offer Shift users. Keep it simple and
-                      specific — &ldquo;10% off any purchase&rdquo; or &ldquo;Free coffee with any
-                      food order&rdquo; work well. You&apos;ll be able to update this anytime from
-                      your partner dashboard.
+                      Tell us what discount you&apos;d like to offer Shift users. Keep it simple
+                      and specific — &ldquo;10% off any purchase&rdquo; or &ldquo;Free cookie with
+                      any coffee order&rdquo; work well. Users will show an animated badge on their
+                      phone — no codes, no scanning.
                     </p>
 
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
-                        Offer description <span className="text-[#E05252]">*</span>
+                        Discount type <span className="text-[#E05252]">*</span>
                       </label>
-                      <textarea
-                        value={form.offer_description}
-                        onChange={(e) => {
-                          if (e.target.value.length <= 200)
-                            update('offer_description', e.target.value)
-                        }}
-                        maxLength={200}
-                        rows={3}
-                        placeholder="e.g. Free pastry with any coffee purchase"
-                        className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]"
-                      />
-                      <div className="mt-1 text-right text-xs text-[#8A8DA8]">
-                        {form.offer_description.length}/200
-                      </div>
+                      <select
+                        value={form.discount_type}
+                        onChange={(e) => update('discount_type', e.target.value)}
+                        className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
+                      >
+                        <option value="">Select a type</option>
+                        <option value="percentage">Percentage off</option>
+                        <option value="fixed_amount">Dollar amount off</option>
+                        <option value="freebie">Free item</option>
+                        <option value="custom">Other</option>
+                      </select>
                     </div>
 
-                    <div className="rounded-xl border border-[rgba(25,26,46,0.09)] bg-[rgba(25,26,46,0.02)] p-5">
-                      <h4 className="mb-1 font-display text-sm font-bold text-[#191A2E]">
-                        Offer limits (all optional)
-                      </h4>
-                      <p className="mb-4 text-xs leading-relaxed text-[#8A8DA8]">
-                        Set any combination of limits, or leave blank for an open-ended offer.
-                      </p>
-
-                      <div className="space-y-4">
-                        <div>
-                          <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
-                            How often can each person use this offer?
-                          </label>
-                          <select
-                            value={form.redemption_frequency}
-                            onChange={(e) => update('redemption_frequency', e.target.value)}
-                            className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
-                          >
-                            <option value="">No limit</option>
-                            <option value="daily">Once per day</option>
-                            <option value="weekly">Once per week</option>
-                            <option value="monthly">Once per month</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
-                            Total number of redemptions available
-                          </label>
+                    {(form.discount_type === 'percentage' || form.discount_type === 'fixed_amount') && (
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
+                          {form.discount_type === 'percentage' ? 'Percentage' : 'Dollar amount'}{' '}
+                          <span className="text-[#E05252]">*</span>
+                        </label>
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8A8DA8]">
+                            {form.discount_type === 'percentage' ? '%' : '$'}
+                          </span>
                           <input
                             type="number"
                             min="1"
-                            value={form.total_redemption_cap}
-                            onChange={(e) => update('total_redemption_cap', e.target.value)}
-                            placeholder="Leave blank for unlimited"
-                            className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]"
+                            step={form.discount_type === 'fixed_amount' ? '0.01' : '1'}
+                            value={form.discount_value}
+                            onChange={(e) => update('discount_value', e.target.value)}
+                            placeholder={form.discount_type === 'percentage' ? '10' : '1.00'}
+                            className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white py-3 pl-10 pr-4 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]"
                           />
-                        </div>
-
-                        <div>
-                          <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
-                            Offer expiration date
-                          </label>
-                          <input
-                            type="date"
-                            value={form.expiration_date}
-                            onChange={(e) => update('expiration_date', e.target.value)}
-                            className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
-                          />
-                          <p className="mt-1 text-xs text-[#8A8DA8]">
-                            Leave blank to run indefinitely.
-                          </p>
                         </div>
                       </div>
+                    )}
+
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
+                        Discount description <span className="text-[#E05252]">*</span>
+                      </label>
+                      <textarea
+                        value={form.discount_description}
+                        onChange={(e) => {
+                          if (e.target.value.length <= 200)
+                            update('discount_description', e.target.value)
+                        }}
+                        maxLength={200}
+                        rows={3}
+                        placeholder="e.g. 10% off all drinks, Free cookie with any purchase"
+                        className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]"
+                      />
+                      <div className="mt-1 text-right text-xs text-[#8A8DA8]">
+                        {form.discount_description.length}/200
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
+                        Preferred minimum tier
+                      </label>
+                      <select
+                        value={form.preferred_minimum_tier}
+                        onChange={(e) => update('preferred_minimum_tier', e.target.value)}
+                        className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
+                      >
+                        <option value="mover">Mover (recommended — most inclusive)</option>
+                        <option value="shifter">Shifter (frequent commuters)</option>
+                        <option value="unsure">I&apos;m not sure — let GSI recommend</option>
+                      </select>
+                      <p className="mt-1.5 text-xs text-[#8A8DA8]">
+                        Only Shift users at or above this tier can see and use your discount.
+                        Mover is the most inclusive — it includes anyone who has logged at least
+                        25 active trips. Most partners choose Mover.
+                      </p>
                     </div>
 
                     <div className="border-t border-[rgba(25,26,46,0.09)] pt-5">
