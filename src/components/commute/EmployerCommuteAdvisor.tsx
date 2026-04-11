@@ -15,7 +15,8 @@ import Footer from '@/components/Footer'
 import type { EmployerGroup, RecommendationResponse, BarrierCode } from '@/lib/types/commute'
 
 type PlaceData = { placeId: string; lat: number; lng: number }
-type RouteResult = { durationMins: number; distanceMiles: number } | null
+type TransitStep = { lineName: string; lineShortName: string; vehicleType: string; numStops: number; departureStop: string; arrivalStop: string }
+type RouteResult = { durationMins: number; distanceMiles: number; transitSteps?: TransitStep[] } | null
 type RouteResponse = { routes: Record<string, RouteResult>; cached: boolean }
 
 const MODE_TO_GOOGLE: Record<string, string> = {
@@ -98,8 +99,6 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
   // Fetch routing
   useEffect(() => {
     if (!homePlaceData || !workPlaceData) { setRouteData(null); return }
-    const googleMode = MODE_TO_GOOGLE[altMode]
-    if (!googleMode) return
     routeAbortRef.current?.abort()
     const controller = new AbortController()
     routeAbortRef.current = controller
@@ -112,7 +111,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
           body: JSON.stringify({
             origin: { lat: homePlaceData.lat, lng: homePlaceData.lng },
             destination: { lat: workPlaceData.lat, lng: workPlaceData.lng },
-            modes: ['DRIVE', googleMode],
+            modes: ['DRIVE', 'TRANSIT', 'BICYCLE', 'WALK'],
           }),
           signal: controller.signal,
         })
@@ -124,7 +123,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
       } catch { /* ignore */ } finally { setRouteLoading(false) }
     }, 500)
     return () => { clearTimeout(timer); controller.abort() }
-  }, [homePlaceData, workPlaceData, altMode])
+  }, [homePlaceData, workPlaceData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch recommendation
   const fetchRecommendation = useCallback(async (barrier?: BarrierCode | null) => {
@@ -421,36 +420,66 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
               </div>
             )}
 
-            {recommendation && (
+            {recommendation && (() => {
+              // Build Google Routes times + transit label override
+              const googleTimes: Record<string, number> = {}
+              if (routeData?.routes) {
+                if (routeData.routes.DRIVE) googleTimes.drive = routeData.routes.DRIVE.durationMins + 5
+                if (routeData.routes.BICYCLE) { googleTimes.bike = routeData.routes.BICYCLE.durationMins; googleTimes.ebike = Math.round(routeData.routes.BICYCLE.durationMins * 0.75) }
+                if (routeData.routes.WALK) googleTimes.walk = routeData.routes.WALK.durationMins
+                if (routeData.routes.TRANSIT) googleTimes.transit = routeData.routes.TRANSIT.durationMins
+              }
+              const hasGoogleTimes = Object.keys(googleTimes).length > 0
+              const transitSteps = routeData?.routes?.TRANSIT?.transitSteps
+
+              // Override generic transit label with actual route from Google
+              let displayPrimary = recommendation.primary
+              let displaySecondary = recommendation.secondary
+              if (transitSteps && transitSteps.length > 0) {
+                function formatStep(step: TransitStep) {
+                  const vType = step.vehicleType === 'BUS' ? 'Bus' : step.vehicleType === 'COMMUTER_RAIL' ? 'Commuter Rail' : ''
+                  const name = step.lineShortName || step.lineName
+                  return vType ? `${vType} ${name}` : name
+                }
+                const mainStep = transitSteps[0]
+                const transitLabel = transitSteps.length === 1
+                  ? `${formatStep(mainStep)} from ${mainStep.departureStop}`
+                  : transitSteps.map(formatStep).join(' → ')
+                if (recommendation.primary.label === 'MBTA Transit' || recommendation.primary.modes.includes('transit')) {
+                  displayPrimary = { ...recommendation.primary, label: transitLabel }
+                }
+                if (recommendation.secondary?.label === 'MBTA Transit') {
+                  displaySecondary = { ...recommendation.secondary, label: transitLabel }
+                }
+              }
+
+              return (
               <div className="animate-in space-y-5">
                 <RecommendationCard
-                  primary={recommendation.primary} secondary={recommendation.secondary}
+                  primary={displayPrimary} secondary={displaySecondary}
                   distanceMiles={recommendation.distance_miles} distanceCategory={recommendation.distance_category}
                   onRefresh={handleRefresh} loading={recLoading} routeTimeMinutes={getRouteTimeForMode()}
-                  routeTimes={routeData?.routes ? Object.fromEntries(
-                    [['drive', routeData.routes.DRIVE ? routeData.routes.DRIVE.durationMins + 5 : undefined],
-                     ['bike', routeData.routes.BICYCLE?.durationMins],
-                     ['ebike', routeData.routes.BICYCLE ? Math.round(routeData.routes.BICYCLE.durationMins * 0.75) : undefined],
-                     ['walk', routeData.routes.WALK?.durationMins],
-                     ['transit', routeData.routes.TRANSIT?.durationMins]]
-                    .filter(([, v]) => v !== undefined)
-                  ) : undefined} />
+                  routeTimes={hasGoogleTimes ? googleTimes : undefined} />
 
                 {/* Mode comparison table */}
-                {recommendation.comparisons && recommendation.comparisons.length > 1 && (
-                  <ModeComparisonTable
-                    comparisons={recommendation.comparisons}
-                    winnerMode={recommendation.comparisons[0]?.mode || ''}
-                    routeTimes={routeData?.routes ? Object.fromEntries(
-                      [['drive', routeData.routes.DRIVE ? routeData.routes.DRIVE.durationMins + 5 : undefined],
-                       ['bike', routeData.routes.BICYCLE?.durationMins],
-                       ['ebike', routeData.routes.BICYCLE ? Math.round(routeData.routes.BICYCLE.durationMins * 0.75) : undefined],
-                       ['walk', routeData.routes.WALK?.durationMins],
-                       ['transit', routeData.routes.TRANSIT?.durationMins]]
-                      .filter(([, v]) => v !== undefined)
-                    ) : undefined}
-                  />
-                )}
+                {recommendation.comparisons && recommendation.comparisons.length > 1 && (() => {
+                  let comps = recommendation.comparisons
+                  if (transitSteps && transitSteps.length > 0) {
+                    const tLabel = transitSteps.map(s => {
+                      const vt = s.vehicleType === 'BUS' ? 'Bus' : ''
+                      const name = s.lineShortName || s.lineName
+                      return vt ? `${vt} ${name}` : name
+                    }).join(' → ')
+                    comps = comps.map(c => c.mode === 'transit' ? { ...c, label: tLabel || c.label } : c)
+                  }
+                  return (
+                    <ModeComparisonTable
+                      comparisons={comps}
+                      winnerMode={comps[0]?.mode || ''}
+                      routeTimes={hasGoogleTimes ? googleTimes : undefined}
+                    />
+                  )
+                })()}
 
                 {homePlaceData && workPlaceData && (
                   <CommuteMap
@@ -538,7 +567,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                   ← Edit your commute details
                 </button>
               </div>
-            )}
+              )})()}
           </div>
         )}
 
