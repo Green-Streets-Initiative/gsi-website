@@ -44,41 +44,62 @@
     .step-content p { font-size: 14px; color: #374151; line-height: 1.5; }
     .screen-preview {
       margin: 0 auto 28px; max-width: 280px;
-      background: #191A2E; border-radius: 24px; padding: 28px 20px;
+      background: #191A2E; border-radius: 24px; padding: 32px 20px;
       text-align: center; color: #fff;
       box-shadow: 0 4px 24px rgba(0,0,0,0.15);
     }
-    .screen-preview .screen-title {
-      font-size: 20px; font-weight: 700; margin-bottom: 16px;
-      color: #BAF14D;
-    }
-    .screen-preview .qr-placeholder {
-      width: 140px; height: 140px; margin: 0 auto 12px;
-      background: #fff; border-radius: 12px;
+    .badge-ring {
+      width: 160px; height: 160px; margin: 0 auto 8px;
+      border: 3px solid #BAF14D; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      color: #191A2E; font-size: 11px; font-weight: 600;
+      box-shadow: 0 0 30px rgba(186,241,77,0.3);
+      animation: badge-glow 2s ease-in-out infinite alternate;
     }
-    .screen-preview .qr-hint {
-      font-size: 11px; color: #8A8DA8; margin-bottom: 16px;
+    .badge-ring-inner {
+      width: 136px; height: 136px;
+      border: 2px dashed rgba(186,241,77,0.4); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      animation: badge-rotate 8s linear infinite;
     }
-    .screen-preview .screen-offer {
-      font-size: 15px; font-weight: 700; margin-bottom: 2px;
+    .badge-chevrons {
+      font-size: 48px; font-weight: 900; color: #BAF14D;
+      letter-spacing: -6px; line-height: 1;
+      /* counter-rotate so text stays upright */
+      animation: badge-counter-rotate 8s linear infinite;
     }
-    .screen-preview .screen-sponsor {
-      font-size: 13px; color: #BAF14D; margin-bottom: 4px;
+    @keyframes badge-glow {
+      from { box-shadow: 0 0 20px rgba(186,241,77,0.2); }
+      to   { box-shadow: 0 0 40px rgba(186,241,77,0.5); }
     }
-    .screen-preview .screen-location {
-      font-size: 12px; color: #8A8DA8; margin-bottom: 12px;
+    @keyframes badge-rotate {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    @keyframes badge-counter-rotate {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(-360deg); }
     }
     .screen-preview .screen-user {
-      font-size: 14px; font-weight: 600; margin-bottom: 2px;
+      font-size: 16px; font-weight: 700; margin-top: 20px; margin-bottom: 2px;
+    }
+    .screen-preview .screen-tier {
+      font-size: 12px; color: #8A8DA8; margin-bottom: 12px;
+    }
+    .screen-preview .screen-offer {
+      font-size: 14px; color: #8A8DA8; margin-bottom: 4px; line-height: 1.4;
     }
     .screen-preview .screen-time {
-      font-size: 12px; color: #8A8DA8;
+      font-size: 12px; color: #BAF14D; margin-top: 16px;
+      letter-spacing: 0.5px;
     }
     .screen-caption {
       text-align: center; font-size: 13px; color: #6B7280;
       margin: -16px 0 28px; font-style: italic;
+    }
+    @media print {
+      .badge-ring, .badge-ring-inner, .badge-chevrons {
+        animation: none !important;
+      }
     }
     .fallback {
       margin-top: 24px; padding: 16px 20px;
@@ -133,68 +154,18 @@
     </div>
   </div>
 
-  <!-- Redemption screen mockup -->
+  <!-- Badge verification screen mockup (matches TierBadgeVerification.tsx) -->
   <div class="screen-preview">
-    <div class="screen-title">Ready to redeem</div>
-    <div class="qr-placeholder">
-      <svg viewBox="0 0 100 100" width="110" height="110">
-        <rect x="5" y="5" width="25" height="25" rx="3" fill="#191A2E"/>
-        <rect x="10" y="10" width="15" height="15" rx="2" fill="#fff"/>
-        <rect x="13" y="13" width="9" height="9" fill="#191A2E"/>
-        <rect x="70" y="5" width="25" height="25" rx="3" fill="#191A2E"/>
-        <rect x="75" y="10" width="15" height="15" rx="2" fill="#fff"/>
-        <rect x="78" y="13" width="9" height="9" fill="#191A2E"/>
-        <rect x="5" y="70" width="25" height="25" rx="3" fill="#191A2E"/>
-        <rect x="10" y="75" width="15" height="15" rx="2" fill="#fff"/>
-        <rect x="13" y="78" width="9" height="9" fill="#191A2E"/>
-        <rect x="35" y="5" width="6" height="6" fill="#191A2E"/>
-        <rect x="45" y="5" width="6" height="6" fill="#191A2E"/>
-        <rect x="55" y="5" width="6" height="6" fill="#191A2E"/>
-        <rect x="35" y="15" width="6" height="6" fill="#191A2E"/>
-        <rect x="50" y="15" width="6" height="6" fill="#191A2E"/>
-        <rect x="35" y="25" width="6" height="6" fill="#191A2E"/>
-        <rect x="45" y="25" width="6" height="6" fill="#191A2E"/>
-        <rect x="5" y="35" width="6" height="6" fill="#191A2E"/>
-        <rect x="15" y="40" width="6" height="6" fill="#191A2E"/>
-        <rect x="25" y="35" width="6" height="6" fill="#191A2E"/>
-        <rect x="35" y="35" width="6" height="6" fill="#191A2E"/>
-        <rect x="50" y="35" width="6" height="6" fill="#191A2E"/>
-        <rect x="60" y="35" width="6" height="6" fill="#191A2E"/>
-        <rect x="5" y="50" width="6" height="6" fill="#191A2E"/>
-        <rect x="20" y="50" width="6" height="6" fill="#191A2E"/>
-        <rect x="35" y="50" width="6" height="6" fill="#191A2E"/>
-        <rect x="45" y="45" width="6" height="6" fill="#191A2E"/>
-        <rect x="55" y="50" width="6" height="6" fill="#191A2E"/>
-        <rect x="70" y="35" width="6" height="6" fill="#191A2E"/>
-        <rect x="80" y="35" width="6" height="6" fill="#191A2E"/>
-        <rect x="90" y="40" width="6" height="6" fill="#191A2E"/>
-        <rect x="70" y="50" width="6" height="6" fill="#191A2E"/>
-        <rect x="85" y="50" width="6" height="6" fill="#191A2E"/>
-        <rect x="5" y="60" width="6" height="6" fill="#191A2E"/>
-        <rect x="20" y="60" width="6" height="6" fill="#191A2E"/>
-        <rect x="40" y="60" width="6" height="6" fill="#191A2E"/>
-        <rect x="55" y="60" width="6" height="6" fill="#191A2E"/>
-        <rect x="70" y="60" width="6" height="6" fill="#191A2E"/>
-        <rect x="85" y="60" width="6" height="6" fill="#191A2E"/>
-        <rect x="40" y="70" width="6" height="6" fill="#191A2E"/>
-        <rect x="55" y="70" width="6" height="6" fill="#191A2E"/>
-        <rect x="70" y="70" width="6" height="6" fill="#191A2E"/>
-        <rect x="85" y="75" width="6" height="6" fill="#191A2E"/>
-        <rect x="40" y="80" width="6" height="6" fill="#191A2E"/>
-        <rect x="55" y="85" width="6" height="6" fill="#191A2E"/>
-        <rect x="70" y="85" width="6" height="6" fill="#191A2E"/>
-        <rect x="80" y="85" width="6" height="6" fill="#191A2E"/>
-        <rect x="90" y="90" width="6" height="6" fill="#191A2E"/>
-      </svg>
+    <div class="badge-ring">
+      <div class="badge-ring-inner">
+        <div class="badge-chevrons">❯❯</div>
+      </div>
     </div>
-    <div class="qr-hint">Show this to the cashier</div>
-    <div class="screen-offer">1 free small coffee</div>
-    <div class="screen-sponsor">Flour Bakery + Cafe</div>
-    <div class="screen-location">📍 Harvard Square</div>
-    <div class="screen-user">Sarah M.</div>
-    <div class="screen-time">Friday, April 11, 2026 · 10:23 AM</div>
+    <div class="screen-user">Sarah M. · Mover</div>
+    <div class="screen-offer">1 free small coffee at Flour Bakery + Cafe</div>
+    <div class="screen-time">Verified at 10:23:47 AM</div>
   </div>
-  <p class="screen-caption">This is what the customer will show you on their phone</p>
+  <p class="screen-caption">This is what the customer will show you on their phone.<br>The badge glows and the ring rotates — a screenshot won't move.</p>
 
   <div class="step">
     <div class="step-number">2</div>
