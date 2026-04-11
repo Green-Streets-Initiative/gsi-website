@@ -292,10 +292,7 @@ export default function RewardsPartnersPage() {
         'https://xyqcpgwbqrhykpgpqbdi.supabase.co/functions/v1/sponsor-magic-link',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: loginEmail.trim(),
             redirect_to: `${window.location.origin}/shift/rewards-partners/dashboard`,
