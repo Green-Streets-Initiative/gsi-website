@@ -932,7 +932,7 @@ export default function RewardsPartnersPage() {
         {/* ═══════════════════════════════════════════════════════
             5 · EXISTING PARTNER LOGIN
         ═══════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24">
+        <section id="partner-login" className="bg-[#191A2E] px-8 py-24">
           <div className="mx-auto max-w-[480px] text-center">
             <h2 className="mb-2 font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold leading-[1.1] tracking-tight text-white">
               Already a rewards partner?
