@@ -42,7 +42,7 @@ const INITIAL_FORM: FormData = {
   address: '',
   city: '',
   address_line1: '',
-  address_state: '',
+  address_state: 'MA',
   address_zip: '',
   website_url: '',
   referral_source: '',
@@ -157,7 +157,7 @@ export default function RewardsPartnersPage() {
   }
 
   function isStep1Valid() {
-    return form.business_name.trim() && form.address.trim() && form.city.trim()
+    return form.business_name.trim() && form.address.trim() && form.city.trim() && form.address_state.trim() && form.address_zip.trim()
   }
 
   function isStep2Valid() {
@@ -237,11 +237,11 @@ export default function RewardsPartnersPage() {
           },
           body: JSON.stringify({
             business_name: form.business_name.trim(),
-            address: form.address.trim(),
+            address: `${form.address.trim()}, ${form.city.trim()}, ${form.address_state.trim()} ${form.address_zip.trim()}`.trim(),
             city: form.city.trim(),
-            address_line1: form.address_line1 || null,
-            address_state: form.address_state || null,
-            address_zip: form.address_zip || null,
+            address_line1: form.address_line1 || form.address.trim(),
+            address_state: form.address_state.trim() || null,
+            address_zip: form.address_zip.trim() || null,
             contact_name: form.contact_name.trim(),
             contact_email: form.contact_email.trim(),
             contact_phone: form.contact_phone.trim() || null,
@@ -640,13 +640,16 @@ export default function RewardsPartnersPage() {
                     <AddressAutocomplete
                       value={form.address}
                       onChange={(v) => update('address', v)}
+                      label="Street address"
+                      placeholder="Start typing or enter manually"
                       onCityDetected={(city) => update('city', city)}
                       onAddressParsed={(parsed) => {
                         setForm(prev => ({
                           ...prev,
                           address_line1: parsed.line1,
-                          address_state: parsed.state,
-                          address_zip: parsed.zip,
+                          city: parsed.city || prev.city,
+                          address_state: parsed.state || prev.address_state,
+                          address_zip: parsed.zip || prev.address_zip,
                         }))
                       }}
                       onPlaceSelected={(place) => {
@@ -662,7 +665,24 @@ export default function RewardsPartnersPage() {
                       required
                       value={form.city}
                       onChange={(v) => update('city', v)}
+                      autoComplete="address-level2"
                     />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field
+                        label="State"
+                        required
+                        value={form.address_state}
+                        onChange={(v) => update('address_state', v)}
+                        autoComplete="address-level1"
+                      />
+                      <Field
+                        label="ZIP code"
+                        required
+                        value={form.address_zip}
+                        onChange={(v) => update('address_zip', v)}
+                        autoComplete="postal-code"
+                      />
+                    </div>
                     <Field
                       label="Business website"
                       value={form.website_url}
@@ -985,6 +1005,7 @@ function Field({
   onChange,
   placeholder,
   type = 'text',
+  autoComplete,
 }: {
   label: string
   required?: boolean
@@ -992,6 +1013,7 @@ function Field({
   onChange: (v: string) => void
   placeholder?: string
   type?: string
+  autoComplete?: string
 }) {
   return (
     <div>
@@ -1003,6 +1025,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        autoComplete={autoComplete}
         className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]"
       />
     </div>
