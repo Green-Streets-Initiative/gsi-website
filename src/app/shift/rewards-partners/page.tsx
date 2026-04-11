@@ -25,7 +25,7 @@ type FormData = {
   discount_description: string
   discount_type: string
   discount_value: string
-  preferred_minimum_tier: string
+  redemption_limit: string
   contact_name: string
   signer_title: string
   contact_email: string
@@ -49,7 +49,7 @@ const INITIAL_FORM: FormData = {
   discount_description: '',
   discount_type: '',
   discount_value: '',
-  preferred_minimum_tier: 'mover',
+  redemption_limit: 'none',
   contact_name: '',
   signer_title: '',
   contact_email: '',
@@ -128,8 +128,32 @@ export default function RewardsPartnersPage() {
     }, 50)
   }
 
+  const [descriptionManuallyEdited, setDescriptionManuallyEdited] = useState(false)
+
   function update(field: keyof FormData, value: string | boolean) {
     setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Auto-generate discount description from type + value
+  function generateDescription(type: string, value: string): string {
+    if (type === 'percentage' && value) return `${value}% off`
+    if (type === 'fixed_amount' && value) return `$${value} off`
+    if (type === 'freebie') return 'Free '
+    return ''
+  }
+
+  function updateDiscountType(type: string) {
+    setForm(prev => {
+      const desc = descriptionManuallyEdited ? prev.discount_description : generateDescription(type, prev.discount_value)
+      return { ...prev, discount_type: type, discount_description: desc }
+    })
+  }
+
+  function updateDiscountValue(value: string) {
+    setForm(prev => {
+      const desc = descriptionManuallyEdited ? prev.discount_description : generateDescription(prev.discount_type, value)
+      return { ...prev, discount_value: value, discount_description: desc }
+    })
   }
 
   function isStep1Valid() {
@@ -225,7 +249,8 @@ export default function RewardsPartnersPage() {
             discount_description: form.discount_description.trim(),
             discount_type: form.discount_type || null,
             discount_value: form.discount_value ? Number(form.discount_value) : null,
-            preferred_minimum_tier: form.preferred_minimum_tier || 'mover',
+            preferred_minimum_tier: 'mover',
+            redemption_limit: form.redemption_limit || 'none',
             // Legacy field — map discount_description for backward compat
             offer_description: form.discount_description.trim(),
             referral_source: form.referral_source.trim() || null,
@@ -708,7 +733,7 @@ export default function RewardsPartnersPage() {
                       </label>
                       <select
                         value={form.discount_type}
-                        onChange={(e) => update('discount_type', e.target.value)}
+                        onChange={(e) => updateDiscountType(e.target.value)}
                         className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
                       >
                         <option value="">Select a type</option>
@@ -734,7 +759,7 @@ export default function RewardsPartnersPage() {
                             min="1"
                             step={form.discount_type === 'fixed_amount' ? '0.01' : '1'}
                             value={form.discount_value}
-                            onChange={(e) => update('discount_value', e.target.value)}
+                            onChange={(e) => updateDiscountValue(e.target.value)}
                             placeholder={form.discount_type === 'percentage' ? '10' : '1.00'}
                             className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white py-3 pl-10 pr-4 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]"
                           />
@@ -744,41 +769,47 @@ export default function RewardsPartnersPage() {
 
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
-                        Discount description <span className="text-[#E05252]">*</span>
+                        Describe the discount <span className="text-[#E05252]">*</span>
                       </label>
                       <textarea
                         value={form.discount_description}
                         onChange={(e) => {
-                          if (e.target.value.length <= 200)
+                          if (e.target.value.length <= 200) {
+                            setDescriptionManuallyEdited(true)
                             update('discount_description', e.target.value)
+                          }
                         }}
                         maxLength={200}
-                        rows={3}
-                        placeholder="e.g. 10% off all drinks, Free cookie with any purchase"
+                        rows={2}
+                        placeholder={
+                          form.discount_type === 'freebie' ? 'e.g. Free cookie with any purchase' :
+                          form.discount_type === 'custom' ? 'e.g. Buy one get one free' :
+                          'e.g. 10% off all drinks'
+                        }
                         className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]"
                       />
-                      <div className="mt-1 text-right text-xs text-[#8A8DA8]">
-                        {form.discount_description.length}/200
-                      </div>
+                      <p className="mt-1 text-xs text-[#8A8DA8]">
+                        This is exactly what Shift users will see. Add details like &ldquo;on all drinks&rdquo; or &ldquo;with any food order.&rdquo;
+                      </p>
                     </div>
 
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
-                        Preferred minimum tier
+                        Redemption limit
                       </label>
                       <select
-                        value={form.preferred_minimum_tier}
-                        onChange={(e) => update('preferred_minimum_tier', e.target.value)}
+                        value={form.redemption_limit}
+                        onChange={(e) => update('redemption_limit', e.target.value)}
                         className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
                       >
-                        <option value="mover">Mover (recommended — most inclusive)</option>
-                        <option value="shifter">Shifter (frequent commuters)</option>
-                        <option value="unsure">I&apos;m not sure — let GSI recommend</option>
+                        <option value="none">No limit</option>
+                        <option value="once_per_visit">Once per visit</option>
+                        <option value="once_per_day">Once per day</option>
+                        <option value="once_per_week">Once per week</option>
+                        <option value="once_per_month">Once per month</option>
                       </select>
-                      <p className="mt-1.5 text-xs text-[#8A8DA8]">
-                        Only Shift users at or above this tier can see and use your discount.
-                        Mover is the most inclusive — it includes anyone who has logged at least
-                        25 active trips. Most partners choose Mover.
+                      <p className="mt-1 text-xs text-[#8A8DA8]">
+                        This will be shown to Shift users alongside your discount.
                       </p>
                     </div>
 
