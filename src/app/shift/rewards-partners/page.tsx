@@ -287,17 +287,27 @@ export default function RewardsPartnersPage() {
     if (!loginEmail.trim()) return
     setLoginLoading(true)
 
-    await fetch(
-      'https://xyqcpgwbqrhykpgpqbdi.supabase.co/functions/v1/sponsor-magic-link',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: loginEmail.trim(),
-          redirect_to: `${window.location.origin}/shift/rewards-partners/dashboard`,
-        }),
+    try {
+      const res = await fetch(
+        'https://xyqcpgwbqrhykpgpqbdi.supabase.co/functions/v1/sponsor-magic-link',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email: loginEmail.trim(),
+            redirect_to: `${window.location.origin}/shift/rewards-partners/dashboard`,
+          }),
+        }
+      )
+      if (!res.ok) {
+        console.error('Magic link request failed:', res.status)
       }
-    )
+    } catch (err) {
+      console.error('Magic link request error:', err)
+    }
 
     setLoginSent(true)
     setLoginLoading(false)
