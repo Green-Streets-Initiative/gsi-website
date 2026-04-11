@@ -9,9 +9,19 @@ interface RouteRequest {
   modes: string[]
 }
 
+interface TransitStep {
+  lineName: string
+  lineShortName: string
+  vehicleType: string  // BUS, SUBWAY, HEAVY_RAIL, COMMUTER_RAIL, etc
+  numStops: number
+  departureStop: string
+  arrivalStop: string
+}
+
 interface RouteResult {
   durationMins: number
   distanceMiles: number
+  transitSteps?: TransitStep[]  // only for TRANSIT mode
 }
 
 // Round to 4 decimal places (~11m precision) for cache normalization
@@ -56,12 +66,17 @@ async function fetchGoogleRoute(
   }
 
   try {
+    // Request transit step details for TRANSIT mode
+    const fieldMask = mode === 'TRANSIT'
+      ? 'routes.duration,routes.distanceMeters,routes.legs.steps.transitDetails'
+      : 'routes.duration,routes.distanceMeters'
+
     const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_API_KEY,
-        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters',
+        'X-Goog-FieldMask': fieldMask,
       },
       body: JSON.stringify(body),
     })
@@ -75,10 +90,33 @@ async function fetchGoogleRoute(
     const route = data.routes?.[0]
     if (!route?.duration || !route?.distanceMeters) return null
 
-    return {
+    const result: RouteResult = {
       durationMins: parseDuration(route.duration),
       distanceMiles: metersToMiles(route.distanceMeters),
     }
+
+    // Extract transit step details (line names, vehicle types)
+    if (mode === 'TRANSIT' && route.legs?.[0]?.steps) {
+      const transitSteps: TransitStep[] = []
+      for (const step of route.legs[0].steps) {
+        const td = step.transitDetails
+        if (td) {
+          transitSteps.push({
+            lineName: td.transitLine?.name || td.transitLine?.nameShort || '',
+            lineShortName: td.transitLine?.nameShort || td.transitLine?.name || '',
+            vehicleType: td.transitLine?.vehicle?.type || 'UNKNOWN',
+            numStops: td.stopCount || 0,
+            departureStop: td.stopDetails?.departureStop?.name || '',
+            arrivalStop: td.stopDetails?.arrivalStop?.name || '',
+          })
+        }
+      }
+      if (transitSteps.length > 0) {
+        result.transitSteps = transitSteps
+      }
+    }
+
+    return result
   } catch (err) {
     console.error(`Google Routes API fetch error for ${mode}:`, err)
     return null

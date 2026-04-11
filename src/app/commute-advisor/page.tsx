@@ -13,7 +13,8 @@ import ModeComparisonTable from '@/components/commute/ModeComparisonTable'
 import type { RecommendationResponse, BarrierCode } from '@/lib/types/commute'
 
 type PlaceData = { placeId: string; lat: number; lng: number }
-type RouteResult = { durationMins: number; distanceMiles: number } | null
+type TransitStep = { lineName: string; lineShortName: string; vehicleType: string; numStops: number; departureStop: string; arrivalStop: string }
+type RouteResult = { durationMins: number; distanceMiles: number; transitSteps?: TransitStep[] } | null
 type RouteResponse = { routes: Record<string, RouteResult>; cached: boolean }
 
 const MODE_TO_GOOGLE: Record<string, string> = {
@@ -724,12 +725,34 @@ export default function CommuteCalculator() {
               }
               const hasGoogleTimes = Object.keys(googleTimes).length > 0
 
+              // Override generic "MBTA Transit" label with actual route from Google
+              const transitData = routeData?.routes?.TRANSIT
+              const transitSteps = transitData?.transitSteps
+              let displayPrimary = recommendation.primary
+              let displaySecondary = recommendation.secondary
+              if (transitSteps && transitSteps.length > 0) {
+                const mainStep = transitSteps[0]
+                const vType = mainStep.vehicleType === 'BUS' ? 'Bus' : mainStep.vehicleType === 'SUBWAY' || mainStep.vehicleType === 'HEAVY_RAIL' ? 'Train' : mainStep.vehicleType === 'COMMUTER_RAIL' ? 'Commuter Rail' : ''
+                const transitLabel = transitSteps.length === 1
+                  ? `${vType} ${mainStep.lineShortName || mainStep.lineName} from ${mainStep.departureStop}`
+                  : `${vType} ${mainStep.lineShortName || mainStep.lineName} → ${transitSteps[1].lineShortName || transitSteps[1].lineName}`
+
+                // Override primary if it's the transit recommendation
+                if (recommendation.primary.label === 'MBTA Transit' || recommendation.primary.modes.includes('transit')) {
+                  displayPrimary = { ...recommendation.primary, label: transitLabel }
+                }
+                // Override secondary if it's transit
+                if (recommendation.secondary?.label === 'MBTA Transit') {
+                  displaySecondary = { ...recommendation.secondary, label: transitLabel }
+                }
+              }
+
               return (
               <div className="animate-in space-y-5">
                 {/* Recommendation */}
                 <RecommendationCard
-                  primary={recommendation.primary}
-                  secondary={recommendation.secondary}
+                  primary={displayPrimary}
+                  secondary={displaySecondary}
                   distanceMiles={recommendation.distance_miles}
                   distanceCategory={recommendation.distance_category}
                   onRefresh={handleRefresh}
@@ -738,14 +761,23 @@ export default function CommuteCalculator() {
                   routeTimes={hasGoogleTimes ? googleTimes : undefined}
                 />
 
-                {/* Mode comparison table */}
-                {recommendation.comparisons && recommendation.comparisons.length > 1 && (
-                  <ModeComparisonTable
-                    comparisons={recommendation.comparisons}
-                    winnerMode={recommendation.comparisons[0]?.mode || ''}
-                    routeTimes={hasGoogleTimes ? googleTimes : undefined}
-                  />
-                )}
+                {/* Mode comparison table — override transit label with Google data */}
+                {recommendation.comparisons && recommendation.comparisons.length > 1 && (() => {
+                  let comps = recommendation.comparisons
+                  if (transitSteps && transitSteps.length > 0) {
+                    const mainStep = transitSteps[0]
+                    const vType = mainStep.vehicleType === 'BUS' ? 'Bus' : mainStep.vehicleType === 'SUBWAY' || mainStep.vehicleType === 'HEAVY_RAIL' ? 'Train' : ''
+                    const tLabel = `${vType} ${mainStep.lineShortName || mainStep.lineName}`.trim()
+                    comps = comps.map(c => c.mode === 'transit' ? { ...c, label: tLabel || c.label } : c)
+                  }
+                  return (
+                    <ModeComparisonTable
+                      comparisons={comps}
+                      winnerMode={comps[0]?.mode || ''}
+                      routeTimes={hasGoogleTimes ? googleTimes : undefined}
+                    />
+                  )
+                })()}
 
                 {!homePlaceData && (
                   <p className="text-center text-[0.8125rem] text-white/40">
