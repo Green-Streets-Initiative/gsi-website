@@ -1,6 +1,7 @@
+import Link from 'next/link'
+import Script from 'next/script'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
-import { DonationToggle } from './donation-toggle'
 
 export const metadata = {
   title: 'Donate — Green Streets Initiative',
@@ -11,15 +12,15 @@ export const metadata = {
 const impactCards = [
   {
     title: 'The app is free.',
-    body: 'Shift is free to download and use. Every active commuter who joins, every school that runs the program, every neighborhood that climbs the leaderboard \u2014 none of it costs them anything. Donations make that possible.',
+    body: 'Shift is free to download and use. Every active commuter who joins, every school that runs the program, every neighborhood that climbs the leaderboard — none of it costs them anything. Donations make that possible.',
   },
   {
-    title: 'Every trip is measured.',
-    body: 'GSI verifies impact trip by trip, neighborhood by neighborhood \u2014 not estimates, but real data. Donors fund the infrastructure that turns every trip into actionable insight for communities and policymakers.',
+    title: 'We measure what others assume.',
+    body: 'Most transportation initiatives run on estimated impact. GSI verifies it — trip by trip, neighborhood by neighborhood. Donors fund infrastructure that produces real data for real decisions.',
   },
   {
     title: 'We\u2019re just getting started.',
-    body: 'Shift is built to scale across Massachusetts \u2014 and eventually beyond. Every donation funds the platform, the programs, and the communities we haven\u2019t reached yet.',
+    body: 'Shift is built to scale across Massachusetts — and eventually beyond. Every donation funds the platform, the programs, and the communities we haven\u2019t reached yet.',
   },
 ]
 
@@ -28,6 +29,13 @@ export default function DonatePage() {
     <>
       <Nav />
       <main style={{ paddingTop: '60px' }}>
+
+        {/* Donorbox widget script — loaded once per page */}
+        <Script
+          src="https://donorbox.org/widgets.js"
+          strategy="lazyOnload"
+          type="module"
+        />
 
         {/* ══════════════════════════════════════════════════════════
             1 · HERO
@@ -49,7 +57,7 @@ export default function DonatePage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
-            2 · WHY IT MATTERS
+            2 · IMPACT CARDS
         ══════════════════════════════════════════════════════════ */}
         <section className="bg-[#242538] px-8 py-24">
           <div className="mx-auto max-w-[1120px]">
@@ -72,35 +80,33 @@ export default function DonatePage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
-            3 · DONATION FORM
+            3 · DONATION FORM (Donorbox)
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24">
-          <div className="mx-auto max-w-[600px]">
+        <section className="bg-[#191A2E] px-6 py-24 sm:px-8">
+          <div className="mx-auto max-w-[680px]">
             <h2 className="mb-8 text-center font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
               Make a gift
             </h2>
-            <DonationToggle />
+            <div className="rounded-2xl bg-white p-4 shadow-2xl shadow-black/40 sm:p-8 md:p-10">
+              <dbox-widget
+                campaign="main-green-streets-donation-form"
+                type="donation_form"
+                enable-auto-scroll="true"
+              />
+            </div>
           </div>
         </section>
 
         {/* ══════════════════════════════════════════════════════════
-            4 · TAX LANGUAGE
+            4 · TAX & LEGAL
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 pb-12">
-          <div className="mx-auto max-w-[600px] text-center">
+        <section className="bg-[#191A2E] px-8 pb-16">
+          <div className="mx-auto max-w-[600px] space-y-3 text-center">
             <p className="text-xs leading-relaxed text-white/40">
               Green Streets Initiative is a registered 501(c)(3) nonprofit organization.
               All donations are tax-deductible to the extent permitted by law.
               EIN: 26-1484405
             </p>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            5 · CLOSING
-        ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 pb-24">
-          <div className="mx-auto max-w-[600px] text-center">
             <p className="text-xs text-white/40">
               Questions about giving? Contact us at{' '}
               <a
@@ -110,6 +116,47 @@ export default function DonatePage() {
                 info@gogreenstreets.org
               </a>
             </p>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════
+            5 · OTHER WAYS TO HELP
+        ══════════════════════════════════════════════════════════ */}
+        <section className="border-t border-white/[0.07] bg-[#242538] px-8 py-24">
+          <div className="mx-auto max-w-[1120px]">
+            <h2 className="mb-10 text-center font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+              Not ready to donate? There are other ways to help.
+            </h2>
+            <div className="mx-auto grid max-w-[720px] gap-6 sm:grid-cols-2">
+              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+                <h3 className="mb-2 font-display text-lg font-bold tracking-tight text-white">
+                  Volunteer
+                </h3>
+                <p className="mb-5 text-[0.9375rem] leading-[1.6] text-white/80">
+                  Join our growing volunteer team.
+                </p>
+                <Link
+                  href="/get-involved"
+                  className="text-sm font-semibold text-[#BAF14D] transition-opacity hover:opacity-80"
+                >
+                  See volunteer roles &rarr;
+                </Link>
+              </div>
+              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+                <h3 className="mb-2 font-display text-lg font-bold tracking-tight text-white">
+                  Spread the word
+                </h3>
+                <p className="mb-5 text-[0.9375rem] leading-[1.6] text-white/80">
+                  Share the Shift app with someone whose commute could be better.
+                </p>
+                <Link
+                  href="/shift"
+                  className="text-sm font-semibold text-[#BAF14D] transition-opacity hover:opacity-80"
+                >
+                  Learn about Shift &rarr;
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
 
