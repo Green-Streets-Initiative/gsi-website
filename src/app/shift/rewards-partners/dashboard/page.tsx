@@ -489,21 +489,17 @@ function DashboardPage() {
       <main style={{ paddingTop: '60px' }} className="min-h-screen bg-[#191A2E]">
         <div className="mx-auto max-w-[800px] px-8 py-16">
 
-          {/* Header */}
-          <div className="mb-10 flex items-start justify-between">
-            <div>
-              <h1 className="font-display text-[clamp(1.75rem,3vw,2.25rem)] font-extrabold tracking-tight text-white">
-                {sponsor.name}
-              </h1>
-              <span
-                className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-bold ${
-                  sponsor.status === 'active'
-                    ? 'bg-[#BAF14D]/15 text-[#BAF14D]'
-                    : 'bg-white/10 text-white'
-                }`}
-              >
-                {sponsor.status === 'active' ? 'Active' : 'Paused'}
+          {/* Shift branding */}
+          <div className="mb-8 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="font-display text-[1.5rem] font-extrabold tracking-[-0.04em] text-white">
+                Shift
               </span>
+              <svg viewBox="0 0 36 28" width="24" height="18" className="shrink-0">
+                <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+                <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+              </svg>
+              <span className="text-sm text-white/40">Rewards Partner</span>
             </div>
             <button
               onClick={handleSignOut}
@@ -511,6 +507,22 @@ function DashboardPage() {
             >
               Sign out
             </button>
+          </div>
+
+          {/* Partner header */}
+          <div className="mb-10">
+            <h1 className="font-display text-[clamp(1.75rem,3vw,2.25rem)] font-extrabold tracking-tight text-white">
+              {sponsor.name}
+            </h1>
+            <span
+              className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-bold ${
+                sponsor.status === 'active'
+                  ? 'bg-[#BAF14D]/15 text-[#BAF14D]'
+                  : 'bg-white/10 text-white'
+              }`}
+            >
+              {sponsor.status === 'active' ? 'Active' : 'Paused'}
+            </span>
           </div>
 
           {/* ── Live listing preview ─────────────────────── */}
