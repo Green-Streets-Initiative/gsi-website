@@ -26,6 +26,8 @@ type FormData = {
   discount_type: string
   discount_value: string
   redemption_limit: string
+  channel: 'in_store' | 'online' | 'both'
+  discount_code: string
   contact_name: string
   signer_title: string
   contact_email: string
@@ -50,6 +52,8 @@ const INITIAL_FORM: FormData = {
   discount_type: '',
   discount_value: '',
   redemption_limit: 'none',
+  channel: 'in_store',
+  discount_code: '',
   contact_name: '',
   signer_title: '',
   contact_email: '',
@@ -61,25 +65,37 @@ const INITIAL_FORM: FormData = {
   location_lng: null,
 }
 
-const AGREEMENT_TEXT = `Shift Rewards Partner Agreement
-Green Streets Initiative — ${new Date().getFullYear()}
+const AGREEMENT_YEAR = new Date().getFullYear()
+
+const PARTICIPATION_IN_STORE = `Partner agrees to honor the discount described in this application ("the Discount") to Shift app users who present a valid, animated tier badge on their device. The Shift app displays a live, dynamic verification screen (not a static image or screenshot) that confirms the user's active commuter status.`
+
+const PARTICIPATION_ONLINE = `Partner agrees to honor the discount code described in this application ("the Discount") for Shift app users who enter it at checkout on Partner's website. The discount code will be visible only to qualifying Shift users within the app.`
+
+const PARTICIPATION_BOTH = `${PARTICIPATION_IN_STORE}
+
+Partner also agrees to honor the discount code described in this application for Shift app users who enter it at checkout on Partner's website. The discount code will be visible only to qualifying Shift users within the app.`
+
+function getAgreementText(channel: 'in_store' | 'online' | 'both') {
+  const participation = channel === 'online' ? PARTICIPATION_ONLINE : channel === 'both' ? PARTICIPATION_BOTH : PARTICIPATION_IN_STORE
+  return `Shift Rewards Partner Agreement
+Green Streets Initiative — ${AGREEMENT_YEAR}
 
 By submitting this application, you ("Partner") agree to the following terms with Green Streets Initiative ("GSI"), a 501(c)(3) nonprofit organization based in Cambridge, Massachusetts.
 
 1. Program participation
-Partner agrees to honor the discount described in this application ("the Discount") to Shift app users who present a valid, animated tier badge on their device. The Shift app displays a live, dynamic verification screen (not a static image or screenshot) that confirms the user's active commuter status. GSI will list the Discount in the Shift partner directory once this application is reviewed and approved.
+${participation} GSI will list the Discount in the Shift partner directory once this application is reviewed and approved.
 
 2. Discount terms
-Partner may discontinue the Discount at any time by contacting GSI. GSI is not responsible for disputes between Partner and customers regarding Discount usage. Partner may update the Discount details via the partner dashboard.
+Partner may discontinue the Discount at any time by contacting GSI.${channel !== 'in_store' ? ' Partner may change the discount code at any time by contacting GSI.' : ''} GSI is not responsible for disputes between Partner and customers regarding Discount usage. Partner may update the Discount details via the partner dashboard.
 
 3. No cost to Partner
 Participation in the Shift rewards network is free. GSI does not charge Partner for listing, impressions, or redemptions.
 
 4. GSI's role
-GSI operates the Shift app and rewards catalog. GSI does not guarantee any minimum number of redemptions or user visits to Partner's location. GSI may remove any Partner listing that violates these terms or that GSI determines is inconsistent with its mission.
+GSI operates the Shift app and rewards catalog. GSI does not guarantee any minimum number of redemptions or user visits to Partner's ${channel === 'online' ? 'website' : 'location'}. GSI may remove any Partner listing that violates these terms or that GSI determines is inconsistent with its mission.
 
 5. Data and reporting
-GSI will provide Partner with monthly reports showing aggregate redemption counts and Shift user reach at Partner's location. GSI does not share individual user data with Partners.
+GSI will provide Partner with monthly reports showing aggregate redemption counts and Shift user reach. GSI does not share individual user data with Partners.
 
 6. Termination
 Either party may end this agreement at any time. Partner may pause or end their listing via the partner dashboard. GSI may remove a listing with written notice to Partner's contact email.
@@ -91,6 +107,7 @@ This agreement does not create an exclusive relationship. GSI may partner with o
 This agreement is governed by the laws of the Commonwealth of Massachusetts.
 
 By checking the box below, you confirm that you are authorized to enter into this agreement on behalf of the business named in this application, and that you have read and agree to these terms.`
+}
 
 export default function RewardsPartnersPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
@@ -166,9 +183,12 @@ export default function RewardsPartnersPage() {
       form.discount_type === 'freebie' ||
       form.discount_type === 'custom' ||
       (form.discount_value && Number(form.discount_value) > 0)
+    const isOnline = form.channel === 'online' || form.channel === 'both'
+    const hasOnlineFields = !isOnline || (form.discount_code.trim() && form.website_url.trim())
     return (
       hasDiscount &&
       hasValueIfNeeded &&
+      hasOnlineFields &&
       form.contact_name.trim() &&
       form.signer_title.trim() &&
       form.contact_email.trim() &&
@@ -251,6 +271,9 @@ export default function RewardsPartnersPage() {
             discount_value: form.discount_value ? Number(form.discount_value) : null,
             preferred_minimum_tier: 'mover',
             redemption_limit: form.redemption_limit || 'none',
+            channel: form.channel,
+            discount_code: form.discount_code.trim() || null,
+            redemption_url: form.website_url.trim() || null,
             // Legacy field — map discount_description for backward compat
             offer_description: form.discount_description.trim(),
             referral_source: form.referral_source.trim() || null,
@@ -750,8 +773,7 @@ export default function RewardsPartnersPage() {
                     <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
                       Tell us what discount you&apos;d like to offer Shift users. Keep it simple
                       and specific — &ldquo;10% off any purchase&rdquo; or &ldquo;Free cookie with
-                      any coffee order&rdquo; work well. Users will show an animated badge on their
-                      phone — no codes, no scanning.
+                      any coffee order&rdquo; work well.
                     </p>
 
                     <div>
@@ -840,6 +862,56 @@ export default function RewardsPartnersPage() {
                       </p>
                     </div>
 
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
+                        Where do customers redeem? <span className="text-[#E05252]">*</span>
+                      </label>
+                      <select
+                        value={form.channel}
+                        onChange={(e) => update('channel', e.target.value)}
+                        className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
+                      >
+                        <option value="in_store">In my store or location</option>
+                        <option value="online">On my website</option>
+                        <option value="both">Both in-store and online</option>
+                      </select>
+                      <p className="mt-1 text-xs text-[#8A8DA8]">
+                        {form.channel === 'in_store'
+                          ? 'Customers will show an animated badge on their phone at checkout.'
+                          : form.channel === 'online'
+                            ? 'Customers will enter a discount code at checkout on your website.'
+                            : 'Customers can show a badge in-store or use a code online.'}
+                      </p>
+                    </div>
+
+                    {(form.channel === 'online' || form.channel === 'both') && (
+                      <>
+                        <div>
+                          <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
+                            Discount code <span className="text-[#E05252]">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={form.discount_code}
+                            onChange={(e) => update('discount_code', e.target.value.toUpperCase())}
+                            placeholder="e.g. SHIFT10"
+                            className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 font-mono text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]"
+                          />
+                          <p className="mt-1 text-xs text-[#8A8DA8]">
+                            The promo code Shift users will enter at checkout on your website.
+                          </p>
+                        </div>
+
+                        {!form.website_url && (
+                          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                            <p className="text-sm text-amber-800">
+                              <strong>Website URL required.</strong> Go back to step 1 and enter your website address so we can link Shift users to your store.
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+
                     <div className="border-t border-[rgba(25,26,46,0.09)] pt-5">
                       <h4 className="mb-4 font-display text-sm font-bold text-[#191A2E]">
                         Contact info
@@ -906,7 +978,7 @@ export default function RewardsPartnersPage() {
                       className="max-h-[240px] overflow-y-scroll rounded-xl border border-[rgba(25,26,46,0.12)] bg-white p-5 text-[0.8125rem] leading-[1.7] text-[#4A4D68] whitespace-pre-line"
                       style={{ scrollbarWidth: 'auto' }}
                     >
-                      {AGREEMENT_TEXT}
+                      {getAgreementText(form.channel)}
                     </div>
 
                     <Field

@@ -199,6 +199,59 @@ serve(async (req) => {
     ? String(body.expiration_date).trim()
     : null;
 
+  // Channel + online discount fields
+  const VALID_CHANNELS = ["in_store", "online", "both"];
+  const channel = body.channel ? String(body.channel).trim() : "in_store";
+  if (!VALID_CHANNELS.includes(channel)) {
+    errors.push("Invalid channel value");
+  }
+
+  const discountCode = body.discount_code
+    ? String(body.discount_code).trim()
+    : null;
+  const redemptionUrl = body.redemption_url
+    ? String(body.redemption_url).trim()
+    : null;
+
+  // Online/both channels require a discount code and website URL
+  if ((channel === "online" || channel === "both") && !discountCode) {
+    errors.push("Discount code is required for online partners");
+  }
+  if ((channel === "online" || channel === "both") && !websiteUrl && !redemptionUrl) {
+    errors.push("Website URL is required for online partners");
+  }
+
+  // New discount fields (from structured form)
+  const discountDescription = body.discount_description
+    ? String(body.discount_description).trim()
+    : null;
+  const VALID_DISCOUNT_TYPES = ["percentage", "fixed_amount", "freebie", "custom"];
+  const discountType = body.discount_type
+    ? String(body.discount_type).trim()
+    : null;
+  if (discountType && !VALID_DISCOUNT_TYPES.includes(discountType)) {
+    errors.push("Invalid discount type");
+  }
+  const discountValue = body.discount_value != null
+    ? Number(body.discount_value)
+    : null;
+
+  const preferredMinimumTier = body.preferred_minimum_tier
+    ? String(body.preferred_minimum_tier).trim()
+    : "mover";
+
+  const VALID_REDEMPTION_LIMITS = ["none", "once_per_visit", "once_per_day", "once_per_week", "once_per_month"];
+  const redemptionLimit = body.redemption_limit
+    ? String(body.redemption_limit).trim()
+    : "none";
+  if (!VALID_REDEMPTION_LIMITS.includes(redemptionLimit)) {
+    errors.push("Invalid redemption limit");
+  }
+
+  // Location coordinates
+  const locationLat = body.location_lat != null ? Number(body.location_lat) : null;
+  const locationLng = body.location_lng != null ? Number(body.location_lng) : null;
+
   if (body.agreement_accepted !== true) {
     errors.push("Agreement must be accepted");
   }
@@ -252,6 +305,16 @@ serve(async (req) => {
       address_line1: addressLine1,
       address_state: addressState,
       address_zip: addressZip,
+      channel,
+      discount_code: discountCode,
+      redemption_url: redemptionUrl ?? websiteUrl,
+      discount_description: discountDescription,
+      discount_type: discountType,
+      discount_value: discountValue,
+      preferred_minimum_tier: preferredMinimumTier,
+      redemption_limit: redemptionLimit,
+      location_lat: locationLat,
+      location_lng: locationLng,
     });
 
   if (insertError) {
@@ -297,6 +360,8 @@ serve(async (req) => {
         <tr><td style="padding:4px 12px 4px 0;color:#6B7280;font-weight:600;">City</td><td>${escapeHtml(city)}</td></tr>
         <tr><td style="padding:4px 12px 4px 0;color:#6B7280;font-weight:600;">Contact</td><td>${escapeHtml(contactName)} &lt;${escapeHtml(contactEmail)}&gt;</td></tr>
         <tr><td style="padding:4px 12px 4px 0;color:#6B7280;font-weight:600;">Offer</td><td>${escapeHtml(offerDescription)}</td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#6B7280;font-weight:600;">Channel</td><td>${channel === "online" ? "Online" : channel === "both" ? "In-store & Online" : "In-store"}</td></tr>${discountCode ? `
+        <tr><td style="padding:4px 12px 4px 0;color:#6B7280;font-weight:600;">Discount Code</td><td style="font-family:monospace;font-weight:700;">${escapeHtml(discountCode)}</td></tr>` : ""}
       </table>
       <p style="margin-top:16px;"><a href="${ADMIN_DASHBOARD_URL}" style="color:#2966E5;">Review in admin dashboard →</a></p>
     </div>`;
