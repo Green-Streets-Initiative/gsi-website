@@ -246,6 +246,9 @@ export default function CommuteCalculator() {
           const category = d < 2 ? 'short' : d < 6 ? 'medium' : 'long' as const
           const driveMins = Math.round((d / 14) * 60)
           const driveCostDaily = d * 2 * 0.237 + 18 // gas+maint+parking
+          const isRS = commuteMode === 'rideshare'
+          const baselineCost = isRS ? rideshareDaily : driveCostDaily
+          const baselineLabel = isRS ? 'rideshare' : 'driving'
 
           // Build candidates
           type Candidate = { mode: string; label: string; mins: number; cost: number; reasons: string[] }
@@ -254,13 +257,13 @@ export default function CommuteCalculator() {
               reasons: [`${driveMins} min each way`, `~$${Math.round(driveCostDaily)}/day including gas, maintenance, and parking`, 'Door-to-door flexibility'] }
           ]
           if (d < 2) candidates.push({ mode: 'walk', label: 'Walk', mins: Math.round((d / 3.5) * 60), cost: 0,
-            reasons: [`${Math.round((d / 3.5) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(driveCostDaily)}/day driving`, 'Zero cost, built-in exercise'] })
+            reasons: [`${Math.round((d / 3.5) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(baselineCost)}/day ${baselineLabel}`, 'Zero cost, built-in exercise'] })
           if (d < 8) candidates.push({ mode: 'bike', label: 'Bike', mins: Math.round((d / 11) * 60), cost: 0,
-            reasons: [`${Math.round((d / 11) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(driveCostDaily)}/day driving — saves ~$${Math.round(driveCostDaily * 260)}/year`, 'Built-in exercise, no parking needed'] })
+            reasons: [`${Math.round((d / 11) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(baselineCost)}/day ${baselineLabel} — saves ~$${Math.round(baselineCost * 260)}/year`, 'Built-in exercise, no parking needed'] })
           if (d >= 4 && d < 12) candidates.push({ mode: 'ebike', label: 'E-bike', mins: Math.round((d / 15) * 60), cost: 0,
-            reasons: [`${Math.round((d / 15) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(driveCostDaily)}/day driving`, 'Arrive without sweating'] })
+            reasons: [`${Math.round((d / 15) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(baselineCost)}/day ${baselineLabel}`, 'Arrive without sweating'] })
           candidates.push({ mode: 'transit', label: 'MBTA Transit', mins: Math.round(d * 4), cost: 4.8,
-            reasons: [`${Math.round(d * 4)} min vs. ${driveMins} min driving`, `$4.80/day vs. ~$${Math.round(driveCostDaily)}/day driving`, 'Read or work during your commute'] })
+            reasons: [`${Math.round(d * 4)} min vs. ${driveMins} min driving`, `$4.80/day vs. ~$${Math.round(baselineCost)}/day ${baselineLabel}`, 'Read or work during your commute'] })
 
           // Sort: cheapest first, then fastest
           candidates.sort((a, b) => (a.cost - b.cost) || (a.mins - b.mins))
@@ -298,6 +301,10 @@ export default function CommuteCalculator() {
         dest_lng: String(workPlaceData.lng),
       })
       if (barrier) params.set('barrier', barrier)
+      if (commuteMode === 'rideshare') {
+        params.set('commute_mode', 'rideshare')
+        params.set('commute_daily_cost', String(rideshareDaily))
+      }
 
       const res = await fetch(`/api/commute/recommend?${params}`)
       const data = await res.json()

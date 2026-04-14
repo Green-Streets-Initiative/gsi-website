@@ -136,12 +136,18 @@ function generatePros(mode: string, bikeInfraQuality: BikeInfraQuality, hasBlueb
 function buildReasons(
   winnerMode: string, winnerTimeMins: number | null, winnerDailyCost: number,
   driveTimeMins: number | null, driveDailyCost: number,
-  distanceMiles: number, pros: string[]
+  distanceMiles: number, pros: string[],
+  commuteMode?: string, commuteDailyCost?: number,
 ): string[] {
   const reasons: string[] = []
   const fmtCost = (n: number) => `$${n.toFixed(0)}`
   const wTime = winnerTimeMins ?? 0
   const dTime = driveTimeMins ?? 0
+
+  // Use user's actual commute cost when provided (e.g. rideshare at $60/day)
+  const isRideshare = commuteMode === 'rideshare'
+  const baselineDailyCost = (isRideshare && commuteDailyCost && commuteDailyCost > 0) ? commuteDailyCost : driveDailyCost
+  const baselineLabel = isRideshare ? 'rideshare' : 'driving'
 
   // Reason 1: time comparison
   if (winnerMode === 'drive') {
@@ -155,14 +161,14 @@ function buildReasons(
   }
 
   // Reason 2: cost comparison
-  if (winnerMode === 'drive') {
+  if (winnerMode === 'drive' && !isRideshare) {
     reasons.push(`~${fmtCost(winnerDailyCost)}/day including gas, maintenance, and parking`)
   } else {
-    const savings = driveDailyCost - winnerDailyCost
+    const savings = baselineDailyCost - winnerDailyCost
     if (savings > 1) {
-      reasons.push(`${fmtCost(winnerDailyCost)}/day vs. ${fmtCost(driveDailyCost)}/day driving — saves ~${fmtCost(savings * WORKDAYS_PER_YEAR)}/year`)
+      reasons.push(`${fmtCost(winnerDailyCost)}/day vs. ${fmtCost(baselineDailyCost)}/day ${baselineLabel} — saves ~${fmtCost(savings * WORKDAYS_PER_YEAR)}/year`)
     } else {
-      reasons.push(`${fmtCost(winnerDailyCost)}/day — similar cost to driving at ${fmtCost(driveDailyCost)}/day`)
+      reasons.push(`${fmtCost(winnerDailyCost)}/day — similar cost to ${baselineLabel} at ${fmtCost(baselineDailyCost)}/day`)
     }
   }
 
@@ -280,6 +286,8 @@ export async function GET(req: NextRequest) {
   const destLat = parseFloat(searchParams.get('dest_lat') || '')
   const destLng = parseFloat(searchParams.get('dest_lng') || '')
   const barrier = searchParams.get('barrier') || null
+  const commuteMode = searchParams.get('commute_mode') || undefined
+  const commuteDailyCost = parseFloat(searchParams.get('commute_daily_cost') || '') || undefined
 
   if (isNaN(originLat) || isNaN(originLng) || isNaN(destLat) || isNaN(destLng)) {
     return NextResponse.json({ error: 'origin_lat, origin_lng, dest_lat, dest_lng required' }, { status: 400 })
@@ -335,7 +343,8 @@ export async function GET(req: NextRequest) {
   const pros = generatePros(edge.recommended_mode, edge.bike_infra_quality, edge.bike_has_bluebikes, recommendedEntry?.detail ?? '')
   const reasons = buildReasons(
     edge.recommended_mode, winnerTimeMins, winnerDailyCost,
-    driveTimeMins, driveDailyCost, edge.distance_miles, pros
+    driveTimeMins, driveDailyCost, edge.distance_miles, pros,
+    commuteMode, commuteDailyCost,
   )
 
   const primary: RecommendationPrimary = {

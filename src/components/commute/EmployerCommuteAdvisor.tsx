@@ -135,6 +135,10 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
         dest_lat: String(workPlaceData.lat), dest_lng: String(workPlaceData.lng),
       })
       if (barrier) params.set('barrier', barrier)
+      if (commuteMode === 'rideshare') {
+        params.set('commute_mode', 'rideshare')
+        params.set('commute_daily_cost', String(rideshareDaily))
+      }
       const res = await fetch(`/api/commute/recommend?${params}`)
       const data = await res.json()
       if (data.error === 'outside_ma') { setOutsideMA(true); setRecommendation(null); return }
