@@ -2,13 +2,10 @@
 
 import { useRef, useEffect, useState } from 'react'
 import type { ModeComparison } from '@/lib/types/commute'
+import ModeIcon from '@/components/commute/ModeIcon'
 
 const MODE_LABELS: Record<string, string> = {
   drive: 'Drive', walk: 'Walk', bike: 'Bike', ebike: 'E-bike', transit: 'Transit', bus: 'Bus',
-}
-
-const MODE_ICONS: Record<string, string> = {
-  walk: '🚶', bike: '🚲', ebike: '⚡🚲', transit: '🚇', bus: '🚌', drive: '🚗',
 }
 
 const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`
@@ -89,7 +86,7 @@ export default function ModeComparisonTable({
               >
                 {/* Mode icon + label */}
                 <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                  <span className="text-base">{MODE_ICONS[c.mode] || '🚀'}</span>
+                  <ModeIcon mode={c.mode as any} size={20} />
                   <span className={`text-[0.8125rem] font-semibold ${isSelected ? 'text-[#BAF14D]' : 'text-white'}`}>
                     {MODE_LABELS[c.mode] || c.label}
                   </span>

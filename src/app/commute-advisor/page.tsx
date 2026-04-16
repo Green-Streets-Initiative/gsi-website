@@ -10,6 +10,7 @@ import CommuteMap from '@/components/commute/CommuteMap'
 import BarrierSelector from '@/components/commute/BarrierSelector'
 import GettingStarted from '@/components/commute/GettingStarted'
 import ModeComparisonTable from '@/components/commute/ModeComparisonTable'
+import ModeIcon from '@/components/commute/ModeIcon'
 import type { RecommendationResponse, BarrierCode, CurrentCommuteMode, Mode } from '@/lib/types/commute'
 
 type PlaceData = { placeId: string; lat: number; lng: number }
@@ -630,33 +631,31 @@ export default function CommuteCalculator() {
             <div className="overflow-hidden rounded-[20px] border border-white/[0.12] bg-[#242538] p-8">
               <div className="mb-6 font-display text-[1.125rem] font-bold text-white">How do you get there now?</div>
 
-              <Field label="How do you get there now?">
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {([
-                    { value: 'drive', label: 'Drive', icon: '🚗' },
-                    { value: 'carpool', label: 'Carpool', icon: '🚕' },
-                    { value: 'rideshare', label: 'Rideshare', icon: '🚙' },
-                    { value: 'bike', label: 'Bike', icon: '🚲' },
-                    { value: 'transit', label: 'Transit', icon: '🚇' },
-                    { value: 'bus', label: 'Bus', icon: '🚌' },
-                    { value: 'commuter_rail', label: 'Commuter Rail', icon: '🚆' },
-                    { value: 'walk', label: 'Walk', icon: '🚶' },
-                  ] as const).map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setCommuteMode(opt.value)}
-                      className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-[0.8125rem] font-semibold transition-colors ${
-                        commuteMode === opt.value
-                          ? 'border-[#BAF14D] bg-[#BAF14D]/[0.12] text-[#BAF14D]'
-                          : 'border-white/[0.12] text-white hover:border-white/[0.25]'
-                      }`}
-                    >
-                      <span className="text-base">{opt.icon}</span>
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </Field>
+              <div className="mb-5 grid grid-cols-2 gap-2">
+                {([
+                  { value: 'drive', label: 'Drive' },
+                  { value: 'carpool', label: 'Carpool' },
+                  { value: 'rideshare', label: 'Rideshare' },
+                  { value: 'bike', label: 'Bike' },
+                  { value: 'transit', label: 'Transit' },
+                  { value: 'bus', label: 'Bus' },
+                  { value: 'commuter_rail', label: 'Commuter Rail' },
+                  { value: 'walk', label: 'Walk' },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setCommuteMode(opt.value)}
+                    className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-[0.8125rem] font-semibold transition-colors ${
+                      commuteMode === opt.value
+                        ? 'border-[#BAF14D] bg-[#BAF14D]/[0.12] text-[#BAF14D]'
+                        : 'border-white/[0.12] text-white hover:border-white/[0.25]'
+                    }`}
+                  >
+                    <ModeIcon mode={opt.value} size={20} />
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
 
               <Field label="Days in the office per week">
                 <div className="mb-2.5 font-display text-base font-bold text-[#BAF14D]">
