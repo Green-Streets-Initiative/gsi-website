@@ -12,7 +12,7 @@ import EmployerSavingsComparison from '@/components/commute/EmployerSavingsCompa
 import ModeComparisonTable from '@/components/commute/ModeComparisonTable'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
-import type { EmployerGroup, RecommendationResponse, BarrierCode } from '@/lib/types/commute'
+import type { EmployerGroup, RecommendationResponse, BarrierCode, CurrentCommuteMode, Mode } from '@/lib/types/commute'
 
 type PlaceData = { placeId: string; lat: number; lng: number }
 type TransitStep = { lineName: string; lineShortName: string; vehicleType: string; numStops: number; departureStop: string; arrivalStop: string }
@@ -65,13 +65,17 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
   // Inputs
   const [distance, setDistance] = useState(0)
   const [driveDays, setDriveDays] = useState(5)
-  const [shiftDays, setShiftDays] = useState(3)
   const [vehicle, setVehicle] = useState('medium_sedan')
   const [gasPrice, setGasPrice] = useState(3.59)
   const [parkMode, setParkMode] = useState(benefits.free_parking ? 'free' : 'full')
   const [parkingCost, setParkingCost] = useState(15)
-  const [commuteMode, setCommuteMode] = useState('drive')
+  const [commuteMode, setCommuteMode] = useState<CurrentCommuteMode>('drive')
   const [rideshareDaily, setRideshareDaily] = useState(30)
+  const [carpoolDaily, setCarpoolDaily] = useState(20)
+  const [transitMonthly, setTransitMonthly] = useState(90)
+  const [busMonthly, setBusMonthly] = useState(55)
+  const [railMonthly, setRailMonthly] = useState(140)
+  const [selectedMode, setSelectedMode] = useState<string | null>(null)
   const [altMode, setAltMode] = useState('bike')
   const [step, setStep] = useState(1)
 
@@ -138,18 +142,23 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
       if (commuteMode === 'rideshare') {
         params.set('commute_mode', 'rideshare')
         params.set('commute_daily_cost', String(rideshareDaily))
+      } else if (commuteMode === 'carpool') {
+        params.set('commute_mode', 'carpool')
+        params.set('commute_daily_cost', String(carpoolDaily))
       }
       const res = await fetch(`/api/commute/recommend?${params}`)
       const data = await res.json()
       if (data.error === 'outside_ma') { setOutsideMA(true); setRecommendation(null); return }
       setRecommendation(data)
+      setSelectedMode(data.primary?.modes?.[0] || data.comparisons?.[0]?.mode || null)
       const recMode = data.primary?.modes?.[0]
       if (recMode === 'walk') setAltMode('walk')
       else if (recMode === 'bike') setAltMode('bike')
       else if (recMode === 'ebike') setAltMode('ebike')
       else if (recMode === 'transit' || recMode === 'bus') setAltMode('mbta')
+      else if (recMode === 'commuter_rail') setAltMode('commuter_rail')
     } catch { setRecError('Unable to load recommendation.') } finally { setRecLoading(false) }
-  }, [homePlaceData, workPlaceData])
+  }, [homePlaceData, workPlaceData, commuteMode, rideshareDaily, carpoolDaily])
 
   const handleSeeOptions = () => {
     setStep(3); setSelectedBarriers([]); fetchRecommendation()
@@ -157,25 +166,74 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
   }
   const handleRefresh = () => fetchRecommendation()
 
-  useEffect(() => { if (shiftDays > driveDays) setShiftDays(driveDays) }, [driveDays, shiftDays])
+  // Sync altMode when user selects a mode in the comparison table
+  useEffect(() => {
+    if (!selectedMode) return
+    if (selectedMode === 'walk') setAltMode('walk')
+    else if (selectedMode === 'bike') setAltMode('bike')
+    else if (selectedMode === 'ebike') setAltMode('ebike')
+    else if (selectedMode === 'transit' || selectedMode === 'bus') setAltMode('mbta')
+    else if (selectedMode === 'commuter_rail') setAltMode('commuter_rail')
+  }, [selectedMode])
+
+  const handleModeSelect = (mode: string) => {
+    setSelectedMode(mode)
+    setSelectedBarriers([])
+  }
 
   // Calculate savings — with and without employer benefits
   const calcSavings = useCallback((applyBenefits: boolean) => {
     if (distance <= 0) return null
     const v = VEHICLES[vehicle]
     const mode = MODES[altMode]
-    const sd = Math.min(shiftDays, driveDays)
+    const sd = driveDays
     const milesRound = distance * 2
     const annualMiles = milesRound * sd * WEEKS
     const isRideshare = commuteMode === 'rideshare'
 
+    // Baseline cost — what the user spends on their current commute
+    let baselineAnnualCost = 0
+    let baselineLabel = 'driving'
+
+    if (commuteMode === 'rideshare') {
+      baselineAnnualCost = rideshareDaily * sd * WEEKS
+      baselineLabel = 'rideshare'
+    } else if (commuteMode === 'carpool') {
+      baselineAnnualCost = carpoolDaily * sd * WEEKS
+      baselineLabel = 'carpool'
+    } else if (commuteMode === 'drive') {
+      if (v.isEV) {
+        baselineAnnualCost = milesRound * v.costPerMile! * sd * WEEKS
+      } else {
+        baselineAnnualCost = milesRound * (gasPrice / v.mpg) * sd * WEEKS
+      }
+      baselineAnnualCost += milesRound * VEHICLES[vehicle].maint * sd * WEEKS
+      if (parkMode !== 'free') baselineAnnualCost += parkingCost * sd * WEEKS
+      baselineLabel = 'driving'
+    } else if (commuteMode === 'transit') {
+      baselineAnnualCost = transitMonthly * 12
+      baselineLabel = 'transit'
+    } else if (commuteMode === 'bus') {
+      baselineAnnualCost = busMonthly * 12
+      baselineLabel = 'bus'
+    } else if (commuteMode === 'commuter_rail') {
+      baselineAnnualCost = railMonthly * 12
+      baselineLabel = 'commuter rail'
+    } else {
+      baselineAnnualCost = 0
+      baselineLabel = commuteMode
+    }
+
+    // Legacy vars for backward compat with EmployerSavingsComparison
     let fuelSavings = 0, maintSavings = 0, rideshareSavings = 0, fuelLabel = 'Fuel savings'
     if (isRideshare) { rideshareSavings = rideshareDaily * sd * WEEKS }
-    else if (v.isEV) { fuelSavings = annualMiles * v.costPerMile!; fuelLabel = 'Electricity savings'; maintSavings = annualMiles * v.maint }
-    else { fuelSavings = annualMiles * (gasPrice / v.mpg); maintSavings = annualMiles * v.maint }
+    else if (commuteMode === 'drive') {
+      if (v.isEV) { fuelSavings = annualMiles * v.costPerMile!; fuelLabel = 'Electricity savings'; maintSavings = annualMiles * v.maint }
+      else { fuelSavings = annualMiles * (gasPrice / v.mpg); maintSavings = annualMiles * v.maint }
+    }
 
     let parkingSavings = 0
-    if (parkMode !== 'free' && !isRideshare) parkingSavings = parkingCost * sd * WEEKS
+    if (parkMode !== 'free' && (commuteMode === 'drive' || commuteMode === 'carpool')) parkingSavings = parkingCost * sd * WEEKS
 
     let transitCost = 0, transitLabel = ''
     if (altMode === 'mbta') {
@@ -188,10 +246,16 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
       if (applyBenefits && benefits.transit_subsidy_monthly && benefits.transit_subsidy_monthly > 0) {
         transitCost = Math.max(0, transitCost - benefits.transit_subsidy_monthly * 12)
       }
+    } else if (altMode === 'commuter_rail') {
+      transitCost = railMonthly * 12
+      if (applyBenefits && benefits.transit_subsidy_monthly && benefits.transit_subsidy_monthly > 0) {
+        transitCost = Math.max(0, transitCost - benefits.transit_subsidy_monthly * 12)
+      }
+      transitLabel = 'Monthly pass'
     }
 
-    const grossSavings = isRideshare ? rideshareSavings : (fuelSavings + maintSavings + parkingSavings)
-    const net = grossSavings - transitCost
+    const altAnnualCost = transitCost
+    const net = baselineAnnualCost - altAnnualCost
     const isActive = ['walk', 'bike', 'ebike'].includes(altMode)
     let activeMins = 0, weeklyCals = 0
     if (isActive && mode.mph) {
@@ -201,14 +265,14 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
     const co2 = annualMiles * (v.isEV ? CO2_PER_MILE * 0.35 : CO2_PER_MILE)
 
     return { net, fuelSavings, maintSavings, parkingSavings, transitCost, transitLabel, fuelLabel, rideshareSavings, isRideshare, isActive, activeMins, weeklyCals, annualMiles, co2,
+      baselineAnnualCost, baselineLabel,
       driveMins: Math.round((distance / DRIVE_MPH) * 60),
       altMins: mode.mph ? Math.round((distance / mode.mph) * 60) : null,
       mode, isRealRouting: false, timeNote: '', gymEquiv: isActive && mode.mph ? ((activeMins / 45).toFixed(1)) : '0' }
-  }, [distance, driveDays, shiftDays, vehicle, gasPrice, parkMode, parkingCost, altMode, commuteMode, rideshareDaily, benefits])
+  }, [distance, driveDays, vehicle, gasPrice, parkMode, parkingCost, altMode, commuteMode, rideshareDaily, carpoolDaily, transitMonthly, busMonthly, railMonthly, benefits])
 
   const withBenefits = calcSavings(true)
   const withoutBenefits = calcSavings(false)
-  const effectiveShift = Math.min(shiftDays, driveDays)
 
   const getRouteTimeForMode = useCallback(() => {
     if (!routeData || !recommendation) return null
@@ -324,69 +388,149 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
           <div className="mx-auto max-w-[520px] px-8">
             <div className="overflow-hidden rounded-[20px] border border-white/[0.12] bg-[#242538] p-8">
               <div className="mb-6 font-display text-[1.125rem] font-bold text-white">How do you get there now?</div>
-              <Field label="Current commute mode">
-                <RadioPills name="commute-mode" value={commuteMode} onChange={setCommuteMode}
-                  options={[{ value: 'drive', label: 'Drive' }, { value: 'rideshare', label: 'Rideshare' }]} />
-                {commuteMode === 'rideshare' && (
-                  <div className="mt-3.5 flex items-center gap-2">
+
+              <Field label="How do you get there now?">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {([
+                    { value: 'drive', label: 'Drive', icon: '🚗' },
+                    { value: 'carpool', label: 'Carpool', icon: '🚕' },
+                    { value: 'rideshare', label: 'Rideshare', icon: '🚙' },
+                    { value: 'bike', label: 'Bike', icon: '🚲' },
+                    { value: 'transit', label: 'Transit', icon: '🚇' },
+                    { value: 'bus', label: 'Bus', icon: '🚌' },
+                    { value: 'commuter_rail', label: 'Commuter Rail', icon: '🚆' },
+                    { value: 'walk', label: 'Walk', icon: '🚶' },
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setCommuteMode(opt.value)}
+                      className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-[0.8125rem] font-semibold transition-colors ${
+                        commuteMode === opt.value
+                          ? 'border-[#BAF14D] bg-[#BAF14D]/[0.12] text-[#BAF14D]'
+                          : 'border-white/[0.12] text-white hover:border-white/[0.25]'
+                      }`}
+                    >
+                      <span className="text-base">{opt.icon}</span>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+
+              <Field label="Days in the office per week">
+                <div className="mb-2.5 font-display text-base font-bold text-[#BAF14D]">
+                  {driveDays} day{driveDays > 1 ? 's' : ''}/week
+                </div>
+                <RangeInput value={driveDays} onChange={setDriveDays} min={1} max={5} labels={['1','2','3','4','5']} />
+              </Field>
+
+              {commuteMode === 'drive' && (
+                <Field label="Vehicle type">
+                  <Select value={vehicle} onChange={setVehicle} options={[
+                    { value: 'small_sedan', label: 'Small sedan (Civic, Corolla)' },
+                    { value: 'medium_sedan', label: 'Medium sedan (Camry, Accord)' },
+                    { value: 'compact_suv', label: 'Compact SUV (RAV4, CR-V)' },
+                    { value: 'medium_suv', label: 'Medium SUV (Explorer, Highlander)' },
+                    { value: 'pickup', label: 'Pickup truck (F-150, Silverado)' },
+                    { value: 'ev', label: 'Electric vehicle (Tesla, Leaf, etc.)' },
+                  ]} />
+                </Field>
+              )}
+
+              {commuteMode === 'drive' && vehicle !== 'ev' && (
+                <Field label="Gas price">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <NumInput value={gasPrice} onChange={setGasPrice} min={2} max={8} step={0.01} width="88px" />
+                    <span className="text-[0.8rem] text-white">per gallon</span>
+                  </div>
+                </Field>
+              )}
+
+              {commuteMode === 'carpool' && (
+                <Field label="Average daily carpool cost">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <NumInput value={carpoolDaily} onChange={setCarpoolDaily} min={1} max={100} step={1} width="88px" />
+                    <span className="text-[0.8rem] text-white">per day (your share)</span>
+                  </div>
+                </Field>
+              )}
+
+              {commuteMode === 'rideshare' && (
+                <Field label="Average daily rideshare cost">
+                  <div className="flex items-center gap-2">
                     <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
                     <NumInput value={rideshareDaily} onChange={setRideshareDaily} min={5} max={200} step={1} width="88px" />
                     <span className="text-[0.8rem] text-white">per day (round trip)</span>
                   </div>
-                )}
-              </Field>
-              <Field label="Days per week">
-                <div className="mb-2 font-display text-base font-bold text-[#BAF14D]">{driveDays} day{driveDays > 1 ? 's' : ''}/week</div>
-                <RangeInput value={driveDays} onChange={setDriveDays} min={1} max={5} labels={['1','2','3','4','5']} />
-              </Field>
-              <Field label="Days you'd go active instead">
-                <div className="mb-2 font-display text-base font-bold text-[#BAF14D]">{effectiveShift} day{effectiveShift > 1 ? 's' : ''}/week</div>
-                <RangeInput value={effectiveShift} onChange={setShiftDays} min={1} max={5} labels={['1','2','3','4','5']} />
-              </Field>
-              {commuteMode === 'drive' && (
-                <>
-                  <Field label="Vehicle type">
-                    <Select value={vehicle} onChange={setVehicle} options={[
-                      { value: 'small_sedan', label: 'Small sedan' }, { value: 'medium_sedan', label: 'Medium sedan' },
-                      { value: 'compact_suv', label: 'Compact SUV' }, { value: 'medium_suv', label: 'Medium SUV' },
-                      { value: 'pickup', label: 'Pickup truck' }, { value: 'ev', label: 'Electric vehicle' },
+                </Field>
+              )}
+
+              {(commuteMode === 'bike' || commuteMode === 'walk') && (
+                <div className="mt-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-3 text-[0.8125rem] text-white/70">
+                  No commute costs to track — we&apos;ll show you how your current commute compares.
+                </div>
+              )}
+
+              {commuteMode === 'transit' && (
+                <Field label="Monthly transit pass">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <NumInput value={transitMonthly} onChange={setTransitMonthly} min={0} max={300} step={1} width="88px" />
+                    <span className="text-[0.8rem] text-white">per month (LinkPass $90)</span>
+                  </div>
+                </Field>
+              )}
+
+              {commuteMode === 'bus' && (
+                <Field label="Monthly bus pass">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <NumInput value={busMonthly} onChange={setBusMonthly} min={0} max={200} step={1} width="88px" />
+                    <span className="text-[0.8rem] text-white">per month (MBTA bus pass $55)</span>
+                  </div>
+                </Field>
+              )}
+
+              {commuteMode === 'commuter_rail' && (
+                <Field label="Monthly commuter rail pass">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <NumInput value={railMonthly} onChange={setRailMonthly} min={90} max={450} step={5} width="88px" />
+                    <span className="text-[0.8rem] text-white">per month</span>
+                  </div>
+                </Field>
+              )}
+
+              {(commuteMode === 'drive' || commuteMode === 'carpool') && (
+                <Field label="Parking">
+                  <RadioPills name="parking" value={parkMode} onChange={setParkMode}
+                    options={[
+                      { value: 'free', label: benefits.free_parking ? 'Free (employer)' : 'Free' },
+                      { value: 'subsidized', label: 'I pay something' },
+                      { value: 'full', label: 'Full cost' },
                     ]} />
-                  </Field>
-                  {vehicle !== 'ev' && (
-                    <Field label="Gas price">
+                  {parkMode !== 'free' && (
+                    <div className="mt-3.5">
                       <div className="flex items-center gap-2">
-                        <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
-                        <NumInput value={gasPrice} onChange={setGasPrice} min={2} max={8} step={0.01} width="88px" />
-                        <span className="text-[0.8rem] text-white">per gallon</span>
-                      </div>
-                    </Field>
-                  )}
-                  <Field label="Parking">
-                    <RadioPills name="parking" value={parkMode} onChange={setParkMode}
-                      options={[
-                        { value: 'free', label: benefits.free_parking ? 'Free (employer)' : 'Free' },
-                        { value: 'subsidized', label: 'I pay something' },
-                        { value: 'full', label: 'Full cost' },
-                      ]} />
-                    {parkMode !== 'free' && (
-                      <div className="mt-3 flex items-center gap-2">
                         <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
                         <NumInput value={parkingCost} onChange={setParkingCost} min={0} max={80} step={1} width="78px" />
                         <span className="text-[0.8rem] text-white">per day</span>
                       </div>
-                    )}
-                    {parkMode === 'full' && (
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        {PARKING_ANCHORS.map(a => (
-                          <button key={a.val} onClick={() => setParkingCost(a.val)}
-                            className="rounded-md border border-white/[0.12] bg-white/[0.06] px-2 py-1 text-[0.65rem] font-semibold text-white transition-colors hover:bg-white/10">
-                            {a.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </Field>
-                </>
+                      {parkMode === 'full' && (
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          {PARKING_ANCHORS.map(a => (
+                            <button key={a.val} onClick={() => setParkingCost(a.val)}
+                              className="rounded-md border border-white/[0.12] bg-white/[0.06] px-2 py-1 text-[0.65rem] font-semibold text-white transition-colors hover:bg-white/10">
+                              {a.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Field>
               )}
               <div className="mt-4 flex gap-3">
                 <button onClick={() => setStep(1)}
@@ -480,7 +624,13 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                     <ModeComparisonTable
                       comparisons={comps}
                       winnerMode={comps[0]?.mode || ''}
+                      selectedMode={selectedMode}
+                      onSelectMode={handleModeSelect}
                       routeTimes={hasGoogleTimes ? googleTimes : undefined}
+                      originLat={homePlaceData?.lat}
+                      originLng={homePlaceData?.lng}
+                      destLat={workPlaceData?.lat}
+                      destLng={workPlaceData?.lng}
                     />
                   )
                 })()}
@@ -524,7 +674,10 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
 
                 {/* Barrier selector with employer overrides */}
                 <BarrierSelector
-                  modes={recommendation.primary.modes} selected={selectedBarriers}
+                  modes={selectedMode && selectedMode !== 'drive'
+                    ? [selectedMode as Mode]
+                    : recommendation.primary.modes}
+                  selected={selectedBarriers}
                   onSelect={setSelectedBarriers} />
 
                 {selectedBarriers.length > 0 && (
@@ -542,7 +695,11 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                         </div>
                       )
                     })}
-                    <GettingStarted modes={recommendation.primary.modes} barriers={selectedBarriers}
+                    <GettingStarted
+                      modes={selectedMode && selectedMode !== 'drive'
+                        ? [selectedMode as Mode]
+                        : recommendation.primary.modes}
+                      barriers={selectedBarriers}
                       event={recommendation.content.event} />
                   </>
                 )}
