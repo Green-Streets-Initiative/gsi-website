@@ -124,8 +124,13 @@ function generatePros(mode: string, bikeInfraQuality: BikeInfraQuality, hasBlueb
       pros.push('Built-in exercise — saves gym time')
       return pros.slice(0, 3)
     }
-    case 'transit':
-      return ['No parking, no gas, no stress', '$90/month unlimited — predictable cost', 'Read, relax, or work during your commute']
+    case 'transit': {
+      const tPros: string[] = []
+      if (detail) tPros.push(detail)
+      tPros.push('$90/month unlimited — predictable cost')
+      tPros.push('Read, relax, or work during your commute')
+      return tPros.slice(0, 3)
+    }
     case 'drive':
       return ['Door-to-door flexibility', 'Weather independent', 'Can carry anything']
     default:
