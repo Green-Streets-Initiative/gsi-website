@@ -569,7 +569,7 @@ export default function CommuteCalculator() {
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
                   s === step ? 'bg-[#BAF14D] text-[#191A2E]'
                   : s < step ? 'bg-[#BAF14D]/20 text-[#BAF14D] hover:bg-[#BAF14D]/30'
-                  : 'bg-white/[0.08] text-white/30'
+                  : 'bg-white/[0.08] text-white/50'
                 }`}
               >
                 {s < step ? '✓' : s}
@@ -807,7 +807,7 @@ export default function CommuteCalculator() {
             {recLoading && !recommendation && (
               <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7 text-center">
                 <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-[#BAF14D]" />
-                <p className="text-sm text-white/60">Analyzing your commute...</p>
+                <p className="text-sm text-white/70">Analyzing your commute...</p>
               </div>
             )}
 
@@ -911,7 +911,7 @@ export default function CommuteCalculator() {
                 })()}
 
                 {!homePlaceData && (
-                  <p className="text-center text-[0.8125rem] text-white/40">
+                  <p className="text-center text-[0.8125rem] text-white/70">
                     Enter your home and work addresses in Step 1 for live transit and Bluebikes availability.
                   </p>
                 )}
@@ -978,13 +978,13 @@ export default function CommuteCalculator() {
                     {/* Time comparison */}
                     <div className="mb-4 grid grid-cols-2 gap-2">
                       <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
-                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/60">Driving</div>
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/70">Driving</div>
                         <div className="font-display text-lg font-bold text-white">
                           {routeLoading ? '…' : `${r.isRealRouting ? '' : '~'}${r.driveMins} min`}
                         </div>
                       </div>
                       <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
-                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/60">{r.mode.label}</div>
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/70">{r.mode.label}</div>
                         <div className="font-display text-lg font-bold text-white">
                           {routeLoading ? '…' : r.altMins !== null ? `${r.isRealRouting ? '' : '~'}${r.altMins} min` : 'varies'}
                         </div>
@@ -996,15 +996,15 @@ export default function CommuteCalculator() {
                       <div className="grid grid-cols-3 gap-2">
                         <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
                           <div className="font-display text-base font-bold text-[#EDB93C]">{r.activeMins}</div>
-                          <div className="mt-0.5 text-[9px] leading-snug text-white/60">active min/week</div>
+                          <div className="mt-0.5 text-[9px] leading-snug text-white/70">active min/week</div>
                         </div>
                         <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
                           <div className="font-display text-base font-bold text-[#EDB93C]">{r.weeklyCals.toLocaleString()}</div>
-                          <div className="mt-0.5 text-[9px] leading-snug text-white/60">cal/week</div>
+                          <div className="mt-0.5 text-[9px] leading-snug text-white/70">cal/week</div>
                         </div>
                         <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
                           <div className="font-display text-base font-bold text-[#EDB93C]">{fmtCO2(r.co2)}</div>
-                          <div className="mt-0.5 text-[9px] leading-snug text-white/60">CO₂ saved/yr</div>
+                          <div className="mt-0.5 text-[9px] leading-snug text-white/70">CO₂ saved/yr</div>
                         </div>
                       </div>
                     )}
@@ -1045,7 +1045,7 @@ export default function CommuteCalculator() {
                 {/* Edit inputs */}
                 <button
                   onClick={() => setStep(1)}
-                  className="w-full rounded-xl border border-white/[0.08] py-3 text-[0.8125rem] font-semibold text-white/50 transition-colors hover:border-white/[0.15] hover:text-white/70"
+                  className="w-full rounded-xl border border-white/[0.08] py-3 text-[0.8125rem] font-semibold text-white/70 transition-colors hover:border-white/[0.15] hover:text-white/90"
                 >
                   ← Edit your commute details
                 </button>

@@ -227,7 +227,7 @@ export default function CommuteMap({
     return (
       <div className="overflow-hidden rounded-2xl border border-white/[0.12] bg-[#242538]">
         <div className="border-b border-white/[0.07] px-5 py-3">
-          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/50">Nearby transit</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">Nearby transit</div>
         </div>
         <div className="flex flex-col gap-3 px-5 py-4">
           {bluebikesOrigin.map((s) => (
@@ -262,28 +262,28 @@ export default function CommuteMap({
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-white/[0.07] bg-[#242538] px-5 py-2.5">
-        <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/50">
+        <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/70">
           <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#BAF14D] text-[8px] font-bold text-[#191A2E]">H</span>
           Home
         </div>
-        <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/50">
+        <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/70">
           <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[8px] font-bold text-[#191A2E]">W</span>
           Work
         </div>
         {(bluebikesOrigin.length > 0 || bluebikesDestStations.length > 0) && (
-          <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/50">
+          <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/70">
             <span className="h-3.5 rounded-full bg-[#22c55e] px-1.5 text-[8px] font-bold leading-[14px] text-white">0</span>
             Bluebikes
           </div>
         )}
         {mbtaStops.length > 0 && (
-          <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/50">
+          <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/70">
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#888] text-[8px] font-bold text-white">T</span>
             MBTA
           </div>
         )}
         {bikeParking.length > 0 && (
-          <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/50">
+          <div className="flex items-center gap-1.5 text-[0.6875rem] text-white/70">
             <span className="flex h-4 w-4 items-center justify-center rounded bg-[#2966E5] text-[8px] font-bold text-white">P</span>
             Bike parking
           </div>
@@ -298,7 +298,7 @@ export default function CommuteMap({
             {nearestBike.num_bikes_available} bikes at {nearestBike.name} ({nearestBike.distance_miles} mi)
           </div>
         ) : (
-          <div className="text-[0.8125rem] text-white/40">Check the Bluebikes app for live availability</div>
+          <div className="text-[0.8125rem] text-white/70">Check the Bluebikes app for live availability</div>
         )}
         {nearestStop ? (
           <div className="flex items-center gap-2 text-[0.8125rem] text-white/80">
@@ -309,7 +309,7 @@ export default function CommuteMap({
             {nearestStop.route_names[0] || 'MBTA'} at {nearestStop.name} ({nearestStop.distance_miles.toFixed(1)} mi)
           </div>
         ) : (
-          <div className="text-[0.8125rem] text-white/40">Check the MBTA app for real-time arrivals</div>
+          <div className="text-[0.8125rem] text-white/70">Check the MBTA app for real-time arrivals</div>
         )}
         {bikeParking.length > 0 && (
           <div className="flex items-center gap-2 text-[0.8125rem] text-white/80">

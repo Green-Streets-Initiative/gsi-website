@@ -350,7 +350,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
                   s === step ? 'bg-[#BAF14D] text-[#191A2E]'
                   : s < step ? 'bg-[#BAF14D]/20 text-[#BAF14D] hover:bg-[#BAF14D]/30'
-                  : 'bg-white/[0.08] text-white/30'
+                  : 'bg-white/[0.08] text-white/50'
                 }`}>{s < step ? '✓' : s}</button>
               {s < 3 && <div className={`h-px w-12 ${s < step ? 'bg-[#BAF14D]/30' : 'bg-white/[0.08]'}`} />}
             </div>
@@ -715,14 +715,14 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
 
                 {/* HR contact */}
                 {benefits.hr_contact_name && benefits.hr_contact_email && (
-                  <div className="text-center text-[0.8125rem] text-white/40">
+                  <div className="text-center text-[0.8125rem] text-white/70">
                     Questions about your commute benefits? Contact {benefits.hr_contact_name} at{' '}
                     <a href={`mailto:${benefits.hr_contact_email}`} className="text-[#BAF14D] underline">{benefits.hr_contact_email}</a>
                   </div>
                 )}
 
                 <button onClick={() => setStep(1)}
-                  className="w-full rounded-xl border border-white/[0.08] py-3 text-[0.8125rem] font-semibold text-white/50 transition-colors hover:border-white/[0.15] hover:text-white/70">
+                  className="w-full rounded-xl border border-white/[0.08] py-3 text-[0.8125rem] font-semibold text-white/70 transition-colors hover:border-white/[0.15] hover:text-white/90">
                   ← Edit your commute details
                 </button>
               </div>

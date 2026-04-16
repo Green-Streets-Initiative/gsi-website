@@ -35,7 +35,7 @@ export default function EmployerBenefits({ companyName, benefits }: EmployerBene
 
   return (
     <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
-      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/50">
+      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">
         Your {companyName} benefits
       </div>
       <ul className="space-y-2.5">

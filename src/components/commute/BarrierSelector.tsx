@@ -74,7 +74,7 @@ export default function BarrierSelector({ modes, selected, onSelect }: BarrierSe
       <h4 className="mb-1 font-display text-[1.125rem] font-bold text-white">
         Any hesitations?
       </h4>
-      <p className="mb-5 text-[0.8125rem] text-white/40">Select all that apply</p>
+      <p className="mb-5 text-[0.8125rem] text-white/70">Select all that apply</p>
 
       <div className="flex flex-col gap-2.5">
         {barriers.map((b) => {

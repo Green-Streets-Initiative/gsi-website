@@ -101,7 +101,7 @@ export default function RecommendationCard({
       {/* Secondary */}
       {secondary && (
         <div className="mt-5 border-t border-white/[0.07] pt-4">
-          <div className="flex items-center gap-2 text-[0.8125rem] text-white/50">
+          <div className="flex items-center gap-2 text-[0.8125rem] text-white/70">
             <span>Also consider:</span>
             <div className="flex items-center gap-1">
               {secondary.modes.map((mode) => (

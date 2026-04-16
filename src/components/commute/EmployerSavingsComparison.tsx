@@ -70,7 +70,7 @@ export default function EmployerSavingsComparison({
 function SavingsColumn({ data, label, muted }: { data: SavingsData; label: string; muted?: boolean }) {
   return (
     <div className={muted ? 'opacity-50' : ''}>
-      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/50">
+      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">
         {label}
       </div>
       <div className={`mb-3 rounded-xl px-4 py-3 text-center ${
@@ -83,7 +83,7 @@ function SavingsColumn({ data, label, muted }: { data: SavingsData; label: strin
         }`}>
           {fmt(data.net)}
         </div>
-        <div className={`mt-1 text-[0.7rem] ${muted ? 'text-white/30' : 'text-[rgba(186,241,77,0.5)]'}`}>
+        <div className={`mt-1 text-[0.7rem] ${muted ? 'text-white/50' : 'text-[rgba(186,241,77,0.5)]'}`}>
           per year
         </div>
       </div>

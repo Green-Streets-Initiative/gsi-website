@@ -115,7 +115,7 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
       <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
         <div className="flex items-center gap-3">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-[#BAF14D]" />
-          <span className="text-sm text-white/50">Finding guides for you...</span>
+          <span className="text-sm text-white/70">Finding guides for you...</span>
         </div>
       </div>
     )
@@ -157,7 +157,7 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
           <p className="mb-2 font-display text-[1rem] font-bold leading-snug text-white">
             We&apos;re building guides for this.
           </p>
-          <p className="mb-4 text-[0.875rem] leading-relaxed text-white/50">
+          <p className="mb-4 text-[0.875rem] leading-relaxed text-white/70">
             In the meantime, the Shift app has tips for new {primaryMode === 'transit' ? 'transit riders' : primaryMode === 'walking' ? 'walkers' : 'cyclists'} built right in.
           </p>
           <Link href="/shift" className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#BAF14D] transition-opacity hover:opacity-80">
@@ -178,7 +178,7 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
           <h5 className="mb-2 font-display text-[1rem] font-bold text-white">
             {event.content_items.title}
           </h5>
-          <div className="mb-2 text-[0.8125rem] text-white/50">
+          <div className="mb-2 text-[0.8125rem] text-white/70">
             {new Date(event.event_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             {event.location_name && ` · ${event.location_name}`}
           </div>

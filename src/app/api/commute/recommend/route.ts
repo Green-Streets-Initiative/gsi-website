@@ -125,7 +125,7 @@ function generatePros(mode: string, bikeInfraQuality: BikeInfraQuality, hasBlueb
       return pros.slice(0, 3)
     }
     case 'transit':
-      return ['Transit option available — exact route shown after entering addresses', '$90/month unlimited — predictable cost', 'Read, relax, or work during your commute']
+      return ['No parking, no gas, no stress', '$90/month unlimited — predictable cost', 'Read, relax, or work during your commute']
     case 'drive':
       return ['Door-to-door flexibility', 'Weather independent', 'Can carry anything']
     default:

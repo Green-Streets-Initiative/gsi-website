@@ -64,7 +64,7 @@ export default function ModeComparisonTable({
 
   return (
     <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
-      <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-white/50">
+      <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">
         All options compared
       </div>
       <div className="space-y-1">
@@ -86,7 +86,9 @@ export default function ModeComparisonTable({
               >
                 {/* Mode icon + label */}
                 <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                  <ModeIcon mode={c.mode as any} size={20} />
+                  <span className={isSelected ? 'text-[#BAF14D]' : 'text-white'}>
+                    <ModeIcon mode={c.mode as any} size={20} />
+                  </span>
                   <span className={`text-[0.8125rem] font-semibold ${isSelected ? 'text-[#BAF14D]' : 'text-white'}`}>
                     {MODE_LABELS[c.mode] || c.label}
                   </span>
@@ -96,23 +98,23 @@ export default function ModeComparisonTable({
                 </div>
 
                 {/* Time */}
-                <div className={`w-16 text-right text-[0.8125rem] font-semibold ${isSelected ? 'text-white' : 'text-white/70'}`}>
+                <div className={`w-16 text-right text-[0.8125rem] font-semibold ${isSelected ? 'text-white' : 'text-white/90'}`}>
                   {time} min
                 </div>
 
                 {/* Daily cost */}
-                <div className={`w-16 text-right text-[0.8125rem] font-semibold ${isSelected ? 'text-white' : 'text-white/70'}`}>
+                <div className={`w-16 text-right text-[0.8125rem] font-semibold ${isSelected ? 'text-white' : 'text-white/90'}`}>
                   {c.daily_cost === 0 ? 'Free' : `$${c.daily_cost.toFixed(2)}`}
                 </div>
 
                 {/* Annual cost */}
-                <div className={`hidden w-20 text-right text-[0.8125rem] font-semibold sm:block ${isSelected ? 'text-white' : 'text-white/70'}`}>
+                <div className={`hidden w-20 text-right text-[0.8125rem] font-semibold sm:block ${isSelected ? 'text-white' : 'text-white/90'}`}>
                   {c.annual_cost === 0 ? 'Free' : fmt(c.annual_cost)}
                 </div>
 
                 {/* Chevron */}
                 <svg
-                  className={`h-4 w-4 flex-shrink-0 text-white/40 transition-transform duration-200 ${isSelected ? 'rotate-180' : ''}`}
+                  className={`h-4 w-4 flex-shrink-0 text-white/60 transition-transform duration-200 ${isSelected ? 'rotate-180' : ''}`}
                   fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -163,7 +165,7 @@ export default function ModeComparisonTable({
       </div>
 
       {/* Column legend for header context */}
-      <div className="mt-3 flex items-center gap-3 px-4 text-[9px] font-bold uppercase tracking-wider text-white/30">
+      <div className="mt-3 flex items-center gap-3 px-4 text-[9px] font-bold uppercase tracking-wider text-white/50">
         <div className="flex-1">Mode</div>
         <div className="w-16 text-right">Time</div>
         <div className="w-16 text-right">Daily</div>
