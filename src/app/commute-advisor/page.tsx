@@ -754,12 +754,11 @@ export default function CommuteCalculator() {
                 <Field label="Parking">
                   <RadioPills
                     name="parking"
-                    value={parkMode}
-                    onChange={setParkMode}
+                    value={parkMode === 'subsidized' ? 'paid' : parkMode === 'full' ? 'paid' : parkMode}
+                    onChange={(v: string) => setParkMode(v === 'paid' ? 'full' : v)}
                     options={[
                       { value: 'free', label: 'Free / employer pays' },
-                      { value: 'subsidized', label: 'I pay something' },
-                      { value: 'full', label: 'Full cost' },
+                      { value: 'paid', label: 'I pay for parking' },
                     ]}
                   />
                   {parkMode !== 'free' && (
@@ -769,17 +768,15 @@ export default function CommuteCalculator() {
                         <NumInput value={parkingCost} onChange={setParkingCost} min={0} max={80} step={1} width="78px" fontSize="1rem" />
                         <span className="text-[0.8rem] text-white">per day</span>
                       </div>
-                      {parkMode === 'full' && (
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <span className="text-[0.63rem] text-white">Area medians:</span>
-                          {PARKING_ANCHORS.map(a => (
-                            <button key={a.val} onClick={() => setParkingCost(a.val)}
-                              className="rounded-md border border-white/[0.12] bg-white/[0.06] px-2 py-1 text-[0.65rem] font-semibold text-white transition-colors hover:bg-white/10 hover:text-white">
-                              {a.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[0.63rem] text-white">Area medians:</span>
+                        {PARKING_ANCHORS.map(a => (
+                          <button key={a.val} onClick={() => setParkingCost(a.val)}
+                            className="rounded-md border border-white/[0.12] bg-white/[0.06] px-2 py-1 text-[0.65rem] font-semibold text-white transition-colors hover:bg-white/10 hover:text-white">
+                            {a.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </Field>
