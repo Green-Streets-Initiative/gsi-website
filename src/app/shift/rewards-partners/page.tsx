@@ -22,6 +22,7 @@ type FormData = {
   address_zip: string
   website_url: string
   referral_source: string
+  referral_source_other: string
   discount_description: string
   discount_type: string
   discount_value: string
@@ -48,6 +49,7 @@ const INITIAL_FORM: FormData = {
   address_zip: '',
   website_url: '',
   referral_source: '',
+  referral_source_other: '',
   discount_description: '',
   discount_type: '',
   discount_value: '',
@@ -276,7 +278,10 @@ export default function RewardsPartnersPage() {
             redemption_url: form.website_url.trim() || null,
             // Legacy field — map discount_description for backward compat
             offer_description: form.discount_description.trim(),
-            referral_source: form.referral_source.trim() || null,
+            referral_source:
+              form.referral_source === 'Other' && form.referral_source_other.trim()
+                ? `Other: ${form.referral_source_other.trim()}`
+                : form.referral_source.trim() || null,
             signer_name: form.signer_name.trim(),
             signer_title: form.signer_title.trim(),
             agreement_accepted: true,
@@ -759,6 +764,16 @@ export default function RewardsPartnersPage() {
                         <option value="AI assistant">AI assistant (ChatGPT, Claude, etc.)</option>
                         <option value="Other">Other</option>
                       </select>
+                      {form.referral_source === 'Other' && (
+                        <input
+                          type="text"
+                          value={form.referral_source_other}
+                          onChange={(e) => update('referral_source_other', e.target.value)}
+                          placeholder="Please specify"
+                          maxLength={120}
+                          className="mt-2 w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
+                        />
+                      )}
                     </div>
                     <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[rgba(25,26,46,0.08)] bg-[rgba(25,26,46,0.03)] p-4">
                       <input
