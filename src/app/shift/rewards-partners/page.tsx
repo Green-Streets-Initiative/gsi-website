@@ -369,11 +369,16 @@ export default function RewardsPartnersPage() {
               Reach active commuters in your neighborhood.
             </h1>
 
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#BAF14D]/30 bg-[#BAF14D]/[0.08] px-4 py-1.5 text-sm font-semibold text-[#BAF14D]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#BAF14D]" />
+              Free to join &middot; No fees &middot; No contracts
+            </div>
+
             <p className="mb-12 max-w-[620px] text-lg leading-[1.7] text-white">
-              Join the Shift rewards network — put your business in front of people who walk, bike, and ride transit every day. Free to join. No POS integration. No complicated setup.
+              Join the Shift rewards network — put your business in front of people who walk, bike, and ride transit every day. No POS integration. No complicated setup.
             </p>
 
-            <div className="grid gap-5 sm:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 {
                   title: 'Visibility where it counts',
@@ -386,6 +391,10 @@ export default function RewardsPartnersPage() {
                 {
                   title: 'Monthly impact reports',
                   desc: 'See how many Shift users redeemed offers at your location each month, with neighborhood-level reach data.',
+                },
+                {
+                  title: 'Self-service dashboard',
+                  desc: 'Edit your offer, view redemption history, and pause or resume your listing anytime — all from a dedicated partner dashboard.',
                 },
               ].map((item) => (
                 <div
@@ -414,7 +423,7 @@ export default function RewardsPartnersPage() {
         {/* ═══════════════════════════════════════════════════════
             2 · CURRENT PARTNERS
         ═══════════════════════════════════════════════════════ */}
-        {sponsors.length > 0 && (
+        {sponsors.length >= 5 ? (
           <section className="bg-[#F4F8EE] px-8 py-24">
             <div className="mx-auto max-w-[1120px]">
               <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#7DB82E]">
@@ -467,6 +476,20 @@ export default function RewardsPartnersPage() {
                   )
                 })}
               </div>
+            </div>
+          </section>
+        ) : (
+          <section className="bg-[#F4F8EE] px-8 py-24">
+            <div className="mx-auto max-w-[1120px]">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#7DB82E]">
+                Our network
+              </div>
+              <h2 className="mb-4 max-w-[720px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
+                Launching across Greater Boston
+              </h2>
+              <p className="max-w-[620px] text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
+                Rewards Partners in Somerville, Cambridge, Arlington, Medford, Boston, and growing. Join the first wave of businesses supporting active commuters in your neighborhood.
+              </p>
             </div>
           </section>
         )}
@@ -530,7 +553,7 @@ export default function RewardsPartnersPage() {
               Apply to join the network
             </h2>
             <p className="mb-10 text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
-              Takes about 5 minutes. Free to participate.
+              Takes about 2 minutes. Free to participate.
             </p>
 
             {submitted ? (
