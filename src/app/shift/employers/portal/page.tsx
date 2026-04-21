@@ -37,6 +37,177 @@ type Challenge = {
   public_leaderboard: boolean
 }
 
+type DashboardData = {
+  period_days: number
+  member_count: number
+  trips_this_period: number
+  active_trips_this_period: number
+  miles_shifted: number
+  co2_avoided_kg: number
+  mode_breakdown: Array<{ mode: string; trip_count: number }>
+  // Trip-level shift rate over period_days — use this on the Impact card
+  // so the percentage lines up with the rest of the period-aligned stats.
+  shift_rate_trip_pct: number
+  // Member-level engagement over last 7 days (kept for admin/portal contexts
+  // that want "who's been active this week?").
+  shift_rate_7d: number
+}
+
+type EmployerMember = {
+  user_id: string
+  display_name: string | null
+  avatar_url: string | null
+  joined_at: string
+  trips_in_period: number
+  active_trips_in_period: number
+}
+
+type FundingPool = {
+  id: string
+  name: string
+  budget_total_cents: number
+  budget_spent_cents: number
+  budget_remaining_cents: number
+  active: boolean
+  valid_through: string | null
+}
+
+const MODE_LABEL: Record<string, string> = {
+  walk: 'Walking',
+  bike: 'Biking',
+  transit_bus: 'Bus',
+  transit_train: 'Train',
+  transit_commuter_rail: 'Commuter rail',
+  escooter: 'E-scooter',
+  carpool: 'Carpool',
+  drive: 'Drive',
+  other: 'Other',
+}
+
+function prettyMode(mode: string): string {
+  return MODE_LABEL[mode] ?? mode
+}
+
+function centsToDollars(cents: number | null | undefined): string {
+  if (cents == null) return '—'
+  return `$${(cents / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+}
+
+/**
+ * Fetch an image URL and return a data URL + dimensions, or null if the
+ * fetch fails (network error, CORS block, etc). Used to embed the
+ * employer logo in PDFs. SVGs are rejected because jsPDF rasterizes
+ * them only via canvas which loses fidelity — return null so the PDF
+ * falls back to a text-only header.
+ */
+async function loadImageForPdf(
+  url: string,
+): Promise<{ dataUrl: string; format: 'PNG' | 'JPEG'; width: number; height: number } | null> {
+  try {
+    const resp = await fetch(url, { mode: 'cors' })
+    if (!resp.ok) return null
+    const blob = await resp.blob()
+    if (blob.type === 'image/svg+xml') return null
+    const format = blob.type.includes('jpeg') ? 'JPEG' : 'PNG'
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = () => reject()
+      reader.readAsDataURL(blob)
+    })
+    const dims = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve({ width: img.width, height: img.height })
+      img.onerror = () => reject()
+      img.src = dataUrl
+    })
+    return { dataUrl, format, width: dims.width, height: dims.height }
+  } catch {
+    return null
+  }
+}
+
+// Resolve an impact-report preset into a concrete {start, end, label}.
+// Returns null when the preset is "custom" but the user hasn't filled in both
+// dates yet — callers should skip the RPC in that case.
+function resolveImpactWindow(
+  preset:
+    | 'last_30'
+    | 'this_month'
+    | 'last_month'
+    | 'this_quarter'
+    | 'last_quarter'
+    | 'ytd'
+    | 'custom',
+  customStart: string,
+  customEnd: string,
+): { start: Date; end: Date; label: string } | null {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const quarterStartMonth = Math.floor(month / 3) * 3
+
+  switch (preset) {
+    case 'last_30': {
+      const start = new Date(now.getTime() - 30 * 86400000)
+      return { start, end: now, label: 'Last 30 days' }
+    }
+    case 'this_month': {
+      const start = new Date(year, month, 1)
+      return {
+        start,
+        end: now,
+        label: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      }
+    }
+    case 'last_month': {
+      const start = new Date(year, month - 1, 1)
+      const end = new Date(year, month, 1)
+      return {
+        start,
+        end,
+        label: start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      }
+    }
+    case 'this_quarter': {
+      const start = new Date(year, quarterStartMonth, 1)
+      const q = Math.floor(quarterStartMonth / 3) + 1
+      return { start, end: now, label: `Q${q} ${year}` }
+    }
+    case 'last_quarter': {
+      const prevQuarterStartMonth = quarterStartMonth - 3
+      const base = new Date(year, prevQuarterStartMonth, 1)
+      const start = base
+      const end = new Date(year, quarterStartMonth, 1)
+      const q = Math.floor((base.getMonth() / 3)) + 1
+      return { start, end, label: `Q${q} ${base.getFullYear()}` }
+    }
+    case 'ytd': {
+      const start = new Date(year, 0, 1)
+      return { start, end: now, label: `${year} year-to-date` }
+    }
+    case 'custom': {
+      if (!customStart || !customEnd) return null
+      const start = new Date(customStart + 'T00:00:00')
+      const end = new Date(customEnd + 'T23:59:59')
+      if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return null
+      return {
+        start,
+        end,
+        label: `${start.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })} – ${end.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })}`,
+      }
+    }
+  }
+}
+
 /* ── helpers ───────────────────────────────────────────────── */
 
 function formatDate(iso: string) {
@@ -121,10 +292,9 @@ function PortalPage() {
   })
   const [savingAccount, setSavingAccount] = useState(false)
 
-  // Logo state
-  const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  // Logo state (upload runs through uploadLogoDirect from the header control)
   const [logoError, setLogoError] = useState('')
+  const [uploadingLogo, setUploadingLogo] = useState(false)
 
   // End challenge modal
   const [showEndModal, setShowEndModal] = useState(false)
@@ -132,6 +302,29 @@ function PortalPage() {
 
   // Leaderboard period
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<'7' | '30' | 'all'>('30')
+
+  // Impact dashboard + members (wired to RPCs)
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null)
+  const [members, setMembers] = useState<EmployerMember[]>([])
+  const [loadingMembers, setLoadingMembers] = useState(false)
+
+  // Rewards pool (premium tier only)
+  const [fundingPool, setFundingPool] = useState<FundingPool | null>(null)
+
+  // Impact report period selection.
+  // "custom" reveals two date pickers and holds its values in customStart/End.
+  type ImpactPreset =
+    | 'last_30'
+    | 'this_month'
+    | 'last_month'
+    | 'this_quarter'
+    | 'last_quarter'
+    | 'ytd'
+    | 'custom'
+  const [impactPreset, setImpactPreset] = useState<ImpactPreset>('last_30')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
+  const [reloadingImpact, setReloadingImpact] = useState(false)
 
   /* ── data fetching ───────────────────────────────────────── */
 
@@ -142,14 +335,20 @@ function PortalPage() {
         await supabase.rpc('link_employer_on_login')
       } catch {}
 
+      // If the admin happens to run more than one employer group with the
+      // same email on file (rare — mostly happens when a single person
+      // subscribes multiple test companies), pick the most recently
+      // created one. We'll add a proper group-picker when real demand
+      // shows up; for now "latest" beats non-deterministic.
       const { data: groupData } = await supabase
         .from('groups')
         .select(
           'id, name, slug, status, admin_name, admin_email, admin_phone, website_url, logo_url, invite_code, tier, access_starts_at, access_ends_at, public_leaderboard, employer_benefits'
         )
         .eq('admin_email', email)
+        .order('created_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (!groupData) {
         router.push('/shift/employers')
@@ -170,9 +369,21 @@ function PortalPage() {
         setAdvisorPlaceData({ placeId: '', lat: eb.destination_lat, lng: eb.destination_lng })
       }
 
-      // Fetch active challenge for this group
+      // Fetch active challenge + member count + impact + members + pool (parallel)
       const now = new Date().toISOString()
-      const [challengeRes, memberRes] = await Promise.all([
+      const poolPromise = groupData.tier === 'premium'
+        ? supabase
+            .from('funding_pools')
+            .select(
+              'id, name, budget_total_cents, budget_spent_cents, budget_remaining_cents, active, valid_through'
+            )
+            .eq('group_id', groupData.id)
+            .eq('active', true)
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null } as const)
+
+      const [challengeRes, memberRes, dashboardRes, membersRes, poolRes] = await Promise.all([
         supabase
           .from('competitions')
           .select('id, name, metric, starts_at, ends_at, prize_description')
@@ -185,6 +396,15 @@ function PortalPage() {
           .from('group_members')
           .select('*', { count: 'exact', head: true })
           .eq('group_id', groupData.id),
+        supabase.rpc('get_employer_dashboard_data', {
+          p_group_id: groupData.id,
+          p_days: 30,
+        }),
+        supabase.rpc('get_employer_members', {
+          p_group_id: groupData.id,
+          p_days: 30,
+        }),
+        poolPromise,
       ])
 
       if (challengeRes.data) {
@@ -203,10 +423,78 @@ function PortalPage() {
       }
 
       setMemberCount(memberRes.count ?? 0)
+
+      if (dashboardRes.data && !(dashboardRes.data as { error?: string }).error) {
+        setDashboard(dashboardRes.data as DashboardData)
+      }
+
+      if (membersRes.data) {
+        setMembers(membersRes.data as EmployerMember[])
+      }
+
+      if (poolRes && 'data' in poolRes && poolRes.data) {
+        setFundingPool(poolRes.data as FundingPool)
+      }
+
       setLoading(false)
     },
     [router]
   )
+
+  /* ── refetch members when period changes ─────────────────── */
+
+  useEffect(() => {
+    if (!group) return
+    const days = leaderboardPeriod === '7' ? 7 : leaderboardPeriod === '30' ? 30 : 9999
+    // Skip first fire: initial 30d fetch happens in fetchData.
+    if (days === 30 && members.length > 0) return
+
+    let cancelled = false
+    setLoadingMembers(true)
+    supabase
+      .rpc('get_employer_members', { p_group_id: group.id, p_days: days })
+      .then(({ data }) => {
+        if (cancelled) return
+        if (data) setMembers(data as EmployerMember[])
+        setLoadingMembers(false)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leaderboardPeriod, group?.id])
+
+  /* ── refetch dashboard when impact range changes ─────────── */
+
+  useEffect(() => {
+    if (!group) return
+    // Initial 30d fetch already happened in fetchData — don't redo it.
+    if (impactPreset === 'last_30' && dashboard) return
+
+    const window = resolveImpactWindow(impactPreset, customStart, customEnd)
+    if (!window) return
+
+    let cancelled = false
+    setReloadingImpact(true)
+    supabase
+      .rpc('get_employer_dashboard_data', {
+        p_group_id: group.id,
+        p_days: 30,
+        p_starts_at: window.start.toISOString(),
+        p_ends_at: window.end.toISOString(),
+      })
+      .then(({ data }) => {
+        if (cancelled) return
+        if (data && !(data as { error?: string }).error) {
+          setDashboard(data as DashboardData)
+        }
+        setReloadingImpact(false)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [impactPreset, customStart, customEnd, group?.id])
 
   /* ── auth flow ───────────────────────────────────────────── */
 
@@ -458,28 +746,58 @@ function PortalPage() {
       year: 'numeric',
     })
 
-    // Header bar
-    doc.setFillColor(25, 26, 46)
-    doc.rect(0, 0, w, 90, 'F')
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(28)
-    doc.setTextColor(255, 255, 255)
-    doc.text('Shift', 50, 55)
-    doc.setFontSize(11)
-    doc.setTextColor(186, 241, 77)
-    doc.text('Green Streets Initiative', 50, 73)
+    // Resolve the active impact window so the report title reflects the
+    // on-screen selection rather than hard-coded "last 30 days".
+    const windowInfo = resolveImpactWindow(impactPreset, customStart, customEnd)
+    const windowLabel = windowInfo?.label ?? 'Last 30 days'
 
-    // Title
+    // Attempt to load the employer logo. Fall back to a text-only header
+    // if fetch/CORS/format checks fail.
+    const logo = group.logo_url ? await loadImageForPdf(group.logo_url) : null
+
+    // Compact top strip: GSI/Shift on the left, company logo (if any)
+    // top-right. Dark band to carry the employer's brand above it.
+    doc.setFillColor(25, 26, 46)
+    doc.rect(0, 0, w, 70, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(18)
+    doc.setTextColor(255, 255, 255)
+    doc.text('Shift', 50, 38)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(186, 241, 77)
+    doc.text('Green Streets Initiative', 50, 54)
+
+    if (logo) {
+      // Fit inside a 120x40 box, preserving aspect.
+      const maxW = 120
+      const maxH = 40
+      const ratio = Math.min(maxW / logo.width, maxH / logo.height)
+      const drawW = logo.width * ratio
+      const drawH = logo.height * ratio
+      const x = w - 50 - drawW
+      const y = 70 / 2 - drawH / 2
+      try {
+        doc.addImage(logo.dataUrl, logo.format, x, y, drawW, drawH)
+      } catch {
+        // jsPDF rejected the image for some reason — silently skip.
+      }
+    }
+
+    // Title block
     doc.setTextColor(25, 26, 46)
     doc.setFontSize(22)
     doc.setFont('helvetica', 'bold')
-    doc.text(group.name, centerX, 140, { align: 'center' })
-    doc.setFontSize(16)
+    doc.text(group.name, centerX, 120, { align: 'center' })
+    doc.setFontSize(15)
     doc.setFont('helvetica', 'normal')
-    doc.text('Shift Challenge Impact Report', centerX, 168, { align: 'center' })
+    doc.text('Shift Impact Report', centerX, 146, { align: 'center' })
+
+    // Reporting period (replaces the old "generated-on" line as the primary
+    // subtitle — the PDF is about the window, not the export moment).
     doc.setFontSize(12)
-    doc.setTextColor(120, 120, 120)
-    doc.text(today, centerX, 192, { align: 'center' })
+    doc.setTextColor(90, 90, 90)
+    doc.text(windowLabel, centerX, 170, { align: 'center' })
 
     // Challenge info
     if (challenge) {
@@ -488,22 +806,51 @@ function PortalPage() {
       doc.text(
         `${challenge.name}  ·  ${formatDate(challenge.starts_at)} – ${formatDate(challenge.ends_at)}`,
         centerX,
-        225,
+        192,
         { align: 'center' }
       )
     }
 
-    // Stats table
+    // Stats table. Use plain "CO2" — jsPDF's default Helvetica doesn't
+    // carry the U+2082 subscript glyph, and some viewers render the
+    // fallback as letter-spaced gibberish.
+    const topMode = dashboard?.mode_breakdown?.find(
+      (m) => !['drive', 'carpool', 'other'].includes(m.mode),
+    )
     const stats = [
-      { label: 'Employees joined', value: memberCount > 0 ? String(memberCount) : '\u2014' },
-      { label: 'Active trips logged', value: '\u2014' },
-      { label: 'Miles shifted', value: '\u2014' },
-      { label: 'CO\u2082 avoided (kg)', value: '\u2014' },
-      { label: 'Most popular mode', value: '\u2014' },
-      { label: 'Average Shift Rate', value: '\u2014' },
+      {
+        label: 'Employees joined',
+        value: dashboard
+          ? String(dashboard.member_count)
+          : memberCount > 0
+            ? String(memberCount)
+            : '\u2014',
+      },
+      {
+        label: 'Active trips logged',
+        value: dashboard
+          ? dashboard.active_trips_this_period.toLocaleString()
+          : '\u2014',
+      },
+      {
+        label: 'Miles shifted',
+        value: dashboard ? dashboard.miles_shifted.toLocaleString() : '\u2014',
+      },
+      {
+        label: 'CO2 avoided (kg)',
+        value: dashboard ? dashboard.co2_avoided_kg.toFixed(1) : '\u2014',
+      },
+      {
+        label: 'Most popular mode',
+        value: topMode ? prettyMode(topMode.mode) : '\u2014',
+      },
+      {
+        label: 'Shift Rate',
+        value: dashboard ? `${Math.round(dashboard.shift_rate_trip_pct)}%` : '\u2014',
+      },
     ]
 
-    const tableTop = challenge ? 260 : 240
+    const tableTop = challenge ? 220 : 200
     const rowH = 38
     const colLabel = 80
     const colValue = w - 80
@@ -538,8 +885,11 @@ function PortalPage() {
     doc.line(50, 680, w - 50, 680)
     doc.setFontSize(10)
     doc.setTextColor(150, 150, 150)
-    doc.text('gogreenstreets.org', centerX, 705, { align: 'center' })
-    doc.text('Shift by Green Streets Initiative', centerX, 720, { align: 'center' })
+    doc.text(`Generated ${today}`, 50, 705)
+    doc.text('Powered by Shift · Green Streets Initiative', centerX, 705, {
+      align: 'center',
+    })
+    doc.text('gogreenstreets.org', w - 50, 705, { align: 'right' })
 
     const slug = group.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
     const dateSlug = new Date().toISOString().split('T')[0]
@@ -550,35 +900,7 @@ function PortalPage() {
     if (!group) return
     setSavingAccount(true)
 
-    let newLogoUrl = group.logo_url
-
-    if (logoFile) {
-      const ext = (logoFile.name.split('.').pop() || 'png').toLowerCase()
-      const mimeMap: Record<string, string> = {
-        svg: 'image/svg+xml',
-        png: 'image/png',
-        jpg: 'image/jpeg',
-        jpeg: 'image/jpeg',
-        webp: 'image/webp',
-      }
-      const contentType = mimeMap[ext] || logoFile.type
-      const path = `logos/${Date.now()}-${group.id.slice(0, 8)}.${ext}`
-
-      const { createClient } = await import('@supabase/supabase-js')
-      const anonClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { auth: { persistSession: false } }
-      )
-      const { error: uploadErr } = await anonClient.storage
-        .from('employer-logos')
-        .upload(path, logoFile, { contentType })
-
-      if (!uploadErr) {
-        newLogoUrl = anonClient.storage.from('employer-logos').getPublicUrl(path).data.publicUrl
-      }
-    }
-
+    // Logo is saved independently via uploadLogoDirect() from the header.
     await supabase
       .from('groups')
       .update({
@@ -586,7 +908,6 @@ function PortalPage() {
         admin_name: accountForm.admin_name.trim() || null,
         admin_phone: accountForm.admin_phone.trim() || null,
         website_url: accountForm.website_url.trim() || null,
-        logo_url: newLogoUrl,
       })
       .eq('id', group.id)
 
@@ -596,17 +917,18 @@ function PortalPage() {
       admin_name: accountForm.admin_name.trim() || null,
       admin_phone: accountForm.admin_phone.trim() || null,
       website_url: accountForm.website_url.trim() || null,
-      logo_url: newLogoUrl,
     })
-    setLogoFile(null)
-    setLogoPreview(null)
     setEditingAccount(false)
     setSavingAccount(false)
   }
 
-  function handleLogoSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  /**
+   * One-shot logo upload triggered from the portal header. Uploads to
+   * Storage, patches `groups.logo_url`, refreshes local state — no need
+   * to enter Account Settings edit mode.
+   */
+  async function uploadLogoDirect(file: File) {
+    if (!group) return
     setLogoError('')
 
     const allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp']
@@ -619,9 +941,47 @@ function PortalPage() {
       return
     }
 
-    setLogoFile(file)
-    setLogoPreview(URL.createObjectURL(file))
+    setUploadingLogo(true)
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase()
+    const mimeMap: Record<string, string> = {
+      svg: 'image/svg+xml',
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      webp: 'image/webp',
+    }
+    const contentType = mimeMap[ext] || file.type
+    const path = `logos/${Date.now()}-${group.id.slice(0, 8)}.${ext}`
+
+    const { error: uploadErr } = await supabase.storage
+      .from('employer-logos')
+      .upload(path, file, { contentType })
+
+    if (uploadErr) {
+      setLogoError(uploadErr.message)
+      setUploadingLogo(false)
+      return
+    }
+
+    const publicUrl = supabase.storage
+      .from('employer-logos')
+      .getPublicUrl(path).data.publicUrl
+
+    const { error: updateErr } = await supabase
+      .from('groups')
+      .update({ logo_url: publicUrl })
+      .eq('id', group.id)
+
+    if (updateErr) {
+      setLogoError(updateErr.message)
+      setUploadingLogo(false)
+      return
+    }
+
+    setGroup({ ...group, logo_url: publicUrl })
+    setUploadingLogo(false)
   }
+
 
   /* ── access check ────────────────────────────────────────── */
 
@@ -699,15 +1059,60 @@ function PortalPage() {
           )}
 
           {/* ── Header ─────────────────────────────────────── */}
-          <div className="mb-10 flex items-start justify-between">
+          <div id="portal-header" className="mb-10 flex scroll-mt-24 items-start justify-between">
             <div className="flex items-center gap-4">
-              {group.logo_url && (
-                <img
-                  src={group.logo_url}
-                  alt=""
-                  className="h-12 w-12 rounded-lg object-contain"
+              {/* Logo control — click to upload or replace */}
+              <label
+                className="group relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-white/[0.12] bg-white/[0.04] transition-colors hover:bg-white/[0.08]"
+                aria-label={group.logo_url ? 'Replace company logo' : 'Upload company logo'}
+                title={group.logo_url ? 'Replace company logo' : 'Upload company logo'}
+              >
+                {group.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={group.logo_url}
+                    alt=""
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <span className="px-1 text-center text-[10px] font-medium leading-tight text-white/60">
+                    Upload logo
+                  </span>
+                )}
+                {/* Hover overlay: camera icon + caption */}
+                <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-[10px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  <svg
+                    className="mb-0.5 h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                  {group.logo_url ? 'Replace' : 'Upload'}
+                </span>
+                {uploadingLogo && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/70 text-[10px] font-medium text-white">
+                    Saving&hellip;
+                  </span>
+                )}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                  className="absolute inset-0 cursor-pointer opacity-0"
+                  disabled={uploadingLogo}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) uploadLogoDirect(file)
+                    e.target.value = ''
+                  }}
                 />
-              )}
+              </label>
               <div>
                 <h1 className="font-display text-[clamp(1.75rem,3vw,2.25rem)] font-extrabold tracking-tight text-white">
                   {group.name}
@@ -727,6 +1132,9 @@ function PortalPage() {
                       ? 'Cancelled'
                       : 'Inactive'}
                 </span>
+                {logoError && (
+                  <p className="mt-1 text-xs text-[#E05252]">{logoError}</p>
+                )}
               </div>
             </div>
             <button
@@ -737,8 +1145,19 @@ function PortalPage() {
             </button>
           </div>
 
+          {/* ── Setup checklist + subscription (top-of-portal overview) ── */}
+          <SetupOverview
+            group={group}
+            memberCount={memberCount}
+            hasChallenge={!!challenge}
+            benefits={benefitsForm}
+          />
+
           {/* ── Section 1: Invite code ─────────────────────── */}
-          <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+          <section
+            id="invite-code"
+            className="mb-8 scroll-mt-24 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
+          >
             <h2 className="mb-5 font-display text-base font-bold text-white">Your invite code</h2>
 
             <div className="mb-4 flex items-center gap-4">
@@ -783,7 +1202,10 @@ function PortalPage() {
           </section>
 
           {/* ── Section 2: Your challenge ──────────────────── */}
-          <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+          <section
+            id="your-challenge"
+            className="mb-8 scroll-mt-24 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
+          >
             <h2 className="mb-5 font-display text-base font-bold text-white">Your challenge</h2>
 
             {editingChallenge ? (
@@ -964,7 +1386,10 @@ function PortalPage() {
           </section>
 
           {/* ── Section: Commute Advisor ──────────────────── */}
-          <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+          <section
+            id="commute-advisor"
+            className="mb-8 scroll-mt-24 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
+          >
             <h2 className="mb-2 font-display text-base font-bold text-white">Commute Advisor</h2>
             <p className="mb-4 text-[0.8125rem] text-white/50">
               Customize the Commute Advisor for your employees. Share this link in your onboarding kit or HR portal:
@@ -1183,13 +1608,13 @@ function PortalPage() {
             </button>
           </section>
 
-          {/* ── Section 4: Employee leaderboard (placeholder) */}
+          {/* ── Section 4: Employee leaderboard ──────────────── */}
           <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
             <h2 className="mb-5 font-display text-base font-bold text-white">
               Employee leaderboard
             </h2>
 
-            {/* Period toggle (rendered but inactive) */}
+            {/* Period toggle */}
             <div className="mb-4 flex gap-2">
               {(
                 [
@@ -1212,41 +1637,210 @@ function PortalPage() {
               ))}
             </div>
 
-            <p className="py-6 text-center text-sm text-white/50">
-              No employee trip data yet. Once employees join your group and log trips in the Shift
-              app, their standings will appear here.
-            </p>
+            {loadingMembers ? (
+              <p className="py-6 text-center text-sm text-white/50">Loading…</p>
+            ) : members.length === 0 ? (
+              <p className="py-6 text-center text-sm text-white/50">
+                No employees have joined yet. Share your invite code above to get started.
+              </p>
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-white/[0.06]">
+                <table className="w-full text-sm">
+                  <thead className="bg-white/[0.04] text-[11px] uppercase tracking-wider text-white/50">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Employee</th>
+                      <th className="px-4 py-2 text-right">Trips</th>
+                      <th className="px-4 py-2 text-right">Active trips</th>
+                      <th className="px-4 py-2 text-left">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.04]">
+                    {members.map((m) => (
+                      <tr key={m.user_id} className="text-white">
+                        <td className="px-4 py-2 font-medium">{m.display_name ?? '—'}</td>
+                        <td className="px-4 py-2 text-right tabular-nums">{m.trips_in_period}</td>
+                        <td className="px-4 py-2 text-right tabular-nums text-[#BAF14D]">
+                          {m.active_trips_in_period}
+                        </td>
+                        <td className="px-4 py-2 text-white/60">
+                          {formatDate(m.joined_at)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-            <p className="text-xs leading-[1.5] text-white/30">
+            <p className="mt-4 text-xs leading-[1.5] text-white/30">
               This leaderboard is visible only to you as the group administrator. Employees cannot
               see each other&apos;s data except through the shared in-app leaderboard.
             </p>
           </section>
 
-          {/* ── Section 5: Impact stats (placeholder) ──────── */}
-          <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-            <h2 className="mb-5 font-display text-base font-bold text-white">Impact report</h2>
+          {/* ── Section 5: Impact stats ─────────────────────── */}
+          <section
+            id="impact-report"
+            className="mb-8 scroll-mt-24 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
+          >
+            <div className="mb-1 flex items-baseline justify-between gap-2">
+              <h2 className="font-display text-base font-bold text-white">Impact report</h2>
+              {reloadingImpact && (
+                <span className="text-xs text-white/40">Loading&hellip;</span>
+              )}
+            </div>
+            {(() => {
+              const win = resolveImpactWindow(impactPreset, customStart, customEnd)
+              return (
+                <p className="mb-5 text-xs text-white/50">
+                  {win ? win.label : 'Pick a date range'}
+                </p>
+              )
+            })()}
 
-            <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
-              {[
-                { label: 'Employees joined', value: memberCount > 0 ? String(memberCount) : '\u2014' },
-                { label: 'Active trips', value: '\u2014' },
-                { label: 'Miles shifted', value: '\u2014' },
-                { label: 'CO\u2082 avoided (kg)', value: '\u2014' },
-                { label: 'Most popular mode', value: '\u2014' },
-                { label: 'Avg Shift Rate', value: '\u2014' },
-              ].map((stat) => (
-                <div key={stat.label} className="rounded-xl bg-white/[0.06] p-4 text-center">
-                  <div className="text-2xl font-extrabold text-white">{stat.value}</div>
-                  <div className="mt-1 text-xs text-white/60">{stat.label}</div>
-                </div>
+            {/* Period presets */}
+            <div className="mb-3 flex flex-wrap gap-2">
+              {(
+                [
+                  ['last_30', 'Last 30 days'],
+                  ['this_month', 'This month'],
+                  ['last_month', 'Last month'],
+                  ['this_quarter', 'This quarter'],
+                  ['last_quarter', 'Last quarter'],
+                  ['ytd', 'Year to date'],
+                  ['custom', 'Custom\u2026'],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setImpactPreset(key)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    impactPreset === key
+                      ? 'bg-[#BAF14D] text-[#191A2E]'
+                      : 'border border-white/[0.12] text-white hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {label}
+                </button>
               ))}
             </div>
 
-            <p className="text-sm text-white/50">
-              Impact data will appear here once your challenge is underway and employees start
-              logging trips.
-            </p>
+            {impactPreset === 'custom' && (
+              <div className="mb-5 flex flex-wrap items-end gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+                <div>
+                  <label className="mb-1 block text-xs text-white/50">Start</label>
+                  <input
+                    type="date"
+                    value={customStart}
+                    onChange={(e) => setCustomStart(e.target.value)}
+                    className="rounded-lg border border-white/[0.12] bg-white/[0.07] px-3 py-1.5 text-sm text-white outline-none focus:border-[#BAF14D]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-white/50">End</label>
+                  <input
+                    type="date"
+                    value={customEnd}
+                    onChange={(e) => setCustomEnd(e.target.value)}
+                    className="rounded-lg border border-white/[0.12] bg-white/[0.07] px-3 py-1.5 text-sm text-white outline-none focus:border-[#BAF14D]"
+                  />
+                </div>
+                {!resolveImpactWindow('custom', customStart, customEnd) && (
+                  <span className="text-xs text-white/40">
+                    Pick a valid start and end date.
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* spacer to keep the original layout below the controls */}
+            <div className="mb-5" />
+
+            <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
+              {(() => {
+                const topMode = dashboard?.mode_breakdown?.find(
+                  (m) => !['drive', 'carpool', 'other'].includes(m.mode),
+                )
+                const stats: Array<{ label: string; value: string }> = [
+                  {
+                    label: 'Employees joined',
+                    value: dashboard
+                      ? String(dashboard.member_count)
+                      : memberCount > 0
+                        ? String(memberCount)
+                        : '\u2014',
+                  },
+                  {
+                    label: 'Active trips',
+                    value: dashboard
+                      ? dashboard.active_trips_this_period.toLocaleString()
+                      : '\u2014',
+                  },
+                  {
+                    label: 'Miles shifted',
+                    value: dashboard ? dashboard.miles_shifted.toLocaleString() : '\u2014',
+                  },
+                  {
+                    label: 'CO\u2082 avoided (kg)',
+                    value: dashboard ? dashboard.co2_avoided_kg.toFixed(1) : '\u2014',
+                  },
+                  {
+                    label: 'Most popular mode',
+                    value: topMode ? prettyMode(topMode.mode) : '\u2014',
+                  },
+                  {
+                    label: 'Shift Rate',
+                    value: dashboard ? `${Math.round(dashboard.shift_rate_trip_pct)}%` : '\u2014',
+                  },
+                ]
+                return stats.map((stat) => (
+                  <div key={stat.label} className="rounded-xl bg-white/[0.06] p-4 text-center">
+                    <div className="text-2xl font-extrabold text-white">{stat.value}</div>
+                    <div className="mt-1 text-xs text-white/60">{stat.label}</div>
+                  </div>
+                ))
+              })()}
+            </div>
+
+            {!dashboard || dashboard.trips_this_period === 0 ? (
+              <p className="text-sm text-white/50">
+                Impact data will appear here once employees start logging trips in the Shift app.
+              </p>
+            ) : null}
+
+            {/* Mode breakdown bars — only show when we have data */}
+            {dashboard && dashboard.mode_breakdown.length > 0 && (
+              <div className="mt-6 space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-white/50">
+                  Mode breakdown
+                </h3>
+                {(() => {
+                  const total = dashboard.mode_breakdown.reduce(
+                    (s, m) => s + m.trip_count,
+                    0,
+                  )
+                  return dashboard.mode_breakdown.map((m) => {
+                    const pct = total > 0 ? Math.round((m.trip_count / total) * 100) : 0
+                    return (
+                      <div key={m.mode}>
+                        <div className="flex items-center justify-between text-xs text-white">
+                          <span>{prettyMode(m.mode)}</span>
+                          <span className="text-white/60">
+                            {m.trip_count} · {pct}%
+                          </span>
+                        </div>
+                        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
+                          <div
+                            className="h-full bg-[#BAF14D]"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })
+                })()}
+              </div>
+            )}
 
             {isTierAtLeast('standard') ? (
               <button
@@ -1266,8 +1860,111 @@ function PortalPage() {
             )}
           </section>
 
+          {/* ── Section 5b: Employee rewards pool (Premium only) */}
+          {group.tier === 'premium' && (
+            <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+              <h2 className="mb-1 font-display text-base font-bold text-white">
+                Employee rewards pool
+              </h2>
+              <p className="mb-5 text-xs text-white/50">
+                Funds you&apos;ve contributed for employees to redeem as gift cards and transit
+                passes via the Shift app.
+              </p>
+
+              {fundingPool ? (
+                (() => {
+                  const total = fundingPool.budget_total_cents
+                  const remaining = fundingPool.budget_remaining_cents
+                  const spent = fundingPool.budget_spent_cents
+                  const pct = total > 0 ? Math.round((remaining / total) * 100) : 0
+                  const depletionLabel =
+                    remaining === 0
+                      ? 'Depleted'
+                      : remaining < 1000
+                        ? 'Nearly depleted'
+                        : remaining < 5000
+                          ? 'Running low'
+                          : 'Active'
+                  const depletionColor =
+                    remaining === 0
+                      ? 'text-white/50'
+                      : remaining < 1000
+                        ? 'text-[#E05252]'
+                        : remaining < 5000
+                          ? 'text-[#EDB93C]'
+                          : 'text-[#BAF14D]'
+                  return (
+                    <>
+                      <div className="mb-4 flex items-baseline justify-between">
+                        <div>
+                          <div className="text-3xl font-extrabold text-white">
+                            {centsToDollars(remaining)}
+                          </div>
+                          <div className="text-xs text-white/60">
+                            remaining of {centsToDollars(total)} ·{' '}
+                            {centsToDollars(spent)} redeemed
+                          </div>
+                        </div>
+                        <span
+                          className={`rounded-full bg-white/[0.06] px-3 py-1 text-xs font-semibold ${depletionColor}`}
+                        >
+                          {depletionLabel}
+                        </span>
+                      </div>
+
+                      <div className="mb-6 h-2 overflow-hidden rounded-full bg-white/[0.08]">
+                        <div
+                          className={`h-full ${
+                            pct >= 20
+                              ? 'bg-[#BAF14D]'
+                              : pct >= 5
+                                ? 'bg-[#EDB93C]'
+                                : 'bg-[#E05252]'
+                          }`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+
+                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
+                        <button
+                          type="button"
+                          disabled
+                          className="rounded-full bg-white/[0.08] px-5 py-2 text-sm font-medium text-white/40"
+                          title="Top-up UI ships in the upcoming Stripe integration"
+                        >
+                          Top up pool
+                        </button>
+                        <p className="mt-2 text-xs text-white/40">
+                          Stripe top-up is coming soon. For now, email{' '}
+                          <a
+                            href="mailto:info@gogreenstreets.org"
+                            className="underline"
+                          >
+                            info@gogreenstreets.org
+                          </a>{' '}
+                          to add funds.
+                        </p>
+                      </div>
+                    </>
+                  )
+                })()
+              ) : (
+                <p className="text-sm text-white/50">
+                  Your rewards pool hasn&apos;t been provisioned yet. Contact{' '}
+                  <a href="mailto:info@gogreenstreets.org" className="underline">
+                    info@gogreenstreets.org
+                  </a>{' '}
+                  to activate it.
+                </p>
+              )}
+            </section>
+          )}
+
           {/* ── Section 6: Account settings ────────────────── */}
-          <section className="mb-8 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
+          <section
+            id="account-settings"
+            className="mb-8 scroll-mt-24 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
+          >
             <h2 className="mb-5 font-display text-base font-bold text-white">Account settings</h2>
 
             {editingAccount ? (
@@ -1302,24 +1999,10 @@ function PortalPage() {
                   placeholder="https://"
                 />
 
-                {/* Logo upload */}
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-white">Logo</label>
-                  {(logoPreview || group.logo_url) && (
-                    <img
-                      src={logoPreview || group.logo_url || ''}
-                      alt=""
-                      className="mb-3 h-16 w-16 rounded-lg object-contain"
-                    />
-                  )}
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                    onChange={handleLogoSelect}
-                    className="block w-full text-sm text-white/60 file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white"
-                  />
-                  {logoError && <p className="mt-1 text-sm text-[#E05252]">{logoError}</p>}
-                </div>
+                {/* Logo is now uploaded from the portal header (click the
+                    logo thumbnail next to your company name). Keeping it
+                    top-of-page makes onboarding one click and avoids the
+                    "settings edit mode required" hop employers hit before. */}
 
                 <div className="flex gap-3">
                   <button
@@ -1337,8 +2020,6 @@ function PortalPage() {
                         admin_phone: group.admin_phone || '',
                         website_url: group.website_url || '',
                       })
-                      setLogoFile(null)
-                      setLogoPreview(null)
                       setEditingAccount(false)
                     }}
                     className="rounded-full border border-white/[0.12] px-5 py-2.5 text-sm font-medium text-white"
@@ -1438,6 +2119,248 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     <div className="flex items-baseline justify-between border-b border-white/[0.04] pb-2">
       <span className="text-sm text-white/50">{label}</span>
       <span className="text-sm font-medium text-white">{value}</span>
+    </div>
+  )
+}
+
+/* ── Setup overview: checklist + subscription status ───────── */
+
+const TIER_LABEL: Record<string, string> = {
+  basic: 'Basic',
+  standard: 'Standard',
+  premium: 'Premium',
+}
+
+const TIER_ANNUAL_PRICE: Record<string, string> = {
+  basic: '$1,000 / year',
+  standard: '$3,000 / year',
+  premium: '$5,000 / year',
+}
+
+function SetupOverview({
+  group,
+  memberCount,
+  hasChallenge,
+  benefits,
+}: {
+  group: Group
+  memberCount: number
+  hasChallenge: boolean
+  benefits: EmployerBenefits
+}) {
+  const [openingPortal, setOpeningPortal] = useState(false)
+  const [portalError, setPortalError] = useState<string | null>(null)
+
+  async function openCustomerPortal() {
+    setPortalError(null)
+    setOpeningPortal(true)
+    try {
+      // functions.invoke() attaches both the session JWT and the anon
+      // apikey header, which the Supabase gateway requires for
+      // JWT-verified functions. A raw fetch with only Authorization
+      // bounces at the gateway with 401 before the function runs.
+      const { data, error } = await supabase.functions.invoke<{
+        url?: string
+        error?: string
+      }>('employer-portal-session', {
+        body: { return_url: window.location.href },
+      })
+
+      if (error) {
+        // 409 = comped / invoiced group with no Stripe customer on file.
+        // Fall back to the mailto path so they can still reach GSI.
+        const status = (error as { context?: { status?: number } }).context?.status
+        if (status === 409) {
+          window.location.href =
+            'mailto:info@gogreenstreets.org?subject=Shift%20Employer%20renewal'
+          return
+        }
+        throw new Error(
+          (data?.error as string | undefined) ??
+            error.message ??
+            "Couldn't open billing portal",
+        )
+      }
+      if (!data?.url) throw new Error('Billing portal URL missing')
+      window.location.href = data.url
+    } catch (err: unknown) {
+      setPortalError(err instanceof Error ? err.message : String(err))
+      setOpeningPortal(false)
+    }
+  }
+  // Checklist heuristics — each item becomes ✓ when the underlying signal is true.
+  const items: Array<{ label: string; done: boolean; anchor: string }> = [
+    {
+      label: 'Company profile complete',
+      done: Boolean(group.admin_name && group.website_url),
+      anchor: '#account-settings',
+    },
+    {
+      label: 'Logo uploaded',
+      done: Boolean(group.logo_url),
+      anchor: '#portal-header',
+    },
+    {
+      label: 'Employees joined',
+      done: memberCount > 0,
+      anchor: '#invite-code',
+    },
+    {
+      label: 'Active challenge running',
+      done: hasChallenge,
+      anchor: '#your-challenge',
+    },
+    {
+      label: 'Commute Advisor configured',
+      done: Boolean(
+        benefits?.destination_lat &&
+          benefits?.destination_lng,
+      ),
+      anchor: '#commute-advisor',
+    },
+  ]
+  const completed = items.filter((i) => i.done).length
+  const total = items.length
+  const allDone = completed === total
+  const pct = Math.round((completed / total) * 100)
+
+  // Subscription status card math
+  const endsAt = group.access_ends_at ? new Date(group.access_ends_at) : null
+  const startsAt = group.access_starts_at ? new Date(group.access_starts_at) : null
+  const now = new Date()
+  const daysUntilRenewal = endsAt
+    ? Math.max(0, Math.ceil((endsAt.getTime() - now.getTime()) / 86400000))
+    : null
+  const renewalTone =
+    daysUntilRenewal == null
+      ? 'neutral'
+      : daysUntilRenewal <= 30
+        ? 'warn'
+        : 'ok'
+  const subscriptionBadge =
+    group.status === 'cancelled'
+      ? { label: 'Cancelled', className: 'bg-[#EDB93C]/15 text-[#EDB93C]' }
+      : renewalTone === 'warn'
+        ? { label: 'Renewal due soon', className: 'bg-[#EDB93C]/15 text-[#EDB93C]' }
+        : { label: 'Active', className: 'bg-[#BAF14D]/15 text-[#BAF14D]' }
+
+  return (
+    <div className="mb-8 grid gap-4 lg:grid-cols-[1fr_320px]">
+      {/* Checklist */}
+      <section className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-6">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="font-display text-base font-bold text-white">
+            {allDone ? 'Setup complete' : 'Finish setup'}
+          </h2>
+          <span className="text-xs text-white/50">
+            {completed} / {total}
+          </span>
+        </div>
+
+        <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
+          <div
+            className="h-full bg-[#BAF14D] transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+
+        <ul className="space-y-1.5">
+          {items.map((item) => (
+            <li key={item.label}>
+              <a
+                href={item.anchor}
+                className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-white/[0.04]"
+              >
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                    item.done
+                      ? 'bg-[#BAF14D] text-[#191A2E]'
+                      : 'border border-white/20 text-white/40'
+                  }`}
+                  aria-hidden
+                >
+                  {item.done ? '\u2713' : ''}
+                </span>
+                <span className={item.done ? 'text-white/80' : 'text-white'}>
+                  {item.label}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Subscription */}
+      <aside className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-6">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="font-display text-base font-bold text-white">Subscription</h2>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${subscriptionBadge.className}`}
+          >
+            {subscriptionBadge.label}
+          </span>
+        </div>
+
+        <div className="mb-1 text-lg font-bold text-white">
+          {TIER_LABEL[group.tier] ?? group.tier}
+        </div>
+        <div className="mb-4 text-xs text-white/50">
+          {TIER_ANNUAL_PRICE[group.tier] ?? ''}
+        </div>
+
+        <dl className="space-y-1.5 text-xs">
+          <div className="flex justify-between">
+            <dt className="text-white/50">Started</dt>
+            <dd className="text-white">
+              {startsAt
+                ? startsAt.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : '\u2014'}
+            </dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-white/50">
+              {group.status === 'cancelled' ? 'Access ends' : 'Renews'}
+            </dt>
+            <dd className="text-white">
+              {endsAt
+                ? endsAt.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : '\u2014'}
+            </dd>
+          </div>
+          {daysUntilRenewal != null && (
+            <div className="flex justify-between">
+              <dt className="text-white/50">Days left</dt>
+              <dd
+                className={
+                  daysUntilRenewal <= 30 ? 'text-[#EDB93C]' : 'text-white'
+                }
+              >
+                {daysUntilRenewal}
+              </dd>
+            </div>
+          )}
+        </dl>
+
+        <button
+          type="button"
+          onClick={openCustomerPortal}
+          disabled={openingPortal}
+          className="mt-4 inline-flex rounded-full border border-white/[0.12] px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-85 disabled:opacity-50"
+        >
+          {openingPortal ? 'Opening\u2026' : 'Manage billing'}
+        </button>
+        {portalError && (
+          <p className="mt-2 text-xs text-[#E05252]">{portalError}</p>
+        )}
+      </aside>
     </div>
   )
 }

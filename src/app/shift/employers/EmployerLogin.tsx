@@ -28,7 +28,7 @@ export default function EmployerLogin() {
   }
 
   return (
-    <section className="bg-[#242538] px-8 py-16">
+    <section id="employer-login" className="scroll-mt-20 bg-[#242538] px-8 py-16">
       <div className="mx-auto max-w-[480px] text-center">
         <h2 className="mb-3 font-display text-xl font-bold text-white">
           Already an employer partner?

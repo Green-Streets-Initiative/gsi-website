@@ -1,8 +1,11 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import FAQ from '@/components/FAQ'
 import EmployerLogin from './EmployerLogin'
+import EmployerPricing from './EmployerPricing'
+import CheckoutBanner from './CheckoutBanner'
 
 export const metadata = {
   title: 'Shift for Employers — Green Streets Initiative',
@@ -58,6 +61,11 @@ export default function ShiftEmployersPage() {
     <>
       <Nav />
       <main style={{ paddingTop: '60px' }}>
+        {/* Post-checkout success / cancel banner — only renders when
+            the marketing page is loaded from a Stripe redirect. */}
+        <Suspense fallback={null}>
+          <CheckoutBanner />
+        </Suspense>
 
         {/* ══════════════════════════════════════════════════════════
             1 · HERO
@@ -217,6 +225,11 @@ export default function ShiftEmployersPage() {
             </div>
           </div>
         </section>
+
+        {/* ══════════════════════════════════════════════════════════
+            4.5 · PRICING / PLANS
+        ══════════════════════════════════════════════════════════ */}
+        <EmployerPricing />
 
         {/* ══════════════════════════════════════════════════════════
             5 · EMPLOYER FAQ
