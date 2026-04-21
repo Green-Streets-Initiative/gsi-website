@@ -1,0 +1,15 @@
+project_id = "xyqcpgwbqrhykpgpqbdi"
+
+# Public-facing edge functions that authenticate via their own mechanism
+# (Stripe signature, email-based lookup, etc.) and therefore must bypass
+# the Supabase gateway's default Authorization: Bearer JWT requirement.
+# Functions NOT listed here default to verify_jwt = true.
+
+[functions.employer-webhook]
+verify_jwt = false
+
+[functions.employer-checkout]
+verify_jwt = false
+
+[functions.employer-magic-link]
+verify_jwt = false
