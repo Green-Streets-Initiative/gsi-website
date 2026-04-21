@@ -56,7 +56,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/what-moves-cambridge-shop-by-bike-ers',
-        destination: '/programs/what-moves-us/cambridge-bike-shoppers',
+        destination: '/programs/what-moves-us/cambridge-shop-by-bike',
         permanent: true,
       },
       {
@@ -86,12 +86,17 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/what-moves-everett-transportation-fair-recap',
-        destination: '/programs/what-moves-us/everett-transportation-fair',
+        destination: '/programs/what-moves-us/everett-community-fair',
         permanent: true,
       },
       {
         source: '/what-moves-everett-transportation-celebration',
-        destination: '/programs/what-moves-us/everett-transportation-fair',
+        destination: '/programs/what-moves-us/everett-community-fair',
+        permanent: true,
+      },
+      {
+        source: '/cities-what-moves-us-program-information',
+        destination: '/programs/what-moves-us',
         permanent: true,
       },
       {
