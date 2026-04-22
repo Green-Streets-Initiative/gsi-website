@@ -148,8 +148,16 @@ serve(async (req) => {
     ? String(body.contact_phone).trim()
     : null;
 
+  // Community Partners cross-promote without a discount, so the discount
+  // fields and offer_description aren't required.
+  const partnerKind =
+    String(body.partner_kind ?? "rewards").trim() === "community"
+      ? "community"
+      : "rewards";
+  const isCommunityPartner = partnerKind === "community";
+
   const offerDescription = String(body.offer_description ?? "").trim();
-  if (!offerDescription) errors.push("Offer description is required");
+  if (!offerDescription && !isCommunityPartner) errors.push("Offer description is required");
   if (offerDescription.length > 1000)
     errors.push("Offer description too long");
 
@@ -214,11 +222,14 @@ serve(async (req) => {
     : null;
 
   // Online/both channels require a discount code and website URL
-  if ((channel === "online" || channel === "both") && !discountCode) {
-    errors.push("Discount code is required for online partners");
-  }
-  if ((channel === "online" || channel === "both") && !websiteUrl && !redemptionUrl) {
-    errors.push("Website URL is required for online partners");
+  // (Rewards Partners only — Community Partners don't have a discount).
+  if (!isCommunityPartner) {
+    if ((channel === "online" || channel === "both") && !discountCode) {
+      errors.push("Discount code is required for online partners");
+    }
+    if ((channel === "online" || channel === "both") && !websiteUrl && !redemptionUrl) {
+      errors.push("Website URL is required for online partners");
+    }
   }
 
   // New discount fields (from structured form)
@@ -306,15 +317,16 @@ serve(async (req) => {
       address_state: addressState,
       address_zip: addressZip,
       channel,
-      discount_code: discountCode,
+      discount_code: isCommunityPartner ? null : discountCode,
       redemption_url: redemptionUrl ?? websiteUrl,
-      discount_description: discountDescription,
-      discount_type: discountType,
-      discount_value: discountValue,
+      discount_description: isCommunityPartner ? null : discountDescription,
+      discount_type: isCommunityPartner ? null : discountType,
+      discount_value: isCommunityPartner ? null : discountValue,
       preferred_minimum_tier: preferredMinimumTier,
-      redemption_limit: redemptionLimit,
+      redemption_limit: isCommunityPartner ? "none" : redemptionLimit,
       location_lat: locationLat,
       location_lng: locationLng,
+      partner_kind: partnerKind,
     });
 
   if (insertError) {

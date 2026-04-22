@@ -25,8 +25,8 @@ const REDEMPTION_LIMIT_OPTIONS = [
 
 const CASHIER_GUIDE_BASE = 'https://www.gogreenstreets.org/cashier-guide.html'
 
-const STICKER_IMAGE_URL =
-  'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-partner-sticker.png'
+// 3"x3" square sticker, served from the website's public folder.
+const STICKER_IMAGE_URL = '/shift-partner-sticker.svg'
 
 /** Map sponsor.redemption_limit → rewards.redemption_frequency */
 function limitToFrequency(limit: string): string | null {

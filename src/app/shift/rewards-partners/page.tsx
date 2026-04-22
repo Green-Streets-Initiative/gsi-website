@@ -14,6 +14,10 @@ type Sponsor = {
 }
 
 type FormData = {
+  // 'rewards' = partner offers a discount; 'community' = cross-promotion only.
+  // Selected at the very top of the form to pre-empt the "you want me to give
+  // a discount?" objection. Drives whether the discount step is required.
+  partner_kind: 'rewards' | 'community'
   business_name: string
   address: string
   city: string
@@ -41,6 +45,7 @@ type FormData = {
 }
 
 const INITIAL_FORM: FormData = {
+  partner_kind: 'rewards',
   business_name: '',
   address: '',
   city: '',
@@ -77,7 +82,40 @@ const PARTICIPATION_BOTH = `${PARTICIPATION_IN_STORE}
 
 Partner also agrees to honor the discount code described in this application for Shift app users who enter it at checkout on Partner's website. The discount code will be visible only to qualifying Shift users within the app.`
 
-function getAgreementText(channel: 'in_store' | 'online' | 'both') {
+function getAgreementText(
+  channel: 'in_store' | 'online' | 'both',
+  partnerKind: 'rewards' | 'community' = 'rewards',
+) {
+  if (partnerKind === 'community') {
+    return `Shift Community Partner Agreement
+Green Streets Initiative — ${AGREEMENT_YEAR}
+
+By submitting this application, you ("Partner") agree to the following terms with Green Streets Initiative ("GSI"), a 501(c)(3) nonprofit organization based in Cambridge, Massachusetts.
+
+1. Program participation
+Partner agrees to be listed as a Community Partner in the Shift app's partner directory. Partner's name, logo, and any provided description will be visible to Shift app users. No discount or other consideration is required from Partner. In return, Partner agrees to cross-promote Shift to its customers and community (e.g., displaying the provided window sticker, mentioning Shift in newsletters or social media when convenient).
+
+2. Listing terms
+Partner may pause or end its listing at any time via the partner dashboard or by contacting GSI. Partner is responsible for the accuracy of its listing details (name, logo, description) and may update them at any time.
+
+3. No cost to Partner
+Participation in the Shift community partner network is free. GSI does not charge Partner for listing or impressions.
+
+4. GSI's role
+GSI operates the Shift app and partner directory. GSI does not guarantee any minimum number of impressions or user visits to Partner's location. GSI may remove any Partner listing that violates these terms or that GSI determines is inconsistent with its mission.
+
+5. Termination
+Either party may end this agreement at any time. Partner may pause or end their listing via the partner dashboard. GSI may remove a listing with written notice to Partner's contact email.
+
+6. No exclusivity
+This agreement does not create an exclusive relationship. GSI may partner with other businesses in Partner's category or neighborhood.
+
+7. Governing law
+This agreement is governed by the laws of the Commonwealth of Massachusetts.
+
+By checking the box below, you confirm that you are authorized to enter into this agreement on behalf of the business named in this application, and that you have read and agree to these terms.`
+  }
+
   const participation = channel === 'online' ? PARTICIPATION_ONLINE : channel === 'both' ? PARTICIPATION_BOTH : PARTICIPATION_IN_STORE
   return `Shift Rewards Partner Agreement
 Green Streets Initiative — ${AGREEMENT_YEAR}
@@ -180,12 +218,15 @@ export default function RewardsPartnersPage() {
   }
 
   function isStep2Valid() {
-    const hasDiscount = form.discount_description.trim() && form.discount_type
+    const isCommunity = form.partner_kind === 'community'
+    // Discount fields are required for Rewards Partners only.
+    const hasDiscount = isCommunity || (form.discount_description.trim() && form.discount_type)
     const hasValueIfNeeded =
+      isCommunity ||
       form.discount_type === 'freebie' ||
       form.discount_type === 'custom' ||
       (form.discount_value && Number(form.discount_value) > 0)
-    const isOnline = form.channel === 'online' || form.channel === 'both'
+    const isOnline = !isCommunity && (form.channel === 'online' || form.channel === 'both')
     const hasOnlineFields = !isOnline || (form.discount_code.trim() && form.website_url.trim())
     return (
       hasDiscount &&
@@ -258,6 +299,7 @@ export default function RewardsPartnersPage() {
             'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
+            partner_kind: form.partner_kind,
             business_name: form.business_name.trim(),
             address: `${(form.address_line1 || form.address).trim()}, ${form.city.trim()}, ${form.address_state.trim()} ${form.address_zip.trim()}`,
             city: form.city.trim(),
@@ -267,17 +309,21 @@ export default function RewardsPartnersPage() {
             contact_name: form.contact_name.trim(),
             contact_email: form.contact_email.trim(),
             contact_phone: form.contact_phone.trim() || null,
-            // New discount fields
-            discount_description: form.discount_description.trim(),
-            discount_type: form.discount_type || null,
-            discount_value: form.discount_value ? Number(form.discount_value) : null,
+            // Discount fields — null for Community Partners (cross-promotion only).
+            discount_description: form.partner_kind === 'community' ? null : form.discount_description.trim(),
+            discount_type: form.partner_kind === 'community' ? null : (form.discount_type || null),
+            discount_value: form.partner_kind === 'community' ? null : (form.discount_value ? Number(form.discount_value) : null),
             preferred_minimum_tier: 'mover',
-            redemption_limit: form.redemption_limit || 'none',
+            redemption_limit: form.partner_kind === 'community' ? 'none' : (form.redemption_limit || 'none'),
             channel: form.channel,
-            discount_code: form.discount_code.trim() || null,
+            discount_code: form.partner_kind === 'community' ? null : (form.discount_code.trim() || null),
             redemption_url: form.website_url.trim() || null,
-            // Legacy field — map discount_description for backward compat
-            offer_description: form.discount_description.trim(),
+            // Legacy field — map discount_description for backward compat. The
+            // sponsor-intake function rejects empty offer_description, so for
+            // community partners we send a sentinel describing the partnership.
+            offer_description: form.partner_kind === 'community'
+              ? 'Community Partner — cross-promotion (no discount)'
+              : form.discount_description.trim(),
             referral_source:
               form.referral_source === 'Other' && form.referral_source_other.trim()
                 ? `Other: ${form.referral_source_other.trim()}`
@@ -614,6 +660,46 @@ export default function RewardsPartnersPage() {
                 {/* Step 1 — Your business */}
                 {step === 1 && (
                   <div className="space-y-5">
+                    {/* Partnership type — first decision, framed positively */}
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-[#191A2E]">
+                        How would you like to partner with Shift?
+                      </label>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() => update('partner_kind', 'rewards')}
+                          className={`rounded-xl border-2 p-4 text-left transition ${
+                            form.partner_kind === 'rewards'
+                              ? 'border-[#191A2E] bg-[#191A2E]/[0.04]'
+                              : 'border-[rgba(25,26,46,0.12)] bg-white hover:border-[rgba(25,26,46,0.3)]'
+                          }`}
+                        >
+                          <div className="text-sm font-semibold text-[#191A2E]">
+                            Rewards Partner
+                          </div>
+                          <p className="mt-1 text-xs text-[#4A4D68]">
+                            Offer a discount to Shift users (any size, your call) — we feature your offer in the rewards directory.
+                          </p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => update('partner_kind', 'community')}
+                          className={`rounded-xl border-2 p-4 text-left transition ${
+                            form.partner_kind === 'community'
+                              ? 'border-[#191A2E] bg-[#191A2E]/[0.04]'
+                              : 'border-[rgba(25,26,46,0.12)] bg-white hover:border-[rgba(25,26,46,0.3)]'
+                          }`}
+                        >
+                          <div className="text-sm font-semibold text-[#191A2E]">
+                            Community Partner
+                          </div>
+                          <p className="mt-1 text-xs text-[#4A4D68]">
+                            No discount — we cross-promote your business in the app, you cross-promote Shift to your customers.
+                          </p>
+                        </button>
+                      </div>
+                    </div>
                     <h3 className="font-display text-lg font-bold text-[#191A2E]">
                       Your business
                     </h3>
@@ -802,18 +888,28 @@ export default function RewardsPartnersPage() {
                   </div>
                 )}
 
-                {/* Step 2 — Your discount */}
+                {/* Step 2 — Your discount (or listing details for Community Partners) */}
                 {step === 2 && (
                   <div className="space-y-5">
                     <h3 className="font-display text-lg font-bold text-[#191A2E]">
-                      Your discount
+                      {form.partner_kind === 'community' ? 'Your listing' : 'Your discount'}
                     </h3>
+                    {form.partner_kind === 'community' ? (
+                      <div className="rounded-xl border border-[#BAF14D]/40 bg-[#BAF14D]/10 p-4 text-[0.9375rem] leading-[1.6] text-[#191A2E]">
+                        <strong>You&apos;re joining as a Community Partner.</strong>{' '}
+                        No discount required — just your contact info below. We&apos;ll
+                        cross-promote your business in the Shift app.
+                      </div>
+                    ) : (
                     <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
                       Tell us what discount you&apos;d like to offer Shift users. Keep it simple
                       and specific — &ldquo;10% off any purchase&rdquo; or &ldquo;Free cookie with
                       any coffee order&rdquo; work well.
                     </p>
+                    )}
 
+                    {form.partner_kind === 'rewards' && (
+                    <>
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
                         Discount type <span className="text-[#E05252]">*</span>
@@ -949,6 +1045,8 @@ export default function RewardsPartnersPage() {
                         )}
                       </>
                     )}
+                    </>
+                    )}
 
                     <div className="border-t border-[rgba(25,26,46,0.09)] pt-5">
                       <h4 className="mb-4 font-display text-sm font-bold text-[#191A2E]">
@@ -1016,7 +1114,7 @@ export default function RewardsPartnersPage() {
                       className="max-h-[240px] overflow-y-scroll rounded-xl border border-[rgba(25,26,46,0.12)] bg-white p-5 text-[0.8125rem] leading-[1.7] text-[#4A4D68] whitespace-pre-line"
                       style={{ scrollbarWidth: 'auto' }}
                     >
-                      {getAgreementText(form.channel)}
+                      {getAgreementText(form.channel, form.partner_kind)}
                     </div>
 
                     <Field
