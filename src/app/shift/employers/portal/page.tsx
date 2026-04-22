@@ -269,6 +269,7 @@ function PortalPage() {
 
   // Invite code copy state
   const [copied, setCopied] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
 
   // Challenge form state
   const [editingChallenge, setEditingChallenge] = useState(false)
@@ -548,6 +549,30 @@ function PortalPage() {
     navigator.clipboard.writeText(group.invite_code)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function shareJoinLink() {
+    if (!group) return
+    const url = `https://shift.gogreenstreets.org/join/${group.invite_code}`
+    const shareData = {
+      title: `Join ${group.name} on Shift`,
+      text: `Join ${group.name} on Shift and start tracking your team's low-carbon commutes.`,
+      url,
+    }
+    // Prefer native share sheet on mobile; fall back to clipboard copy.
+    // navigator.share rejects if the user cancels — that's not an error for us.
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share(shareData)
+        return
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return
+        // fall through to clipboard fallback
+      }
+    }
+    navigator.clipboard.writeText(url)
+    setLinkCopied(true)
+    setTimeout(() => setLinkCopied(false), 2000)
   }
 
   async function saveChallenge() {
@@ -1209,7 +1234,7 @@ function PortalPage() {
           >
             <h2 className="mb-5 font-display text-base font-bold text-white">Your invite code</h2>
 
-            <div className="mb-4 flex items-center gap-4">
+            <div className="mb-4 flex flex-wrap items-center gap-3">
               <span className="font-mono text-3xl font-extrabold tracking-[0.2em] text-[#BAF14D]">
                 {group.invite_code}
               </span>
@@ -1217,13 +1242,20 @@ function PortalPage() {
                 onClick={copyInviteCode}
                 className="rounded-full border border-white/[0.12] px-4 py-2 text-sm font-medium text-white transition-colors"
               >
-                {copied ? 'Copied!' : 'Copy'}
+                {copied ? 'Copied!' : 'Copy code'}
+              </button>
+              <button
+                onClick={shareJoinLink}
+                className="rounded-full bg-[#BAF14D] px-4 py-2 text-sm font-semibold text-[#191A2E] transition-opacity hover:opacity-85"
+              >
+                {linkCopied ? 'Link copied!' : 'Share join link'}
               </button>
             </div>
 
             <p className="text-[0.9375rem] leading-[1.6] text-white">
-              Share this code with your employees. They&apos;ll enter it in the Shift app during
-              onboarding or from the Community tab to join your group.
+              Share the code above, or tap <strong>Share join link</strong> to send a tappable
+              link. Employees with Shift installed jump straight into the join flow; everyone
+              else sees a page with App Store + Play Store buttons.
             </p>
 
             {memberCount > 0 && (
