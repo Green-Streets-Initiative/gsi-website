@@ -802,13 +802,15 @@ function PortalPage() {
     }
 
     if (logo) {
-      // Fit inside a 120x40 box, preserving aspect.
-      const maxW = 120
-      const maxH = 40
+      // Fit inside a 160x50 box centered in the dark strip, preserving
+      // aspect. Centered placement puts the employer's brand in the
+      // hero position; Shift sits left as a secondary platform mark.
+      const maxW = 160
+      const maxH = 50
       const ratio = Math.min(maxW / logo.width, maxH / logo.height)
       const drawW = logo.width * ratio
       const drawH = logo.height * ratio
-      const x = w - 50 - drawW
+      const x = centerX - drawW / 2
       const y = 70 / 2 - drawH / 2
       try {
         doc.addImage(logo.dataUrl, logo.format, x, y, drawW, drawH)
