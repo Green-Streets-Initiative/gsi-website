@@ -8,6 +8,9 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { EmployerBenefits, ShuttleRoute } from '@/lib/types/commute'
 
+const SHIFT_MARK_URL =
+  'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-mark.png'
+
 /* ── types ─────────────────────────────────────────────────── */
 
 type Group = {
@@ -751,18 +754,31 @@ function PortalPage() {
     const windowInfo = resolveImpactWindow(impactPreset, customStart, customEnd)
     const windowLabel = windowInfo?.label ?? 'Last 30 days'
 
-    // Attempt to load the employer logo. Fall back to a text-only header
-    // if fetch/CORS/format checks fail.
-    const logo = group.logo_url ? await loadImageForPdf(group.logo_url) : null
+    // Load the employer logo and the Shift chevron mark in parallel. Both
+    // are best-effort — a null result just means we skip the image and
+    // fall back to text for that slot.
+    const [logo, shiftMark] = await Promise.all([
+      group.logo_url ? loadImageForPdf(group.logo_url) : Promise.resolve(null),
+      loadImageForPdf(SHIFT_MARK_URL),
+    ])
 
-    // Compact top strip: GSI/Shift on the left, company logo (if any)
-    // top-right. Dark band to carry the employer's brand above it.
+    // Compact top strip: Shift wordmark + chevron / GSI on the left,
+    // company logo (if any) top-right. Dark band carries the brand.
     doc.setFillColor(25, 26, 46)
     doc.rect(0, 0, w, 70, 'F')
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(18)
     doc.setTextColor(255, 255, 255)
     doc.text('Shift', 50, 38)
+    if (shiftMark) {
+      const markH = 18
+      const markW = shiftMark.width * (markH / shiftMark.height)
+      try {
+        doc.addImage(shiftMark.dataUrl, shiftMark.format, 88, 22, markW, markH)
+      } catch {
+        // jsPDF rejected the image — silently skip the chevron.
+      }
+    }
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(10)
     doc.setTextColor(186, 241, 77)
@@ -867,18 +883,6 @@ function PortalPage() {
       doc.setTextColor(25, 26, 46)
       doc.text(stat.value, colValue, y + 24, { align: 'right' })
     })
-
-    // Note
-    const noteY = tableTop + stats.length * rowH + 30
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
-    doc.setTextColor(150, 150, 150)
-    const note = doc.splitTextToSize(
-      'This report reflects aggregate data only. Individual employee trip data is never disclosed to employers. ' +
-        'Trip metrics will populate as employees join your group and log trips in the Shift app.',
-      w - 160
-    )
-    doc.text(note, centerX, noteY, { align: 'center' })
 
     // Footer
     doc.setDrawColor(220, 220, 220)
