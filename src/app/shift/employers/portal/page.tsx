@@ -10,8 +10,11 @@ import type { EmployerBenefits, ShuttleRoute } from '@/lib/types/commute'
 
 const BRAND_ASSETS_BASE =
   'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets'
-const SHIFT_WORDMARK_WHITE_URL = `${BRAND_ASSETS_BASE}/shift-wordmark-white.png`
-const GSI_WORDMARK_URL = `${BRAND_ASSETS_BASE}/gsi-wordmark.png`
+// Bump BRAND_ASSETS_VERSION whenever a PNG in the brand-assets bucket is
+// replaced in place, so the CDN and browser cache don't serve stale art.
+const BRAND_ASSETS_VERSION = '20260422'
+const SHIFT_WORDMARK_WHITE_URL = `${BRAND_ASSETS_BASE}/shift-wordmark-white.png?v=${BRAND_ASSETS_VERSION}`
+const GSI_WORDMARK_URL = `${BRAND_ASSETS_BASE}/gsi-wordmark.png?v=${BRAND_ASSETS_VERSION}`
 
 /* ── types ─────────────────────────────────────────────────── */
 
