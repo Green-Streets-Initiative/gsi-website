@@ -440,21 +440,22 @@ function DashboardPage() {
     setRequestingSticker(true)
     setStickerMessage(null)
 
-    const { error } = await supabase.functions.invoke('trigger-sticker-order', {
+    const { error } = await supabase.functions.invoke('record-sticker-request', {
       body: {
-        partner_id: sponsor.id,
+        sponsor_id: sponsor.id,
         business_name: sponsor.name,
         address_line1: stickerAddr.line1,
         city: stickerAddr.city,
         state: stickerAddr.state,
         zip: stickerAddr.zip,
+        source: 'dashboard',
       },
     })
 
     if (error) {
-      setStickerMessage({ type: 'error', text: 'Failed to place sticker order. Please try again or contact us.' })
+      setStickerMessage({ type: 'error', text: 'Failed to record your sticker request. Please try again or contact us.' })
     } else {
-      setStickerMessage({ type: 'success', text: 'Sticker ordered! It will arrive in 5–10 business days.' })
+      setStickerMessage({ type: 'success', text: 'Sticker request received! We hand-mail batches every couple of weeks — yours will be on the way soon.' })
       setShowStickerForm(false)
     }
     setRequestingSticker(false)
