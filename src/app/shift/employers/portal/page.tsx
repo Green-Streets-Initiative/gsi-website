@@ -8,8 +8,10 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { EmployerBenefits, ShuttleRoute } from '@/lib/types/commute'
 
-const SHIFT_MARK_URL =
-  'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-mark.png'
+const BRAND_ASSETS_BASE =
+  'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets'
+const SHIFT_WORDMARK_WHITE_URL = `${BRAND_ASSETS_BASE}/shift-wordmark-white.png`
+const GSI_WORDMARK_URL = `${BRAND_ASSETS_BASE}/gsi-wordmark.png`
 
 /* ── types ─────────────────────────────────────────────────── */
 
@@ -754,35 +756,50 @@ function PortalPage() {
     const windowInfo = resolveImpactWindow(impactPreset, customStart, customEnd)
     const windowLabel = windowInfo?.label ?? 'Last 30 days'
 
-    // Load the employer logo and the Shift chevron mark in parallel. Both
-    // are best-effort — a null result just means we skip the image and
-    // fall back to text for that slot.
-    const [logo, shiftMark] = await Promise.all([
+    // Load brand wordmarks + employer logo in parallel. All three are
+    // best-effort — a null result just means we fall back to helvetica
+    // text for that slot so the PDF always renders something.
+    const [logo, shiftWordmark, gsiWordmark] = await Promise.all([
       group.logo_url ? loadImageForPdf(group.logo_url) : Promise.resolve(null),
-      loadImageForPdf(SHIFT_MARK_URL),
+      loadImageForPdf(SHIFT_WORDMARK_WHITE_URL),
+      loadImageForPdf(GSI_WORDMARK_URL),
     ])
 
-    // Compact top strip: Shift wordmark + chevron / GSI on the left,
-    // company logo (if any) top-right. Dark band carries the brand.
+    // Dark strip header: Shift wordmark on the left, employer logo on
+    // the right. GSI wordmark lives in the footer on white so its dark
+    // navy "Initiative" text stays readable.
     doc.setFillColor(25, 26, 46)
     doc.rect(0, 0, w, 70, 'F')
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(18)
-    doc.setTextColor(255, 255, 255)
-    doc.text('Shift', 50, 38)
-    if (shiftMark) {
-      const markH = 18
-      const markW = shiftMark.width * (markH / shiftMark.height)
+
+    if (shiftWordmark) {
+      const wmH = 32
+      const wmW = shiftWordmark.width * (wmH / shiftWordmark.height)
       try {
-        doc.addImage(shiftMark.dataUrl, shiftMark.format, 88, 22, markW, markH)
+        doc.addImage(
+          shiftWordmark.dataUrl,
+          shiftWordmark.format,
+          50,
+          (70 - wmH) / 2,
+          wmW,
+          wmH,
+        )
       } catch {
-        // jsPDF rejected the image — silently skip the chevron.
+        // jsPDF choked — fall back to plain text.
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(18)
+        doc.setTextColor(255, 255, 255)
+        doc.text('Shift', 50, 40)
       }
+    } else {
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(18)
+      doc.setTextColor(255, 255, 255)
+      doc.text('Shift', 50, 38)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      doc.setTextColor(186, 241, 77)
+      doc.text('Green Streets Initiative', 50, 54)
     }
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
-    doc.setTextColor(186, 241, 77)
-    doc.text('Green Streets Initiative', 50, 54)
 
     if (logo) {
       // Fit inside a 120x40 box, preserving aspect.
@@ -884,16 +901,39 @@ function PortalPage() {
       doc.text(stat.value, colValue, y + 24, { align: 'right' })
     })
 
-    // Footer
+    // Footer. GSI wordmark centered (the "Initiative" text is dark navy,
+    // so this has to live on the white area, not the dark header strip).
+    // Date left, domain right — flanking the wordmark.
     doc.setDrawColor(220, 220, 220)
     doc.line(50, 680, w - 50, 680)
-    doc.setFontSize(10)
+
+    if (gsiWordmark) {
+      const wmH = 22
+      const wmW = gsiWordmark.width * (wmH / gsiWordmark.height)
+      try {
+        doc.addImage(
+          gsiWordmark.dataUrl,
+          gsiWordmark.format,
+          centerX - wmW / 2,
+          695,
+          wmW,
+          wmH,
+        )
+      } catch {
+        doc.setFontSize(10)
+        doc.setTextColor(150, 150, 150)
+        doc.text('Green Streets Initiative', centerX, 710, { align: 'center' })
+      }
+    } else {
+      doc.setFontSize(10)
+      doc.setTextColor(150, 150, 150)
+      doc.text('Green Streets Initiative', centerX, 710, { align: 'center' })
+    }
+
+    doc.setFontSize(9)
     doc.setTextColor(150, 150, 150)
-    doc.text(`Generated ${today}`, 50, 705)
-    doc.text('Powered by Shift · Green Streets Initiative', centerX, 705, {
-      align: 'center',
-    })
-    doc.text('gogreenstreets.org', w - 50, 705, { align: 'right' })
+    doc.text(`Generated ${today}`, 50, 712)
+    doc.text('gogreenstreets.org', w - 50, 712, { align: 'right' })
 
     const slug = group.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
     const dateSlug = new Date().toISOString().split('T')[0]
