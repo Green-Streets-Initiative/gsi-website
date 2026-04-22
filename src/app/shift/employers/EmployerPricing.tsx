@@ -167,7 +167,7 @@ export default function EmployerPricing() {
           </p>
         )}
 
-        <p className="mt-8 text-center text-xs text-white/50">
+        <p className="mt-8 text-center text-xs text-white/75">
           Prefer to be invoiced, or have questions first?{' '}
           <a
             href="/contact?inquiry=employer"

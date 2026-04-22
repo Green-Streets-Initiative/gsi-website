@@ -40,7 +40,7 @@ export default function EmployerLogin() {
               Check your inbox. We sent a login link to{' '}
               <strong className="font-semibold">{email}</strong>.
             </p>
-            <p className="mt-2 text-sm text-white/50">
+            <p className="mt-2 text-sm text-white/75">
               The link expires in 1 hour. Don&apos;t see it? Check your spam folder.
             </p>
           </div>
@@ -56,7 +56,7 @@ export default function EmployerLogin() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@yourcompany.com"
                 required
-                className="flex-1 rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/45 focus:border-[#BAF14D]"
+                className="flex-1 rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/60 focus:border-[#BAF14D]"
               />
               <button
                 type="submit"

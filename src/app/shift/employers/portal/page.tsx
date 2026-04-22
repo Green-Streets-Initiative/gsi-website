@@ -1240,7 +1240,7 @@ function PortalPage() {
                 Download employee invitation
               </button>
             ) : (
-              <p className="mt-4 text-sm text-white/40">
+              <p className="mt-4 text-sm text-white/70">
                 Employee invitation PDF available on Standard and above.{' '}
                 <a href="mailto:info@gogreenstreets.org" className="underline">
                   Contact us to upgrade
@@ -1337,7 +1337,7 @@ function PortalPage() {
                       <span className="text-sm font-medium text-white">
                         Include our company in the Shift Your Summer public leaderboard
                       </span>
-                      <p className="mt-1 text-xs leading-[1.5] text-white/50">
+                      <p className="mt-1 text-xs leading-[1.5] text-white/75">
                         If enabled, your company will appear on the Corporate Challenge tab at
                         gogreenstreets.org/events/shift-your-summer alongside other participating
                         employers. Individual employee data is never shown publicly — only your
@@ -1440,7 +1440,7 @@ function PortalPage() {
             className="mb-8 scroll-mt-24 rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
           >
             <h2 className="mb-2 font-display text-base font-bold text-white">Commute Advisor</h2>
-            <p className="mb-4 text-[0.8125rem] text-white/50">
+            <p className="mb-4 text-[0.8125rem] text-white/75">
               Customize the Commute Advisor for your employees. Share this link in your onboarding kit or HR portal:
             </p>
             {group.slug && (
@@ -1575,7 +1575,7 @@ function PortalPage() {
               {(benefitsForm.shuttle_routes || []).map((route: ShuttleRoute, i: number) => (
                 <div key={i} className="mb-3 rounded-lg border border-white/[0.08] bg-white/[0.03] p-3">
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[0.75rem] font-semibold text-white/50">Route {i + 1}</span>
+                    <span className="text-[0.75rem] font-semibold text-white/75">Route {i + 1}</span>
                     <button onClick={() => {
                       const updated = [...(benefitsForm.shuttle_routes || [])]
                       updated.splice(i, 1)
@@ -1687,15 +1687,15 @@ function PortalPage() {
             </div>
 
             {loadingMembers ? (
-              <p className="py-6 text-center text-sm text-white/50">Loading…</p>
+              <p className="py-6 text-center text-sm text-white/75">Loading…</p>
             ) : members.length === 0 ? (
-              <p className="py-6 text-center text-sm text-white/50">
+              <p className="py-6 text-center text-sm text-white/75">
                 No employees have joined yet. Share your invite code above to get started.
               </p>
             ) : (
               <div className="overflow-hidden rounded-xl border border-white/[0.06]">
                 <table className="w-full text-sm">
-                  <thead className="bg-white/[0.04] text-[11px] uppercase tracking-wider text-white/50">
+                  <thead className="bg-white/[0.04] text-[11px] uppercase tracking-wider text-white/75">
                     <tr>
                       <th className="px-4 py-2 text-left">Employee</th>
                       <th className="px-4 py-2 text-right">Trips</th>
@@ -1721,7 +1721,7 @@ function PortalPage() {
               </div>
             )}
 
-            <p className="mt-4 text-xs leading-[1.5] text-white/30">
+            <p className="mt-4 text-xs leading-[1.5] text-white/70">
               This leaderboard is visible only to you as the group administrator. Employees cannot
               see each other&apos;s data except through the shared in-app leaderboard.
             </p>
@@ -1735,13 +1735,13 @@ function PortalPage() {
             <div className="mb-1 flex items-baseline justify-between gap-2">
               <h2 className="font-display text-base font-bold text-white">Impact report</h2>
               {reloadingImpact && (
-                <span className="text-xs text-white/40">Loading&hellip;</span>
+                <span className="text-xs text-white/70">Loading&hellip;</span>
               )}
             </div>
             {(() => {
               const win = resolveImpactWindow(impactPreset, customStart, customEnd)
               return (
-                <p className="mb-5 text-xs text-white/50">
+                <p className="mb-5 text-xs text-white/75">
                   {win ? win.label : 'Pick a date range'}
                 </p>
               )
@@ -1777,7 +1777,7 @@ function PortalPage() {
             {impactPreset === 'custom' && (
               <div className="mb-5 flex flex-wrap items-end gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
                 <div>
-                  <label className="mb-1 block text-xs text-white/50">Start</label>
+                  <label className="mb-1 block text-xs text-white/75">Start</label>
                   <input
                     type="date"
                     value={customStart}
@@ -1786,7 +1786,7 @@ function PortalPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-white/50">End</label>
+                  <label className="mb-1 block text-xs text-white/75">End</label>
                   <input
                     type="date"
                     value={customEnd}
@@ -1795,7 +1795,7 @@ function PortalPage() {
                   />
                 </div>
                 {!resolveImpactWindow('custom', customStart, customEnd) && (
-                  <span className="text-xs text-white/40">
+                  <span className="text-xs text-white/70">
                     Pick a valid start and end date.
                   </span>
                 )}
@@ -1852,7 +1852,7 @@ function PortalPage() {
             </div>
 
             {!dashboard || dashboard.trips_this_period === 0 ? (
-              <p className="text-sm text-white/50">
+              <p className="text-sm text-white/75">
                 Impact data will appear here once employees start logging trips in the Shift app.
               </p>
             ) : null}
@@ -1860,7 +1860,7 @@ function PortalPage() {
             {/* Mode breakdown bars — only show when we have data */}
             {dashboard && dashboard.mode_breakdown.length > 0 && (
               <div className="mt-6 space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-white/50">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-white/75">
                   Mode breakdown
                 </h3>
                 {(() => {
@@ -1899,7 +1899,7 @@ function PortalPage() {
                 Download impact report
               </button>
             ) : (
-              <p className="mt-4 text-sm text-white/40">
+              <p className="mt-4 text-sm text-white/70">
                 Impact report PDF available on Standard and above.{' '}
                 <a href="mailto:info@gogreenstreets.org" className="underline">
                   Contact us to upgrade
@@ -1915,7 +1915,7 @@ function PortalPage() {
               <h2 className="mb-1 font-display text-base font-bold text-white">
                 Employee rewards pool
               </h2>
-              <p className="mb-5 text-xs text-white/50">
+              <p className="mb-5 text-xs text-white/75">
                 Funds you&apos;ve contributed for employees to redeem as gift cards and transit
                 passes via the Shift app.
               </p>
@@ -1936,7 +1936,7 @@ function PortalPage() {
                           : 'Active'
                   const depletionColor =
                     remaining === 0
-                      ? 'text-white/50'
+                      ? 'text-white/75'
                       : remaining < 1000
                         ? 'text-[#E05252]'
                         : remaining < 5000
@@ -1978,12 +1978,12 @@ function PortalPage() {
                         <button
                           type="button"
                           disabled
-                          className="rounded-full bg-white/[0.08] px-5 py-2 text-sm font-medium text-white/40"
+                          className="rounded-full bg-white/[0.08] px-5 py-2 text-sm font-medium text-white/70"
                           title="Top-up UI ships in the upcoming Stripe integration"
                         >
                           Top up pool
                         </button>
-                        <p className="mt-2 text-xs text-white/40">
+                        <p className="mt-2 text-xs text-white/70">
                           Stripe top-up is coming soon. For now, email{' '}
                           <a
                             href="mailto:info@gogreenstreets.org"
@@ -1998,7 +1998,7 @@ function PortalPage() {
                   )
                 })()
               ) : (
-                <p className="text-sm text-white/50">
+                <p className="text-sm text-white/75">
                   Your rewards pool hasn&apos;t been provisioned yet. Contact{' '}
                   <a href="mailto:info@gogreenstreets.org" className="underline">
                     info@gogreenstreets.org
@@ -2032,7 +2032,7 @@ function PortalPage() {
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-white">Admin email</label>
                   <p className="text-[0.9375rem] text-white/60">{group.admin_email}</p>
-                  <p className="mt-1 text-xs text-white/40">
+                  <p className="mt-1 text-xs text-white/70">
                     Contact GSI at info@gogreenstreets.org to change your email.
                   </p>
                 </div>
@@ -2157,7 +2157,7 @@ function DashField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/45 focus:border-[#BAF14D]"
+        className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/60 focus:border-[#BAF14D]"
       />
     </div>
   )
@@ -2166,7 +2166,7 @@ function DashField({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between border-b border-white/[0.04] pb-2">
-      <span className="text-sm text-white/50">{label}</span>
+      <span className="text-sm text-white/75">{label}</span>
       <span className="text-sm font-medium text-white">{value}</span>
     </div>
   )
@@ -2301,7 +2301,7 @@ function SetupOverview({
           <h2 className="font-display text-base font-bold text-white">
             {allDone ? 'Setup complete' : 'Finish setup'}
           </h2>
-          <span className="text-xs text-white/50">
+          <span className="text-xs text-white/75">
             {completed} / {total}
           </span>
         </div>
@@ -2324,7 +2324,7 @@ function SetupOverview({
                   className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
                     item.done
                       ? 'bg-[#BAF14D] text-[#191A2E]'
-                      : 'border border-white/20 text-white/40'
+                      : 'border border-white/20 text-white/70'
                   }`}
                   aria-hidden
                 >
@@ -2353,13 +2353,13 @@ function SetupOverview({
         <div className="mb-1 text-lg font-bold text-white">
           {TIER_LABEL[group.tier] ?? group.tier}
         </div>
-        <div className="mb-4 text-xs text-white/50">
+        <div className="mb-4 text-xs text-white/75">
           {TIER_ANNUAL_PRICE[group.tier] ?? ''}
         </div>
 
         <dl className="space-y-1.5 text-xs">
           <div className="flex justify-between">
-            <dt className="text-white/50">Started</dt>
+            <dt className="text-white/75">Started</dt>
             <dd className="text-white">
               {startsAt
                 ? startsAt.toLocaleDateString('en-US', {
@@ -2371,7 +2371,7 @@ function SetupOverview({
             </dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-white/50">
+            <dt className="text-white/75">
               {group.status === 'cancelled' ? 'Access ends' : 'Renews'}
             </dt>
             <dd className="text-white">
@@ -2386,7 +2386,7 @@ function SetupOverview({
           </div>
           {daysUntilRenewal != null && (
             <div className="flex justify-between">
-              <dt className="text-white/50">Days left</dt>
+              <dt className="text-white/75">Days left</dt>
               <dd
                 className={
                   daysUntilRenewal <= 30 ? 'text-[#EDB93C]' : 'text-white'

@@ -98,7 +98,7 @@ export default function CheckoutBanner() {
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="text-sm text-white/50 hover:text-white"
+          className="text-sm text-white/75 hover:text-white"
           aria-label="Dismiss"
         >
           ✕
