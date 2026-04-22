@@ -29,6 +29,7 @@ import {
   createStripeClient,
   handleCorsPreflight,
   jsonResponse,
+  tierForPriceId,
 } from "../_shared/stripe.ts";
 
 const PORTAL_ORIGIN =
@@ -370,18 +371,20 @@ async function handleSubscriptionUpdated(
     primaryItem.current_period_end * 1000,
   ).toISOString();
 
-  // Tier can change if the employer upgrades/downgrades in the portal.
-  // Stripe's default is `proration_behavior: create_prorations`.
-  // metadata.tier is set on the subscription when we create Checkout
-  // Sessions; if Stripe's portal upgrade flow doesn't preserve it,
-  // fall back to whatever the group already has.
-  const tierFromMetadata = subscription.metadata?.tier;
-  const tier =
-    tierFromMetadata === "basic" ||
-    tierFromMetadata === "standard" ||
-    tierFromMetadata === "premium"
-      ? tierFromMetadata
-      : group.tier;
+  // Tier source of truth: the price ID on the active subscription item.
+  // When an employer upgrades or downgrades in Stripe's customer portal,
+  // Stripe swaps the price on the item but does NOT carry subscription
+  // metadata across — so we can't rely on metadata.tier. If we ever see
+  // a price ID we don't recognize (env vars out of sync with Stripe),
+  // keep the group's existing tier so we don't clobber it with junk.
+  const priceId = primaryItem.price.id;
+  const tierFromPrice = tierForPriceId(priceId);
+  const tier = tierFromPrice ?? group.tier;
+  if (!tierFromPrice) {
+    console.warn(
+      `[EmployerWebhook] Unknown price ID ${priceId} on subscription ${subscription.id} — keeping tier=${group.tier}. Check STRIPE_PRICE_EMPLOYER_* env vars.`,
+    );
+  }
 
   // Stripe status lifecycle:
   //   active | past_due | unpaid | trialing | incomplete | canceled | incomplete_expired

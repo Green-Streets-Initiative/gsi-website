@@ -58,6 +58,19 @@ export function priceIdForTier(tier: EmployerTier): string {
 }
 
 /**
+ * Reverse of priceIdForTier: given a Stripe price ID, return the tier it
+ * represents, or null if it doesn't match any configured price. Used by
+ * the webhook to detect tier changes from Stripe's customer portal,
+ * where subscription metadata isn't preserved across plan switches.
+ */
+export function tierForPriceId(priceId: string): EmployerTier | null {
+  if (priceId === Deno.env.get("STRIPE_PRICE_EMPLOYER_BASIC")) return "basic";
+  if (priceId === Deno.env.get("STRIPE_PRICE_EMPLOYER_STANDARD")) return "standard";
+  if (priceId === Deno.env.get("STRIPE_PRICE_EMPLOYER_PREMIUM")) return "premium";
+  return null;
+}
+
+/**
  * CORS headers reused across employer edge functions.
  * Origin is left as "*" because the marketing page is public; checkout
  * auth happens inside Stripe, not via our CORS policy.
