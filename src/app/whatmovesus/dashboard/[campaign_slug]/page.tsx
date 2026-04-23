@@ -2,6 +2,7 @@
 
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import InvitationPreviewCard from './InvitationPreviewCard'
 import { useEffect, useState, useCallback } from 'react'
 import {
   PieChart,
@@ -13,6 +14,12 @@ import {
 
 // ── Types ───────────────────────────────────────────────────
 
+interface InviteCopy {
+  headline: string | null
+  body: string | null
+  cta_label: string | null
+}
+
 interface Campaign {
   name: string
   status: string
@@ -22,6 +29,13 @@ interface Campaign {
   funder_logo_url: string | null
   description: string | null
   media_type: string
+  // Fields used by the invitation preview card. Optional because old
+  // edge-function deployments may not return them; InvitationPreviewCard
+  // handles nullable inputs gracefully.
+  invite_copy?: InviteCopy | null
+  prompt_count?: number
+  has_incentive?: boolean
+  incentive_points?: number | null
 }
 
 interface Funnel {
@@ -265,6 +279,26 @@ export default function FunderDashboardPage() {
                 )}
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Invitation preview — what recruits saw on the Shift home screen */}
+        <section className="border-b border-white/[0.07] px-8 py-10">
+          <div className="mx-auto max-w-[1120px]">
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-lime">
+              How Participants Saw Your Invitation
+            </h2>
+            <p className="mb-5 max-w-2xl text-sm text-white/70">
+              This is the card recruits saw on the Shift home screen when
+              we surfaced your campaign. Non-interactive preview.
+            </p>
+            <InvitationPreviewCard
+              inviteCopy={campaign.invite_copy ?? null}
+              promptCount={campaign.prompt_count ?? 0}
+              mediaType={campaign.media_type}
+              hasIncentive={campaign.has_incentive ?? false}
+              incentivePoints={campaign.incentive_points ?? null}
+            />
           </div>
         </section>
 
