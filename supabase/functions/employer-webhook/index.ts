@@ -156,6 +156,15 @@ async function handleCheckoutCompleted(
   event: Stripe.Event,
 ): Promise<void> {
   const session = event.data.object as Stripe.Checkout.Session;
+
+  // Route by metadata.type. employer-top-up-checkout stamps
+  // type='reward_pool_topup' on one-time payment sessions; everything
+  // else falls through to the original subscription-start flow.
+  if (session.metadata?.type === "reward_pool_topup") {
+    await handleRewardPoolTopup(session);
+    return;
+  }
+
   const supabase = createAdminClient();
 
   const customerId =
@@ -296,6 +305,114 @@ async function handleCheckoutCompleted(
     magicLink,
     tier,
   });
+}
+
+/**
+ * Credit a completed reward-pool top-up to the named pool.
+ *
+ * Called by handleCheckoutCompleted when session.metadata.type ===
+ * 'reward_pool_topup'. Stripe has already charged the card; we:
+ *   1. Look up the pool by metadata.pool_id.
+ *   2. Confirm it's still active and belongs to the right group.
+ *   3. Credit balance_cents + lifetime_funded_cents by metadata.amount_cents.
+ *   4. File an info-level admin_notifications row for audit.
+ *
+ * Idempotency: the Stripe event id is stored on the notification
+ * context. If we see the same event twice (Stripe can replay), the
+ * repeat attempt is rejected at the notification-insert step.
+ */
+async function handleRewardPoolTopup(
+  session: Stripe.Checkout.Session,
+): Promise<void> {
+  const supabase = createAdminClient();
+  const poolId = session.metadata?.pool_id ?? "";
+  const groupId = session.metadata?.group_id ?? "";
+  const amountCentsStr = session.metadata?.amount_cents ?? "";
+  const amountCents = Number(amountCentsStr);
+
+  if (!poolId || !groupId || !Number.isFinite(amountCents) || amountCents <= 0) {
+    console.error(
+      "[EmployerWebhook] reward_pool_topup missing/invalid metadata",
+      { poolId, groupId, amountCentsStr },
+    );
+    return;
+  }
+
+  // Session.payment_status must be 'paid' — Stripe occasionally fires
+  // completed events on sessions that later bounce (rare, but possible
+  // with BNPL). Filter here so a failed-payment session can't credit.
+  if (session.payment_status !== "paid") {
+    console.log(
+      `[EmployerWebhook] reward_pool_topup session ${session.id} payment_status=${session.payment_status}, skipping`,
+    );
+    return;
+  }
+
+  const { data: pool, error: poolErr } = await supabase
+    .from("reward_pools")
+    .select("id, owner_group_id, balance_cents, lifetime_funded_cents, active")
+    .eq("id", poolId)
+    .maybeSingle();
+  if (poolErr || !pool) {
+    console.error("[EmployerWebhook] reward pool lookup failed:", poolErr);
+    return;
+  }
+  if (pool.owner_group_id !== groupId) {
+    console.error(
+      "[EmployerWebhook] pool group mismatch",
+      { poolGroup: pool.owner_group_id, metaGroup: groupId },
+    );
+    return;
+  }
+  if (!pool.active) {
+    console.error(
+      `[EmployerWebhook] pool ${poolId} is suspended — payment received but not credited`,
+    );
+    // File a critical notification so ops can refund or reactivate.
+    await supabase.from("admin_notifications").insert({
+      level: "critical",
+      source: "rewards",
+      title: "Top-up received on suspended pool",
+      body: `Pool ${poolId} is inactive; Stripe session ${session.id} for ${amountCents} cents was NOT credited. Investigate.`,
+      context: {
+        kind: "topup_suspended_pool",
+        pool_id: poolId,
+        stripe_session_id: session.id,
+        amount_cents: amountCents,
+      },
+    });
+    return;
+  }
+
+  const { error: updErr } = await supabase
+    .from("reward_pools")
+    .update({
+      balance_cents: pool.balance_cents + amountCents,
+      lifetime_funded_cents: pool.lifetime_funded_cents + amountCents,
+    })
+    .eq("id", poolId);
+  if (updErr) {
+    console.error("[EmployerWebhook] reward pool credit failed:", updErr);
+    return;
+  }
+
+  await supabase.from("admin_notifications").insert({
+    level: "info",
+    source: "rewards",
+    title: "Reward pool funded",
+    body: `Pool "${poolId}" credited with ${amountCents} cents via Stripe session ${session.id}.`,
+    context: {
+      kind: "pool_topup",
+      pool_id: poolId,
+      group_id: groupId,
+      stripe_session_id: session.id,
+      amount_cents: amountCents,
+    },
+  });
+
+  console.log(
+    `[EmployerWebhook] pool ${poolId} credited +${amountCents} cents (session ${session.id})`,
+  );
 }
 
 async function handleSubscriptionDeleted(

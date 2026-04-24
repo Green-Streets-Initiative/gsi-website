@@ -8,6 +8,8 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { EmployerBenefits, ShuttleRoute } from '@/lib/types/commute'
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+
 const BRAND_ASSETS_BASE =
   'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets'
 // Bump BRAND_ASSETS_VERSION whenever a PNG in the brand-assets bucket is
@@ -70,14 +72,17 @@ type EmployerMember = {
   active_trips_in_period: number
 }
 
-type FundingPool = {
+// Reward pool (post–rewards-rebuild schema, migration 00257). Replaces
+// the legacy funding_pools table for employer-backed rewards. Balance
+// grows via Stripe top-ups (employer-top-up-checkout + employer-webhook);
+// lifetime_spent_cents grows when drawing/automatic offers fulfill.
+type RewardPool = {
   id: string
   name: string
-  budget_total_cents: number
-  budget_spent_cents: number
-  budget_remaining_cents: number
+  balance_cents: number
+  lifetime_funded_cents: number
+  lifetime_spent_cents: number
   active: boolean
-  valid_through: string | null
 }
 
 const MODE_LABEL: Record<string, string> = {
@@ -317,8 +322,12 @@ function PortalPage() {
   const [members, setMembers] = useState<EmployerMember[]>([])
   const [loadingMembers, setLoadingMembers] = useState(false)
 
-  // Rewards pool (premium tier only)
-  const [fundingPool, setFundingPool] = useState<FundingPool | null>(null)
+  // Rewards pool (premium tier only). Lazily created on first top-up
+  // by employer-top-up-checkout, so may be null until the admin funds it.
+  const [rewardPool, setRewardPool] = useState<RewardPool | null>(null)
+  const [topUpAmount, setTopUpAmount] = useState('')
+  const [openingTopUp, setOpeningTopUp] = useState(false)
+  const [topUpError, setTopUpError] = useState<string | null>(null)
 
   // Impact report period selection.
   // "custom" reveals two date pickers and holds its values in customStart/End.
@@ -382,12 +391,12 @@ function PortalPage() {
       const now = new Date().toISOString()
       const poolPromise = groupData.tier === 'premium'
         ? supabase
-            .from('funding_pools')
+            .from('reward_pools')
             .select(
-              'id, name, budget_total_cents, budget_spent_cents, budget_remaining_cents, active, valid_through'
+              'id, name, balance_cents, lifetime_funded_cents, lifetime_spent_cents, active'
             )
-            .eq('group_id', groupData.id)
-            .eq('active', true)
+            .eq('owner_type', 'employer')
+            .eq('owner_group_id', groupData.id)
             .limit(1)
             .maybeSingle()
         : Promise.resolve({ data: null, error: null } as const)
@@ -442,7 +451,7 @@ function PortalPage() {
       }
 
       if (poolRes && 'data' in poolRes && poolRes.data) {
-        setFundingPool(poolRes.data as FundingPool)
+        setRewardPool(poolRes.data as RewardPool)
       }
 
       setLoading(false)
@@ -1948,96 +1957,148 @@ function PortalPage() {
                 Employee rewards pool
               </h2>
               <p className="mb-5 text-xs text-white/75">
-                Funds you&apos;ve contributed for employees to redeem as gift cards and transit
-                passes via the Shift app.
+                Funds you&apos;ve contributed for employees to redeem as gift cards
+                and transit passes via the Shift app. Top up via Stripe — balance
+                debits automatically as rewards fulfill.
               </p>
 
-              {fundingPool ? (
-                (() => {
-                  const total = fundingPool.budget_total_cents
-                  const remaining = fundingPool.budget_remaining_cents
-                  const spent = fundingPool.budget_spent_cents
-                  const pct = total > 0 ? Math.round((remaining / total) * 100) : 0
-                  const depletionLabel =
-                    remaining === 0
-                      ? 'Depleted'
-                      : remaining < 1000
-                        ? 'Nearly depleted'
-                        : remaining < 5000
-                          ? 'Running low'
-                          : 'Active'
-                  const depletionColor =
-                    remaining === 0
+              {(() => {
+                const balance = rewardPool?.balance_cents ?? 0
+                const lifetimeFunded = rewardPool?.lifetime_funded_cents ?? 0
+                const lifetimeSpent = rewardPool?.lifetime_spent_cents ?? 0
+                const balanceLabel =
+                  balance === 0
+                    ? lifetimeFunded === 0
+                      ? 'Not yet funded'
+                      : 'Depleted'
+                    : balance < 1000
+                      ? 'Nearly depleted'
+                      : balance < 5000
+                        ? 'Running low'
+                        : 'Active'
+                const balanceColor =
+                  balance === 0 && lifetimeFunded === 0
+                    ? 'text-white/60'
+                    : balance === 0
                       ? 'text-white/75'
-                      : remaining < 1000
+                      : balance < 1000
                         ? 'text-[#E05252]'
-                        : remaining < 5000
+                        : balance < 5000
                           ? 'text-[#EDB93C]'
                           : 'text-[#BAF14D]'
-                  return (
-                    <>
-                      <div className="mb-4 flex items-baseline justify-between">
-                        <div>
-                          <div className="text-3xl font-extrabold text-white">
-                            {centsToDollars(remaining)}
-                          </div>
-                          <div className="text-xs text-white/60">
-                            remaining of {centsToDollars(total)} ·{' '}
-                            {centsToDollars(spent)} redeemed
-                          </div>
+                return (
+                  <>
+                    <div className="mb-4 flex items-baseline justify-between">
+                      <div>
+                        <div className="text-3xl font-extrabold text-white">
+                          {centsToDollars(balance)}
                         </div>
-                        <span
-                          className={`rounded-full bg-white/[0.06] px-3 py-1 text-xs font-semibold ${depletionColor}`}
+                        <div className="text-xs text-white/60">
+                          available balance · {centsToDollars(lifetimeFunded)}{' '}
+                          funded, {centsToDollars(lifetimeSpent)} redeemed
+                        </div>
+                      </div>
+                      <span
+                        className={`rounded-full bg-white/[0.06] px-3 py-1 text-xs font-semibold ${balanceColor}`}
+                      >
+                        {balanceLabel}
+                      </span>
+                    </div>
+
+                    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label
+                          htmlFor="topup-amount"
+                          className="text-xs font-semibold uppercase tracking-wider text-white/70"
                         >
-                          {depletionLabel}
-                        </span>
-                      </div>
-
-                      <div className="mb-6 h-2 overflow-hidden rounded-full bg-white/[0.08]">
-                        <div
-                          className={`h-full ${
-                            pct >= 20
-                              ? 'bg-[#BAF14D]'
-                              : pct >= 5
-                                ? 'bg-[#EDB93C]'
-                                : 'bg-[#E05252]'
-                          }`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-
-                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
+                          Top-up amount
+                        </label>
+                        <div className="flex items-center gap-1 rounded-full bg-white/[0.06] px-3 py-1.5">
+                          <span className="text-sm text-white/80">$</span>
+                          <input
+                            id="topup-amount"
+                            type="number"
+                            min="25"
+                            max="10000"
+                            step="1"
+                            inputMode="decimal"
+                            value={topUpAmount}
+                            onChange={(e) => setTopUpAmount(e.target.value)}
+                            placeholder="250"
+                            className="w-24 bg-transparent text-sm text-white focus:outline-none"
+                          />
+                        </div>
                         <button
                           type="button"
-                          disabled
-                          className="rounded-full bg-white/[0.08] px-5 py-2 text-sm font-medium text-white/70"
-                          title="Top-up UI ships in the upcoming Stripe integration"
+                          onClick={async () => {
+                            setTopUpError(null)
+                            const dollars = Number(topUpAmount)
+                            if (!Number.isFinite(dollars) || dollars < 25 || dollars > 10000) {
+                              setTopUpError(
+                                'Enter an amount between $25 and $10,000.'
+                              )
+                              return
+                            }
+                            setOpeningTopUp(true)
+                            try {
+                              const {
+                                data: { session },
+                              } = await supabase.auth.getSession()
+                              if (!session) {
+                                setTopUpError('Your session expired. Refresh the page.')
+                                setOpeningTopUp(false)
+                                return
+                              }
+                              const res = await fetch(
+                                `${SUPABASE_URL}/functions/v1/employer-top-up-checkout`,
+                                {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    Authorization: `Bearer ${session.access_token}`,
+                                  },
+                                  body: JSON.stringify({
+                                    amount_cents: Math.round(dollars * 100),
+                                    origin: window.location.origin,
+                                  }),
+                                }
+                              )
+                              const payload = (await res
+                                .json()
+                                .catch(() => ({}))) as { url?: string; error?: string }
+                              if (!res.ok || !payload.url) {
+                                setTopUpError(
+                                  payload.error || `Checkout failed (${res.status})`
+                                )
+                                setOpeningTopUp(false)
+                                return
+                              }
+                              window.location.href = payload.url
+                            } catch (err) {
+                              setTopUpError(
+                                err instanceof Error ? err.message : String(err)
+                              )
+                              setOpeningTopUp(false)
+                            }
+                          }}
+                          disabled={openingTopUp}
+                          className="rounded-full bg-[#BAF14D] px-5 py-2 text-sm font-semibold text-[#191A2E] transition-opacity hover:opacity-85 disabled:opacity-50"
                         >
-                          Top up pool
+                          {openingTopUp ? 'Opening checkout\u2026' : 'Top up pool'}
                         </button>
-                        <p className="mt-2 text-xs text-white/70">
-                          Stripe top-up is coming soon. For now, email{' '}
-                          <a
-                            href="mailto:info@gogreenstreets.org"
-                            className="underline"
-                          >
-                            info@gogreenstreets.org
-                          </a>{' '}
-                          to add funds.
-                        </p>
                       </div>
-                    </>
-                  )
-                })()
-              ) : (
-                <p className="text-sm text-white/75">
-                  Your rewards pool hasn&apos;t been provisioned yet. Contact{' '}
-                  <a href="mailto:info@gogreenstreets.org" className="underline">
-                    info@gogreenstreets.org
-                  </a>{' '}
-                  to activate it.
-                </p>
-              )}
+                      {topUpError && (
+                        <p className="mt-2 text-xs text-[#E05252]">{topUpError}</p>
+                      )}
+                      <p className="mt-2 text-xs text-white/60">
+                        Secure Stripe Checkout. Invoices group under your
+                        existing customer. $25 minimum, $10,000 maximum per
+                        transaction.
+                      </p>
+                    </div>
+                  </>
+                )
+              })()}
             </section>
           )}
 
