@@ -17,6 +17,26 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "edge";
 
+/**
+ * Fetch a Bricolage Grotesque weight from Google Fonts. Uses the documented
+ * Vercel pattern: hit the CSS endpoint, parse the woff/ttf URL, fetch the
+ * binary. Edge runtime caches the responses so warm requests are fast.
+ */
+async function loadBricolage(weight: 400 | 700 | 800): Promise<ArrayBuffer> {
+  // Use the legacy /css? endpoint (no `2`) without a UA — it returns TTF
+  // URLs by default, which is what Satori needs. The /css2? endpoint
+  // returns woff2 for any modern UA, which Satori can't parse.
+  const cssUrl = `https://fonts.googleapis.com/css?family=Bricolage+Grotesque:${weight}`;
+  const css = await fetch(cssUrl).then((r) => r.text());
+  const match = css.match(/src:\s*url\((https:\/\/[^)]+)\)\s*format\('truetype'\)/);
+  if (!match) {
+    throw new Error(`Could not parse Bricolage Grotesque ${weight} font URL`);
+  }
+  const fontRes = await fetch(match[1]);
+  if (!fontRes.ok) throw new Error(`Failed to fetch font: ${fontRes.status}`);
+  return fontRes.arrayBuffer();
+}
+
 interface ShareCardData {
   firstName: string;
   lastInitial: string;
@@ -137,7 +157,7 @@ function FallbackCard() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        fontFamily: "sans-serif",
+        fontFamily: "Bricolage Grotesque",
       }}
     >
       <div
@@ -168,7 +188,7 @@ function FallbackCard() {
           display: "flex",
           color: "rgba(255,255,255,0.85)",
           fontSize: 36,
-          fontStyle: "italic",
+          fontWeight: 400,
         }}
       >
         Every trip counts.
@@ -193,17 +213,29 @@ export async function GET(
 ) {
   const { code } = await params;
 
-  const data = await loadShareData(code);
+  const [data, fontRegular, fontBold, fontExtra] = await Promise.all([
+    loadShareData(code),
+    loadBricolage(400),
+    loadBricolage(700),
+    loadBricolage(800),
+  ]);
 
   const cacheHeaders = {
     "Cache-Control": "public, max-age=300, s-maxage=3600",
   };
+
+  const fonts = [
+    { name: "Bricolage Grotesque", data: fontRegular, weight: 400 as const, style: "normal" as const },
+    { name: "Bricolage Grotesque", data: fontBold, weight: 700 as const, style: "normal" as const },
+    { name: "Bricolage Grotesque", data: fontExtra, weight: 800 as const, style: "normal" as const },
+  ];
 
   if (!data) {
     return new ImageResponse(<FallbackCard />, {
       width: 1200,
       height: 630,
       headers: cacheHeaders,
+      fonts,
     });
   }
 
@@ -230,7 +262,7 @@ export async function GET(
           display: "flex",
           flexDirection: "column",
           padding: 60,
-          fontFamily: "sans-serif",
+          fontFamily: "Bricolage Grotesque",
         }}
       >
         {/* Top bar — Shift wordmark + tagline */}
@@ -263,7 +295,7 @@ export async function GET(
               display: "flex",
               color: "rgba(255,255,255,0.85)",
               fontSize: 24,
-              fontStyle: "italic",
+              fontWeight: 400,
             }}
           >
             Every trip counts.
@@ -498,6 +530,7 @@ export async function GET(
       width: 1200,
       height: 630,
       headers: cacheHeaders,
+      fonts,
     },
   );
 }
