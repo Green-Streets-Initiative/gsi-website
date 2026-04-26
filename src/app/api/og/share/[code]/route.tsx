@@ -61,8 +61,52 @@ interface ShareCardData {
   lifetimeActive: number;
   streakDays: number;
   activeMiles: number;
+  modeBreakdown: ModeShare[];
   referralCode: string;
 }
+
+interface ModeShare {
+  key: "walk" | "bike" | "transit" | "escooter";
+  label: string;
+  color: string;
+  pct: number; // 0–100
+}
+
+// Mirrors MODE_ICON_CONFIG in the Shift app (components/ModeIcon.tsx).
+// Walk and Scooter share lime; Bike and Transit share blue. The legend
+// icons disambiguate same-colored segments.
+const MODE_COLORS = {
+  walk: "#BAF14D", // Colors.lime
+  bike: "#2966E5", // Colors.blue
+  transit: "#2966E5",
+  escooter: "#BAF14D",
+} as const;
+
+const MODE_LABELS = {
+  walk: "Walk",
+  bike: "Bike",
+  transit: "Transit",
+  escooter: "Scooter",
+} as const;
+
+// Phosphor "bold" weight SVG paths — sourced from
+// phosphor-react-native/lib/module/defs/<Icon>.js so the share card uses
+// the same mode glyphs as the in-app ModeIcon component. ViewBox 0 0 256 256.
+const ICON_WALK =
+  "M152 84a36 36 0 1 0-36-36 36 36 0 0 0 36 36m0-48a12 12 0 1 1-12 12 12 12 0 0 1 12-12m68 112a12 12 0 0 1-12 12c-37 0-55.27-18.47-70-33.3-1.71-1.72-3.36-3.4-5-5l-8.63 19.85L159 166.23a12 12 0 0 1 5 9.77v56a12 12 0 0 1-24 0v-49.83l-25.37-18.12L83 236.78a12 12 0 1 1-22-9.57l50.06-115.13q-10.64.75-25 8.4a159.8 159.8 0 0 0-29.83 21.23 12 12 0 0 1-16.43-17.5c2.61-2.45 64.36-59.67 104.09-25.18 3.94 3.42 7.64 7.16 11.22 10.78C168.43 123.28 181 136 208 136a12 12 0 0 1 12 12";
+const ICON_BIKE =
+  "M204 108a51.8 51.8 0 0 0-15.13 2.25L168.89 76H192a4 4 0 0 1 4 4 12 12 0 0 0 24 0 28 28 0 0 0-28-28h-44a12 12 0 0 0-10.37 18l8.14 14h-36.21L94.37 58A12 12 0 0 0 84 52H52a12 12 0 0 0 0 24h25.11l11.07 19L74 112.89a52.17 52.17 0 1 0 18.8 14.92l8.37-10.57L118 146.05A12 12 0 1 0 138.7 134l-15.14-26h36.21l8.39 14.38A52 52 0 1 0 204 108M80 160a28 28 0 1 1-21.71-27.28l-15.7 19.83a12 12 0 0 0 18.82 14.9l15.7-19.83A27.84 27.84 0 0 1 80 160m124 28a28 28 0 0 1-23.11-43.79l12.74 21.84A12 12 0 0 0 214.37 154l-12.75-21.84c.79-.07 1.58-.11 2.38-.11a28 28 0 0 1 0 56Z";
+const ICON_TRANSIT =
+  "M184 20H72a36 36 0 0 0-36 36v128a36 36 0 0 0 36 36l-9.6 12.8a12 12 0 1 0 19.2 14.4L102 220h52l20.4 27.2a12 12 0 0 0 19.2-14.4L184 220a36 36 0 0 0 36-36V56a36 36 0 0 0-36-36M60 116V84h56v32Zm80-32h56v32h-56ZM72 44h112a12 12 0 0 1 12 12v4H60v-4a12 12 0 0 1 12-12m112 152H72a12 12 0 0 1-12-12v-44h136v44a12 12 0 0 1-12 12m-80-28a16 16 0 1 1-16-16 16 16 0 0 1 16 16m80 0a16 16 0 1 1-16-16 16 16 0 0 1 16 16";
+const ICON_ESCOOTER =
+  "M212 132h-.68l-31.94-95.79A12 12 0 0 0 168 28h-32a12 12 0 0 0 0 24h23.35l14.83 44.49L114.59 164H83.2a40 40 0 1 0-2.55 24H120a12 12 0 0 0 9-4.06l54-61.13 5.6 16.81A40 40 0 1 0 212 132M44 188a16 16 0 1 1 16-16 16 16 0 0 1-16 16m168 0a16 16 0 1 1 16-16 16 16 0 0 1-16 16";
+
+const MODE_ICONS = {
+  walk: ICON_WALK,
+  bike: ICON_BIKE,
+  transit: ICON_TRANSIT,
+  escooter: ICON_ESCOOTER,
+} as const;
 
 // Mirrors lib/tiers.ts in the Shift app.
 const TIERS = [
@@ -120,25 +164,33 @@ async function loadShareData(code: string): Promise<ShareCardData | null> {
   const userId = user.id as string;
 
   // Parallel fetch
-  const [tierRes, streakRes, rateRes, neighborhoodIdRes] = await Promise.all([
-    supabase
-      .from("user_tiers")
-      .select("status_tiers:current_tier_id(id, name)")
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabase
-      .from("streaks")
-      .select("current_streak")
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabase.rpc("get_user_shift_rate", { p_user_id: userId, p_days: 60 }),
-    user.home_lat != null && user.home_lng != null
-      ? supabase.rpc("find_neighborhood_for_point", {
-          p_lat: user.home_lat,
-          p_lng: user.home_lng,
-        })
-      : Promise.resolve({ data: null }),
-  ]);
+  const [tierRes, streakRes, rateRes, neighborhoodIdRes, tripModesRes] =
+    await Promise.all([
+      supabase
+        .from("user_tiers")
+        .select("status_tiers:current_tier_id(id, name)")
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("streaks")
+        .select("current_streak")
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase.rpc("get_user_shift_rate", { p_user_id: userId, p_days: 60 }),
+      user.home_lat != null && user.home_lng != null
+        ? supabase.rpc("find_neighborhood_for_point", {
+            p_lat: user.home_lat,
+            p_lng: user.home_lng,
+          })
+        : Promise.resolve({ data: null }),
+      supabase
+        .from("trips")
+        .select("mode")
+        .eq("user_id", userId)
+        .eq("user_confirmed", true)
+        .not("mode", "in", "(drive,carpool,other)")
+        .limit(2000),
+    ]);
 
   // Tier
   const tierRow = tierRes.data?.status_tiers as
@@ -167,6 +219,27 @@ async function loadShareData(code: string): Promise<ShareCardData | null> {
     neighborhood = (nb as { name?: string } | null)?.name ?? null;
   }
 
+  // Aggregate active-trip modes into the four buckets the legend shows.
+  // transit_bus / transit_train / transit_commuter_rail collapse to "transit".
+  const counts = { walk: 0, bike: 0, transit: 0, escooter: 0 };
+  const tripRows = (tripModesRes.data as { mode?: string }[] | null) ?? [];
+  for (const row of tripRows) {
+    const m = row.mode ?? "";
+    if (m === "walk") counts.walk++;
+    else if (m === "bike") counts.bike++;
+    else if (m === "escooter") counts.escooter++;
+    else if (m.startsWith("transit_")) counts.transit++;
+  }
+  const totalActive = counts.walk + counts.bike + counts.transit + counts.escooter;
+  const modeBreakdown: ModeShare[] = (["walk", "bike", "transit", "escooter"] as const)
+    .map((key) => ({
+      key,
+      label: MODE_LABELS[key],
+      color: MODE_COLORS[key],
+      pct: totalActive > 0 ? Math.round((counts[key] / totalActive) * 100) : 0,
+    }))
+    .filter((m) => m.pct > 0);
+
   return {
     firstName: (user.first_name as string) || "Friend",
     lastInitial: ((user.last_name as string) || "").charAt(0),
@@ -177,6 +250,7 @@ async function loadShareData(code: string): Promise<ShareCardData | null> {
     lifetimeActive: Number(user.impact_non_car_trips) || 0,
     streakDays,
     activeMiles: Number(user.impact_distance_miles) || 0,
+    modeBreakdown,
     referralCode: code,
   };
 }
@@ -515,7 +589,7 @@ export async function GET(
             display: "flex",
             alignItems: "center",
             gap: 36,
-            marginTop: 18,
+            marginTop: 30,
           }}
         >
           {/* Dual-ring */}
@@ -830,6 +904,90 @@ export async function GET(
                 </span>
               )}
             </div>
+            {/* By-mode breakdown — stacked bar + icon legend */}
+            {data.modeBreakdown.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  marginTop: 10,
+                }}
+              >
+                <span
+                  style={{
+                    display: "flex",
+                    color: "rgba(255,255,255,0.75)",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    letterSpacing: 1.2,
+                  }}
+                >
+                  BY MODE
+                </span>
+                <div
+                  style={{
+                    display: "flex",
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: "rgba(255,255,255,0.08)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {data.modeBreakdown.map((m) => (
+                    <div
+                      key={m.key}
+                      style={{
+                        width: `${m.pct}%`,
+                        height: "100%",
+                        backgroundColor: m.color,
+                      }}
+                    />
+                  ))}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 16,
+                    marginTop: 2,
+                  }}
+                >
+                  {data.modeBreakdown.map((m) => (
+                    <div
+                      key={m.key}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <svg width={20} height={20} viewBox="0 0 256 256">
+                        <path d={MODE_ICONS[m.key]} fill={m.color} />
+                      </svg>
+                      <span
+                        style={{
+                          color: "#fff",
+                          fontSize: 18,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {m.label}
+                      </span>
+                      <span
+                        style={{
+                          color: "rgba(255,255,255,0.75)",
+                          fontSize: 18,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {m.pct}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
