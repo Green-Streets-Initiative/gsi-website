@@ -41,28 +41,43 @@ interface ShareCardData {
   firstName: string;
   lastInitial: string;
   neighborhood: string | null;
+  tierId: number;
   tierName: string;
   shiftRate: number;
   lifetimeActive: number;
   streakDays: number;
+  activeMiles: number;
   referralCode: string;
 }
 
-const TIER_DISPLAY: Record<string, string> = {
-  starter: "Starter",
-  mover: "Mover",
-  shifter: "Shifter",
-  leader: "Pacesetter",
-  trailblazer: "Trailblazer",
-};
+// Mirrors lib/tiers.ts in the Shift app.
+const TIERS = [
+  { id: 1, name: "starter", display: "Starter", tripsRequired: 0, shiftRateMin: 0 },
+  { id: 2, name: "mover", display: "Mover", tripsRequired: 25, shiftRateMin: 0.1 },
+  { id: 3, name: "shifter", display: "Shifter", tripsRequired: 100, shiftRateMin: 0.2 },
+  { id: 4, name: "leader", display: "Pacesetter", tripsRequired: 250, shiftRateMin: 0.3 },
+  { id: 5, name: "trailblazer", display: "Trailblazer", tripsRequired: 500, shiftRateMin: 0.5 },
+] as const;
 
-const TIER_COLORS: Record<string, string> = {
-  starter: "#8A8DA8",
+const TIER_PIP_COLOR: Record<string, string> = {
+  starter: "rgba(138,141,168,0.85)",
   mover: "#2966E5",
   shifter: "#BAF14D",
   leader: "#EDB93C",
   trailblazer: "#BAF14D",
 };
+
+const TIER_ICON_BG: Record<string, string> = {
+  starter: "rgba(138,141,168,0.18)",
+  mover: "rgba(41,102,229,0.18)",
+  shifter: "rgba(186,241,77,0.18)",
+  leader: "rgba(237,185,60,0.18)",
+  trailblazer: "rgba(186,241,77,0.18)",
+};
+
+// Phosphor "flame" fill icon — 256×256 viewBox.
+const FLAME_PATH =
+  "M173.78,51.75a96.21,96.21,0,0,0-12.74-7.45,4,4,0,0,0-5.71,4.16c2.11,18-3.71,30.65-15,42.2-3.36-26.49-13.59-50.84-37.13-77.34a4,4,0,0,0-7,3.07,168.71,168.71,0,0,1-15,73C68.2,101.51,52,124.74,52,160a76,76,0,0,0,152,0C204,118.39,191.13,84.66,173.78,51.75Z";
 
 const NAVY = "#191A2E";
 const LIME = "#BAF14D";
@@ -79,7 +94,7 @@ async function loadShareData(code: string): Promise<ShareCardData | null> {
   const { data: user, error: userErr } = await supabase
     .from("users")
     .select(
-      "id, first_name, last_name, home_lat, home_lng, impact_non_car_trips",
+      "id, first_name, last_name, home_lat, home_lng, impact_non_car_trips, impact_distance_miles",
     )
     .eq("referral_code", code)
     .maybeSingle();
@@ -92,7 +107,7 @@ async function loadShareData(code: string): Promise<ShareCardData | null> {
   const [tierRes, streakRes, rateRes, neighborhoodIdRes] = await Promise.all([
     supabase
       .from("user_tiers")
-      .select("status_tiers:current_tier_id(name)")
+      .select("status_tiers:current_tier_id(id, name)")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -110,9 +125,11 @@ async function loadShareData(code: string): Promise<ShareCardData | null> {
   ]);
 
   // Tier
-  const tierName =
-    ((tierRes.data?.status_tiers as { name?: string } | null)?.name) ??
-    "starter";
+  const tierRow = tierRes.data?.status_tiers as
+    | { id?: number; name?: string }
+    | null;
+  const tierName = tierRow?.name ?? "starter";
+  const tierId = tierRow?.id ?? 1;
 
   // Streak
   const streakDays = Number(streakRes.data?.current_streak) || 0;
@@ -138,10 +155,12 @@ async function loadShareData(code: string): Promise<ShareCardData | null> {
     firstName: (user.first_name as string) || "Friend",
     lastInitial: ((user.last_name as string) || "").charAt(0),
     neighborhood,
+    tierId,
     tierName,
     shiftRate,
     lifetimeActive: Number(user.impact_non_car_trips) || 0,
     streakDays,
+    activeMiles: Number(user.impact_distance_miles) || 0,
     referralCode: code,
   };
 }
@@ -239,18 +258,46 @@ export async function GET(
     });
   }
 
-  const tierDisplay = TIER_DISPLAY[data.tierName] ?? "Starter";
-  const tierColor = TIER_COLORS[data.tierName] ?? TIER_COLORS.starter;
+  const tierIdx = Math.max(0, Math.min(4, data.tierId - 1));
+  const currentTier = TIERS[tierIdx];
+  const isMax = data.tierId >= 5;
+  const nextTier = isMax ? null : TIERS[tierIdx + 1];
+
+  const ratePct = Math.max(0, Math.min(100, data.shiftRate)) / 100;
+  const tripsPct =
+    !isMax && nextTier && nextTier.tripsRequired > 0
+      ? Math.min(1, data.lifetimeActive / nextTier.tripsRequired)
+      : 1;
+
+  // For the pip strip: how full is the current tier's segment?
+  const progressInCurrent = isMax ? 1 : Math.min(tripsPct, ratePct);
+
+  // On-pace check: current 60d rate clears the next tier's floor (or the
+  // Trailblazer floor at max tier).
+  const targetRatePct = isMax
+    ? currentTier.shiftRateMin
+    : nextTier!.shiftRateMin;
+  const onPace = ratePct >= targetRatePct;
 
   const displayName = data.lastInitial
     ? `${data.firstName} ${data.lastInitial}.`
     : data.firstName;
 
-  // Ring math
-  const radius = 110;
-  const circumference = 2 * Math.PI * radius;
-  const progress = Math.max(0, Math.min(100, data.shiftRate)) / 100;
-  const dashOffset = circumference * (1 - progress);
+  // Dual-ring geometry — outer = trips toward next tier (blue), inner =
+  // 60-day shift rate (lime). Mirrors UnifiedStatusCard.tsx in the app.
+  const RING_SIZE = 240;
+  const RING_STROKE = 16;
+  const OUTER_R = (RING_SIZE - RING_STROKE) / 2;
+  const INNER_R = OUTER_R - RING_STROKE - 4;
+  const OUTER_C = 2 * Math.PI * OUTER_R;
+  const INNER_C = 2 * Math.PI * INNER_R;
+  const outerOffset = OUTER_C * (1 - tripsPct);
+  const innerOffset = INNER_C * (1 - ratePct);
+
+  const tierPipColor =
+    TIER_PIP_COLOR[currentTier.name] ?? TIER_PIP_COLOR.starter;
+  const tierIconBg =
+    TIER_ICON_BG[currentTier.name] ?? TIER_ICON_BG.starter;
 
   return new ImageResponse(
     (
@@ -261,7 +308,10 @@ export async function GET(
           backgroundColor: NAVY,
           display: "flex",
           flexDirection: "column",
-          padding: 60,
+          paddingTop: 50,
+          paddingBottom: 50,
+          paddingLeft: 56,
+          paddingRight: 56,
           fontFamily: "Bricolage Grotesque",
         }}
       >
@@ -278,14 +328,14 @@ export async function GET(
             <span
               style={{
                 color: "#fff",
-                fontSize: 44,
+                fontSize: 38,
                 fontWeight: 800,
                 letterSpacing: -1,
               }}
             >
               Shift
             </span>
-            <svg width={56} height={36} viewBox="0 0 40 26">
+            <svg width={50} height={32} viewBox="0 0 40 26">
               <path d="M0,0 L16,13 L0,26 L0,19 L10,13 L0,7Z" fill={LIME} />
               <path d="M20,0 L36,13 L20,26 L20,19 L30,13 L20,7Z" fill={BLUE} />
             </svg>
@@ -294,7 +344,7 @@ export async function GET(
             style={{
               display: "flex",
               color: "rgba(255,255,255,0.85)",
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: 400,
             }}
           >
@@ -302,214 +352,457 @@ export async function GET(
           </span>
         </div>
 
-        {/* Body — two columns */}
+        {/* Identity row: name + neighborhood */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            marginTop: 14,
+          }}
+        >
+          <span
+            style={{
+              color: "#fff",
+              fontSize: 68,
+              fontWeight: 800,
+              letterSpacing: -2,
+              lineHeight: 1.05,
+            }}
+          >
+            {displayName}
+          </span>
+          {data.neighborhood && (
+            <span
+              style={{
+                color: "rgba(255,255,255,0.75)",
+                fontSize: 24,
+                fontWeight: 500,
+                marginTop: 6,
+              }}
+            >
+              {data.neighborhood}
+            </span>
+          )}
+        </div>
+
+        {/* Tier row: chevron icon + tier name + Next: ... */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 18,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: tierIconBg,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg width={22} height={22} viewBox="0 0 32 32">
+                <path
+                  d="M2 5L14 16L2 27L2 22L8 16L2 10Z"
+                  fill={tierPipColor}
+                />
+                <path
+                  d="M17 5L29 16L17 27L17 22L23 16L17 10Z"
+                  fill={tierPipColor}
+                />
+              </svg>
+            </div>
+            <span
+              style={{
+                color: "#fff",
+                fontSize: 28,
+                fontWeight: 700,
+                letterSpacing: -0.2,
+              }}
+            >
+              {currentTier.display}
+            </span>
+          </div>
+          <span
+            style={{
+              display: "flex",
+              color: "rgba(255,255,255,0.75)",
+              fontSize: 20,
+              fontWeight: 500,
+            }}
+          >
+            {isMax ? "Top tier" : `Next: ${nextTier!.display}`}
+          </span>
+        </div>
+
+        {/* Tier pip strip */}
+        <div
+          style={{
+            display: "flex",
+            gap: 5,
+            marginTop: 12,
+          }}
+        >
+          {TIERS.map((t) => {
+            let fill = 0;
+            if (t.id < data.tierId) fill = 1;
+            else if (t.id === data.tierId)
+              fill = Math.max(0.06, progressInCurrent);
+            const color = TIER_PIP_COLOR[t.name] ?? TIER_PIP_COLOR.starter;
+            return (
+              <div
+                key={t.name}
+                style={{
+                  flex: 1,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                  display: "flex",
+                  overflow: "hidden",
+                }}
+              >
+                {fill > 0 && (
+                  <div
+                    style={{
+                      width: `${Math.round(fill * 100)}%`,
+                      height: "100%",
+                      backgroundColor: color,
+                      borderRadius: 3,
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Body: ring (left) + stats column (right) */}
         <div
           style={{
             flex: 1,
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
-            marginTop: 24,
+            gap: 36,
+            marginTop: 18,
           }}
         >
-          {/* Left column */}
+          {/* Dual-ring */}
+          <div
+            style={{
+              width: RING_SIZE,
+              height: RING_SIZE,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+            }}
+          >
+            <svg
+              width={RING_SIZE}
+              height={RING_SIZE}
+              viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
+              style={{ position: "absolute", top: 0, left: 0 }}
+            >
+              {/* Outer track — trips */}
+              {!isMax && (
+                <circle
+                  cx={RING_SIZE / 2}
+                  cy={RING_SIZE / 2}
+                  r={OUTER_R}
+                  fill="none"
+                  stroke="rgba(255,255,255,0.08)"
+                  strokeWidth={RING_STROKE}
+                />
+              )}
+              {/* Outer arc — trips */}
+              {!isMax && (
+                <circle
+                  cx={RING_SIZE / 2}
+                  cy={RING_SIZE / 2}
+                  r={OUTER_R}
+                  fill="none"
+                  stroke={BLUE}
+                  strokeWidth={RING_STROKE}
+                  strokeDasharray={`${OUTER_C} ${OUTER_C}`}
+                  strokeDashoffset={outerOffset}
+                  strokeLinecap="round"
+                  transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
+                />
+              )}
+              {/* Inner track + arc — shift rate */}
+              <circle
+                cx={RING_SIZE / 2}
+                cy={RING_SIZE / 2}
+                r={isMax ? OUTER_R : INNER_R}
+                fill="none"
+                stroke="rgba(255,255,255,0.08)"
+                strokeWidth={RING_STROKE}
+              />
+              <circle
+                cx={RING_SIZE / 2}
+                cy={RING_SIZE / 2}
+                r={isMax ? OUTER_R : INNER_R}
+                fill="none"
+                stroke={LIME}
+                strokeWidth={RING_STROKE}
+                strokeDasharray={`${
+                  isMax ? OUTER_C : INNER_C
+                } ${isMax ? OUTER_C : INNER_C}`}
+                strokeDashoffset={
+                  isMax ? OUTER_C * (1 - ratePct) : innerOffset
+                }
+                strokeLinecap="round"
+                transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
+              />
+            </svg>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span
+                style={{
+                  color: isMax ? LIME : "#fff",
+                  fontSize: 64,
+                  fontWeight: 800,
+                  letterSpacing: -2,
+                  lineHeight: 1,
+                }}
+              >
+                {isMax ? `${data.shiftRate}%` : data.lifetimeActive}
+              </span>
+              <span
+                style={{
+                  display: "flex",
+                  color: "rgba(255,255,255,0.75)",
+                  fontSize: isMax ? 14 : 16,
+                  fontWeight: isMax ? 700 : 500,
+                  letterSpacing: isMax ? 1.2 : 0,
+                  marginTop: isMax ? 6 : 4,
+                }}
+              >
+                {isMax
+                  ? "SHIFT RATE · 60D"
+                  : `of ${nextTier!.tripsRequired} trips`}
+              </span>
+            </div>
+          </div>
+
+          {/* Stats column */}
           <div
             style={{
               flex: 1,
               display: "flex",
               flexDirection: "column",
+              gap: 14,
             }}
           >
-            <span
-              style={{
-                color: "#fff",
-                fontSize: 88,
-                fontWeight: 800,
-                letterSpacing: -2,
-                lineHeight: 1.05,
-              }}
-            >
-              {displayName}
-            </span>
-            {data.neighborhood && (
-              <span
+            {/* Active trips */}
+            {!isMax && (
+              <div
                 style={{
-                  color: "rgba(255,255,255,0.85)",
-                  fontSize: 30,
-                  fontWeight: 500,
-                  marginTop: 14,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 10,
                 }}
               >
-                {data.neighborhood}
-              </span>
+                <div
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: BLUE,
+                    marginTop: 11,
+                  }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "rgba(255,255,255,0.75)",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      letterSpacing: 1.2,
+                    }}
+                  >
+                    ACTIVE TRIPS
+                  </span>
+                  <span
+                    style={{
+                      color: "#fff",
+                      fontSize: 28,
+                      fontWeight: 700,
+                      letterSpacing: -0.5,
+                      marginTop: 2,
+                    }}
+                  >
+                    {data.lifetimeActive} / {nextTier!.tripsRequired}
+                  </span>
+                </div>
+              </div>
             )}
-            {/* Tier badge */}
+            {/* Shift rate */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 10,
+              }}
+            >
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 5,
+                  backgroundColor: LIME,
+                  marginTop: 11,
+                }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <span
+                  style={{
+                    color: "rgba(255,255,255,0.75)",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    letterSpacing: 1.2,
+                  }}
+                >
+                  SHIFT RATE · 60D
+                </span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    marginTop: 2,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "#fff",
+                      fontSize: 28,
+                      fontWeight: 700,
+                      letterSpacing: -0.5,
+                    }}
+                  >
+                    {data.shiftRate}%
+                  </span>
+                  {onPace && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 10,
+                          backgroundColor: "rgba(107,232,154,0.18)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <svg width={12} height={12} viewBox="0 0 24 24">
+                          <path
+                            d="M5 12 L10 17 L19 7"
+                            stroke="#6BE89A"
+                            strokeWidth={3}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
+                          />
+                        </svg>
+                      </div>
+                      <span
+                        style={{
+                          color: "#6BE89A",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        ON PACE
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            {/* Streak + active miles row */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 12,
-                backgroundColor: "rgba(255,255,255,0.06)",
-                padding: "12px 20px",
-                borderRadius: 100,
-                alignSelf: "flex-start",
-                marginTop: 22,
+                gap: 18,
+                marginTop: 4,
               }}
             >
-              <svg width={28} height={28} viewBox="0 0 32 32">
-                <path
-                  d="M2 5L14 16L2 27L2 22L8 16L2 10Z"
-                  fill={tierColor}
-                />
-                <path
-                  d="M17 5L29 16L17 27L17 22L23 16L17 10Z"
-                  fill={tierColor}
-                />
-              </svg>
-              <span
+              <div
                 style={{
-                  color: "#fff",
-                  fontSize: 28,
-                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
                 }}
               >
-                {tierDisplay}
-              </span>
+                <svg width={26} height={26} viewBox="0 0 256 256">
+                  <path d={FLAME_PATH} fill={FIRE} />
+                </svg>
+                <span
+                  style={{
+                    color: "#fff",
+                    fontSize: 22,
+                    fontWeight: 700,
+                  }}
+                >
+                  {data.streakDays}-day streak
+                </span>
+              </div>
+              {data.activeMiles > 0 && (
+                <span
+                  style={{
+                    display: "flex",
+                    color: "rgba(255,255,255,0.5)",
+                    fontSize: 22,
+                    fontWeight: 500,
+                  }}
+                >
+                  ·
+                </span>
+              )}
+              {data.activeMiles > 0 && (
+                <span
+                  style={{
+                    display: "flex",
+                    color: "#fff",
+                    fontSize: 22,
+                    fontWeight: 700,
+                  }}
+                >
+                  {data.activeMiles.toFixed(1)} active mi
+                </span>
+              )}
             </div>
-          </div>
-
-          {/* Right column — Shift rate ring */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <div
-              style={{
-                width: 260,
-                height: 260,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                position: "relative",
-              }}
-            >
-              <svg
-                width={260}
-                height={260}
-                viewBox="0 0 260 260"
-                style={{ position: "absolute", top: 0, left: 0 }}
-              >
-                <circle
-                  cx={130}
-                  cy={130}
-                  r={radius}
-                  fill="none"
-                  stroke="rgba(255,255,255,0.10)"
-                  strokeWidth={18}
-                />
-                <circle
-                  cx={130}
-                  cy={130}
-                  r={radius}
-                  fill="none"
-                  stroke={LIME}
-                  strokeWidth={18}
-                  strokeDasharray={`${circumference} ${circumference}`}
-                  strokeDashoffset={dashOffset}
-                  strokeLinecap="round"
-                  transform="rotate(-90 130 130)"
-                />
-              </svg>
-              <span
-                style={{
-                  color: "#fff",
-                  fontSize: 84,
-                  fontWeight: 800,
-                  letterSpacing: -2,
-                }}
-              >
-                {data.shiftRate}%
-              </span>
-            </div>
-            <span
-              style={{
-                display: "flex",
-                color: "rgba(255,255,255,0.85)",
-                fontSize: 20,
-                fontWeight: 700,
-                letterSpacing: 1.5,
-                marginTop: 14,
-              }}
-            >
-              SHIFT RATE · 60D
-            </span>
-          </div>
-        </div>
-
-        {/* Stats row */}
-        <div
-          style={{
-            display: "flex",
-            gap: 60,
-            marginTop: 24,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: 10,
-            }}
-          >
-            <span
-              style={{
-                color: LIME,
-                fontSize: 44,
-                fontWeight: 800,
-              }}
-            >
-              {data.lifetimeActive}
-            </span>
-            <span
-              style={{
-                color: "rgba(255,255,255,0.85)",
-                fontSize: 20,
-                fontWeight: 700,
-                letterSpacing: 1.5,
-              }}
-            >
-              TRIPS
-            </span>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: 10,
-            }}
-          >
-            <span
-              style={{
-                color: FIRE,
-                fontSize: 44,
-                fontWeight: 800,
-              }}
-            >
-              {data.streakDays}
-            </span>
-            <span
-              style={{
-                color: "rgba(255,255,255,0.85)",
-                fontSize: 20,
-                fontWeight: 700,
-                letterSpacing: 1.5,
-              }}
-            >
-              DAY STREAK
-            </span>
           </div>
         </div>
 
@@ -517,9 +810,9 @@ export async function GET(
         <div
           style={{
             display: "flex",
-            marginTop: 24,
+            marginTop: 16,
             color: "rgba(255,255,255,0.65)",
-            fontSize: 20,
+            fontSize: 18,
           }}
         >
           Use code {data.referralCode} · shift.gogreenstreets.org
