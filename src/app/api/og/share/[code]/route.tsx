@@ -14,14 +14,8 @@
 
 import { ImageResponse } from "@vercel/og";
 import { createClient } from "@supabase/supabase-js";
-import { readFile } from "node:fs/promises";
 
-// Node.js runtime — Edge runtime has a 1 MB function size limit (Hobby
-// plan), and the bundled Trebuchet MS fonts plus Bricolage / Supabase /
-// Satori dependencies push the share-card route just over. Node runtime
-// has a much larger limit and adds negligible latency for an unfurled
-// preview that's cached for an hour at the CDN anyway.
-export const runtime = "nodejs";
+export const runtime = "edge";
 
 /**
  * Fetch a Bricolage Grotesque weight from Google Fonts. Uses the documented
@@ -44,15 +38,19 @@ async function loadBricolage(weight: 400 | 700 | 800): Promise<ArrayBuffer> {
 }
 
 /**
- * Load the GSI brand typeface (Trebuchet MS) bundled with the function.
- * Node runtime: read the file off disk via `fs/promises.readFile`. The
- * `new URL(..., import.meta.url)` form resolves to the .ttf alongside
- * this route file. Vercel includes the file in the function bundle.
- * The font is private to the rendering pipeline — never served publicly.
+ * Load the GSI brand typeface (Trebuchet MS) from the deployed site's
+ * /public/fonts directory. Edge fetch is cached at the Vercel CDN, so
+ * warm requests are fast. Origin is derived from the request URL so the
+ * same code works in dev (localhost) and production.
  */
-async function loadTrebuchet(weight: "regular" | "bold"): Promise<Buffer> {
-  const url = new URL(`./fonts/trebuchet-${weight}.ttf`, import.meta.url);
-  return readFile(url);
+async function loadTrebuchet(
+  origin: string,
+  weight: "regular" | "bold",
+): Promise<ArrayBuffer> {
+  const res = await fetch(`${origin}/fonts/trebuchet-${weight}.ttf`);
+  if (!res.ok)
+    throw new Error(`Failed to load Trebuchet ${weight}: ${res.status}`);
+  return res.arrayBuffer();
 }
 
 interface ShareCardData {
@@ -321,10 +319,11 @@ function FallbackCard() {
 }
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ code: string }> },
 ) {
   const { code } = await params;
+  const origin = new URL(req.url).origin;
 
   const [
     data,
@@ -338,8 +337,8 @@ export async function GET(
     loadBricolage(400),
     loadBricolage(700),
     loadBricolage(800),
-    loadTrebuchet("regular"),
-    loadTrebuchet("bold"),
+    loadTrebuchet(origin, "regular"),
+    loadTrebuchet(origin, "bold"),
   ]);
 
   const cacheHeaders = {
