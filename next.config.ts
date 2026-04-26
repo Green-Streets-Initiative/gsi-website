@@ -39,6 +39,11 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        source: '/sponsor',
+        destination: '/events/shift-your-summer/partners',
+        permanent: false,
+      },
+      {
         source: '/volunteer',
         destination: '/get-involved',
         permanent: true,

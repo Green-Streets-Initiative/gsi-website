@@ -113,6 +113,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/sponsor" className="text-sm text-white transition-colors hover:text-white">
+                  Sponsor an event
+                </Link>
+              </li>
+              <li>
                 <Link href="/help" className="text-sm text-white transition-colors hover:text-white">
                   Help
                 </Link>
