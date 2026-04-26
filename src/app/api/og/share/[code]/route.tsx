@@ -74,14 +74,16 @@ interface ModeShare {
   pct: number; // 0–100
 }
 
-// Mirrors MODE_ICON_CONFIG in the Shift app (components/ModeIcon.tsx).
-// Walk and Scooter share lime; Bike and Transit share blue. The legend
-// icons disambiguate same-colored segments.
+// Each mode gets a distinct brand color so the stacked bar reads at a
+// glance — even at very small percentages. The app's ModeIcon pairs walk
+// with escooter (lime) and bike with transit (blue) to convey "type of
+// motion," but adjacent same-colored segments in a stacked bar render as
+// one block. Here every mode is visually distinct.
 const MODE_COLORS = {
   walk: "#BAF14D", // Colors.lime
   bike: "#2966E5", // Colors.blue
-  transit: "#2966E5",
-  escooter: "#BAF14D",
+  transit: "#EDB93C", // Colors.gold
+  escooter: "#FF8C35", // Colors.fire
 } as const;
 
 const MODE_LABELS = {
@@ -935,13 +937,14 @@ export async function GET(
                     borderRadius: 4,
                     backgroundColor: "rgba(255,255,255,0.08)",
                     overflow: "hidden",
+                    gap: 2,
                   }}
                 >
                   {data.modeBreakdown.map((m) => (
                     <div
                       key={m.key}
                       style={{
-                        width: `${m.pct}%`,
+                        flex: m.pct,
                         height: "100%",
                         backgroundColor: m.color,
                       }}
