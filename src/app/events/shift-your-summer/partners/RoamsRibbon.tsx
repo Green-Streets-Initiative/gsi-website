@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { useEffect, useRef, useState } from 'react'
 import { modeColor } from './lib'
 
 export type RoamCard = {
@@ -19,9 +20,37 @@ export type RoamCard = {
 }
 
 export function RoamsRibbon({ roams }: { roams: RoamCard[] }) {
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  useEffect(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    const update = () => {
+      setCanScrollLeft(el.scrollLeft > 4)
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+    }
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => {
+      el.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [])
+
+  const scrollByPage = (direction: 1 | -1) => {
+    const el = scrollerRef.current
+    if (!el) return
+    const step = Math.max(el.clientWidth - 100, 296)
+    el.scrollBy({ left: step * direction, behavior: 'smooth' })
+  }
+
   return (
     <div className="relative -mx-8 px-8">
       <div
+        ref={scrollerRef}
         className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
@@ -85,10 +114,32 @@ export function RoamsRibbon({ roams }: { roams: RoamCard[] }) {
           </article>
         ))}
       </div>
+
       <div
         className="pointer-events-none absolute top-0 right-0 w-20 h-[calc(100%-1rem)] bg-gradient-to-r from-transparent to-[#191A2E]"
         aria-hidden
       />
+
+      <button
+        type="button"
+        aria-label="Scroll Roams left"
+        onClick={() => scrollByPage(-1)}
+        className={`hidden md:flex absolute left-2 top-[80px] -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full bg-[#191A2E]/85 backdrop-blur-sm border border-white/[0.15] text-white text-lg shadow-lg hover:bg-[#191A2E] hover:border-white/30 transition-all ${
+          canScrollLeft ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <span aria-hidden>←</span>
+      </button>
+      <button
+        type="button"
+        aria-label="Scroll Roams right"
+        onClick={() => scrollByPage(1)}
+        className={`hidden md:flex absolute right-2 top-[80px] -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full bg-[#191A2E]/85 backdrop-blur-sm border border-white/[0.15] text-white text-lg shadow-lg hover:bg-[#191A2E] hover:border-white/30 transition-all ${
+          canScrollRight ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <span aria-hidden>→</span>
+      </button>
     </div>
   )
 }
