@@ -14,8 +14,14 @@
 
 import { ImageResponse } from "@vercel/og";
 import { createClient } from "@supabase/supabase-js";
+import { readFile } from "node:fs/promises";
 
-export const runtime = "edge";
+// Node.js runtime — Edge runtime has a 1 MB function size limit (Hobby
+// plan), and the bundled Trebuchet MS fonts plus Bricolage / Supabase /
+// Satori dependencies push the share-card route just over. Node runtime
+// has a much larger limit and adds negligible latency for an unfurled
+// preview that's cached for an hour at the CDN anyway.
+export const runtime = "nodejs";
 
 /**
  * Fetch a Bricolage Grotesque weight from Google Fonts. Uses the documented
@@ -39,16 +45,14 @@ async function loadBricolage(weight: 400 | 700 | 800): Promise<ArrayBuffer> {
 
 /**
  * Load the GSI brand typeface (Trebuchet MS) bundled with the function.
- * Vercel's Edge bundler resolves `new URL(..., import.meta.url)` at build
- * time and inlines the .ttf into the function bundle. The font is private
- * to the rendering pipeline — never served as a public asset.
+ * Node runtime: read the file off disk via `fs/promises.readFile`. The
+ * `new URL(..., import.meta.url)` form resolves to the .ttf alongside
+ * this route file. Vercel includes the file in the function bundle.
+ * The font is private to the rendering pipeline — never served publicly.
  */
-async function loadTrebuchet(weight: "regular" | "bold"): Promise<ArrayBuffer> {
+async function loadTrebuchet(weight: "regular" | "bold"): Promise<Buffer> {
   const url = new URL(`./fonts/trebuchet-${weight}.ttf`, import.meta.url);
-  const res = await fetch(url);
-  if (!res.ok)
-    throw new Error(`Failed to load Trebuchet ${weight}: ${res.status}`);
-  return res.arrayBuffer();
+  return readFile(url);
 }
 
 interface ShareCardData {
