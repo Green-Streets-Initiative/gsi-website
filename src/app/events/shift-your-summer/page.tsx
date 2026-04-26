@@ -256,6 +256,8 @@ function ComingSoon() {
           </Link>
         </div>
       </section>
+
+      <PartnerCrossLink />
     </>
   )
 }
@@ -317,6 +319,7 @@ function UpcomingEvent({
       {prizes.length > 0 && <PrizesSection prizes={prizes} />}
       {sponsors.length > 0 && <SponsorsSection sponsors={sponsors} />}
       <HowToJoin />
+      <PartnerCrossLink />
       <CtaSection />
     </>
   )
@@ -426,6 +429,7 @@ function ActiveEvent({
 
       {prizes.length > 0 && <PrizesSection prizes={prizes} />}
       <HowToJoin />
+      <PartnerCrossLink />
       <CtaSection />
     </>
   )
@@ -631,6 +635,22 @@ function HowToJoin() {
             </div>
           ))}
         </div>
+      </div>
+    </section>
+  )
+}
+
+function PartnerCrossLink() {
+  return (
+    <section className="bg-[#191A2E] px-8 pb-2">
+      <div className="mx-auto max-w-[1120px] border-t border-white/[0.08] pt-8">
+        <Link
+          href="/events/shift-your-summer/partners"
+          className="group inline-flex items-center gap-2 text-sm text-white/75 hover:text-white transition-colors"
+        >
+          Interested in sponsoring? Learn about partnership opportunities
+          <span className="transition-transform group-hover:translate-x-0.5">→</span>
+        </Link>
       </div>
     </section>
   )
