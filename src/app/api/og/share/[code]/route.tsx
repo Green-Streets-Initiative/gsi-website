@@ -37,6 +37,20 @@ async function loadBricolage(weight: 400 | 700 | 800): Promise<ArrayBuffer> {
   return fontRes.arrayBuffer();
 }
 
+/**
+ * Load the GSI brand typeface (Trebuchet MS) bundled with the function.
+ * Vercel's Edge bundler resolves `new URL(..., import.meta.url)` at build
+ * time and inlines the .ttf into the function bundle. The font is private
+ * to the rendering pipeline — never served as a public asset.
+ */
+async function loadTrebuchet(weight: "regular" | "bold"): Promise<ArrayBuffer> {
+  const url = new URL(`./fonts/trebuchet-${weight}.ttf`, import.meta.url);
+  const res = await fetch(url);
+  if (!res.ok)
+    throw new Error(`Failed to load Trebuchet ${weight}: ${res.status}`);
+  return res.arrayBuffer();
+}
+
 interface ShareCardData {
   firstName: string;
   lastInitial: string;
@@ -234,11 +248,20 @@ export async function GET(
 ) {
   const { code } = await params;
 
-  const [data, fontRegular, fontBold, fontExtra] = await Promise.all([
+  const [
+    data,
+    fontRegular,
+    fontBold,
+    fontExtra,
+    trebuchetRegular,
+    trebuchetBold,
+  ] = await Promise.all([
     loadShareData(code),
     loadBricolage(400),
     loadBricolage(700),
     loadBricolage(800),
+    loadTrebuchet("regular"),
+    loadTrebuchet("bold"),
   ]);
 
   const cacheHeaders = {
@@ -249,6 +272,8 @@ export async function GET(
     { name: "Bricolage Grotesque", data: fontRegular, weight: 400 as const, style: "normal" as const },
     { name: "Bricolage Grotesque", data: fontBold, weight: 700 as const, style: "normal" as const },
     { name: "Bricolage Grotesque", data: fontExtra, weight: 800 as const, style: "normal" as const },
+    { name: "Trebuchet MS", data: trebuchetRegular, weight: 400 as const, style: "normal" as const },
+    { name: "Trebuchet MS", data: trebuchetBold, weight: 700 as const, style: "normal" as const },
   ];
 
   if (!data) {
@@ -827,15 +852,16 @@ export async function GET(
           >
             Use code {data.referralCode} · shift.gogreenstreets.org
           </span>
-          {/* GSI wordmark — Trebuchet MS bold + regular per brand. Satori
-              has no system fonts, so we render it in Bricolage with the
-              same bold/regular split. */}
+          {/* GSI wordmark — Trebuchet MS bold ("Green Streets") + regular
+              ("Initiative"). The .ttf files are bundled with the function
+              and loaded server-side; they're never served publicly. */}
           <div
             style={{
               display: "flex",
               alignItems: "baseline",
               gap: 6,
-              color: "rgba(255,255,255,0.85)",
+              color: "#fff",
+              fontFamily: "Trebuchet MS",
               fontSize: 18,
               letterSpacing: 0.4,
             }}
