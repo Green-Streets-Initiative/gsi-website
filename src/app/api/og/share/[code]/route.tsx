@@ -75,9 +75,11 @@ const TIER_ICON_BG: Record<string, string> = {
   trailblazer: "rgba(186,241,77,0.18)",
 };
 
-// Phosphor "flame" fill icon — 256×256 viewBox.
+// Phosphor "flame" fill icon — 256×256 viewBox. Sourced from
+// phosphor-react-native/lib/module/defs/Flame.js (the same icon
+// UnifiedStatusCard.tsx renders in the app at weight="fill").
 const FLAME_PATH =
-  "M173.78,51.75a96.21,96.21,0,0,0-12.74-7.45,4,4,0,0,0-5.71,4.16c2.11,18-3.71,30.65-15,42.2-3.36-26.49-13.59-50.84-37.13-77.34a4,4,0,0,0-7,3.07,168.71,168.71,0,0,1-15,73C68.2,101.51,52,124.74,52,160a76,76,0,0,0,152,0C204,118.39,191.13,84.66,173.78,51.75Z";
+  "M173.79 51.48a221.3 221.3 0 0 0-41.67-34.34 8 8 0 0 0-8.24 0 221.3 221.3 0 0 0-41.67 34.34C54.59 80.48 40 112.47 40 144a88 88 0 0 0 176 0c0-31.53-14.59-63.52-42.21-92.52M96 184c0-27.67 22.53-47.28 32-54.3 9.48 7 32 26.63 32 54.3a32 32 0 0 1-64 0";
 
 const NAVY = "#191A2E";
 const LIME = "#BAF14D";
@@ -765,8 +767,8 @@ export async function GET(
                   gap: 8,
                 }}
               >
-                <svg width={26} height={26} viewBox="0 0 256 256">
-                  <path d={FLAME_PATH} fill={FIRE} />
+                <svg width={28} height={28} viewBox="0 0 256 256">
+                  <path d={FLAME_PATH} fill={FIRE} fillRule="evenodd" />
                 </svg>
                 <span
                   style={{
@@ -806,16 +808,41 @@ export async function GET(
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer — referral code on the left, GSI wordmark on the right */}
         <div
           style={{
             display: "flex",
-            marginTop: 16,
-            color: "rgba(255,255,255,0.65)",
-            fontSize: 18,
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 30,
           }}
         >
-          Use code {data.referralCode} · shift.gogreenstreets.org
+          <span
+            style={{
+              display: "flex",
+              color: "rgba(255,255,255,0.85)",
+              fontSize: 18,
+              fontWeight: 500,
+            }}
+          >
+            Use code {data.referralCode} · shift.gogreenstreets.org
+          </span>
+          {/* GSI wordmark — Trebuchet MS bold + regular per brand. Satori
+              has no system fonts, so we render it in Bricolage with the
+              same bold/regular split. */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: 6,
+              color: "rgba(255,255,255,0.85)",
+              fontSize: 18,
+              letterSpacing: 0.4,
+            }}
+          >
+            <span style={{ fontWeight: 700 }}>Green Streets</span>
+            <span style={{ fontWeight: 400 }}>Initiative</span>
+          </div>
         </div>
       </div>
     ),
