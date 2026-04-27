@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { resolveUnsplashPhoto } from '@/lib/unsplash'
 import { RoamsRibbon, type RoamCard } from './RoamsRibbon'
 import {
   taglineFromDescription,
@@ -32,6 +33,7 @@ interface RoamRow {
   event_start: string | null
   event_end: string | null
   event_dates: string | null
+  pinned_photo_id: string | null
   hero_image_url: string | null
   hero_image_attribution: string | null
   hero_image_attribution_url: string | null
@@ -47,6 +49,7 @@ export default async function PartnersPage() {
        distance_miles, estimated_minutes,
        featured, sort_order,
        event_start, event_end, event_dates,
+       pinned_photo_id,
        hero_image_url, hero_image_attribution, hero_image_attribution_url,
        checkpoints:roam_checkpoints(id)`
     )
@@ -55,23 +58,29 @@ export default async function PartnersPage() {
     .order('featured', { ascending: false })
     .order('sort_order', { ascending: true })
 
-  const roams: RoamCard[] = ((roamsRaw ?? []) as RoamRow[]).map((r) => {
-    const stops = r.checkpoints?.length ?? 0
-    return {
-      id: r.id,
-      name: r.name,
-      tagline: r.tagline ?? taglineFromDescription(r.description),
-      modeLabel: modeLabel(r.mode),
-      mode: r.mode,
-      durationLabel: formatDuration(r.estimated_minutes),
-      distanceLabel: `${r.distance_miles} mi`,
-      stopsLabel: `${stops} stop${stops === 1 ? '' : 's'}`,
-      heroImageUrl: r.hero_image_url,
-      heroImageAttribution: r.hero_image_attribution,
-      heroImageAttributionUrl: r.hero_image_attribution_url,
-      eventBadge: eventBadgeText(r.event_dates, r.event_start, r.event_end),
-    }
-  })
+  const roams: RoamCard[] = await Promise.all(
+    ((roamsRaw ?? []) as RoamRow[]).map(async (r) => {
+      const stops = r.checkpoints?.length ?? 0
+      const photo = r.pinned_photo_id
+        ? await resolveUnsplashPhoto(r.pinned_photo_id)
+        : null
+      return {
+        id: r.id,
+        name: r.name,
+        tagline: r.tagline ?? taglineFromDescription(r.description),
+        modeLabel: modeLabel(r.mode),
+        mode: r.mode,
+        durationLabel: formatDuration(r.estimated_minutes),
+        distanceLabel: `${r.distance_miles} mi`,
+        stopsLabel: `${stops} stop${stops === 1 ? '' : 's'}`,
+        heroImageUrl: photo?.url ?? r.hero_image_url,
+        heroImageAttribution: photo?.attribution ?? r.hero_image_attribution,
+        heroImageAttributionUrl:
+          photo?.attributionUrl ?? r.hero_image_attribution_url,
+        eventBadge: eventBadgeText(r.event_dates, r.event_start, r.event_end),
+      }
+    })
+  )
 
   return (
     <div className="min-h-screen bg-[#191A2E] text-white font-sans">
