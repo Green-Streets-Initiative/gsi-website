@@ -768,17 +768,25 @@ function PresentedBy({ sponsors }: { sponsors: Sponsorship[] }) {
   const sponsor = presenting?.sponsors ?? sponsors[0]?.sponsors
   if (!sponsor) return null
 
+  const logoEl = sponsor.logo_url ? (
+    <img
+      src={sponsor.logo_url}
+      alt={sponsor.name}
+      className="h-6 max-w-[120px] object-contain brightness-0 invert opacity-60 hover:opacity-100 transition-opacity"
+    />
+  ) : (
+    <span className="font-semibold text-white">{sponsor.name}</span>
+  )
+
   return (
     <div className="mt-6 flex items-center gap-3 text-sm text-white">
       <span>Presented by</span>
-      {sponsor.logo_url ? (
-        <img
-          src={sponsor.logo_url}
-          alt={sponsor.name}
-          className="h-6 max-w-[120px] object-contain brightness-0 invert opacity-60"
-        />
+      {sponsor.website_url ? (
+        <a href={sponsor.website_url} target="_blank" rel="noopener noreferrer">
+          {logoEl}
+        </a>
       ) : (
-        <span className="font-semibold text-white">{sponsor.name}</span>
+        logoEl
       )}
     </div>
   )
