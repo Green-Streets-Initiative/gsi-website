@@ -5,6 +5,7 @@ import Footer from '@/components/Footer'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { resolveUnsplashPhoto } from '@/lib/unsplash'
 import { RoamsRibbon, type RoamCard } from './RoamsRibbon'
+import PartnerForm from './PartnerForm'
 import {
   taglineFromDescription,
   formatDuration,
@@ -98,6 +99,8 @@ export default async function PartnersPage() {
 
       <PrizeSection />
 
+      <PartnerFormSection />
+
       <ContactSection />
 
       <Footer />
@@ -122,6 +125,12 @@ function JumpBar() {
           className="text-[0.8125rem] font-semibold uppercase tracking-wider text-white/70 hover:text-[#52B788] transition-colors whitespace-nowrap"
         >
           Prize donations
+        </a>
+        <a
+          href="#partner-form"
+          className="text-[0.8125rem] font-semibold uppercase tracking-wider text-white/70 hover:text-[#52B788] transition-colors whitespace-nowrap"
+        >
+          Become a partner
         </a>
         <a
           href="#contact"
@@ -486,6 +495,29 @@ function PrizeCard({
   )
 }
 
+/* ── Partner form ────────────────────────────────────────── */
+
+function PartnerFormSection() {
+  return (
+    <section id="partner-form" className="px-8 py-20 border-t border-white/[0.08]">
+      <div className="max-w-[840px] mx-auto">
+        <span className="text-xs font-bold uppercase tracking-[0.08em] text-[#52B788] mb-4 block">
+          Become a Partner
+        </span>
+        <h2 className="font-display text-[clamp(1.75rem,3.5vw,2.25rem)] font-extrabold text-white mb-3">
+          Ready to <span className="text-[#BAF14D]">get involved?</span>
+        </h2>
+        <p className="text-base leading-[1.7] text-white/80 max-w-[680px] mb-10">
+          Tell us about your organization and how you&rsquo;d like to participate.
+          We&rsquo;ll follow up within two business days with next steps and a partnership
+          agreement.
+        </p>
+        <PartnerForm />
+      </div>
+    </section>
+  )
+}
+
 /* ── Contact CTA ─────────────────────────────────────────── */
 
 function ContactSection() {
@@ -518,10 +550,10 @@ function ContactSection() {
         </div>
         <div className="flex flex-col sm:flex-row gap-4 mt-6">
           <a
-            href="mailto:keith@gogreenstreets.org"
+            href="#partner-form"
             className="inline-flex items-center gap-2 bg-[#52B788] text-[#191A2E] px-6 py-3.5 rounded-[10px] font-bold text-[0.9375rem] hover:opacity-90 transition-opacity"
           >
-            Get in touch →
+            Submit partnership interest →
           </a>
           <Link
             href="/events/shift-your-summer"
