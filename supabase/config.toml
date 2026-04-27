@@ -13,3 +13,6 @@ verify_jwt = false
 
 [functions.employer-magic-link]
 verify_jwt = false
+
+[functions.unsplash-proxy]
+verify_jwt = false

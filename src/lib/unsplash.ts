@@ -6,15 +6,18 @@ export interface UnsplashPhoto {
   attributionUrl: string
 }
 
+const PROXY_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/unsplash-proxy`
+  : null
+
 export async function resolveUnsplashPhoto(
   photoId: string
 ): Promise<UnsplashPhoto | null> {
-  const key = process.env.UNSPLASH_ACCESS_KEY
-  if (!key) return null
+  if (!PROXY_BASE) return null
 
   try {
     const res = await fetch(
-      `https://api.unsplash.com/photos/${photoId}?client_id=${key}`,
+      `${PROXY_BASE}?action=photo&id=${encodeURIComponent(photoId)}`,
       { next: { revalidate: 86400 } }
     )
     if (!res.ok) return null
