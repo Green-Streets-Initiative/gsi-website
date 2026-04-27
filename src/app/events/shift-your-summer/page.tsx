@@ -504,6 +504,7 @@ function SponsorLogo({ sponsor, className }: { sponsor: Sponsor; className: stri
 /** Compact sponsor block shown inside the hero for the active-event layout */
 function SponsorsInline({ sponsors }: { sponsors: Sponsorship[] }) {
   const presenting = sponsors.filter(s => s.sponsorship_level === 'presenting' && s.sponsors)
+  const champion = sponsors.filter(s => s.sponsorship_level === 'champion' && s.sponsors)
   const communityPartners = sponsors.filter(s => s.sponsorship_level === 'community_partner' && s.sponsors)
   const supporting = sponsors.filter(s => s.sponsorship_level === 'supporting' && s.sponsors)
   if (sponsors.length === 0) return null
@@ -516,6 +517,16 @@ function SponsorsInline({ sponsors }: { sponsors: Sponsorship[] }) {
           <div className="flex flex-wrap items-center gap-6">
             {presenting.map(s => (
               <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-8 max-w-[140px]" />
+            ))}
+          </div>
+        </div>
+      )}
+      {champion.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          <p className="text-xs font-semibold uppercase tracking-widest text-white/60">Champion Sponsors</p>
+          <div className="flex flex-wrap items-center gap-6">
+            {champion.map(s => (
+              <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-7 max-w-[125px]" />
             ))}
           </div>
         </div>
@@ -546,6 +557,7 @@ function SponsorsInline({ sponsors }: { sponsors: Sponsorship[] }) {
 
 function SponsorsSection({ sponsors }: { sponsors: Sponsorship[] }) {
   const presenting = sponsors.filter(s => s.sponsorship_level === 'presenting' && s.sponsors)
+  const champion = sponsors.filter(s => s.sponsorship_level === 'champion' && s.sponsors)
   const communityPartners = sponsors.filter(s => s.sponsorship_level === 'community_partner' && s.sponsors)
   const supporting = sponsors.filter(s => s.sponsorship_level === 'supporting' && s.sponsors)
 
@@ -562,6 +574,18 @@ function SponsorsSection({ sponsors }: { sponsors: Sponsorship[] }) {
             <div className="flex flex-wrap items-center gap-10">
               {presenting.map(s => (
                 <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-14 max-w-[200px]" />
+              ))}
+            </div>
+          </div>
+        )}
+        {champion.length > 0 && (
+          <div>
+            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/50">
+              Champion Sponsors
+            </p>
+            <div className="flex flex-wrap items-center gap-9">
+              {champion.map(s => (
+                <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-12 max-w-[170px]" />
               ))}
             </div>
           </div>
