@@ -13,6 +13,10 @@ type PricingCard = {
   tagline: string
   features: string[]
   accent: string
+  // Text color used ON the accent (badge background, checkmark glyph,
+  // highlighted button label). Defaults to navy; override to white for
+  // dark accents (e.g. Basic blue) where navy-on-accent fails contrast.
+  accentText?: string
   highlight?: boolean
 }
 
@@ -46,6 +50,8 @@ const CARDS: PricingCard[] = [
       'Opt-in to regional public leaderboards',
     ],
     accent: '#2966E5',
+    accentText: '#FFFFFF',
+    highlight: true,
   },
   {
     id: 'standard',
@@ -59,7 +65,6 @@ const CARDS: PricingCard[] = [
       'Monthly email digest of team participation',
     ],
     accent: '#BAF14D',
-    highlight: true,
   },
   {
     id: 'premium',
@@ -119,14 +124,17 @@ export default function EmployerPricing() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {CARDS.map((card) => (
+          {CARDS.map((card) => {
+            const onAccent = card.accentText ?? '#191A2E'
+            return (
             <div
               key={card.id}
               className={`flex flex-col overflow-hidden rounded-2xl border ${
                 card.highlight
-                  ? 'border-[#BAF14D] bg-white/[0.06]'
+                  ? 'bg-white/[0.06]'
                   : 'border-white/[0.08] bg-white/[0.03]'
               }`}
+              style={card.highlight ? { borderColor: card.accent } : undefined}
             >
               <div
                 className="h-1.5 w-full"
@@ -136,8 +144,8 @@ export default function EmployerPricing() {
               <div className="flex flex-1 flex-col p-8">
                 {card.highlight && (
                   <div
-                    className="mb-4 inline-flex self-start rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[#191A2E]"
-                    style={{ backgroundColor: card.accent }}
+                    className="mb-4 inline-flex self-start rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
+                    style={{ backgroundColor: card.accent, color: onAccent }}
                   >
                     Most popular
                   </div>
@@ -159,8 +167,8 @@ export default function EmployerPricing() {
                   {card.features.map((f) => (
                     <li key={f} className="flex items-start gap-2">
                       <span
-                        className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-[#191A2E]"
-                        style={{ backgroundColor: card.accent }}
+                        className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+                        style={{ backgroundColor: card.accent, color: onAccent }}
                         aria-hidden
                       >
                         ✓
@@ -179,7 +187,7 @@ export default function EmployerPricing() {
                   }`}
                   style={
                     card.highlight
-                      ? { backgroundColor: card.accent, color: '#191A2E' }
+                      ? { backgroundColor: card.accent, color: onAccent }
                       : undefined
                   }
                 >
@@ -189,7 +197,8 @@ export default function EmployerPricing() {
                 </button>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
 
         {error && (
