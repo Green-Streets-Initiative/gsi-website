@@ -33,6 +33,11 @@ interface Prize {
   prize_type: string
   description: string
   value_amount: number | null
+  funded_by_sponsorship_id: string | null
+  funder: {
+    id: string
+    sponsors: { id: string; name: string; logo_url: string | null; website_url: string | null } | null
+  } | null
 }
 
 interface Sponsor {
@@ -156,7 +161,7 @@ export default async function ShiftYourSummerPage() {
         .eq('competition_id', competition.id),
       supabase
         .from('competition_prizes')
-        .select('id, place, prize_type, description, value_amount')
+        .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url))')
         .eq('competition_id', competition.id)
         .eq('prize_type', 'individual')
         .order('place', { ascending: true }),
@@ -172,15 +177,45 @@ export default async function ShiftYourSummerPage() {
       memberCount: Number(row.member_count) || 0,
     }))
     participantCount = countRes.count ?? 0
-    prizes = prizesRes.data ?? []
+    prizes = (prizesRes.data ?? []).map((row: any) => {
+      // Supabase returns the !inner / foreign-key join as an array even when
+      // cardinality is 1. Flatten so Prize.funder is the single record (or null).
+      const funderRaw = row.funder
+      const funder = Array.isArray(funderRaw) ? (funderRaw[0] ?? null) : (funderRaw ?? null)
+      const sponsorRaw = funder?.sponsors
+      const sponsor = Array.isArray(sponsorRaw) ? (sponsorRaw[0] ?? null) : (sponsorRaw ?? null)
+      return {
+        id: row.id,
+        place: row.place,
+        prize_type: row.prize_type,
+        description: row.description,
+        value_amount: row.value_amount,
+        funded_by_sponsorship_id: row.funded_by_sponsorship_id ?? null,
+        funder: funder ? { id: funder.id, sponsors: sponsor } : null,
+      } as Prize
+    })
   } else if (competition && state === 'upcoming') {
     const { data } = await supabase
       .from('competition_prizes')
-      .select('id, place, prize_type, description, value_amount')
+      .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url))')
       .eq('competition_id', competition.id)
       .eq('prize_type', 'individual')
       .order('place', { ascending: true })
-    prizes = data ?? []
+    prizes = (data ?? []).map((row: any) => {
+      const funderRaw = row.funder
+      const funder = Array.isArray(funderRaw) ? (funderRaw[0] ?? null) : (funderRaw ?? null)
+      const sponsorRaw = funder?.sponsors
+      const sponsor = Array.isArray(sponsorRaw) ? (sponsorRaw[0] ?? null) : (sponsorRaw ?? null)
+      return {
+        id: row.id,
+        place: row.place,
+        prize_type: row.prize_type,
+        description: row.description,
+        value_amount: row.value_amount,
+        funded_by_sponsorship_id: row.funded_by_sponsorship_id ?? null,
+        funder: funder ? { id: funder.id, sponsors: sponsor } : null,
+      } as Prize
+    })
   }
 
   const sponsors: Sponsorship[] = competition?.event_sponsorships ?? []
@@ -441,8 +476,7 @@ function ActiveEvent({
 
 function PrizesSection({ prizes }: { prizes: Prize[] }) {
   // Top-N placements get their gold/silver/bronze treatment. Drawing-style
-  // prizes (place=0 or null) get a neutral "Drawing prize" header instead
-  // of an incoherent "0th place".
+  // prizes (place=0 or null) get a neutral "Drawing prize" header.
   const placeLabel = (n: number | null) => {
     if (!n || n <= 0) return 'Drawing prize'
     if (n === 1) return '1st place'
@@ -457,6 +491,32 @@ function PrizesSection({ prizes }: { prizes: Prize[] }) {
     return 'text-white border-white/10 bg-white/[0.03]'
   }
 
+  // Consolidate identical drawing prizes (same description + same funder
+  // sponsor) into one card with an "N× available" badge. Top-N placements
+  // (1st, 2nd, 3rd…) stay as individual cards even if descriptions match,
+  // since "1st place gets X" and "2nd place gets X" are semantically
+  // distinct ranks worth showing separately.
+  type Group = {
+    key: string
+    sample: Prize
+    count: number
+  }
+  const groups: Group[] = []
+  const groupIndex = new Map<string, number>()
+  for (const p of prizes) {
+    const isPlacement = (p.place ?? 0) > 0
+    const key = isPlacement
+      ? `place:${p.id}`
+      : `drawing:${p.description}|${p.funded_by_sponsorship_id ?? ''}`
+    const existing = groupIndex.get(key)
+    if (existing != null) {
+      groups[existing].count += 1
+    } else {
+      groupIndex.set(key, groups.length)
+      groups.push({ key, sample: p, count: 1 })
+    }
+  }
+
   return (
     <section className="bg-[#191A2E] px-8 py-20">
       <div className="mx-auto max-w-[900px]">
@@ -464,19 +524,45 @@ function PrizesSection({ prizes }: { prizes: Prize[] }) {
           What&apos;s at stake
         </h2>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {prizes.map(prize => (
-            <div
-              key={prize.id}
-              className={`rounded-[14px] border p-6 ${placeColor(prize.place)}`}
-            >
-              <div className="mb-3 text-sm font-bold uppercase tracking-wider">
-                {placeLabel(prize.place)}
+          {groups.map(g => {
+            const sponsor = g.sample.funder?.sponsors ?? null
+            return (
+              <div
+                key={g.key}
+                className={`rounded-[14px] border p-6 ${placeColor(g.sample.place)}`}
+              >
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <span className="text-sm font-bold uppercase tracking-wider">
+                    {placeLabel(g.sample.place)}
+                  </span>
+                  {g.count > 1 && (
+                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white">
+                      {g.count}× available
+                    </span>
+                  )}
+                </div>
+                <p className="text-[0.9375rem] leading-[1.6] text-white">
+                  {g.sample.description}
+                </p>
+                {sponsor && (
+                  <div className="mt-4 flex items-center gap-2 border-t border-white/[0.08] pt-3">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-white/50">
+                      Donated by
+                    </span>
+                    {sponsor.logo_url ? (
+                      <img
+                        src={sponsor.logo_url}
+                        alt={sponsor.name}
+                        className="h-5 max-w-[80px] object-contain"
+                      />
+                    ) : (
+                      <span className="text-xs font-semibold text-white">{sponsor.name}</span>
+                    )}
+                  </div>
+                )}
               </div>
-              <p className="text-[0.9375rem] leading-[1.6] text-white">
-                {prize.description}
-              </p>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>
@@ -484,11 +570,16 @@ function PrizesSection({ prizes }: { prizes: Prize[] }) {
 }
 
 function SponsorLogo({ sponsor, className }: { sponsor: Sponsor; className: string }) {
+  // Render logos in their natural form. We previously applied
+  // `brightness-0 invert opacity-70` for visual cohesion across sponsors,
+  // but it reduces colorful logos to unrecognizable white silhouettes
+  // (especially at the small Supporting tier size). Better to let logos
+  // breathe; sponsors who want a monochrome look can supply that asset.
   const inner = sponsor.logo_url ? (
     <img
       src={sponsor.logo_url}
       alt={sponsor.name}
-      className={`object-contain brightness-0 invert opacity-70 hover:opacity-100 transition-opacity ${className}`}
+      className={`object-contain ${className}`}
     />
   ) : (
     <span className="font-semibold text-white">{sponsor.name}</span>
@@ -547,7 +638,7 @@ function SponsorsInline({ sponsors }: { sponsors: Sponsorship[] }) {
           <p className="text-xs font-semibold uppercase tracking-widest text-white/60">Supporting Sponsors</p>
           <div className="flex flex-wrap items-center gap-6">
             {supporting.map(s => (
-              <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-4 max-w-[80px]" />
+              <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-8 max-w-[100px]" />
             ))}
           </div>
         </div>
