@@ -1074,9 +1074,9 @@ function PortalPage() {
     return new Date(g.access_ends_at) > new Date()
   }
 
-  function isTierAtLeast(required: 'basic' | 'standard' | 'premium'): boolean {
+  function isTierAtLeast(required: 'starter' | 'basic' | 'standard' | 'premium'): boolean {
     if (!group) return false
-    const order = { basic: 0, standard: 1, premium: 2 }
+    const order = { starter: 0, basic: 1, standard: 2, premium: 3 }
     return (order[group.tier as keyof typeof order] ?? 0) >= order[required]
   }
 
@@ -1482,7 +1482,9 @@ function PortalPage() {
           >
             <h2 className="mb-2 font-display text-base font-bold text-white">Commute Advisor</h2>
             <p className="mb-4 text-[0.8125rem] text-white/75">
-              Customize the Commute Advisor for your employees. Share this link in your onboarding kit or HR portal:
+              {isTierAtLeast('basic')
+                ? 'Customize the Commute Advisor for your employees. Share this link in your onboarding kit or HR portal:'
+                : 'Share this link in your onboarding kit or HR portal so your team can plan low-carbon commutes:'}
             </p>
             {group.slug && (
               <div className="mb-6 flex items-center gap-2">
@@ -1510,6 +1512,24 @@ function PortalPage() {
               </div>
             )}
 
+            {!isTierAtLeast('basic') ? (
+              <div className="rounded-[12px] border border-white/[0.12] bg-white/[0.04] p-5">
+                <p className="mb-3 text-[0.8125rem] leading-[1.55] text-white/80">
+                  Your Starter plan includes the standard Commute Advisor —
+                  employees still get personalized walking, biking, and
+                  transit recommendations. Upgrade to <strong>Basic</strong>{' '}
+                  to add your branding, workplace address, transit benefits,
+                  shuttle routes, and HR contact.
+                </p>
+                <a
+                  href="mailto:info@gogreenstreets.org?subject=Upgrade%20to%20Basic%20Shift%20Employer%20plan"
+                  className="inline-block rounded-full bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-90"
+                >
+                  Upgrade to Basic
+                </a>
+              </div>
+            ) : (
+              <>
             {/* Workplace address */}
             <div className="mb-5">
               <AddressAutocomplete
@@ -1696,6 +1716,8 @@ function PortalPage() {
             >
               {savingBenefits ? 'Saving...' : benefitsSaved ? 'Saved!' : 'Save benefits'}
             </button>
+              </>
+            )}
           </section>
 
           {/* ── Section 4: Employee leaderboard ──────────────── */}
@@ -2268,12 +2290,14 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 /* ── Setup overview: checklist + subscription status ───────── */
 
 const TIER_LABEL: Record<string, string> = {
+  starter: 'Starter',
   basic: 'Basic',
   standard: 'Standard',
   premium: 'Premium',
 }
 
 const TIER_ANNUAL_PRICE: Record<string, string> = {
+  starter: '$500 / year',
   basic: '$1,000 / year',
   standard: '$3,000 / year',
   premium: '$5,000 / year',
@@ -2331,6 +2355,9 @@ function SetupOverview({
     }
   }
   // Checklist heuristics — each item becomes ✓ when the underlying signal is true.
+  // Starter plans don't get advisor customization, so hide that row for them.
+  const tierOrder = { starter: 0, basic: 1, standard: 2, premium: 3 }
+  const tierRank = tierOrder[group.tier as keyof typeof tierOrder] ?? 0
   const items: Array<{ label: string; done: boolean; anchor: string }> = [
     {
       label: 'Company profile complete',
@@ -2352,14 +2379,18 @@ function SetupOverview({
       done: hasChallenge,
       anchor: '#your-challenge',
     },
-    {
-      label: 'Commute Advisor configured',
-      done: Boolean(
-        benefits?.destination_lat &&
-          benefits?.destination_lng,
-      ),
-      anchor: '#commute-advisor',
-    },
+    ...(tierRank >= tierOrder.basic
+      ? [
+          {
+            label: 'Commute Advisor configured',
+            done: Boolean(
+              benefits?.destination_lat &&
+                benefits?.destination_lng,
+            ),
+            anchor: '#commute-advisor',
+          },
+        ]
+      : []),
   ]
   const completed = items.filter((i) => i.done).length
   const total = items.length

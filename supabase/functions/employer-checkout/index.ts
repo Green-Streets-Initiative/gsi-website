@@ -6,7 +6,7 @@
  *
  * Request body:
  *   {
- *     tier: 'basic' | 'standard' | 'premium',
+ *     tier: 'starter' | 'basic' | 'standard' | 'premium',
  *     origin?: string         // optional: caller's origin for success/cancel URLs
  *                             //          (lets localhost dev work without redeploy)
  *   }

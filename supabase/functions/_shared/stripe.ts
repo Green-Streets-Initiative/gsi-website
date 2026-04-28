@@ -33,23 +33,30 @@ export function createStripeClient(): Stripe {
   });
 }
 
-export type EmployerTier = "basic" | "standard" | "premium";
+export type EmployerTier = "starter" | "basic" | "standard" | "premium";
 
 export function isValidTier(value: unknown): value is EmployerTier {
-  return value === "basic" || value === "standard" || value === "premium";
+  return (
+    value === "starter" ||
+    value === "basic" ||
+    value === "standard" ||
+    value === "premium"
+  );
 }
 
 /**
- * Resolve the Stripe price ID for a tier. The three IDs are stored as
- * edge function secrets so test/live can be swapped without code changes.
+ * Resolve the Stripe price ID for a tier. Each ID is stored as an
+ * edge function secret so test/live can be swapped without code changes.
  */
 export function priceIdForTier(tier: EmployerTier): string {
   const envKey =
-    tier === "basic"
-      ? "STRIPE_PRICE_EMPLOYER_BASIC"
-      : tier === "standard"
-        ? "STRIPE_PRICE_EMPLOYER_STANDARD"
-        : "STRIPE_PRICE_EMPLOYER_PREMIUM";
+    tier === "starter"
+      ? "STRIPE_PRICE_EMPLOYER_STARTER"
+      : tier === "basic"
+        ? "STRIPE_PRICE_EMPLOYER_BASIC"
+        : tier === "standard"
+          ? "STRIPE_PRICE_EMPLOYER_STANDARD"
+          : "STRIPE_PRICE_EMPLOYER_PREMIUM";
   const id = Deno.env.get(envKey);
   if (!id) {
     throw new Error(`${envKey} is not set on the edge function environment.`);
@@ -64,6 +71,7 @@ export function priceIdForTier(tier: EmployerTier): string {
  * where subscription metadata isn't preserved across plan switches.
  */
 export function tierForPriceId(priceId: string): EmployerTier | null {
+  if (priceId === Deno.env.get("STRIPE_PRICE_EMPLOYER_STARTER")) return "starter";
   if (priceId === Deno.env.get("STRIPE_PRICE_EMPLOYER_BASIC")) return "basic";
   if (priceId === Deno.env.get("STRIPE_PRICE_EMPLOYER_STANDARD")) return "standard";
   if (priceId === Deno.env.get("STRIPE_PRICE_EMPLOYER_PREMIUM")) return "premium";
