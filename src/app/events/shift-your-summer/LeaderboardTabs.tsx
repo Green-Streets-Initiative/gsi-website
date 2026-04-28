@@ -1,11 +1,13 @@
 'use client'
 
+import Image from 'next/image'
 import { useState } from 'react'
 
 export interface GroupStanding {
   groupId: string
   groupName: string
   groupType: string
+  logoUrl: string | null
   shiftRate: number
   activeTrips: number
   memberCount: number
@@ -33,7 +35,7 @@ function shiftRateColor(pct: number) {
   return 'text-white'
 }
 
-function GroupStandingsTable({ standings }: { standings: GroupStanding[] }) {
+function GroupStandingsTable({ standings, showLogo = false }: { standings: GroupStanding[]; showLogo?: boolean }) {
   if (standings.length === 0) {
     return (
       <p className="py-10 text-center text-sm text-white/50">
@@ -64,8 +66,28 @@ function GroupStandingsTable({ standings }: { standings: GroupStanding[] }) {
                 </span>
               </td>
               <td className="px-4 py-3">
-                <span className="font-medium text-white">{s.groupName}</span>
-                <span className="ml-2 text-xs text-white/60">{s.activeTrips} active trips</span>
+                <div className="flex items-center gap-3">
+                  {showLogo && (
+                    s.logoUrl ? (
+                      <Image
+                        src={s.logoUrl}
+                        alt={s.groupName}
+                        width={28}
+                        height={28}
+                        className="h-7 w-7 flex-shrink-0 rounded-full bg-white/10 object-contain"
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#BAF14D] text-xs font-bold text-[#191A2E]">
+                        {s.groupName.charAt(0).toUpperCase()}
+                      </span>
+                    )
+                  )}
+                  <span>
+                    <span className="font-medium text-white">{s.groupName}</span>
+                    <span className="ml-2 text-xs text-white/60">{s.activeTrips} active trips</span>
+                  </span>
+                </div>
               </td>
               <td className={`px-4 py-3 text-right font-display font-bold ${shiftRateColor(s.shiftRate)}`}>
                 {Math.round(s.shiftRate)}%
@@ -173,7 +195,7 @@ export default function LeaderboardTabs({ geoStandings, corpStandings, individua
       {/* Content */}
       <div className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#242538]">
         {activeTab === 'towns' && <GroupStandingsTable standings={geoStandings} />}
-        {activeTab === 'corporate' && <GroupStandingsTable standings={corpStandings} />}
+        {activeTab === 'corporate' && <GroupStandingsTable standings={corpStandings} showLogo />}
         {activeTab === 'individual' && (
           <IndividualStandingsTable standings={individualStandings} participantCount={participantCount} />
         )}

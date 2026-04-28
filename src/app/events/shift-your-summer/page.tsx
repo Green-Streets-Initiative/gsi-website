@@ -147,6 +147,7 @@ export default async function ShiftYourSummerPage() {
             p_competition_id: competition.id,
             p_group_ids: groupIds,
             p_days: 90,
+            p_only_public: true,
           })
         : Promise.resolve({ data: [] }),
       supabase
@@ -165,6 +166,7 @@ export default async function ShiftYourSummerPage() {
       groupId: row.group_id,
       groupName: row.group_name,
       groupType: row.group_type,
+      logoUrl: row.logo_url ?? null,
       shiftRate: Number(row.shift_rate) || 0,
       activeTrips: Number(row.active_trips) || 0,
       memberCount: Number(row.member_count) || 0,
