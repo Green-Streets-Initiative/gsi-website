@@ -313,7 +313,7 @@ function UpcomingEvent({
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#191A2E] px-8 py-24 md:py-32">
+      <section className="relative overflow-hidden bg-[#191A2E] px-8 pt-24 md:pt-32 pb-10 md:pb-12">
         <GradientBg />
         <div className="relative mx-auto max-w-[1120px]">
           <div className="max-w-[640px]">
@@ -339,7 +339,7 @@ function UpcomingEvent({
       </section>
 
       {/* Placeholder leaderboard */}
-      <section className="bg-[#191A2E] px-8 py-20">
+      <section className="bg-[#191A2E] px-8 pt-6 pb-12">
         <div className="mx-auto max-w-[800px] text-center">
           <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] px-8 py-16">
             <h2 className="mb-3 font-display text-2xl font-bold tracking-tight text-white">
@@ -427,7 +427,7 @@ function ActiveEvent({
               <h2 className="font-display text-2xl font-bold tracking-tight text-white">
                 Live standings
               </h2>
-              <p className="mt-1 text-sm text-white/50">
+              <p className="mt-1 text-sm text-white/75">
                 Updated when you load this page.
               </p>
             </div>
@@ -518,7 +518,7 @@ function PrizesSection({ prizes }: { prizes: Prize[] }) {
   }
 
   return (
-    <section className="bg-[#191A2E] px-8 py-20">
+    <section className="bg-[#191A2E] px-8 pt-8 pb-16">
       <div className="mx-auto max-w-[900px]">
         <h2 className="mb-10 font-display text-2xl font-bold tracking-tight text-white">
           What&apos;s at stake
@@ -545,18 +545,22 @@ function PrizesSection({ prizes }: { prizes: Prize[] }) {
                   {g.sample.description}
                 </p>
                 {sponsor && (
-                  <div className="mt-4 flex items-center gap-2 border-t border-white/[0.08] pt-3">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-white/50">
+                  <div className="mt-4 flex items-center gap-3 border-t border-white/[0.08] pt-3">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-white/70">
                       Donated by
                     </span>
                     {sponsor.logo_url ? (
-                      <img
-                        src={sponsor.logo_url}
-                        alt={sponsor.name}
-                        className="h-5 max-w-[80px] object-contain"
-                      />
+                      <span className="inline-flex items-center justify-center rounded-lg bg-white p-2">
+                        <img
+                          src={sponsor.logo_url}
+                          alt={sponsor.name}
+                          className="h-9 max-w-[140px] object-contain"
+                        />
+                      </span>
                     ) : (
-                      <span className="text-xs font-semibold text-white">{sponsor.name}</span>
+                      <span className="inline-flex items-center justify-center rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-[#191A2E]">
+                        {sponsor.name}
+                      </span>
                     )}
                   </div>
                 )}
@@ -570,11 +574,9 @@ function PrizesSection({ prizes }: { prizes: Prize[] }) {
 }
 
 function SponsorLogo({ sponsor, className }: { sponsor: Sponsor; className: string }) {
-  // Render logos in their natural form. We previously applied
-  // `brightness-0 invert opacity-70` for visual cohesion across sponsors,
-  // but it reduces colorful logos to unrecognizable white silhouettes
-  // (especially at the small Supporting tier size). Better to let logos
-  // breathe; sponsors who want a monochrome look can supply that asset.
+  // Logos sit on a white tile so dark-on-light marks (e.g. Robinson+Cole)
+  // stay legible against the dark navy page background while colorful marks
+  // (e.g. Level99) keep their natural color.
   const inner = sponsor.logo_url ? (
     <img
       src={sponsor.logo_url}
@@ -582,14 +584,19 @@ function SponsorLogo({ sponsor, className }: { sponsor: Sponsor; className: stri
       className={`object-contain ${className}`}
     />
   ) : (
-    <span className="font-semibold text-white">{sponsor.name}</span>
+    <span className="font-semibold text-[#191A2E]">{sponsor.name}</span>
+  )
+  const tile = (
+    <span className="inline-flex items-center justify-center rounded-lg bg-white p-2.5 sm:p-3">
+      {inner}
+    </span>
   )
   return sponsor.website_url ? (
     <a href={sponsor.website_url} target="_blank" rel="noopener noreferrer">
-      {inner}
+      {tile}
     </a>
   ) : (
-    <div>{inner}</div>
+    tile
   )
 }
 
@@ -656,11 +663,11 @@ function SponsorsSection({ sponsors }: { sponsors: Sponsorship[] }) {
   if (sponsors.length === 0) return null
 
   return (
-    <section className="bg-[#191A2E] px-8 py-20 border-t border-white/[0.08]">
+    <section className="bg-[#191A2E] px-8 pt-10 pb-16 border-t border-white/[0.08]">
       <div className="mx-auto max-w-[900px] space-y-12">
         {presenting.length > 0 && (
           <div>
-            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/50">
+            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/70">
               Presenting Sponsor
             </p>
             <div className="flex flex-wrap items-center gap-10">
@@ -672,7 +679,7 @@ function SponsorsSection({ sponsors }: { sponsors: Sponsorship[] }) {
         )}
         {champion.length > 0 && (
           <div>
-            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/50">
+            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/70">
               Champion Sponsors
             </p>
             <div className="flex flex-wrap items-center gap-9">
@@ -684,7 +691,7 @@ function SponsorsSection({ sponsors }: { sponsors: Sponsorship[] }) {
         )}
         {communityPartners.length > 0 && (
           <div>
-            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/50">
+            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/70">
               Community Partners
             </p>
             <div className="flex flex-wrap items-center gap-8">
@@ -696,7 +703,7 @@ function SponsorsSection({ sponsors }: { sponsors: Sponsorship[] }) {
         )}
         {supporting.length > 0 && (
           <div>
-            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/50">
+            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/70">
               Supporting Partners
             </p>
             <div className="flex flex-wrap items-center gap-6">
