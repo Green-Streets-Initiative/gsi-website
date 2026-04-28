@@ -440,13 +440,17 @@ function ActiveEvent({
 /* ── Shared Sections ──────────────────────────────────────── */
 
 function PrizesSection({ prizes }: { prizes: Prize[] }) {
-  const placeLabel = (n: number) => {
+  // Top-N placements get their gold/silver/bronze treatment. Drawing-style
+  // prizes (place=0 or null) get a neutral "Drawing prize" header instead
+  // of an incoherent "0th place".
+  const placeLabel = (n: number | null) => {
+    if (!n || n <= 0) return 'Drawing prize'
     if (n === 1) return '1st place'
     if (n === 2) return '2nd place'
     if (n === 3) return '3rd place'
     return `${n}th place`
   }
-  const placeColor = (n: number) => {
+  const placeColor = (n: number | null) => {
     if (n === 1) return 'text-[#EDB93C] border-[#EDB93C]/20 bg-[#EDB93C]/5'
     if (n === 2) return 'text-[#C0C0C0] border-[#C0C0C0]/20 bg-[#C0C0C0]/5'
     if (n === 3) return 'text-[#CD7F32] border-[#CD7F32]/20 bg-[#CD7F32]/5'
@@ -471,11 +475,6 @@ function PrizesSection({ prizes }: { prizes: Prize[] }) {
               <p className="text-[0.9375rem] leading-[1.6] text-white">
                 {prize.description}
               </p>
-              {prize.value_amount != null && prize.value_amount > 0 && (
-                <p className="mt-2 text-sm text-white">
-                  ~${prize.value_amount}
-                </p>
-              )}
             </div>
           ))}
         </div>
