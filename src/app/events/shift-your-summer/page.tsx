@@ -28,6 +28,7 @@ interface Standing {
 }
 
 type PrizeTier = 'grand' | 'featured' | 'standard'
+type PrizeEntryType = 'weighted_entries' | 'achievement_gated' | 'event'
 type SponsorTier = 'presenting' | 'champion' | 'community'
 
 interface Prize {
@@ -45,6 +46,8 @@ interface Prize {
   product_url: string | null
   // Unit count drives the "×N" badge and the aggregate-value math.
   quantity: number
+  // Drawing mechanic — drives the entry-type pill on each prize card.
+  entry_type: PrizeEntryType
   funder: {
     id: string
     sponsors: { id: string; name: string; logo_url: string | null; website_url: string | null } | null
@@ -190,7 +193,7 @@ export default async function ShiftYourSummerPage() {
         .eq('competition_id', competition.id),
       supabase
         .from('competition_prizes')
-        .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url)), competition_prize_units(id)')
+        .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, entry_type, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url)), competition_prize_units(id)')
         .eq('competition_id', competition.id)
         .eq('prize_type', 'individual')
         .order('place', { ascending: true }),
@@ -228,13 +231,14 @@ export default async function ShiftYourSummerPage() {
         quantity: Array.isArray(row.competition_prize_units)
           ? row.competition_prize_units.length
           : 0,
+        entry_type: (row.entry_type ?? 'achievement_gated') as PrizeEntryType,
         funder: funder ? { id: funder.id, sponsors: sponsor } : null,
       } as Prize
     })
   } else if (competition && state === 'upcoming') {
     const { data } = await supabase
       .from('competition_prizes')
-      .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url)), competition_prize_units(id)')
+      .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, entry_type, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url)), competition_prize_units(id)')
       .eq('competition_id', competition.id)
       .eq('prize_type', 'individual')
       .order('place', { ascending: true })
@@ -258,6 +262,7 @@ export default async function ShiftYourSummerPage() {
         quantity: Array.isArray(row.competition_prize_units)
           ? row.competition_prize_units.length
           : 0,
+        entry_type: (row.entry_type ?? 'achievement_gated') as PrizeEntryType,
         funder: funder ? { id: funder.id, sponsors: sponsor } : null,
       } as Prize
     })
@@ -722,6 +727,29 @@ function formatDollars(value: number): string {
   return `$${Math.round(value).toLocaleString()}`
 }
 
+function EntryTypePill({ entry_type }: { entry_type: PrizeEntryType }) {
+  const config = {
+    weighted_entries: {
+      label: 'Every trip enters',
+      className: 'bg-[#BAF14D] text-[#191A2E]',
+    },
+    achievement_gated: {
+      label: 'Complete to enter',
+      className: 'bg-[#2966E5]/20 text-[#84B4FF]',
+    },
+    event: {
+      label: 'Celebration event',
+      className: 'bg-[#52B788]/20 text-[#7AD8A2]',
+    },
+  } as const
+  const c = config[entry_type]
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${c.className}`}>
+      {c.label}
+    </span>
+  )
+}
+
 function GrandPrizeCard({ prize, layout }: { prize: Prize; layout: number }) {
   const brand = brandLabel(prize)
   const imageHeight = layout === 1 ? 'h-[180px]' : layout === 2 ? 'h-[140px]' : 'h-[120px]'
@@ -767,6 +795,9 @@ function GrandPrizeCard({ prize, layout }: { prize: Prize; layout: number }) {
             From <span className="font-semibold text-white">{brand}</span>
           </p>
         )}
+        <div className="pt-1">
+          <EntryTypePill entry_type={prize.entry_type} />
+        </div>
         {prize.product_url && (
           <p className="pt-1 text-sm font-semibold text-[#2966E5]">
             View product details →
@@ -815,6 +846,9 @@ function FeaturedPrizeCard({ prize }: { prize: Prize }) {
             Donated by <span className="font-semibold text-white">{brand}</span>
           </p>
         )}
+        <div className="mt-1.5">
+          <EntryTypePill entry_type={prize.entry_type} />
+        </div>
         {prize.product_url && (
           <p className="mt-1.5 text-sm font-semibold text-[#2966E5]">
             View product details →
