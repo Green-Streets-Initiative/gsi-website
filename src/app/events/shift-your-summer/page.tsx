@@ -600,13 +600,13 @@ function SponsorTile({
   size: 'presenting' | 'champion' | 'community'
 }) {
   const tileHeight =
-    size === 'presenting' ? 'h-[120px]' : size === 'champion' ? 'h-[64px]' : 'h-[52px]'
+    size === 'presenting' ? 'h-[120px]' : size === 'champion' ? 'h-[80px]' : 'h-[64px]'
   const logoMax =
     size === 'presenting'
-      ? 'max-h-[80px] max-w-[80%]'
+      ? 'max-h-[88px] max-w-[85%]'
       : size === 'champion'
-        ? 'max-h-[44px] max-w-[80%]'
-        : 'max-h-[36px] max-w-[80%]'
+        ? 'max-h-[56px] max-w-[85%]'
+        : 'max-h-[44px] max-w-[85%]'
   const inner = sponsor.logo_url ? (
     <img
       src={sponsor.logo_url}
@@ -786,27 +786,49 @@ function GrandPrizeCard({ prize, layout }: { prize: Prize; layout: number }) {
 
 function FeaturedPrizeCard({ prize }: { prize: Prize }) {
   const brand = brandLabel(prize)
-  return (
-    <div className="rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-5">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
-          Featured
-        </span>
-        {prize.quantity > 1 && (
-          <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white">
-            ×{prize.quantity}
+  const card = (
+    <div className="flex gap-4 rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-4 transition-colors hover:bg-white/[0.06]">
+      {prize.image_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={prize.image_url}
+          alt={prize.description}
+          className="h-20 w-20 shrink-0 rounded-[10px] bg-[#1A2240] object-cover"
+        />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
+            Featured
           </span>
+          {prize.quantity > 1 && (
+            <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white">
+              ×{prize.quantity}
+            </span>
+          )}
+        </div>
+        <p className="text-sm font-medium leading-snug text-white">
+          {prize.description}
+        </p>
+        {brand && (
+          <p className="mt-1 text-sm text-white/75">
+            Donated by <span className="font-semibold text-white">{brand}</span>
+          </p>
+        )}
+        {prize.product_url && (
+          <p className="mt-1.5 text-sm font-semibold text-[#2966E5]">
+            View product details →
+          </p>
         )}
       </div>
-      <p className="text-sm font-medium leading-snug text-white">
-        {prize.description}
-      </p>
-      {brand && (
-        <p className="mt-1.5 text-sm text-white/75">
-          Donated by <span className="font-semibold text-white">{brand}</span>
-        </p>
-      )}
     </div>
+  )
+  return prize.product_url ? (
+    <a href={prize.product_url} target="_blank" rel="noopener noreferrer" className="block">
+      {card}
+    </a>
+  ) : (
+    card
   )
 }
 
