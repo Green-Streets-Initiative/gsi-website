@@ -27,6 +27,9 @@ interface Standing {
   pct_non_car: number
 }
 
+type PrizeTier = 'grand' | 'featured' | 'standard'
+type SponsorTier = 'presenting' | 'champion' | 'community'
+
 interface Prize {
   id: string
   place: number
@@ -34,6 +37,14 @@ interface Prize {
   description: string
   value_amount: number | null
   funded_by_sponsorship_id: string | null
+  // Visual tiering + media for the public prize section.
+  tier: PrizeTier
+  display_order: number
+  brand_name_override: string | null
+  image_url: string | null
+  product_url: string | null
+  // Unit count drives the "×N" badge and the aggregate-value math.
+  quantity: number
   funder: {
     id: string
     sponsors: { id: string; name: string; logo_url: string | null; website_url: string | null } | null
@@ -50,7 +61,25 @@ interface Sponsor {
 interface Sponsorship {
   id: string
   sponsorship_level: string
+  // New 3-tier source of truth. Falls back to mapping from sponsorship_level
+  // when the new column hasn't been backfilled (shouldn't happen post-migration).
+  tier: SponsorTier | null
+  display_order: number
   sponsors: Sponsor | null
+}
+
+function tierFromLegacy(level: string): SponsorTier {
+  switch (level) {
+    case 'presenting': return 'presenting'
+    case 'champion':   return 'champion'
+    case 'community_partner':
+    case 'supporting':
+    default:           return 'community'
+  }
+}
+
+function resolveSponsorTier(s: Sponsorship): SponsorTier {
+  return s.tier ?? tierFromLegacy(s.sponsorship_level)
 }
 
 interface Competition {
@@ -114,7 +143,7 @@ export default async function ShiftYourSummerPage() {
       id, name, description, metric, starts_at, ends_at,
       is_public, matchup_group_ids, sponsor_name, sponsor_logo_url, prizes_json,
       event_sponsorships (
-        id, sponsorship_level,
+        id, sponsorship_level, tier, display_order,
         sponsors (
           id, name, logo_url, website_url
         )
@@ -161,7 +190,7 @@ export default async function ShiftYourSummerPage() {
         .eq('competition_id', competition.id),
       supabase
         .from('competition_prizes')
-        .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url))')
+        .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url)), competition_prize_units(id)')
         .eq('competition_id', competition.id)
         .eq('prize_type', 'individual')
         .order('place', { ascending: true }),
@@ -191,13 +220,21 @@ export default async function ShiftYourSummerPage() {
         description: row.description,
         value_amount: row.value_amount,
         funded_by_sponsorship_id: row.funded_by_sponsorship_id ?? null,
+        tier: (row.tier ?? 'standard') as PrizeTier,
+        display_order: row.display_order ?? 0,
+        brand_name_override: row.brand_name_override ?? null,
+        image_url: row.image_url ?? null,
+        product_url: row.product_url ?? null,
+        quantity: Array.isArray(row.competition_prize_units)
+          ? row.competition_prize_units.length
+          : 0,
         funder: funder ? { id: funder.id, sponsors: sponsor } : null,
       } as Prize
     })
   } else if (competition && state === 'upcoming') {
     const { data } = await supabase
       .from('competition_prizes')
-      .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url))')
+      .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url)), competition_prize_units(id)')
       .eq('competition_id', competition.id)
       .eq('prize_type', 'individual')
       .order('place', { ascending: true })
@@ -213,6 +250,14 @@ export default async function ShiftYourSummerPage() {
         description: row.description,
         value_amount: row.value_amount,
         funded_by_sponsorship_id: row.funded_by_sponsorship_id ?? null,
+        tier: (row.tier ?? 'standard') as PrizeTier,
+        display_order: row.display_order ?? 0,
+        brand_name_override: row.brand_name_override ?? null,
+        image_url: row.image_url ?? null,
+        product_url: row.product_url ?? null,
+        quantity: Array.isArray(row.competition_prize_units)
+          ? row.competition_prize_units.length
+          : 0,
         funder: funder ? { id: funder.id, sponsors: sponsor } : null,
       } as Prize
     })
@@ -334,7 +379,6 @@ function UpcomingEvent({
               <CountdownTimer targetDate={competition.starts_at} />
             </div>
           </div>
-          <PresentedBy sponsors={sponsors} />
         </div>
       </section>
 
@@ -353,8 +397,8 @@ function UpcomingEvent({
         </div>
       </section>
 
-      {prizes.length > 0 && <PrizesSection prizes={prizes} />}
-      {sponsors.length > 0 && <SponsorsSection sponsors={sponsors} />}
+      <SponsorSection sponsors={sponsors} />
+      {prizes.length > 0 && <PrizeSection prizes={prizes} />}
       <HowToJoin />
       <PartnerCrossLink />
       <CtaSection />
@@ -389,33 +433,24 @@ function ActiveEvent({
       <section className="relative overflow-hidden bg-[#191A2E] px-8 py-16 md:py-24">
         <GradientBg />
         <div className="relative mx-auto max-w-[1120px]">
-          <div className="grid gap-10 md:grid-cols-2 md:items-start">
-            <div>
-              <Eyebrow>
-                Flagship Event &middot; {new Date(competition.starts_at).getFullYear()}
-              </Eyebrow>
-              <h1 className="mb-4 font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-                {competition.name}
-              </h1>
-              <p className="mb-5 text-lg leading-[1.7] text-white">
-                {competition.description}
-              </p>
-              <p className="mb-3 text-sm font-semibold text-white">
-                {formatDateRange(competition.starts_at, competition.ends_at)}
-              </p>
-              <MetricBadge metric={competition.metric} />
-              <div className="mt-8">
-                <CtaButtons />
-              </div>
-            </div>
-
-            <div>
-              <PresentedBy sponsors={sponsors} />
+          <div className="max-w-[640px]">
+            <Eyebrow>
+              Flagship Event &middot; {new Date(competition.starts_at).getFullYear()}
+            </Eyebrow>
+            <h1 className="mb-4 font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+              {competition.name}
+            </h1>
+            <p className="mb-5 text-lg leading-[1.7] text-white">
+              {competition.description}
+            </p>
+            <p className="mb-3 text-sm font-semibold text-white">
+              {formatDateRange(competition.starts_at, competition.ends_at)}
+            </p>
+            <MetricBadge metric={competition.metric} />
+            <div className="mt-8">
+              <CtaButtons />
             </div>
           </div>
-
-          {/* Sponsors inline below hero content */}
-          {sponsors.length > 0 && <SponsorsInline sponsors={sponsors} />}
         </div>
       </section>
 
@@ -464,7 +499,8 @@ function ActiveEvent({
         </div>
       </section>
 
-      {prizes.length > 0 && <PrizesSection prizes={prizes} />}
+      <SponsorSection sponsors={sponsors} />
+      {prizes.length > 0 && <PrizeSection prizes={prizes} />}
       <HowToJoin />
       <PartnerCrossLink />
       <CtaSection />
@@ -474,122 +510,120 @@ function ActiveEvent({
 
 /* ── Shared Sections ──────────────────────────────────────── */
 
-function PrizesSection({ prizes }: { prizes: Prize[] }) {
-  // Top-N placements get their gold/silver/bronze treatment. Drawing-style
-  // prizes (place=0 or null) get a neutral "Drawing prize" header.
-  const placeLabel = (n: number | null) => {
-    if (!n || n <= 0) return 'Drawing prize'
-    if (n === 1) return '1st place'
-    if (n === 2) return '2nd place'
-    if (n === 3) return '3rd place'
-    return `${n}th place`
-  }
-  const placeColor = (n: number | null) => {
-    if (n === 1) return 'text-[#EDB93C] border-[#EDB93C]/20 bg-[#EDB93C]/5'
-    if (n === 2) return 'text-[#C0C0C0] border-[#C0C0C0]/20 bg-[#C0C0C0]/5'
-    if (n === 3) return 'text-[#CD7F32] border-[#CD7F32]/20 bg-[#CD7F32]/5'
-    return 'text-white border-white/10 bg-white/[0.03]'
-  }
+/* ── SponsorSection ─────────────────────────────────────────
+ * Three-tier display: Presenting (full-width hero card) → Champion
+ * (2-up grid, larger logos) → Community (4-up grid, smaller logos).
+ * White-card logo treatment so dark marks read on the navy bg.
+ * Empty Presenting tier shows a soft "become the presenting sponsor"
+ * CTA. Empty Champion / Community tiers hide entirely.
+ */
+function SponsorSection({ sponsors }: { sponsors: Sponsorship[] }) {
+  const tiered = sponsors
+    .filter(s => s.sponsors)
+    .map(s => ({ ...s, _tier: resolveSponsorTier(s) }))
+    .sort((a, b) => a.display_order - b.display_order)
 
-  // Consolidate identical drawing prizes (same description + same funder
-  // sponsor) into one card with an "N× available" badge. Top-N placements
-  // (1st, 2nd, 3rd…) stay as individual cards even if descriptions match,
-  // since "1st place gets X" and "2nd place gets X" are semantically
-  // distinct ranks worth showing separately.
-  type Group = {
-    key: string
-    sample: Prize
-    count: number
-  }
-  const groups: Group[] = []
-  const groupIndex = new Map<string, number>()
-  for (const p of prizes) {
-    const isPlacement = (p.place ?? 0) > 0
-    const key = isPlacement
-      ? `place:${p.id}`
-      : `drawing:${p.description}|${p.funded_by_sponsorship_id ?? ''}`
-    const existing = groupIndex.get(key)
-    if (existing != null) {
-      groups[existing].count += 1
-    } else {
-      groupIndex.set(key, groups.length)
-      groups.push({ key, sample: p, count: 1 })
-    }
-  }
+  const presenting = tiered.filter(s => s._tier === 'presenting')
+  const champion = tiered.filter(s => s._tier === 'champion')
+  const community = tiered.filter(s => s._tier === 'community')
+
+  if (sponsors.length === 0 && presenting.length === 0) return null
 
   return (
-    <section className="bg-[#191A2E] px-8 pt-8 pb-16">
-      <div className="mx-auto max-w-[900px]">
-        <h2 className="mb-10 font-display text-2xl font-bold tracking-tight text-white">
-          What&apos;s at stake
+    <section className="bg-[#191A2E] px-8 pt-12 pb-12 border-t border-white/[0.08]">
+      <div className="mx-auto max-w-[1120px]">
+        <h2 className="mb-2 font-display text-2xl font-bold tracking-tight text-white">
+          Partners &amp; sponsors
         </h2>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {groups.map(g => {
-            const sponsor = g.sample.funder?.sponsors ?? null
-            return (
-              <div
-                key={g.key}
-                className={`rounded-[14px] border p-6 ${placeColor(g.sample.place)}`}
-              >
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <span className="text-sm font-bold uppercase tracking-wider">
-                    {placeLabel(g.sample.place)}
-                  </span>
-                  {g.count > 1 && (
-                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white">
-                      {g.count}× available
-                    </span>
-                  )}
-                </div>
-                <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  {g.sample.description}
-                </p>
-                {sponsor && (
-                  <div className="mt-4 flex items-center gap-3 border-t border-white/[0.08] pt-3">
-                    <span className="text-xs font-semibold uppercase tracking-widest text-white/70">
-                      Donated by
-                    </span>
-                    {sponsor.logo_url ? (
-                      <span className="inline-flex items-center justify-center rounded-lg bg-white p-2">
-                        <img
-                          src={sponsor.logo_url}
-                          alt={sponsor.name}
-                          className="h-9 max-w-[140px] object-contain"
-                        />
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center justify-center rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-[#191A2E]">
-                        {sponsor.name}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
+        <p className="mb-10 text-sm text-white/75">
+          Made possible by these Greater Boston organizations
+        </p>
+
+        {/* Presenting */}
+        <div className="mb-10">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/70">
+            Presenting Sponsor
+          </p>
+          {presenting.length > 0 ? (
+            <div className="grid gap-4">
+              {presenting.map(s => (
+                <SponsorTile key={s.id} sponsor={s.sponsors!} size="presenting" />
+              ))}
+            </div>
+          ) : (
+            <Link
+              href="/events/shift-your-summer/partners"
+              className="block rounded-[14px] border border-dashed border-[#BAF14D]/40 bg-[#BAF14D]/[0.06] px-6 py-7 text-center text-sm font-semibold text-[#BAF14D] hover:bg-[#BAF14D]/[0.12] transition-colors"
+            >
+              Open · become the presenting sponsor →
+            </Link>
+          )}
         </div>
+
+        {/* Champion */}
+        {champion.length > 0 && (
+          <div className="mb-10">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/70">
+              Champion
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {champion.map(s => (
+                <SponsorTile key={s.id} sponsor={s.sponsors!} size="champion" />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Community */}
+        {community.length > 0 && (
+          <div>
+            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/70">
+              Community
+            </p>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {community.map(s => (
+                <SponsorTile key={s.id} sponsor={s.sponsors!} size="community" />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )
 }
 
-function SponsorLogo({ sponsor, className }: { sponsor: Sponsor; className: string }) {
-  // Logos sit on a white tile so dark-on-light marks (e.g. Robinson+Cole)
-  // stay legible against the dark navy page background while colorful marks
-  // (e.g. Level99) keep their natural color.
+function SponsorTile({
+  sponsor,
+  size,
+}: {
+  sponsor: Sponsor
+  size: 'presenting' | 'champion' | 'community'
+}) {
+  const tileHeight =
+    size === 'presenting' ? 'h-[120px]' : size === 'champion' ? 'h-[64px]' : 'h-[52px]'
+  const logoMax =
+    size === 'presenting'
+      ? 'max-h-[80px] max-w-[80%]'
+      : size === 'champion'
+        ? 'max-h-[44px] max-w-[80%]'
+        : 'max-h-[36px] max-w-[80%]'
   const inner = sponsor.logo_url ? (
     <img
       src={sponsor.logo_url}
       alt={sponsor.name}
-      className={`object-contain ${className}`}
+      className={`${logoMax} object-contain`}
     />
   ) : (
-    <span className="font-semibold text-[#191A2E]">{sponsor.name}</span>
+    <span className="px-3 text-center text-sm font-semibold text-[#191A2E]">
+      {sponsor.name}
+    </span>
   )
   const tile = (
-    <span className="inline-flex items-center justify-center rounded-lg bg-white p-2.5 sm:p-3">
+    <div
+      className={`${tileHeight} flex items-center justify-center rounded-[14px] bg-white px-4 py-3`}
+    >
       {inner}
-    </span>
+    </div>
   )
   return sponsor.website_url ? (
     <a href={sponsor.website_url} target="_blank" rel="noopener noreferrer">
@@ -600,121 +634,198 @@ function SponsorLogo({ sponsor, className }: { sponsor: Sponsor; className: stri
   )
 }
 
-/** Compact sponsor block shown inside the hero for the active-event layout */
-function SponsorsInline({ sponsors }: { sponsors: Sponsorship[] }) {
-  const presenting = sponsors.filter(s => s.sponsorship_level === 'presenting' && s.sponsors)
-  const champion = sponsors.filter(s => s.sponsorship_level === 'champion' && s.sponsors)
-  const communityPartners = sponsors.filter(s => s.sponsorship_level === 'community_partner' && s.sponsors)
-  const supporting = sponsors.filter(s => s.sponsorship_level === 'supporting' && s.sponsors)
-  if (sponsors.length === 0) return null
+/* ── PrizeSection ───────────────────────────────────────────
+ * Public "What's at stake" display. Three tiers: Grand (image hero
+ * cards), Featured (2-up mid-weight), Standard (compact rows). Hides
+ * empty tiers. Aggregate value subhead = sum(value_amount × quantity)
+ * rounded down to nearest $100, hidden when no values populated.
+ */
+function PrizeSection({ prizes }: { prizes: Prize[] }) {
+  const grand = prizes.filter(p => p.tier === 'grand').sort(sortPrizesByDisplay)
+  const featured = prizes.filter(p => p.tier === 'featured').sort(sortPrizesByDisplay)
+  const standard = prizes.filter(p => p.tier === 'standard').sort(sortPrizesByDisplay)
+
+  if (grand.length === 0 && featured.length === 0 && standard.length === 0) return null
+
+  // Aggregate value: sum(value × quantity), rounded down to nearest $100.
+  const totalValue = prizes.reduce((acc, p) => {
+    if (p.value_amount == null) return acc
+    const qty = p.quantity > 0 ? p.quantity : 1
+    return acc + p.value_amount * qty
+  }, 0)
+  const roundedValue = Math.floor(totalValue / 100) * 100
+  const aggregateLabel = totalValue > 0 ? `${formatDollars(roundedValue)}+ in prizes` : null
+
+  if (grand.length > 4) {
+    // Spec: 4+ Grand prizes is a misconfiguration. Falls back to 3-up + remainder
+    // visually, but admin should demote weaker ones to Featured.
+    console.warn(`[shift-your-summer] ${grand.length} Grand prizes — UI scales to 3-up; admin should re-tier.`)
+  }
+
+  const grandLayoutCols =
+    grand.length === 1 ? 'grid-cols-1' : grand.length === 2 ? 'sm:grid-cols-2' : 'lg:grid-cols-3'
 
   return (
-    <div className="mt-10 border-t border-white/[0.08] pt-8 flex flex-wrap gap-x-12 gap-y-6">
-      {presenting.length > 0 && (
-        <div className="flex flex-col gap-2.5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-white/60">Presenting Sponsor</p>
-          <div className="flex flex-wrap items-center gap-6">
-            {presenting.map(s => (
-              <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-8 max-w-[140px]" />
+    <section className="bg-[#191A2E] px-8 pt-10 pb-16">
+      <div className="mx-auto max-w-[1120px]">
+        <h2 className="mb-2 font-display text-2xl font-bold tracking-tight text-white">
+          What&apos;s at stake
+        </h2>
+        {aggregateLabel && (
+          <p className="mb-10 text-sm text-white/75">{aggregateLabel}</p>
+        )}
+
+        {grand.length > 0 && (
+          <div className={`mb-8 grid gap-5 ${grandLayoutCols}`}>
+            {grand.map(p => (
+              <GrandPrizeCard key={p.id} prize={p} layout={grand.length} />
             ))}
           </div>
-        </div>
-      )}
-      {champion.length > 0 && (
-        <div className="flex flex-col gap-2.5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-white/60">Champion Sponsors</p>
-          <div className="flex flex-wrap items-center gap-6">
-            {champion.map(s => (
-              <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-7 max-w-[125px]" />
+        )}
+
+        {featured.length > 0 && (
+          <div className="mb-8 grid gap-5 sm:grid-cols-2">
+            {featured.map(p => (
+              <FeaturedPrizeCard key={p.id} prize={p} />
             ))}
           </div>
-        </div>
-      )}
-      {communityPartners.length > 0 && (
-        <div className="flex flex-col gap-2.5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-white/60">Community Partners</p>
-          <div className="flex flex-wrap items-center gap-6">
-            {communityPartners.map(s => (
-              <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-6 max-w-[110px]" />
+        )}
+
+        {standard.length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {standard.map(p => (
+              <StandardPrizeRow key={p.id} prize={p} />
             ))}
           </div>
-        </div>
-      )}
-      {supporting.length > 0 && (
-        <div className="flex flex-col gap-2.5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-white/60">Supporting Sponsors</p>
-          <div className="flex flex-wrap items-center gap-6">
-            {supporting.map(s => (
-              <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-8 max-w-[100px]" />
-            ))}
+        )}
+      </div>
+    </section>
+  )
+}
+
+function sortPrizesByDisplay(a: Prize, b: Prize): number {
+  if (a.display_order !== b.display_order) return a.display_order - b.display_order
+  const av = a.value_amount ?? -1
+  const bv = b.value_amount ?? -1
+  return bv - av
+}
+
+function brandLabel(p: Prize): string | null {
+  return p.funder?.sponsors?.name ?? p.brand_name_override
+}
+
+function formatDollars(value: number): string {
+  if (value >= 1000) {
+    const k = (value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)
+    return `$${k}k`
+  }
+  return `$${Math.round(value).toLocaleString()}`
+}
+
+function GrandPrizeCard({ prize, layout }: { prize: Prize; layout: number }) {
+  const brand = brandLabel(prize)
+  const imageHeight = layout === 1 ? 'h-[180px]' : layout === 2 ? 'h-[140px]' : 'h-[120px]'
+  const card = (
+    <div className="overflow-hidden rounded-[14px] border border-white/[0.08] bg-white/[0.04] transition-colors hover:bg-white/[0.06]">
+      <div className={`relative ${imageHeight} bg-[#1A2240]`}>
+        {prize.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={prize.image_url}
+            alt={prize.description}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-white/60">
+            <svg viewBox="0 0 24 24" fill="none" className="h-12 w-12">
+              <path d="M12 2L3 7v6c0 5 3.5 9.5 9 11 5.5-1.5 9-6 9-11V7l-9-5z" stroke="currentColor" strokeWidth="1" />
+            </svg>
           </div>
+        )}
+        <span className="absolute left-3 top-3 rounded-md bg-[#BAF14D] px-2 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#191A2E]">
+          Grand prize
+        </span>
+        {brand && (
+          <span className="absolute right-3 top-3 rounded-md bg-white px-2 py-1 text-[11px] font-bold text-[#191A2E]">
+            {brand}
+          </span>
+        )}
+      </div>
+      <div className="space-y-1.5 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-[1.0625rem] font-semibold leading-tight text-white">
+            {prize.description}
+          </p>
+          {prize.value_amount != null && (
+            <span className="shrink-0 text-sm font-bold text-[#BAF14D]">
+              ~{formatDollars(prize.value_amount)} value
+            </span>
+          )}
         </div>
+        {brand && (
+          <p className="text-sm text-white/75">
+            From <span className="font-semibold text-white">{brand}</span>
+          </p>
+        )}
+        {prize.product_url && (
+          <p className="pt-1 text-sm font-semibold text-[#2966E5]">
+            View product details →
+          </p>
+        )}
+      </div>
+    </div>
+  )
+  return prize.product_url ? (
+    <a href={prize.product_url} target="_blank" rel="noopener noreferrer" className="block">
+      {card}
+    </a>
+  ) : (
+    card
+  )
+}
+
+function FeaturedPrizeCard({ prize }: { prize: Prize }) {
+  const brand = brandLabel(prize)
+  return (
+    <div className="rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-5">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
+          Featured
+        </span>
+        {prize.quantity > 1 && (
+          <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white">
+            ×{prize.quantity}
+          </span>
+        )}
+      </div>
+      <p className="text-sm font-medium leading-snug text-white">
+        {prize.description}
+      </p>
+      {brand && (
+        <p className="mt-1.5 text-sm text-white/75">
+          Donated by <span className="font-semibold text-white">{brand}</span>
+        </p>
       )}
     </div>
   )
 }
 
-function SponsorsSection({ sponsors }: { sponsors: Sponsorship[] }) {
-  const presenting = sponsors.filter(s => s.sponsorship_level === 'presenting' && s.sponsors)
-  const champion = sponsors.filter(s => s.sponsorship_level === 'champion' && s.sponsors)
-  const communityPartners = sponsors.filter(s => s.sponsorship_level === 'community_partner' && s.sponsors)
-  const supporting = sponsors.filter(s => s.sponsorship_level === 'supporting' && s.sponsors)
-
-  if (sponsors.length === 0) return null
-
+function StandardPrizeRow({ prize }: { prize: Prize }) {
+  const brand = brandLabel(prize)
   return (
-    <section className="bg-[#191A2E] px-8 pt-10 pb-16 border-t border-white/[0.08]">
-      <div className="mx-auto max-w-[900px] space-y-12">
-        {presenting.length > 0 && (
-          <div>
-            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/70">
-              Presenting Sponsor
-            </p>
-            <div className="flex flex-wrap items-center gap-10">
-              {presenting.map(s => (
-                <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-14 max-w-[200px]" />
-              ))}
-            </div>
-          </div>
-        )}
-        {champion.length > 0 && (
-          <div>
-            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/70">
-              Champion Sponsors
-            </p>
-            <div className="flex flex-wrap items-center gap-9">
-              {champion.map(s => (
-                <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-12 max-w-[170px]" />
-              ))}
-            </div>
-          </div>
-        )}
-        {communityPartners.length > 0 && (
-          <div>
-            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/70">
-              Community Partners
-            </p>
-            <div className="flex flex-wrap items-center gap-8">
-              {communityPartners.map(s => (
-                <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-9 max-w-[140px]" />
-              ))}
-            </div>
-          </div>
-        )}
-        {supporting.length > 0 && (
-          <div>
-            <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-white/70">
-              Supporting Partners
-            </p>
-            <div className="flex flex-wrap items-center gap-6">
-              {supporting.map(s => (
-                <SponsorLogo key={s.id} sponsor={s.sponsors!} className="h-6 max-w-[100px]" />
-              ))}
-            </div>
-          </div>
+    <div className="flex items-center gap-3 rounded-[12px] border border-white/[0.08] bg-white/[0.03] px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-white">{prize.description}</p>
+        {brand && (
+          <p className="mt-0.5 text-xs text-white/75">{brand}</p>
         )}
       </div>
-    </section>
+      {prize.quantity > 1 && (
+        <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white">
+          ×{prize.quantity}
+        </span>
+      )}
+    </div>
   )
 }
 
@@ -858,36 +969,6 @@ function MetricBadge({ metric }: { metric: string }) {
         <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#1a1b30]" />
       </span>
     </span>
-  )
-}
-
-function PresentedBy({ sponsors }: { sponsors: Sponsorship[] }) {
-  if (sponsors.length === 0) return null
-  const presenting = sponsors.find(s => s.sponsorship_level === 'presenting')
-  const sponsor = presenting?.sponsors ?? sponsors[0]?.sponsors
-  if (!sponsor) return null
-
-  const logoEl = sponsor.logo_url ? (
-    <img
-      src={sponsor.logo_url}
-      alt={sponsor.name}
-      className="h-6 max-w-[120px] object-contain brightness-0 invert opacity-60 hover:opacity-100 transition-opacity"
-    />
-  ) : (
-    <span className="font-semibold text-white">{sponsor.name}</span>
-  )
-
-  return (
-    <div className="mt-6 flex items-center gap-3 text-sm text-white">
-      <span>Presented by</span>
-      {sponsor.website_url ? (
-        <a href={sponsor.website_url} target="_blank" rel="noopener noreferrer">
-          {logoEl}
-        </a>
-      ) : (
-        logoEl
-      )}
-    </div>
   )
 }
 
