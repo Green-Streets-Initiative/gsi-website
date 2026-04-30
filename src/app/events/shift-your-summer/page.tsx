@@ -5,6 +5,7 @@ import Footer from '@/components/Footer'
 import CountdownTimer from '@/components/CountdownTimer'
 import RefreshButton from '@/components/RefreshButton'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { withUtm, slugify } from '@/lib/utm'
 import LeaderboardTabs, { type GroupStanding } from './LeaderboardTabs'
 
 // This is a live leaderboard — always fetch fresh data, never use cached HTML.
@@ -422,8 +423,8 @@ function UpcomingEvent({
         </div>
       </section>
 
-      <SponsorSection sponsors={sponsors} />
-      {prizes.length > 0 && <PrizeSection prizes={prizes} />}
+      <SponsorSection sponsors={sponsors} eventCampaign={slugify(competition.name)} />
+      {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} />}
       <HowToJoin />
       <PartnerCrossLink />
       <CtaSection />
@@ -524,8 +525,8 @@ function ActiveEvent({
         </div>
       </section>
 
-      <SponsorSection sponsors={sponsors} />
-      {prizes.length > 0 && <PrizeSection prizes={prizes} />}
+      <SponsorSection sponsors={sponsors} eventCampaign={slugify(competition.name)} />
+      {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} />}
       <HowToJoin />
       <PartnerCrossLink />
       <CtaSection />
@@ -542,7 +543,13 @@ function ActiveEvent({
  * Empty Presenting tier shows a soft "become the presenting sponsor"
  * CTA. Empty Champion / Community tiers hide entirely.
  */
-function SponsorSection({ sponsors }: { sponsors: Sponsorship[] }) {
+function SponsorSection({
+  sponsors,
+  eventCampaign,
+}: {
+  sponsors: Sponsorship[]
+  eventCampaign: string
+}) {
   const tiered = sponsors
     .filter(s => s.sponsors)
     .map(s => ({ ...s, _tier: resolveSponsorTier(s) }))
@@ -572,7 +579,7 @@ function SponsorSection({ sponsors }: { sponsors: Sponsorship[] }) {
           {presenting.length > 0 ? (
             <div className="grid gap-4">
               {presenting.map(s => (
-                <SponsorTile key={s.id} sponsor={s.sponsors!} size="presenting" />
+                <SponsorTile key={s.id} sponsor={s.sponsors!} size="presenting" eventCampaign={eventCampaign} />
               ))}
             </div>
           ) : (
@@ -593,7 +600,7 @@ function SponsorSection({ sponsors }: { sponsors: Sponsorship[] }) {
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               {champion.map(s => (
-                <SponsorTile key={s.id} sponsor={s.sponsors!} size="champion" />
+                <SponsorTile key={s.id} sponsor={s.sponsors!} size="champion" eventCampaign={eventCampaign} />
               ))}
             </div>
           </div>
@@ -607,7 +614,7 @@ function SponsorSection({ sponsors }: { sponsors: Sponsorship[] }) {
             </p>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {community.map(s => (
-                <SponsorTile key={s.id} sponsor={s.sponsors!} size="community" />
+                <SponsorTile key={s.id} sponsor={s.sponsors!} size="community" eventCampaign={eventCampaign} />
               ))}
             </div>
           </div>
@@ -620,9 +627,11 @@ function SponsorSection({ sponsors }: { sponsors: Sponsorship[] }) {
 function SponsorTile({
   sponsor,
   size,
+  eventCampaign,
 }: {
   sponsor: Sponsor
   size: 'presenting' | 'champion' | 'community'
+  eventCampaign: string
 }) {
   const tileHeight =
     size === 'presenting' ? 'h-[120px]' : size === 'champion' ? 'h-[80px]' : 'h-[64px]'
@@ -650,8 +659,13 @@ function SponsorTile({
       {inner}
     </div>
   )
-  return sponsor.website_url ? (
-    <a href={sponsor.website_url} target="_blank" rel="noopener noreferrer">
+  const taggedUrl = withUtm(sponsor.website_url, {
+    medium: 'event_page',
+    campaign: eventCampaign,
+    content: `sponsor_${size}`,
+  })
+  return taggedUrl ? (
+    <a href={taggedUrl} target="_blank" rel="noopener noreferrer">
       {tile}
     </a>
   ) : (
@@ -665,7 +679,13 @@ function SponsorTile({
  * empty tiers. Aggregate value subhead = sum(value_amount × quantity)
  * rounded down to nearest $100, hidden when no values populated.
  */
-function PrizeSection({ prizes }: { prizes: Prize[] }) {
+function PrizeSection({
+  prizes,
+  eventCampaign,
+}: {
+  prizes: Prize[]
+  eventCampaign: string
+}) {
   const grand = prizes.filter(p => p.tier === 'grand').sort(sortPrizesByDisplay)
   const featured = prizes.filter(p => p.tier === 'featured').sort(sortPrizesByDisplay)
   const standard = prizes.filter(p => p.tier === 'standard').sort(sortPrizesByDisplay)
@@ -703,7 +723,7 @@ function PrizeSection({ prizes }: { prizes: Prize[] }) {
         {grand.length > 0 && (
           <div className={`mb-8 grid gap-5 ${grandLayoutCols}`}>
             {grand.map(p => (
-              <GrandPrizeCard key={p.id} prize={p} layout={grand.length} />
+              <GrandPrizeCard key={p.id} prize={p} layout={grand.length} eventCampaign={eventCampaign} />
             ))}
           </div>
         )}
@@ -711,7 +731,7 @@ function PrizeSection({ prizes }: { prizes: Prize[] }) {
         {featured.length > 0 && (
           <div className="mb-8 grid gap-5 sm:grid-cols-2">
             {featured.map(p => (
-              <FeaturedPrizeCard key={p.id} prize={p} />
+              <FeaturedPrizeCard key={p.id} prize={p} eventCampaign={eventCampaign} />
             ))}
           </div>
         )}
@@ -824,7 +844,15 @@ function EntryTypePill({ prize }: { prize: Pick<Prize, 'entry_type' | 'eligibili
   )
 }
 
-function GrandPrizeCard({ prize, layout }: { prize: Prize; layout: number }) {
+function GrandPrizeCard({
+  prize,
+  layout,
+  eventCampaign,
+}: {
+  prize: Prize
+  layout: number
+  eventCampaign: string
+}) {
   const brand = brandLabel(prize)
   const imageHeight = layout === 1 ? 'h-[180px]' : layout === 2 ? 'h-[140px]' : 'h-[120px]'
   const card = (
@@ -880,8 +908,13 @@ function GrandPrizeCard({ prize, layout }: { prize: Prize; layout: number }) {
       </div>
     </div>
   )
-  return prize.product_url ? (
-    <a href={prize.product_url} target="_blank" rel="noopener noreferrer" className="block">
+  const taggedProductUrl = withUtm(prize.product_url, {
+    medium: 'event_page',
+    campaign: eventCampaign,
+    content: 'grand_prize_card',
+  })
+  return taggedProductUrl ? (
+    <a href={taggedProductUrl} target="_blank" rel="noopener noreferrer" className="block">
       {card}
     </a>
   ) : (
@@ -889,7 +922,13 @@ function GrandPrizeCard({ prize, layout }: { prize: Prize; layout: number }) {
   )
 }
 
-function FeaturedPrizeCard({ prize }: { prize: Prize }) {
+function FeaturedPrizeCard({
+  prize,
+  eventCampaign,
+}: {
+  prize: Prize
+  eventCampaign: string
+}) {
   const brand = brandLabel(prize)
   const card = (
     <div className="flex gap-4 rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-4 transition-colors hover:bg-white/[0.06]">
@@ -931,8 +970,13 @@ function FeaturedPrizeCard({ prize }: { prize: Prize }) {
       </div>
     </div>
   )
-  return prize.product_url ? (
-    <a href={prize.product_url} target="_blank" rel="noopener noreferrer" className="block">
+  const taggedProductUrl = withUtm(prize.product_url, {
+    medium: 'event_page',
+    campaign: eventCampaign,
+    content: 'featured_prize_card',
+  })
+  return taggedProductUrl ? (
+    <a href={taggedProductUrl} target="_blank" rel="noopener noreferrer" className="block">
       {card}
     </a>
   ) : (
