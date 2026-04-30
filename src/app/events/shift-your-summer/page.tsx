@@ -35,6 +35,13 @@ interface EligibilityCriteria {
   min_tier_id?: number
   min_active_trips?: number
   required_badges?: string[]
+  // List of Roam IDs the user must complete during the campaign window.
+  // roams_match controls whether all of them are required ("all", default)
+  // or any one suffices ("any").
+  required_roams?: string[]
+  roams_match?: 'all' | 'any'
+  // Number of approved What Moves Us video submissions required.
+  required_wmu_submissions?: number
   min_age?: number
   residence?: string
 }
@@ -769,6 +776,20 @@ function achievementGatedLabel(c: EligibilityCriteria | null): string {
     for (const b of c.required_badges) {
       parts.push(`Earn ${BADGE_PILL_LABELS[b] ?? b}`)
     }
+  }
+  if (c.required_roams?.length) {
+    const n = c.required_roams.length
+    const matchAny = c.roams_match === 'any'
+    if (n === 1) parts.push('Complete the Roam')
+    else if (matchAny) parts.push(`Complete 1 of ${n} Roams`)
+    else parts.push(`Complete all ${n} Roams`)
+  }
+  if (c.required_wmu_submissions != null && c.required_wmu_submissions > 0) {
+    parts.push(
+      c.required_wmu_submissions === 1
+        ? 'Submit a What Moves Us video'
+        : `Submit ${c.required_wmu_submissions} What Moves Us videos`,
+    )
   }
   if (c.min_active_trips != null && c.min_active_trips > 0) {
     parts.push(`${c.min_active_trips} active trips`)
