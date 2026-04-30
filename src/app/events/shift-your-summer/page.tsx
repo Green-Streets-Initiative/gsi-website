@@ -31,6 +31,14 @@ type PrizeTier = 'grand' | 'featured' | 'standard'
 type PrizeEntryType = 'weighted_entries' | 'achievement_gated' | 'event'
 type SponsorTier = 'presenting' | 'champion' | 'community'
 
+interface EligibilityCriteria {
+  min_tier_id?: number
+  min_active_trips?: number
+  required_badges?: string[]
+  min_age?: number
+  residence?: string
+}
+
 interface Prize {
   id: string
   place: number
@@ -48,6 +56,9 @@ interface Prize {
   quantity: number
   // Drawing mechanic — drives the entry-type pill on each prize card.
   entry_type: PrizeEntryType
+  // Eligibility rules feed into the achievement-gated pill copy
+  // ("Earn 5-day streak to enter") instead of the generic "Complete to enter".
+  eligibility_criteria: EligibilityCriteria | null
   funder: {
     id: string
     sponsors: { id: string; name: string; logo_url: string | null; website_url: string | null } | null
@@ -193,7 +204,7 @@ export default async function ShiftYourSummerPage() {
         .eq('competition_id', competition.id),
       supabase
         .from('competition_prizes')
-        .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, entry_type, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url)), competition_prize_units(id)')
+        .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, entry_type, eligibility_criteria, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url)), competition_prize_units(id)')
         .eq('competition_id', competition.id)
         .eq('prize_type', 'individual')
         .order('place', { ascending: true }),
@@ -231,14 +242,15 @@ export default async function ShiftYourSummerPage() {
         quantity: Array.isArray(row.competition_prize_units)
           ? row.competition_prize_units.length
           : 0,
-        entry_type: (row.entry_type ?? 'achievement_gated') as PrizeEntryType,
+        entry_type: (row.entry_type ?? "achievement_gated") as PrizeEntryType,
+        eligibility_criteria: (row.eligibility_criteria ?? null) as EligibilityCriteria | null,
         funder: funder ? { id: funder.id, sponsors: sponsor } : null,
       } as Prize
     })
   } else if (competition && state === 'upcoming') {
     const { data } = await supabase
       .from('competition_prizes')
-      .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, entry_type, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url)), competition_prize_units(id)')
+      .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, entry_type, eligibility_criteria, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url)), competition_prize_units(id)')
       .eq('competition_id', competition.id)
       .eq('prize_type', 'individual')
       .order('place', { ascending: true })
@@ -262,7 +274,8 @@ export default async function ShiftYourSummerPage() {
         quantity: Array.isArray(row.competition_prize_units)
           ? row.competition_prize_units.length
           : 0,
-        entry_type: (row.entry_type ?? 'achievement_gated') as PrizeEntryType,
+        entry_type: (row.entry_type ?? "achievement_gated") as PrizeEntryType,
+        eligibility_criteria: (row.eligibility_criteria ?? null) as EligibilityCriteria | null,
         funder: funder ? { id: funder.id, sponsors: sponsor } : null,
       } as Prize
     })
@@ -727,22 +740,62 @@ function formatDollars(value: number): string {
   return `$${Math.round(value).toLocaleString()}`
 }
 
-function EntryTypePill({ entry_type }: { entry_type: PrizeEntryType }) {
-  const config = {
+const BADGE_PILL_LABELS: Record<string, string> = {
+  streak_5: '5-day streak',
+  streak_10: '10-day streak',
+  streak_25: '25-day streak',
+  streak_50: '50-day streak',
+  streak_100: '100-day streak',
+  trip_10: '10 trips',
+  trip_50: '50 trips',
+  trip_100: '100 trips',
+  pedal_power: 'Pedal Power',
+  sole_patrol: 'Sole Patrol',
+  rail_rider: 'Rail Rider',
+  squad_goals: 'Squad Goals',
+}
+
+const TIER_PILL_LABELS: Record<number, string> = {
+  2: 'Mover',
+  3: 'Shifter',
+  4: 'Pacesetter',
+  5: 'Trailblazer',
+}
+
+function achievementGatedLabel(c: EligibilityCriteria | null): string {
+  if (!c) return 'Open to all participants'
+  const parts: string[] = []
+  if (c.required_badges?.length) {
+    for (const b of c.required_badges) {
+      parts.push(`Earn ${BADGE_PILL_LABELS[b] ?? b}`)
+    }
+  }
+  if (c.min_active_trips != null && c.min_active_trips > 0) {
+    parts.push(`${c.min_active_trips} active trips`)
+  }
+  if (c.min_tier_id != null && c.min_tier_id > 1) {
+    parts.push(`Reach ${TIER_PILL_LABELS[c.min_tier_id] ?? `Tier ${c.min_tier_id}`}`)
+  }
+  if (parts.length === 0) return 'Complete to enter'
+  return `${parts.join(' + ')} to enter`
+}
+
+function EntryTypePill({ prize }: { prize: Pick<Prize, 'entry_type' | 'eligibility_criteria'> }) {
+  const config: Record<PrizeEntryType, { label: string; className: string }> = {
     weighted_entries: {
       label: '1 entry per active trip',
       className: 'bg-[#BAF14D] text-[#191A2E]',
     },
     achievement_gated: {
-      label: 'Complete to enter',
+      label: achievementGatedLabel(prize.eligibility_criteria),
       className: 'bg-[#2966E5]/20 text-[#84B4FF]',
     },
     event: {
       label: 'Celebration event',
       className: 'bg-[#52B788]/20 text-[#7AD8A2]',
     },
-  } as const
-  const c = config[entry_type]
+  }
+  const c = config[prize.entry_type]
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${c.className}`}>
       {c.label}
@@ -796,7 +849,7 @@ function GrandPrizeCard({ prize, layout }: { prize: Prize; layout: number }) {
           </p>
         )}
         <div className="pt-1">
-          <EntryTypePill entry_type={prize.entry_type} />
+          <EntryTypePill prize={prize} />
         </div>
         {prize.product_url && (
           <p className="pt-1 text-sm font-semibold text-[#2966E5]">
@@ -847,7 +900,7 @@ function FeaturedPrizeCard({ prize }: { prize: Prize }) {
           </p>
         )}
         <div className="mt-1.5">
-          <EntryTypePill entry_type={prize.entry_type} />
+          <EntryTypePill prize={prize} />
         </div>
         {prize.product_url && (
           <p className="mt-1.5 text-sm font-semibold text-[#2966E5]">
