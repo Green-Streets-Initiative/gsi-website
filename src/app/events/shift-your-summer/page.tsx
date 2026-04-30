@@ -730,7 +730,7 @@ function formatDollars(value: number): string {
 function EntryTypePill({ entry_type }: { entry_type: PrizeEntryType }) {
   const config = {
     weighted_entries: {
-      label: 'Every trip enters',
+      label: '1 entry per active trip',
       className: 'bg-[#BAF14D] text-[#191A2E]',
     },
     achievement_gated: {
