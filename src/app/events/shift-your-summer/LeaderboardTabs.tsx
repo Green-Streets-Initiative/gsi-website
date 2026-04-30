@@ -35,7 +35,15 @@ function shiftRateColor(pct: number) {
   return 'text-white'
 }
 
-function GroupStandingsTable({ standings, showLogo = false }: { standings: GroupStanding[]; showLogo?: boolean }) {
+function GroupStandingsTable({
+  standings,
+  showLogo = false,
+  sortBy,
+}: {
+  standings: GroupStanding[]
+  showLogo?: boolean
+  sortBy: SortBy
+}) {
   if (standings.length === 0) {
     return (
       <p className="py-10 text-center text-sm text-white/50">
@@ -43,6 +51,13 @@ function GroupStandingsTable({ standings, showLogo = false }: { standings: Group
       </p>
     )
   }
+  const sorted = [...standings].sort((a, b) =>
+    sortBy === 'active_trips'
+      ? b.activeTrips - a.activeTrips || b.shiftRate - a.shiftRate
+      : b.shiftRate - a.shiftRate || b.activeTrips - a.activeTrips,
+  )
+  const rateActive = sortBy === 'shift_rate'
+  const tripsActive = sortBy === 'active_trips'
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
@@ -50,12 +65,12 @@ function GroupStandingsTable({ standings, showLogo = false }: { standings: Group
           <tr className="border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-white/50">
             <th className="w-16 py-3.5 pl-5 pr-2 text-right">Rank</th>
             <th className="px-4 py-3.5">Team</th>
-            <th className="px-4 py-3.5 text-right">Shift Rate</th>
-            <th className="hidden px-4 py-3.5 text-right md:table-cell pr-5">Members</th>
+            <th className={`px-4 py-3.5 text-right ${rateActive ? 'text-white' : ''}`}>Shift Rate</th>
+            <th className={`hidden px-4 py-3.5 text-right md:table-cell pr-5 ${tripsActive ? 'text-white' : ''}`}>Active Trips</th>
           </tr>
         </thead>
         <tbody>
-          {standings.map((s, i) => (
+          {sorted.map((s, i) => (
             <tr
               key={s.groupId}
               className={`border-b border-white/[0.05] last:border-b-0 ${i % 2 === 1 ? 'bg-white/[0.02]' : ''}`}
@@ -85,15 +100,15 @@ function GroupStandingsTable({ standings, showLogo = false }: { standings: Group
                   )}
                   <span>
                     <span className="font-medium text-white">{s.groupName}</span>
-                    <span className="ml-2 text-xs text-white/60">{s.activeTrips} active trips</span>
+                    <span className="ml-2 text-xs text-white/60">{s.memberCount} members</span>
                   </span>
                 </div>
               </td>
-              <td className={`px-4 py-3 text-right font-display font-bold ${shiftRateColor(s.shiftRate)}`}>
+              <td className={`px-4 py-3 text-right font-display font-bold ${shiftRateColor(s.shiftRate)} ${tripsActive ? 'opacity-75' : ''}`}>
                 {Math.round(s.shiftRate)}%
               </td>
-              <td className="hidden px-4 py-3 text-right text-white/60 md:table-cell pr-5">
-                {s.memberCount}
+              <td className={`hidden px-4 py-3 text-right md:table-cell pr-5 ${tripsActive ? 'font-display font-bold text-white' : 'text-white/60'}`}>
+                {s.activeTrips.toLocaleString()}
               </td>
             </tr>
           ))}
@@ -103,7 +118,22 @@ function GroupStandingsTable({ standings, showLogo = false }: { standings: Group
   )
 }
 
-function IndividualStandingsTable({ standings, participantCount }: { standings: IndividualStanding[], participantCount: number }) {
+function IndividualStandingsTable({
+  standings,
+  participantCount,
+  sortBy,
+}: {
+  standings: IndividualStanding[]
+  participantCount: number
+  sortBy: SortBy
+}) {
+  const sorted = [...standings].sort((a, b) =>
+    sortBy === 'active_trips'
+      ? b.non_car_trips - a.non_car_trips || b.pct_non_car - a.pct_non_car
+      : b.pct_non_car - a.pct_non_car || b.non_car_trips - a.non_car_trips,
+  )
+  const rateActive = sortBy === 'shift_rate'
+  const tripsActive = sortBy === 'active_trips'
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
@@ -111,12 +141,12 @@ function IndividualStandingsTable({ standings, participantCount }: { standings: 
           <tr className="border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-white/50">
             <th className="w-16 py-3.5 pl-5 pr-2 text-right">Rank</th>
             <th className="px-4 py-3.5">Name</th>
-            <th className="px-4 py-3.5 text-right">Shift Rate</th>
-            <th className="hidden px-4 py-3.5 text-right md:table-cell pr-5">Active Trips</th>
+            <th className={`px-4 py-3.5 text-right ${rateActive ? 'text-white' : ''}`}>Shift Rate</th>
+            <th className={`hidden px-4 py-3.5 text-right md:table-cell pr-5 ${tripsActive ? 'text-white' : ''}`}>Active Trips</th>
           </tr>
         </thead>
         <tbody>
-          {standings.map((entry, i) => {
+          {sorted.map((entry, i) => {
             const rank = i + 1
             return (
               <tr
@@ -129,11 +159,11 @@ function IndividualStandingsTable({ standings, participantCount }: { standings: 
                   </span>
                 </td>
                 <td className="px-4 py-3 font-medium text-white">{entry.display_name}</td>
-                <td className={`px-4 py-3 text-right font-display font-bold ${shiftRateColor(entry.pct_non_car)}`}>
+                <td className={`px-4 py-3 text-right font-display font-bold ${shiftRateColor(entry.pct_non_car)} ${tripsActive ? 'opacity-75' : ''}`}>
                   {Math.round(entry.pct_non_car)}%
                 </td>
-                <td className="hidden px-4 py-3 text-right text-white/60 md:table-cell pr-5">
-                  {entry.non_car_trips}
+                <td className={`hidden px-4 py-3 text-right md:table-cell pr-5 ${tripsActive ? 'font-display font-bold text-white' : 'text-white/60'}`}>
+                  {entry.non_car_trips.toLocaleString()}
                 </td>
               </tr>
             )
@@ -162,10 +192,12 @@ function IndividualStandingsTable({ standings, participantCount }: { standings: 
 }
 
 type Tab = 'towns' | 'corporate' | 'individual'
+type SortBy = 'shift_rate' | 'active_trips'
 
 export default function LeaderboardTabs({ geoStandings, corpStandings, individualStandings, participantCount }: Props) {
   const showCorporate = corpStandings.length > 0
   const [activeTab, setActiveTab] = useState<Tab>('towns')
+  const [sortBy, setSortBy] = useState<SortBy>('shift_rate')
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'towns', label: 'Towns' },
@@ -173,8 +205,30 @@ export default function LeaderboardTabs({ geoStandings, corpStandings, individua
     { id: 'individual', label: 'Individual' },
   ]
 
+  const sorts: { id: SortBy; label: string }[] = [
+    { id: 'shift_rate', label: 'Shift rate' },
+    { id: 'active_trips', label: 'Active trips' },
+  ]
+
   return (
     <div>
+      {/* Sort toggle */}
+      <div className="mb-3 inline-flex gap-1 rounded-full bg-white/[0.06] p-1">
+        {sorts.map(s => (
+          <button
+            key={s.id}
+            onClick={() => setSortBy(s.id)}
+            className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+              sortBy === s.id
+                ? 'bg-white/[0.16] text-white'
+                : 'text-white/75 hover:text-white'
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
       {/* Tab bar */}
       <div className="mb-4 flex gap-1 rounded-xl bg-white/[0.05] p-1">
         {tabs.map(tab => (
@@ -194,10 +248,10 @@ export default function LeaderboardTabs({ geoStandings, corpStandings, individua
 
       {/* Content */}
       <div className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#242538]">
-        {activeTab === 'towns' && <GroupStandingsTable standings={geoStandings} />}
-        {activeTab === 'corporate' && <GroupStandingsTable standings={corpStandings} showLogo />}
+        {activeTab === 'towns' && <GroupStandingsTable standings={geoStandings} sortBy={sortBy} />}
+        {activeTab === 'corporate' && <GroupStandingsTable standings={corpStandings} showLogo sortBy={sortBy} />}
         {activeTab === 'individual' && (
-          <IndividualStandingsTable standings={individualStandings} participantCount={participantCount} />
+          <IndividualStandingsTable standings={individualStandings} participantCount={participantCount} sortBy={sortBy} />
         )}
       </div>
     </div>
