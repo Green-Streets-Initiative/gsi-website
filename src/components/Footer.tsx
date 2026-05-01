@@ -1,9 +1,23 @@
 import Link from 'next/link'
+import NewsletterSignupForm from './NewsletterSignupForm'
 
 export default function Footer() {
   return (
     <footer className="border-t border-white/[0.07] bg-[#191A2E] px-8 pb-8 pt-14">
       <div className="mx-auto max-w-[1120px]">
+        {/* Newsletter signup strip */}
+        <div className="mb-12 border-b border-white/[0.07] pb-12 md:mb-14 md:pb-14">
+          <div className="grid gap-8 md:grid-cols-2 md:items-center md:gap-12">
+            <div>
+              <h3 className="text-2xl font-bold text-white sm:text-3xl">Stay in touch</h3>
+              <p className="mt-3 text-sm leading-relaxed text-white/75">
+                Get our newsletter for stories, impact updates, and new ways to move better.
+              </p>
+            </div>
+            <NewsletterSignupForm />
+          </div>
+        </div>
+
         <div className="grid gap-12 md:grid-cols-4">
           {/* Brand */}
           <div className="md:col-span-1">
