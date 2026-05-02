@@ -7,12 +7,24 @@ import type {
   ClipEntry,
   ConsentCopy,
   ConfirmationCopy,
+  RecorderMode,
 } from '@/lib/field-recorder-types'
-import { LANGUAGE_LABELS } from '@/lib/field-recorder-types'
+import {
+  LANGUAGE_LABELS,
+  UPLOAD_ACCEPT_MIME,
+  UPLOAD_MAX_BYTES,
+} from '@/lib/field-recorder-types'
 
 // ── Types ──────────────────────────────────────────────────────
 
-type Step = 'intro' | 'consent' | 'info' | 'recording' | 'uploading' | 'confirmation'
+type Step =
+  | 'intro'
+  | 'consent'
+  | 'info'
+  | 'recording'
+  | 'upload_pick'
+  | 'uploading'
+  | 'confirmation'
 
 interface Props {
   campaign: FieldRecorderCampaign
@@ -52,7 +64,13 @@ function formatTime(seconds: number): string {
 // ── Component ──────────────────────────────────────────────────
 
 export default function FieldRecorder({ campaign, prompts }: Props) {
+  const recordEnabled = campaign.field_recorder_enabled !== false
+  const uploadEnabled = campaign.upload_enabled !== false
+  const bothModesEnabled = recordEnabled && uploadEnabled
+  const defaultMode: RecorderMode = recordEnabled ? 'record' : 'upload'
+
   const [step, setStep] = useState<Step>('intro')
+  const [mode, setMode] = useState<RecorderMode>(defaultMode)
   const [language, setLanguage] = useState(campaign.supported_languages?.[0] ?? 'en')
   const [consentChecked, setConsentChecked] = useState(false)
   const [email, setEmail] = useState('')
@@ -62,6 +80,11 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
   const [voiceOnly, setVoiceOnly] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
+
+  // Pre-recorded upload state
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadFileUrl, setUploadFileUrl] = useState<string | null>(null)
+  const [uploadFileError, setUploadFileError] = useState<string | null>(null)
 
   // Recording state
   const [isRecording, setIsRecording] = useState(false)
@@ -219,6 +242,79 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
     }
   }
 
+  // ── Pre-recorded upload ──────────────────────────────────────
+
+  function handleFilePicked(file: File | null) {
+    setUploadFileError(null)
+    if (uploadFileUrl) URL.revokeObjectURL(uploadFileUrl)
+    if (!file) {
+      setUploadFile(null)
+      setUploadFileUrl(null)
+      return
+    }
+    if (!UPLOAD_ACCEPT_MIME.includes(file.type as typeof UPLOAD_ACCEPT_MIME[number])) {
+      setUploadFile(null)
+      setUploadFileUrl(null)
+      setUploadFileError(
+        'Please upload a video file — MP4 or MOV from your phone work great.',
+      )
+      return
+    }
+    if (file.size > UPLOAD_MAX_BYTES) {
+      setUploadFile(null)
+      setUploadFileUrl(null)
+      setUploadFileError(
+        'That video is over 100 MB. Try lowering the quality in your phone’s camera settings, or trim it to about 60–90 seconds.',
+      )
+      return
+    }
+    setUploadFile(file)
+    setUploadFileUrl(URL.createObjectURL(file))
+  }
+
+  async function handleUploadSubmit() {
+    if (!uploadFile || prompts.length === 0) return
+    setStep('uploading')
+    setUploadProgress(0)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('campaignId', campaign.id)
+      formData.append('mode', 'upload')
+      formData.append('language', language)
+      formData.append('email', email.trim())
+      formData.append('newsletter', newsletterChecked ? 'true' : 'false')
+      formData.append('promptId', prompts[0].id)
+      formData.append('file', uploadFile, uploadFile.name)
+      formData.append('mimeType', uploadFile.type)
+
+      setUploadProgress(20)
+
+      const res = await fetch('/api/record/submit', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        if (res.status === 409) {
+          throw new Error(
+            body.error ??
+              "Looks like you've already submitted to this campaign — thank you.",
+          )
+        }
+        throw new Error(body.error ?? `Upload failed (${res.status})`)
+      }
+
+      setUploadProgress(100)
+      setStep('confirmation')
+    } catch (err) {
+      setError((err as Error).message || 'Upload failed. Please try again.')
+      setStep('upload_pick')
+    }
+  }
+
   // ── Submit ───────────────────────────────────────────────────
 
   async function handleSubmit(finalClips: Map<string, ClipEntry>) {
@@ -285,6 +381,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
 
     // Clear ALL state (language persists for shared-device use)
     setStep('intro')
+    setMode(defaultMode)
     setConsentChecked(false)
     setEmail('')
     setNewsletterChecked(false)
@@ -299,6 +396,10 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
     setElapsed(0)
     setCameraReady(false)
     setPermissionDenied(false)
+    if (uploadFileUrl) URL.revokeObjectURL(uploadFileUrl)
+    setUploadFile(null)
+    setUploadFileUrl(null)
+    setUploadFileError(null)
   }
 
   // ── Render ───────────────────────────────────────────────────
@@ -369,9 +470,60 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
             </h1>
 
             {consent.what_this_is && (
-              <p className="mb-6 text-sm leading-relaxed text-[#8A8DA8]">
+              <p className="mb-6 text-sm leading-relaxed text-white/75">
                 {consent.what_this_is}
               </p>
+            )}
+
+            {bothModesEnabled && (
+              <div className="mb-6">
+                <label className="mb-2 block text-xs font-medium text-white/70">
+                  How would you like to share?
+                </label>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setMode('record')}
+                    className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                      mode === 'record'
+                        ? 'border-[#BAF14D] bg-[#BAF14D]/10'
+                        : 'border-white/10 bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <span className="mt-0.5 text-lg" aria-hidden="true">
+                      &#127909;
+                    </span>
+                    <span className="flex-1">
+                      <span className="block text-sm font-semibold text-white">
+                        Record a video now
+                      </span>
+                      <span className="block text-xs text-white/75">
+                        Use your camera to record short answers to a few prompts.
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setMode('upload')}
+                    className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                      mode === 'upload'
+                        ? 'border-[#BAF14D] bg-[#BAF14D]/10'
+                        : 'border-white/10 bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <span className="mt-0.5 text-lg" aria-hidden="true">
+                      &#128228;
+                    </span>
+                    <span className="flex-1">
+                      <span className="block text-sm font-semibold text-white">
+                        Upload a video I already made
+                      </span>
+                      <span className="block text-xs text-white/75">
+                        Already filmed something? Share the video file from your
+                        phone or computer.
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </div>
             )}
 
             <button onClick={() => setStep('consent')} className={btnPrimary}>
@@ -447,9 +599,14 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
             <button
               disabled={!consentChecked}
               onClick={() => {
-                if (campaign.field_recorder_collect_email) {
+                // Upload mode always collects email (required, anti-abuse + credit).
+                // Record mode follows the per-campaign collect-email setting.
+                const emailStepNeeded =
+                  mode === 'upload' || campaign.field_recorder_collect_email
+                if (emailStepNeeded) {
                   setStep('info')
                 } else {
+                  // emailStepNeeded already covers upload mode, so we're in record mode here
                   setStep('recording')
                 }
               }}
@@ -475,6 +632,9 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
   // ── Screen 3: Participant Info ─────────────────────────────
 
   if (step === 'info') {
+    const emailRequired = mode === 'upload'
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+    const canContinue = emailRequired ? emailValid : true
     return (
       <div className={wrapperClass}>
         {header}
@@ -483,22 +643,24 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
             <h2 className="font-display text-xl font-bold text-white mb-1">
               A little about you
             </h2>
-            <p className="mb-6 text-sm text-[#8A8DA8]">
-              This is optional — you can skip ahead if you prefer.
+            <p className="mb-6 text-sm text-white/75">
+              {emailRequired
+                ? "We'll use your email to credit your story and let you know if it's selected."
+                : 'This is optional — you can skip ahead if you prefer.'}
             </p>
 
             <div className="mb-4">
-              <label className="mb-1 block text-xs font-medium text-[#8A8DA8]">
-                Your email address (optional)
+              <label className="mb-1 block text-xs font-medium text-white/75">
+                Your email address{emailRequired ? '' : ' (optional)'}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-[#8A8DA8]/50 focus:border-[#BAF14D] focus:outline-none"
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/60 focus:border-[#BAF14D] focus:outline-none"
               />
-              <p className="mt-1 text-[11px] text-[#8A8DA8]">
+              <p className="mt-1 text-[11px] text-white/75">
                 We&apos;ll use this to follow up and invite you to download the
                 free Shift app.
               </p>
@@ -521,20 +683,28 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
               </span>
             </label>
 
-            <button onClick={() => setStep('recording')} className={btnPrimary}>
+            <button
+              disabled={!canContinue}
+              onClick={() =>
+                setStep(mode === 'upload' ? 'upload_pick' : 'recording')
+              }
+              className={btnPrimary}
+            >
               Continue
             </button>
 
-            <button
-              onClick={() => {
-                setEmail('')
-                setNewsletterChecked(false)
-                setStep('recording')
-              }}
-              className="mt-3 w-full text-center text-xs text-[#8A8DA8] underline"
-            >
-              Continue without email
-            </button>
+            {!emailRequired && (
+              <button
+                onClick={() => {
+                  setEmail('')
+                  setNewsletterChecked(false)
+                  setStep('recording')
+                }}
+                className="mt-3 w-full text-center text-xs text-white/75 underline"
+              >
+                Continue without email
+              </button>
+            )}
           </div>
         </main>
       </div>
@@ -724,6 +894,116 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
     )
   }
 
+  // ── Screen 4 (upload mode): Pick a pre-recorded file ─────
+
+  if (step === 'upload_pick') {
+    return (
+      <div className={wrapperClass}>
+        {header}
+        <main className="flex flex-1 items-center justify-center px-4 py-8">
+          <div className={cardClass}>
+            <div className="mb-4 flex items-center justify-between">
+              <button
+                onClick={() => setStep(campaign.field_recorder_collect_email || mode === 'upload' ? 'info' : 'consent')}
+                className="text-xs text-white/75 hover:text-white"
+              >
+                &larr; Back
+              </button>
+            </div>
+
+            <h2 className="font-display text-xl font-bold text-white mb-2">
+              Share your video
+            </h2>
+            <p className="mb-4 text-sm leading-relaxed text-white/75">
+              We&apos;d love to hear what&apos;s behind the moments you captured.
+              Some things we love hearing about:
+            </p>
+
+            {prompts.length > 0 && (
+              <ul className="mb-5 space-y-2 rounded-lg bg-white/5 p-4">
+                {prompts.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex gap-2 text-sm leading-snug text-white/80"
+                  >
+                    <span className="mt-0.5 text-[#BAF14D]">&#9679;</span>
+                    <span>{p.prompt_text}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <p className="mb-4 text-xs text-white/75">
+              One video, up to 100&nbsp;MB. MP4 or MOV from your phone work
+              great. Under 5 minutes plays best.
+            </p>
+
+            {error && (
+              <div className="mb-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                {error}
+              </div>
+            )}
+
+            {uploadFileError && (
+              <div className="mb-4 rounded-lg bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                {uploadFileError}
+              </div>
+            )}
+
+            {uploadFileUrl && uploadFile ? (
+              <div className="mb-4">
+                <video
+                  src={uploadFileUrl}
+                  controls
+                  playsInline
+                  className="aspect-video w-full rounded-lg bg-black"
+                />
+                <div className="mt-2 flex items-center justify-between text-xs text-white/75">
+                  <span className="truncate pr-2">{uploadFile.name}</span>
+                  <span className="flex-shrink-0">
+                    {(uploadFile.size / (1024 * 1024)).toFixed(1)} MB
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleFilePicked(null)}
+                  className="mt-2 w-full text-center text-xs text-white/75 underline"
+                >
+                  Choose a different video
+                </button>
+              </div>
+            ) : (
+              <label className="mb-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/20 bg-white/5 px-6 py-10 text-center transition hover:border-[#BAF14D]/60 hover:bg-white/10">
+                <span className="text-3xl" aria-hidden="true">
+                  &#128228;
+                </span>
+                <span className="text-sm font-medium text-white">
+                  Tap to pick a video
+                </span>
+                <span className="text-xs text-white/75">
+                  MP4, MOV, or WEBM &middot; up to 100 MB
+                </span>
+                <input
+                  type="file"
+                  accept={UPLOAD_ACCEPT_MIME.join(',')}
+                  onChange={(e) => handleFilePicked(e.target.files?.[0] ?? null)}
+                  className="hidden"
+                />
+              </label>
+            )}
+
+            <button
+              onClick={handleUploadSubmit}
+              disabled={!uploadFile}
+              className={btnPrimary}
+            >
+              Submit my video
+            </button>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   // ── Uploading ──────────────────────────────────────────────
 
   if (step === 'uploading') {
@@ -752,11 +1032,19 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
 
   // ── Screen Final: Confirmation ─────────────────────────────
 
-  const answeredCount = Array.from(clips.values()).filter((c) => !c.skipped).length
-  const totalDuration = Array.from(clips.values()).reduce(
-    (sum, c) => sum + (c.skipped ? 0 : c.duration),
-    0,
-  )
+  const answeredCount =
+    mode === 'upload'
+      ? uploadFile
+        ? 1
+        : 0
+      : Array.from(clips.values()).filter((c) => !c.skipped).length
+  const totalDuration =
+    mode === 'upload'
+      ? 0
+      : Array.from(clips.values()).reduce(
+          (sum, c) => sum + (c.skipped ? 0 : c.duration),
+          0,
+        )
 
   return (
     <div className={wrapperClass}>
@@ -773,20 +1061,31 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
 
           {/* Summary card */}
           <div className="mb-4 rounded-lg bg-white/5 p-4 space-y-2">
+            {mode === 'upload' ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-white/75">Submitted</span>
+                <span className="text-white font-medium">
+                  1 video upload
+                </span>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/75">Prompts answered</span>
+                  <span className="text-white font-medium">
+                    {answeredCount} / {prompts.length}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/75">Total recording time</span>
+                  <span className="text-white font-medium">
+                    {formatTime(totalDuration)}
+                  </span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between text-sm">
-              <span className="text-[#8A8DA8]">Prompts answered</span>
-              <span className="text-white font-medium">
-                {answeredCount} / {prompts.length}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-[#8A8DA8]">Total recording time</span>
-              <span className="text-white font-medium">
-                {formatTime(totalDuration)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-[#8A8DA8]">Campaign</span>
+              <span className="text-white/75">Campaign</span>
               <span className="text-white font-medium">{campaign.name}</span>
             </div>
           </div>

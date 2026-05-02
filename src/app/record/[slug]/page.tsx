@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .select('name, funder_name')
     .eq('campaign_slug', slug)
     .eq('status', 'active')
-    .eq('field_recorder_enabled', true)
+    .or('field_recorder_enabled.eq.true,upload_enabled.eq.true')
     .single()
 
   if (!campaign) {
@@ -38,11 +38,11 @@ export default async function RecordPage({ params }: Props) {
     supabase
       .from('wmu_campaigns')
       .select(
-        'id, name, campaign_slug, funder_name, consent_copy, confirmation_copy, field_recorder_collect_email, supported_languages',
+        'id, name, campaign_slug, funder_name, consent_copy, confirmation_copy, field_recorder_enabled, field_recorder_collect_email, upload_enabled, supported_languages',
       )
       .eq('campaign_slug', slug)
       .eq('status', 'active')
-      .eq('field_recorder_enabled', true)
+      .or('field_recorder_enabled.eq.true,upload_enabled.eq.true')
       .single(),
     supabase
       .from('wmu_campaigns')
