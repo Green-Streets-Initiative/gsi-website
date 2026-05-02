@@ -54,7 +54,9 @@ export default async function RecordPage({ params }: Props) {
         if (!res.data) return { data: null }
         return supabase
           .from('wmu_prompts')
-          .select('id, campaign_id, sort_order, prompt_text, hint_text, max_duration_seconds, is_optional')
+          .select(
+            'id, campaign_id, sort_order, prompt_text, hint_text, prompt_text_i18n, hint_text_i18n, max_duration_seconds, is_optional',
+          )
           .eq('campaign_id', res.data.id)
           .order('sort_order', { ascending: true })
       }),

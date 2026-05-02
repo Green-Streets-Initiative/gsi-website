@@ -33,6 +33,7 @@ export interface ConfirmationCopy {
   title?: string
   body?: string
   teaser?: string
+  deletion_link_text?: string
 }
 
 export interface FieldRecorderPrompt {
@@ -41,6 +42,14 @@ export interface FieldRecorderPrompt {
   sort_order: number
   prompt_text: string
   hint_text: string | null
+  /**
+   * Language-keyed prompt text. When present, takes precedence over
+   * `prompt_text` for the active language; falls back to `prompt_text`
+   * (English source) if missing.
+   */
+  prompt_text_i18n: Record<string, string> | null
+  /** Language-keyed hint text, with the same fallback rule as prompt_text_i18n. */
+  hint_text_i18n: Record<string, string> | null
   max_duration_seconds: number
   is_optional: boolean
 }

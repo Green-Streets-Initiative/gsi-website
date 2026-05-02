@@ -14,6 +14,7 @@ import {
   UPLOAD_ACCEPT_MIME,
   UPLOAD_MAX_BYTES,
 } from '@/lib/field-recorder-types'
+import { t } from '@/lib/field-recorder-strings'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -149,6 +150,16 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
 
   const currentPrompt = prompts[currentPromptIndex]
   const maxDuration = currentPrompt?.max_duration_seconds ?? 60
+  const currentPromptText =
+    currentPrompt?.prompt_text_i18n?.[language] ??
+    currentPrompt?.prompt_text_i18n?.en ??
+    currentPrompt?.prompt_text ??
+    ''
+  const currentPromptHintText =
+    currentPrompt?.hint_text_i18n?.[language] ??
+    currentPrompt?.hint_text_i18n?.en ??
+    currentPrompt?.hint_text ??
+    null
 
   function startRecording() {
     if (!streamRef.current) return
@@ -255,17 +266,13 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
     if (!UPLOAD_ACCEPT_MIME.includes(file.type as typeof UPLOAD_ACCEPT_MIME[number])) {
       setUploadFile(null)
       setUploadFileUrl(null)
-      setUploadFileError(
-        'Please upload a video file — MP4 or MOV from your phone work great.',
-      )
+      setUploadFileError(t(language, 'upload_error_mime'))
       return
     }
     if (file.size > UPLOAD_MAX_BYTES) {
       setUploadFile(null)
       setUploadFileUrl(null)
-      setUploadFileError(
-        'That video is over 100 MB. Try lowering the quality in your phone’s camera settings, or trim it to about 60–90 seconds.',
-      )
+      setUploadFileError(t(language, 'upload_error_size'))
       return
     }
     setUploadFile(file)
@@ -300,8 +307,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
         const body = await res.json().catch(() => ({}))
         if (res.status === 409) {
           throw new Error(
-            body.error ??
-              "Looks like you've already submitted to this campaign — thank you.",
+            body.error ?? t(language, 'upload_already_submitted'),
           )
         }
         throw new Error(body.error ?? `Upload failed (${res.status})`)
@@ -310,7 +316,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
       setUploadProgress(100)
       setStep('confirmation')
     } catch (err) {
-      setError((err as Error).message || 'Upload failed. Please try again.')
+      setError((err as Error).message || t(language, 'upload_failed_default'))
       setStep('upload_pick')
     }
   }
@@ -361,7 +367,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
       setUploadProgress(100)
       setStep('confirmation')
     } catch (err) {
-      setError((err as Error).message || 'Upload failed. Please try again.')
+      setError((err as Error).message || t(language, 'upload_failed_default'))
       setStep('recording')
     }
   }
@@ -444,8 +450,8 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
             {/* Language selector */}
             {campaign.supported_languages.length > 1 && (
               <div className="mb-6">
-                <label className="mb-2 block text-xs font-medium text-[#8A8DA8]">
-                  Language
+                <label className="mb-2 block text-xs font-medium text-white/70">
+                  {t(language, 'language_label')}
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {campaign.supported_languages.map((lang) => (
@@ -478,7 +484,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
             {bothModesEnabled && (
               <div className="mb-6">
                 <label className="mb-2 block text-xs font-medium text-white/70">
-                  How would you like to share?
+                  {t(language, 'mode_label')}
                 </label>
                 <div className="space-y-2">
                   <button
@@ -494,10 +500,10 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                     </span>
                     <span className="flex-1">
                       <span className="block text-sm font-semibold text-white">
-                        Record a video now
+                        {t(language, 'mode_record_title')}
                       </span>
                       <span className="block text-xs text-white/75">
-                        Use your camera to record short answers to a few prompts.
+                        {t(language, 'mode_record_subtitle')}
                       </span>
                     </span>
                   </button>
@@ -514,11 +520,10 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                     </span>
                     <span className="flex-1">
                       <span className="block text-sm font-semibold text-white">
-                        Upload a video I already made
+                        {t(language, 'mode_upload_title')}
                       </span>
                       <span className="block text-xs text-white/75">
-                        Already filmed something? Share the video file from your
-                        phone or computer.
+                        {t(language, 'mode_upload_subtitle')}
                       </span>
                     </span>
                   </button>
@@ -527,7 +532,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
             )}
 
             <button onClick={() => setStep('consent')} className={btnPrimary}>
-              Get started
+              {t(language, 'get_started')}
             </button>
           </div>
         </main>
@@ -544,16 +549,16 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
         <main className="flex flex-1 items-center justify-center px-4 py-8">
           <div className={cardClass}>
             <h2 className="font-display text-xl font-bold text-white mb-1">
-              Before you record
+              {t(language, 'before_you_record')}
             </h2>
-            <p className="mb-4 text-sm text-[#8A8DA8]">
-              Please review how your responses will be used.
+            <p className="mb-4 text-sm text-white/75">
+              {t(language, 'review_uses')}
             </p>
 
             {consent.what_this_is && (
               <div className="mb-4">
-                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#8A8DA8]">
-                  What this is
+                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-white/75">
+                  {t(language, 'what_this_is_heading')}
                 </h3>
                 <p className="text-sm leading-relaxed text-white/80">
                   {consent.what_this_is}
@@ -612,16 +617,16 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
               }}
               className={btnPrimary}
             >
-              Let&apos;s go
+              {t(language, 'lets_go')}
             </button>
 
             <a
               href="/privacy"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 block text-center text-xs text-[#8A8DA8] underline"
+              className="mt-4 block text-center text-xs text-white/75 underline"
             >
-              Read our full privacy policy
+              {t(language, 'privacy_link')}
             </a>
           </div>
         </main>
@@ -641,17 +646,19 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
         <main className="flex flex-1 items-center justify-center px-4 py-8">
           <div className={cardClass}>
             <h2 className="font-display text-xl font-bold text-white mb-1">
-              A little about you
+              {t(language, 'info_heading')}
             </h2>
             <p className="mb-6 text-sm text-white/75">
               {emailRequired
-                ? "We'll use your email to credit your story and let you know if it's selected."
-                : 'This is optional — you can skip ahead if you prefer.'}
+                ? t(language, 'info_subhead_required')
+                : t(language, 'info_subhead_optional')}
             </p>
 
             <div className="mb-4">
               <label className="mb-1 block text-xs font-medium text-white/75">
-                Your email address{emailRequired ? '' : ' (optional)'}
+                {emailRequired
+                  ? t(language, 'email_label_required')
+                  : t(language, 'email_label_optional')}
               </label>
               <input
                 type="email"
@@ -661,8 +668,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/60 focus:border-[#BAF14D] focus:outline-none"
               />
               <p className="mt-1 text-[11px] text-white/75">
-                We&apos;ll use this to follow up and invite you to download the
-                free Shift app.
+                {t(language, 'email_helper')}
               </p>
             </div>
 
@@ -679,7 +685,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                 className="h-4 w-4 rounded border-[#8A8DA8] accent-[#BAF14D]"
               />
               <span className="text-sm text-white/80">
-                Add me to the Green Streets newsletter
+                {t(language, 'newsletter_label')}
               </span>
             </label>
 
@@ -690,7 +696,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
               }
               className={btnPrimary}
             >
-              Continue
+              {t(language, 'continue_btn')}
             </button>
 
             {!emailRequired && (
@@ -702,7 +708,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                 }}
                 className="mt-3 w-full text-center text-xs text-white/75 underline"
               >
-                Continue without email
+                {t(language, 'continue_without_email')}
               </button>
             )}
           </div>
@@ -734,14 +740,18 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                       setRecordedUrl(null)
                       setStep('intro')
                     }}
-                    className="text-xs text-[#8A8DA8] hover:text-white"
-                    title="Exit"
+                    className="text-xs text-white/75 hover:text-white"
                   >
-                    &larr; Exit
+                    {t(language, 'exit')}
                   </button>
                 )}
-                <span className="text-xs font-medium text-[#8A8DA8]">
-                  Prompt {promptNumber} of {totalPrompts}
+                <span className="text-xs font-medium text-white/75">
+                  {t(
+                    language,
+                    'prompt_n_of_n',
+                    String(promptNumber),
+                    String(totalPrompts),
+                  )}
                 </span>
               </div>
               {/* Voice-only toggle */}
@@ -753,25 +763,27 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                   }
                 }}
                 disabled={isRecording || !!recordedBlob}
-                className="text-xs text-[#8A8DA8] underline disabled:opacity-40"
+                className="text-xs text-white/75 underline disabled:opacity-40"
               >
-                {voiceOnly ? 'Switch to video' : 'Prefer voice only?'}
+                {voiceOnly
+                  ? t(language, 'switch_to_video')
+                  : t(language, 'prefer_voice_only')}
               </button>
             </div>
 
             {/* Prompt text */}
             <div className="mb-4 rounded-xl bg-[#242538] p-5">
               <p className="font-display text-lg font-bold text-white leading-snug">
-                {currentPrompt?.prompt_text}
+                {currentPromptText}
               </p>
               <div className="mt-2 flex items-center gap-3">
-                {currentPrompt?.hint_text && (
-                  <p className="text-sm text-[#8A8DA8]">
-                    {currentPrompt.hint_text}
+                {currentPromptHintText && (
+                  <p className="text-sm text-white/75">
+                    {currentPromptHintText}
                   </p>
                 )}
-                <span className="flex-shrink-0 rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-[#8A8DA8]">
-                  {maxDuration}s max
+                <span className="flex-shrink-0 rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-white/75">
+                  {t(language, 'n_seconds_max', String(maxDuration))}
                 </span>
               </div>
             </div>
@@ -789,17 +801,16 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                 <div className="flex h-full items-center justify-center p-6 text-center">
                   <div>
                     <p className="mb-2 text-sm text-white">
-                      Camera access is required
+                      {t(language, 'camera_required')}
                     </p>
-                    <p className="text-xs text-[#8A8DA8]">
-                      Please allow camera and microphone access in your browser
-                      settings, then tap below.
+                    <p className="text-xs text-white/75">
+                      {t(language, 'camera_required_helper')}
                     </p>
                     <button
                       onClick={startCamera}
                       className="mt-4 rounded-lg bg-[#BAF14D] px-4 py-2 text-sm font-semibold text-[#191A2E]"
                     >
-                      Try again
+                      {t(language, 'try_again')}
                     </button>
                   </div>
                 </div>
@@ -817,8 +828,10 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                 <div className="flex h-full items-center justify-center">
                   <div className="text-center">
                     <div className="mb-2 text-5xl">&#127908;</div>
-                    <p className="text-sm text-[#8A8DA8]">
-                      {isRecording ? 'Recording audio...' : 'Voice only mode'}
+                    <p className="text-sm text-white/75">
+                      {isRecording
+                        ? t(language, 'recording_audio')
+                        : t(language, 'voice_only_mode')}
                     </p>
                   </div>
                 </div>
@@ -847,7 +860,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
               {/* Warning at 45s */}
               {isRecording && elapsed >= 45 && elapsed < maxDuration && (
                 <div className="absolute bottom-3 left-3 right-3 rounded-lg bg-amber-500/90 px-3 py-2 text-center text-xs font-medium text-white">
-                  Almost at the limit
+                  {t(language, 'almost_at_limit')}
                 </div>
               )}
             </div>
@@ -861,30 +874,30 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                     disabled={!cameraReady}
                     className={btnPrimary}
                   >
-                    Tap to record
+                    {t(language, 'tap_to_record')}
                   </button>
                 ) : (
                   <button onClick={stopRecording} className={btnPrimary}>
-                    Stop recording
+                    {t(language, 'stop_recording')}
                   </button>
                 )}
 
                 {currentPrompt?.is_optional && !isRecording && (
                   <button onClick={skipPrompt} className={btnSecondary}>
-                    Skip this prompt
+                    {t(language, 'skip_prompt')}
                   </button>
                 )}
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-center text-sm text-[#8A8DA8]">
-                  Happy with this? Or record again.
+                <p className="text-center text-sm text-white/75">
+                  {t(language, 'happy_with_this')}
                 </p>
                 <button onClick={acceptClip} className={btnPrimary}>
-                  Use this one &rarr;
+                  {t(language, 'use_this_one')}
                 </button>
                 <button onClick={discardRecording} className={btnSecondary}>
-                  Record again
+                  {t(language, 'record_again')}
                 </button>
               </div>
             )}
@@ -907,16 +920,15 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                 onClick={() => setStep(campaign.field_recorder_collect_email || mode === 'upload' ? 'info' : 'consent')}
                 className="text-xs text-white/75 hover:text-white"
               >
-                &larr; Back
+                {t(language, 'back')}
               </button>
             </div>
 
             <h2 className="font-display text-xl font-bold text-white mb-2">
-              Share your video
+              {t(language, 'upload_share_video_heading')}
             </h2>
             <p className="mb-4 text-sm leading-relaxed text-white/75">
-              We&apos;d love to hear what&apos;s behind the moments you captured.
-              Some things we love hearing about:
+              {t(language, 'upload_inspiration_intro')}
             </p>
 
             {prompts.length > 0 && (
@@ -927,15 +939,18 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                     className="flex gap-2 text-sm leading-snug text-white/80"
                   >
                     <span className="mt-0.5 text-[#BAF14D]">&#9679;</span>
-                    <span>{p.prompt_text}</span>
+                    <span>
+                      {p.prompt_text_i18n?.[language] ??
+                        p.prompt_text_i18n?.en ??
+                        p.prompt_text}
+                    </span>
                   </li>
                 ))}
               </ul>
             )}
 
             <p className="mb-4 text-xs text-white/75">
-              One video, up to 100&nbsp;MB. MP4 or MOV from your phone work
-              great. Under 5 minutes plays best.
+              {t(language, 'upload_size_guidance')}
             </p>
 
             {error && (
@@ -968,7 +983,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                   onClick={() => handleFilePicked(null)}
                   className="mt-2 w-full text-center text-xs text-white/75 underline"
                 >
-                  Choose a different video
+                  {t(language, 'upload_choose_different')}
                 </button>
               </div>
             ) : (
@@ -977,10 +992,10 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                   &#128228;
                 </span>
                 <span className="text-sm font-medium text-white">
-                  Tap to pick a video
+                  {t(language, 'upload_pick_label')}
                 </span>
                 <span className="text-xs text-white/75">
-                  MP4, MOV, or WEBM &middot; up to 100 MB
+                  {t(language, 'upload_accept_helper')}
                 </span>
                 <input
                   type="file"
@@ -996,7 +1011,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
               disabled={!uploadFile}
               className={btnPrimary}
             >
-              Submit my video
+              {t(language, 'upload_submit_btn')}
             </button>
           </div>
         </main>
@@ -1013,7 +1028,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
         <main className="flex flex-1 items-center justify-center px-4 py-8">
           <div className={cardClass + ' text-center'}>
             <h2 className="font-display text-xl font-bold text-white mb-4">
-              Submitting your responses...
+              {t(language, 'submitting')}
             </h2>
             <div className="mx-auto mb-4 h-2 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
               <div
@@ -1021,8 +1036,8 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
-            <p className="text-sm text-[#8A8DA8]">
-              Please don&apos;t close this page.
+            <p className="text-sm text-white/75">
+              {t(language, 'dont_close_page')}
             </p>
           </div>
         </main>
@@ -1052,32 +1067,38 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
       <main className="flex flex-1 items-center justify-center px-4 py-8">
         <div className={cardClass}>
           <h2 className="font-display text-2xl font-bold text-white mb-2">
-            {confirmation.title ?? 'Thank you for sharing your story'}
+            {confirmation.title ?? t(language, 'confirmation_default_title')}
           </h2>
 
           {confirmation.body && (
-            <p className="mb-4 text-sm text-[#8A8DA8]">{confirmation.body}</p>
+            <p className="mb-4 text-sm text-white/75">{confirmation.body}</p>
           )}
 
           {/* Summary card */}
           <div className="mb-4 rounded-lg bg-white/5 p-4 space-y-2">
             {mode === 'upload' ? (
               <div className="flex justify-between text-sm">
-                <span className="text-white/75">Submitted</span>
+                <span className="text-white/75">
+                  {t(language, 'confirmation_submitted_label')}
+                </span>
                 <span className="text-white font-medium">
-                  1 video upload
+                  {t(language, 'confirmation_one_upload')}
                 </span>
               </div>
             ) : (
               <>
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/75">Prompts answered</span>
+                  <span className="text-white/75">
+                    {t(language, 'confirmation_prompts_answered')}
+                  </span>
                   <span className="text-white font-medium">
                     {answeredCount} / {prompts.length}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/75">Total recording time</span>
+                  <span className="text-white/75">
+                    {t(language, 'confirmation_total_time')}
+                  </span>
                   <span className="text-white font-medium">
                     {formatTime(totalDuration)}
                   </span>
@@ -1085,14 +1106,16 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
               </>
             )}
             <div className="flex justify-between text-sm">
-              <span className="text-white/75">Campaign</span>
+              <span className="text-white/75">
+                {t(language, 'confirmation_campaign_label')}
+              </span>
               <span className="text-white font-medium">{campaign.name}</span>
             </div>
           </div>
 
           {/* Teaser */}
           {confirmation.teaser && (
-            <p className="mb-4 text-sm italic text-[#8A8DA8]">
+            <p className="mb-4 text-sm italic text-white/75">
               {confirmation.teaser}
             </p>
           )}
@@ -1100,11 +1123,10 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
           {/* Download Shift */}
           <div className="mb-4 rounded-lg border border-[#BAF14D]/20 bg-[#BAF14D]/5 p-4 text-center">
             <p className="mb-2 text-sm font-medium text-white">
-              Keep tracking your trips
+              {t(language, 'shift_promo_heading')}
             </p>
-            <p className="text-xs text-[#8A8DA8]">
-              Download Shift, the free app that rewards you for walking, biking,
-              and taking transit.
+            <p className="text-xs text-white/75">
+              {t(language, 'shift_promo_body')}
             </p>
             <a
               href="/app"
@@ -1112,22 +1134,22 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
               rel="noopener noreferrer"
               className="mt-3 inline-block rounded-lg bg-[#BAF14D] px-6 py-2 text-sm font-bold text-[#191A2E]"
             >
-              Get Shift
+              {t(language, 'get_shift')}
             </a>
           </div>
 
           {/* Record another */}
           <button onClick={resetSession} className={btnSecondary}>
-            Record another response
+            {t(language, 'record_another')}
           </button>
 
           <a
             href="/privacy#deletion"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 block text-center text-xs text-[#8A8DA8] underline"
+            className="mt-4 block text-center text-xs text-white/75 underline"
           >
-            Request deletion of my responses
+            {confirmation.deletion_link_text ?? t(language, 'deletion_link')}
           </a>
         </div>
       </main>
