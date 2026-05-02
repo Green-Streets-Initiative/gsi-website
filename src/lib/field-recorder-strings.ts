@@ -49,6 +49,7 @@ export const RECORDER_STRINGS_EN = {
   // Recording screens
   exit: '← Exit',
   back: '← Back',
+  step_n_of_n: 'Step {0} of {1}',
   prompt_n_of_n: 'Prompt {0} of {1}',
   prefer_voice_only: 'Prefer voice only?',
   switch_to_video: 'Switch to video',
@@ -136,6 +137,7 @@ const RECORDER_STRINGS_ES: Partial<Record<RecorderStringKey, string>> = {
 
   exit: '← Salir',
   back: '← Atrás',
+  step_n_of_n: 'Paso {0} de {1}',
   prompt_n_of_n: 'Pregunta {0} de {1}',
   prefer_voice_only: '¿Prefieres solo audio?',
   switch_to_video: 'Cambiar a video',
@@ -219,6 +221,7 @@ const RECORDER_STRINGS_PT: Partial<Record<RecorderStringKey, string>> = {
 
   exit: '← Sair',
   back: '← Voltar',
+  step_n_of_n: 'Etapa {0} de {1}',
   prompt_n_of_n: 'Pergunta {0} de {1}',
   prefer_voice_only: 'Prefere só áudio?',
   switch_to_video: 'Mudar para vídeo',
@@ -298,6 +301,7 @@ const RECORDER_STRINGS_ZH: Partial<Record<RecorderStringKey, string>> = {
 
   exit: '← 退出',
   back: '← 返回',
+  step_n_of_n: '第 {0} 步，共 {1} 步',
   prompt_n_of_n: '第 {0} 题，共 {1} 题',
   prefer_voice_only: '只录音频？',
   switch_to_video: '切换到视频',

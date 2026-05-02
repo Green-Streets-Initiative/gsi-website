@@ -142,6 +142,35 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
     }
   }, [step, currentPromptIndex, voiceOnly]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Flow + back-navigation helpers ───────────────────────────
+  // Drives the breadcrumb ("Step N of N") and the Back button on every
+  // step. Steps that fall outside this list (uploading, confirmation)
+  // intentionally have no back action.
+  const flowSteps: Step[] = ['intro', 'consent']
+  if (campaign.field_recorder_collect_email) flowSteps.push('info')
+  flowSteps.push(mode === 'upload' ? 'upload_pick' : 'recording')
+
+  const stepIndex = flowSteps.indexOf(step)
+  const totalSteps = flowSteps.length
+  const showBreadcrumb =
+    step !== 'intro' && step !== 'uploading' && step !== 'confirmation'
+
+  function goBack() {
+    const idx = flowSteps.indexOf(step)
+    if (idx <= 0) return
+    // Leaving recording mid-clip: drop any in-flight blob and free the camera
+    if (step === 'recording') {
+      if (recordedUrl) URL.revokeObjectURL(recordedUrl)
+      setRecordedBlob(null)
+      setRecordedUrl(null)
+      setRecordedDuration(0)
+      setElapsed(0)
+      stopCamera()
+    }
+    setError(null)
+    setStep(flowSteps[idx - 1])
+  }
+
   // ── Recording logic ──────────────────────────────────────────
 
   const currentPrompt = prompts[currentPromptIndex]
@@ -542,6 +571,28 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
     </header>
   )
 
+  // ── Breadcrumb (Back + Step N of N) ───────────────────────
+  // Shown on every step except intro / uploading / confirmation.
+
+  const breadcrumb = showBreadcrumb && stepIndex >= 0 ? (
+    <div className="mb-4 flex items-center justify-between">
+      <button
+        onClick={goBack}
+        className="text-xs font-medium text-white/75 hover:text-white"
+      >
+        {t(language, 'back')}
+      </button>
+      <span className="text-xs text-white/70">
+        {t(
+          language,
+          'step_n_of_n',
+          String(stepIndex + 1),
+          String(totalSteps),
+        )}
+      </span>
+    </div>
+  ) : null
+
   // ── Screen 1: Intro ────────────────────────────────────────
 
   if (step === 'intro') {
@@ -651,6 +702,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
         {header}
         <main className="flex flex-1 items-center justify-center px-4 py-8">
           <div className={cardClass}>
+            {breadcrumb}
             <h2 className="font-display text-xl font-bold text-white mb-1">
               {t(language, 'before_you_record')}
             </h2>
@@ -740,6 +792,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
         {header}
         <main className="flex flex-1 items-center justify-center px-4 py-8">
           <div className={cardClass}>
+            {breadcrumb}
             <h2 className="font-display text-xl font-bold text-white mb-1">
               {t(language, 'info_heading')}
             </h2>
@@ -816,33 +869,39 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
         {header}
         <main className="flex flex-1 items-center justify-center px-4 py-6">
           <div className="mx-auto w-full max-w-lg">
-            {/* Top bar: back button + progress + voice toggle */}
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {!isRecording && (
-                  <button
-                    onClick={() => {
-                      stopCamera()
-                      if (recordedUrl) URL.revokeObjectURL(recordedUrl)
-                      setRecordedBlob(null)
-                      setRecordedUrl(null)
-                      setStep('intro')
-                    }}
-                    className="text-xs text-white/75 hover:text-white"
-                  >
-                    {t(language, 'exit')}
-                  </button>
+            {/* Top bar: back + breadcrumb + voice toggle.
+                Back is hidden mid-recording so the participant can't
+                accidentally drop a clip in progress. */}
+            <div className="mb-3 flex items-center justify-between">
+              {!isRecording ? (
+                <button
+                  onClick={goBack}
+                  className="text-xs font-medium text-white/75 hover:text-white"
+                >
+                  {t(language, 'back')}
+                </button>
+              ) : (
+                <span />
+              )}
+              <span className="text-xs text-white/70">
+                {t(
+                  language,
+                  'step_n_of_n',
+                  String(stepIndex + 1),
+                  String(totalSteps),
                 )}
-                <span className="text-xs font-medium text-white/75">
-                  {t(
-                    language,
-                    'prompt_n_of_n',
-                    String(promptNumber),
-                    String(totalPrompts),
-                  )}
-                </span>
-              </div>
-              {/* Voice-only toggle */}
+              </span>
+            </div>
+            {/* Sub-bar: prompt counter + voice-only toggle */}
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-xs font-medium text-white/75">
+                {t(
+                  language,
+                  'prompt_n_of_n',
+                  String(promptNumber),
+                  String(totalPrompts),
+                )}
+              </span>
               <button
                 onClick={() => {
                   if (!isRecording && !recordedBlob) {
@@ -1003,14 +1062,7 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
         {header}
         <main className="flex flex-1 items-center justify-center px-4 py-8">
           <div className={cardClass}>
-            <div className="mb-4 flex items-center justify-between">
-              <button
-                onClick={() => setStep(campaign.field_recorder_collect_email || mode === 'upload' ? 'info' : 'consent')}
-                className="text-xs text-white/75 hover:text-white"
-              >
-                {t(language, 'back')}
-              </button>
-            </div>
+            {breadcrumb}
 
             <h2 className="font-display text-xl font-bold text-white mb-2">
               {t(language, 'upload_share_video_heading')}
