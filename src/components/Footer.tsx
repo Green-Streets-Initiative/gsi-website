@@ -6,7 +6,7 @@ export default function Footer() {
     <footer className="border-t border-white/[0.07] bg-[#191A2E] px-8 pb-8 pt-14">
       <div className="mx-auto max-w-[1120px]">
         {/* Newsletter signup strip */}
-        <div className="mb-12 border-b border-white/[0.07] pb-12 md:mb-14 md:pb-14">
+        <div id="newsletter" className="scroll-mt-24 mb-12 border-b border-white/[0.07] pb-12 md:mb-14 md:pb-14">
           <div className="grid gap-8 md:grid-cols-2 md:items-center md:gap-12">
             <div>
               <h3 className="text-2xl font-bold text-white sm:text-3xl">Stay in touch</h3>
