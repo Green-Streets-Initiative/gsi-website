@@ -15,6 +15,7 @@ import {
   UPLOAD_MAX_BYTES,
 } from '@/lib/field-recorder-types'
 import { t } from '@/lib/field-recorder-strings'
+import { supabase } from '@/lib/supabase'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -44,11 +45,6 @@ function getSupportedMimeType(voiceOnly: boolean): string {
     }
   }
   return voiceOnly ? 'audio/webm' : 'video/webm'
-}
-
-function getFileExtension(mimeType: string): string {
-  if (mimeType.includes('mp4')) return 'mp4'
-  return 'webm'
 }
 
 /** Strip codec params from MIME type (e.g. "video/webm;codecs=vp9,opus" -> "video/webm") */
@@ -286,31 +282,84 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
     setError(null)
 
     try {
-      const formData = new FormData()
-      formData.append('campaignId', campaign.id)
-      formData.append('mode', 'upload')
-      formData.append('language', language)
-      formData.append('email', email.trim())
-      formData.append('newsletter', newsletterChecked ? 'true' : 'false')
-      formData.append('promptId', prompts[0].id)
-      formData.append('file', uploadFile, uploadFile.name)
-      formData.append('mimeType', uploadFile.type)
+      // Phase 1: prepare submission, get a signed upload URL
+      const trimmedEmail = email.trim() || null
+      const submitRes = await fetch('/api/record/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId: campaign.id,
+          mode: 'upload',
+          language,
+          email: trimmedEmail,
+          newsletter: trimmedEmail ? newsletterChecked : false,
+          clips: [
+            {
+              promptId: prompts[0].id,
+              mimeType: uploadFile.type,
+              skipped: false,
+            },
+          ],
+        }),
+      })
+
+      if (!submitRes.ok) {
+        const body = await submitRes.json().catch(() => ({}))
+        if (submitRes.status === 409) {
+          throw new Error(body.error ?? t(language, 'upload_already_submitted'))
+        }
+        throw new Error(body.error ?? `Upload failed (${submitRes.status})`)
+      }
+
+      const { submissionId, uploads } = (await submitRes.json()) as {
+        submissionId: string
+        uploads: Array<{ promptId: string; path: string; token: string }>
+      }
+      const uploadEntry = uploads[0]
+      if (!uploadEntry) throw new Error('Server did not return an upload URL')
 
       setUploadProgress(20)
 
-      const res = await fetch('/api/record/submit', {
+      // Phase 2: upload file directly to Supabase Storage. Bypasses the
+      // 4.5 MB Vercel function payload limit; the file goes browser → storage.
+      const { error: uploadErr } = await supabase.storage
+        .from('wmu-clips')
+        .uploadToSignedUrl(uploadEntry.path, uploadEntry.token, uploadFile, {
+          contentType: uploadFile.type,
+        })
+
+      if (uploadErr) throw new Error(uploadErr.message)
+
+      setUploadProgress(80)
+
+      // Phase 3: finalize — insert the clip row, mark submission complete,
+      // sync the captured email to the CRM.
+      const finalizeRes = await fetch('/api/record/finalize', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId,
+          source: 'wmu_upload',
+          language,
+          email: trimmedEmail,
+          newsletter: trimmedEmail ? newsletterChecked : false,
+          clips: [
+            {
+              promptId: prompts[0].id,
+              path: uploadEntry.path,
+              mimeType: uploadFile.type,
+              durationSeconds: null,
+              skipped: false,
+            },
+          ],
+        }),
       })
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        if (res.status === 409) {
-          throw new Error(
-            body.error ?? t(language, 'upload_already_submitted'),
-          )
-        }
-        throw new Error(body.error ?? `Upload failed (${res.status})`)
+      if (!finalizeRes.ok) {
+        const body = await finalizeRes.json().catch(() => ({}))
+        throw new Error(
+          body.error ?? `Failed to finalize submission (${finalizeRes.status})`,
+        )
       }
 
       setUploadProgress(100)
@@ -329,39 +378,93 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
     setError(null)
 
     try {
-      const formData = new FormData()
-      formData.append('campaignId', campaign.id)
-      formData.append('language', language)
-      if (email.trim()) {
-        formData.append('email', email.trim())
-        formData.append('newsletter', newsletterChecked ? 'true' : 'false')
-      }
+      const trimmedEmail = email.trim() || null
+      const orderedEntries = Array.from(finalClips.entries())
 
-      let clipIndex = 0
-      const totalClips = finalClips.size
-      for (const [promptId, clip] of finalClips.entries()) {
-        if (clip.skipped) {
-          formData.append(`clip_${promptId}_skipped`, 'true')
-        } else {
-          const ext = getFileExtension(clip.mimeType)
-          formData.append(`clip_${promptId}`, clip.blob, `clip.${ext}`)
-          formData.append(`clip_${promptId}_mime`, baseMimeType(clip.mimeType))
-          formData.append(`clip_${promptId}_duration`, String(clip.duration))
-        }
-        clipIndex++
-        setUploadProgress(Math.round((clipIndex / totalClips) * 80))
-      }
+      // Phase 1: prepare submission, get a signed upload URL per non-skipped clip.
+      const manifest = orderedEntries.map(([promptId, clip]) => ({
+        promptId,
+        skipped: clip.skipped,
+        mimeType: clip.skipped ? undefined : baseMimeType(clip.mimeType),
+      }))
 
-      formData.append('promptIds', JSON.stringify(Array.from(finalClips.keys())))
-
-      const res = await fetch('/api/record/submit', {
+      const submitRes = await fetch('/api/record/submit', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId: campaign.id,
+          mode: 'field',
+          language,
+          email: trimmedEmail,
+          newsletter: trimmedEmail ? newsletterChecked : false,
+          clips: manifest,
+        }),
       })
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error ?? `Upload failed (${res.status})`)
+      if (!submitRes.ok) {
+        const body = await submitRes.json().catch(() => ({}))
+        throw new Error(body.error ?? `Upload failed (${submitRes.status})`)
+      }
+
+      const { submissionId, uploads } = (await submitRes.json()) as {
+        submissionId: string
+        uploads: Array<{ promptId: string; path: string; token: string }>
+      }
+      const pathByPrompt = new Map<string, { path: string; token: string }>()
+      for (const u of uploads) pathByPrompt.set(u.promptId, u)
+
+      // Phase 2: upload each non-skipped clip directly to Supabase Storage.
+      // Bypasses the 4.5 MB Vercel function payload limit.
+      let uploadedCount = 0
+      const totalToUpload = uploads.length
+      for (const [promptId, clip] of orderedEntries) {
+        if (clip.skipped) continue
+        const target = pathByPrompt.get(promptId)
+        if (!target) throw new Error(`Missing upload URL for prompt ${promptId}`)
+
+        const { error: uploadErr } = await supabase.storage
+          .from('wmu-clips')
+          .uploadToSignedUrl(target.path, target.token, clip.blob, {
+            contentType: baseMimeType(clip.mimeType),
+          })
+
+        if (uploadErr) throw new Error(uploadErr.message)
+
+        uploadedCount++
+        setUploadProgress(Math.round((uploadedCount / totalToUpload) * 80))
+      }
+
+      // Phase 3: finalize — insert clip rows, mark submission complete, sync CRM.
+      const finalizeRes = await fetch('/api/record/finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId,
+          source: 'wmu_field_recorder',
+          language,
+          email: trimmedEmail,
+          newsletter: trimmedEmail ? newsletterChecked : false,
+          clips: orderedEntries.map(([promptId, clip]) => {
+            if (clip.skipped) {
+              return { promptId, skipped: true }
+            }
+            const target = pathByPrompt.get(promptId)
+            return {
+              promptId,
+              path: target?.path,
+              mimeType: baseMimeType(clip.mimeType),
+              durationSeconds: clip.duration,
+              skipped: false,
+            }
+          }),
+        }),
+      })
+
+      if (!finalizeRes.ok) {
+        const body = await finalizeRes.json().catch(() => ({}))
+        throw new Error(
+          body.error ?? `Failed to finalize submission (${finalizeRes.status})`,
+        )
       }
 
       setUploadProgress(100)
@@ -604,15 +707,10 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
             <button
               disabled={!consentChecked}
               onClick={() => {
-                // Upload mode always collects email (required, anti-abuse + credit).
-                // Record mode follows the per-campaign collect-email setting.
-                const emailStepNeeded =
-                  mode === 'upload' || campaign.field_recorder_collect_email
-                if (emailStepNeeded) {
+                if (campaign.field_recorder_collect_email) {
                   setStep('info')
                 } else {
-                  // emailStepNeeded already covers upload mode, so we're in record mode here
-                  setStep('recording')
+                  setStep(mode === 'upload' ? 'upload_pick' : 'recording')
                 }
               }}
               className={btnPrimary}
@@ -637,9 +735,6 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
   // ── Screen 3: Participant Info ─────────────────────────────
 
   if (step === 'info') {
-    const emailRequired = mode === 'upload'
-    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-    const canContinue = emailRequired ? emailValid : true
     return (
       <div className={wrapperClass}>
         {header}
@@ -649,16 +744,12 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
               {t(language, 'info_heading')}
             </h2>
             <p className="mb-6 text-sm text-white/75">
-              {emailRequired
-                ? t(language, 'info_subhead_required')
-                : t(language, 'info_subhead_optional')}
+              {t(language, 'info_subhead_optional')}
             </p>
 
             <div className="mb-4">
               <label className="mb-1 block text-xs font-medium text-white/75">
-                {emailRequired
-                  ? t(language, 'email_label_required')
-                  : t(language, 'email_label_optional')}
+                {t(language, 'email_label_optional')}
               </label>
               <input
                 type="email"
@@ -690,7 +781,6 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
             </label>
 
             <button
-              disabled={!canContinue}
               onClick={() =>
                 setStep(mode === 'upload' ? 'upload_pick' : 'recording')
               }
@@ -699,18 +789,16 @@ export default function FieldRecorder({ campaign, prompts }: Props) {
               {t(language, 'continue_btn')}
             </button>
 
-            {!emailRequired && (
-              <button
-                onClick={() => {
-                  setEmail('')
-                  setNewsletterChecked(false)
-                  setStep('recording')
-                }}
-                className="mt-3 w-full text-center text-xs text-white/75 underline"
-              >
-                {t(language, 'continue_without_email')}
-              </button>
-            )}
+            <button
+              onClick={() => {
+                setEmail('')
+                setNewsletterChecked(false)
+                setStep(mode === 'upload' ? 'upload_pick' : 'recording')
+              }}
+              className="mt-3 w-full text-center text-xs text-white/75 underline"
+            >
+              {t(language, 'continue_without_email')}
+            </button>
           </div>
         </main>
       </div>
