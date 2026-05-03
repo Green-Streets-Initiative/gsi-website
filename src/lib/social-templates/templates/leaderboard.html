@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #BAF14D;
+    --blue: #2966E5;
+    --navy: #191A2E;
+    --card: #242538;
+    --white: #FFFFFF;
+    --body: #E8E8EE;
+    --secondary: rgba(255,255,255,0.7);
+    --attribution: rgba(255,255,255,0.6);
+    --border: rgba(255,255,255,0.08);
+
+    --w: {{__width__}}px;
+    --h: {{__height__}}px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: var(--w);
+    height: var(--h);
+    overflow: hidden;
+    background: var(--navy);
+    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--white);
+  }
+
+  .template {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    padding: calc(var(--h) * 0.06) calc(var(--w) * 0.05);
+    position: relative; overflow: hidden;
+  }
+
+  .accent-stripe {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--blue));
+  }
+
+  /* Logo area */
+  .logo-area { display: flex; flex-direction: column; gap: 4px; }
+  .shift-lockup { display: flex; align-items: center; gap: 8px; }
+  .shift-lockup .word {
+    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+    font-weight: 800;
+    font-size: calc(var(--w) * 0.022);
+    letter-spacing: -0.04em;
+    color: var(--white);
+    line-height: 1;
+  }
+  .gsi-wordmark {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: calc(var(--w) * 0.013);
+    letter-spacing: 0.5px;
+  }
+  .gsi-wordmark .green-streets { font-weight: 700; color: #52B788; }
+  .gsi-wordmark .initiative { font-weight: 400; color: var(--white); }
+  .gsi-lead { display: none; flex-direction: column; gap: 6px; }
+  .gsi-lead .gsi-wordmark { font-size: calc(var(--w) * 0.014); }
+  .gsi-lead .shift-secondary { display: flex; align-items: center; gap: 4px; opacity: 0.7; }
+  .gsi-lead .shift-secondary .word {
+    font-size: calc(var(--w) * 0.013);
+    color: var(--body);
+  }
+
+  /* Heading */
+  .heading {
+    margin-top: calc(var(--h) * 0.025);
+  }
+  .heading-tag {
+    font-size: calc(var(--w) * 0.011);
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    color: var(--green);
+    text-transform: uppercase;
+  }
+  .heading-period {
+    font-size: calc(var(--w) * 0.013);
+    color: var(--secondary);
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Ranks list */
+  .ranks {
+    margin-top: calc(var(--h) * 0.035);
+    display: flex; flex-direction: column;
+    gap: calc(var(--h) * 0.022);
+    flex: 1;
+  }
+  .rank-row .rank-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    align-items: baseline;
+  }
+  .rank-name {
+    font-size: calc(var(--w) * 0.0175);
+    font-weight: 700;
+    color: var(--white);
+  }
+  .rank-position {
+    margin-right: 9px;
+    font-family: 'DM Mono', monospace;
+    font-size: calc(var(--w) * 0.014);
+  }
+  .rank-row.r1 .rank-position { color: var(--green); }
+  .rank-row.r2 .rank-position { color: var(--blue); }
+  .rank-row.r3 .rank-position { color: var(--secondary); }
+  .rank-value {
+    font-size: calc(var(--w) * 0.014);
+    color: var(--body);
+    font-family: 'DM Mono', monospace;
+  }
+  .rank-bar-bg {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--card);
+    overflow: hidden;
+  }
+  .rank-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+  }
+  .rank-row.r1 .rank-bar-fill {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--green) 53%, transparent), var(--green));
+  }
+  .rank-row.r2 .rank-bar-fill {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 40%, transparent), var(--blue));
+  }
+  .rank-row.r3 .rank-bar-fill {
+    background: linear-gradient(90deg, rgba(232,232,238,0.25), rgba(232,232,238,0.5));
+  }
+
+  /* Footer total */
+  .total {
+    margin-top: auto;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .total-number {
+    font-size: calc(var(--w) * 0.032);
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: -0.03em;
+  }
+  .total-label {
+    font-size: calc(var(--w) * 0.013);
+    color: var(--body);
+  }
+
+  /* Platform overrides */
+  [data-platform="instagram"] .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="bluesky"]   .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="linkedin"]  .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="linkedin"]  .shift-lockup { display: none; }
+  [data-platform="linkedin"]  .gsi-lead { display: flex; }
+</style>
+</head>
+<body>
+  <div class="template" data-platform="{{__platform__}}" data-ratio="{{__ratio__}}">
+    <div class="accent-stripe"></div>
+
+    <div class="logo-area">
+      <div class="shift-lockup">
+        <span class="word">Shift</span>
+        <svg viewBox="0 0 36 28" width="28" height="22" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+          <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+        </svg>
+      </div>
+      <div class="gsi-wordmark">
+        <span class="green-streets">Green Streets</span><span class="initiative"> Initiative</span>
+      </div>
+      <div class="gsi-lead">
+        <div class="gsi-wordmark">
+          <span class="green-streets">Green Streets</span><span class="initiative"> Initiative</span>
+        </div>
+        <div class="shift-secondary">
+          <svg viewBox="0 0 36 28" width="14" height="11" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+            <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+          </svg>
+          <span class="word">Shift</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="heading">
+      <div class="heading-tag">This week in Shift</div>
+      <div class="heading-period">{{period}}</div>
+    </div>
+
+    <div class="ranks">
+      <div class="rank-row r1">
+        <div class="rank-header">
+          <span class="rank-name"><span class="rank-position">#1</span>{{rank_1_name}}</span>
+          <span class="rank-value">{{rank_1_value}}</span>
+        </div>
+        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width: 100%;"></div></div>
+      </div>
+      <div class="rank-row r2">
+        <div class="rank-header">
+          <span class="rank-name"><span class="rank-position">#2</span>{{rank_2_name}}</span>
+          <span class="rank-value">{{rank_2_value}}</span>
+        </div>
+        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width: {{rank_2_pct}}%;"></div></div>
+      </div>
+      <div class="rank-row r3">
+        <div class="rank-header">
+          <span class="rank-name"><span class="rank-position">#3</span>{{rank_3_name}}</span>
+          <span class="rank-value">{{rank_3_value}}</span>
+        </div>
+        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width: {{rank_3_pct}}%;"></div></div>
+      </div>
+    </div>
+
+    <div class="total">
+      <span class="total-number">{{community_total}}</span>
+      <span class="total-label">total trips</span>
+    </div>
+  </div>
+</body>
+</html>

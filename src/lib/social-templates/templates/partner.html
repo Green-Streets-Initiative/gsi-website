@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #BAF14D;
+    --blue: #2966E5;
+    --navy: #191A2E;
+    --card: #242538;
+    --leaf-white: #F4F8EE;
+    --white: #FFFFFF;
+    --body: #E8E8EE;
+    --secondary: rgba(255,255,255,0.7);
+    --attribution: rgba(255,255,255,0.6);
+    --border: rgba(255,255,255,0.08);
+
+    --w: {{__width__}}px;
+    --h: {{__height__}}px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: var(--w);
+    height: var(--h);
+    overflow: hidden;
+    background: var(--navy);
+    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--white);
+  }
+
+  .template {
+    width: 100%; height: 100%;
+    position: relative; overflow: hidden;
+  }
+
+  /* Top photo band — 45% of height. Photo is full-bleed within the band;
+     fades to navy via gradient before the content area begins. */
+  .photo-band {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 45%;
+    overflow: hidden;
+    background: linear-gradient(135deg, #4a3a2a 0%, #3a3a2a 50%, #2a3a3a 100%);
+  }
+  .photo {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  /* Bottom-of-band gradient that fades to solid navy */
+  .photo-fade {
+    position: absolute;
+    top: 35%; left: 0; right: 0;
+    height: 20%;
+    background: linear-gradient(to bottom, transparent, var(--navy));
+    z-index: 2;
+  }
+
+  /* Logo area — top-left, on top of photo */
+  .logo-area {
+    position: absolute;
+    top: calc(var(--h) * 0.025);
+    left: calc(var(--w) * 0.025);
+    z-index: 3;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .shift-lockup { display: flex; align-items: center; gap: 7px; }
+  .shift-lockup .word {
+    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+    font-weight: 800;
+    font-size: calc(var(--w) * 0.02);
+    letter-spacing: -0.04em;
+    color: var(--white);
+    line-height: 1;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+  .gsi-wordmark {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: calc(var(--w) * 0.012);
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+  .gsi-wordmark .green-streets { font-weight: 700; color: #52B788; }
+  .gsi-wordmark .initiative { font-weight: 400; color: var(--white); }
+  .gsi-lead { display: none; flex-direction: column; gap: 6px; }
+  .gsi-lead .gsi-wordmark { font-size: calc(var(--w) * 0.013); }
+  .gsi-lead .shift-secondary { display: flex; align-items: center; gap: 4px; opacity: 0.85; }
+  .gsi-lead .shift-secondary .word {
+    font-size: calc(var(--w) * 0.012);
+    color: var(--body);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+
+  /* Content area — bottom 55% on solid navy */
+  .content {
+    position: absolute;
+    left: calc(var(--w) * 0.025);
+    right: calc(var(--w) * 0.025);
+    bottom: calc(var(--h) * 0.04);
+    z-index: 3;
+  }
+
+  .partner-tag {
+    font-size: calc(var(--w) * 0.011);
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--green);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  /* Logo container — light-bg, holds the partner's actual logo */
+  .logo-container {
+    width: 100%;
+    height: calc(var(--h) * 0.07);
+    background: var(--card);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    margin-bottom: 12px;
+    gap: 10px;
+  }
+  .logo-img {
+    width: calc(var(--h) * 0.045);
+    height: calc(var(--h) * 0.045);
+    border-radius: 5px;
+    background: var(--leaf-white);
+    object-fit: contain;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+
+  .partner-name {
+    font-size: calc(var(--w) * 0.024);
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+
+  .partner-location {
+    font-size: calc(var(--w) * 0.013);
+    color: var(--body);
+    margin-top: 6px;
+  }
+
+  /* Offer card */
+  .offer {
+    margin-top: 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 16px;
+  }
+  .offer-text {
+    font-size: calc(var(--w) * 0.018);
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: -0.02em;
+  }
+  .offer-qualifier {
+    font-size: calc(var(--w) * 0.013);
+    color: var(--body);
+    margin-top: 3px;
+  }
+
+  .cta {
+    display: none;
+    margin-top: 14px;
+    background: var(--green);
+    color: var(--navy);
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: calc(var(--w) * 0.012);
+    font-weight: 700;
+    width: fit-content;
+  }
+  [data-platform="facebook"] .cta:not(:empty) { display: inline-flex; }
+  [data-platform="linkedin"] .cta:not(:empty) { display: inline-flex; }
+
+  /* Platform overrides */
+  [data-platform="instagram"] .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="bluesky"]   .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="linkedin"]  .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="linkedin"]  .shift-lockup { display: none; }
+  [data-platform="linkedin"]  .gsi-lead { display: flex; }
+</style>
+</head>
+<body>
+  <div class="template" data-platform="{{__platform__}}" data-ratio="{{__ratio__}}">
+    <div class="photo-band">
+      <img class="photo" src="{{partner_photo}}" alt="" crossorigin="anonymous" />
+    </div>
+    <div class="photo-fade"></div>
+
+    <div class="logo-area">
+      <div class="shift-lockup">
+        <span class="word">Shift</span>
+        <svg viewBox="0 0 36 28" width="26" height="20" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+          <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+        </svg>
+      </div>
+      <div class="gsi-wordmark">
+        <span class="green-streets">Green Streets</span><span class="initiative"> Initiative</span>
+      </div>
+      <div class="gsi-lead">
+        <div class="gsi-wordmark">
+          <span class="green-streets">Green Streets</span><span class="initiative"> Initiative</span>
+        </div>
+        <div class="shift-secondary">
+          <svg viewBox="0 0 36 28" width="13" height="10" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+            <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+          </svg>
+          <span class="word">Shift</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="partner-tag">{{partner_type}}</div>
+
+      <div class="logo-container">
+        <img class="logo-img" src="{{partner_logo}}" alt="" crossorigin="anonymous" />
+      </div>
+
+      <div class="partner-name">{{partner_name}}</div>
+      <div class="partner-location">📍 {{location}}</div>
+
+      <div class="offer">
+        <div class="offer-text">{{offer_text}}</div>
+        <div class="offer-qualifier">{{offer_qualifier}}</div>
+      </div>
+
+      <div class="cta">{{cta_text}}</div>
+    </div>
+  </div>
+</body>
+</html>

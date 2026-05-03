@@ -19,6 +19,10 @@
 
     --w: {{__width__}}px;
     --h: {{__height__}}px;
+    --line-color: {{line_color}};
+    /* Brightened text variant of line color (caller passes if available;
+       otherwise defaults to white for safety on dark navy) */
+    --line-text: {{line_text_color}};
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,25 +38,21 @@
   }
 
   .template {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
     padding: calc(var(--h) * 0.06) calc(var(--w) * 0.05);
-    position: relative;
-    overflow: hidden;
+    position: relative; overflow: hidden;
   }
 
-  /* Decorative sun glow (top right) */
-  .glow {
-    position: absolute;
-    top: -20px; right: 10px;
-    width: 220px; height: 220px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(251,191,36,0.1) 0%, transparent 70%);
+  /* Top accent stripe colored to match the affected line */
+  .accent-stripe {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--line-color);
   }
 
-  /* Logo lockups (same shapes as quote-stat) */
+  /* Logo area (shared shapes — the platform overrides at the bottom
+     control which variant is visible) */
   .logo-area { display: flex; flex-direction: column; gap: 4px; }
   .shift-lockup { display: flex; align-items: center; gap: 8px; }
   .shift-lockup .word {
@@ -77,76 +77,63 @@
     font-size: calc(var(--w) * 0.013);
     color: var(--body);
   }
-  /* Scope visibility to direct children of .logo-area so the .gsi-wordmark
-     nested inside .gsi-lead doesn't get hidden when LinkedIn shows it */
-  [data-platform="instagram"] .logo-area > .gsi-wordmark { display: none; }
-  [data-platform="bluesky"]   .logo-area > .gsi-wordmark { display: none; }
-  [data-platform="linkedin"]  .logo-area > .gsi-wordmark { display: none; }
-  [data-platform="linkedin"]  .shift-lockup { display: none; }
-  [data-platform="linkedin"]  .gsi-lead { display: flex; }
 
-  /* Weather core */
-  .weather-row {
-    margin-top: calc(var(--h) * 0.04);
-    display: flex;
-    align-items: flex-start;
-    gap: 18px;
-  }
-  .condition-icon {
-    font-size: calc(var(--w) * 0.07);
-    line-height: 1;
-  }
-  .temperature {
-    font-size: calc(var(--w) * 0.07);
-    font-weight: 800;
-    color: var(--white);
-    line-height: 1;
-    letter-spacing: -0.04em;
-  }
-  .condition-label {
-    font-size: calc(var(--w) * 0.018);
-    font-weight: 700;
-    color: var(--green);
-    margin-top: 4px;
-  }
-
-  .aqi-pill {
-    margin-top: 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    background: var(--card);
-    border-radius: 18px;
-    padding: 6px 14px;
+  /* Alert pill */
+  .alert-pill {
+    margin-top: calc(var(--h) * 0.03);
+    display: inline-flex; align-items: center; gap: 8px;
+    background: color-mix(in srgb, var(--line-color) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line-color) 33%, transparent);
+    border-radius: 8px;
+    padding: 9px 14px;
     align-self: flex-start;
-    border: 1px solid var(--border);
   }
-  .aqi-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--green);
+  .alert-pill .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--line-color);
   }
-  .aqi-text {
-    font-size: calc(var(--w) * 0.012);
-    color: var(--body);
-    font-family: 'DM Mono', monospace;
+  .alert-pill .label {
+    font-size: calc(var(--w) * 0.013);
+    font-weight: 700;
+    color: var(--line-text);
+    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
   }
 
-  /* Drafter nudge */
-  .nudge {
+  .alert-detail {
+    font-size: calc(var(--w) * 0.014);
+    color: var(--body);
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+
+  .divider {
+    width: calc(var(--w) * 0.04);
+    height: 2px;
+    border-radius: 1px;
+    background: var(--card);
+    margin: 22px 0;
+  }
+
+  .suggestion {
     margin-top: auto;
   }
-  .nudge-headline {
-    font-size: calc(var(--w) * 0.032);
+  .suggestion-row {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 8px;
+  }
+  .alt-mode-icon {
+    font-size: calc(var(--w) * 0.024);
+  }
+  .suggestion-headline {
+    font-size: calc(var(--w) * 0.022);
     font-weight: 800;
     color: var(--white);
     line-height: 1.15;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
   }
-  .nudge-body {
+  .suggestion-body {
     font-size: calc(var(--w) * 0.014);
     color: var(--body);
-    margin-top: 12px;
     line-height: 1.55;
   }
 
@@ -170,11 +157,18 @@
     font-size: calc(var(--w) * 0.0095);
     color: var(--attribution);
   }
+
+  /* Platform overrides — scope visibility to direct children of .logo-area */
+  [data-platform="instagram"] .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="bluesky"]   .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="linkedin"]  .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="linkedin"]  .shift-lockup { display: none; }
+  [data-platform="linkedin"]  .gsi-lead { display: flex; }
 </style>
 </head>
 <body>
   <div class="template" data-platform="{{__platform__}}" data-ratio="{{__ratio__}}">
-    <div class="glow"></div>
+    <div class="accent-stripe"></div>
 
     <div class="logo-area">
       <div class="shift-lockup">
@@ -201,26 +195,25 @@
       </div>
     </div>
 
-    <div class="weather-row">
-      <div class="condition-icon">{{condition_icon}}</div>
-      <div>
-        <div class="temperature">{{temperature}}</div>
-        <div class="condition-label">{{condition_label}}</div>
+    <div class="alert-pill">
+      <div class="dot"></div>
+      <span class="label">{{line_name}} · {{alert_type}}</span>
+    </div>
+
+    <div class="alert-detail">{{alert_detail}}</div>
+
+    <div class="divider"></div>
+
+    <div class="suggestion">
+      <div class="suggestion-row">
+        <span class="alt-mode-icon">{{alt_mode_icon}}</span>
+        <div class="suggestion-headline">{{suggestion_headline}}</div>
       </div>
-    </div>
-
-    <div class="aqi-pill">
-      <div class="aqi-dot"></div>
-      <span class="aqi-text">AQI {{aqi_value}} · {{aqi_label}}</span>
-    </div>
-
-    <div class="nudge">
-      <div class="nudge-headline">{{nudge_headline}}</div>
-      <div class="nudge-body">{{nudge_body}}</div>
+      <div class="suggestion-body">{{suggestion_body}}</div>
       <div class="cta">{{cta_text}}</div>
     </div>
 
-    <div class="source-line">NWS Boston · AirNow EPA</div>
+    <div class="source-line">MBTA Realtime API · NWS Boston</div>
   </div>
 </body>
 </html>

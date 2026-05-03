@@ -11,6 +11,7 @@
     --blue: #2966E5;
     --navy: #191A2E;
     --card: #242538;
+    --leaf-white: #F4F8EE;
     --white: #FFFFFF;
     --body: #E8E8EE;
     --secondary: rgba(255,255,255,0.7);
@@ -34,25 +35,29 @@
   }
 
   .template {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
     padding: calc(var(--h) * 0.06) calc(var(--w) * 0.05);
-    position: relative;
-    overflow: hidden;
+    position: relative; overflow: hidden;
   }
 
-  /* Decorative sun glow (top right) */
-  .glow {
+  /* Celebratory accents — green→blue→green stripe + centered radial */
+  .accent-stripe {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--blue), var(--green));
+  }
+  .celebration-glow {
     position: absolute;
-    top: -20px; right: 10px;
-    width: 220px; height: 220px;
+    top: -40px; left: 50%;
+    transform: translateX(-50%);
+    width: 60%; height: 30%;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(251,191,36,0.1) 0%, transparent 70%);
+    background: radial-gradient(ellipse, rgba(186,241,77,0.18) 0%, transparent 70%);
+    pointer-events: none;
   }
 
-  /* Logo lockups (same shapes as quote-stat) */
+  /* Logo area */
   .logo-area { display: flex; flex-direction: column; gap: 4px; }
   .shift-lockup { display: flex; align-items: center; gap: 8px; }
   .shift-lockup .word {
@@ -77,77 +82,72 @@
     font-size: calc(var(--w) * 0.013);
     color: var(--body);
   }
-  /* Scope visibility to direct children of .logo-area so the .gsi-wordmark
-     nested inside .gsi-lead doesn't get hidden when LinkedIn shows it */
-  [data-platform="instagram"] .logo-area > .gsi-wordmark { display: none; }
-  [data-platform="bluesky"]   .logo-area > .gsi-wordmark { display: none; }
-  [data-platform="linkedin"]  .logo-area > .gsi-wordmark { display: none; }
-  [data-platform="linkedin"]  .shift-lockup { display: none; }
-  [data-platform="linkedin"]  .gsi-lead { display: flex; }
 
-  /* Weather core */
-  .weather-row {
-    margin-top: calc(var(--h) * 0.04);
-    display: flex;
-    align-items: flex-start;
-    gap: 18px;
-  }
-  .condition-icon {
-    font-size: calc(var(--w) * 0.07);
-    line-height: 1;
-  }
-  .temperature {
-    font-size: calc(var(--w) * 0.07);
-    font-weight: 800;
-    color: var(--white);
-    line-height: 1;
-    letter-spacing: -0.04em;
-  }
-  .condition-label {
-    font-size: calc(var(--w) * 0.018);
-    font-weight: 700;
-    color: var(--green);
-    margin-top: 4px;
-  }
-
-  .aqi-pill {
-    margin-top: 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    background: var(--card);
-    border-radius: 18px;
-    padding: 6px 14px;
-    align-self: flex-start;
-    border: 1px solid var(--border);
-  }
-  .aqi-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--green);
-  }
-  .aqi-text {
-    font-size: calc(var(--w) * 0.012);
-    color: var(--body);
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* Drafter nudge */
-  .nudge {
+  /* Prize tag — pushed to mid via margin-top:auto */
+  .prize-tag {
     margin-top: auto;
+    font-size: calc(var(--w) * 0.011);
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    color: var(--green);
+    text-transform: uppercase;
   }
-  .nudge-headline {
-    font-size: calc(var(--w) * 0.032);
+  .prize-headline {
+    font-size: calc(var(--w) * 0.03);
     font-weight: 800;
     color: var(--white);
-    line-height: 1.15;
+    line-height: 1.1;
     letter-spacing: -0.03em;
+    margin-top: 8px;
   }
-  .nudge-body {
+
+  /* Funder credit — small logo + name + location */
+  .funder {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .funder-logo {
+    width: calc(var(--w) * 0.04);
+    height: calc(var(--w) * 0.04);
+    border-radius: 8px;
+    background: var(--leaf-white);
+    object-fit: contain;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+  .funder-text-name {
+    font-size: calc(var(--w) * 0.014);
+    font-weight: 700;
+    color: var(--body);
+  }
+  .funder-text-location {
+    font-size: calc(var(--w) * 0.0115);
+    color: var(--secondary);
+    margin-top: 2px;
+  }
+
+  /* How to win card */
+  .how {
+    margin-top: 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .how-label {
+    font-size: calc(var(--w) * 0.011);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--secondary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .how-body {
     font-size: calc(var(--w) * 0.014);
     color: var(--body);
-    margin-top: 12px;
-    line-height: 1.55;
+    line-height: 1.5;
   }
 
   .cta {
@@ -164,17 +164,40 @@
   [data-platform="facebook"] .cta:not(:empty) { display: inline-flex; }
   [data-platform="linkedin"] .cta:not(:empty) { display: inline-flex; }
 
-  .source-line {
-    margin-top: 18px;
+  /* Footer — deadline + legal line */
+  .footer {
+    margin-top: auto;
+    padding-top: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .deadline {
+    font-size: calc(var(--w) * 0.013);
+    font-weight: 700;
+    color: var(--green);
     font-family: 'DM Mono', monospace;
+  }
+  .legal {
     font-size: calc(var(--w) * 0.0095);
     color: var(--attribution);
+    font-family: 'DM Mono', monospace;
+    text-align: right;
   }
+
+  /* Platform overrides */
+  [data-platform="instagram"] .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="bluesky"]   .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="linkedin"]  .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="linkedin"]  .shift-lockup { display: none; }
+  [data-platform="linkedin"]  .gsi-lead { display: flex; }
 </style>
 </head>
 <body>
   <div class="template" data-platform="{{__platform__}}" data-ratio="{{__ratio__}}">
-    <div class="glow"></div>
+    <div class="accent-stripe"></div>
+    <div class="celebration-glow"></div>
 
     <div class="logo-area">
       <div class="shift-lockup">
@@ -201,26 +224,28 @@
       </div>
     </div>
 
-    <div class="weather-row">
-      <div class="condition-icon">{{condition_icon}}</div>
+    <div class="prize-tag">{{prize_tag}}</div>
+    <div class="prize-headline">{{prize_headline}}</div>
+
+    <div class="funder">
+      <img class="funder-logo" src="{{partner_logo}}" alt="" crossorigin="anonymous" />
       <div>
-        <div class="temperature">{{temperature}}</div>
-        <div class="condition-label">{{condition_label}}</div>
+        <div class="funder-text-name">Funded by {{partner_name}}</div>
+        <div class="funder-text-location">📍 {{partner_location}}</div>
       </div>
     </div>
 
-    <div class="aqi-pill">
-      <div class="aqi-dot"></div>
-      <span class="aqi-text">AQI {{aqi_value}} · {{aqi_label}}</span>
+    <div class="how">
+      <div class="how-label">How to win</div>
+      <div class="how-body">{{how_to_win}}</div>
     </div>
 
-    <div class="nudge">
-      <div class="nudge-headline">{{nudge_headline}}</div>
-      <div class="nudge-body">{{nudge_body}}</div>
-      <div class="cta">{{cta_text}}</div>
-    </div>
+    <div class="cta">{{cta_text}}</div>
 
-    <div class="source-line">NWS Boston · AirNow EPA</div>
+    <div class="footer">
+      <span class="deadline">{{deadline}}</span>
+      <span class="legal">{{legal_line}}</span>
+    </div>
   </div>
 </body>
 </html>

@@ -162,8 +162,8 @@
      don't accidentally hide the .gsi-wordmark NESTED inside .gsi-lead */
   [data-platform="instagram"] .logo-area > .gsi-wordmark { display: none; }
   [data-platform="bluesky"]   .logo-area > .gsi-wordmark { display: none; }
-  [data-platform="facebook"]  .cta { display: inline-flex; }
-  [data-platform="linkedin"]  .cta { display: inline-flex; }
+  [data-platform="facebook"]  .cta:not(:empty) { display: inline-flex; }
+  [data-platform="linkedin"]  .cta:not(:empty) { display: inline-flex; }
 
   /* For LinkedIn, swap the Shift-leading lockup for the GSI-leading variant */
   [data-platform="linkedin"] .shift-lockup { display: none; }

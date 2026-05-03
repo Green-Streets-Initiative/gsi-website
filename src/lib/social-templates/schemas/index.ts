@@ -10,6 +10,12 @@
 import { z, type ZodTypeAny } from 'zod';
 import { quoteStatSchema } from './quote-stat';
 import { weatherSchema } from './weather';
+import { mbtaSchema } from './mbta';
+import { roamSchema } from './roam';
+import { leaderboardSchema } from './leaderboard';
+import { partnerSchema } from './partner';
+import { prizeSchema } from './prize';
+import { sponsorSchema } from './sponsor';
 import { type Platform } from '../platform-overrides';
 
 type SchemaFactory = (platform: Platform) => ZodTypeAny;
@@ -17,7 +23,15 @@ type SchemaFactory = (platform: Platform) => ZodTypeAny;
 export const TEMPLATE_SCHEMAS: Record<string, SchemaFactory> = {
   'quote-stat': quoteStatSchema,
   weather: weatherSchema,
+  mbta: mbtaSchema,
+  roam: roamSchema,
+  leaderboard: leaderboardSchema,
+  partner: partnerSchema,
+  prize: prizeSchema,
+  sponsor: sponsorSchema,
 };
+
+export const TEMPLATE_IDS = Object.keys(TEMPLATE_SCHEMAS);
 
 export function getSchemaForTemplate(template: string): SchemaFactory | null {
   return TEMPLATE_SCHEMAS[template] ?? null;

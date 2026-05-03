@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { renderSocialImage } from '@/lib/social-templates/render';
-import { getSchemaForTemplate } from '@/lib/social-templates/schemas';
+import { getSchemaForTemplate, TEMPLATE_IDS } from '@/lib/social-templates/schemas';
 import { isValidPlatform, type Platform } from '@/lib/social-templates/platform-overrides';
 import { isValidAspectRatio, type AspectRatio } from '@/lib/social-templates/aspect-ratios';
 
@@ -122,7 +122,7 @@ export async function GET() {
       ok: true,
       service: 'render-social-image',
       methods: ['POST'],
-      templates: ['quote-stat', 'weather'],
+      templates: TEMPLATE_IDS,
       platforms: ['instagram', 'facebook', 'linkedin', 'bluesky'],
       ratios: ['1:1', '4:5', '1.91:1', '9:16'],
     },
