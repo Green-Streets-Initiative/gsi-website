@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #BAF14D;
+    --blue: #2966E5;
+    --navy: #191A2E;
+    --card: #242538;
+    --white: #FFFFFF;
+    --body: #E8E8EE;
+    --secondary: rgba(255,255,255,0.7);
+    --attribution: rgba(255,255,255,0.6);
+    --border: rgba(255,255,255,0.08);
+
+    --w: {{__width__}}px;
+    --h: {{__height__}}px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: var(--w);
+    height: var(--h);
+    overflow: hidden;
+    background: var(--navy);
+    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--white);
+  }
+
+  .template {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: calc(var(--h) * 0.06) calc(var(--w) * 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Decorative sun glow (top right) */
+  .glow {
+    position: absolute;
+    top: -20px; right: 10px;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(251,191,36,0.1) 0%, transparent 70%);
+  }
+
+  /* Logo lockups (same shapes as quote-stat) */
+  .logo-area { display: flex; flex-direction: column; gap: 4px; }
+  .shift-lockup { display: flex; align-items: center; gap: 8px; }
+  .shift-lockup .word {
+    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+    font-weight: 800;
+    font-size: calc(var(--w) * 0.022);
+    letter-spacing: -0.04em;
+    color: var(--white);
+    line-height: 1;
+  }
+  .gsi-wordmark {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: calc(var(--w) * 0.013);
+    letter-spacing: 0.5px;
+  }
+  .gsi-wordmark .green-streets { font-weight: 700; color: #52B788; }
+  .gsi-wordmark .initiative { font-weight: 400; color: var(--white); }
+  .gsi-lead { display: none; flex-direction: column; gap: 6px; }
+  .gsi-lead .gsi-wordmark { font-size: calc(var(--w) * 0.014); }
+  .gsi-lead .shift-secondary { display: flex; align-items: center; gap: 4px; opacity: 0.7; }
+  .gsi-lead .shift-secondary .word {
+    font-size: calc(var(--w) * 0.013);
+    color: var(--body);
+  }
+  /* Scope visibility to direct children of .logo-area so the .gsi-wordmark
+     nested inside .gsi-lead doesn't get hidden when LinkedIn shows it */
+  [data-platform="instagram"] .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="bluesky"]   .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="linkedin"]  .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="linkedin"]  .shift-lockup { display: none; }
+  [data-platform="linkedin"]  .gsi-lead { display: flex; }
+
+  /* Weather core */
+  .weather-row {
+    margin-top: calc(var(--h) * 0.04);
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+  }
+  .condition-icon {
+    font-size: calc(var(--w) * 0.07);
+    line-height: 1;
+  }
+  .temperature {
+    font-size: calc(var(--w) * 0.07);
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .condition-label {
+    font-size: calc(var(--w) * 0.018);
+    font-weight: 700;
+    color: var(--green);
+    margin-top: 4px;
+  }
+
+  .aqi-pill {
+    margin-top: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--card);
+    border-radius: 18px;
+    padding: 6px 14px;
+    align-self: flex-start;
+    border: 1px solid var(--border);
+  }
+  .aqi-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  .aqi-text {
+    font-size: calc(var(--w) * 0.012);
+    color: var(--body);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Drafter nudge */
+  .nudge {
+    margin-top: auto;
+  }
+  .nudge-headline {
+    font-size: calc(var(--w) * 0.032);
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+  .nudge-body {
+    font-size: calc(var(--w) * 0.014);
+    color: var(--body);
+    margin-top: 12px;
+    line-height: 1.55;
+  }
+
+  .cta {
+    display: none;
+    margin-top: 14px;
+    background: var(--green);
+    color: var(--navy);
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: calc(var(--w) * 0.012);
+    font-weight: 700;
+    align-self: flex-start;
+  }
+  [data-platform="facebook"] .cta { display: inline-flex; }
+  [data-platform="linkedin"] .cta { display: inline-flex; }
+
+  .source-line {
+    margin-top: 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: calc(var(--w) * 0.0095);
+    color: var(--attribution);
+  }
+</style>
+</head>
+<body>
+  <div class="template" data-platform="{{__platform__}}" data-ratio="{{__ratio__}}">
+    <div class="glow"></div>
+
+    <div class="logo-area">
+      <div class="shift-lockup">
+        <span class="word">Shift</span>
+        <svg viewBox="0 0 36 28" width="28" height="22" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+          <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+        </svg>
+      </div>
+      <div class="gsi-wordmark">
+        <span class="green-streets">Green Streets</span><span class="initiative"> Initiative</span>
+      </div>
+      <div class="gsi-lead">
+        <div class="gsi-wordmark">
+          <span class="green-streets">Green Streets</span><span class="initiative"> Initiative</span>
+        </div>
+        <div class="shift-secondary">
+          <svg viewBox="0 0 36 28" width="14" height="11" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+            <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+          </svg>
+          <span class="word">Shift</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="weather-row">
+      <div class="condition-icon">{{condition_icon}}</div>
+      <div>
+        <div class="temperature">{{temperature}}</div>
+        <div class="condition-label">{{condition_label}}</div>
+      </div>
+    </div>
+
+    <div class="aqi-pill">
+      <div class="aqi-dot"></div>
+      <span class="aqi-text">AQI {{aqi_value}} · {{aqi_label}}</span>
+    </div>
+
+    <div class="nudge">
+      <div class="nudge-headline">{{nudge_headline}}</div>
+      <div class="nudge-body">{{nudge_body}}</div>
+      <div class="cta">{{cta_text}}</div>
+    </div>
+
+    <div class="source-line">NWS Boston · AirNow EPA</div>
+  </div>
+</body>
+</html>

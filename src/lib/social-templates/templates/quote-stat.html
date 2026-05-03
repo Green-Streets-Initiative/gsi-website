@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #BAF14D;
+    --blue: #2966E5;
+    --navy: #191A2E;
+    --card: #242538;
+    --white: #FFFFFF;
+    --body: #E8E8EE;
+    --secondary: rgba(255,255,255,0.7);
+    --attribution: rgba(255,255,255,0.6);
+    --border: rgba(255,255,255,0.08);
+
+    --w: {{__width__}}px;
+    --h: {{__height__}}px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: var(--w);
+    height: var(--h);
+    overflow: hidden;
+    background: var(--navy);
+    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--white);
+  }
+
+  .template {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: calc(var(--h) * 0.06) calc(var(--w) * 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Top accent stripe + decorative radial */
+  .accent-stripe {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--blue));
+  }
+  .corner-glow {
+    position: absolute;
+    top: -60px; right: -40px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(186,241,77,0.12) 0%, transparent 70%);
+  }
+
+  /* Logo lockups */
+  .logo-area {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .shift-lockup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .shift-lockup .word {
+    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+    font-weight: 800;
+    font-size: calc(var(--w) * 0.022);
+    letter-spacing: -0.04em;
+    color: var(--white);
+    line-height: 1;
+  }
+  .shift-mark { display: inline-block; line-height: 0; }
+  .gsi-wordmark {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: calc(var(--w) * 0.013);
+    letter-spacing: 0.5px;
+  }
+  .gsi-wordmark .green-streets { font-weight: 700; color: #52B788; }
+  .gsi-wordmark .initiative { font-weight: 400; color: var(--white); }
+
+  /* GSI-lead variant for LinkedIn */
+  .gsi-lead {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .gsi-lead .gsi-wordmark { font-size: calc(var(--w) * 0.014); }
+  .gsi-lead .shift-secondary {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0.7;
+  }
+  .gsi-lead .shift-secondary .word {
+    font-size: calc(var(--w) * 0.013);
+    color: var(--body);
+  }
+
+  /* Body content */
+  .category-tag {
+    margin-top: auto;
+    font-size: calc(var(--w) * 0.011);
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    color: var(--green);
+    text-transform: uppercase;
+  }
+  .headline-number {
+    font-size: calc(var(--w) * 0.085);
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin-top: 8px;
+  }
+  .headline-unit {
+    font-size: calc(var(--w) * 0.022);
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: -0.02em;
+    margin-top: 4px;
+  }
+  .body-text {
+    font-size: calc(var(--w) * 0.014);
+    color: var(--body);
+    margin-top: 18px;
+    line-height: 1.55;
+    max-width: 80%;
+  }
+
+  /* Footer */
+  .source-line {
+    margin-top: auto;
+    padding-top: 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: calc(var(--w) * 0.0095);
+    color: var(--secondary);
+  }
+
+  /* CTA pill (Facebook + LinkedIn only) */
+  .cta {
+    display: none;
+    margin-top: 14px;
+    background: var(--green);
+    color: var(--navy);
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: calc(var(--w) * 0.012);
+    font-weight: 700;
+    align-self: flex-start;
+  }
+
+  /* Platform overrides — scope to direct children of .logo-area so we
+     don't accidentally hide the .gsi-wordmark NESTED inside .gsi-lead */
+  [data-platform="instagram"] .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="bluesky"]   .logo-area > .gsi-wordmark { display: none; }
+  [data-platform="facebook"]  .cta { display: inline-flex; }
+  [data-platform="linkedin"]  .cta { display: inline-flex; }
+
+  /* For LinkedIn, swap the Shift-leading lockup for the GSI-leading variant */
+  [data-platform="linkedin"] .shift-lockup { display: none; }
+  [data-platform="linkedin"] .logo-area > .gsi-wordmark { display: none; }
+  .gsi-lead { display: none; }
+  [data-platform="linkedin"] .gsi-lead { display: flex; }
+</style>
+</head>
+<body>
+  <div class="template" data-platform="{{__platform__}}" data-ratio="{{__ratio__}}">
+    <div class="accent-stripe"></div>
+    <div class="corner-glow"></div>
+
+    <div class="logo-area">
+      <div class="shift-lockup">
+        <span class="word">Shift</span>
+        <span class="shift-mark">
+          <svg viewBox="0 0 36 28" width="28" height="22" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+            <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+          </svg>
+        </span>
+      </div>
+      <div class="gsi-wordmark">
+        <span class="green-streets">Green Streets</span><span class="initiative"> Initiative</span>
+      </div>
+      <div class="gsi-lead">
+        <div class="gsi-wordmark">
+          <span class="green-streets">Green Streets</span><span class="initiative"> Initiative</span>
+        </div>
+        <div class="shift-secondary">
+          <svg viewBox="0 0 36 28" width="14" height="11" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+            <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+          </svg>
+          <span class="word">Shift</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="category-tag">{{category_tag}}</div>
+    <div class="headline-number">{{headline_number}}</div>
+    <div class="headline-unit">{{headline_unit}}</div>
+    <div class="body-text">{{body_text}}</div>
+
+    <div class="cta">{{cta_text}}</div>
+
+    <div class="source-line">{{source_label}}</div>
+  </div>
+</body>
+</html>
