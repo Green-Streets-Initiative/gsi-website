@@ -122,7 +122,10 @@
     margin-bottom: 8px;
   }
   .alt-mode-icon {
-    font-size: calc(var(--w) * 0.024);
+    /* SVG sizes via inherited font-size on this wrapper */
+    font-size: calc(var(--w) * 0.028);
+    line-height: 1;
+    color: var(--green);
   }
   .suggestion-headline {
     font-size: calc(var(--w) * 0.022);

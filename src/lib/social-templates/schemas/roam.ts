@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TEXT_LIMITS, type Platform } from '../platform-overrides';
+import { ALLOWED_ICONS } from '../icons';
 
 export function roamSchema(platform: Platform) {
   const limits = TEXT_LIMITS[platform];
@@ -8,7 +9,7 @@ export function roamSchema(platform: Platform) {
     roam_tag: z.string().min(1).max(30).default('ROAM FRIDAY'),
     roam_name: z.string().min(1).max(50),
     distance: z.string().min(1).max(12),                       // "2.4 mi"
-    mode_icon: z.string().min(1).max(4),                       // emoji
+    mode_icon: z.enum(ALLOWED_ICONS),                          // Phosphor: 'bicycle', 'person-simple-walk', 'train'
     route_label: z.string().min(1).max(50),                    // "Davis Sq → Union Sq"
     description: z.string().min(1).max(limits.body_text),
     xp_value: z.string().min(1).max(12),                       // "+150 XP"

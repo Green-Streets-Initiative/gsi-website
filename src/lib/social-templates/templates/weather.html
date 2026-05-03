@@ -93,8 +93,10 @@
     gap: 18px;
   }
   .condition-icon {
+    /* SVG sizes via inherited font-size from this wrapper */
     font-size: calc(var(--w) * 0.07);
     line-height: 1;
+    color: var(--green);   /* Phosphor SVG fills with currentColor */
   }
   .temperature {
     font-size: calc(var(--w) * 0.07);

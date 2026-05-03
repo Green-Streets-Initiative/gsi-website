@@ -91,6 +91,14 @@
     letter-spacing: 2.5px;
     color: var(--green);
     text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+  }
+  .prize-tag .tag-icon {
+    font-size: calc(var(--w) * 0.014);
+    line-height: 1;
   }
   .prize-headline {
     font-size: calc(var(--w) * 0.03);
@@ -126,6 +134,14 @@
     font-size: calc(var(--w) * 0.0115);
     color: var(--secondary);
     margin-top: 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .funder-text-location .pin-icon {
+    color: var(--green);
+    font-size: calc(var(--w) * 0.0125);
+    line-height: 1;
   }
 
   /* How to win card */
@@ -224,14 +240,14 @@
       </div>
     </div>
 
-    <div class="prize-tag">{{prize_tag}}</div>
+    <div class="prize-tag"><span class="tag-icon">{{tag_icon}}</span>{{prize_tag}}</div>
     <div class="prize-headline">{{prize_headline}}</div>
 
     <div class="funder">
       <img class="funder-logo" src="{{partner_logo}}" alt="" crossorigin="anonymous" />
       <div>
         <div class="funder-text-name">Funded by {{partner_name}}</div>
-        <div class="funder-text-location">📍 {{partner_location}}</div>
+        <div class="funder-text-location"><span class="pin-icon">{{location_icon}}</span>{{partner_location}}</div>
       </div>
     </div>
 

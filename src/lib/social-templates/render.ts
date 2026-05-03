@@ -6,6 +6,7 @@ import { join } from 'path';
 import { randomBytes } from 'crypto';
 import { ASPECT_RATIOS, type AspectRatio } from './aspect-ratios';
 import { type Platform } from './platform-overrides';
+import { phosphorIcon } from './icons';
 import { createServerSupabaseClient } from '../supabase-server';
 
 /**
@@ -58,15 +59,24 @@ export async function renderSocialImage(input: RenderInput): Promise<RenderResul
     .replace(/\{\{__platform__\}\}/g, input.platform)
     .replace(/\{\{__ratio__\}\}/g, input.ratio);
 
-  // 3. Inject user variables, escaping HTML entities
+  // 3. Inject user variables. Two paths:
+  //    - Keys ending in `_icon` are Phosphor icon NAMES (e.g. "bicycle",
+  //      "sun", "map-pin"). The renderer resolves them to inline SVG and
+  //      injects RAW (not HTML-escaped) so the SVG markup actually
+  //      renders. Per the brand rule (no emojis anywhere), all icon
+  //      fields must be Phosphor names — see icons.ts ALLOWED_ICONS.
+  //    - All other keys are user-supplied text and get HTML-escaped.
   for (const [key, raw] of Object.entries(input.vars)) {
-    const escaped = String(raw)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-    html = html.replace(new RegExp(`\\{\\{${escapeRegex(key)}\\}\\}`, 'g'), escaped);
+    const isIconField = /_icon$/.test(key);
+    const replacement = isIconField
+      ? phosphorIcon(String(raw))
+      : String(raw)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+    html = html.replace(new RegExp(`\\{\\{${escapeRegex(key)}\\}\\}`, 'g'), replacement);
   }
 
   // 4. Strip any unused {{var}} placeholders (so they don't render in the

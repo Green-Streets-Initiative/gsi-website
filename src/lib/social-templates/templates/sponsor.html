@@ -78,7 +78,9 @@
     align-self: flex-start;
   }
   .campaign-icon {
-    font-size: calc(var(--w) * 0.014);
+    font-size: calc(var(--w) * 0.018);
+    line-height: 1;
+    color: var(--green);
   }
   .campaign-name {
     font-size: calc(var(--w) * 0.013);
@@ -101,6 +103,13 @@
     color: var(--tier-color);
     margin-top: 4px;
     letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .tier-label .tier-icon {
+    font-size: calc(var(--w) * 0.018);
+    line-height: 1;
   }
 
   /* Sponsor logo container — large, light-bg, prominent */
@@ -187,7 +196,7 @@
     </div>
 
     <div class="thanks-line">Thank you to our</div>
-    <div class="tier-label">{{tier_icon}} {{tier_label}}</div>
+    <div class="tier-label"><span class="tier-icon">{{tier_icon}}</span>{{tier_label}}</div>
 
     <div class="sponsor-logo-container">
       <img class="sponsor-logo-img" src="{{sponsor_logo}}" alt="" crossorigin="anonymous" />

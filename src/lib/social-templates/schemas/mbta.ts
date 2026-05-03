@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TEXT_LIMITS, type Platform } from '../platform-overrides';
+import { ALLOWED_ICONS } from '../icons';
 
 export function mbtaSchema(platform: Platform) {
   const limits = TEXT_LIMITS[platform];
@@ -14,7 +15,7 @@ export function mbtaSchema(platform: Platform) {
     alert_detail: z.string().min(1).max(160),                  // truncated to fit
     suggestion_headline: z.string().min(1).max(limits.nudge_headline),
     suggestion_body: z.string().min(1).max(limits.nudge_body),
-    alt_mode_icon: z.string().min(1).max(4),                   // emoji: 🚲, 🚶, 🚇
+    alt_mode_icon: z.enum(ALLOWED_ICONS),                      // Phosphor icon: 'bicycle', 'person-simple-walk', 'train'
     cta_text: z.string().max(40).optional(),
   });
 }

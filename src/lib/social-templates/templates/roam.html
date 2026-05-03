@@ -137,6 +137,15 @@
   .roam-meta-item {
     font-size: calc(var(--w) * 0.013);
     color: var(--body);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  /* Inline mode icon — sized via the surrounding font-size */
+  .roam-meta-item .mode-icon {
+    color: var(--green);
+    font-size: calc(var(--w) * 0.016);
+    line-height: 1;
   }
   .roam-meta-dot {
     width: 3px; height: 3px;
@@ -209,7 +218,7 @@
       <div class="roam-tag">{{roam_tag}}</div>
       <div class="roam-name">{{roam_name}}</div>
       <div class="roam-meta">
-        <span class="roam-meta-item">{{mode_icon}} {{distance}}</span>
+        <span class="roam-meta-item"><span class="mode-icon">{{mode_icon}}</span>{{distance}}</span>
         <span class="roam-meta-dot"></span>
         <span class="roam-meta-item">{{route_label}}</span>
       </div>

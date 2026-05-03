@@ -150,6 +150,14 @@
     font-size: calc(var(--w) * 0.013);
     color: var(--body);
     margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .partner-location .pin-icon {
+    color: var(--green);
+    font-size: calc(var(--w) * 0.014);
+    line-height: 1;
   }
 
   /* Offer card */
@@ -234,7 +242,7 @@
       </div>
 
       <div class="partner-name">{{partner_name}}</div>
-      <div class="partner-location">📍 {{location}}</div>
+      <div class="partner-location"><span class="pin-icon">{{location_icon}}</span>{{location}}</div>
 
       <div class="offer">
         <div class="offer-text">{{offer_text}}</div>
