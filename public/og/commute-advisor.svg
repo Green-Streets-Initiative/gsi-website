@@ -1,0 +1,21 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Commute Advisor — Find a better way to get to work</title>
+  <rect width="1200" height="630" fill="#0F1729"/>
+  <rect x="0" y="0" width="8" height="630" fill="#52B788"/>
+  <text x="80" y="135" font-family="Trebuchet MS, 'Lucida Grande', Verdana, sans-serif" font-size="36" letter-spacing="0.5">
+    <tspan fill="#52B788" font-weight="700">Green Streets</tspan><tspan fill="#FFFFFF" font-weight="400"> Initiative</tspan>
+  </text>
+  <text x="80" y="280" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="108" font-weight="700" fill="#E8E8EE">Commute Advisor</text>
+  <text x="80" y="360" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="42" font-weight="400" fill="#E8E8EE">Find a better way to get to work.</text>
+  <g transform="translate(80, 470)">
+    <rect x="0" y="0" width="140" height="60" rx="30" fill="#1A2438" stroke="#52B788" stroke-width="2"/>
+    <text x="70" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="500" fill="#E8E8EE" text-anchor="middle">Walk</text>
+    <rect x="160" y="0" width="140" height="60" rx="30" fill="#1A2438" stroke="#52B788" stroke-width="2"/>
+    <text x="230" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="500" fill="#E8E8EE" text-anchor="middle">Bike</text>
+    <rect x="320" y="0" width="140" height="60" rx="30" fill="#1A2438" stroke="#52B788" stroke-width="2"/>
+    <text x="390" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="500" fill="#E8E8EE" text-anchor="middle">Transit</text>
+    <rect x="480" y="0" width="140" height="60" rx="30" fill="#1A2438" stroke="#52B788" stroke-width="2"/>
+    <text x="550" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="500" fill="#E8E8EE" text-anchor="middle">Drive</text>
+  </g>
+  <text x="1120" y="585" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="600" fill="#52B788" text-anchor="end">commuteadvisor.org</text>
+</svg>
