@@ -5,6 +5,14 @@ const nextConfig: NextConfig = {
   // /var/task/node_modules/@sparticuz/chromium/bin path resolves correctly
   // on Vercel's serverless runtime. Used by /api/render-social-image.
   serverExternalPackages: ['@sparticuz/chromium', 'playwright-core'],
+  // Vercel's output-file tracer doesn't pick up the .br binaries because
+  // nothing imports them directly — they're read at runtime. Force them
+  // into the deployed lambda for the render route.
+  outputFileTracingIncludes: {
+    '/api/render-social-image': [
+      './node_modules/@sparticuz/chromium/bin/**',
+    ],
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
