@@ -1,6 +1,10 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  // Keep the Playwright + Chromium binary out of Next.js's bundler so its
+  // /var/task/node_modules/@sparticuz/chromium/bin path resolves correctly
+  // on Vercel's serverless runtime. Used by /api/render-social-image.
+  serverExternalPackages: ['@sparticuz/chromium', 'playwright-core'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
