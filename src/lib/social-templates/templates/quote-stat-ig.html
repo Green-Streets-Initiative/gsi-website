@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #BAF14D;
+    --blue: #2966E5;
+    --navy: #191A2E;
+    --card: #242538;
+    --white: #FFFFFF;
+    --body: #E8E8EE;
+    --secondary: rgba(255,255,255,0.7);
+    --attribution: rgba(255,255,255,0.6);
+    --border: rgba(255,255,255,0.08);
+
+    --w: {{__width__}}px;
+    --h: {{__height__}}px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: var(--w); height: var(--h);
+    overflow: hidden;
+    background: var(--navy);
+    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--white);
+  }
+
+  /* Enriched 4:5 IG layout — vertical stack, tighter padding so all
+     the enrichment cards fit. */
+  .template {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    padding: calc(var(--h) * 0.04) calc(var(--w) * 0.045) calc(var(--h) * 0.035);
+    position: relative; overflow: hidden;
+  }
+
+  .accent-stripe {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--green), var(--blue));
+  }
+
+  /* Subtle Shift chevron watermark in lower-right per spec */
+  .chevron-watermark {
+    position: absolute;
+    bottom: calc(var(--h) * 0.05);
+    right: calc(var(--w) * -0.03);
+    width: calc(var(--w) * 0.30);
+    opacity: 0.025;
+    pointer-events: none;
+  }
+
+  .shift-lockup { display: flex; align-items: center; gap: 10px; }
+  .shift-lockup .word {
+    font-weight: 800;
+    font-size: calc(var(--w) * 0.030);
+    letter-spacing: -0.04em;
+    color: var(--white);
+    line-height: 1;
+  }
+  .shift-lockup svg { width: calc(var(--w) * 0.038); height: auto; }
+
+  .category-tag {
+    margin-top: calc(var(--h) * 0.025);
+    font-size: calc(var(--w) * 0.020);
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--green);
+    text-transform: uppercase;
+  }
+
+  .headline-number {
+    font-size: calc(var(--w) * 0.080);
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin-top: calc(var(--h) * 0.012);
+  }
+  .headline-unit {
+    font-size: calc(var(--w) * 0.026);
+    font-weight: 700;
+    color: var(--green);
+    margin-top: calc(var(--h) * 0.008);
+  }
+  .body-text {
+    font-size: calc(var(--w) * 0.020);
+    color: var(--body);
+    line-height: 1.45;
+    margin-top: calc(var(--h) * 0.018);
+  }
+
+  /* Secondary stats row (3 cards from {{secondary_stats_html}}) */
+  .stats-row {
+    display: flex;
+    gap: calc(var(--w) * 0.012);
+    margin-top: calc(var(--h) * 0.025);
+  }
+  .stat-card {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: calc(var(--h) * 0.018) calc(var(--w) * 0.012);
+    display: flex; flex-direction: column;
+    align-items: center; text-align: center;
+    /* color set inline by renderer per item.iconColor */
+  }
+  .stat-icon {
+    font-size: calc(var(--w) * 0.030);
+    line-height: 1;
+  }
+  .stat-value {
+    font-size: calc(var(--w) * 0.024);
+    font-weight: 800;
+    color: var(--white);
+    margin-top: calc(var(--h) * 0.008);
+    letter-spacing: -0.02em;
+  }
+  .stat-label {
+    font-size: calc(var(--w) * 0.013);
+    color: var(--secondary);
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+
+  /* Trend context card */
+  .trend-card {
+    margin-top: calc(var(--h) * 0.018);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: calc(var(--h) * 0.018) calc(var(--w) * 0.022);
+    display: flex; align-items: center; gap: calc(var(--w) * 0.018);
+  }
+  .trend-icon {
+    font-size: calc(var(--w) * 0.034);
+    line-height: 1;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+  .trend-text {
+    font-size: calc(var(--w) * 0.020);
+    font-weight: 700;
+    color: var(--body);
+  }
+  .trend-detail {
+    font-size: calc(var(--w) * 0.016);
+    color: var(--secondary);
+    margin-top: 4px;
+  }
+
+  .source-line {
+    margin-top: auto;
+    padding-top: calc(var(--h) * 0.018);
+    font-family: 'DM Mono', monospace;
+    font-size: calc(var(--w) * 0.014);
+    color: var(--secondary);
+  }
+</style>
+</head>
+<body>
+  <div class="template" data-platform="{{__platform__}}" data-ratio="{{__ratio__}}">
+    <div class="accent-stripe"></div>
+    <svg class="chevron-watermark" viewBox="0 0 36 28" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+      <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+    </svg>
+
+    <div class="shift-lockup">
+      <span class="word">Shift</span>
+      <svg viewBox="0 0 36 28" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+        <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+      </svg>
+    </div>
+
+    <div class="category-tag">{{category_tag}}</div>
+    <div class="headline-number">{{headline_number}}</div>
+    <div class="headline-unit">{{headline_unit}}</div>
+    <div class="body-text">{{body_text}}</div>
+
+    <div class="stats-row">
+      {{secondary_stats_html}}
+    </div>
+
+    <div class="trend-card">
+      <div class="trend-icon">{{trend_icon}}</div>
+      <div>
+        <div class="trend-text">{{trend_text}}</div>
+        <div class="trend-detail">{{trend_detail}}</div>
+      </div>
+    </div>
+
+    <div class="source-line">{{source_label}}</div>
+  </div>
+</body>
+</html>

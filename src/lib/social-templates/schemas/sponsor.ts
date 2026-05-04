@@ -13,6 +13,10 @@ export function sponsorSchema(platform: Platform) {
     tier_label: z.string().min(1).max(30),
     tier_icon: z.enum(ALLOWED_ICONS),                          // Phosphor: 'plant' (community), 'star' (champion), 'trophy' (presenting)
     tier_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),         // hex
+    // Drives the campaign badge tint + text + icon color. Defaults to
+    // brand green; use seasonal accents like #FFB74D (summer gold) or
+    // #FF7043 (autumn orange) when the campaign has a seasonal feel.
+    campaign_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default('#BAF14D'),
     sponsor_logo: z.string().url(),                            // sponsors.logo_url
     sponsor_name: z.string().min(1).max(50),
     impact_text: z.string().min(1).max(limits.nudge_body),     // drafted; FACTUAL only

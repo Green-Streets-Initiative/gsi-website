@@ -7,6 +7,8 @@ import { randomBytes } from 'crypto';
 import { ASPECT_RATIOS, type AspectRatio } from './aspect-ratios';
 import { type Platform } from './platform-overrides';
 import { phosphorIcon } from './icons';
+import { getTemplateFile } from './default-ratios';
+import { expandArrayVars } from './array-renderers';
 import { createServerSupabaseClient } from '../supabase-server';
 
 /**
@@ -19,10 +21,15 @@ import { createServerSupabaseClient } from '../supabase-server';
  * Function memory should be 1024MB+ (configured at the route level).
  */
 export interface RenderInput {
-  template: string;       // matches a file in templates/<id>.html
+  template: string;       // base template id (e.g. "quote-stat"); the
+                          // renderer maps to `<id>.html` or `<id>-ig.html`
+                          // via getTemplateFile() based on platform
   platform: Platform;
   ratio: AspectRatio;
-  vars: Record<string, string>;
+  // Vars may include arrays of objects (secondary_stats, forecast_days,
+  // alternatives) for the enriched IG variants — the renderer
+  // pre-renders those into HTML strings via expandArrayVars().
+  vars: Record<string, unknown>;
 }
 
 export interface RenderResult {
@@ -38,17 +45,20 @@ export interface RenderResult {
 export async function renderSocialImage(input: RenderInput): Promise<RenderResult> {
   const dims = ASPECT_RATIOS[input.ratio];
 
-  // 1. Load template HTML
+  // 1. Load template HTML — getTemplateFile() picks the IG-enriched
+  //    variant for quote-stat / weather / mbta on Instagram, or the
+  //    standard file otherwise.
+  const templateFilename = getTemplateFile(input.template, input.platform);
   const templatePath = join(
     process.cwd(),
     'src',
     'lib',
     'social-templates',
     'templates',
-    `${input.template}.html`,
+    templateFilename,
   );
   if (!existsSync(templatePath)) {
-    throw new Error(`Template not found: ${input.template}`);
+    throw new Error(`Template not found: ${templateFilename}`);
   }
   let html = readFileSync(templatePath, 'utf-8');
 
@@ -59,18 +69,27 @@ export async function renderSocialImage(input: RenderInput): Promise<RenderResul
     .replace(/\{\{__platform__\}\}/g, input.platform)
     .replace(/\{\{__ratio__\}\}/g, input.ratio);
 
-  // 3. Inject user variables. Two paths:
-  //    - Keys ending in `_icon` are Phosphor icon NAMES (e.g. "bicycle",
-  //      "sun", "map-pin"). The renderer resolves them to inline SVG and
-  //      injects RAW (not HTML-escaped) so the SVG markup actually
-  //      renders. Per the brand rule (no emojis anywhere), all icon
-  //      fields must be Phosphor names — see icons.ts ALLOWED_ICONS.
-  //    - All other keys are user-supplied text and get HTML-escaped.
-  for (const [key, raw] of Object.entries(input.vars)) {
+  // 3a. Pre-render array vars (secondary_stats, forecast_days,
+  //     alternatives) into HTML strings keyed as `<name>_html`.
+  //     Returns a flat string-only record; the original array key is
+  //     dropped from the result so the substitution loop below skips it.
+  const flatVars = expandArrayVars(input.vars);
+
+  // 3b. Inject the (now-flat) user variables. Three paths:
+  //     - Keys ending in `_html` are pre-rendered HTML from step 3a.
+  //       Inject RAW (no escaping); the helpers already escaped any
+  //       user-supplied text inside.
+  //     - Keys ending in `_icon` are Phosphor icon NAMES. Resolve to
+  //       inline SVG via phosphorIcon() and inject RAW.
+  //     - All other keys are user text — HTML-escape and inject.
+  for (const [key, raw] of Object.entries(flatVars)) {
+    const isHtmlBlock = /_html$/.test(key);
     const isIconField = /_icon$/.test(key);
-    const replacement = isIconField
-      ? phosphorIcon(String(raw))
-      : String(raw)
+    const replacement = isHtmlBlock
+      ? raw
+      : isIconField
+      ? phosphorIcon(raw)
+      : raw
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')

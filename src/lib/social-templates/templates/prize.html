@@ -25,8 +25,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body {
-    width: var(--w);
-    height: var(--h);
+    width: var(--w); height: var(--h);
     overflow: hidden;
     background: var(--navy);
     font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
@@ -41,162 +40,165 @@
     position: relative; overflow: hidden;
   }
 
-  /* Celebratory accents — green→blue→green stripe + centered radial */
   .accent-stripe {
     position: absolute; top: 0; left: 0; right: 0;
-    height: 3px;
+    height: 4px;
     background: linear-gradient(90deg, var(--green), var(--blue), var(--green));
   }
   .celebration-glow {
     position: absolute;
-    top: -40px; left: 50%;
+    top: -60px; left: 50%;
     transform: translateX(-50%);
-    width: 60%; height: 30%;
+    width: 70%; height: 35%;
     border-radius: 50%;
     background: radial-gradient(ellipse, rgba(186,241,77,0.18) 0%, transparent 70%);
     pointer-events: none;
   }
 
-  /* Logo area */
-  .logo-area { display: flex; flex-direction: column; gap: 4px; }
-  .shift-lockup { display: flex; align-items: center; gap: 8px; }
+  /* Logo lockups */
+  .logo-area { display: flex; flex-direction: column; gap: 6px; }
+  .shift-lockup { display: flex; align-items: center; gap: 10px; }
   .shift-lockup .word {
-    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
     font-weight: 800;
-    font-size: calc(var(--w) * 0.022);
+    font-size: calc(var(--w) * 0.032);
     letter-spacing: -0.04em;
     color: var(--white);
     line-height: 1;
   }
+  .shift-lockup svg { width: calc(var(--w) * 0.04); height: auto; }
   .gsi-wordmark {
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: calc(var(--w) * 0.013);
+    font-size: calc(var(--w) * 0.018);
     letter-spacing: 0.5px;
   }
   .gsi-wordmark .green-streets { font-weight: 700; color: #52B788; }
   .gsi-wordmark .initiative { font-weight: 400; color: var(--white); }
   .gsi-lead { display: none; flex-direction: column; gap: 6px; }
-  .gsi-lead .gsi-wordmark { font-size: calc(var(--w) * 0.014); }
-  .gsi-lead .shift-secondary { display: flex; align-items: center; gap: 4px; opacity: 0.7; }
+  .gsi-lead .gsi-wordmark { font-size: calc(var(--w) * 0.02); }
+  .gsi-lead .shift-secondary { display: flex; align-items: center; gap: 6px; opacity: 0.75; }
+  .gsi-lead .shift-secondary svg { width: calc(var(--w) * 0.025); height: auto; }
   .gsi-lead .shift-secondary .word {
-    font-size: calc(var(--w) * 0.013);
+    font-size: calc(var(--w) * 0.018);
     color: var(--body);
+    font-weight: 700;
   }
 
-  /* Prize tag — pushed to mid via margin-top:auto */
+  /* Hero block — vertically centered prize content */
+  .hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: calc(var(--h) * 0.022);
+  }
+
   .prize-tag {
-    margin-top: auto;
-    font-size: calc(var(--w) * 0.011);
+    font-size: calc(var(--w) * 0.018);
     font-weight: 700;
-    letter-spacing: 2.5px;
+    letter-spacing: 3px;
     color: var(--green);
     text-transform: uppercase;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 9px;
     align-self: flex-start;
   }
   .prize-tag .tag-icon {
-    font-size: calc(var(--w) * 0.014);
+    font-size: calc(var(--w) * 0.026);
     line-height: 1;
   }
+
   .prize-headline {
-    font-size: calc(var(--w) * 0.03);
+    font-size: calc(var(--w) * 0.045);
     font-weight: 800;
     color: var(--white);
     line-height: 1.1;
     letter-spacing: -0.03em;
-    margin-top: 8px;
+    margin-top: calc(var(--h) * -0.005);
   }
 
-  /* Funder credit — small logo + name + location */
   .funder {
-    margin-top: 16px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: calc(var(--w) * 0.018);
   }
   .funder-logo {
-    width: calc(var(--w) * 0.04);
-    height: calc(var(--w) * 0.04);
-    border-radius: 8px;
+    width: calc(var(--w) * 0.055);
+    height: calc(var(--w) * 0.055);
+    border-radius: 10px;
     background: var(--leaf-white);
     object-fit: contain;
-    padding: 4px;
+    padding: 5px;
     flex-shrink: 0;
   }
   .funder-text-name {
-    font-size: calc(var(--w) * 0.014);
+    font-size: calc(var(--w) * 0.022);
     font-weight: 700;
     color: var(--body);
   }
   .funder-text-location {
-    font-size: calc(var(--w) * 0.0115);
+    font-size: calc(var(--w) * 0.017);
     color: var(--secondary);
-    margin-top: 2px;
+    margin-top: 4px;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
   }
   .funder-text-location .pin-icon {
     color: var(--green);
-    font-size: calc(var(--w) * 0.0125);
+    font-size: calc(var(--w) * 0.02);
     line-height: 1;
   }
 
-  /* How to win card */
   .how {
-    margin-top: 18px;
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
+    border-radius: 12px;
+    padding: calc(var(--h) * 0.025) calc(var(--w) * 0.025);
   }
   .how-label {
-    font-size: calc(var(--w) * 0.011);
+    font-size: calc(var(--w) * 0.014);
     font-weight: 700;
-    letter-spacing: 1.5px;
+    letter-spacing: 2px;
     color: var(--secondary);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     text-transform: uppercase;
   }
   .how-body {
-    font-size: calc(var(--w) * 0.014);
+    font-size: calc(var(--w) * 0.022);
     color: var(--body);
     line-height: 1.5;
   }
 
   .cta {
     display: none;
-    margin-top: 14px;
+    margin-top: calc(var(--h) * 0.005);
     background: var(--green);
     color: var(--navy);
-    border-radius: 6px;
-    padding: 7px 14px;
-    font-size: calc(var(--w) * 0.012);
+    border-radius: 8px;
+    padding: calc(var(--h) * 0.018) calc(var(--w) * 0.022);
+    font-size: calc(var(--w) * 0.018);
     font-weight: 700;
     align-self: flex-start;
   }
   [data-platform="facebook"] .cta:not(:empty) { display: inline-flex; }
   [data-platform="linkedin"] .cta:not(:empty) { display: inline-flex; }
 
-  /* Footer — deadline + legal line */
   .footer {
-    margin-top: auto;
-    padding-top: 14px;
+    margin-top: calc(var(--h) * 0.025);
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    gap: 12px;
+    gap: calc(var(--w) * 0.025);
   }
   .deadline {
-    font-size: calc(var(--w) * 0.013);
+    font-size: calc(var(--w) * 0.02);
     font-weight: 700;
     color: var(--green);
     font-family: 'DM Mono', monospace;
   }
   .legal {
-    font-size: calc(var(--w) * 0.0095);
+    font-size: calc(var(--w) * 0.013);
     color: var(--attribution);
     font-family: 'DM Mono', monospace;
     text-align: right;
@@ -218,7 +220,7 @@
     <div class="logo-area">
       <div class="shift-lockup">
         <span class="word">Shift</span>
-        <svg viewBox="0 0 36 28" width="28" height="22" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 36 28" xmlns="http://www.w3.org/2000/svg">
           <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
           <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
         </svg>
@@ -231,7 +233,7 @@
           <span class="green-streets">Green Streets</span><span class="initiative"> Initiative</span>
         </div>
         <div class="shift-secondary">
-          <svg viewBox="0 0 36 28" width="14" height="11" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 36 28" xmlns="http://www.w3.org/2000/svg">
             <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
             <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
           </svg>
@@ -240,23 +242,27 @@
       </div>
     </div>
 
-    <div class="prize-tag"><span class="tag-icon">{{tag_icon}}</span>{{prize_tag}}</div>
-    <div class="prize-headline">{{prize_headline}}</div>
-
-    <div class="funder">
-      <img class="funder-logo" src="{{partner_logo}}" alt="" crossorigin="anonymous" />
+    <div class="hero">
       <div>
-        <div class="funder-text-name">Funded by {{partner_name}}</div>
-        <div class="funder-text-location"><span class="pin-icon">{{location_icon}}</span>{{partner_location}}</div>
+        <div class="prize-tag"><span class="tag-icon">{{tag_icon}}</span>{{prize_tag}}</div>
+        <div class="prize-headline">{{prize_headline}}</div>
       </div>
-    </div>
 
-    <div class="how">
-      <div class="how-label">How to win</div>
-      <div class="how-body">{{how_to_win}}</div>
-    </div>
+      <div class="funder">
+        <img class="funder-logo" src="{{partner_logo}}" alt="" crossorigin="anonymous" />
+        <div>
+          <div class="funder-text-name">Funded by {{partner_name}}</div>
+          <div class="funder-text-location"><span class="pin-icon">{{location_icon}}</span>{{partner_location}}</div>
+        </div>
+      </div>
 
-    <div class="cta">{{cta_text}}</div>
+      <div class="how">
+        <div class="how-label">How to win</div>
+        <div class="how-body">{{how_to_win}}</div>
+      </div>
+
+      <div class="cta">{{cta_text}}</div>
+    </div>
 
     <div class="footer">
       <span class="deadline">{{deadline}}</span>

@@ -60,113 +60,116 @@
   /* XP pill — top-right */
   .xp-pill {
     position: absolute;
-    top: calc(var(--h) * 0.025);
-    right: calc(var(--w) * 0.022);
+    top: calc(var(--h) * 0.03);
+    right: calc(var(--w) * 0.025);
     z-index: 3;
     background: var(--green);
     color: var(--navy);
-    font-size: calc(var(--w) * 0.014);
+    font-size: calc(var(--w) * 0.022);
     font-weight: 800;
-    padding: 6px 14px;
-    border-radius: 20px;
+    padding: calc(var(--h) * 0.012) calc(var(--w) * 0.022);
+    border-radius: 999px;
     font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
   }
 
   /* Logo area — top-left, on top of gradient */
   .logo-area {
     position: absolute;
-    top: calc(var(--h) * 0.025);
-    left: calc(var(--w) * 0.025);
+    top: calc(var(--h) * 0.03);
+    left: calc(var(--w) * 0.03);
     z-index: 3;
-    display: flex; flex-direction: column; gap: 4px;
+    display: flex; flex-direction: column; gap: 6px;
   }
-  .shift-lockup { display: flex; align-items: center; gap: 7px; }
+  .shift-lockup { display: flex; align-items: center; gap: 9px; }
   .shift-lockup .word {
     font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
     font-weight: 800;
-    font-size: calc(var(--w) * 0.02);
+    font-size: calc(var(--w) * 0.028);
     letter-spacing: -0.04em;
     color: var(--white);
     line-height: 1;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.5);
   }
+  .shift-lockup svg { width: calc(var(--w) * 0.035); height: auto; filter: drop-shadow(0 1px 4px rgba(0,0,0,0.4)); }
   .gsi-wordmark {
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: calc(var(--w) * 0.012);
+    font-size: calc(var(--w) * 0.016);
     letter-spacing: 0.5px;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
   }
   .gsi-wordmark .green-streets { font-weight: 700; color: #52B788; }
   .gsi-wordmark .initiative { font-weight: 400; color: var(--white); }
   .gsi-lead { display: none; flex-direction: column; gap: 6px; }
-  .gsi-lead .gsi-wordmark { font-size: calc(var(--w) * 0.013); }
-  .gsi-lead .shift-secondary { display: flex; align-items: center; gap: 4px; opacity: 0.85; }
+  .gsi-lead .gsi-wordmark { font-size: calc(var(--w) * 0.018); }
+  .gsi-lead .shift-secondary { display: flex; align-items: center; gap: 6px; opacity: 0.9; }
+  .gsi-lead .shift-secondary svg { width: calc(var(--w) * 0.022); height: auto; filter: drop-shadow(0 1px 4px rgba(0,0,0,0.4)); }
   .gsi-lead .shift-secondary .word {
-    font-size: calc(var(--w) * 0.012);
+    font-size: calc(var(--w) * 0.016);
     color: var(--body);
-    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    font-weight: 700;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
   }
 
   /* Body content — bottom */
   .content {
     position: absolute;
-    left: calc(var(--w) * 0.025);
-    right: calc(var(--w) * 0.025);
-    bottom: calc(var(--h) * 0.04);
+    left: calc(var(--w) * 0.05);
+    right: calc(var(--w) * 0.05);
+    bottom: calc(var(--h) * 0.05);
     z-index: 3;
   }
   .roam-tag {
-    font-size: calc(var(--w) * 0.011);
+    font-size: calc(var(--w) * 0.018);
     font-weight: 700;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
     color: var(--green);
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     text-transform: uppercase;
   }
   .roam-name {
-    font-size: calc(var(--w) * 0.028);
+    font-size: calc(var(--w) * 0.044);
     font-weight: 800;
     color: var(--white);
     line-height: 1.1;
     letter-spacing: -0.03em;
   }
   .roam-meta {
-    display: flex; align-items: center; gap: 12px;
-    margin-top: 10px;
+    display: flex; align-items: center; gap: 16px;
+    margin-top: 14px;
   }
   .roam-meta-item {
-    font-size: calc(var(--w) * 0.013);
+    font-size: calc(var(--w) * 0.020);
     color: var(--body);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
   /* Inline mode icon — sized via the surrounding font-size */
   .roam-meta-item .mode-icon {
     color: var(--green);
-    font-size: calc(var(--w) * 0.016);
+    font-size: calc(var(--w) * 0.026);
     line-height: 1;
   }
   .roam-meta-dot {
-    width: 3px; height: 3px;
+    width: 4px; height: 4px;
     border-radius: 50%;
     background: var(--secondary);
   }
   .roam-description {
-    font-size: calc(var(--w) * 0.014);
+    font-size: calc(var(--w) * 0.022);
     color: var(--body);
-    margin-top: 12px;
+    margin-top: 16px;
     line-height: 1.5;
   }
 
   .cta {
     display: none;
-    margin-top: 14px;
+    margin-top: calc(var(--h) * 0.022);
     background: var(--green);
     color: var(--navy);
-    border-radius: 6px;
-    padding: 7px 14px;
-    font-size: calc(var(--w) * 0.012);
+    border-radius: 8px;
+    padding: calc(var(--h) * 0.018) calc(var(--w) * 0.022);
+    font-size: calc(var(--w) * 0.018);
     font-weight: 700;
     align-self: flex-start;
     width: fit-content;

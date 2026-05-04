@@ -20,16 +20,13 @@
     --w: {{__width__}}px;
     --h: {{__height__}}px;
     --line-color: {{line_color}};
-    /* Brightened text variant of line color (caller passes if available;
-       otherwise defaults to white for safety on dark navy) */
     --line-text: {{line_text_color}};
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body {
-    width: var(--w);
-    height: var(--h);
+    width: var(--w); height: var(--h);
     overflow: hidden;
     background: var(--navy);
     font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
@@ -37,134 +34,122 @@
     color: var(--white);
   }
 
+  /* Compact horizontal split — left column (alert pill + detail) +
+     right column (suggestion: bike icon + headline + body) */
   .template {
     width: 100%; height: 100%;
-    display: flex; flex-direction: column;
-    padding: calc(var(--h) * 0.06) calc(var(--w) * 0.05);
+    display: flex;
+    padding: calc(var(--h) * 0.07) calc(var(--w) * 0.04);
     position: relative; overflow: hidden;
+    gap: calc(var(--w) * 0.03);
   }
 
-  /* Top accent stripe colored to match the affected line */
   .accent-stripe {
     position: absolute; top: 0; left: 0; right: 0;
-    height: 3px;
+    height: 4px;
     background: var(--line-color);
   }
 
-  /* Logo area (shared shapes — the platform overrides at the bottom
-     control which variant is visible) */
-  .logo-area { display: flex; flex-direction: column; gap: 4px; }
-  .shift-lockup { display: flex; align-items: center; gap: 8px; }
+  /* Left column */
+  .left {
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    flex-shrink: 0;
+    max-width: calc(var(--w) * 0.45);
+  }
+
+  .shift-lockup { display: flex; align-items: center; gap: 9px; }
   .shift-lockup .word {
-    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
     font-weight: 800;
-    font-size: calc(var(--w) * 0.022);
+    font-size: calc(var(--w) * 0.028);
     letter-spacing: -0.04em;
     color: var(--white);
     line-height: 1;
   }
+  .shift-lockup svg { width: calc(var(--w) * 0.035); height: auto; }
   .gsi-wordmark {
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: calc(var(--w) * 0.013);
+    font-size: calc(var(--w) * 0.016);
     letter-spacing: 0.5px;
   }
   .gsi-wordmark .green-streets { font-weight: 700; color: #52B788; }
   .gsi-wordmark .initiative { font-weight: 400; color: var(--white); }
-  .gsi-lead { display: none; flex-direction: column; gap: 6px; }
-  .gsi-lead .gsi-wordmark { font-size: calc(var(--w) * 0.014); }
-  .gsi-lead .shift-secondary { display: flex; align-items: center; gap: 4px; opacity: 0.7; }
+  .gsi-lead { display: none; flex-direction: column; gap: 5px; }
+  .gsi-lead .gsi-wordmark { font-size: calc(var(--w) * 0.018); }
+  .gsi-lead .shift-secondary { display: flex; align-items: center; gap: 6px; opacity: 0.75; }
+  .gsi-lead .shift-secondary svg { width: calc(var(--w) * 0.022); height: auto; }
   .gsi-lead .shift-secondary .word {
-    font-size: calc(var(--w) * 0.013);
+    font-size: calc(var(--w) * 0.016);
     color: var(--body);
+    font-weight: 700;
   }
 
-  /* Alert pill */
   .alert-pill {
-    margin-top: calc(var(--h) * 0.03);
-    display: inline-flex; align-items: center; gap: 8px;
-    background: color-mix(in srgb, var(--line-color) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--line-color) 33%, transparent);
+    display: inline-flex; align-items: center; gap: 9px;
+    background: color-mix(in srgb, var(--line-color) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line-color) 35%, transparent);
     border-radius: 8px;
-    padding: 9px 14px;
+    padding: calc(var(--h) * 0.014) calc(var(--w) * 0.018);
     align-self: flex-start;
   }
   .alert-pill .dot {
-    width: 10px; height: 10px; border-radius: 50%;
+    width: 11px; height: 11px;
+    border-radius: 50%;
     background: var(--line-color);
   }
   .alert-pill .label {
-    font-size: calc(var(--w) * 0.013);
+    font-size: calc(var(--w) * 0.020);
     font-weight: 700;
     color: var(--line-text);
-    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
   }
-
   .alert-detail {
-    font-size: calc(var(--w) * 0.014);
+    font-size: calc(var(--w) * 0.020);
     color: var(--body);
-    margin-top: 14px;
-    line-height: 1.5;
+    line-height: 1.45;
+    margin-top: calc(var(--h) * 0.018);
   }
 
-  .divider {
-    width: calc(var(--w) * 0.04);
-    height: 2px;
-    border-radius: 1px;
-    background: var(--card);
-    margin: 22px 0;
-  }
-
-  .suggestion {
-    margin-top: auto;
+  /* Right column */
+  .right {
+    margin-left: auto;
+    display: flex; flex-direction: column;
+    justify-content: center;
+    text-align: right;
+    max-width: calc(var(--w) * 0.45);
   }
   .suggestion-row {
     display: flex; align-items: center; gap: 12px;
-    margin-bottom: 8px;
+    justify-content: flex-end;
   }
   .alt-mode-icon {
-    /* SVG sizes via inherited font-size on this wrapper */
-    font-size: calc(var(--w) * 0.028);
+    font-size: calc(var(--w) * 0.034);
     line-height: 1;
     color: var(--green);
   }
   .suggestion-headline {
-    font-size: calc(var(--w) * 0.022);
+    font-size: calc(var(--w) * 0.028);
     font-weight: 800;
     color: var(--white);
     line-height: 1.15;
     letter-spacing: -0.02em;
   }
   .suggestion-body {
-    font-size: calc(var(--w) * 0.014);
+    font-size: calc(var(--w) * 0.020);
     color: var(--body);
-    line-height: 1.55;
+    line-height: 1.45;
+    margin-top: calc(var(--h) * 0.022);
   }
-
-  .cta {
-    display: none;
-    margin-top: 14px;
-    background: var(--green);
-    color: var(--navy);
-    border-radius: 6px;
-    padding: 7px 14px;
-    font-size: calc(var(--w) * 0.012);
-    font-weight: 700;
-    align-self: flex-start;
-  }
-  [data-platform="facebook"] .cta:not(:empty) { display: inline-flex; }
-  [data-platform="linkedin"] .cta:not(:empty) { display: inline-flex; }
-
   .source-line {
-    margin-top: 18px;
     font-family: 'DM Mono', monospace;
-    font-size: calc(var(--w) * 0.0095);
+    font-size: calc(var(--w) * 0.013);
     color: var(--attribution);
+    margin-top: calc(var(--h) * 0.025);
   }
 
-  /* Platform overrides — scope visibility to direct children of .logo-area */
-  [data-platform="instagram"] .logo-area > .gsi-wordmark { display: none; }
-  [data-platform="bluesky"]   .logo-area > .gsi-wordmark { display: none; }
-  [data-platform="linkedin"]  .logo-area > .gsi-wordmark { display: none; }
+  /* Platform overrides */
+  [data-platform="instagram"] .left > .gsi-wordmark { display: none; }
+  [data-platform="bluesky"]   .left > .gsi-wordmark { display: none; }
+  [data-platform="linkedin"]  .left > .gsi-wordmark { display: none; }
   [data-platform="linkedin"]  .shift-lockup { display: none; }
   [data-platform="linkedin"]  .gsi-lead { display: flex; }
 </style>
@@ -173,10 +158,10 @@
   <div class="template" data-platform="{{__platform__}}" data-ratio="{{__ratio__}}">
     <div class="accent-stripe"></div>
 
-    <div class="logo-area">
+    <div class="left">
       <div class="shift-lockup">
         <span class="word">Shift</span>
-        <svg viewBox="0 0 36 28" width="28" height="22" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 36 28" xmlns="http://www.w3.org/2000/svg">
           <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
           <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
         </svg>
@@ -189,34 +174,31 @@
           <span class="green-streets">Green Streets</span><span class="initiative"> Initiative</span>
         </div>
         <div class="shift-secondary">
-          <svg viewBox="0 0 36 28" width="14" height="11" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 36 28" xmlns="http://www.w3.org/2000/svg">
             <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
             <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
           </svg>
           <span class="word">Shift</span>
         </div>
       </div>
+
+      <div>
+        <div class="alert-pill">
+          <div class="dot"></div>
+          <span class="label">{{line_name}} · {{alert_type}}</span>
+        </div>
+        <div class="alert-detail">{{alert_detail}}</div>
+      </div>
     </div>
 
-    <div class="alert-pill">
-      <div class="dot"></div>
-      <span class="label">{{line_name}} · {{alert_type}}</span>
-    </div>
-
-    <div class="alert-detail">{{alert_detail}}</div>
-
-    <div class="divider"></div>
-
-    <div class="suggestion">
+    <div class="right">
       <div class="suggestion-row">
-        <span class="alt-mode-icon">{{alt_mode_icon}}</span>
         <div class="suggestion-headline">{{suggestion_headline}}</div>
+        <span class="alt-mode-icon">{{alt_mode_icon}}</span>
       </div>
       <div class="suggestion-body">{{suggestion_body}}</div>
-      <div class="cta">{{cta_text}}</div>
+      <div class="source-line">MBTA Realtime API · NWS Boston</div>
     </div>
-
-    <div class="source-line">MBTA Realtime API · NWS Boston</div>
   </div>
 </body>
 </html>

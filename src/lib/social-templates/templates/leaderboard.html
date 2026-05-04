@@ -47,89 +47,92 @@
   }
 
   /* Logo area */
-  .logo-area { display: flex; flex-direction: column; gap: 4px; }
-  .shift-lockup { display: flex; align-items: center; gap: 8px; }
+  .logo-area { display: flex; flex-direction: column; gap: 6px; }
+  .shift-lockup { display: flex; align-items: center; gap: 10px; }
   .shift-lockup .word {
     font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
     font-weight: 800;
-    font-size: calc(var(--w) * 0.022);
+    font-size: calc(var(--w) * 0.032);
     letter-spacing: -0.04em;
     color: var(--white);
     line-height: 1;
   }
+  .shift-lockup svg { width: calc(var(--w) * 0.04); height: auto; }
   .gsi-wordmark {
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: calc(var(--w) * 0.013);
+    font-size: calc(var(--w) * 0.018);
     letter-spacing: 0.5px;
   }
   .gsi-wordmark .green-streets { font-weight: 700; color: #52B788; }
   .gsi-wordmark .initiative { font-weight: 400; color: var(--white); }
   .gsi-lead { display: none; flex-direction: column; gap: 6px; }
-  .gsi-lead .gsi-wordmark { font-size: calc(var(--w) * 0.014); }
-  .gsi-lead .shift-secondary { display: flex; align-items: center; gap: 4px; opacity: 0.7; }
+  .gsi-lead .gsi-wordmark { font-size: calc(var(--w) * 0.02); }
+  .gsi-lead .shift-secondary { display: flex; align-items: center; gap: 6px; opacity: 0.75; }
+  .gsi-lead .shift-secondary svg { width: calc(var(--w) * 0.025); height: auto; }
   .gsi-lead .shift-secondary .word {
-    font-size: calc(var(--w) * 0.013);
+    font-size: calc(var(--w) * 0.018);
     color: var(--body);
+    font-weight: 700;
   }
 
   /* Heading */
   .heading {
-    margin-top: calc(var(--h) * 0.025);
+    margin-top: calc(var(--h) * 0.03);
   }
   .heading-tag {
-    font-size: calc(var(--w) * 0.011);
+    font-size: calc(var(--w) * 0.018);
     font-weight: 700;
-    letter-spacing: 2.5px;
+    letter-spacing: 3px;
     color: var(--green);
     text-transform: uppercase;
   }
   .heading-period {
-    font-size: calc(var(--w) * 0.013);
+    font-size: calc(var(--w) * 0.020);
     color: var(--secondary);
-    margin-top: 4px;
+    margin-top: 6px;
     font-family: 'DM Mono', monospace;
   }
 
   /* Ranks list */
   .ranks {
-    margin-top: calc(var(--h) * 0.035);
+    margin-top: calc(var(--h) * 0.04);
     display: flex; flex-direction: column;
-    gap: calc(var(--h) * 0.022);
+    gap: calc(var(--h) * 0.028);
     flex: 1;
   }
   .rank-row .rank-header {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 6px;
+    margin-bottom: 9px;
     align-items: baseline;
   }
   .rank-name {
-    font-size: calc(var(--w) * 0.0175);
+    font-size: calc(var(--w) * 0.026);
     font-weight: 700;
     color: var(--white);
   }
   .rank-position {
-    margin-right: 9px;
+    margin-right: 12px;
     font-family: 'DM Mono', monospace;
-    font-size: calc(var(--w) * 0.014);
+    font-size: calc(var(--w) * 0.020);
   }
   .rank-row.r1 .rank-position { color: var(--green); }
   .rank-row.r2 .rank-position { color: var(--blue); }
   .rank-row.r3 .rank-position { color: var(--secondary); }
   .rank-value {
-    font-size: calc(var(--w) * 0.014);
+    font-size: calc(var(--w) * 0.022);
     color: var(--body);
     font-family: 'DM Mono', monospace;
   }
   .rank-bar-bg {
-    height: 6px;
-    border-radius: 3px;
+    height: 9px;
+    border-radius: 5px;
     background: var(--card);
     overflow: hidden;
   }
   .rank-bar-fill {
     height: 100%;
-    border-radius: 3px;
+    border-radius: 5px;
   }
   .rank-row.r1 .rank-bar-fill {
     background: linear-gradient(90deg, color-mix(in srgb, var(--green) 53%, transparent), var(--green));
@@ -143,21 +146,21 @@
 
   /* Footer total */
   .total {
-    margin-top: auto;
-    padding-top: 18px;
+    margin-top: calc(var(--h) * 0.025);
+    padding-top: calc(var(--h) * 0.022);
     border-top: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: baseline;
   }
   .total-number {
-    font-size: calc(var(--w) * 0.032);
+    font-size: calc(var(--w) * 0.048);
     font-weight: 800;
     color: var(--white);
     letter-spacing: -0.03em;
   }
   .total-label {
-    font-size: calc(var(--w) * 0.013);
+    font-size: calc(var(--w) * 0.022);
     color: var(--body);
   }
 

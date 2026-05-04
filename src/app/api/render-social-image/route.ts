@@ -3,6 +3,7 @@ import { renderSocialImage } from '@/lib/social-templates/render';
 import { getSchemaForTemplate, TEMPLATE_IDS } from '@/lib/social-templates/schemas';
 import { isValidPlatform, type Platform } from '@/lib/social-templates/platform-overrides';
 import { isValidAspectRatio, type AspectRatio } from '@/lib/social-templates/aspect-ratios';
+import { getDefaultRatio } from '@/lib/social-templates/default-ratios';
 
 /**
  * POST /api/render-social-image
@@ -73,7 +74,11 @@ export async function POST(req: NextRequest) {
       'platform must be one of: instagram, facebook, linkedin, bluesky',
     ]);
   }
-  if (!ratio || !isValidAspectRatio(ratio)) {
+  // Default ratio per template+platform if caller didn't supply one.
+  // Caller-supplied ratio still overrides — this just fills in the
+  // common case where the drafter / publish flow doesn't bother.
+  const effectiveRatio = ratio || getDefaultRatio(template, platform);
+  if (!isValidAspectRatio(effectiveRatio)) {
     return badRequest('VALIDATION_FAILED', [
       'ratio must be one of: 1:1, 4:5, 1.91:1, 9:16',
     ]);
@@ -102,8 +107,8 @@ export async function POST(req: NextRequest) {
     const result = await renderSocialImage({
       template,
       platform: platform as Platform,
-      ratio: ratio as AspectRatio,
-      vars: parse.data as Record<string, string>,
+      ratio: effectiveRatio as AspectRatio,
+      vars: parse.data as Record<string, unknown>,
     });
     return NextResponse.json(result, { status: 200 });
   } catch (err) {

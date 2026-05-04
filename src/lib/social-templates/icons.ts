@@ -28,6 +28,7 @@ export const ALLOWED_ICONS = [
   'person-simple-walk',
   'train',
   'train-simple',
+  'bus',                // dual-layout MBTA enriched alternatives
 
   // Weather conditions
   'sun',
@@ -36,14 +37,18 @@ export const ALLOWED_ICONS = [
   'cloud-sun',
   'cloud-rain',
   'cloud-snow',
+  'cloud-fog',          // dual-layout weather enriched forecast
+  'cloud-lightning',    // dual-layout weather enriched forecast
   'lightning',
   'snowflake',
   'moon',
   'wind',
+  'leaf',               // fall / September campaigns
 
   // Geography / location
   'map-pin',
   'map-pin-line',
+  'map-trifold',        // dual-layout MBTA enriched (Bluebikes / station map alt)
   'navigation-arrow',
 
   // Prize / sponsor / recognition
@@ -54,6 +59,10 @@ export const ALLOWED_ICONS = [
   'plant',
   'sparkle',
   'medal',
+
+  // Stats / data (dual-layout quote-stat enriched)
+  'currency-dollar',
+  'trend-up',
 
   // Alerts / status
   'warning',

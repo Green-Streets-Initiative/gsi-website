@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #BAF14D;
+    --blue: #2966E5;
+    --navy: #191A2E;
+    --card: #242538;
+    --white: #FFFFFF;
+    --body: #E8E8EE;
+    --secondary: rgba(255,255,255,0.7);
+    --attribution: rgba(255,255,255,0.6);
+    --border: rgba(255,255,255,0.08);
+
+    --w: {{__width__}}px;
+    --h: {{__height__}}px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: var(--w); height: var(--h);
+    overflow: hidden;
+    background: var(--navy);
+    font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--white);
+  }
+
+  .template {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    padding: calc(var(--h) * 0.04) calc(var(--w) * 0.045) calc(var(--h) * 0.035);
+    position: relative; overflow: hidden;
+  }
+
+  .chevron-watermark {
+    position: absolute;
+    bottom: calc(var(--h) * 0.04);
+    right: calc(var(--w) * -0.03);
+    width: calc(var(--w) * 0.28);
+    opacity: 0.025;
+    pointer-events: none;
+  }
+
+  .shift-lockup { display: flex; align-items: center; gap: 10px; }
+  .shift-lockup .word {
+    font-weight: 800;
+    font-size: calc(var(--w) * 0.030);
+    letter-spacing: -0.04em;
+    color: var(--white);
+    line-height: 1;
+  }
+  .shift-lockup svg { width: calc(var(--w) * 0.038); height: auto; }
+
+  /* Current conditions */
+  .current {
+    margin-top: calc(var(--h) * 0.025);
+    display: flex; align-items: flex-start; gap: calc(var(--w) * 0.022);
+  }
+  .condition-icon {
+    font-size: calc(var(--w) * 0.075);
+    line-height: 1;
+    color: #FBBF24;
+  }
+  .temperature {
+    font-size: calc(var(--w) * 0.080);
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .condition-label {
+    font-size: calc(var(--w) * 0.024);
+    font-weight: 700;
+    color: var(--green);
+    margin-top: 6px;
+  }
+
+  /* AQI + Wind chips */
+  .chips-row {
+    margin-top: calc(var(--h) * 0.018);
+    display: flex; gap: calc(var(--w) * 0.012);
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--card);
+    border-radius: 999px;
+    padding: calc(var(--h) * 0.012) calc(var(--w) * 0.020);
+    border: 1px solid var(--border);
+  }
+  .chip-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  .chip-icon {
+    font-size: calc(var(--w) * 0.020);
+    line-height: 1;
+    color: var(--secondary);
+  }
+  .chip-text {
+    font-size: calc(var(--w) * 0.016);
+    color: var(--body);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* 3-day forecast */
+  .forecast-row {
+    margin-top: calc(var(--h) * 0.025);
+    display: flex; gap: calc(var(--w) * 0.012);
+  }
+  .forecast-card {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: calc(var(--h) * 0.018) calc(var(--w) * 0.012);
+    display: flex; flex-direction: column;
+    align-items: center; text-align: center; gap: 6px;
+  }
+  .forecast-day {
+    font-size: calc(var(--w) * 0.014);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--secondary);
+  }
+  .forecast-icon {
+    font-size: calc(var(--w) * 0.034);
+    line-height: 1;
+  }
+  .forecast-high {
+    font-size: calc(var(--w) * 0.022);
+    font-weight: 700;
+    color: var(--white);
+  }
+  .forecast-low {
+    font-size: calc(var(--w) * 0.014);
+    color: var(--secondary);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Nudge */
+  .nudge {
+    margin-top: calc(var(--h) * 0.025);
+  }
+  .nudge-headline {
+    font-size: calc(var(--w) * 0.030);
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+  .nudge-body {
+    font-size: calc(var(--w) * 0.020);
+    color: var(--body);
+    line-height: 1.5;
+    margin-top: calc(var(--h) * 0.014);
+  }
+
+  .source-line {
+    margin-top: auto;
+    padding-top: calc(var(--h) * 0.018);
+    font-family: 'DM Mono', monospace;
+    font-size: calc(var(--w) * 0.014);
+    color: var(--attribution);
+  }
+</style>
+</head>
+<body>
+  <div class="template" data-platform="{{__platform__}}" data-ratio="{{__ratio__}}">
+    <svg class="chevron-watermark" viewBox="0 0 36 28" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+      <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+    </svg>
+
+    <div class="shift-lockup">
+      <span class="word">Shift</span>
+      <svg viewBox="0 0 36 28" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+        <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
+      </svg>
+    </div>
+
+    <div class="current">
+      <div class="condition-icon">{{condition_icon}}</div>
+      <div>
+        <div class="temperature">{{temperature}}</div>
+        <div class="condition-label">{{condition_label}}</div>
+      </div>
+    </div>
+
+    <div class="chips-row">
+      <div class="chip">
+        <div class="chip-dot"></div>
+        <span class="chip-text">AQI {{aqi_value}} · {{aqi_label}}</span>
+      </div>
+      <div class="chip">
+        <span class="chip-icon">{{wind_icon}}</span>
+        <span class="chip-text">{{wind_direction}} {{wind_speed}}</span>
+      </div>
+    </div>
+
+    <div class="forecast-row">
+      {{forecast_days_html}}
+    </div>
+
+    <div class="nudge">
+      <div class="nudge-headline">{{nudge_headline}}</div>
+      <div class="nudge-body">{{nudge_body}}</div>
+    </div>
+
+    <div class="source-line">NWS Boston · AirNow EPA</div>
+  </div>
+</body>
+</html>
