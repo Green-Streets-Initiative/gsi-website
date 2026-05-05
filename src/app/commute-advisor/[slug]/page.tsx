@@ -3,6 +3,17 @@ import { redirect } from 'next/navigation'
 import type { EmployerGroup, EmployerBenefits } from '@/lib/types/commute'
 import EmployerCommuteAdvisor from '@/components/commute/EmployerCommuteAdvisor'
 
+type AdvisorGroupRow = {
+  id: string
+  name: string
+  slug: string
+  logo_url: string | null
+  tier: string | null
+  status: string
+  employer_benefits: EmployerBenefits | null
+  commute_advisor_enabled: boolean
+}
+
 export default async function EmployerAdvisorPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
@@ -12,10 +23,8 @@ export default async function EmployerAdvisorPage({ params }: { params: Promise<
   const supabase = createServerSupabaseClient()
 
   const { data: group } = await supabase
-    .from('public_group_advisor')
-    .select('id, name, slug, logo_url, tier, employer_benefits')
-    .eq('slug', slug)
-    .single()
+    .rpc('get_advisor_group_by_slug', { p_slug: slug })
+    .maybeSingle<AdvisorGroupRow>()
 
   if (!group) redirect('/commute-advisor')
 
