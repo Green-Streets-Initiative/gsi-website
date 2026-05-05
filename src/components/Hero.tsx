@@ -98,8 +98,8 @@ export default function Hero() {
                           <p className="text-[7px] leading-tight text-white/75">Next: Pacesetter</p>
                         </div>
                       </div>
-                      <div className="rounded-full border px-2 py-[2px]" style={{ borderColor: 'rgba(186,241,77,0.55)', backgroundColor: 'rgba(186,241,77,0.10)' }}>
-                        <span className="text-[8px] font-bold text-lime">Share</span>
+                      <div className="rounded-full border px-2.5 py-[5px] text-[8px] font-bold leading-none text-lime" style={{ borderColor: 'rgba(186,241,77,0.55)', backgroundColor: 'rgba(186,241,77,0.10)' }}>
+                        Share
                       </div>
                     </div>
 
