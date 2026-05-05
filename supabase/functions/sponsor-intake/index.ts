@@ -170,8 +170,14 @@ serve(async (req) => {
   const referralSource = body.referral_source
     ? String(body.referral_source).trim()
     : null;
-  if (referralSource && !VALID_REFERRAL_SOURCES.includes(referralSource)) {
-    errors.push("Invalid referral source");
+  if (referralSource) {
+    const isEnum = VALID_REFERRAL_SOURCES.includes(referralSource);
+    const isOtherWithDetail = referralSource.startsWith("Other: ");
+    if (!isEnum && !isOtherWithDetail) {
+      errors.push("Invalid referral source");
+    } else if (referralSource.length > 200) {
+      errors.push("Referral source too long");
+    }
   }
 
   const logoUrl = body.logo_url ? String(body.logo_url).trim() : null;
