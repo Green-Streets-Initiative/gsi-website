@@ -66,16 +66,16 @@ export default function ModeComparisonTable({
   const hasCoords = originLat != null && originLng != null && destLat != null && destLng != null
 
   return (
-    <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
+    <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-4 sm:p-6">
       <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">
         All options compared
       </div>
 
       {/* Column headers */}
-      <div className="mb-2 flex items-center gap-3 px-4 text-[9px] font-bold uppercase tracking-wider text-white/70">
+      <div className="mb-2 flex items-center gap-2 px-3 text-[9px] font-bold uppercase tracking-wider text-white/70 sm:gap-3 sm:px-4">
         <div className="flex-1">Mode</div>
-        <div className="w-16 text-right">Time</div>
-        <div className="w-16 text-right">Daily</div>
+        <div className="w-14 text-right sm:w-16">Time</div>
+        <div className="w-14 text-right sm:w-16">Daily</div>
         <div className="hidden w-20 text-right sm:block">Annual</div>
         <div className="w-4" />
       </div>
@@ -91,32 +91,32 @@ export default function ModeComparisonTable({
               {/* Summary row — always visible */}
               <button
                 onClick={() => onSelectMode?.(c.mode)}
-                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors ${
+                className={`flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left transition-colors sm:gap-3 sm:px-4 ${
                   isSelected
                     ? 'bg-[rgba(186,241,77,0.08)] ring-1 ring-[#BAF14D]/30'
                     : 'hover:bg-white/[0.04]'
                 }`}
               >
                 {/* Mode icon + label */}
-                <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                  <span className={isSelected ? 'text-[#BAF14D]' : 'text-white'}>
+                <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-2.5">
+                  <span className={`shrink-0 ${isSelected ? 'text-[#BAF14D]' : 'text-white'}`}>
                     <ModeIcon mode={c.mode as any} size={20} />
                   </span>
-                  <span className={`text-[0.8125rem] font-semibold ${isSelected ? 'text-[#BAF14D]' : 'text-white'}`}>
+                  <span className={`min-w-0 truncate text-[0.8125rem] font-semibold ${isSelected ? 'text-[#BAF14D]' : 'text-white'}`}>
                     {MODE_LABELS[c.mode] || c.label}
                   </span>
                   {isWinner && (
-                    <span className="rounded-full bg-[#BAF14D]/[0.15] px-2 py-0.5 text-[9px] font-bold uppercase text-[#BAF14D]">Best</span>
+                    <span className="hidden shrink-0 rounded-full bg-[#BAF14D]/[0.15] px-2 py-0.5 text-[9px] font-bold uppercase text-[#BAF14D] sm:inline-flex">Best</span>
                   )}
                 </div>
 
                 {/* Time */}
-                <div className={`w-16 text-right text-[0.8125rem] font-semibold ${isSelected ? 'text-white' : 'text-white/90'}`}>
+                <div className={`w-14 text-right text-[0.8125rem] font-semibold sm:w-16 ${isSelected ? 'text-white' : 'text-white/90'}`}>
                   {time} min
                 </div>
 
                 {/* Daily cost */}
-                <div className={`w-16 text-right text-[0.8125rem] font-semibold ${isSelected ? 'text-white' : 'text-white/90'}`}>
+                <div className={`w-14 text-right text-[0.8125rem] font-semibold sm:w-16 ${isSelected ? 'text-white' : 'text-white/90'}`}>
                   {c.daily_cost === 0 ? 'Free' : `$${c.daily_cost.toFixed(2)}`}
                 </div>
 
