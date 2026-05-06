@@ -67,6 +67,16 @@ export default function ModeComparisonTable({
       <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">
         All options compared
       </div>
+
+      {/* Column headers */}
+      <div className="mb-2 flex items-center gap-3 px-4 text-[9px] font-bold uppercase tracking-wider text-white/70">
+        <div className="flex-1">Mode</div>
+        <div className="w-16 text-right">Time</div>
+        <div className="w-16 text-right">Daily</div>
+        <div className="hidden w-20 text-right sm:block">Annual</div>
+        <div className="w-4" />
+      </div>
+
       <div className="space-y-1">
         {comparisons.map((c) => {
           const isWinner = c.mode === winnerMode
@@ -162,15 +172,6 @@ export default function ModeComparisonTable({
             </div>
           )
         })}
-      </div>
-
-      {/* Column legend for header context */}
-      <div className="mt-3 flex items-center gap-3 px-4 text-[9px] font-bold uppercase tracking-wider text-white/50">
-        <div className="flex-1">Mode</div>
-        <div className="w-16 text-right">Time</div>
-        <div className="w-16 text-right">Daily</div>
-        <div className="hidden w-20 text-right sm:block">Annual</div>
-        <div className="w-4" />
       </div>
     </div>
   )

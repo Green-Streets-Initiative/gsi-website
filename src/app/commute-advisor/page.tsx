@@ -192,6 +192,21 @@ export default function CommuteCalculator() {
       return
     }
 
+    // Instant haversine estimate so the distance field updates with no
+    // perceptible lag while the Google Routes call is in flight. The real
+    // driving distance overrides this when the response arrives.
+    const R = 3958.8
+    const toRad = (d: number) => (d * Math.PI) / 180
+    const dLat = toRad(workPlaceData.lat - homePlaceData.lat)
+    const dLng = toRad(workPlaceData.lng - homePlaceData.lng)
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(homePlaceData.lat)) *
+        Math.cos(toRad(workPlaceData.lat)) *
+        Math.sin(dLng / 2) ** 2
+    const haversineMi = 2 * R * Math.asin(Math.sqrt(a))
+    setDistance(Math.round(haversineMi * 1.3 * 2) / 2)
+
     // Abort previous request
     routeAbortRef.current?.abort()
     const controller = new AbortController()
@@ -231,7 +246,7 @@ export default function CommuteCalculator() {
       } finally {
         setRouteLoading(false)
       }
-    }, 500) // debounce
+    }, 50) // minimal debounce — trigger is a discrete autocomplete pick, not typing
 
     return () => {
       clearTimeout(timer)
@@ -353,9 +368,11 @@ export default function CommuteCalculator() {
     setStep(3)
     setSelectedBarriers([])
     fetchRecommendation()
-    // Scroll to top of results
+    // Pin to the top of the page so the header + step indicator + loading
+    // spinner are visible together, instead of scrolling into the methodology
+    // fine print that sits below the (initially small) results container.
     setTimeout(() => {
-      recommendRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }, 100)
   }
 
