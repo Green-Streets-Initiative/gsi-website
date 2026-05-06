@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
@@ -15,16 +16,28 @@ import {
 // Live-data page (per-prize eligibility from competition_prizes).
 export const dynamic = 'force-dynamic'
 
+// Gate the rules page behind an env flag until the legal sections are
+// populated. While unpublished:
+//  - Direct visits 404 (notFound below).
+//  - Search engines are told not to index (metadata.robots).
+//  - The "official rules" link in HowToJoin (page.tsx) falls back to plain
+//    text so we don't ship a link that 404s.
+// Flip NEXT_PUBLIC_RULES_PUBLISHED=true once the [TBD] blocks are filled.
+const RULES_PUBLISHED = process.env.NEXT_PUBLIC_RULES_PUBLISHED === 'true'
+
 export const metadata: Metadata = {
   title: 'Shift Your Summer · Official Rules | Green Streets Initiative',
   description:
     'Official rules and per-prize eligibility for the Shift Your Summer commuter challenge.',
+  robots: RULES_PUBLISHED ? undefined : { index: false, follow: false },
 }
 
 // Bumped manually whenever rules copy changes. Surfaced at the top of the page.
 const LAST_UPDATED = 'May 2026'
 
 export default async function ShiftYourSummerRulesPage() {
+  if (!RULES_PUBLISHED) notFound()
+
   const supabase = createServerSupabaseClient()
   const now = new Date().toISOString()
 

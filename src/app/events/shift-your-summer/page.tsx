@@ -89,6 +89,11 @@ type PageState = 'upcoming' | 'active' | 'coming-soon'
 /* ── helpers ───────────────────────────────────────────────── */
 
 const APP_LAUNCHED = process.env.NEXT_PUBLIC_APP_LAUNCHED === 'true'
+// Mirrors the gate in /rules/page.tsx — keeps the "official rules" link out
+// of the public UI until the legal [TBD] blocks on the rules page are
+// populated. Flip both this and the rules page on by setting
+// NEXT_PUBLIC_RULES_PUBLISHED=true.
+const RULES_PUBLISHED = process.env.NEXT_PUBLIC_RULES_PUBLISHED === 'true'
 
 function formatDateRange(start: string, end: string) {
   const opts: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', timeZone: 'America/New_York' }
@@ -902,7 +907,7 @@ function HowToJoin() {
     {
       num: '3',
       title: 'Climb the board',
-      body: (
+      body: RULES_PUBLISHED ? (
         <>
           See{' '}
           <Link
@@ -913,6 +918,8 @@ function HowToJoin() {
           </Link>{' '}
           and each prize&apos;s eligibility requirements.
         </>
+      ) : (
+        "Each prize has its own eligibility requirements."
       ),
     },
   ]
