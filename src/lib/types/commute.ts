@@ -1,6 +1,20 @@
 export type Mode = 'walk' | 'bike' | 'ebike' | 'transit' | 'bus'
 
 export type BikeInfraQuality = 'protected' | 'shared' | 'none' | 'unknown'
+
+export type BikeComfortRating = 'protected' | 'bike_lane' | 'shared_road' | 'mixed'
+
+export interface BikeComfortSegment {
+  label: string
+  rating: string
+  distance_mi: number
+}
+
+export interface BikeComfort {
+  rating: BikeComfortRating | null
+  segments: BikeComfortSegment[] | null
+  summary: string | null
+}
 export type DistanceCategory = 'short' | 'medium' | 'long'
 export type BarrierCode = 'safety' | 'routes' | 'sweating' | 'gear' | 'bike_parking' | 'planning' | 'weather' | 'time' | 'carrying' | 'habit'
 export type CurrentCommuteMode = 'drive' | 'carpool' | 'rideshare' | 'bike' | 'transit' | 'bus' | 'commuter_rail' | 'walk'
@@ -132,4 +146,5 @@ export interface RecommendationResponse {
   drive_comparison: { time_minutes: number; daily_cost: number; annual_cost: number }
   distance_miles: number
   distance_category: DistanceCategory
+  bike_comfort?: BikeComfort | null
 }

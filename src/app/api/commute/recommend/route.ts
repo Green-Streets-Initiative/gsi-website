@@ -69,6 +69,9 @@ interface EdgeResponse {
   bike_infra_quality: BikeInfraQuality
   bike_infra_has_protected: boolean
   bike_infra_has_shared: boolean
+  bike_comfort_rating: 'protected' | 'bike_lane' | 'shared_road' | 'mixed' | null
+  bike_comfort_segments: Array<{ label: string; rating: string; distance_mi: number }> | null
+  bike_comfort_summary: string | null
   parking_monthly: number
 }
 
@@ -116,9 +119,9 @@ function generatePros(mode: string, bikeInfraQuality: BikeInfraQuality, hasBlueb
     case 'walk':
       return ['Zero cost', 'No equipment needed', 'Built-in exercise']
     case 'bike': {
+      // Note: bike infrastructure is now visualized via the ComfortBar in the
+      // expanded Bike row, so no infra pro-line here.
       const pros: string[] = []
-      if (bikeInfraQuality === 'protected') pros.push('Protected bike lane along this corridor')
-      else if (bikeInfraQuality === 'shared') pros.push('Bike lane available along this route')
       if (hasBluebikes) pros.push('Free with your own bike, or Bluebikes station nearby')
       else pros.push('Free with your own bike')
       pros.push('Built-in exercise — saves gym time')
@@ -402,6 +405,13 @@ export async function GET(req: NextRequest) {
     drive_comparison: driveComparisonOut,
     distance_miles: edge.distance_miles,
     distance_category: getDistanceCategory(edge.distance_miles),
+    bike_comfort: (edge.bike_comfort_segments || edge.bike_comfort_rating)
+      ? {
+          rating: edge.bike_comfort_rating,
+          segments: edge.bike_comfort_segments,
+          summary: edge.bike_comfort_summary,
+        }
+      : null,
   }
 
   return NextResponse.json(response, {

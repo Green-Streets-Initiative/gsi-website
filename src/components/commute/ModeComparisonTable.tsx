@@ -1,8 +1,9 @@
 'use client'
 
 import { useRef, useEffect, useState } from 'react'
-import type { ModeComparison } from '@/lib/types/commute'
+import type { BikeComfort, ModeComparison } from '@/lib/types/commute'
 import ModeIcon from '@/components/commute/ModeIcon'
+import ComfortBar from '@/components/commute/ComfortBar'
 
 const MODE_LABELS: Record<string, string> = {
   drive: 'Drive', walk: 'Walk', bike: 'Bike', ebike: 'E-bike', transit: 'Transit', bus: 'Bus',
@@ -51,11 +52,13 @@ interface ModeComparisonTableProps {
   originLng?: number
   destLat?: number
   destLng?: number
+  bikeComfort?: BikeComfort | null
 }
 
 export default function ModeComparisonTable({
   comparisons, winnerMode, selectedMode, onSelectMode,
   routeTimes, originLat, originLng, destLat, destLng,
+  bikeComfort,
 }: ModeComparisonTableProps) {
   if (comparisons.length < 2) return null
 
@@ -146,6 +149,16 @@ export default function ModeComparisonTable({
                         </li>
                       ))}
                     </ul>
+                  )}
+
+                  {/* Route comfort visualization (bike only) */}
+                  {c.mode === 'bike' && bikeComfort && (
+                    <div className="mb-3">
+                      <ComfortBar
+                        rating={bikeComfort.rating}
+                        segments={bikeComfort.segments}
+                      />
+                    </div>
                   )}
 
                   {/* Annual cost callout on mobile (hidden on desktop where it's in the row) */}

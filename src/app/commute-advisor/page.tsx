@@ -923,6 +923,7 @@ export default function CommuteCalculator() {
                       originLng={homePlaceData?.lng}
                       destLat={workPlaceData?.lat}
                       destLng={workPlaceData?.lng}
+                      bikeComfort={recommendation.bike_comfort}
                     />
                   )
                 })()}
