@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
@@ -58,7 +59,9 @@ export default async function GuidesLibraryPage() {
         {/* Filter + grid (client) */}
         <section className="px-8 pb-24">
           <div className="mx-auto max-w-[1120px]">
-            <GuideLibrary guides={guides} />
+            <Suspense fallback={<div className="text-[0.8125rem] text-white/75">Loading guides…</div>}>
+              <GuideLibrary guides={guides} />
+            </Suspense>
           </div>
         </section>
       </main>
