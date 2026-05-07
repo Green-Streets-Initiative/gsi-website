@@ -66,6 +66,7 @@ export interface RecommendationSecondary {
 
 export interface ContentItem {
   id: string
+  slug?: string | null
   title: string
   summary: string
   body?: string

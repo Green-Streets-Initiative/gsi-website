@@ -7,11 +7,10 @@ import Footer from '@/components/Footer'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import RecommendationCard from '@/components/commute/RecommendationCard'
 import CommuteMap from '@/components/commute/CommuteMap'
-import BarrierSelector from '@/components/commute/BarrierSelector'
-import GettingStarted from '@/components/commute/GettingStarted'
+import StarterGuides from '@/components/commute/StarterGuides'
 import ModeComparisonTable from '@/components/commute/ModeComparisonTable'
 import ModeIcon from '@/components/commute/ModeIcon'
-import type { RecommendationResponse, BarrierCode, CurrentCommuteMode, Mode } from '@/lib/types/commute'
+import type { RecommendationResponse, CurrentCommuteMode, Mode } from '@/lib/types/commute'
 
 type PlaceData = { placeId: string; lat: number; lng: number }
 type TransitStep = { lineName: string; lineShortName: string; vehicleType: string; numStops: number; departureStop: string; arrivalStop: string }
@@ -149,11 +148,10 @@ export default function CommuteCalculator() {
   // Step flow — restore step
   const [step, setStep] = useState(s?.step ?? 1)
 
-  // Recommendation state — restore recommendation and barriers
+  // Recommendation state
   const [recommendation, setRecommendation] = useState<RecommendationResponse | null>(s?.recommendation ?? null)
   const [recLoading, setRecLoading] = useState(false)
   const [recError, setRecError] = useState<string | null>(null)
-  const [selectedBarriers, setSelectedBarriers] = useState<BarrierCode[]>(s?.selectedBarriers ?? [])
   const [outsideMA, setOutsideMA] = useState(false)
   const recommendRef = useRef<HTMLDivElement>(null)
 
@@ -176,14 +174,14 @@ export default function CommuteCalculator() {
         commuteMode, rideshareDaily, carpoolDaily, transitMonthly, busMonthly, selectedMode,
         altMode, railZone, mbtaType, hasEmployerSubsidy, employerSubsidy,
         homeAddress, workAddress, homePlaceData, workPlaceData,
-        step, recommendation, selectedBarriers,
+        step, recommendation,
       }))
     } catch { /* sessionStorage full or unavailable */ }
   }, [distance, driveDays, vehicle, gasPrice, parkMode, parkingCost,
       commuteMode, rideshareDaily, carpoolDaily, transitMonthly, busMonthly, selectedMode,
       altMode, railZone, mbtaType, hasEmployerSubsidy, employerSubsidy,
       homeAddress, workAddress, homePlaceData, workPlaceData,
-      step, recommendation, selectedBarriers])
+      step, recommendation])
 
   // Fetch routing when both addresses and alt mode are set
   useEffect(() => {
@@ -255,7 +253,7 @@ export default function CommuteCalculator() {
   }, [homePlaceData, workPlaceData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch recommendation when both addresses are set
-  const fetchRecommendation = useCallback(async (barrier?: BarrierCode | null) => {
+  const fetchRecommendation = useCallback(async () => {
     if (!homePlaceData || !workPlaceData) {
       // Manual distance fallback — comparison-based estimate
       if (distance > 0) {
@@ -328,7 +326,6 @@ export default function CommuteCalculator() {
         dest_lat: String(workPlaceData.lat),
         dest_lng: String(workPlaceData.lng),
       })
-      if (barrier) params.set('barrier', barrier)
       if (commuteMode === 'rideshare') {
         params.set('commute_mode', 'rideshare')
         params.set('commute_daily_cost', String(rideshareDaily))
@@ -362,11 +359,9 @@ export default function CommuteCalculator() {
     }
   }, [homePlaceData, workPlaceData, distance, commuteMode, rideshareDaily, carpoolDaily])
 
-  // Handle barrier selection — always show GettingStarted, don't re-fetch entire recommendation
   // Handle "See my options" — transition to Step 3 and fetch recommendation
   const handleSeeOptions = () => {
     setStep(3)
-    setSelectedBarriers([])
     fetchRecommendation()
     // Pin to the top of the page so the header + step indicator + loading
     // spinner are visible together, instead of scrolling into the methodology
@@ -393,7 +388,6 @@ export default function CommuteCalculator() {
 
   const handleModeSelect = (mode: string) => {
     setSelectedMode(mode)
-    setSelectedBarriers([])
   }
 
   // Calculate results
@@ -1029,25 +1023,13 @@ export default function CommuteCalculator() {
                   </div>
                 )}
 
-                {/* Barrier selector (multi-select) */}
-                <BarrierSelector
+                {/* Starter guides for the recommended mode */}
+                <StarterGuides
                   modes={selectedMode && selectedMode !== 'drive'
                     ? [selectedMode as Mode]
                     : recommendation.primary.modes}
-                  selected={selectedBarriers}
-                  onSelect={setSelectedBarriers}
+                  event={recommendation.content.event}
                 />
-
-                {/* Guides — appears after barrier selection */}
-                {selectedBarriers.length > 0 && (
-                  <GettingStarted
-                    modes={selectedMode && selectedMode !== 'drive'
-                      ? [selectedMode as Mode]
-                      : recommendation.primary.modes}
-                    barriers={selectedBarriers}
-                    event={recommendation.content.event}
-                  />
-                )}
 
                 {/* Start earning CTA */}
                 <div className="rounded-2xl border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-7 py-6">

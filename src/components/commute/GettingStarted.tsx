@@ -57,7 +57,7 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
 
         const { data: exactMatches } = await supabase
           .from('content_items')
-          .select('id, title, summary, body')
+          .select('id, slug, title, summary, body')
           .eq('content_type', 'micro_guide')
           .eq('status', 'approved')
           .eq('primary_mode', primaryMode)
@@ -80,7 +80,7 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
         // Fallback: mode-only match (different from already found)
         const { data: fallbacks } = await supabase
           .from('content_items')
-          .select('id, title, summary, body')
+          .select('id, slug, title, summary, body')
           .eq('content_type', 'micro_guide')
           .eq('status', 'approved')
           .eq('primary_mode', primaryMode)
@@ -142,7 +142,7 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
                 {guide.summary}
               </p>
               <Link
-                href={`/guides/${guide.id}`}
+                href={`/guides/${guide.slug ?? guide.id}`}
                 className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#BAF14D] transition-opacity hover:opacity-80"
               >
                 Read the full guide
