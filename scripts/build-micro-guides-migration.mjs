@@ -208,8 +208,10 @@ BEGIN;
 -- 1. Mode cleanup: any pre-existing 'bike' rows fold into 'cycling'.
 UPDATE content_items SET primary_mode = 'cycling' WHERE primary_mode = 'bike';
 
--- 2. Deprecate guides superseded by mg_bluebikes.
-UPDATE content_items SET status = 'deprecated'
+-- 2. Archive guides superseded by mg_bluebikes.
+-- (CHECK constraint allows 'approved' | 'archived' | 'draft' — 'archived'
+--  takes them out of the active set without inventing a new status value.)
+UPDATE content_items SET status = 'archived'
   WHERE id IN (${SUPERSEDED_IDS.map(sqlString).join(', ')});
 `
 
