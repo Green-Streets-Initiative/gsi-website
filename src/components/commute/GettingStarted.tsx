@@ -10,14 +10,14 @@ const modeToContentMode: Record<string, string> = {
   bike: 'cycling', ebike: 'cycling', walk: 'walking', transit: 'transit', bus: 'transit',
 }
 
-// Map new fine-grained barrier codes to DB values (some share a DB code)
+// Barrier codes are now 1:1 with DB values after the 20260507 seed migration.
 const barrierToDbCode: Record<string, string> = {
   safety: 'safety',
   routes: 'routes',
   sweating: 'sweating',
-  gear: 'logistics',       // gear guides stored under 'logistics' until DB is updated
+  gear: 'gear',
   bike_parking: 'bike_parking',
-  planning: 'logistics',   // planning guides stored under 'logistics' until DB is updated
+  planning: 'planning',
   weather: 'weather',
   time: 'time',
   carrying: 'carrying',
@@ -50,12 +50,12 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
       const results: ContentItem[] = []
       const seenIds = new Set<string>()
 
-      // Fetch a guide for each barrier
+      // Fetch all guides for each barrier — multiple guides can share a
+      // (mode, barrier) key now (e.g. transit/planning has 4).
       for (const barrier of activeBarriers) {
         const dbCode = barrierToDbCode[barrier] || barrier
 
-        // Try exact match: mode + barrier
-        const { data: exact } = await supabase
+        const { data: exactMatches } = await supabase
           .from('content_items')
           .select('id, title, summary, body')
           .eq('content_type', 'micro_guide')
@@ -64,14 +64,18 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
           .eq('primary_barrier', dbCode)
           .contains('surfaces', ['guide_library'])
           .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
 
-        if (exact && !seenIds.has(exact.id)) {
-          results.push(exact)
-          seenIds.add(exact.id)
-          continue
+        let foundAny = false
+        if (exactMatches) {
+          for (const guide of exactMatches) {
+            if (!seenIds.has(guide.id)) {
+              results.push(guide)
+              seenIds.add(guide.id)
+              foundAny = true
+            }
+          }
         }
+        if (foundAny) continue
 
         // Fallback: mode-only match (different from already found)
         const { data: fallbacks } = await supabase
