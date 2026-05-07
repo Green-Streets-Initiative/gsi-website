@@ -16,7 +16,7 @@ const impactCards = [
   },
   {
     title: 'Verified trips. Real decisions.',
-    body: 'Every commute logged through Shift is a counted trip — timestamped, tied to a route, ground-truthed by a real commuter. Donations fund the infrastructure behind that data, so employers, cities, and partners can plan active transportation investments with evidence.',
+    body: 'Every trip on Shift is real behavioral data — verified, tied to a route, with the mode (walk, bike, transit, drive) auto-detected. Donations fund the infrastructure behind that data, so employers, cities, and partners can plan active transportation investments with evidence.',
   },
   {
     title: 'We\u2019re just getting started.',
