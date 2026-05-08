@@ -1,84 +1,32 @@
-# GSI Micro-guide Library
+-- Seed migration for the micro-guide library (20 guides).
+-- Generated from content/micro-guides-library.md by
+-- scripts/build-micro-guides-migration.mjs — do not edit by hand.
+--
+-- Re-running the parser overwrites this file. The markdown is the source of truth.
 
-**Status:** Final draft, ready for seed migration
-**Last updated:** 2026-05-07
-**Total guides:** 20 (10 cycling, 7 transit, 3 walking)
+BEGIN;
 
-## What this is
+-- 1. Mode cleanup: any pre-existing 'bike' rows fold into 'cycling'.
+UPDATE content_items SET primary_mode = 'cycling' WHERE primary_mode = 'bike';
 
-Source-of-truth file for the GSI micro-guide library. Each entry below has YAML metadata (intended for the `content_items` table) followed by a markdown body (intended for the `body` field). Code can parse this file deterministically into a seed migration: walk each `### \`mg_*\`` section, extract the YAML block, capture the body content between the YAML block close and the next `---` separator, and emit `INSERT INTO content_items ... ON CONFLICT (id) DO UPDATE SET ...` statements.
+-- 2. Archive guides superseded by mg_bluebikes.
+-- (CHECK constraint allows 'approved' | 'archived' | 'draft' — 'archived'
+--  takes them out of the active set without inventing a new status value.)
+UPDATE content_items SET status = 'archived'
+  WHERE id IN ('mg_blue_bikes', 'mg_return_bluebike');
 
-Voice and content guidelines applied across all 20 guides:
-
-- Direct, plain, adult-to-adult tone. No cuteness, no sales-pitch energy.
-- Positive active-transportation framing. Cars are acknowledged where relevant and treated as legitimate options that sometimes win; the library is not adversarial against driving.
-- Specific over abstract — actual brand examples, dollar amounts, route names, neighborhoods, where they add value.
-- Mobile-first, scannable, ~200-380 words per guide.
-- Sponsor recognition deliberately kept out of guide bodies (it belongs in dedicated sponsor channels, not woven into informational content).
-
-## Schema additions needed before seed migration
-
-The `content_items` table needs three additions before this seed runs cleanly:
-
-1. **`slug`** (text, unique) — for public website URLs (e.g. `/guides/picking-a-bike-route`).
-2. **`topics`** (text[]) — for browse-by-topic on the public website, separate from `primary_barrier`. Topics are an unconstrained content axis; barriers are the in-app Commute Advisor discovery key. Some overlap is fine.
-3. **`related_guides`** (text[]) — array of guide IDs for cross-references. Replaces the prose "Related: ..." lines that earlier versions of guides used.
-
-If any of these already exist with different names, the field names in the YAML below can be remapped.
-
-## IDs to deprecate
-
-The Bluebikes merge consolidated two existing guides into one. The seed migration should set the old IDs to `status = 'deprecated'` (or delete them, depending on retention policy):
-
-- `mg_blue_bikes` — superseded by `mg_bluebikes`
-- `mg_return_bluebike` — superseded by `mg_bluebikes`
-
-Any inbound references to those old IDs should be updated to `mg_bluebikes`.
-
-## Barrier-tagging notes for Code
-
-A few decisions worth surfacing:
-
-- **`confidence`** was discussed and intentionally **not** added as a UI barrier. Guides previously tagged `confidence` have been retagged into existing barriers: `mg_first_bike_lane` → `cycling/safety`, `mg_subway_vs_bus` → `transit/routes`.
-- **`barrier: null`** on the cargo bike guide (`mg_cargo_bike`) is intentional. It's a featured library piece, not a barrier-gated answer. It surfaces via `home_feed` and `guide_library` (and via inbound `related` references from gear, sweating, time, and walking-carrying guides).
-- **`logistics`** is not currently used by any guide in this seed. Several existing guides previously tagged `logistics` have been redistributed: gear-related → `gear`, lock-related → `bike_parking`, transit fare/transfer/first-ride content → `planning`. If `logistics` should be retired from the schema or kept as a catch-all, that's a separate cleanup pass.
-- **The Commute Advisor barrier-code mapping in `GettingStarted.tsx:14`** should be updated so UI codes match DB codes 1:1 (`gear → 'gear'`, `planning → 'planning'`, etc.) rather than going through the legacy `logistics` indirection. With the seed migration applied, the indirection is no longer needed.
-
-## Topics vocabulary
-
-To keep browse-by-topic coherent, the `topics` field uses a controlled vocabulary across the library:
-
-`apps`, `bike-share`, `cargo`, `e-bikes`, `errands`, `family`, `fares`, `gear`, `getting-started`, `infrastructure`, `mbta-basics`, `motivation`, `multimodal`, `parking`, `planning`, `routes`, `safety`, `security`, `short-trips`, `weather`, `year-round`
-
-New topics can be added later but should be kept pruned — too many tags makes browse less useful.
-
-## Outstanding work after seed migration runs
-
-- **Public site IA:** the website needs a `/guides` library landing page with browse-by-mode and browse-by-topic, plus individual guide pages at `/guides/<slug>`. This is web work, not data work.
-- **Cross-reference rendering:** the `related_guides` field needs a renderer in both surfaces (in-app library + public site). On the public site this could be a "Related guides" sidebar; in-app it could be inline tappable links.
-- **Voice extension:** if more guides get authored later (e-scooter, accessibility, family-specific, route-specific Roams content), they should follow the same spec captured by the existing 20.
-
----
-
-## Cycling (10 guides)
-
-### `mg_low_stress_routes`
-
-```yaml
-id: mg_low_stress_routes
-title: "Picking a bike route that feels comfortable"
-summary: "Comfort beats speed for a route you'll actually keep using. How to pick one that feels manageable from day one."
-slug: picking-a-bike-route
-mode: cycling
-barrier: routes
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [routes, getting-started, infrastructure]
-related: [mg_first_bike_lane, mg_bike_commute_gear]
-```
-
-The fastest route isn't always the right route. A five-minute-longer ride on protected infrastructure is almost always better than a "direct" route on a four-lane stretch with no bike lane. Here's how to pick well, especially when you're new.
+-- 3. Upsert the 20-guide library.
+INSERT INTO content_items (
+  id, title, slug, summary, body, primary_mode, primary_barrier, status,
+  content_type, surfaces, topics, related_guides, is_starter,
+  read_time_minutes, last_reviewed_at
+) VALUES
+  (
+    'mg_low_stress_routes',
+    'Picking a bike route that feels comfortable',
+    'picking-a-bike-route',
+    'Comfort beats speed for a route you''ll actually keep using. How to pick one that feels manageable from day one.',
+    $guidebody$The fastest route isn't always the right route. A five-minute-longer ride on protected infrastructure is almost always better than a "direct" route on a four-lane stretch with no bike lane. Here's how to pick well, especially when you're new.
 
 ### 1. Know your infrastructure types.
 
@@ -102,27 +50,24 @@ Ride your planned commute once on a Saturday morning with no time pressure. Know
 
 ### Try this first
 
-Pull up Google Maps with the cycling layer on and look at your typical destination. You'll often spot a path or protected lane within a block of where you were planning to ride.
-
----
-
-### `mg_first_bike_lane`
-
-```yaml
-id: mg_first_bike_lane
-title: "Your first ride in a bike lane"
-summary: "Protected, painted, sharrows, green paint — what each kind of bike lane means and how to ride it without overthinking."
-slug: your-first-ride-in-a-bike-lane
-mode: cycling
-barrier: safety
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library, roam_leg]
-topics: [safety, getting-started, infrastructure]
-related: [mg_low_stress_routes, mg_bike_commute_gear]
-```
-
-Bike lanes in Boston range from painted lines on the road to fully separated paths with their own signals. Here's what to know for your first time in one.
+Pull up Google Maps with the cycling layer on and look at your typical destination. You'll often spot a path or protected lane within a block of where you were planning to ride.$guidebody$,
+    'cycling',
+    'routes',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['routes', 'getting-started', 'infrastructure']::text[],
+    ARRAY['mg_first_bike_lane', 'mg_bike_commute_gear']::text[],
+    true,
+    2,
+    now()
+  ),
+  (
+    'mg_first_bike_lane',
+    'Your first ride in a bike lane',
+    'your-first-ride-in-a-bike-lane',
+    'Protected, painted, sharrows, green paint — what each kind of bike lane means and how to ride it without overthinking.',
+    $guidebody$Bike lanes in Boston range from painted lines on the road to fully separated paths with their own signals. Here's what to know for your first time in one.
 
 ### Protected lanes
 
@@ -142,27 +87,24 @@ Shared lane arrows, the ones with the chevrons. They mean you share the lane wit
 
 ### The one habit that matters most
 
-Look behind you before changing your position in the lane. A quick shoulder check before moving left to pass or avoid something — it's the cycling equivalent of checking your mirror.
-
----
-
-### `mg_bike_commute_gear`
-
-```yaml
-id: mg_bike_commute_gear
-title: "The gear that actually matters for bike commuting"
-summary: "What's worth spending on for daily bike commuting, what isn't, and which two purchases matter most."
-slug: bike-commute-gear
-mode: cycling
-barrier: gear
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [gear, getting-started, safety]
-related: [mg_bike_lock, mg_bike_sweat, mg_biking_in_rain]
-```
-
-You don't need much equipment to bike-commute, but a few things make the difference between a good ride and a frustrating one. Here's what's worth investing in.
+Look behind you before changing your position in the lane. A quick shoulder check before moving left to pass or avoid something — it's the cycling equivalent of checking your mirror.$guidebody$,
+    'cycling',
+    'safety',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library', 'roam_leg']::text[],
+    ARRAY['safety', 'getting-started', 'infrastructure']::text[],
+    ARRAY['mg_low_stress_routes', 'mg_bike_commute_gear']::text[],
+    true,
+    2,
+    now()
+  ),
+  (
+    'mg_bike_commute_gear',
+    'The gear that actually matters for bike commuting',
+    'bike-commute-gear',
+    'What''s worth spending on for daily bike commuting, what isn''t, and which two purchases matter most.',
+    $guidebody$You don't need much equipment to bike-commute, but a few things make the difference between a good ride and a frustrating one. Here's what's worth investing in.
 
 ### 1. A helmet — non-negotiable.
 
@@ -191,27 +133,24 @@ A $25 fender set keeps a stripe of road grime off your back and pants. The singl
 
 ### Try this first
 
-If you only buy two things, make them lights and a U-lock. Everything else can wait until you know what you actually need.
-
----
-
-### `mg_bike_time`
-
-```yaml
-id: mg_bike_time
-title: "When biking is actually the faster option"
-summary: "Door-to-door, biking beats driving for more trips than people expect. The five situations where it definitely wins."
-slug: when-biking-is-faster
-mode: cycling
-barrier: time
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [motivation, e-bikes, short-trips]
-related: [mg_low_stress_routes, mg_cargo_bike, mg_bike_commute_gear]
-```
-
-Biking is faster than driving for more trips than people expect — once you count door-to-door time. Here's when it actually wins.
+If you only buy two things, make them lights and a U-lock. Everything else can wait until you know what you actually need.$guidebody$,
+    'cycling',
+    'gear',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['gear', 'getting-started', 'safety']::text[],
+    ARRAY['mg_bike_lock', 'mg_bike_sweat', 'mg_biking_in_rain']::text[],
+    true,
+    2,
+    now()
+  ),
+  (
+    'mg_bike_time',
+    'When biking is actually the faster option',
+    'when-biking-is-faster',
+    'Door-to-door, biking beats driving for more trips than people expect. The five situations where it definitely wins.',
+    $guidebody$Biking is faster than driving for more trips than people expect — once you count door-to-door time. Here's when it actually wins.
 
 ### 1. Trips under three miles, especially in dense neighborhoods.
 
@@ -231,27 +170,24 @@ A 5-7 mile commute that's a slow slog on a regular bike is a comfortable 20-25 m
 
 ### 5. Errands and trips with kids — on an e-cargo bike.
 
-An e-cargo bike (a long-tail or front-bucket frame with pedal-assist) can carry two kids plus a week of groceries, and uses bike infrastructure that skips the school-pickup line entirely. It handles most of what people assume requires a car. You don't have to buy one to find out: [CargoB](https://www.ridecargob.com/) rents cargo bikes by the minute around the region, and [Community Pedal Power](https://communitypedalpower.org/) in Cambridge runs an e-bike library where you can borrow one for free.
-
----
-
-### `mg_bike_sweat`
-
-```yaml
-id: mg_bike_sweat
-title: "How to bike-commute without breaking a sweat"
-summary: "Pace, route, gear, and the desk-side kit that makes August humidity manageable on a bike."
-slug: bike-commute-without-sweat
-mode: cycling
-barrier: sweating
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [gear, e-bikes, getting-started]
-related: [mg_bike_commute_gear, mg_cargo_bike]
-```
-
-Worrying about arriving sweaty stops a lot of people from biking to work. There are several layers of fix, and the most effective one doesn't involve any extra gear at all.
+An e-cargo bike (a long-tail or front-bucket frame with pedal-assist) can carry two kids plus a week of groceries, and uses bike infrastructure that skips the school-pickup line entirely. It handles most of what people assume requires a car. You don't have to buy one to find out: [CargoB](https://www.ridecargob.com/) rents cargo bikes by the minute around the region, and [Community Pedal Power](https://communitypedalpower.org/) in Cambridge runs an e-bike library where you can borrow one for free.$guidebody$,
+    'cycling',
+    'time',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['motivation', 'e-bikes', 'short-trips']::text[],
+    ARRAY['mg_low_stress_routes', 'mg_cargo_bike', 'mg_bike_commute_gear']::text[],
+    false,
+    2,
+    now()
+  ),
+  (
+    'mg_bike_sweat',
+    'How to bike-commute without breaking a sweat',
+    'bike-commute-without-sweat',
+    'Pace, route, gear, and the desk-side kit that makes August humidity manageable on a bike.',
+    $guidebody$Worrying about arriving sweaty stops a lot of people from biking to work. There are several layers of fix, and the most effective one doesn't involve any extra gear at all.
 
 ### 1. The simplest fix: sweat less to begin with.
 
@@ -279,27 +215,24 @@ Keep these at your desk and the issue mostly disappears: deodorant, athletic bod
 
 ### 6. Plan around the worst days.
 
-August humidity is real. On the worst handful of days, take the T or work from home. Keeping the streak intact for everything else matters more than perfection.
-
----
-
-### `mg_cargo_bike`
-
-```yaml
-id: mg_cargo_bike
-title: "What you can do with an e-cargo bike"
-summary: "An e-cargo bike replaces most car trips a family makes in a week. What they handle, and where to try one before buying."
-slug: what-you-can-do-with-an-e-cargo-bike
-mode: cycling
-barrier: null
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [e-bikes, cargo, family, getting-started]
-related: [mg_bike_sweat, mg_bike_commute_gear, mg_bike_time, mg_walking_carrying]
-```
-
-An e-cargo bike is a regular bike with two changes: a longer or wider frame for carrying things, and a pedal-assist motor that helps with hills and loads. People who try one find it covers most of the trips they'd assumed required a car — daycare drop-off, the weekly grocery run, hardware store hauls, beach day, the occasional Costco trip.
+August humidity is real. On the worst handful of days, take the T or work from home. Keeping the streak intact for everything else matters more than perfection.$guidebody$,
+    'cycling',
+    'sweating',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['gear', 'e-bikes', 'getting-started']::text[],
+    ARRAY['mg_bike_commute_gear', 'mg_cargo_bike']::text[],
+    false,
+    2,
+    now()
+  ),
+  (
+    'mg_cargo_bike',
+    'What you can do with an e-cargo bike',
+    'what-you-can-do-with-an-e-cargo-bike',
+    'An e-cargo bike replaces most car trips a family makes in a week. What they handle, and where to try one before buying.',
+    $guidebody$An e-cargo bike is a regular bike with two changes: a longer or wider frame for carrying things, and a pedal-assist motor that helps with hills and loads. People who try one find it covers most of the trips they'd assumed required a car — daycare drop-off, the weekly grocery run, hardware store hauls, beach day, the occasional Costco trip.
 
 ### The main types
 
@@ -328,28 +261,24 @@ An e-cargo bike is a regular bike with two changes: a longer or wider frame for 
 
 ### Try this first
 
-Borrow one from Community Pedal Power for a weekend. Use it for one school pickup and one grocery run. You'll know quickly whether it fits your life.
-
----
-
-### `mg_bluebikes`
-
-```yaml
-id: mg_bluebikes
-title: "Bluebikes from start to finish"
-summary: "How to unlock, ride, dock, and avoid surprise charges with Greater Boston's bike-share. First-trip jitters, sorted."
-slug: how-to-use-bluebikes
-mode: cycling
-barrier: bike_share
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library, nudge_card, roam_leg]
-topics: [bike-share, getting-started]
-related: [mg_bike_lock, mg_low_stress_routes]
-supersedes: [mg_blue_bikes, mg_return_bluebike]
-```
-
-Bluebikes is Greater Boston's bike-share system, with 400+ stations across Boston, Brookline, Cambridge, Somerville, Everett, Chelsea, Revere, and beyond. Once you've used it once, it's simple. Here's everything you need for the first time.
+Borrow one from Community Pedal Power for a weekend. Use it for one school pickup and one grocery run. You'll know quickly whether it fits your life.$guidebody$,
+    'cycling',
+    NULL,
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['e-bikes', 'cargo', 'family', 'getting-started']::text[],
+    ARRAY['mg_bike_sweat', 'mg_bike_commute_gear', 'mg_bike_time', 'mg_walking_carrying']::text[],
+    false,
+    2,
+    now()
+  ),
+  (
+    'mg_bluebikes',
+    'Bluebikes from start to finish',
+    'how-to-use-bluebikes',
+    'How to unlock, ride, dock, and avoid surprise charges with Greater Boston''s bike-share. First-trip jitters, sorted.',
+    $guidebody$Bluebikes is Greater Boston's bike-share system, with 400+ stations across Boston, Brookline, Cambridge, Somerville, Everett, Chelsea, Revere, and beyond. Once you've used it once, it's simple. Here's everything you need for the first time.
 
 ### Getting started
 
@@ -376,29 +305,24 @@ Dock at any station along the way, wait a minute, and undock a new bike. The clo
 ### If something goes wrong
 
 - **Station full?** The app shows real-time dock availability — there's almost always one within a block or two.
-- **App still shows your ride active after docking?** Take a screenshot of the green light. Contact Bluebikes through the app; they resolve these quickly and won't charge you for a properly returned bike.
-
-**Note for Code:** I tagged `barrier: bike_share` here as a guess; if `bike_share` isn't in the barrier vocabulary, fall back to `logistics` or just `null`. Bluebikes is more of a topical resource than a barrier-specific answer; consider surfacing primarily via `home_feed` and `guide_library`.
-
----
-
-### `mg_bike_lock`
-
-```yaml
-id: mg_bike_lock
-title: "Where (and how) to lock your bike"
-summary: "Most stolen bikes weren't unlocked — they were locked badly. Six rules that make the difference."
-slug: where-to-lock-your-bike
-mode: cycling
-barrier: bike_parking
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [parking, security, gear]
-related: [mg_bike_commute_gear, mg_bluebikes]
-```
-
-A good lock is only as good as how and where you use it. Most stolen bikes weren't unlocked — they were locked badly, or locked to something that didn't actually hold. Here's what works.
+- **App still shows your ride active after docking?** Take a screenshot of the green light. Contact Bluebikes through the app; they resolve these quickly and won't charge you for a properly returned bike.$guidebody$,
+    'cycling',
+    NULL,
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library', 'nudge_card', 'roam_leg']::text[],
+    ARRAY['bike-share', 'getting-started']::text[],
+    ARRAY['mg_bike_lock', 'mg_low_stress_routes']::text[],
+    false,
+    2,
+    now()
+  ),
+  (
+    'mg_bike_lock',
+    'Where (and how) to lock your bike',
+    'where-to-lock-your-bike',
+    'Most stolen bikes weren''t unlocked — they were locked badly. Six rules that make the difference.',
+    $guidebody$A good lock is only as good as how and where you use it. Most stolen bikes weren't unlocked — they were locked badly, or locked to something that didn't actually hold. Here's what works.
 
 ### 1. Lock the frame, not just the wheel.
 
@@ -422,27 +346,24 @@ If your workplace has indoor bike parking, use it. Many MBTA stations have secur
 
 ### 6. Register and track.
 
-Register your bike at [bikeindex.org](https://bikeindex.org) (free, helps recovery if it's stolen) and take a photo of the serial number. Hide an AirTag or Tile tracker somewhere discreet — taped under the saddle, dropped inside the seat tube, or tucked into a tail-light housing. If the bike walks off, you can find it. Remove lights and quick-release accessories when you park.
-
----
-
-### `mg_biking_in_rain`
-
-```yaml
-id: mg_biking_in_rain
-title: "Biking in the rain"
-summary: "Light rain stops feeling like a barrier after the third or fourth time. The minimal gear that gets you there fast."
-slug: biking-in-the-rain
-mode: cycling
-barrier: weather
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [weather, gear, year-round]
-related: [mg_cold_weather, mg_bike_commute_gear]
-```
-
-Rain stops a lot of would-be bike commuters, but with minimal gear it's manageable — and once you've done it a few times, light rain stops feeling like a barrier at all.
+Register your bike at [bikeindex.org](https://bikeindex.org) (free, helps recovery if it's stolen) and take a photo of the serial number. Hide an AirTag or Tile tracker somewhere discreet — taped under the saddle, dropped inside the seat tube, or tucked into a tail-light housing. If the bike walks off, you can find it. Remove lights and quick-release accessories when you park.$guidebody$,
+    'cycling',
+    'bike_parking',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['parking', 'security', 'gear']::text[],
+    ARRAY['mg_bike_commute_gear', 'mg_bluebikes']::text[],
+    false,
+    2,
+    now()
+  ),
+  (
+    'mg_biking_in_rain',
+    'Biking in the rain',
+    'biking-in-the-rain',
+    'Light rain stops feeling like a barrier after the third or fourth time. The minimal gear that gets you there fast.',
+    $guidebody$Rain stops a lot of would-be bike commuters, but with minimal gear it's manageable — and once you've done it a few times, light rain stops feeling like a barrier at all.
 
 ### 1. Fenders are the single best investment.
 
@@ -471,27 +392,24 @@ Lights on, even during the day. Bright or reflective layers help drivers see you
 
 ### One last thing
 
-Most "rain rides" are light drizzle or brief showers. Truly heavy rain during commute hours is rare, and even when you get wet, you dry off. People who try it a few times often find light rain pleasant — less traffic, cooler air, a small sense of accomplishment that brightens the day.
-
----
-
-### `mg_cold_weather`
-
-```yaml
-id: mg_cold_weather
-title: "Cold-weather biking"
-summary: "Dress for the riding body, not the standing-still body. Layering, hands and feet, and what matters most below freezing."
-slug: cold-weather-biking
-mode: cycling
-barrier: weather
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [weather, gear, year-round]
-related: [mg_biking_in_rain, mg_bike_commute_gear]
-```
-
-Cold-weather cycling is more comfortable than most people expect. Your body generates real heat while riding — the trick is dressing for that, not for standing still.
+Most "rain rides" are light drizzle or brief showers. Truly heavy rain during commute hours is rare, and even when you get wet, you dry off. People who try it a few times often find light rain pleasant — less traffic, cooler air, a small sense of accomplishment that brightens the day.$guidebody$,
+    'cycling',
+    'weather',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['weather', 'gear', 'year-round']::text[],
+    ARRAY['mg_cold_weather', 'mg_bike_commute_gear']::text[],
+    false,
+    2,
+    now()
+  ),
+  (
+    'mg_cold_weather',
+    'Cold-weather biking',
+    'cold-weather-biking',
+    'Dress for the riding body, not the standing-still body. Layering, hands and feet, and what matters most below freezing.',
+    $guidebody$Cold-weather cycling is more comfortable than most people expect. Your body generates real heat while riding — the trick is dressing for that, not for standing still.
 
 ### 1. Dress for 15°F warmer than it is.
 
@@ -522,29 +440,24 @@ A buff or neck gaiter pulled up over your nose and cheeks dramatically extends y
 
 ### One last thing
 
-Winter biking has real advantages once you're set up: lighter traffic, no overheating, and you arrive energized.
-
----
-
-## Transit (7 guides)
-
-### `mg_subway_vs_bus`
-
-```yaml
-id: mg_subway_vs_bus
-title: "Subway vs. bus — what's different"
-summary: "Bus, subway, Green Line — three modes, one fare. What to expect the first time you ride each."
-slug: subway-vs-bus
-mode: transit
-barrier: routes
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library, roam_leg]
-topics: [getting-started, mbta-basics, routes]
-related: [mg_first_bus_ride, mg_pay_for_t]
-```
-
-The MBTA runs buses, subway lines, and the Green Line (which acts like a streetcar in some places and a subway in others). They're all part of the same system, but the experience is different enough that it helps to know what you're walking into.
+Winter biking has real advantages once you're set up: lighter traffic, no overheating, and you arrive energized.$guidebody$,
+    'cycling',
+    'weather',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['weather', 'gear', 'year-round']::text[],
+    ARRAY['mg_biking_in_rain', 'mg_bike_commute_gear']::text[],
+    false,
+    2,
+    now()
+  ),
+  (
+    'mg_subway_vs_bus',
+    'Subway vs. bus — what''s different',
+    'subway-vs-bus',
+    'Bus, subway, Green Line — three modes, one fare. What to expect the first time you ride each.',
+    $guidebody$The MBTA runs buses, subway lines, and the Green Line (which acts like a streetcar in some places and a subway in others). They're all part of the same system, but the experience is different enough that it helps to know what you're walking into.
 
 ### Buses
 
@@ -560,53 +473,47 @@ The weird one. Parts run underground like a subway (downtown). Other parts run a
 
 ### Free transfers
 
-If you pay with a Charlie Card or phone, a single bus-to-subway transfer is free within two hours. So a trip that mixes buses and trains often costs just a single fare.
-
----
-
-### `mg_bus_transfers`
-
-```yaml
-id: mg_bus_transfers
-title: "How bus transfers work"
-summary: "Two-hour free transfers are the MBTA's quietest perk. The basic rule and the gotchas."
-slug: how-bus-transfers-work
-mode: transit
-barrier: planning
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library, roam_leg]
-topics: [fares, mbta-basics]
-related: [mg_pay_for_t, mg_subway_vs_bus]
-```
-
-If your trip involves more than one bus or train, you're probably paying less than you think.
+If you pay with a Charlie Card or phone, a single bus-to-subway transfer is free within two hours. So a trip that mixes buses and trains often costs just a single fare.$guidebody$,
+    'transit',
+    'routes',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library', 'roam_leg']::text[],
+    ARRAY['getting-started', 'mbta-basics', 'routes']::text[],
+    ARRAY['mg_first_bus_ride', 'mg_pay_for_t']::text[],
+    true,
+    2,
+    now()
+  ),
+  (
+    'mg_bus_transfers',
+    'How bus transfers work',
+    'how-bus-transfers-work',
+    'Two-hour free transfers are the MBTA''s quietest perk. The basic rule and the gotchas.',
+    $guidebody$If your trip involves more than one bus or train, you're probably paying less than you think.
 
 **The basic rule:** When you pay with a Charlie Card or phone tap, your first transfer within two hours is free. Bus to bus, bus to subway, subway to bus — all free. That two-hour window starts from your first tap.
 
 **What counts:** The transfer has to be between different routes. Riding the same bus back doesn't count. And the free transfer only covers the base fare — if you're transferring to an express bus or commuter rail, you pay the difference.
 
-**What doesn't work:** Cash on the bus doesn't get you a free transfer. Neither do single-ride tickets from the machines. If you're going to ride transit more than once, a Charlie Card (or just your phone) pays for itself immediately.
-
----
-
-### `mg_pay_for_t`
-
-```yaml
-id: mg_pay_for_t
-title: "How to pay for the T"
-summary: "Tap if you ride a few times a month. Get a CharlieCard pass if you commute. The pricing math in plain language."
-slug: how-to-pay-for-the-t
-mode: transit
-barrier: planning
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library, nudge_card]
-topics: [fares, getting-started, mbta-basics]
-related: [mg_bus_transfers, mg_first_bus_ride]
-```
-
-The MBTA accepts both contactless payments and the older CharlieCard system. Which to use depends on how often you ride.
+**What doesn't work:** Cash on the bus doesn't get you a free transfer. Neither do single-ride tickets from the machines. If you're going to ride transit more than once, a Charlie Card (or just your phone) pays for itself immediately.$guidebody$,
+    'transit',
+    'planning',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library', 'roam_leg']::text[],
+    ARRAY['fares', 'mbta-basics']::text[],
+    ARRAY['mg_pay_for_t', 'mg_subway_vs_bus']::text[],
+    false,
+    1,
+    now()
+  ),
+  (
+    'mg_pay_for_t',
+    'How to pay for the T',
+    'how-to-pay-for-the-t',
+    'Tap if you ride a few times a month. Get a CharlieCard pass if you commute. The pricing math in plain language.',
+    $guidebody$The MBTA accepts both contactless payments and the older CharlieCard system. Which to use depends on how often you ride.
 
 ### For occasional riders: tap to pay.
 
@@ -639,27 +546,24 @@ Available for riders 65+, riders with disabilities, students, and income-eligibl
 
 ### The bottom line
 
-If you ride a few times a month, just tap. If you commute regularly, get a CharlieCard with a monthly pass — it pays for itself within a couple weeks.
-
----
-
-### `mg_first_bus_ride`
-
-```yaml
-id: mg_first_bus_ride
-title: "Your first bus ride — what to expect"
-summary: "Step by step from finding the right route to walking off at your stop, with paying and transfers in between."
-slug: your-first-bus-ride
-mode: transit
-barrier: planning
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [getting-started, mbta-basics, planning]
-related: [mg_pay_for_t, mg_subway_vs_bus]
-```
-
-If you've never taken a city bus, or haven't in years, here's what to expect. It's easier than it feels in advance.
+If you ride a few times a month, just tap. If you commute regularly, get a CharlieCard with a monthly pass — it pays for itself within a couple weeks.$guidebody$,
+    'transit',
+    'planning',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library', 'nudge_card']::text[],
+    ARRAY['fares', 'getting-started', 'mbta-basics']::text[],
+    ARRAY['mg_bus_transfers', 'mg_first_bus_ride']::text[],
+    true,
+    2,
+    now()
+  ),
+  (
+    'mg_first_bus_ride',
+    'Your first bus ride — what to expect',
+    'your-first-bus-ride',
+    'Step by step from finding the right route to walking off at your stop, with paying and transfers in between.',
+    $guidebody$If you've never taken a city bus, or haven't in years, here's what to expect. It's easier than it feels in advance.
 
 ### Before you leave
 
@@ -683,27 +587,24 @@ Move toward the back to make room for new riders. Hold a pole or strap if standi
 
 - **Transfers are free** within 2 hours if you connect to another bus or the subway using the same payment method.
 - **The bus can kneel.** If you need step-free boarding, the driver can lower the bus.
-- **Drivers are used to new riders.** If you're not sure whether you got the right bus or how something works, just ask.
-
----
-
-### `mg_transit_plus_walking`
-
-```yaml
-id: mg_transit_plus_walking
-title: "Combining transit with walking or biking"
-summary: "Transit plus a short walk or bike at each end beats pure transit and pure walking on most longer trips."
-slug: transit-plus-walking-or-biking
-mode: transit
-barrier: routes
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [routes, multimodal, getting-started]
-related: [mg_transit_planning, mg_subway_vs_bus]
-```
-
-For trips over 3-4 miles, mixing transit with a walk or bike at each end is often the fastest and most pleasant way to get there. You skip the slowest parts of pure-transit (local bus stops, transfers), get built-in exercise without adding total time, and arrive right at the door.
+- **Drivers are used to new riders.** If you're not sure whether you got the right bus or how something works, just ask.$guidebody$,
+    'transit',
+    'planning',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['getting-started', 'mbta-basics', 'planning']::text[],
+    ARRAY['mg_pay_for_t', 'mg_subway_vs_bus']::text[],
+    false,
+    2,
+    now()
+  ),
+  (
+    'mg_transit_plus_walking',
+    'Combining transit with walking or biking',
+    'transit-plus-walking-or-biking',
+    'Transit plus a short walk or bike at each end beats pure transit and pure walking on most longer trips.',
+    $guidebody$For trips over 3-4 miles, mixing transit with a walk or bike at each end is often the fastest and most pleasant way to get there. You skip the slowest parts of pure-transit (local bus stops, transfers), get built-in exercise without adding total time, and arrive right at the door.
 
 ### How it works
 
@@ -731,27 +632,24 @@ Total: 33 minutes, $2.40, and 18 minutes of walking built into the day.
 
 - **Build in buffer time** — allow 5 extra minutes until you learn the routine.
 - **Have a backup plan** — know the all-transit route for bad weather days when the walk or bike-share segment is less appealing.
-- **For repeat trips, the routine compounds.** Once you know the timing and rhythm, the planning effort drops to nearly zero.
-
----
-
-### `mg_transit_planning`
-
-```yaml
-id: mg_transit_planning
-title: "Planning a transit trip — it's mostly the apps doing the work"
-summary: "Real-time apps do the work that printed schedules used to. Five rules for getting the most out of them."
-slug: planning-a-transit-trip
-mode: transit
-barrier: planning
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [planning, apps, getting-started]
-related: [mg_subway_vs_bus, mg_transit_plus_walking]
-```
-
-Planning a transit trip used to mean reading printed schedules and hoping the bus showed up. Today the apps do all of that. Here's how to use them well.
+- **For repeat trips, the routine compounds.** Once you know the timing and rhythm, the planning effort drops to nearly zero.$guidebody$,
+    'transit',
+    'routes',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['routes', 'multimodal', 'getting-started']::text[],
+    ARRAY['mg_transit_planning', 'mg_subway_vs_bus']::text[],
+    false,
+    2,
+    now()
+  ),
+  (
+    'mg_transit_planning',
+    'Planning a transit trip — it''s mostly the apps doing the work',
+    'planning-a-transit-trip',
+    'Real-time apps do the work that printed schedules used to. Five rules for getting the most out of them.',
+    $guidebody$Planning a transit trip used to mean reading printed schedules and hoping the bus showed up. Today the apps do all of that. Here's how to use them well.
 
 ### 1. Use the Transit app or Google Maps.
 
@@ -779,27 +677,24 @@ Both Transit and Google Maps let you favorite or pin frequent destinations. Afte
 
 ### One last thing
 
-For first-time multi-leg trips, screenshot the directions in case signal drops on the platform.
-
----
-
-### `mg_transit_time`
-
-```yaml
-id: mg_transit_time
-title: "When transit is actually the faster option"
-summary: "On most trips into or across downtown, transit door-to-door beats driving once you count the parking search."
-slug: when-transit-is-faster
-mode: transit
-barrier: time
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [motivation, mbta-basics]
-related: [mg_subway_vs_bus, mg_transit_plus_walking]
-```
-
-Transit can feel slower than driving, but on most trips into or across downtown Boston, it isn't — once you count the full door-to-door time and what driving actually costs you in stress and parking. Here's when transit wins.
+For first-time multi-leg trips, screenshot the directions in case signal drops on the platform.$guidebody$,
+    'transit',
+    'planning',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['planning', 'apps', 'getting-started']::text[],
+    ARRAY['mg_subway_vs_bus', 'mg_transit_plus_walking']::text[],
+    true,
+    2,
+    now()
+  ),
+  (
+    'mg_transit_time',
+    'When transit is actually the faster option',
+    'when-transit-is-faster',
+    'On most trips into or across downtown, transit door-to-door beats driving once you count the parking search.',
+    $guidebody$Transit can feel slower than driving, but on most trips into or across downtown Boston, it isn't — once you count the full door-to-door time and what driving actually costs you in stress and parking. Here's when transit wins.
 
 ### 1. Anywhere downtown, in or out.
 
@@ -819,29 +714,24 @@ Even when transit isn't the absolute fastest option on a given day, it's the mos
 
 ### 5. What you do with the time.
 
-A 30-minute drive is 30 minutes of driving. A 30-minute train ride is 30 minutes of reading, working, podcast-listening, or zoning out. For a daily commute, that adds up to several hours a week of time you get to spend on something else.
-
----
-
-## Walking (3 guides)
-
-### `mg_walking_vs_driving`
-
-```yaml
-id: mg_walking_vs_driving
-title: "When walking is actually the faster option"
-summary: "For trips under a mile, walking often beats driving once you count getting to the car. Five times it definitely wins."
-slug: when-walking-is-faster
-mode: walking
-barrier: time
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library, nudge_card]
-topics: [motivation, short-trips]
-related: [mg_walking_carrying]
-```
-
-Walking is faster than driving for more short trips than people expect — once you count door-to-door time. Here's when it wins.
+A 30-minute drive is 30 minutes of driving. A 30-minute train ride is 30 minutes of reading, working, podcast-listening, or zoning out. For a daily commute, that adds up to several hours a week of time you get to spend on something else.$guidebody$,
+    'transit',
+    'time',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['motivation', 'mbta-basics']::text[],
+    ARRAY['mg_subway_vs_bus', 'mg_transit_plus_walking']::text[],
+    false,
+    2,
+    now()
+  ),
+  (
+    'mg_walking_vs_driving',
+    'When walking is actually the faster option',
+    'when-walking-is-faster',
+    'For trips under a mile, walking often beats driving once you count getting to the car. Five times it definitely wins.',
+    $guidebody$Walking is faster than driving for more short trips than people expect — once you count door-to-door time. Here's when it wins.
 
 ### 1. Trips under half a mile.
 
@@ -861,27 +751,24 @@ A 1-mile drive in stop-and-go traffic can easily take 10-15 minutes. A 1-mile wa
 
 ### 5. What walking does that GPS doesn't track.
 
-A 15-minute walk burns about 60 calories, lets you notice your neighborhood, and ends with you in a better mood than you started.
-
----
-
-### `mg_walking_carrying`
-
-```yaml
-id: mg_walking_carrying
-title: "Walking with stuff: how to carry what you need"
-summary: "A rolling cart, a good backpack, and one delivery a week cover almost any load people typically drive for."
-slug: walking-with-stuff
-mode: walking
-barrier: carrying
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [carrying, gear, errands]
-related: [mg_cargo_bike, mg_walking_vs_driving]
-```
-
-Carrying stuff is the most overstated walking barrier. Most things people assume require a car can be carried on foot with the right setup. For the rest, there are still good options. Here's what works.
+A 15-minute walk burns about 60 calories, lets you notice your neighborhood, and ends with you in a better mood than you started.$guidebody$,
+    'walking',
+    'time',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library', 'nudge_card']::text[],
+    ARRAY['motivation', 'short-trips']::text[],
+    ARRAY['mg_walking_carrying']::text[],
+    true,
+    2,
+    now()
+  ),
+  (
+    'mg_walking_carrying',
+    'Walking with stuff: how to carry what you need',
+    'walking-with-stuff',
+    'A rolling cart, a good backpack, and one delivery a week cover almost any load people typically drive for.',
+    $guidebody$Carrying stuff is the most overstated walking barrier. Most things people assume require a car can be carried on foot with the right setup. For the rest, there are still good options. Here's what works.
 
 ### 1. A rolling cart is the unsung hero.
 
@@ -905,27 +792,24 @@ Two smaller walking trips a week often work better than one big haul. Smaller lo
 
 ### Putting it together
 
-A rolling cart, an e-cargo bike, and a delivery subscription cover almost any load people typically drive for.
-
----
-
-### `mg_walking_weather`
-
-```yaml
-id: mg_walking_weather
-title: "Walking through the weather"
-summary: "Most weather is more walkable than it looks from the warm side of a window. The shoes, layers, and bail-out plan that get you out the door."
-slug: walking-through-the-weather
-mode: walking
-barrier: weather
-status: approved
-content_type: micro_guide
-surfaces: [home_feed, guide_library]
-topics: [weather, gear, year-round]
-related: [mg_biking_in_rain, mg_cold_weather]
-```
-
-Weather is most people's biggest walking hesitation, but most weather is more walkable than it looks from the warm side of a window. Here's what to know.
+A rolling cart, an e-cargo bike, and a delivery subscription cover almost any load people typically drive for.$guidebody$,
+    'walking',
+    'carrying',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['carrying', 'gear', 'errands']::text[],
+    ARRAY['mg_cargo_bike', 'mg_walking_vs_driving']::text[],
+    true,
+    2,
+    now()
+  ),
+  (
+    'mg_walking_weather',
+    'Walking through the weather',
+    'walking-through-the-weather',
+    'Most weather is more walkable than it looks from the warm side of a window. The shoes, layers, and bail-out plan that get you out the door.',
+    $guidebody$Weather is most people's biggest walking hesitation, but most weather is more walkable than it looks from the warm side of a window. Here's what to know.
 
 ### 1. The right shoes are step one.
 
@@ -949,12 +833,33 @@ Real bad weather — sleet, lightning, dangerous heat — is the right time to t
 
 ### One last thing
 
-Most "the weather is bad" conclusions are made by people standing inside dressed for inside. Take a 5-minute walk to the corner and back before deciding it's a no-go day; the answer is usually different than expected.
+Most "the weather is bad" conclusions are made by people standing inside dressed for inside. Take a 5-minute walk to the corner and back before deciding it's a no-go day; the answer is usually different than expected.$guidebody$,
+    'walking',
+    'weather',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['weather', 'gear', 'year-round']::text[],
+    ARRAY['mg_biking_in_rain', 'mg_cold_weather']::text[],
+    true,
+    2,
+    now()
+  )
+ON CONFLICT (id) DO UPDATE SET
+  title = EXCLUDED.title,
+  slug = EXCLUDED.slug,
+  summary = EXCLUDED.summary,
+  body = EXCLUDED.body,
+  primary_mode = EXCLUDED.primary_mode,
+  primary_barrier = EXCLUDED.primary_barrier,
+  status = EXCLUDED.status,
+  content_type = EXCLUDED.content_type,
+  surfaces = EXCLUDED.surfaces,
+  topics = EXCLUDED.topics,
+  related_guides = EXCLUDED.related_guides,
+  is_starter = EXCLUDED.is_starter,
+  read_time_minutes = EXCLUDED.read_time_minutes,
+  last_reviewed_at = EXCLUDED.last_reviewed_at;
+  -- created_at intentionally not in SET so existing rows keep their original timestamp.
 
----
-
-## End of library
-
-**Total: 20 guides** (10 cycling, 7 transit, 3 walking) plus 2 deprecations (`mg_blue_bikes`, `mg_return_bluebike`).
-
-If anything in this file needs to change before the seed migration runs, edit here first — this file is the source of truth. Re-running the parser produces a fresh migration.
+COMMIT;

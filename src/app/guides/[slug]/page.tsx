@@ -106,9 +106,10 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           </h1>
 
           {/* Body — rendered from markdown.
-              Summary intentionally not rendered here — the parser derives
-              summary from the body's first paragraph, so rendering both would
-              duplicate. Cards on /guides + starter stack still use summary. */}
+              Summary is intentionally not rendered here. Summaries are
+              hand-authored hooks (used on /guides cards and the Shift app
+              cover); the body's lead paragraph already serves as the
+              article's opener. Rendering both would feel magazine-y. */}
           <div
             className="guide-body text-[0.9375rem] leading-[1.8] text-white"
             dangerouslySetInnerHTML={{ __html: renderMarkdown(g.body) }}
