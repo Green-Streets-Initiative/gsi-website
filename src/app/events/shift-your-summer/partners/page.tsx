@@ -18,7 +18,7 @@ export const revalidate = 600
 export const metadata: Metadata = {
   title: 'Partner with Shift Your Summer | Green Streets Initiative',
   description:
-    "Sponsor or donate prizes to Greater Boston's 8-week active transportation challenge. Three sponsorship tiers from $1,000–$5,000.",
+    "Sponsor or donate prizes to Massachusetts's 8-week active transportation challenge. Three sponsorship tiers from $1,000–$5,000.",
 }
 
 interface RoamRow {
@@ -197,7 +197,7 @@ function AboutSection() {
         </h2>
         <div className="text-base leading-[1.8] text-white/80 max-w-[700px] space-y-4">
           <p>
-            Greater Boston is in the middle of a generational shift. New protected bike
+            Massachusetts is in the middle of a generational shift. New protected bike
             lanes, expanded transit service, and redesigned streetscapes are changing how
             people move. Ridership is climbing. Bike commuting is up. Walking rates in
             metro Boston consistently rank among the highest in the country.
@@ -228,7 +228,7 @@ function RoamsSection({ roams }: { roams: RoamCard[] }) {
       <div className="max-w-[1100px] mx-auto">
         <div className="mb-6">
           <h3 className="font-display text-[1.5rem] font-bold text-white mb-3">
-            Explore Greater Boston with <span className="text-[#BAF14D]">Roams</span>
+            Explore Massachusetts with <span className="text-[#BAF14D]">Roams</span>
           </h3>
           <p className="text-[0.9375rem] leading-[1.7] text-white/75 max-w-[640px]">
             Roams are curated, multi-stop active transportation adventures built into the
@@ -367,7 +367,7 @@ function SponsorshipSection() {
           <ValueCard
             dot="#BAF14D"
             title="Brand Alignment"
-            body="Associate your brand with Greater Boston's largest active transportation initiative — a positive, community-driven campaign backed by a nonprofit with nearly two decades of credibility in the region."
+            body="Associate your brand with Massachusetts's largest active transportation initiative — a positive, community-driven campaign backed by a nonprofit with nearly two decades of credibility in the region."
           />
           <ValueCard
             dot="#2966E5"
@@ -527,7 +527,7 @@ function ContactSection() {
         <h2 className="font-display text-[clamp(2rem,4vw,2.5rem)] font-extrabold text-white mb-6 leading-[1.15]">
           Let&rsquo;s shift
           <br />
-          Greater Boston
+          Massachusetts
           <br />
           <span className="text-[#BAF14D]">together.</span>
         </h2>

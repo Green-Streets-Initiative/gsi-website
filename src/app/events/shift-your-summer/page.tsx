@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'Shift Your Summer — Live Leaderboard | Green Streets Initiative',
   description:
-    'Track Boston\u2019s biggest commuter challenge. See who\u2019s shifting the most trips to walking, biking, and transit this summer.',
+    'Track Massachusetts\u2019s biggest commuter challenge. See who\u2019s shifting the most trips to walking, biking, and transit this summer.',
 }
 
 /* ── types ─────────────────────────────────────────────────── */
@@ -84,11 +84,10 @@ interface Competition {
   event_sponsorships: Sponsorship[]
 }
 
-type PageState = 'upcoming' | 'active' | 'coming-soon'
+type PageState = 'upcoming' | 'active' | 'ended' | 'coming-soon'
 
 /* ── helpers ───────────────────────────────────────────────── */
 
-const APP_LAUNCHED = process.env.NEXT_PUBLIC_APP_LAUNCHED === 'true'
 // Mirrors the gate in /rules/page.tsx — keeps the "official rules" link out
 // of the public UI until the legal [TBD] blocks on the rules page are
 // populated. Flip both this and the rules page on by setting
@@ -100,16 +99,6 @@ function formatDateRange(start: string, end: string) {
   const startStr = new Date(start).toLocaleDateString('en-US', opts)
   const endStr = new Date(end).toLocaleDateString('en-US', { ...opts, year: 'numeric' })
   return `${startStr} \u2013 ${endStr}`
-}
-
-function metricLabel(metric: string) {
-  const map: Record<string, string> = {
-    pct_non_car: 'Ranked by Shift Rate',
-    trips: 'Ranked by active trips',
-    miles: 'Ranked by miles shifted',
-    active_days: 'Ranked by active days',
-  }
-  return map[metric] ?? 'Ranked by Shift Rate'
 }
 
 function shiftRateColor(pct: number) {
@@ -124,12 +113,12 @@ function shiftRateColor(pct: number) {
 
 export default async function ShiftYourSummerPage() {
   const supabase = createServerSupabaseClient()
-  const now = new Date().toISOString()
 
-  // Fetch the most relevant public flagship event
-  // Cast to Competition: Supabase infers FK joins as arrays but PostgREST returns
-  // a single object for forward FKs (event_sponsorships.sponsor_id → sponsors.id)
-  const { data: competitionRaw } = await supabase
+  // Fetch recent public Shift-Your-Summer events (incl. ended ones) and pick
+  // the most relevant: prefer currently-active, else next upcoming, else most
+  // recently ended. Limit 5 is a generous ceiling — there should normally be
+  // one or two matching rows.
+  const { data: competitionsRaw } = await supabase
     .from('competitions')
     .select(`
       id, name, description, metric, starts_at, ends_at,
@@ -144,18 +133,30 @@ export default async function ShiftYourSummerPage() {
     .eq('is_public', true)
     .is('group_id', null)
     .like('name', '%Shift Your Summer%')
-    .gte('ends_at', now)
-    .order('starts_at', { ascending: true })
-    .limit(1)
-    .single()
-  const competition = competitionRaw as unknown as Competition | null
+    .order('starts_at', { ascending: false })
+    .limit(5)
+
+  const competitions = (competitionsRaw ?? []) as unknown as Competition[]
+  const nowMs = Date.now()
+  const competition: Competition | null =
+    competitions.find(c => {
+      const s = new Date(c.starts_at).getTime()
+      const e = new Date(c.ends_at).getTime()
+      return s <= nowMs && e >= nowMs
+    }) ??
+    competitions.find(c => new Date(c.starts_at).getTime() > nowMs) ??
+    competitions[0] ??
+    null
 
   // Determine page state
   let state: PageState = 'coming-soon'
   if (competition) {
     const startsAt = new Date(competition.starts_at).getTime()
-    const nowMs = Date.now()
-    state = startsAt > nowMs ? 'upcoming' : 'active'
+    const endsAt = new Date(competition.ends_at).getTime()
+    state =
+      endsAt < nowMs ? 'ended'
+      : startsAt > nowMs ? 'upcoming'
+      : 'active'
   }
 
   // Fetch additional data for active/upcoming states
@@ -164,7 +165,7 @@ export default async function ShiftYourSummerPage() {
   let participantCount = 0
   let prizes: Prize[] = []
 
-  if (competition && state === 'active') {
+  if (competition && (state === 'active' || state === 'ended')) {
     const groupIds = competition.matchup_group_ids ?? []
     const [standingsRes, groupStandingsRes, countRes, prizesRes] = await Promise.all([
       supabase.rpc('get_competition_standings', { p_competition_id: competition.id }),
@@ -286,6 +287,17 @@ export default async function ShiftYourSummerPage() {
             sponsors={sponsors}
           />
         )}
+        {state === 'ended' && competition && (
+          <EndedEvent
+            competition={competition}
+            standings={standings}
+            geoStandings={geoStandings}
+            corpStandings={corpStandings}
+            participantCount={participantCount}
+            prizes={prizes}
+            sponsors={sponsors}
+          />
+        )}
       </main>
       <Footer />
     </>
@@ -308,12 +320,7 @@ function ComingSoon() {
           <p className="mx-auto mb-10 max-w-[580px] text-lg leading-[1.7] text-white">
             Shift flagship events bring Massachusetts commuters together to compete, move, and win real prizes. Download the app to get started.
           </p>
-          <Link
-            href="/shift"
-            className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-          >
-            Download the app
-          </Link>
+          <JoinChallengeCta phase="coming-soon" />
         </div>
       </section>
 
@@ -354,7 +361,7 @@ function UpcomingEvent({
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#191A2E] px-8 pt-24 md:pt-32 pb-10 md:pb-12">
+      <section className="relative overflow-hidden bg-[#191A2E] px-8 pt-24 md:pt-32 pb-4 md:pb-6">
         <GradientBg />
         <div className="relative mx-auto max-w-[1120px]">
           <div className="max-w-[640px]">
@@ -370,7 +377,6 @@ function UpcomingEvent({
             <p className="mb-3 text-sm font-semibold text-white">
               {formatDateRange(competition.starts_at, competition.ends_at)}
             </p>
-            <MetricBadge metric={competition.metric} />
             <div className="mt-8">
               <CountdownTimer targetDate={competition.starts_at} />
             </div>
@@ -379,16 +385,19 @@ function UpcomingEvent({
       </section>
 
       {/* Placeholder leaderboard */}
-      <section className="bg-[#191A2E] px-8 pt-6 pb-12">
-        <div className="mx-auto max-w-[800px] text-center">
-          <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] px-8 py-16">
+      <section className="bg-[#191A2E] px-8 pt-2 pb-12">
+        <div className="mx-auto max-w-[800px]">
+          <div className="mb-5 text-center">
+            <ShareChallengeButton />
+          </div>
+          <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] px-8 py-16 text-center">
             <h2 className="mb-3 font-display text-2xl font-bold tracking-tight text-white">
               Be the first on the board
             </h2>
             <p className="mb-8 text-[1.0625rem] leading-[1.7] text-white">
               The challenge hasn&apos;t started yet. Download Shift and be ready to compete from day one.
             </p>
-            <CtaButtons />
+            <JoinChallengeCta phase="upcoming" />
           </div>
         </div>
       </section>
@@ -397,7 +406,7 @@ function UpcomingEvent({
       {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} />}
       <HowToJoin />
       <PartnerCrossLink />
-      <CtaSection />
+      <CtaSection phase="upcoming" />
     </>
   )
 }
@@ -442,9 +451,8 @@ function ActiveEvent({
             <p className="mb-3 text-sm font-semibold text-white">
               {formatDateRange(competition.starts_at, competition.ends_at)}
             </p>
-            <MetricBadge metric={competition.metric} />
             <div className="mt-8">
-              <CtaButtons />
+              <JoinChallengeCta phase="active" />
             </div>
           </div>
         </div>
@@ -453,6 +461,9 @@ function ActiveEvent({
       {/* Leaderboard */}
       <section className="bg-[#191A2E] px-8 pb-16 pt-4">
         <div className="mx-auto max-w-[900px]">
+          <div className="mb-5">
+            <ShareChallengeButton />
+          </div>
           <div className="mb-4 flex items-end justify-between">
             <div>
               <h2 className="font-display text-2xl font-bold tracking-tight text-white">
@@ -499,7 +510,108 @@ function ActiveEvent({
       {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} />}
       <HowToJoin />
       <PartnerCrossLink />
-      <CtaSection />
+      <CtaSection phase="active" />
+    </>
+  )
+}
+
+/* ── State D: Ended Event ─────────────────────────────────── */
+
+function EndedEvent({
+  competition,
+  standings,
+  geoStandings,
+  corpStandings,
+  participantCount,
+  prizes,
+  sponsors,
+}: {
+  competition: Competition
+  standings: Standing[]
+  geoStandings: GroupStanding[]
+  corpStandings: GroupStanding[]
+  participantCount: number
+  prizes: Prize[]
+  sponsors: Sponsorship[]
+}) {
+  const leader = standings[0]
+  return (
+    <>
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-[#191A2E] px-8 py-16 md:py-24">
+        <GradientBg />
+        <div className="relative mx-auto max-w-[1120px]">
+          <div className="max-w-[640px]">
+            <Eyebrow>
+              Flagship Event &middot; {new Date(competition.starts_at).getFullYear()}
+            </Eyebrow>
+            <h1 className="mb-4 font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+              {competition.name}
+            </h1>
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#BAF14D]/40 bg-[#BAF14D]/[0.08] px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest text-[#BAF14D]">
+              Challenge complete
+            </div>
+            <p className="mb-5 text-lg leading-[1.7] text-white">
+              {competition.description}
+            </p>
+            <p className="mb-3 text-sm font-semibold text-white">
+              {formatDateRange(competition.starts_at, competition.ends_at)}
+            </p>
+            <div className="mt-8">
+              <JoinChallengeCta phase="ended" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final standings */}
+      <section className="bg-[#191A2E] px-8 pb-16 pt-4">
+        <div className="mx-auto max-w-[900px]">
+          <div className="mb-5">
+            <ShareChallengeButton />
+          </div>
+          <div className="mb-4">
+            <h2 className="font-display text-2xl font-bold tracking-tight text-white">
+              Final standings
+            </h2>
+            <p className="mt-1 text-sm text-white/75">
+              Challenge complete. Shift Your September is up next.
+            </p>
+          </div>
+
+          <div className="mb-4 flex flex-wrap gap-3">
+            <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-4 py-2.5">
+              <span className="font-display text-lg font-extrabold text-white">
+                {participantCount.toLocaleString()}
+              </span>
+              <span className="ml-1.5 text-sm text-white/75">people participated</span>
+            </div>
+            {leader && (
+              <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-4 py-2.5">
+                <span className="text-sm text-white/75">Winner: </span>
+                <span className="font-display text-sm font-bold text-white">
+                  {leader.display_name}
+                </span>
+                <span className="ml-1.5 text-sm text-[#EDB93C]">
+                  {Math.round(leader.pct_non_car)}% Shift Rate
+                </span>
+              </div>
+            )}
+          </div>
+
+          <LeaderboardTabs
+            geoStandings={geoStandings}
+            corpStandings={corpStandings}
+            individualStandings={standings}
+            participantCount={participantCount}
+          />
+        </div>
+      </section>
+
+      <SponsorSection sponsors={sponsors} eventCampaign={slugify(competition.name)} />
+      {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} />}
+      <PartnerCrossLink />
+      <CtaSection phase="ended" />
     </>
   )
 }
@@ -538,7 +650,7 @@ function SponsorSection({
           Partners &amp; sponsors
         </h2>
         <p className="mb-10 text-sm text-white/75">
-          Made possible by these Greater Boston organizations
+          Made possible by these organizations
         </p>
 
         {/* Presenting */}
@@ -966,33 +1078,23 @@ function PartnerCrossLink() {
   )
 }
 
-function CtaSection() {
+function CtaSection({ phase }: { phase: PageState }) {
+  const heading =
+    phase === 'ended' ? 'Ready for the next one?' : 'Ready to compete?'
+  const body =
+    phase === 'active'
+      ? 'Download Shift, join the challenge, and start earning your spot on the board.'
+      : phase === 'ended'
+        ? 'Shift Your September is up next. Download the app and be ready when it launches.'
+        : 'Download the app now so you’re ready when the challenge goes live.'
   return (
     <section className="bg-[#191A2E] px-8 py-24">
       <div className="mx-auto max-w-[560px] text-center">
         <h2 className="mb-4 font-display text-[clamp(2rem,4vw,3rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-          Ready to compete?
+          {heading}
         </h2>
-        {APP_LAUNCHED ? (
-          <>
-            <p className="mb-10 text-lg leading-relaxed text-white">
-              Download Shift, join the challenge, and start earning your spot on the board.
-            </p>
-            <AppStoreButtons />
-          </>
-        ) : (
-          <>
-            <p className="mb-10 text-lg leading-relaxed text-white">
-              Shift launches this summer. Download the app now so you&apos;re ready when the challenge goes live.
-            </p>
-            <Link
-              href="/shift"
-              className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-            >
-              Download the app
-            </Link>
-          </>
-        )}
+        <p className="mb-10 text-lg leading-relaxed text-white">{body}</p>
+        <JoinChallengeCta phase={phase} />
       </div>
     </section>
   )
@@ -1031,56 +1133,39 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   )
 }
 
-function MetricBadge({ metric }: { metric: string }) {
-  return (
-    <span className="group relative inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.05] px-3.5 py-1.5 text-xs font-semibold text-white cursor-default">
-      <svg viewBox="0 0 12 12" width="12" height="12" fill="currentColor">
-        <path d="M6 0l1.76 3.57L12 4.14 8.82 7.02l.94 4.98L6 10.02 2.24 12l.94-4.98L0 4.14l4.24-.57z" />
-      </svg>
-      {metricLabel(metric)}
-      <span className="ml-0.5 text-white/60">?</span>
-      {/* Tooltip */}
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-64 -translate-x-1/2 rounded-lg border border-white/[0.1] bg-[#1a1b30] px-3.5 py-2.5 text-xs font-normal leading-relaxed text-white/80 opacity-0 shadow-xl transition-opacity group-hover:opacity-100">
-        Shift Rate is the percentage of your trips taken by active modes — walking, biking, or transit. Higher is better.
-        <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#1a1b30]" />
-      </span>
-    </span>
-  )
-}
-
-function CtaButtons() {
-  if (APP_LAUNCHED) return <AppStoreButtons />
+function ShareChallengeButton() {
   return (
     <Link
-      href="#cta"
-      className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+      href="/events/shift-your-summer/share"
+      className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
     >
-      Join the challenge &rarr;
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="18" cy="5" r="3" />
+        <circle cx="6" cy="12" r="3" />
+        <circle cx="18" cy="19" r="3" />
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+      </svg>
+      Share this challenge with your team
+      <span aria-hidden="true">→</span>
     </Link>
   )
 }
 
-function AppStoreButtons() {
+// Phase-aware download/join CTA. All variants point at /app, where the existing
+// IS_LIVE gate decides between dual store buttons and the waitlist email form
+// based on the NEXT_PUBLIC_IOS_URL / NEXT_PUBLIC_ANDROID_URL env vars.
+function JoinChallengeCta({ phase }: { phase: PageState }) {
+  const label =
+    phase === 'active' ? 'Join the challenge'
+      : phase === 'ended' ? 'Get the Shift app'
+      : 'Download the Shift app'
   return (
-    <div className="flex items-center justify-center gap-4">
-      <a
-        href="#"
-        className="inline-flex items-center gap-2 rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-      >
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="#191A2E">
-          <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-        </svg>
-        Download for iOS
-      </a>
-      <a
-        href="#"
-        className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-      >
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="white">
-          <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-1.832l2.46 1.42c.55.32.55 1.09 0 1.41l-2.46 1.42-2.534-2.534 2.534-2.534v.818zm-3.906-2.54L4.864 3.378l10.928 6.328-2.302 2.302.303.327z" />
-        </svg>
-        Download for Android
-      </a>
-    </div>
+    <Link
+      href="/app"
+      className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+    >
+      {label} &rarr;
+    </Link>
   )
 }
