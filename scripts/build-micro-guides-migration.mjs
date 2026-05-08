@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = resolve(__dirname, '..')
 const sourcePath = resolve(repoRoot, 'content/micro-guides-library.md')
-const outputPath = resolve(repoRoot, 'supabase/migrations/20260507_seed_micro_guides_library.sql')
+const outputPath = resolve(repoRoot, 'supabase/migrations/20260508_reseed_micro_guides_library.sql')
 
 const STARTER_IDS = new Set([
   // Cycling
@@ -119,15 +119,19 @@ function normalizeBody(raw) {
   return body.trim()
 }
 
-function deriveSummary(body) {
-  // First non-heading, non-empty paragraph. Strip leading bullet/bold markers
-  // so the summary reads as a sentence rather than a list lead-in.
+function deriveSummary(yaml, body) {
+  // Prefer hand-authored summary in YAML — that's the curated cover-card hook
+  // used by the Shift app and the public /guides listing cards.
+  if (yaml.summary && typeof yaml.summary === 'string' && yaml.summary.trim()) {
+    return yaml.summary.trim()
+  }
+
+  // Fallback: auto-extract the first non-heading paragraph as a safety net.
   const blocks = body.split(/\n\s*\n/)
   for (const block of blocks) {
     const trimmed = block.trim()
     if (!trimmed) continue
     if (trimmed.startsWith('#')) continue
-    // Strip a leading bullet "- " and surrounding bold markers from the lead.
     const cleaned = trimmed
       .replace(/^[-*]\s+/, '')
       .replace(/\*\*([^*]+)\*\*/g, '$1')
@@ -173,7 +177,7 @@ function rowSql(guide) {
   const y = guide.yaml
   const id = y.id
   const barrier = BARRIER_OVERRIDES.has(id) ? BARRIER_OVERRIDES.get(id) : y.barrier
-  const summary = deriveSummary(guide.body)
+  const summary = deriveSummary(y, guide.body)
   const isStarter = STARTER_IDS.has(id)
   const readMin = readTimeMinutes(guide.body)
 
