@@ -8,9 +8,7 @@ export default function MissionStatement() {
         <p className="mb-10 font-display text-[clamp(1.375rem,2.5vw,1.875rem)] font-bold leading-[1.3] tracking-tight text-navy">
           Green Streets Initiative helps people{' '}
           <em className="not-italic text-[#7DB82E]">shift trips</em> to healthier,
-          cheaper, cleaner alternatives — and measures the impact,{' '}
-          <em className="not-italic text-[#7DB82E]">trip by trip</em>, community by
-          community.
+          more affordable, more fun alternatives.
         </p>
 
         <div className="grid gap-6 border-t border-navy/[0.09] pt-8 md:grid-cols-3">
