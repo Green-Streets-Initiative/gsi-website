@@ -118,7 +118,7 @@ export default function WhatMovesUsPage() {
                 For commuters
               </h2>
               <p className="text-[0.9375rem] leading-[1.6] text-white">
-                Share your story, shape your streets, and earn bonus points in Shift. Your commute experience matters — and it can change how your city moves.
+                Share your story, shape your streets, and earn bonus XP in Shift. Your commute experience matters — and it can change how your city moves.
               </p>
             </div>
           </div>
@@ -181,7 +181,7 @@ export default function WhatMovesUsPage() {
                 Stories that connect to data.
               </h3>
               <p className="mb-8 max-w-[560px] text-[1.0625rem] leading-[1.65] text-white">
-                Future What Moves Us campaigns will connect to the Shift platform. Participants who share their stories can track their own trips, earn points, and see how their community moves — all in one place.
+                Future What Moves Us campaigns will connect to the Shift platform. Participants who share their stories can track their own trips, earn XP, and see how their community moves — all in one place.
               </p>
               <Link
                 href="/shift"

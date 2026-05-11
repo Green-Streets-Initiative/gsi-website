@@ -109,7 +109,7 @@ export default function ProgramsPage() {
                   For commuters
                 </h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  Share your story, shape your streets, and earn bonus points in Shift. Your commute experience matters — and it can change how your city moves.
+                  Share your story, shape your streets, and earn bonus XP in Shift. Your commute experience matters — and it can change how your city moves.
                 </p>
               </div>
             </div>

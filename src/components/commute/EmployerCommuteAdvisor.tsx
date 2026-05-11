@@ -704,7 +704,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
 
                 {/* Shift CTA */}
                 <div className="rounded-2xl border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-7 py-6">
-                  <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight text-white">Start earning</div>
+                  <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight text-white">Get the app</div>
                   <div className="mb-3.5 text-[0.8rem] leading-relaxed text-white">
                     Track your commute with Shift — {group.name} employees who use Shift can join the company challenge and compete with teammates.
                   </div>

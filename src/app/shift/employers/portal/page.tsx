@@ -757,7 +757,7 @@ function PortalPage() {
     doc.setTextColor(80, 80, 80)
     const desc = doc.splitTextToSize(
       'Shift tracks your commute automatically and rewards you for walking, biking, and taking transit. ' +
-        'Earn points, compete with your team, and help reduce congestion and emissions.',
+        'Climb the tiers, compete with your team, and help reduce congestion and emissions.',
       420
     )
     doc.text(desc, centerX, 545, { align: 'center' })

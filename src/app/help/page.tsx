@@ -19,7 +19,7 @@ const quickLinks = [
     sections: [
       { name: 'Getting Started', anchor: '#getting-started' },
       { name: 'Tracking Your Trips', anchor: '#trip-tracking' },
-      { name: 'Points & Rewards', anchor: '#points-rewards' },
+      { name: 'Rewards & Tiers', anchor: '#points-rewards' },
       { name: 'Badges, Streaks & Tiers', anchor: '#badges-streaks-tiers' },
       { name: 'Finding Rewards Partners', anchor: '#rewards-partners-users' },
     ],
@@ -90,7 +90,7 @@ const faqSections = [
       {
         question: 'What transportation modes count?',
         answer:
-          'Shift recognizes walking, biking, public transit (bus, subway, commuter rail), carpooling, and e-scooter rides. These are the modes that earn points. Driving does not earn points.',
+          'Shift recognizes walking, biking, public transit (bus, subway, commuter rail), carpooling, and e-scooter rides. These are the modes that earn XP and count toward your tier. Driving does not.',
       },
       {
         question: 'Why didn\u2019t my trip get logged?',
@@ -100,7 +100,7 @@ const faqSections = [
       {
         question: 'Can I log a trip manually?',
         answer:
-          'Yes. The Log tab is one of the app\u2019s four main tabs. Tap it to enter the mode, approximate distance, and date. Manual trips earn points the same way automatic trips do.',
+          'Yes. The Log tab is one of the app\u2019s four main tabs. Tap it to enter the mode, approximate distance, and date. Manual trips earn XP and count toward your tier the same way automatic trips do.',
       },
       {
         question: 'How accurate is background tracking?',
@@ -116,39 +116,34 @@ const faqSections = [
   },
   {
     id: 'points-rewards',
-    title: 'Points & Rewards',
+    title: 'Rewards & Tiers',
     items: [
       {
-        question: 'How do I earn points?',
+        question: 'How do partner rewards work in Shift?',
         answer:
-          'You earn points every time you log an active trip (walk, bike, transit, carpool, or e-scooter). The number of points you earn per trip depends on your current tier: Starters earn 1 point per trip, Movers earn 2, Shifters earn 3, Pacesetters earn 4, and Trailblazers earn 5. You can also earn points for unlocking achievements and by submitting your story to What Moves Us campaigns, if eligible. The maximum you can earn is 15 points per day.',
+          'Browse the Rewards tab in the app. Each partner offer shows whether you\u2019ve unlocked it. Tap an unlocked offer, show the resulting badge or code at the register, and the partner takes care of the discount. There\u2019s no points balance to manage \u2014 rewards unlock as you progress.',
       },
       {
-        question: 'How do I redeem points at a Rewards Partner?',
+        question: 'How do I unlock more rewards?',
         answer:
-          'Browse available rewards in the Rewards tab of the app. When you find one you\u2019d like to redeem, tap it to generate a QR code. Show this QR code to the cashier at the partner location \u2014 they\u2019ll scan it with any phone to confirm your redemption. Each reward listing shows the point cost and any terms.',
+          'Rewards unlock as you advance through Shift\u2019s five tiers \u2014 Starter, Mover, Shifter, Pacesetter, and Trailblazer. Each tier opens up more partner offers. You advance by taking active trips and maintaining a healthy Shift Rate (the share of your trips that are active) over the last 60 days.',
       },
       {
-        question: 'Where can I see my points balance?',
+        question: 'What is XP, then?',
         answer:
-          'Your current points balance is displayed at the top of the Rewards tab and on your profile screen.',
-      },
-      {
-        question: 'Do points expire?',
-        answer:
-          'Points expire after 12 months of account inactivity. As long as you\u2019re taking active trips, your points are safe.',
+          'XP is a progress counter \u2014 a way to see how much you\u2019ve shifted over time. You earn XP for every active trip, with a higher multiplier at higher tiers. XP is not a currency \u2014 you don\u2019t spend it, and it doesn\u2019t unlock anything on its own. It\u2019s a record of your achievements.',
       },
       {
         question:
-          'I redeemed points but the partner didn\u2019t accept my code. What do I do?',
+          'I tried to use a reward but the partner didn\u2019t accept it. What do I do?',
         answer: (
           <p>
             Contact us at{' '}
             <a href="mailto:help@gogreenstreets.org" className={linkClass}>
               help@gogreenstreets.org
             </a>{' '}
-            with the redemption details, partner name, and date. We&rsquo;ll
-            sort it out and make sure you&rsquo;re not out any points.
+            with the partner name, date, and details. We&rsquo;ll sort it out
+            with the partner directly.
           </p>
         ),
       },

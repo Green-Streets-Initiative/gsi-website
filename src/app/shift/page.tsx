@@ -85,7 +85,7 @@ export default function ShiftPage() {
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-sm font-extrabold text-[#7DB82E]">2</div>
                 <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-[#191A2E]">Your commute, working for you</h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
-                  Every active trip earns points, automatically. Your tier multiplies your earnings — the more you shift, the more you earn. Redeem for real rewards from local businesses.
+                  Active trips advance you through five tiers — Starter to Trailblazer — and each tier unlocks more perks at partner businesses around town. Show your badge at the register; no point math, no codes to track.
                 </p>
               </div>
 

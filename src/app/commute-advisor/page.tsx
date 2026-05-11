@@ -1031,11 +1031,11 @@ export default function CommuteCalculator() {
                   event={recommendation.content.event}
                 />
 
-                {/* Start earning CTA */}
+                {/* Get the app CTA */}
                 <div className="rounded-2xl border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-7 py-6">
-                  <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight text-white">Start earning</div>
+                  <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight text-white">Get the app</div>
                   <div className="mb-3.5 text-[0.8rem] leading-relaxed text-white">
-                    Every active trip earns you points toward rewards from local businesses.
+                    Track your active trips with Shift to see what you&rsquo;re saving, feel the health gains, and unlock perks at partner businesses around town.
                   </div>
                   <a href="/shift" className="inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85">
                     Download the app &rarr;

@@ -112,7 +112,7 @@ export default function WalkRideDaysPage() {
                 Track your Walk/Ride Days in the Shift app.
               </h3>
               <p className="mb-8 max-w-[560px] text-[1.0625rem] leading-[1.65] text-white">
-                Shift detects your Walk/Ride Day trips automatically. Earn bonus points, see your neighborhood leaderboard, and watch your impact add up over time.
+                Shift detects your Walk/Ride Day trips automatically. Earn bonus XP, see your neighborhood leaderboard, and watch your impact add up over time.
               </p>
               <Link
                 href="/shift"

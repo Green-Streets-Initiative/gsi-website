@@ -17,7 +17,7 @@ const employerFaqItems = [
   {
     question: 'Can my company use Shift for a workplace challenge?',
     answer:
-      'Yes. Shift supports invite-code-gated private groups where employees compete, earn points, and track collective impact. You can run a time-limited challenge (like a month-long competition) or an ongoing year-round program.',
+      'Yes. Shift supports invite-code-gated private groups where employees compete, earn rewards, and track collective impact. You can run a time-limited challenge (like a month-long competition) or an ongoing year-round program.',
   },
   {
     question: 'What does an employer challenge look like?',
@@ -42,7 +42,7 @@ const employerFaqItems = [
   {
     question: 'How is individual employee privacy protected?',
     answer:
-      'Employers receive aggregate data only. No individual trips, routes, Shift Rate, or points balance is ever visible to your organization. Participation is voluntary — employees opt in by downloading the app and entering your invite code.',
+      'Employers receive aggregate data only. No individual trips, routes, Shift Rate, or XP is ever visible to your organization. Participation is voluntary — employees opt in by downloading the app and entering your invite code.',
   },
   {
     question: 'How does this connect to our ESG reporting?',
