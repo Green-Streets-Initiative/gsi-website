@@ -9,12 +9,12 @@ const IS_LIVE = !!(IOS_URL && ANDROID_URL)
 export const metadata: Metadata = {
   title: 'Download Shift — Earn rewards for walking, biking, and transit',
   description:
-    'Shift by Green Streets Initiative rewards you for choosing active and sustainable transportation. Coming soon to iOS and Android.',
+    'Shift by Green Streets Initiative tracks your active trips — earn rewards, get practical commute advice, and discover your city with curated Roams.',
   alternates: { canonical: 'https://gogreenstreets.org/app' },
   openGraph: {
     title: 'Download Shift — Earn rewards for walking, biking, and transit',
     description:
-      'Shift by Green Streets Initiative rewards you for choosing active and sustainable transportation.',
+      'Shift by Green Streets Initiative tracks your active trips — earn rewards, get practical commute advice, and discover your city with curated Roams.',
     url: 'https://gogreenstreets.org/app',
     siteName: 'Green Streets Initiative',
     locale: 'en_US',
@@ -29,7 +29,7 @@ export default function AppDownloadPage() {
       <div className="mx-auto max-w-[1120px] px-8 pt-6">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-sm text-white/50 transition-colors hover:text-white/80"
+          className="inline-flex items-center gap-1.5 text-sm text-white/70 transition-colors hover:text-white/90"
         >
           &larr; gogreenstreets.org
         </Link>
@@ -52,9 +52,9 @@ export default function AppDownloadPage() {
           <h1 className="mb-5 font-display text-[clamp(1.75rem,5vw,2.75rem)] font-extrabold leading-[1.1] tracking-tight">
             Earn rewards for walking, biking, and taking transit.
           </h1>
-          <p className="mb-10 text-[1.0625rem] leading-[1.65] text-white/70">
-            Shift tracks your active trips and connects you to local businesses that reward you for
-            getting there sustainably.
+          <p className="mb-10 text-[1.0625rem] leading-[1.65] text-white/75">
+            Shift tracks your active trips — and helps you earn rewards, move smarter, and discover
+            your city along the way.
           </p>
 
           {/* ── State A: Pre-launch / State B: Live ────────── */}
@@ -84,7 +84,7 @@ export default function AppDownloadPage() {
                   Get it on Google Play
                 </a>
               </div>
-              <p className="mt-5 text-sm text-white/40">
+              <p className="mt-5 text-sm text-white/60">
                 Free &middot; Requires iOS 16+ or Android 10+
               </p>
             </div>
@@ -106,21 +106,11 @@ export default function AppDownloadPage() {
             {
               icon: (
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#BAF14D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-              ),
-              title: 'Track every trip',
-              desc: 'Walks, rides, and transit automatically detected.',
-            },
-            {
-              icon: (
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#BAF14D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z" />
                 </svg>
               ),
-              title: 'Earn points',
-              desc: 'Rewards from local businesses in your neighborhood.',
+              title: 'Win rewards & prizes',
+              desc: 'Partner discounts, competition prizes, and giveaways \u2014 just for commuting actively.',
             },
             {
               icon: (
@@ -128,8 +118,18 @@ export default function AppDownloadPage() {
                   <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                 </svg>
               ),
-              title: 'See your impact',
-              desc: 'CO\u2082 avoided, miles moved, money saved.',
+              title: 'Move smarter',
+              desc: 'Guides, routes, and nudges tailored to how you actually get around.',
+            },
+            {
+              icon: (
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#BAF14D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+                </svg>
+              ),
+              title: 'Discover your city',
+              desc: 'Curated Roams that help you explore your neighborhood in new ways.',
             },
           ].map((f) => (
             <div
@@ -142,7 +142,7 @@ export default function AppDownloadPage() {
               <h3 className="mb-2 font-display text-base font-bold tracking-tight">
                 {f.title}
               </h3>
-              <p className="text-[0.875rem] leading-[1.6] text-white/60">{f.desc}</p>
+              <p className="text-[0.875rem] leading-[1.6] text-white/75">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -154,9 +154,9 @@ export default function AppDownloadPage() {
           <h2 className="mb-4 font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold leading-[1.15] tracking-tight">
             Are you a local business?
           </h2>
-          <p className="mb-8 text-[0.9375rem] leading-[1.65] text-white/60">
-            Join the Shift Rewards Partner network and connect with customers who are actively
-            choosing active transportation.
+          <p className="mb-8 text-[0.9375rem] leading-[1.65] text-white/75">
+            Join the Shift Rewards Partner network and connect with people who walk, bike, and
+            ride transit in your neighborhood.
           </p>
           <Link
             href="/shift/rewards-partners"
