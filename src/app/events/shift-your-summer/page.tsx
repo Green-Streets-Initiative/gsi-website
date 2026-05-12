@@ -183,7 +183,7 @@ export default async function ShiftYourSummerPage() {
         .eq('competition_id', competition.id),
       supabase
         .from('competition_prizes')
-        .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, entry_type, eligibility_criteria, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url)), competition_prize_units(id)')
+        .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, entry_type, eligibility_criteria, quantity, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url))')
         .eq('competition_id', competition.id)
         .eq('prize_type', 'individual')
         .order('place', { ascending: true }),
@@ -218,9 +218,7 @@ export default async function ShiftYourSummerPage() {
         brand_name_override: row.brand_name_override ?? null,
         image_url: row.image_url ?? null,
         product_url: row.product_url ?? null,
-        quantity: Array.isArray(row.competition_prize_units)
-          ? row.competition_prize_units.length
-          : 0,
+        quantity: row.quantity ?? 1,
         entry_type: (row.entry_type ?? "achievement_gated") as PrizeEntryType,
         eligibility_criteria: (row.eligibility_criteria ?? null) as EligibilityCriteria | null,
         funder: funder ? { id: funder.id, sponsors: sponsor } : null,
@@ -229,7 +227,7 @@ export default async function ShiftYourSummerPage() {
   } else if (competition && state === 'upcoming') {
     const { data } = await supabase
       .from('competition_prizes')
-      .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, entry_type, eligibility_criteria, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url)), competition_prize_units(id)')
+      .select('id, place, prize_type, description, value_amount, funded_by_sponsorship_id, tier, display_order, brand_name_override, image_url, product_url, entry_type, eligibility_criteria, quantity, funder:funded_by_sponsorship_id(id, sponsors(id, name, logo_url, website_url))')
       .eq('competition_id', competition.id)
       .eq('prize_type', 'individual')
       .order('place', { ascending: true })
@@ -250,9 +248,7 @@ export default async function ShiftYourSummerPage() {
         brand_name_override: row.brand_name_override ?? null,
         image_url: row.image_url ?? null,
         product_url: row.product_url ?? null,
-        quantity: Array.isArray(row.competition_prize_units)
-          ? row.competition_prize_units.length
-          : 0,
+        quantity: row.quantity ?? 1,
         entry_type: (row.entry_type ?? "achievement_gated") as PrizeEntryType,
         eligibility_criteria: (row.eligibility_criteria ?? null) as EligibilityCriteria | null,
         funder: funder ? { id: funder.id, sponsors: sponsor } : null,
