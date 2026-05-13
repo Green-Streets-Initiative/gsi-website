@@ -360,40 +360,57 @@ function UpcomingEvent({
       <section className="relative overflow-hidden bg-[#191A2E] px-8 pt-24 md:pt-32 pb-4 md:pb-6">
         <GradientBg />
         <div className="relative mx-auto max-w-[1120px]">
-          <div className="max-w-[640px]">
+          <div className="flex max-w-[640px] flex-col">
             <Eyebrow>
               Flagship Event &middot; {new Date(competition.starts_at).getFullYear()}
             </Eyebrow>
-            <h1 className="mb-4 font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h1 className="order-1 mb-4 font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
               {competition.name}
             </h1>
-            <p className="mb-5 text-lg leading-[1.7] text-white">
+            <p className="order-2 mb-5 text-lg leading-[1.7] text-white">
               {competition.description}
             </p>
-            <p className="mb-3 text-sm font-semibold text-white">
+            <p className="order-3 mb-3 text-sm font-semibold text-white">
               {formatDateRange(competition.starts_at, competition.ends_at)}
             </p>
-            <div className="mt-8">
+            <p className="order-4 mt-1 text-xs font-medium text-white/60">
+              Green Streets Initiative &middot; moving Massachusetts since 2006
+            </p>
+
+            {/* Download card: mobile order-5 (before countdown), desktop order-6 (after countdown) */}
+            <div className="order-5 md:order-6 mt-6">
+              <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] px-8 py-10 text-center">
+                <h2 className="mb-3 font-display text-2xl font-bold tracking-tight text-white">
+                  Be the first on the board
+                </h2>
+                <p className="mb-8 text-[1.0625rem] leading-[1.7] text-white">
+                  The challenge hasn&apos;t started yet. Download Shift and be ready to compete from day one.
+                </p>
+                <JoinChallengeCta phase="upcoming" />
+              </div>
+            </div>
+
+            {/* Countdown: mobile order-6 (after card), desktop order-5 (before card) */}
+            <div className="order-6 md:order-5 mt-8">
               <CountdownTimer targetDate={competition.starts_at} />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Placeholder leaderboard */}
+      {/* Share + employer CTA */}
       <section className="bg-[#191A2E] px-8 pt-2 pb-12">
         <div className="mx-auto max-w-[800px]">
           <div className="mb-5 text-center">
             <ShareChallengeButton />
-          </div>
-          <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] px-8 py-16 text-center">
-            <h2 className="mb-3 font-display text-2xl font-bold tracking-tight text-white">
-              Be the first on the board
-            </h2>
-            <p className="mb-8 text-[1.0625rem] leading-[1.7] text-white">
-              The challenge hasn&apos;t started yet. Download Shift and be ready to compete from day one.
-            </p>
-            <JoinChallengeCta phase="upcoming" />
+            <div className="mt-3">
+              <Link
+                href="/shift/employers"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/75 transition-colors hover:text-white"
+              >
+                Running a team? <span className="text-[#BAF14D]">Learn about the employer platform &rarr;</span>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -447,6 +464,9 @@ function ActiveEvent({
             <p className="mb-3 text-sm font-semibold text-white">
               {formatDateRange(competition.starts_at, competition.ends_at)}
             </p>
+            <p className="mt-1 text-xs font-medium text-white/60">
+              Green Streets Initiative &middot; moving Massachusetts since 2006
+            </p>
             <div className="mt-8">
               <JoinChallengeCta phase="active" />
             </div>
@@ -459,6 +479,14 @@ function ActiveEvent({
         <div className="mx-auto max-w-[900px]">
           <div className="mb-5">
             <ShareChallengeButton />
+            <div className="mt-3">
+              <Link
+                href="/shift/employers"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/75 transition-colors hover:text-white"
+              >
+                Running a team? <span className="text-[#BAF14D]">Learn about the employer platform &rarr;</span>
+              </Link>
+            </div>
           </div>
           <div className="mb-4 flex items-end justify-between">
             <div>
@@ -553,6 +581,9 @@ function EndedEvent({
             <p className="mb-3 text-sm font-semibold text-white">
               {formatDateRange(competition.starts_at, competition.ends_at)}
             </p>
+            <p className="mt-1 text-xs font-medium text-white/60">
+              Green Streets Initiative &middot; moving Massachusetts since 2006
+            </p>
             <div className="mt-8">
               <JoinChallengeCta phase="ended" />
             </div>
@@ -565,6 +596,14 @@ function EndedEvent({
         <div className="mx-auto max-w-[900px]">
           <div className="mb-5">
             <ShareChallengeButton />
+            <div className="mt-3">
+              <Link
+                href="/shift/employers"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/75 transition-colors hover:text-white"
+              >
+                Running a team? <span className="text-[#BAF14D]">Learn about the employer platform &rarr;</span>
+              </Link>
+            </div>
           </div>
           <div className="mb-4">
             <h2 className="font-display text-2xl font-bold tracking-tight text-white">
@@ -650,25 +689,18 @@ function SponsorSection({
         </p>
 
         {/* Presenting */}
-        <div className="mb-10">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/70">
-            Presenting Sponsor
-          </p>
-          {presenting.length > 0 ? (
+        {presenting.length > 0 && (
+          <div className="mb-10">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/70">
+              Presenting Sponsor
+            </p>
             <div className="grid gap-4">
               {presenting.map(s => (
                 <SponsorTile key={s.id} sponsor={s.sponsors!} size="presenting" eventCampaign={eventCampaign} />
               ))}
             </div>
-          ) : (
-            <Link
-              href="/events/shift-your-summer/partners"
-              className="block rounded-[14px] border border-dashed border-[#BAF14D]/40 bg-[#BAF14D]/[0.06] px-6 py-7 text-center text-sm font-semibold text-[#BAF14D] hover:bg-[#BAF14D]/[0.12] transition-colors"
-            >
-              Open · become the presenting sponsor →
-            </Link>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Champion */}
         {champion.length > 0 && (
@@ -1081,8 +1113,8 @@ function CtaSection({ phase }: { phase: PageState }) {
     phase === 'active'
       ? 'Download Shift, join the challenge, and start earning your spot on the board.'
       : phase === 'ended'
-        ? 'Shift Your September is up next. Download the app and be ready when it launches.'
-        : 'Download the app now so you’re ready when the challenge goes live.'
+        ? "Shift Your September is up next. Download Shift and be ready when it launches."
+        : "Download Shift so you’re ready when the challenge goes live."
   return (
     <section className="bg-[#191A2E] px-8 py-24">
       <div className="mx-auto max-w-[560px] text-center">
@@ -1153,9 +1185,7 @@ function ShareChallengeButton() {
 // based on the NEXT_PUBLIC_IOS_URL / NEXT_PUBLIC_ANDROID_URL env vars.
 function JoinChallengeCta({ phase }: { phase: PageState }) {
   const label =
-    phase === 'active' ? 'Join the challenge'
-      : phase === 'ended' ? 'Get the Shift app'
-      : 'Download the Shift app'
+    phase === 'active' ? 'Join the challenge' : 'Download Shift'
   return (
     <Link
       href="/app"

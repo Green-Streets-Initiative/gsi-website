@@ -186,10 +186,16 @@ export default async function FlyerPage({
           <h1 className="mb-2 font-display text-[44px] font-extrabold leading-[1.05] tracking-tight">
             {eventName}
           </h1>
-          <p className="mb-1 text-lg font-semibold">{dateRange}</p>
+          <div className="mb-1 flex items-center gap-3">
+            <span className="inline-flex items-center rounded-full bg-[#BAF14D] px-3 py-1 text-sm font-bold text-[#191A2E]">
+              Starts {new Date(competition?.starts_at ?? '2026-06-15').toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/New_York' })}
+            </span>
+            <span className="text-base font-semibold text-[#191A2E]/75">{dateRange}</span>
+          </div>
           <p className="text-base text-[#191A2E]/80">
-            Massachusetts&apos;s 8-week active transportation challenge. Free to join.
+            An 8-week challenge to walk, bike, and ride transit. Free to join.
           </p>
+          <p className="mt-1 text-sm font-bold text-[#191A2E]/60">#ShiftYourSummer</p>
         </header>
 
         {/* Hero row: pitch + QR */}
@@ -243,7 +249,14 @@ export default async function FlyerPage({
                 const brand = brandLabel(p)
                 return (
                   <li key={p.id} className="border-l-2 border-[#BAF14D] pl-3">
-                    <p className="font-semibold">{p.description}</p>
+                    <p className="font-semibold">
+                      {p.description}
+                      {p.quantity > 1 && (
+                        <span className="ml-1.5 text-sm font-normal text-[#191A2E]/60">
+                          &middot; {p.quantity} winners
+                        </span>
+                      )}
+                    </p>
                     {brand && (
                       <p className="text-sm text-[#191A2E]/75">From {brand}</p>
                     )}
@@ -256,6 +269,19 @@ export default async function FlyerPage({
             </p>
           </section>
         )}
+
+        {/* Bring it to your team */}
+        <section className="mb-10 rounded-lg border-2 border-[#191A2E]/15 p-5">
+          <h3 className="mb-1 font-display text-base font-extrabold">
+            Bring it to your team
+          </h3>
+          <p className="mb-2 text-sm leading-snug text-[#191A2E]/80">
+            Get a branded team leaderboard, impact reporting, and prizes for your organization.
+          </p>
+          <p className="text-sm font-bold">
+            gogreenstreets.org/shift/employers
+          </p>
+        </section>
 
         {/* Sponsors */}
         {sponsors.length > 0 && (
@@ -289,9 +315,6 @@ export default async function FlyerPage({
         <footer className="mt-10 border-t border-[#191A2E]/15 pt-4 text-sm text-[#191A2E]/75">
           <p>
             Green Streets Initiative &middot; <strong>gogreenstreets.org/events/shift-your-summer</strong>
-          </p>
-          <p className="mt-1">
-            Want to run this challenge for your team? Visit gogreenstreets.org/shift/employers
           </p>
         </footer>
       </article>
