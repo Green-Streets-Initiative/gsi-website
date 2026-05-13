@@ -251,7 +251,7 @@ export default function ShiftEmployersPage() {
         {/* ══════════════════════════════════════════════════════════
             7 · CLOSING CTA
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 pb-24 md:pb-32">
+        <section className="bg-[#191A2E] px-8 py-24 md:py-32">
           <div className="mx-auto max-w-[640px] text-center">
             <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
               Ready to talk?
