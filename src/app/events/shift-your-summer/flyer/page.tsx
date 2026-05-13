@@ -174,13 +174,22 @@ export default async function FlyerPage({
       <article className="mx-auto max-w-[8.5in] px-10 py-10">
         {/* Header */}
         <header className="mb-8 border-b-2 border-[#191A2E] pb-6">
-          <div className="mb-4 inline-flex items-center gap-2.5">
-            <svg viewBox="0 0 36 28" width="32" height="22" className="shrink-0">
-              <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
-              <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
-            </svg>
-            <span className="font-display text-base font-bold uppercase tracking-wider">
-              Shift &middot; Green Streets Initiative
+          <div className="mb-4 inline-flex items-center gap-4">
+            {/* Shift wordmark: Bricolage Grotesque + chevrons */}
+            <span className="flex items-center gap-1.5">
+              <span className="font-display text-xl font-extrabold tracking-tight">
+                Shift
+              </span>
+              <svg viewBox="0 0 40 26" width="24" height="16" aria-hidden="true" className="shrink-0">
+                <path d="M0,0 L16,13 L0,26 L0,19 L10,13 L0,7Z" fill="#BAF14D" />
+                <path d="M20,0 L36,13 L20,26 L20,19 L30,13 L20,7Z" fill="#2966E5" />
+              </svg>
+            </span>
+            <span className="text-[#191A2E]/30">&middot;</span>
+            {/* GSI wordmark: Trebuchet MS, "Green Streets" bold + "Initiative" regular */}
+            <span className="text-base tracking-wide" style={{ fontFamily: "'Trebuchet MS', sans-serif" }}>
+              <span className="font-bold">Green Streets</span>{' '}
+              <span className="font-normal">Initiative</span>
             </span>
           </div>
           <h1 className="mb-2 font-display text-[44px] font-extrabold leading-[1.05] tracking-tight">
