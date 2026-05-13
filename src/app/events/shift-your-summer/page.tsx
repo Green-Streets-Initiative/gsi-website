@@ -377,8 +377,8 @@ function UpcomingEvent({
               Green Streets Initiative &middot; moving Massachusetts since 2006
             </p>
 
-            {/* Download card: mobile order-5 (before countdown), desktop order-6 (after countdown) */}
-            <div className="order-5 md:order-6 mt-6">
+            {/* Download card — directly under the date */}
+            <div className="order-5 mt-6">
               <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] px-8 py-10 text-center">
                 <h2 className="mb-3 font-display text-2xl font-bold tracking-tight text-white">
                   Be the first on the board
@@ -390,8 +390,8 @@ function UpcomingEvent({
               </div>
             </div>
 
-            {/* Countdown: mobile order-6 (after card), desktop order-5 (before card) */}
-            <div className="order-6 md:order-5 mt-8">
+            {/* Countdown — below the download card */}
+            <div className="order-6 mt-8">
               <CountdownTimer targetDate={competition.starts_at} />
             </div>
           </div>
