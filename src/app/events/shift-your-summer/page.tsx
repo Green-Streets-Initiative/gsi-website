@@ -1046,21 +1046,8 @@ function HowToJoin() {
     },
     {
       num: '3',
-      title: 'Climb the board',
-      body: RULES_PUBLISHED ? (
-        <>
-          See{' '}
-          <Link
-            href="/events/shift-your-summer/rules"
-            className="underline decoration-white/30 underline-offset-2 hover:decoration-white"
-          >
-            official rules
-          </Link>{' '}
-          and each prize&apos;s eligibility requirements.
-        </>
-      ) : (
-        "Each prize has its own eligibility requirements."
-      ),
+      title: 'Win prizes',
+      body: 'Every active trip is a prize entry. Earn bonus entries by referring friends, completing Roams, and submitting What Moves Us videos.',
     },
   ]
 
