@@ -71,8 +71,8 @@ export default function AboutPage() {
               Twenty years of moving Massachusetts.
             </h1>
             <p className="max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
-              Green Streets Initiative has been helping people shift trips to healthier, cheaper,
-              cleaner alternatives since 2006 &mdash; and measuring the impact, trip by trip,
+              Green Streets Initiative has been helping people shift trips to healthier, more affordable,
+              more fun alternatives since 2006 &mdash; and measuring the impact, trip by trip,
               community by community.
             </p>
           </div>
