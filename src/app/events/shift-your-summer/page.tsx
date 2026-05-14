@@ -373,9 +373,6 @@ function UpcomingEvent({
             <p className="order-3 mb-3 text-sm font-semibold text-white">
               {formatDateRange(competition.starts_at, competition.ends_at)}
             </p>
-            <p className="order-4 mt-1 text-xs font-medium text-white/60">
-              Green Streets Initiative &middot; moving Massachusetts since 2006
-            </p>
 
             {/* Download card — directly under the date */}
             <div className="order-5 mt-6">
