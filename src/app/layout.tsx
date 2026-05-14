@@ -18,7 +18,7 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: 'Green Streets Initiative — Shift how you move',
-  description: 'Green Streets Initiative helps people shift trips to healthier, cheaper, cleaner alternatives — and measures the impact, trip by trip, community by community.',
+  description: 'Green Streets Initiative helps people shift trips to healthier, more affordable, more fun alternatives — and measures the impact, trip by trip, community by community.',
   metadataBase: new URL('https://www.gogreenstreets.org'),
   openGraph: {
     title: 'Green Streets Initiative',

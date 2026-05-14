@@ -5,7 +5,7 @@ import Footer from '@/components/Footer'
 export const metadata = {
   title: 'About — Green Streets Initiative',
   description:
-    'Green Streets Initiative has been helping people shift trips to healthier, cheaper, cleaner alternatives since 2006.',
+    'Green Streets Initiative has been helping people shift trips to healthier, more affordable, more fun alternatives since 2006.',
 }
 
 const staff = [
@@ -114,7 +114,7 @@ export default function AboutPage() {
               Our mission
             </div>
             <p className="font-display text-[clamp(1.5rem,3vw,2.25rem)] font-extrabold leading-[1.2] tracking-tight text-white">
-              Green Streets Initiative helps people shift trips to healthier, cheaper, cleaner
+              Green Streets Initiative helps people shift trips to healthier, more affordable, more fun
               alternatives &mdash; and measures the impact, trip by trip, community by community.
             </p>
           </div>
