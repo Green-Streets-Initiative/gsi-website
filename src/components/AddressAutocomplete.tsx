@@ -32,8 +32,6 @@ type Props = {
   placeholder?: string
 }
 
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY!
-
 export default function AddressAutocomplete({
   value,
   onChange,
@@ -59,33 +57,14 @@ export default function AddressAutocomplete({
     }
 
     try {
-      const res = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
+      const res = await fetch('/api/places/autocomplete', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-Api-Key': API_KEY,
-        },
-        body: JSON.stringify({
-          input,
-          includedRegionCodes: ['us'],
-          includedPrimaryTypes: ['street_address', 'premise', 'subpremise', 'establishment'],
-          locationBias: {
-            circle: {
-              center: { latitude: 42.3736, longitude: -71.1097 },
-              radius: 30000,
-            },
-          },
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input }),
       })
 
       const data = await res.json()
-      const items: Prediction[] = (data.suggestions || [])
-        .filter((s: { placePrediction?: unknown }) => s.placePrediction)
-        .slice(0, 5)
-        .map((s: { placePrediction: { placeId: string; text: { text: string } } }) => ({
-          placeId: s.placePrediction.placeId,
-          text: s.placePrediction.text.text,
-        }))
+      const items: Prediction[] = data.predictions || []
 
       setPredictions(items)
       setOpen(items.length > 0)
@@ -116,8 +95,7 @@ export default function AddressAutocomplete({
       ].filter(Boolean).join(',')
 
       const res = await fetch(
-        `https://places.googleapis.com/v1/places/${prediction.placeId}?fields=${fields}`,
-        { headers: { 'X-Goog-Api-Key': API_KEY } }
+        `/api/places/details?placeId=${prediction.placeId}&fields=${fields}`
       )
       const data = await res.json()
 
