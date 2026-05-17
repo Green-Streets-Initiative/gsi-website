@@ -296,6 +296,8 @@ export async function GET(req: NextRequest) {
   const barrier = searchParams.get('barrier') || null
   const commuteMode = searchParams.get('commute_mode') || undefined
   const commuteDailyCost = parseFloat(searchParams.get('commute_daily_cost') || '') || undefined
+  const parkingDaily = parseFloat(searchParams.get('parking_daily') || '') || 0
+  const parkingMonthly = Math.round(parkingDaily * 20)
 
   if (isNaN(originLat) || isNaN(originLng) || isNaN(destLat) || isNaN(destLng)) {
     return NextResponse.json({ error: 'origin_lat, origin_lng, dest_lat, dest_lng required' }, { status: 400 })
@@ -322,7 +324,7 @@ export async function GET(req: NextRequest) {
     body: JSON.stringify({
       origin: { lat: originLat, lng: originLng },
       destination: { lat: destLat, lng: destLng },
-      parking_monthly: 0,
+      parking_monthly: parkingMonthly,
     }),
     signal: AbortSignal.timeout(15000),
   })

@@ -264,7 +264,7 @@ export default function CommuteCalculator() {
           const d = distance
           const category = d < 2 ? 'short' : d < 6 ? 'medium' : 'long' as const
           const driveMins = Math.round((d / 14) * 60)
-          const driveCostDaily = d * 2 * 0.237 + 18 // gas+maint+parking
+          const driveCostDaily = d * 2 * 0.237 + (parkMode !== 'free' ? parkingCost : 0)
           let baselineCost = driveCostDaily
           let baselineLabel = 'driving'
           if (commuteMode === 'rideshare') { baselineCost = rideshareDaily; baselineLabel = 'rideshare' }
@@ -326,6 +326,9 @@ export default function CommuteCalculator() {
         dest_lat: String(workPlaceData.lat),
         dest_lng: String(workPlaceData.lng),
       })
+      if (parkMode !== 'free') {
+        params.set('parking_daily', String(parkingCost))
+      }
       if (commuteMode === 'rideshare') {
         params.set('commute_mode', 'rideshare')
         params.set('commute_daily_cost', String(rideshareDaily))
@@ -357,7 +360,7 @@ export default function CommuteCalculator() {
     } finally {
       setRecLoading(false)
     }
-  }, [homePlaceData, workPlaceData, distance, commuteMode, rideshareDaily, carpoolDaily])
+  }, [homePlaceData, workPlaceData, distance, commuteMode, rideshareDaily, carpoolDaily, parkMode, parkingCost])
 
   // Handle "See my options" — transition to Step 3 and fetch recommendation
   const handleSeeOptions = () => {
