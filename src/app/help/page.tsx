@@ -6,7 +6,7 @@ import FAQ from '@/components/FAQ'
 export const metadata = {
   title: 'Help — Green Streets Initiative',
   description:
-    'Everything you need to know about using Shift, redeeming rewards, running a schools challenge, or joining as a partner.',
+    'Everything you need to know about using Shift, unlocking rewards, running a schools challenge, or joining as a partner.',
 }
 
 /* ------------------------------------------------------------------ */
@@ -19,9 +19,10 @@ const quickLinks = [
     sections: [
       { name: 'Getting Started', anchor: '#getting-started' },
       { name: 'Tracking Your Trips', anchor: '#trip-tracking' },
-      { name: 'Rewards & Tiers', anchor: '#points-rewards' },
+      { name: 'Earning XP & Unlocking Rewards', anchor: '#points-rewards' },
       { name: 'Badges, Streaks & Tiers', anchor: '#badges-streaks-tiers' },
       { name: 'Finding Rewards Partners', anchor: '#rewards-partners-users' },
+      { name: 'Competitions & Prize Draws', anchor: '#competitions' },
     ],
   },
   {
@@ -50,7 +51,7 @@ const faqSections = [
       {
         question: 'What is Shift?',
         answer:
-          'Shift is a free app from Green Streets Initiative that logs your walking, biking, and transit trips \u2014 and rewards you for choosing active transportation. You\u2019ll earn points, unlock achievement badges, climb tier levels, and redeem rewards at local businesses.',
+          'Shift is a free app from Green Streets Initiative that logs your walking, biking, and transit trips \u2014 and rewards you for choosing active transportation. You\u2019ll earn XP, unlock achievement badges, climb tier levels, and unlock perks at local Rewards Partners as you go. You can also enter prize draws during seasonal events like Shift Your Summer.',
       },
       {
         question: 'How do I download the Shift app?',
@@ -116,34 +117,49 @@ const faqSections = [
   },
   {
     id: 'points-rewards',
-    title: 'Rewards & Tiers',
+    title: 'Earning XP & Unlocking Rewards',
     items: [
       {
-        question: 'How do partner rewards work in Shift?',
+        question: 'How does the rewards model work?',
         answer:
-          'Browse the Rewards tab in the app. Each partner offer shows whether you\u2019ve unlocked it. Tap an unlocked offer, show the resulting badge or code at the register, and the partner takes care of the discount. There\u2019s no points balance to manage \u2014 rewards unlock as you progress.',
+          'Shift uses an access-based rewards model. As you take active trips you earn XP and climb through five tiers. Each tier unlocks more perks at local Rewards Partners \u2014 discounts, freebies, or member-only offers. You don\u2019t spend XP to redeem; reaching a tier unlocks the offers automatically.',
       },
       {
-        question: 'How do I unlock more rewards?',
+        question: 'How do I earn XP?',
         answer:
-          'Rewards unlock as you advance through Shift\u2019s five tiers \u2014 Starter, Mover, Shifter, Pacesetter, and Trailblazer. Each tier opens up more partner offers. You advance by taking active trips and maintaining a healthy Shift Rate (the share of your trips that are active) over the last 60 days.',
+          'You earn XP every time you log an active trip (walk, bike, transit, carpool, or e-scooter). The amount per trip depends on your tier: Starters earn 1 XP per trip, Movers 2, Shifters 3, Pacesetters 4, and Trailblazers 5. You can earn up to 15 XP per day from trips. On top of that, you earn bonus XP for hitting badge milestones (streaks, distances, mode mix) and for tier promotions. During a Featured Goal sprint, completing the goal in time gives you a 50% XP bonus on the badge.',
       },
       {
-        question: 'What is XP, then?',
+        question: 'Is XP a currency I can spend?',
         answer:
-          'XP is a progress counter \u2014 a way to see how much you\u2019ve shifted over time. You earn XP for every active trip, with a higher multiplier at higher tiers. XP is not a currency \u2014 you don\u2019t spend it, and it doesn\u2019t unlock anything on its own. It\u2019s a record of your achievements.',
+          'No. XP is a record of your progress, not a wallet. It drives tier advancement and shows up on your profile so you can see how far you\u2019ve come \u2014 but you never spend it to redeem an offer. Rewards Partner offers are unlocked by your tier.',
+      },
+      {
+        question: 'How do I unlock and use a Rewards Partner offer?',
+        answer:
+          'Open the Rewards tab to see what\u2019s available. Each offer shows the minimum tier required to unlock it. If you\u2019re at or above that tier, the offer is yours \u2014 tap it to see the details, the partner location, and any terms. To redeem in-store, show the in-app screen (or QR code) to the cashier; they\u2019ll confirm your tier and apply the offer. Online offers include a code or a link.',
+      },
+      {
+        question: 'Where can I see my XP and tier?',
+        answer:
+          'Your current XP total and tier are visible on your profile screen and on the home screen status card. The Rewards tab also shows your tier so you can quickly see which offers are unlocked.',
+      },
+      {
+        question: 'Does XP expire?',
+        answer:
+          'XP is a progression metric, so there\u2019s nothing to "expire" \u2014 your lifetime XP and tier history are always part of your profile. If you stop using the app for a long time we may archive inactive accounts, but as long as you\u2019re using Shift your progress is safe.',
       },
       {
         question:
-          'I tried to use a reward but the partner didn\u2019t accept it. What do I do?',
+          'A Rewards Partner didn\u2019t honor an offer I should be eligible for. What do I do?',
         answer: (
           <p>
-            Contact us at{' '}
-            <a href="mailto:help@gogreenstreets.org" className={linkClass}>
-              help@gogreenstreets.org
+            Email us at{' '}
+            <a href="mailto:info@gogreenstreets.org" className={linkClass}>
+              info@gogreenstreets.org
             </a>{' '}
-            with the partner name, date, and details. We&rsquo;ll sort it out
-            with the partner directly.
+            with the partner name, date, and what happened. We&rsquo;ll sort it
+            out with the partner directly so you get the offer.
           </p>
         ),
       },
@@ -156,27 +172,32 @@ const faqSections = [
       {
         question: 'What are the tier levels?',
         answer:
-          'Shift has five tiers: Starter, Mover, Shifter, Pacesetter, and Trailblazer. You advance through tiers by accumulating active trips and maintaining each tier\u2019s target Shift Rate \u2014 the percentage of your total trips that are active (walk, bike, or transit).',
+          'Shift has five tiers: Starter, Mover, Shifter, Pacesetter, and Trailblazer. You advance by accumulating active trips and maintaining a strong Shift Rate. Each step up unlocks more Rewards Partner offers and increases the XP you earn per trip.',
       },
       {
         question: 'What is Shift Rate?',
         answer:
-          'Shift Rate is the percentage of your total trips that are active \u2014 walking, biking or scooting, or taking transit. It\u2019s calculated over the last 7 days and is the core metric Shift uses to measure your transportation habits. It\u2019s one of the factors that determines your tier level.',
+          'Shift Rate is the percentage of your total trips that are active \u2014 walking, biking or scooting, or taking transit. The home screen shows your 7-day Shift Rate as a quick read on how the week is going. Tier advancement uses your 60-day Shift Rate so a single off-week doesn\u2019t bump you down a tier.',
       },
       {
         question: 'How do achievement badges work?',
         answer:
-          'Achievement badges are earned by reaching specific milestones \u2014 trying new modes, completing challenges, hitting cumulative distance goals, and more. Check your profile to see which achievements you\u2019ve unlocked and what\u2019s next.',
+          'Achievement badges are earned by reaching specific milestones \u2014 trying new modes, building streaks, hitting cumulative distance goals, completing Roams, and more. Check your profile to see which badges you\u2019ve unlocked and what\u2019s next. Most badges award bonus XP when earned.',
+      },
+      {
+        question: 'What is a Featured Goal?',
+        answer:
+          'A Featured Goal is a 14-day sprint highlighting the next badge you\u2019re closest to earning. If you complete the goal within the 14-day window, you get a 50% XP bonus on top of the badge\u2019s normal XP. Featured Goals replace the older "challenges" concept \u2014 same idea, more personalized.',
       },
       {
         question: 'How do streaks work?',
         answer:
-          'A streak counts consecutive days where you log at least one active trip. There\u2019s a built-in 2-day grace period \u2014 if you miss a single day, your streak stays alive. Miss two consecutive days and the streak resets. We also protect your streak during MBTA service disruptions, so you won\u2019t be penalized for something outside your control.',
+          'A streak counts the days when you take at least one active trip (walking, biking, transit, or e-scooter). You get a 2-day grace window \u2014 miss up to two days in a row and the streak stays alive. Take an active trip on the third day or sooner to keep going. Three consecutive days without an active trip resets the streak. We also automatically protect your streak during significant MBTA service disruptions so you\u2019re not penalized for something outside your control.',
       },
       {
         question: 'What happens if I break a streak?',
         answer:
-          'Your streak counter resets to zero, but your longest streak is saved on your profile. Streaks are meant to be motivating, not punishing \u2014 just start a new one whenever you\u2019re ready.',
+          'Your current streak resets to 1, but your longest streak is saved on your profile. Streaks are meant to be motivating, not punishing \u2014 start a new one whenever you\u2019re ready.',
       },
     ],
   },
@@ -187,12 +208,12 @@ const faqSections = [
       {
         question: 'How do I find Rewards Partners near me?',
         answer:
-          'The Rewards tab in the app shows available partner offers in your area. You can browse the list to find partners near you.',
+          'The Rewards tab in the app shows available partner offers in your area. Each offer lists the partner location, the offer details, and the minimum tier required to unlock it.',
       },
       {
         question: 'What kinds of rewards are available?',
         answer:
-          'Rewards vary by partner \u2014 they can include discounts, free items, or special offers. Each partner sets their own reward and the points required to redeem it.',
+          'Rewards vary by partner \u2014 discounts, free items, member-only deals, or special online offers. Each partner sets the offer and the minimum tier required to unlock it. Higher tiers unlock more offers.',
       },
       {
         question: 'Can I suggest a business as a Rewards Partner?',
@@ -205,11 +226,36 @@ const faqSections = [
               className={linkClass}
             >
               partners@gogreenstreets.org
-            </a>{' '}
-            or share their info through the app. We&rsquo;re always growing the
-            network.
+            </a>
+            . We&rsquo;re always growing the network.
           </p>
         ),
+      },
+    ],
+  },
+  {
+    id: 'competitions',
+    title: 'Competitions & Prize Draws',
+    items: [
+      {
+        question: 'What are competitions and prize draws?',
+        answer:
+          'A few times a year we run flagship events \u2014 Shift Your Summer is a big one \u2014 where active trips earn you entries into prize draws from sponsors and Rewards Partners. Some prizes go to anyone who participates; others are unlocked by hitting badges, completing Roams, or referring friends. Check the Community tab during an event to see what\u2019s active.',
+      },
+      {
+        question: 'How do I enter?',
+        answer:
+          'During an event, your active trips automatically earn entries into eligible prize draws \u2014 no separate sign-up needed. Some prizes also have specific requirements like "earn the Pedal Power badge" or "complete a Roam," shown right on the prize card.',
+      },
+      {
+        question: 'How and when are winners chosen?',
+        answer:
+          'Winners are drawn after the event ends, using a verifiable random selection from everyone eligible for that prize. If you win, you\u2019ll get an in-app notification with instructions to claim. There\u2019s a window to claim \u2014 if a winner doesn\u2019t claim in time, we redraw to the next person.',
+      },
+      {
+        question: 'Can I refer friends to earn extra entries?',
+        answer:
+          'Yes \u2014 some prizes are referral-gated, meaning each friend you refer who joins Shift earns you another entry into that prize draw. Your unique referral link is in the app; share it from any prize card or your profile.',
       },
     ],
   },
@@ -240,7 +286,7 @@ const faqSections = [
       {
         question: 'How do I verify a Shift redemption?',
         answer:
-          'Using any phone, have your cashier scan the QR code shown on the Shift user\u2019s app screen. That\u2019s it \u2014 no need to log into a dashboard or verify anything else at the time of redemption. When you join, we\u2019ll provide a 1-page printed guide to redemptions that you can keep at the register.',
+          'When a customer wants to use a Shift offer, they\u2019ll show their app screen confirming they\u2019ve unlocked it (or scan the QR code with any phone). That\u2019s your green light to apply the offer \u2014 no need to log into a dashboard at the time. When you join, we\u2019ll provide a 1-page printed guide you can keep at the register.',
       },
       {
         question: 'How do I access my business dashboard?',
@@ -264,7 +310,7 @@ const faqSections = [
       {
         question: 'Can I change or pause my reward offer?',
         answer:
-          'Yes. You can update your offer, change the points required, or temporarily pause your listing from your business dashboard at any time.',
+          'Yes. You can update your offer, change the minimum tier required, or temporarily pause your listing from your business dashboard at any time.',
       },
     ],
   },
@@ -373,8 +419,8 @@ const faqSections = [
             You can delete your account from the Settings screen in the app.
             This permanently removes your profile, trip history, and all
             associated data. If you have any trouble, email{' '}
-            <a href="mailto:help@gogreenstreets.org" className={linkClass}>
-              help@gogreenstreets.org
+            <a href="mailto:info@gogreenstreets.org" className={linkClass}>
+              info@gogreenstreets.org
             </a>{' '}
             and we&rsquo;ll take care of it.
           </p>
@@ -397,16 +443,32 @@ const faqSections = [
           'Go to Settings > Profile in the app. You can update your display name and neighborhood at any time.',
       },
       {
+        question: 'How do I get help or send feedback from inside the app?',
+        answer: (
+          <p>
+            Open the Profile tab and scroll to the Account section. Tap{' '}
+            <strong>Help &amp; FAQ</strong> to come right back to this page, or{' '}
+            <strong>Send feedback</strong> to email us with the basics about
+            your phone and app version pre-filled. You can also email{' '}
+            <a href="mailto:info@gogreenstreets.org" className={linkClass}>
+              info@gogreenstreets.org
+            </a>{' '}
+            directly.
+          </p>
+        ),
+      },
+      {
         question: 'I\u2019m having a technical issue not listed here.',
         answer: (
           <p>
-            Email us at{' '}
-            <a href="mailto:help@gogreenstreets.org" className={linkClass}>
-              help@gogreenstreets.org
+            Use the in-app <strong>Send feedback</strong> link (Profile &rarr;
+            Account) \u2014 it pre-fills your phone model, OS version, and app
+            build, which helps us reproduce the issue quickly. Or email{' '}
+            <a href="mailto:info@gogreenstreets.org" className={linkClass}>
+              info@gogreenstreets.org
             </a>{' '}
-            with a description of the issue, your phone model, and OS version.
-            Screenshots help too. We&rsquo;ll get back to you as quickly as we
-            can.
+            with a description and a screenshot if you have one. We&rsquo;ll
+            get back to you as quickly as we can.
           </p>
         ),
       },
@@ -430,7 +492,7 @@ export default function HelpPage() {
               How can we help?
             </h1>
             <p className="mx-auto mt-5 max-w-[640px] text-[1.0625rem] leading-[1.65] text-white/70">
-              Everything you need to know about using Shift, redeeming rewards,
+              Everything you need to know about using Shift, unlocking rewards,
               running a schools challenge, or joining as a partner.
             </p>
           </div>
@@ -494,7 +556,7 @@ export default function HelpPage() {
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a
-                href="mailto:help@gogreenstreets.org"
+                href="mailto:info@gogreenstreets.org"
                 className="inline-flex items-center rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-90"
               >
                 General Support
