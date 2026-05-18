@@ -519,10 +519,10 @@ export default function EventMap({
           topStops.map(async (s) => {
             const res = await fetch(`https://api-v3.mbta.com/routes?filter[stop]=${s.id}&filter[type]=0,1`)
             const data = await res.json()
-            return { stopId: s.id, routes: (data.data || []).map((r: { id: string; attributes: { long_name?: string; direction_names?: string[] } }) => ({
+            return { stopId: s.id, routes: (data.data || []).map((r: { id: string; attributes: { long_name?: string; direction_names?: string[]; direction_destinations?: string[] } }) => ({
               id: r.id,
               name: r.attributes.long_name ?? r.id,
-              directions: r.attributes.direction_names || [],
+              directions: r.attributes.direction_destinations || r.attributes.direction_names || [],
             })) }
           })
         )

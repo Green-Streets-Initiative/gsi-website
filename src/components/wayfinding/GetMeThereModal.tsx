@@ -62,6 +62,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
   const [loadingPredictions, setLoadingPredictions] = useState(true)
   const [loadingTrainPredictions, setLoadingTrainPredictions] = useState(true)
   const [busExpanded, setBusExpanded] = useState(false)
+  const [trainExpanded, setTrainExpanded] = useState(false)
   const [bikeComfort, setBikeComfort] = useState<BikeComfort | null>(null)
   const [loadingComfort, setLoadingComfort] = useState(false)
 
@@ -196,7 +197,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
       for (const r of routesData.data || []) {
         routeMap.set(r.id, {
           name: r.attributes.long_name ?? r.id,
-          directions: r.attributes.direction_names || [],
+          directions: r.attributes.direction_destinations || r.attributes.direction_names || [],
         })
       }
 
@@ -265,6 +266,8 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
 
   const visiblePredictions = busExpanded ? predictions : predictions.slice(0, 2)
   const hasMoreBus = predictions.length > 2
+  const visibleTrainPredictions = trainExpanded ? trainPredictions : trainPredictions.slice(0, 2)
+  const hasMoreTrain = trainPredictions.length > 2
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
@@ -414,7 +417,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
           ) : trainPredictions.length > 0 ? (
             <div className="bg-gray-50 rounded-xl overflow-hidden">
               <div className="divide-y divide-gray-100">
-                {trainPredictions.map((pred, i) => {
+                {visibleTrainPredictions.map((pred, i) => {
                   const walkToStopDist = hasLocation ? haversineMeters(userPosition!.lat, userPosition!.lng, pred.stopLat, pred.stopLng) : null
                   return (
                   <div key={`${pred.routeId}-${pred.direction}-${i}`} className="p-4">
@@ -453,6 +456,14 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                   )
                 })}
               </div>
+              {hasMoreTrain && (
+                <button
+                  onClick={() => setTrainExpanded(!trainExpanded)}
+                  className="w-full py-2.5 text-xs font-medium text-orange-600 hover:bg-orange-50 transition-colors border-t border-gray-100"
+                >
+                  {trainExpanded ? t(locale, 'fewer_routes') : `${t(locale, 'more_routes')} (${trainPredictions.length - 2})`}
+                </button>
+              )}
             </div>
           ) : null}
 

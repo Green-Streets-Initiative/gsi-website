@@ -19,11 +19,21 @@ const SEGMENT_LABELS: Record<string, string> = {
 // of enumerating every segment.
 function rollup(segments: BikeComfortSegment[]) {
   const totals: Record<string, number> = {}
+  const flexTotals: Record<string, number> = {}
   for (const s of segments) {
     totals[s.rating] = (totals[s.rating] ?? 0) + (s.distance_mi || 0)
+    flexTotals[s.rating] = (flexTotals[s.rating] ?? 0) + (s.distance_mi || 1)
   }
+  const totalKnown = Object.values(totals).reduce((a, b) => a + b, 0)
+  const totalFlex = Object.values(flexTotals).reduce((a, b) => a + b, 0)
   return ['protected', 'bike_lane', 'shared_road']
-    .map((r) => ({ rating: r, miles: totals[r] ?? 0 }))
+    .map((r) => {
+      const raw = totals[r] ?? 0
+      const flex = flexTotals[r] ?? 0
+      if (raw > 0) return { rating: r, miles: raw }
+      if (flex > 0 && totalKnown > 0) return { rating: r, miles: +(totalKnown * flex / totalFlex).toFixed(1) }
+      return { rating: r, miles: 0 }
+    })
     .filter((x) => x.miles > 0)
 }
 
