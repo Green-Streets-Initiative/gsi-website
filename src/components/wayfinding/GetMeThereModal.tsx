@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { WayfindingEvent, Locale, BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
+import type { WayfindingEvent, Locale, BluebikeStationLive } from '@/lib/wayfinding/types'
 import { t } from '@/lib/wayfinding/i18n'
 import { haversineMeters, formatDistance, walkTimeMinutes, bikeTimeMinutes, busTimeMinutes } from '@/lib/wayfinding/geo'
 import { trackEvent } from '@/lib/wayfinding/telemetry'
@@ -12,7 +12,6 @@ interface Props {
   locale: Locale
   userPosition: { lat: number; lng: number } | null
   bluebikes: BluebikeStationLive[]
-  mbtaStops: MBTAStopLive[]
   onClose: () => void
 }
 
@@ -36,7 +35,7 @@ function directionsUrl(lat: number, lng: number, mode: 'walking' | 'transit'): s
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=${mode}`
 }
 
-export default function GetMeThereModal({ event, locale, userPosition, bluebikes, mbtaStops, onClose }: Props) {
+export default function GetMeThereModal({ event, locale, userPosition, bluebikes, onClose }: Props) {
   const [predictions, setPredictions] = useState<MBTAPrediction[]>([])
   const [loadingPredictions, setLoadingPredictions] = useState(true)
   const [busExpanded, setBusExpanded] = useState(false)
@@ -63,18 +62,33 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
 
   const fetchPredictions = useCallback(async () => {
     try {
-      const stopIds = [...new Set(mbtaStops.map(s => s.stop_id))].slice(0, 10)
-      if (stopIds.length === 0) { setLoadingPredictions(false); return }
+      if (!hasLocation) { setLoadingPredictions(false); return }
 
-      const res = await fetch(
-        `https://api-v3.mbta.com/predictions?filter[stop]=${stopIds.join(',')}&filter[route_type]=3&sort=departure_time&page[limit]=30`
+      const stopsRes = await fetch(
+        `https://api-v3.mbta.com/stops?filter[latitude]=${userPosition!.lat}&filter[longitude]=${userPosition!.lng}&filter[radius]=0.02&filter[route_type]=3`
       )
-      const data = await res.json()
+      const stopsData = await stopsRes.json()
+      const nearbyStopIds: string[] = []
+      const stopNameMap = new Map<string, string>()
+      const stopLocMap = new Map<string, { lat: number; lng: number }>()
 
-      const routesRes = await fetch(
-        `https://api-v3.mbta.com/routes?filter[type]=3&sort=sort_order`
-      )
+      for (const stop of stopsData.data || []) {
+        nearbyStopIds.push(stop.id)
+        const name = stop.attributes.name.replace(/(^|[.!?]\s+|@ )([a-z])/g, (_: string, prefix: string, letter: string) => prefix + letter.toUpperCase())
+        stopNameMap.set(stop.id, name)
+        stopLocMap.set(stop.id, { lat: stop.attributes.latitude, lng: stop.attributes.longitude })
+      }
+
+      if (nearbyStopIds.length === 0) { setLoadingPredictions(false); return }
+
+      const stopIds = nearbyStopIds.slice(0, 10)
+      const [predsResponse, routesRes] = await Promise.all([
+        fetch(`https://api-v3.mbta.com/predictions?filter[stop]=${stopIds.join(',')}&filter[route_type]=3&sort=departure_time&page[limit]=30`),
+        fetch(`https://api-v3.mbta.com/routes?filter[stop]=${stopIds.join(',')}&filter[type]=3`),
+      ])
+      const predsData = await predsResponse.json()
       const routesData = await routesRes.json()
+
       const routeMap = new Map<string, { name: string; directions: string[] }>()
       for (const r of routesData.data || []) {
         routeMap.set(r.id, {
@@ -83,17 +97,10 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         })
       }
 
-      const stopNameMap = new Map<string, string>()
-      const stopLocMap = new Map<string, { lat: number; lng: number }>()
-      for (const s of mbtaStops) {
-        stopNameMap.set(s.stop_id, s.name)
-        stopLocMap.set(s.stop_id, { lat: s.lat, lng: s.lng })
-      }
-
       const preds: MBTAPrediction[] = []
       const seen = new Set<string>()
 
-      for (const pred of data.data || []) {
+      for (const pred of predsData.data || []) {
         const stopId = pred.relationships?.stop?.data?.id
         const routeId = pred.relationships?.route?.data?.id
         if (!stopId || !routeId) continue
@@ -105,15 +112,12 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
 
         const dirId = pred.attributes.direction_id
         const key = `${routeId}-${dirId}`
-        if (seen.has(key)) {
-          const existing = preds.find(p => p.routeId === routeId && p.direction === (routeMap.get(routeId)?.directions[dirId] ?? ''))
-          if (existing) continue
-        }
-
+        if (seen.has(key)) continue
         seen.add(key)
-        const route = routeMap.get(routeId)
 
+        const route = routeMap.get(routeId)
         const stopLoc = stopLocMap.get(stopId)
+
         preds.push({
           routeId,
           routeName: route?.name ?? routeId,
@@ -132,7 +136,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     } finally {
       setLoadingPredictions(false)
     }
-  }, [mbtaStops])
+  }, [hasLocation, userPosition])
 
   useEffect(() => {
     fetchPredictions()
@@ -262,7 +266,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
             </div>
           ) : null}
 
-          {!loadingPredictions && predictions.length === 0 && mbtaStops.length > 0 && (
+          {!loadingPredictions && predictions.length === 0 && hasLocation && (
             <ModeCard
               icon={<BusIcon size={20} className="text-blue-600" />}
               title={t(locale, 'arrival_bus')}

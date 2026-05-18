@@ -342,7 +342,6 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
           locale={locale}
           userPosition={geo.position}
           bluebikes={sortedBluebikes}
-          mbtaStops={sortedMbta}
           onClose={() => setShowGetMeThere(false)}
         />
       )}

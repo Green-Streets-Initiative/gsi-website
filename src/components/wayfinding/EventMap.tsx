@@ -354,9 +354,10 @@ export default function EventMap({
       if (nearbyStopIds.length === 0) return []
 
       const stopRouteIds = nearbyStopIds.slice(0, 10)
+      const today = new Date().toISOString().slice(0, 10)
       const [predsRes, schedulesRes] = await Promise.all([
         fetch(`https://api-v3.mbta.com/predictions?filter[stop]=${stopRouteIds.join(',')}&filter[route_type]=3&sort=departure_time&page[limit]=20`),
-        fetch(`https://api-v3.mbta.com/schedules?filter[stop]=${stopRouteIds.join(',')}&filter[route_type]=3&page[limit]=100`),
+        fetch(`https://api-v3.mbta.com/schedules?filter[stop]=${stopRouteIds.join(',')}&filter[route_type]=3&filter[date]=${today}&page[limit]=500`),
       ])
       const predsData = await predsRes.json()
       const schedulesData = await schedulesRes.json()
