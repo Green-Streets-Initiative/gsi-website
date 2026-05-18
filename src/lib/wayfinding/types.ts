@@ -23,6 +23,7 @@ export interface WayfindingEvent {
   is_rain_date: boolean
   is_cancelled: boolean
   is_published: boolean
+  admin_token: string | null
   created_at: string
 }
 
