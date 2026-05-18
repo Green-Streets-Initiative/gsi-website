@@ -3,6 +3,7 @@
 import { LayerKey, Locale } from '@/lib/wayfinding/types'
 import { FIXED_LAYERS } from '@/lib/wayfinding/layers'
 import { t, TranslationKey } from '@/lib/wayfinding/i18n'
+import { MapPinIcon, ForkKnifeIcon, BusIcon, BicycleIcon, LockIcon } from './WayfindingIcons'
 
 interface Props {
   activeLayers: Record<LayerKey, boolean>
@@ -10,12 +11,12 @@ interface Props {
   locale: Locale
 }
 
-const ICONS: Record<string, string> = {
-  MapPin: '📍',
-  ForkKnife: '🍴',
-  Bus: '🚌',
-  Bicycle: '🚲',
-  LockKey: '🔒',
+const ICON_COMPONENTS: Record<string, React.FC<{ size?: number; className?: string }>> = {
+  MapPin: MapPinIcon,
+  ForkKnife: ForkKnifeIcon,
+  Bus: BusIcon,
+  Bicycle: BicycleIcon,
+  LockKey: LockIcon,
 }
 
 export default function ChipRow({ activeLayers, onToggle, locale }: Props) {
@@ -24,6 +25,7 @@ export default function ChipRow({ activeLayers, onToggle, locale }: Props) {
       {FIXED_LAYERS.map(layer => {
         const active = activeLayers[layer.key]
         const chipColor = layer.color === 'accent' ? 'var(--accent)' : layer.color
+        const IconComponent = ICON_COMPONENTS[layer.icon]
         return (
           <button
             key={layer.key}
@@ -35,7 +37,7 @@ export default function ChipRow({ activeLayers, onToggle, locale }: Props) {
             }`}
             style={active ? { backgroundColor: chipColor } : undefined}
           >
-            <span className="text-sm">{ICONS[layer.icon] ?? '•'}</span>
+            {IconComponent && <IconComponent size={16} />}
             {t(locale, layer.labelKey as TranslationKey)}
           </button>
         )

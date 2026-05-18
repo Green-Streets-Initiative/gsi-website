@@ -42,18 +42,39 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
 
   return (
     <header className="flex-shrink-0 bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-between" style={{ height: '64px' }}>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         {event.eyebrow && (
           <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">
             {event.eyebrow}
           </div>
         )}
-        <h1
-          className="text-xl font-bold leading-tight truncate"
-          style={{ color: 'var(--accent)', fontFamily: 'var(--font-bricolage)' }}
-        >
-          {event.name}
-        </h1>
+        <div className="flex items-baseline gap-2">
+          <h1
+            className="text-xl font-bold leading-tight truncate"
+            style={{ color: 'var(--accent)', fontFamily: 'var(--font-bricolage)' }}
+          >
+            {event.event_url ? (
+              <a href={event.event_url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                {event.name}
+              </a>
+            ) : (
+              event.name
+            )}
+          </h1>
+          {event.event_url && (
+            <a
+              href={event.event_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Event website"
+            >
+              <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
+                <path d="M224,104a8,8,0,0,1-16,0V59.32l-66.33,66.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z" />
+              </svg>
+            </a>
+          )}
+        </div>
         <div className="text-xs text-gray-500">
           {dateLabel}{timeLabel ? ` · ${timeLabel}` : ''}
         </div>

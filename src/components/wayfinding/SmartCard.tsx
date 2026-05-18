@@ -70,11 +70,17 @@ export default function SmartCard({ feature, locale, userLat, userLng }: Props) 
         </div>
         <div className="flex gap-4 mt-3">
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-700">{station.num_bikes_available}</div>
+            <div className="text-2xl font-bold text-blue-700">{station.num_bikes_available - station.num_ebikes_available}</div>
             <div className="text-xs text-gray-500">{t(locale, 'bikes')}</div>
           </div>
+          {station.num_ebikes_available > 0 && (
+            <div className="text-center">
+              <div className="text-2xl font-bold text-emerald-600">{station.num_ebikes_available}</div>
+              <div className="text-xs text-gray-500">e-bikes</div>
+            </div>
+          )}
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-700">{station.num_docks_available}</div>
+            <div className="text-2xl font-bold text-gray-600">{station.num_docks_available}</div>
             <div className="text-xs text-gray-500">{t(locale, 'docks_free')}</div>
           </div>
         </div>
@@ -96,26 +102,35 @@ export default function SmartCard({ feature, locale, userLat, userLng }: Props) 
     const dist = haversineMeters(userLat, userLng, stop.lat, stop.lng)
     return (
       <div className="px-4 py-3">
-        <h3 className="font-semibold text-gray-900 text-lg">
-          {stop.route_name} {stop.direction ? `${t(locale, 'toward')} ${stop.direction}` : ''}
-        </h3>
-        <div className="text-sm text-gray-500 mt-0.5">
-          {t(locale, 'stop')} {stop.name} · {formatDistance(dist)} {t(locale, 'away')}
+        <div className="flex items-center gap-2">
+          {stop.route_name && (
+            <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded bg-blue-600 text-white text-sm font-bold">
+              {stop.route_name}
+            </span>
+          )}
+          <h3 className="font-semibold text-gray-900 text-lg">
+            {stop.direction ? `${t(locale, 'toward')} ${stop.direction}` : stop.name}
+          </h3>
+        </div>
+        <div className="text-sm text-gray-500 mt-1">
+          {stop.name} · {formatDistance(dist)} {t(locale, 'away')}
         </div>
         {stop.next_arrival_minutes !== null && (
-          <div className="mt-2 text-lg font-semibold text-blue-700">
-            {stop.next_arrival_minutes} {t(locale, 'min')}
+          <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-blue-700 font-semibold text-sm">
+            {t(locale, 'next_bus')}: {stop.next_arrival_minutes} {t(locale, 'min')}
           </div>
         )}
-        <a
-          href={directionsUrl(stop.lat, stop.lng)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white mt-3"
-          style={{ backgroundColor: 'var(--accent)' }}
-        >
-          {t(locale, 'directions')}
-        </a>
+        <div className="mt-3">
+          <a
+            href={directionsUrl(stop.lat, stop.lng)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white"
+            style={{ backgroundColor: 'var(--accent)' }}
+          >
+            {t(locale, 'directions')}
+          </a>
+        </div>
       </div>
     )
   }

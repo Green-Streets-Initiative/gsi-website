@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { WayfindingEvent, Locale, DepartureMode } from '@/lib/wayfinding/types'
 import { t } from '@/lib/wayfinding/i18n'
 import { trackEvent } from '@/lib/wayfinding/telemetry'
+import { PersonWalkIcon, BusIcon, BicycleIcon } from './WayfindingIcons'
 
 interface Props {
   event: WayfindingEvent
@@ -12,10 +13,10 @@ interface Props {
   onClose: () => void
 }
 
-const MODES: { key: DepartureMode; icon: string; labelKey: 'arrival_walk' | 'arrival_bus' | 'arrival_bike' }[] = [
-  { key: 'walk', icon: '🚶', labelKey: 'arrival_walk' },
-  { key: 'bus', icon: '🚌', labelKey: 'arrival_bus' },
-  { key: 'bike', icon: '🚲', labelKey: 'arrival_bike' },
+const MODES: { key: DepartureMode; icon: React.ReactNode; labelKey: 'arrival_walk' | 'arrival_bus' | 'arrival_bike' }[] = [
+  { key: 'walk', icon: <PersonWalkIcon size={22} />, labelKey: 'arrival_walk' },
+  { key: 'bus', icon: <BusIcon size={22} />, labelKey: 'arrival_bus' },
+  { key: 'bike', icon: <BicycleIcon size={22} />, labelKey: 'arrival_bike' },
 ]
 
 function getDirectionsUrl(mode: DepartureMode, destLat: number, destLng: number, originLat?: number, originLng?: number): string {
@@ -98,7 +99,7 @@ export default function DepartureModal({ event, locale, userPosition, onClose }:
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              <span className="text-lg">{m.icon}</span>
+              <span>{m.icon}</span>
               {t(locale, m.labelKey)}
             </button>
           ))}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import type { WayfindingEvent, WayfindingBusiness, Locale, LayerKey, SelectedFeature, SheetSnap, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
 import { getDefaultLayerState } from '@/lib/wayfinding/layers'
 import { useGeolocation, haversineMeters } from '@/lib/wayfinding/geo'
@@ -30,6 +30,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
   const [bluebikes, setBluebikes] = useState<BluebikeStationLive[]>([])
   const [mbtaStops, setMbtaStops] = useState<MBTAStopLive[]>([])
   const [bikeParking, setBikeParking] = useState<BikeParkingSpot[]>([])
+  const [activeCategories, setActiveCategories] = useState<Set<string> | null>(null)
   const sheetRef = useRef<{ snapTo: (snap: SheetSnap) => void }>(null)
 
   const geo = useGeolocation()
@@ -74,6 +75,35 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
   const sortedMbta = [...mbtaStops].sort((a, b) => a.distance_meters - b.distance_meters)
   const sortedBikeParking = [...bikeParking].sort((a, b) => a.distance_meters - b.distance_meters)
 
+  const foodCategories = useMemo(() => {
+    const cats = [...new Set(businesses.map(b => b.category))].sort()
+    return cats
+  }, [businesses])
+
+  const filteredBusinesses = useMemo(() => {
+    if (!activeCategories || activeCategories.size === 0) return sortedBusinesses
+    return sortedBusinesses.filter(b => activeCategories.has(b.category))
+  }, [sortedBusinesses, activeCategories])
+
+  const toggleCategory = useCallback((cat: string) => {
+    setActiveCategories(prev => {
+      if (!prev) {
+        const next = new Set(foodCategories)
+        next.delete(cat)
+        return next
+      }
+      const next = new Set(prev)
+      if (next.has(cat)) {
+        next.delete(cat)
+        if (next.size === 0) return null
+      } else {
+        next.add(cat)
+        if (next.size === foodCategories.length) return null
+      }
+      return next
+    })
+  }, [foodCategories])
+
   return (
     <>
       {!isEmbed && (
@@ -91,7 +121,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
       <div className="relative flex-1 min-h-0">
         <EventMap
           event={event}
-          businesses={businesses}
+          businesses={filteredBusinesses}
           activeLayers={activeLayers}
           userPosition={geo.position}
           bluebikes={bluebikes}
@@ -112,6 +142,27 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
             locale={locale}
           />
 
+          {activeLayers.food && foodCategories.length > 1 && (
+            <div className="flex gap-1.5 px-4 py-1 overflow-x-auto no-scrollbar bg-white/90 backdrop-blur-sm">
+              {foodCategories.map(cat => {
+                const active = !activeCategories || activeCategories.has(cat)
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => toggleCategory(cat)}
+                    className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                      active
+                        ? 'bg-orange-100 text-orange-800'
+                        : 'bg-gray-100 text-gray-400'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
           <BottomSheet
             ref={sheetRef}
             snap={sheetSnap}
@@ -127,19 +178,22 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
               />
             ) : sheetSnap === 'full' ? (
               <div className="px-4 pb-8">
-                {activeLayers.food && sortedBusinesses.length > 0 && (
+                {activeLayers.food && filteredBusinesses.length > 0 && (
                   <section className="mb-6">
                     <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
                       {t(locale, 'chip_food')}
                     </h3>
-                    {sortedBusinesses.map(b => (
+                    {filteredBusinesses.map(b => (
                       <button
                         key={b.id}
                         className="w-full text-left py-3 border-b border-gray-100 last:border-0"
                         onClick={() => handlePinSelect({ type: 'business', data: b })}
                       >
                         <div className="font-medium text-gray-900">{b.name}</div>
-                        {b.address && <div className="text-sm text-gray-500">{b.address}</div>}
+                        <div className="text-sm text-gray-500">
+                          {foodCategories.length > 1 && <span className="text-orange-600">{b.category} · </span>}
+                          {b.address}
+                        </div>
                       </button>
                     ))}
                   </section>
@@ -157,7 +211,9 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                       >
                         <div className="font-medium text-gray-900">{s.name}</div>
                         <div className="text-sm text-gray-500">
-                          {s.num_bikes_available} {t(locale, 'bikes')} · {s.num_docks_available} {t(locale, 'docks_free')}
+                          {s.num_bikes_available - s.num_ebikes_available} {t(locale, 'bikes')}
+                          {s.num_ebikes_available > 0 && ` + ${s.num_ebikes_available} e-bikes`}
+                          {' · '}{s.num_docks_available} {t(locale, 'docks_free')}
                         </div>
                       </button>
                     ))}
@@ -171,12 +227,21 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                     {sortedMbta.map((s, i) => (
                       <button
                         key={`${s.stop_id}-${s.route_id}-${i}`}
-                        className="w-full text-left py-3 border-b border-gray-100 last:border-0"
+                        className="w-full text-left py-3 border-b border-gray-100 last:border-0 flex items-center gap-3"
                         onClick={() => handlePinSelect({ type: 'mbta', data: s })}
                       >
-                        <div className="font-medium text-gray-900">{s.route_name} {t(locale, 'toward')} {s.direction}</div>
-                        <div className="text-sm text-gray-500">
-                          {s.next_arrival_minutes !== null ? `${s.next_arrival_minutes} ${t(locale, 'min')}` : ''} · {t(locale, 'stop')} {s.name}
+                        {s.route_name && (
+                          <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded bg-blue-600 text-white text-xs font-bold flex-shrink-0">
+                            {s.route_name}
+                          </span>
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900">
+                            {s.direction ? `${t(locale, 'toward')} ${s.direction}` : s.name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {s.next_arrival_minutes !== null ? `${s.next_arrival_minutes} ${t(locale, 'min')} · ` : ''}{s.name}
+                          </div>
                         </div>
                       </button>
                     ))}
@@ -211,8 +276,17 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
       </div>
 
       {!isEmbed && (
-        <div className="bg-white border-t border-gray-100 py-2 px-4 text-center">
-          <span className="text-xs text-gray-400">{event.attribution}</span>
+        <div className="bg-white border-t border-gray-100 py-2 px-4">
+          <div className="flex items-center justify-center gap-4">
+            {event.organizer_logo_url && (
+              <img src={event.organizer_logo_url} alt={event.organizer_name ?? ''} className="h-6 object-contain" />
+            )}
+            <span className="text-[10px] text-gray-300">|</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-400">Map by</span>
+              <img src="https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/gsi-wordmark.png" alt="Green Streets Initiative" className="h-3.5 object-contain opacity-40" />
+            </div>
+          </div>
         </div>
       )}
 

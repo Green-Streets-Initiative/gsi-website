@@ -1,8 +1,9 @@
 'use client'
 
-import { WayfindingEvent, Locale, ArrivalMode, SelectedFeature, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
+import { WayfindingEvent, Locale, SelectedFeature, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
 import { t } from '@/lib/wayfinding/i18n'
 import { formatDistance } from '@/lib/wayfinding/geo'
+import { BicycleIcon, BusIcon, LockIcon } from './WayfindingIcons'
 
 interface Props {
   event: WayfindingEvent
@@ -15,7 +16,7 @@ interface Props {
 }
 
 interface QuickCard {
-  icon: string
+  icon: React.ReactNode
   title: string
   subtitle: string
   feature: SelectedFeature
@@ -30,9 +31,9 @@ export default function ArrivalFlow({
   if (bluebikes.length > 0) {
     const closest = bluebikes[0]
     cards.push({
-      icon: '🚲',
+      icon: <BicycleIcon size={22} className="text-blue-700" />,
       title: closest.name,
-      subtitle: `${closest.num_bikes_available} ${t(locale, 'bikes')} · ${closest.num_docks_available} ${t(locale, 'docks_free')} · ${formatDistance(closest.distance_meters)}`,
+      subtitle: `${closest.num_bikes_available - closest.num_ebikes_available} ${t(locale, 'bikes')}${closest.num_ebikes_available > 0 ? ` + ${closest.num_ebikes_available} e-bikes` : ''} · ${closest.num_docks_available} ${t(locale, 'docks_free')} · ${formatDistance(closest.distance_meters)}`,
       feature: { type: 'bluebike', data: closest },
     })
   }
@@ -43,9 +44,9 @@ export default function ArrivalFlow({
       ? `${closest.next_arrival_minutes} ${t(locale, 'min')} · `
       : ''
     cards.push({
-      icon: '🚌',
-      title: `${closest.route_name}${closest.direction ? ` ${t(locale, 'toward')} ${closest.direction}` : ''}`,
-      subtitle: `${arrivalText}${t(locale, 'stop')} ${closest.name} · ${formatDistance(closest.distance_meters)}`,
+      icon: <BusIcon size={22} className="text-blue-600" />,
+      title: `${closest.route_name ? `Route ${closest.route_name}` : ''}${closest.direction ? ` ${t(locale, 'toward')} ${closest.direction}` : closest.name}`,
+      subtitle: `${arrivalText}${closest.name} · ${formatDistance(closest.distance_meters)}`,
       feature: { type: 'mbta', data: closest },
     })
   }
@@ -53,7 +54,7 @@ export default function ArrivalFlow({
   if (bikeParking.length > 0) {
     const closest = bikeParking[0]
     cards.push({
-      icon: '🔒',
+      icon: <LockIcon size={22} className="text-gray-600" />,
       title: closest.type === 'stands' || closest.type === 'rack'
         ? t(locale, 'bike_rack')
         : t(locale, 'bike_corral'),
@@ -81,7 +82,7 @@ export default function ArrivalFlow({
           className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left"
           onClick={() => onSelectFeature(card.feature)}
         >
-          <span className="text-xl flex-shrink-0">{card.icon}</span>
+          <span className="flex-shrink-0">{card.icon}</span>
           <div className="min-w-0">
             <div className="font-medium text-gray-900 text-sm truncate">{card.title}</div>
             <div className="text-xs text-gray-500 truncate">{card.subtitle}</div>

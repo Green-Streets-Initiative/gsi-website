@@ -23,6 +23,7 @@ export interface WayfindingEvent {
   is_rain_date: boolean
   is_cancelled: boolean
   is_published: boolean
+  event_url: string | null
   admin_token: string | null
   created_at: string
 }
@@ -49,6 +50,7 @@ export interface BluebikeStationLive {
   lng: number
   capacity: number
   num_bikes_available: number
+  num_ebikes_available: number
   num_docks_available: number
   distance_meters: number
 }

@@ -82,13 +82,41 @@ export default function EventMap({
           })
 
           map.addLayer({
+            id: 'corridor-glow',
+            type: 'line',
+            source: 'corridor',
+            paint: {
+              'line-color': accentColor,
+              'line-width': 24,
+              'line-opacity': 0.15,
+              'line-blur': 8,
+            },
+          })
+
+          map.addLayer({
             id: 'corridor-line',
             type: 'line',
             source: 'corridor',
             paint: {
               'line-color': accentColor,
-              'line-width': 12,
+              'line-width': 6,
+              'line-opacity': 0.85,
+            },
+            layout: {
+              'line-cap': 'round',
+              'line-join': 'round',
+            },
+          })
+
+          map.addLayer({
+            id: 'corridor-dash',
+            type: 'line',
+            source: 'corridor',
+            paint: {
+              'line-color': '#ffffff',
+              'line-width': 2,
               'line-opacity': 0.6,
+              'line-dasharray': [2, 4],
             },
           })
 
@@ -97,18 +125,18 @@ export default function EventMap({
             type: 'symbol',
             source: 'corridor',
             layout: {
-              'text-field': event.name,
-              'text-size': 13,
+              'text-field': `${event.eyebrow ? event.eyebrow + ' ' : ''}${event.name}`,
+              'text-size': 12,
               'text-font': ['Open Sans Semibold'],
               'symbol-placement': 'line-center',
-              'text-allow-overlap': false,
+              'text-allow-overlap': true,
+              'text-letter-spacing': 0.1,
             },
             paint: {
               'text-color': accentColor,
               'text-halo-color': '#ffffff',
-              'text-halo-width': 2,
+              'text-halo-width': 2.5,
             },
-            maxzoom: 18,
           })
         }
 
@@ -144,10 +172,9 @@ export default function EventMap({
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    const corridorLine = map.getLayer('corridor-line')
-    if (corridorLine) {
-      map.setLayoutProperty('corridor-line', 'visibility', activeLayers.festival ? 'visible' : 'none')
-      map.setLayoutProperty('corridor-label', 'visibility', activeLayers.festival ? 'visible' : 'none')
+    const vis = activeLayers.festival ? 'visible' : 'none'
+    for (const layerId of ['corridor-glow', 'corridor-line', 'corridor-dash', 'corridor-label']) {
+      if (map.getLayer(layerId)) map.setLayoutProperty(layerId, 'visibility', vis)
     }
   }, [activeLayers.festival])
 
@@ -180,7 +207,7 @@ export default function EventMap({
     }
     if (activeLayers.bluebike) {
       bluebikes.forEach(station => {
-        addMarker(map, station.lng, station.lat, '#388E3C', `${station.num_bikes_available}`, () => {
+        addMarker(map, station.lng, station.lat, '#2B6CB0', `${station.num_bikes_available}`, () => {
           onPinSelect({ type: 'bluebike', data: station })
         })
       })
@@ -245,9 +272,9 @@ export default function EventMap({
       const statusRes = await fetch('https://gbfs.lyft.com/gbfs/2.3/bos/en/station_status.json')
       const status = await statusRes.json()
 
-      const statusMap = new Map<string, { num_bikes_available: number; num_docks_available: number }>()
+      const statusMap = new Map<string, { num_bikes_available: number; num_ebikes_available: number; num_docks_available: number }>()
       for (const s of status.data.stations) {
-        statusMap.set(s.station_id, { num_bikes_available: s.num_bikes_available, num_docks_available: s.num_docks_available })
+        statusMap.set(s.station_id, { num_bikes_available: s.num_bikes_available, num_ebikes_available: s.num_ebikes_available ?? 0, num_docks_available: s.num_docks_available })
       }
 
       const nearby: BluebikeStationLive[] = []
@@ -262,6 +289,7 @@ export default function EventMap({
             lng: station.lon,
             capacity: station.capacity,
             num_bikes_available: st?.num_bikes_available ?? 0,
+            num_ebikes_available: st?.num_ebikes_available ?? 0,
             num_docks_available: st?.num_docks_available ?? 0,
             distance_meters: dist,
           })
@@ -275,42 +303,108 @@ export default function EventMap({
 
   async function fetchMBTAStops(): Promise<MBTAStopLive[]> {
     try {
-      const res = await fetch(
-        `https://api-v3.mbta.com/stops?filter[latitude]=${event.center_lat}&filter[longitude]=${event.center_lng}&filter[radius]=0.01&filter[route_type]=3&include=route`
+      const routesRes = await fetch(
+        `https://api-v3.mbta.com/routes?filter[type]=3&filter[stop]&sort=sort_order`
       )
-      const data = await res.json()
-      const stops: MBTAStopLive[] = []
-
-      for (const stop of data.data || []) {
-        const lat = stop.attributes.latitude
-        const lng = stop.attributes.longitude
-        const dist = haversineDist(event.center_lat, event.center_lng, lat, lng)
-
-        const routeRels = stop.relationships?.route?.data
-        const routeId = Array.isArray(routeRels) ? routeRels[0]?.id : routeRels?.id
-
-        stops.push({
-          stop_id: stop.id,
-          name: stop.attributes.name,
-          lat,
-          lng,
-          route_id: routeId ?? '',
-          route_name: routeId ?? '',
-          direction: '',
-          next_arrival_minutes: null,
-          distance_meters: dist,
+      const routesData = await routesRes.json()
+      const routeMap = new Map<string, { long_name: string; direction_names: string[] }>()
+      for (const r of routesData.data || []) {
+        routeMap.set(r.id, {
+          long_name: r.attributes.long_name || r.id,
+          direction_names: r.attributes.direction_names || [],
         })
       }
 
-      const uniqueStops = stops.reduce((acc, stop) => {
-        if (!acc.find(s => s.stop_id === stop.stop_id)) acc.push(stop)
-        return acc
-      }, [] as MBTAStopLive[])
+      const stopsRes = await fetch(
+        `https://api-v3.mbta.com/stops?filter[latitude]=${event.center_lat}&filter[longitude]=${event.center_lng}&filter[radius]=0.01&filter[route_type]=3`
+      )
+      const stopsData = await stopsRes.json()
+      const nearbyStopIds: string[] = []
+      const stopInfo = new Map<string, { name: string; lat: number; lng: number; dist: number }>()
 
-      return uniqueStops.sort((a, b) => a.distance_meters - b.distance_meters).slice(0, 10)
+      for (const stop of stopsData.data || []) {
+        const lat = stop.attributes.latitude
+        const lng = stop.attributes.longitude
+        const dist = haversineDist(event.center_lat, event.center_lng, lat, lng)
+        nearbyStopIds.push(stop.id)
+        stopInfo.set(stop.id, {
+          name: capitalizeStopName(stop.attributes.name),
+          lat, lng, dist,
+        })
+      }
+
+      if (nearbyStopIds.length === 0) return []
+
+      const predsRes = await fetch(
+        `https://api-v3.mbta.com/predictions?filter[stop]=${nearbyStopIds.slice(0, 10).join(',')}&filter[route_type]=3&sort=departure_time&page[limit]=20`
+      )
+      const predsData = await predsRes.json()
+
+      const stops: MBTAStopLive[] = []
+      const seen = new Set<string>()
+
+      for (const pred of predsData.data || []) {
+        const stopId = pred.relationships?.stop?.data?.id
+        const routeId = pred.relationships?.route?.data?.id
+        if (!stopId || !routeId) continue
+
+        const direction = pred.attributes.direction_id
+        const key = `${stopId}-${routeId}-${direction}`
+        if (seen.has(key)) continue
+        seen.add(key)
+
+        const info = stopInfo.get(stopId)
+        if (!info) continue
+
+        const route = routeMap.get(routeId)
+        const directionName = route?.direction_names?.[direction] ?? ''
+
+        let arrivalMin: number | null = null
+        const depTime = pred.attributes.departure_time
+        if (depTime) {
+          const diff = (new Date(depTime).getTime() - Date.now()) / 60000
+          if (diff >= 0) arrivalMin = Math.round(diff)
+        }
+
+        stops.push({
+          stop_id: stopId,
+          name: info.name,
+          lat: info.lat,
+          lng: info.lng,
+          route_id: routeId,
+          route_name: routeId.replace(/^0*/, ''),
+          direction: directionName,
+          next_arrival_minutes: arrivalMin,
+          distance_meters: info.dist,
+        })
+      }
+
+      for (const [stopId, info] of stopInfo) {
+        if (!stops.find(s => s.stop_id === stopId)) {
+          stops.push({
+            stop_id: stopId,
+            name: info.name,
+            lat: info.lat,
+            lng: info.lng,
+            route_id: '',
+            route_name: '',
+            direction: '',
+            next_arrival_minutes: null,
+            distance_meters: info.dist,
+          })
+        }
+      }
+
+      return stops.sort((a, b) => a.distance_meters - b.distance_meters).slice(0, 15)
     } catch {
       return []
     }
+  }
+
+  function capitalizeStopName(name: string): string {
+    return name.replace(/(^|[.!?]\s+|@ )([a-z])/g, (_, prefix, letter) =>
+      prefix + letter.toUpperCase()
+    )
   }
 
   async function fetchBikeParking(): Promise<BikeParkingSpot[]> {
