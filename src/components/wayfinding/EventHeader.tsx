@@ -40,8 +40,12 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
     }
   }
 
-  const logoUrls = event.organizer_logo_url
-    ? event.organizer_logo_url.split(',').map(u => u.trim()).filter(Boolean)
+  const logos = event.organizer_logo_url
+    ? event.organizer_logo_url.split(',').map(entry => {
+        const trimmed = entry.trim()
+        const [imgUrl, linkUrl] = trimmed.split('|').map(s => s.trim())
+        return { imgUrl, linkUrl: linkUrl || null }
+      }).filter(l => l.imgUrl)
     : []
 
   return (
@@ -101,11 +105,17 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
         </div>
       </div>
 
-      {logoUrls.length > 0 && (
+      {logos.length > 0 && (
         <div className="px-4 pb-2 flex items-center gap-3">
-          {logoUrls.map((url, i) => (
-            <img key={i} src={url} alt={event.organizer_name ?? ''} className="h-8 object-contain" />
-          ))}
+          {logos.map((logo, i) =>
+            logo.linkUrl ? (
+              <a key={i} href={logo.linkUrl} target="_blank" rel="noopener noreferrer">
+                <img src={logo.imgUrl} alt={event.organizer_name ?? ''} className="h-8 object-contain hover:opacity-80 transition-opacity" />
+              </a>
+            ) : (
+              <img key={i} src={logo.imgUrl} alt={event.organizer_name ?? ''} className="h-8 object-contain" />
+            )
+          )}
         </div>
       )}
     </header>

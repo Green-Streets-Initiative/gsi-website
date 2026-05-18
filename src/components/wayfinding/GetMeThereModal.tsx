@@ -37,6 +37,7 @@ function directionsUrl(lat: number, lng: number, mode: 'walking' | 'transit'): s
 export default function GetMeThereModal({ event, locale, userPosition, bluebikes, mbtaStops, onClose }: Props) {
   const [predictions, setPredictions] = useState<MBTAPrediction[]>([])
   const [loadingPredictions, setLoadingPredictions] = useState(true)
+  const [busExpanded, setBusExpanded] = useState(false)
 
   const destLat = event.center_lat
   const destLng = event.center_lng
@@ -136,6 +137,9 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     trackEvent({ event: 'get_me_there', slug: event.slug, locale, mode })
   }
 
+  const visiblePredictions = busExpanded ? predictions : predictions.slice(0, 2)
+  const hasMoreBus = predictions.length > 2
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -178,7 +182,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
             }
           />
 
-          {/* Bus routes */}
+          {/* Bus routes — grouped */}
           {loadingPredictions && predictions.length === 0 ? (
             <div className="bg-gray-50 rounded-xl p-4">
               <div className="flex items-center gap-3">
@@ -186,40 +190,60 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                 <span className="text-sm text-gray-500">{t(locale, 'loading')}</span>
               </div>
             </div>
-          ) : (
-            predictions.slice(0, 4).map((pred, i) => (
-              <ModeCard
-                key={`${pred.routeId}-${pred.direction}-${i}`}
-                icon={<BusIcon size={20} className="text-blue-600" />}
-                title={
-                  <span className="flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center min-w-[1.75rem] px-1.5 py-0.5 rounded bg-blue-600 text-white text-xs font-bold">
-                      {pred.routeName}
-                    </span>
-                    <span>{t(locale, 'toward')} {pred.direction}</span>
-                  </span>
-                }
-                subtitle={
-                  <span className="flex items-center gap-2 flex-wrap">
-                    <ArrivalPill minutes={pred.minutesAway} locale={locale} isNext />
-                    <span className="text-gray-500">· {pred.stopName}</span>
-                  </span>
-                }
-                action={
-                  <a
-                    href={directionsUrl(destLat, destLng, 'transit')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => handleDirections('bus')}
-                    className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
-                    style={{ backgroundColor: 'var(--accent)' }}
-                  >
-                    {t(locale, 'directions')}
-                  </a>
-                }
-              />
-            ))
-          )}
+          ) : predictions.length > 0 ? (
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <div className="divide-y divide-gray-100">
+                {visiblePredictions.map((pred, i) => (
+                  <div key={`${pred.routeId}-${pred.direction}-${i}`} className="p-4">
+                    <div className="flex items-start gap-3">
+                      <span className="flex-shrink-0 mt-0.5">
+                        <BusIcon size={20} className="text-blue-600" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-gray-900 text-sm flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center min-w-[1.75rem] px-1.5 py-0.5 rounded bg-blue-600 text-white text-xs font-bold">
+                            {pred.routeName}
+                          </span>
+                          <span>{t(locale, 'toward')} {pred.direction}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
+                          <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>
+                          <ArrivalPill minutes={pred.minutesAway} locale={locale} isNext />
+                          <span>· {pred.stopName}</span>
+                        </div>
+                      </div>
+                      <a
+                        href={directionsUrl(destLat, destLng, 'transit')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => handleDirections('bus')}
+                        className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
+                        style={{ backgroundColor: 'var(--accent)' }}
+                      >
+                        {t(locale, 'directions')}
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {hasMoreBus && (
+                <button
+                  onClick={() => setBusExpanded(!busExpanded)}
+                  className="w-full py-2.5 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors border-t border-gray-100"
+                >
+                  {busExpanded ? t(locale, 'fewer_routes') : `${t(locale, 'more_routes')} (${predictions.length - 2})`}
+                </button>
+              )}
+              <a
+                href="https://www.gogreenstreets.org/micro-guides/how-to-ride-the-bus"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block py-2.5 text-xs text-center text-gray-400 hover:text-gray-600 transition-colors border-t border-gray-100"
+              >
+                {t(locale, 'bus_guide')} →
+              </a>
+            </div>
+          ) : null}
 
           {!loadingPredictions && predictions.length === 0 && mbtaStops.length > 0 && (
             <ModeCard
@@ -243,45 +267,55 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
 
           {/* Bluebike */}
           {nearestBluebike && (
-            <ModeCard
-              icon={<BicycleIcon size={20} className="text-blue-700" />}
-              title={
-                <span className="flex items-center gap-2">
-                  <span>Bluebike</span>
-                  <span className="text-xs font-normal text-gray-500">· {nearestBluebike.name}</span>
-                </span>
-              }
-              subtitle={
-                <span className="flex items-center gap-2 flex-wrap">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
-                    {nearestBluebike.num_bikes_available - nearestBluebike.num_ebikes_available} {t(locale, 'bikes')}
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <div className="p-4">
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 mt-0.5">
+                    <BicycleIcon size={20} className="text-blue-700" />
                   </span>
-                  {nearestBluebike.num_ebikes_available > 0 && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-                      {nearestBluebike.num_ebikes_available} e-bikes
-                    </span>
-                  )}
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
-                    {nearestBluebike.num_docks_available} {t(locale, 'docks_free')}
-                  </span>
-                  {bluebikeDistToUser && (
-                    <span className="text-gray-500">· {formatDistance(bluebikeDistToUser)}</span>
-                  )}
-                </span>
-              }
-              action={
-                <a
-                  href={directionsUrl(nearestBluebike.lat, nearestBluebike.lng, 'walking')}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleDirections('bluebike')}
-                  className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
-                  style={{ backgroundColor: 'var(--accent)' }}
-                >
-                  {t(locale, 'directions')}
-                </a>
-              }
-            />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-gray-900 text-sm flex items-center gap-2">
+                      <span>Bluebike</span>
+                      <span className="text-xs font-normal text-gray-500">· {nearestBluebike.name}</span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+                        {nearestBluebike.num_bikes_available - nearestBluebike.num_ebikes_available} {t(locale, 'bikes')}
+                      </span>
+                      {nearestBluebike.num_ebikes_available > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                          {nearestBluebike.num_ebikes_available} e-bikes
+                        </span>
+                      )}
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
+                        {nearestBluebike.num_docks_available} {t(locale, 'docks_free')}
+                      </span>
+                      {bluebikeDistToUser && (
+                        <span className="text-gray-500">· {formatDistance(bluebikeDistToUser)}</span>
+                      )}
+                    </div>
+                  </div>
+                  <a
+                    href={directionsUrl(nearestBluebike.lat, nearestBluebike.lng, 'walking')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => handleDirections('bluebike')}
+                    className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
+                    style={{ backgroundColor: 'var(--accent)' }}
+                  >
+                    {t(locale, 'directions')}
+                  </a>
+                </div>
+              </div>
+              <a
+                href="https://www.gogreenstreets.org/micro-guides/how-to-use-bluebikes"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block py-2.5 text-xs text-center text-gray-400 hover:text-gray-600 transition-colors border-t border-gray-100"
+              >
+                {t(locale, 'bluebike_guide')} →
+              </a>
+            </div>
           )}
         </div>
       </div>

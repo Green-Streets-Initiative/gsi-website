@@ -45,6 +45,12 @@ const strings = {
     get_me_there: 'Get me there',
     get_me_there_title: 'How to get here',
     no_predictions: 'No upcoming departures',
+    next_arrival: 'Next arrival',
+    more_routes: 'More bus routes',
+    fewer_routes: 'Fewer routes',
+    bus_guide: 'How to ride the bus',
+    bluebike_guide: 'How to use Bluebikes',
+    ride_time: 'ride',
   },
   es: {
     eyebrow_default: 'SomerStreets',
@@ -90,6 +96,12 @@ const strings = {
     get_me_there: 'Llévame allá',
     get_me_there_title: 'Cómo llegar',
     no_predictions: 'Sin próximas salidas',
+    next_arrival: 'Próxima llegada',
+    more_routes: 'Más rutas de autobús',
+    fewer_routes: 'Menos rutas',
+    bus_guide: 'Cómo tomar el autobús',
+    bluebike_guide: 'Cómo usar Bluebikes',
+    ride_time: 'viaje',
   },
   pt: {
     eyebrow_default: 'SomerStreets',
@@ -135,6 +147,12 @@ const strings = {
     get_me_there: 'Me leve lá',
     get_me_there_title: 'Como chegar',
     no_predictions: 'Sem próximas partidas',
+    next_arrival: 'Próxima chegada',
+    more_routes: 'Mais linhas de ônibus',
+    fewer_routes: 'Menos linhas',
+    bus_guide: 'Como andar de ônibus',
+    bluebike_guide: 'Como usar Bluebikes',
+    ride_time: 'viagem',
   },
 } as const
 

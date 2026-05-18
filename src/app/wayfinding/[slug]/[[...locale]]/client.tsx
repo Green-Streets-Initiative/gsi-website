@@ -328,7 +328,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
               target="_blank"
               rel="noopener noreferrer"
               className="text-[11px] hover:underline"
-              style={{ color: '#2E7D32', fontFamily: 'Trebuchet MS, sans-serif' }}
+              style={{ color: '#2D6A4F', fontFamily: 'Trebuchet MS, sans-serif' }}
             >
               <strong>Green Streets</strong> Initiative
             </a>
