@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { WayfindingEvent, WayfindingBusiness } from './types'
 import { CARNAVAL_EVENT, CARNAVAL_RESTAURANTS } from './static-carnaval'
+import { TASTE_EVENT, TASTE_BUSINESSES } from './static-tasteofsomerville'
 
 function getSupabase() {
   return createClient(
@@ -25,6 +26,7 @@ export async function fetchEventConfig(slug: string): Promise<WayfindingEvent | 
   }
 
   if (slug === 'carnaval') return CARNAVAL_EVENT
+  if (slug === 'tasteofsomerville') return TASTE_EVENT
   return null
 }
 
@@ -43,6 +45,7 @@ export async function fetchBusinesses(eventId: string): Promise<WayfindingBusine
   }
 
   if (eventId === 'static-carnaval') return CARNAVAL_RESTAURANTS
+  if (eventId === 'static-tasteofsomerville') return TASTE_BUSINESSES
   return []
 }
 

@@ -60,6 +60,8 @@ const strings = {
     cat_cafe: 'Cafe',
     cat_quick_bites: 'Quick Bites',
     cat_bar_grill: 'Bar & Grill',
+    cat_brewery: 'Brewery',
+    cat_beverage_brand: 'Beverage Brand',
   },
   es: {
     eyebrow_default: 'SomerStreets',
@@ -120,6 +122,8 @@ const strings = {
     cat_cafe: 'Café',
     cat_quick_bites: 'Comida rápida',
     cat_bar_grill: 'Bar y parrilla',
+    cat_brewery: 'Cervecería',
+    cat_beverage_brand: 'Marca de bebidas',
   },
   pt: {
     eyebrow_default: 'SomerStreets',
@@ -180,6 +184,8 @@ const strings = {
     cat_cafe: 'Café',
     cat_quick_bites: 'Comida rápida',
     cat_bar_grill: 'Bar e churrasqueira',
+    cat_brewery: 'Cervejaria',
+    cat_beverage_brand: 'Marca de bebidas',
   },
 } as const
 
@@ -200,6 +206,8 @@ const categoryKeyMap: Record<string, TranslationKey> = {
   'Cafe': 'cat_cafe',
   'Quick Bites': 'cat_quick_bites',
   'Bar & Grill': 'cat_bar_grill',
+  'Brewery': 'cat_brewery',
+  'Beverage Brand': 'cat_beverage_brand',
 }
 
 export function tCategory(locale: Locale, category: string): string {
