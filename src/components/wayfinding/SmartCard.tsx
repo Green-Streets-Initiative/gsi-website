@@ -84,6 +84,7 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
     return (
       <div className="relative px-4 py-3">
         <DismissButton onDismiss={onDismiss} />
+        <div className="text-xs font-medium text-blue-700 mb-0.5">Bluebike station</div>
         <h3 className="font-semibold text-gray-900 text-lg pr-8">{station.name}</h3>
         <div className="text-sm text-gray-500 mt-0.5">
           {formatDistance(dist)} {t(locale, 'away')}
