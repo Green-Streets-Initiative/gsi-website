@@ -27,7 +27,7 @@ function rollup(segments: BikeComfortSegment[]) {
     .filter((x) => x.miles > 0.05)
 }
 
-export default function ComfortBar({ rating, segments }: Pick<BikeComfort, 'rating' | 'segments'>) {
+export default function ComfortBar({ rating, segments, theme = 'dark' }: Pick<BikeComfort, 'rating' | 'segments'> & { theme?: 'dark' | 'light' }) {
   const hasSegments = !!segments && segments.length > 0
   const totalDistance = hasSegments
     ? segments!.reduce((sum, s) => sum + (s.distance_mi || 0), 0)
@@ -43,9 +43,9 @@ export default function ComfortBar({ rating, segments }: Pick<BikeComfort, 'rati
   return (
     <div
       aria-label={a11yLabel}
-      className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3.5"
+      className={`rounded-lg p-3.5 ${theme === 'light' ? 'border border-gray-200 bg-gray-50' : 'border border-white/[0.06] bg-white/[0.02]'}`}
     >
-      <div className="mb-1.5 flex items-center justify-between text-[11px] text-white/75">
+      <div className={`mb-1.5 flex items-center justify-between text-[11px] ${theme === 'light' ? 'text-gray-500' : 'text-white/75'}`}>
         <span>Route comfort</span>
         {totalDistance > 0 && <span>{totalDistance.toFixed(1)} mi total</span>}
       </div>
@@ -74,7 +74,7 @@ export default function ComfortBar({ rating, segments }: Pick<BikeComfort, 'rati
       </div>
 
       {breakdown.length > 0 ? (
-        <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-white/75">
+        <div className={`mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] ${theme === 'light' ? 'text-gray-500' : 'text-white/75'}`}>
           {breakdown.map((b) => (
             <div key={b.rating} className="flex items-center gap-1.5">
               <span
@@ -86,7 +86,7 @@ export default function ComfortBar({ rating, segments }: Pick<BikeComfort, 'rati
           ))}
         </div>
       ) : (
-        <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-white/75">
+        <div className={`mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] ${theme === 'light' ? 'text-gray-500' : 'text-white/75'}`}>
           {Object.entries(SEGMENT_LABELS).map(([key, label]) => (
             <div key={key} className="flex items-center gap-1.5">
               <span

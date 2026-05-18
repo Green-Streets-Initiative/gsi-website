@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { WayfindingEvent, Locale, BluebikeStationLive } from '@/lib/wayfinding/types'
+import type { BikeComfort } from '@/lib/types/commute'
 import { t } from '@/lib/wayfinding/i18n'
 import { haversineMeters, formatDistance, walkTimeMinutes, bikeTimeMinutes, busTimeMinutes } from '@/lib/wayfinding/geo'
 import { trackEvent } from '@/lib/wayfinding/telemetry'
 import { PersonWalkIcon, BusIcon, BicycleIcon } from './WayfindingIcons'
+import ComfortBar from '@/components/commute/ComfortBar'
 
 interface Props {
   event: WayfindingEvent
@@ -39,6 +41,8 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
   const [predictions, setPredictions] = useState<MBTAPrediction[]>([])
   const [loadingPredictions, setLoadingPredictions] = useState(true)
   const [busExpanded, setBusExpanded] = useState(false)
+  const [bikeComfort, setBikeComfort] = useState<BikeComfort | null>(null)
+  const [loadingComfort, setLoadingComfort] = useState(false)
 
   const destLat = event.center_lat
   const destLng = event.center_lng
@@ -143,6 +147,16 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     const interval = setInterval(fetchPredictions, 30000)
     return () => clearInterval(interval)
   }, [fetchPredictions])
+
+  useEffect(() => {
+    if (!hasLocation) return
+    setLoadingComfort(true)
+    fetch(`/api/wayfinding/bike-comfort?origin_lat=${userPosition!.lat}&origin_lng=${userPosition!.lng}&dest_lat=${destLat}&dest_lng=${destLng}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data && !data.error) setBikeComfort(data) })
+      .catch(() => {})
+      .finally(() => setLoadingComfort(false))
+  }, [hasLocation, userPosition, destLat, destLng])
 
   const handleDirections = (mode: string) => {
     trackEvent({ event: 'get_me_there', slug: event.slug, locale, mode })
@@ -286,55 +300,69 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
             />
           )}
 
-          {/* Bluebike */}
-          {nearestBluebike && (() => {
-            const bikeRideDist = haversineMeters(nearestBluebike.lat, nearestBluebike.lng, destLat, destLng)
-            const bikeRideMin = bikeTimeMinutes(bikeRideDist)
-            const walkToStation = bluebikeDistToUser ? walkTimeMinutes(bluebikeDistToUser) : null
-            const totalBikeTrip = walkToStation !== null ? walkToStation + bikeRideMin : null
+          {/* Bike */}
+          {(nearestBluebike || bikeComfort) && (() => {
+            const bikeRideDist = nearestBluebike ? haversineMeters(nearestBluebike.lat, nearestBluebike.lng, destLat, destLng) : null
+            const bikeRideMin = bikeRideDist ? bikeTimeMinutes(bikeRideDist) : null
+            const walkToStation = nearestBluebike && bluebikeDistToUser ? walkTimeMinutes(bluebikeDistToUser) : null
+            const totalBikeTrip = walkToStation !== null && bikeRideMin !== null ? walkToStation + bikeRideMin : null
             return (
             <div className="bg-gray-50 rounded-xl overflow-hidden">
               <div className="p-4">
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 mt-0.5">
-                    <BicycleIcon size={20} className="text-blue-700" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium text-gray-900 text-sm flex items-center gap-2">
-                      <span>Bluebike</span>
-                      {totalBikeTrip !== null && (
-                        <span className="text-xs font-normal text-gray-400">~{totalBikeTrip} {t(locale, 'min')}</span>
-                      )}
-                      <span className="text-xs font-normal text-gray-500">· {nearestBluebike.name}</span>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
-                        {nearestBluebike.num_bikes_available - nearestBluebike.num_ebikes_available} {t(locale, 'bikes')}
-                      </span>
-                      {nearestBluebike.num_ebikes_available > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-                          {nearestBluebike.num_ebikes_available} e-bikes
-                        </span>
-                      )}
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
-                        {nearestBluebike.num_docks_available} {t(locale, 'docks_free')}
-                      </span>
-                      {bluebikeDistToUser && (
-                        <span className="text-gray-500">· {formatDistance(bluebikeDistToUser)}</span>
-                      )}
-                    </div>
-                  </div>
-                  <a
-                    href={directionsUrl(nearestBluebike.lat, nearestBluebike.lng, 'walking')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => handleDirections('bluebike')}
-                    className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
-                    style={{ backgroundColor: 'var(--accent)' }}
-                  >
-                    {t(locale, 'directions')}
-                  </a>
+                <div className="flex items-center gap-2 mb-3">
+                  <BicycleIcon size={20} className="text-blue-700" />
+                  <span className="font-medium text-gray-900 text-sm">{t(locale, 'chip_bluebike')}</span>
+                  {totalBikeTrip !== null && (
+                    <span className="text-xs font-normal text-gray-400">~{totalBikeTrip} {t(locale, 'min')}</span>
+                  )}
                 </div>
+
+                {bikeComfort && (bikeComfort.segments || bikeComfort.rating) && (
+                  <div className="mb-3">
+                    <ComfortBar rating={bikeComfort.rating} segments={bikeComfort.segments} theme="light" />
+                    {bikeComfort.summary && (
+                      <p className="text-xs text-gray-500 mt-1.5">{bikeComfort.summary}</p>
+                    )}
+                  </div>
+                )}
+                {loadingComfort && !bikeComfort && (
+                  <div className="mb-3 text-xs text-gray-400">{t(locale, 'loading')}</div>
+                )}
+
+                {nearestBluebike && (
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium text-gray-600 mb-1">Nearest Bluebike station</div>
+                      <div className="text-sm font-medium text-gray-900">{nearestBluebike.name}</div>
+                      <div className="text-xs text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+                          {nearestBluebike.num_bikes_available - nearestBluebike.num_ebikes_available} {t(locale, 'bikes')}
+                        </span>
+                        {nearestBluebike.num_ebikes_available > 0 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                            {nearestBluebike.num_ebikes_available} e-bikes
+                          </span>
+                        )}
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
+                          {nearestBluebike.num_docks_available} {t(locale, 'docks_free')}
+                        </span>
+                        {bluebikeDistToUser && (
+                          <span className="text-gray-500">· {formatDistance(bluebikeDistToUser)}</span>
+                        )}
+                      </div>
+                    </div>
+                    <a
+                      href={directionsUrl(nearestBluebike.lat, nearestBluebike.lng, 'walking')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => handleDirections('bluebike')}
+                      className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
+                      style={{ backgroundColor: 'var(--accent)' }}
+                    >
+                      {t(locale, 'directions')}
+                    </a>
+                  </div>
+                )}
               </div>
               <a
                 href="https://www.gogreenstreets.org/guides/how-to-use-bluebikes"
