@@ -152,7 +152,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                 <span className="font-medium text-gray-900">{b.name}</span>
                 {b.is_shift_partner && (
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200">
-                    <img src="/assets/wayfinding/shift-wordmark.svg" alt="Shift" className="h-3" />
+                    <img src="/assets/wayfinding/shift-wordmark.png" alt="Shift" className="h-3" />
                     <span className="text-[10px] text-gray-500 font-medium">Rewards Partner</span>
                   </span>
                 )}
@@ -165,88 +165,8 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
           ))}
         </section>
       )}
-      {sortedBluebikes.length > 0 && (
-        <section className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {t(locale, 'chip_bluebike')}
-          </h3>
-          {sortedBluebikes.map(s => (
-            <button
-              key={s.station_id}
-              className="w-full text-left py-3 border-b border-gray-100 last:border-0"
-              onClick={() => handlePinSelect({ type: 'bluebike', data: s })}
-            >
-              <div className="font-medium text-gray-900">{s.name}</div>
-              <div className="text-sm text-gray-500">
-                {s.num_bikes_available - s.num_ebikes_available} {t(locale, 'bikes')}
-                {s.num_ebikes_available > 0 && ` + ${s.num_ebikes_available} e-bikes`}
-                {' · '}{s.num_docks_available} {t(locale, 'docks_free')}
-              </div>
-            </button>
-          ))}
-        </section>
-      )}
-      {sortedMbta.length > 0 && (
-        <section className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {t(locale, 'chip_bus')}
-          </h3>
-          {sortedMbta.map((s, i) => (
-            <button
-              key={`${s.stop_id}-${s.route_id}-${i}`}
-              className="w-full text-left py-3 border-b border-gray-100 last:border-0 flex items-center gap-3"
-              onClick={() => handlePinSelect({ type: 'mbta', data: s })}
-            >
-              {s.route_name && (
-                <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded bg-blue-600 text-white text-xs font-bold flex-shrink-0">
-                  {s.route_name}
-                </span>
-              )}
-              <div className="min-w-0">
-                <div className="font-medium text-gray-900">
-                  {s.direction ? `${t(locale, 'toward')} ${s.direction}` : s.name}
-                </div>
-                <div className="text-sm text-gray-500">
-                  {s.next_arrival_minutes !== null ? `${s.next_arrival_minutes} ${t(locale, 'min')} · ` : ''}{s.name}
-                </div>
-              </div>
-            </button>
-          ))}
-        </section>
-      )}
-      {sortedTrainStops.length > 0 && (
-        <section className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {t(locale, 'chip_train')}
-          </h3>
-          {sortedTrainStops.map((s, i) => {
-            const lineColor = ROUTE_COLORS[s.route_id] ?? '#E66300'
-            return (
-            <button
-              key={`${s.stop_id}-${s.route_id}-${i}`}
-              className="w-full text-left py-3 border-b border-gray-100 last:border-0 flex items-center gap-3"
-              onClick={() => handlePinSelect({ type: 'mbta', data: s })}
-            >
-              {s.route_name && (
-                <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded text-white text-xs font-bold flex-shrink-0" style={{ backgroundColor: lineColor }}>
-                  {s.route_name}
-                </span>
-              )}
-              <div className="min-w-0">
-                <div className="font-medium text-gray-900">
-                  {s.direction ? `${t(locale, 'toward')} ${s.direction}` : s.name}
-                </div>
-                <div className="text-sm text-gray-500">
-                  {s.next_arrival_minutes !== null ? `${s.next_arrival_minutes} ${t(locale, 'min')} · ` : ''}{s.name}
-                </div>
-              </div>
-            </button>
-            )
-          })}
-        </section>
-      )}
     </div>
-  ), [filteredBusinesses, foodCategories, sortedBluebikes, sortedMbta, sortedTrainStops, locale, handlePinSelect])
+  ), [filteredBusinesses, foodCategories, locale, handlePinSelect])
 
   return (
     <>
@@ -340,9 +260,9 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
 
         {/* Mobile: directory view */}
         {mobileView === 'directory' && (
-          <div className="absolute inset-0 bg-white overflow-y-auto md:hidden">
+          <div className="absolute inset-0 bg-white flex flex-col md:hidden">
             {activeLayers.food && foodCategories.length > 1 && (
-              <div className="flex flex-wrap gap-1.5 px-4 py-2 border-b border-gray-100">
+              <div className="flex-shrink-0 flex flex-wrap gap-1.5 px-4 py-2 border-b border-gray-100 bg-white">
                 {foodCategories.map(cat => {
                   const active = !activeCategories || activeCategories.has(cat)
                   const CatIcon = FOOD_CATEGORY_ICONS[cat]
@@ -363,7 +283,9 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                 })}
               </div>
             )}
-            <DirectoryList />
+            <div className="flex-1 overflow-y-auto">
+              <DirectoryList />
+            </div>
           </div>
         )}
 
@@ -372,22 +294,24 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
           <div className="flex border-t border-gray-200 bg-white">
             <button
               onClick={() => { setMobileView('map'); setSelectedFeature(null) }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
-                mobileView === 'map' ? 'text-gray-900' : 'text-gray-400'
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors border-b-2 ${
+                mobileView === 'map' ? 'text-gray-900 border-current' : 'text-gray-400 border-transparent'
               }`}
+              style={mobileView === 'map' ? { borderColor: 'var(--accent)' } : undefined}
             >
-              <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
+              <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor">
                 <path d="M228.92,49.69a8,8,0,0,0-6.86-1.45L160.93,63.52,99.58,32.84a8,8,0,0,0-5.52-.6l-64,16A8,8,0,0,0,24,56V200a8,8,0,0,0,9.94,7.76l61.13-15.28,61.35,30.68A8.15,8.15,0,0,0,160,224a8,8,0,0,0,1.94-.24l64-16A8,8,0,0,0,232,200V56A8,8,0,0,0,228.92,49.69ZM104,52.94l48,24V203.06l-48-24ZM40,62.25l48-12v127.5l-48,12ZM216,193.75l-48,12V78.25l48-12Z" />
               </svg>
               Map
             </button>
             <button
               onClick={() => setMobileView('directory')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
-                mobileView === 'directory' ? 'text-gray-900' : 'text-gray-400'
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors border-b-2 ${
+                mobileView === 'directory' ? 'text-gray-900 border-current' : 'text-gray-400 border-transparent'
               }`}
+              style={mobileView === 'directory' ? { borderColor: 'var(--accent)' } : undefined}
             >
-              <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
+              <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor">
                 <path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z" />
               </svg>
               Directory

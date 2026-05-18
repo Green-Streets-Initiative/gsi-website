@@ -48,8 +48,6 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
       }).filter(l => l.imgUrl)
     : []
 
-  const logoHeight = logos.length === 1 ? 'h-20' : 'h-12'
-
   return (
     <header className="flex-shrink-0 bg-white border-b border-gray-100">
       <div className="px-4 py-2 flex items-center justify-between">
@@ -114,19 +112,31 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
         </div>
       </div>
 
-      {logos.length > 0 && (
+      {logos.length === 1 ? (
+        <div className="px-4 pb-3">
+          <div className="inline-block rounded-xl px-5 py-3" style={{ backgroundColor: 'var(--accent)' }}>
+            {logos[0].linkUrl ? (
+              <a href={logos[0].linkUrl} target="_blank" rel="noopener noreferrer">
+                <img src={logos[0].imgUrl} alt={event.organizer_name ?? ''} className="h-20 object-contain hover:opacity-80 transition-opacity" />
+              </a>
+            ) : (
+              <img src={logos[0].imgUrl} alt={event.organizer_name ?? ''} className="h-20 object-contain" />
+            )}
+          </div>
+        </div>
+      ) : logos.length > 1 ? (
         <div className="px-4 pb-2 flex items-center gap-3">
           {logos.map((logo, i) =>
             logo.linkUrl ? (
               <a key={i} href={logo.linkUrl} target="_blank" rel="noopener noreferrer">
-                <img src={logo.imgUrl} alt={event.organizer_name ?? ''} className={`${logoHeight} object-contain hover:opacity-80 transition-opacity`} />
+                <img src={logo.imgUrl} alt={event.organizer_name ?? ''} className="h-12 object-contain hover:opacity-80 transition-opacity" />
               </a>
             ) : (
-              <img key={i} src={logo.imgUrl} alt={event.organizer_name ?? ''} className={`${logoHeight} object-contain`} />
+              <img key={i} src={logo.imgUrl} alt={event.organizer_name ?? ''} className="h-12 object-contain" />
             )
           )}
         </div>
-      )}
+      ) : null}
     </header>
   )
 }
