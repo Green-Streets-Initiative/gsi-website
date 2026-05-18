@@ -6,7 +6,7 @@ import type { BikeComfort } from '@/lib/types/commute'
 import { t } from '@/lib/wayfinding/i18n'
 import { haversineMeters, formatDistance, walkTimeMinutes, bikeTimeMinutes, busTimeMinutes } from '@/lib/wayfinding/geo'
 import { trackEvent } from '@/lib/wayfinding/telemetry'
-import { PersonWalkIcon, BusIcon, BicycleIcon } from './WayfindingIcons'
+import { PersonWalkIcon, BusIcon, BicycleIcon, TrainIcon } from './WayfindingIcons'
 import ComfortBar from '@/components/commute/ComfortBar'
 
 interface Props {
@@ -28,6 +28,25 @@ interface MBTAPrediction {
   minutesAway: number
 }
 
+interface TrainPrediction {
+  routeId: string
+  routeName: string
+  direction: string
+  stopName: string
+  stopId: string
+  stopLat: number
+  stopLng: number
+  minutesAway: number
+  lineColor: string
+}
+
+const ROUTE_COLORS: Record<string, string> = {
+  'Orange': '#ED8B00',
+  'Green-B': '#00843D', 'Green-C': '#00843D', 'Green-D': '#00843D', 'Green-E': '#00843D',
+  'Red': '#DA291C',
+  'Blue': '#003DA5',
+}
+
 function directionsUrl(lat: number, lng: number, mode: 'walking' | 'transit'): string {
   const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
   if (isIOS) {
@@ -39,7 +58,9 @@ function directionsUrl(lat: number, lng: number, mode: 'walking' | 'transit'): s
 
 export default function GetMeThereModal({ event, locale, userPosition, bluebikes, onClose }: Props) {
   const [predictions, setPredictions] = useState<MBTAPrediction[]>([])
+  const [trainPredictions, setTrainPredictions] = useState<TrainPrediction[]>([])
   const [loadingPredictions, setLoadingPredictions] = useState(true)
+  const [loadingTrainPredictions, setLoadingTrainPredictions] = useState(true)
   const [busExpanded, setBusExpanded] = useState(false)
   const [bikeComfort, setBikeComfort] = useState<BikeComfort | null>(null)
   const [loadingComfort, setLoadingComfort] = useState(false)
@@ -142,11 +163,91 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     }
   }, [hasLocation, userPosition])
 
+  const fetchTrainPreds = useCallback(async () => {
+    try {
+      if (!hasLocation) { setLoadingTrainPredictions(false); return }
+
+      const stopsRes = await fetch(
+        `https://api-v3.mbta.com/stops?filter[latitude]=${userPosition!.lat}&filter[longitude]=${userPosition!.lng}&filter[radius]=0.02&filter[route_type]=0,1`
+      )
+      const stopsData = await stopsRes.json()
+      const nearbyStopIds: string[] = []
+      const stopNameMap = new Map<string, string>()
+      const stopLocMap = new Map<string, { lat: number; lng: number }>()
+
+      for (const stop of stopsData.data || []) {
+        nearbyStopIds.push(stop.id)
+        const name = stop.attributes.name.replace(/(^|[.!?]\s+|@ )([a-z])/g, (_: string, prefix: string, letter: string) => prefix + letter.toUpperCase())
+        stopNameMap.set(stop.id, name)
+        stopLocMap.set(stop.id, { lat: stop.attributes.latitude, lng: stop.attributes.longitude })
+      }
+
+      if (nearbyStopIds.length === 0) { setLoadingTrainPredictions(false); return }
+
+      const stopIds = nearbyStopIds.slice(0, 10)
+      const [predsResponse, routesRes] = await Promise.all([
+        fetch(`https://api-v3.mbta.com/predictions?filter[stop]=${stopIds.join(',')}&filter[route_type]=0,1&sort=departure_time&page[limit]=30`),
+        fetch(`https://api-v3.mbta.com/routes?filter[stop]=${stopIds.join(',')}&filter[type]=0,1`),
+      ])
+      const predsData = await predsResponse.json()
+      const routesData = await routesRes.json()
+
+      const routeMap = new Map<string, { name: string; directions: string[] }>()
+      for (const r of routesData.data || []) {
+        routeMap.set(r.id, {
+          name: r.attributes.long_name ?? r.id,
+          directions: r.attributes.direction_names || [],
+        })
+      }
+
+      const preds: TrainPrediction[] = []
+      const seen = new Set<string>()
+
+      for (const pred of predsData.data || []) {
+        const stopId = pred.relationships?.stop?.data?.id
+        const routeId = pred.relationships?.route?.data?.id
+        if (!stopId || !routeId) continue
+
+        const depTime = pred.attributes.departure_time
+        if (!depTime) continue
+        const diff = (new Date(depTime).getTime() - Date.now()) / 60000
+        if (diff < 0) continue
+
+        const dirId = pred.attributes.direction_id
+        const key = `${routeId}-${dirId}`
+        if (seen.has(key)) continue
+        seen.add(key)
+
+        const route = routeMap.get(routeId)
+        const stopLoc = stopLocMap.get(stopId)
+
+        preds.push({
+          routeId,
+          routeName: route?.name ?? routeId,
+          direction: route?.directions[dirId] ?? '',
+          stopName: stopNameMap.get(stopId) ?? stopId,
+          stopId,
+          stopLat: stopLoc?.lat ?? 0,
+          stopLng: stopLoc?.lng ?? 0,
+          minutesAway: Math.round(diff),
+          lineColor: ROUTE_COLORS[routeId] ?? '#E66300',
+        })
+      }
+
+      setTrainPredictions(preds.sort((a, b) => a.minutesAway - b.minutesAway))
+    } catch {
+      // fail silently
+    } finally {
+      setLoadingTrainPredictions(false)
+    }
+  }, [hasLocation, userPosition])
+
   useEffect(() => {
     fetchPredictions()
-    const interval = setInterval(fetchPredictions, 30000)
+    fetchTrainPreds()
+    const interval = setInterval(() => { fetchPredictions(); fetchTrainPreds() }, 30000)
     return () => clearInterval(interval)
-  }, [fetchPredictions])
+  }, [fetchPredictions, fetchTrainPreds])
 
   useEffect(() => {
     if (!hasLocation) return
@@ -293,6 +394,79 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => handleDirections('bus')}
+                  className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
+                  style={{ backgroundColor: 'var(--accent)' }}
+                >
+                  {t(locale, 'directions')}
+                </a>
+              }
+            />
+          )}
+
+          {/* Train */}
+          {loadingTrainPredictions && trainPredictions.length === 0 ? (
+            <div className="bg-gray-50 rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <TrainIcon size={20} className="text-orange-600" />
+                <span className="text-sm text-gray-500">{t(locale, 'loading')}</span>
+              </div>
+            </div>
+          ) : trainPredictions.length > 0 ? (
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <div className="divide-y divide-gray-100">
+                {trainPredictions.map((pred, i) => {
+                  const walkToStopDist = hasLocation ? haversineMeters(userPosition!.lat, userPosition!.lng, pred.stopLat, pred.stopLng) : null
+                  return (
+                  <div key={`${pred.routeId}-${pred.direction}-${i}`} className="p-4">
+                    <div className="flex items-start gap-3">
+                      <span className="flex-shrink-0 mt-0.5">
+                        <TrainIcon size={20} style={{ color: pred.lineColor }} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-gray-900 text-sm flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center min-w-[1.75rem] px-1.5 py-0.5 rounded text-white text-xs font-bold" style={{ backgroundColor: pred.lineColor }}>
+                            {pred.routeName}
+                          </span>
+                          <span>{t(locale, 'toward')} {pred.direction}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>{' '}
+                          <ArrivalPill minutes={pred.minutesAway} locale={locale} isNext />
+                        </div>
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          {t(locale, 'board_at')} {pred.stopName}
+                          {walkToStopDist !== null && ` · ${formatDistance(walkToStopDist)}`}
+                        </div>
+                      </div>
+                      <a
+                        href={directionsUrl(destLat, destLng, 'transit')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => handleDirections('train')}
+                        className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
+                        style={{ backgroundColor: 'var(--accent)' }}
+                      >
+                        {t(locale, 'directions')}
+                      </a>
+                    </div>
+                  </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {!loadingTrainPredictions && trainPredictions.length === 0 && hasLocation && (
+            <ModeCard
+              icon={<TrainIcon size={20} className="text-orange-600" />}
+              title={t(locale, 'chip_train')}
+              subtitle={t(locale, 'no_predictions')}
+              action={
+                <a
+                  href={directionsUrl(destLat, destLng, 'transit')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => handleDirections('train')}
                   className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
                   style={{ backgroundColor: 'var(--accent)' }}
                 >

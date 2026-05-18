@@ -16,6 +16,13 @@ import DepartureModal from '@/components/wayfinding/DepartureModal'
 import GetMeThereModal from '@/components/wayfinding/GetMeThereModal'
 import { ForkKnifeIcon, PintGlassIcon, CoffeeIcon, BowlSteamIcon } from '@/components/wayfinding/WayfindingIcons'
 
+const ROUTE_COLORS: Record<string, string> = {
+  'Orange': '#ED8B00',
+  'Green-B': '#00843D', 'Green-C': '#00843D', 'Green-D': '#00843D', 'Green-E': '#00843D',
+  'Red': '#DA291C',
+  'Blue': '#003DA5',
+}
+
 const FOOD_CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
   'Restaurant': ForkKnifeIcon,
   'Bar & Grill': PintGlassIcon,
@@ -38,6 +45,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
   const [showGetMeThere, setShowGetMeThere] = useState(false)
   const [bluebikes, setBluebikes] = useState<BluebikeStationLive[]>([])
   const [mbtaStops, setMbtaStops] = useState<MBTAStopLive[]>([])
+  const [trainStops, setTrainStops] = useState<MBTAStopLive[]>([])
   const [bikeParking, setBikeParking] = useState<BikeParkingSpot[]>([])
   const [activeCategories, setActiveCategories] = useState<Set<string> | null>(null)
   const sheetRef = useRef<{ snapTo: (snap: SheetSnap) => void }>(null)
@@ -92,6 +100,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
 
   const sortedBluebikes = [...bluebikes].sort((a, b) => a.distance_meters - b.distance_meters)
   const sortedMbta = [...mbtaStops].sort((a, b) => a.distance_meters - b.distance_meters)
+  const sortedTrainStops = [...trainStops].sort((a, b) => a.distance_meters - b.distance_meters)
   const sortedBikeParking = [...bikeParking].sort((a, b) => a.distance_meters - b.distance_meters)
 
   const foodCategories = useMemo(() => {
@@ -194,8 +203,39 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
           ))}
         </section>
       )}
+      {sortedTrainStops.length > 0 && (
+        <section className="mb-6">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            {t(locale, 'chip_train')}
+          </h3>
+          {sortedTrainStops.map((s, i) => {
+            const lineColor = ROUTE_COLORS[s.route_id] ?? '#E66300'
+            return (
+            <button
+              key={`${s.stop_id}-${s.route_id}-${i}`}
+              className="w-full text-left py-3 border-b border-gray-100 last:border-0 flex items-center gap-3"
+              onClick={() => handlePinSelect({ type: 'mbta', data: s })}
+            >
+              {s.route_name && (
+                <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded text-white text-xs font-bold flex-shrink-0" style={{ backgroundColor: lineColor }}>
+                  {s.route_name}
+                </span>
+              )}
+              <div className="min-w-0">
+                <div className="font-medium text-gray-900">
+                  {s.direction ? `${t(locale, 'toward')} ${s.direction}` : s.name}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {s.next_arrival_minutes !== null ? `${s.next_arrival_minutes} ${t(locale, 'min')} · ` : ''}{s.name}
+                </div>
+              </div>
+            </button>
+            )
+          })}
+        </section>
+      )}
     </div>
-  ), [filteredBusinesses, foodCategories, sortedBluebikes, sortedMbta, locale, handlePinSelect])
+  ), [filteredBusinesses, foodCategories, sortedBluebikes, sortedMbta, sortedTrainStops, locale, handlePinSelect])
 
   return (
     <>
@@ -221,13 +261,15 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
             userPosition={geo.position}
             bluebikes={bluebikes}
             mbtaStops={mbtaStops}
+            trainStops={trainStops}
             bikeParking={bikeParking}
             onPinSelect={handlePinSelect}
             onMapTap={handleDismiss}
-            onLiveDataLoad={(bb, mbta, bp) => {
+            onLiveDataLoad={(bb, mbta, bp, train) => {
               setBluebikes(bb)
               setMbtaStops(mbta)
               setBikeParking(bp)
+              setTrainStops(train)
             }}
           />
 
@@ -278,6 +320,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                 userLng={refLng}
                 eventCenter={{ lat: event.center_lat, lng: event.center_lng }}
                 allMbtaStops={sortedMbta}
+                allTrainStops={sortedTrainStops}
                 onDismiss={handleDismiss}
               />
             ) : sheetSnap === 'full' ? (
@@ -328,6 +371,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                 userLng={refLng}
                 eventCenter={{ lat: event.center_lat, lng: event.center_lng }}
                 allMbtaStops={sortedMbta}
+                allTrainStops={sortedTrainStops}
                 onDismiss={handleDismiss}
               />
             ) : (

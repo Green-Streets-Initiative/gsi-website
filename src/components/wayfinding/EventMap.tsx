@@ -19,10 +19,11 @@ interface Props {
   userPosition: { lat: number; lng: number } | null
   bluebikes: BluebikeStationLive[]
   mbtaStops: MBTAStopLive[]
+  trainStops: MBTAStopLive[]
   bikeParking: BikeParkingSpot[]
   onPinSelect: (feature: SelectedFeature) => void
   onMapTap: () => void
-  onLiveDataLoad: (bb: BluebikeStationLive[], mbta: MBTAStopLive[], bp: BikeParkingSpot[]) => void
+  onLiveDataLoad: (bb: BluebikeStationLive[], mbta: MBTAStopLive[], bp: BikeParkingSpot[], train: MBTAStopLive[]) => void
 }
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
@@ -48,7 +49,7 @@ function setCachedMBTATopology(lat: number, lng: number, data: unknown) {
 
 export default function EventMap({
   event, businesses, activeLayers, userPosition,
-  bluebikes, mbtaStops, bikeParking,
+  bluebikes, mbtaStops, trainStops, bikeParking,
   onPinSelect, onMapTap, onLiveDataLoad,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -194,7 +195,7 @@ export default function EventMap({
     if (!mapRef.current) return
     renderMarkers(mapRef.current)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLayers, businesses, bluebikes, mbtaStops, bikeParking])
+  }, [activeLayers, businesses, bluebikes, mbtaStops, trainStops, bikeParking])
 
   useEffect(() => {
     if (!mapRef.current || !userPosition) return
@@ -237,6 +238,7 @@ export default function EventMap({
     bus: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M184,28H72A36,36,0,0,0,36,64V208a20,20,0,0,0,20,20H84a20,20,0,0,0,20-20V192h48v16a20,20,0,0,0,20,20h28a20,20,0,0,0,20-20V64A36,36,0,0,0,184,28ZM60,168V112H196v56ZM72,52H184a12,12,0,0,1,12,12V88H60V64A12,12,0,0,1,72,52Zm8,152H60V192H80Zm96,0V192h20v12Zm-68-64a16,16,0,1,1-16-16A16,16,0,0,1,108,140Zm72,0a16,16,0,1,1-16-16A16,16,0,0,1,180,140Z"/></svg>',
     bike: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M208,112a47.81,47.81,0,0,0-16.93,3.09L165.93,72H192a8,8,0,0,1,8,8,8,8,0,0,0,16,0,24,24,0,0,0-24-24H152a8,8,0,0,0-6.91,12l11.65,20H99.26L82.91,60A8,8,0,0,0,76,56H48a8,8,0,0,0,0,16H71.41l13.71,23.51L62.87,127.9A48,48,0,1,0,79,138.63l17.41-23.11,38.68,66.31A8,8,0,0,0,142,184a7.9,7.9,0,0,0,4-1.08,8,8,0,0,0,2.88-10.94l-38.15-65.42h57.55l11.06,19A48.09,48.09,0,1,0,208,112ZM80,160a32,32,0,1,1-7.34-20.42L55.08,161.84A8,8,0,0,0,61,175.16l17.58-22.26A31.84,31.84,0,0,1,80,160Zm128,32a32,32,0,0,1-21.64-55.64l14.91,25.62a8,8,0,0,0,13.82-8l-14.91-25.62A32,32,0,1,1,208,192Z"/></svg>',
     parking: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M208,80H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208V208Zm-68-56a12,12,0,1,1-12-12A12,12,0,0,1,140,152Z"/></svg>',
+    train: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM56,120V80h64v40Zm80-40h64v40H136ZM72,40H184a16,16,0,0,1,16,16v8H56V56A16,16,0,0,1,72,40ZM184,200H72a16,16,0,0,1-16-16V136H200v48A16,16,0,0,1,184,200ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"/></svg>',
   }
 
   const foodCategoryIcon: Record<string, string> = {
@@ -277,6 +279,20 @@ export default function EventMap({
         })
       })
     }
+    if (activeLayers.train) {
+      const trainGroups = new Map<string, MBTAStopLive[]>()
+      trainStops.forEach(stop => {
+        const group = trainGroups.get(stop.stop_id) || []
+        group.push(stop)
+        trainGroups.set(stop.stop_id, group)
+      })
+      trainGroups.forEach(stops => {
+        const first = stops[0]
+        addMarker(map, first.lng, first.lat, '#E66300', markerIcons.train, () => {
+          onPinSelect({ type: 'mbta', data: first })
+        })
+      })
+    }
     if (activeLayers['bike-parking']) {
       bikeParking.forEach(spot => {
         addMarker(map, spot.lng, spot.lat, '#616161', markerIcons.parking, () => {
@@ -311,12 +327,14 @@ export default function EventMap({
     let bb: BluebikeStationLive[] = []
     let mbta: MBTAStopLive[] = []
     let bp: BikeParkingSpot[] = []
+    let train: MBTAStopLive[] = []
 
-    const bbPromise = fetchBluebikes().then(r => { bb = r; onLiveDataLoad(bb, mbta, bp) })
-    const mbtaPromise = fetchMBTAStops().then(r => { mbta = r; onLiveDataLoad(bb, mbta, bp) })
-    const bpPromise = fetchBikeParking().then(r => { bp = r; onLiveDataLoad(bb, mbta, bp) })
+    const bbPromise = fetchBluebikes().then(r => { bb = r; onLiveDataLoad(bb, mbta, bp, train) })
+    const mbtaPromise = fetchMBTAStops().then(r => { mbta = r; onLiveDataLoad(bb, mbta, bp, train) })
+    const bpPromise = fetchBikeParking().then(r => { bp = r; onLiveDataLoad(bb, mbta, bp, train) })
+    const trainPromise = fetchTrainStops().then(r => { train = r; onLiveDataLoad(bb, mbta, bp, train) })
 
-    await Promise.allSettled([bbPromise, mbtaPromise, bpPromise])
+    await Promise.allSettled([bbPromise, mbtaPromise, bpPromise, trainPromise])
   }
 
   async function fetchBluebikes(): Promise<BluebikeStationLive[]> {
@@ -456,6 +474,110 @@ export default function EventMap({
       return stops.sort((a, b) => a.distance_meters - b.distance_meters)
     } catch (err) {
       console.warn('[wayfinding] fetchMBTAStops failed:', err)
+      return []
+    }
+  }
+
+  async function fetchTrainStops(): Promise<MBTAStopLive[]> {
+    try {
+      interface StopTopo { id: string; name: string; lat: number; lng: number; dist: number; routes: { id: string; name: string; directions: string[] }[] }
+
+      const trainCacheKey = `mbta-train-${event.center_lat.toFixed(4)},${event.center_lng.toFixed(4)}`
+      let topology: StopTopo[]
+      let stopIds: string[]
+
+      const cachedRaw = (() => { try { const r = sessionStorage.getItem(trainCacheKey); if (!r) return null; const c = JSON.parse(r); return Date.now() - c.ts > MBTA_CACHE_TTL ? null : c.data } catch { return null } })()
+
+      if (cachedRaw) {
+        topology = cachedRaw
+        stopIds = topology.map(s => s.id)
+      } else {
+        const stopsRes = await fetch(
+          `https://api-v3.mbta.com/stops?filter[latitude]=${event.center_lat}&filter[longitude]=${event.center_lng}&filter[radius]=0.02&filter[route_type]=0,1`
+        )
+        const stopsData = await stopsRes.json()
+        const nearbyStops: { id: string; name: string; lat: number; lng: number; dist: number }[] = []
+
+        for (const stop of stopsData.data || []) {
+          const lat = stop.attributes.latitude
+          const lng = stop.attributes.longitude
+          nearbyStops.push({
+            id: stop.id,
+            name: capitalizeStopName(stop.attributes.name),
+            lat, lng,
+            dist: haversineDist(event.center_lat, event.center_lng, lat, lng),
+          })
+        }
+
+        nearbyStops.sort((a, b) => a.dist - b.dist)
+        const topStops = nearbyStops.slice(0, 10)
+        if (topStops.length === 0) return []
+
+        stopIds = topStops.map(s => s.id)
+
+        const routeResults = await Promise.all(
+          topStops.map(async (s) => {
+            const res = await fetch(`https://api-v3.mbta.com/routes?filter[stop]=${s.id}&filter[type]=0,1`)
+            const data = await res.json()
+            return { stopId: s.id, routes: (data.data || []).map((r: { id: string; attributes: { long_name?: string; direction_names?: string[] } }) => ({
+              id: r.id,
+              name: r.attributes.long_name ?? r.id,
+              directions: r.attributes.direction_names || [],
+            })) }
+          })
+        )
+
+        const routesByStop = new Map(routeResults.map(r => [r.stopId, r.routes]))
+        topology = topStops.map(s => ({ ...s, routes: routesByStop.get(s.id) || [] }))
+
+        try { sessionStorage.setItem(trainCacheKey, JSON.stringify({ data: topology, ts: Date.now() })) } catch {}
+      }
+
+      const predsRes = await fetch(
+        `https://api-v3.mbta.com/predictions?filter[stop]=${stopIds.join(',')}&filter[route_type]=0,1&sort=departure_time&page[limit]=100`
+      )
+      const predsData = await predsRes.json()
+
+      const predMap = new Map<string, number>()
+      for (const pred of predsData.data || []) {
+        const stopId = pred.relationships?.stop?.data?.id
+        const routeId = pred.relationships?.route?.data?.id
+        const dirId = pred.attributes?.direction_id
+        if (!stopId || !routeId || dirId === undefined) continue
+
+        const depTime = pred.attributes?.departure_time
+        if (!depTime) continue
+        const diff = (new Date(depTime).getTime() - Date.now()) / 60000
+        if (diff < 0) continue
+
+        const key = `${stopId}-${routeId}-${dirId}`
+        if (!predMap.has(key)) predMap.set(key, Math.round(diff))
+      }
+
+      const stops: MBTAStopLive[] = []
+      for (const s of topology) {
+        if (s.routes.length === 0) continue
+        for (const route of s.routes) {
+          for (let dirIdx = 0; dirIdx < route.directions.length; dirIdx++) {
+            const predKey = `${s.id}-${route.id}-${dirIdx}`
+            stops.push({
+              stop_id: s.id,
+              name: s.name,
+              lat: s.lat,
+              lng: s.lng,
+              route_id: route.id,
+              route_name: route.name,
+              direction: route.directions[dirIdx] ?? '',
+              next_arrival_minutes: predMap.get(predKey) ?? null,
+              distance_meters: s.dist,
+            })
+          }
+        }
+      }
+
+      return stops.sort((a, b) => a.distance_meters - b.distance_meters)
+    } catch (err) {
+      console.warn('[wayfinding] fetchTrainStops failed:', err)
       return []
     }
   }

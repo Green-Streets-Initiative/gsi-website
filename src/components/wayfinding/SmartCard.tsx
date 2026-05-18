@@ -3,7 +3,14 @@
 import { SelectedFeature, Locale, WayfindingBusiness, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
 import { t } from '@/lib/wayfinding/i18n'
 import { formatDistance, haversineMeters } from '@/lib/wayfinding/geo'
-import { BusIcon } from './WayfindingIcons'
+import { BusIcon, TrainIcon } from './WayfindingIcons'
+
+const ROUTE_COLORS: Record<string, string> = {
+  'Orange': '#ED8B00',
+  'Green-B': '#00843D', 'Green-C': '#00843D', 'Green-D': '#00843D', 'Green-E': '#00843D',
+  'Red': '#DA291C',
+  'Blue': '#003DA5',
+}
 
 interface Props {
   feature: SelectedFeature
@@ -12,6 +19,7 @@ interface Props {
   userLng: number
   eventCenter: { lat: number; lng: number }
   allMbtaStops?: MBTAStopLive[]
+  allTrainStops?: MBTAStopLive[]
   onDismiss?: () => void
 }
 
@@ -38,7 +46,7 @@ function DismissButton({ onDismiss }: { onDismiss?: () => void }) {
   )
 }
 
-export default function SmartCard({ feature, locale, userLat, userLng, allMbtaStops, onDismiss }: Props) {
+export default function SmartCard({ feature, locale, userLat, userLng, allMbtaStops, allTrainStops, onDismiss }: Props) {
   if (feature.type === 'business') {
     const biz = feature.data as WayfindingBusiness
     const dist = haversineMeters(userLat, userLng, biz.lat, biz.lng)
@@ -121,12 +129,13 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
   if (feature.type === 'mbta') {
     const stop = feature.data as MBTAStopLive
     const dist = haversineMeters(userLat, userLng, stop.lat, stop.lng)
-    const siblingRoutes = allMbtaStops
-      ? allMbtaStops.filter(s => s.stop_id === stop.stop_id && (s.route_id !== stop.route_id || s.direction !== stop.direction))
-      : []
+    const isTrainStop = !!(allTrainStops?.some(s => s.stop_id === stop.stop_id))
+    const stopsPool = isTrainStop ? allTrainStops! : (allMbtaStops ?? [])
+    const siblingRoutes = stopsPool.filter(s => s.stop_id === stop.stop_id && (s.route_id !== stop.route_id || s.direction !== stop.direction))
     const allRoutes = [stop, ...siblingRoutes]
     const routeNames = [...new Set(allRoutes.map(r => r.route_name).filter(Boolean))]
     const withPredictions = allRoutes.filter(r => r.next_arrival_minutes !== null)
+    const defaultBadgeColor = isTrainStop ? '#E66300' : undefined
 
     return (
       <div className="relative px-4 py-3">
@@ -137,22 +146,30 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
         </div>
 
         <div className="mt-3 flex items-center gap-2">
-          <BusIcon size={18} className="text-blue-600 flex-shrink-0" />
+          {isTrainStop
+            ? <TrainIcon size={18} className="flex-shrink-0" style={{ color: '#E66300' }} />
+            : <BusIcon size={18} className="text-blue-600 flex-shrink-0" />
+          }
           <div className="flex items-center gap-1.5 flex-wrap">
-            {routeNames.map(name => (
-              <span key={name} className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded bg-blue-600 text-white text-xs font-bold">
-                {name}
-              </span>
-            ))}
+            {routeNames.map(name => {
+              const bg = ROUTE_COLORS[name] ?? defaultBadgeColor ?? '#2563EB'
+              return (
+                <span key={name} className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded text-white text-xs font-bold" style={{ backgroundColor: bg }}>
+                  {name}
+                </span>
+              )
+            })}
           </div>
         </div>
 
         {withPredictions.length > 0 ? (
           <div className="mt-3 space-y-1.5">
-            {withPredictions.map((route, i) => (
+            {withPredictions.map((route, i) => {
+              const bg = ROUTE_COLORS[route.route_name] ?? defaultBadgeColor ?? '#2563EB'
+              return (
               <div key={`${route.route_id}-${route.direction}-${i}`} className="flex items-center gap-2 py-1">
                 {route.route_name && (
-                  <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded bg-blue-600 text-white text-xs font-bold flex-shrink-0">
+                  <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded text-white text-xs font-bold flex-shrink-0" style={{ backgroundColor: bg }}>
                     {route.route_name}
                   </span>
                 )}
@@ -165,7 +182,8 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
                   </div>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <div className="mt-3 text-sm text-gray-400">{t(locale, 'no_predictions')}</div>

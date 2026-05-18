@@ -1,6 +1,6 @@
 export type Locale = 'en' | 'es' | 'pt'
 
-export type LayerKey = 'festival' | 'food' | 'bus' | 'bluebike' | 'bike-parking'
+export type LayerKey = 'festival' | 'food' | 'bus' | 'train' | 'bluebike' | 'bike-parking'
 
 export interface WayfindingEvent {
   id: string
