@@ -8,6 +8,7 @@ export interface WayfindingEvent {
   name: string
   eyebrow: string | null
   organizer_name: string | null
+  organizer_url: string | null
   organizer_logo_url: string | null
   date_primary: string
   date_rain: string | null
@@ -15,6 +16,7 @@ export interface WayfindingEvent {
   time_end: string | null
   accent_color: string
   corridor_geojson: GeoJSON.LineString | GeoJSON.MultiLineString | null
+  venue_geojson: GeoJSON.Polygon | null
   center_lat: number
   center_lng: number
   default_zoom: number

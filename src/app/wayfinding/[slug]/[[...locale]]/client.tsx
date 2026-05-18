@@ -14,7 +14,7 @@ import EventMap from '@/components/wayfinding/EventMap'
 import SmartCard from '@/components/wayfinding/SmartCard'
 import DepartureModal from '@/components/wayfinding/DepartureModal'
 import GetMeThereModal from '@/components/wayfinding/GetMeThereModal'
-import { ForkKnifeIcon, PintGlassIcon, CoffeeIcon, BowlSteamIcon } from '@/components/wayfinding/WayfindingIcons'
+import { ForkKnifeIcon, PintGlassIcon, CoffeeIcon, BowlSteamIcon, BeerSteinIcon, BeerBottleIcon } from '@/components/wayfinding/WayfindingIcons'
 
 const ROUTE_COLORS: Record<string, string> = {
   'Orange': '#ED8B00',
@@ -28,6 +28,8 @@ const FOOD_CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: 
   'Bar & Grill': PintGlassIcon,
   'Cafe': CoffeeIcon,
   'Quick Bites': BowlSteamIcon,
+  'Brewery': BeerSteinIcon,
+  'Beverage Brand': BeerBottleIcon,
 }
 
 interface Props {

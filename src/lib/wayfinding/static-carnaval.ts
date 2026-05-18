@@ -6,12 +6,14 @@ export const CARNAVAL_EVENT: WayfindingEvent = {
   name: 'Carnaval',
   eyebrow: 'SomerStreets',
   organizer_name: 'East Somerville Main Streets + Somerville Arts Council',
+  organizer_url: null,
   organizer_logo_url: 'https://static.wixstatic.com/media/e81d2c_b4217595de34451b87dc75433c7f6ebe~mv2.png|https://www.eastsomervillemainstreets.org/event-details/carnaval-2026, https://static.wixstatic.com/media/e81d2c_4f02db12d19d4de581643c20ccf5f624~mv2.png|https://somervilleartscouncil.org/',
   date_primary: '2026-06-07',
   date_rain: '2026-06-14',
   time_start: '14:00',
   time_end: '18:00',
   accent_color: '#D81B60',
+  venue_geojson: null,
   corridor_geojson: {
     type: 'LineString',
     coordinates: [

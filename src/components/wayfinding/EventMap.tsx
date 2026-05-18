@@ -161,6 +161,60 @@ export default function EventMap({
           })
         }
 
+        if (event.venue_geojson) {
+          map.addSource('venue', {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: event.venue_geojson,
+            },
+          })
+
+          map.addLayer({
+            id: 'venue-fill',
+            type: 'fill',
+            source: 'venue',
+            paint: {
+              'fill-color': accentColor,
+              'fill-opacity': 0.12,
+            },
+          })
+
+          map.addLayer({
+            id: 'venue-outline',
+            type: 'line',
+            source: 'venue',
+            paint: {
+              'line-color': accentColor,
+              'line-width': 2.5,
+              'line-opacity': 0.6,
+            },
+            layout: {
+              'line-cap': 'round',
+              'line-join': 'round',
+            },
+          })
+
+          map.addLayer({
+            id: 'venue-label',
+            type: 'symbol',
+            source: 'venue',
+            layout: {
+              'text-field': event.name,
+              'text-size': 13,
+              'text-font': ['Open Sans Semibold'],
+              'text-allow-overlap': true,
+              'text-letter-spacing': 0.05,
+            },
+            paint: {
+              'text-color': accentColor,
+              'text-halo-color': '#ffffff',
+              'text-halo-width': 2,
+            },
+          })
+        }
+
         renderMarkers(map)
         fetchLiveData(map)
       })
@@ -207,7 +261,7 @@ export default function EventMap({
     const map = mapRef.current
     if (!map) return
     const vis = activeLayers.festival ? 'visible' : 'none'
-    for (const layerId of ['corridor-glow', 'corridor-line', 'corridor-dash', 'corridor-label']) {
+    for (const layerId of ['corridor-glow', 'corridor-line', 'corridor-dash', 'corridor-label', 'venue-fill', 'venue-outline', 'venue-label']) {
       if (map.getLayer(layerId)) map.setLayoutProperty(layerId, 'visibility', vis)
     }
   }, [activeLayers.festival])
@@ -239,6 +293,8 @@ export default function EventMap({
     bike: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M208,112a47.81,47.81,0,0,0-16.93,3.09L165.93,72H192a8,8,0,0,1,8,8,8,8,0,0,0,16,0,24,24,0,0,0-24-24H152a8,8,0,0,0-6.91,12l11.65,20H99.26L82.91,60A8,8,0,0,0,76,56H48a8,8,0,0,0,0,16H71.41l13.71,23.51L62.87,127.9A48,48,0,1,0,79,138.63l17.41-23.11,38.68,66.31A8,8,0,0,0,142,184a7.9,7.9,0,0,0,4-1.08,8,8,0,0,0,2.88-10.94l-38.15-65.42h57.55l11.06,19A48.09,48.09,0,1,0,208,112ZM80,160a32,32,0,1,1-7.34-20.42L55.08,161.84A8,8,0,0,0,61,175.16l17.58-22.26A31.84,31.84,0,0,1,80,160Zm128,32a32,32,0,0,1-21.64-55.64l14.91,25.62a8,8,0,0,0,13.82-8l-14.91-25.62A32,32,0,1,1,208,192Z"/></svg>',
     parking: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M208,80H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208V208Zm-68-56a12,12,0,1,1-12-12A12,12,0,0,1,140,152Z"/></svg>',
     train: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM56,120V80h64v40Zm80-40h64v40H136ZM72,40H184a16,16,0,0,1,16,16v8H56V56A16,16,0,0,1,72,40ZM184,200H72a16,16,0,0,1-16-16V136H200v48A16,16,0,0,1,184,200ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"/></svg>',
+    brewery: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M104,104v80a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm40-8a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V104A8,8,0,0,0,144,96Zm96,16v64a24,24,0,0,1-24,24H200v8a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V72c0-30.88,28.71-56,64-56,16.77,0,32.91,5.8,44.82,16H160a40,40,0,0,1,40,40V88h16A24,24,0,0,1,240,112ZM57,64H182.62A24,24,0,0,0,160,48H145.74a8,8,0,0,1-5.53-2.22C131.06,37,117.87,32,104,32,80.82,32,61.43,45.76,57,64ZM184,208V80H56V208H184Zm40-96a8,8,0,0,0-8-8H200v80h16a8,8,0,0,0,8-8Z"/></svg>',
+    beverage: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M245.66,42.34l-32-32a8,8,0,0,0-11.32,11.32l1.48,1.47L148.65,64.51l-38.22,7.65a8.05,8.05,0,0,0-4.09,2.18L23,157.66a24,24,0,0,0,0,33.94L64.4,233a24,24,0,0,0,33.94,0l83.32-83.31a8,8,0,0,0,2.18-4.09l7.65-38.22,41.38-55.17,1.47,1.48a8,8,0,0,0,11.32-11.32ZM96,107.31,148.69,160,104,204.69,51.31,152ZM81.37,224a7.94,7.94,0,0,1-5.65-2.34L34.34,180.28a8,8,0,0,1,0-11.31L40,163.31,92.69,216,87,221.66A8,8,0,0,1,81.37,224ZM177.6,99.2a7.92,7.92,0,0,0-1.44,3.23l-7.53,37.63L160,148.69,107.31,96l8.63-8.63,37.63-7.53a7.92,7.92,0,0,0,3.23-1.44l58.45-43.84,6.19,6.19Z"/></svg>',
   }
 
   const foodCategoryIcon: Record<string, string> = {
@@ -246,6 +302,8 @@ export default function EventMap({
     'Bar & Grill': markerIcons.bar_grill,
     'Cafe': markerIcons.cafe,
     'Quick Bites': markerIcons.quick_bites,
+    'Brewery': markerIcons.brewery,
+    'Beverage Brand': markerIcons.beverage,
   }
 
   function renderMarkers(map: maplibregl.Map) {

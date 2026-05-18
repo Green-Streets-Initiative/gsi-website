@@ -445,6 +445,9 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
               <div className="divide-y divide-gray-100">
                 {visibleTrainPredictions.map((pred, i) => {
                   const walkToStopDist = hasLocation ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, pred.stopLat, pred.stopLng) : null
+                  const walkToStop = walkToStopDist !== null ? walkTimeMinutes(walkToStopDist) : null
+                  const trainRide = pred.stopLat ? busTimeMinutes(haversineMeters(pred.stopLat, pred.stopLng, destLat, destLng)) : null
+                  const tripEst = walkToStop !== null && trainRide !== null ? walkToStop + pred.minutesAway + trainRide : null
                   return (
                   <div key={`${pred.routeId}-${pred.direction}-${i}`} className="p-4">
                     <div className="flex items-start gap-3">
@@ -457,6 +460,9 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                             {pred.routeName}
                           </span>
                           <span>{t(locale, 'toward')} {pred.direction}</span>
+                          {tripEst !== null && (
+                            <span className="text-xs font-normal text-gray-400">~{tripEst} {t(locale, 'min')}</span>
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>{' '}

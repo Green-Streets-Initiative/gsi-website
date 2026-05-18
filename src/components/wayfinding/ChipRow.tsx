@@ -3,7 +3,7 @@
 import { LayerKey, Locale } from '@/lib/wayfinding/types'
 import { FIXED_LAYERS } from '@/lib/wayfinding/layers'
 import { t, TranslationKey } from '@/lib/wayfinding/i18n'
-import { MapPinIcon, ForkKnifeIcon, BusIcon, TrainIcon, BicycleIcon, LockIcon } from './WayfindingIcons'
+import { MapPinIcon, ForkKnifeIcon, BusIcon, TrainIcon, BicycleIcon, LockIcon, BeerSteinIcon, BeerBottleIcon } from './WayfindingIcons'
 
 interface Props {
   activeLayers: Record<LayerKey, boolean>

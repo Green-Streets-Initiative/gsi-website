@@ -54,7 +54,13 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
         <div className="min-w-0 flex-1">
           {event.eyebrow && (
             <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">
-              {event.eyebrow}
+              {event.organizer_url ? (
+                <a href={event.organizer_url} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 transition-colors">
+                  {event.eyebrow}
+                </a>
+              ) : (
+                event.eyebrow
+              )}
             </div>
           )}
           <div className="flex items-baseline gap-2">
@@ -110,10 +116,10 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
           {logos.map((logo, i) =>
             logo.linkUrl ? (
               <a key={i} href={logo.linkUrl} target="_blank" rel="noopener noreferrer">
-                <img src={logo.imgUrl} alt={event.organizer_name ?? ''} className="h-8 object-contain hover:opacity-80 transition-opacity" />
+                <img src={logo.imgUrl} alt={event.organizer_name ?? ''} className="h-12 object-contain hover:opacity-80 transition-opacity" />
               </a>
             ) : (
-              <img key={i} src={logo.imgUrl} alt={event.organizer_name ?? ''} className="h-8 object-contain" />
+              <img key={i} src={logo.imgUrl} alt={event.organizer_name ?? ''} className="h-12 object-contain" />
             )
           )}
         </div>
