@@ -12,6 +12,7 @@ interface Props {
   userLng: number
   eventCenter: { lat: number; lng: number }
   allMbtaStops?: MBTAStopLive[]
+  onDismiss?: () => void
 }
 
 function directionsUrl(lat: number, lng: number): string {
@@ -22,13 +23,29 @@ function directionsUrl(lat: number, lng: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`
 }
 
-export default function SmartCard({ feature, locale, userLat, userLng, allMbtaStops }: Props) {
+function DismissButton({ onDismiss }: { onDismiss?: () => void }) {
+  if (!onDismiss) return null
+  return (
+    <button
+      onClick={onDismiss}
+      className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+      aria-label="Close"
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M1 1l12 12M13 1L1 13" />
+      </svg>
+    </button>
+  )
+}
+
+export default function SmartCard({ feature, locale, userLat, userLng, allMbtaStops, onDismiss }: Props) {
   if (feature.type === 'business') {
     const biz = feature.data as WayfindingBusiness
     const dist = haversineMeters(userLat, userLng, biz.lat, biz.lng)
     return (
-      <div className="px-4 py-3">
-        <h3 className="font-semibold text-gray-900 text-lg">{biz.name}</h3>
+      <div className="relative px-4 py-3">
+        <DismissButton onDismiss={onDismiss} />
+        <h3 className="font-semibold text-gray-900 text-lg pr-8">{biz.name}</h3>
         <div className="text-sm text-gray-500 mt-0.5">
           {formatDistance(dist)} {t(locale, 'away')}
           {biz.address && ` · ${biz.address}`}
@@ -65,8 +82,9 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
     const station = feature.data as BluebikeStationLive
     const dist = haversineMeters(userLat, userLng, station.lat, station.lng)
     return (
-      <div className="px-4 py-3">
-        <h3 className="font-semibold text-gray-900 text-lg">{station.name}</h3>
+      <div className="relative px-4 py-3">
+        <DismissButton onDismiss={onDismiss} />
+        <h3 className="font-semibold text-gray-900 text-lg pr-8">{station.name}</h3>
         <div className="text-sm text-gray-500 mt-0.5">
           {formatDistance(dist)} {t(locale, 'away')}
         </div>
@@ -110,8 +128,9 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
     const withPredictions = allRoutes.filter(r => r.next_arrival_minutes !== null)
 
     return (
-      <div className="px-4 py-3">
-        <h3 className="font-semibold text-gray-900 text-lg">{stop.name}</h3>
+      <div className="relative px-4 py-3">
+        <DismissButton onDismiss={onDismiss} />
+        <h3 className="font-semibold text-gray-900 text-lg pr-8">{stop.name}</h3>
         <div className="text-sm text-gray-500 mt-0.5">
           {formatDistance(dist)} {t(locale, 'away')}
         </div>
@@ -173,8 +192,9 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
       ? t(locale, 'bike_rack')
       : t(locale, 'bike_corral')
     return (
-      <div className="px-4 py-3">
-        <h3 className="font-semibold text-gray-900 text-lg">{label}</h3>
+      <div className="relative px-4 py-3">
+        <DismissButton onDismiss={onDismiss} />
+        <h3 className="font-semibold text-gray-900 text-lg pr-8">{label}</h3>
         <div className="text-sm text-gray-500 mt-0.5">
           {formatDistance(dist)} {t(locale, 'away')}
           {spot.capacity && ` · ${spot.capacity} ${t(locale, 'spaces')}`}

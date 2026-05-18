@@ -21,6 +21,7 @@ interface Props {
   mbtaStops: MBTAStopLive[]
   bikeParking: BikeParkingSpot[]
   onPinSelect: (feature: SelectedFeature) => void
+  onMapTap: () => void
   onLiveDataLoad: (bb: BluebikeStationLive[], mbta: MBTAStopLive[], bp: BikeParkingSpot[]) => void
 }
 
@@ -48,7 +49,7 @@ function setCachedMBTATopology(lat: number, lng: number, data: unknown) {
 export default function EventMap({
   event, businesses, activeLayers, userPosition,
   bluebikes, mbtaStops, bikeParking,
-  onPinSelect, onLiveDataLoad,
+  onPinSelect, onMapTap, onLiveDataLoad,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -161,6 +162,10 @@ export default function EventMap({
 
         renderMarkers(map)
         fetchLiveData(map)
+      })
+
+      map.on('click', () => {
+        onMapTap()
       })
 
       map.on('contextmenu', (e) => {

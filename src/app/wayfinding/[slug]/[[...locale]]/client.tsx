@@ -61,6 +61,11 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
     trackEvent({ event: 'pin_tap', slug: event.slug, locale, type: feature.type, name: 'name' in feature.data ? (feature.data as WayfindingBusiness).name : '' })
   }, [event.slug, locale])
 
+  const handleDismiss = useCallback(() => {
+    setSelectedFeature(null)
+    sheetRef.current?.snapTo('peek')
+  }, [])
+
   const handleGetMeHome = useCallback(() => {
     setShowDeparture(true)
     trackEvent({ event: 'get_me_home', slug: event.slug, locale })
@@ -210,6 +215,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
             mbtaStops={mbtaStops}
             bikeParking={bikeParking}
             onPinSelect={handlePinSelect}
+            onMapTap={handleDismiss}
             onLiveDataLoad={(bb, mbta, bp) => {
               setBluebikes(bb)
               setMbtaStops(mbta)
@@ -262,6 +268,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                 userLng={refLng}
                 eventCenter={{ lat: event.center_lat, lng: event.center_lng }}
                 allMbtaStops={sortedMbta}
+                onDismiss={handleDismiss}
               />
             ) : sheetSnap === 'full' ? (
               <DirectoryList />
@@ -311,6 +318,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                 userLng={refLng}
                 eventCenter={{ lat: event.center_lat, lng: event.center_lng }}
                 allMbtaStops={sortedMbta}
+                onDismiss={handleDismiss}
               />
             ) : (
               <DirectoryList />
