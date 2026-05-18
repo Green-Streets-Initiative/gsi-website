@@ -353,10 +353,22 @@ export default function EventMap({
 
       if (nearbyStopIds.length === 0) return []
 
-      const predsRes = await fetch(
-        `https://api-v3.mbta.com/predictions?filter[stop]=${nearbyStopIds.slice(0, 10).join(',')}&filter[route_type]=3&sort=departure_time&page[limit]=20`
-      )
+      const stopRouteIds = nearbyStopIds.slice(0, 10)
+      const [predsRes, schedulesRes] = await Promise.all([
+        fetch(`https://api-v3.mbta.com/predictions?filter[stop]=${stopRouteIds.join(',')}&filter[route_type]=3&sort=departure_time&page[limit]=20`),
+        fetch(`https://api-v3.mbta.com/schedules?filter[stop]=${stopRouteIds.join(',')}&filter[route_type]=3&page[limit]=100`),
+      ])
       const predsData = await predsRes.json()
+      const schedulesData = await schedulesRes.json()
+
+      const stopRoutesMap = new Map<string, Set<string>>()
+      for (const sched of schedulesData.data || []) {
+        const stopId = sched.relationships?.stop?.data?.id
+        const routeId = sched.relationships?.route?.data?.id
+        if (!stopId || !routeId) continue
+        if (!stopRoutesMap.has(stopId)) stopRoutesMap.set(stopId, new Set())
+        stopRoutesMap.get(stopId)!.add(routeId)
+      }
 
       const stops: MBTAStopLive[] = []
       const seen = new Set<string>()
@@ -399,17 +411,35 @@ export default function EventMap({
 
       for (const [stopId, info] of stopInfo) {
         if (!stops.find(s => s.stop_id === stopId)) {
-          stops.push({
-            stop_id: stopId,
-            name: info.name,
-            lat: info.lat,
-            lng: info.lng,
-            route_id: '',
-            route_name: '',
-            direction: '',
-            next_arrival_minutes: null,
-            distance_meters: info.dist,
-          })
+          const routeIds = stopRoutesMap.get(stopId)
+          if (routeIds && routeIds.size > 0) {
+            for (const rId of routeIds) {
+              const route = routeMap.get(rId)
+              stops.push({
+                stop_id: stopId,
+                name: info.name,
+                lat: info.lat,
+                lng: info.lng,
+                route_id: rId,
+                route_name: rId.replace(/^0*/, ''),
+                direction: route?.direction_names?.[0] ?? '',
+                next_arrival_minutes: null,
+                distance_meters: info.dist,
+              })
+            }
+          } else {
+            stops.push({
+              stop_id: stopId,
+              name: info.name,
+              lat: info.lat,
+              lng: info.lng,
+              route_id: '',
+              route_name: '',
+              direction: '',
+              next_arrival_minutes: null,
+              distance_meters: info.dist,
+            })
+          }
         }
       }
 

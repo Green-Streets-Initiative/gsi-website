@@ -220,10 +220,12 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                             <span className="text-xs font-normal text-gray-400">~{tripEst} {t(locale, 'min')}</span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
-                          <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>
+                        <div className="text-xs text-gray-500 mt-1">
+                          <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>{' '}
                           <ArrivalPill minutes={pred.minutesAway} locale={locale} isNext />
-                          <span>· {pred.stopName}</span>
+                        </div>
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          {t(locale, 'board_at')} {pred.stopName}
                         </div>
                       </div>
                       <a
