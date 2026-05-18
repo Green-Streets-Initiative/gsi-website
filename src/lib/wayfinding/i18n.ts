@@ -42,6 +42,9 @@ const strings = {
     no_data: 'No data available',
     grant_location: 'Allow location access for distances',
     away: 'away',
+    get_me_there: 'Get me there',
+    get_me_there_title: 'How to get here',
+    no_predictions: 'No upcoming departures',
   },
   es: {
     eyebrow_default: 'SomerStreets',
@@ -84,6 +87,9 @@ const strings = {
     no_data: 'No hay datos disponibles',
     grant_location: 'Permite acceso a ubicación para ver distancias',
     away: 'de distancia',
+    get_me_there: 'Llévame allá',
+    get_me_there_title: 'Cómo llegar',
+    no_predictions: 'Sin próximas salidas',
   },
   pt: {
     eyebrow_default: 'SomerStreets',
@@ -126,6 +132,9 @@ const strings = {
     no_data: 'Dados não disponíveis',
     grant_location: 'Permita acesso à localização para ver distâncias',
     away: 'de distância',
+    get_me_there: 'Me leve lá',
+    get_me_there_title: 'Como chegar',
+    no_predictions: 'Sem próximas partidas',
   },
 } as const
 

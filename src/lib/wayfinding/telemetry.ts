@@ -7,6 +7,7 @@ type EventName =
   | 'arrival_mode_selected'
   | 'departure_mode_selected'
   | 'get_me_home'
+  | 'get_me_there'
   | 'geolocation_granted'
   | 'geolocation_denied'
   | 'rain_banner_impression'

@@ -14,6 +14,7 @@ import EventMap from '@/components/wayfinding/EventMap'
 import SmartCard from '@/components/wayfinding/SmartCard'
 import ArrivalFlow from '@/components/wayfinding/ArrivalFlow'
 import DepartureModal from '@/components/wayfinding/DepartureModal'
+import GetMeThereModal from '@/components/wayfinding/GetMeThereModal'
 
 interface Props {
   event: WayfindingEvent
@@ -27,6 +28,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
   const [selectedFeature, setSelectedFeature] = useState<SelectedFeature | null>(null)
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>('peek')
   const [showDeparture, setShowDeparture] = useState(false)
+  const [showGetMeThere, setShowGetMeThere] = useState(false)
   const [bluebikes, setBluebikes] = useState<BluebikeStationLive[]>([])
   const [mbtaStops, setMbtaStops] = useState<MBTAStopLive[]>([])
   const [bikeParking, setBikeParking] = useState<BikeParkingSpot[]>([])
@@ -63,6 +65,11 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
   const handleGetMeHome = useCallback(() => {
     setShowDeparture(true)
     trackEvent({ event: 'get_me_home', slug: event.slug, locale })
+  }, [event.slug, locale])
+
+  const handleGetMeThere = useCallback(() => {
+    setShowGetMeThere(true)
+    trackEvent({ event: 'get_me_there', slug: event.slug, locale })
   }, [event.slug, locale])
 
   const displayDate = event.is_rain_date && event.date_rain ? event.date_rain : event.date_primary
@@ -262,13 +269,19 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
               </div>
             )}
 
-            <div className="px-4 pb-4 mt-2">
+            <div className="px-4 pb-4 mt-2 flex gap-2">
               <button
-                onClick={handleGetMeHome}
-                className="w-full py-3 rounded-xl font-semibold text-white text-center"
+                onClick={handleGetMeThere}
+                className="flex-1 py-3 rounded-xl font-semibold text-white text-center"
                 style={{ backgroundColor: 'var(--accent)' }}
               >
-                {t(locale, 'get_me_home')} →
+                {t(locale, 'get_me_there')} →
+              </button>
+              <button
+                onClick={handleGetMeHome}
+                className="flex-1 py-3 rounded-xl font-semibold text-center bg-gray-100 text-gray-700"
+              >
+                {t(locale, 'get_me_home')}
               </button>
             </div>
           </BottomSheet>
@@ -288,6 +301,17 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
             </div>
           </div>
         </div>
+      )}
+
+      {showGetMeThere && (
+        <GetMeThereModal
+          event={event}
+          locale={locale}
+          userPosition={geo.position}
+          bluebikes={sortedBluebikes}
+          mbtaStops={sortedMbta}
+          onClose={() => setShowGetMeThere(false)}
+        />
       )}
 
       {showDeparture && (
