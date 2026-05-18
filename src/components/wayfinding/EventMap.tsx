@@ -285,21 +285,19 @@ export default function EventMap({
     markersRef.current.push(marker)
   }
 
-  async function fetchLiveData(map: maplibregl.Map) {
+  async function fetchLiveData(_map: maplibregl.Map) {
     if (liveLoadedRef.current) return
     liveLoadedRef.current = true
 
-    const [bbData, mbtaData, bpData] = await Promise.allSettled([
-      fetchBluebikes(),
-      fetchMBTAStops(),
-      fetchBikeParking(),
-    ])
+    let bb: BluebikeStationLive[] = []
+    let mbta: MBTAStopLive[] = []
+    let bp: BikeParkingSpot[] = []
 
-    const bb = bbData.status === 'fulfilled' ? bbData.value : []
-    const mbta = mbtaData.status === 'fulfilled' ? mbtaData.value : []
-    const bp = bpData.status === 'fulfilled' ? bpData.value : []
+    const bbPromise = fetchBluebikes().then(r => { bb = r; onLiveDataLoad(bb, mbta, bp) })
+    const mbtaPromise = fetchMBTAStops().then(r => { mbta = r; onLiveDataLoad(bb, mbta, bp) })
+    const bpPromise = fetchBikeParking().then(r => { bp = r; onLiveDataLoad(bb, mbta, bp) })
 
-    onLiveDataLoad(bb, mbta, bp)
+    await Promise.allSettled([bbPromise, mbtaPromise, bpPromise])
   }
 
   async function fetchBluebikes(): Promise<BluebikeStationLive[]> {
@@ -344,9 +342,11 @@ export default function EventMap({
 
       const cached = getCachedMBTATopology(event.center_lat, event.center_lng)
       let topology: StopTopo[]
+      let stopIds: string[]
 
       if (cached) {
         topology = cached
+        stopIds = topology.map(s => s.id)
       } else {
         const stopsRes = await fetch(
           `https://api-v3.mbta.com/stops?filter[latitude]=${event.center_lat}&filter[longitude]=${event.center_lng}&filter[radius]=0.01&filter[route_type]=3`
@@ -369,6 +369,8 @@ export default function EventMap({
         const topStops = nearbyStops.slice(0, 10)
         if (topStops.length === 0) return []
 
+        stopIds = topStops.map(s => s.id)
+
         const routeResults = await Promise.all(
           topStops.map(async (s) => {
             const res = await fetch(`https://api-v3.mbta.com/routes?filter[stop]=${s.id}&filter[type]=3`)
@@ -387,14 +389,13 @@ export default function EventMap({
         setCachedMBTATopology(event.center_lat, event.center_lng, topology)
       }
 
-      const allStopIds = topology.map(s => s.id)
-      let predsData: { data?: Array<{ relationships?: { stop?: { data?: { id?: string } }; route?: { data?: { id?: string } } }; attributes?: { direction_id?: number; departure_time?: string } }> } = {}
-      try {
-        const predsRes = await fetch(
-          `https://api-v3.mbta.com/predictions?filter[stop]=${allStopIds.join(',')}&filter[route_type]=3&sort=departure_time&page[limit]=100`
-        )
-        predsData = await predsRes.json()
-      } catch {}
+      const predsRes = await fetch(
+        `https://api-v3.mbta.com/predictions?filter[stop]=${stopIds.join(',')}&filter[route_type]=3&sort=departure_time&page[limit]=100`
+      )
+      const predsData = await predsRes.json()
+      if (!predsData.data) {
+        console.warn('[wayfinding] Predictions response:', predsData)
+      }
 
       const predMap = new Map<string, number>()
       for (const pred of predsData.data || []) {
@@ -411,6 +412,8 @@ export default function EventMap({
         const key = `${stopId}-${routeId}-${dirId}`
         if (!predMap.has(key)) predMap.set(key, Math.round(diff))
       }
+
+      console.log(`[wayfinding] ${predsData.data?.length ?? 0} predictions fetched, ${predMap.size} matched to stops`)
 
       const stops: MBTAStopLive[] = []
       for (const s of topology) {
@@ -433,8 +436,12 @@ export default function EventMap({
         }
       }
 
+      const withPreds = stops.filter(s => s.next_arrival_minutes !== null).length
+      console.log(`[wayfinding] ${stops.length} stop entries built, ${withPreds} have arrival predictions`)
+
       return stops.sort((a, b) => a.distance_meters - b.distance_meters)
-    } catch {
+    } catch (err) {
+      console.warn('[wayfinding] fetchMBTAStops failed:', err)
       return []
     }
   }
