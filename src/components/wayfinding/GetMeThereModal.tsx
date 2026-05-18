@@ -219,7 +219,8 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
             <div className="bg-gray-50 rounded-xl overflow-hidden">
               <div className="divide-y divide-gray-100">
                 {visiblePredictions.map((pred, i) => {
-                  const walkToStop = hasLocation ? walkTimeMinutes(haversineMeters(userPosition!.lat, userPosition!.lng, pred.stopLat, pred.stopLng)) : null
+                  const walkToStopDist = hasLocation ? haversineMeters(userPosition!.lat, userPosition!.lng, pred.stopLat, pred.stopLng) : null
+                  const walkToStop = walkToStopDist !== null ? walkTimeMinutes(walkToStopDist) : null
                   const busRide = pred.stopLat ? busTimeMinutes(haversineMeters(pred.stopLat, pred.stopLng, destLat, destLng)) : null
                   const tripEst = walkToStop !== null && busRide !== null ? walkToStop + pred.minutesAway + busRide : null
                   return (
@@ -244,6 +245,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                         </div>
                         <div className="text-xs text-gray-400 mt-0.5">
                           {t(locale, 'board_at')} {pred.stopName}
+                          {walkToStopDist !== null && ` · ${formatDistance(walkToStopDist)}`}
                         </div>
                       </div>
                       <a
