@@ -14,6 +14,14 @@ import EventMap from '@/components/wayfinding/EventMap'
 import SmartCard from '@/components/wayfinding/SmartCard'
 import DepartureModal from '@/components/wayfinding/DepartureModal'
 import GetMeThereModal from '@/components/wayfinding/GetMeThereModal'
+import { ForkKnifeIcon, PintGlassIcon, CoffeeIcon, BowlSteamIcon } from '@/components/wayfinding/WayfindingIcons'
+
+const FOOD_CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
+  'Restaurant': ForkKnifeIcon,
+  'Bar & Grill': PintGlassIcon,
+  'Cafe': CoffeeIcon,
+  'Quick Bites': BowlSteamIcon,
+}
 
 interface Props {
   event: WayfindingEvent
@@ -234,16 +242,18 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
               <div className="flex gap-1.5 px-4 py-1 overflow-x-auto no-scrollbar bg-white/90 backdrop-blur-sm">
                 {foodCategories.map(cat => {
                   const active = !activeCategories || activeCategories.has(cat)
+                  const CatIcon = FOOD_CATEGORY_ICONS[cat]
                   return (
                     <button
                       key={cat}
                       onClick={() => toggleCategory(cat)}
-                      className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                      className={`flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
                         active
                           ? 'bg-orange-100 text-orange-800'
                           : 'bg-gray-100 text-gray-400'
                       }`}
                     >
+                      {CatIcon && <CatIcon size={14} />}
                       {tCategory(locale, cat)}
                     </button>
                   )
