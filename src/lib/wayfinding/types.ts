@@ -43,6 +43,7 @@ export interface WayfindingBusiness {
   website_url: string | null
   google_place_id: string | null
   show_on_map: boolean
+  is_shift_partner: boolean
   pin_color: string | null
 }
 

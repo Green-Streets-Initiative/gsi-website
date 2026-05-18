@@ -42,7 +42,8 @@ interface Props {
 export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) {
   const [activeLayers, setActiveLayers] = useState<Record<LayerKey, boolean>>(getDefaultLayerState)
   const [selectedFeature, setSelectedFeature] = useState<SelectedFeature | null>(null)
-  const [sheetSnap, setSheetSnap] = useState<SheetSnap>('half')
+  const [sheetSnap, setSheetSnap] = useState<SheetSnap>('peek')
+  const [mobileView, setMobileView] = useState<'map' | 'directory'>('map')
   const [showDeparture, setShowDeparture] = useState(false)
   const [showGetMeThere, setShowGetMeThere] = useState(false)
   const [bluebikes, setBluebikes] = useState<BluebikeStationLive[]>([])
@@ -147,7 +148,15 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
               className="w-full text-left py-3 border-b border-gray-100 last:border-0"
               onClick={() => handlePinSelect({ type: 'business', data: b })}
             >
-              <div className="font-medium text-gray-900">{b.name}</div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-900">{b.name}</span>
+                {b.is_shift_partner && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200">
+                    <img src="/assets/wayfinding/shift-wordmark.svg" alt="Shift" className="h-3" />
+                    <span className="text-[10px] text-gray-500 font-medium">Rewards Partner</span>
+                  </span>
+                )}
+              </div>
               <div className="text-sm text-gray-500">
                 {foodCategories.length > 1 && <span className="text-orange-600">{tCategory(locale, b.category)} · </span>}
                 {b.address}
@@ -254,8 +263,8 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
       )}
 
       <div className="relative flex-1 min-h-0 md:flex md:flex-row">
-        {/* Map area */}
-        <div className="absolute inset-0 md:relative md:flex-1 md:min-h-0">
+        {/* Map area — always mounted, hidden on mobile when directory tab active */}
+        <div className={`absolute inset-0 md:relative md:flex-1 md:min-h-0 ${mobileView === 'directory' ? 'hidden md:block' : ''}`}>
           <EventMap
             event={event}
             businesses={filteredBusinesses}
@@ -305,32 +314,86 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
               </div>
             )}
           </div>
+
+          {/* Mobile: SmartCard sheet on pin tap */}
+          {selectedFeature && (
+            <div className="absolute bottom-0 left-0 right-0 z-10 md:hidden">
+              <BottomSheet
+                ref={sheetRef}
+                snap={sheetSnap}
+                onSnapChange={setSheetSnap}
+              >
+                <SmartCard
+                  feature={selectedFeature}
+                  locale={locale}
+                  userLat={refLat}
+                  userLng={refLng}
+                  eventCenter={{ lat: event.center_lat, lng: event.center_lng }}
+                  allMbtaStops={sortedMbta}
+                  allTrainStops={sortedTrainStops}
+                  onDismiss={handleDismiss}
+                />
+              </BottomSheet>
+            </div>
+          )}
         </div>
 
-        {/* Mobile: bottom sheet + floating CTAs */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 md:hidden">
-          <BottomSheet
-            ref={sheetRef}
-            snap={sheetSnap}
-            onSnapChange={setSheetSnap}
-          >
-            {selectedFeature ? (
-              <SmartCard
-                feature={selectedFeature}
-                locale={locale}
-                userLat={refLat}
-                userLng={refLng}
-                eventCenter={{ lat: event.center_lat, lng: event.center_lng }}
-                allMbtaStops={sortedMbta}
-                allTrainStops={sortedTrainStops}
-                onDismiss={handleDismiss}
-              />
-            ) : sheetSnap !== 'peek' ? (
-              <DirectoryList />
-            ) : null}
-          </BottomSheet>
+        {/* Mobile: directory view */}
+        {mobileView === 'directory' && (
+          <div className="absolute inset-0 bg-white overflow-y-auto md:hidden">
+            {activeLayers.food && foodCategories.length > 1 && (
+              <div className="flex flex-wrap gap-1.5 px-4 py-2 border-b border-gray-100">
+                {foodCategories.map(cat => {
+                  const active = !activeCategories || activeCategories.has(cat)
+                  const CatIcon = FOOD_CATEGORY_ICONS[cat]
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => toggleCategory(cat)}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                        active
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-gray-100 text-gray-400'
+                      }`}
+                    >
+                      {CatIcon && <CatIcon size={14} />}
+                      {tCategory(locale, cat)}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            <DirectoryList />
+          </div>
+        )}
 
-          <div className="px-4 pb-3 pt-1 flex gap-2 bg-white/95 backdrop-blur-sm">
+        {/* Mobile: bottom bar with tab toggle + CTAs */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 md:hidden">
+          <div className="flex border-t border-gray-200 bg-white">
+            <button
+              onClick={() => { setMobileView('map'); setSelectedFeature(null) }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
+                mobileView === 'map' ? 'text-gray-900' : 'text-gray-400'
+              }`}
+            >
+              <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
+                <path d="M228.92,49.69a8,8,0,0,0-6.86-1.45L160.93,63.52,99.58,32.84a8,8,0,0,0-5.52-.6l-64,16A8,8,0,0,0,24,56V200a8,8,0,0,0,9.94,7.76l61.13-15.28,61.35,30.68A8.15,8.15,0,0,0,160,224a8,8,0,0,0,1.94-.24l64-16A8,8,0,0,0,232,200V56A8,8,0,0,0,228.92,49.69ZM104,52.94l48,24V203.06l-48-24ZM40,62.25l48-12v127.5l-48,12ZM216,193.75l-48,12V78.25l48-12Z" />
+              </svg>
+              Map
+            </button>
+            <button
+              onClick={() => setMobileView('directory')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
+                mobileView === 'directory' ? 'text-gray-900' : 'text-gray-400'
+              }`}
+            >
+              <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
+                <path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z" />
+              </svg>
+              Directory
+            </button>
+          </div>
+          <div className="px-4 pb-3 pt-1 flex gap-2 bg-white">
             <button
               onClick={handleGetMeThere}
               className="flex-1 py-3 rounded-xl font-semibold text-white text-center shadow-sm"

@@ -88,6 +88,7 @@ export default function EventEditor({ event: initial, businesses: initialBiz }: 
       website_url: null,
       google_place_id: null,
       show_on_map: true,
+      is_shift_partner: false,
       pin_color: null,
     }
     setBusinesses(prev => [newBiz, ...prev])

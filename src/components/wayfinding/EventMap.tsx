@@ -309,7 +309,7 @@ export default function EventMap({
   function renderMarkers(map: maplibregl.Map) {
     clearMarkers()
     if (activeLayers.food) {
-      businesses.forEach(biz => {
+      businesses.filter(b => b.show_on_map).forEach(biz => {
         const icon = foodCategoryIcon[biz.category] ?? markerIcons.restaurant
         addMarker(map, biz.lng, biz.lat, '#FF7043', icon, () => {
           onPinSelect({ type: 'business', data: biz })

@@ -366,7 +366,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                           </span>
                           <span>{t(locale, 'toward')} {pred.direction}</span>
                           {tripEst !== null && (
-                            <span className="text-xs font-normal text-gray-400">~{tripEst} {t(locale, 'min')}</span>
+                            <span className="text-xs font-normal text-gray-500">~{tripEst} {t(locale, 'min')}</span>
                           )}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
@@ -461,7 +461,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                           </span>
                           <span>{t(locale, 'toward')} {pred.direction}</span>
                           {tripEst !== null && (
-                            <span className="text-xs font-normal text-gray-400">~{tripEst} {t(locale, 'min')}</span>
+                            <span className="text-xs font-normal text-gray-500">~{tripEst} {t(locale, 'min')}</span>
                           )}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
