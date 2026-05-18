@@ -143,6 +143,15 @@ export default function EventMap({
         renderMarkers(map)
         fetchLiveData(map)
       })
+
+      map.on('contextmenu', (e) => {
+        const { lng, lat } = e.lngLat
+        const text = `${lat.toFixed(7)}, ${lng.toFixed(7)}`
+        new maplibregl.Popup({ closeButton: true, maxWidth: '260px' })
+          .setLngLat(e.lngLat)
+          .setHTML(`<div style="font-family:monospace;font-size:13px;padding:2px 4px;cursor:pointer" onclick="navigator.clipboard.writeText('${text}').then(()=>this.textContent='Copied!')">${text}<div style="font-size:10px;color:#888;margin-top:2px">Click to copy</div></div>`)
+          .addTo(map)
+      })
     }
 
     init()
