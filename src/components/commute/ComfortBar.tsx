@@ -24,7 +24,7 @@ function rollup(segments: BikeComfortSegment[]) {
   }
   return ['protected', 'bike_lane', 'shared_road']
     .map((r) => ({ rating: r, miles: totals[r] ?? 0 }))
-    .filter((x) => x.miles > 0.05)
+    .filter((x) => x.miles > 0)
 }
 
 export default function ComfortBar({ rating, segments, theme = 'dark' }: Pick<BikeComfort, 'rating' | 'segments'> & { theme?: 'dark' | 'light' }) {
