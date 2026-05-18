@@ -1,0 +1,130 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0845514, 42.3876847] },
+      "properties": { "name": "La Brasa", "description": "Wood-fired, globally inspired dishes & cocktails. 124 Broadway.", "address": "124 Broadway", "website_url": "https://www.labrasasomerville.com", "google_place_id": null }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.084638, 42.38791] },
+      "properties": { "name": "Fat Hen", "description": "Cozy Italian serving bowls of pasta & braised meats, plus fine wine.", "address": null, "website_url": null, "google_place_id": "ChIJf_M5Y9pw44kRuMmmh5GnXUY" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0850222, 42.3880836] },
+      "properties": { "name": "Taqueria Montecristo", "description": "Authentic Taqueria, Mexican and Salvadorean specialties. 146 Broadway.", "address": "146 Broadway", "website_url": "https://montecristorestaurantsomerville.com", "google_place_id": "ChIJVVr8e9pw44kR5ycgfoFBlhU" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.08344, 42.3874654] },
+      "properties": { "name": "Gauchao Brazilian Cuisine", "description": "Corner churrascaria with a buffet, fire-roasted meats & Brazilian specialties.", "address": null, "website_url": null, "google_place_id": "ChIJEalB9tpw44kRIR4EqysYXB8" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.082899, 42.387646] },
+      "properties": { "name": "Rincon Mexicano Somerville", "description": "Authentic Mexican cuisine. 99 Broadway.", "address": "99 Broadway", "website_url": "https://www.rinconmexicanosomerville.com", "google_place_id": "ChIJYbgbVNpw44kRFV41qqw3mPw" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0823981, 42.3875178] },
+      "properties": { "name": "Blessing Caribbean", "description": "Haitian and Caribbean Cuisine, Creole Griot. 89 Broadway.", "address": "89 Broadway", "website_url": null, "google_place_id": "ChIJsRBOVdpw44kRaJlfIaYcIbM" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0822552, 42.3874485] },
+      "properties": { "name": "Recino's Cafe", "description": "Baked goods, beverages, and pupusas. 85 Broadway.", "address": "85 Broadway", "website_url": null, "google_place_id": "ChIJISwBq9tw44kRA4Ci9wB947w" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0816743, 42.3868797] },
+      "properties": { "name": "Vinny's Ristorante", "description": "76 Broadway.", "address": "76 Broadway", "website_url": "https://www.vinnysatnight.com/", "google_place_id": "ChIJ4RxWD9tw44kRfnBBHjLukwo" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0796774, 42.386342] },
+      "properties": { "name": "Taco Loco Mexican Grill", "description": "Counter-serve burritos, taco combos, pupusas. 44 Broadway.", "address": "44 Broadway", "website_url": null, "google_place_id": "ChIJtbLSfNtw44kR25KofPDZl3M" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0848299, 42.3883488] },
+      "properties": { "name": "Fasika Ethiopian Restaurant", "description": "Hands-on Ethiopian dining at traditional wicker tables, plus a full bar. 145 Broadway.", "address": "145 Broadway", "website_url": "https://www.fasikaethiopian.com", "google_place_id": "ChIJrxxCcNpw44kRXOPPMg8myZM" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0859397, 42.3889385] },
+      "properties": { "name": "Lotus Xpress", "description": "Sushi, curries & noodle dishes. 167 Broadway.", "address": "167 Broadway", "website_url": "https://www.lotusxpress.com", "google_place_id": "ChIJz2le8vh244kREBSYnYwT1Kk" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0862535, 42.3890827] },
+      "properties": { "name": "Casey's", "description": "Pizza, sandwiches & bar bites. 173 Broadway.", "address": "173 Broadway", "website_url": "https://www.caseyssomerville.com", "google_place_id": "ChIJIWIKl9Bw44kRqrcJvGf4L-w" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0865165, 42.3891326] },
+      "properties": { "name": "Maya Sol Mexican Grill", "description": "Mexican classics & Salvadoran pupusas. 179 Broadway.", "address": "179 Broadway", "website_url": "https://www.mayasolmexicangrill.com", "google_place_id": "ChIJ5dyPltBw44kRfHg2YgGDaHQ" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0870902, 42.389559] },
+      "properties": { "name": "Louies", "description": null, "address": null, "website_url": null, "google_place_id": "ChIJabfQ8dxw44kRbQGS-fA7VwM" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0873334, 42.3890312] },
+      "properties": { "name": "Pastelaria Vitoria Broadway", "description": "Brazilian Fast Food. 192 Broadway.", "address": "192 Broadway", "website_url": null, "google_place_id": "ChIJ1WFe6dBw44kRJUBchSYYOwQ" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0782028, 42.385929] },
+      "properties": { "name": "Mount Vernon Restaurant & Pub", "description": "14 Broadway.", "address": "14 Broadway", "website_url": "https://www.mtvernonsomerville.com", "google_place_id": "ChIJ0feWktxw44kRMPIGmSD8rU0" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.086905, 42.386917] },
+      "properties": { "name": "Friends Pizza", "description": "Pizzas, burgers, sandwiches, salads. 38 Cross St.", "address": "38 Cross St", "website_url": "https://www.friendspizzamenu.com", "google_place_id": "ChIJSwOsatBw44kRxu36VKC2rNc" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0821241, 42.3870327] },
+      "properties": { "name": "Taqueria Tapatio", "description": "Mexican Restaurant. 82 Broadway.", "address": "82 Broadway", "website_url": null, "google_place_id": "ChIJZWCrANtw44kRXWBHooFaO1k" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0841152, 42.3881068] },
+      "properties": { "name": "Rei Da Picanha", "description": "Brazilian Steakhouse, burgers, and hot subs. 129 Broadway.", "address": "129 Broadway", "website_url": null, "google_place_id": "ChIJoa_wZtpw44kR3hcF6YMTo8o" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.083918, 42.3875394] },
+      "properties": { "name": "Ola Cafe", "description": "Cafe with coffee, pastries, sandwiches, fresh OJ. 112 Broadway.", "address": "112 Broadway", "website_url": "https://www.olacafesomerville.com", "google_place_id": "ChIJ8Z7uX9pw44kRHcApbk0KJWE" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.080744, 42.386576] },
+      "properties": { "name": "Los Paisanos Restaurant", "description": "Mexican Dishes.", "address": null, "website_url": null, "google_place_id": "ChIJ2cSvc9tw44kRUKnF29-Q3bo" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0868865, 42.3813466] },
+      "properties": { "name": "Buddy's", "description": "Small diner. Menu on paper plates tacked on the wall.", "address": null, "website_url": null, "google_place_id": "ChIJT1qRSc9w44kR9rjagY522fU" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0869645, 42.3807928] },
+      "properties": { "name": "Oliveira's Steak House", "description": "Brazilian Steakhouse, rodízio style.", "address": null, "website_url": null, "google_place_id": "ChIJO03Gtchw44kRaJm0taIIUvk" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.0820693, 42.3820859] },
+      "properties": { "name": "Royal Pizza & Subs", "description": "Pizza and Subs.", "address": null, "website_url": null, "google_place_id": "ChIJdXDrUcRw44kR_RJR5kDwKUs" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.085876, 42.3815692] },
+      "properties": { "name": "Michael's Bar", "description": "Cheap drinks, fun atmosphere, local hangout.", "address": null, "website_url": null, "google_place_id": "ChIJE_7PW89w44kR-KWwQjrAJJw" }
+    }
+  ]
+}

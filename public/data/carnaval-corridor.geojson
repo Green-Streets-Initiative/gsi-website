@@ -1,0 +1,26 @@
+{
+  "type": "Feature",
+  "properties": {
+    "name": "Carnaval Festival Corridor",
+    "description": "Broadway between Pennsylvania Ave and McGrath Hwy, East Somerville"
+  },
+  "geometry": {
+    "type": "LineString",
+    "coordinates": [
+      [-71.0780, 42.3858],
+      [-71.0785, 42.3860],
+      [-71.0795, 42.3863],
+      [-71.0808, 42.3866],
+      [-71.0820, 42.3870],
+      [-71.0830, 42.3873],
+      [-71.0840, 42.3876],
+      [-71.0845, 42.3878],
+      [-71.0850, 42.3880],
+      [-71.0855, 42.3883],
+      [-71.0860, 42.3889],
+      [-71.0865, 42.3891],
+      [-71.0870, 42.3895],
+      [-71.0875, 42.3898]
+    ]
+  }
+}
