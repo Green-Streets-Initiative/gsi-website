@@ -25,6 +25,25 @@ interface Props {
 }
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
+const MBTA_CACHE_TTL = 30 * 60 * 1000
+
+function getCachedMBTATopology(lat: number, lng: number) {
+  try {
+    const key = `mbta-stops-${lat.toFixed(4)},${lng.toFixed(4)}`
+    const raw = sessionStorage.getItem(key)
+    if (!raw) return null
+    const cached = JSON.parse(raw)
+    if (Date.now() - cached.ts > MBTA_CACHE_TTL) return null
+    return cached.data
+  } catch { return null }
+}
+
+function setCachedMBTATopology(lat: number, lng: number, data: unknown) {
+  try {
+    const key = `mbta-stops-${lat.toFixed(4)},${lng.toFixed(4)}`
+    sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }))
+  } catch {}
+}
 
 export default function EventMap({
   event, businesses, activeLayers, userPosition,
@@ -321,130 +340,100 @@ export default function EventMap({
 
   async function fetchMBTAStops(): Promise<MBTAStopLive[]> {
     try {
-      const routesRes = await fetch(
-        `https://api-v3.mbta.com/routes?filter[type]=3&filter[stop]&sort=sort_order`
-      )
-      const routesData = await routesRes.json()
-      const routeMap = new Map<string, { long_name: string; direction_names: string[] }>()
-      for (const r of routesData.data || []) {
-        routeMap.set(r.id, {
-          long_name: r.attributes.long_name || r.id,
-          direction_names: r.attributes.direction_names || [],
-        })
+      interface StopTopo { id: string; name: string; lat: number; lng: number; dist: number; routes: { id: string; name: string; directions: string[] }[] }
+
+      const cached = getCachedMBTATopology(event.center_lat, event.center_lng)
+      let topology: StopTopo[]
+
+      if (cached) {
+        topology = cached
+      } else {
+        const stopsRes = await fetch(
+          `https://api-v3.mbta.com/stops?filter[latitude]=${event.center_lat}&filter[longitude]=${event.center_lng}&filter[radius]=0.01&filter[route_type]=3`
+        )
+        const stopsData = await stopsRes.json()
+        const nearbyStops: { id: string; name: string; lat: number; lng: number; dist: number }[] = []
+
+        for (const stop of stopsData.data || []) {
+          const lat = stop.attributes.latitude
+          const lng = stop.attributes.longitude
+          nearbyStops.push({
+            id: stop.id,
+            name: capitalizeStopName(stop.attributes.name),
+            lat, lng,
+            dist: haversineDist(event.center_lat, event.center_lng, lat, lng),
+          })
+        }
+
+        nearbyStops.sort((a, b) => a.dist - b.dist)
+        const topStops = nearbyStops.slice(0, 10)
+        if (topStops.length === 0) return []
+
+        const routeResults = await Promise.all(
+          topStops.map(async (s) => {
+            const res = await fetch(`https://api-v3.mbta.com/routes?filter[stop]=${s.id}&filter[type]=3`)
+            const data = await res.json()
+            return { stopId: s.id, routes: (data.data || []).map((r: { id: string; attributes: { direction_names?: string[] } }) => ({
+              id: r.id,
+              name: r.id.replace(/^0*/, ''),
+              directions: r.attributes.direction_names || [],
+            })) }
+          })
+        )
+
+        const routesByStop = new Map(routeResults.map(r => [r.stopId, r.routes]))
+        topology = topStops.map(s => ({ ...s, routes: routesByStop.get(s.id) || [] }))
+
+        setCachedMBTATopology(event.center_lat, event.center_lng, topology)
       }
 
-      const stopsRes = await fetch(
-        `https://api-v3.mbta.com/stops?filter[latitude]=${event.center_lat}&filter[longitude]=${event.center_lng}&filter[radius]=0.01&filter[route_type]=3`
-      )
-      const stopsData = await stopsRes.json()
-      const nearbyStopIds: string[] = []
-      const stopInfo = new Map<string, { name: string; lat: number; lng: number; dist: number }>()
+      const allStopIds = topology.map(s => s.id)
+      let predsData: { data?: Array<{ relationships?: { stop?: { data?: { id?: string } }; route?: { data?: { id?: string } } }; attributes?: { direction_id?: number; departure_time?: string } }> } = {}
+      try {
+        const predsRes = await fetch(
+          `https://api-v3.mbta.com/predictions?filter[stop]=${allStopIds.join(',')}&filter[route_type]=3&sort=departure_time&page[limit]=100`
+        )
+        predsData = await predsRes.json()
+      } catch {}
 
-      for (const stop of stopsData.data || []) {
-        const lat = stop.attributes.latitude
-        const lng = stop.attributes.longitude
-        const dist = haversineDist(event.center_lat, event.center_lng, lat, lng)
-        nearbyStopIds.push(stop.id)
-        stopInfo.set(stop.id, {
-          name: capitalizeStopName(stop.attributes.name),
-          lat, lng, dist,
-        })
-      }
-
-      if (nearbyStopIds.length === 0) return []
-
-      const stopRouteIds = nearbyStopIds.slice(0, 10)
-      const today = new Date().toISOString().slice(0, 10)
-      const [predsRes, schedulesRes] = await Promise.all([
-        fetch(`https://api-v3.mbta.com/predictions?filter[stop]=${stopRouteIds.join(',')}&filter[route_type]=3&sort=departure_time&page[limit]=20`),
-        fetch(`https://api-v3.mbta.com/schedules?filter[stop]=${stopRouteIds.join(',')}&filter[route_type]=3&filter[date]=${today}&page[limit]=500`),
-      ])
-      const predsData = await predsRes.json()
-      const schedulesData = await schedulesRes.json()
-
-      const stopRoutesMap = new Map<string, Set<string>>()
-      for (const sched of schedulesData.data || []) {
-        const stopId = sched.relationships?.stop?.data?.id
-        const routeId = sched.relationships?.route?.data?.id
-        if (!stopId || !routeId) continue
-        if (!stopRoutesMap.has(stopId)) stopRoutesMap.set(stopId, new Set())
-        stopRoutesMap.get(stopId)!.add(routeId)
-      }
-
-      const stops: MBTAStopLive[] = []
-      const seen = new Set<string>()
-
+      const predMap = new Map<string, number>()
       for (const pred of predsData.data || []) {
         const stopId = pred.relationships?.stop?.data?.id
         const routeId = pred.relationships?.route?.data?.id
-        if (!stopId || !routeId) continue
+        const dirId = pred.attributes?.direction_id
+        if (!stopId || !routeId || dirId === undefined) continue
 
-        const direction = pred.attributes.direction_id
-        const key = `${stopId}-${routeId}-${direction}`
-        if (seen.has(key)) continue
-        seen.add(key)
+        const depTime = pred.attributes?.departure_time
+        if (!depTime) continue
+        const diff = (new Date(depTime).getTime() - Date.now()) / 60000
+        if (diff < 0) continue
 
-        const info = stopInfo.get(stopId)
-        if (!info) continue
-
-        const route = routeMap.get(routeId)
-        const directionName = route?.direction_names?.[direction] ?? ''
-
-        let arrivalMin: number | null = null
-        const depTime = pred.attributes.departure_time
-        if (depTime) {
-          const diff = (new Date(depTime).getTime() - Date.now()) / 60000
-          if (diff >= 0) arrivalMin = Math.round(diff)
-        }
-
-        stops.push({
-          stop_id: stopId,
-          name: info.name,
-          lat: info.lat,
-          lng: info.lng,
-          route_id: routeId,
-          route_name: routeId.replace(/^0*/, ''),
-          direction: directionName,
-          next_arrival_minutes: arrivalMin,
-          distance_meters: info.dist,
-        })
+        const key = `${stopId}-${routeId}-${dirId}`
+        if (!predMap.has(key)) predMap.set(key, Math.round(diff))
       }
 
-      for (const [stopId, info] of stopInfo) {
-        if (!stops.find(s => s.stop_id === stopId)) {
-          const routeIds = stopRoutesMap.get(stopId)
-          if (routeIds && routeIds.size > 0) {
-            for (const rId of routeIds) {
-              const route = routeMap.get(rId)
-              stops.push({
-                stop_id: stopId,
-                name: info.name,
-                lat: info.lat,
-                lng: info.lng,
-                route_id: rId,
-                route_name: rId.replace(/^0*/, ''),
-                direction: route?.direction_names?.[0] ?? '',
-                next_arrival_minutes: null,
-                distance_meters: info.dist,
-              })
-            }
-          } else {
+      const stops: MBTAStopLive[] = []
+      for (const s of topology) {
+        if (s.routes.length === 0) continue
+        for (const route of s.routes) {
+          for (let dirIdx = 0; dirIdx < route.directions.length; dirIdx++) {
+            const predKey = `${s.id}-${route.id}-${dirIdx}`
             stops.push({
-              stop_id: stopId,
-              name: info.name,
-              lat: info.lat,
-              lng: info.lng,
-              route_id: '',
-              route_name: '',
-              direction: '',
-              next_arrival_minutes: null,
-              distance_meters: info.dist,
+              stop_id: s.id,
+              name: s.name,
+              lat: s.lat,
+              lng: s.lng,
+              route_id: route.id,
+              route_name: route.name,
+              direction: route.directions[dirIdx] ?? '',
+              next_arrival_minutes: predMap.get(predKey) ?? null,
+              distance_meters: s.dist,
             })
           }
         }
       }
 
-      return stops.sort((a, b) => a.distance_meters - b.distance_meters).slice(0, 15)
+      return stops.sort((a, b) => a.distance_meters - b.distance_meters)
     } catch {
       return []
     }
