@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import type { WayfindingEvent, WayfindingBusiness, Locale, LayerKey, SelectedFeature, SheetSnap, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
 import { getDefaultLayerState } from '@/lib/wayfinding/layers'
-import { useGeolocation, haversineMeters } from '@/lib/wayfinding/geo'
+import { useGeolocation, haversineMeters, formatDistance } from '@/lib/wayfinding/geo'
 import { t, tCategory } from '@/lib/wayfinding/i18n'
 import { trackEvent } from '@/lib/wayfinding/telemetry'
 import EventHeader from '@/components/wayfinding/EventHeader'
@@ -44,6 +44,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
   const [selectedFeature, setSelectedFeature] = useState<SelectedFeature | null>(null)
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>('peek')
   const [mobileView, setMobileView] = useState<'map' | 'directory'>('map')
+  const [expandedBizId, setExpandedBizId] = useState<string | null>(null)
   const [showDeparture, setShowDeparture] = useState(false)
   const [showGetMeThere, setShowGetMeThere] = useState(false)
   const [bluebikes, setBluebikes] = useState<BluebikeStationLive[]>([])
@@ -129,42 +130,80 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
     })
   }, [])
 
+  const directionsUrl = useCallback((lat: number, lng: number) => {
+    const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
+    if (isIOS) return `maps://maps.apple.com/?daddr=${lat},${lng}&dirflg=w`
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`
+  }, [])
+
   const DirectoryList = useCallback(() => (
-    <div className="px-4 pb-8">
+    <div className="px-4 pb-36">
       {filteredBusinesses.length > 0 && (
         <section className="mb-6">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
             {t(locale, 'chip_food')}
           </h3>
-          {filteredBusinesses.map(b => (
-            <button
-              key={b.id}
-              className="w-full text-left py-3 border-b border-gray-100 last:border-0"
-              onClick={() => {
-                setSelectedFeature({ type: 'business', data: b })
-                setMobileView('map')
-                setTimeout(() => sheetRef.current?.snapTo('half'), 50)
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-900">{b.name}</span>
-                {b.is_shift_partner && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200">
-                    <img src="/assets/wayfinding/shift-wordmark.png" alt="Shift" className="h-3" />
-                    <span className="text-[10px] text-gray-500 font-medium">Rewards Partner</span>
-                  </span>
+          {filteredBusinesses.map(b => {
+            const isExpanded = expandedBizId === b.id
+            const dist = haversineMeters(refLat, refLng, b.lat, b.lng)
+            return (
+              <div key={b.id} className="border-b border-gray-100 last:border-0">
+                <button
+                  className="w-full text-left py-3"
+                  onClick={() => setExpandedBizId(isExpanded ? null : b.id)}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900">{b.name}</span>
+                    {b.is_shift_partner && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200">
+                        <img src="/assets/wayfinding/shift-wordmark.png" alt="Shift" className="h-3" />
+                        <span className="text-[10px] text-gray-500 font-medium">Rewards Partner</span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {foodCategories.length > 1 && <span className="text-orange-600">{tCategory(locale, b.category)} · </span>}
+                    {b.address}
+                  </div>
+                </button>
+                {isExpanded && (
+                  <div className="pb-3 pl-0">
+                    <div className="text-sm text-gray-500 mb-1">
+                      {formatDistance(dist)} {t(locale, 'away')}
+                    </div>
+                    {b.description && (
+                      <p className="text-sm text-gray-600 mb-2">{b.description}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <a
+                        href={directionsUrl(b.lat, b.lng)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white"
+                        style={{ backgroundColor: 'var(--accent)' }}
+                      >
+                        {t(locale, 'directions')}
+                      </a>
+                      {b.website_url && (
+                        <a
+                          href={b.website_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        >
+                          Website
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
-              <div className="text-sm text-gray-500">
-                {foodCategories.length > 1 && <span className="text-orange-600">{tCategory(locale, b.category)} · </span>}
-                {b.address}
-              </div>
-            </button>
-          ))}
+            )
+          })}
         </section>
       )}
     </div>
-  ), [filteredBusinesses, foodCategories, locale, handlePinSelect])
+  ), [filteredBusinesses, foodCategories, locale, expandedBizId, refLat, refLng, directionsUrl])
 
   return (
     <>

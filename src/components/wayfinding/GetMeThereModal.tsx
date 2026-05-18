@@ -373,7 +373,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                           <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>{' '}
                           <ArrivalPill minutes={pred.minutesAway} locale={locale} isNext />
                         </div>
-                        <div className="text-xs text-gray-400 mt-0.5">
+                        <div className="text-xs text-gray-500 mt-0.5">
                           {t(locale, 'board_at')} {pred.stopName}
                           {walkToStopDist !== null && ` · ${formatDistance(walkToStopDist)}`}
                         </div>
@@ -468,7 +468,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                           <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>{' '}
                           <ArrivalPill minutes={pred.minutesAway} locale={locale} isNext />
                         </div>
-                        <div className="text-xs text-gray-400 mt-0.5">
+                        <div className="text-xs text-gray-500 mt-0.5">
                           {t(locale, 'board_at')} {pred.stopName}
                           {walkToStopDist !== null && ` · ${formatDistance(walkToStopDist)}`}
                         </div>
@@ -532,7 +532,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                   <BicycleIcon size={20} className="text-blue-700" />
                   <span className="font-medium text-gray-900 text-sm">{t(locale, 'chip_bluebike')}</span>
                   {totalBikeTrip !== null && (
-                    <span className="text-xs font-normal text-gray-400">~{totalBikeTrip} {t(locale, 'min')}</span>
+                    <span className="text-xs font-normal text-gray-500">~{totalBikeTrip} {t(locale, 'min')}</span>
                   )}
                 </div>
 
@@ -545,7 +545,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                   </div>
                 )}
                 {loadingComfort && !bikeComfort && (
-                  <div className="mb-3 text-xs text-gray-400">{t(locale, 'loading')}</div>
+                  <div className="mb-3 text-xs text-gray-500">{t(locale, 'loading')}</div>
                 )}
 
                 {nearestBluebike && (

@@ -63,6 +63,7 @@ export const CARNAVAL_EVENT: WayfindingEvent = {
   is_cancelled: false,
   is_published: true,
   event_url: 'https://www.eastsomervillemainstreets.org/carnaval2026',
+  event_photo_url: null,
   admin_token: null,
   created_at: '2026-05-18T00:00:00Z',
 }

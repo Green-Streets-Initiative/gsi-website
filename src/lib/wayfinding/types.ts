@@ -27,6 +27,7 @@ export interface WayfindingEvent {
   is_cancelled: boolean
   is_published: boolean
   event_url: string | null
+  event_photo_url: string | null
   admin_token: string | null
   created_at: string
 }
