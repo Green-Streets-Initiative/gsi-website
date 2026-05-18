@@ -56,7 +56,7 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
       <header className="flex-shrink-0">
         {/* Photo band — only when event has a photo */}
         {hasPhoto && (
-          <div className="relative h-[168px] overflow-hidden">
+          <div className="relative h-[120px] overflow-hidden">
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{
@@ -91,7 +91,7 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
                 <img
                   src={logos[0].imgUrl}
                   alt={event.organizer_name ?? event.name}
-                  className="w-[156px] h-[118px] object-contain object-left"
+                  className="w-[120px] h-[88px] object-contain object-left"
                   style={{ filter: 'drop-shadow(0 3px 10px rgba(0,0,0,0.6))' }}
                 />
               </a>
@@ -106,7 +106,7 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
           </div>
         )}
 
-        {/* Meta band — solid accent color */}
+        {/* Meta band — solid accent color, dark text for contrast */}
         <div className="px-3.5 py-3" style={{ backgroundColor: 'var(--accent)' }}>
           {/* No-photo variant: eyebrow + logo badge */}
           {hasLogoNoPhoto && (
@@ -118,22 +118,22 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
                       href={event.organizer_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] font-bold uppercase tracking-[1.5px] text-white/95 hover:text-white transition-colors"
+                      className="text-[11px] font-bold uppercase tracking-[1.5px] text-black/60 hover:text-black/80 transition-colors"
                     >
                       {event.eyebrow} ↗
                     </a>
                   ) : (
-                    <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-white/95">
+                    <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-black/60">
                       {event.eyebrow}
                     </span>
                   )
                 )}
                 <button
                   onClick={handleShare}
-                  className="p-2 rounded-full hover:bg-white/15 transition-colors"
+                  className="p-2 rounded-full hover:bg-black/10 transition-colors"
                   aria-label={t(locale, 'share')}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-black/70">
                     <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
                     <polyline points="16 6 12 2 8 6" />
                     <line x1="12" y1="2" x2="12" y2="15" />
@@ -150,12 +150,12 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <h1
-                    className="text-[22px] font-bold leading-tight text-white"
+                    className="text-[22px] font-bold leading-tight text-[#1A1A1A]"
                     style={{ fontFamily: 'var(--font-bricolage)', letterSpacing: '-0.4px' }}
                   >
                     {event.name}
                   </h1>
-                  <div className="text-[13px] text-white/90 mt-1 leading-snug">
+                  <div className="text-[13px] text-black/70 mt-1 leading-snug">
                     {event.venue_name && <>{event.venue_name}<br /></>}
                     {dateLabel}{timeLabel ? ` · ${timeLabel}` : ''}
                   </div>
@@ -169,19 +169,19 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
             <div className="flex justify-between items-start gap-3">
               <div className="min-w-0 flex-1">
                 <h1
-                  className="text-2xl font-bold leading-[1.05] text-white"
+                  className="text-2xl font-bold leading-[1.05] text-[#1A1A1A]"
                   style={{ fontFamily: 'var(--font-bricolage)', letterSpacing: '-0.4px' }}
                 >
                   {event.name}
                 </h1>
-                <div className="text-[13px] text-white/90 mt-1 leading-snug">
+                <div className="text-[13px] text-black/70 mt-1 leading-snug">
                   {event.venue_name && <span>{event.venue_name} · </span>}
                   {dateLabel}{timeLabel ? ` · ${timeLabel}` : ''}
                 </div>
               </div>
               <button
                 onClick={handleShare}
-                className="flex-shrink-0 w-9 h-9 rounded-full bg-white/[0.18] hover:bg-white/[0.28] text-white flex items-center justify-center transition-colors"
+                className="flex-shrink-0 w-9 h-9 rounded-full bg-black/10 hover:bg-black/15 text-[#1A1A1A] flex items-center justify-center transition-colors"
                 aria-label={t(locale, 'share')}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -193,7 +193,9 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
             </div>
           )}
 
-          <LanguagePill event={event} locale={locale} variant="dark" />
+          <div className="mt-2.5">
+            <LanguagePill event={event} locale={locale} variant="accent" />
+          </div>
         </div>
       </header>
     )

@@ -247,29 +247,6 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
               onToggle={toggleLayer}
               locale={locale}
             />
-
-            {activeLayers.food && foodCategories.length > 1 && (
-              <div className="flex flex-wrap gap-1.5 px-4 py-1 bg-white/90 backdrop-blur-sm">
-                {foodCategories.map(cat => {
-                  const active = activeCategories ? activeCategories.has(cat) : false
-                  const CatIcon = FOOD_CATEGORY_ICONS[cat]
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => toggleCategory(cat)}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                        active
-                          ? 'bg-orange-100 text-orange-800'
-                          : 'bg-gray-100 text-gray-400'
-                      }`}
-                    >
-                      {CatIcon && <CatIcon size={14} />}
-                      {tCategory(locale, cat)}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
           </div>
 
           {/* Mobile: SmartCard sheet on pin tap */}
@@ -388,6 +365,28 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
               {t(locale, 'get_me_home')}
             </button>
           </div>
+          {activeLayers.food && foodCategories.length > 1 && !selectedFeature && (
+            <div className="flex-shrink-0 flex flex-wrap gap-1.5 px-4 py-2 border-b border-gray-100 bg-white">
+              {foodCategories.map(cat => {
+                const active = activeCategories ? activeCategories.has(cat) : false
+                const CatIcon = FOOD_CATEGORY_ICONS[cat]
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => toggleCategory(cat)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                      active
+                        ? 'bg-orange-100 text-orange-800'
+                        : 'bg-gray-100 text-gray-400'
+                    }`}
+                  >
+                    {CatIcon && <CatIcon size={14} />}
+                    {tCategory(locale, cat)}
+                  </button>
+                )
+              })}
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto">
             {selectedFeature ? (
               <SmartCard
