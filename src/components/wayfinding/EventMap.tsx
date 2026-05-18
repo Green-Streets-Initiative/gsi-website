@@ -482,7 +482,7 @@ export default function EventMap({
     try {
       interface StopTopo { id: string; name: string; lat: number; lng: number; dist: number; routes: { id: string; name: string; directions: string[] }[] }
 
-      const trainCacheKey = `mbta-train-${event.center_lat.toFixed(4)},${event.center_lng.toFixed(4)}`
+      const trainCacheKey = `mbta-train-v2-${event.center_lat.toFixed(4)},${event.center_lng.toFixed(4)}`
       let topology: StopTopo[]
       let stopIds: string[]
 
