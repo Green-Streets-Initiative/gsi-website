@@ -48,79 +48,138 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
       }).filter(l => l.imgUrl)
     : []
 
+  const hasHeroLogo = logos.length === 1
+
   return (
-    <header className="flex-shrink-0 bg-white border-b border-gray-100">
-      <div className="px-4 py-2 flex items-center justify-between">
-        <div className="min-w-0 flex-1">
-          {event.eyebrow && (
-            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">
-              {event.organizer_url ? (
-                <a href={event.organizer_url} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 transition-colors">
-                  {event.eyebrow}
+    <header className="flex-shrink-0 border-b border-gray-100">
+      {hasHeroLogo ? (
+        <div className="relative overflow-hidden" style={{ backgroundColor: 'var(--accent)' }}>
+          <img
+            src={logos[0].imgUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-contain opacity-15 scale-125 pointer-events-none"
+          />
+          <div className="relative px-4 py-3 flex items-center justify-between">
+            <div className="min-w-0 flex-1">
+              {logos[0].linkUrl ? (
+                <a href={logos[0].linkUrl} target="_blank" rel="noopener noreferrer">
+                  <img src={logos[0].imgUrl} alt={event.name} className="h-14 object-contain drop-shadow-md" />
                 </a>
               ) : (
-                event.eyebrow
+                <img src={logos[0].imgUrl} alt={event.name} className="h-14 object-contain drop-shadow-md" />
+              )}
+              <div className="mt-1 flex items-baseline gap-2">
+                {event.venue_name && (
+                  <span className="text-sm font-semibold text-white/90">{event.venue_name}</span>
+                )}
+                <span className="text-xs text-white/75">
+                  {dateLabel}{timeLabel ? ` · ${timeLabel}` : ''}
+                </span>
+              </div>
+              {event.eyebrow && (
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                  {event.organizer_url ? (
+                    <a href={event.organizer_url} target="_blank" rel="noopener noreferrer" className="hover:text-white/80 transition-colors">
+                      {event.eyebrow}
+                    </a>
+                  ) : (
+                    event.eyebrow
+                  )}
+                </div>
               )}
             </div>
-          )}
-          <div className="flex items-baseline gap-2">
-            <h1
-              className="text-xl font-bold leading-tight truncate"
-              style={{ color: 'var(--accent)', fontFamily: 'var(--font-bricolage)' }}
-            >
-              {event.event_url ? (
-                <a href={event.event_url} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                  {event.name}
-                </a>
-              ) : (
-                event.name
-              )}
-            </h1>
-            {event.event_url && (
-              <a
-                href={event.event_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-                aria-label="Event website"
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <LanguagePill event={event} locale={locale} />
+              <button
+                onClick={handleShare}
+                className="p-2 rounded-full hover:bg-white/20 transition-colors"
+                aria-label={t(locale, 'share')}
               >
-                <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
-                  <path d="M224,104a8,8,0,0,1-16,0V59.32l-66.33,66.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                  <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
                 </svg>
-              </a>
-            )}
-          </div>
-          <div className="text-xs text-gray-500">
-            {dateLabel}{timeLabel ? ` · ${timeLabel}` : ''}
+              </button>
+            </div>
           </div>
         </div>
+      ) : (
+        <div className="bg-white">
+          <div className="px-4 py-2 flex items-center justify-between">
+            <div className="min-w-0 flex-1">
+              {event.eyebrow && (
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">
+                  {event.organizer_url ? (
+                    <a href={event.organizer_url} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 transition-colors">
+                      {event.eyebrow}
+                    </a>
+                  ) : (
+                    event.eyebrow
+                  )}
+                </div>
+              )}
+              <div className="flex items-baseline gap-2">
+                <h1
+                  className="text-xl font-bold leading-tight truncate"
+                  style={{ color: 'var(--accent)', fontFamily: 'var(--font-bricolage)' }}
+                >
+                  {event.event_url ? (
+                    <a href={event.event_url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                      {event.name}
+                    </a>
+                  ) : (
+                    event.name
+                  )}
+                </h1>
+                {event.event_url && (
+                  <a
+                    href={event.event_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label="Event website"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
+                      <path d="M224,104a8,8,0,0,1-16,0V59.32l-66.33,66.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z" />
+                    </svg>
+                  </a>
+                )}
+              </div>
+              <div className="text-xs text-gray-500">
+                {event.venue_name && <span className="font-medium">{event.venue_name} · </span>}
+                {dateLabel}{timeLabel ? ` · ${timeLabel}` : ''}
+              </div>
+            </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <LanguagePill event={event} locale={locale} />
-          <button
-            onClick={handleShare}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label={t(locale, 'share')}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
-              <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
-              <polyline points="16 6 12 2 8 6" />
-              <line x1="12" y1="2" x2="12" y2="15" />
-            </svg>
-          </button>
-        </div>
-      </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <LanguagePill event={event} locale={locale} />
+              <button
+                onClick={handleShare}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                aria-label={t(locale, 'share')}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
+                  <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+              </button>
+            </div>
+          </div>
 
-      {logos.length > 0 && (
-        <div className="px-4 pb-2 flex items-center gap-3">
-          {logos.map((logo, i) =>
-            logo.linkUrl ? (
-              <a key={i} href={logo.linkUrl} target="_blank" rel="noopener noreferrer">
-                <img src={logo.imgUrl} alt={event.organizer_name ?? ''} className="h-12 object-contain hover:opacity-80 transition-opacity" />
-              </a>
-            ) : (
-              <img key={i} src={logo.imgUrl} alt={event.organizer_name ?? ''} className="h-12 object-contain" />
-            )
+          {logos.length > 0 && (
+            <div className="px-4 pb-2 flex items-center gap-3">
+              {logos.map((logo, i) =>
+                logo.linkUrl ? (
+                  <a key={i} href={logo.linkUrl} target="_blank" rel="noopener noreferrer">
+                    <img src={logo.imgUrl} alt={event.organizer_name ?? ''} className="h-12 object-contain hover:opacity-80 transition-opacity" />
+                  </a>
+                ) : (
+                  <img key={i} src={logo.imgUrl} alt={event.organizer_name ?? ''} className="h-12 object-contain" />
+                )
+              )}
+            </div>
           )}
         </div>
       )}

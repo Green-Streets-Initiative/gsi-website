@@ -201,7 +201,7 @@ export default function EventMap({
             type: 'symbol',
             source: 'venue',
             layout: {
-              'text-field': event.name,
+              'text-field': event.venue_name ? `${event.name} @ ${event.venue_name}` : event.name,
               'text-size': 13,
               'text-font': ['Open Sans Semibold'],
               'text-allow-overlap': true,

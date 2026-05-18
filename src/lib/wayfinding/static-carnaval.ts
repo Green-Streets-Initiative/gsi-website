@@ -13,6 +13,7 @@ export const CARNAVAL_EVENT: WayfindingEvent = {
   time_start: '14:00',
   time_end: '18:00',
   accent_color: '#D81B60',
+  venue_name: null,
   venue_geojson: null,
   corridor_geojson: {
     type: 'LineString',

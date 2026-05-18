@@ -16,6 +16,7 @@ export interface WayfindingEvent {
   time_end: string | null
   accent_color: string
   corridor_geojson: GeoJSON.LineString | GeoJSON.MultiLineString | null
+  venue_name: string | null
   venue_geojson: GeoJSON.Polygon | null
   center_lat: number
   center_lng: number

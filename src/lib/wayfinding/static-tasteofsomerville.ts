@@ -13,6 +13,7 @@ export const TASTE_EVENT: WayfindingEvent = {
   time_start: '17:00',
   time_end: '20:00',
   accent_color: '#F5A623',
+  venue_name: 'Boynton Yards',
   venue_geojson: {
     type: 'Polygon',
     coordinates: [[

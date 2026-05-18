@@ -42,7 +42,7 @@ interface Props {
 export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) {
   const [activeLayers, setActiveLayers] = useState<Record<LayerKey, boolean>>(getDefaultLayerState)
   const [selectedFeature, setSelectedFeature] = useState<SelectedFeature | null>(null)
-  const [sheetSnap, setSheetSnap] = useState<SheetSnap>('peek')
+  const [sheetSnap, setSheetSnap] = useState<SheetSnap>('half')
   const [showDeparture, setShowDeparture] = useState(false)
   const [showGetMeThere, setShowGetMeThere] = useState(false)
   const [bluebikes, setBluebikes] = useState<BluebikeStationLive[]>([])
@@ -283,7 +283,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
             />
 
             {activeLayers.food && foodCategories.length > 1 && (
-              <div className="flex gap-1.5 px-4 py-1 overflow-x-auto no-scrollbar bg-white/90 backdrop-blur-sm">
+              <div className="flex flex-wrap gap-1.5 px-4 py-1 bg-white/90 backdrop-blur-sm">
                 {foodCategories.map(cat => {
                   const active = !activeCategories || activeCategories.has(cat)
                   const CatIcon = FOOD_CATEGORY_ICONS[cat]
@@ -291,7 +291,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                     <button
                       key={cat}
                       onClick={() => toggleCategory(cat)}
-                      className={`flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
                         active
                           ? 'bg-orange-100 text-orange-800'
                           : 'bg-gray-100 text-gray-400'
@@ -325,7 +325,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                 allTrainStops={sortedTrainStops}
                 onDismiss={handleDismiss}
               />
-            ) : sheetSnap === 'full' ? (
+            ) : sheetSnap !== 'peek' ? (
               <DirectoryList />
             ) : null}
           </BottomSheet>
