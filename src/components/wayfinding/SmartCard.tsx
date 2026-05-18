@@ -105,30 +105,40 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
       ? allMbtaStops.filter(s => s.stop_id === stop.stop_id && (s.route_id !== stop.route_id || s.direction !== stop.direction))
       : []
     const allRoutes = [stop, ...siblingRoutes]
+    const routeNames = [...new Set(allRoutes.map(r => r.route_name).filter(Boolean))]
 
     return (
       <div className="px-4 py-3">
         <h3 className="font-semibold text-gray-900 text-lg">{stop.name}</h3>
-        <div className="text-sm text-gray-500 mt-0.5">
-          {formatDistance(dist)} {t(locale, 'away')}
+        <div className="text-sm text-gray-500 mt-0.5 flex items-center gap-2 flex-wrap">
+          <span>{formatDistance(dist)} {t(locale, 'away')}</span>
+          <span className="flex items-center gap-1">
+            {routeNames.map(name => (
+              <span key={name} className="inline-flex items-center justify-center min-w-[1.75rem] px-1.5 py-0.5 rounded bg-blue-600 text-white text-[10px] font-bold">
+                {name}
+              </span>
+            ))}
+          </span>
         </div>
         <div className="mt-3 space-y-2">
           {allRoutes.map((route, i) => (
-            <div key={`${route.route_id}-${route.direction}-${i}`} className="flex items-center gap-2">
+            <div key={`${route.route_id}-${route.direction}-${i}`} className="flex items-center gap-2 py-1">
               {route.route_name && (
                 <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded bg-blue-600 text-white text-xs font-bold flex-shrink-0">
                   {route.route_name}
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                <span className="text-sm text-gray-900">
-                  {route.direction ? `${t(locale, 'toward')} ${route.direction}` : ''}
-                </span>
+                <div className="text-sm text-gray-900 font-medium">
+                  {route.direction ? `${t(locale, 'toward')} ${route.direction}` : route.route_name}
+                </div>
               </div>
-              {route.next_arrival_minutes !== null && (
+              {route.next_arrival_minutes !== null ? (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold flex-shrink-0">
                   {route.next_arrival_minutes} {t(locale, 'min')}
                 </span>
+              ) : (
+                <span className="text-xs text-gray-400 flex-shrink-0">{t(locale, 'no_predictions')}</span>
               )}
             </div>
           ))}

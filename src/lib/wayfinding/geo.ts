@@ -72,6 +72,14 @@ export function walkTimeMinutes(meters: number): number {
   return Math.round(meters / 80)
 }
 
+export function bikeTimeMinutes(meters: number): number {
+  return Math.max(1, Math.round(meters / 268))
+}
+
+export function busTimeMinutes(meters: number): number {
+  return Math.max(2, Math.round(meters / 322))
+}
+
 export function isInsideFestival(lat: number, lng: number, corridorBounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }, bufferMeters = 200): boolean {
   const bufferDeg = bufferMeters / 111000
   return (

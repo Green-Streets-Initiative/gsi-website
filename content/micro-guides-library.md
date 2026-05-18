@@ -353,7 +353,7 @@ Bluebikes is Greater Boston's bike-share system, with 400+ stations across Bosto
 
 ### Getting started
 
-1. Download the **Bluebikes app** (iOS/Android), create an account, add a payment method.
+1. [Download the **Bluebikes app**](https://bluebikes.com/how-it-works/get-the-app) (iOS/Android), create an account, add a payment method.
 2. Open the app to see nearby stations and live availability. Green means bikes are available.
 3. Tap "Unlock," scan the QR code on any available bike at the station. The lock releases.
 

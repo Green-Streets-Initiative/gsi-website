@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { WayfindingEvent, Locale, BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { t } from '@/lib/wayfinding/i18n'
-import { haversineMeters, formatDistance, walkTimeMinutes } from '@/lib/wayfinding/geo'
+import { haversineMeters, formatDistance, walkTimeMinutes, bikeTimeMinutes, busTimeMinutes } from '@/lib/wayfinding/geo'
 import { trackEvent } from '@/lib/wayfinding/telemetry'
 import { PersonWalkIcon, BusIcon, BicycleIcon } from './WayfindingIcons'
 
@@ -22,6 +22,8 @@ interface MBTAPrediction {
   direction: string
   stopName: string
   stopId: string
+  stopLat: number
+  stopLng: number
   minutesAway: number
 }
 
@@ -82,8 +84,10 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
       }
 
       const stopNameMap = new Map<string, string>()
+      const stopLocMap = new Map<string, { lat: number; lng: number }>()
       for (const s of mbtaStops) {
         stopNameMap.set(s.stop_id, s.name)
+        stopLocMap.set(s.stop_id, { lat: s.lat, lng: s.lng })
       }
 
       const preds: MBTAPrediction[] = []
@@ -109,12 +113,15 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         seen.add(key)
         const route = routeMap.get(routeId)
 
+        const stopLoc = stopLocMap.get(stopId)
         preds.push({
           routeId,
           routeName: route?.name ?? routeId,
           direction: route?.directions[dirId] ?? '',
           stopName: stopNameMap.get(stopId) ?? stopId,
           stopId,
+          stopLat: stopLoc?.lat ?? 0,
+          stopLng: stopLoc?.lng ?? 0,
           minutesAway: Math.round(diff),
         })
       }
@@ -193,7 +200,11 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
           ) : predictions.length > 0 ? (
             <div className="bg-gray-50 rounded-xl overflow-hidden">
               <div className="divide-y divide-gray-100">
-                {visiblePredictions.map((pred, i) => (
+                {visiblePredictions.map((pred, i) => {
+                  const walkToStop = hasLocation ? walkTimeMinutes(haversineMeters(userPosition!.lat, userPosition!.lng, pred.stopLat, pred.stopLng)) : null
+                  const busRide = pred.stopLat ? busTimeMinutes(haversineMeters(pred.stopLat, pred.stopLng, destLat, destLng)) : null
+                  const tripEst = walkToStop !== null && busRide !== null ? walkToStop + pred.minutesAway + busRide : null
+                  return (
                   <div key={`${pred.routeId}-${pred.direction}-${i}`} className="p-4">
                     <div className="flex items-start gap-3">
                       <span className="flex-shrink-0 mt-0.5">
@@ -205,6 +216,9 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                             {pred.routeName}
                           </span>
                           <span>{t(locale, 'toward')} {pred.direction}</span>
+                          {tripEst !== null && (
+                            <span className="text-xs font-normal text-gray-400">~{tripEst} {t(locale, 'min')}</span>
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
                           <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>
@@ -224,7 +238,8 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                       </a>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
               {hasMoreBus && (
                 <button
@@ -235,10 +250,10 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                 </button>
               )}
               <a
-                href="https://www.gogreenstreets.org/micro-guides/how-to-ride-the-bus"
+                href="https://www.gogreenstreets.org/guides/your-first-bus-ride"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block py-2.5 text-xs text-center text-gray-400 hover:text-gray-600 transition-colors border-t border-gray-100"
+                className="block py-2.5 text-xs text-center text-gray-500 hover:text-gray-700 transition-colors border-t border-gray-100"
               >
                 {t(locale, 'bus_guide')} →
               </a>
@@ -266,7 +281,12 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
           )}
 
           {/* Bluebike */}
-          {nearestBluebike && (
+          {nearestBluebike && (() => {
+            const bikeRideDist = haversineMeters(nearestBluebike.lat, nearestBluebike.lng, destLat, destLng)
+            const bikeRideMin = bikeTimeMinutes(bikeRideDist)
+            const walkToStation = bluebikeDistToUser ? walkTimeMinutes(bluebikeDistToUser) : null
+            const totalBikeTrip = walkToStation !== null ? walkToStation + bikeRideMin : null
+            return (
             <div className="bg-gray-50 rounded-xl overflow-hidden">
               <div className="p-4">
                 <div className="flex items-start gap-3">
@@ -276,6 +296,9 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                   <div className="min-w-0 flex-1">
                     <div className="font-medium text-gray-900 text-sm flex items-center gap-2">
                       <span>Bluebike</span>
+                      {totalBikeTrip !== null && (
+                        <span className="text-xs font-normal text-gray-400">~{totalBikeTrip} {t(locale, 'min')}</span>
+                      )}
                       <span className="text-xs font-normal text-gray-500">· {nearestBluebike.name}</span>
                     </div>
                     <div className="text-xs text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
@@ -308,15 +331,16 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                 </div>
               </div>
               <a
-                href="https://www.gogreenstreets.org/micro-guides/how-to-use-bluebikes"
+                href="https://www.gogreenstreets.org/guides/how-to-use-bluebikes"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block py-2.5 text-xs text-center text-gray-400 hover:text-gray-600 transition-colors border-t border-gray-100"
+                className="block py-2.5 text-xs text-center text-gray-500 hover:text-gray-700 transition-colors border-t border-gray-100"
               >
                 {t(locale, 'bluebike_guide')} →
               </a>
             </div>
-          )}
+            )
+          })()}
         </div>
       </div>
     </div>
