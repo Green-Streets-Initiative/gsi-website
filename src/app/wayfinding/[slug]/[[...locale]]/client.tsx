@@ -118,22 +118,16 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
 
   const toggleCategory = useCallback((cat: string) => {
     setActiveCategories(prev => {
-      if (!prev) {
-        const next = new Set(foodCategories)
-        next.delete(cat)
-        return next
-      }
+      if (!prev) return new Set([cat])
       const next = new Set(prev)
       if (next.has(cat)) {
         next.delete(cat)
-        if (next.size === 0) return null
-      } else {
-        next.add(cat)
-        if (next.size === foodCategories.length) return null
+        return next.size === 0 ? null : next
       }
+      next.add(cat)
       return next
     })
-  }, [foodCategories])
+  }, [])
 
   const DirectoryList = useCallback(() => (
     <div className="px-4 pb-8">
@@ -146,7 +140,11 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
             <button
               key={b.id}
               className="w-full text-left py-3 border-b border-gray-100 last:border-0"
-              onClick={() => handlePinSelect({ type: 'business', data: b })}
+              onClick={() => {
+                setSelectedFeature({ type: 'business', data: b })
+                setMobileView('map')
+                setTimeout(() => sheetRef.current?.snapTo('half'), 50)
+              }}
             >
               <div className="flex items-center gap-2">
                 <span className="font-medium text-gray-900">{b.name}</span>
@@ -214,7 +212,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
             {activeLayers.food && foodCategories.length > 1 && (
               <div className="flex flex-wrap gap-1.5 px-4 py-1 bg-white/90 backdrop-blur-sm">
                 {foodCategories.map(cat => {
-                  const active = !activeCategories || activeCategories.has(cat)
+                  const active = activeCategories ? activeCategories.has(cat) : false
                   const CatIcon = FOOD_CATEGORY_ICONS[cat]
                   return (
                     <button
@@ -264,7 +262,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
             {activeLayers.food && foodCategories.length > 1 && (
               <div className="flex-shrink-0 flex flex-wrap gap-1.5 px-4 py-2 border-b border-gray-100 bg-white">
                 {foodCategories.map(cat => {
-                  const active = !activeCategories || activeCategories.has(cat)
+                  const active = activeCategories ? activeCategories.has(cat) : false
                   const CatIcon = FOOD_CATEGORY_ICONS[cat]
                   return (
                     <button

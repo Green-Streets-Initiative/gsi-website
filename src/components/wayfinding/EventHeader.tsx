@@ -48,6 +48,87 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
       }).filter(l => l.imgUrl)
     : []
 
+  const isHero = logos.length === 1
+
+  if (isHero) {
+    return (
+      <header
+        className="flex-shrink-0 relative overflow-hidden"
+        style={{ backgroundColor: 'var(--accent)' }}
+      >
+        {/* Logo as faded background */}
+        <img
+          src={logos[0].imgUrl}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-contain object-right opacity-20 pointer-events-none"
+        />
+
+        <div className="relative px-4 py-2 flex items-center justify-between">
+          <div className="min-w-0 flex-1">
+            {event.eyebrow && (
+              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/75">
+                {event.organizer_url ? (
+                  <a href={event.organizer_url} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                    {event.eyebrow}
+                  </a>
+                ) : (
+                  event.eyebrow
+                )}
+              </div>
+            )}
+            <div className="flex items-baseline gap-2">
+              <h1
+                className="text-base font-bold leading-tight truncate text-white"
+                style={{ fontFamily: 'var(--font-bricolage)' }}
+              >
+                {event.event_url ? (
+                  <a href={event.event_url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    {event.name}
+                  </a>
+                ) : (
+                  event.name
+                )}
+              </h1>
+              {event.event_url && (
+                <a
+                  href={event.event_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 text-white/60 hover:text-white transition-colors"
+                  aria-label="Event website"
+                >
+                  <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
+                    <path d="M224,104a8,8,0,0,1-16,0V59.32l-66.33,66.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z" />
+                  </svg>
+                </a>
+              )}
+            </div>
+            <div className="text-xs text-white/75">
+              {event.venue_name && <span className="font-medium">{event.venue_name} · </span>}
+              {dateLabel}{timeLabel ? ` · ${timeLabel}` : ''}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <LanguagePill event={event} locale={locale} variant="dark" />
+            <button
+              onClick={handleShare}
+              className="p-2 rounded-full hover:bg-white/15 transition-colors"
+              aria-label={t(locale, 'share')}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+    )
+  }
+
   return (
     <header className="flex-shrink-0 bg-white border-b border-gray-100">
       <div className="px-4 py-2 flex items-center justify-between">
@@ -112,19 +193,7 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
         </div>
       </div>
 
-      {logos.length === 1 ? (
-        <div className="px-4 pb-3">
-          <div className="inline-block rounded-xl px-5 py-3" style={{ backgroundColor: 'var(--accent)' }}>
-            {logos[0].linkUrl ? (
-              <a href={logos[0].linkUrl} target="_blank" rel="noopener noreferrer">
-                <img src={logos[0].imgUrl} alt={event.organizer_name ?? ''} className="h-20 object-contain hover:opacity-80 transition-opacity" />
-              </a>
-            ) : (
-              <img src={logos[0].imgUrl} alt={event.organizer_name ?? ''} className="h-20 object-contain" />
-            )}
-          </div>
-        </div>
-      ) : logos.length > 1 ? (
+      {logos.length > 1 && (
         <div className="px-4 pb-2 flex items-center gap-3">
           {logos.map((logo, i) =>
             logo.linkUrl ? (
@@ -136,7 +205,7 @@ export default function EventHeader({ event, locale, displayDate }: Props) {
             )
           )}
         </div>
-      ) : null}
+      )}
     </header>
   )
 }
