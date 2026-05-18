@@ -3,6 +3,7 @@
 import { SelectedFeature, Locale, WayfindingBusiness, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
 import { t } from '@/lib/wayfinding/i18n'
 import { formatDistance, haversineMeters } from '@/lib/wayfinding/geo'
+import { BusIcon } from './WayfindingIcons'
 
 interface Props {
   feature: SelectedFeature
@@ -110,17 +111,22 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
     return (
       <div className="px-4 py-3">
         <h3 className="font-semibold text-gray-900 text-lg">{stop.name}</h3>
-        <div className="text-sm text-gray-500 mt-0.5 flex items-center gap-2 flex-wrap">
-          <span>{formatDistance(dist)} {t(locale, 'away')}</span>
-          <span className="flex items-center gap-1">
+        <div className="text-sm text-gray-500 mt-0.5">
+          {formatDistance(dist)} {t(locale, 'away')}
+        </div>
+
+        <div className="mt-3 flex items-center gap-2">
+          <BusIcon size={18} className="text-blue-600 flex-shrink-0" />
+          <div className="flex items-center gap-1.5 flex-wrap">
             {routeNames.map(name => (
-              <span key={name} className="inline-flex items-center justify-center min-w-[1.75rem] px-1.5 py-0.5 rounded bg-blue-600 text-white text-[10px] font-bold">
+              <span key={name} className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded bg-blue-600 text-white text-xs font-bold">
                 {name}
               </span>
             ))}
-          </span>
+          </div>
         </div>
-        <div className="mt-3 space-y-2">
+
+        <div className="mt-3 space-y-1.5">
           {allRoutes.map((route, i) => (
             <div key={`${route.route_id}-${route.direction}-${i}`} className="flex items-center gap-2 py-1">
               {route.route_name && (
@@ -132,17 +138,18 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
                 <div className="text-sm text-gray-900 font-medium">
                   {route.direction ? `${t(locale, 'toward')} ${route.direction}` : route.route_name}
                 </div>
+                {route.next_arrival_minutes !== null ? (
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {t(locale, 'next_arrival')}: {route.next_arrival_minutes} {t(locale, 'min')}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-400 mt-0.5">{t(locale, 'no_predictions')}</div>
+                )}
               </div>
-              {route.next_arrival_minutes !== null ? (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold flex-shrink-0">
-                  {route.next_arrival_minutes} {t(locale, 'min')}
-                </span>
-              ) : (
-                <span className="text-xs text-gray-400 flex-shrink-0">{t(locale, 'no_predictions')}</span>
-              )}
             </div>
           ))}
         </div>
+
         <div className="mt-3">
           <a
             href={directionsUrl(stop.lat, stop.lng)}
@@ -169,7 +176,7 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
         <h3 className="font-semibold text-gray-900 text-lg">{label}</h3>
         <div className="text-sm text-gray-500 mt-0.5">
           {formatDistance(dist)} {t(locale, 'away')}
-          {spot.capacity && ` · ${spot.capacity} spaces`}
+          {spot.capacity && ` · ${spot.capacity} ${t(locale, 'spaces')}`}
         </div>
         <a
           href={directionsUrl(spot.lat, spot.lng)}

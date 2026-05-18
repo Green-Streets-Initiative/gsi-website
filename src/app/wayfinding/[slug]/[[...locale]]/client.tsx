@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import type { WayfindingEvent, WayfindingBusiness, Locale, LayerKey, SelectedFeature, SheetSnap, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
 import { getDefaultLayerState } from '@/lib/wayfinding/layers'
 import { useGeolocation, haversineMeters } from '@/lib/wayfinding/geo'
-import { t } from '@/lib/wayfinding/i18n'
+import { t, tCategory } from '@/lib/wayfinding/i18n'
 import { trackEvent } from '@/lib/wayfinding/telemetry'
 import EventHeader from '@/components/wayfinding/EventHeader'
 import ChipRow from '@/components/wayfinding/ChipRow'
@@ -125,7 +125,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
             >
               <div className="font-medium text-gray-900">{b.name}</div>
               <div className="text-sm text-gray-500">
-                {foodCategories.length > 1 && <span className="text-orange-600">{b.category} · </span>}
+                {foodCategories.length > 1 && <span className="text-orange-600">{tCategory(locale, b.category)} · </span>}
                 {b.address}
               </div>
             </button>
@@ -238,7 +238,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                           : 'bg-gray-100 text-gray-400'
                       }`}
                     >
-                      {cat}
+                      {tCategory(locale, cat)}
                     </button>
                   )
                 })}

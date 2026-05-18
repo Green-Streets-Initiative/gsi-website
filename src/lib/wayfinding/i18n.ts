@@ -51,6 +51,11 @@ const strings = {
     bus_guide: 'How to ride the bus',
     bluebike_guide: 'How to use Bluebikes',
     ride_time: 'ride',
+    spaces: 'spaces',
+    cat_restaurant: 'Restaurant',
+    cat_cafe: 'Cafe',
+    cat_quick_bites: 'Quick Bites',
+    cat_bar_grill: 'Bar & Grill',
   },
   es: {
     eyebrow_default: 'SomerStreets',
@@ -102,6 +107,11 @@ const strings = {
     bus_guide: 'Cómo tomar el autobús',
     bluebike_guide: 'Cómo usar Bluebikes',
     ride_time: 'viaje',
+    spaces: 'espacios',
+    cat_restaurant: 'Restaurante',
+    cat_cafe: 'Café',
+    cat_quick_bites: 'Comida rápida',
+    cat_bar_grill: 'Bar y parrilla',
   },
   pt: {
     eyebrow_default: 'SomerStreets',
@@ -153,6 +163,11 @@ const strings = {
     bus_guide: 'Como andar de ônibus',
     bluebike_guide: 'Como usar Bluebikes',
     ride_time: 'viagem',
+    spaces: 'vagas',
+    cat_restaurant: 'Restaurante',
+    cat_cafe: 'Café',
+    cat_quick_bites: 'Comida rápida',
+    cat_bar_grill: 'Bar e churrasqueira',
   },
 } as const
 
@@ -166,6 +181,18 @@ export function t(locale: Locale, key: TranslationKey, replacements?: Record<str
     }
   }
   return value
+}
+
+const categoryKeyMap: Record<string, TranslationKey> = {
+  'Restaurant': 'cat_restaurant',
+  'Cafe': 'cat_cafe',
+  'Quick Bites': 'cat_quick_bites',
+  'Bar & Grill': 'cat_bar_grill',
+}
+
+export function tCategory(locale: Locale, category: string): string {
+  const key = categoryKeyMap[category]
+  return key ? t(locale, key) : category
 }
 
 export function getLocaleFromParams(params: string[] | undefined): Locale {
