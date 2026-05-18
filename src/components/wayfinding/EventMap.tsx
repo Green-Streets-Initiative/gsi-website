@@ -213,9 +213,18 @@ export default function EventMap({
       })
     }
     if (activeLayers.bus) {
+      const stopGroups = new Map<string, MBTAStopLive[]>()
       mbtaStops.forEach(stop => {
-        addMarker(map, stop.lng, stop.lat, '#1976D2', stop.route_name.replace(/^Route\s*/i, ''), () => {
-          onPinSelect({ type: 'mbta', data: stop })
+        const group = stopGroups.get(stop.stop_id) || []
+        group.push(stop)
+        stopGroups.set(stop.stop_id, group)
+      })
+      stopGroups.forEach(stops => {
+        const first = stops[0]
+        const routeLabels = [...new Set(stops.map(s => s.route_name.replace(/^Route\s*/i, '')).filter(Boolean))]
+        const label = routeLabels.slice(0, 2).join('/') || 'Bus'
+        addMarker(map, first.lng, first.lat, '#1976D2', label, () => {
+          onPinSelect({ type: 'mbta', data: first })
         })
       })
     }

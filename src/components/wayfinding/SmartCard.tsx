@@ -10,6 +10,7 @@ interface Props {
   userLat: number
   userLng: number
   eventCenter: { lat: number; lng: number }
+  allMbtaStops?: MBTAStopLive[]
 }
 
 function directionsUrl(lat: number, lng: number): string {
@@ -20,7 +21,7 @@ function directionsUrl(lat: number, lng: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`
 }
 
-export default function SmartCard({ feature, locale, userLat, userLng }: Props) {
+export default function SmartCard({ feature, locale, userLat, userLng, allMbtaStops }: Props) {
   if (feature.type === 'business') {
     const biz = feature.data as WayfindingBusiness
     const dist = haversineMeters(userLat, userLng, biz.lat, biz.lng)
@@ -100,26 +101,38 @@ export default function SmartCard({ feature, locale, userLat, userLng }: Props) 
   if (feature.type === 'mbta') {
     const stop = feature.data as MBTAStopLive
     const dist = haversineMeters(userLat, userLng, stop.lat, stop.lng)
+    const siblingRoutes = allMbtaStops
+      ? allMbtaStops.filter(s => s.stop_id === stop.stop_id && (s.route_id !== stop.route_id || s.direction !== stop.direction))
+      : []
+    const allRoutes = [stop, ...siblingRoutes]
+
     return (
       <div className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          {stop.route_name && (
-            <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded bg-blue-600 text-white text-sm font-bold">
-              {stop.route_name}
-            </span>
-          )}
-          <h3 className="font-semibold text-gray-900 text-lg">
-            {stop.direction ? `${t(locale, 'toward')} ${stop.direction}` : stop.name}
-          </h3>
+        <h3 className="font-semibold text-gray-900 text-lg">{stop.name}</h3>
+        <div className="text-sm text-gray-500 mt-0.5">
+          {formatDistance(dist)} {t(locale, 'away')}
         </div>
-        <div className="text-sm text-gray-500 mt-1">
-          {stop.name} · {formatDistance(dist)} {t(locale, 'away')}
+        <div className="mt-3 space-y-2">
+          {allRoutes.map((route, i) => (
+            <div key={`${route.route_id}-${route.direction}-${i}`} className="flex items-center gap-2">
+              {route.route_name && (
+                <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded bg-blue-600 text-white text-xs font-bold flex-shrink-0">
+                  {route.route_name}
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <span className="text-sm text-gray-900">
+                  {route.direction ? `${t(locale, 'toward')} ${route.direction}` : ''}
+                </span>
+              </div>
+              {route.next_arrival_minutes !== null && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold flex-shrink-0">
+                  {route.next_arrival_minutes} {t(locale, 'min')}
+                </span>
+              )}
+            </div>
+          ))}
         </div>
-        {stop.next_arrival_minutes !== null && (
-          <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-blue-700 font-semibold text-sm">
-            {t(locale, 'next_bus')}: {stop.next_arrival_minutes} {t(locale, 'min')}
-          </div>
-        )}
         <div className="mt-3">
           <a
             href={directionsUrl(stop.lat, stop.lng)}

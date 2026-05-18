@@ -63,8 +63,9 @@ function toRad(deg: number): number {
 }
 
 export function formatDistance(meters: number): string {
-  if (meters < 1000) return `${Math.round(meters)}m`
-  return `${(meters / 1000).toFixed(1)}km`
+  const miles = meters / 1609.34
+  if (miles < 0.1) return `${Math.round(meters * 3.281)} ft`
+  return `${miles.toFixed(1)} mi`
 }
 
 export function walkTimeMinutes(meters: number): number {
