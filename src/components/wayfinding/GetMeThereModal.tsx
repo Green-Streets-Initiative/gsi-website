@@ -8,6 +8,7 @@ import { haversineMeters, formatDistance, walkTimeMinutes, bikeTimeMinutes, busT
 import { trackEvent } from '@/lib/wayfinding/telemetry'
 import { PersonWalkIcon, BusIcon, BicycleIcon, TrainIcon } from './WayfindingIcons'
 import ComfortBar from '@/components/commute/ComfortBar'
+import AddressAutocomplete from '@/components/AddressAutocomplete'
 
 interface Props {
   event: WayfindingEvent
@@ -65,25 +66,28 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
   const [trainExpanded, setTrainExpanded] = useState(false)
   const [bikeComfort, setBikeComfort] = useState<BikeComfort | null>(null)
   const [loadingComfort, setLoadingComfort] = useState(false)
+  const [manualPosition, setManualPosition] = useState<{ lat: number; lng: number } | null>(null)
+  const [addressValue, setAddressValue] = useState('')
 
   const destLat = event.center_lat
   const destLng = event.center_lng
-  const hasLocation = !!userPosition
+  const effectivePosition = userPosition ?? manualPosition
+  const hasLocation = !!effectivePosition
 
-  const walkDist = hasLocation ? haversineMeters(userPosition!.lat, userPosition!.lng, destLat, destLng) : null
+  const walkDist = hasLocation ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, destLat, destLng) : null
   const walkMin = walkDist ? walkTimeMinutes(walkDist) : null
 
   const nearestBluebike = bluebikes
     .filter(s => s.num_bikes_available > 0)
     .sort((a, b) => {
       if (!hasLocation) return a.distance_meters - b.distance_meters
-      const da = haversineMeters(userPosition!.lat, userPosition!.lng, a.lat, a.lng)
-      const db = haversineMeters(userPosition!.lat, userPosition!.lng, b.lat, b.lng)
+      const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.lat, a.lng)
+      const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.lat, b.lng)
       return da - db
     })[0] ?? null
 
   const bluebikeDistToUser = nearestBluebike && hasLocation
-    ? haversineMeters(userPosition!.lat, userPosition!.lng, nearestBluebike.lat, nearestBluebike.lng)
+    ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, nearestBluebike.lat, nearestBluebike.lng)
     : null
 
   const fetchPredictions = useCallback(async () => {
@@ -91,7 +95,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
       if (!hasLocation) { setLoadingPredictions(false); return }
 
       const stopsRes = await fetch(
-        `https://api-v3.mbta.com/stops?filter[latitude]=${userPosition!.lat}&filter[longitude]=${userPosition!.lng}&filter[radius]=0.02&filter[route_type]=3`
+        `https://api-v3.mbta.com/stops?filter[latitude]=${effectivePosition!.lat}&filter[longitude]=${effectivePosition!.lng}&filter[radius]=0.02&filter[route_type]=3`
       )
       const stopsData = await stopsRes.json()
       const nearbyStopIds: string[] = []
@@ -156,20 +160,24 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         })
       }
 
-      setPredictions(preds.sort((a, b) => a.minutesAway - b.minutesAway))
+      setPredictions(preds.sort((a, b) => {
+        const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
+        const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
+        return da !== db ? da - db : a.minutesAway - b.minutesAway
+      }))
     } catch {
       // fail silently
     } finally {
       setLoadingPredictions(false)
     }
-  }, [hasLocation, userPosition])
+  }, [hasLocation, effectivePosition])
 
   const fetchTrainPreds = useCallback(async () => {
     try {
       if (!hasLocation) { setLoadingTrainPredictions(false); return }
 
       const stopsRes = await fetch(
-        `https://api-v3.mbta.com/stops?filter[latitude]=${userPosition!.lat}&filter[longitude]=${userPosition!.lng}&filter[radius]=0.02&filter[route_type]=0,1`
+        `https://api-v3.mbta.com/stops?filter[latitude]=${effectivePosition!.lat}&filter[longitude]=${effectivePosition!.lng}&filter[radius]=0.02&filter[route_type]=0,1`
       )
       const stopsData = await stopsRes.json()
       const nearbyStopIds: string[] = []
@@ -235,13 +243,17 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         })
       }
 
-      setTrainPredictions(preds.sort((a, b) => a.minutesAway - b.minutesAway))
+      setTrainPredictions(preds.sort((a, b) => {
+        const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
+        const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
+        return da !== db ? da - db : a.minutesAway - b.minutesAway
+      }))
     } catch {
       // fail silently
     } finally {
       setLoadingTrainPredictions(false)
     }
-  }, [hasLocation, userPosition])
+  }, [hasLocation, effectivePosition])
 
   useEffect(() => {
     fetchPredictions()
@@ -253,12 +265,12 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
   useEffect(() => {
     if (!hasLocation) return
     setLoadingComfort(true)
-    fetch(`/api/wayfinding/bike-comfort?origin_lat=${userPosition!.lat}&origin_lng=${userPosition!.lng}&dest_lat=${destLat}&dest_lng=${destLng}`)
+    fetch(`/api/wayfinding/bike-comfort?origin_lat=${effectivePosition!.lat}&origin_lng=${effectivePosition!.lng}&dest_lat=${destLat}&dest_lng=${destLng}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data && !data.error) setBikeComfort(data) })
       .catch(() => {})
       .finally(() => setLoadingComfort(false))
-  }, [hasLocation, userPosition, destLat, destLng])
+  }, [hasLocation, effectivePosition, destLat, destLng])
 
   const handleDirections = (mode: string) => {
     trackEvent({ event: 'get_me_there', slug: event.slug, locale, mode })
@@ -289,6 +301,20 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         </div>
 
         <div className="px-5 pb-8 space-y-3 max-h-[70vh] overflow-y-auto">
+          {!userPosition && (
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-xs text-gray-500 mb-2">{t(locale, 'or_enter_address')}</p>
+              <AddressAutocomplete
+                value={addressValue}
+                onChange={setAddressValue}
+                onPlaceSelected={(place) => setManualPosition({ lat: place.lat, lng: place.lng })}
+                label={null}
+                variant="light"
+                placeholder={t(locale, 'address_placeholder')}
+              />
+            </div>
+          )}
+
           {/* Walk */}
           <ModeCard
             icon={<PersonWalkIcon size={20} className="text-gray-700" />}
@@ -323,7 +349,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
             <div className="bg-gray-50 rounded-xl overflow-hidden">
               <div className="divide-y divide-gray-100">
                 {visiblePredictions.map((pred, i) => {
-                  const walkToStopDist = hasLocation ? haversineMeters(userPosition!.lat, userPosition!.lng, pred.stopLat, pred.stopLng) : null
+                  const walkToStopDist = hasLocation ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, pred.stopLat, pred.stopLng) : null
                   const walkToStop = walkToStopDist !== null ? walkTimeMinutes(walkToStopDist) : null
                   const busRide = pred.stopLat ? busTimeMinutes(haversineMeters(pred.stopLat, pred.stopLng, destLat, destLng)) : null
                   const tripEst = walkToStop !== null && busRide !== null ? walkToStop + pred.minutesAway + busRide : null
@@ -418,7 +444,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
             <div className="bg-gray-50 rounded-xl overflow-hidden">
               <div className="divide-y divide-gray-100">
                 {visibleTrainPredictions.map((pred, i) => {
-                  const walkToStopDist = hasLocation ? haversineMeters(userPosition!.lat, userPosition!.lng, pred.stopLat, pred.stopLng) : null
+                  const walkToStopDist = hasLocation ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, pred.stopLat, pred.stopLng) : null
                   return (
                   <div key={`${pred.routeId}-${pred.direction}-${i}`} className="p-4">
                     <div className="flex items-start gap-3">

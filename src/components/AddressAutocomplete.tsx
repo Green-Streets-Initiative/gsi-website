@@ -27,7 +27,7 @@ type Props = {
   onCityDetected?: (city: string) => void
   onPlaceSelected?: (place: PlaceData) => void
   onAddressParsed?: (parsed: ParsedAddress) => void
-  label?: string
+  label?: string | null
   variant?: 'light' | 'dark'
   placeholder?: string
 }
@@ -153,14 +153,9 @@ export default function AddressAutocomplete({
 
   return (
     <div ref={containerRef} className="relative">
-      {label && (
+      {label !== null && (
         <label className={`mb-1.5 block text-sm font-medium ${isDark ? 'text-white' : 'text-[#191A2E]'}`}>
-          {label}
-        </label>
-      )}
-      {!label && (
-        <label className={`mb-1.5 block text-sm font-medium ${isDark ? 'text-white' : 'text-[#191A2E]'}`}>
-          Address <span className={isDark ? 'text-lime' : 'text-[#E05252]'}>*</span>
+          {label || <>Address <span className={isDark ? 'text-lime' : 'text-[#E05252]'}>*</span></>}
         </label>
       )}
       <input
