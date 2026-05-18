@@ -90,7 +90,7 @@ export default function ShiftPage() {
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-sm font-extrabold text-[#7DB82E]">1</div>
                 <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-[#191A2E]">It just works</h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
-                  Grant location and motion access once. Shift detects your walks, bike rides, and transit trips in the background. No tapping required — your streak keeps going even if you never open the app.
+                  Grant location and motion access once. Shift detects your walks, bike rides, and transit trips in the background.
                 </p>
               </div>
 
@@ -99,7 +99,7 @@ export default function ShiftPage() {
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-sm font-extrabold text-[#7DB82E]">2</div>
                 <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-[#191A2E]">Your commute, working for you</h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
-                  Active trips advance you through five tiers — Starter to Trailblazer — and each tier unlocks more perks at partner businesses around town. Show your badge at the register; no point math, no codes to track.
+                  Walk, ride, or roll your way to rewards at local businesses, and keep an eye out for flagship events like Shift Your Summer to enter to win prizes from national and local partners.
                 </p>
               </div>
 
@@ -108,7 +108,7 @@ export default function ShiftPage() {
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-sm font-extrabold text-[#7DB82E]">3</div>
                 <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-[#191A2E]">See what you&apos;re gaining</h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
-                  Time saved. Money kept. Health earned. Open the app to check in, or don&apos;t. Everything tracks whether you&apos;re watching or not.
+                  Watch the benefits of your choices — like time and money saved and calories burned — add up over time as you build streaks, gain XP, and shift more of your trips to active transportation.
                 </p>
               </div>
             </div>
