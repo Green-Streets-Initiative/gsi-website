@@ -1,6 +1,11 @@
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import WaitlistEmailForm from '@/components/WaitlistEmailForm'
+
+const IOS_URL = process.env.NEXT_PUBLIC_IOS_URL || ''
+const ANDROID_URL = process.env.NEXT_PUBLIC_ANDROID_URL || ''
+const IS_LIVE = !!(IOS_URL && ANDROID_URL)
 
 export default function ShiftPage() {
   return (
@@ -41,16 +46,25 @@ export default function ShiftPage() {
               The Shift app detects your walks, bike rides, and transit trips automatically — no tapping, no logging, no thinking about it. Your commute earns you real rewards while you move.
             </p>
 
-            <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <a href="#" className="inline-flex items-center gap-2 rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="#191A2E"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-                Download for iOS
-              </a>
-              <a href="#" className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-1.832l2.46 1.42c.55.32.55 1.09 0 1.41l-2.46 1.42-2.534-2.534 2.534-2.534v.818zm-3.906-2.54L4.864 3.378l10.928 6.328-2.302 2.302.303.327z"/></svg>
-                Download for Android
-              </a>
-            </div>
+            {IS_LIVE ? (
+              <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                <a href={IOS_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="#191A2E"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+                  Download for iOS
+                </a>
+                <a href={ANDROID_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-1.832l2.46 1.42c.55.32.55 1.09 0 1.41l-2.46 1.42-2.534-2.534 2.534-2.534v.818zm-3.906-2.54L4.864 3.378l10.928 6.328-2.302 2.302.303.327z"/></svg>
+                  Download for Android
+                </a>
+              </div>
+            ) : (
+              <div>
+                <p className="mb-6 text-sm font-semibold uppercase tracking-widest text-[#BAF14D]">
+                  Coming soon to iOS and Android
+                </p>
+                <WaitlistEmailForm source="shift_page" />
+              </div>
+            )}
 
             <div className="mt-6">
               <Link href="/commute-advisor" className="text-sm font-semibold text-[#BAF14D]">
@@ -348,28 +362,30 @@ export default function ShiftPage() {
             <h2 className="mb-4 font-display text-[clamp(2rem,4vw,3rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
               Find your shift.
             </h2>
-            <p className="mb-10 text-lg leading-relaxed text-white">
-              Free to download. Available on iOS and Android.
-            </p>
-
-            <Link
-              href="/shift"
-              className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-            >
-              Download the app
-            </Link>
-
-            {/* App store badge placeholders */}
-            <div className="mt-8 flex items-center justify-center gap-4">
-              <div className="flex h-10 items-center rounded-lg border border-white/[0.12] bg-white/[0.04] px-4">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="white" className="mr-2"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-                <span className="text-xs font-semibold text-white">App Store</span>
-              </div>
-              <div className="flex h-10 items-center rounded-lg border border-white/[0.12] bg-white/[0.04] px-4">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="white" className="mr-2"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-1.832l2.46 1.42c.55.32.55 1.09 0 1.41l-2.46 1.42-2.534-2.534 2.534-2.534v.818zm-3.906-2.54L4.864 3.378l10.928 6.328-2.302 2.302.303.327z"/></svg>
-                <span className="text-xs font-semibold text-white">Google Play</span>
-              </div>
-            </div>
+            {IS_LIVE ? (
+              <>
+                <p className="mb-10 text-lg leading-relaxed text-white">
+                  Free to download. Available on iOS and Android.
+                </p>
+                <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                  <a href={IOS_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="#191A2E"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+                    Download for iOS
+                  </a>
+                  <a href={ANDROID_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-1.832l2.46 1.42c.55.32.55 1.09 0 1.41l-2.46 1.42-2.534-2.534 2.534-2.534v.818zm-3.906-2.54L4.864 3.378l10.928 6.328-2.302 2.302.303.327z"/></svg>
+                    Download for Android
+                  </a>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mb-10 text-lg leading-relaxed text-white">
+                  Coming soon to iOS and Android.
+                </p>
+                <WaitlistEmailForm source="shift_page" />
+              </>
+            )}
 
             <p className="mt-6 text-sm text-white/60">
               Local business?{' '}

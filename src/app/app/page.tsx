@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import WaitlistEmailForm from './WaitlistEmailForm'
+import WaitlistEmailForm from '@/components/WaitlistEmailForm'
 
 const IOS_URL = process.env.NEXT_PUBLIC_IOS_URL || ''
 const ANDROID_URL = process.env.NEXT_PUBLIC_ANDROID_URL || ''

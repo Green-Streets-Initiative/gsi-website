@@ -4,12 +4,14 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY!)
 
 export async function POST(req: Request) {
-  let body: { email?: string; website?: string }
+  let body: { email?: string; website?: string; source?: string }
   try {
     body = await req.json()
   } catch {
     return Response.json({ error: 'Invalid request body' }, { status: 400 })
   }
+
+  const source = body.source || 'app_page'
 
   // Honeypot check
   if (body.website) {
@@ -30,7 +32,7 @@ export async function POST(req: Request) {
     const supabase = createServerSupabaseClient()
     const { data: inserted, error } = await supabase
       .from('launch_waitlist')
-      .upsert({ email, source: 'app_page' }, { onConflict: 'email', ignoreDuplicates: true })
+      .upsert({ email, source }, { onConflict: 'email', ignoreDuplicates: true })
       .select('id')
 
     if (error) {
@@ -79,7 +81,7 @@ export async function POST(req: Request) {
           type: 'note',
           direction: 'inbound',
           subject: 'Joined Shift app launch waitlist',
-          body: 'Submitted email at gogreenstreets.org/app to be notified at launch.',
+          body: `Submitted email at gogreenstreets.org (${source}) to be notified at launch.`,
           occurred_at: new Date().toISOString(),
         })
       }
@@ -94,10 +96,10 @@ export async function POST(req: Request) {
           to: 'keith@gogreenstreets.org',
           subject: 'New Shift app waitlist signup',
           html: `<p><strong>Email:</strong> ${email}</p>
-                 <p><strong>Source:</strong> app_page</p>
+                 <p><strong>Source:</strong> ${source}</p>
                  <hr/>
                  <p style="color:#888;font-size:12px">
-                   Submitted via gogreenstreets.org/app<br/>
+                   Submitted via gogreenstreets.org (${source})<br/>
                    ${new Date().toISOString()}
                  </p>`,
         })

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-export default function WaitlistEmailForm() {
+export default function WaitlistEmailForm({ source = 'app_page' }: { source?: string }) {
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
@@ -24,7 +24,7 @@ export default function WaitlistEmailForm() {
       const res = await fetch('/api/notify-launch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmed }),
+        body: JSON.stringify({ email: trimmed, source }),
       })
 
       if (!res.ok) {
