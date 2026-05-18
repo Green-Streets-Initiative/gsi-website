@@ -19,29 +19,43 @@ const ICON_COMPONENTS: Record<string, React.FC<{ size?: number; className?: stri
   LockKey: LockIcon,
 }
 
-export default function ChipRow({ activeLayers, onToggle, locale }: Props) {
+function Chip({ layer, active, onToggle, locale }: { layer: (typeof FIXED_LAYERS)[number]; active: boolean; onToggle: (key: LayerKey) => void; locale: Locale }) {
+  const chipColor = layer.color === 'accent' ? 'var(--accent)' : layer.color
+  const IconComponent = ICON_COMPONENTS[layer.icon]
   return (
-    <div className="flex gap-2 px-4 py-2 overflow-x-auto no-scrollbar bg-white/90 backdrop-blur-sm">
-      {FIXED_LAYERS.map(layer => {
-        const active = activeLayers[layer.key]
-        const chipColor = layer.color === 'accent' ? 'var(--accent)' : layer.color
-        const IconComponent = ICON_COMPONENTS[layer.icon]
-        return (
-          <button
-            key={layer.key}
-            onClick={() => onToggle(layer.key)}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-              active
-                ? 'text-white shadow-sm'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-            style={active ? { backgroundColor: chipColor } : undefined}
-          >
-            {IconComponent && <IconComponent size={16} />}
-            {t(locale, layer.labelKey as TranslationKey)}
-          </button>
-        )
-      })}
+    <button
+      onClick={() => onToggle(layer.key)}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+        active
+          ? 'text-white shadow-sm'
+          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+      }`}
+      style={active ? { backgroundColor: chipColor } : undefined}
+    >
+      {IconComponent && <IconComponent size={16} />}
+      {t(locale, layer.labelKey as TranslationKey)}
+    </button>
+  )
+}
+
+const ROW1_KEYS: LayerKey[] = ['festival', 'food']
+const ROW2_KEYS: LayerKey[] = ['bus', 'bluebike', 'bike-parking']
+
+export default function ChipRow({ activeLayers, onToggle, locale }: Props) {
+  const row1 = FIXED_LAYERS.filter(l => ROW1_KEYS.includes(l.key))
+  const row2 = FIXED_LAYERS.filter(l => ROW2_KEYS.includes(l.key))
+  return (
+    <div className="px-4 py-2 space-y-1.5 bg-white/90 backdrop-blur-sm">
+      <div className="flex gap-2">
+        {row1.map(layer => (
+          <Chip key={layer.key} layer={layer} active={activeLayers[layer.key]} onToggle={onToggle} locale={locale} />
+        ))}
+      </div>
+      <div className="flex gap-2">
+        {row2.map(layer => (
+          <Chip key={layer.key} layer={layer} active={activeLayers[layer.key]} onToggle={onToggle} locale={locale} />
+        ))}
+      </div>
     </div>
   )
 }
