@@ -413,8 +413,6 @@ export default function EventMap({
         if (!predMap.has(key)) predMap.set(key, Math.round(diff))
       }
 
-      console.log(`[wayfinding] ${predsData.data?.length ?? 0} predictions fetched, ${predMap.size} matched to stops`)
-
       const stops: MBTAStopLive[] = []
       for (const s of topology) {
         if (s.routes.length === 0) continue
@@ -435,9 +433,6 @@ export default function EventMap({
           }
         }
       }
-
-      const withPreds = stops.filter(s => s.next_arrival_minutes !== null).length
-      console.log(`[wayfinding] ${stops.length} stop entries built, ${withPreds} have arrival predictions`)
 
       return stops.sort((a, b) => a.distance_meters - b.distance_meters)
     } catch (err) {

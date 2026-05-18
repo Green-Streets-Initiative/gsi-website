@@ -107,6 +107,7 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
       : []
     const allRoutes = [stop, ...siblingRoutes]
     const routeNames = [...new Set(allRoutes.map(r => r.route_name).filter(Boolean))]
+    const withPredictions = allRoutes.filter(r => r.next_arrival_minutes !== null)
 
     return (
       <div className="px-4 py-3">
@@ -126,29 +127,29 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
           </div>
         </div>
 
-        <div className="mt-3 space-y-1.5">
-          {allRoutes.map((route, i) => (
-            <div key={`${route.route_id}-${route.direction}-${i}`} className="flex items-center gap-2 py-1">
-              {route.route_name && (
-                <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded bg-blue-600 text-white text-xs font-bold flex-shrink-0">
-                  {route.route_name}
-                </span>
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="text-sm text-gray-900 font-medium">
-                  {route.direction ? `${t(locale, 'toward')} ${route.direction}` : route.route_name}
-                </div>
-                {route.next_arrival_minutes !== null ? (
+        {withPredictions.length > 0 ? (
+          <div className="mt-3 space-y-1.5">
+            {withPredictions.map((route, i) => (
+              <div key={`${route.route_id}-${route.direction}-${i}`} className="flex items-center gap-2 py-1">
+                {route.route_name && (
+                  <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded bg-blue-600 text-white text-xs font-bold flex-shrink-0">
+                    {route.route_name}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm text-gray-900 font-medium">
+                    {route.direction ? `${t(locale, 'toward')} ${route.direction}` : route.route_name}
+                  </div>
                   <div className="text-xs text-gray-500 mt-0.5">
                     {t(locale, 'next_arrival')}: {route.next_arrival_minutes} {t(locale, 'min')}
                   </div>
-                ) : (
-                  <div className="text-xs text-gray-400 mt-0.5">{t(locale, 'no_predictions')}</div>
-                )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-3 text-sm text-gray-400">{t(locale, 'no_predictions')}</div>
+        )}
 
         <div className="mt-3">
           <a
