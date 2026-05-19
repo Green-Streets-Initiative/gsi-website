@@ -51,7 +51,7 @@ const ROUTE_COLORS: Record<string, string> = {
 function directionsUrl(lat: number, lng: number, mode: 'walking' | 'transit' | 'bicycling'): string {
   const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
   if (isIOS) {
-    const dirflg = mode === 'transit' ? 'r' : 'w'
+    const dirflg = mode === 'transit' ? 'r' : mode === 'bicycling' ? 'cy' : 'w'
     return `maps://maps.apple.com/?daddr=${lat},${lng}&dirflg=${dirflg}`
   }
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=${mode}`
@@ -314,12 +314,16 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
       })()
     : null
 
-  const bestBikeEst = nearestBluebike && bluebikeDistToUser
+  const ownBikeEst = walkDist ? bikeTimeMinutes(walkDist) : null
+  const blueBikeEst = nearestBluebike && bluebikeDistToUser
     ? (() => {
         const bikeRideDist = haversineMeters(nearestBluebike.lat, nearestBluebike.lng, destLat, destLng)
         return walkTimeMinutes(bluebikeDistToUser) + bikeTimeMinutes(bikeRideDist)
       })()
     : null
+  const bestBikeEst = ownBikeEst !== null && blueBikeEst !== null
+    ? Math.min(ownBikeEst, blueBikeEst)
+    : ownBikeEst ?? blueBikeEst
 
   type ModeKey = 'walk' | 'bus' | 'train' | 'bike'
   const modeEstimates: { key: ModeKey; est: number | null }[] = [
@@ -586,11 +590,34 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
 
             if (mode === 'bike') return (
               <Fragment key="bike">
-                {(nearestBluebike || bikeComfort) && (() => {
-                  const bikeRideDist = nearestBluebike ? haversineMeters(nearestBluebike.lat, nearestBluebike.lng, destLat, destLng) : null
-                  const bikeRideMin = bikeRideDist ? bikeTimeMinutes(bikeRideDist) : null
-                  const walkToStation = nearestBluebike && bluebikeDistToUser ? walkTimeMinutes(bluebikeDistToUser) : null
-                  const totalBikeTrip = walkToStation !== null && bikeRideMin !== null ? walkToStation + bikeRideMin : null
+                {/* Your bike — direct cycling directions */}
+                <ModeCard
+                  icon={<BicycleIcon size={20} className="text-green-700" />}
+                  title={t(locale, 'your_bike')}
+                  subtitle={walkDist
+                    ? `~${bikeTimeMinutes(walkDist)} ${t(locale, 'min')} · ${formatDistance(walkDist)}`
+                    : t(locale, 'grant_location')
+                  }
+                  action={
+                    <a
+                      href={directionsUrl(destLat, destLng, 'bicycling')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => handleDirections('bike')}
+                      className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
+                      style={{ backgroundColor: 'var(--accent)' }}
+                    >
+                      {t(locale, 'directions')}
+                    </a>
+                  }
+                />
+
+                {/* Bluebike — walk to station + ride */}
+                {nearestBluebike && (() => {
+                  const bikeRideDist = haversineMeters(nearestBluebike.lat, nearestBluebike.lng, destLat, destLng)
+                  const bikeRideMin = bikeTimeMinutes(bikeRideDist)
+                  const walkToStation = bluebikeDistToUser ? walkTimeMinutes(bluebikeDistToUser) : null
+                  const totalBikeTrip = walkToStation !== null ? walkToStation + bikeRideMin : null
                   return (
                   <div className="bg-gray-50 rounded-xl overflow-hidden">
                     <div className="p-4">
@@ -601,18 +628,6 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                           <span className="text-xs font-normal text-gray-500">~{totalBikeTrip} {t(locale, 'min')}</span>
                         )}
                       </div>
-
-                      {bikeComfort && (bikeComfort.segments || bikeComfort.rating) && (
-                        <div className="mb-3">
-                          <ComfortBar rating={bikeComfort.rating} segments={bikeComfort.segments} theme="light" />
-                          {bikeComfort.summary && (
-                            <p className="text-xs text-gray-500 mt-1.5">{bikeComfort.summary}</p>
-                          )}
-                        </div>
-                      )}
-                      {loadingComfort && !bikeComfort && (
-                        <div className="mb-3 text-xs text-gray-500">{t(locale, 'loading')}</div>
-                      )}
 
                       {nearestBluebike && (
                         <div className="flex items-start gap-3">
@@ -631,13 +646,13 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
                                 {nearestBluebike.num_docks_available} {t(locale, 'docks_free')}
                               </span>
-                              {bluebikeDistToUser && (
-                                <span className="text-gray-500">· {formatDistance(bluebikeDistToUser)}</span>
+                              {bluebikeDistToUser && walkToStation !== null && (
+                                <span className="text-gray-500">· {formatDistance(bluebikeDistToUser)} walk</span>
                               )}
                             </div>
                           </div>
                           <a
-                            href={directionsUrl(destLat, destLng, 'bicycling')}
+                            href={directionsUrl(nearestBluebike.lat, nearestBluebike.lng, 'walking')}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => handleDirections('bluebike')}
