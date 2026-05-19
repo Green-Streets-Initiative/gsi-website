@@ -160,7 +160,13 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         })
       }
 
-      setPredictions(preds.sort((a, b) => {
+      const userToDest = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, destLat, destLng)
+      const viable = preds.filter(p => {
+        const stopToDest = haversineMeters(p.stopLat, p.stopLng, destLat, destLng)
+        return stopToDest < userToDest
+      })
+
+      setPredictions(viable.sort((a, b) => {
         const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
         const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
         return da !== db ? da - db : a.minutesAway - b.minutesAway
@@ -170,7 +176,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     } finally {
       setLoadingPredictions(false)
     }
-  }, [hasLocation, effectivePosition])
+  }, [hasLocation, effectivePosition, destLat, destLng])
 
   const fetchTrainPreds = useCallback(async () => {
     try {
@@ -243,7 +249,13 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         })
       }
 
-      setTrainPredictions(preds.sort((a, b) => {
+      const userToDest = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, destLat, destLng)
+      const viable = preds.filter(p => {
+        const stopToDest = haversineMeters(p.stopLat, p.stopLng, destLat, destLng)
+        return stopToDest < userToDest
+      })
+
+      setTrainPredictions(viable.sort((a, b) => {
         const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
         const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
         return da !== db ? da - db : a.minutesAway - b.minutesAway
@@ -253,7 +265,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     } finally {
       setLoadingTrainPredictions(false)
     }
-  }, [hasLocation, effectivePosition])
+  }, [hasLocation, effectivePosition, destLat, destLng])
 
   useEffect(() => {
     fetchPredictions()
@@ -408,7 +420,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                               <BusIcon size={20} className="text-blue-600" />
                             </span>
                             <div className="min-w-0 flex-1">
-                              <div className="font-medium text-gray-900 text-sm flex items-center gap-2">
+                              <div className="font-medium text-gray-900 text-sm flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                 <span className="inline-flex items-center justify-center min-w-[1.75rem] px-1.5 py-0.5 rounded bg-blue-600 text-white text-xs font-bold">
                                   {pred.routeName}
                                 </span>
@@ -506,7 +518,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                               <TrainIcon size={20} style={{ color: pred.lineColor }} />
                             </span>
                             <div className="min-w-0 flex-1">
-                              <div className="font-medium text-gray-900 text-sm flex items-center gap-2">
+                              <div className="font-medium text-gray-900 text-sm flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                 <span className="inline-flex items-center justify-center min-w-[1.75rem] px-1.5 py-0.5 rounded text-white text-xs font-bold" style={{ backgroundColor: pred.lineColor }}>
                                   {pred.routeName}
                                 </span>
