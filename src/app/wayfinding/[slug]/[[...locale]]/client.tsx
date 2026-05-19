@@ -77,7 +77,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
 
   const handlePinSelect = useCallback((feature: SelectedFeature) => {
     setSelectedFeature(feature)
-    sheetRef.current?.snapTo('half')
+    setTimeout(() => sheetRef.current?.snapTo('half'), 50)
     trackEvent({ event: 'pin_tap', slug: event.slug, locale, type: feature.type, name: 'name' in feature.data ? (feature.data as WayfindingBusiness).name : '' })
   }, [event.slug, locale])
 
@@ -251,7 +251,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
 
           {/* Mobile: SmartCard sheet on pin tap */}
           {selectedFeature && (
-            <div className="absolute bottom-0 left-0 right-0 z-10 md:hidden">
+            <div className="absolute bottom-[108px] left-0 right-0 z-10 md:hidden">
               <BottomSheet
                 ref={sheetRef}
                 snap={sheetSnap}

@@ -57,6 +57,7 @@ export default function EventMap({
   const markersRef = useRef<maplibregl.Marker[]>([])
   const userMarkerRef = useRef<maplibregl.Marker | null>(null)
   const liveLoadedRef = useRef(false)
+  const markerClickedRef = useRef(false)
 
   const accentColor = event.accent_color
 
@@ -220,6 +221,10 @@ export default function EventMap({
       })
 
       map.on('click', () => {
+        if (markerClickedRef.current) {
+          markerClickedRef.current = false
+          return
+        }
         onMapTap()
       })
 
@@ -371,6 +376,7 @@ export default function EventMap({
     el.innerHTML = iconSvg
     el.addEventListener('click', (e) => {
       e.stopPropagation()
+      markerClickedRef.current = true
       onClick()
     })
 
