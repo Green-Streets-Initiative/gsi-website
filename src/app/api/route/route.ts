@@ -7,6 +7,7 @@ interface RouteRequest {
   origin: { lat: number; lng: number }
   destination: { lat: number; lng: number }
   modes: string[]
+  departureTime?: string
 }
 
 interface TransitStep {
@@ -16,6 +17,8 @@ interface TransitStep {
   numStops: number
   departureStop: string
   arrivalStop: string
+  departureStopLat?: number
+  departureStopLng?: number
 }
 
 interface RouteResult {
@@ -43,6 +46,7 @@ async function fetchGoogleRoute(
   origin: { lat: number; lng: number },
   destination: { lat: number; lng: number },
   mode: string,
+  departureTime?: string,
 ): Promise<RouteResult | null> {
   const body: Record<string, unknown> = {
     origin: {
@@ -54,12 +58,16 @@ async function fetchGoogleRoute(
     travelMode: mode,
   }
 
-  // Use 8:30 AM next weekday for all modes — shows rush hour conditions
-  const now = new Date()
-  const next = new Date(now)
-  next.setDate(now.getDate() + ((8 - now.getDay()) % 7 || 7)) // next Monday
-  next.setHours(8, 30, 0, 0)
-  body.departureTime = next.toISOString()
+  if (departureTime) {
+    body.departureTime = departureTime
+  } else {
+    // Default: 8:30 AM next weekday — shows rush hour conditions (for commute advisor)
+    const now = new Date()
+    const next = new Date(now)
+    next.setDate(now.getDate() + ((8 - now.getDay()) % 7 || 7)) // next Monday
+    next.setHours(8, 30, 0, 0)
+    body.departureTime = next.toISOString()
+  }
 
   if (mode === 'DRIVE') {
     body.routingPreference = 'TRAFFIC_AWARE'
@@ -78,6 +86,7 @@ async function fetchGoogleRoute(
     // Request transit step details for TRANSIT mode
     const fieldMask = mode === 'TRANSIT'
       ? 'routes.duration,routes.distanceMeters,routes.legs.steps.transitDetails'
+        + ',routes.legs.steps.startLocation,routes.legs.steps.endLocation'
       : 'routes.duration,routes.distanceMeters'
 
     const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
@@ -130,6 +139,8 @@ async function fetchGoogleRoute(
           const stopDetails = td.stopDetails as Record<string, unknown> | undefined
           const depStop = stopDetails?.departureStop as Record<string, unknown> | undefined
           const arrStop = stopDetails?.arrivalStop as Record<string, unknown> | undefined
+          const depLoc = depStop?.location as Record<string, unknown> | undefined
+          const depLatLng = depLoc?.latLng as Record<string, unknown> | undefined
           transitSteps.push({
             lineName: (line?.name || line?.nameShort || '') as string,
             lineShortName: (line?.nameShort || line?.name || '') as string,
@@ -137,6 +148,8 @@ async function fetchGoogleRoute(
             numStops: (td.stopCount || 0) as number,
             departureStop: (depStop?.name || '') as string,
             arrivalStop: (arrStop?.name || '') as string,
+            departureStopLat: depLatLng?.latitude as number | undefined,
+            departureStopLng: depLatLng?.longitude as number | undefined,
           })
         }
       }
@@ -160,7 +173,7 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { origin, destination, modes } = body
+  const { origin, destination, modes, departureTime } = body
 
   if (!origin?.lat || !origin?.lng || !destination?.lat || !destination?.lng) {
     return Response.json({ error: 'Missing origin or destination coordinates' }, { status: 400 })
@@ -220,7 +233,7 @@ export async function POST(req: Request) {
   if (modesToFetch.length > 0) {
     const results = await Promise.all(
       modesToFetch.map(mode =>
-        fetchGoogleRoute({ lat: oLat, lng: oLng }, { lat: dLat, lng: dLng }, mode)
+        fetchGoogleRoute({ lat: oLat, lng: oLng }, { lat: dLat, lng: dLng }, mode, departureTime)
       )
     )
 

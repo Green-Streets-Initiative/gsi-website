@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback, Fragment } from 'react'
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
 import type { WayfindingEvent, Locale, BluebikeStationLive } from '@/lib/wayfinding/types'
 import type { BikeComfort } from '@/lib/types/commute'
 import { t } from '@/lib/wayfinding/i18n'
-import { haversineMeters, formatDistance, walkTimeMinutes, bikeTimeMinutes, busTimeMinutes } from '@/lib/wayfinding/geo'
+import { haversineMeters, formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
 import { trackEvent } from '@/lib/wayfinding/telemetry'
 import { PersonWalkIcon, BusIcon, BicycleIcon, TrainIcon } from './WayfindingIcons'
 import ComfortBar from '@/components/commute/ComfortBar'
@@ -18,27 +18,27 @@ interface Props {
   onClose: () => void
 }
 
-interface MBTAPrediction {
-  routeId: string
-  routeName: string
-  direction: string
-  stopName: string
-  stopId: string
-  stopLat: number
-  stopLng: number
-  minutesAway: number
+interface TransitStep {
+  lineName: string
+  lineShortName: string
+  vehicleType: string
+  numStops: number
+  departureStop: string
+  arrivalStop: string
+  departureStopLat?: number
+  departureStopLng?: number
 }
 
-interface TrainPrediction {
-  routeId: string
-  routeName: string
-  direction: string
-  stopName: string
-  stopId: string
-  stopLat: number
-  stopLng: number
+interface RouteResult {
+  durationMins: number
+  distanceMiles: number
+  transitSteps?: TransitStep[]
+}
+
+interface MbtaRealtimePred {
   minutesAway: number
-  lineColor: string
+  routeId: string
+  stopId: string
 }
 
 const ROUTE_COLORS: Record<string, string> = {
@@ -46,6 +46,21 @@ const ROUTE_COLORS: Record<string, string> = {
   'Green-B': '#00843D', 'Green-C': '#00843D', 'Green-D': '#00843D', 'Green-E': '#00843D',
   'Red': '#DA291C',
   'Blue': '#003DA5',
+}
+
+function transitLineColor(step: TransitStep): string {
+  for (const [key, color] of Object.entries(ROUTE_COLORS)) {
+    if (step.lineName.includes(key) || step.lineShortName.includes(key)) return color
+  }
+  if (step.vehicleType === 'BUS') return '#2563EB'
+  if (step.vehicleType === 'SUBWAY' || step.vehicleType === 'HEAVY_RAIL') return '#E66300'
+  return '#6B7280'
+}
+
+function transitIcon(step: TransitStep) {
+  const color = transitLineColor(step)
+  if (step.vehicleType === 'BUS') return <BusIcon size={18} style={{ color }} />
+  return <TrainIcon size={18} style={{ color }} />
 }
 
 function directionsUrl(lat: number, lng: number, mode: 'walking' | 'transit' | 'bicycling'): string {
@@ -57,25 +72,30 @@ function directionsUrl(lat: number, lng: number, mode: 'walking' | 'transit' | '
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=${mode}`
 }
 
+function milesToDisplay(miles: number): string {
+  if (miles < 0.1) return `${Math.round(miles * 5280)} ft`
+  return `${miles.toFixed(1)} mi`
+}
+
 export default function GetMeThereModal({ event, locale, userPosition, bluebikes, onClose }: Props) {
-  const [predictions, setPredictions] = useState<MBTAPrediction[]>([])
-  const [trainPredictions, setTrainPredictions] = useState<TrainPrediction[]>([])
-  const [loadingPredictions, setLoadingPredictions] = useState(true)
-  const [loadingTrainPredictions, setLoadingTrainPredictions] = useState(true)
-  const [busExpanded, setBusExpanded] = useState(false)
-  const [trainExpanded, setTrainExpanded] = useState(false)
+  const [routeData, setRouteData] = useState<Record<string, RouteResult | null> | null>(null)
+  const [loadingRoutes, setLoadingRoutes] = useState(true)
+  const [mbtaPred, setMbtaPred] = useState<MbtaRealtimePred | null>(null)
+  const [loadingMbtaPred, setLoadingMbtaPred] = useState(false)
   const [bikeComfort, setBikeComfort] = useState<BikeComfort | null>(null)
   const [loadingComfort, setLoadingComfort] = useState(false)
   const [manualPosition, setManualPosition] = useState<{ lat: number; lng: number } | null>(null)
   const [addressValue, setAddressValue] = useState('')
+  const mbtaIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const destLat = event.center_lat
   const destLng = event.center_lng
   const effectivePosition = userPosition ?? manualPosition
   const hasLocation = !!effectivePosition
 
-  const walkDist = hasLocation ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, destLat, destLng) : null
-  const walkMin = walkDist ? walkTimeMinutes(walkDist) : null
+  const walkRoute = routeData?.WALK ?? null
+  const bikeRoute = routeData?.BICYCLE ?? null
+  const transitRoute = routeData?.TRANSIT ?? null
 
   const nearestBluebike = bluebikes
     .filter(s => s.num_bikes_available > 0)
@@ -90,235 +110,102 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, nearestBluebike.lat, nearestBluebike.lng)
     : null
 
-  const fetchPredictions = useCallback(async () => {
+  // Fetch all routes from Google via /api/route
+  const fetchRoutes = useCallback(async () => {
+    if (!hasLocation) { setLoadingRoutes(false); return }
+    setLoadingRoutes(true)
     try {
-      if (!hasLocation) { setLoadingPredictions(false); return }
-
-      const stopsRes = await fetch(
-        `https://api-v3.mbta.com/stops?filter[latitude]=${effectivePosition!.lat}&filter[longitude]=${effectivePosition!.lng}&filter[radius]=0.02&filter[route_type]=3`
-      )
-      const stopsData = await stopsRes.json()
-      const nearbyStopIds: string[] = []
-      const stopNameMap = new Map<string, string>()
-      const stopLocMap = new Map<string, { lat: number; lng: number }>()
-
-      for (const stop of stopsData.data || []) {
-        nearbyStopIds.push(stop.id)
-        const name = stop.attributes.name.replace(/(^|[.!?]\s+|@ )([a-z])/g, (_: string, prefix: string, letter: string) => prefix + letter.toUpperCase())
-        stopNameMap.set(stop.id, name)
-        stopLocMap.set(stop.id, { lat: stop.attributes.latitude, lng: stop.attributes.longitude })
-      }
-
-      if (nearbyStopIds.length === 0) { setLoadingPredictions(false); return }
-
-      const stopIds = nearbyStopIds.slice(0, 10)
-      const [predsResponse, routesRes] = await Promise.all([
-        fetch(`https://api-v3.mbta.com/predictions?filter[stop]=${stopIds.join(',')}&filter[route_type]=3&sort=departure_time&page[limit]=30`),
-        fetch(`https://api-v3.mbta.com/routes?filter[stop]=${stopIds.join(',')}&filter[type]=3`),
-      ])
-      const predsData = await predsResponse.json()
-      const routesData = await routesRes.json()
-
-      const routeMap = new Map<string, { name: string; directions: string[] }>()
-      for (const r of routesData.data || []) {
-        routeMap.set(r.id, {
-          name: r.id.replace(/^0*/, ''),
-          directions: r.attributes.direction_names || [],
-        })
-      }
-
-      const preds: MBTAPrediction[] = []
-      const fallbackPreds: MBTAPrediction[] = []
-      const seen = new Set<string>()
-      const seenFallback = new Set<string>()
-
-      for (const pred of predsData.data || []) {
-        const stopId = pred.relationships?.stop?.data?.id
-        const routeId = pred.relationships?.route?.data?.id
-        if (!stopId || !routeId) continue
-
-        const dirId = pred.attributes.direction_id
-        const key = `${routeId}-${dirId}`
-        const route = routeMap.get(routeId)
-        const stopLoc = stopLocMap.get(stopId)
-
-        const depTime = pred.attributes.departure_time
-        if (depTime) {
-          const diff = (new Date(depTime).getTime() - Date.now()) / 60000
-          if (diff < 0) continue
-          if (seen.has(key)) continue
-          seen.add(key)
-          preds.push({
-            routeId,
-            routeName: route?.name ?? routeId,
-            direction: route?.directions[dirId] ?? '',
-            stopName: stopNameMap.get(stopId) ?? stopId,
-            stopId,
-            stopLat: stopLoc?.lat ?? 0,
-            stopLng: stopLoc?.lng ?? 0,
-            minutesAway: Math.round(diff),
-          })
-        } else {
-          if (seenFallback.has(key) || seen.has(key)) continue
-          seenFallback.add(key)
-          fallbackPreds.push({
-            routeId,
-            routeName: route?.name ?? routeId,
-            direction: route?.directions[dirId] ?? '',
-            stopName: stopNameMap.get(stopId) ?? stopId,
-            stopId,
-            stopLat: stopLoc?.lat ?? 0,
-            stopLng: stopLoc?.lng ?? 0,
-            minutesAway: -1,
-          })
-        }
-      }
-
-      const userToDest = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, destLat, destLng)
-      const viabilityFilter = (p: MBTAPrediction) => {
-        const stopToDest = haversineMeters(p.stopLat, p.stopLng, destLat, destLng)
-        return stopToDest < userToDest
-      }
-      const sortByDistance = (a: MBTAPrediction, b: MBTAPrediction) => {
-        const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
-        const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
-        return da !== db ? da - db : a.minutesAway - b.minutesAway
-      }
-
-      const viableRealTime = preds.filter(viabilityFilter)
-      const viableFallback = fallbackPreds.filter(viabilityFilter)
-
-      setPredictions(
-        viableRealTime.length > 0
-          ? viableRealTime.sort(sortByDistance)
-          : viableFallback.sort(sortByDistance)
-      )
+      const res = await fetch('/api/route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          origin: { lat: effectivePosition!.lat, lng: effectivePosition!.lng },
+          destination: { lat: destLat, lng: destLng },
+          modes: ['WALK', 'BICYCLE', 'TRANSIT'],
+          departureTime: new Date().toISOString(),
+        }),
+      })
+      if (!res.ok) { setLoadingRoutes(false); return }
+      const data = await res.json()
+      setRouteData(data.routes)
     } catch {
       // fail silently
     } finally {
-      setLoadingPredictions(false)
+      setLoadingRoutes(false)
     }
   }, [hasLocation, effectivePosition, destLat, destLng])
 
-  const fetchTrainPreds = useCallback(async () => {
-    try {
-      if (!hasLocation) { setLoadingTrainPredictions(false); return }
+  // Surgical MBTA prediction: query for the specific stop+route Google identified
+  const fetchMbtaPrediction = useCallback(async () => {
+    if (!transitRoute?.transitSteps?.length) return
+    const firstStep = transitRoute.transitSteps[0]
+    if (!firstStep.departureStopLat || !firstStep.departureStopLng) return
 
+    setLoadingMbtaPred(true)
+    try {
+      const routeType = firstStep.vehicleType === 'BUS' ? '3' : '0,1'
+      // Find the MBTA stop near the departure stop Google identified
       const stopsRes = await fetch(
-        `https://api-v3.mbta.com/stops?filter[latitude]=${effectivePosition!.lat}&filter[longitude]=${effectivePosition!.lng}&filter[radius]=0.02&filter[route_type]=0,1`
+        `https://api-v3.mbta.com/stops?filter[latitude]=${firstStep.departureStopLat}&filter[longitude]=${firstStep.departureStopLng}&filter[radius]=0.003&filter[route_type]=${routeType}&page[limit]=5`
       )
       const stopsData = await stopsRes.json()
-      const nearbyStopIds: string[] = []
-      const stopNameMap = new Map<string, string>()
-      const stopLocMap = new Map<string, { lat: number; lng: number }>()
+      const stopIds = (stopsData.data || []).map((s: { id: string }) => s.id)
+      if (stopIds.length === 0) { setLoadingMbtaPred(false); return }
 
-      for (const stop of stopsData.data || []) {
-        nearbyStopIds.push(stop.id)
-        const name = stop.attributes.name.replace(/(^|[.!?]\s+|@ )([a-z])/g, (_: string, prefix: string, letter: string) => prefix + letter.toUpperCase())
-        stopNameMap.set(stop.id, name)
-        stopLocMap.set(stop.id, { lat: stop.attributes.latitude, lng: stop.attributes.longitude })
-      }
+      // Query predictions for those stops
+      const predsRes = await fetch(
+        `https://api-v3.mbta.com/predictions?filter[stop]=${stopIds.join(',')}&filter[route_type]=${routeType}&sort=departure_time&page[limit]=10`
+      )
+      const predsData = await predsRes.json()
 
-      if (nearbyStopIds.length === 0) { setLoadingTrainPredictions(false); return }
-
-      const stopIds = nearbyStopIds.slice(0, 10)
-      const [predsResponse, routesRes] = await Promise.all([
-        fetch(`https://api-v3.mbta.com/predictions?filter[stop]=${stopIds.join(',')}&filter[route_type]=0,1&sort=departure_time&page[limit]=30`),
-        fetch(`https://api-v3.mbta.com/routes?filter[stop]=${stopIds.join(',')}&filter[type]=0,1`),
-      ])
-      const predsData = await predsResponse.json()
-      const routesData = await routesRes.json()
-
-      const routeMap = new Map<string, { name: string; directions: string[] }>()
-      for (const r of routesData.data || []) {
-        routeMap.set(r.id, {
-          name: r.attributes.long_name ?? r.id,
-          directions: r.attributes.direction_destinations || r.attributes.direction_names || [],
-        })
-      }
-
-      const preds: TrainPrediction[] = []
-      const fallbackPreds: TrainPrediction[] = []
-      const seen = new Set<string>()
-      const seenFallback = new Set<string>()
+      const lineShort = firstStep.lineShortName.toLowerCase()
+      const lineName = firstStep.lineName.toLowerCase()
 
       for (const pred of predsData.data || []) {
-        const stopId = pred.relationships?.stop?.data?.id
-        const routeId = pred.relationships?.route?.data?.id
-        if (!stopId || !routeId) continue
-
-        const dirId = pred.attributes.direction_id
-        const key = `${routeId}-${dirId}`
-        const route = routeMap.get(routeId)
-        const stopLoc = stopLocMap.get(stopId)
-
         const depTime = pred.attributes.departure_time
-        if (depTime) {
-          const diff = (new Date(depTime).getTime() - Date.now()) / 60000
-          if (diff < 0) continue
-          if (seen.has(key)) continue
-          seen.add(key)
-          preds.push({
-            routeId,
-            routeName: route?.name ?? routeId,
-            direction: route?.directions[dirId] ?? '',
-            stopName: stopNameMap.get(stopId) ?? stopId,
-            stopId,
-            stopLat: stopLoc?.lat ?? 0,
-            stopLng: stopLoc?.lng ?? 0,
+        if (!depTime) continue
+        const diff = (new Date(depTime).getTime() - Date.now()) / 60000
+        if (diff < 0) continue
+        const routeId = pred.relationships?.route?.data?.id ?? ''
+        const routeLower = routeId.toLowerCase()
+        // Match by route ID containing the line short name or vice versa
+        if (routeLower.includes(lineShort) || lineShort.includes(routeLower) ||
+            routeLower.includes(lineName) || lineName.includes(routeLower) ||
+            routeId.replace(/^0*/, '') === firstStep.lineShortName) {
+          setMbtaPred({
             minutesAway: Math.round(diff),
-            lineColor: ROUTE_COLORS[routeId] ?? '#E66300',
-          })
-        } else {
-          if (seenFallback.has(key) || seen.has(key)) continue
-          seenFallback.add(key)
-          fallbackPreds.push({
             routeId,
-            routeName: route?.name ?? routeId,
-            direction: route?.directions[dirId] ?? '',
-            stopName: stopNameMap.get(stopId) ?? stopId,
-            stopId,
-            stopLat: stopLoc?.lat ?? 0,
-            stopLng: stopLoc?.lng ?? 0,
-            minutesAway: -1,
-            lineColor: ROUTE_COLORS[routeId] ?? '#E66300',
+            stopId: pred.relationships?.stop?.data?.id ?? '',
           })
+          setLoadingMbtaPred(false)
+          return
         }
       }
-
-      const userToDest = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, destLat, destLng)
-      const viabilityFilter = (p: TrainPrediction) => {
-        const stopToDest = haversineMeters(p.stopLat, p.stopLng, destLat, destLng)
-        return stopToDest < userToDest
-      }
-      const sortByDistance = (a: TrainPrediction, b: TrainPrediction) => {
-        const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
-        const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
-        return da !== db ? da - db : a.minutesAway - b.minutesAway
-      }
-
-      const viableRealTime = preds.filter(viabilityFilter)
-      const viableFallback = fallbackPreds.filter(viabilityFilter)
-
-      setTrainPredictions(
-        viableRealTime.length > 0
-          ? viableRealTime.sort(sortByDistance)
-          : viableFallback.sort(sortByDistance)
-      )
+      // No matching prediction found — might be off-hours
+      setMbtaPred(null)
     } catch {
       // fail silently
     } finally {
-      setLoadingTrainPredictions(false)
+      setLoadingMbtaPred(false)
     }
-  }, [hasLocation, effectivePosition, destLat, destLng])
+  }, [transitRoute])
 
+  // Fetch Google routes once on mount / location change
   useEffect(() => {
-    fetchPredictions()
-    fetchTrainPreds()
-    const interval = setInterval(() => { fetchPredictions(); fetchTrainPreds() }, 30000)
-    return () => clearInterval(interval)
-  }, [fetchPredictions, fetchTrainPreds])
+    fetchRoutes()
+  }, [fetchRoutes])
 
+  // Start MBTA polling once we have transit route data
+  useEffect(() => {
+    if (!transitRoute?.transitSteps?.length) return
+    fetchMbtaPrediction()
+    mbtaIntervalRef.current = setInterval(fetchMbtaPrediction, 30000)
+    return () => {
+      if (mbtaIntervalRef.current) clearInterval(mbtaIntervalRef.current)
+    }
+  }, [transitRoute, fetchMbtaPrediction])
+
+  // Bike comfort
   useEffect(() => {
     if (!hasLocation) return
     setLoadingComfort(true)
@@ -333,49 +220,20 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     trackEvent({ event: 'get_me_there', slug: event.slug, locale, mode })
   }
 
-  const visiblePredictions = busExpanded ? predictions : predictions.slice(0, 2)
-  const hasMoreBus = predictions.length > 2
-  const visibleTrainPredictions = trainExpanded ? trainPredictions : trainPredictions.slice(0, 2)
-  const hasMoreTrain = trainPredictions.length > 2
-
-  // Compute best trip estimates for sorting modes by duration
-  const bestBusEst = predictions.length > 0 && hasLocation
-    ? (() => {
-        const p = predictions[0]
-        const wd = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, p.stopLat, p.stopLng)
-        const wt = walkTimeMinutes(wd)
-        const br = busTimeMinutes(haversineMeters(p.stopLat, p.stopLng, destLat, destLng))
-        return wt + (p.minutesAway >= 0 ? p.minutesAway : 0) + br
-      })()
-    : null
-
-  const bestTrainEst = trainPredictions.length > 0 && hasLocation
-    ? (() => {
-        const p = trainPredictions[0]
-        const wd = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, p.stopLat, p.stopLng)
-        const wt = walkTimeMinutes(wd)
-        const tr = busTimeMinutes(haversineMeters(p.stopLat, p.stopLng, destLat, destLng))
-        return wt + (p.minutesAway >= 0 ? p.minutesAway : 0) + tr
-      })()
-    : null
-
-  const ownBikeEst = walkDist ? bikeTimeMinutes(walkDist) : null
+  // Bluebike trip estimate (haversine is fine for walk-to-nearest-station)
   const blueBikeEst = nearestBluebike && bluebikeDistToUser
     ? (() => {
         const bikeRideDist = haversineMeters(nearestBluebike.lat, nearestBluebike.lng, destLat, destLng)
         return walkTimeMinutes(bluebikeDistToUser) + bikeTimeMinutes(bikeRideDist)
       })()
     : null
-  const bestBikeEst = ownBikeEst !== null && blueBikeEst !== null
-    ? Math.min(ownBikeEst, blueBikeEst)
-    : ownBikeEst ?? blueBikeEst
 
-  type ModeKey = 'walk' | 'bus' | 'train' | 'bike'
+  // Mode ordering by Google durations
+  type ModeKey = 'walk' | 'transit' | 'bike'
   const modeEstimates: { key: ModeKey; est: number | null }[] = [
-    { key: 'walk', est: walkMin },
-    { key: 'bus', est: bestBusEst },
-    { key: 'train', est: bestTrainEst },
-    { key: 'bike', est: bestBikeEst },
+    { key: 'walk', est: walkRoute?.durationMins ?? null },
+    { key: 'transit', est: transitRoute?.durationMins ?? null },
+    { key: 'bike', est: bikeRoute?.durationMins ?? null },
   ]
   const modeOrder = modeEstimates
     .sort((a, b) => {
@@ -419,15 +277,21 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
             </div>
           )}
 
-          {modeOrder.map(mode => {
+          {loadingRoutes && hasLocation && (
+            <div className="bg-gray-50 rounded-xl p-4">
+              <span className="text-sm text-gray-500">{t(locale, 'loading')}</span>
+            </div>
+          )}
+
+          {!loadingRoutes && modeOrder.map(mode => {
             if (mode === 'walk') return (
               <ModeCard
                 key="walk"
                 icon={<PersonWalkIcon size={20} className="text-gray-700" />}
                 title={t(locale, 'arrival_walk')}
-                subtitle={walkMin !== null
-                  ? `${walkMin} ${t(locale, 'min')} · ${formatDistance(walkDist!)}`
-                  : t(locale, 'grant_location')
+                subtitle={walkRoute
+                  ? `${walkRoute.durationMins} ${t(locale, 'min')} · ${milesToDisplay(walkRoute.distanceMiles)}`
+                  : hasLocation ? t(locale, 'no_viable_route') : t(locale, 'grant_location')
                 }
                 action={
                   <a
@@ -444,100 +308,21 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
               />
             )
 
-            if (mode === 'bus') return (
-              <Fragment key="bus">
-                {loadingPredictions && predictions.length === 0 ? (
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <div className="flex items-center gap-3">
-                      <BusIcon size={20} className="text-blue-600" />
-                      <span className="text-sm text-gray-500">{t(locale, 'loading')}</span>
-                    </div>
-                  </div>
-                ) : predictions.length > 0 ? (
-                  <div className="bg-gray-50 rounded-xl overflow-hidden">
-                    <div className="divide-y divide-gray-100">
-                      {visiblePredictions.map((pred, i) => {
-                        const walkToStopDist = hasLocation ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, pred.stopLat, pred.stopLng) : null
-                        const walkToStop = walkToStopDist !== null ? walkTimeMinutes(walkToStopDist) : null
-                        const busRide = pred.stopLat ? busTimeMinutes(haversineMeters(pred.stopLat, pred.stopLng, destLat, destLng)) : null
-                        const hasRealTime = pred.minutesAway >= 0
-                        const tripEst = walkToStop !== null && busRide !== null
-                          ? walkToStop + (hasRealTime ? pred.minutesAway : 0) + busRide
-                          : null
-                        return (
-                        <div key={`${pred.routeId}-${pred.direction}-${i}`} className="p-4">
-                          <div className="flex items-start gap-3">
-                            <span className="flex-shrink-0 mt-0.5">
-                              <BusIcon size={20} className="text-blue-600" />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="font-medium text-gray-900 text-sm flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                <span className="inline-flex items-center justify-center min-w-[1.75rem] px-1.5 py-0.5 rounded bg-blue-600 text-white text-xs font-bold">
-                                  {pred.routeName}
-                                </span>
-                                <span>{t(locale, 'toward')} {pred.direction}</span>
-                                {tripEst !== null && (
-                                  <span className="text-xs font-normal text-gray-500">~{tripEst} {t(locale, 'min')}</span>
-                                )}
-                              </div>
-                              {hasRealTime ? (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>{' '}
-                                  <ArrivalPill minutes={pred.minutesAway} locale={locale} isNext />
-                                </div>
-                              ) : (
-                                <div className="text-xs text-gray-400 mt-1">{t(locale, 'no_predictions')}</div>
-                              )}
-                              <div className="text-xs text-gray-500 mt-0.5">
-                                {t(locale, 'board_at')} {pred.stopName}
-                                {walkToStopDist !== null && ` · ${formatDistance(walkToStopDist)}`}
-                              </div>
-                            </div>
-                            <a
-                              href={directionsUrl(destLat, destLng, 'transit')}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={() => handleDirections('bus')}
-                              className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
-                              style={{ backgroundColor: 'var(--accent)' }}
-                            >
-                              {t(locale, 'directions')}
-                            </a>
-                          </div>
-                        </div>
-                        )
-                      })}
-                    </div>
-                    {hasMoreBus && (
-                      <button
-                        onClick={() => setBusExpanded(!busExpanded)}
-                        className="w-full py-2.5 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors border-t border-gray-100"
-                      >
-                        {busExpanded ? t(locale, 'fewer_routes') : `${t(locale, 'more_routes')} (${predictions.length - 2})`}
-                      </button>
-                    )}
-                    <a
-                      href="https://www.gogreenstreets.org/guides/your-first-bus-ride"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block py-2.5 text-xs text-center text-gray-500 hover:text-gray-700 transition-colors border-t border-gray-100"
-                    >
-                      {t(locale, 'bus_guide')} →
-                    </a>
-                  </div>
-                ) : null}
-
-                {!loadingPredictions && predictions.length === 0 && hasLocation && (
+            if (mode === 'transit') {
+              if (!hasLocation) return null
+              if (!transitRoute || !transitRoute.transitSteps?.length) {
+                return (
                   <ModeCard
+                    key="transit"
                     icon={<BusIcon size={20} className="text-blue-600" />}
-                    title={t(locale, 'arrival_bus')}
+                    title={t(locale, 'transit')}
                     subtitle={t(locale, 'no_viable_route')}
                     action={
                       <a
                         href={directionsUrl(destLat, destLng, 'transit')}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={() => handleDirections('bus')}
+                        onClick={() => handleDirections('transit')}
                         className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
                         style={{ backgroundColor: 'var(--accent)' }}
                       >
@@ -545,116 +330,92 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                       </a>
                     }
                   />
-                )}
-              </Fragment>
-            )
+                )
+              }
 
-            if (mode === 'train') return (
-              <Fragment key="train">
-                {loadingTrainPredictions && trainPredictions.length === 0 ? (
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <div className="flex items-center gap-3">
-                      <TrainIcon size={20} className="text-orange-600" />
-                      <span className="text-sm text-gray-500">{t(locale, 'loading')}</span>
+              return (
+                <div key="transit" className="bg-gray-50 rounded-xl overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {transitIcon(transitRoute.transitSteps[0])}
+                        <span className="font-medium text-gray-900 text-sm">{t(locale, 'transit')}</span>
+                        <span className="text-xs text-gray-500">~{transitRoute.durationMins} {t(locale, 'min')}</span>
+                      </div>
+                      <a
+                        href={directionsUrl(destLat, destLng, 'transit')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => handleDirections('transit')}
+                        className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
+                        style={{ backgroundColor: 'var(--accent)' }}
+                      >
+                        {t(locale, 'directions')}
+                      </a>
                     </div>
-                  </div>
-                ) : trainPredictions.length > 0 ? (
-                  <div className="bg-gray-50 rounded-xl overflow-hidden">
-                    <div className="divide-y divide-gray-100">
-                      {visibleTrainPredictions.map((pred, i) => {
-                        const walkToStopDist = hasLocation ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, pred.stopLat, pred.stopLng) : null
-                        const walkToStop = walkToStopDist !== null ? walkTimeMinutes(walkToStopDist) : null
-                        const trainRide = pred.stopLat ? busTimeMinutes(haversineMeters(pred.stopLat, pred.stopLng, destLat, destLng)) : null
-                        const hasRealTime = pred.minutesAway >= 0
-                        const tripEst = walkToStop !== null && trainRide !== null
-                          ? walkToStop + (hasRealTime ? pred.minutesAway : 0) + trainRide
-                          : null
+
+                    <div className="space-y-2">
+                      {transitRoute.transitSteps.map((step, i) => {
+                        const color = transitLineColor(step)
+                        const badge = step.lineShortName || step.lineName
+                        const isFirst = i === 0
                         return (
-                        <div key={`${pred.routeId}-${pred.direction}-${i}`} className="p-4">
-                          <div className="flex items-start gap-3">
-                            <span className="flex-shrink-0 mt-0.5">
-                              <TrainIcon size={20} style={{ color: pred.lineColor }} />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="font-medium text-gray-900 text-sm flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                <span className="inline-flex items-center justify-center min-w-[1.75rem] px-1.5 py-0.5 rounded text-white text-xs font-bold" style={{ backgroundColor: pred.lineColor }}>
-                                  {pred.routeName}
-                                </span>
-                                <span>{t(locale, 'toward')} {pred.direction}</span>
-                                {tripEst !== null && (
-                                  <span className="text-xs font-normal text-gray-500">~{tripEst} {t(locale, 'min')}</span>
-                                )}
-                              </div>
-                              {hasRealTime ? (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>{' '}
-                                  <ArrivalPill minutes={pred.minutesAway} locale={locale} isNext />
-                                </div>
-                              ) : (
-                                <div className="text-xs text-gray-400 mt-1">{t(locale, 'no_predictions')}</div>
-                              )}
-                              <div className="text-xs text-gray-500 mt-0.5">
-                                {t(locale, 'board_at')} {pred.stopName}
-                                {walkToStopDist !== null && ` · ${formatDistance(walkToStopDist)}`}
-                              </div>
+                          <div key={i} className="flex items-start gap-2.5">
+                            <div className="flex-shrink-0 mt-0.5">
+                              {step.vehicleType === 'BUS'
+                                ? <BusIcon size={16} style={{ color }} />
+                                : <TrainIcon size={16} style={{ color }} />
+                              }
                             </div>
-                            <a
-                              href={directionsUrl(destLat, destLng, 'transit')}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={() => handleDirections('train')}
-                              className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
-                              style={{ backgroundColor: 'var(--accent)' }}
-                            >
-                              {t(locale, 'directions')}
-                            </a>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm">
+                                <span
+                                  className="inline-flex items-center justify-center min-w-[1.75rem] px-1.5 py-0.5 rounded text-white text-xs font-bold"
+                                  style={{ backgroundColor: color }}
+                                >
+                                  {badge}
+                                </span>
+                                <span className="text-gray-700">
+                                  {step.numStops} {t(locale, 'stops_to')} {step.arrivalStop}
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                {t(locale, 'board_at')} {step.departureStop}
+                              </div>
+                              {isFirst && mbtaPred && (
+                                <div className="mt-1">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                                    {t(locale, 'next_departure')}: {mbtaPred.minutesAway <= 0 ? 'Now' : `${mbtaPred.minutesAway} ${t(locale, 'min')}`}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
                         )
                       })}
                     </div>
-                    {hasMoreTrain && (
-                      <button
-                        onClick={() => setTrainExpanded(!trainExpanded)}
-                        className="w-full py-2.5 text-xs font-medium text-orange-600 hover:bg-orange-50 transition-colors border-t border-gray-100"
-                      >
-                        {trainExpanded ? t(locale, 'fewer_routes') : `${t(locale, 'more_routes')} (${trainPredictions.length - 2})`}
-                      </button>
-                    )}
                   </div>
-                ) : null}
-
-                {!loadingTrainPredictions && trainPredictions.length === 0 && hasLocation && (
-                  <ModeCard
-                    icon={<TrainIcon size={20} className="text-orange-600" />}
-                    title={t(locale, 'chip_train')}
-                    subtitle={t(locale, 'no_viable_route')}
-                    action={
-                      <a
-                        href={directionsUrl(destLat, destLng, 'transit')}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => handleDirections('train')}
-                        className="px-4 py-2 rounded-full text-sm font-semibold text-white flex-shrink-0"
-                        style={{ backgroundColor: 'var(--accent)' }}
-                      >
-                        {t(locale, 'directions')}
-                      </a>
-                    }
-                  />
-                )}
-              </Fragment>
-            )
+                  <a
+                    href="https://www.gogreenstreets.org/guides/your-first-bus-ride"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block py-2.5 text-xs text-center text-gray-500 hover:text-gray-700 transition-colors border-t border-gray-100"
+                  >
+                    {t(locale, 'bus_guide')} →
+                  </a>
+                </div>
+              )
+            }
 
             if (mode === 'bike') return (
               <Fragment key="bike">
-                {/* Your bike — direct cycling directions */}
+                {/* Your bike — Google-routed cycling directions */}
                 <ModeCard
                   icon={<BicycleIcon size={20} className="text-green-700" />}
                   title={t(locale, 'your_bike')}
-                  subtitle={walkDist
-                    ? `~${bikeTimeMinutes(walkDist)} ${t(locale, 'min')} · ${formatDistance(walkDist)}`
-                    : t(locale, 'grant_location')
+                  subtitle={bikeRoute
+                    ? `~${bikeRoute.durationMins} ${t(locale, 'min')} · ${milesToDisplay(bikeRoute.distanceMiles)}`
+                    : hasLocation ? t(locale, 'no_viable_route') : t(locale, 'grant_location')
                   }
                   action={
                     <a
@@ -761,20 +522,5 @@ function ModeCard({ icon, title, subtitle, action }: {
         {action}
       </div>
     </div>
-  )
-}
-
-function ArrivalPill({ minutes, locale, isNext }: { minutes: number; locale: Locale; isNext?: boolean }) {
-  const label = minutes <= 0 ? 'Now' : `${minutes} ${t(locale, 'min')}`
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-        isNext
-          ? 'bg-blue-100 text-blue-800'
-          : 'bg-blue-50 text-blue-600'
-      }`}
-    >
-      {label}
-    </span>
   )
 }
