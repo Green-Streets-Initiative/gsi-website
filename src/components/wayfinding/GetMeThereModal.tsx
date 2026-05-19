@@ -174,6 +174,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         }))
       } else {
         const fallback: MBTAPrediction[] = []
+        const unviableBus: MBTAPrediction[] = []
         const seenFallback = new Set<string>()
         for (const [routeId, route] of routeMap) {
           for (let dirId = 0; dirId < route.directions.length; dirId++) {
@@ -188,9 +189,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                 haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.loc!.lat, b.loc!.lng)
               )[0]
             if (!nearestStop?.loc) continue
-            const stopToDest = haversineMeters(nearestStop.loc.lat, nearestStop.loc.lng, destLat, destLng)
-            if (stopToDest >= userToDest) continue
-            fallback.push({
+            const entry: MBTAPrediction = {
               routeId,
               routeName: route.name,
               direction: route.directions[dirId] ?? '',
@@ -199,10 +198,17 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
               stopLat: nearestStop.loc.lat,
               stopLng: nearestStop.loc.lng,
               minutesAway: -1,
-            })
+            }
+            const stopToDest = haversineMeters(nearestStop.loc.lat, nearestStop.loc.lng, destLat, destLng)
+            if (stopToDest < userToDest) {
+              fallback.push(entry)
+            } else {
+              unviableBus.push(entry)
+            }
           }
         }
-        setPredictions(fallback.sort((a, b) => {
+        const busResults = fallback.length > 0 ? fallback : unviableBus
+        setPredictions(busResults.sort((a, b) => {
           const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
           const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
           return da - db
@@ -300,6 +306,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         }))
       } else {
         const fallback: TrainPrediction[] = []
+        const unviable: TrainPrediction[] = []
         const seenFallback = new Set<string>()
         for (const [routeId, route] of routeMap) {
           for (let dirId = 0; dirId < route.directions.length; dirId++) {
@@ -314,9 +321,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                 haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.loc!.lat, b.loc!.lng)
               )[0]
             if (!nearestStop?.loc) continue
-            const stopToDest = haversineMeters(nearestStop.loc.lat, nearestStop.loc.lng, destLat, destLng)
-            if (stopToDest >= userToDest) continue
-            fallback.push({
+            const entry: TrainPrediction = {
               routeId,
               routeName: route.name,
               direction: route.directions[dirId] ?? '',
@@ -326,10 +331,17 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
               stopLng: nearestStop.loc.lng,
               minutesAway: -1,
               lineColor: ROUTE_COLORS[routeId] ?? '#E66300',
-            })
+            }
+            const stopToDest = haversineMeters(nearestStop.loc.lat, nearestStop.loc.lng, destLat, destLng)
+            if (stopToDest < userToDest) {
+              fallback.push(entry)
+            } else {
+              unviable.push(entry)
+            }
           }
         }
-        setTrainPredictions(fallback.sort((a, b) => {
+        const results = fallback.length > 0 ? fallback : unviable
+        setTrainPredictions(results.sort((a, b) => {
           const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
           const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
           return da - db
