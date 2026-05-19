@@ -103,7 +103,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
     haversineMeters(refLat, refLng, a.lat, a.lng) - haversineMeters(refLat, refLng, b.lat, b.lng)
   )
 
-  const sortedBluebikes = [...bluebikes].sort((a, b) => a.distance_meters - b.distance_meters)
+  const sortedBluebikes = useMemo(() => [...bluebikes].sort((a, b) => a.distance_meters - b.distance_meters), [bluebikes])
   const sortedMbta = [...mbtaStops].sort((a, b) => a.distance_meters - b.distance_meters)
   const sortedTrainStops = [...trainStops].sort((a, b) => a.distance_meters - b.distance_meters)
   const sortedBikeParking = [...bikeParking].sort((a, b) => a.distance_meters - b.distance_meters)

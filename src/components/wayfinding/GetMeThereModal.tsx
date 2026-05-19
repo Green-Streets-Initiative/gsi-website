@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react'
 import type { WayfindingEvent, Locale, BluebikeStationLive } from '@/lib/wayfinding/types'
 import type { BikeComfort } from '@/lib/types/commute'
 import { t } from '@/lib/wayfinding/i18n'
@@ -98,14 +98,17 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
   const bikeRoute = routeData?.BICYCLE ?? null
   const transitRoute = routeData?.TRANSIT ?? null
 
-  const nearestBluebike = bluebikes
-    .filter(s => s.num_bikes_available > 0)
-    .sort((a, b) => {
-      if (!hasLocation) return a.distance_meters - b.distance_meters
-      const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.lat, a.lng)
-      const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.lat, b.lng)
-      return da - db
-    })[0] ?? null
+  const nearestBluebike = useMemo(() =>
+    bluebikes
+      .filter(s => s.num_bikes_available > 0)
+      .sort((a, b) => {
+        if (!hasLocation) return a.distance_meters - b.distance_meters
+        const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.lat, a.lng)
+        const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.lat, b.lng)
+        return da - db
+      })[0] ?? null,
+    [bluebikes, hasLocation, effectivePosition]
+  )
 
   const bluebikeDistToUser = nearestBluebike && hasLocation
     ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, nearestBluebike.lat, nearestBluebike.lng)
