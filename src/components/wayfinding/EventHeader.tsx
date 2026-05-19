@@ -13,7 +13,7 @@ interface Props {
 function formatDate(dateStr: string, locale: Locale): string {
   const date = new Date(dateStr + 'T00:00:00')
   const loc = locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US'
-  return date.toLocaleDateString(loc, { weekday: 'short', month: 'short', day: 'numeric' })
+  return date.toLocaleDateString(loc, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function formatTime(timeStr: string): string {
