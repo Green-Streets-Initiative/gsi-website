@@ -58,15 +58,17 @@ async function fetchGoogleRoute(
     travelMode: mode,
   }
 
-  if (departureTime) {
-    body.departureTime = departureTime
-  } else {
-    // Default: 8:30 AM next weekday — shows rush hour conditions (for commute advisor)
-    const now = new Date()
-    const next = new Date(now)
-    next.setDate(now.getDate() + ((8 - now.getDay()) % 7 || 7)) // next Monday
-    next.setHours(8, 30, 0, 0)
-    body.departureTime = next.toISOString()
+  // departureTime only applies to DRIVE and TRANSIT — Google rejects it for WALK/BICYCLE
+  if (mode === 'DRIVE' || mode === 'TRANSIT') {
+    if (departureTime) {
+      body.departureTime = departureTime
+    } else {
+      const now = new Date()
+      const next = new Date(now)
+      next.setDate(now.getDate() + ((8 - now.getDay()) % 7 || 7)) // next Monday
+      next.setHours(8, 30, 0, 0)
+      body.departureTime = next.toISOString()
+    }
   }
 
   if (mode === 'DRIVE') {
