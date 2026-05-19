@@ -166,11 +166,48 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         return stopToDest < userToDest
       })
 
-      setPredictions(viable.sort((a, b) => {
-        const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
-        const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
-        return da !== db ? da - db : a.minutesAway - b.minutesAway
-      }))
+      if (viable.length > 0) {
+        setPredictions(viable.sort((a, b) => {
+          const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
+          const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
+          return da !== db ? da - db : a.minutesAway - b.minutesAway
+        }))
+      } else {
+        const fallback: MBTAPrediction[] = []
+        const seenFallback = new Set<string>()
+        for (const [routeId, route] of routeMap) {
+          for (let dirId = 0; dirId < route.directions.length; dirId++) {
+            const key = `${routeId}-${dirId}`
+            if (seenFallback.has(key)) continue
+            seenFallback.add(key)
+            const nearestStop = nearbyStopIds
+              .map(sid => ({ sid, loc: stopLocMap.get(sid) }))
+              .filter(s => s.loc)
+              .sort((a, b) =>
+                haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.loc!.lat, a.loc!.lng) -
+                haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.loc!.lat, b.loc!.lng)
+              )[0]
+            if (!nearestStop?.loc) continue
+            const stopToDest = haversineMeters(nearestStop.loc.lat, nearestStop.loc.lng, destLat, destLng)
+            if (stopToDest >= userToDest) continue
+            fallback.push({
+              routeId,
+              routeName: route.name,
+              direction: route.directions[dirId] ?? '',
+              stopName: stopNameMap.get(nearestStop.sid) ?? nearestStop.sid,
+              stopId: nearestStop.sid,
+              stopLat: nearestStop.loc.lat,
+              stopLng: nearestStop.loc.lng,
+              minutesAway: -1,
+            })
+          }
+        }
+        setPredictions(fallback.sort((a, b) => {
+          const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
+          const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
+          return da - db
+        }))
+      }
     } catch {
       // fail silently
     } finally {
@@ -255,11 +292,49 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         return stopToDest < userToDest
       })
 
-      setTrainPredictions(viable.sort((a, b) => {
-        const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
-        const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
-        return da !== db ? da - db : a.minutesAway - b.minutesAway
-      }))
+      if (viable.length > 0) {
+        setTrainPredictions(viable.sort((a, b) => {
+          const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
+          const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
+          return da !== db ? da - db : a.minutesAway - b.minutesAway
+        }))
+      } else {
+        const fallback: TrainPrediction[] = []
+        const seenFallback = new Set<string>()
+        for (const [routeId, route] of routeMap) {
+          for (let dirId = 0; dirId < route.directions.length; dirId++) {
+            const key = `${routeId}-${dirId}`
+            if (seenFallback.has(key)) continue
+            seenFallback.add(key)
+            const nearestStop = nearbyStopIds
+              .map(sid => ({ sid, loc: stopLocMap.get(sid) }))
+              .filter(s => s.loc)
+              .sort((a, b) =>
+                haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.loc!.lat, a.loc!.lng) -
+                haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.loc!.lat, b.loc!.lng)
+              )[0]
+            if (!nearestStop?.loc) continue
+            const stopToDest = haversineMeters(nearestStop.loc.lat, nearestStop.loc.lng, destLat, destLng)
+            if (stopToDest >= userToDest) continue
+            fallback.push({
+              routeId,
+              routeName: route.name,
+              direction: route.directions[dirId] ?? '',
+              stopName: stopNameMap.get(nearestStop.sid) ?? nearestStop.sid,
+              stopId: nearestStop.sid,
+              stopLat: nearestStop.loc.lat,
+              stopLng: nearestStop.loc.lng,
+              minutesAway: -1,
+              lineColor: ROUTE_COLORS[routeId] ?? '#E66300',
+            })
+          }
+        }
+        setTrainPredictions(fallback.sort((a, b) => {
+          const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
+          const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
+          return da - db
+        }))
+      }
     } catch {
       // fail silently
     } finally {
@@ -300,7 +375,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         const wd = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, p.stopLat, p.stopLng)
         const wt = walkTimeMinutes(wd)
         const br = busTimeMinutes(haversineMeters(p.stopLat, p.stopLng, destLat, destLng))
-        return wt + p.minutesAway + br
+        return wt + (p.minutesAway >= 0 ? p.minutesAway : 0) + br
       })()
     : null
 
@@ -310,7 +385,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         const wd = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, p.stopLat, p.stopLng)
         const wt = walkTimeMinutes(wd)
         const tr = busTimeMinutes(haversineMeters(p.stopLat, p.stopLng, destLat, destLng))
-        return wt + p.minutesAway + tr
+        return wt + (p.minutesAway >= 0 ? p.minutesAway : 0) + tr
       })()
     : null
 
@@ -416,7 +491,10 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                         const walkToStopDist = hasLocation ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, pred.stopLat, pred.stopLng) : null
                         const walkToStop = walkToStopDist !== null ? walkTimeMinutes(walkToStopDist) : null
                         const busRide = pred.stopLat ? busTimeMinutes(haversineMeters(pred.stopLat, pred.stopLng, destLat, destLng)) : null
-                        const tripEst = walkToStop !== null && busRide !== null ? walkToStop + pred.minutesAway + busRide : null
+                        const hasRealTime = pred.minutesAway >= 0
+                        const tripEst = walkToStop !== null && busRide !== null
+                          ? walkToStop + (hasRealTime ? pred.minutesAway : 0) + busRide
+                          : null
                         return (
                         <div key={`${pred.routeId}-${pred.direction}-${i}`} className="p-4">
                           <div className="flex items-start gap-3">
@@ -433,10 +511,14 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                                   <span className="text-xs font-normal text-gray-500">~{tripEst} {t(locale, 'min')}</span>
                                 )}
                               </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>{' '}
-                                <ArrivalPill minutes={pred.minutesAway} locale={locale} isNext />
-                              </div>
+                              {hasRealTime ? (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>{' '}
+                                  <ArrivalPill minutes={pred.minutesAway} locale={locale} isNext />
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-400 mt-1">{t(locale, 'no_predictions')}</div>
+                              )}
                               <div className="text-xs text-gray-500 mt-0.5">
                                 {t(locale, 'board_at')} {pred.stopName}
                                 {walkToStopDist !== null && ` · ${formatDistance(walkToStopDist)}`}
@@ -514,7 +596,10 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                         const walkToStopDist = hasLocation ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, pred.stopLat, pred.stopLng) : null
                         const walkToStop = walkToStopDist !== null ? walkTimeMinutes(walkToStopDist) : null
                         const trainRide = pred.stopLat ? busTimeMinutes(haversineMeters(pred.stopLat, pred.stopLng, destLat, destLng)) : null
-                        const tripEst = walkToStop !== null && trainRide !== null ? walkToStop + pred.minutesAway + trainRide : null
+                        const hasRealTime = pred.minutesAway >= 0
+                        const tripEst = walkToStop !== null && trainRide !== null
+                          ? walkToStop + (hasRealTime ? pred.minutesAway : 0) + trainRide
+                          : null
                         return (
                         <div key={`${pred.routeId}-${pred.direction}-${i}`} className="p-4">
                           <div className="flex items-start gap-3">
@@ -531,10 +616,14 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                                   <span className="text-xs font-normal text-gray-500">~{tripEst} {t(locale, 'min')}</span>
                                 )}
                               </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>{' '}
-                                <ArrivalPill minutes={pred.minutesAway} locale={locale} isNext />
-                              </div>
+                              {hasRealTime ? (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  <span className="text-gray-600 font-medium">{t(locale, 'next_arrival')}:</span>{' '}
+                                  <ArrivalPill minutes={pred.minutesAway} locale={locale} isNext />
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-400 mt-1">{t(locale, 'no_predictions')}</div>
+                              )}
                               <div className="text-xs text-gray-500 mt-0.5">
                                 {t(locale, 'board_at')} {pred.stopName}
                                 {walkToStopDist !== null && ` · ${formatDistance(walkToStopDist)}`}

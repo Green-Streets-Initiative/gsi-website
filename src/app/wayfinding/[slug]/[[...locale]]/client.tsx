@@ -172,7 +172,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
                       >
                         <img src="/assets/wayfinding/shift-wordmark.png" alt="Shift" className="h-3" />
-                        <span className="text-[10px] text-gray-500 font-medium">Rewards Partner</span>
+                        <span className="text-[10px] text-gray-500 font-medium">Rewards Partner ↗</span>
                       </a>
                     )}
                   </div>
