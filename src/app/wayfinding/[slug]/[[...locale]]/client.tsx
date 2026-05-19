@@ -298,7 +298,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
                       shiftFilter
                         ? 'bg-orange-100 text-orange-800'
-                        : 'bg-gray-100 text-gray-400'
+                        : 'bg-gray-100 text-gray-500'
                     }`}
                   >
                     <img src="/assets/wayfinding/shift-wordmark.png" alt="" className="h-2.5 opacity-60" />
@@ -315,7 +315,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                       className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
                         active
                           ? 'bg-orange-100 text-orange-800'
-                          : 'bg-gray-100 text-gray-400'
+                          : 'bg-gray-100 text-gray-500'
                       }`}
                     >
                       {CatIcon && <CatIcon size={14} />}
@@ -401,7 +401,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
                     shiftFilter
                       ? 'bg-orange-100 text-orange-800'
-                      : 'bg-gray-100 text-gray-400'
+                      : 'bg-gray-100 text-gray-500'
                   }`}
                 >
                   <img src="/assets/wayfinding/shift-wordmark.png" alt="" className="h-2.5 opacity-60" />
@@ -418,7 +418,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
                       active
                         ? 'bg-orange-100 text-orange-800'
-                        : 'bg-gray-100 text-gray-400'
+                        : 'bg-gray-100 text-gray-500'
                     }`}
                   >
                     {CatIcon && <CatIcon size={14} />}
