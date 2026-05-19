@@ -438,7 +438,6 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
         <div className="px-5 pb-8 space-y-3 max-h-[70vh] overflow-y-auto">
           {!userPosition && (
             <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-2">{t(locale, 'or_enter_address')}</p>
               <AddressAutocomplete
                 value={addressValue}
                 onChange={setAddressValue}
