@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
 import type { WayfindingEvent, Locale, BluebikeStationLive } from '@/lib/wayfinding/types'
 import type { BikeComfort } from '@/lib/types/commute'
 import { t } from '@/lib/wayfinding/i18n'
-import { haversineMeters, formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
+import { haversineMeters, formatDistance, walkTimeMinutes } from '@/lib/wayfinding/geo'
 import { trackEvent } from '@/lib/wayfinding/telemetry'
 import { PersonWalkIcon, BusIcon, BicycleIcon, TrainIcon } from './WayfindingIcons'
 import ComfortBar from '@/components/commute/ComfortBar'
@@ -82,6 +82,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
   const [loadingRoutes, setLoadingRoutes] = useState(true)
   const [mbtaPred, setMbtaPred] = useState<MbtaRealtimePred | null>(null)
   const [loadingMbtaPred, setLoadingMbtaPred] = useState(false)
+  const [bluebikeRoute, setBluebikeRoute] = useState<RouteResult | null>(null)
   const [bikeComfort, setBikeComfort] = useState<BikeComfort | null>(null)
   const [loadingComfort, setLoadingComfort] = useState(false)
   const [manualPosition, setManualPosition] = useState<{ lat: number; lng: number } | null>(null)
@@ -205,6 +206,23 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     }
   }, [transitRoute, fetchMbtaPrediction])
 
+  // Fetch Google BICYCLE route from nearest Bluebike station to destination
+  useEffect(() => {
+    if (!nearestBluebike) return
+    fetch('/api/route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        origin: { lat: nearestBluebike.lat, lng: nearestBluebike.lng },
+        destination: { lat: destLat, lng: destLng },
+        modes: ['BICYCLE'],
+      }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.routes?.BICYCLE) setBluebikeRoute(data.routes.BICYCLE) })
+      .catch(() => {})
+  }, [nearestBluebike, destLat, destLng])
+
   // Bike comfort
   useEffect(() => {
     if (!hasLocation) return
@@ -220,12 +238,8 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     trackEvent({ event: 'get_me_there', slug: event.slug, locale, mode })
   }
 
-  // Bluebike trip estimate (haversine is fine for walk-to-nearest-station)
-  const blueBikeEst = nearestBluebike && bluebikeDistToUser
-    ? (() => {
-        const bikeRideDist = haversineMeters(nearestBluebike.lat, nearestBluebike.lng, destLat, destLng)
-        return walkTimeMinutes(bluebikeDistToUser) + bikeTimeMinutes(bikeRideDist)
-      })()
+  const blueBikeEst = bluebikeRoute && bluebikeDistToUser
+    ? walkTimeMinutes(bluebikeDistToUser) + bluebikeRoute.durationMins
     : null
 
   // Mode ordering by Google durations
@@ -433,10 +447,8 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
 
                 {/* Bluebike — walk to station + ride */}
                 {nearestBluebike && (() => {
-                  const bikeRideDist = haversineMeters(nearestBluebike.lat, nearestBluebike.lng, destLat, destLng)
-                  const bikeRideMin = bikeTimeMinutes(bikeRideDist)
                   const walkToStation = bluebikeDistToUser ? walkTimeMinutes(bluebikeDistToUser) : null
-                  const totalBikeTrip = walkToStation !== null ? walkToStation + bikeRideMin : null
+                  const totalBikeTrip = blueBikeEst
                   return (
                   <div className="bg-gray-50 rounded-xl overflow-hidden">
                     <div className="p-4">
