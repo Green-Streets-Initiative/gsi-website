@@ -128,92 +128,71 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
       }
 
       const preds: MBTAPrediction[] = []
+      const fallbackPreds: MBTAPrediction[] = []
       const seen = new Set<string>()
+      const seenFallback = new Set<string>()
 
       for (const pred of predsData.data || []) {
         const stopId = pred.relationships?.stop?.data?.id
         const routeId = pred.relationships?.route?.data?.id
         if (!stopId || !routeId) continue
 
-        const depTime = pred.attributes.departure_time
-        if (!depTime) continue
-        const diff = (new Date(depTime).getTime() - Date.now()) / 60000
-        if (diff < 0) continue
-
         const dirId = pred.attributes.direction_id
         const key = `${routeId}-${dirId}`
-        if (seen.has(key)) continue
-        seen.add(key)
-
         const route = routeMap.get(routeId)
         const stopLoc = stopLocMap.get(stopId)
 
-        preds.push({
-          routeId,
-          routeName: route?.name ?? routeId,
-          direction: route?.directions[dirId] ?? '',
-          stopName: stopNameMap.get(stopId) ?? stopId,
-          stopId,
-          stopLat: stopLoc?.lat ?? 0,
-          stopLng: stopLoc?.lng ?? 0,
-          minutesAway: Math.round(diff),
-        })
+        const depTime = pred.attributes.departure_time
+        if (depTime) {
+          const diff = (new Date(depTime).getTime() - Date.now()) / 60000
+          if (diff < 0) continue
+          if (seen.has(key)) continue
+          seen.add(key)
+          preds.push({
+            routeId,
+            routeName: route?.name ?? routeId,
+            direction: route?.directions[dirId] ?? '',
+            stopName: stopNameMap.get(stopId) ?? stopId,
+            stopId,
+            stopLat: stopLoc?.lat ?? 0,
+            stopLng: stopLoc?.lng ?? 0,
+            minutesAway: Math.round(diff),
+          })
+        } else {
+          if (seenFallback.has(key) || seen.has(key)) continue
+          seenFallback.add(key)
+          fallbackPreds.push({
+            routeId,
+            routeName: route?.name ?? routeId,
+            direction: route?.directions[dirId] ?? '',
+            stopName: stopNameMap.get(stopId) ?? stopId,
+            stopId,
+            stopLat: stopLoc?.lat ?? 0,
+            stopLng: stopLoc?.lng ?? 0,
+            minutesAway: -1,
+          })
+        }
       }
 
       const userToDest = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, destLat, destLng)
-      const viable = preds.filter(p => {
+      const viabilityFilter = (p: MBTAPrediction) => {
         const stopToDest = haversineMeters(p.stopLat, p.stopLng, destLat, destLng)
         return stopToDest < userToDest
-      })
-
-      if (viable.length > 0) {
-        setPredictions(viable.sort((a, b) => {
-          const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
-          const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
-          return da !== db ? da - db : a.minutesAway - b.minutesAway
-        }))
-      } else {
-        const fallback: MBTAPrediction[] = []
-        const unviableBus: MBTAPrediction[] = []
-        const seenFallback = new Set<string>()
-        for (const [routeId, route] of routeMap) {
-          for (let dirId = 0; dirId < route.directions.length; dirId++) {
-            const key = `${routeId}-${dirId}`
-            if (seenFallback.has(key)) continue
-            seenFallback.add(key)
-            const nearestStop = nearbyStopIds
-              .map(sid => ({ sid, loc: stopLocMap.get(sid) }))
-              .filter(s => s.loc)
-              .sort((a, b) =>
-                haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.loc!.lat, a.loc!.lng) -
-                haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.loc!.lat, b.loc!.lng)
-              )[0]
-            if (!nearestStop?.loc) continue
-            const entry: MBTAPrediction = {
-              routeId,
-              routeName: route.name,
-              direction: route.directions[dirId] ?? '',
-              stopName: stopNameMap.get(nearestStop.sid) ?? nearestStop.sid,
-              stopId: nearestStop.sid,
-              stopLat: nearestStop.loc.lat,
-              stopLng: nearestStop.loc.lng,
-              minutesAway: -1,
-            }
-            const stopToDest = haversineMeters(nearestStop.loc.lat, nearestStop.loc.lng, destLat, destLng)
-            if (stopToDest < userToDest) {
-              fallback.push(entry)
-            } else {
-              unviableBus.push(entry)
-            }
-          }
-        }
-        const busResults = fallback.length > 0 ? fallback : unviableBus
-        setPredictions(busResults.sort((a, b) => {
-          const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
-          const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
-          return da - db
-        }))
       }
+      const sortByDistance = (a: MBTAPrediction, b: MBTAPrediction) => {
+        const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
+        const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
+        return da !== db ? da - db : a.minutesAway - b.minutesAway
+      }
+
+      const viableRealTime = preds.filter(viabilityFilter)
+      const viableFallback = fallbackPreds.filter(viabilityFilter)
+
+      setPredictions(
+        viableRealTime.length > 0
+          ? viableRealTime.sort(sortByDistance)
+          : viableFallback.sort(sortByDistance)
+      )
     } catch {
       // fail silently
     } finally {
@@ -259,94 +238,73 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
       }
 
       const preds: TrainPrediction[] = []
+      const fallbackPreds: TrainPrediction[] = []
       const seen = new Set<string>()
+      const seenFallback = new Set<string>()
 
       for (const pred of predsData.data || []) {
         const stopId = pred.relationships?.stop?.data?.id
         const routeId = pred.relationships?.route?.data?.id
         if (!stopId || !routeId) continue
 
-        const depTime = pred.attributes.departure_time
-        if (!depTime) continue
-        const diff = (new Date(depTime).getTime() - Date.now()) / 60000
-        if (diff < 0) continue
-
         const dirId = pred.attributes.direction_id
         const key = `${routeId}-${dirId}`
-        if (seen.has(key)) continue
-        seen.add(key)
-
         const route = routeMap.get(routeId)
         const stopLoc = stopLocMap.get(stopId)
 
-        preds.push({
-          routeId,
-          routeName: route?.name ?? routeId,
-          direction: route?.directions[dirId] ?? '',
-          stopName: stopNameMap.get(stopId) ?? stopId,
-          stopId,
-          stopLat: stopLoc?.lat ?? 0,
-          stopLng: stopLoc?.lng ?? 0,
-          minutesAway: Math.round(diff),
-          lineColor: ROUTE_COLORS[routeId] ?? '#E66300',
-        })
+        const depTime = pred.attributes.departure_time
+        if (depTime) {
+          const diff = (new Date(depTime).getTime() - Date.now()) / 60000
+          if (diff < 0) continue
+          if (seen.has(key)) continue
+          seen.add(key)
+          preds.push({
+            routeId,
+            routeName: route?.name ?? routeId,
+            direction: route?.directions[dirId] ?? '',
+            stopName: stopNameMap.get(stopId) ?? stopId,
+            stopId,
+            stopLat: stopLoc?.lat ?? 0,
+            stopLng: stopLoc?.lng ?? 0,
+            minutesAway: Math.round(diff),
+            lineColor: ROUTE_COLORS[routeId] ?? '#E66300',
+          })
+        } else {
+          if (seenFallback.has(key) || seen.has(key)) continue
+          seenFallback.add(key)
+          fallbackPreds.push({
+            routeId,
+            routeName: route?.name ?? routeId,
+            direction: route?.directions[dirId] ?? '',
+            stopName: stopNameMap.get(stopId) ?? stopId,
+            stopId,
+            stopLat: stopLoc?.lat ?? 0,
+            stopLng: stopLoc?.lng ?? 0,
+            minutesAway: -1,
+            lineColor: ROUTE_COLORS[routeId] ?? '#E66300',
+          })
+        }
       }
 
       const userToDest = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, destLat, destLng)
-      const viable = preds.filter(p => {
+      const viabilityFilter = (p: TrainPrediction) => {
         const stopToDest = haversineMeters(p.stopLat, p.stopLng, destLat, destLng)
         return stopToDest < userToDest
-      })
-
-      if (viable.length > 0) {
-        setTrainPredictions(viable.sort((a, b) => {
-          const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
-          const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
-          return da !== db ? da - db : a.minutesAway - b.minutesAway
-        }))
-      } else {
-        const fallback: TrainPrediction[] = []
-        const unviable: TrainPrediction[] = []
-        const seenFallback = new Set<string>()
-        for (const [routeId, route] of routeMap) {
-          for (let dirId = 0; dirId < route.directions.length; dirId++) {
-            const key = `${routeId}-${dirId}`
-            if (seenFallback.has(key)) continue
-            seenFallback.add(key)
-            const nearestStop = nearbyStopIds
-              .map(sid => ({ sid, loc: stopLocMap.get(sid) }))
-              .filter(s => s.loc)
-              .sort((a, b) =>
-                haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.loc!.lat, a.loc!.lng) -
-                haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.loc!.lat, b.loc!.lng)
-              )[0]
-            if (!nearestStop?.loc) continue
-            const entry: TrainPrediction = {
-              routeId,
-              routeName: route.name,
-              direction: route.directions[dirId] ?? '',
-              stopName: stopNameMap.get(nearestStop.sid) ?? nearestStop.sid,
-              stopId: nearestStop.sid,
-              stopLat: nearestStop.loc.lat,
-              stopLng: nearestStop.loc.lng,
-              minutesAway: -1,
-              lineColor: ROUTE_COLORS[routeId] ?? '#E66300',
-            }
-            const stopToDest = haversineMeters(nearestStop.loc.lat, nearestStop.loc.lng, destLat, destLng)
-            if (stopToDest < userToDest) {
-              fallback.push(entry)
-            } else {
-              unviable.push(entry)
-            }
-          }
-        }
-        const results = fallback.length > 0 ? fallback : unviable
-        setTrainPredictions(results.sort((a, b) => {
-          const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
-          const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
-          return da - db
-        }))
       }
+      const sortByDistance = (a: TrainPrediction, b: TrainPrediction) => {
+        const da = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, a.stopLat, a.stopLng)
+        const db = haversineMeters(effectivePosition!.lat, effectivePosition!.lng, b.stopLat, b.stopLng)
+        return da !== db ? da - db : a.minutesAway - b.minutesAway
+      }
+
+      const viableRealTime = preds.filter(viabilityFilter)
+      const viableFallback = fallbackPreds.filter(viabilityFilter)
+
+      setTrainPredictions(
+        viableRealTime.length > 0
+          ? viableRealTime.sort(sortByDistance)
+          : viableFallback.sort(sortByDistance)
+      )
     } catch {
       // fail silently
     } finally {
@@ -573,7 +531,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                   <ModeCard
                     icon={<BusIcon size={20} className="text-blue-600" />}
                     title={t(locale, 'arrival_bus')}
-                    subtitle={t(locale, 'no_predictions')}
+                    subtitle={t(locale, 'no_viable_route')}
                     action={
                       <a
                         href={directionsUrl(destLat, destLng, 'transit')}
@@ -670,7 +628,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                   <ModeCard
                     icon={<TrainIcon size={20} className="text-orange-600" />}
                     title={t(locale, 'chip_train')}
-                    subtitle={t(locale, 'no_predictions')}
+                    subtitle={t(locale, 'no_viable_route')}
                     action={
                       <a
                         href={directionsUrl(destLat, destLng, 'transit')}
