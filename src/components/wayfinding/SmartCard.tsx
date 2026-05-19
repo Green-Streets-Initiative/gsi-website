@@ -58,6 +58,17 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
           {formatDistance(dist)} {t(locale, 'away')}
           {biz.address && ` · ${biz.address}`}
         </div>
+        {biz.is_shift_partner && (
+          <a
+            href="https://www.gogreenstreets.org/shift/rewards-partners"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-1.5 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
+          >
+            <img src="/assets/wayfinding/shift-wordmark.png" alt="Shift" className="h-3" />
+            <span className="text-[10px] text-gray-500 font-medium">Rewards Partner</span>
+          </a>
+        )}
         {biz.description && (
           <p className="text-sm text-gray-600 mt-2">{biz.description}</p>
         )}

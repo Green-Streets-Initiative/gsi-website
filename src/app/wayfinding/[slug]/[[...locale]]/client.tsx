@@ -52,6 +52,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
   const [trainStops, setTrainStops] = useState<MBTAStopLive[]>([])
   const [bikeParking, setBikeParking] = useState<BikeParkingSpot[]>([])
   const [activeCategories, setActiveCategories] = useState<Set<string> | null>(null)
+  const [shiftFilter, setShiftFilter] = useState(false)
   const sheetRef = useRef<{ snapTo: (snap: SheetSnap) => void }>(null)
 
   const geo = useGeolocation()
@@ -112,10 +113,18 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
     return cats
   }, [businesses])
 
+  const hasShiftPartners = useMemo(() => businesses.some(b => b.is_shift_partner), [businesses])
+
   const filteredBusinesses = useMemo(() => {
-    if (!activeCategories || activeCategories.size === 0) return sortedBusinesses
-    return sortedBusinesses.filter(b => activeCategories.has(b.category))
-  }, [sortedBusinesses, activeCategories])
+    let filtered = sortedBusinesses
+    if (activeCategories && activeCategories.size > 0) {
+      filtered = filtered.filter(b => activeCategories.has(b.category))
+    }
+    if (shiftFilter) {
+      filtered = filtered.filter(b => b.is_shift_partner)
+    }
+    return filtered
+  }, [sortedBusinesses, activeCategories, shiftFilter])
 
   const toggleCategory = useCallback((cat: string) => {
     setActiveCategories(prev => {
@@ -155,10 +164,16 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-900">{b.name}</span>
                     {b.is_shift_partner && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200">
+                      <a
+                        href="https://www.gogreenstreets.org/shift/rewards-partners"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
+                      >
                         <img src="/assets/wayfinding/shift-wordmark.png" alt="Shift" className="h-3" />
                         <span className="text-[10px] text-gray-500 font-medium">Rewards Partner</span>
-                      </span>
+                      </a>
                     )}
                   </div>
                   <div className="text-sm text-gray-500">
@@ -275,8 +290,21 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
         {/* Mobile: directory view */}
         {mobileView === 'directory' && (
           <div className="absolute inset-0 bg-white flex flex-col md:hidden">
-            {activeLayers.food && foodCategories.length > 1 && (
+            {activeLayers.food && (foodCategories.length > 1 || hasShiftPartners) && (
               <div className="flex-shrink-0 flex flex-wrap gap-1.5 px-4 py-2 border-b border-gray-100 bg-white">
+                {hasShiftPartners && (
+                  <button
+                    onClick={() => setShiftFilter(f => !f)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                      shiftFilter
+                        ? 'bg-orange-100 text-orange-800'
+                        : 'bg-gray-100 text-gray-400'
+                    }`}
+                  >
+                    <img src="/assets/wayfinding/shift-wordmark.png" alt="" className="h-2.5 opacity-60" />
+                    Rewards
+                  </button>
+                )}
                 {foodCategories.map(cat => {
                   const active = activeCategories ? activeCategories.has(cat) : false
                   const CatIcon = FOOD_CATEGORY_ICONS[cat]
@@ -365,8 +393,21 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
               {t(locale, 'get_me_home')}
             </button>
           </div>
-          {activeLayers.food && foodCategories.length > 1 && !selectedFeature && (
+          {activeLayers.food && (foodCategories.length > 1 || hasShiftPartners) && !selectedFeature && (
             <div className="flex-shrink-0 flex flex-wrap gap-1.5 px-4 py-2 border-b border-gray-100 bg-white">
+              {hasShiftPartners && (
+                <button
+                  onClick={() => setShiftFilter(f => !f)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                    shiftFilter
+                      ? 'bg-orange-100 text-orange-800'
+                      : 'bg-gray-100 text-gray-400'
+                  }`}
+                >
+                  <img src="/assets/wayfinding/shift-wordmark.png" alt="" className="h-2.5 opacity-60" />
+                  Rewards
+                </button>
+              )}
               {foodCategories.map(cat => {
                 const active = activeCategories ? activeCategories.has(cat) : false
                 const CatIcon = FOOD_CATEGORY_ICONS[cat]
