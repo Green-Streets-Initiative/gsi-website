@@ -623,7 +623,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                     <div className="p-4">
                       <div className="flex items-center gap-2 mb-3">
                         <BicycleIcon size={20} className="text-blue-700" />
-                        <span className="font-medium text-gray-900 text-sm">{t(locale, 'chip_bluebike')}</span>
+                        <span className="font-medium text-gray-900 text-sm">Bluebike</span>
                         {totalBikeTrip !== null && (
                           <span className="text-xs font-normal text-gray-500">~{totalBikeTrip} {t(locale, 'min')}</span>
                         )}
