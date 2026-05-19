@@ -48,7 +48,7 @@ const ROUTE_COLORS: Record<string, string> = {
   'Blue': '#003DA5',
 }
 
-function directionsUrl(lat: number, lng: number, mode: 'walking' | 'transit'): string {
+function directionsUrl(lat: number, lng: number, mode: 'walking' | 'transit' | 'bicycling'): string {
   const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
   if (isIOS) {
     const dirflg = mode === 'transit' ? 'r' : 'w'
@@ -637,7 +637,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                             </div>
                           </div>
                           <a
-                            href={directionsUrl(nearestBluebike.lat, nearestBluebike.lng, 'walking')}
+                            href={directionsUrl(destLat, destLng, 'bicycling')}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => handleDirections('bluebike')}
