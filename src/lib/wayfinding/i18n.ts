@@ -10,7 +10,7 @@ const strings = {
     chip_food: 'Food & drink',
     chip_bus: 'Bus',
     chip_train: 'Train',
-    chip_bluebike: 'Bike',
+    chip_bluebike: 'Bluebike',
     chip_bike_parking: 'Bike parking',
     bikes: 'bikes',
     docks_free: 'docks free',
