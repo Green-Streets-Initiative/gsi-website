@@ -21,8 +21,9 @@ const quickLinks = [
       { name: 'Tracking Your Trips', anchor: '#trip-tracking' },
       { name: 'Earning XP & Unlocking Rewards', anchor: '#points-rewards' },
       { name: 'Badges, Streaks & Tiers', anchor: '#badges-streaks-tiers' },
+      { name: 'Roams', anchor: '#roams' },
       { name: 'Finding Rewards Partners', anchor: '#rewards-partners-users' },
-      { name: 'Competitions & Prize Draws', anchor: '#competitions' },
+      { name: 'Shift Your Summer', anchor: '#competitions' },
     ],
   },
   {
@@ -202,6 +203,47 @@ const faqSections = [
     ],
   },
   {
+    id: 'roams',
+    title: 'Roams',
+    items: [
+      {
+        question: 'What is a Roam?',
+        answer:
+          'A Roam is a curated outing — a set of checkpoints along a walking, biking, transit, or multi-modal route that you visit in any order. Think of it as a self-guided tour that rewards you for exploring your city by active transportation. Roams range from quick neighborhood loops to longer cross-city adventures.',
+      },
+      {
+        question: 'How do I start a Roam?',
+        answer:
+          'Open the Community tab and look for available Roams. Tap one to see its checkpoints on a map, the estimated distance, and which modes are recommended (walk, bike, transit, or any combination). When you’re ready, tap Start. The app will track your progress as you visit each checkpoint.',
+      },
+      {
+        question: 'How does checkpoint detection work?',
+        answer:
+          'As you move near a checkpoint, the app detects your arrival automatically using your phone’s location. If auto-detection doesn’t trigger (GPS can be imprecise in dense areas), you can tap the checkpoint on the map and use the manual check-in button when you’re nearby. Either way counts the same.',
+      },
+      {
+        question: 'Do I need to visit every checkpoint?',
+        answer:
+          'Most Roams require visiting all checkpoints to complete. Some longer Roams have a lower threshold — for example, a 20-checkpoint trail Roam might only require 16. The Roam detail screen shows how many checkpoints you need.',
+      },
+      {
+        question: 'Do I need to follow a specific route between checkpoints?',
+        answer:
+          'No. You choose your own path between checkpoints. The map shows checkpoint locations, but how you get between them is up to you. Walk, bike, or take transit — whatever the Roam’s recommended modes include.',
+      },
+      {
+        question: 'What do I earn for completing a Roam?',
+        answer:
+          'Completing a Roam earns you a badge and XP. Some Roams are part of collections — finish all Roams in a collection for a bonus badge. During Shift Your Summer, completing a Roam also earns bonus sweepstakes entries.',
+      },
+      {
+        question: 'Any safety tips for Roams?',
+        answer:
+          'Always follow traffic laws and use sidewalks, bike lanes, and crosswalks. Stay aware of your surroundings — don’t stare at your phone while moving. Plan your route before you start, especially for longer Roams. Bring water, wear weather-appropriate gear, and let someone know your plans for longer outings. The app is a guide, not a GPS navigator — use your own judgment about safe routes.',
+      },
+    ],
+  },
+  {
     id: 'rewards-partners-users',
     title: 'Finding Rewards Partners',
     items: [
@@ -235,27 +277,107 @@ const faqSections = [
   },
   {
     id: 'competitions',
-    title: 'Competitions & Prize Draws',
+    title: 'Shift Your Summer',
     items: [
       {
-        question: 'What are competitions and prize draws?',
+        question: 'What is Shift Your Summer?',
         answer:
-          'A few times a year we run flagship events \u2014 Shift Your Summer is a big one \u2014 where active trips earn you entries into prize draws from sponsors and Rewards Partners. Some prizes go to anyone who participates; others are unlocked by hitting badges, completing Roams, or referring friends. Check the Community tab during an event to see what\u2019s active.',
+          'Shift Your Summer is our flagship summer event \u2014 a sweepstakes where your active trips, Roam completions, referrals, and other actions earn you entries into prize draws from leading brands and local partners. It runs from mid-June through mid-August. Check the Community tab during the event for full details and a live look at available prizes.',
       },
       {
-        question: 'How do I enter?',
-        answer:
-          'During an event, your active trips automatically earn entries into eligible prize draws \u2014 no separate sign-up needed. Some prizes also have specific requirements like "earn the Pedal Power badge" or "complete a Roam," shown right on the prize card.',
+        question: 'Who is eligible?',
+        answer: (
+          <p>
+            Shift Your Summer is open to Massachusetts residents aged 18 and
+            older. You must have a Shift account and opt in to the sweepstakes
+            through the app. No purchase is necessary to enter. See the{' '}
+            <Link
+              href="/events/shift-your-summer/rules"
+              className={linkClass}
+            >
+              official rules
+            </Link>{' '}
+            for full details.
+          </p>
+        ),
       },
       {
-        question: 'How and when are winners chosen?',
-        answer:
-          'Winners are drawn after the event ends, using a verifiable random selection from everyone eligible for that prize. If you win, you\u2019ll get an in-app notification with instructions to claim. There\u2019s a window to claim \u2014 if a winner doesn\u2019t claim in time, we redraw to the next person.',
+        question: 'How do I earn sweepstakes entries?',
+        answer: (
+          <div>
+            <p>There are several ways to earn entries during the event:</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>
+                <strong>Active trips</strong> \u2014 Each walk, bike, or transit trip
+                earns 1 entry, up to 6 entries per day.
+              </li>
+              <li>
+                <strong>Roam completion</strong> \u2014 Completing a Roam earns 10
+                bonus entries.
+              </li>
+              <li>
+                <strong>Checkpoint visits</strong> \u2014 Each Roam checkpoint you
+                visit earns 1 entry.
+              </li>
+              <li>
+                <strong>Collection completion</strong> \u2014 Finishing all Roams in a
+                collection earns 50 bonus entries.
+              </li>
+              <li>
+                <strong>What Moves Us videos</strong> \u2014 Submitting a video to an
+                eligible What Moves Us campaign earns 5 entries.
+              </li>
+              <li>
+                <strong>Referrals</strong> \u2014 Each friend who joins Shift using
+                your referral link earns you entries \u2014 2 for your first referral,
+                3 for the second, and 5 for each one after that, up to 10
+                friends.
+              </li>
+              <li>
+                <strong>Free mail-in entry (AMOE)</strong> \u2014 You can enter
+                without using the app by mailing a handwritten request. See the{' '}
+                <Link
+                  href="/events/shift-your-summer/rules"
+                  className={linkClass}
+                >
+                  official rules
+                </Link>{' '}
+                for details.
+              </li>
+            </ul>
+          </div>
+        ),
       },
       {
-        question: 'Can I refer friends to earn extra entries?',
+        question: 'Is there a limit on how many entries I can earn?',
         answer:
-          'Yes \u2014 some prizes are referral-gated, meaning each friend you refer who joins Shift earns you another entry into that prize draw. Your unique referral link is in the app; share it from any prize card or your profile.',
+          'Trip entries are capped at 6 per day. Referral entries max out at 10 referred friends. All other entry types (Roams, checkpoints, collections, What Moves Us) have no daily cap \u2014 the more you do, the more entries you earn.',
+      },
+      {
+        question: 'How are winners chosen?',
+        answer:
+          'Winners are drawn after the event ends using a verifiable random selection from all eligible entries for each prize. More entries means better odds, but every eligible entrant has a chance. If you win, you’ll get an in-app notification with instructions to claim your prize.',
+      },
+      {
+        question: 'What happens if I win?',
+        answer:
+          'You’ll receive an in-app notification and an email with claiming instructions. You have 7 days to claim your prize. If you don’t claim in time, we redraw to the next eligible person.',
+      },
+      {
+        question: 'Where are the official rules?',
+        answer: (
+          <p>
+            Full official rules, including legal terms, prize descriptions, and
+            the free mail-in entry process, are available at{' '}
+            <Link
+              href="/events/shift-your-summer/rules"
+              className={linkClass}
+            >
+              gogreenstreets.org/events/shift-your-summer/rules
+            </Link>
+            .
+          </p>
+        ),
       },
     ],
   },
