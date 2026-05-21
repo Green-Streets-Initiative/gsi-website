@@ -138,7 +138,7 @@ const faqSections = [
       {
         question: 'How do I unlock and use a Rewards Partner offer?',
         answer:
-          'Open the Rewards tab to see what\u2019s available. Each offer shows the minimum tier required to unlock it. If you\u2019re at or above that tier, the offer is yours \u2014 tap it to see the details, the partner location, and any terms. To redeem in-store, show the in-app screen (or QR code) to the cashier; they\u2019ll confirm your tier and apply the offer. Online offers include a code or a link.',
+          'Open the Rewards tab to see what\u2019s available. Each offer shows the minimum tier required to unlock it. If you\u2019re at or above that tier, the offer is yours \u2014 tap it to see the details, the partner location, and any terms. To redeem in-store, show your tier badge on the app screen to the cashier and they\u2019ll apply the offer.',
       },
       {
         question: 'Where can I see my XP and tier?',
@@ -409,7 +409,7 @@ const faqSections = [
       {
         question: 'How do I verify a Shift redemption?',
         answer:
-          'When a customer wants to use a Shift offer, they\u2019ll show their app screen confirming they\u2019ve unlocked it (or scan the QR code with any phone). That\u2019s your green light to apply the offer \u2014 no need to log into a dashboard at the time. When you join, we\u2019ll provide a 1-page printed guide you can keep at the register.',
+          'When a customer wants to use a Shift offer, they\u2019ll show you their tier badge on the app screen. That\u2019s your green light to apply the offer \u2014 no need to log into a dashboard at the time. When you join, we\u2019ll provide a 1-page printed guide you can keep at the register.',
       },
       {
         question: 'How do I access my business dashboard?',
