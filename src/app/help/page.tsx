@@ -308,34 +308,35 @@ const faqSections = [
             <p>There are several ways to earn entries during the event:</p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>
-                <strong>Active trips</strong> \u2014 Each walk, bike, or transit trip
-                earns 1 entry, up to 6 entries per day.
+                <strong>Active trips</strong> &mdash; Each walk, bike, or
+                transit trip earns 1 entry, up to 6 entries per day.
               </li>
               <li>
-                <strong>Roam completion</strong> \u2014 Completing a Roam earns 10
-                bonus entries.
+                <strong>Roam completion</strong> &mdash; Completing a Roam earns
+                10 bonus entries.
               </li>
               <li>
-                <strong>Checkpoint visits</strong> \u2014 Each Roam checkpoint you
-                visit earns 1 entry.
+                <strong>Checkpoint visits</strong> &mdash; Each Roam checkpoint
+                you visit earns 1 entry.
               </li>
               <li>
-                <strong>Collection completion</strong> \u2014 Finishing all Roams in a
-                collection earns 50 bonus entries.
+                <strong>Collection completion</strong> &mdash; Finishing all
+                Roams in a collection earns 50 bonus entries.
               </li>
               <li>
-                <strong>What Moves Us videos</strong> \u2014 Submitting a video to an
-                eligible What Moves Us campaign earns 5 entries.
+                <strong>What Moves Us videos</strong> &mdash; Submitting a video
+                to an eligible What Moves Us campaign earns 5 entries.
               </li>
               <li>
-                <strong>Referrals</strong> \u2014 Each friend who joins Shift using
-                your referral link earns you entries \u2014 2 for your first referral,
-                3 for the second, and 5 for each one after that, up to 10
-                friends.
+                <strong>Referrals</strong> &mdash; Each friend who joins Shift
+                using your referral link earns you entries &mdash; 2 for your
+                first referral, 3 for the second, and 5 for each one after that,
+                up to 10 friends.
               </li>
               <li>
-                <strong>Free mail-in entry (AMOE)</strong> \u2014 You can enter
-                without using the app by mailing a handwritten request. See the{' '}
+                <strong>Free mail-in entry (AMOE)</strong> &mdash; You can enter
+                without using the app by mailing a handwritten request. See
+                the{' '}
                 <Link
                   href="/events/shift-your-summer/rules"
                   className={linkClass}
