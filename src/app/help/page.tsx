@@ -123,7 +123,7 @@ const faqSections = [
       {
         question: 'How does the rewards model work?',
         answer:
-          'Shift uses an access-based rewards model. As you take active trips you earn XP and climb through five tiers. Each tier unlocks more perks at local Rewards Partners \u2014 discounts, freebies, or member-only offers. You don\u2019t spend XP to redeem; reaching a tier unlocks the offers automatically.',
+          'Shift uses an access-based rewards model. As you take active trips you earn XP and climb through five tiers. Once you reach the second tier (Mover), all Rewards Partner offers are unlocked \u2014 discounts, freebies, or member-only deals at local businesses. You don\u2019t spend XP to redeem; your tier is your key.',
       },
       {
         question: 'How do I earn XP?',
@@ -138,7 +138,7 @@ const faqSections = [
       {
         question: 'How do I unlock and use a Rewards Partner offer?',
         answer:
-          'Open the Rewards tab to see what\u2019s available. Each offer shows the minimum tier required to unlock it. If you\u2019re at or above that tier, the offer is yours \u2014 tap it to see the details, the partner location, and any terms. To redeem in-store, show your tier badge on the app screen to the cashier and they\u2019ll apply the offer.',
+          'Open the Rewards tab to see what\u2019s available. All offers unlock once you reach Mover (the second tier). Tap any offer to see the details, the partner location, and any terms. To redeem in-store, show your tier badge on the app screen to the cashier and they\u2019ll apply the offer.',
       },
       {
         question: 'Where can I see my XP and tier?',
