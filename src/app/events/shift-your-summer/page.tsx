@@ -992,13 +992,13 @@ function GrandPrizeCard({
           />
         </div>
 
-        {/* Bike photo — centered, padded to show full tires */}
+        {/* Bike photo — large, shifted up slightly so tires clear the bottom */}
         {prize.image_url && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={prize.image_url}
             alt={prize.description}
-            className="absolute inset-0 mx-auto h-full w-[92%] max-w-[720px] object-contain py-10 md:w-[70%] md:py-8"
+            className="absolute left-1/2 top-[44%] h-auto w-[92%] max-w-[720px] -translate-x-1/2 -translate-y-1/2 md:w-[70%]"
           />
         )}
 
