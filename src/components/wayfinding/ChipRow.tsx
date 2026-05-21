@@ -26,14 +26,14 @@ function Chip({ layer, active, onToggle, locale }: { layer: (typeof FIXED_LAYERS
   return (
     <button
       onClick={() => onToggle(layer.key)}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+      className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
         active
           ? 'text-white shadow-sm'
           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
       }`}
       style={active ? { backgroundColor: chipColor } : undefined}
     >
-      {IconComponent && <IconComponent size={16} />}
+      {IconComponent && <IconComponent size={14} className="sm:w-4 sm:h-4" />}
       {t(locale, layer.labelKey as TranslationKey)}
     </button>
   )
@@ -47,12 +47,12 @@ export default function ChipRow({ activeLayers, onToggle, locale }: Props) {
   const row2 = FIXED_LAYERS.filter(l => ROW2_KEYS.includes(l.key))
   return (
     <div className="px-4 py-2 space-y-1.5 bg-white/90 backdrop-blur-sm">
-      <div className="flex gap-2">
+      <div className="flex gap-1.5 sm:gap-2">
         {row1.map(layer => (
           <Chip key={layer.key} layer={layer} active={activeLayers[layer.key]} onToggle={onToggle} locale={locale} />
         ))}
       </div>
-      <div className="flex gap-2 overflow-x-auto">
+      <div className="flex gap-1.5 sm:gap-2">
         {row2.map(layer => (
           <Chip key={layer.key} layer={layer} active={activeLayers[layer.key]} onToggle={onToggle} locale={locale} />
         ))}
