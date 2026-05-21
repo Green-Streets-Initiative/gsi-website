@@ -880,8 +880,8 @@ const SEGWAY_GRAND_PRIZE = {
   valueSubtext: 'Bike + bundle',
   heroTagline: 'Plus a 3-piece accessory bundle',
   features: [
-    { icon: 'route', label: '80-mi range', sub: '716Wh removable battery' },
-    { icon: 'zap', label: '750W motor', sub: '80 Nm torque, near-silent' },
+    { icon: 'route', label: 'Up to 80-mi range', sub: '716Wh removable battery' },
+    { icon: 'zap', label: '20 mph top speed', sub: '750W rear hub motor' },
     { icon: 'package', label: '418 lb payload', sub: 'Cargo, passenger, both' },
     { icon: 'smartphone', label: 'Apple Find My', sub: 'AirLock + GPS tracking' },
   ],
