@@ -408,8 +408,18 @@ const faqSections = [
       },
       {
         question: 'How do I verify a Shift redemption?',
-        answer:
-          'When a customer wants to use a Shift offer, they\u2019ll show you their tier badge on the app screen. That\u2019s your green light to apply the offer \u2014 no need to log into a dashboard at the time. When you join, we\u2019ll provide a 1-page printed guide you can keep at the register.',
+        answer: (
+          <p>
+            When a customer wants to use a Shift offer, they&rsquo;ll show you
+            their tier badge on the app screen. That&rsquo;s your green light to
+            apply the offer &mdash; no need to log into a dashboard at the time.
+            When you join, we&rsquo;ll provide a{' '}
+            <a href="/cashier-guide.html" className={linkClass}>
+              1-page printed guide
+            </a>{' '}
+            you can keep at the register.
+          </p>
+        ),
       },
       {
         question: 'How do I access my business dashboard?',
