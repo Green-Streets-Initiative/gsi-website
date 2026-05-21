@@ -584,7 +584,7 @@ const faqSections = [
         question: 'I\u2019m having a technical issue not listed here.',
         answer: (
           <p>
-            Use the in-app <strong>Send feedback</strong> link (Profile &rarr;
+            Use the in-app <strong>Send feedback</strong>{' '}link (Profile &rarr;
             Account) &mdash; it pre-fills your phone model, OS version, and app
             build, which helps us reproduce the issue quickly. Or email{' '}
             <a href="mailto:info@gogreenstreets.org" className={linkClass}>
