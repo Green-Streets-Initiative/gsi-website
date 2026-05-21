@@ -880,7 +880,7 @@ function GrandPrizeCard({
   eventCampaign: string
 }) {
   const brand = brandLabel(prize)
-  const imageHeight = layout === 1 ? 'h-[180px]' : layout === 2 ? 'h-[140px]' : 'h-[120px]'
+  const imageHeight = layout === 1 ? 'h-[220px]' : layout === 2 ? 'h-[180px]' : 'h-[160px]'
   const card = (
     <div className="overflow-hidden rounded-[14px] border border-white/[0.08] bg-white/[0.04] transition-colors hover:bg-white/[0.06]">
       <div className={`relative ${imageHeight} bg-[#1A2240]`}>
@@ -889,7 +889,7 @@ function GrandPrizeCard({
           <img
             src={prize.image_url}
             alt={prize.description}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain p-4"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-white/60">
