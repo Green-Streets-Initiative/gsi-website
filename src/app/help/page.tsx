@@ -102,7 +102,7 @@ const faqSections = [
       {
         question: 'Can I log a trip manually?',
         answer:
-          'Yes. The Log tab is one of the app\u2019s four main tabs. Tap it to enter the mode, approximate distance, and date. Manual trips earn XP and count toward your tier the same way automatic trips do.',
+          'Yes. From the home screen, tap the + button and choose Log past trip. Enter the mode, approximate distance, and date. Manual trips earn XP and count toward your tier the same way automatic trips do.',
       },
       {
         question: 'How accurate is background tracking?',
