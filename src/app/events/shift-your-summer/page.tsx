@@ -870,6 +870,46 @@ function formatDollars(value: number): string {
   return `$${Math.round(value).toLocaleString()}`
 }
 
+// ─── Enriched grand-prize content for the Segway MUXI ───────────────
+// Hardcoded because the Prize schema doesn't carry feature specs,
+// accessory bundles, or donor logos. Falls back to the simple card for
+// any other grand prize.
+const SEGWAY_GRAND_PRIZE = {
+  description:
+    "Segway’s compact short-tail utility e-bike — a step-through commuter that’s part beach cruiser, part Dutch cargo. Pull up to coffee in style, school pickup with kid in tow, hit the bike path on Saturday. One bike, every kind of trip.",
+  valueSubtext: 'Bike + bundle',
+  heroTagline: 'Plus a 3-piece accessory bundle',
+  features: [
+    { icon: 'route', label: '80-mi range', sub: '716Wh removable battery' },
+    { icon: 'zap', label: '750W motor', sub: '80 Nm torque, near-silent' },
+    { icon: 'package', label: '418 lb payload', sub: 'Cargo, passenger, both' },
+    { icon: 'smartphone', label: 'Apple Find My', sub: 'AirLock + GPS tracking' },
+  ],
+  accessories: [
+    { name: 'Middle basket', blurb: 'Frame-mounted storage between the knees', img: '/assets/prizes/acc-middle-basket.png' },
+    { name: 'Passenger kit', blurb: 'Cushioned rear seat with foot pegs', img: '/assets/prizes/acc-passenger-kit.png' },
+    { name: 'Fender kit', blurb: 'Front + rear fenders for rain and road spray', img: '/assets/prizes/acc-fender.png' },
+  ],
+  donorLogoUrl: '/assets/prizes/segway-logo.png',
+}
+
+// Lucide-style inline SVG icons for the feature tiles.
+function FeatureIcon({ name }: { name: string }) {
+  const shared = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  switch (name) {
+    case 'route':
+      return <svg {...shared} aria-hidden="true"><circle cx="6" cy="19" r="3" /><circle cx="18" cy="5" r="3" /><path d="M6 16V8a4 4 0 0 1 4-4h4" /><path d="M18 8v8a4 4 0 0 1-4 4h-4" /></svg>
+    case 'zap':
+      return <svg {...shared} aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+    case 'package':
+      return <svg {...shared} aria-hidden="true"><path d="m7.5 4.27 9 5.15" /><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="M3.3 7 12 12l8.7-5" /><path d="M12 22V12" /></svg>
+    case 'smartphone':
+      return <svg {...shared} aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg>
+    default:
+      return null
+  }
+}
+
 function GrandPrizeCard({
   prize,
   layout,
@@ -880,71 +920,211 @@ function GrandPrizeCard({
   eventCampaign: string
 }) {
   const brand = brandLabel(prize)
-  const card = (
-    <div className="overflow-hidden rounded-[14px] border border-white/[0.08] bg-white/[0.04] transition-colors hover:bg-white/[0.06]">
-      <div className="relative flex items-center justify-center bg-[#1A2240] p-6"
-           style={{ minHeight: layout === 1 ? 220 : layout === 2 ? 180 : 160 }}>
-        {prize.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={prize.image_url}
-            alt={prize.description}
-            className="max-h-[260px] w-auto max-w-full object-contain"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-white/60">
-            <svg viewBox="0 0 24 24" fill="none" className="h-12 w-12">
-              <path d="M12 2L3 7v6c0 5 3.5 9.5 9 11 5.5-1.5 9-6 9-11V7l-9-5z" stroke="currentColor" strokeWidth="1" />
-            </svg>
-          </div>
-        )}
-        <span className="absolute left-3 top-3 rounded-md bg-[#BAF14D] px-2 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#191A2E]">
-          Grand prize
-        </span>
-        {brand && (
-          <span className="absolute right-3 top-3 rounded-md bg-white px-2 py-1 text-[11px] font-bold text-[#191A2E]">
-            {brand}
-          </span>
-        )}
-      </div>
-      <div className="space-y-1.5 p-5">
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-[1.0625rem] font-semibold leading-tight text-white">
-            {prize.description}
-          </p>
-          {prize.value_amount != null && (
-            <span className="shrink-0 text-sm font-bold text-[#BAF14D]">
-              ~{formatDollars(prize.value_amount)} value
-            </span>
+
+  // ── Enriched "Hero stack" card for the Segway MUXI ──
+  // Matches when brand is "Segway" and there's enriched content to show.
+  const isEnriched = brand === 'Segway'
+
+  if (!isEnriched) {
+    // Fallback: simple card for any non-enriched grand prize
+    const simpleCard = (
+      <div className="overflow-hidden rounded-[14px] border border-white/[0.08] bg-white/[0.04] transition-colors hover:bg-white/[0.06]">
+        <div
+          className="relative flex items-center justify-center bg-[#1A2240] p-6"
+          style={{ minHeight: layout === 1 ? 220 : layout === 2 ? 180 : 160 }}
+        >
+          {prize.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={prize.image_url} alt={prize.description} className="max-h-[260px] w-auto max-w-full object-contain" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-white/60">
+              <svg viewBox="0 0 24 24" fill="none" className="h-12 w-12"><path d="M12 2L3 7v6c0 5 3.5 9.5 9 11 5.5-1.5 9-6 9-11V7l-9-5z" stroke="currentColor" strokeWidth="1" /></svg>
+            </div>
           )}
+          <span className="absolute left-3 top-3 rounded-md bg-[#BAF14D] px-2 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#191A2E]">Grand prize</span>
+          {brand && <span className="absolute right-3 top-3 rounded-md bg-white px-2 py-1 text-[11px] font-bold text-[#191A2E]">{brand}</span>}
         </div>
-        {brand && (
-          <p className="text-sm text-white/75">
-            From <span className="font-semibold text-white">{brand}</span>
-          </p>
-        )}
-        <div className="pt-1">
-          <EntryTypePill prize={prize} />
+        <div className="space-y-1.5 p-5">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-[1.0625rem] font-semibold leading-tight text-white">{prize.description}</p>
+            {prize.value_amount != null && <span className="shrink-0 text-sm font-bold text-[#BAF14D]">~{formatDollars(prize.value_amount)} value</span>}
+          </div>
+          {brand && <p className="text-sm text-white/75">From <span className="font-semibold text-white">{brand}</span></p>}
+          <div className="pt-1"><EntryTypePill prize={prize} /></div>
+          {prize.product_url && <p className="pt-1 text-sm font-semibold text-[#2966E5]">View product details →</p>}
         </div>
-        {prize.product_url && (
-          <p className="pt-1 text-sm font-semibold text-[#2966E5]">
-            View product details →
-          </p>
-        )}
       </div>
-    </div>
-  )
+    )
+    const taggedUrl = withUtm(prize.product_url, { medium: 'event_page', campaign: eventCampaign, content: 'grand_prize_card' })
+    return taggedUrl ? <a href={taggedUrl} target="_blank" rel="noopener noreferrer" className="block">{simpleCard}</a> : simpleCard
+  }
+
+  // ── Enriched Hero Stack card ──
+  const gp = SEGWAY_GRAND_PRIZE
   const taggedProductUrl = withUtm(prize.product_url, {
     medium: 'event_page',
     campaign: eventCampaign,
     content: 'grand_prize_card',
   })
-  return taggedProductUrl ? (
-    <a href={taggedProductUrl} target="_blank" rel="noopener noreferrer" className="block">
-      {card}
-    </a>
-  ) : (
-    card
+
+  return (
+    <article className="overflow-hidden rounded-[20px] border border-white/[0.07] bg-[#242538] font-display text-white">
+      {/* ── Region 1: Hero band ── */}
+      <div className="relative h-[260px] overflow-hidden bg-gradient-to-b from-[#1c2348] to-[#181f3e] md:h-[420px]">
+        {/* Grand prize pill */}
+        <div className="absolute left-3.5 top-3.5 z-10 md:left-[22px] md:top-[22px]">
+          <span className="inline-flex items-center rounded-full bg-[#BAF14D] px-3.5 py-[7px] text-xs font-bold uppercase tracking-[0.12em] text-[#191A2E]">
+            Grand prize
+          </span>
+        </div>
+
+        {/* Donor lockup — logo only on mobile, "DONATED BY" + logo on desktop */}
+        <div className="absolute right-3.5 top-3.5 z-10 flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.08] px-2.5 py-1.5 md:right-[22px] md:top-[22px] md:gap-2 md:px-3.5 md:py-2">
+          <span className="hidden text-[11px] font-semibold uppercase tracking-[0.14em] text-white/75 md:inline">
+            Donated by
+          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={gp.donorLogoUrl}
+            alt="Segway"
+            className="h-3 w-auto md:h-4"
+            style={{ filter: 'invert(1) brightness(2)' }}
+          />
+        </div>
+
+        {/* Bike photo — centered */}
+        {prize.image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={prize.image_url}
+            alt={prize.description}
+            className="absolute left-1/2 top-1/2 h-auto w-[92%] max-w-[720px] -translate-x-1/2 -translate-y-1/2 md:w-[70%]"
+          />
+        )}
+
+        {/* Tagline — bottom-left */}
+        <div className="absolute bottom-3.5 left-4 z-10 text-[10px] font-semibold uppercase tracking-[0.04em] text-white/75 md:bottom-[22px] md:left-7 md:text-[13px]">
+          {gp.heroTagline}
+        </div>
+      </div>
+
+      {/* ── Region 2: Title bar ── */}
+      <div className="px-[18px] pt-5 md:flex md:items-end md:justify-between md:gap-6 md:px-8 md:pt-7">
+        <div>
+          <h3 className="text-2xl font-extrabold leading-[1.05] tracking-tight text-white md:text-[34px]">
+            {prize.description}
+          </h3>
+          {brand && (
+            <p className="mt-1.5 text-sm text-white/75 md:mt-2 md:text-base">
+              From <span className="font-semibold text-white">{brand}</span>
+            </p>
+          )}
+          {/* Mobile-only value pill */}
+          {prize.value_amount != null && (
+            <div className="mt-3 inline-flex items-baseline gap-2 rounded-full border border-[#BAF14D]/25 bg-[#BAF14D]/10 px-3 py-1.5 md:hidden">
+              <span className="text-lg font-extrabold tracking-tight text-[#BAF14D]">
+                ~{formatDollars(prize.value_amount)}
+              </span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/75">
+                value · {gp.valueSubtext}
+              </span>
+            </div>
+          )}
+        </div>
+        {/* Desktop-only value block */}
+        {prize.value_amount != null && (
+          <div className="hidden shrink-0 text-right md:block">
+            <div className="text-[28px] font-extrabold tracking-tight text-[#BAF14D]">
+              ~{formatDollars(prize.value_amount)} value
+            </div>
+            <div className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-white/75">
+              {gp.valueSubtext}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Region 3: Description ── */}
+      <p className="mx-[18px] mt-4 max-w-[880px] text-[15px] leading-relaxed text-white/[0.78] md:mx-8 md:mt-5 md:text-[17px]" style={{ textWrap: 'pretty' }}>
+        {gp.description}
+      </p>
+
+      {/* ── Region 4: Feature tile grid ── */}
+      <div className="mx-[18px] mt-5 grid grid-cols-2 gap-2.5 md:mx-8 md:mt-6 md:grid-cols-4 md:gap-3">
+        {gp.features.map(f => (
+          <div key={f.label} className="flex flex-col gap-1.5 rounded-[10px] border border-white/[0.07] bg-white/[0.04] p-3.5 md:p-4">
+            <div className="text-[#BAF14D]">
+              <FeatureIcon name={f.icon} />
+            </div>
+            <div className="text-[15px] font-bold tracking-tight text-white">{f.label}</div>
+            <div className="text-xs leading-snug text-white/75">{f.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Region 5: Accessory bundle ── */}
+      <div className="mx-[18px] mt-5 md:mx-8 md:mt-7">
+        {/* Section heading */}
+        <div className="mb-3 md:flex md:items-baseline md:justify-between md:mb-3.5">
+          <h4 className="text-base font-bold tracking-tight text-white md:text-lg">
+            Includes a 3-piece accessory bundle
+          </h4>
+          <span className="mt-0.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-white/75 md:mt-0">
+            All three, free
+          </span>
+        </div>
+
+        {/* Desktop: 3-column vertical cards */}
+        <div className="hidden gap-3 md:grid md:grid-cols-3">
+          {gp.accessories.map(a => (
+            <div key={a.name} className="overflow-hidden rounded-[10px] border border-white/[0.07] bg-white/[0.04]">
+              <div className="flex h-[180px] items-center justify-center bg-[#FDFDFB] p-2.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={a.img} alt={a.name} loading="lazy" className="max-h-full max-w-full object-contain" />
+              </div>
+              <div className="p-3 pb-3.5">
+                <div className="text-sm font-bold text-white">{a.name}</div>
+                <div className="mt-0.5 text-xs leading-snug text-white/75">{a.blurb}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Mobile: stacked row cards */}
+        <div className="flex flex-col gap-2.5 md:hidden">
+          {gp.accessories.map(a => (
+            <div key={a.name} className="flex items-center gap-3.5 rounded-[10px] border border-white/[0.07] bg-white/[0.04] p-2.5 pr-3">
+              <div className="flex h-14 w-16 shrink-0 items-center justify-center rounded-md bg-[#FDFDFB]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={a.img} alt={a.name} loading="lazy" className="h-full w-full object-contain" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-bold text-white">{a.name}</div>
+                <div className="mt-0.5 text-xs leading-snug text-white/75">{a.blurb}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Region 6: Footer ── */}
+      <div className="mx-0 mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.07] bg-black/[0.12] px-[18px] py-5 md:mt-6 md:flex-nowrap md:gap-4 md:px-8 md:py-6">
+        <EntryTypePill prize={prize} />
+        {taggedProductUrl && (
+          <a
+            href={taggedProductUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-base font-semibold tracking-tight text-[#4A82F0] transition-colors hover:text-[#6699FF]"
+          >
+            View product details
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+            </svg>
+          </a>
+        )}
+      </div>
+    </article>
   )
 }
 
