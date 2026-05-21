@@ -264,10 +264,10 @@ const faqSections = [
             Absolutely. If there&rsquo;s a local business you&rsquo;d love to
             see in the Shift network, let us know at{' '}
             <a
-              href="mailto:partners@gogreenstreets.org"
+              href="mailto:info@gogreenstreets.org"
               className={linkClass}
             >
-              partners@gogreenstreets.org
+              info@gogreenstreets.org
             </a>
             . We&rsquo;re always growing the network.
           </p>
@@ -396,12 +396,12 @@ const faqSections = [
             </Link>{' '}
             or email{' '}
             <a
-              href="mailto:partners@gogreenstreets.org"
+              href="mailto:info@gogreenstreets.org"
               className={linkClass}
             >
-              partners@gogreenstreets.org
+              info@gogreenstreets.org
             </a>
-            . We&rsquo;ll walk you through the setup \u2014 it&rsquo;s simple
+            . We&rsquo;ll walk you through the setup &mdash; it&rsquo;s simple
             and free to participate.
           </p>
         ),
@@ -585,7 +585,7 @@ const faqSections = [
         answer: (
           <p>
             Use the in-app <strong>Send feedback</strong> link (Profile &rarr;
-            Account) \u2014 it pre-fills your phone model, OS version, and app
+            Account) &mdash; it pre-fills your phone model, OS version, and app
             build, which helps us reproduce the issue quickly. Or email{' '}
             <a href="mailto:info@gogreenstreets.org" className={linkClass}>
               info@gogreenstreets.org
@@ -698,12 +698,6 @@ export default function HelpPage() {
                     strokeLinejoin="round"
                   />
                 </svg>
-              </a>
-              <a
-                href="mailto:partners@gogreenstreets.org"
-                className="inline-flex items-center rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-bold text-white transition-colors hover:bg-white/[0.1]"
-              >
-                Partner Inquiries
               </a>
               <a
                 href="mailto:schools@gogreenstreets.org"
