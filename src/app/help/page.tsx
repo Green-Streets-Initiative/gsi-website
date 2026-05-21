@@ -472,10 +472,10 @@ const faqSections = [
             confirming participating classrooms, distributing classroom codes to
             teachers, and sharing the parent information sheet. Reach out to{' '}
             <a
-              href="mailto:schools@gogreenstreets.org"
+              href="mailto:info@gogreenstreets.org"
               className={linkClass}
             >
-              schools@gogreenstreets.org
+              info@gogreenstreets.org
             </a>{' '}
             any time.
           </p>
@@ -490,10 +490,10 @@ const faqSections = [
             bike a set route to school together. If you&rsquo;re interested in
             starting or joining one, talk to your School Coordinator or email{' '}
             <a
-              href="mailto:schools@gogreenstreets.org"
+              href="mailto:info@gogreenstreets.org"
               className={linkClass}
             >
-              schools@gogreenstreets.org
+              info@gogreenstreets.org
             </a>
             .
           </p>
@@ -698,12 +698,6 @@ export default function HelpPage() {
                     strokeLinejoin="round"
                   />
                 </svg>
-              </a>
-              <a
-                href="mailto:schools@gogreenstreets.org"
-                className="inline-flex items-center rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-bold text-white transition-colors hover:bg-white/[0.1]"
-              >
-                Schools Program
               </a>
             </div>
           </div>
