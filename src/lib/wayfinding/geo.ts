@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 interface GeoPosition {
   lat: number
@@ -20,6 +20,7 @@ export function useGeolocation(): UseGeolocationResult {
   const [error, setError] = useState<string | null>(null)
   const [requesting, setRequesting] = useState(false)
   const [watchId, setWatchId] = useState<number | null>(null)
+  const lastCoordsRef = useRef<{ lat: number; lng: number } | null>(null)
 
   const request = useCallback(() => {
     if (!navigator.geolocation) {
@@ -29,7 +30,14 @@ export function useGeolocation(): UseGeolocationResult {
     setRequesting(true)
     const id = navigator.geolocation.watchPosition(
       (pos) => {
-        setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy })
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        const prev = lastCoordsRef.current
+        // Only update state if coordinates actually changed (avoids new object refs on every GPS tick)
+        if (!prev || prev.lat !== lat || prev.lng !== lng) {
+          lastCoordsRef.current = { lat, lng }
+          setPosition({ lat, lng, accuracy: pos.coords.accuracy })
+        }
         setRequesting(false)
       },
       (err) => {

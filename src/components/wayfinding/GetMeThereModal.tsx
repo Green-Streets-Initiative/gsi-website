@@ -91,7 +91,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
 
   const destLat = event.center_lat
   const destLng = event.center_lng
-  const effectivePosition = userPosition ?? manualPosition
+  const effectivePosition = useMemo(() => userPosition ?? manualPosition, [userPosition, manualPosition])
   const hasLocation = !!effectivePosition
 
   const walkRoute = routeData?.WALK ?? null
@@ -199,15 +199,19 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     fetchRoutes()
   }, [fetchRoutes])
 
+  // Keep a ref to the latest fetchMbtaPrediction so the interval always calls the current version
+  const fetchMbtaPredRef = useRef(fetchMbtaPrediction)
+  useEffect(() => { fetchMbtaPredRef.current = fetchMbtaPrediction }, [fetchMbtaPrediction])
+
   // Start MBTA polling once we have transit route data
   useEffect(() => {
     if (!transitRoute?.transitSteps?.length) return
-    fetchMbtaPrediction()
-    mbtaIntervalRef.current = setInterval(fetchMbtaPrediction, 30000)
+    fetchMbtaPredRef.current()
+    mbtaIntervalRef.current = setInterval(() => fetchMbtaPredRef.current(), 30000)
     return () => {
       if (mbtaIntervalRef.current) clearInterval(mbtaIntervalRef.current)
     }
-  }, [transitRoute, fetchMbtaPrediction])
+  }, [transitRoute])
 
   // Fetch Google BICYCLE route from nearest Bluebike station to destination
   useEffect(() => {

@@ -52,7 +52,7 @@ export default function ChipRow({ activeLayers, onToggle, locale }: Props) {
           <Chip key={layer.key} layer={layer} active={activeLayers[layer.key]} onToggle={onToggle} locale={locale} />
         ))}
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto">
         {row2.map(layer => (
           <Chip key={layer.key} layer={layer} active={activeLayers[layer.key]} onToggle={onToggle} locale={locale} />
         ))}
