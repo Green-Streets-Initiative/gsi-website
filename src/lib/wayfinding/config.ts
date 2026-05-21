@@ -11,6 +11,11 @@ function getSupabase() {
 }
 
 export async function fetchEventConfig(slug: string): Promise<WayfindingEvent | null> {
+  // Static events: use hardcoded data (source of truth)
+  if (slug === 'carnaval') return CARNAVAL_EVENT
+  if (slug === 'tasteofsomerville') return TASTE_EVENT
+
+  // Dynamic events: fetch from Supabase
   try {
     const supabase = getSupabase()
     const { data, error } = await supabase
@@ -24,13 +29,15 @@ export async function fetchEventConfig(slug: string): Promise<WayfindingEvent | 
   } catch {
     // table may not exist yet
   }
-
-  if (slug === 'carnaval') return CARNAVAL_EVENT
-  if (slug === 'tasteofsomerville') return TASTE_EVENT
   return null
 }
 
 export async function fetchBusinesses(eventId: string): Promise<WayfindingBusiness[]> {
+  // Static events: use hardcoded data (source of truth)
+  if (eventId === 'static-carnaval') return CARNAVAL_BUSINESSES
+  if (eventId === 'static-tasteofsomerville') return TASTE_BUSINESSES
+
+  // Dynamic events: fetch from Supabase
   try {
     const supabase = getSupabase()
     const { data, error } = await supabase
@@ -43,9 +50,6 @@ export async function fetchBusinesses(eventId: string): Promise<WayfindingBusine
   } catch {
     // table may not exist yet
   }
-
-  if (eventId === 'static-carnaval') return CARNAVAL_BUSINESSES
-  if (eventId === 'static-tasteofsomerville') return TASTE_BUSINESSES
   return []
 }
 

@@ -158,7 +158,7 @@ export function WayfindingClient({ event, businesses, detours, locale, isEmbed }
     const layerOrder = ['food', 'shopping', 'services']
 
     return (
-      <div className="px-4 pb-36">
+      <div className="px-4 pt-4 pb-36">
         {layerOrder.map(layerKey => {
           const items = grouped[layerKey]
           if (!items?.length) return null
