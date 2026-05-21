@@ -880,16 +880,16 @@ function GrandPrizeCard({
   eventCampaign: string
 }) {
   const brand = brandLabel(prize)
-  const imageHeight = layout === 1 ? 'h-[220px]' : layout === 2 ? 'h-[180px]' : 'h-[160px]'
   const card = (
     <div className="overflow-hidden rounded-[14px] border border-white/[0.08] bg-white/[0.04] transition-colors hover:bg-white/[0.06]">
-      <div className={`relative ${imageHeight} bg-[#1A2240]`}>
+      <div className="relative flex items-center justify-center bg-[#1A2240] p-6"
+           style={{ minHeight: layout === 1 ? 220 : layout === 2 ? 180 : 160 }}>
         {prize.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={prize.image_url}
             alt={prize.description}
-            className="h-full w-full object-contain p-4"
+            className="max-h-[260px] w-auto max-w-full object-contain"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-white/60">
