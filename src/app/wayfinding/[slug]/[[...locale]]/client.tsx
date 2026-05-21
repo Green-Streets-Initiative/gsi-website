@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import type { WayfindingEvent, WayfindingBusiness, BusDetourConfig, Locale, LayerKey, SelectedFeature, SheetSnap, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
-import { getDefaultLayerState } from '@/lib/wayfinding/layers'
+import { getDefaultLayerState, CATEGORY_TO_LAYER } from '@/lib/wayfinding/layers'
 import { useGeolocation, haversineMeters, formatDistance } from '@/lib/wayfinding/geo'
 import { t, tCategory } from '@/lib/wayfinding/i18n'
 import { trackEvent } from '@/lib/wayfinding/telemetry'
@@ -15,22 +15,11 @@ import EventMap from '@/components/wayfinding/EventMap'
 import SmartCard from '@/components/wayfinding/SmartCard'
 import DepartureModal from '@/components/wayfinding/DepartureModal'
 import GetMeThereModal from '@/components/wayfinding/GetMeThereModal'
-import { ForkKnifeIcon, PintGlassIcon, CoffeeIcon, BowlSteamIcon, BeerSteinIcon, BeerBottleIcon } from '@/components/wayfinding/WayfindingIcons'
-
 const ROUTE_COLORS: Record<string, string> = {
   'Orange': '#ED8B00',
   'Green-B': '#00843D', 'Green-C': '#00843D', 'Green-D': '#00843D', 'Green-E': '#00843D',
   'Red': '#DA291C',
   'Blue': '#003DA5',
-}
-
-const FOOD_CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
-  'Restaurant': ForkKnifeIcon,
-  'Bar & Grill': PintGlassIcon,
-  'Cafe': CoffeeIcon,
-  'Quick Bites': BowlSteamIcon,
-  'Brewery': BeerSteinIcon,
-  'Beverage Brand': BeerBottleIcon,
 }
 
 interface Props {
@@ -110,7 +99,7 @@ export function WayfindingClient({ event, businesses, detours, locale, isEmbed }
   const sortedTrainStops = [...trainStops].sort((a, b) => a.distance_meters - b.distance_meters)
   const sortedBikeParking = [...bikeParking].sort((a, b) => a.distance_meters - b.distance_meters)
 
-  const foodCategories = useMemo(() => {
+  const allCategories = useMemo(() => {
     const cats = [...new Set(businesses.map(b => b.category))].sort()
     return cats
   }, [businesses])
@@ -119,6 +108,11 @@ export function WayfindingClient({ event, businesses, detours, locale, isEmbed }
 
   const filteredBusinesses = useMemo(() => {
     let filtered = sortedBusinesses
+    // Filter by active layers (food/shopping/services)
+    filtered = filtered.filter(b => {
+      const layer = CATEGORY_TO_LAYER[b.category] ?? 'food'
+      return activeLayers[layer as LayerKey]
+    })
     if (activeCategories && activeCategories.size > 0) {
       filtered = filtered.filter(b => activeCategories.has(b.category))
     }
@@ -126,7 +120,7 @@ export function WayfindingClient({ event, businesses, detours, locale, isEmbed }
       filtered = filtered.filter(b => b.is_shift_partner)
     }
     return filtered
-  }, [sortedBusinesses, activeCategories, shiftFilter])
+  }, [sortedBusinesses, activeCategories, shiftFilter, activeLayers])
 
   const toggleCategory = useCallback((cat: string) => {
     setActiveCategories(prev => {
@@ -147,80 +141,102 @@ export function WayfindingClient({ event, businesses, detours, locale, isEmbed }
     return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`
   }, [])
 
-  const DirectoryList = useCallback(() => (
-    <div className="px-4 pb-36">
-      {filteredBusinesses.length > 0 && (
-        <section className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {t(locale, 'chip_food')}
-          </h3>
-          {filteredBusinesses.map(b => {
-            const isExpanded = expandedBizId === b.id
-            const dist = haversineMeters(refLat, refLng, b.lat, b.lng)
-            return (
-              <div key={b.id} className="border-b border-gray-100 last:border-0">
-                <button
-                  className="w-full text-left py-3"
-                  onClick={() => setExpandedBizId(isExpanded ? null : b.id)}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{b.name}</span>
-                    {b.is_shift_partner && (
-                      <a
-                        href="https://www.gogreenstreets.org/shift/rewards-partners"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
-                      >
-                        <img src="/assets/wayfinding/shift-wordmark.png" alt="Shift" className="h-3" />
-                        <span className="text-[10px] text-gray-500 font-medium">Rewards Partner ↗</span>
-                      </a>
+  const LAYER_SECTION_LABELS: Record<string, { labelKey: 'chip_food' | 'chip_shopping' | 'chip_services'; color: string }> = {
+    food: { labelKey: 'chip_food', color: '#FF7043' },
+    shopping: { labelKey: 'chip_shopping', color: '#8E24AA' },
+    services: { labelKey: 'chip_services', color: '#00897B' },
+  }
+
+  const DirectoryList = useCallback(() => {
+    // Group filtered businesses by layer
+    const grouped: Record<string, WayfindingBusiness[]> = {}
+    filteredBusinesses.forEach(b => {
+      const layer = CATEGORY_TO_LAYER[b.category] ?? 'food'
+      if (!grouped[layer]) grouped[layer] = []
+      grouped[layer].push(b)
+    })
+    const layerOrder = ['food', 'shopping', 'services']
+
+    return (
+      <div className="px-4 pb-36">
+        {layerOrder.map(layerKey => {
+          const items = grouped[layerKey]
+          if (!items?.length) return null
+          const section = LAYER_SECTION_LABELS[layerKey]
+          return (
+            <section key={layerKey} className="mb-6">
+              <h3 className="text-sm font-semibold uppercase tracking-wide mb-3" style={{ color: section?.color ?? '#666' }}>
+                {section ? t(locale, section.labelKey) : layerKey}
+              </h3>
+              {items.map(b => {
+                const isExpanded = expandedBizId === b.id
+                const dist = haversineMeters(refLat, refLng, b.lat, b.lng)
+                return (
+                  <div key={b.id} className="border-b border-gray-100 last:border-0">
+                    <button
+                      className="w-full text-left py-3"
+                      onClick={() => setExpandedBizId(isExpanded ? null : b.id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">{b.name}</span>
+                        {b.is_shift_partner && (
+                          <a
+                            href="https://www.gogreenstreets.org/shift/rewards-partners"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
+                          >
+                            <img src="/assets/wayfinding/shift-wordmark.png" alt="Shift" className="h-3" />
+                            <span className="text-[10px] text-gray-500 font-medium">Rewards Partner ↗</span>
+                          </a>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        <span style={{ color: section?.color ?? '#666' }}>{tCategory(locale, b.category)} · </span>
+                        {b.address}
+                      </div>
+                    </button>
+                    {isExpanded && (
+                      <div className="pb-3 pl-0">
+                        <div className="text-sm text-gray-500 mb-1">
+                          {formatDistance(dist)} {t(locale, 'away')}
+                        </div>
+                        {b.description && (
+                          <p className="text-sm text-gray-600 mb-2">{b.description}</p>
+                        )}
+                        <div className="flex gap-2">
+                          <a
+                            href={directionsUrl(b.lat, b.lng)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white"
+                            style={{ backgroundColor: 'var(--accent)' }}
+                          >
+                            {t(locale, 'directions')}
+                          </a>
+                          {b.website_url && (
+                            <a
+                              href={b.website_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            >
+                              Website
+                            </a>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {foodCategories.length > 1 && <span className="text-orange-600">{tCategory(locale, b.category)} · </span>}
-                    {b.address}
-                  </div>
-                </button>
-                {isExpanded && (
-                  <div className="pb-3 pl-0">
-                    <div className="text-sm text-gray-500 mb-1">
-                      {formatDistance(dist)} {t(locale, 'away')}
-                    </div>
-                    {b.description && (
-                      <p className="text-sm text-gray-600 mb-2">{b.description}</p>
-                    )}
-                    <div className="flex gap-2">
-                      <a
-                        href={directionsUrl(b.lat, b.lng)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white"
-                        style={{ backgroundColor: 'var(--accent)' }}
-                      >
-                        {t(locale, 'directions')}
-                      </a>
-                      {b.website_url && (
-                        <a
-                          href={b.website_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        >
-                          Website
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </section>
-      )}
-    </div>
-  ), [filteredBusinesses, foodCategories, locale, expandedBizId, refLat, refLng, directionsUrl])
+                )
+              })}
+            </section>
+          )
+        })}
+      </div>
+    )
+  }, [filteredBusinesses, locale, expandedBizId, refLat, refLng, directionsUrl])
 
   return (
     <>
@@ -298,7 +314,7 @@ export function WayfindingClient({ event, businesses, detours, locale, isEmbed }
         {/* Mobile: directory view */}
         {mobileView === 'directory' && (
           <div className="absolute inset-0 bg-white flex flex-col md:hidden">
-            {activeLayers.food && (foodCategories.length > 1 || hasShiftPartners) && (
+            {(allCategories.length > 1 || hasShiftPartners) && (
               <div className="flex-shrink-0 flex flex-wrap gap-1.5 px-4 py-2 border-b border-gray-100 bg-white">
                 {hasShiftPartners && (
                   <button
@@ -313,20 +329,28 @@ export function WayfindingClient({ event, businesses, detours, locale, isEmbed }
                     Rewards
                   </button>
                 )}
-                {foodCategories.map(cat => {
+                {allCategories.filter(cat => {
+                  const layer = CATEGORY_TO_LAYER[cat] ?? 'food'
+                  return activeLayers[layer as LayerKey]
+                }).map(cat => {
                   const active = activeCategories ? activeCategories.has(cat) : false
-                  const CatIcon = FOOD_CATEGORY_ICONS[cat]
+                  const layer = CATEGORY_TO_LAYER[cat] ?? 'food'
+                  const layerColors: Record<string, { bg: string; text: string }> = {
+                    food: { bg: 'bg-orange-100', text: 'text-orange-800' },
+                    shopping: { bg: 'bg-purple-100', text: 'text-purple-800' },
+                    services: { bg: 'bg-teal-100', text: 'text-teal-800' },
+                  }
+                  const colors = layerColors[layer] ?? layerColors.food
                   return (
                     <button
                       key={cat}
                       onClick={() => toggleCategory(cat)}
                       className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
                         active
-                          ? 'bg-orange-100 text-orange-800'
+                          ? `${colors.bg} ${colors.text}`
                           : 'bg-gray-100 text-gray-500'
                       }`}
                     >
-                      {CatIcon && <CatIcon size={14} />}
                       {tCategory(locale, cat)}
                     </button>
                   )
@@ -401,7 +425,7 @@ export function WayfindingClient({ event, businesses, detours, locale, isEmbed }
               {t(locale, 'get_me_home')}
             </button>
           </div>
-          {activeLayers.food && (foodCategories.length > 1 || hasShiftPartners) && !selectedFeature && (
+          {(allCategories.length > 1 || hasShiftPartners) && !selectedFeature && (
             <div className="flex-shrink-0 flex flex-wrap gap-1.5 px-4 py-2 border-b border-gray-100 bg-white">
               {hasShiftPartners && (
                 <button
@@ -416,20 +440,28 @@ export function WayfindingClient({ event, businesses, detours, locale, isEmbed }
                   Rewards
                 </button>
               )}
-              {foodCategories.map(cat => {
+              {allCategories.filter(cat => {
+                const layer = CATEGORY_TO_LAYER[cat] ?? 'food'
+                return activeLayers[layer as LayerKey]
+              }).map((cat: string) => {
                 const active = activeCategories ? activeCategories.has(cat) : false
-                const CatIcon = FOOD_CATEGORY_ICONS[cat]
+                const layer = CATEGORY_TO_LAYER[cat] ?? 'food'
+                const layerColors: Record<string, { bg: string; text: string }> = {
+                  food: { bg: 'bg-orange-100', text: 'text-orange-800' },
+                  shopping: { bg: 'bg-purple-100', text: 'text-purple-800' },
+                  services: { bg: 'bg-teal-100', text: 'text-teal-800' },
+                }
+                const colors = layerColors[layer] ?? layerColors.food
                 return (
                   <button
                     key={cat}
                     onClick={() => toggleCategory(cat)}
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
                       active
-                        ? 'bg-orange-100 text-orange-800'
+                        ? `${colors.bg} ${colors.text}`
                         : 'bg-gray-100 text-gray-500'
                     }`}
                   >
-                    {CatIcon && <CatIcon size={14} />}
                     {tCategory(locale, cat)}
                   </button>
                 )

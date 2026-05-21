@@ -1,7 +1,8 @@
 'use client'
 
 import { SelectedFeature, Locale, WayfindingBusiness, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
-import { t } from '@/lib/wayfinding/i18n'
+import { t, tCategory } from '@/lib/wayfinding/i18n'
+import { CATEGORY_TO_LAYER } from '@/lib/wayfinding/layers'
 import { formatDistance, haversineMeters } from '@/lib/wayfinding/geo'
 import { BusIcon, TrainIcon } from './WayfindingIcons'
 
@@ -51,9 +52,14 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
   if (feature.type === 'business') {
     const biz = feature.data as WayfindingBusiness
     const dist = haversineMeters(userLat, userLng, biz.lat, biz.lng)
+    const layer = CATEGORY_TO_LAYER[biz.category] ?? 'food'
+    const categoryColors: Record<string, string> = { food: '#FF7043', shopping: '#8E24AA', services: '#00897B' }
     return (
       <div className="relative px-4 py-3">
         <DismissButton onDismiss={onDismiss} />
+        <div className="text-xs font-medium mt-0.5 mb-0.5" style={{ color: categoryColors[layer] ?? '#FF7043' }}>
+          {tCategory(locale, biz.category)}
+        </div>
         <h3 className="font-semibold text-gray-900 text-lg pr-8">{biz.name}</h3>
         <div className="text-sm text-gray-500 mt-0.5">
           {formatDistance(dist)} {t(locale, 'away')}

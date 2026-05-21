@@ -3,6 +3,7 @@
 import { useRef, useEffect, useCallback } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { WayfindingEvent, WayfindingBusiness, BusDetourConfig, LayerKey, SelectedFeature, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
+import { CATEGORY_TO_LAYER } from '@/lib/wayfinding/layers'
 
 let maplibrePromise: Promise<typeof import('maplibre-gl')> | null = null
 function loadMaplibre() {
@@ -354,27 +355,52 @@ export default function EventMap({
     train: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM56,120V80h64v40Zm80-40h64v40H136ZM72,40H184a16,16,0,0,1,16,16v8H56V56A16,16,0,0,1,72,40ZM184,200H72a16,16,0,0,1-16-16V136H200v48A16,16,0,0,1,184,200ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"/></svg>',
     brewery: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M104,104v80a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm40-8a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V104A8,8,0,0,0,144,96Zm96,16v64a24,24,0,0,1-24,24H200v8a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V72c0-30.88,28.71-56,64-56,16.77,0,32.91,5.8,44.82,16H160a40,40,0,0,1,40,40V88h16A24,24,0,0,1,240,112ZM57,64H182.62A24,24,0,0,0,160,48H145.74a8,8,0,0,1-5.53-2.22C131.06,37,117.87,32,104,32,80.82,32,61.43,45.76,57,64ZM184,208V80H56V208H184Zm40-96a8,8,0,0,0-8-8H200v80h16a8,8,0,0,0,8-8Z"/></svg>',
     beverage: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M245.66,42.34l-32-32a8,8,0,0,0-11.32,11.32l1.48,1.47L148.65,64.51l-38.22,7.65a8.05,8.05,0,0,0-4.09,2.18L23,157.66a24,24,0,0,0,0,33.94L64.4,233a24,24,0,0,0,33.94,0l83.32-83.31a8,8,0,0,0,2.18-4.09l7.65-38.22,41.38-55.17,1.47,1.48a8,8,0,0,0,11.32-11.32ZM96,107.31,148.69,160,104,204.69,51.31,152ZM81.37,224a7.94,7.94,0,0,1-5.65-2.34L34.34,180.28a8,8,0,0,1,0-11.31L40,163.31,92.69,216,87,221.66A8,8,0,0,1,81.37,224ZM177.6,99.2a7.92,7.92,0,0,0-1.44,3.23l-7.53,37.63L160,148.69,107.31,96l8.63-8.63,37.63-7.53a7.92,7.92,0,0,0,3.23-1.44l58.45-43.84,6.19,6.19Z"/></svg>',
+    storefront: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M232,96a7.89,7.89,0,0,0-.3-2.2L217.35,43.6A16.07,16.07,0,0,0,202,32H54A16.07,16.07,0,0,0,38.65,43.6L24.31,93.8A7.89,7.89,0,0,0,24,96l0,8a40,40,0,0,0,16,32v72a8,8,0,0,0,8,8H208a8,8,0,0,0,8-8V136a40,40,0,0,0,16-32ZM54,48H202l11.42,40H42.55ZM120,96h16v8a24,24,0,0,1-48,0V96h16v8a8,8,0,0,0,16,0Zm-80,8a24,24,0,0,1-24-24V96H64v8A24,24,0,0,1,40,128Zm24,72V133.57a40.1,40.1,0,0,0,32,0,39.8,39.8,0,0,0,32,0,39.81,39.81,0,0,0,32,0,40.1,40.1,0,0,0,32,0V200Zm136-96v16a24,24,0,0,1-48,0V96h48Z"/></svg>',
+    wrench: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M226.76,69a8,8,0,0,0-12.84-2.88l-40.3,37.19-17.23-3.7-3.7-17.23,37.19-40.3A8,8,0,0,0,187,29.24,72,72,0,0,0,88,96a72.34,72.34,0,0,0,1.69,15.56L29.66,164.34a24,24,0,0,0,0,33.94l28.06,28.06a24,24,0,0,0,33.94,0l52.78-60A72.34,72.34,0,0,0,160,168a72,72,0,0,0,66.76-99ZM160,152a56.14,56.14,0,0,1-15.36-2.15,8,8,0,0,0-8.11,1.8L80.34,214.74a8,8,0,0,1-11.31,0L41.26,186.93a8,8,0,0,1,0-11.31l63.09-56.19a8,8,0,0,0,1.8-8.11A56,56,0,0,1,200.29,74.42l-31.13,33.69a8,8,0,0,0-2,6.69l5.15,24a8,8,0,0,0,6.27,6.27l24,5.15a8,8,0,0,0,6.69-2l33.69-31.13A56.06,56.06,0,0,1,160,152Z"/></svg>',
   }
 
   const foodCategoryIcon: Record<string, string> = {
     'Restaurant': markerIcons.restaurant,
     'Bar & Grill': markerIcons.bar_grill,
+    'Bar': markerIcons.bar_grill,
     'Cafe': markerIcons.cafe,
     'Quick Bites': markerIcons.quick_bites,
     'Brewery': markerIcons.brewery,
     'Beverage Brand': markerIcons.beverage,
+    'Liquor Store': markerIcons.beverage,
+    'Meat Market': markerIcons.restaurant,
+  }
+
+  const LAYER_COLORS: Record<string, string> = {
+    food: '#FF7043',
+    shopping: '#8E24AA',
+    services: '#00897B',
+  }
+
+  const LAYER_DEFAULT_ICONS: Record<string, string> = {
+    food: markerIcons.restaurant,
+    shopping: markerIcons.storefront,
+    services: markerIcons.wrench,
+  }
+
+  function getBusinessIcon(category: string, layer: string): string {
+    if (layer === 'food') return foodCategoryIcon[category] ?? markerIcons.restaurant
+    if (layer === 'shopping') return markerIcons.storefront
+    return markerIcons.wrench
   }
 
   function renderMarkers(map: maplibregl.Map) {
     clearMarkers()
-    if (activeLayers.food) {
-      businesses.filter(b => b.show_on_map).forEach(biz => {
-        const icon = foodCategoryIcon[biz.category] ?? markerIcons.restaurant
-        addMarker(map, biz.lng, biz.lat, '#FF7043', icon, () => {
-          onPinSelect({ type: 'business', data: biz })
-        })
+    // Render all business markers, filtered by their layer
+    businesses.filter(b => b.show_on_map).forEach(biz => {
+      const layer = CATEGORY_TO_LAYER[biz.category] ?? 'food'
+      if (!activeLayers[layer as LayerKey]) return
+      const color = LAYER_COLORS[layer] ?? '#FF7043'
+      const icon = getBusinessIcon(biz.category, layer)
+      addMarker(map, biz.lng, biz.lat, color, icon, () => {
+        onPinSelect({ type: 'business', data: biz })
       })
-    }
+    })
     if (activeLayers.bluebike) {
       bluebikes.forEach(station => {
         addMarker(map, station.lng, station.lat, '#2B6CB0', markerIcons.bike, () => {

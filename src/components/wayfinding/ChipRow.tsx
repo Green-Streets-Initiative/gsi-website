@@ -3,7 +3,7 @@
 import { LayerKey, Locale } from '@/lib/wayfinding/types'
 import { FIXED_LAYERS } from '@/lib/wayfinding/layers'
 import { t, TranslationKey } from '@/lib/wayfinding/i18n'
-import { MapPinIcon, ForkKnifeIcon, BusIcon, TrainIcon, BicycleIcon, LockIcon, BeerSteinIcon, BeerBottleIcon } from './WayfindingIcons'
+import { MapPinIcon, ForkKnifeIcon, BusIcon, TrainIcon, BicycleIcon, LockIcon, StorefrontIcon, WrenchIcon } from './WayfindingIcons'
 
 interface Props {
   activeLayers: Record<LayerKey, boolean>
@@ -14,6 +14,8 @@ interface Props {
 const ICON_COMPONENTS: Record<string, React.FC<{ size?: number; className?: string }>> = {
   MapPin: MapPinIcon,
   ForkKnife: ForkKnifeIcon,
+  Storefront: StorefrontIcon,
+  Wrench: WrenchIcon,
   Bus: BusIcon,
   Train: TrainIcon,
   Bicycle: BicycleIcon,
@@ -39,7 +41,7 @@ function Chip({ layer, active, onToggle, locale }: { layer: (typeof FIXED_LAYERS
   )
 }
 
-const ROW1_KEYS: LayerKey[] = ['festival', 'food']
+const ROW1_KEYS: LayerKey[] = ['festival', 'food', 'shopping', 'services']
 const ROW2_KEYS: LayerKey[] = ['bus', 'train', 'bluebike', 'bike-parking']
 
 export default function ChipRow({ activeLayers, onToggle, locale }: Props) {

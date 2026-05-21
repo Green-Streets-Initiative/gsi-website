@@ -84,6 +84,22 @@ export function BeerBottleIcon({ size = 20, className = '', style }: IconProps) 
   )
 }
 
+export function StorefrontIcon({ size = 20, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
+      <path d="M232,96a7.89,7.89,0,0,0-.3-2.2L217.35,43.6A16.07,16.07,0,0,0,202,32H54A16.07,16.07,0,0,0,38.65,43.6L24.31,93.8A7.89,7.89,0,0,0,24,96l0,8a40,40,0,0,0,16,32v72a8,8,0,0,0,8,8H208a8,8,0,0,0,8-8V136a40,40,0,0,0,16-32ZM54,48H202l11.42,40H42.55ZM120,96h16v8a24,24,0,0,1-48,0V96h16v8a8,8,0,0,0,16,0Zm-80,8a24,24,0,0,1-24-24V96H64v8A24,24,0,0,1,40,128Zm24,72V133.57a40.1,40.1,0,0,0,32,0,39.8,39.8,0,0,0,32,0,39.81,39.81,0,0,0,32,0,40.1,40.1,0,0,0,32,0V200Zm136-96v16a24,24,0,0,1-48,0V96h48Z" />
+    </svg>
+  )
+}
+
+export function WrenchIcon({ size = 20, className = '' }: IconProps) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
+      <path d="M226.76,69a8,8,0,0,0-12.84-2.88l-40.3,37.19-17.23-3.7-3.7-17.23,37.19-40.3A8,8,0,0,0,187,29.24,72,72,0,0,0,88,96a72.34,72.34,0,0,0,1.69,15.56L29.66,164.34a24,24,0,0,0,0,33.94l28.06,28.06a24,24,0,0,0,33.94,0l52.78-60A72.34,72.34,0,0,0,160,168a72,72,0,0,0,66.76-99ZM160,152a56.14,56.14,0,0,1-15.36-2.15,8,8,0,0,0-8.11,1.8L80.34,214.74a8,8,0,0,1-11.31,0L41.26,186.93a8,8,0,0,1,0-11.31l63.09-56.19a8,8,0,0,0,1.8-8.11A56,56,0,0,1,200.29,74.42l-31.13,33.69a8,8,0,0,0-2,6.69l5.15,24a8,8,0,0,0,6.27,6.27l24,5.15a8,8,0,0,0,6.69-2l33.69-31.13A56.06,56.06,0,0,1,160,152Z" />
+    </svg>
+  )
+}
+
 export function TrainIcon({ size = 20, className = '' }: IconProps) {
   return (
     <svg className={className} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
