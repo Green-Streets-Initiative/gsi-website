@@ -80,6 +80,20 @@ export interface BikeParkingSpot {
   distance_meters: number
 }
 
+export interface BusDetourRoute {
+  routes: string[]
+  description: string
+  geojson: GeoJSON.LineString
+}
+
+export interface BusDetourConfig {
+  time_window: string
+  routes_affected: string[]
+  closed_stop_ids: string[]
+  detour_routes: BusDetourRoute[]
+  color: string
+}
+
 export type ArrivalMode = 'bike' | 'bluebike' | 'bus' | 'walk'
 export type DepartureMode = 'walk' | 'bus' | 'bike'
 

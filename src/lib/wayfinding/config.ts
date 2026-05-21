@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import { WayfindingEvent, WayfindingBusiness } from './types'
-import { CARNAVAL_EVENT, CARNAVAL_RESTAURANTS } from './static-carnaval'
+import { WayfindingEvent, WayfindingBusiness, BusDetourConfig } from './types'
+import { CARNAVAL_EVENT, CARNAVAL_RESTAURANTS, CARNAVAL_DETOURS } from './static-carnaval'
 import { TASTE_EVENT, TASTE_BUSINESSES } from './static-tasteofsomerville'
 
 function getSupabase() {
@@ -47,6 +47,11 @@ export async function fetchBusinesses(eventId: string): Promise<WayfindingBusine
   if (eventId === 'static-carnaval') return CARNAVAL_RESTAURANTS
   if (eventId === 'static-tasteofsomerville') return TASTE_BUSINESSES
   return []
+}
+
+export function fetchDetourConfig(slug: string): BusDetourConfig | null {
+  if (slug === 'carnaval') return CARNAVAL_DETOURS
+  return null
 }
 
 export async function fetchTranslations(eventId: string, locale: string): Promise<Record<string, string>> {

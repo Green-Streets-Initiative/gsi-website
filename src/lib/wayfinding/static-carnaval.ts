@@ -1,4 +1,4 @@
-import type { WayfindingEvent, WayfindingBusiness } from './types'
+import type { WayfindingEvent, WayfindingBusiness, BusDetourConfig } from './types'
 
 export const CARNAVAL_EVENT: WayfindingEvent = {
   id: 'static-carnaval',
@@ -66,6 +66,78 @@ export const CARNAVAL_EVENT: WayfindingEvent = {
   event_photo_url: null,
   admin_token: null,
   created_at: '2026-05-18T00:00:00Z',
+}
+
+/**
+ * Bus detour data for Carnaval — Routes 89, 90, 101 detoured during the festival
+ * because Broadway is closed. Source: MBTA Operator Advisory, June 2026.
+ *
+ * 89/101 IB: Broadway → L Temple St → R Mystic Ave → Sullivan Station
+ * 89/101 OB: Sullivan Station → Mystic Ave → L Temple St → R Broadway
+ * 90 IB: Cross St → R Tufts St → L Washington St → Sullivan Station
+ * 90 OB: Sullivan Station → Washington St → R Tufts St → L Cross St
+ */
+export const CARNAVAL_DETOURS: BusDetourConfig = {
+  time_window: '11 AM – 8 PM',
+  routes_affected: ['89', '90', '101'],
+  closed_stop_ids: [
+    '2710',  // Broadway @ Cross St
+    '2711',  // Broadway @ Glen St
+    '2719',  // Broadway @ Illinois Ave
+    '2721',  // Broadway @ Cross St (other direction)
+    '2747',  // Cross St @ Broadway
+    '2748',  // Cross St @ Broadway (other direction)
+  ],
+  detour_routes: [
+    {
+      routes: ['89', '101'],
+      description: 'Broadway → Temple St → Mystic Ave → Sullivan Station',
+      geojson: {
+        type: 'LineString',
+        coordinates: [
+          // Broadway near Temple St (west end of corridor)
+          [-71.0892, 42.3897],
+          // Temple St heading north
+          [-71.0895, 42.3908],
+          [-71.0897, 42.3918],
+          // Temple St @ Mystic Ave
+          [-71.0893, 42.3928],
+          // Mystic Ave heading east
+          [-71.0870, 42.3932],
+          [-71.0845, 42.3928],
+          // Approaching Sullivan from north via Middlesex Ave
+          [-71.0815, 42.3910],
+          [-71.0795, 42.3880],
+          // Sullivan Square bus terminal
+          [-71.0770, 42.3843],
+        ],
+      },
+    },
+    {
+      routes: ['90'],
+      description: 'Cross St → Tufts St → Washington St → Sullivan Station',
+      geojson: {
+        type: 'LineString',
+        coordinates: [
+          // Cross St @ Broadway (west of corridor)
+          [-71.0862, 42.3885],
+          // Cross St heading south
+          [-71.0870, 42.3870],
+          [-71.0878, 42.3855],
+          // Right on Tufts St heading southeast
+          [-71.0870, 42.3840],
+          [-71.0858, 42.3828],
+          // Left on Washington St heading east toward Sullivan
+          [-71.0840, 42.3822],
+          [-71.0815, 42.3825],
+          [-71.0795, 42.3832],
+          // Sullivan Square bus terminal
+          [-71.0770, 42.3843],
+        ],
+      },
+    },
+  ],
+  color: '#FF6F00',
 }
 
 export const CARNAVAL_RESTAURANTS: WayfindingBusiness[] = [

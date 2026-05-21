@@ -68,6 +68,9 @@ const strings = {
     cat_bar_grill: 'Bar & Grill',
     cat_brewery: 'Brewery',
     cat_beverage_brand: 'Beverage Brand',
+    banner_detour: 'Routes {routes} detoured {time} during the festival',
+    stop_closed: 'Closed during the festival',
+    detour_nearby: 'Buses detoured to nearby streets',
   },
   es: {
     eyebrow_default: 'SomerStreets',
@@ -136,6 +139,9 @@ const strings = {
     cat_bar_grill: 'Bar y parrilla',
     cat_brewery: 'Cervecería',
     cat_beverage_brand: 'Marca de bebidas',
+    banner_detour: 'Rutas {routes} desviadas {time} durante el festival',
+    stop_closed: 'Cerrada durante el festival',
+    detour_nearby: 'Autobuses desviados a calles cercanas',
   },
   pt: {
     eyebrow_default: 'SomerStreets',
@@ -204,6 +210,9 @@ const strings = {
     cat_bar_grill: 'Bar e churrasqueira',
     cat_brewery: 'Cervejaria',
     cat_beverage_brand: 'Marca de bebidas',
+    banner_detour: 'Linhas {routes} desviadas {time} durante o festival',
+    stop_closed: 'Fechada durante o festival',
+    detour_nearby: 'Ônibus desviados para ruas próximas',
   },
 } as const
 

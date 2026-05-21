@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import type { WayfindingEvent, WayfindingBusiness, Locale, LayerKey, SelectedFeature, SheetSnap, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
+import type { WayfindingEvent, WayfindingBusiness, BusDetourConfig, Locale, LayerKey, SelectedFeature, SheetSnap, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
 import { getDefaultLayerState } from '@/lib/wayfinding/layers'
 import { useGeolocation, haversineMeters, formatDistance } from '@/lib/wayfinding/geo'
 import { t, tCategory } from '@/lib/wayfinding/i18n'
@@ -10,6 +10,7 @@ import EventHeader from '@/components/wayfinding/EventHeader'
 import ChipRow from '@/components/wayfinding/ChipRow'
 import BottomSheet from '@/components/wayfinding/BottomSheet'
 import RainBanner from '@/components/wayfinding/RainBanner'
+import DetourBanner from '@/components/wayfinding/DetourBanner'
 import EventMap from '@/components/wayfinding/EventMap'
 import SmartCard from '@/components/wayfinding/SmartCard'
 import DepartureModal from '@/components/wayfinding/DepartureModal'
@@ -35,11 +36,12 @@ const FOOD_CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: 
 interface Props {
   event: WayfindingEvent
   businesses: WayfindingBusiness[]
+  detours: BusDetourConfig | null
   locale: Locale
   isEmbed: boolean
 }
 
-export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) {
+export function WayfindingClient({ event, businesses, detours, locale, isEmbed }: Props) {
   const [activeLayers, setActiveLayers] = useState<Record<LayerKey, boolean>>(getDefaultLayerState)
   const [selectedFeature, setSelectedFeature] = useState<SelectedFeature | null>(null)
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>('peek')
@@ -234,6 +236,10 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
         <RainBanner event={event} locale={locale} displayDate={displayDate} />
       )}
 
+      {detours && (
+        <DetourBanner detours={detours} locale={locale} />
+      )}
+
       <div className="relative flex-1 min-h-0 md:flex md:flex-row">
         {/* Map area — always mounted, hidden on mobile when directory tab active */}
         <div className={`absolute inset-0 md:relative md:flex-1 md:min-h-0 ${mobileView === 'directory' ? 'hidden md:block' : ''}`}>
@@ -246,6 +252,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
             mbtaStops={mbtaStops}
             trainStops={trainStops}
             bikeParking={bikeParking}
+            detours={detours}
             onPinSelect={handlePinSelect}
             onMapTap={handleDismiss}
             onLiveDataLoad={(bb, mbta, bp, train) => {
@@ -280,6 +287,7 @@ export function WayfindingClient({ event, businesses, locale, isEmbed }: Props) 
                   eventCenter={{ lat: event.center_lat, lng: event.center_lng }}
                   allMbtaStops={sortedMbta}
                   allTrainStops={sortedTrainStops}
+                  closedStopIds={detours?.closed_stop_ids}
                   onDismiss={handleDismiss}
                 />
               </BottomSheet>

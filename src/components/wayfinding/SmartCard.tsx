@@ -20,6 +20,7 @@ interface Props {
   eventCenter: { lat: number; lng: number }
   allMbtaStops?: MBTAStopLive[]
   allTrainStops?: MBTAStopLive[]
+  closedStopIds?: string[]
   onDismiss?: () => void
 }
 
@@ -46,7 +47,7 @@ function DismissButton({ onDismiss }: { onDismiss?: () => void }) {
   )
 }
 
-export default function SmartCard({ feature, locale, userLat, userLng, allMbtaStops, allTrainStops, onDismiss }: Props) {
+export default function SmartCard({ feature, locale, userLat, userLng, allMbtaStops, allTrainStops, closedStopIds, onDismiss }: Props) {
   if (feature.type === 'business') {
     const biz = feature.data as WayfindingBusiness
     const dist = haversineMeters(userLat, userLng, biz.lat, biz.lng)
@@ -141,6 +142,7 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
     const stop = feature.data as MBTAStopLive
     const dist = haversineMeters(userLat, userLng, stop.lat, stop.lng)
     const isTrainStop = !!(allTrainStops?.some(s => s.stop_id === stop.stop_id))
+    const isClosed = closedStopIds?.includes(stop.stop_id) ?? false
     const stopsPool = isTrainStop ? allTrainStops! : (allMbtaStops ?? [])
     const siblingRoutes = stopsPool.filter(s => s.stop_id === stop.stop_id && (s.route_id !== stop.route_id || s.direction !== stop.direction))
     const allRoutes = [stop, ...siblingRoutes]
@@ -155,6 +157,13 @@ export default function SmartCard({ feature, locale, userLat, userLng, allMbtaSt
         <div className="text-sm text-gray-500 mt-0.5">
           {formatDistance(dist)} {t(locale, 'away')}
         </div>
+
+        {isClosed && (
+          <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <p className="text-sm font-medium text-amber-800">{t(locale, 'stop_closed')}</p>
+            <p className="text-xs text-amber-600 mt-0.5">{t(locale, 'detour_nearby')}</p>
+          </div>
+        )}
 
         <div className="mt-3 flex items-center gap-2">
           {isTrainStop

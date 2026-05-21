@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import type { WayfindingEvent, WayfindingBusiness, LayerKey, SelectedFeature, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
+import type { WayfindingEvent, WayfindingBusiness, BusDetourConfig, LayerKey, SelectedFeature, BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
 
 let maplibrePromise: Promise<typeof import('maplibre-gl')> | null = null
 function loadMaplibre() {
@@ -21,6 +21,7 @@ interface Props {
   mbtaStops: MBTAStopLive[]
   trainStops: MBTAStopLive[]
   bikeParking: BikeParkingSpot[]
+  detours: BusDetourConfig | null
   onPinSelect: (feature: SelectedFeature) => void
   onMapTap: () => void
   onLiveDataLoad: (bb: BluebikeStationLive[], mbta: MBTAStopLive[], bp: BikeParkingSpot[], train: MBTAStopLive[]) => void
@@ -49,7 +50,7 @@ function setCachedMBTATopology(lat: number, lng: number, data: unknown) {
 
 export default function EventMap({
   event, businesses, activeLayers, userPosition,
-  bluebikes, mbtaStops, trainStops, bikeParking,
+  bluebikes, mbtaStops, trainStops, bikeParking, detours,
   onPinSelect, onMapTap, onLiveDataLoad,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -158,6 +159,48 @@ export default function EventMap({
               'text-color': accentColor,
               'text-halo-color': '#ffffff',
               'text-halo-width': 2.5,
+            },
+          })
+        }
+
+        // Bus detour polylines
+        if (detours && detours.detour_routes.length > 0) {
+          const detourFeatures = detours.detour_routes.map((route) => ({
+            type: 'Feature' as const,
+            properties: { routes: route.routes.join(', ') },
+            geometry: route.geojson,
+          }))
+
+          map.addSource('detours', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection' as const, features: detourFeatures },
+          })
+
+          map.addLayer({
+            id: 'detour-glow',
+            type: 'line',
+            source: 'detours',
+            paint: {
+              'line-color': detours.color,
+              'line-width': 10,
+              'line-opacity': 0.12,
+              'line-blur': 4,
+            },
+          })
+
+          map.addLayer({
+            id: 'detour-line',
+            type: 'line',
+            source: 'detours',
+            paint: {
+              'line-color': detours.color,
+              'line-width': 4,
+              'line-opacity': 0.8,
+              'line-dasharray': [3, 3],
+            },
+            layout: {
+              'line-cap': 'round',
+              'line-join': 'round',
             },
           })
         }
@@ -271,6 +314,16 @@ export default function EventMap({
     }
   }, [activeLayers.festival])
 
+  // Toggle detour layer visibility with bus chip
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const vis = activeLayers.bus ? 'visible' : 'none'
+    for (const layerId of ['detour-glow', 'detour-line']) {
+      if (map.getLayer(layerId)) map.setLayoutProperty(layerId, 'visibility', vis)
+    }
+  }, [activeLayers.bus])
+
   async function updateUserMarker(map: maplibregl.Map, pos: { lat: number; lng: number }) {
     const maplibregl = await loadMaplibre()
     if (userMarkerRef.current) {
@@ -295,6 +348,7 @@ export default function EventMap({
     cafe: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M80,56V24a8,8,0,0,1,16,0V56a8,8,0,0,1-16,0Zm40,8a8,8,0,0,0,8-8V24a8,8,0,0,0-16,0V56A8,8,0,0,0,120,64Zm32,0a8,8,0,0,0,8-8V24a8,8,0,0,0-16,0V56A8,8,0,0,0,152,64Zm96,56v8a40,40,0,0,1-37.51,39.91,96.59,96.59,0,0,1-27,40.09H208a8,8,0,0,1,0,16H32a8,8,0,0,1,0-16H56.54A96.3,96.3,0,0,1,24,136V88a8,8,0,0,1,8-8H208A40,40,0,0,1,248,120ZM200,96H40v40a80.27,80.27,0,0,0,45.12,72h69.76A80.27,80.27,0,0,0,200,136Zm32,24a24,24,0,0,0-16-22.62V136a95.78,95.78,0,0,1-1.2,15A24,24,0,0,0,232,128Z"/></svg>',
     quick_bites: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M224,112H32a8,8,0,0,0-8,8,104.35,104.35,0,0,0,56,92.28V216a16,16,0,0,0,16,16h64a16,16,0,0,0,16-16v-3.72A104.35,104.35,0,0,0,232,120,8,8,0,0,0,224,112Zm-59.34,88a8,8,0,0,0-4.66,7.27V216H96v-8.71A8,8,0,0,0,91.34,200a88.29,88.29,0,0,1-51-72H215.63A88.29,88.29,0,0,1,164.66,200ZM81.77,55c5.35-6.66,6.67-11.16,6.12-13.14-.42-1.49-2.41-2.26-2.43-2.26A8,8,0,0,1,88,24a8.11,8.11,0,0,1,2.38.36c1,.31,9.91,3.33,12.79,12.76,2.46,8.07-.55,17.45-8.94,27.89-5.35,6.66-6.67,11.16-6.12,13.14.42,1.49,2.37,2.24,2.39,2.25A8,8,0,0,1,88,96a8.11,8.11,0,0,1-2.38-.36c-1-.31-9.91-3.33-12.79-12.76C70.37,74.81,73.38,65.43,81.77,55Zm40,0c5.35-6.66,6.67-11.16,6.12-13.14-.42-1.49-2.41-2.26-2.43-2.26A8,8,0,0,1,128,24a8.11,8.11,0,0,1,2.38.36c1,.31,9.91,3.33,12.79,12.76,2.46,8.07-.55,17.45-8.94,27.89-5.35,6.66-6.67,11.16-6.12,13.14.42,1.49,2.37,2.24,2.39,2.25A8,8,0,0,1,128,96a8.11,8.11,0,0,1-2.38-.36c-1-.31-9.91-3.33-12.79-12.76C110.37,74.81,113.38,65.43,121.77,55Zm40,0c5.35-6.66,6.67-11.16,6.12-13.14-.42-1.49-2.41-2.26-2.43-2.26A8,8,0,0,1,168,24a8.11,8.11,0,0,1,2.38.36c1,.31,9.91,3.33,12.79,12.76,2.46,8.07-.55,17.45-8.94,27.89-5.35,6.66-6.67,11.16-6.12,13.14.42,1.49,2.37,2.24,2.39,2.25A8,8,0,0,1,168,96a8.11,8.11,0,0,1-2.38-.36c-1-.31-9.91-3.33-12.79-12.76C150.37,74.81,153.38,65.43,161.77,55Z"/></svg>',
     bus: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M184,28H72A36,36,0,0,0,36,64V208a20,20,0,0,0,20,20H84a20,20,0,0,0,20-20V192h48v16a20,20,0,0,0,20,20h28a20,20,0,0,0,20-20V64A36,36,0,0,0,184,28ZM60,168V112H196v56ZM72,52H184a12,12,0,0,1,12,12V88H60V64A12,12,0,0,1,72,52Zm8,152H60V192H80Zm96,0V192h20v12Zm-68-64a16,16,0,1,1-16-16A16,16,0,0,1,108,140Zm72,0a16,16,0,1,1-16-16A16,16,0,0,1,180,140Z"/></svg>',
+    busClosed: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M184,28H72A36,36,0,0,0,36,64V208a20,20,0,0,0,20,20H84a20,20,0,0,0,20-20V192h48v16a20,20,0,0,0,20,20h28a20,20,0,0,0,20-20V64A36,36,0,0,0,184,28ZM60,168V112H196v56ZM72,52H184a12,12,0,0,1,12,12V88H60V64A12,12,0,0,1,72,52Zm8,152H60V192H80Zm96,0V192h20v12Zm-68-64a16,16,0,1,1-16-16A16,16,0,0,1,108,140Zm72,0a16,16,0,1,1-16-16A16,16,0,0,1,180,140Z"/><line x1="50" y1="50" x2="206" y2="206" stroke="white" stroke-width="24"/><line x1="206" y1="50" x2="50" y2="206" stroke="white" stroke-width="24"/></svg>',
     bike: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M208,112a47.81,47.81,0,0,0-16.93,3.09L165.93,72H192a8,8,0,0,1,8,8,8,8,0,0,0,16,0,24,24,0,0,0-24-24H152a8,8,0,0,0-6.91,12l11.65,20H99.26L82.91,60A8,8,0,0,0,76,56H48a8,8,0,0,0,0,16H71.41l13.71,23.51L62.87,127.9A48,48,0,1,0,79,138.63l17.41-23.11,38.68,66.31A8,8,0,0,0,142,184a7.9,7.9,0,0,0,4-1.08,8,8,0,0,0,2.88-10.94l-38.15-65.42h57.55l11.06,19A48.09,48.09,0,1,0,208,112ZM80,160a32,32,0,1,1-7.34-20.42L55.08,161.84A8,8,0,0,0,61,175.16l17.58-22.26A31.84,31.84,0,0,1,80,160Zm128,32a32,32,0,0,1-21.64-55.64l14.91,25.62a8,8,0,0,0,13.82-8l-14.91-25.62A32,32,0,1,1,208,192Z"/></svg>',
     parking: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M208,80H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208V208Zm-68-56a12,12,0,1,1-12-12A12,12,0,0,1,140,152Z"/></svg>',
     train: '<svg width="16" height="16" viewBox="0 0 256 256" fill="white"><path d="M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM56,120V80h64v40Zm80-40h64v40H136ZM72,40H184a16,16,0,0,1,16,16v8H56V56A16,16,0,0,1,72,40ZM184,200H72a16,16,0,0,1-16-16V136H200v48A16,16,0,0,1,184,200ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"/></svg>',
@@ -329,6 +383,7 @@ export default function EventMap({
       })
     }
     if (activeLayers.bus) {
+      const closedIds = new Set(detours?.closed_stop_ids ?? [])
       const stopGroups = new Map<string, MBTAStopLive[]>()
       mbtaStops.forEach(stop => {
         const group = stopGroups.get(stop.stop_id) || []
@@ -337,7 +392,10 @@ export default function EventMap({
       })
       stopGroups.forEach(stops => {
         const first = stops[0]
-        addMarker(map, first.lng, first.lat, '#1976D2', markerIcons.bus, () => {
+        const isClosed = closedIds.has(first.stop_id)
+        const color = isClosed ? '#9E9E9E' : '#1976D2'
+        const icon = isClosed ? markerIcons.busClosed : markerIcons.bus
+        addMarker(map, first.lng, first.lat, color, icon, () => {
           onPinSelect({ type: 'mbta', data: first })
         })
       })
