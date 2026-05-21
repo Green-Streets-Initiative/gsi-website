@@ -876,7 +876,7 @@ function formatDollars(value: number): string {
 // any other grand prize.
 const SEGWAY_GRAND_PRIZE = {
   description:
-    "Segway’s compact short-tail utility e-bike — a step-through commuter that’s part beach cruiser, part Dutch cargo. Pull up to coffee in style, school pickup with kid in tow, hit the bike path on Saturday. One bike, every kind of trip.",
+    "Segway’s compact short-tail utility e-bike — a step-through commuter that’s part beach cruiser, part Dutch cargo. Pull up to work on schedule, coffee in style, and hit the bike path on Saturday. One bike, every kind of trip.",
   valueSubtext: 'Bike + bundle',
   heroTagline: 'Plus a 3-piece accessory bundle',
   features: [
@@ -970,7 +970,7 @@ function GrandPrizeCard({
   return (
     <article className="overflow-hidden rounded-[20px] border border-white/[0.07] bg-[#242538] font-display text-white">
       {/* ── Region 1: Hero band ── */}
-      <div className="relative h-[260px] overflow-hidden bg-gradient-to-b from-[#1c2348] to-[#181f3e] md:h-[420px]">
+      <div className="relative h-[280px] overflow-hidden bg-gradient-to-b from-[#1c2348] to-[#181f3e] md:h-[440px]">
         {/* Grand prize pill */}
         <div className="absolute left-3.5 top-3.5 z-10 md:left-[22px] md:top-[22px]">
           <span className="inline-flex items-center rounded-full bg-[#BAF14D] px-3.5 py-[7px] text-xs font-bold uppercase tracking-[0.12em] text-[#191A2E]">
@@ -992,13 +992,13 @@ function GrandPrizeCard({
           />
         </div>
 
-        {/* Bike photo — centered */}
+        {/* Bike photo — centered, padded to show full tires */}
         {prize.image_url && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={prize.image_url}
             alt={prize.description}
-            className="absolute left-1/2 top-1/2 h-auto w-[92%] max-w-[720px] -translate-x-1/2 -translate-y-1/2 md:w-[70%]"
+            className="absolute inset-0 mx-auto h-full w-[92%] max-w-[720px] object-contain py-10 md:w-[70%] md:py-8"
           />
         )}
 
