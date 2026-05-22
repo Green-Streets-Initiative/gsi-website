@@ -338,6 +338,7 @@ function ComingSoon() {
         </div>
       </section>
 
+      <RulesLink />
       <PartnerCrossLink />
     </>
   )
@@ -415,6 +416,7 @@ function UpcomingEvent({
       <SponsorSection sponsors={sponsors} eventCampaign={slugify(competition.name)} />
       {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} />}
       <HowToJoin />
+      <RulesLink />
       <PartnerCrossLink />
       <CtaSection phase="upcoming" />
     </>
@@ -530,6 +532,7 @@ function ActiveEvent({
       <SponsorSection sponsors={sponsors} eventCampaign={slugify(competition.name)} />
       {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} />}
       <HowToJoin />
+      <RulesLink />
       <PartnerCrossLink />
       <CtaSection phase="active" />
     </>
@@ -642,6 +645,7 @@ function EndedEvent({
 
       <SponsorSection sponsors={sponsors} eventCampaign={slugify(competition.name)} />
       {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} />}
+      <RulesLink />
       <PartnerCrossLink />
       <CtaSection phase="ended" />
     </>
@@ -1249,6 +1253,23 @@ function HowToJoin() {
             </div>
           ))}
         </div>
+      </div>
+    </section>
+  )
+}
+
+function RulesLink() {
+  if (!RULES_PUBLISHED) return null
+  return (
+    <section className="bg-[#191A2E] px-8 pb-2">
+      <div className="mx-auto max-w-[1120px] border-t border-white/[0.08] pt-8">
+        <Link
+          href="/events/shift-your-summer/rules"
+          className="group inline-flex items-center gap-2 text-sm text-white/75 hover:text-white transition-colors"
+        >
+          Official Rules
+          <span className="transition-transform group-hover:translate-x-0.5">→</span>
+        </Link>
       </div>
     </section>
   )
