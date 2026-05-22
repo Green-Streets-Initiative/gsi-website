@@ -589,7 +589,7 @@ export default function EventMap({
         const dirId = pred.attributes?.direction_id
         if (!stopId || !routeId || dirId === undefined) continue
 
-        const depTime = pred.attributes?.departure_time
+        const depTime = pred.attributes?.departure_time ?? pred.attributes?.arrival_time
         if (!depTime) continue
         const diff = (new Date(depTime).getTime() - Date.now()) / 60000
         if (diff < 0) continue
@@ -693,7 +693,7 @@ export default function EventMap({
         const dirId = pred.attributes?.direction_id
         if (!stopId || !routeId || dirId === undefined) continue
 
-        const depTime = pred.attributes?.departure_time
+        const depTime = pred.attributes?.departure_time ?? pred.attributes?.arrival_time
         if (!depTime) continue
         const diff = (new Date(depTime).getTime() - Date.now()) / 60000
         if (diff < 0) continue
