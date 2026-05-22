@@ -33,7 +33,7 @@ const MBTA_CACHE_TTL = 30 * 60 * 1000
 
 function getCachedMBTATopology(lat: number, lng: number) {
   try {
-    const key = `mbta-stops-${lat.toFixed(4)},${lng.toFixed(4)}`
+    const key = `mbta-stops-v2-${lat.toFixed(4)},${lng.toFixed(4)}`
     const raw = sessionStorage.getItem(key)
     if (!raw) return null
     const cached = JSON.parse(raw)
@@ -44,7 +44,7 @@ function getCachedMBTATopology(lat: number, lng: number) {
 
 function setCachedMBTATopology(lat: number, lng: number, data: unknown) {
   try {
-    const key = `mbta-stops-${lat.toFixed(4)},${lng.toFixed(4)}`
+    const key = `mbta-stops-v2-${lat.toFixed(4)},${lng.toFixed(4)}`
     sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }))
   } catch {}
 }
@@ -560,10 +560,10 @@ export default function EventMap({
           topStops.map(async (s) => {
             const res = await fetch(`https://api-v3.mbta.com/routes?filter[stop]=${s.id}&filter[type]=3`)
             const data = await res.json()
-            return { stopId: s.id, routes: (data.data || []).map((r: { id: string; attributes: { direction_names?: string[] } }) => ({
+            return { stopId: s.id, routes: (data.data || []).map((r: { id: string; attributes: { direction_names?: string[]; direction_destinations?: string[] } }) => ({
               id: r.id,
               name: r.id.replace(/^0*/, ''),
-              directions: r.attributes.direction_names || [],
+              directions: r.attributes.direction_destinations || r.attributes.direction_names || [],
             })) }
           })
         )
