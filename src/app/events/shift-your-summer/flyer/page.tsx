@@ -36,6 +36,14 @@ interface CompetitionRow {
   event_sponsorships: SponsorshipRow[]
 }
 
+function formatDollars(value: number): string {
+  if (value >= 1000) {
+    const k = (value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)
+    return `$${k}k`
+  }
+  return `$${Math.round(value).toLocaleString()}`
+}
+
 function sanitizeRef(value: string | string[] | undefined): string | null {
   const raw = Array.isArray(value) ? value[0] : value
   if (!raw) return null
@@ -133,6 +141,14 @@ export default async function FlyerPage({
   const featuredPrizes = prizes
     .filter(p => p.tier === 'grand' || p.tier === 'featured')
     .slice(0, 6)
+
+  const grandPrize = featuredPrizes.find(p => p.tier === 'grand') ?? null
+  const otherFeatured = featuredPrizes.filter(p => p !== grandPrize)
+
+  const totalPrizeValue = prizes.reduce((sum, p) => {
+    const unitValue = p.value_amount ?? 0
+    return sum + unitValue * Math.max(p.quantity, 1)
+  }, 0)
 
   // Generate the QR as inline SVG so it prints crisp at any size and needs no
   // network round-trip on the print client.
@@ -250,29 +266,71 @@ export default async function FlyerPage({
         {/* Featured prizes */}
         {featuredPrizes.length > 0 && (
           <section className="mb-10">
-            <h2 className="mb-3 font-display text-xl font-extrabold uppercase tracking-wider">
-              What&apos;s at stake
-            </h2>
-            <ul className="grid grid-cols-2 gap-x-6 gap-y-2 text-[15px] leading-snug">
-              {featuredPrizes.map(p => {
-                const brand = brandLabel(p)
-                return (
-                  <li key={p.id} className="border-l-2 border-[#BAF14D] pl-3">
-                    <p className="font-semibold">
-                      {p.description}
-                      {p.quantity > 1 && (
-                        <span className="ml-1.5 text-sm font-normal text-[#191A2E]/60">
-                          &middot; {p.quantity} winners
-                        </span>
-                      )}
+            <div className="mb-3 flex items-baseline justify-between">
+              <h2 className="font-display text-xl font-extrabold uppercase tracking-wider">
+                What&apos;s at stake
+              </h2>
+              {totalPrizeValue > 0 && (
+                <span className="text-sm font-bold text-[#191A2E]/75">
+                  {formatDollars(totalPrizeValue)}+ in prizes
+                </span>
+              )}
+            </div>
+
+            {grandPrize && (
+              <div className="mb-4 flex items-center gap-4 rounded-lg border-2 border-[#BAF14D] bg-[#BAF14D]/10 p-4">
+                <div className="flex-1">
+                  <span className="mb-1 inline-block rounded-full bg-[#BAF14D] px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-[#191A2E]">
+                    Grand Prize
+                  </span>
+                  <p className="mt-1 text-lg font-extrabold leading-tight">
+                    {grandPrize.description}
+                  </p>
+                  {brandLabel(grandPrize) && (
+                    <p className="mt-0.5 text-sm text-[#191A2E]/75">From {brandLabel(grandPrize)}</p>
+                  )}
+                  {grandPrize.value_amount != null && grandPrize.value_amount > 0 && (
+                    <p className="mt-0.5 text-sm font-bold text-[#191A2E]/60">
+                      Value: {formatDollars(grandPrize.value_amount)}+
                     </p>
-                    {brand && (
-                      <p className="text-sm text-[#191A2E]/75">From {brand}</p>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+                  )}
+                </div>
+                {grandPrize.image_url && (
+                  <div className="h-[120px] w-[120px] shrink-0 overflow-hidden rounded-md">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={grandPrize.image_url}
+                      alt={grandPrize.description}
+                      className="h-full w-full scale-[1.6] translate-y-[-8%] object-contain"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {otherFeatured.length > 0 && (
+              <ul className="grid grid-cols-2 gap-x-6 gap-y-2 text-[15px] leading-snug">
+                {otherFeatured.map(p => {
+                  const brand = brandLabel(p)
+                  return (
+                    <li key={p.id} className="border-l-2 border-[#BAF14D] pl-3">
+                      <p className="font-semibold">
+                        {p.description}
+                        {p.quantity > 1 && (
+                          <span className="ml-1.5 text-sm font-normal text-[#191A2E]/60">
+                            &middot; {p.quantity} winners
+                          </span>
+                        )}
+                      </p>
+                      {brand && (
+                        <p className="text-sm text-[#191A2E]/75">From {brand}</p>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+
             <p className="mt-3 text-sm text-[#191A2E]/75">
               See the full prize list at gogreenstreets.org/events/shift-your-summer
             </p>
