@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { CheckCircle, Camera } from '@phosphor-icons/react'
 
 interface Props {
   assignmentId: string
@@ -229,7 +230,7 @@ export default function VolunteerAssessmentClient(props: Props) {
     return (
       <main className="min-h-screen bg-[#F4F8EE] flex items-center justify-center p-6">
         <div className="max-w-md text-center">
-          <div className="text-4xl mb-4">✅</div>
+          <div className="mb-4"><CheckCircle size={40} weight="regular" className="mx-auto text-green-600" /></div>
           <h1 className="text-xl font-bold text-[#191A2E]">Assessment Submitted!</h1>
           <p className="mt-2 text-sm text-[#6B7280]">
             Thank you for assessing {props.corridorName}. Your observations will help create safe routes
@@ -321,7 +322,7 @@ export default function VolunteerAssessmentClient(props: Props) {
 
         {/* Photo guidance */}
         <div className="rounded-xl bg-blue-50 border border-blue-200 p-4 mb-4">
-          <p className="text-xs font-semibold text-blue-800">📷 Photo Guidance</p>
+          <p className="text-xs font-semibold text-blue-800 flex items-center gap-1"><Camera size={14} weight="regular" /> Photo Guidance</p>
           <p className="text-xs text-blue-700 mt-1">
             Please take photos to document specific conditions — particularly hazards, missing sidewalks,
             unsafe crossings, or inadequate bike infrastructure. Each photo should capture a specific
@@ -469,7 +470,7 @@ export default function VolunteerAssessmentClient(props: Props) {
             <button type="button" onClick={() => fileInputRef.current?.click()}
               disabled={photos.length >= 8}
               className="rounded-lg border-2 border-dashed border-gray-300 px-4 py-3 text-sm text-[#6B7280] w-full hover:border-[#2966E5] hover:text-[#2966E5] disabled:opacity-50">
-              📷 Add Photos ({photos.length}/8)
+              <span className="inline-flex items-center gap-1.5"><Camera size={16} weight="regular" /> Add Photos ({photos.length}/8)</span>
             </button>
             {photos.map((p, i) => (
               <div key={i} className="mt-2 flex items-start gap-2">

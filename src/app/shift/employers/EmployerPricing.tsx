@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Check } from '@phosphor-icons/react'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
@@ -171,7 +172,7 @@ export default function EmployerPricing() {
                         style={{ backgroundColor: card.accent, color: onAccent }}
                         aria-hidden
                       >
-                        ✓
+                        <Check size={12} weight="bold" />
                       </span>
                       <span>{f}</span>
                     </li>

@@ -2,10 +2,12 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { MapPin, LinkSimple } from '@phosphor-icons/react'
+import type { Icon } from '@phosphor-icons/react'
 
-const NAV_ITEMS = [
-  { href: '/admin/wayfinding', label: 'Wayfinding Events', icon: '📍' },
-  { href: '/admin/demo-generator', label: 'Demo Generator', icon: '🔗' },
+const NAV_ITEMS: { href: string; label: string; icon: Icon }[] = [
+  { href: '/admin/wayfinding', label: 'Wayfinding Events', icon: MapPin },
+  { href: '/admin/demo-generator', label: 'Demo Generator', icon: LinkSimple },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -36,7 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     : 'text-white/75 hover:bg-white/[0.06] hover:text-white'
                 }`}
               >
-                <span className="text-base">{item.icon}</span>
+                <item.icon size={18} weight="regular" />
                 {item.label}
               </Link>
             )

@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
+import { Lock, ClipboardText } from '@phosphor-icons/react/dist/ssr'
 import VolunteerAssessmentClient from './client'
 
 async function getAssignmentData(token: string) {
@@ -170,7 +171,7 @@ export default async function VolunteerAssessmentPage({
       <main className="min-h-screen bg-[#F4F8EE] flex items-center justify-center p-6">
         <div className="max-w-md text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-            <span className="text-2xl">📋</span>
+            <ClipboardText size={28} weight="regular" />
           </div>
           <h1 className="text-xl font-bold text-[#191A2E]">Training Required</h1>
           <p className="mt-2 text-sm text-[#6B7280]">
@@ -199,7 +200,7 @@ export default async function VolunteerAssessmentPage({
       <main className="min-h-screen bg-[#F4F8EE] flex items-center justify-center p-6">
         <div className="max-w-md text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-            <span className="text-2xl">🔒</span>
+            <Lock size={28} weight="regular" />
           </div>
           <h1 className="text-xl font-bold text-[#191A2E]">Background Check Required</h1>
           <p className="mt-2 text-sm text-[#6B7280]">

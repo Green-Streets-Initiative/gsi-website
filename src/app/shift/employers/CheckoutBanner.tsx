@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { X } from '@phosphor-icons/react'
 
 /**
  * Banner shown on the /shift/employers marketing page after a successful
@@ -101,7 +102,7 @@ export default function CheckoutBanner() {
           className="text-sm text-white/75 hover:text-white"
           aria-label="Dismiss"
         >
-          ✕
+          <X size={16} weight="bold" />
         </button>
       </div>
     </div>

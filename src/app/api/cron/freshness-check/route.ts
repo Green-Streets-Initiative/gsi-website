@@ -155,7 +155,7 @@ function renderEmail(reports: SourceReport[], stale: StaleGuide[]): string {
     lines.push(`</div>`)
 
     if (r.error) {
-      lines.push(`<div style="color:#b00;font-size:13px">⚠ Fetch error: ${escapeHtml(r.error)} (HTTP ${r.status})</div>`)
+      lines.push(`<div style="color:#b00;font-size:13px">&#9888; Fetch error: ${escapeHtml(r.error)} (HTTP ${r.status})</div>`)
     } else if (!r.diff) {
       lines.push(
         `<div style="color:#888;font-size:13px">Snapshot seeded (${r.fetched.length} prices). Future runs will diff against this.</div>`,

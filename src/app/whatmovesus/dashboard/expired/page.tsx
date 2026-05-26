@@ -1,6 +1,7 @@
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import Link from 'next/link'
+import { LinkBreak } from '@phosphor-icons/react/dist/ssr'
 
 export const metadata = {
   title: 'Link Expired — Green Streets Initiative',
@@ -13,7 +14,7 @@ export default function ExpiredPage() {
       <main style={{ paddingTop: '60px' }}>
         <section className="flex min-h-[60vh] items-center justify-center px-8 py-24">
           <div className="mx-auto max-w-md text-center">
-            <div className="mb-6 text-5xl">🔗</div>
+            <div className="mb-6"><LinkBreak size={48} weight="regular" className="mx-auto text-white/60" /></div>
             <h1 className="font-display mb-4 text-2xl font-bold tracking-tight text-white">
               This link has expired
             </h1>

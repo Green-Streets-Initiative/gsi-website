@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { MagnifyingGlass, ChatCircle, MapTrifold, MapPin } from '@phosphor-icons/react/dist/ssr'
+import type { Icon } from '@phosphor-icons/react'
 
 const journeySteps = [
   { name: 'Receptive moment', sub: 'New job, new neighborhood, life transition' },
@@ -6,11 +8,11 @@ const journeySteps = [
   { name: 'Commitment', sub: 'Sign up, log first trip' },
 ]
 
-const engineSteps = [
-  { icon: '🔍', name: 'Barrier', sub: 'Identify friction' },
-  { icon: '💬', name: 'Nudge', sub: 'Contextual prompt' },
-  { icon: '🗺️', name: 'Resource', sub: 'Micro-guides, links, local info' },
-  { icon: '📍', name: 'Reinforcement', sub: 'Track, reward, reflect' },
+const engineSteps: { icon: Icon; name: string; sub: string }[] = [
+  { icon: MagnifyingGlass, name: 'Barrier', sub: 'Identify friction' },
+  { icon: ChatCircle, name: 'Nudge', sub: 'Contextual prompt' },
+  { icon: MapTrifold, name: 'Resource', sub: 'Micro-guides, links, local info' },
+  { icon: MapPin, name: 'Reinforcement', sub: 'Track, reward, reflect' },
 ]
 
 const tierIcons = {
@@ -108,7 +110,7 @@ export default function ShiftSection() {
                 {engineSteps.map((step, i) => (
                   <div key={step.name} className="flex min-w-0 flex-1 items-stretch">
                     <div className="flex-1 rounded-lg border border-[rgba(41,102,229,0.2)] bg-[rgba(41,102,229,0.1)] px-2 py-3 text-center">
-                      <p className="mb-1 text-[14px]">{step.icon}</p>
+                      <step.icon className="mx-auto mb-1 text-[14px]" size={18} weight="regular" />
                       <p className="font-display text-xs font-bold text-white">{step.name}</p>
                       <p className="mt-0.5 text-[10px] leading-snug text-white">{step.sub}</p>
                     </div>

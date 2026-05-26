@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { Lock, Confetti, Check, File, NotePencil, FilmSlate } from '@phosphor-icons/react'
 import type { TrainingPortalProps } from './page'
 
 type ModuleWithState = TrainingPortalProps['modules'][number]
@@ -102,7 +103,7 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
       <main className="min-h-screen bg-[#F4F8EE] flex items-center justify-center p-6">
         <div className="max-w-md text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-            <span className="text-2xl">🔒</span>
+            <Lock size={28} weight="regular" />
           </div>
           <h1 className="text-xl font-bold text-[#191A2E]">Prerequisite Required</h1>
           <p className="mt-2 text-sm text-[#6B7280]">
@@ -121,7 +122,7 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
       <main className="min-h-screen bg-[#F4F8EE] flex items-center justify-center p-6">
         <div className="max-w-lg text-center">
           <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-            <span className="text-4xl">🎉</span>
+            <Confetti size={40} weight="regular" />
           </div>
           <h1 className="text-2xl font-bold text-[#191A2E]">Certification Complete!</h1>
           <p className="mt-3 text-[#6B7280]">
@@ -253,7 +254,7 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
                     ? 'bg-[#2966E5]/10 text-[#2966E5]'
                     : 'bg-[#F3F4F6] text-[#9CA3AF]'
                 }`}>
-                  {isComplete ? '✓' : mod.moduleNumber}
+                  {isComplete ? <Check size={16} weight="bold" /> : mod.moduleNumber}
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -479,7 +480,7 @@ function ModuleView({
             {/* No content yet placeholder */}
             {!hasContent && !hasVideo && (
               <div className="rounded-xl bg-white p-8 text-center shadow-sm ring-1 ring-[#E5E7EB]">
-                <span className="text-3xl">📝</span>
+                <NotePencil size={32} weight="regular" className="text-[#9CA3AF]" />
                 <h2 className="mt-3 font-semibold text-[#191A2E]">Content Coming Soon</h2>
                 <p className="mt-2 text-sm text-[#6B7280]">
                   Training material for this module is being prepared.
@@ -499,7 +500,7 @@ function ModuleView({
                   className="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-[#F9FAFB] transition"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-lg">🎬</span>
+                    <FilmSlate size={20} weight="regular" className="text-[#191A2E]" />
                     <div>
                       <p className="text-sm font-medium text-[#191A2E]">Watch the video</p>
                       <p className="text-xs text-[#9CA3AF]">
@@ -594,7 +595,7 @@ function ModuleView({
                   quizScore !== null && quizScore >= 80 ? 'text-green-700' : 'text-red-700'
                 }`}>
                   {quizScore !== null && quizScore >= 80
-                    ? 'You passed! 🎉'
+                    ? 'You passed!'
                     : 'Not quite — review the explanations above and try again.'}
                 </p>
                 {quizScore !== null && quizScore >= 80 && (
@@ -752,7 +753,7 @@ function GuideDownloadButton({ storagePath }: { storagePath: string }) {
       {loading ? (
         <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
       ) : (
-        <span>📄</span>
+        <File size={16} weight="regular" />
       )}
       Download Reference Guide
     </button>
@@ -816,7 +817,7 @@ function CoriBanner({
   if (localStatus === 'approved') {
     return (
       <div className="rounded-xl bg-green-50 px-5 py-3 ring-1 ring-green-200 flex items-center gap-3">
-        <span className="text-green-600 text-lg">✓</span>
+        <Check size={20} weight="bold" className="text-green-600" />
         <div>
           <p className="text-sm font-medium text-green-800">Background check approved</p>
           <p className="text-xs text-green-600">Your CORI clearance is on file.</p>
@@ -828,7 +829,7 @@ function CoriBanner({
   if (localStatus === 'pending') {
     return (
       <div className="rounded-xl bg-blue-50 px-5 py-3 ring-1 ring-blue-200 flex items-center gap-3">
-        <span className="text-blue-600 text-lg">📄</span>
+        <File size={20} weight="regular" className="text-blue-600" />
         <div>
           <p className="text-sm font-medium text-blue-800">Background check submitted</p>
           <p className="text-xs text-blue-600">Your CORI document is pending review by your coordinator.</p>
@@ -847,7 +848,7 @@ function CoriBanner({
         onChange={handleUpload}
       />
       <div className="flex items-start gap-3">
-        <span className="text-amber-500 text-lg mt-0.5">🔒</span>
+        <Lock size={20} weight="regular" className="text-amber-500 mt-0.5" />
         <div className="flex-1">
           <p className="text-sm font-medium text-amber-800">Background check required</p>
           <p className="mt-1 text-xs text-amber-700 leading-relaxed">

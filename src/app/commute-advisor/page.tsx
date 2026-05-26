@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
+import { GasPump, Lightning, Check } from '@phosphor-icons/react'
 import RecommendationCard from '@/components/commute/RecommendationCard'
 import CommuteMap from '@/components/commute/CommuteMap'
 import StarterGuides from '@/components/commute/StarterGuides'
@@ -440,14 +441,16 @@ export default function CommuteCalculator() {
     let fuelSavings = 0
     let maintSavings = 0
     let rideshareSavings = 0
-    let fuelLabel = '⛽ Fuel savings'
+    let fuelIcon: React.ReactNode = <GasPump size={14} weight="regular" className="inline -mt-0.5" />
+    let fuelText = 'Fuel savings'
 
     if (isRideshare) {
       rideshareSavings = rideshareDaily * sd * WEEKS
     } else if (commuteMode === 'drive') {
       if (v.isEV) {
         fuelSavings = annualMiles * v.costPerMile!
-        fuelLabel = '⚡ Electricity savings'
+        fuelIcon = <Lightning size={14} weight="regular" className="inline -mt-0.5" />
+        fuelText = 'Electricity savings'
         maintSavings = annualMiles * v.maint
       } else {
         fuelSavings = annualMiles * (gasPrice / v.mpg)
@@ -538,7 +541,7 @@ export default function CommuteCalculator() {
 
     return {
       net, fuelSavings, maintSavings, parkingSavings, transitCost, transitLabel,
-      fuelLabel, rideshareSavings, isRideshare,
+      fuelIcon, fuelText, rideshareSavings, isRideshare,
       baselineAnnualCost, baselineLabel,
       driveMins, altMins, timeNote, isRealRouting, mode,
       isActive, activeMins, weeklyCals, gymEquiv,
@@ -586,7 +589,7 @@ export default function CommuteCalculator() {
                   : 'bg-white/[0.08] text-white/50'
                 }`}
               >
-                {s < step ? '✓' : s}
+                {s < step ? <Check size={14} weight="bold" /> : s}
               </button>
               {s < 3 && <div className={`h-px w-12 ${s < step ? 'bg-[#BAF14D]/30' : 'bg-white/[0.08]'}`} />}
             </div>
@@ -978,7 +981,7 @@ export default function CommuteCalculator() {
                         <ResultRow label="Rideshare savings" value={`+${fmt(r.rideshareSavings)}`} type="pos" />
                       ) : commuteMode === 'drive' ? (
                         <>
-                          <ResultRow label={r.fuelLabel} value={`+${fmt(r.fuelSavings)}`} type="pos" />
+                          <ResultRow label={<span className="flex items-center gap-1.5">{r.fuelIcon} {r.fuelText}</span>} value={`+${fmt(r.fuelSavings)}`} type="pos" />
                           <ResultRow label="Maintenance savings" value={`+${fmt(r.maintSavings)}`} type="pos" />
                           {parkMode !== 'free' && (
                             <ResultRow label="Parking savings" value={`+${fmt(r.parkingSavings)}`} type="pos" />
@@ -1168,7 +1171,7 @@ function RadioPills({ name, value, onChange, options }: {
   )
 }
 
-function ResultRow({ label, value, type }: { label: string; value: string; type: 'pos' | 'neg' | 'neu' }) {
+function ResultRow({ label, value, type }: { label: React.ReactNode; value: string; type: 'pos' | 'neg' | 'neu' }) {
   const color = type === 'pos' ? 'text-[#BAF14D]' : type === 'neg' ? 'text-[#FF6B6B]' : 'text-white'
   return (
     <div className="flex items-center justify-between rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-3.5 py-2.5">

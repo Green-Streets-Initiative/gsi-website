@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import WaitlistEmailForm from '@/components/WaitlistEmailForm'
+import { CurrencyDollar, Brain, MagnifyingGlass } from '@phosphor-icons/react/dist/ssr'
 
 const IOS_URL = process.env.NEXT_PUBLIC_IOS_URL || ''
 const ANDROID_URL = process.env.NEXT_PUBLIC_ANDROID_URL || ''
@@ -165,7 +166,7 @@ export default function ShiftPage() {
 
             <div className="grid gap-6 md:grid-cols-3">
               <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <div className="mb-4 text-2xl">💰</div>
+                <div className="mb-4"><CurrencyDollar size={28} weight="regular" className="text-[#BAF14D]" /></div>
                 <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Save real money</h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-white">
                   Active trips put money back in your pocket — and earn you rewards from local businesses on top.
@@ -173,7 +174,7 @@ export default function ShiftPage() {
               </div>
 
               <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <div className="mb-4 text-2xl">🧠</div>
+                <div className="mb-4"><Brain size={28} weight="regular" className="text-[#BAF14D]" /></div>
                 <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Feel better</h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-white">
                   Active commuters report better sleep, sharper focus, and lower stress. Built into your day, not added to it.
@@ -181,7 +182,7 @@ export default function ShiftPage() {
               </div>
 
               <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <div className="mb-4 text-2xl">🔍</div>
+                <div className="mb-4"><MagnifyingGlass size={28} weight="regular" className="text-[#BAF14D]" /></div>
                 <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Discover what works for you</h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-white">
                   Shift finds transit routes and bike-share options connecting your home and work that you haven&apos;t tried yet. Every week, new suggestions based on where you actually go.

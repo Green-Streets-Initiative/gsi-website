@@ -166,10 +166,13 @@ export default async function FlyerPage({
   return (
     <main className="flyer-root min-h-screen bg-white text-[#191A2E]">
       <style>{`
-        @page { size: letter; margin: 0.5in; }
+        @page { size: letter; margin: 0.35in 0.5in; }
         @media print {
           .flyer-no-print { display: none !important; }
-          .flyer-root { background: white !important; }
+          .flyer-root { background: white !important; min-height: 0 !important; }
+          body > :not(.flyer-root) { display: none !important; }
+          [data-nextjs-toast], nextjs-portal { display: none !important; }
+          .flyer-article { padding: 0 !important; }
         }
         .flyer-root { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       `}</style>
@@ -187,10 +190,10 @@ export default async function FlyerPage({
         </div>
       </div>
 
-      <article className="mx-auto max-w-[8.5in] px-10 py-10">
+      <article className="flyer-article mx-auto max-w-[8.5in] px-10 py-3">
         {/* Header */}
-        <header className="mb-8 border-b-2 border-[#191A2E] pb-6">
-          <div className="mb-4 inline-flex items-center gap-4">
+        <header className="mb-3 border-b-2 border-[#191A2E] pb-2">
+          <div className="mb-2 inline-flex items-center gap-4">
             {/* Shift wordmark: Bricolage Grotesque + chevrons */}
             <span className="flex items-center gap-1.5">
               <span className="font-display text-xl font-extrabold tracking-tight">
@@ -208,7 +211,7 @@ export default async function FlyerPage({
               <span className="font-normal">Initiative</span>
             </span>
           </div>
-          <h1 className="mb-2 font-display text-[44px] font-extrabold leading-[1.05] tracking-tight">
+          <h1 className="mb-1 font-display text-[38px] font-extrabold leading-[1.05] tracking-tight">
             {eventName}
           </h1>
           <div className="mb-1 flex items-center gap-3">
@@ -217,23 +220,23 @@ export default async function FlyerPage({
             </span>
             <span className="text-base font-semibold text-[#191A2E]/75">{dateRange}</span>
           </div>
-          <p className="text-base text-[#191A2E]/80">
+          <p className="text-sm text-[#191A2E]/80">
             An 8-week challenge to walk, bike, and ride transit. Free to join.
           </p>
-          <p className="mt-1 text-sm font-bold text-[#191A2E]/60">#ShiftYourSummer</p>
+          <p className="mt-0.5 text-xs font-bold text-[#191A2E]/60">#ShiftYourSummer</p>
         </header>
 
         {/* Hero row: pitch + QR */}
-        <section className="mb-10 grid grid-cols-[1fr_auto] gap-10">
+        <section className="mb-4 grid grid-cols-[1fr_auto] gap-6">
           <div>
-            <h2 className="mb-3 font-display text-[26px] font-extrabold leading-tight">
+            <h2 className="mb-2 font-display text-[22px] font-extrabold leading-tight">
               Walk, bike, ride — and get rewarded for it.
             </h2>
-            <p className="mb-4 text-base leading-[1.55]">
+            <p className="mb-2 text-sm leading-[1.5]">
               The Shift app automatically detects your active trips. Build streaks, climb the
               leaderboard, and enter to win prizes from local and national partners.
             </p>
-            <ol className="space-y-2 text-base">
+            <ol className="space-y-1 text-sm">
               <li>
                 <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#BAF14D] text-sm font-extrabold">1</span>
                 Download Shift on iOS or Android.
@@ -251,7 +254,7 @@ export default async function FlyerPage({
 
           <div className="flex flex-col items-center justify-center text-center">
             <div
-              className="h-[180px] w-[180px]"
+              className="h-[120px] w-[120px]"
               dangerouslySetInnerHTML={{ __html: qrSvg }}
             />
             <p className="mt-2 text-xs font-bold uppercase tracking-widest">
@@ -265,8 +268,8 @@ export default async function FlyerPage({
 
         {/* Featured prizes */}
         {featuredPrizes.length > 0 && (
-          <section className="mb-10">
-            <div className="mb-3 flex items-baseline justify-between">
+          <section className="mb-5">
+            <div className="mb-2 flex items-baseline justify-between">
               <h2 className="font-display text-xl font-extrabold uppercase tracking-wider">
                 What&apos;s at stake
               </h2>
@@ -278,12 +281,12 @@ export default async function FlyerPage({
             </div>
 
             {grandPrize && (
-              <div className="mb-4 flex items-center gap-4 rounded-lg border-2 border-[#BAF14D] bg-[#BAF14D]/10 p-4">
+              <div className="mb-3 flex items-center gap-4 rounded-lg border-2 border-[#BAF14D] bg-[#BAF14D]/10 p-3">
                 <div className="flex-1">
                   <span className="mb-1 inline-block rounded-full bg-[#BAF14D] px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-[#191A2E]">
                     Grand Prize
                   </span>
-                  <p className="mt-1 text-lg font-extrabold leading-tight">
+                  <p className="mt-1 text-base font-extrabold leading-tight">
                     {grandPrize.description}
                   </p>
                   {brandLabel(grandPrize) && (
@@ -296,7 +299,7 @@ export default async function FlyerPage({
                   )}
                 </div>
                 {grandPrize.image_url && (
-                  <div className="h-[120px] w-[120px] shrink-0 overflow-hidden rounded-md">
+                  <div className="h-[85px] w-[85px] shrink-0 overflow-hidden rounded-md">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={grandPrize.image_url}
@@ -309,7 +312,7 @@ export default async function FlyerPage({
             )}
 
             {otherFeatured.length > 0 && (
-              <ul className="grid grid-cols-2 gap-x-6 gap-y-2 text-[15px] leading-snug">
+              <ul className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px] leading-snug">
                 {otherFeatured.map(p => {
                   const brand = brandLabel(p)
                   return (
@@ -331,43 +334,27 @@ export default async function FlyerPage({
               </ul>
             )}
 
-            <p className="mt-3 text-sm text-[#191A2E]/75">
-              See the full prize list at gogreenstreets.org/events/shift-your-summer
-            </p>
           </section>
         )}
 
-        {/* Bring it to your team */}
-        <section className="mb-10 rounded-lg border-2 border-[#191A2E]/15 p-5">
-          <h3 className="mb-1 font-display text-base font-extrabold">
-            Bring it to your team
-          </h3>
-          <p className="mb-2 text-sm leading-snug text-[#191A2E]/80">
-            Get a branded team leaderboard, impact reporting, and prizes for your organization.
-          </p>
-          <p className="text-sm font-bold">
-            gogreenstreets.org/shift/employers
-          </p>
-        </section>
-
         {/* Sponsors */}
         {sponsors.length > 0 && (
-          <section className="mb-8">
-            <h2 className="mb-3 font-display text-xl font-extrabold uppercase tracking-wider">
+          <section className="mb-2">
+            <h2 className="mb-1 font-display text-base font-extrabold uppercase tracking-wider">
               Made possible by
             </h2>
-            <div className="grid grid-cols-4 gap-4">
-              {sponsors.slice(0, 12).map(s => (
+            <div className="grid grid-cols-4 gap-2">
+              {sponsors.slice(0, 8).map(s => (
                 <div
                   key={s.id}
-                  className="flex h-[64px] items-center justify-center rounded-md border border-[#191A2E]/10 bg-white px-2"
+                  className="flex h-[44px] items-center justify-center rounded-md border border-[#191A2E]/10 bg-white px-2"
                 >
                   {s.logo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={s.logo_url}
                       alt={s.name}
-                      className="max-h-[44px] max-w-[85%] object-contain"
+                      className="max-h-[30px] max-w-[85%] object-contain"
                     />
                   ) : (
                     <span className="text-center text-xs font-semibold">{s.name}</span>
@@ -379,9 +366,12 @@ export default async function FlyerPage({
         )}
 
         {/* Footer */}
-        <footer className="mt-10 border-t border-[#191A2E]/15 pt-4 text-sm text-[#191A2E]/75">
+        <footer className="mt-2 border-t border-[#191A2E]/15 pt-1.5 text-sm text-[#191A2E]/75">
           <p>
-            Green Streets Initiative &middot; <strong>gogreenstreets.org/events/shift-your-summer</strong>
+            Green Streets Initiative, a 501(c)(3) &middot; <strong>gogreenstreets.org/events/shift-your-summer</strong>
+          </p>
+          <p className="mt-1">
+            Bring it to your team &middot; <strong>gogreenstreets.org/shift/employers</strong>
           </p>
         </footer>
       </article>

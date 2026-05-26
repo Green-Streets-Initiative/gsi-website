@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Check } from '@phosphor-icons/react'
 
 interface OfferFormProps {
   slug: string
@@ -98,7 +99,7 @@ export default function OfferForm({
     return (
       <div className="offer-success" role="status" aria-live="polite">
         <div className="check" aria-hidden="true">
-          ✓
+          <Check size={32} weight="bold" />
         </div>
         <h3>You're in!</h3>
         <button

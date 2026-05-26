@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
+import { Check } from '@phosphor-icons/react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import RecommendationCard from '@/components/commute/RecommendationCard'
 import CommuteMap from '@/components/commute/CommuteMap'
@@ -351,7 +352,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                   s === step ? 'bg-[#BAF14D] text-[#191A2E]'
                   : s < step ? 'bg-[#BAF14D]/20 text-[#BAF14D] hover:bg-[#BAF14D]/30'
                   : 'bg-white/[0.08] text-white/50'
-                }`}>{s < step ? '✓' : s}</button>
+                }`}>{s < step ? <Check size={14} weight="bold" /> : s}</button>
               {s < 3 && <div className={`h-px w-12 ${s < step ? 'bg-[#BAF14D]/30' : 'bg-white/[0.08]'}`} />}
             </div>
           ))}

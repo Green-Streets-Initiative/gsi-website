@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Check } from '@phosphor-icons/react'
 
 type Tier = 'community' | 'champion' | 'presenting' | 'custom'
 type PrizeCategory = 'grand' | 'weekly' | 'catalog' | 'unsure'
@@ -113,7 +114,7 @@ export default function PartnerForm() {
   if (submitted) {
     return (
       <div className="bg-[#242538] rounded-xl border border-white/[0.08] p-12 text-center">
-        <div className="text-3xl mb-4">✓</div>
+        <div className="text-3xl mb-4"><Check size={36} weight="bold" /></div>
         <h3 className="font-display text-[1.5rem] font-bold text-white mb-3">Thank you!</h3>
         <p className="text-base text-white/80 leading-relaxed max-w-[440px] mx-auto">
           We&rsquo;ve received your partnership interest. Keith will follow up within two

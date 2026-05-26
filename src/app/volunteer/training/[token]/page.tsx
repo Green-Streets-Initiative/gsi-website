@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
+import { Check } from '@phosphor-icons/react/dist/ssr'
 import TrainingPortalClient from './client'
 
 interface TrackData {
@@ -244,7 +245,7 @@ export default async function TrainingPortalPage({
       <main className="min-h-screen bg-[#F4F8EE] flex items-center justify-center p-6">
         <div className="max-w-md text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-            <span className="text-2xl">✓</span>
+            <Check size={28} weight="bold" />
           </div>
           <h1 className="text-xl font-bold text-[#191A2E]">Already Certified</h1>
           <p className="mt-2 text-sm text-[#6B7280]">

@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { CurrencyDollar, Brain, Buildings, Bicycle, Building } from '@phosphor-icons/react/dist/ssr'
+import type { Icon } from '@phosphor-icons/react'
 
 export default function HowItWorks() {
   return (
@@ -17,9 +19,9 @@ export default function HowItWorks() {
             </p>
           </div>
           <div className="flex flex-col gap-3.5">
-            {[
+            {([
               {
-                icon: '💰',
+                icon: CurrencyDollar,
                 text: (
                   <>
                     <strong className="font-semibold text-[#191A2E]">Save money and time.</strong> Walking, biking, or taking transit instead of driving saves the average Boston commuter hundreds each month in gas, maintenance, and parking.
@@ -27,7 +29,7 @@ export default function HowItWorks() {
                 ),
               },
               {
-                icon: '🧠',
+                icon: Brain,
                 text: (
                   <>
                     <strong className="font-semibold text-[#191A2E]">Feel better.</strong> Regular active trips are linked to better sleep, sharper cognition, lower stress — and meaningfully lower all-cause mortality.
@@ -35,19 +37,21 @@ export default function HowItWorks() {
                 ),
               },
               {
-                icon: '🏙️',
+                icon: Buildings,
                 text: (
                   <>
                     <strong className="font-semibold text-[#191A2E]">Move your community.</strong> Every active trip builds momentum — for your neighborhood, your city, and the people around you.
                   </>
                 ),
               },
-            ].map((item, i) => (
+            ] as { icon: Icon; text: React.ReactNode }[]).map((item, i) => (
               <div
                 key={i}
                 className="flex items-start gap-3.5 rounded-[10px] border border-[rgba(25,26,46,0.09)] bg-white px-4 py-3.5"
               >
-                <span className="mt-0.5 w-9 shrink-0 text-center text-lg">{item.icon}</span>
+                <div className="mt-0.5 w-9 shrink-0 text-center">
+                  <item.icon size={22} weight="regular" className="mx-auto text-[#4A4D68]" />
+                </div>
                 <p className="text-[0.9rem] leading-relaxed text-[#4A4D68]">{item.text}</p>
               </div>
             ))}
@@ -56,8 +60,8 @@ export default function HowItWorks() {
 
         <div className="grid gap-5 md:grid-cols-2">
           <div className="group flex flex-col rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-white p-8 transition-all hover:border-[#7DB82E] hover:shadow-[0_8px_32px_rgba(186,241,77,0.12)] hover:-translate-y-0.5">
-            <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-[10px] bg-[rgba(186,241,77,0.15)] text-[1.25rem]">
-              🚲
+            <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-[10px] bg-[rgba(186,241,77,0.15)]">
+              <Bicycle size={24} weight="regular" className="text-[#7DB82E]" />
             </div>
             <h3 className="mb-2 font-display text-lg font-bold tracking-tight text-[#191A2E]">
               Individual commuters
@@ -74,8 +78,8 @@ export default function HowItWorks() {
             </Link>
           </div>
           <div className="group flex flex-col rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-white p-8 transition-all hover:border-[#7DB82E] hover:shadow-[0_8px_32px_rgba(186,241,77,0.12)] hover:-translate-y-0.5">
-            <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-[10px] bg-[rgba(41,102,229,0.1)] text-[1.25rem]">
-              🏢
+            <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-[10px] bg-[rgba(41,102,229,0.1)]">
+              <Building size={24} weight="regular" className="text-[#2966E5]" />
             </div>
             <h3 className="mb-2 font-display text-lg font-bold tracking-tight text-[#191A2E]">
               Employers, universities &amp; cities
