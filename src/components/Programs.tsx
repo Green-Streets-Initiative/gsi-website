@@ -15,15 +15,14 @@ export default function Programs() {
           {/* Shift — the app (primary, navy bg) */}
           <div className="group relative overflow-hidden rounded-2xl bg-navy p-8">
             <span className="mb-5 inline-block rounded-full bg-lime/15 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7DB82E]">
-              New in 2026
+              Download now
             </span>
             <h3 className="mb-2 font-display text-[1.375rem] font-extrabold tracking-tight text-white">
               Shift — the app
             </h3>
             <p className="mb-6 text-[15px] leading-relaxed text-white">
               A behavior-change app that makes walking, biking, and transit feel
-              rewarding, competitive, and social. Available on iOS and Android —
-              coming soon.
+              rewarding, competitive, and social. Available on iOS and Android.
             </p>
             <Link
               href="/shift"
