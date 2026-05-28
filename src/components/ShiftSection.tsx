@@ -110,7 +110,7 @@ export default function ShiftSection() {
                 {engineSteps.map((step, i) => (
                   <div key={step.name} className="flex min-w-0 flex-1 items-stretch">
                     <div className="flex-1 rounded-lg border border-[rgba(41,102,229,0.2)] bg-[rgba(41,102,229,0.1)] px-2 py-3 text-center">
-                      <step.icon className="mx-auto mb-1 text-[14px]" size={18} weight="regular" />
+                      <step.icon className="mx-auto mb-1 text-white" size={18} weight="regular" />
                       <p className="font-display text-xs font-bold text-white">{step.name}</p>
                       <p className="mt-0.5 text-[10px] leading-snug text-white">{step.sub}</p>
                     </div>
