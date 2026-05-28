@@ -291,15 +291,16 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
             style={{
               display: 'flex',
               alignItems: 'baseline',
+              gap: 7,
               marginTop: 24,
               fontFamily: 'Trebuchet MS',
               fontSize: 28,
               textShadow: TEXT_SHADOW,
             }}
           >
-            <span style={{ color: SOFT_WHITE, fontWeight: 400 }}>Wayfinding by </span>
+            <span style={{ color: SOFT_WHITE, fontWeight: 400 }}>Wayfinding by</span>
             <span style={{ color: TEAL, fontWeight: 700 }}>Green Streets</span>
-            <span style={{ color: SOFT_WHITE, fontWeight: 400 }}> Initiative</span>
+            <span style={{ color: SOFT_WHITE, fontWeight: 400 }}>Initiative</span>
           </div>
         </div>
       </div>

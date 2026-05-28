@@ -16,7 +16,7 @@ export async function generateMetadata({
     description: `Wayfinding for ${event.name}. ${event.organizer_name ? `Presented by ${event.organizer_name}.` : ''} ${displayDate}`,
     openGraph: {
       title: `${event.name} — Getting around`,
-      description: `Find your way to ${event.name} by bike, bus, or foot.`,
+      description: `Find your way to ${event.name} by bike, transit, or foot.`,
     },
     twitter: {
       card: 'summary_large_image',
