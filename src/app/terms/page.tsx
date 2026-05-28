@@ -18,7 +18,7 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="mt-3 text-sm text-white">
-            Shift by Green Streets Initiative &middot; Last updated March 2026
+            Shift by Green Streets Initiative &middot; Last updated May 2026
           </p>
           <p className="mt-1 text-sm text-white">
             Contact: <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>
