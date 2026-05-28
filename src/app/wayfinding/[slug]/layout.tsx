@@ -18,6 +18,9 @@ export async function generateMetadata({
       title: `${event.name} — Getting around`,
       description: `Find your way to ${event.name} by bike, bus, or foot.`,
     },
+    twitter: {
+      card: 'summary_large_image',
+    },
   }
 }
 

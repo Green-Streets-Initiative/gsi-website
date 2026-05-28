@@ -14,44 +14,9 @@
 
 import { ImageResponse } from "@vercel/og";
 import { createClient } from "@supabase/supabase-js";
+import { loadBricolage, loadTrebuchet } from "@/lib/og-fonts";
 
 export const runtime = "edge";
-
-/**
- * Fetch a Bricolage Grotesque weight from Google Fonts. Uses the documented
- * Vercel pattern: hit the CSS endpoint, parse the woff/ttf URL, fetch the
- * binary. Edge runtime caches the responses so warm requests are fast.
- */
-async function loadBricolage(weight: 400 | 700 | 800): Promise<ArrayBuffer> {
-  // Use the legacy /css? endpoint (no `2`) without a UA — it returns TTF
-  // URLs by default, which is what Satori needs. The /css2? endpoint
-  // returns woff2 for any modern UA, which Satori can't parse.
-  const cssUrl = `https://fonts.googleapis.com/css?family=Bricolage+Grotesque:${weight}`;
-  const css = await fetch(cssUrl).then((r) => r.text());
-  const match = css.match(/src:\s*url\((https:\/\/[^)]+)\)\s*format\('truetype'\)/);
-  if (!match) {
-    throw new Error(`Could not parse Bricolage Grotesque ${weight} font URL`);
-  }
-  const fontRes = await fetch(match[1]);
-  if (!fontRes.ok) throw new Error(`Failed to fetch font: ${fontRes.status}`);
-  return fontRes.arrayBuffer();
-}
-
-/**
- * Load the GSI brand typeface (Trebuchet MS) from the deployed site's
- * /public/fonts directory. Edge fetch is cached at the Vercel CDN, so
- * warm requests are fast. Origin is derived from the request URL so the
- * same code works in dev (localhost) and production.
- */
-async function loadTrebuchet(
-  origin: string,
-  weight: "regular" | "bold",
-): Promise<ArrayBuffer> {
-  const res = await fetch(`${origin}/fonts/trebuchet-${weight}.ttf`);
-  if (!res.ok)
-    throw new Error(`Failed to load Trebuchet ${weight}: ${res.status}`);
-  return res.arrayBuffer();
-}
 
 interface ShareCardData {
   firstName: string;

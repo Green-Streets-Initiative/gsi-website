@@ -28,6 +28,8 @@ export interface WayfindingEvent {
   is_published: boolean
   event_url: string | null
   event_photo_url: string | null
+  og_location_primary: string | null
+  og_location_detail: string | null
   admin_token: string | null
   created_at: string
 }

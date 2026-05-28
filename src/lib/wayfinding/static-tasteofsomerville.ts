@@ -38,6 +38,8 @@ export const TASTE_EVENT: WayfindingEvent = {
   is_published: true,
   event_url: 'https://tasteofsomerville.org/',
   event_photo_url: '/assets/wayfinding/tos-event-photo.jpg',
+  og_location_primary: 'Boynton Yards',
+  og_location_detail: null,
   admin_token: null,
   created_at: '2026-05-18T00:00:00Z',
 }
