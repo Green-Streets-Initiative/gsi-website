@@ -33,7 +33,7 @@ export default async function SharePage({
     ? `${CHALLENGE_BASE_URL}?ref=${refCode}`
     : CHALLENGE_BASE_URL
 
-  const blurb = `Join Shift Your Summer — a free 8-week challenge (June 15 – Aug 15) where every walk, bike ride, and transit trip is an entry to win. The Shift app tracks your trips automatically. Build streaks, climb the leaderboard, and compete for prizes from Apollo Scooters, Quad Lock, Kryptonite, and more. Every trip earns you an entry. Join here: ${shareUrl}`
+  const blurb = `Join Shift Your Summer — a free 8-week challenge (June 15 – Aug 15) where every walk, bike ride, and transit trip is an entry to win. The Shift app tracks your trips automatically. Build streaks, climb the leaderboard, and compete for prizes from Segway, Quad Lock, Kryptonite, and more. Every trip earns you an entry. Join here: ${shareUrl}`
 
   const emailSubject = 'Join me for Shift Your Summer'
   const emailBody = blurb
@@ -55,7 +55,7 @@ export default async function SharePage({
               Share Shift Your Summer
             </h1>
             <p className="mb-10 text-[1.0625rem] leading-[1.65] text-white/85">
-              Help us grow the challenge. Share with your team, your neighbors, or your friends — participants are eligible for prizes from brands like Apollo Scooters, Quad Lock, and Kryptonite just by walking, biking, and taking transit this summer.
+              Help us grow the challenge. Share with your team, your neighbors, or your friends — participants are eligible for prizes from brands like Segway, Quad Lock, and Kryptonite just by walking, biking, and taking transit this summer.
             </p>
 
             <ShareKit
