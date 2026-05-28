@@ -226,9 +226,9 @@ export default async function FlyerPage({
         </div>
       </div>
 
-      <article className="flyer-article mx-auto max-w-[8.5in] px-10 py-3">
+      <article className="flyer-article mx-auto max-w-[8.5in] px-10 py-2">
         {/* Header */}
-        <header className="mb-3 border-b-2 border-[#191A2E] pb-2">
+        <header className="mb-2 border-b-2 border-[#191A2E] pb-1.5">
           <div className="mb-2 inline-flex items-center gap-4">
             {/* Shift wordmark: Bricolage Grotesque + chevrons */}
             <span className="flex items-center gap-1.5">
@@ -247,9 +247,9 @@ export default async function FlyerPage({
               <span className="font-normal">Initiative</span>
             </span>
           </div>
-          <h1 className="mb-1 font-display text-[38px] font-extrabold leading-[1.05] tracking-tight">
+          <h1 className={`mb-1 font-display font-extrabold leading-[1.05] tracking-tight ${group ? 'text-[32px]' : 'text-[38px]'}`}>
             {group ? (
-              <>{eventName}<br /><span className="text-[28px]">× {group.name}</span></>
+              <>{eventName}<br /><span className="text-[22px]">× {group.name}</span></>
             ) : eventName}
           </h1>
           <div className="mb-1 flex items-center gap-3">
@@ -265,7 +265,7 @@ export default async function FlyerPage({
         </header>
 
         {/* Hero row: pitch + QR */}
-        <section className="mb-4 grid grid-cols-[1fr_auto] gap-6">
+        <section className="mb-3 grid grid-cols-[1fr_auto] gap-6">
           <div>
             <h2 className="mb-2 font-display text-[22px] font-extrabold leading-tight">
               Walk, bike, ride — and get rewarded for it.
@@ -318,7 +318,7 @@ export default async function FlyerPage({
 
         {/* Featured prizes */}
         {featuredPrizes.length > 0 && (
-          <section className="mb-5">
+          <section className="mb-4">
             <div className="mb-2 flex items-baseline justify-between">
               <h2 className="font-display text-xl font-extrabold uppercase tracking-wider">
                 What&apos;s at stake
@@ -331,7 +331,7 @@ export default async function FlyerPage({
             </div>
 
             {grandPrize && (
-              <div className="mb-3 flex items-center gap-4 rounded-lg border-2 border-[#BAF14D] bg-[#BAF14D]/10 p-3">
+              <div className="mb-2 flex items-center gap-4 rounded-lg border-2 border-[#BAF14D] bg-[#BAF14D]/10 p-3">
                 <div className="flex-1">
                   <span className="mb-1 inline-block rounded-full bg-[#BAF14D] px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-[#191A2E]">
                     Grand Prize
@@ -416,7 +416,7 @@ export default async function FlyerPage({
         )}
 
         {/* Footer */}
-        <footer className="mt-2 border-t border-[#191A2E]/15 pt-1.5 text-sm text-[#191A2E]/75">
+        <footer className="mt-1.5 border-t border-[#191A2E]/15 pt-1 text-sm text-[#191A2E]/75">
           <p>
             Green Streets Initiative, a 501(c)(3) &middot; <strong>gogreenstreets.org/events/shift-your-summer</strong>
           </p>

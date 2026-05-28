@@ -139,36 +139,53 @@ export default async function CorporateSharePage({ params }: Props) {
               Walk, bike, and take transit this summer — and compete for prizes from brands like Segway, Quad Lock, and Kryptonite. Join your team in the Shift app to get started.
             </p>
 
-            {/* Primary CTA — deep link */}
-            <a
-              href={joinUrl}
-              className="mb-8 inline-flex w-full items-center justify-center rounded-full bg-[#BAF14D] px-8 py-4 text-center text-lg font-extrabold text-[#191A2E] transition-opacity hover:opacity-85 sm:w-auto"
-            >
-              Join {group.name}&rsquo;s team
-            </a>
+            {/* Path 1 — Deep link (recommended) */}
+            <div className="mb-6 rounded-[14px] border border-[#BAF14D]/20 bg-[#BAF14D]/[0.06] p-6">
+              <span className="mb-2 inline-block rounded-full bg-[#BAF14D]/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[#BAF14D]">
+                Recommended
+              </span>
+              <h2 className="mb-2 text-lg font-bold text-white">
+                Tap to join automatically
+              </h2>
+              <p className="mb-5 text-[0.9375rem] leading-[1.6] text-white/85">
+                Already have the Shift app? This link opens it and joins you to {group.name}&rsquo;s team automatically. Don&rsquo;t have it yet? You&rsquo;ll see download links for{' '}
+                <a href={IOS_URL} className="font-semibold text-white underline underline-offset-2" target="_blank" rel="noopener noreferrer">iOS</a>
+                {' '}and{' '}
+                <a href={ANDROID_URL} className="font-semibold text-white underline underline-offset-2" target="_blank" rel="noopener noreferrer">Android</a>
+                {' '}— install the app, create an account, and you&rsquo;ll land on the join screen with {group.name}&rsquo;s code already filled in.
+              </p>
+              <a
+                href={joinUrl}
+                className="inline-flex w-full items-center justify-center rounded-full bg-[#BAF14D] px-8 py-4 text-center text-lg font-extrabold text-[#191A2E] transition-opacity hover:opacity-85 sm:w-auto"
+              >
+                Join {group.name}&rsquo;s team &rarr;
+              </a>
+            </div>
 
-            {/* How to join */}
+            {/* Path 2 — Manual code entry (fallback) */}
             <div className="mb-10 rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-6">
-              <p className="mb-4 text-xs font-bold uppercase tracking-widest text-white/75">
-                How to join
+              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-white/75">
+                Or enter the code manually
               </p>
-              <ol className="space-y-4 text-[0.9375rem] leading-[1.5] text-white/85">
-                <li className="flex gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#BAF14D] text-sm font-extrabold text-[#191A2E]">1</span>
-                  <span>Download the Shift app on <a href={IOS_URL} className="font-semibold text-white underline underline-offset-2" target="_blank" rel="noopener noreferrer">iOS</a> or <a href={ANDROID_URL} className="font-semibold text-white underline underline-offset-2" target="_blank" rel="noopener noreferrer">Android</a>.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#BAF14D] text-sm font-extrabold text-[#191A2E]">2</span>
-                  <span>Create your account.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#BAF14D] text-sm font-extrabold text-[#191A2E]">3</span>
-                  <span>Enter code <strong className="font-mono tracking-wider text-[#BAF14D]">{group.invite_code}</strong> to join {group.name}&rsquo;s team.</span>
-                </li>
-              </ol>
-              <p className="mt-4 text-sm text-white/75">
-                Already have the app? <a href={joinUrl} className="font-semibold text-[#BAF14D] hover:opacity-85">Tap here to join directly.</a>
+              <p className="mb-5 text-sm leading-[1.6] text-white/85">
+                If the link above doesn&rsquo;t open the app, you can join by entering your team&rsquo;s invite code directly in the Shift app.
               </p>
+
+              {/* Invite code */}
+              <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-4">
+                <span className="text-sm font-medium text-white/75">Your team code:</span>
+                <span className="font-mono text-2xl font-extrabold tracking-[0.2em] text-[#BAF14D]">
+                  {group.invite_code}
+                </span>
+              </div>
+
+              {/* App screenshots showing where to enter the code */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/shift-app/shift-join-sequence.png"
+                alt="How to enter your team code in the Shift app: tap the + button on the Groups tab, then enter your invite code and tap Join."
+                className="w-full rounded-xl"
+              />
             </div>
 
             {/* QR code + invite code */}
