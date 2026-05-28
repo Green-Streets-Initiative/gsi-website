@@ -202,7 +202,7 @@ export default async function FlyerPage({
   return (
     <main className="flyer-root min-h-screen bg-white text-[#191A2E]">
       <style>{`
-        @page { size: letter; margin: 0.35in 0.5in; }
+        @page { size: letter; margin: 0.25in 0.5in; }
         @media print {
           .flyer-no-print { display: none !important; }
           .flyer-root { background: white !important; min-height: 0 !important; }
@@ -393,11 +393,11 @@ export default async function FlyerPage({
             <h2 className="mb-1 font-display text-base font-extrabold uppercase tracking-wider">
               Made possible by
             </h2>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               {sponsors.slice(0, 8).map(s => (
                 <div
                   key={s.id}
-                  className="flex h-[44px] items-center justify-center rounded-md border border-[#191A2E]/10 bg-white px-2"
+                  className="flex h-[40px] items-center justify-center rounded-md border border-[#191A2E]/10 bg-white px-2"
                 >
                   {s.logo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
