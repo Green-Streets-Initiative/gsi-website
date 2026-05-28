@@ -1267,6 +1267,17 @@ function PortalPage() {
               else sees a page with App Store + Play Store buttons.
             </p>
 
+            {group.slug && (
+              <a
+                href={`/events/shift-your-summer/share/${group.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#BAF14D] hover:opacity-85"
+              >
+                View your team&rsquo;s share page &rarr;
+              </a>
+            )}
+
             {memberCount > 0 && (
               <p className="mt-3 text-sm text-white/60">
                 {memberCount} employee{memberCount !== 1 ? 's' : ''} joined

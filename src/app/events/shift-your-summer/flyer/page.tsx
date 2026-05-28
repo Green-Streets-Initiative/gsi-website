@@ -51,6 +51,20 @@ function sanitizeRef(value: string | string[] | undefined): string | null {
   return raw
 }
 
+function sanitizeSlug(value: string | string[] | undefined): string | null {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (!raw) return null
+  if (!/^[a-z0-9-]{1,80}$/.test(raw)) return null
+  return raw
+}
+
+type GroupRow = {
+  name: string
+  slug: string
+  invite_code: string
+  logo_url: string | null
+}
+
 function formatDateRange(start: string, end: string) {
   const opts: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', timeZone: 'America/New_York' }
   const startStr = new Date(start).toLocaleDateString('en-US', opts)
@@ -65,9 +79,31 @@ export default async function FlyerPage({
 }) {
   const params = await searchParams
   const refCode = sanitizeRef(params.ref)
-  const shareUrl = refCode ? `${CHALLENGE_BASE_URL}?ref=${refCode}` : CHALLENGE_BASE_URL
+  const groupSlug = sanitizeSlug(params.group)
 
   const supabase = createServerSupabaseClient()
+
+  let group: GroupRow | null = null
+  if (groupSlug) {
+    const { data } = await supabase
+      .from('groups')
+      .select('name, slug, invite_code, logo_url, status, access_ends_at')
+      .eq('slug', groupSlug)
+      .in('status', ['active', 'cancelled'])
+      .maybeSingle()
+    if (data) {
+      const row = data as GroupRow & { access_ends_at: string | null }
+      if (!row.access_ends_at || new Date(row.access_ends_at) >= new Date()) {
+        group = { name: row.name, slug: row.slug, invite_code: row.invite_code, logo_url: row.logo_url }
+      }
+    }
+  }
+
+  const shareUrl = group
+    ? `https://shift.gogreenstreets.org/join/${group.invite_code}`
+    : refCode
+      ? `${CHALLENGE_BASE_URL}?ref=${refCode}`
+      : CHALLENGE_BASE_URL
 
   const { data: competitionsRaw } = await supabase
     .from('competitions')
@@ -212,7 +248,7 @@ export default async function FlyerPage({
             </span>
           </div>
           <h1 className="mb-1 font-display text-[38px] font-extrabold leading-[1.05] tracking-tight">
-            {eventName}
+            {group ? `${eventName} × ${group.name}` : eventName}
           </h1>
           <div className="mb-1 flex items-center gap-3">
             <span className="inline-flex items-center rounded-full bg-[#BAF14D] px-3 py-1 text-sm font-bold text-[#191A2E]">
@@ -239,15 +275,21 @@ export default async function FlyerPage({
             <ol className="space-y-1 text-sm">
               <li>
                 <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#BAF14D] text-sm font-extrabold">1</span>
-                Download Shift on iOS or Android.
+                Download Shift on iOS or Android{group ? ' or scan the QR code' : ''}.
               </li>
               <li>
                 <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#BAF14D] text-sm font-extrabold">2</span>
-                Take active trips. Walk, bike, or ride transit — Shift detects automatically.
+                {group ? (
+                  <>Enter code <strong className="font-mono tracking-wider">{group.invite_code}</strong> to join {group.name}&rsquo;s team.</>
+                ) : (
+                  <>Take active trips. Walk, bike, or ride transit — Shift detects automatically.</>
+                )}
               </li>
               <li>
                 <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#BAF14D] text-sm font-extrabold">3</span>
-                Climb the leaderboard. Every trip is a prize entry.
+                {group
+                  ? 'Walk, bike, or ride transit. Every active trip is a prize entry.'
+                  : 'Climb the leaderboard. Every trip is a prize entry.'}
               </li>
             </ol>
           </div>
@@ -258,11 +300,17 @@ export default async function FlyerPage({
               dangerouslySetInnerHTML={{ __html: qrSvg }}
             />
             <p className="mt-2 text-xs font-bold uppercase tracking-widest">
-              Scan to join
+              {group ? `Scan to join ${group.name}` : 'Scan to join'}
             </p>
-            <p className="mt-1 text-xs text-[#191A2E]/75 break-all">
-              gogreenstreets.org/events/shift-your-summer
-            </p>
+            {group ? (
+              <p className="mt-1 font-mono text-base font-extrabold tracking-[0.15em] text-[#191A2E]">
+                {group.invite_code}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-[#191A2E]/75 break-all">
+                gogreenstreets.org/events/shift-your-summer
+              </p>
+            )}
           </div>
         </section>
 
@@ -370,9 +418,15 @@ export default async function FlyerPage({
           <p>
             Green Streets Initiative, a 501(c)(3) &middot; <strong>gogreenstreets.org/events/shift-your-summer</strong>
           </p>
-          <p className="mt-1">
-            Bring it to your team &middot; <strong>gogreenstreets.org/shift/employers</strong>
-          </p>
+          {group ? (
+            <p className="mt-1">
+              Join {group.name}&rsquo;s team &middot; <strong>gogreenstreets.org/events/shift-your-summer/share/{group.slug}</strong>
+            </p>
+          ) : (
+            <p className="mt-1">
+              Bring it to your team &middot; <strong>gogreenstreets.org/shift/employers</strong>
+            </p>
+          )}
         </footer>
       </article>
     </main>
