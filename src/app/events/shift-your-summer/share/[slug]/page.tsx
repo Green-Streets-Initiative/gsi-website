@@ -91,7 +91,7 @@ export default async function CorporateSharePage({ params }: Props) {
   const joinUrl = `https://shift.gogreenstreets.org/join/${group.invite_code}`
   const sharePageUrl = `https://gogreenstreets.org/events/shift-your-summer/share/${clean}`
 
-  const blurb = `Join ${group.name} for Shift Your Summer — a free 8-week challenge (June 15 – Aug 15) where every walk, bike ride, and transit trip is an entry to win prizes from Segway, Quad Lock, Kryptonite, and more. Tap the link to join: ${joinUrl}`
+  const blurb = `Join ${group.name} for Shift Your Summer — an 8-week challenge (June 15 – Aug 15) where every walk, bike ride, and transit trip is an entry to win prizes from Segway, Quad Lock, Kryptonite, and more. Tap the link to join: ${joinUrl}`
 
   const emailSubject = `Join ${group.name} for Shift Your Summer`
   const emailBody = blurb

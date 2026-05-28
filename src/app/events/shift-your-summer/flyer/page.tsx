@@ -248,7 +248,9 @@ export default async function FlyerPage({
             </span>
           </div>
           <h1 className="mb-1 font-display text-[38px] font-extrabold leading-[1.05] tracking-tight">
-            {group ? `${eventName} × ${group.name}` : eventName}
+            {group ? (
+              <>{eventName}<br /><span className="text-[28px]">× {group.name}</span></>
+            ) : eventName}
           </h1>
           <div className="mb-1 flex items-center gap-3">
             <span className="inline-flex items-center rounded-full bg-[#BAF14D] px-3 py-1 text-sm font-bold text-[#191A2E]">
