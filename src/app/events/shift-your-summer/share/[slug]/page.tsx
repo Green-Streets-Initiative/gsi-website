@@ -184,7 +184,7 @@ export default async function CorporateSharePage({ params }: Props) {
               <img
                 src="/images/shift-app/shift-join-sequence.png"
                 alt="How to enter your team code in the Shift app: tap the + button on the Groups tab, then enter your invite code and tap Join."
-                className="w-full rounded-xl"
+                className="mx-auto max-w-[340px] rounded-xl"
               />
             </div>
 
