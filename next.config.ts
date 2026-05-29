@@ -22,6 +22,13 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // /app → /shift now that the app is live
+      {
+        source: '/app',
+        destination: '/shift',
+        permanent: false,
+      },
+
       // Shift leaderboard shortcut
       {
         source: '/shift/leaderboard',
