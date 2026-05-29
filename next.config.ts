@@ -29,6 +29,13 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
 
+      // Cloudflare Worker links to /shift-your-summer-rules; actual page lives under /events/
+      {
+        source: '/shift-your-summer-rules',
+        destination: '/events/shift-your-summer/rules',
+        permanent: true,
+      },
+
       // Old Wix team/people pages
       {
         source: '/ourteam',
