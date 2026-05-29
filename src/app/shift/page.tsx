@@ -1,12 +1,40 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import FadeIn from '@/components/FadeIn'
 import WaitlistEmailForm from '@/components/WaitlistEmailForm'
-import { CurrencyDollar, Brain, MagnifyingGlass } from '@phosphor-icons/react/dist/ssr'
+import StoreButtons from '@/components/StoreButtons'
+import PhoneFrame from './_components/PhoneFrame'
+import FeatureRow, { Bullet } from './_components/FeatureRow'
+import TierLadder from './_components/TierLadder'
 
 const IOS_URL = process.env.NEXT_PUBLIC_IOS_URL || ''
 const ANDROID_URL = process.env.NEXT_PUBLIC_ANDROID_URL || ''
 const IS_LIVE = !!(IOS_URL && ANDROID_URL)
+
+export const metadata: Metadata = {
+  title: 'Shift — Move better. Every trip. | Green Streets Initiative',
+  description: 'Turn everyday trips into local perks, status, and friendly competition.',
+  openGraph: {
+    title: 'Shift — Move better. Every trip.',
+    description: 'Turn everyday trips into local perks, status, and friendly competition.',
+    url: 'https://gogreenstreets.org/shift',
+    siteName: 'Green Streets Initiative',
+    images: [{ url: '/og/shift-og.png', width: 1200, height: 630, alt: 'Shift by Green Streets Initiative — Move better. Every trip.' }],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Shift — Move better. Every trip.',
+    description: 'Turn everyday trips into local perks, status, and friendly competition.',
+    images: ['/og/shift-og.png'],
+  },
+}
+
+/* ── Chevron helper ─────────────────────────────────────────── */
+const CHEV = <span className="font-extrabold tracking-[-0.08em] text-[#BAF14D]">&#8250;&#8250;</span>
 
 export default function ShiftPage() {
   return (
@@ -14,386 +42,465 @@ export default function ShiftPage() {
       <Nav />
       <main style={{ paddingTop: '60px' }}>
 
-        {/* ══════════════════════════════════════════════════════════
+        {/* ═══════════════════════════════════════════════════════
             1 · HERO
-        ══════════════════════════════════════════════════════════ */}
-        <section className="relative overflow-hidden bg-[#191A2E] px-8 py-24 md:py-32">
-          <div className="pointer-events-none absolute inset-0">
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage:
-                  'linear-gradient(rgba(186,241,77,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(186,241,77,0.03) 1px, transparent 1px)',
-                backgroundSize: '48px 48px',
-              }}
-            />
-            <div className="absolute -right-[10%] top-[10%] h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(186,241,77,0.07)_0%,transparent_70%)]" />
+        ═══════════════════════════════════════════════════════ */}
+        <section className="relative overflow-hidden bg-[#191A2E] px-8 pb-0 pt-12 md:pt-[50px]">
+          {/* Background gradients */}
+          <div className="pointer-events-none absolute inset-0 z-0">
+            <div className="absolute -right-[5%] top-[8%] h-[420px] w-[680px] rounded-full bg-[radial-gradient(circle,rgba(41,102,229,0.30),transparent_60%)]" />
+            <div className="absolute -left-[5%] bottom-[10%] h-[460px] w-[620px] rounded-full bg-[radial-gradient(circle,rgba(186,241,77,0.16),transparent_60%)]" />
           </div>
 
-          <div className="relative mx-auto max-w-[1120px] text-center">
-            <div className="mb-5 inline-flex items-center gap-2">
-              <svg viewBox="0 0 36 28" width="24" height="15" className="shrink-0">
-                <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
-                <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
-              </svg>
-              <span className="font-display text-sm font-bold tracking-wider text-white uppercase">The Shift App</span>
-            </div>
+          <div className="relative z-10 mx-auto grid max-w-[1120px] items-center gap-6 md:grid-cols-[1.04fr_0.96fr]">
+            {/* Left — copy */}
+            <div>
+              <span className="inline-flex items-center gap-2 font-display text-[13px] font-bold uppercase tracking-[0.18em] text-[#BAF14D]">
+                {CHEV} The Shift app &middot; now on iOS &amp; Android
+              </span>
+              <h1 className="mt-4 font-display text-[clamp(44px,7.2vw,86px)] font-extrabold leading-[1.04] tracking-[-0.02em] text-white">
+                Move better.<br />
+                <span className="text-[#BAF14D]">Every trip.</span>
+              </h1>
+              <p className="mt-5 max-w-[46ch] text-[clamp(18px,1.6vw,21px)] leading-[1.6] text-white">
+                Shift automatically detects your walks, bike rides, and transit trips, then turns the way you already move into status, streaks, local perks, and a little friendly competition with your neighborhood.
+              </p>
 
-            <h1 className="mx-auto mb-6 max-w-[640px] font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              Move better.<br />Every trip.
-            </h1>
-
-            <p className="mx-auto mb-10 max-w-[580px] text-lg leading-[1.7] text-white">
-              The Shift app detects your walks, bike rides, and transit trips automatically — no tapping, no logging, no thinking about it. Your commute earns you real rewards while you move.
-            </p>
-
-            {IS_LIVE ? (
-              <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                <a href={IOS_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="#191A2E"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-                  Download for iOS
-                </a>
-                <a href={ANDROID_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-1.832l2.46 1.42c.55.32.55 1.09 0 1.41l-2.46 1.42-2.534-2.534 2.534-2.534v.818zm-3.906-2.54L4.864 3.378l10.928 6.328-2.302 2.302.303.327z"/></svg>
-                  Download for Android
-                </a>
-              </div>
-            ) : (
-              <div>
-                <p className="mb-6 text-sm font-semibold uppercase tracking-widest text-[#BAF14D]">
-                  Coming soon to iOS and Android
-                </p>
-                <WaitlistEmailForm source="shift_page" />
-              </div>
-            )}
-
-            <div className="mt-6">
-              <Link href="/commute-advisor" className="text-sm font-semibold text-[#BAF14D]">
-                See your savings →
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            2 · HOW IT WORKS
-        ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#F4F8EE] px-8 py-24">
-          <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#7DB82E]">How it works</div>
-            <h2 className="mb-14 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
-              Three steps. Zero effort.
-            </h2>
-
-            <div className="grid gap-6 md:grid-cols-3">
-              {/* Step 1 */}
-              <div className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-white p-8">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-sm font-extrabold text-[#7DB82E]">1</div>
-                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-[#191A2E]">It just works</h3>
-                <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
-                  Grant location and motion access once. Shift detects your walks, bike rides, and transit trips in the background.
-                </p>
-              </div>
-
-              {/* Step 2 */}
-              <div className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-white p-8">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-sm font-extrabold text-[#7DB82E]">2</div>
-                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-[#191A2E]">Your commute, working for you</h3>
-                <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
-                  Walk, ride, or roll your way to rewards at local businesses, and keep an eye out for flagship events like Shift Your Summer to enter to win prizes from national and local partners.
-                </p>
-              </div>
-
-              {/* Step 3 */}
-              <div className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-white p-8">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-sm font-extrabold text-[#7DB82E]">3</div>
-                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-[#191A2E]">See what you&apos;re gaining</h3>
-                <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
-                  Watch the benefits of your choices — like time and money saved and calories burned — add up over time as you build streaks, gain XP, and shift more of your trips to active transportation.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            3 · YOUR COMMUTE COACH
-        ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24">
-          <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">Your commute coach</div>
-            <h2 className="mb-4 max-w-[560px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
-              More than a tracker.
-            </h2>
-            <p className="mb-14 max-w-[560px] text-[1.0625rem] leading-[1.65] text-white">
-              Shift learns how you move and helps you move better — with practical guides, smart nudges, and real-world events matched to your commute.
-            </p>
-
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Guides that meet you where you are</h3>
-                <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  Wondering how Blue Bikes work? Nervous about your first bus ride? Not sure what to wear on a bike commute? Shift serves short, practical guides matched to the barriers you actually face — swipeable, 1–3 minute reads with local info and next steps.
-                </p>
-              </div>
-
-              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Nudges, not nagging</h3>
-                <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  After a short trip, Shift might suggest a route that&apos;s faster on foot. When you haven&apos;t tried transit in a while, it&apos;ll surface a nearby stop you didn&apos;t know about. One nudge per day, max — always relevant, always easy to dismiss.
-                </p>
-              </div>
-
-              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Events that make the first time easy</h3>
-                <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  Guided rides, e-bike demos, walking tours, transit buddy meetups — real-world group experiences near you that take the uncertainty out of trying something new. Show up, try it, see how it feels.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            4 · BUILT FOR COMMUTERS
-        ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#242538] px-8 py-24">
-          <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">Built for commuters</div>
-            <h2 className="mb-14 max-w-[560px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
-              Built around what actually changes behavior.
-            </h2>
-
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <div className="mb-4"><CurrencyDollar size={28} weight="regular" className="text-[#BAF14D]" /></div>
-                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Save real money</h3>
-                <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  Active trips put money back in your pocket — and earn you rewards from local businesses on top.
-                </p>
-              </div>
-
-              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <div className="mb-4"><Brain size={28} weight="regular" className="text-[#BAF14D]" /></div>
-                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Feel better</h3>
-                <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  Active commuters report better sleep, sharper focus, and lower stress. Built into your day, not added to it.
-                </p>
-              </div>
-
-              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <div className="mb-4"><MagnifyingGlass size={28} weight="regular" className="text-[#BAF14D]" /></div>
-                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Discover what works for you</h3>
-                <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  Shift finds transit routes and bike-share options connecting your home and work that you haven&apos;t tried yet. Every week, new suggestions based on where you actually go.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            5 · FOR EMPLOYERS
-        ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#242538] px-8 py-24">
-          <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#2966E5]">For employers</div>
-            <h2 className="mb-4 max-w-[640px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
-              Your team wants to come in. The commute is what stops them.
-            </h2>
-            <p className="mb-12 max-w-[640px] text-[1.0625rem] leading-[1.65] text-white">
-              Boston has some of the worst traffic in the country. Shift helps your employees find a way in that they actually enjoy — so the commute stops being a reason to stay home.
-            </p>
-
-            <div className="grid gap-8 md:grid-cols-2">
-              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.03] p-8">
-                <h3 className="mb-5 font-display text-base font-bold text-white">What employers get</h3>
-                <ul className="flex flex-col gap-3.5">
-                  {[
-                    'Higher in-office attendance — employees who enjoy their commute come in more',
-                    'A genuine wellness benefit with real participation data',
-                    'ESG and sustainability reporting — verified active trip data by mode',
-                    'Real commute data — mode share, participation trends, and patterns over time',
-                  ].map((item, i) => (
-                    <li key={i} className="flex gap-3 text-[0.9375rem] leading-[1.6] text-white">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#2966E5]" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.03] p-8">
-                <h3 className="mb-5 font-display text-base font-bold text-white">What employees get</h3>
-                <ul className="flex flex-col gap-3.5">
-                  {[
-                    'A way in that\'s cheaper, faster in traffic, and better for their health',
-                    'Real rewards earned automatically from every active trip',
-                  ].map((item, i) => (
-                    <li key={i} className="flex gap-3 text-[0.9375rem] leading-[1.6] text-white">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#BAF14D]" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            <div className="mt-10">
-              <Link
-                href="/contact?inquiry=employer"
-                className="inline-block rounded-full bg-[#2966E5] px-7 py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-85"
-              >
-                Partner with us →
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            5 · FOR SCHOOLS
-        ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#1E2038] px-8 py-24">
-          <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#EDB93C]">For schools</div>
-            <h2 className="mb-4 max-w-[640px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
-              The simplest school wellness program you&apos;ve ever run.
-            </h2>
-            <p className="mb-12 max-w-[640px] text-[1.0625rem] leading-[1.65] text-white">
-              No student apps. No accounts. No data on kids. Just a wall chart, a show of hands, and one email from the teacher.
-            </p>
-
-            <div className="mb-12 grid gap-6 md:grid-cols-3">
-              <div className="rounded-[18px] border border-[rgba(237,185,60,0.15)] bg-[rgba(237,185,60,0.05)] p-8">
-                <div className="mb-3 font-display text-sm font-bold text-[#EDB93C]">Under 5 minutes a week for teachers</div>
-                <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  Post the chart Monday, photograph it Friday, Shift handles everything else.
-                </p>
-              </div>
-
-              <div className="rounded-[18px] border border-[rgba(237,185,60,0.15)] bg-[rgba(237,185,60,0.05)] p-8">
-                <div className="mb-3 font-display text-sm font-bold text-[#EDB93C]">COPPA-clean by design</div>
-                <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  No student accounts, no student devices, no location data on minors.
-                </p>
-              </div>
-
-              <div className="rounded-[18px] border border-[rgba(237,185,60,0.15)] bg-[rgba(237,185,60,0.05)] p-8">
-                <div className="mb-3 font-display text-sm font-bold text-[#EDB93C]">Curriculum-aligned</div>
-                <p className="text-[0.9375rem] leading-[1.6] text-white">
-                  Math and science worksheets for K–2, 3–5, and 6–8 grade bands included.
-                </p>
-              </div>
-            </div>
-
-            <div className="mb-10 rounded-[18px] border border-white/[0.08] bg-white/[0.03] p-8">
-              <h3 className="mb-5 font-display text-base font-bold text-white">What schools get</h3>
-              <ul className="flex flex-col gap-3.5">
-                {[
-                  'Auto-generated leaderboards at classroom, grade, and school level',
-                  'Weekly impact reports for PTAs and school boards',
-                  'A parent bridge — weekly email connecting families to their classroom\'s results',
-                  'Safe route planning assistance for families and schools',
-                  'Piloting in Massachusetts schools in 2026',
-                ].map((item, i) => (
-                  <li key={i} className="flex gap-3 text-[0.9375rem] leading-[1.6] text-white">
-                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#EDB93C]" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <Link
-              href="/contact?inquiry=school"
-              className="inline-block rounded-full bg-[#EDB93C] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-            >
-              Bring it to your school →
-            </Link>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            5½ · FLAGSHIP EVENTS
-        ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24">
-          <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">Events</div>
-            <h2 className="mb-4 max-w-[640px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
-              Compete. Move. Win.
-            </h2>
-            <p className="mb-8 max-w-[560px] text-[1.0625rem] leading-[1.65] text-white">
-              Shift flagship events bring the whole city together. Track your commute, climb the leaderboard, and win real prizes.
-            </p>
-            <Link
-              href="/events/shift-your-summer"
-              className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-            >
-              See the leaderboard &rarr;
-            </Link>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            6 · FOR LOCAL BUSINESSES
-        ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24">
-          <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">For local businesses</div>
-            <h2 className="mb-4 max-w-[640px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
-              Join the Shift rewards network.
-            </h2>
-            <p className="mb-8 max-w-[560px] text-[1.0625rem] leading-[1.65] text-white">
-              Offer discounts to active commuters in your neighborhood. Free to join. No POS integration required.
-            </p>
-            <Link
-              href="/shift/rewards-partners"
-              className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-            >
-              Learn more &rarr;
-            </Link>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            7 · CLOSING CTA
-        ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24 md:py-32">
-          <div className="mx-auto max-w-[560px] text-center">
-            <h2 className="mb-4 font-display text-[clamp(2rem,4vw,3rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              Find your shift.
-            </h2>
-            {IS_LIVE ? (
-              <>
-                <p className="mb-10 text-lg leading-relaxed text-white">
-                  Free to download. Available on iOS and Android.
-                </p>
-                <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                  <a href={IOS_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="#191A2E"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-                    Download for iOS
-                  </a>
-                  <a href={ANDROID_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-1.832l2.46 1.42c.55.32.55 1.09 0 1.41l-2.46 1.42-2.534-2.534 2.534-2.534v.818zm-3.906-2.54L4.864 3.378l10.928 6.328-2.302 2.302.303.327z"/></svg>
-                    Download for Android
-                  </a>
+              {IS_LIVE ? (
+                <StoreButtons iosUrl={IOS_URL} androidUrl={ANDROID_URL} className="mt-[30px]" />
+              ) : (
+                <div className="mt-[30px]">
+                  <p className="mb-5 text-sm font-semibold uppercase tracking-widest text-[#BAF14D]">
+                    Coming soon to iOS and Android
+                  </p>
+                  <WaitlistEmailForm source="shift_page" />
                 </div>
-              </>
-            ) : (
-              <>
-                <p className="mb-10 text-lg leading-relaxed text-white">
-                  Coming soon to iOS and Android.
-                </p>
-                <WaitlistEmailForm source="shift_page" />
-              </>
-            )}
+              )}
 
-            <p className="mt-6 text-sm text-white/60">
-              Local business?{' '}
-              <Link href="/shift/rewards-partners" className="font-semibold text-[#BAF14D] hover:underline">
-                Join our rewards network &rarr;
-              </Link>
-            </p>
+              <div className="mt-[18px] inline-flex items-center gap-2 font-display text-sm font-semibold text-white/80">
+                {CHEV} Free to download &nbsp;&middot;&nbsp;{' '}
+                <Link href="/commute-advisor" className="font-bold text-[#BAF14D] hover:underline">
+                  See what your trips are worth
+                </Link>
+              </div>
+            </div>
+
+            {/* Right — fanned phones */}
+            <div className="group relative mx-auto h-[560px] w-full max-w-[520px] md:h-[620px]" aria-hidden="true">
+              <div className="absolute left-1/2 top-1/2 z-[-1] h-[80%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(41,102,229,0.5),transparent_70%)] blur-xl" />
+              {/* Left phone */}
+              <div className="absolute left-1/2 top-1/2 z-[1] hidden w-[268px] -translate-x-[92%] -translate-y-[52%] -rotate-[9deg] scale-[0.82] brightness-[0.86] transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:-translate-x-[104%] group-hover:-rotate-[12deg] group-hover:scale-[0.83] md:block">
+                <PhoneFrame src="/images/shift-app/rewards-screen.png" alt="Shift rewards screen" />
+              </div>
+              {/* Right phone */}
+              <div className="absolute left-1/2 top-1/2 z-[1] hidden w-[268px] -translate-x-[8%] -translate-y-[46%] rotate-[9deg] scale-[0.82] brightness-[0.86] transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:-translate-x-[-4%] group-hover:rotate-[12deg] group-hover:scale-[0.83] md:block">
+                <PhoneFrame src="/images/shift-app/roam-adventures.png" alt="Shift Roam adventures screen" />
+              </div>
+              {/* Center phone */}
+              <div className="absolute left-1/2 top-1/2 z-[3] w-[268px] -translate-x-1/2 -translate-y-1/2 scale-[0.98] transition-transform duration-500">
+                <PhoneFrame src="/images/shift-app/home-streak.png" alt="Shift home screen with streak and status tier" priority />
+              </div>
+            </div>
+          </div>
+
+          {/* Stats strip */}
+          <div className="mt-[34px] border-b border-t border-[#2E3252] bg-[#121320] py-[18px]">
+            <div className="mx-auto flex max-w-[1120px] flex-wrap items-center justify-center gap-x-[46px] gap-y-3 px-8">
+              <span className="inline-flex items-center gap-2.5 font-display text-[15px] font-semibold text-white">
+                {CHEV} Auto-detects every trip
+              </span>
+              <span className="h-[5px] w-[5px] rounded-full bg-[#2E3252]" />
+              <span className="font-display text-[15px] font-semibold text-white">Walk &middot; Bike &middot; Transit</span>
+              <span className="h-[5px] w-[5px] rounded-full bg-[#2E3252]" />
+              <span className="font-display text-[15px] font-semibold text-white">
+                <b className="text-[20px] font-extrabold text-[#BAF14D]">5</b> status tiers to climb
+              </span>
+              <span className="h-[5px] w-[5px] rounded-full bg-[#2E3252]" />
+              <span className="font-display text-[15px] font-semibold text-white">
+                Real perks from <b className="font-extrabold text-[#BAF14D]">local</b> businesses
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════
+            2 · STATUS / STREAKS / BADGES
+        ═══════════════════════════════════════════════════════ */}
+        <section className="bg-[#191A2E]" id="the-app">
+          <FadeIn>
+            <FeatureRow
+              eyebrow="Status · streaks · badges"
+              heading="Watch your status climb as you move."
+              media={
+                <PhoneFrame
+                  src="/images/shift-app/home-streak-detail.png"
+                  alt="Shift home screen showing a 52-day streak, Shifter tier, and 71% shift rate"
+                  className="w-[268px]"
+                />
+              }
+            >
+              <p className="text-[18px] leading-[1.6] text-white/80">
+                Every active trip nudges you up a ladder of five status tiers. Your standing reflects how you actually get around — not how much you grind.
+              </p>
+              <div className="mt-6">
+                <TierLadder />
+              </div>
+              <ul className="mt-6 flex flex-col gap-3.5">
+                <Bullet><b className="font-display font-bold text-white">Tiers track real behavior.</b> You advance on active trips plus your trailing 60-day Shift Rate — the share of your trips that are active.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Streaks keep momentum.</b> Make an active trip a day and watch the streak grow.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">XP is for bragging rights.</b> Rack it up and compare with friends.</Bullet>
+              </ul>
+            </FeatureRow>
+          </FadeIn>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════
+            3 · COMMUTE ADVISOR
+        ═══════════════════════════════════════════════════════ */}
+        <section className="bg-[#121320]">
+          <FadeIn>
+            <FeatureRow
+              eyebrow="Commute Advisor"
+              eyebrowColor="#2966E5"
+              heading="A coach for the way you actually travel."
+              reverse
+              media={
+                <div className="flex w-[340px] max-w-full flex-col gap-4">
+                  {/* Advisor card 1 — route suggestion */}
+                  <div className="rounded-[20px] border border-[#2E3252] bg-[#1E2038] p-5 shadow-[0_24px_50px_-26px_rgba(0,0,0,0.7)]">
+                    <div className="flex items-center gap-2.5 font-display text-[13px] font-bold uppercase tracking-[0.04em] text-[#9DBEFF]">
+                      <span className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-[rgba(41,102,229,0.18)]">
+                        <svg viewBox="0 0 24 24" width="16" fill="#9DBEFF"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z" /></svg>
+                      </span>
+                      Smarter way in
+                    </div>
+                    <h4 className="mt-3 font-display text-[19px] font-extrabold text-white">Try the Red Line + a 6-min walk</h4>
+                    <p className="mt-1.5 text-[15px] text-white/80">About the same door-to-door time as your usual route — and you get the walk in without planning for it.</p>
+                    <div className="mt-3.5 flex flex-wrap gap-2">
+                      <span className="rounded-full bg-[#262A47] px-3 py-1.5 font-display text-[12.5px] font-bold text-white">&#x1F687; 24 min</span>
+                      <span className="rounded-full bg-[#262A47] px-3 py-1.5 font-display text-[12.5px] font-bold text-white">&#x1F6B6; 0.4 mi walk</span>
+                      <span className="rounded-full bg-[#BAF14D] px-3 py-1.5 font-display text-[12.5px] font-bold text-[#10210B]">Use this route</span>
+                    </div>
+                  </div>
+                  {/* Advisor card 2 — nudge */}
+                  <div className="rounded-[20px] border border-[#2E3252] bg-[#1E2038] p-5 shadow-[0_24px_50px_-26px_rgba(0,0,0,0.7)]">
+                    <div className="flex items-center gap-2.5 font-display text-[13px] font-bold uppercase tracking-[0.04em] text-[#8FE0B6]">
+                      <span className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-[rgba(82,183,136,0.18)]">
+                        <svg viewBox="0 0 24 24" width="16" fill="#8FE0B6"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" /></svg>
+                      </span>
+                      A gentle nudge
+                    </div>
+                    <h4 className="mt-3 font-display text-[19px] font-extrabold text-white">Nice — 0.8 mi on foot today</h4>
+                    <p className="mt-1.5 text-[15px] text-white/80">There&apos;s a quieter, leafier way home you haven&apos;t tried. Want it next time? One tap, no pressure.</p>
+                    <div className="mt-3.5 flex flex-wrap gap-2">
+                      <span className="rounded-full bg-[#262A47] px-3 py-1.5 font-display text-[12.5px] font-bold text-white">Quieter streets</span>
+                      <span className="rounded-full bg-[#262A47] px-3 py-1.5 font-display text-[12.5px] font-bold text-white">+2 min</span>
+                    </div>
+                  </div>
+                </div>
+              }
+            >
+              <p className="text-[18px] leading-[1.6] text-white/80">
+                Shift learns your real routes and surfaces active and transit options worth trying — connecting your home, work, and the places you go. Practical, personal, and matched to your trips.
+              </p>
+              <ul className="mt-6 flex flex-col gap-3.5">
+                <Bullet><b className="font-display font-bold text-white">Routes you&apos;d never have found.</b> Bike-share legs, transfers, and shortcuts tuned to where you go.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Nudges, not nagging.</b> One suggestion at a time, always relevant, always easy to dismiss.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Built for Massachusetts.</b> Real MBTA, Bluebikes, and neighborhood knowledge baked in.</Bullet>
+              </ul>
+            </FeatureRow>
+          </FadeIn>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════
+            4 · MICRO-GUIDES
+        ═══════════════════════════════════════════════════════ */}
+        <section className="bg-[#191A2E]">
+          <FadeIn>
+            <FeatureRow
+              eyebrow="Micro-guides"
+              heading="The 2-minute reads that lower the barrier."
+              media={
+                <PhoneFrame
+                  src="/images/shift-app/micro-guides.png"
+                  alt="Shift micro-guides: biking in the rain, Bluebikes, bus transfers"
+                  className="w-[268px]"
+                />
+              }
+            >
+              <p className="text-[18px] leading-[1.6] text-white/80">
+                Wondering how Bluebikes work? Nervous about your first bus? Shift serves short, practical guides matched to the barriers you face to help you expand your horizons.
+              </p>
+              {/* Chip row */}
+              <div className="mt-6 flex flex-wrap gap-2.5">
+                {['Cost', 'Safety', 'Weather', 'Time', 'Distance', 'Fitness', 'Infrastructure', 'Habit', 'Awareness', 'Social'].map((chip) => (
+                  <span key={chip} className="rounded-full border border-[#2E3252] bg-[#262A47] px-3.5 py-[7px] font-display text-[13px] font-semibold text-white">
+                    {chip}
+                  </span>
+                ))}
+              </div>
+              <ul className="mt-6 flex flex-col gap-3.5">
+                <Bullet><b className="font-display font-bold text-white">Swipeable and short.</b> 1&ndash;3 minute reads with local info and next steps.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Filter by mode.</b> Cycling, transit, or walking — read what&apos;s relevant to you.</Bullet>
+              </ul>
+            </FeatureRow>
+          </FadeIn>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════
+            5 · COMMUNITY
+        ═══════════════════════════════════════════════════════ */}
+        <section className="bg-[#121320] px-8 py-10" id="community">
+          <FadeIn>
+            <div className="mx-auto mb-11 max-w-[680px] text-center">
+              <span className="inline-flex items-center gap-2 font-display text-[13px] font-bold uppercase tracking-[0.18em] text-[#52B788]">
+                <span className="font-extrabold tracking-[-0.08em] text-[#52B788]">&#8250;&#8250;</span>
+                Community
+              </span>
+              <h2 className="mt-3.5 font-display text-[clamp(30px,4.6vw,52px)] font-extrabold leading-[1.04] tracking-[-0.02em] text-white">
+                Moving is more fun together.
+              </h2>
+              <p className="mt-[18px] text-[19px] text-white/80">
+                Shift turns your neighborhood into a friendly arena — standings, seasonal challenges, real-world rides, and curated adventures right where you live.
+              </p>
+            </div>
+          </FadeIn>
+
+          {/* 5a — Leaderboards */}
+          <FadeIn>
+            <FeatureRow
+              eyebrow="Leaderboards"
+              eyebrowColor="#52B788"
+              heading="How does your town stack up?"
+              reverse
+              media={
+                <PhoneFrame
+                  src="/images/shift-app/leaderboard.png"
+                  alt="Shift leaderboard: Somerville ranked #3 of 9 by shift rate"
+                  className="w-[268px]"
+                />
+              }
+            >
+              <p className="text-[18px] leading-[1.6] text-white/80">
+                Join your town and neighborhood groups and see where you stand — ranked by Shift Rate, so it&apos;s about the share of active trips, not just who logs the most miles.
+              </p>
+              <ul className="mt-6 flex flex-col gap-3.5">
+                <Bullet><b className="font-display font-bold text-white">Town vs. town, block vs. block.</b> Cambridge, Somerville, Union Square — pick your home turf.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Places you&apos;ve been.</b> Trips you take automatically surface new groups to join.</Bullet>
+              </ul>
+            </FeatureRow>
+          </FadeIn>
+
+          {/* 5b — Flagship challenges */}
+          <FadeIn>
+            <FeatureRow
+              eyebrow="Flagship challenges"
+              eyebrowColor="#52B788"
+              heading="Shift Your Summer & seasonal sweepstakes."
+              media={
+                <PhoneFrame
+                  src="/images/shift-app/shift-your-summer.png"
+                  alt="Shift Your Summer 2026 sweepstakes with a Segway e-bike grand prize"
+                  className="w-[268px]"
+                />
+              }
+            >
+              <p className="text-[18px] leading-[1.6] text-white/80">
+                A few times a year, Shift runs state-wide challenges with real prizes. Every active trip you take is an entry — so simply moving the way you already do puts you in the running.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2.5">
+                <span className="rounded-full border border-[rgba(186,241,77,0.3)] bg-[rgba(186,241,77,0.12)] px-3.5 py-[7px] font-display text-[13px] font-semibold text-[#BAF14D]">$5k+ in prizes</span>
+                <span className="rounded-full border border-[#2E3252] bg-[#262A47] px-3.5 py-[7px] font-display text-[13px] font-semibold text-white">Grand prize: Segway e-bike</span>
+                <span className="rounded-full border border-[#2E3252] bg-[#262A47] px-3.5 py-[7px] font-display text-[13px] font-semibold text-white">1 entry per active trip</span>
+              </div>
+              <ul className="mt-6 flex flex-col gap-3.5">
+                <Bullet><b className="font-display font-bold text-white">No extra effort.</b> Your walks, rides, and transit trips are your entries.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Town vs. town.</b> Climb the standings while you rack up entries.</Bullet>
+              </ul>
+            </FeatureRow>
+          </FadeIn>
+
+          {/* 5c — Community events */}
+          <FadeIn>
+            <FeatureRow
+              eyebrow="Community events"
+              eyebrowColor="#52B788"
+              heading="Real rides, real people, near you."
+              reverse
+              media={
+                <PhoneFrame
+                  src="/images/shift-app/community-events.png"
+                  alt="Shift community events: group rides and guided rides nearby"
+                  className="w-[268px]"
+                />
+              }
+            >
+              <p className="text-[18px] leading-[1.6] text-white/80">
+                Guided rides, group rides, e-bike demos, and walking tours nearby — the easiest way to try something new is to show up with people who already do it.
+              </p>
+              <ul className="mt-6 flex flex-col gap-3.5">
+                <Bullet><b className="font-display font-bold text-white">Discover nearby.</b> Filter by distance and type, save the ones you like.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Events that lower the bar.</b> Guided, beginner-friendly, low-pressure.</Bullet>
+              </ul>
+            </FeatureRow>
+          </FadeIn>
+
+          {/* 5d — Roams */}
+          <FadeIn>
+            <FeatureRow
+              eyebrow="Roams"
+              eyebrowColor="#52B788"
+              heading="Curated adventures on your doorstep."
+              media={
+                /* Duo phone layout */
+                <div className="relative mx-auto min-h-[560px] w-[392px] max-w-full">
+                  <div className="absolute right-0 top-0 z-[1] w-[210px] rotate-[8deg] scale-[0.94] brightness-[0.84]">
+                    <PhoneFrame
+                      src="/images/shift-app/roam-stop-detail.png"
+                      alt="Shift Roam stop detail: route-comfort rating and live Bluebikes availability"
+                      width={560}
+                      height={1214}
+                    />
+                  </div>
+                  <div className="absolute bottom-0 left-0 z-[2] w-[210px] -rotate-[4deg]">
+                    <PhoneFrame
+                      src="/images/shift-app/roam-charles-loop.png"
+                      alt="Shift Roam — The Charles Loop, a 4.1-mile bike route with mapped stops and points of interest"
+                      width={560}
+                      height={1214}
+                    />
+                  </div>
+                </div>
+              }
+            >
+              <p className="text-[18px] leading-[1.6] text-white/80">
+                Hand-picked greenways, trails, and loops across Massachusetts. Each Roam comes with a suggested route, leg-by-leg stops, live transit and Bluebikes availability, and nearby points of interest worth the detour — plus a one-tap handoff to Maps. Earn badges as you explore.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2.5">
+                <span className="rounded-full border border-[rgba(82,183,136,0.35)] bg-[rgba(82,183,136,0.14)] px-3.5 py-[7px] font-display text-[13px] font-semibold text-[#8FE0B6]">~30 Roams and growing</span>
+                <span className="rounded-full border border-[rgba(82,183,136,0.35)] bg-[rgba(82,183,136,0.14)] px-3.5 py-[7px] font-display text-[13px] font-semibold text-[#8FE0B6]">Quick &middot; Half-Day &middot; Full Day</span>
+                <span className="rounded-full border border-[rgba(82,183,136,0.35)] bg-[rgba(82,183,136,0.14)] px-3.5 py-[7px] font-display text-[13px] font-semibold text-[#8FE0B6]">Bike &middot; Transit &middot; Walk</span>
+              </div>
+              <ul className="mt-6 flex flex-col gap-3.5">
+                <Bullet><b className="font-display font-bold text-white">Live and local.</b> Real-time Bluebikes counts, route-comfort ratings, and points of interest along the way.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Filter by your mood.</b> Chill, active, social, or exploring.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Badge series.</b> Collect adventures and unlock recognition as you go.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Bonus during Shift Your Summer.</b> Completing Roams earns extra sweepstakes entries.</Bullet>
+              </ul>
+            </FeatureRow>
+          </FadeIn>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════
+            6 · REWARDS
+        ═══════════════════════════════════════════════════════ */}
+        <section className="bg-[#191A2E]" id="rewards">
+          <FadeIn>
+            <FeatureRow
+              eyebrow="Rewards"
+              heading="Local perks that unlock as you move."
+              reverse
+              media={
+                <PhoneFrame
+                  src="/images/shift-app/rewards-perks.png"
+                  alt="Shift rewards: local perks from Gracie's Ice Cream, Juliet, Remnant Brewing, Bagel Guild"
+                  className="w-[268px]"
+                  glow
+                />
+              }
+            >
+              <p className="text-[18px] leading-[1.6] text-white/80">
+                Reach Mover status and a neighborhood of real perks opens up — coffee, ice cream, and bagels — from the independent businesses right around you. Just rewards that appear because you&apos;re an active commuter.
+              </p>
+              <ul className="mt-6 flex flex-col gap-3.5">
+                <Bullet><b className="font-display font-bold text-white">Unlocked by your status.</b> Hit Mover tier and qualifying perks turn on automatically.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Right around the corner.</b> Sorted by distance, from businesses in your neighborhood.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Plus partner drawings.</b> Automatic and prize-drawing rewards from GSI, your employer, and partners.</Bullet>
+              </ul>
+            </FeatureRow>
+          </FadeIn>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════
+            7 · TEAMS & SCHOOLS
+        ═══════════════════════════════════════════════════════ */}
+        <section className="bg-[#121320] px-8 py-10" id="teams">
+          <FadeIn>
+            <div className="mx-auto max-w-[1120px]">
+              <div className="mb-2 text-center">
+                <span className="inline-flex items-center gap-2 font-display text-[13px] font-bold uppercase tracking-[0.18em] text-[#BAF14D]">
+                  {CHEV} Beyond the individual
+                </span>
+                <h2 className="mt-3.5 font-display text-[clamp(30px,4.6vw,52px)] font-extrabold leading-[1.04] tracking-[-0.02em] text-white">
+                  Shift works for groups, too.
+                </h2>
+              </div>
+
+              <div className="mt-9 grid gap-[22px] md:grid-cols-2">
+                {/* Employers card */}
+                <div className="rounded-[22px] border border-[#2E3252] bg-[#1E2038] p-[30px] transition-all duration-200 hover:-translate-y-[3px] hover:border-[#BAF14D]">
+                  <div className="font-display text-xs font-bold uppercase tracking-[0.16em] text-[#52B788]">For employers</div>
+                  <h3 className="mt-3 font-display text-[24px] font-extrabold leading-[1.08] text-white">
+                    Make the commute a reason to come in.
+                  </h3>
+                  <p className="mt-2.5 text-[15.5px] leading-[1.6] text-white/80">
+                    A genuine wellness benefit with real participation data, verified active-trip mode share, and sustainability reporting your team will actually use.
+                  </p>
+                  <Link href="/contact?inquiry=employer" className="mt-[18px] inline-flex items-center gap-2 font-display text-[15px] font-bold text-[#BAF14D]">
+                    Partner with us <span>&rarr;</span>
+                  </Link>
+                </div>
+
+                {/* Schools card */}
+                <div className="rounded-[22px] border border-[#2E3252] bg-[#1E2038] p-[30px] transition-all duration-200 hover:-translate-y-[3px] hover:border-[#BAF14D]">
+                  <div className="font-display text-xs font-bold uppercase tracking-[0.16em] text-[#52B788]">For schools</div>
+                  <h3 className="mt-3 font-display text-[24px] font-extrabold leading-[1.08] text-white">
+                    The simplest school wellness program you&apos;ll ever run.
+                  </h3>
+                  <p className="mt-2.5 text-[15.5px] leading-[1.6] text-white/80">
+                    No student apps, no accounts, no data on kids. A wall chart, a show of hands, and one email from the teacher — COPPA-clean by design.
+                  </p>
+                  <Link href="/contact?inquiry=school" className="mt-[18px] inline-flex items-center gap-2 font-display text-[15px] font-bold text-[#BAF14D]">
+                    Bring it to your school <span>&rarr;</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════
+            8 · FINAL CTA
+        ═══════════════════════════════════════════════════════ */}
+        <section className="relative overflow-hidden bg-[#191A2E] px-8 py-[78px] text-center" id="get">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(700px_380px_at_50%_0%,rgba(186,241,77,0.16),transparent_65%)]" />
+          <div className="relative mx-auto max-w-[560px]">
+            <FadeIn>
+              <span className="inline-flex items-center gap-2 font-display text-[13px] font-bold uppercase tracking-[0.18em] text-[#BAF14D]">
+                {CHEV} Find your shift
+              </span>
+              <h2 className="mt-4 font-display text-[clamp(40px,6vw,72px)] font-extrabold leading-[1.04] tracking-[-0.02em] text-white">
+                Your trips are already happening.<br />Start counting them.
+              </h2>
+              <p className="mt-4 text-[19px] text-white/80">
+                Free to download. Available on iOS and Android.
+              </p>
+
+              {IS_LIVE ? (
+                <StoreButtons iosUrl={IOS_URL} androidUrl={ANDROID_URL} className="mt-[34px] justify-center" />
+              ) : (
+                <div className="mt-[34px]">
+                  <WaitlistEmailForm source="shift_page" />
+                </div>
+              )}
+
+              <p className="mt-[22px] font-display text-sm font-semibold text-white/80">
+                Local business?{' '}
+                <Link href="/shift/rewards-partners" className="font-bold text-[#BAF14D] hover:underline">
+                  Join our rewards network &rarr;
+                </Link>
+              </p>
+            </FadeIn>
           </div>
         </section>
 
