@@ -33,10 +33,10 @@ export default function StoreButtons({
         className="inline-flex items-center gap-3 rounded-[14px] border-[1.5px] border-[#2E3252] bg-[#0E0F1A] px-5 py-[11px] pl-4 transition-all hover:-translate-y-0.5 hover:border-[#BAF14D]"
       >
         <svg viewBox="0 0 24 24" width="22" height="22" className="shrink-0">
-          <path fill="#BAF14D" d="M3.6 2.1 13 11.5l-2.6 2.6L3.6 2.1z" opacity=".9" />
-          <path fill="#2966E5" d="M3.6 21.9 13 12.5l-2.6-2.6L3.6 21.9z" opacity=".9" />
-          <path fill="#E8E8EE" d="M13 11.5l3.4-1.95 3.4 1.95-3.4 1.95L13 11.5z" />
-          <path fill="#52B788" d="M16.4 9.55 13 11.5l-2.6-2.6 3-1.7 3 2.35z" opacity=".7" />
+          <path fill="#4285F4" d="M12.545 12.151 3.34 21.8a2.05 2.05 0 0 0 2.728.635l10.41-5.93-3.933-4.354z" />
+          <path fill="#34A853" d="M20.694 10.404 16.48 8.004 12.32 11.93l4.2 4.394 4.177-2.378a2.05 2.05 0 0 0-.003-3.542z" />
+          <path fill="#FBBC04" d="M3.34 2.2a2.034 2.034 0 0 0-.34 1.15v17.3c0 .4.12.77.34 1.15l9.42-9.65L3.34 2.2z" />
+          <path fill="#EA4335" d="M12.545 11.849 16.48 8.004 6.068 2.063A2.048 2.048 0 0 0 3.34 2.2l9.205 9.649z" />
         </svg>
         <span className="flex flex-col font-display leading-[1.1]">
           <small className="text-[11px] font-medium tracking-[0.04em] text-white/75">Get it on</small>
