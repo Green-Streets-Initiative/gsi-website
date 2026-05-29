@@ -88,6 +88,8 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
   const [manualPosition, setManualPosition] = useState<{ lat: number; lng: number } | null>(null)
   const [addressValue, setAddressValue] = useState('')
   const mbtaIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
+  const lastFetchPosRef = useRef<{ lat: number; lng: number } | null>(null)
 
   const destLat = event.center_lat
   const destLng = event.center_lng
@@ -114,30 +116,53 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     ? haversineMeters(effectivePosition!.lat, effectivePosition!.lng, nearestBluebike.lat, nearestBluebike.lng)
     : null
 
-  // Fetch all routes from Google via /api/route
-  const fetchRoutes = useCallback(async () => {
-    if (!hasLocation) { setLoadingRoutes(false); return }
-    setLoadingRoutes(true)
-    try {
-      const res = await fetch('/api/route', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          origin: { lat: effectivePosition!.lat, lng: effectivePosition!.lng },
-          destination: { lat: destLat, lng: destLng },
-          modes: ['WALK', 'BICYCLE', 'TRANSIT'],
-          departureTime: new Date().toISOString(),
-        }),
-      })
-      if (!res.ok) { setLoadingRoutes(false); return }
-      const data = await res.json()
-      setRouteData(data.routes)
-    } catch {
-      // fail silently
-    } finally {
-      setLoadingRoutes(false)
+  // Fetch routes with abort control and single retry on server errors
+  const doFetchRoutes = useCallback(async (
+    pos: { lat: number; lng: number },
+    controller: AbortController,
+    showLoading: boolean,
+  ) => {
+    if (showLoading) setLoadingRoutes(true)
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch('/api/route', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            origin: { lat: pos.lat, lng: pos.lng },
+            destination: { lat: destLat, lng: destLng },
+            modes: ['WALK', 'BICYCLE', 'TRANSIT'],
+            departureTime: new Date().toISOString(),
+          }),
+          signal: controller.signal,
+        })
+        if (controller.signal.aborted) return
+        if (res.ok) {
+          const data = await res.json()
+          if (!controller.signal.aborted) {
+            lastFetchPosRef.current = pos
+            setRouteData(data.routes)
+          }
+          break
+        }
+        if (attempt === 0 && res.status >= 500) {
+          await new Promise(r => setTimeout(r, 1500))
+          if (controller.signal.aborted) return
+          continue
+        }
+        break
+      } catch (e) {
+        if ((e as Error).name === 'AbortError') return
+        if (attempt === 0) {
+          await new Promise(r => setTimeout(r, 1500))
+          if (controller.signal.aborted) return
+          continue
+        }
+        break
+      }
     }
-  }, [hasLocation, effectivePosition, destLat, destLng])
+    if (!controller.signal.aborted) setLoadingRoutes(false)
+  }, [destLat, destLng])
 
   // Surgical MBTA prediction: query for the specific stop+route Google identified
   const fetchMbtaPrediction = useCallback(async () => {
@@ -194,10 +219,35 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     }
   }, [transitRoute])
 
-  // Fetch Google routes once on mount / location change
+  // Fetch on GPS — once initially, then only if user moves >100m
   useEffect(() => {
-    fetchRoutes()
-  }, [fetchRoutes])
+    if (!userPosition || manualPosition) return
+    if (lastFetchPosRef.current) {
+      const dist = haversineMeters(
+        lastFetchPosRef.current.lat, lastFetchPosRef.current.lng,
+        userPosition.lat, userPosition.lng
+      )
+      if (dist < 100) return
+    }
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+    doFetchRoutes(userPosition, controller, !lastFetchPosRef.current)
+  }, [userPosition, manualPosition, doFetchRoutes])
+
+  // Re-fetch when manual address changes
+  useEffect(() => {
+    if (!manualPosition) return
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+    doFetchRoutes(manualPosition, controller, true)
+  }, [manualPosition, doFetchRoutes])
+
+  // Abort in-flight request on unmount
+  useEffect(() => {
+    return () => { abortRef.current?.abort() }
+  }, [])
 
   // Keep a ref to the latest fetchMbtaPrediction so the interval always calls the current version
   const fetchMbtaPredRef = useRef(fetchMbtaPrediction)
@@ -249,21 +299,23 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     ? walkTimeMinutes(bluebikeDistToUser) + bluebikeRoute.durationMins
     : null
 
-  // Mode ordering by Google durations
+  // Mode ordering by Google durations — memoized to prevent layout jumps
   type ModeKey = 'walk' | 'transit' | 'bike'
-  const modeEstimates: { key: ModeKey; est: number | null }[] = [
-    { key: 'walk', est: walkRoute?.durationMins ?? null },
-    { key: 'transit', est: transitRoute?.durationMins ?? null },
-    { key: 'bike', est: bikeRoute?.durationMins ?? null },
-  ]
-  const modeOrder = modeEstimates
-    .sort((a, b) => {
-      if (a.est === null && b.est === null) return 0
-      if (a.est === null) return 1
-      if (b.est === null) return -1
-      return a.est - b.est
-    })
-    .map(m => m.key)
+  const modeOrder = useMemo((): ModeKey[] => {
+    const estimates: { key: ModeKey; est: number | null }[] = [
+      { key: 'walk', est: walkRoute?.durationMins ?? null },
+      { key: 'transit', est: transitRoute?.durationMins ?? null },
+      { key: 'bike', est: bikeRoute?.durationMins ?? null },
+    ]
+    return estimates
+      .sort((a, b) => {
+        if (a.est === null && b.est === null) return 0
+        if (a.est === null) return 1
+        if (b.est === null) return -1
+        return a.est - b.est
+      })
+      .map(m => m.key)
+  }, [walkRoute?.durationMins, transitRoute?.durationMins, bikeRoute?.durationMins])
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
