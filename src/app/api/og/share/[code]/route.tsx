@@ -4,12 +4,11 @@
  * Hit pattern: GET /api/og/share/{referralCode} → 1200×630 PNG.
  *
  * Used by the Cloudflare Worker at shift.gogreenstreets.org/refer/{code}
- * (which serves OG meta tags pointing here) so that messaging apps and
- * social platforms render a rich preview when the share URL is pasted.
+ * so messaging apps render a rich preview when a referral link is shared.
  *
  * Card focuses on the referrer's neighborhood — "Join [Neighborhood] on
- * Shift" — rather than personal stats, because the primary sharing use
- * case is inviting neighbors to join a neighborhood group.
+ * Shift" — with the neighborhood's ranking in its town, the active
+ * competition (if any), the referral code, and who invited them.
  *
  * Cache: 5 min user-side, 1 hour CDN.
  */
@@ -29,8 +28,18 @@ interface ShareData {
   neighborhood: string | null
   town: string | null
   memberCount: number
-  shiftRate: number | null
+  rank: number | null
+  totalGroups: number | null
   referralCode: string
+  competitionName: string | null
+  competitionDates: string | null
+}
+
+function formatDateRange(start: string, end: string): string {
+  const opts: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', timeZone: 'America/New_York' }
+  const s = new Date(start).toLocaleDateString('en-US', opts)
+  const e = new Date(end).toLocaleDateString('en-US', opts)
+  return `${s} – ${e}`
 }
 
 async function loadShareData(code: string): Promise<ShareData | null> {
@@ -48,13 +57,32 @@ async function loadShareData(code: string): Promise<ShareData | null> {
 
   if (userErr || !user) return null
 
+  const userId = user.id as string
   const firstName = (user.first_name as string) || 'A friend'
+
+  // Find active/upcoming Shift Your Summer competition
+  const { data: comps } = await supabase
+    .from('competitions')
+    .select('id, name, starts_at, ends_at')
+    .eq('is_public', true)
+    .is('group_id', null)
+    .like('name', '%Shift Your Summer%')
+    .order('starts_at', { ascending: false })
+    .limit(5)
+
+  const competitions = (comps ?? []) as { id: string; name: string; starts_at: string; ends_at: string }[]
+  const now = Date.now()
+  const competition =
+    competitions.find(c => new Date(c.starts_at).getTime() <= now && new Date(c.ends_at).getTime() >= now) ??
+    competitions.find(c => new Date(c.starts_at).getTime() > now) ??
+    competitions[0] ?? null
 
   // Find neighborhood from home coordinates
   let neighborhood: string | null = null
   let town: string | null = null
   let memberCount = 0
-  let shiftRate: number | null = null
+  let rank: number | null = null
+  let totalGroups: number | null = null
 
   if (user.home_lat != null && user.home_lng != null) {
     const { data: nbId } = await supabase.rpc('find_neighborhood_for_point', {
@@ -75,7 +103,7 @@ async function loadShareData(code: string): Promise<ShareData | null> {
         town = (nb as { town: string }).town
       }
 
-      // Find the neighborhood group and its stats
+      // Find the neighborhood group and its member count
       const { data: groupRow } = await supabase
         .from('groups')
         .select('id, group_members(count)')
@@ -89,20 +117,45 @@ async function loadShareData(code: string): Promise<ShareData | null> {
           ? (members[0] as { count?: number })?.count ?? 0
           : 0
 
-        // Fetch neighborhood shift rate
-        const { data: rateRows } = await supabase.rpc('get_group_shift_rate', {
-          p_group_id: (groupRow as { id: string }).id,
-          p_days: 30,
-        })
-        const rateRow = (rateRows as { shift_rate?: number }[] | null)?.[0]
-        if (rateRow?.shift_rate != null) {
-          shiftRate = Math.round(Number(rateRow.shift_rate))
+        // Find the town group to get neighborhood ranking
+        if (town) {
+          const { data: townGroup } = await supabase
+            .from('groups')
+            .select('id')
+            .eq('type', 'town')
+            .eq('name', town)
+            .maybeSingle()
+
+          if (townGroup) {
+            const { data: standing } = await supabase.rpc('get_town_neighborhood_standing', {
+              p_town_group_id: (townGroup as { id: string }).id,
+              p_user_id: userId,
+              p_metric: 'shift_rate',
+              p_days: 30,
+            })
+
+            const row = Array.isArray(standing) ? standing[0] : standing
+            if (row) {
+              rank = (row as { self_rank?: number }).self_rank ?? null
+              totalGroups = (row as { total_groups?: number }).total_groups ?? null
+            }
+          }
         }
       }
     }
   }
 
-  return { firstName, neighborhood, town, memberCount, shiftRate, referralCode: code }
+  return {
+    firstName,
+    neighborhood,
+    town,
+    memberCount,
+    rank,
+    totalGroups,
+    referralCode: code,
+    competitionName: competition?.name ?? null,
+    competitionDates: competition ? formatDateRange(competition.starts_at, competition.ends_at) : null,
+  }
 }
 
 function FallbackCard() {
@@ -128,13 +181,10 @@ function FallbackCard() {
           <path d="M20,0 L36,13 L20,26 L20,19 L30,13 L20,7Z" fill={BLUE} />
         </svg>
       </div>
-      <div style={{ display: 'flex', color: LIME, fontSize: 32, fontWeight: 700, marginBottom: 16 }}>
-        Shift Your Summer · June 15 – Aug 15
+      <div style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 36, fontWeight: 400 }}>
+        Walk, bike, ride — and get rewarded for it.
       </div>
-      <div style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 28, fontWeight: 400 }}>
-        Walk, bike, ride — and win prizes.
-      </div>
-      <div style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, marginTop: 24 }}>
+      <div style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 24, marginTop: 24 }}>
         shift.gogreenstreets.org
       </div>
     </div>
@@ -168,17 +218,7 @@ export async function GET(
     { name: 'Trebuchet MS', data: trebuchetBold, weight: 700 as const, style: 'normal' as const },
   ]
 
-  if (!data) {
-    return new ImageResponse(<FallbackCard />, {
-      width: 1200,
-      height: 630,
-      headers: cacheHeaders,
-      fonts,
-    })
-  }
-
-  // If no neighborhood data, use the fallback with Shift Your Summer branding
-  if (!data.neighborhood) {
+  if (!data || !data.neighborhood) {
     return new ImageResponse(<FallbackCard />, {
       width: 1200,
       height: 630,
@@ -191,6 +231,16 @@ export async function GET(
     ? `Join ${data.neighborhood}, ${data.town} on Shift`
     : `Join ${data.neighborhood} on Shift`
 
+  // Build the subtitle: competition info or general tagline
+  const subtitle = data.competitionName
+    ? `${data.competitionName} · ${data.competitionDates}`
+    : 'Walk, bike, ride — and get rewarded for it.'
+
+  // Build ranking text: "#3 of 9 in Somerville"
+  const rankText = data.rank != null && data.totalGroups != null && data.town
+    ? `#${data.rank} of ${data.totalGroups} in ${data.town}`
+    : null
+
   return new ImageResponse(
     (
       <div
@@ -200,7 +250,7 @@ export async function GET(
           backgroundColor: NAVY,
           display: 'flex',
           flexDirection: 'column',
-          padding: '56px 64px',
+          padding: '48px 64px',
           fontFamily: 'Bricolage Grotesque',
         }}
       >
@@ -233,6 +283,7 @@ export async function GET(
 
         {/* Center content */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+          {/* Headline */}
           <span
             style={{
               display: 'flex',
@@ -248,16 +299,17 @@ export async function GET(
             {headline}
           </span>
 
+          {/* Subtitle — competition or tagline */}
           <span
             style={{
               display: 'flex',
               color: LIME,
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: 700,
-              marginTop: 20,
+              marginTop: 16,
             }}
           >
-            Shift Your Summer · June 15 – Aug 15
+            {subtitle}
           </span>
 
           {/* Stats row */}
@@ -265,30 +317,71 @@ export async function GET(
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 32,
-              marginTop: 28,
-              padding: '14px 32px',
+              gap: 0,
+              marginTop: 32,
               borderRadius: 16,
               backgroundColor: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.12)',
+              overflow: 'hidden',
             }}
           >
-            {memberCount(data.memberCount)}
-            {data.shiftRate != null && (
+            {/* Members */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 36px' }}>
+              <span style={{ display: 'flex', color: '#fff', fontSize: 30, fontWeight: 800 }}>
+                {data.memberCount.toLocaleString()}
+              </span>
+              <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 15, fontWeight: 500, marginTop: 2 }}>
+                {data.memberCount === 1 ? 'member' : 'members'}
+              </span>
+            </div>
+
+            {/* Ranking */}
+            {rankText && (
               <>
-                <div style={{ display: 'flex', width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.15)' }} />
-                {statItem(`${data.shiftRate}%`, 'Shift rate')}
+                <div style={{ display: 'flex', width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 36px' }}>
+                  <span style={{ display: 'flex', color: LIME, fontSize: 30, fontWeight: 800 }}>
+                    #{data.rank}
+                  </span>
+                  <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 15, fontWeight: 500, marginTop: 2 }}>
+                    of {data.totalGroups} in {data.town}
+                  </span>
+                </div>
               </>
             )}
-            <div style={{ display: 'flex', width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.15)' }} />
-            {statItem(data.firstName, 'Invited by')}
+
+            {/* Invited by */}
+            <div style={{ display: 'flex', width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 36px' }}>
+              <span style={{ display: 'flex', color: '#fff', fontSize: 30, fontWeight: 800 }}>
+                {data.firstName}
+              </span>
+              <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 15, fontWeight: 500, marginTop: 2 }}>
+                Invited by
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 400 }}>
-            shift.gogreenstreets.org
+        {/* Footer — referral code */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 500 }}>
+            Use code
+          </span>
+          <span
+            style={{
+              display: 'flex',
+              fontFamily: 'monospace',
+              fontSize: 24,
+              fontWeight: 800,
+              letterSpacing: 4,
+              color: LIME,
+            }}
+          >
+            {data.referralCode}
+          </span>
+          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 500 }}>
+            to join
           </span>
         </div>
       </div>
@@ -299,32 +392,5 @@ export async function GET(
       headers: cacheHeaders,
       fonts,
     },
-  )
-}
-
-function memberCount(count: number) {
-  const label = count === 1 ? 'member' : 'members'
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-      <span style={{ display: 'flex', color: '#fff', fontSize: 28, fontWeight: 800 }}>
-        {count.toLocaleString()}
-      </span>
-      <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 16, fontWeight: 500 }}>
-        {label}
-      </span>
-    </div>
-  )
-}
-
-function statItem(value: string, label: string) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-      <span style={{ display: 'flex', color: '#fff', fontSize: 28, fontWeight: 800 }}>
-        {value}
-      </span>
-      <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 16, fontWeight: 500 }}>
-        {label}
-      </span>
-    </div>
   )
 }
