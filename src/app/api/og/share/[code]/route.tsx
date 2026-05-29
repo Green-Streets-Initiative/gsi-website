@@ -227,19 +227,11 @@ export async function GET(
     })
   }
 
-  const headline = data.town
-    ? `Join ${data.neighborhood}, ${data.town} on Shift`
-    : `Join ${data.neighborhood} on Shift`
+  const neighborhoodLine = data.town
+    ? `Join ${data.neighborhood}, ${data.town}`
+    : `Join ${data.neighborhood}`
 
-  // Build the subtitle: competition info or general tagline
-  const subtitle = data.competitionName
-    ? `${data.competitionName} · ${data.competitionDates}`
-    : 'Walk, bike, ride — and get rewarded for it.'
-
-  // Build ranking text: "#3 of 9 in Somerville"
-  const rankText = data.rank != null && data.totalGroups != null && data.town
-    ? `#${data.rank} of ${data.totalGroups} in ${data.town}`
-    : null
+  const hasCompetition = !!data.competitionName
 
   return new ImageResponse(
     (
@@ -283,67 +275,109 @@ export async function GET(
 
         {/* Center content */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-          {/* Headline */}
-          <span
-            style={{
-              display: 'flex',
-              color: '#fff',
-              fontSize: 52,
-              fontWeight: 800,
-              letterSpacing: -1.5,
-              lineHeight: 1.1,
-              textAlign: 'center',
-              maxWidth: 900,
-            }}
-          >
-            {headline}
-          </span>
+          {/* Headline — neighborhood on first line, "on Shift" on second */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <span
+              style={{
+                display: 'flex',
+                color: '#fff',
+                fontSize: 52,
+                fontWeight: 800,
+                letterSpacing: -1.5,
+                lineHeight: 1.1,
+                textAlign: 'center',
+              }}
+            >
+              {neighborhoodLine}
+            </span>
+            <span
+              style={{
+                display: 'flex',
+                color: '#fff',
+                fontSize: 52,
+                fontWeight: 800,
+                letterSpacing: -1.5,
+                lineHeight: 1.1,
+              }}
+            >
+              on Shift
+            </span>
+          </div>
 
-          {/* Subtitle — competition or tagline */}
-          <span
-            style={{
-              display: 'flex',
-              color: LIME,
-              fontSize: 26,
-              fontWeight: 700,
-              marginTop: 16,
-            }}
-          >
-            {subtitle}
-          </span>
+          {/* Description — what this is and why they should care */}
+          {hasCompetition ? (
+            <span
+              style={{
+                display: 'flex',
+                color: 'rgba(255,255,255,0.85)',
+                fontSize: 22,
+                fontWeight: 400,
+                marginTop: 16,
+                textAlign: 'center',
+                maxWidth: 700,
+              }}
+            >
+              Every walk, bike ride, and transit trip is an entry to win prizes.
+            </span>
+          ) : (
+            <span
+              style={{
+                display: 'flex',
+                color: 'rgba(255,255,255,0.85)',
+                fontSize: 22,
+                fontWeight: 400,
+                marginTop: 16,
+              }}
+            >
+              Walk, bike, ride — and get rewarded for it.
+            </span>
+          )}
+
+          {/* Competition badge */}
+          {hasCompetition && (
+            <span
+              style={{
+                display: 'flex',
+                color: LIME,
+                fontSize: 18,
+                fontWeight: 700,
+                marginTop: 10,
+              }}
+            >
+              {data.competitionName} · {data.competitionDates} · Official rules at gogreenstreets.org
+            </span>
+          )}
 
           {/* Stats row */}
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: 0,
-              marginTop: 32,
+              alignItems: 'stretch',
+              marginTop: 28,
               borderRadius: 16,
               backgroundColor: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.12)',
-              overflow: 'hidden',
             }}
           >
             {/* Members */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 36px' }}>
-              <span style={{ display: 'flex', color: '#fff', fontSize: 30, fontWeight: 800 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '14px 36px' }}>
+              <span style={{ display: 'flex', color: '#fff', fontSize: 28, fontWeight: 800 }}>
                 {data.memberCount.toLocaleString()}
               </span>
-              <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 15, fontWeight: 500, marginTop: 2 }}>
+              <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: 500, marginTop: 2 }}>
                 {data.memberCount === 1 ? 'member' : 'members'}
               </span>
             </div>
 
             {/* Ranking */}
-            {rankText && (
+            {data.rank != null && data.totalGroups != null && data.town && (
               <>
-                <div style={{ display: 'flex', width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 36px' }}>
-                  <span style={{ display: 'flex', color: LIME, fontSize: 30, fontWeight: 800 }}>
+                <div style={{ display: 'flex', alignSelf: 'center', width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '14px 36px' }}>
+                  <span style={{ display: 'flex', color: LIME, fontSize: 28, fontWeight: 800 }}>
                     #{data.rank}
                   </span>
-                  <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 15, fontWeight: 500, marginTop: 2 }}>
+                  <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: 500, marginTop: 2 }}>
                     of {data.totalGroups} in {data.town}
                   </span>
                 </div>
@@ -351,12 +385,12 @@ export async function GET(
             )}
 
             {/* Invited by */}
-            <div style={{ display: 'flex', width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 36px' }}>
-              <span style={{ display: 'flex', color: '#fff', fontSize: 30, fontWeight: 800 }}>
+            <div style={{ display: 'flex', alignSelf: 'center', width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '14px 36px' }}>
+              <span style={{ display: 'flex', color: '#fff', fontSize: 28, fontWeight: 800 }}>
                 {data.firstName}
               </span>
-              <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 15, fontWeight: 500, marginTop: 2 }}>
+              <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: 500, marginTop: 2 }}>
                 Invited by
               </span>
             </div>
