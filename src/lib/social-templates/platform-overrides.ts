@@ -32,8 +32,8 @@ export const TEXT_LIMITS: Record<Platform, {
   nudge_body: number;
   body_text: number;
 }> = {
-  instagram: { nudge_headline: 50, nudge_body: 120, body_text: 100 },
-  facebook:  { nudge_headline: 60, nudge_body: 180, body_text: 150 },
-  linkedin:  { nudge_headline: 70, nudge_body: 220, body_text: 200 },
-  bluesky:   { nudge_headline: 50, nudge_body: 120, body_text: 100 },
+  instagram: { nudge_headline: 50, nudge_body: 120, body_text: 200 },
+  facebook:  { nudge_headline: 60, nudge_body: 180, body_text: 200 },
+  linkedin:  { nudge_headline: 70, nudge_body: 220, body_text: 250 },
+  bluesky:   { nudge_headline: 50, nudge_body: 120, body_text: 200 },
 };

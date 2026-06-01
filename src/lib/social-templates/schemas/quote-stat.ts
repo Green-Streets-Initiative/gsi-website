@@ -28,7 +28,7 @@ export function quoteStatSchema(platform: Platform) {
     headline_number: z.string().min(1).max(20),    // "12,847"
     headline_unit:   z.string().min(1).max(40),    // "active trips"
     body_text:       z.string().min(1).max(limits.body_text),
-    source_label:    z.string().min(1).max(60),    // "Shift Live Data · May 2026"
+    source_label:    z.string().min(1).max(120),   // "Shift Live Data · May 2026"
     cta_text:        z.string().max(40).optional(),
   });
 
