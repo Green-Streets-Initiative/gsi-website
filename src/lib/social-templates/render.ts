@@ -134,13 +134,21 @@ export async function renderSocialImage(input: RenderInput): Promise<RenderResul
       viewport: { width: dims.width, height: dims.height },
       deviceScaleFactor: 1,
     });
-    await page.setContent(html, { waitUntil: 'networkidle', timeout: 15_000 });
+    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 10_000 });
 
-    // Wait for fonts (Bricolage Grotesque) to load. Without this, the
-    // screenshot can include the Arial Black fallback. The 5s floor
-    // covers slow Google Fonts responses.
-    await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(300); // small buffer for any pending image decodes
+    // Wait for fonts + images to load. domcontentloaded is faster than
+    // networkidle (which can hang on long-polling or slow CDN requests).
+    // We explicitly wait for the two things that matter: fonts and images.
+    await page.evaluate(() => Promise.all([
+      document.fonts.ready,
+      ...Array.from(document.images)
+        .filter((img) => !img.complete)
+        .map((img) => new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve; // don't block on broken images
+        })),
+    ]));
+    await page.waitForTimeout(200); // small buffer for any pending paints
 
     const screenshot = await page.screenshot({
       type: 'png',
