@@ -14,7 +14,7 @@ const forecastItem = z.object({
   icon: z.enum(ALLOWED_ICONS),                     // Phosphor icon: sun / cloud-sun / cloud-rain / cloud-snow / cloud-fog / cloud-lightning
   high: z.string().min(1).max(8),                  // "72°"
   low:  z.string().min(1).max(8),                  // "55°"
-  iconColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  iconColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
 });
 
 export function weatherSchema(platform: Platform) {
@@ -34,7 +34,7 @@ export function weatherSchema(platform: Platform) {
     ]),
     nudge_headline: z.string().min(1).max(limits.nudge_headline),
     nudge_body:     z.string().min(1).max(limits.nudge_body),
-    cta_text:       z.string().max(40).optional(),
+    cta_text:       z.string().max(40).nullable().optional(),
   });
 
   if (platform === 'instagram') {

@@ -5,7 +5,7 @@ const featuredItemSchema = z.object({
   name: z.string().min(1).max(60),
   donor: z.string().min(1).max(40),
   img: z.string().url(),
-  qty: z.string().max(10).optional(),                             // e.g. "×8"
+  qty: z.string().max(10).nullable().optional(),                             // e.g. "×8"
 });
 
 export function prizeFeaturedSchema(_platform: Platform) {

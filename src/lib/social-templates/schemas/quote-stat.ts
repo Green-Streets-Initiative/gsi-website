@@ -18,7 +18,7 @@ const secondaryStatItem = z.object({
   // "lbs CO₂ avoided" instead.
   label: z.string().min(1).max(28),
   icon: z.enum(ALLOWED_ICONS),                    // Phosphor icon name
-  iconColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  iconColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
 });
 
 export function quoteStatSchema(platform: Platform) {
@@ -29,7 +29,7 @@ export function quoteStatSchema(platform: Platform) {
     headline_unit:   z.string().min(1).max(40),    // "active trips"
     body_text:       z.string().min(1).max(limits.body_text),
     source_label:    z.string().min(1).max(120),   // "Shift Live Data · May 2026"
-    cta_text:        z.string().max(40).optional(),
+    cta_text:        z.string().max(40).nullable().optional(),
   });
 
   if (platform === 'instagram') {

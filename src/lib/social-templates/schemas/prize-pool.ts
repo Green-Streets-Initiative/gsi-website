@@ -4,7 +4,7 @@ import { type Platform } from '../platform-overrides';
 const poolItemSchema = z.object({
   name: z.string().min(1).max(40),                                // keep short — tight tiles
   donor: z.string().min(1).max(30),
-  qty: z.string().max(10).optional(),
+  qty: z.string().max(10).nullable().optional(),
 });
 
 export function prizePoolSchema(_platform: Platform) {

@@ -20,6 +20,6 @@ export function sponsorSchema(platform: Platform) {
     sponsor_logo: z.string().url(),                            // sponsors.logo_url
     sponsor_name: z.string().min(1).max(50),
     impact_text: z.string().min(1).max(limits.nudge_body),     // drafted; FACTUAL only
-    cta_text: z.string().max(40).optional(),
+    cta_text: z.string().max(40).nullable().optional(),
   });
 }

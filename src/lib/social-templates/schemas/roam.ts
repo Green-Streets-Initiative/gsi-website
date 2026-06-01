@@ -13,6 +13,6 @@ export function roamSchema(platform: Platform) {
     route_label: z.string().min(1).max(50),                    // "Davis Sq → Union Sq"
     description: z.string().min(1).max(limits.body_text),
     xp_value: z.string().min(1).max(12),                       // "+150 XP"
-    cta_text: z.string().max(40).optional(),
+    cta_text: z.string().max(40).nullable().optional(),
   });
 }

@@ -15,6 +15,6 @@ export function prizeSchema(platform: Platform) {
     how_to_win: z.string().min(1).max(limits.body_text),       // drafted from prize rules
     deadline: z.string().min(1).max(40),                       // "Ends May 31"
     legal_line: z.string().max(80).default('No purchase necessary · Rules apply'),
-    cta_text: z.string().max(40).optional(),
+    cta_text: z.string().max(40).nullable().optional(),
   });
 }

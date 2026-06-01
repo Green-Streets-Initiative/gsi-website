@@ -7,10 +7,10 @@ export function dykEditorialSchema(_platform: Platform) {
     pre: z.string().min(1).max(200),                              // lead-in text before the highlighted stat
     statHl: z.string().min(1).max(20),                            // lime-highlighted inline stat
     post: z.string().min(1).max(300),                             // text after the highlighted stat
-    reframe: z.string().max(200).optional(),                      // warm CTA in forest-tint block
-    source: z.string().max(120).optional(),
+    reframe: z.string().max(200).nullable().optional(),                      // warm CTA in forest-tint block
+    source: z.string().max(120).nullable().optional(),
     org: z.enum(['gsi', 'shift']).default('gsi'),
     photo: z.boolean().default(false),
-    photoSrc: z.string().url().optional(),
+    photoSrc: z.string().url().nullable().optional(),
   });
 }

@@ -6,8 +6,8 @@ export function partnerBlockSchema(_platform: Platform) {
     logoSrc: z.string().url().nullable().optional(),
     partner: z.string().min(1).max(60),
     perk: z.string().min(1).max(80),
-    category: z.string().max(40).optional(),                      // e.g. "Bike shop"
-    neighborhood: z.string().max(60).optional(),
+    category: z.string().max(40).nullable().optional(),                      // e.g. "Bike shop"
+    neighborhood: z.string().max(60).nullable().optional(),
     unlock: z.string().max(30).default('Mover'),
   });
 }

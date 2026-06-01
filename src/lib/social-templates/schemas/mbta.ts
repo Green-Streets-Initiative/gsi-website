@@ -14,8 +14,8 @@ const alternativeItem = z.object({
   mode: z.string().min(1).max(20),                 // "Bike" / "Walk + Bus" / "Bluebikes"
   detail: z.string().min(1).max(50),               // "Community Path runs parallel"
   time: z.string().min(1).max(40),                 // "~18 min Harvard → Alewife"
-  highlight: z.boolean().optional(),               // true on the recommended option (visually highlighted)
-  iconColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  highlight: z.boolean().nullable().optional(),               // true on the recommended option (visually highlighted)
+  iconColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
 });
 
 export function mbtaSchema(platform: Platform) {
@@ -29,7 +29,7 @@ export function mbtaSchema(platform: Platform) {
     suggestion_headline: z.string().min(1).max(limits.nudge_headline),
     suggestion_body: z.string().min(1).max(limits.nudge_body),
     alt_mode_icon: z.enum(ALLOWED_ICONS),                      // Phosphor for the compact variant
-    cta_text: z.string().max(40).optional(),
+    cta_text: z.string().max(40).nullable().optional(),
   });
 
   if (platform === 'instagram') {

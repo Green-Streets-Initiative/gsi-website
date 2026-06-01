@@ -12,6 +12,6 @@ export function partnerSchema(_platform: Platform) {
     location_icon: z.enum(ALLOWED_ICONS).default('map-pin'),   // Phosphor icon next to the location text
     offer_text: z.string().min(1).max(50),                     // "10% off tune-ups"
     offer_qualifier: z.string().min(1).max(40),                // "for Shift users"
-    cta_text: z.string().max(40).optional(),
+    cta_text: z.string().max(40).nullable().optional(),
   });
 }
