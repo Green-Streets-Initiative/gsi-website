@@ -148,7 +148,11 @@ export async function renderSocialImage(input: RenderInput): Promise<RenderResul
           img.onerror = resolve; // don't block on broken images
         })),
     ]));
-    await page.waitForTimeout(200); // small buffer for any pending paints
+    // Small buffer for pending paints. Wrapped in try/catch because on
+    // Vercel cold-start cleanup the browser context can close before this
+    // completes — the screenshot still succeeds since fonts+images are
+    // already loaded above.
+    try { await page.waitForTimeout(200); } catch { /* context may be closing */ }
 
     const screenshot = await page.screenshot({
       type: 'png',
