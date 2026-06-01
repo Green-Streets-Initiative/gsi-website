@@ -153,6 +153,11 @@
     color: var(--lime);
     flex-shrink: 0;
   }
+  /* Hide clarifier row when clarifier text is empty */
+  .sx-clarifier:has(span:last-child:empty) { display: none; }
+
+  /* Hide empty spans so flex gap doesn't create phantom space */
+  .sx-meta span:empty { display: none; }
 
   /* Divider */
   .sx-divider {
@@ -227,7 +232,7 @@
               <path d="M104,7 L120,20 L104,33 L104,26 L114,20 L104,14Z" fill="#2966E5" />
             </svg>
           </span>
-          <span class="sx-meta" style="display:flex;flex-direction:column;gap:6px;text-align:right">
+          <span class="sx-meta" style="display:flex;flex-direction:column;gap:16px;text-align:right">
             <span>{{source}}</span>
             <span>{{photoAttribution}}</span>
           </span>
