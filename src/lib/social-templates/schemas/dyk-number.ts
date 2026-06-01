@@ -11,5 +11,7 @@ export function dykNumberSchema(_platform: Platform) {
     org: z.enum(['gsi', 'shift']).default('gsi'),                 // footer lockup
     photo: z.boolean().default(false),                            // toggle full-bleed bg photo
     photoSrc: z.string().url().nullable().optional(),                        // bg image when photo=true
+    photoAttribution: z.string().nullable().optional(),                      // "Photo: Jane Doe / Unsplash"
+    photoAttributionUrl: z.string().url().nullable().optional(),             // photographer profile URL (not rendered, used in post)
   });
 }

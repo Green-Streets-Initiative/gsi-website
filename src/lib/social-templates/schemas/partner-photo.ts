@@ -9,5 +9,7 @@ export function partnerPhotoSchema(_platform: Platform) {
     perk: z.string().min(1).max(80),                              // offer text (rendered large)
     neighborhood: z.string().max(60).nullable().optional(),                  // e.g. "Inman Square, Cambridge"
     unlock: z.string().max(30).default('Mover'),                  // tier name (never "points")
+    photoAttribution: z.string().nullable().optional(),
+    photoAttributionUrl: z.string().url().nullable().optional(),
   });
 }

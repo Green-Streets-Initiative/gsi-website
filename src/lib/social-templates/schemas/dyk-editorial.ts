@@ -12,5 +12,7 @@ export function dykEditorialSchema(_platform: Platform) {
     org: z.enum(['gsi', 'shift']).default('gsi'),
     photo: z.boolean().default(false),
     photoSrc: z.string().url().nullable().optional(),
+    photoAttribution: z.string().nullable().optional(),
+    photoAttributionUrl: z.string().url().nullable().optional(),
   });
 }
