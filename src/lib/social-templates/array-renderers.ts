@@ -122,6 +122,82 @@ export function renderAlternatives(items: MbtaAlternative[]): string {
     .join('');
 }
 
+// ── Social card templates v2: prize_featured, prize_pool, roam_collection ──
+
+export interface FeaturedPrize {
+  name: string;
+  donor: string;
+  img: string;
+  qty?: string;   // e.g. "×8"
+}
+
+export function renderFeaturedPrizes(items: FeaturedPrize[]): string {
+  return items
+    .map((p) => `
+      <div class="sx-tile" style="position:relative;padding:16px;justify-content:flex-start;min-height:0;overflow:hidden">
+        ${p.qty ? `<span class="sx-qty" style="position:absolute;top:24px;right:24px;z-index:2">${escapeHtml(p.qty)}</span>` : ''}
+        <div style="flex:1 1 auto;background:#fff;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:16px;min-height:0">
+          <img src="${escapeHtml(p.img)}" alt="${escapeHtml(p.name)}" style="max-width:100%;max-height:100%;object-fit:contain" />
+        </div>
+        <div style="padding:16px 8px 4px">
+          <div class="sx-title" style="font-size:30px;line-height:1.1">${escapeHtml(p.name)}</div>
+          <div class="sx-meta" style="margin-top:8px">${escapeHtml(p.donor)}</div>
+        </div>
+      </div>
+    `)
+    .join('');
+}
+
+export interface PoolPrize {
+  name: string;
+  donor: string;
+  qty?: string;
+}
+
+export function renderPoolPrizes(items: PoolPrize[]): string {
+  return items
+    .map((p) => `
+      <div class="sx-tile" style="padding:18px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <span class="sx-title" style="font-size:25px;line-height:1.1">${escapeHtml(p.name)}</span>
+          ${p.qty ? `<span class="sx-qty" style="font-size:17px;padding:2px 10px">${escapeHtml(p.qty)}</span>` : ''}
+        </div>
+        <div class="sx-meta" style="font-size:17px;margin-top:8px">${escapeHtml(p.donor)}</div>
+      </div>
+    `)
+    .join('');
+}
+
+export interface CollectionRoam {
+  name: string;
+  img: string;
+}
+
+export function renderCollectionRoams(items: CollectionRoam[], total: number): string {
+  const shown = items.slice(0, 5);
+  const remaining = total - shown.length;
+
+  const tiles = shown
+    .map((r) => `
+      <div style="position:relative;border-radius:16px;overflow:hidden;min-height:0">
+        <img src="${escapeHtml(r.img)}" alt="${escapeHtml(r.name)}"
+          style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" />
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(21,22,42,0) 38%,rgba(21,22,42,0.92) 100%)"></div>
+        <div style="position:absolute;left:18px;right:18px;bottom:16px;font-family:var(--display);font-weight:700;font-size:26px;line-height:1.04;letter-spacing:-0.02em;color:var(--soft-white)">${escapeHtml(r.name)}</div>
+      </div>
+    `)
+    .join('');
+
+  const moreTile = `
+    <div style="position:relative;border-radius:16px;overflow:hidden;min-height:0;background:var(--navy-2);border:2px dashed rgba(186,241,77,0.4);display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div style="font-family:var(--display);font-weight:800;font-size:64px;line-height:0.9;letter-spacing:-0.04em;color:var(--lime)">+${remaining}</div>
+      <div class="sx-meta" style="margin-top:8px">more roams</div>
+    </div>
+  `;
+
+  return tiles + moreTile;
+}
+
 // ── Top-level dispatcher ────────────────────────────────────────────────
 
 /**
@@ -134,12 +210,13 @@ export function renderAlternatives(items: MbtaAlternative[]): string {
  * stripped from the output so it doesn't get accidentally substituted
  * as `[object Object]`.
  *
- * Unrecognized array keys are passed through untouched (the renderer
- * will then fall back to its default behavior — likely producing a
- * stringified object that the template won't render).
+ * `template` disambiguates generic array key names (e.g. `items` is
+ * used by prize_featured, prize_pool, and roam_collection — each
+ * needs a different renderer).
  */
 export function expandArrayVars(
   vars: Record<string, unknown>,
+  template = '',
 ): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(vars)) {
@@ -153,6 +230,19 @@ export function expandArrayVars(
           continue;
         case 'alternatives':
           out[`${key}_html`] = renderAlternatives(value as MbtaAlternative[]);
+          continue;
+        case 'items':
+          // Generic key — route by template id
+          if (template === 'prize_featured') {
+            out[`${key}_html`] = renderFeaturedPrizes(value as FeaturedPrize[]);
+          } else if (template === 'prize_pool') {
+            out[`${key}_html`] = renderPoolPrizes(value as PoolPrize[]);
+          } else if (template === 'roam_collection') {
+            // roam_collection needs `total` for the "+N more" tile;
+            // pull it from the vars bag (it's a scalar sibling)
+            const total = typeof vars['total'] === 'number' ? vars['total'] : value.length;
+            out[`${key}_html`] = renderCollectionRoams(value as CollectionRoam[], total);
+          }
           continue;
         default:
           // Unknown array key — drop it (don't pass through arrays as

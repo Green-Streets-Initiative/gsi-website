@@ -71,6 +71,17 @@ export const ALLOWED_ICONS = [
 
   // Misc utility
   'arrow-right',
+
+  // Social card templates v2 (DYK, Partner, Prize, Roam families)
+  'compass',
+  'footprints',
+  'lightbulb',
+  'path',
+  'sneaker-move',
+  'tag',
+  'ticket',
+  'calendar-blank',
+  'mountains',
 ] as const;
 
 export type IconName = (typeof ALLOWED_ICONS)[number];

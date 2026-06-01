@@ -35,6 +35,17 @@ export const DEFAULT_RATIOS: Record<string, Record<Platform, AspectRatio>> = {
   'partner':     { instagram: '1:1', facebook: '1.91:1', linkedin: '1.91:1', bluesky: '1:1' },
   'prize':       { instagram: '1:1', facebook: '1.91:1', linkedin: '1.91:1', bluesky: '1:1' },
   'sponsor':     { instagram: '1:1', facebook: '1.91:1', linkedin: '1.91:1', bluesky: '1:1' },
+
+  // Social card templates v2 — all 4:5 only
+  'dyk_number':       { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
+  'dyk_editorial':    { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
+  'partner_photo':    { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
+  'partner_block':    { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
+  'prize_grand':      { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
+  'prize_featured':   { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
+  'prize_pool':       { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
+  'roam_poster':      { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
+  'roam_collection':  { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
 };
 
 export function getDefaultRatio(template: string, platform: Platform): AspectRatio {

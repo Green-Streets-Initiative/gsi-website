@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #191A2E;
+    --navy-2: #20223A;
+    --navy-3: #15162a;
+    --soft-white: #E8E8EE;
+    --soft-white-2: #CBCCDA;
+    --lime: #BAF14D;
+    --lime-bright: #C9F76B;
+    --blue: #2966E5;
+    --forest: #2D6A4F;
+    --forest-lt: #52B788;
+    --forest-tint: #D8E8DE;
+    --display: 'Bricolage Grotesque', system-ui, sans-serif;
+    --mono: 'DM Mono', ui-monospace, monospace;
+    --w: {{__width__}}px;
+    --h: {{__height__}}px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: var(--w);
+    height: var(--h);
+    overflow: hidden;
+    background: var(--navy);
+    font-family: var(--display);
+    -webkit-font-smoothing: antialiased;
+    color: var(--soft-white);
+  }
+
+  .sx-card {
+    position: relative;
+    width: 100%; height: 100%;
+    overflow: hidden;
+  }
+
+  /* Full-bleed photo background */
+  .photo-layer {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+  .photobg-layer {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background: linear-gradient(180deg,
+       rgba(21,22,42,0.58) 0%,
+       rgba(21,22,42,0.58) 42%,
+       rgba(21,22,42,0.82) 78%,
+       rgba(21,22,42,0.96) 100%);
+  }
+
+  /* Photo toggle via data attribute */
+  [data-photo="false"] .photo-layer,
+  [data-photo="false"] .photobg-layer { display: none; }
+
+  /* Org lockup toggle */
+  [data-org="gsi"] .lockup-shift { display: none; }
+  [data-org="shift"] .lockup-gsi { display: none; }
+
+  .sx-pad {
+    position: relative;
+    z-index: 2;
+    padding: 88px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  /* Eyebrow */
+  .sx-eyebrow {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 30px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--lime);
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .sx-eyebrow svg {
+    flex-shrink: 0;
+  }
+
+  /* Giant stat number */
+  .sx-stat {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 380px;
+    line-height: 0.82;
+    letter-spacing: -0.045em;
+    color: var(--lime);
+  }
+
+  /* Statement body */
+  .sx-display {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 84px;
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    color: var(--soft-white);
+    text-wrap: balance;
+    margin-top: 28px;
+    max-width: 880px;
+  }
+
+  /* Middle content — vertically centered via auto margins */
+  .sx-middle {
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+
+  /* Bottom section */
+  .sx-bottom {
+    flex-shrink: 0;
+  }
+
+  /* Clarifier line with mode icons */
+  .sx-clarifier {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 34px;
+    line-height: 1.32;
+    letter-spacing: -0.01em;
+    color: var(--lime);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+  .sx-modes {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .sx-modes svg {
+    color: var(--lime);
+    flex-shrink: 0;
+  }
+
+  /* Divider */
+  .sx-divider {
+    height: 3px;
+    background: rgba(232,232,238,0.16);
+    border: 0;
+    margin-bottom: 28px;
+  }
+
+  /* Footer */
+  .sx-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sx-meta {
+    font-family: var(--mono);
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: 0.02em;
+    color: var(--soft-white-2);
+  }
+</style>
+</head>
+<body>
+  <div class="sx-card" data-photo="{{photo}}" data-org="{{org}}">
+    <img class="photo-layer" src="{{photoSrc}}" alt="" crossorigin="anonymous" />
+    <div class="photobg-layer"></div>
+
+    <div class="sx-pad">
+      <!-- Eyebrow -->
+      <div class="sx-eyebrow">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" width="32" height="32" style="vertical-align:-0.125em"><path d="M176,232a8,8,0,0,1-8,8H88a8,8,0,0,1,0-16h80A8,8,0,0,1,176,232Zm40-128a87.55,87.55,0,0,1-33.64,69.21A16.24,16.24,0,0,0,176,186v6a16,16,0,0,1-16,16H96a16,16,0,0,1-16-16v-6a16,16,0,0,0-6.23-12.66A87.59,87.59,0,0,1,40,104.49C39.74,56.83,78.26,17.14,125.88,16A88,88,0,0,1,216,104Zm-16,0a72,72,0,0,0-73.74-72c-39,.92-70.47,33.39-70.26,72.39a71.65,71.65,0,0,0,27.64,56.3A32,32,0,0,1,96,186v6h64v-6a32.15,32.15,0,0,1,12.47-25.35A71.65,71.65,0,0,0,200,104Zm-16.11-9.34a57.6,57.6,0,0,0-46.56-46.55,8,8,0,0,0-2.66,15.78c16.57,2.79,30.63,16.85,33.44,33.45a8,8,0,0,0,9.22,6.55,8,8,0,0,0,6.56-9.23Z"/></svg>
+        {{eyebrow}}
+      </div>
+
+      <!-- Middle: giant stat + statement -->
+      <div class="sx-middle">
+        <div class="sx-stat">{{stat}}</div>
+        <div class="sx-display">{{statement}}</div>
+      </div>
+
+      <!-- Bottom: clarifier + divider + footer -->
+      <div class="sx-bottom">
+        <div class="sx-clarifier">
+          <span class="sx-modes">
+            <!-- person-simple-walk -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" width="40" height="40"><path d="M152,48a24,24,0,1,0-24-24A24,24,0,0,0,152,48Zm76,144a8,8,0,0,1-8,8,32,32,0,0,1-30.38-22l-27.39-82.18L136,116.1V200a8,8,0,0,1-16,0V120a8,8,0,0,1,2.53-5.83l38-36.17-20.86-20.86L111.42,85.4A32,32,0,0,1,80,104a8,8,0,0,1,0-16,16,16,0,0,0,15.71-9.3l35.59-35.59a32,32,0,0,1,44.32-.9l22.63,22.63a32,32,0,0,1,6.25,33.36l-12.16,36.5A16,16,0,0,0,198.25,152l22,66A8,8,0,0,1,228,192Z"/></svg>
+            <!-- bicycle -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" width="40" height="40"><path d="M208,112a79.72,79.72,0,0,0-31.39,6.41l-15-26.29A24,24,0,0,0,144,80h-8a8,8,0,0,1,0-16h32a8,8,0,0,0,0-16H136a24,24,0,0,0-8,46.63V120L96.37,169.3A80,80,0,1,0,48,224a79.74,79.74,0,0,0,46-14.59,80,80,0,1,0,114-97.41ZM48,208a64.07,64.07,0,0,1,0-128,63.49,63.49,0,0,1,30.57,7.8L51.43,138.67a8,8,0,0,0,5.71,13.33H96A64.07,64.07,0,0,1,48,208Zm80-56.56L104.67,136H144V112h0l18.44-32.27,12.83,22.46A80.2,80.2,0,0,0,128,151.44ZM208,208a64.07,64.07,0,0,1-64-64,63.49,63.49,0,0,1,7.8-30.57l26.87,47.07A8,8,0,0,0,185.6,164,8.14,8.14,0,0,0,188,163.4L214.2,178.57A63.49,63.49,0,0,1,208,208Z"/></svg>
+            <!-- bus -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" width="40" height="40"><path d="M184,32H72A32,32,0,0,0,40,64V200a16,16,0,0,0,16,16H80a16,16,0,0,0,16-16V192h64v8a16,16,0,0,0,16,16h24a16,16,0,0,0,16-16V64A32,32,0,0,0,184,32ZM56,120V80H200v40Zm16-72H184a16,16,0,0,1,16,16v0H56A16,16,0,0,1,72,48ZM80,200H56V176H200v24H176v-8a8,8,0,0,0-8-8H88a8,8,0,0,0-8,8Zm8-40a12,12,0,1,1,12-12A12,12,0,0,1,88,160Zm80,0a12,12,0,1,1,12-12A12,12,0,0,1,168,160Z"/></svg>
+          </span>
+          <span>{{clarifier}}</span>
+        </div>
+        <hr class="sx-divider" />
+        <div class="sx-footer">
+          <!-- GSI lockup -->
+          <span class="lockup-gsi">
+            <svg width="330" viewBox="0 0 380 30" xmlns="http://www.w3.org/2000/svg" style="display:block">
+              <text y="24" font-family="'Trebuchet MS','Lucida Grande',Verdana,sans-serif" font-size="22" letter-spacing="0.3">
+                <tspan fill="#52B788" font-weight="700">Green Streets</tspan>
+                <tspan fill="#FFFFFF" font-weight="400"> Initiative</tspan>
+              </text>
+            </svg>
+          </span>
+          <!-- Shift lockup -->
+          <span class="lockup-shift">
+            <svg width="150" viewBox="0 0 125 40" xmlns="http://www.w3.org/2000/svg" style="display:block">
+              <text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text>
+              <path d="M85,7 L101,20 L85,33 L85,26 L95,20 L85,14Z" fill="#BAF14D" />
+              <path d="M104,7 L120,20 L104,33 L104,26 L114,20 L104,14Z" fill="#2966E5" />
+            </svg>
+          </span>
+          <span class="sx-meta">{{source}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

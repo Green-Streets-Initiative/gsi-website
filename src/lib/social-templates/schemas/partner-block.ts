@@ -1,0 +1,13 @@
+import { z } from 'zod';
+import { type Platform } from '../platform-overrides';
+
+export function partnerBlockSchema(_platform: Platform) {
+  return z.object({
+    logoSrc: z.string().url().nullable().optional(),
+    partner: z.string().min(1).max(60),
+    perk: z.string().min(1).max(80),
+    category: z.string().max(40).optional(),                      // e.g. "Bike shop"
+    neighborhood: z.string().max(60).optional(),
+    unlock: z.string().max(30).default('Mover'),
+  });
+}

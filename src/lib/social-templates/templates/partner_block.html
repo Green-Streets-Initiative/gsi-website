@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #191A2E; --navy-2: #20223A; --navy-3: #15162a;
+    --soft-white: #E8E8EE; --soft-white-2: #CBCCDA;
+    --lime: #BAF14D; --lime-bright: #C9F76B;
+    --blue: #2966E5;
+    --forest: #2D6A4F; --forest-lt: #52B788; --forest-tint: #D8E8DE;
+    --display: 'Bricolage Grotesque', system-ui, sans-serif;
+    --mono: 'DM Mono', ui-monospace, monospace;
+    --w: {{__width__}}px; --h: {{__height__}}px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: var(--w); height: var(--h);
+    overflow: hidden;
+    background: var(--navy);
+    font-family: var(--display);
+    -webkit-font-smoothing: antialiased;
+    color: var(--soft-white);
+  }
+
+  /* ---- Card frame ---- */
+  .sx-card {
+    position: relative;
+    width: 100%; height: 100%;
+    overflow: hidden;
+  }
+  .sx-card * { box-sizing: border-box; }
+  .sx-pad { padding: 88px; }
+
+  /* ---- Header row ---- */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .sx-eyebrow {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 30px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--lime);
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    white-space: nowrap;
+  }
+  .sx-eyebrow svg { flex-shrink: 0; }
+
+  .sx-meta {
+    font-family: var(--mono);
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: 0.02em;
+    color: var(--soft-white-2);
+    white-space: nowrap;
+  }
+
+  /* ---- Forest hero block ---- */
+  .forest-block {
+    background: var(--forest);
+    border-radius: 28px;
+    padding: 56px;
+    margin-top: 48px;
+    flex: 0 0 auto;
+  }
+
+  .partner-row {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    margin-bottom: 40px;
+  }
+
+  /* Scale the 168px logo plate down to 132px */
+  .logo-sm {
+    width: 132px; height: 132px;
+    flex: 0 0 auto;
+    overflow: hidden;
+  }
+  .logo-sm > * {
+    transform: scale(0.786);
+    transform-origin: top left;
+  }
+
+  .sx-title {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 52px;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    color: #fff;
+  }
+
+  .perk-label {
+    font-family: var(--mono);
+    font-size: 22px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--lime);
+    margin-bottom: 16px;
+  }
+
+  .sx-stat-sm {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 100px;
+    line-height: 0.96;
+    letter-spacing: -0.04em;
+    color: #fff;
+  }
+
+  /* ---- Location ---- */
+  .sx-loc {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 30px;
+    color: var(--soft-white);
+    letter-spacing: -0.01em;
+    margin-top: 56px;
+  }
+  .sx-loc svg { flex-shrink: 0; color: var(--lime); }
+
+  /* ---- Bottom section ---- */
+  .bottom {
+    margin-top: auto;
+  }
+
+  .sx-divider {
+    height: 3px;
+    background: rgba(232,232,238,0.16);
+    border: 0;
+    margin-bottom: 28px;
+  }
+
+  .sx-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sx-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 26px;
+    border-radius: 9999px;
+    white-space: nowrap;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: -0.01em;
+  }
+  .sx-pill--lime {
+    background: var(--lime);
+    color: var(--navy);
+  }
+</style>
+</head>
+<body>
+  <div class="sx-card sx-pad" style="display:flex;flex-direction:column">
+    <!-- Header -->
+    <div class="header">
+      <span class="sx-eyebrow">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" width="32" height="32" style="vertical-align:-0.125em"><path d="M243.31,136,144,36.69A15.86,15.86,0,0,0,132.69,32H40a8,8,0,0,0-8,8v92.69A15.86,15.86,0,0,0,36.69,144L136,243.31a16,16,0,0,0,22.63,0l84.68-84.68a16,16,0,0,0,0-22.63ZM48,48h84.69L232,147.31l-84.69,84.68L48,132.69Zm32,56a12,12,0,1,1,12-12A12,12,0,0,1,80,104Z"/></svg>
+        Rewards partner
+      </span>
+      <span class="sx-meta">{{category}}</span>
+    </div>
+
+    <!-- Forest hero block -->
+    <div class="forest-block">
+      <div class="partner-row">
+        <div class="logo-sm">{{logo_plate_html}}</div>
+        <div class="sx-title">{{partner}}</div>
+      </div>
+      <div class="perk-label">The perk</div>
+      <div class="sx-stat-sm">{{perk}}</div>
+    </div>
+
+    <!-- Location -->
+    <div class="sx-loc">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" width="36" height="36" style="vertical-align:-0.125em;color:var(--lime)"><path d="M128,16a88.1,88.1,0,0,0-88,88c0,75.3,80,132.17,83.41,134.55a8,8,0,0,0,9.18,0C136,236.17,216,179.3,216,104A88.1,88.1,0,0,0,128,16Zm0,56a32,32,0,1,1-32,32A32,32,0,0,1,128,72Z"/></svg>
+      {{neighborhood}}
+    </div>
+
+    <!-- Bottom: divider + footer -->
+    <div class="bottom">
+      <hr class="sx-divider" />
+      <div class="sx-footer">
+        <span class="sx-pill sx-pill--lime">Unlocks at the {{unlock}} tier</span>
+        <svg width="150" viewBox="0 0 125 40" xmlns="http://www.w3.org/2000/svg" style="display:block">
+          <text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text>
+          <path d="M85,7 L101,20 L85,33 L85,26 L95,20 L85,14Z" fill="#BAF14D" />
+          <path d="M104,7 L120,20 L104,33 L104,26 L114,20 L104,14Z" fill="#2966E5" />
+        </svg>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

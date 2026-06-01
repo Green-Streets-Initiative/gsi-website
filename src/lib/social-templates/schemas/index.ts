@@ -16,6 +16,16 @@ import { leaderboardSchema } from './leaderboard';
 import { partnerSchema } from './partner';
 import { prizeSchema } from './prize';
 import { sponsorSchema } from './sponsor';
+// v2 templates
+import { dykNumberSchema } from './dyk-number';
+import { dykEditorialSchema } from './dyk-editorial';
+import { partnerPhotoSchema } from './partner-photo';
+import { partnerBlockSchema } from './partner-block';
+import { prizeGrandSchema } from './prize-grand';
+import { prizeFeaturedSchema } from './prize-featured';
+import { prizePoolSchema } from './prize-pool';
+import { roamPosterSchema } from './roam-poster';
+import { roamCollectionSchema } from './roam-collection';
 import { type Platform } from '../platform-overrides';
 
 type SchemaFactory = (platform: Platform) => ZodTypeAny;
@@ -29,6 +39,16 @@ export const TEMPLATE_SCHEMAS: Record<string, SchemaFactory> = {
   partner: partnerSchema,
   prize: prizeSchema,
   sponsor: sponsorSchema,
+  // v2 templates
+  dyk_number: dykNumberSchema,
+  dyk_editorial: dykEditorialSchema,
+  partner_photo: partnerPhotoSchema,
+  partner_block: partnerBlockSchema,
+  prize_grand: prizeGrandSchema,
+  prize_featured: prizeFeaturedSchema,
+  prize_pool: prizePoolSchema,
+  roam_poster: roamPosterSchema,
+  roam_collection: roamCollectionSchema,
 };
 
 export const TEMPLATE_IDS = Object.keys(TEMPLATE_SCHEMAS);

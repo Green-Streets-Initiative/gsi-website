@@ -69,11 +69,18 @@ export async function renderSocialImage(input: RenderInput): Promise<RenderResul
     .replace(/\{\{__platform__\}\}/g, input.platform)
     .replace(/\{\{__ratio__\}\}/g, input.ratio);
 
+  // 2b. Pre-process nullable logo fields — generate monogram HTML
+  //     when logoSrc / donorLogo is empty, or <img> when present.
+  //     Injected raw via the `_html` suffix convention.
+  preprocessLogoPlate(input.vars, 'logoSrc', 'partner');
+  preprocessDonorLogo(input.vars, 'donorLogo', 'donor');
+
   // 3a. Pre-render array vars (secondary_stats, forecast_days,
-  //     alternatives) into HTML strings keyed as `<name>_html`.
+  //     alternatives, items) into HTML strings keyed as `<name>_html`.
   //     Returns a flat string-only record; the original array key is
   //     dropped from the result so the substitution loop below skips it.
-  const flatVars = expandArrayVars(input.vars);
+  //     Template id disambiguates generic keys like `items`.
+  const flatVars = expandArrayVars(input.vars, input.template);
 
   // 3b. Inject the (now-flat) user variables. Three paths:
   //     - Keys ending in `_html` are pre-rendered HTML from step 3a.
@@ -182,4 +189,66 @@ function buildFilename(input: RenderInput): string {
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Pre-process a nullable logo field into a `logo_plate_html` variable.
+ * When the logo URL is present, produces an <img> tag on a white plate.
+ * When absent, produces a monogram <span> from the first letter of
+ * the `nameKey` field. The template uses `{{logo_plate_html}}` (raw
+ * injection via the `_html` suffix).
+ */
+function preprocessLogoPlate(
+  vars: Record<string, unknown>,
+  logoKey: string,
+  nameKey: string,
+): void {
+  const logoSrc = vars[logoKey];
+  if (logoSrc && typeof logoSrc === 'string' && logoSrc.trim()) {
+    vars['logo_plate_html'] =
+      `<div style="width:168px;height:168px;border-radius:28px;background:#fff;display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-shadow:0 4px 24px rgba(0,0,0,0.12)">` +
+      `<img src="${escapeHtmlAttr(logoSrc)}" alt="" style="max-width:88%;max-height:88%;object-fit:contain" />` +
+      `</div>`;
+  } else {
+    const name = typeof vars[nameKey] === 'string' ? (vars[nameKey] as string) : '';
+    const initial = name.charAt(0).toUpperCase() || '?';
+    vars['logo_plate_html'] =
+      `<div style="width:168px;height:168px;border-radius:28px;background:#fff;display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-shadow:0 4px 24px rgba(0,0,0,0.12)">` +
+      `<span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:84px;color:#191A2E;letter-spacing:-0.04em;line-height:1">${initial}</span>` +
+      `</div>`;
+  }
+  // Remove the original key so it doesn't get substituted as a string
+  delete vars[logoKey];
+}
+
+/**
+ * Pre-process a nullable donor logo field into `donor_logo_html`.
+ * When present, shows the logo on a white chip. When absent, shows
+ * the donor name as plain meta text.
+ */
+function preprocessDonorLogo(
+  vars: Record<string, unknown>,
+  logoKey: string,
+  nameKey: string,
+): void {
+  const logoSrc = vars[logoKey];
+  const name = typeof vars[nameKey] === 'string' ? (vars[nameKey] as string) : '';
+  if (logoSrc && typeof logoSrc === 'string' && logoSrc.trim()) {
+    vars['donor_logo_html'] =
+      `<span style="background:#fff;border-radius:8px;padding:8px 16px;display:inline-flex;align-items:center">` +
+      `<img src="${escapeHtmlAttr(logoSrc)}" alt="${escapeHtmlAttr(name)}" style="height:28px;display:block" />` +
+      `</span>`;
+  } else {
+    vars['donor_logo_html'] =
+      `<span class="sx-meta">${escapeHtmlAttr(name)}</span>`;
+  }
+  delete vars[logoKey];
+}
+
+function escapeHtmlAttr(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #191A2E;
+    --navy-2: #20223A;
+    --navy-3: #15162a;
+    --soft-white: #E8E8EE;
+    --soft-white-2: #CBCCDA;
+    --lime: #BAF14D;
+    --lime-bright: #C9F76B;
+    --blue: #2966E5;
+    --forest: #2D6A4F;
+    --forest-lt: #52B788;
+    --forest-tint: #D8E8DE;
+    --display: 'Bricolage Grotesque', system-ui, sans-serif;
+    --mono: 'DM Mono', ui-monospace, monospace;
+    --w: {{__width__}}px;
+    --h: {{__height__}}px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: var(--w);
+    height: var(--h);
+    overflow: hidden;
+    background: var(--navy);
+    font-family: var(--display);
+    -webkit-font-smoothing: antialiased;
+    color: var(--soft-white);
+  }
+
+  .sx-card {
+    position: relative;
+    width: 100%; height: 100%;
+    overflow: hidden;
+  }
+
+  /* Full-bleed photo background */
+  .photo-layer {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+  .photobg-layer {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background: linear-gradient(180deg,
+       rgba(21,22,42,0.58) 0%,
+       rgba(21,22,42,0.58) 42%,
+       rgba(21,22,42,0.82) 78%,
+       rgba(21,22,42,0.96) 100%);
+  }
+
+  /* Photo toggle via data attribute */
+  [data-photo="false"] .photo-layer,
+  [data-photo="false"] .photobg-layer { display: none; }
+
+  /* Org lockup toggle */
+  [data-org="gsi"] .lockup-shift { display: none; }
+  [data-org="shift"] .lockup-gsi { display: none; }
+
+  .sx-pad {
+    position: relative;
+    z-index: 2;
+    padding: 88px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Eyebrow */
+  .sx-eyebrow {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 30px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--lime);
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .sx-eyebrow svg {
+    flex-shrink: 0;
+  }
+
+  /* Display text — editorial statement with inline highlight */
+  .sx-display {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 92px;
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    color: var(--soft-white);
+    text-wrap: balance;
+    margin-top: 56px;
+    max-width: 920px;
+    flex: 0 0 auto;
+  }
+  .sx-hl {
+    color: var(--lime);
+  }
+
+  /* Bottom section — pushed to bottom via margin-top auto */
+  .sx-bottom {
+    margin-top: auto;
+  }
+
+  /* Reframe block — forest-tint warm CTA */
+  .sx-reframe {
+    background: var(--forest-tint);
+    color: var(--navy);
+    border-radius: 20px;
+    padding: 40px 48px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .sx-reframe svg {
+    flex: 0 0 auto;
+    color: var(--forest);
+  }
+  .sx-reframe-text {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 44px;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+
+  /* Divider */
+  .sx-divider {
+    height: 3px;
+    background: rgba(232,232,238,0.16);
+    border: 0;
+    margin-bottom: 28px;
+  }
+
+  /* Footer */
+  .sx-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sx-meta {
+    font-family: var(--mono);
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: 0.02em;
+    color: var(--soft-white-2);
+  }
+</style>
+</head>
+<body>
+  <div class="sx-card" data-photo="{{photo}}" data-org="{{org}}">
+    <img class="photo-layer" src="{{photoSrc}}" alt="" crossorigin="anonymous" />
+    <div class="photobg-layer"></div>
+
+    <div class="sx-pad">
+      <!-- Eyebrow -->
+      <div class="sx-eyebrow">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" width="32" height="32" style="vertical-align:-0.125em"><path d="M176,232a8,8,0,0,1-8,8H88a8,8,0,0,1,0-16h80A8,8,0,0,1,176,232Zm40-128a87.55,87.55,0,0,1-33.64,69.21A16.24,16.24,0,0,0,176,186v6a16,16,0,0,1-16,16H96a16,16,0,0,1-16-16v-6a16,16,0,0,0-6.23-12.66A87.59,87.59,0,0,1,40,104.49C39.74,56.83,78.26,17.14,125.88,16A88,88,0,0,1,216,104Zm-16,0a72,72,0,0,0-73.74-72c-39,.92-70.47,33.39-70.26,72.39a71.65,71.65,0,0,0,27.64,56.3A32,32,0,0,1,96,186v6h64v-6a32.15,32.15,0,0,1,12.47-25.35A71.65,71.65,0,0,0,200,104Zm-16.11-9.34a57.6,57.6,0,0,0-46.56-46.55,8,8,0,0,0-2.66,15.78c16.57,2.79,30.63,16.85,33.44,33.45a8,8,0,0,0,9.22,6.55,8,8,0,0,0,6.56-9.23Z"/></svg>
+        {{eyebrow}}
+      </div>
+
+      <!-- Display text with inline highlight -->
+      <div class="sx-display">{{pre}} <span class="sx-hl">{{statHl}}</span> {{post}}</div>
+
+      <!-- Bottom: reframe + divider + footer -->
+      <div class="sx-bottom">
+        <div class="sx-reframe">
+          <!-- sneaker-move icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" width="64" height="64"><path d="M232,152H210.09l-18-37.93A16,16,0,0,0,177.58,104H160V64a24,24,0,0,0-24-24H96A24,24,0,0,0,72,64v40H64a8,8,0,0,0-5.66,2.34l-40,40A8,8,0,0,0,16,152v48a16,16,0,0,0,16,16H232a16,16,0,0,0,16-16V168A16,16,0,0,0,232,152Zm0,48H32V155.31L69.66,117.66,72,115.31V64a8,8,0,0,1,8-8h40a8,8,0,0,1,8,8v48a8,8,0,0,0,8,8h41.58l20.49,43.09A8,8,0,0,0,205.36,168H232Z"/></svg>
+          <span class="sx-reframe-text">{{reframe}}</span>
+        </div>
+        <hr class="sx-divider" />
+        <div class="sx-footer">
+          <!-- GSI lockup -->
+          <span class="lockup-gsi">
+            <svg width="330" viewBox="0 0 380 30" xmlns="http://www.w3.org/2000/svg" style="display:block">
+              <text y="24" font-family="'Trebuchet MS','Lucida Grande',Verdana,sans-serif" font-size="22" letter-spacing="0.3">
+                <tspan fill="#52B788" font-weight="700">Green Streets</tspan>
+                <tspan fill="#FFFFFF" font-weight="400"> Initiative</tspan>
+              </text>
+            </svg>
+          </span>
+          <!-- Shift lockup -->
+          <span class="lockup-shift">
+            <svg width="150" viewBox="0 0 125 40" xmlns="http://www.w3.org/2000/svg" style="display:block">
+              <text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text>
+              <path d="M85,7 L101,20 L85,33 L85,26 L95,20 L85,14Z" fill="#BAF14D" />
+              <path d="M104,7 L120,20 L104,33 L104,26 L114,20 L104,14Z" fill="#2966E5" />
+            </svg>
+          </span>
+          <span class="sx-meta">{{source}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
