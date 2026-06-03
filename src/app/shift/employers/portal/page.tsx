@@ -85,29 +85,77 @@ type RewardPool = {
   active: boolean
 }
 
+type PrizeMetric = 'pct_non_car' | 'trips' | 'active_days' | 'miles'
+type AwardMode = 'merit' | 'drawing'
+
 type ChallengePrize = {
   id: string
   competition_id: string
   group_id: string
   name: string
-  amount_cents: number
+  award_mode: AwardMode
+  metric: PrizeMetric
+  min_threshold: number | null
   winner_count: number
-  min_shift_rate_pct: number
   funded_from_pool: boolean
+  amount_cents: number | null
+  prize_description: string | null
   auto_draw: boolean
   draw_status: 'pending' | 'drawn' | 'fulfilled'
   drawn_at: string | null
+  display_order: number
 }
 
 type PrizeWinner = {
   id: string
   prize_id: string
   user_id: string
-  amount_cents: number
-  shift_rate_pct: number
+  metric: string
+  metric_value: number
+  amount_cents: number | null
   drawn_at: string
   fulfillment_status: 'pending' | 'fulfilled' | 'forfeited'
   fulfilled_at: string | null
+}
+
+type PrizeFormState = {
+  id: string | null
+  name: string
+  award_mode: AwardMode
+  metric: PrizeMetric
+  min_threshold: string
+  winner_count: string
+  funded_from_pool: boolean
+  amount_dollars: string
+  prize_description: string
+  auto_draw: boolean
+}
+
+const PRIZE_METRIC_LABELS: Record<string, string> = {
+  pct_non_car: 'Shift Rate',
+  trips: 'Active trips',
+  active_days: 'Active days',
+  miles: 'Miles shifted',
+}
+
+const PRIZE_METRIC_UNITS: Record<string, string> = {
+  pct_non_car: '%',
+  trips: 'trips',
+  active_days: 'days',
+  miles: 'mi',
+}
+
+const EMPTY_PRIZE_FORM: PrizeFormState = {
+  id: null,
+  name: 'Gift Card Drawing',
+  award_mode: 'drawing',
+  metric: 'pct_non_car',
+  min_threshold: '50',
+  winner_count: '3',
+  funded_from_pool: false,
+  amount_dollars: '25',
+  prize_description: '',
+  auto_draw: true,
 }
 
 const MODE_LABEL: Record<string, string> = {
@@ -353,20 +401,13 @@ function PortalPage() {
   const [topUpAmount, setTopUpAmount] = useState('')
   const [openingTopUp, setOpeningTopUp] = useState(false)
 
-  // Prize drawing (Premium tier — structured prizes funded from pool)
-  const [challengePrize, setChallengePrize] = useState<ChallengePrize | null>(null)
-  const [prizeWinners, setPrizeWinners] = useState<PrizeWinner[]>([])
-  const [prizeForm, setPrizeForm] = useState({
-    enabled: false,
-    name: 'Gift Card Drawing',
-    amount_dollars: '25',
-    winner_count: '3',
-    min_shift_rate_pct: '50',
-    auto_draw: true,
-  })
+  // Prize configuration (Premium tier — multiple prizes per challenge)
+  const [challengePrizes, setChallengePrizes] = useState<ChallengePrize[]>([])
+  const [prizeWinnersMap, setPrizeWinnersMap] = useState<Record<string, PrizeWinner[]>>({})
+  const [prizeForms, setPrizeForms] = useState<PrizeFormState[]>([])
+  const [editingPrizeIdx, setEditingPrizeIdx] = useState<number | null>(null)
   const [savingPrize, setSavingPrize] = useState(false)
-  const [drawingPrize, setDrawingPrize] = useState(false)
-  const [eligibleCount, setEligibleCount] = useState<number | null>(null)
+  const [drawingPrizeId, setDrawingPrizeId] = useState<string | null>(null)
   const [topUpError, setTopUpError] = useState<string | null>(null)
 
   // Impact report period selection.
@@ -479,29 +520,42 @@ function PortalPage() {
           public_leaderboard: groupData.public_leaderboard ?? false,
         })
 
-        // Fetch structured prize config (Premium tier)
-        const { data: prizeData } = await supabase
+        // Fetch structured prizes (Premium tier — multiple per challenge)
+        const { data: prizesData } = await supabase
           .from('employer_challenge_prizes')
           .select('*')
           .eq('competition_id', challengeRes.data.id)
-          .maybeSingle()
-        if (prizeData) {
-          setChallengePrize(prizeData as ChallengePrize)
-          setPrizeForm({
-            enabled: true,
-            name: prizeData.name,
-            amount_dollars: String(prizeData.amount_cents / 100),
-            winner_count: String(prizeData.winner_count),
-            min_shift_rate_pct: String(prizeData.min_shift_rate_pct),
-            auto_draw: prizeData.auto_draw,
-          })
-          // Fetch winners if already drawn
-          if (prizeData.draw_status === 'drawn' || prizeData.draw_status === 'fulfilled') {
+          .order('display_order')
+        if (prizesData && prizesData.length > 0) {
+          const prizes = prizesData as ChallengePrize[]
+          setChallengePrizes(prizes)
+          setPrizeForms(prizes.map((p) => ({
+            id: p.id,
+            name: p.name,
+            award_mode: p.award_mode,
+            metric: p.metric,
+            min_threshold: p.min_threshold != null ? String(p.min_threshold) : '50',
+            winner_count: String(p.winner_count),
+            funded_from_pool: p.funded_from_pool,
+            amount_dollars: p.amount_cents ? String(p.amount_cents / 100) : '25',
+            prize_description: p.prize_description || '',
+            auto_draw: p.auto_draw,
+          })))
+          const drawnIds = prizes
+            .filter((p) => p.draw_status === 'drawn' || p.draw_status === 'fulfilled')
+            .map((p) => p.id)
+          if (drawnIds.length > 0) {
             const { data: winners } = await supabase
               .from('employer_prize_winners')
               .select('*')
-              .eq('prize_id', prizeData.id)
-            if (winners) setPrizeWinners(winners as PrizeWinner[])
+              .in('prize_id', drawnIds)
+            if (winners) {
+              const map: Record<string, PrizeWinner[]> = {}
+              for (const w of winners as PrizeWinner[]) {
+                ;(map[w.prize_id] ??= []).push(w)
+              }
+              setPrizeWinnersMap(map)
+            }
           }
         }
       }
@@ -693,13 +747,9 @@ function PortalPage() {
       }
     }
 
-    // Save structured prize (Premium tier)
-    if (competitionId && isTierAtLeast('premium')) {
-      if (prizeForm.enabled) {
-        await saveChallengePrize(competitionId)
-      } else if (challengePrize) {
-        await deleteChallengePrize()
-      }
+    // Save structured prizes (Premium tier)
+    if (competitionId && isTierAtLeast('premium') && prizeForms.length > 0) {
+      await savePrizes(competitionId)
     }
 
     // Handle public leaderboard opt-in — wire to matchup_group_ids
@@ -764,103 +814,84 @@ function PortalPage() {
     setEndingChallenge(false)
   }
 
-  async function saveChallengePrize(competitionId: string) {
-    if (!group || !prizeForm.enabled) return
+  async function savePrizes(competitionId: string) {
+    if (!group) return
     setSavingPrize(true)
-    const amountCents = Math.round(parseFloat(prizeForm.amount_dollars) * 100)
-    const winnerCount = parseInt(prizeForm.winner_count, 10)
-    const minRate = parseInt(prizeForm.min_shift_rate_pct, 10)
-
-    const payload = {
-      competition_id: competitionId,
-      group_id: group.id,
-      name: prizeForm.name.trim(),
-      amount_cents: amountCents,
-      winner_count: winnerCount,
-      min_shift_rate_pct: minRate,
-      funded_from_pool: true,
-      auto_draw: prizeForm.auto_draw,
+    for (let i = 0; i < prizeForms.length; i++) {
+      const form = prizeForms[i]
+      const payload = {
+        competition_id: competitionId,
+        group_id: group.id,
+        name: form.name.trim(),
+        award_mode: form.award_mode,
+        metric: form.metric,
+        min_threshold: form.award_mode === 'drawing' && form.min_threshold
+          ? parseFloat(form.min_threshold) : null,
+        winner_count: parseInt(form.winner_count, 10) || 1,
+        funded_from_pool: form.funded_from_pool,
+        amount_cents: form.funded_from_pool && form.amount_dollars
+          ? Math.round(parseFloat(form.amount_dollars) * 100) : null,
+        prize_description: !form.funded_from_pool ? form.prize_description.trim() || null : null,
+        auto_draw: form.auto_draw,
+        display_order: i,
+      }
+      if (form.id) {
+        await supabase.from('employer_challenge_prizes').update(payload).eq('id', form.id)
+      } else {
+        const { data } = await supabase
+          .from('employer_challenge_prizes').insert(payload).select('id').single()
+        if (data) prizeForms[i] = { ...form, id: data.id }
+      }
     }
-
-    if (challengePrize) {
-      await supabase
-        .from('employer_challenge_prizes')
-        .update(payload)
-        .eq('id', challengePrize.id)
-      setChallengePrize({ ...challengePrize, ...payload })
-    } else {
-      const { data } = await supabase
-        .from('employer_challenge_prizes')
-        .insert(payload)
-        .select('*')
-        .single()
-      if (data) setChallengePrize(data as ChallengePrize)
+    const formIds = new Set(prizeForms.filter((f) => f.id).map((f) => f.id))
+    for (const existing of challengePrizes) {
+      if (!formIds.has(existing.id)) {
+        await supabase.from('employer_challenge_prizes').delete().eq('id', existing.id)
+      }
     }
+    const { data: refreshed } = await supabase
+      .from('employer_challenge_prizes').select('*')
+      .eq('competition_id', competitionId).order('display_order')
+    if (refreshed) {
+      setChallengePrizes(refreshed as ChallengePrize[])
+      setPrizeForms((refreshed as ChallengePrize[]).map((p) => ({
+        id: p.id, name: p.name, award_mode: p.award_mode, metric: p.metric,
+        min_threshold: p.min_threshold != null ? String(p.min_threshold) : '50',
+        winner_count: String(p.winner_count), funded_from_pool: p.funded_from_pool,
+        amount_dollars: p.amount_cents ? String(p.amount_cents / 100) : '25',
+        prize_description: p.prize_description || '', auto_draw: p.auto_draw,
+      })))
+    }
+    setEditingPrizeIdx(null)
     setSavingPrize(false)
   }
 
-  async function deleteChallengePrize() {
-    if (!challengePrize) return
-    await supabase
-      .from('employer_challenge_prizes')
-      .delete()
-      .eq('id', challengePrize.id)
-    setChallengePrize(null)
-    setPrizeForm({
-      enabled: false,
-      name: 'Gift Card Drawing',
-      amount_dollars: '25',
-      winner_count: '3',
-      min_shift_rate_pct: '50',
-      auto_draw: true,
-    })
-  }
-
-  async function drawPrizeWinners() {
-    if (!challengePrize) return
-    setDrawingPrize(true)
-    const { data, error } = await supabase.rpc('draw_employer_challenge_prizes', {
-      p_prize_id: challengePrize.id,
-    })
+  async function drawPrize(prizeId: string) {
+    setDrawingPrizeId(prizeId)
+    const { error } = await supabase.rpc('draw_employer_challenge_prizes', { p_prize_id: prizeId })
     if (error) {
       console.error('Draw failed:', error.message)
-      setDrawingPrize(false)
+      setDrawingPrizeId(null)
       return
     }
-    // Refresh prize state + winners
-    const { data: updatedPrize } = await supabase
-      .from('employer_challenge_prizes')
-      .select('*')
-      .eq('id', challengePrize.id)
-      .single()
-    if (updatedPrize) setChallengePrize(updatedPrize as ChallengePrize)
-
+    const { data: updated } = await supabase
+      .from('employer_challenge_prizes').select('*').eq('id', prizeId).single()
+    if (updated) {
+      setChallengePrizes((prev) => prev.map((p) => (p.id === prizeId ? (updated as ChallengePrize) : p)))
+    }
     const { data: winners } = await supabase
-      .from('employer_prize_winners')
-      .select('*')
-      .eq('prize_id', challengePrize.id)
-    if (winners) setPrizeWinners(winners as PrizeWinner[])
-
-    // Refresh pool balance
+      .from('employer_prize_winners').select('*').eq('prize_id', prizeId)
+    if (winners) {
+      setPrizeWinnersMap((prev) => ({ ...prev, [prizeId]: winners as PrizeWinner[] }))
+    }
     if (rewardPool) {
       const { data: poolData } = await supabase
         .from('reward_pools')
         .select('id, name, balance_cents, lifetime_funded_cents, lifetime_spent_cents, active')
-        .eq('id', rewardPool.id)
-        .single()
+        .eq('id', rewardPool.id).single()
       if (poolData) setRewardPool(poolData as RewardPool)
     }
-
-    setDrawingPrize(false)
-  }
-
-  async function fetchEligibleCount() {
-    if (!challenge) return
-    const { data } = await supabase.rpc('get_employer_prize_eligible_count', {
-      p_competition_id: challenge.id,
-      p_min_shift_rate_pct: parseInt(prizeForm.min_shift_rate_pct, 10) || 50,
-    })
-    if (typeof data === 'number') setEligibleCount(data)
+    setDrawingPrizeId(null)
   }
 
   /* ── PDF generation ──────────────────────────────────────── */
@@ -1544,126 +1575,129 @@ function PortalPage() {
                 </div>
                 {/* Prize configuration — tier-dependent */}
                 {isTierAtLeast('premium') ? (
-                  <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 space-y-4">
-                    <label className="flex cursor-pointer items-start gap-3">
-                      <input
-                        type="checkbox"
-                        checked={prizeForm.enabled}
-                        onChange={(e) =>
-                          setPrizeForm({ ...prizeForm, enabled: e.target.checked })
-                        }
-                        className="mt-1 h-4 w-4 rounded accent-[#BAF14D]"
-                      />
-                      <div>
-                        <span className="text-sm font-medium text-white">
-                          Fund a prize drawing from your reward pool
-                        </span>
-                        <p className="mt-0.5 text-xs text-white/75">
-                          Employees who meet the minimum Shift Rate are entered into a random drawing.
-                          {rewardPool
-                            ? `Pool balance: ${centsToDollars(rewardPool.balance_cents)}.`
-                            : 'Fund your reward pool below to enable prize drawings.'}
-                        </p>
-                      </div>
-                    </label>
-
-                    {prizeForm.enabled && (
-                      <div className="space-y-3 pl-7">
-                        <DashField
-                          label="Prize name"
-                          value={prizeForm.name}
-                          onChange={(v) => setPrizeForm({ ...prizeForm, name: v })}
-                          placeholder="e.g. Gift Card Drawing"
-                        />
-                        <div className="grid grid-cols-3 gap-3">
-                          <div>
-                            <label className="mb-1.5 block text-sm font-medium text-white">
-                              Amount per winner
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-white">Prizes (optional)</label>
+                    {prizeForms.map((pf, idx) => (
+                      <div key={idx} className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+                        {editingPrizeIdx === idx ? (
+                          <div className="space-y-3">
+                            <DashField label="Prize name" value={pf.name}
+                              onChange={(v) => { const n = [...prizeForms]; n[idx] = { ...pf, name: v }; setPrizeForms(n) }}
+                              placeholder="e.g. Gift Card Drawing" />
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-white">How are winners selected?</label>
+                              <div className="flex gap-3">
+                                {(['drawing', 'merit'] as AwardMode[]).map((mode) => (
+                                  <button key={mode} type="button"
+                                    onClick={() => { const n = [...prizeForms]; n[idx] = { ...pf, award_mode: mode }; setPrizeForms(n) }}
+                                    className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${pf.award_mode === mode ? 'bg-[#BAF14D] text-[#191A2E]' : 'border border-white/[0.12] text-white'}`}>
+                                    {mode === 'drawing' ? 'Random drawing' : 'Top performers (merit)'}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className={`grid gap-3 ${pf.award_mode === 'drawing' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                              <div>
+                                <label className="mb-1.5 block text-sm font-medium text-white">Metric</label>
+                                <select value={pf.metric}
+                                  onChange={(e) => { const n = [...prizeForms]; n[idx] = { ...pf, metric: e.target.value as PrizeMetric }; setPrizeForms(n) }}
+                                  className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D]">
+                                  <option value="pct_non_car">Shift Rate</option>
+                                  <option value="trips">Active trips</option>
+                                  <option value="active_days">Active days</option>
+                                  <option value="miles">Miles shifted</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="mb-1.5 block text-sm font-medium text-white">{pf.award_mode === 'merit' ? 'Top N' : 'Winners'}</label>
+                                <input type="number" min="1" max="20" value={pf.winner_count}
+                                  onChange={(e) => { const n = [...prizeForms]; n[idx] = { ...pf, winner_count: e.target.value }; setPrizeForms(n) }}
+                                  className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D]" />
+                              </div>
+                              {pf.award_mode === 'drawing' && (
+                                <div>
+                                  <label className="mb-1.5 block text-sm font-medium text-white">Min {PRIZE_METRIC_LABELS[pf.metric]}</label>
+                                  <div className="relative">
+                                    <input type="number" min="0" value={pf.min_threshold}
+                                      onChange={(e) => { const n = [...prizeForms]; n[idx] = { ...pf, min_threshold: e.target.value }; setPrizeForms(n) }}
+                                      className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] py-3 pl-4 pr-10 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D]" />
+                                    <span className="absolute right-3 top-3 text-white/75">{PRIZE_METRIC_UNITS[pf.metric]}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-white">Fulfillment</label>
+                              <div className="flex gap-3">
+                                <button type="button" onClick={() => { const n = [...prizeForms]; n[idx] = { ...pf, funded_from_pool: true }; setPrizeForms(n) }}
+                                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${pf.funded_from_pool ? 'bg-[#BAF14D] text-[#191A2E]' : 'border border-white/[0.12] text-white'}`}>
+                                  Fund from pool
+                                </button>
+                                <button type="button" onClick={() => { const n = [...prizeForms]; n[idx] = { ...pf, funded_from_pool: false }; setPrizeForms(n) }}
+                                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${!pf.funded_from_pool ? 'bg-[#BAF14D] text-[#191A2E]' : 'border border-white/[0.12] text-white'}`}>
+                                  Self-fulfilled
+                                </button>
+                              </div>
+                            </div>
+                            {pf.funded_from_pool ? (
+                              <div>
+                                <label className="mb-1.5 block text-sm font-medium text-white">Amount per winner</label>
+                                <div className="relative inline-block">
+                                  <span className="absolute left-3 top-3 text-white/75">$</span>
+                                  <input type="number" min="5" max="500" value={pf.amount_dollars}
+                                    onChange={(e) => { const n = [...prizeForms]; n[idx] = { ...pf, amount_dollars: e.target.value }; setPrizeForms(n) }}
+                                    className="w-40 rounded-xl border border-white/[0.12] bg-white/[0.07] py-3 pl-7 pr-4 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D]" />
+                                </div>
+                                {(() => {
+                                  const totalCents = Math.round(parseFloat(pf.amount_dollars || '0') * 100) * (parseInt(pf.winner_count || '0', 10))
+                                  const overBudget = totalCents > (rewardPool?.balance_cents ?? 0)
+                                  return (
+                                    <p className={`mt-1 text-xs ${overBudget ? 'text-[#E05252]' : 'text-white/75'}`}>
+                                      Total: {centsToDollars(totalCents)} from pool
+                                      {rewardPool ? ` (${centsToDollars(rewardPool.balance_cents)} available)` : ''}
+                                      {overBudget && ' — exceeds balance'}
+                                    </p>
+                                  )
+                                })()}
+                              </div>
+                            ) : (
+                              <DashField label="Prize description" value={pf.prize_description}
+                                onChange={(v) => { const n = [...prizeForms]; n[idx] = { ...pf, prize_description: v }; setPrizeForms(n) }}
+                                placeholder="e.g. Branded water bottle, gift card, etc." />
+                            )}
+                            <label className="flex cursor-pointer items-start gap-3">
+                              <input type="checkbox" checked={pf.auto_draw}
+                                onChange={(e) => { const n = [...prizeForms]; n[idx] = { ...pf, auto_draw: e.target.checked }; setPrizeForms(n) }}
+                                className="mt-1 h-4 w-4 rounded accent-[#BAF14D]" />
+                              <span className="text-sm text-white">Automatically select winners when challenge ends</span>
                             </label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-3 text-white/75">$</span>
-                              <input
-                                type="number"
-                                min="5"
-                                max="500"
-                                value={prizeForm.amount_dollars}
-                                onChange={(e) =>
-                                  setPrizeForm({ ...prizeForm, amount_dollars: e.target.value })
-                                }
-                                className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] py-3 pl-7 pr-4 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D]"
-                              />
+                            <button type="button" onClick={() => setEditingPrizeIdx(null)}
+                              className="rounded-full border border-white/[0.12] px-4 py-1.5 text-sm font-medium text-white">Done</button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-white">{pf.name}</p>
+                              <p className="mt-0.5 text-xs text-white/75">
+                                {pf.award_mode === 'merit' ? 'Merit' : 'Drawing'}
+                                {' · '}{pf.winner_count} winner{parseInt(pf.winner_count) !== 1 ? 's' : ''}
+                                {pf.funded_from_pool ? ` × $${pf.amount_dollars} from pool` : pf.prize_description ? ` · ${pf.prize_description}` : ' · Self-fulfilled'}
+                                {pf.award_mode === 'drawing' && pf.min_threshold ? ` · Min ${pf.min_threshold}${PRIZE_METRIC_UNITS[pf.metric]} ${PRIZE_METRIC_LABELS[pf.metric]}` : ` · By ${PRIZE_METRIC_LABELS[pf.metric]}`}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button type="button" onClick={() => setEditingPrizeIdx(idx)} className="text-xs font-medium text-white/75 hover:text-white">Edit</button>
+                              <button type="button" onClick={() => setPrizeForms(prizeForms.filter((_, i) => i !== idx))} className="text-xs font-medium text-[#E05252]/75 hover:text-[#E05252]">Remove</button>
                             </div>
                           </div>
-                          <div>
-                            <label className="mb-1.5 block text-sm font-medium text-white">
-                              Winners
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              max="20"
-                              value={prizeForm.winner_count}
-                              onChange={(e) =>
-                                setPrizeForm({ ...prizeForm, winner_count: e.target.value })
-                              }
-                              className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D]"
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1.5 block text-sm font-medium text-white">
-                              Min Shift Rate
-                            </label>
-                            <div className="relative">
-                              <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                value={prizeForm.min_shift_rate_pct}
-                                onChange={(e) =>
-                                  setPrizeForm({ ...prizeForm, min_shift_rate_pct: e.target.value })
-                                }
-                                className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] py-3 pl-4 pr-7 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D]"
-                              />
-                              <span className="absolute right-3 top-3 text-white/75">%</span>
-                            </div>
-                          </div>
-                        </div>
-                        {(() => {
-                          const totalCents =
-                            Math.round(parseFloat(prizeForm.amount_dollars || '0') * 100) *
-                            parseInt(prizeForm.winner_count || '0', 10)
-                          const overBudget = totalCents > (rewardPool?.balance_cents ?? 0)
-                          return (
-                            <p
-                              className={`text-sm ${overBudget ? 'text-[#E05252]' : 'text-white/75'}`}
-                            >
-                              Total: {centsToDollars(totalCents)} from pool
-                              {overBudget && ' — exceeds available balance'}
-                            </p>
-                          )
-                        })()}
-                        <label className="flex cursor-pointer items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={prizeForm.auto_draw}
-                            onChange={(e) =>
-                              setPrizeForm({ ...prizeForm, auto_draw: e.target.checked })
-                            }
-                            className="mt-1 h-4 w-4 rounded accent-[#BAF14D]"
-                          />
-                          <div>
-                            <span className="text-sm text-white">
-                              Automatically draw winners when challenge ends
-                            </span>
-                            <p className="text-xs text-white/75">
-                              {prizeForm.auto_draw
-                                ? 'Winners will be selected automatically on the end date.'
-                                : 'You\'ll draw winners manually from this portal after the challenge ends.'}
-                            </p>
-                          </div>
-                        </label>
+                        )}
                       </div>
-                    )}
+                    ))}
+                    <button type="button"
+                      onClick={() => { setPrizeForms([...prizeForms, { ...EMPTY_PRIZE_FORM }]); setEditingPrizeIdx(prizeForms.length) }}
+                      className="rounded-full border border-dashed border-white/[0.15] px-4 py-2 text-sm font-medium text-white/75 hover:border-white/[0.3] hover:text-white">
+                      + Add prize
+                    </button>
                   </div>
                 ) : (
                   <DashField
@@ -1739,93 +1773,69 @@ function PortalPage() {
                   {challenge.prize_description && ` · Prize: ${challenge.prize_description}`}
                 </p>
 
-                {/* Structured prize card (Premium) */}
-                {challengePrize && (
-                  <div className="mb-4 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-white">
-                          {challengePrize.name}: {challengePrize.winner_count} winner{challengePrize.winner_count > 1 ? 's' : ''} &times; {centsToDollars(challengePrize.amount_cents)}
-                        </p>
-                        <p className="mt-0.5 text-xs text-white/75">
-                          Employees with {challengePrize.min_shift_rate_pct}%+ Shift Rate are entered
-                          {challengePrize.auto_draw
-                            ? ` · Auto-draw on ${formatDate(challenge.ends_at)}`
-                            : ' · Manual draw'}
-                        </p>
+                {/* Structured prize cards (Premium) */}
+                {challengePrizes.map((prize) => {
+                  const winners = prizeWinnersMap[prize.id] || []
+                  const challengeEnded = new Date(challenge.ends_at) <= new Date()
+                  return (
+                    <div key={prize.id} className="mb-3 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-white">
+                            {prize.name}: {prize.award_mode === 'merit' ? `Top ${prize.winner_count}` : `${prize.winner_count} winner${prize.winner_count > 1 ? 's' : ''}`}
+                            {prize.amount_cents ? ` × ${centsToDollars(prize.amount_cents)}` : ''}
+                          </p>
+                          <p className="mt-0.5 text-xs text-white/75">
+                            {prize.award_mode === 'merit'
+                              ? `By ${PRIZE_METRIC_LABELS[prize.metric]}`
+                              : prize.min_threshold != null
+                                ? `Min ${prize.min_threshold}${PRIZE_METRIC_UNITS[prize.metric]} ${PRIZE_METRIC_LABELS[prize.metric]}`
+                                : PRIZE_METRIC_LABELS[prize.metric]}
+                            {prize.funded_from_pool ? ' · From pool' : prize.prize_description ? ` · ${prize.prize_description}` : ' · Self-fulfilled'}
+                            {prize.auto_draw ? ` · Auto-draw` : ' · Manual draw'}
+                          </p>
+                        </div>
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                          prize.draw_status === 'drawn' ? 'bg-[#BAF14D]/20 text-[#BAF14D]'
+                            : prize.draw_status === 'fulfilled' ? 'bg-[#52B788]/20 text-[#52B788]'
+                            : 'bg-white/10 text-white/75'
+                        }`}>
+                          {prize.draw_status === 'pending' ? 'Pending' : prize.draw_status === 'drawn' ? 'Drawn' : 'Fulfilled'}
+                        </span>
                       </div>
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          challengePrize.draw_status === 'drawn'
-                            ? 'bg-[#BAF14D]/20 text-[#BAF14D]'
-                            : challengePrize.draw_status === 'fulfilled'
-                              ? 'bg-[#52B788]/20 text-[#52B788]'
-                              : 'bg-white/10 text-white/75'
-                        }`}
-                      >
-                        {challengePrize.draw_status === 'pending'
-                          ? 'Pending'
-                          : challengePrize.draw_status === 'drawn'
-                            ? 'Drawn'
-                            : 'Fulfilled'}
-                      </span>
-                    </div>
-
-                    {/* Draw button — shows after challenge ends, if manual draw and not yet drawn */}
-                    {challengePrize.draw_status === 'pending' &&
-                      !challengePrize.auto_draw &&
-                      new Date(challenge.ends_at) <= new Date() && (
-                        <button
-                          onClick={drawPrizeWinners}
-                          disabled={drawingPrize}
-                          className="mt-3 rounded-full bg-[#BAF14D] px-5 py-2 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85 disabled:opacity-40"
-                        >
-                          {drawingPrize ? 'Drawing…' : 'Draw winners'}
+                      {prize.draw_status === 'pending' && !prize.auto_draw && challengeEnded && (
+                        <button onClick={() => drawPrize(prize.id)} disabled={drawingPrizeId === prize.id}
+                          className="mt-3 rounded-full bg-[#BAF14D] px-5 py-2 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85 disabled:opacity-40">
+                          {drawingPrizeId === prize.id ? 'Drawing…' : 'Draw winners'}
                         </button>
                       )}
-
-                    {/* Winners list */}
-                    {prizeWinners.length > 0 && (
-                      <div className="mt-3 space-y-1.5">
-                        <p className="text-xs font-medium text-white/75">Winners:</p>
-                        {prizeWinners.map((w) => {
-                          const member = members.find((m) => m.user_id === w.user_id)
-                          return (
-                            <div
-                              key={w.id}
-                              className="flex items-center justify-between rounded-lg bg-white/[0.04] px-3 py-2"
-                            >
-                              <div>
-                                <span className="text-sm text-white">
-                                  {member?.display_name || 'Employee'}
-                                </span>
-                                <span className="ml-2 text-xs text-white/75">
-                                  {w.shift_rate_pct}% Shift Rate
-                                </span>
+                      {winners.length > 0 && (
+                        <div className="mt-3 space-y-1.5">
+                          <p className="text-xs font-medium text-white/75">Winners:</p>
+                          {winners.map((w) => {
+                            const member = members.find((m) => m.user_id === w.user_id)
+                            return (
+                              <div key={w.id} className="flex items-center justify-between rounded-lg bg-white/[0.04] px-3 py-2">
+                                <div>
+                                  <span className="text-sm text-white">{member?.display_name || 'Employee'}</span>
+                                  <span className="ml-2 text-xs text-white/75">
+                                    {w.metric_value}{PRIZE_METRIC_UNITS[w.metric] || ''} {PRIZE_METRIC_LABELS[w.metric] || w.metric}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {w.amount_cents && <span className="text-sm font-medium text-[#BAF14D]">{centsToDollars(w.amount_cents)}</span>}
+                                  <span className={`text-xs ${w.fulfillment_status === 'fulfilled' ? 'text-[#52B788]' : w.fulfillment_status === 'forfeited' ? 'text-[#E05252]' : 'text-white/75'}`}>
+                                    {w.fulfillment_status}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-[#BAF14D]">
-                                  {centsToDollars(w.amount_cents)}
-                                </span>
-                                <span
-                                  className={`text-xs ${
-                                    w.fulfillment_status === 'fulfilled'
-                                      ? 'text-[#52B788]'
-                                      : w.fulfillment_status === 'forfeited'
-                                        ? 'text-[#E05252]'
-                                        : 'text-white/75'
-                                  }`}
-                                >
-                                  {w.fulfillment_status}
-                                </span>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
 
                 <div className="flex gap-3">
                   <button
