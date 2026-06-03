@@ -85,6 +85,31 @@ type RewardPool = {
   active: boolean
 }
 
+type ChallengePrize = {
+  id: string
+  competition_id: string
+  group_id: string
+  name: string
+  amount_cents: number
+  winner_count: number
+  min_shift_rate_pct: number
+  funded_from_pool: boolean
+  auto_draw: boolean
+  draw_status: 'pending' | 'drawn' | 'fulfilled'
+  drawn_at: string | null
+}
+
+type PrizeWinner = {
+  id: string
+  prize_id: string
+  user_id: string
+  amount_cents: number
+  shift_rate_pct: number
+  drawn_at: string
+  fulfillment_status: 'pending' | 'fulfilled' | 'forfeited'
+  fulfilled_at: string | null
+}
+
 const MODE_LABEL: Record<string, string> = {
   walk: 'Walking',
   bike: 'Biking',
@@ -327,6 +352,21 @@ function PortalPage() {
   const [rewardPool, setRewardPool] = useState<RewardPool | null>(null)
   const [topUpAmount, setTopUpAmount] = useState('')
   const [openingTopUp, setOpeningTopUp] = useState(false)
+
+  // Prize drawing (Premium tier — structured prizes funded from pool)
+  const [challengePrize, setChallengePrize] = useState<ChallengePrize | null>(null)
+  const [prizeWinners, setPrizeWinners] = useState<PrizeWinner[]>([])
+  const [prizeForm, setPrizeForm] = useState({
+    enabled: false,
+    name: 'Gift Card Drawing',
+    amount_dollars: '25',
+    winner_count: '3',
+    min_shift_rate_pct: '50',
+    auto_draw: true,
+  })
+  const [savingPrize, setSavingPrize] = useState(false)
+  const [drawingPrize, setDrawingPrize] = useState(false)
+  const [eligibleCount, setEligibleCount] = useState<number | null>(null)
   const [topUpError, setTopUpError] = useState<string | null>(null)
 
   // Impact report period selection.
@@ -438,6 +478,32 @@ function PortalPage() {
           prize_description: challengeRes.data.prize_description || '',
           public_leaderboard: groupData.public_leaderboard ?? false,
         })
+
+        // Fetch structured prize config (Premium tier)
+        const { data: prizeData } = await supabase
+          .from('employer_challenge_prizes')
+          .select('*')
+          .eq('competition_id', challengeRes.data.id)
+          .maybeSingle()
+        if (prizeData) {
+          setChallengePrize(prizeData as ChallengePrize)
+          setPrizeForm({
+            enabled: true,
+            name: prizeData.name,
+            amount_dollars: String(prizeData.amount_cents / 100),
+            winner_count: String(prizeData.winner_count),
+            min_shift_rate_pct: String(prizeData.min_shift_rate_pct),
+            auto_draw: prizeData.auto_draw,
+          })
+          // Fetch winners if already drawn
+          if (prizeData.draw_status === 'drawn' || prizeData.draw_status === 'fulfilled') {
+            const { data: winners } = await supabase
+              .from('employer_prize_winners')
+              .select('*')
+              .eq('prize_id', prizeData.id)
+            if (winners) setPrizeWinners(winners as PrizeWinner[])
+          }
+        }
       }
 
       setMemberCount(memberRes.count ?? 0)
@@ -600,6 +666,8 @@ function PortalPage() {
       prize_description: challengeForm.prize_description.trim() || null,
     }
 
+    let competitionId: string | null = null
+
     if (challenge) {
       // Update existing
       await supabase.from('competitions').update(payload).eq('id', challenge.id)
@@ -611,6 +679,7 @@ function PortalPage() {
         ends_at: payload.ends_at,
         prize_description: payload.prize_description,
       })
+      competitionId = challenge.id
     } else {
       // Create new
       const { data } = await supabase
@@ -620,6 +689,16 @@ function PortalPage() {
         .single()
       if (data) {
         setChallenge({ ...data, public_leaderboard: false })
+        competitionId = data.id
+      }
+    }
+
+    // Save structured prize (Premium tier)
+    if (competitionId && isTierAtLeast('premium')) {
+      if (prizeForm.enabled) {
+        await saveChallengePrize(competitionId)
+      } else if (challengePrize) {
+        await deleteChallengePrize()
       }
     }
 
@@ -683,6 +762,105 @@ function PortalPage() {
     setChallenge(null)
     setShowEndModal(false)
     setEndingChallenge(false)
+  }
+
+  async function saveChallengePrize(competitionId: string) {
+    if (!group || !prizeForm.enabled) return
+    setSavingPrize(true)
+    const amountCents = Math.round(parseFloat(prizeForm.amount_dollars) * 100)
+    const winnerCount = parseInt(prizeForm.winner_count, 10)
+    const minRate = parseInt(prizeForm.min_shift_rate_pct, 10)
+
+    const payload = {
+      competition_id: competitionId,
+      group_id: group.id,
+      name: prizeForm.name.trim(),
+      amount_cents: amountCents,
+      winner_count: winnerCount,
+      min_shift_rate_pct: minRate,
+      funded_from_pool: true,
+      auto_draw: prizeForm.auto_draw,
+    }
+
+    if (challengePrize) {
+      await supabase
+        .from('employer_challenge_prizes')
+        .update(payload)
+        .eq('id', challengePrize.id)
+      setChallengePrize({ ...challengePrize, ...payload })
+    } else {
+      const { data } = await supabase
+        .from('employer_challenge_prizes')
+        .insert(payload)
+        .select('*')
+        .single()
+      if (data) setChallengePrize(data as ChallengePrize)
+    }
+    setSavingPrize(false)
+  }
+
+  async function deleteChallengePrize() {
+    if (!challengePrize) return
+    await supabase
+      .from('employer_challenge_prizes')
+      .delete()
+      .eq('id', challengePrize.id)
+    setChallengePrize(null)
+    setPrizeForm({
+      enabled: false,
+      name: 'Gift Card Drawing',
+      amount_dollars: '25',
+      winner_count: '3',
+      min_shift_rate_pct: '50',
+      auto_draw: true,
+    })
+  }
+
+  async function drawPrizeWinners() {
+    if (!challengePrize) return
+    setDrawingPrize(true)
+    const { data, error } = await supabase.rpc('draw_employer_challenge_prizes', {
+      p_prize_id: challengePrize.id,
+    })
+    if (error) {
+      console.error('Draw failed:', error.message)
+      setDrawingPrize(false)
+      return
+    }
+    // Refresh prize state + winners
+    const { data: updatedPrize } = await supabase
+      .from('employer_challenge_prizes')
+      .select('*')
+      .eq('id', challengePrize.id)
+      .single()
+    if (updatedPrize) setChallengePrize(updatedPrize as ChallengePrize)
+
+    const { data: winners } = await supabase
+      .from('employer_prize_winners')
+      .select('*')
+      .eq('prize_id', challengePrize.id)
+    if (winners) setPrizeWinners(winners as PrizeWinner[])
+
+    // Refresh pool balance
+    if (rewardPool) {
+      const { data: poolData } = await supabase
+        .from('reward_pools')
+        .select('id, name, balance_cents, lifetime_funded_cents, lifetime_spent_cents, active')
+        .eq('id', rewardPool.id)
+        .single()
+      if (poolData) setRewardPool(poolData as RewardPool)
+    }
+
+    setDrawingPrize(false)
+  }
+
+  async function fetchEligibleCount() {
+    if (!challenge) return
+    const { data } = await supabase.rpc('get_employer_prize_eligible_count', {
+      p_competition_id: challenge.id,
+      p_min_shift_rate_pct: parseInt(prizeForm.min_shift_rate_pct, 10) || 50,
+    })
+    if (typeof data === 'number') setEligibleCount(data)
   }
 
   /* ── PDF generation ──────────────────────────────────────── */
@@ -1364,12 +1542,135 @@ function PortalPage() {
                     <option value="miles">Miles shifted</option>
                   </select>
                 </div>
-                <DashField
-                  label="Prize description (optional)"
-                  value={challengeForm.prize_description}
-                  onChange={(v) => setChallengeForm({ ...challengeForm, prize_description: v })}
-                  placeholder="e.g. Gift cards for top 3 finishers"
-                />
+                {/* Prize configuration — tier-dependent */}
+                {isTierAtLeast('premium') && rewardPool ? (
+                  <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 space-y-4">
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={prizeForm.enabled}
+                        onChange={(e) =>
+                          setPrizeForm({ ...prizeForm, enabled: e.target.checked })
+                        }
+                        className="mt-1 h-4 w-4 rounded accent-[#BAF14D]"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-white">
+                          Fund a prize drawing from your reward pool
+                        </span>
+                        <p className="mt-0.5 text-xs text-white/75">
+                          Employees who meet the minimum Shift Rate are entered into a random drawing.
+                          Pool balance: {centsToDollars(rewardPool.balance_cents)}.
+                        </p>
+                      </div>
+                    </label>
+
+                    {prizeForm.enabled && (
+                      <div className="space-y-3 pl-7">
+                        <DashField
+                          label="Prize name"
+                          value={prizeForm.name}
+                          onChange={(v) => setPrizeForm({ ...prizeForm, name: v })}
+                          placeholder="e.g. Gift Card Drawing"
+                        />
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <label className="mb-1.5 block text-sm font-medium text-white">
+                              Amount per winner
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-3 text-white/75">$</span>
+                              <input
+                                type="number"
+                                min="5"
+                                max="500"
+                                value={prizeForm.amount_dollars}
+                                onChange={(e) =>
+                                  setPrizeForm({ ...prizeForm, amount_dollars: e.target.value })
+                                }
+                                className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] py-3 pl-7 pr-4 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D]"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="mb-1.5 block text-sm font-medium text-white">
+                              Winners
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="20"
+                              value={prizeForm.winner_count}
+                              onChange={(e) =>
+                                setPrizeForm({ ...prizeForm, winner_count: e.target.value })
+                              }
+                              className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D]"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1.5 block text-sm font-medium text-white">
+                              Min Shift Rate
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={prizeForm.min_shift_rate_pct}
+                                onChange={(e) =>
+                                  setPrizeForm({ ...prizeForm, min_shift_rate_pct: e.target.value })
+                                }
+                                className="w-full rounded-xl border border-white/[0.12] bg-white/[0.07] py-3 pl-4 pr-7 text-[0.9375rem] text-white outline-none focus:border-[#BAF14D]"
+                              />
+                              <span className="absolute right-3 top-3 text-white/75">%</span>
+                            </div>
+                          </div>
+                        </div>
+                        {(() => {
+                          const totalCents =
+                            Math.round(parseFloat(prizeForm.amount_dollars || '0') * 100) *
+                            parseInt(prizeForm.winner_count || '0', 10)
+                          const overBudget = totalCents > (rewardPool?.balance_cents ?? 0)
+                          return (
+                            <p
+                              className={`text-sm ${overBudget ? 'text-[#E05252]' : 'text-white/75'}`}
+                            >
+                              Total: {centsToDollars(totalCents)} from pool
+                              {overBudget && ' — exceeds available balance'}
+                            </p>
+                          )
+                        })()}
+                        <label className="flex cursor-pointer items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={prizeForm.auto_draw}
+                            onChange={(e) =>
+                              setPrizeForm({ ...prizeForm, auto_draw: e.target.checked })
+                            }
+                            className="mt-1 h-4 w-4 rounded accent-[#BAF14D]"
+                          />
+                          <div>
+                            <span className="text-sm text-white">
+                              Automatically draw winners when challenge ends
+                            </span>
+                            <p className="text-xs text-white/75">
+                              {prizeForm.auto_draw
+                                ? 'Winners will be selected automatically on the end date.'
+                                : 'You\'ll draw winners manually from this portal after the challenge ends.'}
+                            </p>
+                          </div>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <DashField
+                    label="Prize description (optional)"
+                    value={challengeForm.prize_description}
+                    onChange={(v) => setChallengeForm({ ...challengeForm, prize_description: v })}
+                    placeholder="e.g. Gift cards for top 3 finishers"
+                  />
+                )}
 
                 {/* Public leaderboard toggle */}
                 <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
@@ -1428,13 +1729,102 @@ function PortalPage() {
               /* ── Active challenge view ─────────────────── */
               <div>
                 <h3 className="mb-1 text-lg font-bold text-white">{challenge.name}</h3>
-                <p className="mb-1 text-sm text-white/60">
+                <p className="mb-1 text-sm text-white/75">
                   {formatDate(challenge.starts_at)} &ndash; {formatDate(challenge.ends_at)}
                 </p>
-                <p className="mb-4 text-sm text-white/60">
+                <p className="mb-4 text-sm text-white/75">
                   {METRIC_LABELS[challenge.metric] || challenge.metric}
                   {challenge.prize_description && ` · Prize: ${challenge.prize_description}`}
                 </p>
+
+                {/* Structured prize card (Premium) */}
+                {challengePrize && (
+                  <div className="mb-4 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-white">
+                          {challengePrize.name}: {challengePrize.winner_count} winner{challengePrize.winner_count > 1 ? 's' : ''} &times; {centsToDollars(challengePrize.amount_cents)}
+                        </p>
+                        <p className="mt-0.5 text-xs text-white/75">
+                          Employees with {challengePrize.min_shift_rate_pct}%+ Shift Rate are entered
+                          {challengePrize.auto_draw
+                            ? ` · Auto-draw on ${formatDate(challenge.ends_at)}`
+                            : ' · Manual draw'}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                          challengePrize.draw_status === 'drawn'
+                            ? 'bg-[#BAF14D]/20 text-[#BAF14D]'
+                            : challengePrize.draw_status === 'fulfilled'
+                              ? 'bg-[#52B788]/20 text-[#52B788]'
+                              : 'bg-white/10 text-white/75'
+                        }`}
+                      >
+                        {challengePrize.draw_status === 'pending'
+                          ? 'Pending'
+                          : challengePrize.draw_status === 'drawn'
+                            ? 'Drawn'
+                            : 'Fulfilled'}
+                      </span>
+                    </div>
+
+                    {/* Draw button — shows after challenge ends, if manual draw and not yet drawn */}
+                    {challengePrize.draw_status === 'pending' &&
+                      !challengePrize.auto_draw &&
+                      new Date(challenge.ends_at) <= new Date() && (
+                        <button
+                          onClick={drawPrizeWinners}
+                          disabled={drawingPrize}
+                          className="mt-3 rounded-full bg-[#BAF14D] px-5 py-2 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85 disabled:opacity-40"
+                        >
+                          {drawingPrize ? 'Drawing…' : 'Draw winners'}
+                        </button>
+                      )}
+
+                    {/* Winners list */}
+                    {prizeWinners.length > 0 && (
+                      <div className="mt-3 space-y-1.5">
+                        <p className="text-xs font-medium text-white/75">Winners:</p>
+                        {prizeWinners.map((w) => {
+                          const member = members.find((m) => m.user_id === w.user_id)
+                          return (
+                            <div
+                              key={w.id}
+                              className="flex items-center justify-between rounded-lg bg-white/[0.04] px-3 py-2"
+                            >
+                              <div>
+                                <span className="text-sm text-white">
+                                  {member?.display_name || 'Employee'}
+                                </span>
+                                <span className="ml-2 text-xs text-white/75">
+                                  {w.shift_rate_pct}% Shift Rate
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-[#BAF14D]">
+                                  {centsToDollars(w.amount_cents)}
+                                </span>
+                                <span
+                                  className={`text-xs ${
+                                    w.fulfillment_status === 'fulfilled'
+                                      ? 'text-[#52B788]'
+                                      : w.fulfillment_status === 'forfeited'
+                                        ? 'text-[#E05252]'
+                                        : 'text-white/75'
+                                  }`}
+                                >
+                                  {w.fulfillment_status}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex gap-3">
                   <button
                     onClick={() => {
@@ -1991,8 +2381,8 @@ function PortalPage() {
               </h2>
               <p className="mb-5 text-xs text-white/75">
                 Funds you&apos;ve contributed for employees to redeem as gift cards
-                and transit passes via the Shift app. Top up via Stripe — balance
-                debits automatically as rewards fulfill.
+                via the Shift app. Top up via Stripe — balance debits
+                automatically as rewards fulfill.
               </p>
 
               {(() => {
