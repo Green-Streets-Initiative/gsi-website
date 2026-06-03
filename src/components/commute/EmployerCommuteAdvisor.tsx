@@ -14,7 +14,7 @@ import ModeComparisonTable from '@/components/commute/ModeComparisonTable'
 import ModeIcon from '@/components/commute/ModeIcon'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
-import type { EmployerGroup, RecommendationResponse, BarrierCode, CurrentCommuteMode, Mode } from '@/lib/types/commute'
+import type { EmployerGroup, EmployerBenefits as EmployerBenefitsConfig, RecommendationResponse, BarrierCode, CurrentCommuteMode, Mode } from '@/lib/types/commute'
 
 type PlaceData = { placeId: string; lat: number; lng: number }
 type TransitStep = { lineName: string; lineShortName: string; vehicleType: string; numStops: number; departureStop: string; arrivalStop: string }
@@ -54,6 +54,49 @@ const PARKING_ANCHORS = [
   { label: 'Downtown Boston $32', val: 32 }, { label: 'Back Bay $26', val: 26 },
   { label: 'Kendall $22', val: 22 }, { label: 'Somerville $14', val: 14 },
 ]
+
+function enrichProsWithBenefits(pros: string[], b: EmployerBenefitsConfig, mode: string): string[] {
+  const extra: string[] = []
+
+  if (mode === 'bike') {
+    if (b.bluebikes_subsidized) {
+      extra.push(b.bluebikes_subsidy_label || 'Your employer covers Bluebikes membership')
+    }
+    if (b.bike_parking) {
+      extra.push(b.bike_parking_details
+        ? `Secure bike parking — ${b.bike_parking_details}`
+        : 'Secure bike parking at your office')
+    }
+    if (b.showers) {
+      extra.push(b.shower_details
+        ? `Showers available — ${b.shower_details}`
+        : 'Showers available at the office')
+    }
+  }
+
+  if (mode === 'transit') {
+    if (b.transit_subsidy_monthly && b.transit_subsidy_monthly > 0) {
+      extra.push(b.transit_subsidy_label || `Your employer covers $${b.transit_subsidy_monthly}/mo toward transit`)
+    }
+  }
+
+  if (mode === 'walk') {
+    if (b.showers) {
+      extra.push(b.shower_details
+        ? `Showers available — ${b.shower_details}`
+        : 'Showers available at the office')
+    }
+  }
+
+  if (mode === 'drive') {
+    if (b.free_parking) {
+      extra.push('Free parking at your office')
+    }
+  }
+
+  if (extra.length === 0) return pros
+  return [...pros, ...extra].slice(0, 5)
+}
 
 interface Props {
   group: EmployerGroup
@@ -602,11 +645,28 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
 
               return (
               <div className="animate-in space-y-5">
-                <RecommendationCard
-                  primary={displayPrimary} secondary={displaySecondary}
-                  distanceMiles={recommendation.distance_miles} distanceCategory={recommendation.distance_category}
-                  onRefresh={handleRefresh} loading={recLoading} routeTimeMinutes={getRouteTimeForMode()}
-                  routeTimes={hasGoogleTimes ? googleTimes : undefined} />
+                {(() => {
+                  const recMode = displayPrimary.modes[0]
+                  const benefitReason = (() => {
+                    if ((recMode === 'bike' || recMode === 'ebike') && benefits.bluebikes_subsidized)
+                      return benefits.bluebikes_subsidy_label || 'Your employer covers Bluebikes membership'
+                    if (recMode === 'transit' && benefits.transit_subsidy_monthly && benefits.transit_subsidy_monthly > 0)
+                      return benefits.transit_subsidy_label || `Your employer covers $${benefits.transit_subsidy_monthly}/mo toward transit`
+                    if (recMode === 'walk' && benefits.showers)
+                      return 'Showers available at the office for when you arrive'
+                    return null
+                  })()
+                  const enrichedPrimary = benefitReason
+                    ? { ...displayPrimary, reasons: [...displayPrimary.reasons, benefitReason] }
+                    : displayPrimary
+                  return (
+                    <RecommendationCard
+                      primary={enrichedPrimary} secondary={displaySecondary}
+                      distanceMiles={recommendation.distance_miles} distanceCategory={recommendation.distance_category}
+                      onRefresh={handleRefresh} loading={recLoading} routeTimeMinutes={getRouteTimeForMode()}
+                      routeTimes={hasGoogleTimes ? googleTimes : undefined} />
+                  )
+                })()}
 
                 {/* Mode comparison table */}
                 {recommendation.comparisons && recommendation.comparisons.length > 1 && (() => {
@@ -619,6 +679,10 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                     }).join(' → ')
                     comps = comps.map(c => c.mode === 'transit' ? { ...c, label: tLabel || c.label } : c)
                   }
+                  comps = comps.map(c => ({
+                    ...c,
+                    pros: enrichProsWithBenefits(c.pros, benefits, c.mode),
+                  }))
                   return (
                     <ModeComparisonTable
                       comparisons={comps}
