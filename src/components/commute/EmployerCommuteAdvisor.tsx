@@ -630,6 +630,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                       originLng={homePlaceData?.lng}
                       destLat={workPlaceData?.lat}
                       destLng={workPlaceData?.lng}
+                      bikeComfort={recommendation.bike_comfort}
                     />
                   )
                 })()}
