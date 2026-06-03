@@ -1543,7 +1543,7 @@ function PortalPage() {
                   </select>
                 </div>
                 {/* Prize configuration — tier-dependent */}
-                {isTierAtLeast('premium') && rewardPool ? (
+                {isTierAtLeast('premium') ? (
                   <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 space-y-4">
                     <label className="flex cursor-pointer items-start gap-3">
                       <input
@@ -1560,7 +1560,9 @@ function PortalPage() {
                         </span>
                         <p className="mt-0.5 text-xs text-white/75">
                           Employees who meet the minimum Shift Rate are entered into a random drawing.
-                          Pool balance: {centsToDollars(rewardPool.balance_cents)}.
+                          {rewardPool
+                            ? `Pool balance: ${centsToDollars(rewardPool.balance_cents)}.`
+                            : 'Fund your reward pool below to enable prize drawings.'}
                         </p>
                       </div>
                     </label>
