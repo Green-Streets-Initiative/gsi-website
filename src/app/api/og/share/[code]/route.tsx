@@ -158,6 +158,40 @@ async function loadShareData(code: string): Promise<ShareData | null> {
   }
 }
 
+function Wordmark({ size = 'large' }: { size?: 'large' | 'small' }) {
+  const s = size === 'large'
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: s ? 12 : 10 }}>
+      <span style={{ color: '#fff', fontSize: s ? 96 : 38, fontWeight: 800, letterSpacing: s ? -2 : -1 }}>
+        Shift
+      </span>
+      <svg width={s ? 96 : 50} height={s ? 64 : 32} viewBox="0 0 40 26">
+        <path d="M0,0 L16,13 L0,26 L0,19 L10,13 L0,7Z" fill={LIME} />
+        <path d="M20,0 L36,13 L20,26 L20,19 L30,13 L20,7Z" fill={BLUE} />
+      </svg>
+    </div>
+  )
+}
+
+function GsiWordmark() {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'baseline',
+        gap: 6,
+        color: '#fff',
+        fontFamily: 'Trebuchet MS',
+        fontSize: 18,
+        letterSpacing: 0.4,
+      }}
+    >
+      <span style={{ fontWeight: 700 }}>Green Streets</span>
+      <span style={{ fontWeight: 400 }}>Initiative</span>
+    </div>
+  )
+}
+
 function FallbackCard() {
   return (
     <div
@@ -172,20 +206,139 @@ function FallbackCard() {
         fontFamily: 'Bricolage Grotesque',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <span style={{ color: '#fff', fontSize: 96, fontWeight: 800, letterSpacing: -2 }}>
-          Shift
-        </span>
-        <svg width={96} height={64} viewBox="0 0 40 26">
-          <path d="M0,0 L16,13 L0,26 L0,19 L10,13 L0,7Z" fill={LIME} />
-          <path d="M20,0 L36,13 L20,26 L20,19 L30,13 L20,7Z" fill={BLUE} />
-        </svg>
-      </div>
-      <div style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 36, fontWeight: 400 }}>
+      <Wordmark />
+      <div style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 36, fontWeight: 400, marginTop: 24 }}>
         Walk, bike, ride — and get rewarded for it.
       </div>
       <div style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 24, marginTop: 24 }}>
         shift.gogreenstreets.org
+      </div>
+    </div>
+  )
+}
+
+function InviteCard({ firstName, referralCode }: { firstName: string; referralCode: string }) {
+  return (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        backgroundColor: NAVY,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '48px 64px',
+        fontFamily: 'Bricolage Grotesque',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <Wordmark size="small" />
+        <GsiWordmark />
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+        <span style={{ display: 'flex', color: '#fff', fontSize: 56, fontWeight: 800, letterSpacing: -1.5, lineHeight: 1.1 }}>
+          Join me on Shift!
+        </span>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 24, fontWeight: 400, marginTop: 20, textAlign: 'center', maxWidth: 700 }}>
+          Track your walks, bike rides, and transit trips — and get rewarded for it.
+        </span>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginTop: 32,
+            borderRadius: 16,
+            backgroundColor: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            padding: '14px 36px',
+            gap: 12,
+          }}
+        >
+          <span style={{ display: 'flex', color: '#fff', fontSize: 28, fontWeight: 800 }}>
+            {firstName}
+          </span>
+          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 18, fontWeight: 500 }}>
+            invited you
+          </span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 500 }}>Use code</span>
+        <span style={{ display: 'flex', fontFamily: 'monospace', fontSize: 24, fontWeight: 800, letterSpacing: 4, color: LIME }}>{referralCode}</span>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 500 }}>to join</span>
+      </div>
+    </div>
+  )
+}
+
+function CampaignCard({
+  firstName,
+  referralCode,
+  competitionName,
+  competitionDates,
+}: {
+  firstName: string
+  referralCode: string
+  competitionName: string
+  competitionDates: string | null
+}) {
+  return (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        backgroundColor: NAVY,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '48px 64px',
+        fontFamily: 'Bricolage Grotesque',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <Wordmark size="small" />
+        <GsiWordmark />
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+        <span style={{ display: 'flex', color: '#fff', fontSize: 52, fontWeight: 800, letterSpacing: -1.5, lineHeight: 1.1, textAlign: 'center' }}>
+          Join {competitionName}
+        </span>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 24, fontWeight: 400, marginTop: 16, textAlign: 'center', maxWidth: 700 }}>
+          Every walk, bike ride, and transit trip is an entry to win prizes.
+        </span>
+        {competitionDates && (
+          <span style={{ display: 'flex', color: LIME, fontSize: 20, fontWeight: 700, marginTop: 12 }}>
+            {competitionDates}
+          </span>
+        )}
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginTop: 28,
+            borderRadius: 16,
+            backgroundColor: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            padding: '14px 36px',
+            gap: 12,
+          }}
+        >
+          <span style={{ display: 'flex', color: '#fff', fontSize: 28, fontWeight: 800 }}>
+            {firstName}
+          </span>
+          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 18, fontWeight: 500 }}>
+            invited you
+          </span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 500 }}>Use code</span>
+        <span style={{ display: 'flex', fontFamily: 'monospace', fontSize: 24, fontWeight: 800, letterSpacing: 4, color: LIME }}>{referralCode}</span>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 500 }}>to join</span>
       </div>
     </div>
   )
@@ -196,7 +349,9 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> },
 ) {
   const { code } = await params
-  const origin = new URL(req.url).origin
+  const reqUrl = new URL(req.url)
+  const origin = reqUrl.origin
+  const ctx = reqUrl.searchParams.get('ctx') || ''
 
   const [data, fontRegular, fontBold, fontExtra, trebuchetRegular, trebuchetBold] =
     await Promise.all([
@@ -218,13 +373,30 @@ export async function GET(
     { name: 'Trebuchet MS', data: trebuchetBold, weight: 700 as const, style: 'normal' as const },
   ]
 
+  const imgOpts = { width: 1200, height: 630, headers: cacheHeaders, fonts }
+
+  if (ctx === 'invite' && data) {
+    return new ImageResponse(
+      <InviteCard firstName={data.firstName} referralCode={data.referralCode} />,
+      imgOpts,
+    )
+  }
+
+  if (ctx === 'campaign' && data) {
+    const name = data.competitionName || 'Shift Your Summer 2026'
+    return new ImageResponse(
+      <CampaignCard
+        firstName={data.firstName}
+        referralCode={data.referralCode}
+        competitionName={name}
+        competitionDates={data.competitionDates}
+      />,
+      imgOpts,
+    )
+  }
+
   if (!data || !data.neighborhood) {
-    return new ImageResponse(<FallbackCard />, {
-      width: 1200,
-      height: 630,
-      headers: cacheHeaders,
-      fonts,
-    })
+    return new ImageResponse(<FallbackCard />, imgOpts)
   }
 
   const neighborhoodLine = data.town
@@ -420,11 +592,6 @@ export async function GET(
         </div>
       </div>
     ),
-    {
-      width: 1200,
-      height: 630,
-      headers: cacheHeaders,
-      fonts,
-    },
+    imgOpts,
   )
 }
