@@ -206,7 +206,6 @@ export default async function ShiftYourSummerRulesPage() {
               <P>
                 Entries from every method &mdash; trips, Roams, checkpoints, collections, What Moves
                 Us videos, referrals, and AMOE postcards &mdash; apply to all prize drawings.
-                Participants do not select or enter for a specific prize.
               </P>
 
               <SubSection title="Sweepstakes opt-in (required for app-based entry)">
