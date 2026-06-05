@@ -328,10 +328,11 @@ const faqSections = [
                 to an eligible What Moves Us campaign earns 5 entries.
               </li>
               <li>
-                <strong>Referrals</strong> &mdash; Each friend who joins Shift
-                using your referral link earns you entries &mdash; 2 for your
-                first referral, 3 for the second, and 5 for each one after that,
-                up to 10 friends.
+                <strong>Referrals</strong> &mdash; For each friend who joins
+                Shift using your referral code and takes a verified trip, you
+                earn up to 10 entries. New users who join through a referral
+                start with 2 entries. Limit 10 referred friends (up to 100
+                referral entries total).
               </li>
               <li>
                 <strong>Free mail-in entry (AMOE)</strong> &mdash; You can enter

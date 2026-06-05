@@ -1261,14 +1261,19 @@ function HowToJoin() {
 function RulesLink() {
   if (!RULES_PUBLISHED) return null
   return (
-    <section className="bg-[#191A2E] px-8 pb-2">
-      <div className="mx-auto max-w-[1120px] border-t border-white/[0.08] pt-8">
+    <section className="bg-[#191A2E] px-8 py-10">
+      <div className="mx-auto max-w-[800px] rounded-2xl border border-white/[0.08] bg-white/[0.04] px-8 py-8 text-center">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-white/70">Sweepstakes</p>
+        <h3 className="mb-3 font-display text-xl font-bold text-white">Official Rules</h3>
+        <p className="mb-5 text-[0.9375rem] leading-[1.6] text-white/75">
+          Eligibility, entry mechanics, prize details, and the free mail-in entry process.
+        </p>
         <Link
           href="/events/shift-your-summer/rules"
-          className="group inline-flex items-center gap-2 text-sm text-white/75 hover:text-white transition-colors"
+          className="group inline-flex items-center gap-2 text-sm font-semibold text-[#BAF14D] transition-colors hover:text-white"
         >
-          Official Rules
-          <span className="transition-transform group-hover:translate-x-0.5">→</span>
+          Read the official rules
+          <span className="transition-transform group-hover:translate-x-0.5">&rarr;</span>
         </Link>
       </div>
     </section>
