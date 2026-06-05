@@ -93,6 +93,7 @@ export default async function ShiftYourSummerRulesPage() {
         funder: funder ? { id: funder.id, sponsors: sponsor } : null,
       } as Prize
     })
+    prizes.sort((a, b) => (b.value_amount ?? 0) - (a.value_amount ?? 0))
   }
 
   return (
