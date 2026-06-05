@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import StoreButtons from '@/components/StoreButtons'
 import CorporateShareKit from './CorporateShareKit'
 
 export const dynamic = 'force-dynamic'
@@ -135,9 +136,12 @@ export default async function CorporateSharePage({ params }: Props) {
               </div>
             </div>
 
-            <p className="mb-10 text-[1.0625rem] leading-[1.65] text-white/85">
+            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-white/85">
               Walk, bike, and take transit this summer — and compete for prizes from brands like Segway, Quad Lock, and Kryptonite. Join your team in the Shift app to get started.
             </p>
+
+            {/* App store buttons */}
+            <StoreButtons iosUrl={IOS_URL} androidUrl={ANDROID_URL} className="mb-10" />
 
             {/* Path 1 — Deep link (recommended) */}
             <div className="mb-6 rounded-[14px] border border-[#BAF14D]/20 bg-[#BAF14D]/[0.06] p-6">
