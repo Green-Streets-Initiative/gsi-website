@@ -658,8 +658,10 @@ function entryMechanicLabel(p: Prize): string {
 
 function drawingDateLabel(p: Prize): string {
   if (p.entry_type === 'event') return 'At celebration event'
-  if (p.tier === 'grand' || p.tier === 'featured') return 'On or about Aug 22, 2026'
-  return 'Weekly drawing'
+  const brand = brandLabel(p)?.toLowerCase() ?? ''
+  if (brand.includes('athletic brewing') || brand.includes('kryptonite'))
+    return 'Weekly drawing'
+  return 'On or about Aug 22, 2026'
 }
 
 function PrizeTable({ prizes }: { prizes: Prize[] }) {
