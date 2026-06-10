@@ -145,13 +145,42 @@ export default function EmployeesPage() {
   const activeCount = members.filter((m) => m.active_trips_in_period > 0).length
   const activeRate = memberCount > 0 ? Math.round((activeCount / memberCount) * 100) : 0
 
+  function exportCsv() {
+    if (filtered.length === 0) return
+    const header = ['Rank', 'Name', 'Joined', 'Active trips', 'Total trips', 'Shift rate']
+    const rows = filtered.map((m, i) => {
+      const rank = sorted.indexOf(m) + 1
+      const rate = m.trips_in_period
+        ? Math.round((m.active_trips_in_period / m.trips_in_period) * 100)
+        : 0
+      return [
+        rank,
+        m.display_name || 'Unnamed',
+        m.joined_at.split('T')[0],
+        m.active_trips_in_period,
+        m.trips_in_period,
+        `${rate}%`,
+      ]
+    })
+    const csv = [header, ...rows].map((r) => r.map((c) => `"${c}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${(group!.name || 'employees').replace(/\s+/g, '-').toLowerCase()}-employees.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <>
       <PortalPageHead
         title="Employees"
         subtitle="Invite your team, track participation, and celebrate top performers"
         actions={
-          <Button variant="primary" icon={Users}>Invite employees</Button>
+          <Button variant="primary" icon={Users} onClick={shareLink}>
+            {linkCopied ? 'Link copied!' : 'Invite employees'}
+          </Button>
         }
       />
 
@@ -198,7 +227,7 @@ export default function EmployeesPage() {
                 Visible only to you — employees never see each other&apos;s data here.
               </p>
             </div>
-            <Button variant="secondary" size="sm" icon={Download}>Export</Button>
+            <Button variant="secondary" size="sm" icon={Download} onClick={exportCsv}>Export</Button>
           </div>
 
           {/* Controls */}
