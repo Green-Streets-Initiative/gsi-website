@@ -22,6 +22,8 @@ export default function BillingPage() {
   const [topUpAmount, setTopUpAmount] = useState('250')
   const [openingTopUp, setOpeningTopUp] = useState(false)
   const [topUpError, setTopUpError] = useState<string | null>(null)
+  const [portalError, setPortalError] = useState<string | null>(null)
+  const [openingPortal, setOpeningPortal] = useState(false)
 
   if (!group) return null
 
@@ -83,9 +85,6 @@ export default function BillingPage() {
       setOpeningTopUp(false)
     }
   }
-
-  const [portalError, setPortalError] = useState<string | null>(null)
-  const [openingPortal, setOpeningPortal] = useState(false)
 
   async function openBillingPortal() {
     if (!group) return
