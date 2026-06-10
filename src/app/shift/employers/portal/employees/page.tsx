@@ -142,8 +142,9 @@ export default function EmployeesPage() {
     setTimeout(() => setLinkCopied(false), 2000)
   }
 
+  const effectiveCount = memberCount || members.length
   const activeCount = members.filter((m) => m.active_trips_in_period > 0).length
-  const activeRate = memberCount > 0 ? Math.round((activeCount / memberCount) * 100) : 0
+  const activeRate = effectiveCount > 0 ? Math.round((activeCount / effectiveCount) * 100) : 0
 
   function exportCsv() {
     if (filtered.length === 0) return
@@ -209,11 +210,11 @@ export default function EmployeesPage() {
           </Card>
           <div className="grid grid-cols-2 gap-6">
             <Card pad>
-              <StatTile label="Joined" value={String(memberCount)} labelIcon={Users} />
+              <StatTile label="Joined" value={String(effectiveCount)} labelIcon={Users} />
             </Card>
             <Card pad>
               <StatTile label="Active rate" value={`${activeRate}%`} labelIcon={TrendingUp}
-                delta={`${activeCount} of ${memberCount} active`} up={activeRate > 0} />
+                delta={`${activeCount} of ${effectiveCount} active`} up={activeRate > 0} />
             </Card>
           </div>
         </div>
