@@ -3,6 +3,7 @@
 import { Suspense } from 'react'
 import { Source_Sans_3, DM_Mono } from 'next/font/google'
 import { PortalProvider } from './_lib/portal-context'
+import { ToastProvider } from '@/components/employer/Toast'
 import Sidebar from './_components/Sidebar'
 import Topbar from './_components/Topbar'
 import './portal.css'
@@ -24,20 +25,22 @@ const dmMono = DM_Mono({
 function PortalShell({ children }: { children: React.ReactNode }) {
   return (
     <PortalProvider>
-      <div
-        className={`${sourceSans.variable} ${dmMono.variable} grid min-h-screen min-[980px]:grid-cols-[256px_1fr] bg-canvas`}
-        style={{ fontFamily: "'Source Sans 3', var(--font-source-sans), var(--font-sans), system-ui, sans-serif" }}
-      >
-        <Sidebar />
-        <div className="flex min-h-screen flex-col overflow-hidden">
-          <Topbar />
-          <main className="flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-[1200px] px-6 py-6">
-              {children}
-            </div>
-          </main>
+      <ToastProvider>
+        <div
+          className={`${sourceSans.variable} ${dmMono.variable} grid min-h-screen min-[980px]:grid-cols-[256px_1fr] bg-canvas`}
+          style={{ fontFamily: "'Source Sans 3', var(--font-source-sans), var(--font-sans), system-ui, sans-serif" }}
+        >
+          <Sidebar />
+          <div className="flex min-h-screen flex-col overflow-hidden">
+            <Topbar />
+            <main className="flex-1 overflow-y-auto">
+              <div className="mx-auto max-w-[1200px] px-6 py-6">
+                {children}
+              </div>
+            </main>
+          </div>
         </div>
-      </div>
+      </ToastProvider>
     </PortalProvider>
   )
 }

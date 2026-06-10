@@ -59,13 +59,19 @@ export default function EmployerLoginPage() {
       <div className="w-full max-w-[420px]">
         {/* Brand */}
         <div className="mb-8 text-center">
-          <div className="mb-2 flex items-center justify-center gap-2">
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden>
-              <path d="M6 22 L16 6 L16 18 Z" fill="#2D6A4F" />
-              <path d="M16 14 L26 26 L16 26 Z" fill="#52B788" />
+          <div className="mb-2 flex items-center justify-center gap-1.5">
+            <span
+              className="text-[26px] font-extrabold tracking-[-0.01em] text-[#191A2E]"
+              style={{ fontFamily: "'Bricolage Grotesque', var(--font-display), sans-serif" }}
+            >
+              Shift
+            </span>
+            <svg viewBox="0 0 36 28" width={24} height={24 * (28 / 36)} className="relative top-[1px]" aria-hidden>
+              <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
+              <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
             </svg>
-            <span className="text-[20px] font-bold tracking-[-0.01em] text-[#191A2E]">
-              Shift <span className="font-normal text-[#5A5C6E]">for Employers</span>
+            <span className="text-[20px] font-normal text-[#5A5C6E]">
+              for Employers
             </span>
           </div>
           <p className="text-[13px] text-[#5A5C6E]">

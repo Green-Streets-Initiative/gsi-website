@@ -374,12 +374,6 @@ function EmployeeDrawer({ member, onClose }: { member: EmployerMember; onClose: 
         </div>
       </aside>
 
-      <style jsx global>{`
-        @keyframes slide-in-right {
-          from { transform: translateX(100%); }
-          to { transform: translateX(0); }
-        }
-      `}</style>
     </>
   )
 }

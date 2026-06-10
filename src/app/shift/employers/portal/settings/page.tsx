@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Building2,
   Shield,
@@ -36,6 +36,26 @@ export default function SettingsPage() {
   const [logoError, setLogoError] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const [notifPrefs, setNotifPrefs] = useState({ weekly_impact: true, new_employee: true, challenge_milestones: false })
+
+  useEffect(() => {
+    if (!group) return
+    try {
+      const raw = localStorage.getItem(`ep_notif_prefs_${group.id}`)
+      if (raw) setNotifPrefs(JSON.parse(raw))
+    } catch {}
+  }, [group])
+
+  const updateNotifPref = useCallback((key: string, value: boolean) => {
+    setNotifPrefs((prev) => {
+      const next = { ...prev, [key]: value }
+      if (group) {
+        try { localStorage.setItem(`ep_notif_prefs_${group.id}`, JSON.stringify(next)) } catch {}
+      }
+      return next
+    })
+  }, [group])
 
   if (loading || !group) {
     return (
@@ -252,9 +272,9 @@ export default function SettingsPage() {
           <Card>
             <CardHead title="Notifications" sub="What we email you about" />
             <div className="space-y-3 px-6 py-5">
-              <Toggle on={true} onChange={() => {}} title="Weekly impact summary" desc="A digest of trips, miles, and CO₂ every Monday" />
-              <Toggle on={true} onChange={() => {}} title="New employee joins" desc="When someone joins with your code" />
-              <Toggle on={false} onChange={() => {}} title="Challenge milestones" desc="Alerts when your team hits goals" />
+              <Toggle on={notifPrefs.weekly_impact} onChange={(v) => updateNotifPref('weekly_impact', v)} title="Weekly impact summary" desc="A digest of trips, miles, and CO₂ every Monday" />
+              <Toggle on={notifPrefs.new_employee} onChange={(v) => updateNotifPref('new_employee', v)} title="New employee joins" desc="When someone joins with your code" />
+              <Toggle on={notifPrefs.challenge_milestones} onChange={(v) => updateNotifPref('challenge_milestones', v)} title="Challenge milestones" desc="Alerts when your team hits goals" />
             </div>
           </Card>
 

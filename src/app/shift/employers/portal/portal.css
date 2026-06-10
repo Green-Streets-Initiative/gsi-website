@@ -25,3 +25,8 @@
   --shadow-md: 0 4px 16px rgba(25, 26, 46, 0.07);
   --shadow-lg: 0 18px 48px rgba(25, 26, 46, 0.14);
 }
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
