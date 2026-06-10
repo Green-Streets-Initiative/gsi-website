@@ -34,11 +34,34 @@ serve(async (req: Request) => {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
-  const productsUrl = TREMENDOUS_CAMPAIGN_ID
-    ? `${TREMENDOUS_API_URL}/campaigns/${TREMENDOUS_CAMPAIGN_ID}`
-    : `${TREMENDOUS_API_URL}/products`;
+  // If a campaign is configured, first fetch which product IDs it allows,
+  // then fetch the full product catalog and filter to just those IDs.
+  let allowedProductIds: Set<string> | null = null;
 
-  const res = await fetch(productsUrl, {
+  if (TREMENDOUS_CAMPAIGN_ID) {
+    const campaignRes = await fetch(
+      `${TREMENDOUS_API_URL}/campaigns/${TREMENDOUS_CAMPAIGN_ID}`,
+      { headers: { Authorization: `Bearer ${TREMENDOUS_API_KEY}` } },
+    );
+    if (campaignRes.ok) {
+      const campaignData = await campaignRes.json();
+      const campaign = campaignData.campaign ?? campaignData;
+      const ids: string[] = (campaign.products ?? []).map(
+        (p: { id: string } | string) => (typeof p === "string" ? p : p.id),
+      );
+      if (ids.length > 0) {
+        allowedProductIds = new Set(ids);
+      }
+    } else {
+      console.error(
+        "[Tremendous] campaign fetch failed:",
+        campaignRes.status,
+        await campaignRes.text().catch(() => ""),
+      );
+    }
+  }
+
+  const res = await fetch(`${TREMENDOUS_API_URL}/products`, {
     headers: { Authorization: `Bearer ${TREMENDOUS_API_KEY}` },
   });
 
@@ -70,12 +93,11 @@ serve(async (req: Request) => {
     images?: TremendousImage[];
   }
 
-  const rawProducts: TremendousRawProduct[] = TREMENDOUS_CAMPAIGN_ID
-    ? data.campaign?.products ?? []
-    : data.products ?? [];
+  const rawProducts: TremendousRawProduct[] = data.products ?? [];
 
   const products = rawProducts
     .filter((p: TremendousRawProduct) => {
+      if (allowedProductIds && !allowedProductIds.has(p.id)) return false;
       return p.countries?.some((c) => c.abbr === "US");
     })
     .map((p: TremendousRawProduct) => {
