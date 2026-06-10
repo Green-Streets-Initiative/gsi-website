@@ -46,18 +46,20 @@ serve(async (req: Request) => {
     if (campaignRes.ok) {
       const campaignData = await campaignRes.json();
       const campaign = campaignData.campaign ?? campaignData;
-      const ids: string[] = (campaign.products ?? []).map(
+      const rawProducts = campaign.products ?? [];
+      const ids: string[] = rawProducts.map(
         (p: { id: string } | string) => (typeof p === "string" ? p : p.id),
       );
       if (ids.length > 0) {
         allowedProductIds = new Set(ids);
+      } else {
+        console.error("[Tremendous] campaign returned 0 product IDs");
+        return jsonResponse({ error: "Campaign has no products configured" }, 500);
       }
     } else {
-      console.error(
-        "[Tremendous] campaign fetch failed:",
-        campaignRes.status,
-        await campaignRes.text().catch(() => ""),
-      );
+      const errText = await campaignRes.text().catch(() => "");
+      console.error("[Tremendous] campaign fetch failed:", campaignRes.status, errText);
+      return jsonResponse({ error: "Failed to load campaign" }, 502);
     }
   }
 
@@ -130,7 +132,7 @@ serve(async (req: Request) => {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers":
         "authorization, content-type, x-client-info, apikey",
-      "Cache-Control": "public, max-age=3600, stale-while-revalidate=300",
+      "Cache-Control": "no-cache",
     },
   });
 });
