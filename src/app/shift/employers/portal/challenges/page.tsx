@@ -163,6 +163,7 @@ export default function ChallengesPage() {
         group_id: group.id,
         name: form.name.trim(),
         metric: 'pct_non_car',
+        duration_type: 'fixed' as const,
         starts_at: new Date(form.starts_at).toISOString(),
         ends_at: new Date(form.ends_at + 'T23:59:59').toISOString(),
         is_public: false,
