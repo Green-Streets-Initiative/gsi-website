@@ -85,7 +85,14 @@ export default function ChallengesPage() {
         .is('group_id', null)
         .gte('ends_at', now)
         .order('starts_at', { ascending: true })
-      if (data) setFlagshipChallenges(data)
+      if (data) {
+        const multiDay = data.filter((c: { starts_at: string; ends_at: string }) => {
+          const s = new Date(c.starts_at)
+          const e = new Date(c.ends_at)
+          return e.getTime() - s.getTime() > 2 * 24 * 60 * 60 * 1000
+        })
+        setFlagshipChallenges(multiDay)
+      }
     }
     loadFlagships()
   }, [])
@@ -546,16 +553,18 @@ export default function ChallengesPage() {
                 <div>
                   <div className="text-[14px] font-semibold">
                     Include our company in the{' '}
-                    {flagshipChallenges.map((fc, i) => (
+                    {flagshipChallenges.slice(0, 2).map((fc, i) => (
                       <span key={fc.id}>
-                        {i > 0 && ', '}
+                        {i > 0 && ' and '}
                         {fc.name}
                       </span>
-                    ))}{' '}
-                    public leaderboard
+                    ))}
+                    {flagshipChallenges.length > 2 &&
+                      ` and ${flagshipChallenges.length - 2} more`}{' '}
+                    public leaderboard{flagshipChallenges.length > 1 ? 's' : ''}
                   </div>
                   <div className="mt-1 text-[13px] text-ink-muted">
-                    {flagshipChallenges.map((fc) => {
+                    {flagshipChallenges.slice(0, 3).map((fc) => {
                       const s = new Date(fc.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                       const e = new Date(fc.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                       return `${fc.name}: ${s} – ${e}`
