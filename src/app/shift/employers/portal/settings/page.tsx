@@ -9,6 +9,7 @@ import {
   Globe,
   Edit,
   LogOut,
+  Pause,
   Upload,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -301,11 +302,11 @@ export default function SettingsPage() {
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-ep-danger">
               Danger zone
             </div>
-            <div className="space-y-2.5">
+            <div className="flex flex-wrap gap-2.5">
               <Button variant="danger" size="sm" icon={LogOut} onClick={signOut}>
                 Sign out
               </Button>
-              <Button variant="danger" size="sm" onClick={() => {}}>
+              <Button variant="danger" size="sm" icon={Pause} onClick={() => {}}>
                 Pause account
               </Button>
             </div>

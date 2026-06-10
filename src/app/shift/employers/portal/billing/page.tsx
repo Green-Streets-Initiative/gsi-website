@@ -53,13 +53,22 @@ export default function BillingPage() {
     setTopUpError(null)
     setOpeningTopUp(true)
     try {
+      const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession()
+      if (!session) {
+        setTopUpError('Not signed in')
+        setOpeningTopUp(false)
+        return
+      }
       const res = await fetch(`${SUPABASE_URL}/functions/v1/employer-top-up-checkout`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
         body: JSON.stringify({
-          group_id: group!.id,
           amount_cents: cents,
-          return_url: window.location.href,
+          origin: window.location.origin,
         }),
       })
       const data = await res.json()
