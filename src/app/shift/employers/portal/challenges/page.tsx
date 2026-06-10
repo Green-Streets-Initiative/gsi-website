@@ -19,6 +19,7 @@ import Button from '@/components/employer/Button'
 import { supabase } from '@/lib/supabase'
 import {
   PRIZE_METRIC_LABELS,
+  PRIZE_METRIC_UNITS,
   EMPTY_PRIZE_FORM,
 } from '../_lib/portal-constants'
 import { formatDate } from '../_lib/portal-utils'
@@ -704,20 +705,21 @@ function PrizeEditor({
           </div>
           <div>
             <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-              Min Shift Rate
+              Min {PRIZE_METRIC_LABELS[p.metric] ?? 'Shift Rate'}
             </label>
             <div className="flex items-center rounded-[10px] border border-line bg-surface">
               <input
                 type="number"
                 min="0"
-                max="100"
                 className="w-full border-0 bg-transparent px-3 py-2.5 text-[14px] text-ink outline-none"
                 value={p.min_threshold}
                 onChange={(e) =>
                   onChange({ min_threshold: e.target.value })
                 }
               />
-              <span className="pr-3 text-[14px] text-ink-faint">%</span>
+              <span className="pr-3 text-[14px] text-ink-faint">
+                {PRIZE_METRIC_UNITS[p.metric] ?? '%'}
+              </span>
             </div>
           </div>
         </div>
