@@ -19,7 +19,7 @@ export default function EmployerLogin() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: email.trim(),
-        redirect_to: `${window.location.origin}/shift/employers/portal`,
+        redirect_to: `${window.location.origin}/shift/employers/portal/dashboard`,
       }),
     })
 
