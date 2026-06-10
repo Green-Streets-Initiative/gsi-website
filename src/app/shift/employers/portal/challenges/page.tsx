@@ -988,18 +988,6 @@ function PrizeEditor({
           </div>
           <div>
             <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-              Winners
-            </label>
-            <input
-              type="number"
-              min="1"
-              className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
-              value={p.winner_count}
-              onChange={(e) => onChange({ winner_count: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
               Min {PRIZE_METRIC_LABELS[p.metric] ?? 'Shift Rate'}
             </label>
             <div className="flex items-center rounded-[10px] border border-line bg-surface">
@@ -1016,6 +1004,18 @@ function PrizeEditor({
                 {PRIZE_METRIC_UNITS[p.metric] ?? '%'}
               </span>
             </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+              Winners
+            </label>
+            <input
+              type="number"
+              min="1"
+              className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
+              value={p.winner_count}
+              onChange={(e) => onChange({ winner_count: e.target.value })}
+            />
           </div>
         </div>
 
