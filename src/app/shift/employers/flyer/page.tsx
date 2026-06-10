@@ -265,12 +265,12 @@ export default async function EmployerFlyerPage({
               </p>
             </div>
             {group.logo_url && (
-              <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-[#191A2E]/10">
+              <div className="flex h-[56px] shrink-0 items-center rounded-xl bg-white px-3 ring-1 ring-[#191A2E]/10">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={group.logo_url}
                   alt={group.name}
-                  className="max-h-[48px] max-w-[48px] object-contain"
+                  className="h-[38px] w-auto max-w-[160px] object-contain"
                 />
               </div>
             )}
