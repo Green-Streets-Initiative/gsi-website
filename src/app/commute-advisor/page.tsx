@@ -347,6 +347,11 @@ export default function CommuteCalculator() {
         return
       }
 
+      if (!res.ok || data.error) {
+        setRecError('Unable to load recommendation. Please try again.')
+        return
+      }
+
       setRecommendation(data)
       const recMode = data.primary?.modes?.[0] || data.comparisons?.[0]?.mode || null
       setSelectedMode(recMode)

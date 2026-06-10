@@ -287,6 +287,8 @@ function mapComparisons(modes: EdgeModeResult[], bikeInfraQuality: BikeInfraQual
 
 /* ── Route handler ── */
 
+export const maxDuration = 30
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const originLat = parseFloat(searchParams.get('origin_lat') || '')
@@ -314,109 +316,130 @@ export async function GET(req: NextRequest) {
   }
 
   // Call the shared Edge Function
-  const edgeFnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/commute-advisor-compare`
-  const edgeRes = await fetch(edgeFnUrl, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      origin: { lat: originLat, lng: originLng },
-      destination: { lat: destLat, lng: destLng },
-      parking_monthly: parkingMonthly,
-    }),
-    signal: AbortSignal.timeout(15000),
-  })
+  let edgeRes: Response
+  try {
+    const edgeFnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/commute-advisor-compare`
+    edgeRes = await fetch(edgeFnUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        origin: { lat: originLat, lng: originLng },
+        destination: { lat: destLat, lng: destLng },
+        parking_monthly: parkingMonthly,
+      }),
+      signal: AbortSignal.timeout(15000),
+    })
+  } catch (err) {
+    const isTimeout = err instanceof DOMException && err.name === 'TimeoutError'
+    console.error('Edge Function fetch failed:', isTimeout ? 'timeout (15s)' : err)
+    return NextResponse.json(
+      { error: 'recommendation_unavailable' },
+      { status: isTimeout ? 504 : 502 },
+    )
+  }
 
   if (!edgeRes.ok) {
     console.error('Edge Function error:', edgeRes.status, await edgeRes.text().catch(() => ''))
     return NextResponse.json({ error: 'recommendation_unavailable' }, { status: 502 })
   }
 
-  const edge: EdgeResponse = await edgeRes.json()
-
-  // Map comparisons
-  const comparisons = mapComparisons(edge.modes, edge.bike_infra_quality, edge.bike_has_bluebikes)
-
-  // Find recommended mode and drive entry
-  const recommendedEntry = edge.modes.find((m) => m.mode === edge.recommended_mode)
-  const driveEntry = edge.modes.find((m) => m.mode === 'drive')
-  const recommendedComparison = comparisons.find((c) => c.mode === edge.recommended_mode)
-  const driveComparison = comparisons.find((c) => c.mode === 'drive')
-
-  const winnerDailyCost = recommendedComparison?.daily_cost ?? 0
-  const winnerTimeMins = recommendedEntry?.time_minutes ?? 0
-  const driveDailyCost = driveComparison?.daily_cost ?? 0
-  const driveTimeMins = driveEntry?.time_minutes ?? 0
-
-  const pros = generatePros(edge.recommended_mode, edge.bike_infra_quality, edge.bike_has_bluebikes, recommendedEntry?.detail ?? '')
-  const reasons = buildReasons(
-    edge.recommended_mode, winnerTimeMins, winnerDailyCost,
-    driveTimeMins, driveDailyCost, edge.distance_miles, pros,
-    commuteMode, commuteDailyCost,
-  )
-
-  const primary: RecommendationPrimary = {
-    modes: modeToModes(edge.recommended_mode),
-    label: modeLabel(edge.recommended_mode),
-    reasons,
-    time_estimate_minutes: winnerTimeMins,
-    cost_estimate_daily: winnerDailyCost,
-    google_maps_url: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, edge.recommended_mode),
+  let edge: EdgeResponse
+  try {
+    edge = await edgeRes.json()
+  } catch (err) {
+    console.error('Edge Function returned invalid JSON:', err)
+    return NextResponse.json({ error: 'recommendation_unavailable' }, { status: 502 })
   }
 
-  // Secondary: first viable non-recommended, non-drive mode
-  const secondaryEntry = edge.modes.find((m) => m.viable && m.mode !== edge.recommended_mode && m.mode !== 'drive')
-  const secondary: RecommendationSecondary | null = secondaryEntry
-    ? { modes: modeToModes(secondaryEntry.mode), label: modeLabel(secondaryEntry.mode), time_estimate_minutes: secondaryEntry.time_minutes ?? 0 }
-    : null
+  try {
+    // Map comparisons
+    const comparisons = mapComparisons(edge.modes, edge.bike_infra_quality, edge.bike_has_bluebikes)
 
-  // Drive comparison for the response
-  const driveComparisonOut = driveComparison
-    ? { time_minutes: driveComparison.time_minutes, daily_cost: driveComparison.daily_cost, annual_cost: driveComparison.annual_cost }
-    : { time_minutes: driveTimeMins, daily_cost: driveDailyCost, annual_cost: Math.round(edge.drive_monthly_cost * 12) }
+    // Find recommended mode and drive entry
+    const recommendedEntry = edge.modes.find((m) => m.mode === edge.recommended_mode)
+    const driveEntry = edge.modes.find((m) => m.mode === 'drive')
+    const recommendedComparison = comparisons.find((c) => c.mode === edge.recommended_mode)
+    const driveComparison = comparisons.find((c) => c.mode === 'drive')
 
-  // Map data
-  const bluebikesOrigin = mapBluebikesStations(edge.bluebikes_origin, true)
-  const bluebikesDestStations = mapBluebikesStations(edge.bluebikes_dest, false)
-  const mbtaStops = mapMBTAStops(edge.mbta_stops)
+    const winnerDailyCost = recommendedComparison?.daily_cost ?? 0
+    const winnerTimeMins = recommendedEntry?.time_minutes ?? 0
+    const driveDailyCost = driveComparison?.daily_cost ?? 0
+    const driveTimeMins = driveEntry?.time_minutes ?? 0
 
-  // Content queries (website-only): guide + event from Supabase
-  const modeToContentMode: Record<string, string> = {
-    bike: 'cycling', ebike: 'cycling', walk: 'walking', transit: 'transit', bus: 'transit', drive: 'transit',
+    const pros = generatePros(edge.recommended_mode, edge.bike_infra_quality, edge.bike_has_bluebikes, recommendedEntry?.detail ?? '')
+    const reasons = buildReasons(
+      edge.recommended_mode, winnerTimeMins, winnerDailyCost,
+      driveTimeMins, driveDailyCost, edge.distance_miles, pros,
+      commuteMode, commuteDailyCost,
+    )
+
+    const primary: RecommendationPrimary = {
+      modes: modeToModes(edge.recommended_mode),
+      label: modeLabel(edge.recommended_mode),
+      reasons,
+      time_estimate_minutes: winnerTimeMins,
+      cost_estimate_daily: winnerDailyCost,
+      google_maps_url: buildGoogleMapsUrl(originLat, originLng, destLat, destLng, edge.recommended_mode),
+    }
+
+    // Secondary: first viable non-recommended, non-drive mode
+    const secondaryEntry = edge.modes.find((m) => m.viable && m.mode !== edge.recommended_mode && m.mode !== 'drive')
+    const secondary: RecommendationSecondary | null = secondaryEntry
+      ? { modes: modeToModes(secondaryEntry.mode), label: modeLabel(secondaryEntry.mode), time_estimate_minutes: secondaryEntry.time_minutes ?? 0 }
+      : null
+
+    // Drive comparison for the response
+    const driveComparisonOut = driveComparison
+      ? { time_minutes: driveComparison.time_minutes, daily_cost: driveComparison.daily_cost, annual_cost: driveComparison.annual_cost }
+      : { time_minutes: driveTimeMins, daily_cost: driveDailyCost, annual_cost: Math.round(edge.drive_monthly_cost * 12) }
+
+    // Map data
+    const bluebikesOrigin = mapBluebikesStations(edge.bluebikes_origin, true)
+    const bluebikesDestStations = mapBluebikesStations(edge.bluebikes_dest, false)
+    const mbtaStops = mapMBTAStops(edge.mbta_stops)
+
+    // Content queries (website-only): guide + event from Supabase
+    const modeToContentMode: Record<string, string> = {
+      bike: 'cycling', ebike: 'cycling', walk: 'walking', transit: 'transit', bus: 'transit', drive: 'transit',
+    }
+    const primaryModeStr = modeToContentMode[edge.recommended_mode] || 'transit'
+
+    const [guide, event] = await Promise.all([
+      fetchGuide(primaryModeStr, barrier),
+      fetchEvent(primaryModeStr),
+    ])
+
+    const response: RecommendationResponse = {
+      primary,
+      secondary,
+      map_data: {
+        bluebikes_origin: bluebikesOrigin,
+        bluebikes_dest: bluebikesDestStations,
+        mbta_stops: mbtaStops,
+        bike_infra_quality: edge.bike_infra_quality,
+      },
+      content: { guide, event },
+      comparisons,
+      drive_comparison: driveComparisonOut,
+      distance_miles: edge.distance_miles,
+      distance_category: getDistanceCategory(edge.distance_miles),
+      bike_comfort: (edge.bike_comfort_segments || edge.bike_comfort_rating)
+        ? {
+            rating: edge.bike_comfort_rating,
+            segments: edge.bike_comfort_segments,
+            summary: edge.bike_comfort_summary,
+          }
+        : null,
+    }
+
+    return NextResponse.json(response, {
+      headers: { 'Cache-Control': 'public, max-age=600, stale-while-revalidate=60' },
+    })
+  } catch (err) {
+    console.error('Recommendation mapping failed:', err)
+    return NextResponse.json({ error: 'recommendation_unavailable' }, { status: 502 })
   }
-  const primaryModeStr = modeToContentMode[edge.recommended_mode] || 'transit'
-
-  const [guide, event] = await Promise.all([
-    fetchGuide(primaryModeStr, barrier),
-    fetchEvent(primaryModeStr),
-  ])
-
-  const response: RecommendationResponse = {
-    primary,
-    secondary,
-    map_data: {
-      bluebikes_origin: bluebikesOrigin,
-      bluebikes_dest: bluebikesDestStations,
-      mbta_stops: mbtaStops,
-      bike_infra_quality: edge.bike_infra_quality,
-    },
-    content: { guide, event },
-    comparisons,
-    drive_comparison: driveComparisonOut,
-    distance_miles: edge.distance_miles,
-    distance_category: getDistanceCategory(edge.distance_miles),
-    bike_comfort: (edge.bike_comfort_segments || edge.bike_comfort_rating)
-      ? {
-          rating: edge.bike_comfort_rating,
-          segments: edge.bike_comfort_segments,
-          summary: edge.bike_comfort_summary,
-        }
-      : null,
-  }
-
-  return NextResponse.json(response, {
-    headers: { 'Cache-Control': 'public, max-age=600, stale-while-revalidate=60' },
-  })
 }
