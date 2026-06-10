@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Trophy,
   Plus,
@@ -67,6 +67,22 @@ export default function ChallengesPage() {
   const [saving, setSaving] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [drawingPrizeId, setDrawingPrizeId] = useState<string | null>(null)
+  const [flagshipChallenges, setFlagshipChallenges] = useState<{ id: string; name: string; starts_at: string; ends_at: string }[]>([])
+
+  useEffect(() => {
+    async function loadFlagships() {
+      const now = new Date().toISOString()
+      const { data } = await supabase
+        .from('competitions')
+        .select('id, name, starts_at, ends_at')
+        .eq('is_public', true)
+        .is('group_id', null)
+        .gte('ends_at', now)
+        .order('starts_at', { ascending: true })
+      if (data) setFlagshipChallenges(data)
+    }
+    loadFlagships()
+  }, [])
 
   const set = (k: string, v: unknown) =>
     setForm((p) => ({ ...p, [k]: v }))
@@ -236,30 +252,30 @@ export default function ChallengesPage() {
           .update({ public_leaderboard: wantsPublic })
           .eq('id', group.id)
         const now = new Date().toISOString()
-        const { data: flagship } = await supabase
+        const { data: flagships } = await supabase
           .from('competitions')
           .select('id, matchup_group_ids')
           .eq('is_public', true)
           .is('group_id', null)
           .gte('ends_at', now)
           .order('starts_at', { ascending: true })
-          .limit(1)
-          .single()
-        if (flagship) {
-          const currentIds: string[] = flagship.matchup_group_ids ?? []
-          let newIds: string[]
-          if (wantsPublic && !currentIds.includes(group.id)) {
-            newIds = [...currentIds, group.id]
-          } else if (!wantsPublic) {
-            newIds = currentIds.filter((id) => id !== group.id)
-          } else {
-            newIds = currentIds
-          }
-          if (newIds !== currentIds) {
-            await supabase
-              .from('competitions')
-              .update({ matchup_group_ids: newIds })
-              .eq('id', flagship.id)
+        if (flagships) {
+          for (const flagship of flagships) {
+            const currentIds: string[] = flagship.matchup_group_ids ?? []
+            let newIds: string[]
+            if (wantsPublic && !currentIds.includes(group.id)) {
+              newIds = [...currentIds, group.id]
+            } else if (!wantsPublic) {
+              newIds = currentIds.filter((id) => id !== group.id)
+            } else {
+              newIds = currentIds
+            }
+            if (newIds !== currentIds) {
+              await supabase
+                .from('competitions')
+                .update({ matchup_group_ids: newIds })
+                .eq('id', flagship.id)
+            }
           }
         }
       }
@@ -525,35 +541,49 @@ export default function ChallengesPage() {
             )}
 
             {/* Public leaderboard */}
-            <div
-              className="flex cursor-pointer items-start gap-3"
-              onClick={() =>
-                set('public_leaderboard', !form.public_leaderboard)
-              }
-            >
+            {flagshipChallenges.length > 0 && (
               <div
-                className={`mt-0.5 grid h-[22px] w-[22px] shrink-0 place-items-center rounded-md border-2 transition-colors ${
-                  form.public_leaderboard
-                    ? 'border-accent bg-accent text-white'
-                    : 'border-line'
-                }`}
+                className="flex cursor-pointer items-start gap-3"
+                onClick={() =>
+                  set('public_leaderboard', !form.public_leaderboard)
+                }
               >
-                {form.public_leaderboard && (
-                  <Check size={13} strokeWidth={2.5} />
-                )}
-              </div>
-              <div>
-                <div className="text-[14px] font-semibold">
-                  Include our company in the Shift Your Summer public
-                  leaderboard
+                <div
+                  className={`mt-0.5 grid h-[22px] w-[22px] shrink-0 place-items-center rounded-md border-2 transition-colors ${
+                    form.public_leaderboard
+                      ? 'border-accent bg-accent text-white'
+                      : 'border-line'
+                  }`}
+                >
+                  {form.public_leaderboard && (
+                    <Check size={13} strokeWidth={2.5} />
+                  )}
                 </div>
-                <div className="mt-1 text-[13px] text-ink-muted">
-                  Your company appears on the Corporate Challenge tab alongside
-                  other employers. Individual employee data is never shown
-                  publicly — only your aggregate Shift Rate and trip count.
+                <div>
+                  <div className="text-[14px] font-semibold">
+                    Include our company in the{' '}
+                    {flagshipChallenges.map((fc, i) => (
+                      <span key={fc.id}>
+                        {i > 0 && ', '}
+                        {fc.name}
+                      </span>
+                    ))}{' '}
+                    public leaderboard
+                  </div>
+                  <div className="mt-1 text-[13px] text-ink-muted">
+                    {flagshipChallenges.map((fc) => {
+                      const s = new Date(fc.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      const e = new Date(fc.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      return `${fc.name}: ${s} – ${e}`
+                    }).join(' · ')}
+                    {' · '}
+                    Your company appears on the Corporate Challenge tab alongside
+                    other employers. Individual employee data is never shown
+                    publicly — only your aggregate Shift Rate and trip count.
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Footer */}
