@@ -191,15 +191,14 @@ export default function ChallengesPage() {
           .insert(payload)
           .select('id, name, metric, starts_at, ends_at, prize_description')
           .single()
-        if (insertErr) {
-          console.error('Challenge insert failed:', insertErr)
-          toast(insertErr.message || 'Failed to create challenge', { type: 'error' })
+        if (insertErr || !data) {
+          const msg = insertErr?.message || 'Challenge was not created — no data returned'
+          console.error('Challenge insert failed:', insertErr ?? 'data was null')
+          toast(msg, { type: 'error' })
           return
         }
-        if (data) {
-          setChallenge({ ...data, public_leaderboard: false })
-          competitionId = data.id
-        }
+        setChallenge({ ...data, public_leaderboard: false })
+        competitionId = data.id
       }
 
       // Save prizes
@@ -305,6 +304,12 @@ export default function ChallengesPage() {
       }
 
       setBuilderOpen(false)
+    } catch (err) {
+      console.error('Challenge save error:', err)
+      toast(
+        err instanceof Error ? err.message : 'Something went wrong saving the challenge',
+        { type: 'error' },
+      )
     } finally {
       setSaving(false)
     }
