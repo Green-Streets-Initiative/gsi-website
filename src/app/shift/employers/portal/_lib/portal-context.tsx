@@ -26,7 +26,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
 interface PortalContextValue {
   group: Group | null
-  challenge: Challenge | null
+  challenges: Challenge[]
   memberCount: number
   dashboard: DashboardData | null
   members: EmployerMember[]
@@ -42,7 +42,7 @@ interface PortalContextValue {
   tierAtLeast: (tier: 'starter' | 'basic' | 'standard' | 'premium') => boolean
 
   setGroup: (g: Group) => void
-  setChallenge: (c: Challenge | null) => void
+  setChallenges: (c: Challenge[]) => void
   setMemberCount: (n: number) => void
   setDashboard: (d: DashboardData | null) => void
   setMembers: (m: EmployerMember[]) => void
@@ -76,7 +76,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [authenticated, setAuthenticated] = useState(false)
   const [group, setGroup] = useState<Group | null>(null)
-  const [challenge, setChallenge] = useState<Challenge | null>(null)
+  const [challenges, setChallenges] = useState<Challenge[]>([])
   const [memberCount, setMemberCount] = useState(0)
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [members, setMembers] = useState<EmployerMember[]>([])
@@ -133,10 +133,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
           .from('competitions')
           .select('id, name, metric, starts_at, ends_at, prize_description')
           .eq('group_id', groupData.id)
-          .gte('ends_at', now)
-          .order('starts_at', { ascending: false })
-          .limit(1)
-          .single(),
+          .order('starts_at', { ascending: false }),
         supabase
           .from('group_members')
           .select('*', { count: 'exact', head: true })
@@ -152,16 +149,18 @@ export function PortalProvider({ children }: { children: ReactNode }) {
         poolPromise,
       ])
 
-      if (challengeRes.data) {
-        setChallenge({
-          ...challengeRes.data,
+      if (challengeRes.data && challengeRes.data.length > 0) {
+        const allChallenges = challengeRes.data.map((c) => ({
+          ...c,
           public_leaderboard: groupData.public_leaderboard ?? false,
-        })
+        })) as Challenge[]
+        setChallenges(allChallenges)
 
+        const challengeIds = allChallenges.map((c) => c.id)
         const { data: prizesData } = await supabase
           .from('employer_challenge_prizes')
           .select('*')
-          .eq('competition_id', challengeRes.data.id)
+          .in('competition_id', challengeIds)
           .order('display_order')
 
         if (prizesData && prizesData.length > 0) {
@@ -290,7 +289,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
 
   const value: PortalContextValue = {
     group,
-    challenge,
+    challenges,
     memberCount,
     dashboard,
     members,
@@ -303,7 +302,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     authenticated,
     tierAtLeast,
     setGroup,
-    setChallenge,
+    setChallenges,
     setMemberCount,
     setDashboard,
     setMembers,

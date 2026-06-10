@@ -50,8 +50,8 @@ function statusOf(c: Challenge): { label: string; tone: 'success' | 'info' | 'ne
 export default function ChallengesPage() {
   const {
     group,
-    challenge,
-    setChallenge,
+    challenges,
+    setChallenges,
     challengePrizes,
     setChallengePrizes,
     prizeWinnersMap,
@@ -63,6 +63,7 @@ export default function ChallengesPage() {
   const toast = useToast()
 
   const [builderOpen, setBuilderOpen] = useState(false)
+  const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null)
   const [form, setForm] = useState({
     name: '',
     starts_at: '',
@@ -98,21 +99,26 @@ export default function ChallengesPage() {
     loadFlagships()
   }, [])
 
+  const prizesFor = (challengeId: string) =>
+    challengePrizes.filter((p) => p.competition_id === challengeId)
+
   const set = (k: string, v: unknown) =>
     setForm((p) => ({ ...p, [k]: v }))
   const canSave = form.name.trim() && form.starts_at && form.ends_at
 
-  const openEditor = () => {
-    if (challenge) {
+  const openEditor = (c?: Challenge) => {
+    if (c) {
+      const prizes = prizesFor(c.id)
+      setEditingChallenge(c)
       setForm({
-        name: challenge.name,
-        starts_at: challenge.starts_at.split('T')[0],
-        ends_at: challenge.ends_at.split('T')[0],
-        prize_description: challenge.prize_description || '',
-        public_leaderboard: challenge.public_leaderboard,
+        name: c.name,
+        starts_at: c.starts_at.split('T')[0],
+        ends_at: c.ends_at.split('T')[0],
+        prize_description: c.prize_description || '',
+        public_leaderboard: c.public_leaderboard,
       })
       setPrizeForms(
-        challengePrizes.map((p) => ({
+        prizes.map((p) => ({
           id: p.id,
           name: p.name,
           award_mode: p.award_mode,
@@ -131,6 +137,7 @@ export default function ChallengesPage() {
       )
       setEditMode(true)
     } else {
+      setEditingChallenge(null)
       setForm({
         name: '',
         starts_at: '',
@@ -173,19 +180,20 @@ export default function ChallengesPage() {
 
       let competitionId: string | null = null
 
-      if (challenge && editMode) {
+      if (editingChallenge && editMode) {
         await supabase
           .from('competitions')
           .update(payload)
-          .eq('id', challenge.id)
-        setChallenge({
-          ...challenge,
+          .eq('id', editingChallenge.id)
+        const updated = {
+          ...editingChallenge,
           name: payload.name,
           starts_at: payload.starts_at,
           ends_at: payload.ends_at,
           prize_description: payload.prize_description,
-        })
-        competitionId = challenge.id
+        }
+        setChallenges(challenges.map((c) => (c.id === updated.id ? updated : c)))
+        competitionId = editingChallenge.id
       } else {
         const { data, error: insertErr } = await supabase
           .from('competitions')
@@ -198,7 +206,7 @@ export default function ChallengesPage() {
           toast(msg, { type: 'error' })
           return
         }
-        setChallenge({ ...data, public_leaderboard: false })
+        setChallenges([{ ...data, public_leaderboard: false }, ...challenges])
         competitionId = data.id
       }
 
@@ -250,7 +258,8 @@ export default function ChallengesPage() {
         const formIds = new Set(
           prizeForms.filter((f) => f.id).map((f) => f.id),
         )
-        for (const existing of challengePrizes) {
+        const existingPrizes = prizesFor(competitionId)
+        for (const existing of existingPrizes) {
           if (!formIds.has(existing.id)) {
             await supabase
               .from('employer_challenge_prizes')
@@ -264,7 +273,10 @@ export default function ChallengesPage() {
           .select('*')
           .eq('competition_id', competitionId)
           .order('display_order')
-        if (refreshed) setChallengePrizes(refreshed as ChallengePrize[])
+        if (refreshed) {
+          const otherPrizes = challengePrizes.filter((p) => p.competition_id !== competitionId)
+          setChallengePrizes([...otherPrizes, ...(refreshed as ChallengePrize[])])
+        }
       }
 
       // Public leaderboard
@@ -318,12 +330,13 @@ export default function ChallengesPage() {
     group,
     canSave,
     form,
-    challenge,
+    editingChallenge,
     editMode,
     prizeForms,
+    challenges,
     challengePrizes,
     tierAtLeast,
-    setChallenge,
+    setChallenges,
     setChallengePrizes,
   ])
 
@@ -363,8 +376,6 @@ export default function ChallengesPage() {
     setDrawingPrizeId(null)
   }
 
-  const st = challenge ? statusOf(challenge) : null
-
   return (
     <div className="grid gap-6">
       <PortalPageHead
@@ -372,86 +383,92 @@ export default function ChallengesPage() {
         subtitle="Create friendly competitions to drive participation"
         actions={
           !builderOpen && (
-            <Button variant="primary" icon={Plus} onClick={openEditor}>
-              {challenge ? 'Edit challenge' : 'Create a challenge'}
+            <Button variant="primary" icon={Plus} onClick={() => openEditor()}>
+              Create a challenge
             </Button>
           )
         }
       />
 
-      {/* Existing challenge */}
-      {challenge && !builderOpen && (
-        <Card pad>
-          <div className="flex flex-wrap items-start justify-between gap-3.5">
-            <div className="min-w-0">
-              <div className="mb-1 flex items-center gap-2.5">
-                <strong className="text-[16px]">{challenge.name}</strong>
-                {st && (
-                  <Badge tone={st.tone} dot={false}>
-                    {st.label}
-                  </Badge>
-                )}
-                {challenge.public_leaderboard && (
-                  <Badge tone="info" dot={false}>
-                    Public board
-                  </Badge>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-ink-faint">
-                <span className="flex items-center gap-1.5">
-                  <Calendar size={14} strokeWidth={1.75} />
-                  {formatDate(challenge.starts_at)} →{' '}
-                  {formatDate(challenge.ends_at)}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Gift size={14} strokeWidth={1.75} />
-                  {challengePrizes.length}{' '}
-                  {challengePrizes.length === 1 ? 'prize' : 'prizes'}
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Pencil}
-                onClick={openEditor}
-              >
-                Edit
-              </Button>
-            </div>
-          </div>
+      {/* Challenge list */}
+      {!builderOpen && challenges.length > 0 && (
+        <div className="grid gap-4">
+          {challenges.map((c) => {
+            const st = statusOf(c)
+            const prizes = prizesFor(c.id)
+            return (
+              <Card pad key={c.id}>
+                <div className="flex flex-wrap items-start justify-between gap-3.5">
+                  <div className="min-w-0">
+                    <div className="mb-1 flex items-center gap-2.5">
+                      <strong className="text-[16px]">{c.name}</strong>
+                      <Badge tone={st.tone} dot={false}>
+                        {st.label}
+                      </Badge>
+                      {c.public_leaderboard && (
+                        <Badge tone="info" dot={false}>
+                          Public board
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-ink-faint">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar size={14} strokeWidth={1.75} />
+                        {formatDate(c.starts_at)} →{' '}
+                        {formatDate(c.ends_at)}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Gift size={14} strokeWidth={1.75} />
+                        {prizes.length}{' '}
+                        {prizes.length === 1 ? 'prize' : 'prizes'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={Pencil}
+                      onClick={() => openEditor(c)}
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                </div>
 
-          {/* Prize list */}
-          {challengePrizes.length > 0 && (
-            <div className="mt-5 grid gap-3 border-t border-line-2 pt-5">
-              {challengePrizes.map((p) => (
-                <PrizeCard
-                  key={p.id}
-                  prize={p}
-                  winners={prizeWinnersMap[p.id] || []}
-                  challengeStatus={st?.label ?? ''}
-                  drawing={drawingPrizeId === p.id}
-                  onDraw={() => drawPrize(p.id)}
-                  onWinnersUpdated={(updated) => {
-                    setPrizeWinnersMap({ ...prizeWinnersMap, [p.id]: updated })
-                  }}
-                  onPrizeUpdated={(updated) => {
-                    setChallengePrizes(
-                      challengePrizes.map((cp) =>
-                        cp.id === updated.id ? updated : cp,
-                      ),
-                    )
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </Card>
+                {/* Prize list */}
+                {prizes.length > 0 && (
+                  <div className="mt-5 grid gap-3 border-t border-line-2 pt-5">
+                    {prizes.map((p) => (
+                      <PrizeCard
+                        key={p.id}
+                        prize={p}
+                        winners={prizeWinnersMap[p.id] || []}
+                        challengeStatus={st.label}
+                        drawing={drawingPrizeId === p.id}
+                        onDraw={() => drawPrize(p.id)}
+                        onWinnersUpdated={(updated) => {
+                          setPrizeWinnersMap({ ...prizeWinnersMap, [p.id]: updated })
+                        }}
+                        onPrizeUpdated={(updated) => {
+                          setChallengePrizes(
+                            challengePrizes.map((cp) =>
+                              cp.id === updated.id ? updated : cp,
+                            ),
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )
+          })}
+        </div>
       )}
 
       {/* Empty state */}
-      {!challenge && !builderOpen && (
+      {!builderOpen && challenges.length === 0 && (
         <Card pad className="py-16 text-center">
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-accent-soft text-accent">
             <Trophy size={28} strokeWidth={1.75} />
@@ -463,7 +480,7 @@ export default function ChallengesPage() {
             Kick off a friendly competition to drive sign-ups and active trips.
             Set a date range and add optional prizes.
           </p>
-          <Button variant="primary" icon={Plus} onClick={openEditor}>
+          <Button variant="primary" icon={Plus} onClick={() => openEditor()}>
             Create a challenge
           </Button>
         </Card>

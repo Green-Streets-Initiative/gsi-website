@@ -78,10 +78,10 @@ function isSetupComplete(group: { logo_url: string | null; tier: string } | null
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const { group, memberCount, challenge, benefitsForm } = usePortal()
+  const { group, memberCount, challenges, benefitsForm } = usePortal()
 
   const hasBenefits = !!(benefitsForm?.destination_address)
-  const setupComplete = isSetupComplete(group, memberCount, !!challenge, hasBenefits)
+  const setupComplete = isSetupComplete(group, memberCount, challenges.length > 0, hasBenefits)
 
   return (
     <aside className="hidden min-[980px]:flex flex-col h-screen sticky top-0 w-64 overflow-hidden"

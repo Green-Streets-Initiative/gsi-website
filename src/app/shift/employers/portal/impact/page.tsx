@@ -45,7 +45,7 @@ const MODE_ICON: Record<string, React.ElementType> = {
 }
 
 export default function ImpactPage() {
-  const { group, challenge, dashboard, memberCount, refreshDashboard } =
+  const { group, challenges, dashboard, memberCount, refreshDashboard } =
     usePortal()
 
   const [range, setRange] = useState<string>('Last 30 days')
@@ -173,11 +173,15 @@ export default function ImpactPage() {
       doc.setTextColor(90, 90, 90)
       doc.text(range, centerX, 170, { align: 'center' })
 
-      if (challenge) {
+      const activeChallenge = challenges.find((c) => {
+        const now = new Date()
+        return new Date(c.starts_at) <= now && new Date(c.ends_at) >= now
+      }) ?? challenges[0]
+      if (activeChallenge) {
         doc.setFontSize(11)
         doc.setTextColor(80, 80, 80)
         doc.text(
-          `${challenge.name}  ·  ${formatDate(challenge.starts_at)} – ${formatDate(challenge.ends_at)}`,
+          `${activeChallenge.name}  ·  ${formatDate(activeChallenge.starts_at)} – ${formatDate(activeChallenge.ends_at)}`,
           centerX,
           192,
           { align: 'center' },
@@ -208,7 +212,7 @@ export default function ImpactPage() {
         },
       ]
 
-      const tableTop = challenge ? 220 : 200
+      const tableTop = activeChallenge ? 220 : 200
       const rowH = 38
       const colLabel = 80
       const colValue = w - 80

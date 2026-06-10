@@ -19,7 +19,7 @@ interface SetupStep {
 }
 
 export default function SetupPage() {
-  const { group, challenge, memberCount, benefitsForm } = usePortal()
+  const { group, challenges, memberCount, benefitsForm } = usePortal()
   const router = useRouter()
 
   const steps: SetupStep[] = [
@@ -57,7 +57,7 @@ export default function SetupPage() {
       id: 'challenge',
       label: 'Active challenge running',
       desc: "Kick off a friendly competition to drive sign-ups.",
-      done: !!challenge,
+      done: challenges.length > 0,
       route: '/shift/employers/portal/challenges',
     },
   ]

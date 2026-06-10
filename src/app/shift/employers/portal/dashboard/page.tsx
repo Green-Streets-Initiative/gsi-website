@@ -39,7 +39,7 @@ const MODE_ICON: Record<string, string> = {
 }
 
 export default function DashboardPage() {
-  const { group, challenge, memberCount, dashboard, members, benefitsForm, loading } = usePortal()
+  const { group, challenges, memberCount, dashboard, members, benefitsForm, loading } = usePortal()
   const [copied, setCopied] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
 
@@ -56,7 +56,7 @@ export default function DashboardPage() {
     { id: 'logo', label: 'Logo uploaded', done: !!group.logo_url },
     { id: 'advisor', label: 'Commute Advisor configured', done: !!benefitsForm?.destination_address },
     { id: 'employees', label: 'Employees joined', done: memberCount > 0 },
-    { id: 'challenge', label: 'Active challenge running', done: !!challenge },
+    { id: 'challenge', label: 'Active challenge running', done: challenges.length > 0 },
   ]
   const setupDone = setupSteps.filter((s) => s.done).length
   const setupPct = Math.round((setupDone / setupSteps.length) * 100)

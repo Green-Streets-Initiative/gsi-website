@@ -49,7 +49,7 @@ function getPrefs(groupId: string): Record<string, boolean> {
 }
 
 export default function NotificationsDropdown({ onClose }: { onClose: () => void }) {
-  const { group, members, challenge } = usePortal()
+  const { group, members, challenges } = usePortal()
   const panelRef = useRef<HTMLDivElement>(null)
 
   const groupId = group?.id ?? ''
@@ -94,23 +94,25 @@ export default function NotificationsDropdown({ onClose }: { onClose: () => void
       }
     }
 
-    if (prefs.challenge_milestones !== false && challenge) {
-      const startMs = new Date(challenge.starts_at).getTime()
-      if (startMs > thirtyDaysAgo) {
-        result.push({
-          id: `challenge-${challenge.id}`,
-          type: 'challenge',
-          title: `Challenge "${challenge.name}" started`,
-          name: challenge.name,
-          timestamp: challenge.starts_at,
-          unread: lastSeen ? new Date(challenge.starts_at) > new Date(lastSeen) : true,
-        })
+    if (prefs.challenge_milestones !== false) {
+      for (const c of challenges) {
+        const startMs = new Date(c.starts_at).getTime()
+        if (startMs > thirtyDaysAgo) {
+          result.push({
+            id: `challenge-${c.id}`,
+            type: 'challenge',
+            title: `Challenge "${c.name}" started`,
+            name: c.name,
+            timestamp: c.starts_at,
+            unread: lastSeen ? new Date(c.starts_at) > new Date(lastSeen) : true,
+          })
+        }
       }
     }
 
     result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     return result
-  }, [members, challenge, lastSeen, prefs])
+  }, [members, challenges, lastSeen, prefs])
 
   const markAllRead = useCallback(() => {
     if (groupId) setLastSeen(groupId)
@@ -177,10 +179,10 @@ export default function NotificationsDropdown({ onClose }: { onClose: () => void
 export function hasUnreadNotifications(
   groupId: string,
   members: { joined_at: string }[],
-  challenge: { id: string; starts_at: string } | null,
+  challenges: { id: string; starts_at: string }[],
 ): boolean {
   const lastSeen = getLastSeen(groupId)
-  if (!lastSeen) return members.length > 0 || !!challenge
+  if (!lastSeen) return members.length > 0 || challenges.length > 0
 
   const cutoff = new Date(lastSeen)
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
@@ -193,9 +195,11 @@ export function hasUnreadNotifications(
     }
   }
 
-  if (prefs.challenge_milestones !== false && challenge) {
-    const startMs = new Date(challenge.starts_at).getTime()
-    if (startMs > thirtyDaysAgo && new Date(challenge.starts_at) > cutoff) return true
+  if (prefs.challenge_milestones !== false) {
+    for (const c of challenges) {
+      const startMs = new Date(c.starts_at).getTime()
+      if (startMs > thirtyDaysAgo && new Date(c.starts_at) > cutoff) return true
+    }
   }
 
   return false

@@ -24,12 +24,12 @@ type Panel = 'search' | 'notifications' | 'help' | null
 export default function Topbar() {
   const pathname = usePathname()
   const meta = ROUTE_META[pathname] ?? { label: 'Dashboard' }
-  const { group, members, challenge } = usePortal()
+  const { group, members, challenges } = usePortal()
 
   const [activePanel, setActivePanel] = useState<Panel>(null)
 
   const showUnread = group
-    ? hasUnreadNotifications(group.id, members, challenge)
+    ? hasUnreadNotifications(group.id, members, challenges)
     : false
 
   const closePanel = useCallback(() => setActivePanel(null), [])
