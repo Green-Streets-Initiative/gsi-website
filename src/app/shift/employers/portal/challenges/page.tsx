@@ -60,6 +60,7 @@ export default function ChallengesPage() {
     tierAtLeast,
     refreshPool,
   } = usePortal()
+  const toast = useToast()
 
   const [builderOpen, setBuilderOpen] = useState(false)
   const [form, setForm] = useState({
@@ -185,11 +186,16 @@ export default function ChallengesPage() {
         })
         competitionId = challenge.id
       } else {
-        const { data } = await supabase
+        const { data, error: insertErr } = await supabase
           .from('competitions')
           .insert(payload)
           .select('id, name, metric, starts_at, ends_at, prize_description')
           .single()
+        if (insertErr) {
+          console.error('Challenge insert failed:', insertErr)
+          toast(insertErr.message || 'Failed to create challenge', { type: 'error' })
+          return
+        }
         if (data) {
           setChallenge({ ...data, public_leaderboard: false })
           competitionId = data.id
