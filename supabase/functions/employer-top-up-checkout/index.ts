@@ -42,6 +42,7 @@ import {
   handleCorsPreflight,
   jsonResponse,
 } from "../_shared/stripe.ts";
+import { ensureStripeCustomer } from "../_shared/ensure-stripe-customer.ts";
 
 const DEFAULT_ORIGIN =
   Deno.env.get("EMPLOYER_PORTAL_ORIGIN") ?? "https://www.gogreenstreets.org";
@@ -118,12 +119,6 @@ serve(async (req: Request) => {
   if (!group) {
     return jsonResponse({ error: "No employer group linked" }, 403);
   }
-  if (!group.stripe_customer_id) {
-    return jsonResponse(
-      { error: "Group has no Stripe customer on file" },
-      409,
-    );
-  }
   if (group.tier !== "premium") {
     return jsonResponse(
       { error: "Reward pool funding is a Premium-tier feature" },
@@ -131,10 +126,28 @@ serve(async (req: Request) => {
     );
   }
 
-  // Find or lazily create the reward_pool. Writes use the service
-  // role because reward_pools has server-only RLS (no employer SELECT/
-  // INSERT policies). Lazy create avoids an ops-blocking step.
+  let stripe: ReturnType<typeof createStripeClient>;
+  try {
+    stripe = createStripeClient();
+  } catch (err) {
+    console.error("[TopUpCheckout] Stripe client init failed:", err);
+    return jsonResponse({ error: "Stripe not configured" }, 500);
+  }
+
   const admin = createAdminClient();
+
+  let customerId: string;
+  try {
+    customerId = await ensureStripeCustomer(stripe, admin, {
+      id: group.id,
+      name: group.name,
+      admin_email: group.admin_email ?? email,
+      stripe_customer_id: group.stripe_customer_id,
+    });
+  } catch (err) {
+    console.error("[TopUpCheckout] customer creation failed:", err);
+    return jsonResponse({ error: "Could not set up billing" }, 500);
+  }
 
   const { data: existingPool, error: poolLookupErr } = await admin
     .from("reward_pools")
@@ -161,7 +174,7 @@ serve(async (req: Request) => {
         name: `${group.name} rewards pool`,
         owner_type: "employer",
         owner_group_id: group.id,
-        stripe_customer_id: group.stripe_customer_id,
+        stripe_customer_id: customerId,
         balance_cents: 0,
         lifetime_funded_cents: 0,
         active: true,
@@ -187,18 +200,10 @@ serve(async (req: Request) => {
     }
   }
 
-  let stripe: ReturnType<typeof createStripeClient>;
-  try {
-    stripe = createStripeClient();
-  } catch (err) {
-    console.error("[TopUpCheckout] Stripe client init failed:", err);
-    return jsonResponse({ error: "Stripe not configured" }, 500);
-  }
-
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      customer: group.stripe_customer_id,
+      customer: customerId,
       line_items: [
         {
           price_data: {

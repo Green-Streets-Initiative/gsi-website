@@ -84,31 +84,47 @@ export default function BillingPage() {
     }
   }
 
+  const [portalError, setPortalError] = useState<string | null>(null)
+  const [openingPortal, setOpeningPortal] = useState(false)
+
   async function openBillingPortal() {
     if (!group) return
+    setPortalError(null)
+    setOpeningPortal(true)
     try {
       const {
         data: { session },
       } = await (await import('@/lib/supabase')).supabase.auth.getSession()
-      if (!session) return
+      if (!session) {
+        setPortalError('Not signed in')
+        setOpeningPortal(false)
+        return
+      }
       const res = await fetch(
-        `${SUPABASE_URL}/functions/v1/employer-checkout`,
+        `${SUPABASE_URL}/functions/v1/employer-billing-portal`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session.access_token}`,
+            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
           },
           body: JSON.stringify({
-            action: 'billing_portal',
-            group_id: group.id,
             return_url: window.location.href,
           }),
         },
       )
       const data = await res.json()
-      if (data.url) window.location.href = data.url
-    } catch {}
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setPortalError(data.error || 'Could not open billing portal')
+      }
+    } catch {
+      setPortalError('Network error — try again')
+    } finally {
+      setOpeningPortal(false)
+    }
   }
 
   return (
@@ -229,10 +245,14 @@ export default function BillingPage() {
                 variant="secondary"
                 size="sm"
                 onClick={openBillingPortal}
+                disabled={openingPortal}
                 className="mt-3"
               >
-                Open billing portal
+                {openingPortal ? 'Opening...' : 'Open billing portal'}
               </Button>
+              {portalError && (
+                <p className="mt-2 text-[13px] text-ep-danger">{portalError}</p>
+              )}
             </div>
           </Card>
         </div>
@@ -290,17 +310,22 @@ export default function BillingPage() {
                 variant="secondary"
                 size="sm"
                 onClick={openBillingPortal}
+                disabled={openingPortal}
               >
-                Change plan
+                {openingPortal ? 'Opening...' : 'Change plan'}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={openBillingPortal}
+                disabled={openingPortal}
               >
                 Payment method
               </Button>
             </div>
+            {portalError && (
+              <p className="mt-2 text-[13px] text-ep-danger">{portalError}</p>
+            )}
           </Card>
 
           {/* Upsell */}
