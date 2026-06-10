@@ -15,6 +15,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { usePortal } from '../_lib/portal-context'
 import { prettyMode, formatDateShort } from '../_lib/portal-utils'
 import { TIER_LABEL, TIER_ANNUAL_PRICE } from '../_lib/portal-constants'
@@ -39,6 +40,7 @@ const MODE_ICON: Record<string, string> = {
 }
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { group, challenges, memberCount, dashboard, members, benefitsForm, loading } = usePortal()
   const [copied, setCopied] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
@@ -105,7 +107,7 @@ export default function DashboardPage() {
         subtitle={`Welcome back${group.admin_name ? `, ${group.admin_name.split(' ')[0]}` : ''}`}
         actions={
           <>
-            <Button variant="secondary" icon={BarChart3} onClick={() => {}}>
+            <Button variant="secondary" icon={BarChart3} onClick={() => router.push('/shift/employers/portal/impact')}>
               Export report
             </Button>
             <Button variant="primary" icon={LinkIcon} onClick={shareLink}>
