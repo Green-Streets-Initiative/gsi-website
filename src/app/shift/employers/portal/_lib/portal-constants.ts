@@ -34,6 +34,7 @@ export const EMPTY_PRIZE_FORM: PrizeFormState = {
   winner_count: '3',
   funded_from_pool: false,
   amount_dollars: '25',
+  tremendous_product_id: '',
   prize_description: '',
   auto_draw: true,
 }

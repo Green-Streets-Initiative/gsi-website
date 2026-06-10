@@ -6,10 +6,14 @@ import {
   Plus,
   Calendar,
   Gift,
-  BarChart3,
   Pencil,
   X,
   Check,
+  Send,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  Ban,
 } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
 import { usePortal } from '../_lib/portal-context'
@@ -22,6 +26,7 @@ import {
   PRIZE_METRIC_UNITS,
   EMPTY_PRIZE_FORM,
 } from '../_lib/portal-constants'
+import { useToast } from '@/components/employer/Toast'
 import { formatDate } from '../_lib/portal-utils'
 import type {
   Challenge,
@@ -30,6 +35,7 @@ import type {
   AwardMode,
   ChallengePrize,
   PrizeWinner,
+  TremendousProduct,
 } from '../_lib/portal-types'
 
 function statusOf(c: Challenge): { label: string; tone: 'success' | 'info' | 'neutral' } {
@@ -110,6 +116,7 @@ export default function ChallengesPage() {
           amount_dollars: p.amount_cents
             ? String(p.amount_cents / 100)
             : '25',
+          tremendous_product_id: p.tremendous_product_id || '',
           prize_description: p.prize_description || '',
           auto_draw: p.auto_draw,
         })),
@@ -201,6 +208,10 @@ export default function ChallengesPage() {
             amount_cents:
               pf.funded_from_pool && pf.amount_dollars
                 ? Math.round(parseFloat(pf.amount_dollars) * 100)
+                : null,
+            tremendous_product_id:
+              pf.funded_from_pool && pf.tremendous_product_id
+                ? pf.tremendous_product_id
                 : null,
             prize_description: !pf.funded_from_pool
               ? pf.prize_description.trim() || null
@@ -395,53 +406,26 @@ export default function ChallengesPage() {
           {/* Prize list */}
           {challengePrizes.length > 0 && (
             <div className="mt-5 grid gap-3 border-t border-line-2 pt-5">
-              {challengePrizes.map((p) => {
-                const winners = prizeWinnersMap[p.id] || []
-                return (
-                  <div
-                    key={p.id}
-                    className="flex items-center justify-between rounded-xl border border-line bg-surface-2 px-4 py-3.5"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-accent-soft text-accent">
-                        <Gift size={16} strokeWidth={1.75} />
-                      </div>
-                      <div>
-                        <div className="text-[14px] font-semibold">
-                          {p.name}
-                        </div>
-                        <div className="text-[12.5px] text-ink-faint">
-                          {p.award_mode === 'drawing'
-                            ? 'Random drawing'
-                            : 'Top performers'}{' '}
-                          · {p.winner_count}{' '}
-                          {p.winner_count === 1 ? 'winner' : 'winners'} ·{' '}
-                          {p.funded_from_pool
-                            ? 'Funded from pool'
-                            : 'Self-fulfilled'}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {p.draw_status === 'pending' && st?.label === 'Ended' && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => drawPrize(p.id)}
-                          disabled={drawingPrizeId === p.id}
-                        >
-                          {drawingPrizeId === p.id ? 'Drawing...' : 'Draw winners'}
-                        </Button>
-                      )}
-                      {p.draw_status !== 'pending' && (
-                        <Badge tone="success" dot={false}>
-                          {winners.length} drawn
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+              {challengePrizes.map((p) => (
+                <PrizeCard
+                  key={p.id}
+                  prize={p}
+                  winners={prizeWinnersMap[p.id] || []}
+                  challengeStatus={st?.label ?? ''}
+                  drawing={drawingPrizeId === p.id}
+                  onDraw={() => drawPrize(p.id)}
+                  onWinnersUpdated={(updated) => {
+                    setPrizeWinnersMap({ ...prizeWinnersMap, [p.id]: updated })
+                  }}
+                  onPrizeUpdated={(updated) => {
+                    setChallengePrizes(
+                      challengePrizes.map((cp) =>
+                        cp.id === updated.id ? updated : cp,
+                      ),
+                    )
+                  }}
+                />
+              ))}
             </div>
           )}
         </Card>
@@ -622,6 +606,231 @@ export default function ChallengesPage() {
   )
 }
 
+function PrizeCard({
+  prize: p,
+  winners,
+  challengeStatus,
+  drawing,
+  onDraw,
+  onWinnersUpdated,
+  onPrizeUpdated,
+}: {
+  prize: ChallengePrize
+  winners: PrizeWinner[]
+  challengeStatus: string
+  drawing: boolean
+  onDraw: () => void
+  onWinnersUpdated: (w: PrizeWinner[]) => void
+  onPrizeUpdated: (p: ChallengePrize) => void
+}) {
+  const { members, refreshPool, rewardPool } = usePortal()
+  const toast = useToast()
+  const [expanded, setExpanded] = useState(false)
+  const [fulfilling, setFulfilling] = useState(false)
+
+  const memberMap = new Map(members.map((m) => [m.user_id, m]))
+  const pendingCount = winners.filter((w) => w.fulfillment_status === 'pending').length
+  const fulfilledCount = winners.filter((w) => w.fulfillment_status === 'fulfilled').length
+
+  async function fulfillPrize() {
+    setFulfilling(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/employer-tremendous-fulfill`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token}`,
+            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          },
+          body: JSON.stringify({ prize_id: p.id }),
+        },
+      )
+      const result = await res.json()
+      if (!res.ok) {
+        toast(result.error || 'Fulfillment failed', { type: 'error' })
+        return
+      }
+      toast(`${result.fulfilled} reward${result.fulfilled === 1 ? '' : 's'} sent`)
+      const { data: updatedWinners } = await supabase
+        .from('employer_prize_winners')
+        .select('*')
+        .eq('prize_id', p.id)
+      if (updatedWinners) onWinnersUpdated(updatedWinners as PrizeWinner[])
+      const { data: updatedPrize } = await supabase
+        .from('employer_challenge_prizes')
+        .select('*')
+        .eq('id', p.id)
+        .single()
+      if (updatedPrize) onPrizeUpdated(updatedPrize as ChallengePrize)
+      if (rewardPool) await refreshPool()
+    } catch {
+      toast('Network error during fulfillment', { type: 'error' })
+    } finally {
+      setFulfilling(false)
+    }
+  }
+
+  async function forfeitWinner(winnerId: string) {
+    await supabase
+      .from('employer_prize_winners')
+      .update({ fulfillment_status: 'forfeited' })
+      .eq('id', winnerId)
+    onWinnersUpdated(
+      winners.map((w) =>
+        w.id === winnerId ? { ...w, fulfillment_status: 'forfeited' as const } : w,
+      ),
+    )
+    toast('Winner marked as forfeited')
+  }
+
+  return (
+    <div className="rounded-xl border border-line bg-surface-2">
+      <div className="flex items-center justify-between px-4 py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-accent-soft text-accent">
+            <Gift size={16} strokeWidth={1.75} />
+          </div>
+          <div>
+            <div className="text-[14px] font-semibold">{p.name}</div>
+            <div className="text-[12.5px] text-ink-faint">
+              {p.award_mode === 'drawing' ? 'Random drawing' : 'Top performers'}{' '}
+              · {p.winner_count} {p.winner_count === 1 ? 'winner' : 'winners'}{' '}
+              · {p.funded_from_pool ? `$${(p.amount_cents ?? 0) / 100} from pool` : 'Self-fulfilled'}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {p.draw_status === 'pending' && challengeStatus === 'Ended' && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={onDraw}
+              disabled={drawing}
+            >
+              {drawing ? 'Drawing...' : 'Draw winners'}
+            </Button>
+          )}
+          {p.draw_status === 'drawn' && p.funded_from_pool && pendingCount > 0 && (
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Send}
+              onClick={fulfillPrize}
+              disabled={fulfilling}
+            >
+              {fulfilling
+                ? `Sending ${pendingCount} reward${pendingCount === 1 ? '' : 's'}...`
+                : `Fulfill ${pendingCount} reward${pendingCount === 1 ? '' : 's'}`}
+            </Button>
+          )}
+          {p.draw_status === 'fulfilled' && (
+            <Badge tone="success" dot={false}>
+              All fulfilled
+            </Badge>
+          )}
+          {p.draw_status !== 'pending' && (
+            <button
+              className="grid h-8 w-8 place-items-center rounded-lg text-ink-faint hover:bg-surface"
+              onClick={() => setExpanded(!expanded)}
+            >
+              {expanded ? (
+                <ChevronUp size={16} strokeWidth={1.75} />
+              ) : (
+                <ChevronDown size={16} strokeWidth={1.75} />
+              )}
+            </button>
+          )}
+          {p.draw_status !== 'pending' && !expanded && (
+            <Badge tone="success" dot={false}>
+              {winners.length} drawn
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {expanded && winners.length > 0 && (
+        <div className="border-t border-line-2 px-4 py-3">
+          <table className="w-full text-left text-[13px]">
+            <thead>
+              <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-ink-faint">
+                <th className="pb-2">Winner</th>
+                <th className="pb-2 text-right">{PRIZE_METRIC_LABELS[p.metric]}</th>
+                {p.funded_from_pool && <th className="pb-2 text-right">Amount</th>}
+                <th className="pb-2 text-right">Status</th>
+                <th className="pb-2 w-8" />
+              </tr>
+            </thead>
+            <tbody>
+              {winners.map((w) => {
+                const member = memberMap.get(w.user_id)
+                return (
+                  <tr key={w.id} className="border-t border-line-2">
+                    <td className="py-2 font-semibold text-ink">
+                      {member?.display_name || w.user_id.slice(0, 8) + '...'}
+                    </td>
+                    <td className="py-2 text-right text-ink-muted">
+                      {p.metric === 'pct_non_car'
+                        ? `${Number(w.metric_value).toFixed(1)}%`
+                        : Number(w.metric_value).toFixed(1)}
+                    </td>
+                    {p.funded_from_pool && (
+                      <td className="py-2 text-right text-ink-muted">
+                        ${((w.amount_cents ?? 0) / 100).toFixed(0)}
+                      </td>
+                    )}
+                    <td className="py-2 text-right">
+                      <Badge
+                        tone={
+                          w.fulfillment_status === 'fulfilled'
+                            ? 'success'
+                            : w.fulfillment_status === 'forfeited'
+                              ? 'neutral'
+                              : 'info'
+                        }
+                        dot={false}
+                      >
+                        {w.fulfillment_status === 'fulfilled'
+                          ? 'Fulfilled'
+                          : w.fulfillment_status === 'forfeited'
+                            ? 'Forfeited'
+                            : 'Pending'}
+                      </Badge>
+                    </td>
+                    <td className="py-2 text-right">
+                      {w.fulfillment_status === 'pending' && (
+                        <button
+                          className="text-ink-faint hover:text-ep-danger"
+                          title="Mark as forfeited"
+                          onClick={() => forfeitWinner(w.id)}
+                        >
+                          <Ban size={14} strokeWidth={1.75} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+          {p.draw_status === 'drawn' && !p.funded_from_pool && (
+            <p className="mt-3 text-[12.5px] text-ink-faint">
+              Self-fulfilled prizes are managed outside of Shift. Mark winners as forfeited if they don&apos;t claim their prize.
+            </p>
+          )}
+          {fulfilledCount > 0 && fulfilledCount === winners.length && (
+            <p className="mt-3 text-[12.5px] text-ink-faint">
+              All rewards have been sent via Tremendous. Winners receive an email with their reward link.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PrizeEditor({
   prize: p,
   onChange,
@@ -632,6 +841,51 @@ function PrizeEditor({
   onRemove: () => void
 }) {
   const [open, setOpen] = useState(!p.id)
+  const [products, setProducts] = useState<TremendousProduct[]>([])
+  const [productsLoading, setProductsLoading] = useState(false)
+  const [productsError, setProductsError] = useState('')
+  const [productSearch, setProductSearch] = useState('')
+
+  useEffect(() => {
+    if (!p.funded_from_pool || !open) return
+    if (products.length > 0) return
+    let cancelled = false
+    async function load() {
+      setProductsLoading(true)
+      setProductsError('')
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/employer-tremendous-products`,
+          {
+            headers: {
+              Authorization: `Bearer ${session?.access_token}`,
+              apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            },
+          },
+        )
+        if (!res.ok) throw new Error('Failed to load')
+        const data = await res.json()
+        if (!cancelled) setProducts(data.products ?? [])
+      } catch {
+        if (!cancelled) setProductsError('Could not load reward options')
+      } finally {
+        if (!cancelled) setProductsLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [p.funded_from_pool, open, products.length])
+
+  const filteredProducts = productSearch
+    ? products.filter((prod) =>
+        prod.name.toLowerCase().includes(productSearch.toLowerCase()),
+      )
+    : products
+
+  const selectedProduct = products.find(
+    (prod) => prod.id === p.tremendous_product_id,
+  )
 
   if (!open) {
     return (
@@ -647,7 +901,9 @@ function PrizeEditor({
             <div className="text-[12.5px] text-ink-faint">
               {p.award_mode === 'drawing' ? 'Random drawing' : 'Top performers'}{' '}
               · {p.winner_count} {Number(p.winner_count) === 1 ? 'winner' : 'winners'} ·{' '}
-              {p.funded_from_pool ? 'Funded from pool' : 'Self-fulfilled'}
+              {p.funded_from_pool
+                ? `$${p.amount_dollars || '25'} from pool`
+                : 'Self-fulfilled'}
             </div>
           </div>
         </div>
@@ -777,19 +1033,133 @@ function PrizeEditor({
           </div>
         </div>
 
-        <div>
-          <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-            Prize description
-          </label>
-          <input
-            className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
-            placeholder="e.g. Branded water bottle, gift card, etc."
-            value={p.prize_description}
-            onChange={(e) =>
-              onChange({ prize_description: e.target.value })
-            }
-          />
-        </div>
+        {p.funded_from_pool ? (
+          <>
+            <div>
+              <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                Amount per winner
+              </label>
+              <div className="flex items-center rounded-[10px] border border-line bg-surface">
+                <span className="pl-3 text-[14px] text-ink-faint">$</span>
+                <input
+                  type="number"
+                  min="1"
+                  className="w-full border-0 bg-transparent px-2 py-2.5 text-[14px] text-ink outline-none"
+                  placeholder="25"
+                  value={p.amount_dollars}
+                  onChange={(e) => onChange({ amount_dollars: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                Reward type
+              </label>
+              {productsLoading && (
+                <div className="rounded-[10px] border border-line bg-surface px-3.5 py-3 text-[13px] text-ink-faint">
+                  Loading reward options...
+                </div>
+              )}
+              {productsError && (
+                <div className="rounded-[10px] border border-ep-danger/30 bg-ep-danger/5 px-3.5 py-3 text-[13px] text-ep-danger">
+                  {productsError}
+                </div>
+              )}
+              {!productsLoading && !productsError && products.length > 0 && (
+                <div>
+                  {selectedProduct && !productSearch ? (
+                    <div className="flex items-center justify-between rounded-[10px] border border-accent bg-accent-soft px-3.5 py-2.5">
+                      <div className="flex items-center gap-2.5">
+                        {selectedProduct.image_url && (
+                          <img
+                            src={selectedProduct.image_url}
+                            alt=""
+                            className="h-7 w-7 rounded object-contain"
+                          />
+                        )}
+                        <span className="text-[14px] font-semibold text-accent-ink">
+                          {selectedProduct.name}
+                        </span>
+                      </div>
+                      <button
+                        className="text-[12.5px] font-semibold text-accent hover:underline"
+                        onClick={() => {
+                          onChange({ tremendous_product_id: '' })
+                          setProductSearch('')
+                        }}
+                      >
+                        Change
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="relative mb-2">
+                        <Search
+                          size={15}
+                          strokeWidth={1.75}
+                          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
+                        />
+                        <input
+                          className="w-full rounded-[10px] border border-line bg-surface py-2.5 pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-faint outline-none focus:border-accent"
+                          placeholder="Search rewards (Visa, Amazon, Starbucks...)"
+                          value={productSearch}
+                          onChange={(e) => setProductSearch(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid max-h-[240px] gap-1 overflow-y-auto rounded-[10px] border border-line bg-surface p-1.5">
+                        {filteredProducts.slice(0, 50).map((prod) => (
+                          <button
+                            key={prod.id}
+                            className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors hover:bg-accent-softer ${
+                              p.tremendous_product_id === prod.id
+                                ? 'bg-accent-soft'
+                                : ''
+                            }`}
+                            onClick={() => {
+                              onChange({ tremendous_product_id: prod.id })
+                              setProductSearch('')
+                            }}
+                          >
+                            {prod.image_url && (
+                              <img
+                                src={prod.image_url}
+                                alt=""
+                                className="h-6 w-6 rounded object-contain"
+                              />
+                            )}
+                            <span className="text-[13px] font-medium text-ink">
+                              {prod.name}
+                            </span>
+                          </button>
+                        ))}
+                        {filteredProducts.length === 0 && (
+                          <div className="px-3 py-3 text-center text-[13px] text-ink-faint">
+                            No matching rewards
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div>
+            <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+              Prize description
+            </label>
+            <input
+              className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
+              placeholder="e.g. Branded water bottle, gift card, etc."
+              value={p.prize_description}
+              onChange={(e) =>
+                onChange({ prize_description: e.target.value })
+              }
+            />
+          </div>
+        )}
 
         <div
           className="flex cursor-pointer items-center gap-2.5"

@@ -72,6 +72,7 @@ export type ChallengePrize = {
   funded_from_pool: boolean
   amount_cents: number | null
   prize_description: string | null
+  tremendous_product_id: string | null
   auto_draw: boolean
   draw_status: 'pending' | 'drawn' | 'fulfilled'
   drawn_at: string | null
@@ -88,6 +89,7 @@ export type PrizeWinner = {
   drawn_at: string
   fulfillment_status: 'pending' | 'fulfilled' | 'forfeited'
   fulfilled_at: string | null
+  tremendous_order_id: string | null
 }
 
 export type PrizeFormState = {
@@ -99,8 +101,19 @@ export type PrizeFormState = {
   winner_count: string
   funded_from_pool: boolean
   amount_dollars: string
+  tremendous_product_id: string
   prize_description: string
   auto_draw: boolean
+}
+
+export type TremendousProduct = {
+  id: string
+  name: string
+  image_url: string | null
+  min_value: number
+  max_value: number
+  currency_codes: string[]
+  category: string
 }
 
 export type ImpactPreset =
