@@ -76,6 +76,37 @@ export default function ChallengesPage() {
   const [editMode, setEditMode] = useState(false)
   const [drawingPrizeId, setDrawingPrizeId] = useState<string | null>(null)
   const [flagshipChallenges, setFlagshipChallenges] = useState<{ id: string; name: string; starts_at: string; ends_at: string }[]>([])
+  const [tremendousProducts, setTremendousProducts] = useState<TremendousProduct[]>([])
+  const [tremendousLoading, setTremendousLoading] = useState(false)
+  const [tremendousError, setTremendousError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadProducts() {
+      setTremendousLoading(true)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/employer-tremendous-products`,
+          {
+            headers: {
+              Authorization: `Bearer ${session?.access_token}`,
+              apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            },
+          },
+        )
+        if (!res.ok) throw new Error('Failed to load')
+        const data = await res.json()
+        if (!cancelled) setTremendousProducts(data.products ?? [])
+      } catch {
+        if (!cancelled) setTremendousError('Could not load reward options')
+      } finally {
+        if (!cancelled) setTremendousLoading(false)
+      }
+    }
+    loadProducts()
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
     async function loadFlagships() {
@@ -443,6 +474,7 @@ export default function ChallengesPage() {
                       <PrizeCard
                         key={p.id}
                         prize={p}
+                        products={tremendousProducts}
                         winners={prizeWinnersMap[p.id] || []}
                         challengeStatus={st.label}
                         drawing={drawingPrizeId === p.id}
@@ -545,6 +577,9 @@ export default function ChallengesPage() {
                     <PrizeEditor
                       key={idx}
                       prize={p}
+                      products={tremendousProducts}
+                      productsLoading={tremendousLoading}
+                      productsError={tremendousError}
                       onChange={(patch) => updatePrize(idx, patch)}
                       onRemove={() => removePrize(idx)}
                     />
@@ -646,6 +681,7 @@ export default function ChallengesPage() {
 
 function PrizeCard({
   prize: p,
+  products,
   winners,
   challengeStatus,
   drawing,
@@ -654,6 +690,7 @@ function PrizeCard({
   onPrizeUpdated,
 }: {
   prize: ChallengePrize
+  products: TremendousProduct[]
   winners: PrizeWinner[]
   challengeStatus: string
   drawing: boolean
@@ -724,6 +761,10 @@ function PrizeCard({
     toast('Winner marked as forfeited')
   }
 
+  const productName = p.tremendous_product_id
+    ? products.find((prod) => prod.id === p.tremendous_product_id)?.name
+    : null
+
   return (
     <div className="rounded-xl border border-line bg-surface-2">
       <div className="flex items-center justify-between px-4 py-3.5">
@@ -736,7 +777,9 @@ function PrizeCard({
             <div className="text-[12.5px] text-ink-faint">
               {p.award_mode === 'drawing' ? 'Random drawing' : 'Top performers'}{' '}
               · {p.winner_count} {p.winner_count === 1 ? 'winner' : 'winners'}{' '}
-              · {p.funded_from_pool ? `$${(p.amount_cents ?? 0) / 100} from pool` : 'Self-fulfilled'}
+              · {p.funded_from_pool
+                ? `$${(p.amount_cents ?? 0) / 100}${productName ? ` ${productName}` : ' from pool'}`
+                : 'Self-fulfilled'}
             </div>
           </div>
         </div>
@@ -871,49 +914,21 @@ function PrizeCard({
 
 function PrizeEditor({
   prize: p,
+  products,
+  productsLoading,
+  productsError,
   onChange,
   onRemove,
 }: {
   prize: PrizeFormState
+  products: TremendousProduct[]
+  productsLoading: boolean
+  productsError: string
   onChange: (patch: Partial<PrizeFormState>) => void
   onRemove: () => void
 }) {
   const [open, setOpen] = useState(!p.id)
-  const [products, setProducts] = useState<TremendousProduct[]>([])
-  const [productsLoading, setProductsLoading] = useState(false)
-  const [productsError, setProductsError] = useState('')
   const [productSearch, setProductSearch] = useState('')
-
-  useEffect(() => {
-    if (!p.funded_from_pool || !open) return
-    if (products.length > 0) return
-    let cancelled = false
-    async function load() {
-      setProductsLoading(true)
-      setProductsError('')
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/employer-tremendous-products`,
-          {
-            headers: {
-              Authorization: `Bearer ${session?.access_token}`,
-              apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            },
-          },
-        )
-        if (!res.ok) throw new Error('Failed to load')
-        const data = await res.json()
-        if (!cancelled) setProducts(data.products ?? [])
-      } catch {
-        if (!cancelled) setProductsError('Could not load reward options')
-      } finally {
-        if (!cancelled) setProductsLoading(false)
-      }
-    }
-    load()
-    return () => { cancelled = true }
-  }, [p.funded_from_pool, open, products.length])
 
   const filteredProducts = productSearch
     ? products.filter((prod) =>
@@ -940,7 +955,7 @@ function PrizeEditor({
               {p.award_mode === 'drawing' ? 'Random drawing' : 'Top performers'}{' '}
               · {p.winner_count} {Number(p.winner_count) === 1 ? 'winner' : 'winners'} ·{' '}
               {p.funded_from_pool
-                ? `$${p.amount_dollars || '25'} from pool`
+                ? `$${p.amount_dollars || '25'}${selectedProduct ? ` ${selectedProduct.name}` : ' from pool'}`
                 : 'Self-fulfilled'}
             </div>
           </div>
