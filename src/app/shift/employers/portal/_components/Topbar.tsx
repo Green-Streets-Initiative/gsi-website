@@ -13,6 +13,7 @@ const ROUTE_META: Record<string, { label: string }> = {
   '/shift/employers/portal/setup': { label: 'Setup' },
   '/shift/employers/portal/advisor': { label: 'Commute Advisor' },
   '/shift/employers/portal/employees': { label: 'Employees' },
+  '/shift/employers/portal/share-kit': { label: 'Share Kit' },
   '/shift/employers/portal/challenges': { label: 'Challenges' },
   '/shift/employers/portal/impact': { label: 'Impact' },
   '/shift/employers/portal/billing': { label: 'Rewards & billing' },

@@ -7,6 +7,7 @@ import {
   ListChecks,
   Route,
   Users,
+  Share2,
   Trophy,
   BarChart3,
   Wallet,
@@ -42,6 +43,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
     label: 'Engage',
     items: [
       { key: 'employees', label: 'Employees', icon: Users, href: '/shift/employers/portal/employees', showCount: true },
+      { key: 'share-kit', label: 'Share Kit', icon: Share2, href: '/shift/employers/portal/share-kit' },
       { key: 'challenges', label: 'Challenges', icon: Trophy, href: '/shift/employers/portal/challenges' },
       { key: 'impact', label: 'Impact', icon: BarChart3, href: '/shift/employers/portal/impact' },
     ],
