@@ -8,6 +8,8 @@ const TREMENDOUS_API_URL =
 const TREMENDOUS_API_KEY = Deno.env.get("TREMENDOUS_API_KEY") ?? "";
 const TREMENDOUS_FUNDING_SOURCE_ID =
   Deno.env.get("TREMENDOUS_FUNDING_SOURCE_ID") ?? "";
+const TREMENDOUS_CAMPAIGN_ID =
+  Deno.env.get("TREMENDOUS_CAMPAIGN_ID") ?? "";
 
 serve(async (req: Request) => {
   const preflight = handleCorsPreflight(req);
@@ -133,6 +135,9 @@ serve(async (req: Request) => {
           payment: {
             funding_source_id: TREMENDOUS_FUNDING_SOURCE_ID,
           },
+          ...(TREMENDOUS_CAMPAIGN_ID && {
+            campaign_id: TREMENDOUS_CAMPAIGN_ID,
+          }),
           rewards: [
             {
               value: {

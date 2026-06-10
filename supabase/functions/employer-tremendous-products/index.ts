@@ -5,6 +5,7 @@ import { handleCorsPreflight, jsonResponse } from "../_shared/stripe.ts";
 const TREMENDOUS_API_URL =
   Deno.env.get("TREMENDOUS_API_URL") ?? "https://www.tremendous.com/api/v2";
 const TREMENDOUS_API_KEY = Deno.env.get("TREMENDOUS_API_KEY") ?? "";
+const TREMENDOUS_CAMPAIGN_ID = Deno.env.get("TREMENDOUS_CAMPAIGN_ID") ?? "";
 
 serve(async (req: Request) => {
   const preflight = handleCorsPreflight(req);
@@ -33,7 +34,11 @@ serve(async (req: Request) => {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
-  const res = await fetch(`${TREMENDOUS_API_URL}/products`, {
+  const productsUrl = TREMENDOUS_CAMPAIGN_ID
+    ? `${TREMENDOUS_API_URL}/campaigns/${TREMENDOUS_CAMPAIGN_ID}`
+    : `${TREMENDOUS_API_URL}/products`;
+
+  const res = await fetch(productsUrl, {
     headers: { Authorization: `Bearer ${TREMENDOUS_API_KEY}` },
   });
 
@@ -65,7 +70,11 @@ serve(async (req: Request) => {
     images?: TremendousImage[];
   }
 
-  const products = (data.products ?? [])
+  const rawProducts: TremendousRawProduct[] = TREMENDOUS_CAMPAIGN_ID
+    ? data.campaign?.products ?? []
+    : data.products ?? [];
+
+  const products = rawProducts
     .filter((p: TremendousRawProduct) => {
       return p.countries?.some((c) => c.abbr === "US");
     })
