@@ -80,7 +80,7 @@ function isSetupComplete(group: { logo_url: string | null; tier: string } | null
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const { group, memberCount, challenges, benefitsForm } = usePortal()
+  const { group, role, isAdmin, memberCount, challenges, benefitsForm } = usePortal()
 
   const hasBenefits = !!(benefitsForm?.destination_address)
   const setupComplete = isSetupComplete(group, memberCount, challenges.length > 0, hasBenefits)
@@ -125,7 +125,7 @@ export default function Sidebar() {
               {section.label}
             </div>
             <div className="space-y-0.5">
-              {section.items.map((item) => {
+              {section.items.filter((item) => isAdmin || item.key !== 'billing').map((item) => {
                 const active = pathname === item.href || pathname.startsWith(item.href + '/')
                 const Icon = item.icon
                 return (
@@ -178,8 +178,8 @@ export default function Sidebar() {
             <div className="truncate text-[12px] font-semibold text-white/90">
               {group?.name ?? '...'}
             </div>
-            <div className="truncate text-[11.5px] text-white/[0.45]">
-              {group?.admin_name ?? group?.admin_email ?? ''} · Admin
+            <div className="truncate text-[11.5px] text-white/70">
+              {group?.admin_name ?? group?.admin_email ?? ''} · {role === 'admin' ? 'Admin' : 'Viewer'}
             </div>
           </div>
           <ChevronRight size={14} className="shrink-0 text-white/30" />

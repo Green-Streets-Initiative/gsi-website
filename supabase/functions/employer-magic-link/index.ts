@@ -124,13 +124,17 @@ serve(async (req: Request) => {
   // Check if email belongs to an active employer group
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-  const { data: group } = await supabase
-    .from("groups")
-    .select("id, name, admin_email")
-    .eq("admin_email", email)
-    .in("status", ["active", "cancelled"])
+  const { data: adminRow } = await supabase
+    .from("group_admins")
+    .select("group_id, groups!inner(id, name, status)")
+    .eq("email", email)
+    .in("groups.status", ["active", "cancelled"])
     .limit(1)
-    .single();
+    .maybeSingle();
+
+  const group = adminRow
+    ? { id: (adminRow.groups as { id: string; name: string }).id, name: (adminRow.groups as { id: string; name: string }).name }
+    : null;
 
   if (!group) {
     console.log(`[EmployerMagicLink] No active group for ${email}`);

@@ -50,19 +50,23 @@ serve(async (req: Request) => {
   }
   const email = userData.user.email.toLowerCase();
 
-  const { data: group, error: groupErr } = await userSupabase
-    .from("groups")
-    .select("id, name, tier, stripe_customer_id, admin_email")
-    .eq("admin_email", email)
+  const { data: adminRow, error: adminErr } = await userSupabase
+    .from("group_admins")
+    .select("group_id, role, groups!inner(id, name, tier, stripe_customer_id, admin_email)")
+    .eq("email", email)
     .limit(1)
     .maybeSingle();
-  if (groupErr) {
-    console.error("[BillingPortal] group lookup failed:", groupErr);
+  if (adminErr) {
+    console.error("[BillingPortal] group lookup failed:", adminErr);
     return jsonResponse({ error: "Lookup failed" }, 500);
   }
-  if (!group) {
+  if (!adminRow) {
     return jsonResponse({ error: "No employer group linked" }, 403);
   }
+  if (adminRow.role !== "admin") {
+    return jsonResponse({ error: "Admin role required for billing" }, 403);
+  }
+  const group = adminRow.groups as { id: string; name: string; tier: string; stripe_customer_id: string | null; admin_email: string | null };
 
   let stripe: ReturnType<typeof createStripeClient>;
   try {

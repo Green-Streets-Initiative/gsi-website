@@ -12,6 +12,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type {
   Group,
+  GroupAdmin,
   Challenge,
   DashboardData,
   EmployerMember,
@@ -26,6 +27,8 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
 interface PortalContextValue {
   group: Group | null
+  role: 'admin' | 'viewer'
+  admins: GroupAdmin[]
   challenges: Challenge[]
   memberCount: number
   dashboard: DashboardData | null
@@ -39,6 +42,8 @@ interface PortalContextValue {
   loadingMembers: boolean
   authenticated: boolean
 
+  isAdmin: boolean
+
   tierAtLeast: (tier: 'starter' | 'basic' | 'standard' | 'premium') => boolean
 
   setGroup: (g: Group) => void
@@ -50,6 +55,7 @@ interface PortalContextValue {
   setChallengePrizes: (p: ChallengePrize[]) => void
   setPrizeWinnersMap: (m: Record<string, PrizeWinner[]>) => void
   setBenefitsForm: (b: EmployerBenefits) => void
+  setAdmins: (a: GroupAdmin[]) => void
 
   refreshMembers: (days: number) => Promise<void>
   refreshDashboard: (params: {
@@ -76,6 +82,8 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [authenticated, setAuthenticated] = useState(false)
   const [group, setGroup] = useState<Group | null>(null)
+  const [role, setRole] = useState<'admin' | 'viewer'>('admin')
+  const [admins, setAdmins] = useState<GroupAdmin[]>([])
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const [memberCount, setMemberCount] = useState(0)
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
@@ -97,14 +105,26 @@ export function PortalProvider({ children }: { children: ReactNode }) {
         await supabase.rpc('link_employer_on_login')
       } catch {}
 
+      const { data: adminRow } = await supabase
+        .from('group_admins')
+        .select('group_id, role')
+        .eq('email', email)
+        .limit(1)
+        .maybeSingle()
+
+      if (!adminRow) {
+        router.push('/shift/employers')
+        return
+      }
+
+      setRole(adminRow.role as 'admin' | 'viewer')
+
       const { data: groupData } = await supabase
         .from('groups')
         .select(
           'id, name, slug, status, admin_name, admin_email, admin_phone, website_url, logo_url, invite_code, tier, access_starts_at, access_ends_at, public_leaderboard, employer_benefits',
         )
-        .eq('admin_email', email)
-        .order('created_at', { ascending: false })
-        .limit(1)
+        .eq('id', adminRow.group_id)
         .maybeSingle()
 
       if (!groupData) {
@@ -128,7 +148,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
               .maybeSingle()
           : Promise.resolve({ data: null, error: null } as const)
 
-      const [challengeRes, memberRes, dashboardRes, membersRes, poolRes] = await Promise.all([
+      const [challengeRes, memberRes, dashboardRes, membersRes, poolRes, adminsRes] = await Promise.all([
         supabase
           .from('competitions')
           .select('id, name, metric, starts_at, ends_at, prize_description')
@@ -147,6 +167,11 @@ export function PortalProvider({ children }: { children: ReactNode }) {
           p_days: 30,
         }),
         poolPromise,
+        supabase
+          .from('group_admins')
+          .select('id, group_id, email, role, name, created_at')
+          .eq('group_id', groupData.id)
+          .order('created_at'),
       ])
 
       if (challengeRes.data && challengeRes.data.length > 0) {
@@ -200,6 +225,10 @@ export function PortalProvider({ children }: { children: ReactNode }) {
 
       if (poolRes && 'data' in poolRes && poolRes.data) {
         setRewardPool(poolRes.data as RewardPool)
+      }
+
+      if (adminsRes.data) {
+        setAdmins(adminsRes.data as GroupAdmin[])
       }
 
       setLoading(false)
@@ -287,8 +316,12 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     router.push('/shift/employers')
   }, [router])
 
+  const isAdmin = role === 'admin'
+
   const value: PortalContextValue = {
     group,
+    role,
+    admins,
     challenges,
     memberCount,
     dashboard,
@@ -300,6 +333,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     loading,
     loadingMembers,
     authenticated,
+    isAdmin,
     tierAtLeast,
     setGroup,
     setChallenges,
@@ -310,6 +344,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     setChallengePrizes,
     setPrizeWinnersMap,
     setBenefitsForm,
+    setAdmins,
     refreshMembers,
     refreshDashboard,
     refreshPool,

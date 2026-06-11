@@ -125,4 +125,13 @@ export type ImpactPreset =
   | 'ytd'
   | 'custom'
 
+export type GroupAdmin = {
+  id: string
+  group_id: string
+  email: string
+  role: 'admin' | 'viewer'
+  name: string | null
+  created_at: string
+}
+
 export type { EmployerBenefits }

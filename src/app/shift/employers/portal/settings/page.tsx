@@ -13,9 +13,13 @@ import {
   Pause,
   Upload,
   ArrowRight,
+  UserPlus,
+  Trash2,
+  Users,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
+import type { GroupAdmin } from '../_lib/portal-types'
 import { TIER_LABEL, TIER_ANNUAL_PRICE } from '../_lib/portal-constants'
 import { formatDate } from '../_lib/portal-utils'
 import PortalPageHead from '../_components/PortalPageHead'
@@ -25,7 +29,7 @@ import Button from '@/components/employer/Button'
 import Toggle from '@/components/employer/Toggle'
 
 export default function SettingsPage() {
-  const { group, setGroup, signOut, loading } = usePortal()
+  const { group, setGroup, isAdmin, admins, setAdmins, signOut, loading } = usePortal()
 
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -60,6 +64,54 @@ export default function SettingsPage() {
       return next
     })
   }, [group])
+
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<'admin' | 'viewer'>('viewer')
+  const [inviting, setInviting] = useState(false)
+  const [inviteError, setInviteError] = useState('')
+  const [removingId, setRemovingId] = useState<string | null>(null)
+
+  const adminCount = admins.filter((a) => a.role === 'admin').length
+
+  async function inviteMember() {
+    if (!group) return
+    const email = inviteEmail.trim().toLowerCase()
+    if (!email || !email.includes('@')) {
+      setInviteError('Enter a valid email address')
+      return
+    }
+    if (admins.some((a) => a.email === email)) {
+      setInviteError('This person is already on the team')
+      return
+    }
+    setInviting(true)
+    setInviteError('')
+    const { data, error } = await supabase
+      .from('group_admins')
+      .insert({ group_id: group.id, email, role: inviteRole })
+      .select('id, group_id, email, role, name, created_at')
+      .single()
+    if (error) {
+      setInviteError(error.message)
+      setInviting(false)
+      return
+    }
+    setAdmins([...admins, data as GroupAdmin])
+    setInviteEmail('')
+    setInviting(false)
+  }
+
+  async function removeMember(id: string) {
+    setRemovingId(id)
+    await supabase.from('group_admins').delete().eq('id', id)
+    setAdmins(admins.filter((a) => a.id !== id))
+    setRemovingId(null)
+  }
+
+  async function changeRole(id: string, newRole: 'admin' | 'viewer') {
+    await supabase.from('group_admins').update({ role: newRole }).eq('id', id)
+    setAdmins(admins.map((a) => (a.id === id ? { ...a, role: newRole } : a)))
+  }
 
   if (loading || !group) {
     return (
@@ -165,16 +217,18 @@ export default function SettingsPage() {
             <CardHead
               title="Account details"
               action={
-                editing ? (
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
-                    <Button variant="primary" size="sm" onClick={saveAccount} disabled={saving}>
-                      {saving ? 'Saving...' : 'Save'}
-                    </Button>
-                  </div>
-                ) : (
-                  <Button variant="secondary" size="sm" icon={Edit} onClick={startEditing}>Edit</Button>
-                )
+                isAdmin ? (
+                  editing ? (
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
+                      <Button variant="primary" size="sm" onClick={saveAccount} disabled={saving}>
+                        {saving ? 'Saving...' : 'Save'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="secondary" size="sm" icon={Edit} onClick={startEditing}>Edit</Button>
+                  )
+                ) : undefined
               }
             />
             <div className="px-6">
@@ -206,7 +260,7 @@ export default function SettingsPage() {
           </Card>
 
           {/* Branding / Logo upload */}
-          <Card>
+          {isAdmin && <Card>
             <CardHead title="Branding" sub="Your logo, shown to employees" />
             <div className="p-6">
               <div
@@ -272,6 +326,8 @@ export default function SettingsPage() {
             </div>
           </Card>
 
+          }
+
           {/* Notifications */}
           <Card>
             <CardHead title="Notifications" sub="What we email you about" />
@@ -282,16 +338,101 @@ export default function SettingsPage() {
             </div>
           </Card>
 
+          {/* Team */}
+          {isAdmin && (
+            <Card>
+              <CardHead title="Team" sub="People who can access this portal" />
+              <div className="px-6 pb-2">
+                {admins.map((member) => {
+                  const isSelf = member.email === group.admin_email
+                  const isLastAdmin = member.role === 'admin' && adminCount <= 1
+                  return (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between border-b border-line-2 py-3 last:border-0"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-[14px] font-semibold text-ink">
+                            {member.name || member.email}
+                          </span>
+                          <Badge tone={member.role === 'admin' ? 'info' : 'neutral'}>
+                            {member.role === 'admin' ? 'Admin' : 'Viewer'}
+                          </Badge>
+                        </div>
+                        {member.name && (
+                          <div className="text-[12.5px] text-ink-faint">{member.email}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={member.role}
+                          onChange={(e) => changeRole(member.id, e.target.value as 'admin' | 'viewer')}
+                          disabled={isLastAdmin}
+                          className="rounded-[8px] border border-line bg-surface px-2 py-1 text-[13px] text-ink outline-none disabled:opacity-50"
+                        >
+                          <option value="admin">Admin</option>
+                          <option value="viewer">Viewer</option>
+                        </select>
+                        <button
+                          onClick={() => removeMember(member.id)}
+                          disabled={isLastAdmin || removingId === member.id}
+                          className="rounded-[8px] p-1.5 text-ink-faint transition-colors hover:bg-surface-2 hover:text-ep-danger disabled:pointer-events-none disabled:opacity-30"
+                          title={isLastAdmin ? 'Cannot remove the last admin' : 'Remove'}
+                        >
+                          <Trash2 size={15} strokeWidth={1.75} />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="border-t border-line px-6 py-4">
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => { setInviteEmail(e.target.value); setInviteError('') }}
+                    placeholder="Email address"
+                    className="min-w-0 flex-1 rounded-[10px] border border-line bg-surface px-3 py-[10px] text-[14px] text-ink outline-none transition-shadow placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent-soft"
+                  />
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as 'admin' | 'viewer')}
+                    className="rounded-[10px] border border-line bg-surface px-2 py-[10px] text-[13px] text-ink outline-none"
+                  >
+                    <option value="viewer">Viewer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={UserPlus}
+                    onClick={inviteMember}
+                    disabled={inviting || !inviteEmail.trim()}
+                  >
+                    {inviting ? 'Adding...' : 'Add'}
+                  </Button>
+                </div>
+                {inviteError && (
+                  <p className="mt-2 text-[13px] text-ep-danger">{inviteError}</p>
+                )}
+              </div>
+            </Card>
+          )}
+
           {/* Plan & access */}
           <Card>
             <CardHead
               title="Plan & access"
               action={
-                <Link href="/shift/employers/portal/billing">
-                  <Button variant="secondary" size="sm" icon={ArrowRight}>
-                    Manage billing
-                  </Button>
-                </Link>
+                isAdmin ? (
+                  <Link href="/shift/employers/portal/billing">
+                    <Button variant="secondary" size="sm" icon={ArrowRight}>
+                      Manage billing
+                    </Button>
+                  </Link>
+                ) : undefined
               }
             />
             <div className="px-6 pb-5">
@@ -339,9 +480,11 @@ export default function SettingsPage() {
               <Button variant="danger" size="sm" icon={LogOut} onClick={signOut}>
                 Sign out
               </Button>
-              <Button variant="danger" size="sm" icon={Pause} onClick={() => {}}>
-                Pause account
-              </Button>
+              {isAdmin && (
+                <Button variant="danger" size="sm" icon={Pause} onClick={() => {}}>
+                  Pause account
+                </Button>
+              )}
             </div>
           </Card>
         </div>

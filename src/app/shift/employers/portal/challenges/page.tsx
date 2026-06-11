@@ -58,6 +58,7 @@ export default function ChallengesPage() {
     setPrizeWinnersMap,
     rewardPool,
     tierAtLeast,
+    isAdmin,
     refreshPool,
   } = usePortal()
   const toast = useToast()
@@ -413,7 +414,7 @@ export default function ChallengesPage() {
         title="Challenges"
         subtitle="Create friendly competitions to drive participation"
         actions={
-          !builderOpen && (
+          !builderOpen && isAdmin && (
             <Button variant="primary" icon={Plus} onClick={() => openEditor()}>
               Create a challenge
             </Button>
@@ -455,16 +456,18 @@ export default function ChallengesPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      icon={Pencil}
-                      onClick={() => openEditor(c)}
-                    >
-                      Edit
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={Pencil}
+                        onClick={() => openEditor(c)}
+                      >
+                        Edit
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Prize list */}
@@ -512,9 +515,11 @@ export default function ChallengesPage() {
             Kick off a friendly competition to drive sign-ups and active trips.
             Set a date range and add optional prizes.
           </p>
-          <Button variant="primary" icon={Plus} onClick={() => openEditor()}>
-            Create a challenge
-          </Button>
+          {isAdmin && (
+            <Button variant="primary" icon={Plus} onClick={() => openEditor()}>
+              Create a challenge
+            </Button>
+          )}
         </Card>
       )}
 
@@ -698,7 +703,7 @@ function PrizeCard({
   onWinnersUpdated: (w: PrizeWinner[]) => void
   onPrizeUpdated: (p: ChallengePrize) => void
 }) {
-  const { members, refreshPool, rewardPool } = usePortal()
+  const { members, refreshPool, rewardPool, isAdmin } = usePortal()
   const toast = useToast()
   const [expanded, setExpanded] = useState(false)
   const [fulfilling, setFulfilling] = useState(false)
@@ -784,7 +789,7 @@ function PrizeCard({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {p.draw_status === 'pending' && challengeStatus === 'Ended' && (
+          {isAdmin && p.draw_status === 'pending' && challengeStatus === 'Ended' && (
             <Button
               variant="primary"
               size="sm"
@@ -794,7 +799,7 @@ function PrizeCard({
               {drawing ? 'Drawing...' : 'Draw winners'}
             </Button>
           )}
-          {p.draw_status === 'drawn' && p.funded_from_pool && pendingCount > 0 && (
+          {isAdmin && p.draw_status === 'drawn' && p.funded_from_pool && pendingCount > 0 && (
             <Button
               variant="primary"
               size="sm"

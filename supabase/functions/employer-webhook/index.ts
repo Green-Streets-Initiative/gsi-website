@@ -277,6 +277,12 @@ async function handleCheckoutCompleted(
     console.log(
       `[EmployerWebhook] Created group ${groupId} (${companyName}, ${tier})`,
     );
+
+    await supabase.from("group_admins").insert({
+      group_id: groupId,
+      email: adminEmail,
+      role: "admin",
+    });
   }
 
   // Generate a magic link for the admin to sign in. Auth user is created

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Wallet, Download, Sparkles } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
 import { usePortal } from '../_lib/portal-context'
@@ -18,7 +19,8 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const TOP_UP_PRESETS = [100, 250, 500, 1000]
 
 export default function BillingPage() {
-  const { group, rewardPool, tierAtLeast, refreshPool } = usePortal()
+  const router = useRouter()
+  const { group, rewardPool, tierAtLeast, refreshPool, isAdmin } = usePortal()
   const [topUpAmount, setTopUpAmount] = useState('250')
   const [openingTopUp, setOpeningTopUp] = useState(false)
   const [topUpError, setTopUpError] = useState<string | null>(null)
@@ -26,6 +28,10 @@ export default function BillingPage() {
   const [openingPortal, setOpeningPortal] = useState(false)
 
   if (!group) return null
+  if (!isAdmin) {
+    router.push('/shift/employers/portal/dashboard')
+    return null
+  }
 
   const tier = group.tier || 'starter'
   const tierLabel = TIER_LABEL[tier] || tier
