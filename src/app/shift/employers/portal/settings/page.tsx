@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import Link from 'next/link'
 import {
   Building2,
   Shield,
@@ -11,10 +12,12 @@ import {
   LogOut,
   Pause,
   Upload,
+  ArrowRight,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
-import { TIER_LABEL } from '../_lib/portal-constants'
+import { TIER_LABEL, TIER_ANNUAL_PRICE } from '../_lib/portal-constants'
+import { formatDate } from '../_lib/portal-utils'
 import PortalPageHead from '../_components/PortalPageHead'
 import { Card, CardHead } from '@/components/employer/Card'
 import Badge from '@/components/employer/Badge'
@@ -281,17 +284,47 @@ export default function SettingsPage() {
 
           {/* Plan & access */}
           <Card>
-            <CardHead title="Plan & access" />
-            <div className="flex items-center justify-between px-6 py-4">
-              <div>
-                <div className="text-[14px] font-semibold text-ink">
-                  {TIER_LABEL[group.tier] ?? group.tier} tier
-                </div>
-                <div className="text-[13px] text-ink-faint">
-                  Manage billing, seats, and rewards pool
-                </div>
+            <CardHead
+              title="Plan & access"
+              action={
+                <Link href="/shift/employers/portal/billing">
+                  <Button variant="secondary" size="sm" icon={ArrowRight}>
+                    Manage billing
+                  </Button>
+                </Link>
+              }
+            />
+            <div className="px-6 pb-5">
+              <div className="mb-4 flex items-center gap-3">
+                <span className="text-[20px] font-bold tracking-[-0.01em] text-ink">
+                  {TIER_LABEL[group.tier] ?? group.tier}
+                </span>
+                <Badge tone={group.status === 'active' ? 'success' : 'neutral'}>
+                  {group.status === 'active' ? 'Active' : group.status === 'cancelled' ? 'Cancelled' : 'Inactive'}
+                </Badge>
               </div>
-              <Badge tone="success">{TIER_LABEL[group.tier] ?? group.tier}</Badge>
+              <div className="grid gap-2 text-[13.5px]">
+                {TIER_ANNUAL_PRICE[group.tier] != null && (
+                  <div className="flex justify-between">
+                    <span className="text-ink-muted">Annual fee</span>
+                    <span className="font-semibold text-ink">
+                      ${TIER_ANNUAL_PRICE[group.tier].toLocaleString()} / year
+                    </span>
+                  </div>
+                )}
+                {group.access_starts_at && (
+                  <div className="flex justify-between">
+                    <span className="text-ink-muted">Started</span>
+                    <span className="font-semibold text-ink">{formatDate(group.access_starts_at)}</span>
+                  </div>
+                )}
+                {group.access_ends_at && (
+                  <div className="flex justify-between">
+                    <span className="text-ink-muted">Renews</span>
+                    <span className="font-semibold text-ink">{formatDate(group.access_ends_at)}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
         </div>
