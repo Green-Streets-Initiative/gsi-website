@@ -260,7 +260,8 @@ export default function SettingsPage() {
           </Card>
 
           {/* Branding / Logo upload */}
-          {isAdmin && <Card>
+          {isAdmin && (
+            <Card>
             <CardHead title="Branding" sub="Your logo, shown to employees" />
             <div className="p-6">
               <div
@@ -325,8 +326,7 @@ export default function SettingsPage() {
               {uploadingLogo && <p className="mt-2 text-[13px] text-ink-faint">Uploading...</p>}
             </div>
           </Card>
-
-          }
+          )}
 
           {/* Notifications */}
           <Card>

@@ -17,6 +17,8 @@ import {
   TrainFront,
   Car,
   MapPin,
+  Share2,
+  ArrowRight,
 } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
 import { formatDateShort } from '../_lib/portal-utils'
@@ -207,6 +209,14 @@ export default function EmployeesPage() {
               Employees with Shift installed jump straight into the join flow; everyone else
               gets a page with App Store + Play Store buttons.
             </p>
+            <Link
+              href="/shift/employers/portal/share-kit"
+              className="mt-3 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-accent no-underline hover:underline"
+            >
+              <Share2 size={14} strokeWidth={2} />
+              Open your Share Kit for posters, email templates, and more
+              <ArrowRight size={14} strokeWidth={2} />
+            </Link>
           </Card>
           <div className="grid grid-cols-2 gap-6">
             <Card pad>
