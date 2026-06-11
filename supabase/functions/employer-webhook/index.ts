@@ -88,7 +88,7 @@ function buildWelcomeEmailHtml(args: {
         </a>
       </td></tr>
     </table>
-    <p style="margin:8px 0 0;font-size:12px;color:#9CA3AF;">This link expires in 1 hour. Request a new one any time from gogreenstreets.org/shift/employers.</p>
+    <p style="margin:8px 0 0;font-size:12px;color:#9CA3AF;">This link expires in 1 hour. Request a new one any time from shiftatwork.org.</p>
 
     <h2 style="margin:36px 0 10px;font-size:15px;color:#191A2E;">2. Share your employee invite code</h2>
     <p style="font-size:13px;color:#374151;line-height:1.6;margin:0 0 14px;">

@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export const config = {
-  matcher: ['/whatmovesus/dashboard/:path*', '/admin/:path*'],
+  matcher: [
+    '/whatmovesus/dashboard/:path*',
+    '/admin/:path*',
+    '/portal/:path*',
+    '/login',
+    '/flyer',
+    '/shift/employers/:path*',
+    '/',
+  ],
 }
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
+
+  // ── shiftatwork.org employer domain ──
+  const host = req.headers.get('host') ?? ''
+  if (host.includes('shiftatwork.org')) {
+    return handleEmployerDomain(req)
+  }
 
   // ── Admin routes ──
   if (pathname.startsWith('/admin')) {
@@ -13,7 +27,51 @@ export async function middleware(req: NextRequest) {
   }
 
   // ── WMU Funder Dashboard ──
-  return handleWmu(req)
+  if (pathname.startsWith('/whatmovesus/dashboard')) {
+    return handleWmu(req)
+  }
+
+  return NextResponse.next()
+}
+
+// ════════════════════════════════════════════════════════════════════
+// shiftatwork.org — clean URL rewrites for the employer domain
+// ════════════════════════════════════════════════════════════════════
+
+function handleEmployerDomain(req: NextRequest) {
+  const { pathname } = req.nextUrl
+
+  // If someone hits the full internal path, redirect to the clean version
+  if (pathname.startsWith('/shift/employers')) {
+    const clean = pathname.replace(/^\/shift\/employers/, '') || '/'
+    const url = new URL(clean, req.url)
+    url.search = req.nextUrl.search
+    return NextResponse.redirect(url, 308)
+  }
+
+  // Rewrite clean paths to internal routes
+  if (pathname === '/') {
+    return NextResponse.rewrite(new URL('/shift/employers', req.url))
+  }
+  if (pathname === '/login') {
+    return NextResponse.rewrite(new URL('/shift/employers/login', req.url))
+  }
+  if (pathname === '/flyer') {
+    const dest = new URL('/shift/employers/flyer', req.url)
+    dest.search = req.nextUrl.search
+    return NextResponse.rewrite(dest)
+  }
+  if (pathname === '/portal' || pathname.startsWith('/portal/')) {
+    const rest = pathname.replace(/^\/portal/, '') || ''
+    const dest = new URL(`/shift/employers/portal${rest}`, req.url)
+    dest.search = req.nextUrl.search
+    return NextResponse.rewrite(dest)
+  }
+
+  // Any other path on this domain → redirect to main site
+  const mainUrl = new URL(`https://gogreenstreets.org${pathname}`)
+  mainUrl.search = req.nextUrl.search
+  return NextResponse.redirect(mainUrl, 308)
 }
 
 // ════════════════════════════════════════════════════════════════════

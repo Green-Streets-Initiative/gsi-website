@@ -65,6 +65,8 @@ serve(async (req: Request) => {
   const allowedHosts = new Set([
     "www.gogreenstreets.org",
     "gogreenstreets.org",
+    "www.shiftatwork.org",
+    "shiftatwork.org",
     "localhost",
   ]);
   let resolvedOrigin = DEFAULT_ORIGIN;

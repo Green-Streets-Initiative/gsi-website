@@ -50,6 +50,8 @@ const DEFAULT_ORIGIN =
 const ALLOWED_HOSTS = new Set([
   "www.gogreenstreets.org",
   "gogreenstreets.org",
+  "www.shiftatwork.org",
+  "shiftatwork.org",
   "localhost",
 ]);
 
