@@ -77,6 +77,9 @@ ON CONFLICT (group_id, email) DO NOTHING;
 
 ALTER TABLE public.group_admins ENABLE ROW LEVEL SECURITY;
 
+GRANT ALL ON public.group_admins TO authenticated;
+GRANT SELECT ON public.group_admins TO anon;
+
 CREATE POLICY ga_admin_all ON public.group_admins
   FOR ALL USING (public.is_group_admin(group_id));
 
@@ -103,6 +106,12 @@ CREATE POLICY "employer_own_group" ON public.groups
 DROP POLICY IF EXISTS "group_admin_members" ON public.group_members;
 CREATE POLICY "group_admin_members" ON public.group_members
   FOR SELECT USING (public.is_group_team(group_id));
+
+-- The old group_admin_members policy included auth.uid() = user_id as part
+-- of a combined check. Splitting it out means regular users need their own
+-- SELECT policy to read their memberships (community leaderboards, etc.).
+CREATE POLICY IF NOT EXISTS "own_memberships" ON public.group_members
+  FOR SELECT USING (auth.uid() = user_id);
 
 
 -- ── Update RLS on employer_challenge_prizes ────────────────────
