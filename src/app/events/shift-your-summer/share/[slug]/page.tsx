@@ -117,23 +117,21 @@ export default async function CorporateSharePage({ params }: Props) {
             </Link>
 
             {/* Company header */}
-            <div className="mb-6 flex items-center gap-4">
+            <div className="mb-6">
               {group.logo_url && (
-                <div className="flex h-16 shrink-0 items-center rounded-xl bg-white px-3">
+                <div className="mb-5 inline-flex h-20 items-center rounded-2xl bg-white px-5">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={group.logo_url}
                     alt={group.name}
-                    className="h-[44px] w-auto max-w-[180px] object-contain"
+                    className="h-[56px] w-auto max-w-[260px] object-contain"
                   />
                 </div>
               )}
-              <div>
-                <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
-                  Join {group.name}
-                  {' '}for Shift&nbsp;Your&nbsp;Summer
-                </h1>
-              </div>
+              <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+                Join {group.name}
+                {' '}for Shift&nbsp;Your&nbsp;Summer
+              </h1>
             </div>
 
             <p className="mb-8 text-[1.0625rem] leading-[1.65] text-white/85">
