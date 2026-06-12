@@ -351,15 +351,15 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
   return (
     <>
       <Nav />
-      <main className="bg-[#191A2E]" style={{ paddingTop: '60px' }}>
+      <main className="bg-[#F4F6F1]" style={{ paddingTop: '60px' }}>
         {/* Demo banner */}
         {isDemo && (
-          <div className="bg-[#BAF14D] px-6 py-2.5 text-center">
-            <span className="text-[0.8125rem] font-semibold text-[#191A2E]">
+          <div className="bg-[#2D6A4F] px-6 py-2.5 text-center">
+            <span className="text-[0.8125rem] font-semibold text-white">
               This is a personalized preview for {group.name}
             </span>
-            <span className="mx-2 text-[#191A2E]/40">·</span>
-            <Link href="/contact?inquiry=employer" className="text-[0.8125rem] font-semibold text-[#191A2E] underline">
+            <span className="mx-2 text-white/40">·</span>
+            <Link href="/contact?inquiry=employer" className="text-[0.8125rem] font-semibold text-white underline">
               Contact us to get started
             </Link>
           </div>
@@ -368,20 +368,20 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
         {/* Co-branded header */}
         <div className="mx-auto max-w-[640px] px-8 pb-6 pt-10 text-center">
           <div className="mb-4 flex items-center justify-center gap-6">
-            <span className="text-[0.9rem] tracking-[0.3px]" style={{ fontFamily: "'Trebuchet MS', sans-serif" }}>
-              <span className="font-bold text-[#52B788]">Green Streets</span>{' '}
-              <span className="font-normal text-white/60">Initiative</span>
+            <span className="text-[0.9rem] tracking-[0.3px]">
+              <span className="font-bold text-[#2D6A4F]">Green Streets</span>{' '}
+              <span className="font-normal text-[#5A5C6E]">Initiative</span>
             </span>
             {group.logo_url ? (
               <img src={group.logo_url} alt={group.name} className="h-9 w-auto object-contain" />
             ) : (
-              <span className="font-display text-[1rem] font-bold text-white">{group.name}</span>
+              <span className="text-[1rem] font-bold text-[#191A2E]">{group.name}</span>
             )}
           </div>
-          <h1 className="mb-2 font-display text-[clamp(1.5rem,3vw,2.25rem)] font-extrabold leading-[1.15] tracking-tighter text-white">
-            Find your <em className="not-italic text-[#BAF14D]">best commute</em>
+          <h1 className="mb-2 text-[clamp(1.5rem,3vw,2.25rem)] font-extrabold leading-[1.15] tracking-tighter text-[#191A2E]">
+            Find your <em className="not-italic text-[#2D6A4F]">best commute</em>
           </h1>
-          <p className="text-[0.9375rem] text-white/60">
+          <p className="text-[0.9375rem] text-[#5A5C6E]">
             Commute Advisor for {group.name} employees
           </p>
         </div>
@@ -392,11 +392,11 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
             <div key={s} className="flex items-center gap-2">
               <button onClick={() => s < step && setStep(s)} disabled={s > step}
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                  s === step ? 'bg-[#BAF14D] text-[#191A2E]'
-                  : s < step ? 'bg-[#BAF14D]/20 text-[#BAF14D] hover:bg-[#BAF14D]/30'
-                  : 'bg-white/[0.08] text-white/50'
+                  s === step ? 'bg-[#2D6A4F] text-white'
+                  : s < step ? 'bg-[#E7F0EA] text-[#2D6A4F] hover:bg-[#d5e5d9]'
+                  : 'bg-[rgba(25,26,46,0.06)] text-[#8A8B9A]'
                 }`}>{s < step ? <Check size={14} weight="bold" /> : s}</button>
-              {s < 3 && <div className={`h-px w-12 ${s < step ? 'bg-[#BAF14D]/30' : 'bg-white/[0.08]'}`} />}
+              {s < 3 && <div className={`h-px w-12 ${s < step ? 'bg-[#2D6A4F]/30' : 'bg-[rgba(25,26,46,0.06)]'}`} />}
             </div>
           ))}
         </div>
@@ -404,24 +404,24 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
         {/* ── STEP 1 ── */}
         {step === 1 && (
           <div className="mx-auto max-w-[520px] px-8">
-            <div className="overflow-hidden rounded-[20px] border border-white/[0.12] bg-[#242538] p-8">
-              <div className="mb-6 font-display text-[1.125rem] font-bold text-white">Where&apos;s your commute?</div>
+            <div className="overflow-hidden rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-8 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+              <div className="mb-6 text-[1.125rem] font-bold text-[#191A2E]">Where&apos;s your commute?</div>
               <div className="mb-5 space-y-3">
                 <AddressAutocomplete value={homeAddress}
                   onChange={(val) => { setHomeAddress(val); if (!val) setHomePlaceData(null) }}
-                  onPlaceSelected={setHomePlaceData} label="Home address" variant="dark" placeholder="Where do you live?" />
+                  onPlaceSelected={setHomePlaceData} label="Home address" variant="light" placeholder="Where do you live?" />
                 <AddressAutocomplete value={workAddress}
                   onChange={(val) => { setWorkAddress(val); if (!val) setWorkPlaceData(null) }}
                   onPlaceSelected={setWorkPlaceData}
                   label={benefits.destination_address ? 'Your workplace' : 'Work address'}
-                  variant="dark" placeholder="Where do you work?" />
+                  variant="light" placeholder="Where do you work?" />
               </div>
 
               {/* Employer benefits checklist */}
               {!isDemo && <EmployerBenefits companyName={group.name} benefits={benefits} />}
 
               <button onClick={() => setStep(2)} disabled={!homePlaceData}
-                className="mt-6 w-full rounded-xl bg-[#BAF14D] py-3 text-[0.9375rem] font-bold text-[#191A2E] transition-opacity hover:opacity-90 disabled:opacity-30">
+                className="mt-6 w-full rounded-[10px] bg-[#2D6A4F] py-3 text-[0.9375rem] font-bold text-white transition-colors hover:bg-[#1F4D3A] disabled:opacity-30">
                 Next
               </button>
             </div>
@@ -431,8 +431,8 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
         {/* ── STEP 2 ── */}
         {step === 2 && (
           <div className="mx-auto max-w-[520px] px-8">
-            <div className="overflow-hidden rounded-[20px] border border-white/[0.12] bg-[#242538] p-8">
-              <div className="mb-6 font-display text-[1.125rem] font-bold text-white">How do you get there now?</div>
+            <div className="overflow-hidden rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-8 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+              <div className="mb-6 text-[1.125rem] font-bold text-[#191A2E]">How do you get there now?</div>
 
               <div className="mb-5 grid grid-cols-2 gap-2">
                 {([
@@ -450,8 +450,8 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                     onClick={() => setCommuteMode(opt.value)}
                     className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-[0.8125rem] font-semibold transition-colors ${
                       commuteMode === opt.value
-                        ? 'border-[#BAF14D] bg-[#BAF14D]/[0.12] text-[#BAF14D]'
-                        : 'border-white/[0.12] text-white hover:border-white/[0.25]'
+                        ? 'border-[#2D6A4F] bg-[#E7F0EA] text-[#2D6A4F]'
+                        : 'border-[rgba(25,26,46,0.09)] text-[#191A2E] hover:border-[rgba(25,26,46,0.18)]'
                     }`}
                   >
                     <ModeIcon mode={opt.value} size={20} />
@@ -461,7 +461,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
               </div>
 
               <Field label="Days in the office per week">
-                <div className="mb-2.5 font-display text-base font-bold text-[#BAF14D]">
+                <div className="mb-2.5 text-base font-bold text-[#2D6A4F]">
                   {driveDays} day{driveDays > 1 ? 's' : ''}/week
                 </div>
                 <RangeInput value={driveDays} onChange={setDriveDays} min={1} max={5} labels={['1','2','3','4','5']} />
@@ -483,9 +483,9 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
               {commuteMode === 'drive' && vehicle !== 'ev' && (
                 <Field label="Gas price">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <span className="text-lg font-bold text-[#2D6A4F]">$</span>
                     <NumInput value={gasPrice} onChange={setGasPrice} min={2} max={8} step={0.01} width="88px" />
-                    <span className="text-[0.8rem] text-white">per gallon</span>
+                    <span className="text-[0.8rem] text-[#191A2E]">per gallon</span>
                   </div>
                 </Field>
               )}
@@ -493,9 +493,9 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
               {commuteMode === 'carpool' && (
                 <Field label="Average daily carpool cost">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <span className="text-lg font-bold text-[#2D6A4F]">$</span>
                     <NumInput value={carpoolDaily} onChange={setCarpoolDaily} min={1} max={100} step={1} width="88px" />
-                    <span className="text-[0.8rem] text-white">per day (your share)</span>
+                    <span className="text-[0.8rem] text-[#191A2E]">per day (your share)</span>
                   </div>
                 </Field>
               )}
@@ -503,15 +503,15 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
               {commuteMode === 'rideshare' && (
                 <Field label="Average daily rideshare cost">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <span className="text-lg font-bold text-[#2D6A4F]">$</span>
                     <NumInput value={rideshareDaily} onChange={setRideshareDaily} min={5} max={200} step={1} width="88px" />
-                    <span className="text-[0.8rem] text-white">per day (round trip)</span>
+                    <span className="text-[0.8rem] text-[#191A2E]">per day (round trip)</span>
                   </div>
                 </Field>
               )}
 
               {(commuteMode === 'bike' || commuteMode === 'walk') && (
-                <div className="mt-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-3 text-[0.8125rem] text-white/70">
+                <div className="mt-1 rounded-xl border border-[rgba(25,26,46,0.06)] bg-[#FAFBF8] px-5 py-3 text-[0.8125rem] text-[#5A5C6E]">
                   No commute costs to track — we&apos;ll show you how your current commute compares.
                 </div>
               )}
@@ -519,9 +519,9 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
               {commuteMode === 'transit' && (
                 <Field label="Monthly transit pass">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <span className="text-lg font-bold text-[#2D6A4F]">$</span>
                     <NumInput value={transitMonthly} onChange={setTransitMonthly} min={0} max={300} step={1} width="88px" />
-                    <span className="text-[0.8rem] text-white">per month (LinkPass $90)</span>
+                    <span className="text-[0.8rem] text-[#191A2E]">per month (LinkPass $90)</span>
                   </div>
                 </Field>
               )}
@@ -529,9 +529,9 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
               {commuteMode === 'bus' && (
                 <Field label="Monthly bus pass">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <span className="text-lg font-bold text-[#2D6A4F]">$</span>
                     <NumInput value={busMonthly} onChange={setBusMonthly} min={0} max={200} step={1} width="88px" />
-                    <span className="text-[0.8rem] text-white">per month (MBTA bus pass $55)</span>
+                    <span className="text-[0.8rem] text-[#191A2E]">per month (MBTA bus pass $55)</span>
                   </div>
                 </Field>
               )}
@@ -539,9 +539,9 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
               {commuteMode === 'commuter_rail' && (
                 <Field label="Monthly commuter rail pass">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <span className="text-lg font-bold text-[#2D6A4F]">$</span>
                     <NumInput value={railMonthly} onChange={setRailMonthly} min={90} max={450} step={5} width="88px" />
-                    <span className="text-[0.8rem] text-white">per month</span>
+                    <span className="text-[0.8rem] text-[#191A2E]">per month</span>
                   </div>
                 </Field>
               )}
@@ -558,14 +558,14 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                   {parkMode !== 'free' && (
                     <div className="mt-3.5">
                       <div className="flex items-center gap-2">
-                        <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                        <span className="text-lg font-bold text-[#2D6A4F]">$</span>
                         <NumInput value={parkingCost} onChange={setParkingCost} min={0} max={80} step={1} width="78px" />
-                        <span className="text-[0.8rem] text-white">per day</span>
+                        <span className="text-[0.8rem] text-[#191A2E]">per day</span>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         {PARKING_ANCHORS.map(a => (
                           <button key={a.val} onClick={() => setParkingCost(a.val)}
-                            className="rounded-md border border-white/[0.12] bg-white/[0.06] px-2 py-1 text-[0.65rem] font-semibold text-white transition-colors hover:bg-white/10">
+                            className="rounded-md border border-[rgba(25,26,46,0.09)] bg-[#FAFBF8] px-2 py-1 text-[0.65rem] font-semibold text-[#191A2E] transition-colors hover:bg-[rgba(25,26,46,0.06)]">
                             {a.label}
                           </button>
                         ))}
@@ -576,11 +576,11 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
               )}
               <div className="mt-4 flex gap-3">
                 <button onClick={() => setStep(1)}
-                  className="rounded-xl border border-white/[0.12] px-6 py-3 text-[0.9375rem] font-semibold text-white transition-colors hover:bg-white/[0.05]">
+                  className="rounded-[10px] border border-[rgba(25,26,46,0.09)] bg-white px-6 py-3 text-[0.9375rem] font-semibold text-[#191A2E] transition-colors hover:bg-[#FAFBF8]">
                   Back
                 </button>
                 <button onClick={handleSeeOptions}
-                  className="flex-1 rounded-xl bg-[#BAF14D] py-3 text-[0.9375rem] font-bold text-[#191A2E] transition-opacity hover:opacity-90">
+                  className="flex-1 rounded-[10px] bg-[#2D6A4F] py-3 text-[0.9375rem] font-bold text-white transition-colors hover:bg-[#1F4D3A]">
                   See my options
                 </button>
               </div>
@@ -592,21 +592,21 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
         {step === 3 && (
           <div ref={recommendRef} className="mx-auto max-w-[640px] px-8">
             {recLoading && !recommendation && (
-              <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7 text-center">
-                <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-[#BAF14D]" />
-                <p className="text-sm text-white/60">Analyzing your commute...</p>
+              <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-7 text-center shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+                <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-[rgba(25,26,46,0.12)] border-t-[#2D6A4F]" />
+                <p className="text-sm text-[#5A5C6E]">Analyzing your commute...</p>
               </div>
             )}
             {outsideMA && (
-              <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
-                <p className="text-[0.9375rem] text-white">Our recommendation engine is optimized for Massachusetts commutes.</p>
-                <button onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-[#BAF14D]">← Start over</button>
+              <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-7 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+                <p className="text-[0.9375rem] text-[#191A2E]">Our recommendation engine is optimized for Massachusetts commutes.</p>
+                <button onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-[#2D6A4F]">&larr; Start over</button>
               </div>
             )}
             {recError && (
-              <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
-                <p className="text-[0.9375rem] text-white/70">{recError}</p>
-                <button onClick={handleSeeOptions} className="mt-3 text-sm font-semibold text-[#BAF14D]">Try again</button>
+              <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-7 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+                <p className="text-[0.9375rem] text-[#5A5C6E]">{recError}</p>
+                <button onClick={handleSeeOptions} className="mt-3 text-sm font-semibold text-[#2D6A4F]">Try again</button>
               </div>
             )}
 
@@ -718,19 +718,19 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
 
                 {/* Health + environment */}
                 {withBenefits?.isActive && (
-                  <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
+                  <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
-                        <div className="font-display text-base font-bold text-[#EDB93C]">{withBenefits.activeMins}</div>
-                        <div className="mt-0.5 text-[9px] leading-snug text-white/60">active min/week</div>
+                      <div className="rounded-[9px] bg-[#FAFBF8] px-2 py-2 text-center">
+                        <div className="text-base font-bold text-[#C97A2E]">{withBenefits.activeMins}</div>
+                        <div className="mt-0.5 text-[9px] leading-snug text-[#5A5C6E]">active min/week</div>
                       </div>
-                      <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
-                        <div className="font-display text-base font-bold text-[#EDB93C]">{withBenefits.weeklyCals.toLocaleString()}</div>
-                        <div className="mt-0.5 text-[9px] leading-snug text-white/60">cal/week</div>
+                      <div className="rounded-[9px] bg-[#FAFBF8] px-2 py-2 text-center">
+                        <div className="text-base font-bold text-[#C97A2E]">{withBenefits.weeklyCals.toLocaleString()}</div>
+                        <div className="mt-0.5 text-[9px] leading-snug text-[#5A5C6E]">cal/week</div>
                       </div>
-                      <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
-                        <div className="font-display text-base font-bold text-[#EDB93C]">{fmtCO2(withBenefits.co2)}</div>
-                        <div className="mt-0.5 text-[9px] leading-snug text-white/60">CO₂ saved/yr</div>
+                      <div className="rounded-[9px] bg-[#FAFBF8] px-2 py-2 text-center">
+                        <div className="text-base font-bold text-[#C97A2E]">{fmtCO2(withBenefits.co2)}</div>
+                        <div className="mt-0.5 text-[9px] leading-snug text-[#5A5C6E]">CO₂ saved/yr</div>
                       </div>
                     </div>
                   </div>
@@ -751,11 +751,11 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                       const override = getBarrierOverride(b)
                       if (!override) return null
                       return (
-                        <div key={b} className="rounded-2xl border border-[rgba(186,241,77,0.15)] bg-[rgba(186,241,77,0.06)] p-6">
-                          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#BAF14D]/60">
+                        <div key={b} className="rounded-[14px] border border-[rgba(45,106,79,0.12)] bg-[#E7F0EA] p-6">
+                          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#2D6A4F]">
                             Good news from {group.name}
                           </div>
-                          <p className="text-[0.9375rem] leading-relaxed text-white">{override}</p>
+                          <p className="text-[0.9375rem] leading-relaxed text-[#191A2E]">{override}</p>
                         </div>
                       )
                     })}
@@ -769,27 +769,27 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                 )}
 
                 {/* Shift CTA */}
-                <div className="rounded-2xl border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-7 py-6">
-                  <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight text-white">Get the app</div>
-                  <div className="mb-3.5 text-[0.8rem] leading-relaxed text-white">
+                <div className="rounded-[14px] border border-[rgba(45,106,79,0.12)] bg-[linear-gradient(135deg,rgba(45,106,79,0.06),rgba(45,106,79,0.03))] px-7 py-6">
+                  <div className="mb-1 text-[1.0625rem] font-extrabold tracking-tight text-[#191A2E]">Get the app</div>
+                  <div className="mb-3.5 text-[0.8rem] leading-relaxed text-[#5A5C6E]">
                     Track your commute with Shift — {group.name} employees who use Shift can join the company challenge and compete with teammates.
                   </div>
-                  <a href="/shift" className="inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85">
+                  <a href="/shift" className="inline-block rounded-lg bg-[#2D6A4F] px-4 py-2 text-[0.8125rem] font-bold text-white transition-colors hover:bg-[#1F4D3A]">
                     Download the app &rarr;
                   </a>
                 </div>
 
                 {/* HR contact */}
                 {benefits.hr_contact_name && benefits.hr_contact_email && (
-                  <div className="text-center text-[0.8125rem] text-white/70">
+                  <div className="text-center text-[0.8125rem] text-[#5A5C6E]">
                     Questions about your commute benefits? Contact {benefits.hr_contact_name} at{' '}
-                    <a href={`mailto:${benefits.hr_contact_email}`} className="text-[#BAF14D] underline">{benefits.hr_contact_email}</a>
+                    <a href={`mailto:${benefits.hr_contact_email}`} className="text-[#2D6A4F] underline">{benefits.hr_contact_email}</a>
                   </div>
                 )}
 
                 <button onClick={() => setStep(1)}
-                  className="w-full rounded-xl border border-white/[0.08] py-3 text-[0.8125rem] font-semibold text-white/70 transition-colors hover:border-white/[0.15] hover:text-white/90">
-                  ← Edit your commute details
+                  className="w-full rounded-[10px] border border-[rgba(25,26,46,0.06)] bg-white py-3 text-[0.8125rem] font-semibold text-[#5A5C6E] transition-colors hover:border-[rgba(25,26,46,0.12)] hover:text-[#191A2E]">
+                  &larr; Edit your commute details
                 </button>
               </div>
               )})()}
@@ -808,7 +808,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
-      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">{label}</label>
+      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[#5A5C6E]">{label}</label>
       {children}
     </div>
   )
@@ -820,7 +820,7 @@ function NumInput({ value, onChange, min, max, step, width }: {
   return (
     <input type="number" value={value} onChange={e => onChange(parseFloat(e.target.value) || 0)}
       min={min} max={max} step={step}
-      className="rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2.5 text-center font-display font-bold text-white transition-colors focus:border-[#BAF14D] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+      className="rounded-[10px] border-[1.5px] border-[rgba(25,26,46,0.09)] bg-white px-3 py-2.5 text-center font-bold text-[#191A2E] transition-colors focus:border-[#2D6A4F] focus:ring-1 focus:ring-[#2D6A4F]/20 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
       style={{ width: width || '100px', fontSize: '1rem' }} />
   )
 }
@@ -831,9 +831,9 @@ function RangeInput({ value, onChange, min, max, labels }: {
   return (
     <div>
       <input type="range" min={min} max={max} step={1} value={value} onChange={e => onChange(parseInt(e.target.value))}
-        className="w-full cursor-pointer appearance-none rounded-full bg-white/10 outline-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-[#191A2E] [&::-webkit-slider-thumb]:bg-[#BAF14D] [&::-webkit-slider-thumb]:shadow-[0_0_0_1.5px_#BAF14D]"
+        className="w-full cursor-pointer appearance-none rounded-full bg-[rgba(25,26,46,0.09)] outline-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[#2D6A4F] [&::-webkit-slider-thumb]:shadow-[0_0_0_1.5px_#2D6A4F]"
         style={{ height: '6px' }} />
-      <div className="mt-1 flex justify-between">{labels.map(l => <span key={l} className="text-[10px] text-white">{l}</span>)}</div>
+      <div className="mt-1 flex justify-between">{labels.map(l => <span key={l} className="text-[10px] text-[#5A5C6E]">{l}</span>)}</div>
     </div>
   )
 }
@@ -843,8 +843,8 @@ function Select({ value, onChange, options }: {
 }) {
   return (
     <select value={value} onChange={e => onChange(e.target.value)}
-      className="w-full cursor-pointer appearance-none rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2012%208%22%3E%3Cpath%20d%3D%22M1%201l5%205%205-5%22%20stroke%3D%22%238A8DA8%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E')] bg-[length:12px] bg-[right_0.875rem_center] bg-no-repeat px-3.5 py-2.5 text-sm text-white transition-colors focus:border-[#BAF14D] focus:outline-none">
-      {options.map(o => <option key={o.value} value={o.value} className="bg-[#242538] text-white">{o.label}</option>)}
+      className="w-full cursor-pointer appearance-none rounded-[10px] border-[1.5px] border-[rgba(25,26,46,0.09)] bg-white bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2012%208%22%3E%3Cpath%20d%3D%22M1%201l5%205%205-5%22%20stroke%3D%22%238A8DA8%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E')] bg-[length:12px] bg-[right_0.875rem_center] bg-no-repeat px-3.5 py-2.5 text-sm text-[#191A2E] transition-colors focus:border-[#2D6A4F] focus:ring-1 focus:ring-[#2D6A4F]/20 focus:outline-none">
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   )
 }
@@ -856,7 +856,7 @@ function RadioPills({ name, value, onChange, options }: {
     <div className="flex flex-wrap gap-2">
       {options.map(o => (
         <label key={o.value} className={`cursor-pointer whitespace-nowrap rounded-full border-[1.5px] px-3.5 py-1.5 text-xs font-semibold transition-all ${
-          value === o.value ? 'border-[#BAF14D] bg-[#BAF14D] text-[#191A2E]' : 'border-white/[0.12] text-white hover:border-white/25'
+          value === o.value ? 'border-[#2D6A4F] bg-[#2D6A4F] text-white' : 'border-[rgba(25,26,46,0.09)] text-[#191A2E] hover:border-[rgba(25,26,46,0.18)]'
         }`}>
           <input type="radio" name={name} value={o.value} checked={value === o.value}
             onChange={() => onChange(o.value)} className="sr-only" />

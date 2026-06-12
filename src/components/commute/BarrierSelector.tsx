@@ -53,11 +53,9 @@ export default function BarrierSelector({ modes, selected, onSelect }: BarrierSe
 
   const toggleBarrier = (code: BarrierCode) => {
     if (code === 'habit') {
-      // "Ready to try it" clears all others
       onSelect(selected.includes('habit') ? [] : ['habit'])
       return
     }
-    // Remove 'habit' if selecting a real barrier
     const without = selected.filter(b => b !== 'habit' && b !== code)
     if (selected.includes(code)) {
       onSelect(without)
@@ -67,14 +65,14 @@ export default function BarrierSelector({ modes, selected, onSelect }: BarrierSe
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
-      <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/60">
+    <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-7 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+      <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
         One more thing
       </div>
-      <h4 className="mb-1 font-display text-[1.125rem] font-bold text-white">
+      <h4 className="mb-1 text-[1.125rem] font-bold text-[#191A2E]">
         Any hesitations?
       </h4>
-      <p className="mb-5 text-[0.8125rem] text-white/70">Select all that apply</p>
+      <p className="mb-5 text-[0.8125rem] text-[#5A5C6E]">Select all that apply</p>
 
       <div className="flex flex-col gap-2.5">
         {barriers.map((b) => {
@@ -85,8 +83,8 @@ export default function BarrierSelector({ modes, selected, onSelect }: BarrierSe
               onClick={() => toggleBarrier(b.code)}
               className={`rounded-xl border px-4 py-3 text-left text-[0.9375rem] transition-colors ${
                 isSelected
-                  ? 'border-[#BAF14D]/40 bg-[#BAF14D]/[0.08] text-white'
-                  : 'border-white/[0.08] text-white/70 hover:border-white/[0.2] hover:text-white'
+                  ? 'border-[#2D6A4F]/30 bg-[#E7F0EA] text-[#191A2E]'
+                  : 'border-[rgba(25,26,46,0.06)] text-[#5A5C6E] hover:border-[rgba(25,26,46,0.12)] hover:text-[#191A2E]'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -94,11 +92,11 @@ export default function BarrierSelector({ modes, selected, onSelect }: BarrierSe
                   className={`flex h-5 w-5 shrink-0 items-center justify-center rounded ${
                     b.code === 'habit' ? 'rounded-full' : ''
                   } border-2 ${
-                    isSelected ? 'border-[#BAF14D] bg-[#BAF14D]' : 'border-white/30'
+                    isSelected ? 'border-[#2D6A4F] bg-[#2D6A4F]' : 'border-[rgba(25,26,46,0.18)]'
                   }`}
                 >
                   {isSelected && (
-                    <svg className="h-3 w-3 text-[#191A2E]" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   )}

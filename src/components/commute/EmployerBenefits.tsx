@@ -34,14 +34,14 @@ export default function EmployerBenefits({ companyName, benefits }: EmployerBene
   if (items.length === 0) return null
 
   return (
-    <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
-      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">
+    <div className="rounded-[14px] border border-[rgba(25,26,46,0.06)] bg-[#FAFBF8] p-6">
+      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
         Your {companyName} benefits
       </div>
       <ul className="space-y-2.5">
         {items.map((item, i) => (
-          <li key={i} className="flex items-start gap-2.5 text-[0.9375rem] text-white">
-            <svg className="mt-0.5 h-4 w-4 shrink-0 text-[#BAF14D]" viewBox="0 0 20 20" fill="currentColor">
+          <li key={i} className="flex items-start gap-2.5 text-[0.9375rem] text-[#191A2E]">
+            <svg className="mt-0.5 h-4 w-4 shrink-0 text-[#2D6A4F]" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
             <span>{item}</span>

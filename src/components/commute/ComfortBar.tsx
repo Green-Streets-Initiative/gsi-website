@@ -53,9 +53,9 @@ export default function ComfortBar({ rating, segments, theme = 'dark' }: Pick<Bi
   return (
     <div
       aria-label={a11yLabel}
-      className={`rounded-lg p-3.5 ${theme === 'light' ? 'border border-gray-200 bg-gray-50' : 'border border-white/[0.06] bg-white/[0.02]'}`}
+      className={`rounded-lg p-3.5 ${theme === 'light' ? 'border border-[rgba(25,26,46,0.09)] bg-[#FAFBF8]' : 'border border-white/[0.06] bg-white/[0.02]'}`}
     >
-      <div className={`mb-1.5 flex items-center justify-between text-[11px] ${theme === 'light' ? 'text-gray-500' : 'text-white/75'}`}>
+      <div className={`mb-1.5 flex items-center justify-between text-[11px] ${theme === 'light' ? 'text-[#5A5C6E]' : 'text-white/75'}`}>
         <span>Route comfort</span>
         {totalDistance > 0 && <span>{totalDistance.toFixed(1)} mi total</span>}
       </div>
@@ -84,7 +84,7 @@ export default function ComfortBar({ rating, segments, theme = 'dark' }: Pick<Bi
       </div>
 
       {breakdown.length > 0 ? (
-        <div className={`mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] ${theme === 'light' ? 'text-gray-500' : 'text-white/75'}`}>
+        <div className={`mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] ${theme === 'light' ? 'text-[#5A5C6E]' : 'text-white/75'}`}>
           {breakdown.map((b) => (
             <div key={b.rating} className="flex items-center gap-1.5">
               <span
@@ -96,7 +96,7 @@ export default function ComfortBar({ rating, segments, theme = 'dark' }: Pick<Bi
           ))}
         </div>
       ) : (
-        <div className={`mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] ${theme === 'light' ? 'text-gray-500' : 'text-white/75'}`}>
+        <div className={`mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] ${theme === 'light' ? 'text-[#5A5C6E]' : 'text-white/75'}`}>
           {Object.entries(SEGMENT_LABELS).map(([key, label]) => (
             <div key={key} className="flex items-center gap-1.5">
               <span

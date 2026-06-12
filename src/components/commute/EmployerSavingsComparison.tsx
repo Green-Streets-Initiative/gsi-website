@@ -34,8 +34,8 @@ export default function EmployerSavingsComparison({
   if (!showComparison) {
     // Basic tier: single column
     return (
-      <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
-        <div className="mb-4 font-display text-[0.9375rem] font-bold text-white">
+      <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-7 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+        <div className="mb-4 text-[0.9375rem] font-bold text-[#191A2E]">
           Your estimated annual savings
         </div>
         <SavingsColumn data={withBenefits} label="With your benefits" />
@@ -45,8 +45,8 @@ export default function EmployerSavingsComparison({
 
   // Premium tier: side-by-side
   return (
-    <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
-      <div className="mb-4 font-display text-[0.9375rem] font-bold text-white">
+    <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-7 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+      <div className="mb-4 text-[0.9375rem] font-bold text-[#191A2E]">
         Estimated annual savings
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -54,11 +54,11 @@ export default function EmployerSavingsComparison({
         <SavingsColumn data={withBenefits} label="With your benefits" />
       </div>
       {extraSavings > 0 && (
-        <div className="mt-5 rounded-xl border border-[rgba(186,241,77,0.2)] bg-[rgba(186,241,77,0.08)] px-5 py-4 text-center">
-          <div className="font-display text-[1.25rem] font-extrabold text-[#BAF14D]">
+        <div className="mt-5 rounded-xl border border-[rgba(45,106,79,0.12)] bg-[#E7F0EA] px-5 py-4 text-center">
+          <div className="text-[1.25rem] font-extrabold text-[#2D6A4F]">
             +{fmt(extraSavings)}/year
           </div>
-          <div className="mt-1 text-[0.8125rem] text-white/60">
+          <div className="mt-1 text-[0.8125rem] text-[#5A5C6E]">
             {companyName} benefits save you an extra {fmt(extraSavings)} per year
           </div>
         </div>
@@ -70,20 +70,20 @@ export default function EmployerSavingsComparison({
 function SavingsColumn({ data, label, muted }: { data: SavingsData; label: string; muted?: boolean }) {
   return (
     <div className={muted ? 'opacity-50' : ''}>
-      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">
+      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A5C6E]">
         {label}
       </div>
       <div className={`mb-3 rounded-xl px-4 py-3 text-center ${
         muted
-          ? 'border border-white/[0.07] bg-white/[0.03]'
-          : 'border border-[rgba(186,241,77,0.2)] bg-[rgba(186,241,77,0.08)]'
+          ? 'border border-[rgba(25,26,46,0.06)] bg-[#FAFBF8]'
+          : 'border border-[rgba(45,106,79,0.12)] bg-[#E7F0EA]'
       }`}>
-        <div className={`font-display text-[1.75rem] font-extrabold leading-none tracking-tighter ${
-          muted ? 'text-white/60' : 'text-[#BAF14D]'
+        <div className={`text-[1.75rem] font-extrabold leading-none tracking-tighter ${
+          muted ? 'text-[#8A8B9A]' : 'text-[#2D6A4F]'
         }`}>
           {fmt(data.net)}
         </div>
-        <div className={`mt-1 text-[0.7rem] ${muted ? 'text-white/50' : 'text-[rgba(186,241,77,0.5)]'}`}>
+        <div className={`mt-1 text-[0.7rem] ${muted ? 'text-[#8A8B9A]' : 'text-[#2D6A4F]/60'}`}>
           per year
         </div>
       </div>
@@ -110,8 +110,8 @@ function SavingsColumn({ data, label, muted }: { data: SavingsData; label: strin
 function Row({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
   return (
     <div className="flex justify-between text-[0.8125rem]">
-      <span className="text-white/60">{label}</span>
-      <span className={positive ? 'font-semibold text-[#BAF14D]' : 'font-semibold text-[#FF6B6B]'}>
+      <span className="text-[#5A5C6E]">{label}</span>
+      <span className={positive ? 'font-semibold text-[#2D6A4F]' : 'font-semibold text-[#B3361F]'}>
         {value}
       </span>
     </div>

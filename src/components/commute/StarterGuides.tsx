@@ -20,12 +20,6 @@ interface StarterGuidesProps {
   event?: EventWithDetails | null
 }
 
-/**
- * Starter-guide stack shown after a recommendation. Fetches the curated
- * `is_starter=true` guides for the primary recommended mode and links out to
- * the full /guides library. Replaces the barrier-checklist UX on the public
- * Commute Advisor.
- */
 export default function StarterGuides({ modes, event }: StarterGuidesProps) {
   const [guides, setGuides] = useState<ContentItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,10 +53,10 @@ export default function StarterGuides({ modes, event }: StarterGuidesProps) {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
+      <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
         <div className="flex items-center gap-3">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-[#BAF14D]" />
-          <span className="text-sm text-white/75">Finding guides for you...</span>
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[rgba(25,26,46,0.12)] border-t-[#2D6A4F]" />
+          <span className="text-sm text-[#5A5C6E]">Finding guides for you...</span>
         </div>
       </div>
     )
@@ -73,7 +67,7 @@ export default function StarterGuides({ modes, event }: StarterGuidesProps) {
   return (
     <div className="space-y-4">
       <div>
-        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/75">
+        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
           Start here
         </div>
         {guides.length > 0 ? (
@@ -82,13 +76,13 @@ export default function StarterGuides({ modes, event }: StarterGuidesProps) {
               <Link
                 key={guide.id}
                 href={`/guides/${guide.slug ?? guide.id}`}
-                className="block rounded-2xl border border-white/[0.12] bg-[#242538] p-6 transition-colors hover:border-[#BAF14D]/40"
+                className="block rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 shadow-[0_1px_2px_rgba(25,26,46,0.05)] transition-colors hover:border-[#2D6A4F]/30"
               >
-                <h5 className="mb-2 font-display text-[1rem] font-bold text-white">{guide.title}</h5>
-                <p className="mb-4 line-clamp-3 text-[0.875rem] leading-relaxed text-white/80">
+                <h5 className="mb-2 text-[1rem] font-bold text-[#191A2E]">{guide.title}</h5>
+                <p className="mb-4 line-clamp-3 text-[0.875rem] leading-relaxed text-[#5A5C6E]">
                   {guide.summary}
                 </p>
-                <span className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#BAF14D]">
+                <span className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#2D6A4F]">
                   Read the guide
                   <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" />
@@ -98,8 +92,8 @@ export default function StarterGuides({ modes, event }: StarterGuidesProps) {
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
-            <p className="text-[0.875rem] leading-relaxed text-white/80">
+          <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+            <p className="text-[0.875rem] leading-relaxed text-[#5A5C6E]">
               We&apos;re building starter guides for this mode.
             </p>
           </div>
@@ -109,7 +103,7 @@ export default function StarterGuides({ modes, event }: StarterGuidesProps) {
         <div className="mt-4">
           <Link
             href={`/guides?mode=${primaryMode}`}
-            className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#BAF14D] transition-opacity hover:opacity-80"
+            className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#2D6A4F] transition-opacity hover:opacity-80"
           >
             Browse all {browseLabel} guides
             <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -119,23 +113,23 @@ export default function StarterGuides({ modes, event }: StarterGuidesProps) {
         </div>
       </div>
 
-      {/* Event card — preserved from prior behavior */}
+      {/* Event card */}
       {event ? (
-        <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
-          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/75">
+        <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
             Try it with others
           </div>
-          <h5 className="mb-2 font-display text-[1rem] font-bold text-white">
+          <h5 className="mb-2 text-[1rem] font-bold text-[#191A2E]">
             {event.content_items.title}
           </h5>
-          <div className="mb-2 text-[0.8125rem] text-white/75">
+          <div className="mb-2 text-[0.8125rem] text-[#5A5C6E]">
             {new Date(event.event_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             {event.location_name && ` · ${event.location_name}`}
           </div>
-          <p className="mb-4 line-clamp-2 text-[0.875rem] leading-relaxed text-white/80">
+          <p className="mb-4 line-clamp-2 text-[0.875rem] leading-relaxed text-[#5A5C6E]">
             {event.content_items.summary}
           </p>
-          <Link href={`/events/${event.id}`} className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#BAF14D] transition-opacity hover:opacity-80">
+          <Link href={`/events/${event.id}`} className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#2D6A4F] transition-opacity hover:opacity-80">
             Learn more
             <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" />

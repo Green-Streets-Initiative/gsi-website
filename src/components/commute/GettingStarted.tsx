@@ -50,8 +50,6 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
       const results: ContentItem[] = []
       const seenIds = new Set<string>()
 
-      // Fetch all guides for each barrier — multiple guides can share a
-      // (mode, barrier) key now (e.g. transit/planning has 4).
       for (const barrier of activeBarriers) {
         const dbCode = barrierToDbCode[barrier] || barrier
 
@@ -77,7 +75,6 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
         }
         if (foundAny) continue
 
-        // Fallback: mode-only match (different from already found)
         const { data: fallbacks } = await supabase
           .from('content_items')
           .select('id, slug, title, summary, body')
@@ -107,7 +104,6 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
     return () => { cancelled = true }
   }, [primaryMode, activeBarriers.join(',')])
 
-  // "I'm ready to try it" — no guides needed
   if (barriers.length === 1 && barriers[0] === 'habit') {
     return null
   }
@@ -116,10 +112,10 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
+      <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
         <div className="flex items-center gap-3">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-[#BAF14D]" />
-          <span className="text-sm text-white/70">Finding guides for you...</span>
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[rgba(25,26,46,0.12)] border-t-[#2D6A4F]" />
+          <span className="text-sm text-[#5A5C6E]">Finding guides for you...</span>
         </div>
       </div>
     )
@@ -133,17 +129,17 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
       {hasGuides ? (
         <div className={`grid gap-4 ${guides.length > 1 ? 'md:grid-cols-2' : ''}`}>
           {guides.map((guide) => (
-            <div key={guide.id} className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
-              <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/60">
+            <div key={guide.id} className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+              <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
                 We can help with that
               </div>
-              <h5 className="mb-2 font-display text-[1rem] font-bold text-white">{guide.title}</h5>
-              <p className="mb-4 line-clamp-3 text-[0.875rem] leading-relaxed text-white/70">
+              <h5 className="mb-2 text-[1rem] font-bold text-[#191A2E]">{guide.title}</h5>
+              <p className="mb-4 line-clamp-3 text-[0.875rem] leading-relaxed text-[#5A5C6E]">
                 {guide.summary}
               </p>
               <Link
                 href={`/guides/${guide.slug ?? guide.id}`}
-                className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#BAF14D] transition-opacity hover:opacity-80"
+                className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#2D6A4F] transition-opacity hover:opacity-80"
               >
                 Read the full guide
                 <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -154,17 +150,17 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
-          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/60">
+        <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
             We can help with that
           </div>
-          <p className="mb-2 font-display text-[1rem] font-bold leading-snug text-white">
+          <p className="mb-2 text-[1rem] font-bold leading-snug text-[#191A2E]">
             We&apos;re building guides for this.
           </p>
-          <p className="mb-4 text-[0.875rem] leading-relaxed text-white/70">
+          <p className="mb-4 text-[0.875rem] leading-relaxed text-[#5A5C6E]">
             In the meantime, the Shift app has tips for new {primaryMode === 'transit' ? 'transit riders' : primaryMode === 'walking' ? 'walkers' : 'cyclists'} built right in.
           </p>
-          <Link href="/shift" className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#BAF14D] transition-opacity hover:opacity-80">
+          <Link href="/shift" className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#2D6A4F] transition-opacity hover:opacity-80">
             Explore in the app
             <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" />
@@ -175,21 +171,21 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
 
       {/* Event card */}
       {event ? (
-        <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-6">
-          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/60">
+        <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
             Try it with others
           </div>
-          <h5 className="mb-2 font-display text-[1rem] font-bold text-white">
+          <h5 className="mb-2 text-[1rem] font-bold text-[#191A2E]">
             {event.content_items.title}
           </h5>
-          <div className="mb-2 text-[0.8125rem] text-white/70">
+          <div className="mb-2 text-[0.8125rem] text-[#5A5C6E]">
             {new Date(event.event_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             {event.location_name && ` · ${event.location_name}`}
           </div>
-          <p className="mb-4 line-clamp-2 text-[0.875rem] leading-relaxed text-white/70">
+          <p className="mb-4 line-clamp-2 text-[0.875rem] leading-relaxed text-[#5A5C6E]">
             {event.content_items.summary}
           </p>
-          <Link href={`/events/${event.id}`} className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#BAF14D] transition-opacity hover:opacity-80">
+          <Link href={`/events/${event.id}`} className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#2D6A4F] transition-opacity hover:opacity-80">
             Learn more
             <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" />

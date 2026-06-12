@@ -31,17 +31,17 @@ export default function RecommendationCard({
     displayReasons[0] = `${primary.reasons[0]?.match(/^[\d.]+ miles/)?.[0] || ''} — about ${routeTimeMinutes} minutes ${modeLabel}`.replace(/^ — /, '')
   }
   return (
-    <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
+    <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-7 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
       {/* Header */}
       <div className="mb-5 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/60">
+        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
           Your best option
         </span>
         {onRefresh && (
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 rounded-full border border-white/[0.12] px-3 py-1 text-[11px] font-semibold text-white/70 transition-colors hover:border-white/[0.25] hover:text-white disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-full border border-[rgba(25,26,46,0.09)] px-3 py-1 text-[11px] font-semibold text-[#5A5C6E] transition-colors hover:border-[rgba(25,26,46,0.18)] hover:text-[#191A2E] disabled:opacity-40"
           >
             <svg
               className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`}
@@ -60,13 +60,13 @@ export default function RecommendationCard({
 
       {/* Mode icons + label */}
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex items-center gap-1 text-[#BAF14D]">
+        <div className="flex items-center gap-1 text-[#2D6A4F]">
           {primary.modes.length === 0 && <ModeIcon mode="drive" />}
           {primary.modes.map((mode) => (
             <ModeIcon key={mode} mode={mode} />
           ))}
         </div>
-        <h3 className="font-display text-[1.375rem] font-bold leading-tight tracking-tight text-white">
+        <h3 className="text-[1.375rem] font-bold leading-tight tracking-tight text-[#191A2E]">
           {primary.label}
         </h3>
       </div>
@@ -74,8 +74,8 @@ export default function RecommendationCard({
       {/* Reasons */}
       <ul className="mb-6 space-y-2.5">
         {displayReasons.map((reason, i) => (
-          <li key={i} className="flex items-start gap-2.5 text-[0.9375rem] leading-snug text-white">
-            <svg className="mt-0.5 h-4 w-4 shrink-0 text-[#BAF14D]" viewBox="0 0 20 20" fill="currentColor">
+          <li key={i} className="flex items-start gap-2.5 text-[0.9375rem] leading-snug text-[#191A2E]">
+            <svg className="mt-0.5 h-4 w-4 shrink-0 text-[#2D6A4F]" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
             <span>{reason}</span>
@@ -89,7 +89,7 @@ export default function RecommendationCard({
           href={primary.google_maps_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-full bg-[#BAF14D] px-5 py-2.5 text-sm font-semibold text-[#191A2E] transition-opacity hover:opacity-85"
+          className="inline-flex items-center gap-2 rounded-full bg-[#2D6A4F] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1F4D3A]"
         >
           Get directions in Google Maps
           <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -100,15 +100,15 @@ export default function RecommendationCard({
 
       {/* Secondary */}
       {secondary && (
-        <div className="mt-5 border-t border-white/[0.07] pt-4">
-          <div className="flex items-center gap-2 text-[0.8125rem] text-white/70">
+        <div className="mt-5 border-t border-[rgba(25,26,46,0.06)] pt-4">
+          <div className="flex items-center gap-2 text-[0.8125rem] text-[#5A5C6E]">
             <span>Also consider:</span>
             <div className="flex items-center gap-1">
               {secondary.modes.map((mode) => (
                 <ModeIcon key={mode} mode={mode} className="opacity-50" />
               ))}
             </div>
-            <span className="text-white/70">{secondary.label}</span>
+            <span className="text-[#5A5C6E]">{secondary.label}</span>
             <span>— {(() => {
               // Use Google Routes time for secondary mode if available
               const secMode = secondary.modes[0] || 'drive'
