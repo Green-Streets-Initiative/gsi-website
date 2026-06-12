@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createAdminClient } from "../_shared/supabase-admin.ts";
 import { handleCorsPreflight, jsonResponse } from "../_shared/stripe.ts";
+import { sendExpoPushBatch } from "../_shared/expo-push.ts";
 
 const TREMENDOUS_API_URL =
   Deno.env.get("TREMENDOUS_API_URL") ?? "https://www.tremendous.com/api/v2";
@@ -100,9 +101,18 @@ serve(async (req: Request) => {
     );
   }
 
+  // Load the competition name for notification copy
+  const { data: competition } = await admin
+    .from("competitions")
+    .select("name")
+    .eq("id", prize.competition_id)
+    .single();
+  const challengeName = competition?.name ?? "your workplace challenge";
+
   let fulfilled = 0;
   let failed = 0;
   const errors: string[] = [];
+  const fulfilledUserIds: string[] = [];
 
   for (const winner of winners) {
     const { data: authUser } = await admin.auth.admin.getUserById(
@@ -173,6 +183,8 @@ serve(async (req: Request) => {
 
       const orderData = await orderRes.json();
       const orderId = orderData.order?.id ?? null;
+      const rewardLink =
+        orderData.order?.rewards?.[0]?.delivery?.link ?? null;
 
       await admin
         .from("employer_prize_winners")
@@ -180,10 +192,12 @@ serve(async (req: Request) => {
           fulfillment_status: "fulfilled",
           fulfilled_at: new Date().toISOString(),
           tremendous_order_id: orderId,
+          reward_link: rewardLink,
         })
         .eq("id", winner.id);
 
       fulfilled++;
+      fulfilledUserIds.push(winner.user_id);
     } catch (err) {
       console.error(`[Tremendous] order error for ${winner.id}:`, err);
       errors.push(`Network error for ${recipientEmail}`);
@@ -196,6 +210,54 @@ serve(async (req: Request) => {
       .from("employer_challenge_prizes")
       .update({ draw_status: "fulfilled" })
       .eq("id", prizeId);
+  }
+
+  // ── Push + in-app notifications for fulfilled winners ───
+  if (fulfilledUserIds.length > 0) {
+    try {
+      const { data: pushUsers } = await admin
+        .from("users")
+        .select("id, expo_push_token")
+        .in("id", fulfilledUserIds)
+        .not("expo_push_token", "is", null);
+
+      const amountLabel = prize.amount_cents
+        ? `$${(prize.amount_cents / 100).toFixed(0)} `
+        : "";
+      const title = "You won a prize!";
+      const body = `Your ${amountLabel}${prize.name} from ${challengeName} is on its way — check your email.`;
+
+      if (pushUsers && pushUsers.length > 0) {
+        const messages = pushUsers.map((u: any) => ({
+          _userId: u.id,
+          to: u.expo_push_token,
+          sound: "default" as const,
+          title,
+          body,
+          data: { screen: "rewards" },
+        }));
+
+        const result = await sendExpoPushBatch(messages);
+
+        if (result.invalidTokenUserIds.length > 0) {
+          await admin
+            .from("users")
+            .update({ expo_push_token: null })
+            .in("id", result.invalidTokenUserIds);
+        }
+      }
+
+      // In-app notification for all fulfilled winners
+      await admin.rpc("insert_notifications_batch", {
+        p_user_ids: fulfilledUserIds,
+        p_type: "employer_prize_fulfilled",
+        p_title: title,
+        p_body: body,
+        p_data: { prize_id: prizeId, screen: "rewards" },
+      });
+    } catch (notifyErr) {
+      console.error("[notify] prize fulfillment notifications failed:", notifyErr);
+    }
   }
 
   return jsonResponse({ fulfilled, failed, errors });
