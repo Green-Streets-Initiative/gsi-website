@@ -43,6 +43,7 @@ const MODES: Record<string, { met: number; mph: number | null; label: string; he
 const DRIVE_MPH = 14
 const MBTA_SUBWAY_SINGLE = 2.40
 const MBTA_SUBWAY_MONTHLY = 90
+const BLUEBIKES_ANNUAL = 119
 const WEEKS = 52
 const CO2_PER_MILE = 0.404
 const BODY_WEIGHT_LBS = 165
@@ -269,37 +270,56 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
       baselineLabel = commuteMode
     }
 
-    // Legacy vars for backward compat with EmployerSavingsComparison
-    let fuelSavings = 0, maintSavings = 0, rideshareSavings = 0, fuelLabel = 'Fuel savings'
-    if (isRideshare) { rideshareSavings = rideshareDaily * sd * WEEKS }
-    else if (commuteMode === 'drive') {
-      if (v.isEV) { fuelSavings = annualMiles * v.costPerMile!; fuelLabel = 'Electricity savings'; maintSavings = annualMiles * v.maint }
-      else { fuelSavings = annualMiles * (gasPrice / v.mpg); maintSavings = annualMiles * v.maint }
+    // Baseline breakdown — what the user stops spending on their current commute
+    const baselineItems: Array<{ label: string; value: number }> = []
+    if (commuteMode === 'rideshare') {
+      baselineItems.push({ label: 'Rideshare savings', value: rideshareDaily * sd * WEEKS })
+    } else if (commuteMode === 'carpool') {
+      baselineItems.push({ label: 'Carpool savings', value: carpoolDaily * sd * WEEKS })
+    } else if (commuteMode === 'drive') {
+      if (v.isEV) {
+        baselineItems.push({ label: 'Electricity savings', value: annualMiles * v.costPerMile! })
+      } else {
+        baselineItems.push({ label: 'Fuel savings', value: annualMiles * (gasPrice / v.mpg) })
+      }
+      baselineItems.push({ label: 'Maintenance', value: annualMiles * v.maint })
+      if (parkMode !== 'free') baselineItems.push({ label: 'Parking', value: parkingCost * sd * WEEKS })
+    } else if (commuteMode === 'transit') {
+      baselineItems.push({ label: 'Transit pass', value: transitMonthly * 12 })
+    } else if (commuteMode === 'bus') {
+      baselineItems.push({ label: 'Bus pass', value: busMonthly * 12 })
+    } else if (commuteMode === 'commuter_rail') {
+      baselineItems.push({ label: 'Rail pass', value: railMonthly * 12 })
     }
 
-    let parkingSavings = 0
-    if (parkMode !== 'free' && (commuteMode === 'drive' || commuteMode === 'carpool')) parkingSavings = parkingCost * sd * WEEKS
-
-    let transitCost = 0, transitLabel = ''
+    // Alternative-mode costs — what the recommended mode costs
+    const altCostItems: Array<{ label: string; value: number }> = []
+    let altAnnualCost = 0
     if (altMode === 'mbta') {
-      const monthlyPass = MBTA_SUBWAY_MONTHLY
       const perRideAnnual = MBTA_SUBWAY_SINGLE * 2 * sd * WEEKS
-      const passAnnual = monthlyPass * 12
-      if (perRideAnnual > passAnnual) { transitCost = passAnnual; transitLabel = 'Monthly LinkPass' }
-      else { transitCost = perRideAnnual; transitLabel = 'Per-ride fares' }
-      // Apply employer transit subsidy
+      const passAnnual = MBTA_SUBWAY_MONTHLY * 12
+      let cost: number, label: string
+      if (perRideAnnual > passAnnual) { cost = passAnnual; label = 'Monthly LinkPass' }
+      else { cost = perRideAnnual; label = 'Per-ride fares' }
       if (applyBenefits && benefits.transit_subsidy_monthly && benefits.transit_subsidy_monthly > 0) {
-        transitCost = Math.max(0, transitCost - benefits.transit_subsidy_monthly * 12)
+        cost = Math.max(0, cost - benefits.transit_subsidy_monthly * 12)
       }
+      altAnnualCost = cost
+      altCostItems.push({ label, value: cost })
     } else if (altMode === 'commuter_rail') {
-      transitCost = railMonthly * 12
+      let cost = railMonthly * 12
       if (applyBenefits && benefits.transit_subsidy_monthly && benefits.transit_subsidy_monthly > 0) {
-        transitCost = Math.max(0, transitCost - benefits.transit_subsidy_monthly * 12)
+        cost = Math.max(0, cost - benefits.transit_subsidy_monthly * 12)
       }
-      transitLabel = 'Monthly pass'
+      altAnnualCost = cost
+      altCostItems.push({ label: 'Monthly pass', value: cost })
+    } else if ((altMode === 'bike' || altMode === 'ebike') && benefits.bluebikes_subsidized) {
+      let cost = BLUEBIKES_ANNUAL
+      if (applyBenefits) cost = 0
+      altAnnualCost = cost
+      altCostItems.push({ label: 'Bluebikes membership', value: cost })
     }
 
-    const altAnnualCost = transitCost
     const net = baselineAnnualCost - altAnnualCost
     const isActive = ['walk', 'bike', 'ebike'].includes(altMode)
     let activeMins = 0, weeklyCals = 0
@@ -309,7 +329,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
     }
     const co2 = annualMiles * (v.isEV ? CO2_PER_MILE * 0.35 : CO2_PER_MILE)
 
-    return { net, fuelSavings, maintSavings, parkingSavings, transitCost, transitLabel, fuelLabel, rideshareSavings, isRideshare, isActive, activeMins, weeklyCals, annualMiles, co2,
+    return { net, baselineItems, altCostItems, isActive, activeMins, weeklyCals, annualMiles, co2,
       baselineAnnualCost, baselineLabel,
       driveMins: Math.round((distance / DRIVE_MPH) * 60),
       altMins: mode.mph ? Math.round((distance / mode.mph) * 60) : null,

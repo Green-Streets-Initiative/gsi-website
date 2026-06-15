@@ -2,14 +2,8 @@
 
 interface SavingsData {
   net: number
-  fuelSavings: number
-  maintSavings: number
-  parkingSavings: number
-  transitCost: number
-  isRideshare: boolean
-  rideshareSavings: number
-  fuelLabel: string
-  transitLabel: string
+  baselineItems: Array<{ label: string; value: number }>
+  altCostItems: Array<{ label: string; value: number }>
   isActive: boolean
 }
 
@@ -88,20 +82,12 @@ function SavingsColumn({ data, label, muted }: { data: SavingsData; label: strin
         </div>
       </div>
       <div className="space-y-1.5">
-        {data.isRideshare ? (
-          <Row label="Rideshare savings" value={`+${fmt(data.rideshareSavings)}`} positive />
-        ) : (
-          <>
-            <Row label={data.fuelLabel} value={`+${fmt(data.fuelSavings)}`} positive />
-            <Row label="Maintenance" value={`+${fmt(data.maintSavings)}`} positive />
-            {data.parkingSavings > 0 && (
-              <Row label="Parking" value={`+${fmt(data.parkingSavings)}`} positive />
-            )}
-          </>
-        )}
-        {!data.isActive && data.transitCost > 0 && (
-          <Row label={data.transitLabel} value={`-${fmt(data.transitCost)}`} />
-        )}
+        {data.baselineItems.map((item) => (
+          <Row key={item.label} label={item.label} value={`+${fmt(item.value)}`} positive />
+        ))}
+        {data.altCostItems.filter(item => item.value > 0).map((item) => (
+          <Row key={item.label} label={item.label} value={`-${fmt(item.value)}`} />
+        ))}
       </div>
     </div>
   )
