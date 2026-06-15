@@ -84,14 +84,16 @@ function GroupStandingsTable({
                 <div className="flex items-center gap-3">
                   {showLogo && (
                     s.logoUrl ? (
-                      <Image
-                        src={s.logoUrl}
-                        alt={s.groupName}
-                        width={28}
-                        height={28}
-                        className="h-7 w-7 flex-shrink-0 rounded-full bg-white/10 object-contain"
-                        unoptimized
-                      />
+                      <span className="flex h-7 w-auto max-w-[80px] flex-shrink-0 items-center justify-center rounded-md bg-white px-1.5">
+                        <Image
+                          src={s.logoUrl}
+                          alt={s.groupName}
+                          width={72}
+                          height={28}
+                          className="h-5 w-auto max-w-full object-contain"
+                          unoptimized
+                        />
+                      </span>
                     ) : (
                       <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#BAF14D] text-xs font-bold text-[#191A2E]">
                         {s.groupName.charAt(0).toUpperCase()}
