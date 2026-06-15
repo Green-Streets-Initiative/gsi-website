@@ -486,9 +486,6 @@ function ActiveEvent({
                 <span className="text-sm font-bold text-[#BAF14D]">{aggregateLabel}</span>
               </div>
             )}
-            <p className="mt-2 text-xs font-medium text-white/60">
-              Green Streets Initiative &middot; moving Massachusetts since 2006
-            </p>
             <div className="mt-8">
               <JoinChallengeCta phase="active" />
             </div>
