@@ -401,26 +401,20 @@ function UpcomingEvent({
               </div>
             </div>
 
-            {/* Countdown — below the download card */}
-            <div className="order-6 mt-8">
-              <CountdownTimer targetDate={competition.starts_at} />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Share + employer CTA */}
-      <section className="bg-[#191A2E] px-8 pt-2 pb-12">
-        <div className="mx-auto max-w-[800px]">
-          <div className="mb-5 text-center">
-            <ShareChallengeButton />
-            <div className="mt-3">
+            {/* Secondary links */}
+            <div className="order-6 mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+              <ShareChallengeLink />
               <Link
                 href="/shift/employers"
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/75 transition-colors hover:text-white"
               >
-                Running a team? <span className="text-[#BAF14D]">Learn about the employer platform &rarr;</span>
+                Running a team? <span className="text-[#BAF14D]">Employer platform &rarr;</span>
               </Link>
+            </div>
+
+            {/* Countdown — below the download card */}
+            <div className="order-7 mt-8">
+              <CountdownTimer targetDate={competition.starts_at} />
             </div>
           </div>
         </div>
@@ -486,8 +480,17 @@ function ActiveEvent({
                 <span className="text-sm font-bold text-[#BAF14D]">{aggregateLabel}</span>
               </div>
             )}
-            <div className="mt-8">
+            <div className="mt-8 space-y-3">
               <JoinChallengeCta phase="active" />
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                <ShareChallengeLink />
+                <Link
+                  href="/shift/employers"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/75 transition-colors hover:text-white"
+                >
+                  Running a team? <span className="text-[#BAF14D]">Employer platform &rarr;</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -496,17 +499,6 @@ function ActiveEvent({
       {/* Leaderboard */}
       <section className="bg-[#191A2E] px-8 pb-16 pt-4">
         <div className="mx-auto max-w-[900px]">
-          <div className="mb-5">
-            <ShareChallengeButton />
-            <div className="mt-3">
-              <Link
-                href="/shift/employers"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/75 transition-colors hover:text-white"
-              >
-                Running a team? <span className="text-[#BAF14D]">Learn about the employer platform &rarr;</span>
-              </Link>
-            </div>
-          </div>
           {isEarlyState ? (
             <EarlyStateCard participantCount={participantCount} />
           ) : (
@@ -616,8 +608,17 @@ function EndedEvent({
             <p className="mt-2 text-xs font-medium text-white/60">
               Green Streets Initiative &middot; moving Massachusetts since 2006
             </p>
-            <div className="mt-8">
+            <div className="mt-8 space-y-3">
               <JoinChallengeCta phase="ended" />
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                <ShareChallengeLink />
+                <Link
+                  href="/shift/employers"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/75 transition-colors hover:text-white"
+                >
+                  Running a team? <span className="text-[#BAF14D]">Employer platform &rarr;</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -626,17 +627,6 @@ function EndedEvent({
       {/* Final standings */}
       <section className="bg-[#191A2E] px-8 pb-16 pt-4">
         <div className="mx-auto max-w-[900px]">
-          <div className="mb-5">
-            <ShareChallengeButton />
-            <div className="mt-3">
-              <Link
-                href="/shift/employers"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/75 transition-colors hover:text-white"
-              >
-                Running a team? <span className="text-[#BAF14D]">Learn about the employer platform &rarr;</span>
-              </Link>
-            </div>
-          </div>
           <div className="mb-4">
             <h2 className="font-display text-2xl font-bold tracking-tight text-white">
               Final standings
@@ -1407,21 +1397,20 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   )
 }
 
-function ShareChallengeButton() {
+function ShareChallengeLink() {
   return (
     <Link
       href="/events/shift-your-summer/share"
-      className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+      className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/75 transition-colors hover:text-white"
     >
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <circle cx="18" cy="5" r="3" />
         <circle cx="6" cy="12" r="3" />
         <circle cx="18" cy="19" r="3" />
         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
         <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
       </svg>
-      Share this challenge with your team
-      <span aria-hidden="true">→</span>
+      Share with your team
     </Link>
   )
 }
