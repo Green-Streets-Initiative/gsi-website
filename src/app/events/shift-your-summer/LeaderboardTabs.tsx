@@ -46,7 +46,7 @@ function GroupStandingsTable({
 }) {
   if (standings.length === 0) {
     return (
-      <p className="py-10 text-center text-sm text-white/50">
+      <p className="py-10 text-center text-sm text-white/75">
         No standings yet. Check back once the event is underway.
       </p>
     )
@@ -62,7 +62,7 @@ function GroupStandingsTable({
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-white/50">
+          <tr className="border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-white/70">
             <th className="w-16 py-3.5 pl-5 pr-2 text-right">Rank</th>
             <th className="px-4 py-3.5">Team</th>
             <th className={`px-4 py-3.5 text-right ${rateActive ? 'text-white' : ''}`}>Shift Rate</th>
@@ -76,7 +76,7 @@ function GroupStandingsTable({
               className={`border-b border-white/[0.05] last:border-b-0 ${i % 2 === 1 ? 'bg-white/[0.02]' : ''}`}
             >
               <td className="py-3 pl-5 pr-2 text-right">
-                <span className={`font-display text-base font-bold ${i < 3 ? 'text-[#EDB93C]' : 'text-white/50'}`}>
+                <span className={`font-display text-base font-bold ${i < 3 ? 'text-[#EDB93C]' : 'text-white/60'}`}>
                   {i + 1}
                 </span>
               </td>
@@ -138,7 +138,7 @@ function IndividualStandingsTable({
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-white/50">
+          <tr className="border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-white/70">
             <th className="w-16 py-3.5 pl-5 pr-2 text-right">Rank</th>
             <th className="px-4 py-3.5">Name</th>
             <th className={`px-4 py-3.5 text-right ${rateActive ? 'text-white' : ''}`}>Shift Rate</th>
@@ -154,11 +154,11 @@ function IndividualStandingsTable({
                 className={`border-b border-white/[0.05] last:border-b-0 ${i % 2 === 1 ? 'bg-white/[0.02]' : ''}`}
               >
                 <td className="py-3 pl-5 pr-2 text-right">
-                  <span className={`font-display text-base font-bold ${rank <= 3 ? 'text-[#EDB93C]' : 'text-white/50'}`}>
+                  <span className={`font-display text-base font-bold ${rank <= 3 ? 'text-[#EDB93C]' : 'text-white/60'}`}>
                     {rank}
                   </span>
                 </td>
-                <td className="px-4 py-3 font-medium text-white">{entry.display_name}</td>
+                <td className="px-4 py-3 font-medium text-white">{entry.display_name || 'Shift user'}</td>
                 <td className={`px-4 py-3 text-right font-display font-bold ${shiftRateColor(entry.pct_non_car)} ${tripsActive ? 'opacity-75' : ''}`}>
                   {Math.round(entry.pct_non_car)}%
                 </td>
@@ -174,10 +174,10 @@ function IndividualStandingsTable({
                 key={`filler-${i}`}
                 className={`border-b border-white/[0.05] last:border-b-0 ${(standings.length + i) % 2 === 1 ? 'bg-white/[0.02]' : ''}`}
               >
-                <td className="py-3 pl-5 pr-2 text-right text-white/40">{standings.length + i + 1}</td>
-                <td className="px-4 py-3 text-white/40">&mdash;</td>
-                <td className="px-4 py-3 text-right text-white/40">&mdash;</td>
-                <td className="hidden px-4 py-3 text-right text-white/40 md:table-cell pr-5">&mdash;</td>
+                <td className="py-3 pl-5 pr-2 text-right text-white/60">{standings.length + i + 1}</td>
+                <td className="px-4 py-3 text-white/60">&mdash;</td>
+                <td className="px-4 py-3 text-right text-white/60">&mdash;</td>
+                <td className="hidden px-4 py-3 text-right text-white/60 md:table-cell pr-5">&mdash;</td>
               </tr>
             ))}
         </tbody>

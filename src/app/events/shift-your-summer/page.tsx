@@ -259,6 +259,8 @@ export default async function ShiftYourSummerPage() {
   const sponsors: Sponsorship[] = competition?.event_sponsorships ?? []
   const geoStandings = groupStandings.filter(s => s.groupType === 'town' || s.groupType === 'neighborhood')
   const corpStandings = groupStandings.filter(s => s.groupType === 'workplace' || s.groupType === 'school')
+  const aggregateLabel = computeAggregateLabel(prizes)
+  const totalActiveTrips = standings.reduce((sum, s) => sum + s.non_car_trips, 0)
 
   return (
     <>
@@ -270,6 +272,7 @@ export default async function ShiftYourSummerPage() {
             competition={competition}
             prizes={prizes}
             sponsors={sponsors}
+            aggregateLabel={aggregateLabel}
           />
         )}
         {state === 'active' && competition && (
@@ -281,6 +284,8 @@ export default async function ShiftYourSummerPage() {
             participantCount={participantCount}
             prizes={prizes}
             sponsors={sponsors}
+            aggregateLabel={aggregateLabel}
+            totalActiveTrips={totalActiveTrips}
           />
         )}
         {state === 'ended' && competition && (
@@ -292,6 +297,7 @@ export default async function ShiftYourSummerPage() {
             participantCount={participantCount}
             prizes={prizes}
             sponsors={sponsors}
+            aggregateLabel={aggregateLabel}
           />
         )}
       </main>
@@ -350,10 +356,12 @@ function UpcomingEvent({
   competition,
   prizes,
   sponsors,
+  aggregateLabel,
 }: {
   competition: Competition
   prizes: Prize[]
   sponsors: Sponsorship[]
+  aggregateLabel: string | null
 }) {
   return (
     <>
@@ -374,6 +382,11 @@ function UpcomingEvent({
             <p className="order-3 mb-3 text-sm font-semibold text-white">
               {formatDateRange(competition.starts_at, competition.ends_at)}
             </p>
+            {aggregateLabel && (
+              <div className="order-4 mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#BAF14D]/30 bg-[#BAF14D]/10 px-3.5 py-1.5">
+                <span className="text-sm font-bold text-[#BAF14D]">{aggregateLabel}</span>
+              </div>
+            )}
 
             {/* Download card — directly under the date */}
             <div className="order-5 mt-6">
@@ -413,8 +426,8 @@ function UpcomingEvent({
         </div>
       </section>
 
+      {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} aggregateLabel={aggregateLabel} />}
       <SponsorSection sponsors={sponsors} eventCampaign={slugify(competition.name)} />
-      {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} />}
       <HowToJoin />
       <RulesLink />
       <PartnerCrossLink />
@@ -433,6 +446,8 @@ function ActiveEvent({
   participantCount,
   prizes,
   sponsors,
+  aggregateLabel,
+  totalActiveTrips,
 }: {
   competition: Competition
   standings: Standing[]
@@ -441,8 +456,11 @@ function ActiveEvent({
   participantCount: number
   prizes: Prize[]
   sponsors: Sponsorship[]
+  aggregateLabel: string | null
+  totalActiveTrips: number
 }) {
   const leader = standings[0]
+  const isEarlyState = totalActiveTrips === 0
 
   return (
     <>
@@ -463,7 +481,12 @@ function ActiveEvent({
             <p className="mb-3 text-sm font-semibold text-white">
               {formatDateRange(competition.starts_at, competition.ends_at)}
             </p>
-            <p className="mt-1 text-xs font-medium text-white/60">
+            {aggregateLabel && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#BAF14D]/30 bg-[#BAF14D]/10 px-3.5 py-1.5">
+                <span className="text-sm font-bold text-[#BAF14D]">{aggregateLabel}</span>
+              </div>
+            )}
+            <p className="mt-2 text-xs font-medium text-white/60">
               Green Streets Initiative &middot; moving Massachusetts since 2006
             </p>
             <div className="mt-8">
@@ -487,50 +510,55 @@ function ActiveEvent({
               </Link>
             </div>
           </div>
-          <div className="mb-4 flex items-end justify-between">
-            <div>
-              <h2 className="font-display text-2xl font-bold tracking-tight text-white">
-                Live standings
-              </h2>
-              <p className="mt-1 text-sm text-white/75">
-                Updated when you load this page.
-              </p>
-            </div>
-            <RefreshButton />
-          </div>
-
-          {/* Stats row above leaderboard */}
-          <div className="mb-4 flex flex-wrap gap-3">
-            <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-4 py-2.5">
-              <span className="font-display text-lg font-extrabold text-white">
-                {participantCount.toLocaleString()}
-              </span>
-              <span className="ml-1.5 text-sm text-white/60">people participating</span>
-            </div>
-            {leader && (
-              <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-4 py-2.5">
-                <span className="text-sm text-white/60">#1 right now: </span>
-                <span className="font-display text-sm font-bold text-white">
-                  {leader.display_name}
-                </span>
-                <span className="ml-1.5 text-sm text-[#EDB93C]">
-                  {Math.round(leader.pct_non_car)}% Shift Rate
-                </span>
+          {isEarlyState ? (
+            <EarlyStateCard participantCount={participantCount} />
+          ) : (
+            <>
+              <div className="mb-4 flex items-end justify-between">
+                <div>
+                  <h2 className="font-display text-2xl font-bold tracking-tight text-white">
+                    Live standings
+                  </h2>
+                  <p className="mt-1 text-sm text-white/75">
+                    Updated when you load this page.
+                  </p>
+                </div>
+                <RefreshButton />
               </div>
-            )}
-          </div>
 
-          <LeaderboardTabs
-            geoStandings={geoStandings}
-            corpStandings={corpStandings}
-            individualStandings={standings}
-            participantCount={participantCount}
-          />
+              <div className="mb-4 flex flex-wrap gap-3">
+                <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-4 py-2.5">
+                  <span className="font-display text-lg font-extrabold text-white">
+                    {participantCount.toLocaleString()}
+                  </span>
+                  <span className="ml-1.5 text-sm text-white/60">people participating</span>
+                </div>
+                {leader && leader.pct_non_car > 0 && (
+                  <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-4 py-2.5">
+                    <span className="text-sm text-white/60">#1 right now: </span>
+                    <span className="font-display text-sm font-bold text-white">
+                      {leader.display_name || 'Shift user'}
+                    </span>
+                    <span className="ml-1.5 text-sm text-[#EDB93C]">
+                      {Math.round(leader.pct_non_car)}% Shift Rate
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <LeaderboardTabs
+                geoStandings={geoStandings}
+                corpStandings={corpStandings}
+                individualStandings={standings}
+                participantCount={participantCount}
+              />
+            </>
+          )}
         </div>
       </section>
 
+      {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} aggregateLabel={aggregateLabel} />}
       <SponsorSection sponsors={sponsors} eventCampaign={slugify(competition.name)} />
-      {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} />}
       <HowToJoin />
       <RulesLink />
       <PartnerCrossLink />
@@ -549,6 +577,7 @@ function EndedEvent({
   participantCount,
   prizes,
   sponsors,
+  aggregateLabel,
 }: {
   competition: Competition
   standings: Standing[]
@@ -557,6 +586,7 @@ function EndedEvent({
   participantCount: number
   prizes: Prize[]
   sponsors: Sponsorship[]
+  aggregateLabel: string | null
 }) {
   const leader = standings[0]
   return (
@@ -581,7 +611,12 @@ function EndedEvent({
             <p className="mb-3 text-sm font-semibold text-white">
               {formatDateRange(competition.starts_at, competition.ends_at)}
             </p>
-            <p className="mt-1 text-xs font-medium text-white/60">
+            {aggregateLabel && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#BAF14D]/30 bg-[#BAF14D]/10 px-3.5 py-1.5">
+                <span className="text-sm font-bold text-[#BAF14D]">{aggregateLabel}</span>
+              </div>
+            )}
+            <p className="mt-2 text-xs font-medium text-white/60">
               Green Streets Initiative &middot; moving Massachusetts since 2006
             </p>
             <div className="mt-8">
@@ -625,7 +660,7 @@ function EndedEvent({
               <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-4 py-2.5">
                 <span className="text-sm text-white/75">Winner: </span>
                 <span className="font-display text-sm font-bold text-white">
-                  {leader.display_name}
+                  {leader.display_name || 'Shift user'}
                 </span>
                 <span className="ml-1.5 text-sm text-[#EDB93C]">
                   {Math.round(leader.pct_non_car)}% Shift Rate
@@ -643,8 +678,8 @@ function EndedEvent({
         </div>
       </section>
 
+      {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} aggregateLabel={aggregateLabel} />}
       <SponsorSection sponsors={sponsors} eventCampaign={slugify(competition.name)} />
-      {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} />}
       <RulesLink />
       <PartnerCrossLink />
       <CtaSection phase="ended" />
@@ -793,24 +828,17 @@ function SponsorTile({
 function PrizeSection({
   prizes,
   eventCampaign,
+  aggregateLabel,
 }: {
   prizes: Prize[]
   eventCampaign: string
+  aggregateLabel: string | null
 }) {
   const grand = prizes.filter(p => p.tier === 'grand').sort(sortPrizesByDisplay)
   const featured = prizes.filter(p => p.tier === 'featured').sort(sortPrizesByDisplay)
   const standard = prizes.filter(p => p.tier === 'standard').sort(sortPrizesByDisplay)
 
   if (grand.length === 0 && featured.length === 0 && standard.length === 0) return null
-
-  // Aggregate value: sum(value × quantity), rounded down to nearest $100.
-  const totalValue = prizes.reduce((acc, p) => {
-    if (p.value_amount == null) return acc
-    const qty = p.quantity > 0 ? p.quantity : 1
-    return acc + p.value_amount * qty
-  }, 0)
-  const roundedValue = Math.floor(totalValue / 100) * 100
-  const aggregateLabel = totalValue > 0 ? `${formatDollars(roundedValue)}+ in prizes` : null
 
   if (grand.length > 4) {
     // Spec: 4+ Grand prizes is a misconfiguration. Falls back to 3-up + remainder
@@ -872,6 +900,16 @@ function formatDollars(value: number): string {
     return `$${k}k`
   }
   return `$${Math.round(value).toLocaleString()}`
+}
+
+function computeAggregateLabel(prizes: Prize[]): string | null {
+  const totalValue = prizes.reduce((acc, p) => {
+    if (p.value_amount == null) return acc
+    const qty = p.quantity > 0 ? p.quantity : 1
+    return acc + p.value_amount * qty
+  }, 0)
+  const roundedValue = Math.floor(totalValue / 100) * 100
+  return totalValue > 0 ? `${formatDollars(roundedValue)}+ in prizes` : null
 }
 
 // ─── Enriched grand-prize content for the Segway MUXI ───────────────
@@ -1315,6 +1353,27 @@ function CtaSection({ phase }: { phase: PageState }) {
         <JoinChallengeCta phase={phase} />
       </div>
     </section>
+  )
+}
+
+function EarlyStateCard({ participantCount }: { participantCount: number }) {
+  return (
+    <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] px-8 py-12 text-center">
+      <div className="mx-auto max-w-[420px]">
+        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#BAF14D]/15">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#BAF14D" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
+        </div>
+        <p className="mb-2 font-display text-lg font-bold text-white">
+          {participantCount.toLocaleString()} {participantCount === 1 ? 'person has' : 'people have'} joined
+        </p>
+        <p className="mb-8 text-[0.9375rem] leading-[1.6] text-white/75">
+          The first trips are being logged — check back soon to see the board come alive.
+        </p>
+        <JoinChallengeCta phase="active" />
+      </div>
+    </div>
   )
 }
 
