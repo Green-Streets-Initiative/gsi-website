@@ -100,13 +100,24 @@ export default function ImpactPage() {
       // @ts-expect-error — no type declarations for the direct ES bundle
       const { jsPDF } = await import('jspdf/dist/jspdf.es.min.js')
       const doc = new jsPDF({ unit: 'pt', format: 'letter' })
-      const w = doc.internal.pageSize.getWidth()
-      const centerX = w / 2
+      const W = doc.internal.pageSize.getWidth()  // 612
+      const mx = 50
+      const cw = W - mx * 2 // 512
+      const cx = W / 2
       const today = new Date().toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
         year: 'numeric',
       })
+
+      // Colors
+      const NAVY = [25, 26, 46] as const
+      const ACCENT = [45, 106, 79] as const
+      const CANVAS = [244, 246, 241] as const
+      const ACCENT_SOFT = [231, 240, 234] as const
+      const MUTED = [90, 92, 110] as const
+      const FAINT = [138, 139, 154] as const
+      const TILE_BORDER = [225, 226, 228] as const
 
       const [logo, shiftWordmark, gsiWordmark] = await Promise.all([
         group.logo_url
@@ -116,153 +127,246 @@ export default function ImpactPage() {
         loadImageForPdf(GSI_WORDMARK_URL),
       ])
 
-      doc.setFillColor(25, 26, 46)
-      doc.rect(0, 0, w, 70, 'F')
+      // ── HEADER BAR ──────────────────────────────────────────
+      doc.setFillColor(...NAVY)
+      doc.rect(0, 0, W, 70, 'F')
 
       if (shiftWordmark) {
-        const wmH = 32
+        const wmH = 28
         const wmW = shiftWordmark.width * (wmH / shiftWordmark.height)
         try {
-          doc.addImage(
-            shiftWordmark.dataUrl,
-            shiftWordmark.format,
-            50,
-            (70 - wmH) / 2,
-            wmW,
-            wmH,
-          )
+          doc.addImage(shiftWordmark.dataUrl, shiftWordmark.format, mx, (70 - wmH) / 2, wmW, wmH)
         } catch {
-          doc.setFont('helvetica', 'bold')
-          doc.setFontSize(18)
-          doc.setTextColor(255, 255, 255)
-          doc.text('Shift', 50, 40)
+          doc.setFont('helvetica', 'bold').setFontSize(18).setTextColor(255, 255, 255)
+          doc.text('Shift', mx, 40)
         }
       } else {
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(18)
-        doc.setTextColor(255, 255, 255)
-        doc.text('Shift', 50, 38)
+        doc.setFont('helvetica', 'bold').setFontSize(18).setTextColor(255, 255, 255)
+        doc.text('Shift', mx, 40)
       }
 
       if (logo) {
-        const maxW2 = 160
-        const maxH2 = 50
-        const ratio = Math.min(maxW2 / logo.width, maxH2 / logo.height)
-        const drawW = logo.width * ratio
-        const drawH = logo.height * ratio
+        const maxLW = 160, maxLH = 44
+        const ratio = Math.min(maxLW / logo.width, maxLH / logo.height)
+        const dw = logo.width * ratio, dh = logo.height * ratio
         try {
-          doc.addImage(
-            logo.dataUrl,
-            logo.format,
-            centerX - drawW / 2,
-            70 / 2 - drawH / 2,
-            drawW,
-            drawH,
-          )
+          doc.addImage(logo.dataUrl, logo.format, W - mx - dw, 35 - dh / 2, dw, dh)
         } catch {}
       }
 
-      doc.setTextColor(25, 26, 46)
-      doc.setFontSize(22)
-      doc.setFont('helvetica', 'bold')
-      doc.text(group.name, centerX, 120, { align: 'center' })
-      doc.setFontSize(15)
-      doc.setFont('helvetica', 'normal')
-      doc.text('Shift Impact Report', centerX, 146, { align: 'center' })
-      doc.setFontSize(12)
-      doc.setTextColor(90, 90, 90)
-      doc.text(range, centerX, 170, { align: 'center' })
+      // ── TITLE BLOCK ─────────────────────────────────────────
+      doc.setTextColor(...NAVY).setFontSize(20).setFont('helvetica', 'bold')
+      doc.text(group.name, cx, 108, { align: 'center' })
+      doc.setFontSize(13).setFont('helvetica', 'normal')
+      doc.text('Shift Impact Report', cx, 128, { align: 'center' })
+      doc.setFontSize(11).setTextColor(...MUTED)
+      doc.text(range, cx, 148, { align: 'center' })
 
       const activeChallenge = challenges.find((c) => {
         const now = new Date()
         return new Date(c.starts_at) <= now && new Date(c.ends_at) >= now
       }) ?? challenges[0]
+      let sectionY = 170
       if (activeChallenge) {
-        doc.setFontSize(11)
-        doc.setTextColor(80, 80, 80)
+        doc.setFontSize(10).setTextColor(...FAINT)
         doc.text(
           `${activeChallenge.name}  ·  ${formatDate(activeChallenge.starts_at)} – ${formatDate(activeChallenge.ends_at)}`,
-          centerX,
-          192,
-          { align: 'center' },
+          cx, 166, { align: 'center' },
+        )
+        sectionY = 186
+      }
+
+      // ── STAT TILES (3×2) ────────────────────────────────────
+      const tileGap = 10
+      const tileW = (cw - tileGap * 2) / 3
+      const tileH = 58
+
+      const stats = [
+        { label: 'Employees joined', value: String(dashboard.member_count || memberCount || '—'), unit: '' },
+        { label: 'Active trips', value: dashboard.active_trips_this_period.toLocaleString(), unit: '' },
+        { label: 'Miles shifted', value: dashboard.miles_shifted.toLocaleString(undefined, { maximumFractionDigits: 1 }), unit: 'mi' },
+        { label: 'kg CO₂ avoided', value: dashboard.co2_avoided_kg.toFixed(1), unit: 'kg' },
+        { label: 'Most popular mode', value: topNonCarMode ? prettyMode(topNonCarMode.mode) : '—', unit: '' },
+        { label: 'Shift rate', value: `${Math.round(dashboard.shift_rate_trip_pct)}%`, unit: '' },
+      ]
+
+      stats.forEach((stat, i) => {
+        const col = i % 3
+        const row = Math.floor(i / 3)
+        const tx = mx + col * (tileW + tileGap)
+        const ty = sectionY + row * (tileH + tileGap)
+
+        doc.setFillColor(...CANVAS)
+        doc.setDrawColor(...TILE_BORDER)
+        doc.setLineWidth(0.75)
+        doc.roundedRect(tx, ty, tileW, tileH, 6, 6, 'FD')
+
+        doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(...FAINT)
+        doc.text(stat.label, tx + 14, ty + 18)
+
+        doc.setFont('helvetica', 'bold').setFontSize(22).setTextColor(...NAVY)
+        doc.text(stat.value, tx + 14, ty + 44)
+
+        if (stat.unit) {
+          const valW = doc.getTextWidth(stat.value)
+          doc.setFont('helvetica', 'normal').setFontSize(13).setTextColor(...FAINT)
+          doc.text(` ${stat.unit}`, tx + 14 + valW, ty + 44)
+        }
+      })
+
+      // ── TREND CHART + MODE BREAKDOWN ────────────────────────
+      const cardsY = sectionY + tileH * 2 + tileGap * 2 + 16
+      const leftW = 300
+      const rightW = cw - leftW - tileGap
+      const cardH = 210
+
+      // Helper: card outline
+      function drawCard(x: number, y: number, w: number, h: number) {
+        doc.setFillColor(255, 255, 255)
+        doc.setDrawColor(...TILE_BORDER)
+        doc.setLineWidth(0.75)
+        doc.roundedRect(x, y, w, h, 8, 8, 'FD')
+      }
+
+      // ── Left card: Shift rate trend ──
+      drawCard(mx, cardsY, leftW, cardH)
+      const lPad = 16
+      doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...NAVY)
+      doc.text('Shift rate trend', mx + lPad, cardsY + 22)
+      doc.setFont('helvetica', 'normal').setFontSize(8.5).setTextColor(...FAINT)
+      doc.text('Share of commute trips made by active modes', mx + lPad, cardsY + 35)
+
+      if (shiftRate != null) {
+        const badgeText = `${shiftRate}% now`
+        const bw = doc.getTextWidth(badgeText) + 12
+        doc.setFillColor(...ACCENT_SOFT)
+        doc.roundedRect(mx + leftW - lPad - bw, cardsY + 10, bw, 18, 9, 9, 'F')
+        doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(...ACCENT)
+        doc.text(badgeText, mx + leftW - lPad - bw / 2, cardsY + 22, { align: 'center' })
+      }
+
+      if (trendData && trendData.length > 1) {
+        const chartX = mx + lPad
+        const chartY = cardsY + 50
+        const chartW = leftW - lPad * 2
+        const chartH = 120
+        const tMin = Math.min(...trendData)
+        const tMax = Math.max(...trendData)
+        const tRange = tMax - tMin || 1
+
+        const pts = trendData.map((v, i) => ([
+          chartX + (i / (trendData.length - 1)) * chartW,
+          chartY + (1 - (v - tMin) / tRange) * chartH,
+        ] as [number, number]))
+
+        // Area fill
+        doc.setFillColor(...ACCENT_SOFT)
+        const areaVectors: [number, number][] = []
+        for (let i = 1; i < pts.length; i++) areaVectors.push([pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]])
+        areaVectors.push([0, chartY + chartH - pts[pts.length - 1][1]])
+        areaVectors.push([pts[0][0] - pts[pts.length - 1][0], 0])
+        areaVectors.push([0, pts[0][1] - (chartY + chartH)])
+        doc.lines(areaVectors, pts[0][0], pts[0][1], [1, 1], 'F', true)
+
+        // Stroke line
+        doc.setDrawColor(...ACCENT)
+        doc.setLineWidth(2)
+        const lineVectors: [number, number][] = []
+        for (let i = 1; i < pts.length; i++) lineVectors.push([pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]])
+        doc.lines(lineVectors, pts[0][0], pts[0][1], [1, 1], 'S')
+        doc.setLineWidth(0.75)
+
+        // Endpoint dot
+        const last = pts[pts.length - 1]
+        doc.setFillColor(...ACCENT)
+        doc.circle(last[0], last[1], 4, 'F')
+        doc.setFillColor(255, 255, 255)
+        doc.circle(last[0], last[1], 2, 'F')
+
+        // Axis labels
+        doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(...FAINT)
+        doc.text('12 weeks ago', chartX, cardsY + cardH - 14)
+        doc.text('This week', chartX + chartW, cardsY + cardH - 14, { align: 'right' })
+      }
+
+      // ── Right card: Mode breakdown ──
+      const rightX = mx + leftW + tileGap
+      drawCard(rightX, cardsY, rightW, cardH)
+      doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...NAVY)
+      doc.text('Mode breakdown', rightX + lPad, cardsY + 22)
+      doc.setFont('helvetica', 'normal').setFontSize(8.5).setTextColor(...FAINT)
+      doc.text(`${totalTrips} trips logged`, rightX + lPad, cardsY + 35)
+
+      const barPad = lPad
+      const barMaxW = rightW - barPad * 2
+      const rowH = 22
+      const maxRows = Math.min(modes.length, 8)
+      modes.slice(0, maxRows).forEach((m, i) => {
+        const ry = cardsY + 48 + i * rowH
+
+        doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(...NAVY)
+        doc.text(m.label, rightX + barPad, ry + 6)
+
+        const countText = `${m.count} · ${m.pct}%`
+        doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(...FAINT)
+        doc.text(countText, rightX + rightW - barPad, ry + 6, { align: 'right' })
+
+        // Bar
+        const barY = ry + 10
+        const barH = 6
+        doc.setFillColor(...CANVAS)
+        doc.roundedRect(rightX + barPad, barY, barMaxW, barH, 3, 3, 'F')
+        const fillW = Math.max(4, (m.count / maxModeCount) * barMaxW)
+        doc.setFillColor(...ACCENT)
+        doc.roundedRect(rightX + barPad, barY, fillW, barH, 3, 3, 'F')
+      })
+
+      // ── CO₂ CALLOUT ─────────────────────────────────────────
+      if (dashboard.co2_avoided_kg > 0) {
+        const coY = cardsY + cardH + 14
+        doc.setFillColor(...ACCENT_SOFT)
+        doc.setDrawColor(210, 230, 218)
+        doc.roundedRect(mx, coY, cw, 46, 8, 8, 'FD')
+
+        // Green dot as leaf stand-in
+        doc.setFillColor(...ACCENT)
+        doc.circle(mx + 26, coY + 23, 6, 'F')
+        doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(255, 255, 255)
+        doc.text('✰', mx + 22.5, coY + 26)
+
+        doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...NAVY)
+        doc.text(
+          `Your team avoided ${dashboard.co2_avoided_kg.toFixed(1)} kg of CO₂ this period`,
+          mx + 44, coY + 20,
+        )
+        doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...MUTED)
+        doc.text(
+          `That's about the same as charging ${Math.round(dashboard.co2_avoided_kg * 122).toLocaleString()} smartphones.`,
+          mx + 44, coY + 35,
         )
       }
 
-      const stats = [
-        {
-          label: 'Employees joined',
-          value: String(dashboard.member_count || memberCount || '—'),
-        },
-        {
-          label: 'Active trips logged',
-          value: dashboard.active_trips_this_period.toLocaleString(),
-        },
-        {
-          label: 'Miles shifted',
-          value: dashboard.miles_shifted.toLocaleString(),
-        },
-        { label: 'CO2 avoided (kg)', value: dashboard.co2_avoided_kg.toFixed(1) },
-        {
-          label: 'Most popular mode',
-          value: topNonCarMode ? prettyMode(topNonCarMode.mode) : '—',
-        },
-        {
-          label: 'Shift Rate',
-          value: `${Math.round(dashboard.shift_rate_trip_pct)}%`,
-        },
-      ]
-
-      const tableTop = activeChallenge ? 220 : 200
-      const rowH = 38
-      const colLabel = 80
-      const colValue = w - 80
-
-      doc.setDrawColor(230, 230, 230)
-      stats.forEach((stat, i) => {
-        const y = tableTop + i * rowH
-        if (i > 0) doc.line(colLabel, y, colValue, y)
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(12)
-        doc.setTextColor(100, 100, 100)
-        doc.text(stat.label, colLabel, y + 24)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(25, 26, 46)
-        doc.text(stat.value, colValue, y + 24, { align: 'right' })
-      })
-
+      // ── FOOTER ──────────────────────────────────────────────
       doc.setDrawColor(220, 220, 220)
-      doc.line(50, 680, w - 50, 680)
+      doc.line(mx, 690, W - mx, 690)
 
       if (gsiWordmark) {
-        const wmH = 22
+        const wmH = 20
         const wmW = gsiWordmark.width * (wmH / gsiWordmark.height)
         try {
-          doc.addImage(
-            gsiWordmark.dataUrl,
-            gsiWordmark.format,
-            centerX - wmW / 2,
-            695,
-            wmW,
-            wmH,
-          )
+          doc.addImage(gsiWordmark.dataUrl, gsiWordmark.format, cx - wmW / 2, 700, wmW, wmH)
         } catch {
-          doc.setFontSize(10)
-          doc.setTextColor(150, 150, 150)
-          doc.text('Green Streets Initiative', centerX, 710, {
-            align: 'center',
-          })
+          doc.setFontSize(10).setTextColor(150, 150, 150)
+          doc.text('Green Streets Initiative', cx, 714, { align: 'center' })
         }
       }
 
-      doc.setFontSize(9)
-      doc.setTextColor(150, 150, 150)
-      doc.text(`Generated ${today}`, 50, 712)
-      doc.text('gogreenstreets.org', w - 50, 712, { align: 'right' })
+      doc.setFontSize(9).setTextColor(150, 150, 150)
+      doc.text(`Generated ${today}`, mx, 726)
+      doc.text('gogreenstreets.org', W - mx, 726, { align: 'right' })
 
-      const slug = group.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '')
+      // ── SAVE ────────────────────────────────────────────────
+      const slug = group.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
       const dateSlug = new Date().toISOString().split('T')[0]
       doc.save(`${slug}-shift-impact-report-${dateSlug}.pdf`)
     } finally {
