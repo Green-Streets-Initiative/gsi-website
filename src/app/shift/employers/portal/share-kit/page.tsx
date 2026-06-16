@@ -8,6 +8,8 @@ import {
   Mail,
   Download,
   ExternalLink,
+  ZoomIn,
+  X,
 } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
 import { formatDateShort } from '../_lib/portal-utils'
@@ -23,6 +25,7 @@ export default function ShareKitPage() {
   const { group, challenges, challengePrizes, loading } = usePortal()
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
 
   const joinUrl = group
     ? `https://shift.gogreenstreets.org/join/${group.invite_code}`
@@ -291,12 +294,21 @@ export default function ShareKitPage() {
                 <p className="mb-3 text-[13px] text-ink-muted">
                   Open the Groups tab, then tap the + button
                 </p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/shift-app/shift-join-step1.png"
-                  alt="Tap + on the Groups tab"
-                  className="w-[120px] rounded-lg shadow-sm ring-1 ring-line"
-                />
+                <button
+                  type="button"
+                  onClick={() => setLightboxSrc('/images/shift-app/shift-join-step1.png')}
+                  className="group relative cursor-pointer rounded-lg transition-shadow hover:shadow-md"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/images/shift-app/shift-join-step1.png"
+                    alt="Tap + on the Groups tab"
+                    className="w-[120px] rounded-lg shadow-sm ring-1 ring-line"
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-ink/0 transition-colors group-hover:bg-ink/15">
+                    <ZoomIn size={20} className="text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" />
+                  </span>
+                </button>
               </div>
 
               {/* Step 3 */}
@@ -310,22 +322,24 @@ export default function ShareKitPage() {
                 <p className="mb-3 text-[13px] text-ink-muted">
                   Type <strong className="font-mono tracking-wider text-ink">{group.invite_code}</strong> and tap Join
                 </p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/shift-app/shift-join-step2.png"
-                  alt="Enter team code"
-                  className="w-[120px] rounded-lg shadow-sm ring-1 ring-line"
-                />
+                <button
+                  type="button"
+                  onClick={() => setLightboxSrc('/images/shift-app/shift-join-step2.png')}
+                  className="group relative cursor-pointer rounded-lg transition-shadow hover:shadow-md"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/images/shift-app/shift-join-step2.png"
+                    alt="Enter team code"
+                    className="w-[120px] rounded-lg shadow-sm ring-1 ring-line"
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-ink/0 transition-colors group-hover:bg-ink/15">
+                    <ZoomIn size={20} className="text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" />
+                  </span>
+                </button>
               </div>
             </div>
 
-            {/* Full sequence image */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/shift-app/shift-join-sequence.png"
-              alt="Full join sequence: download, tap +, enter code"
-              className="mx-auto max-w-[360px] rounded-xl"
-            />
           </div>
         </Card>
 
@@ -349,6 +363,29 @@ export default function ShareKitPage() {
           </a>
         </Card>
       </div>
+
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setLightboxSrc(null)}
+        >
+          <div className="relative mx-4" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setLightboxSrc(null)}
+              className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md transition-colors hover:bg-surface-2"
+            >
+              <X size={16} className="text-ink" />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lightboxSrc}
+              alt="Step detail"
+              className="max-h-[80vh] max-w-[360px] rounded-xl shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
     </>
   )
 }
