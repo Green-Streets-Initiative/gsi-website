@@ -125,6 +125,12 @@ export type ImpactPreset =
   | 'ytd'
   | 'custom'
 
+export type NotificationPrefs = {
+  weekly_impact: boolean
+  new_employee: boolean
+  challenge_milestones: boolean
+}
+
 export type GroupAdmin = {
   id: string
   group_id: string
@@ -132,6 +138,7 @@ export type GroupAdmin = {
   role: 'admin' | 'viewer'
   name: string | null
   created_at: string
+  notification_prefs: NotificationPrefs | null
 }
 
 export type { EmployerBenefits }

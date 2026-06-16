@@ -169,7 +169,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
         poolPromise,
         supabase
           .from('group_admins')
-          .select('id, group_id, email, role, name, created_at')
+          .select('id, group_id, email, role, name, created_at, notification_prefs')
           .eq('group_id', groupData.id)
           .order('created_at'),
       ])

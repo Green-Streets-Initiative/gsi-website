@@ -45,25 +45,31 @@ export default function SettingsPage() {
   const [dragOver, setDragOver] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const [notifPrefs, setNotifPrefs] = useState({ weekly_impact: true, new_employee: true, challenge_milestones: false })
+  const defaultPrefs = { weekly_impact: true, new_employee: true, challenge_milestones: false }
+  const [notifPrefs, setNotifPrefs] = useState(defaultPrefs)
+
+  const currentAdmin = admins.find((a) => a.email === group?.admin_email)
 
   useEffect(() => {
-    if (!group) return
-    try {
-      const raw = localStorage.getItem(`ep_notif_prefs_${group.id}`)
-      if (raw) setNotifPrefs(JSON.parse(raw))
-    } catch {}
-  }, [group])
+    if (!currentAdmin) return
+    if (currentAdmin.notification_prefs) {
+      setNotifPrefs({ ...defaultPrefs, ...currentAdmin.notification_prefs })
+    }
+  }, [currentAdmin?.id])
 
   const updateNotifPref = useCallback((key: string, value: boolean) => {
     setNotifPrefs((prev) => {
       const next = { ...prev, [key]: value }
-      if (group) {
-        try { localStorage.setItem(`ep_notif_prefs_${group.id}`, JSON.stringify(next)) } catch {}
+      if (currentAdmin) {
+        supabase
+          .from('group_admins')
+          .update({ notification_prefs: next })
+          .eq('id', currentAdmin.id)
+          .then()
       }
       return next
     })
-  }, [group])
+  }, [currentAdmin])
 
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<'admin' | 'viewer'>('viewer')
@@ -89,7 +95,7 @@ export default function SettingsPage() {
     const { data, error } = await supabase
       .from('group_admins')
       .insert({ group_id: group.id, email, role: inviteRole })
-      .select('id, group_id, email, role, name, created_at')
+      .select('id, group_id, email, role, name, created_at, notification_prefs')
       .single()
     if (error) {
       setInviteError(error.message)
