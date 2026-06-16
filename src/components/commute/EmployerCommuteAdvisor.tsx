@@ -387,16 +387,15 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
 
         {/* Co-branded header */}
         <div className="mx-auto max-w-[640px] px-8 pb-6 pt-10 text-center">
-          <div className="mb-4 flex items-center justify-center gap-6">
-            <span className="text-[0.9rem] tracking-[0.3px]">
-              <span className="font-bold text-[#2D6A4F]">Green Streets</span>{' '}
-              <span className="font-normal text-[#5A5C6E]">Initiative</span>
-            </span>
+          <div className="mb-5">
             {group.logo_url ? (
-              <img src={group.logo_url} alt={group.name} className="h-9 w-auto object-contain" />
+              <img src={group.logo_url} alt={group.name} className="mx-auto h-14 w-auto object-contain" />
             ) : (
-              <span className="text-[1rem] font-bold text-[#191A2E]">{group.name}</span>
+              <div className="text-[1.5rem] font-bold text-[#191A2E]">{group.name}</div>
             )}
+            <div className="mt-2 text-[0.75rem] tracking-[0.3px] text-[#8A8B9A]">
+              powered by <span className="font-semibold text-[#2D6A4F]">Green Streets</span> Initiative
+            </div>
           </div>
           <h1 className="mb-2 text-[clamp(1.5rem,3vw,2.25rem)] font-extrabold leading-[1.15] tracking-tighter text-[#191A2E]">
             Find your <em className="not-italic text-[#2D6A4F]">best commute</em>
