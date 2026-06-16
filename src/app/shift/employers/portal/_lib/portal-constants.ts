@@ -25,12 +25,19 @@ export const PRIZE_METRIC_UNITS: Record<string, string> = {
   miles: 'mi',
 }
 
+export const DEFAULT_METRIC_THRESHOLD: Record<string, string> = {
+  pct_non_car: '25',
+  trips: '10',
+  active_days: '5',
+  miles: '10',
+}
+
 export const EMPTY_PRIZE_FORM: PrizeFormState = {
   id: null,
   name: 'Gift Card Drawing',
   award_mode: 'drawing',
   metric: 'pct_non_car',
-  min_threshold: '50',
+  min_threshold: '25',
   winner_count: '3',
   funded_from_pool: false,
   amount_dollars: '25',

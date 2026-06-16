@@ -14,6 +14,7 @@ import {
   ChevronUp,
   Search,
   Ban,
+  Info,
 } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
 import { usePortal } from '../_lib/portal-context'
@@ -25,6 +26,7 @@ import {
   PRIZE_METRIC_LABELS,
   PRIZE_METRIC_UNITS,
   EMPTY_PRIZE_FORM,
+  DEFAULT_METRIC_THRESHOLD,
 } from '../_lib/portal-constants'
 import { useToast } from '@/components/employer/Toast'
 import { formatDate } from '../_lib/portal-utils'
@@ -203,8 +205,8 @@ export default function ChallengesPage() {
         name: form.name.trim(),
         metric: 'pct_non_car',
         duration_type: 'fixed' as const,
-        starts_at: new Date(form.starts_at).toISOString(),
-        ends_at: new Date(form.ends_at + 'T23:59:59').toISOString(),
+        starts_at: form.starts_at + 'T12:00:00',
+        ends_at: form.ends_at + 'T12:00:00',
         is_public: false,
         event_type: 'employer',
         prize_description: form.prize_description.trim() || null,
@@ -933,6 +935,7 @@ function PrizeEditor({
   onRemove: () => void
 }) {
   const [open, setOpen] = useState(!p.id)
+  const [showDrawingInfo, setShowDrawingInfo] = useState(false)
   const [productSearch, setProductSearch] = useState('')
 
   const filteredProducts = productSearch
@@ -996,24 +999,56 @@ function PrizeEditor({
         </div>
 
         <div>
-          <div className="mb-2 text-[12.5px] font-semibold text-ink-muted">
+          <div className="mb-2 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted">
             How are winners selected?
+            <button
+              type="button"
+              className="text-ink-faint hover:text-accent"
+              onClick={() => setShowDrawingInfo(true)}
+            >
+              <Info size={14} strokeWidth={2} />
+            </button>
           </div>
           <div className="flex gap-2">
-            {(['drawing', 'merit'] as AwardMode[]).map((mode) => (
-              <button
-                key={mode}
-                className={`rounded-[10px] border px-4 py-2.5 text-[13px] font-semibold transition-colors ${
-                  p.award_mode === mode
-                    ? 'border-accent bg-accent-soft text-accent-ink'
-                    : 'border-line text-ink-muted hover:border-accent'
-                }`}
-                onClick={() => onChange({ award_mode: mode })}
-              >
-                {mode === 'drawing' ? 'Random drawing' : 'Top performers (merit)'}
-              </button>
-            ))}
+            <button
+              className={`flex items-center gap-2 rounded-[10px] border px-4 py-2.5 text-[13px] font-semibold transition-colors ${
+                p.award_mode === 'drawing'
+                  ? 'border-accent bg-accent-soft text-accent-ink'
+                  : 'border-line text-ink-muted hover:border-accent'
+              }`}
+              onClick={() => onChange({ award_mode: 'drawing' })}
+            >
+              Random drawing
+              <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-accent">
+                Recommended
+              </span>
+            </button>
+            <button
+              className={`rounded-[10px] border px-4 py-2.5 text-[13px] font-semibold transition-colors ${
+                p.award_mode === 'merit'
+                  ? 'border-accent bg-accent-soft text-accent-ink'
+                  : 'border-line text-ink-muted hover:border-accent'
+              }`}
+              onClick={() => onChange({ award_mode: 'merit' })}
+            >
+              Top performers (merit)
+            </button>
           </div>
+          {showDrawingInfo && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowDrawingInfo(false)}>
+              <div className="mx-4 max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-[15px] font-bold text-ink">Why random drawings?</h3>
+                  <button className="text-ink-faint hover:text-ink" onClick={() => setShowDrawingInfo(false)}>
+                    <X size={18} strokeWidth={2} />
+                  </button>
+                </div>
+                <p className="text-[13.5px] leading-[1.6] text-ink-muted">
+                  We recommend random drawings because they encourage broader participation. Merit-based prizes tend to attract a small group of over-zealous competitors, which can discourage everyone else. With a random drawing, every eligible participant has an equal chance to win, keeping more people engaged throughout the challenge.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-3.5">
@@ -1024,9 +1059,14 @@ function PrizeEditor({
             <select
               className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
               value={p.metric}
-              onChange={(e) =>
-                onChange({ metric: e.target.value as PrizeMetric })
-              }
+              onChange={(e) => {
+                const next = e.target.value as PrizeMetric
+                const patch: Partial<PrizeFormState> = { metric: next }
+                if (p.min_threshold === (DEFAULT_METRIC_THRESHOLD[p.metric] ?? '25')) {
+                  patch.min_threshold = DEFAULT_METRIC_THRESHOLD[next] ?? '25'
+                }
+                onChange(patch)
+              }}
             >
               {Object.entries(PRIZE_METRIC_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -1089,6 +1129,11 @@ function PrizeEditor({
               </button>
             ))}
           </div>
+          <p className="mt-2 text-[12px] leading-[1.5] text-ink-faint">
+            {p.funded_from_pool
+              ? 'Winners receive rewards from your Shift rewards pool (gift cards or bank transfers).'
+              : 'You handle prize distribution directly — for example, company swag, experiences, or gift cards you purchase separately.'}
+          </p>
         </div>
 
         {p.funded_from_pool ? (
