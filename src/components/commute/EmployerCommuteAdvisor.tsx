@@ -641,9 +641,10 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
               const hasGoogleTimes = Object.keys(googleTimes).length > 0
               const transitSteps = routeData?.routes?.TRANSIT?.transitSteps
 
-              // Override generic transit label with actual route from Google
+              // Override generic transit label with Google route data as fallback
+              // (edge function provides specific labels when available)
               let displayPrimary = recommendation.primary
-              let displaySecondary = recommendation.secondary
+              const displaySecondary = recommendation.secondary
               if (transitSteps && transitSteps.length > 0) {
                 function formatStep(step: TransitStep) {
                   const vType = step.vehicleType === 'BUS' ? 'Bus' : step.vehicleType === 'COMMUTER_RAIL' ? 'Commuter Rail' : ''
@@ -654,11 +655,8 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                 const transitLabel = transitSteps.length === 1
                   ? `${formatStep(mainStep)} from ${mainStep.departureStop}`
                   : transitSteps.map(formatStep).join(' → ')
-                if (recommendation.primary.label === 'MBTA Transit' || recommendation.primary.modes.includes('transit')) {
+                if (recommendation.primary.label === 'MBTA Transit') {
                   displayPrimary = { ...recommendation.primary, label: transitLabel }
-                }
-                if (recommendation.secondary?.label === 'MBTA Transit') {
-                  displaySecondary = { ...recommendation.secondary, label: transitLabel }
                 }
               }
 
@@ -696,7 +694,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                       const name = s.lineShortName || s.lineName
                       return vt ? `${vt} ${name}` : name
                     }).join(' → ')
-                    comps = comps.map(c => c.mode === 'transit' ? { ...c, label: tLabel || c.label } : c)
+                    comps = comps.map(c => c.mode === 'transit' && c.label === 'MBTA Transit' ? { ...c, label: tLabel } : c)
                   }
                   comps = comps.map(c => ({
                     ...c,

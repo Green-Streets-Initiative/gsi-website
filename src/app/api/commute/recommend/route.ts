@@ -277,7 +277,7 @@ function mapMBTAStops(stops: EdgeStopInfo[]): MBTAStop[] {
 function mapComparisons(modes: EdgeModeResult[], bikeInfraQuality: BikeInfraQuality, hasBluebikes: boolean): ModeComparison[] {
   return modes.map((m) => ({
     mode: m.mode as Mode | 'drive',
-    label: modeLabel(m.mode),
+    label: (m.mode === 'transit' || m.mode === 'bus') && m.detail ? m.detail : modeLabel(m.mode),
     time_minutes: m.time_minutes ?? 0,
     daily_cost: Math.round((m.monthly_cost / WORKDAYS_PER_MONTH) * 100) / 100,
     annual_cost: Math.round(m.monthly_cost * 12),
@@ -378,7 +378,8 @@ export async function GET(req: NextRequest) {
 
     const primary: RecommendationPrimary = {
       modes: modeToModes(edge.recommended_mode),
-      label: modeLabel(edge.recommended_mode),
+      label: (edge.recommended_mode === 'transit' || edge.recommended_mode === 'bus') && recommendedEntry?.detail
+        ? recommendedEntry.detail : modeLabel(edge.recommended_mode),
       reasons,
       time_estimate_minutes: winnerTimeMins,
       cost_estimate_daily: winnerDailyCost,
@@ -388,7 +389,12 @@ export async function GET(req: NextRequest) {
     // Secondary: first viable non-recommended, non-drive mode
     const secondaryEntry = edge.modes.find((m) => m.viable && m.mode !== edge.recommended_mode && m.mode !== 'drive')
     const secondary: RecommendationSecondary | null = secondaryEntry
-      ? { modes: modeToModes(secondaryEntry.mode), label: modeLabel(secondaryEntry.mode), time_estimate_minutes: secondaryEntry.time_minutes ?? 0 }
+      ? {
+          modes: modeToModes(secondaryEntry.mode),
+          label: (secondaryEntry.mode === 'transit' || secondaryEntry.mode === 'bus') && secondaryEntry.detail
+            ? secondaryEntry.detail : modeLabel(secondaryEntry.mode),
+          time_estimate_minutes: secondaryEntry.time_minutes ?? 0,
+        }
       : null
 
     // Drive comparison for the response
