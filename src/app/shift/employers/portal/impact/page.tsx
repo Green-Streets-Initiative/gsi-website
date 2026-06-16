@@ -176,6 +176,17 @@ export default function ImpactPage() {
         sectionY = 186
       }
 
+      function drawCO2(x: number, y: number, fontSize: number, color: readonly [number, number, number], weight: 'normal' | 'bold' = 'normal') {
+        doc.setFont('helvetica', weight).setFontSize(fontSize).setTextColor(...color)
+        doc.text('CO', x, y)
+        const coW = doc.getTextWidth('CO')
+        doc.setFontSize(fontSize * 0.65)
+        doc.text('2', x + coW, y + fontSize * 0.15)
+        const subW = doc.getTextWidth('2')
+        doc.setFontSize(fontSize)
+        return coW + subW
+      }
+
       // ── STAT TILES (3×2) ────────────────────────────────────
       const tileGap = 10
       const tileW = (cw - tileGap * 2) / 3
@@ -185,7 +196,7 @@ export default function ImpactPage() {
         { label: 'Employees joined', value: String(dashboard.member_count || memberCount || '—'), unit: '' },
         { label: 'Active trips', value: dashboard.active_trips_this_period.toLocaleString(), unit: '' },
         { label: 'Miles shifted', value: dashboard.miles_shifted.toLocaleString(undefined, { maximumFractionDigits: 1 }), unit: 'mi' },
-        { label: 'kg CO₂ avoided', value: dashboard.co2_avoided_kg.toFixed(1), unit: 'kg' },
+        { label: 'kg CO2 avoided', value: dashboard.co2_avoided_kg.toFixed(1), unit: 'kg', co2Label: true },
         { label: 'Most popular mode', value: topNonCarMode ? prettyMode(topNonCarMode.mode) : '—', unit: '' },
         { label: 'Shift rate', value: `${Math.round(dashboard.shift_rate_trip_pct)}%`, unit: '' },
       ]
@@ -202,7 +213,15 @@ export default function ImpactPage() {
         doc.roundedRect(tx, ty, tileW, tileH, 6, 6, 'FD')
 
         doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(...FAINT)
-        doc.text(stat.label, tx + 14, ty + 18)
+        if (stat.co2Label) {
+          doc.text('kg ', tx + 14, ty + 18)
+          const kgW = doc.getTextWidth('kg ')
+          const co2W = drawCO2(tx + 14 + kgW, ty + 18, 9, FAINT)
+          doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(...FAINT)
+          doc.text(' avoided', tx + 14 + kgW + co2W, ty + 18)
+        } else {
+          doc.text(stat.label, tx + 14, ty + 18)
+        }
 
         doc.setFont('helvetica', 'bold').setFontSize(22).setTextColor(...NAVY)
         doc.text(stat.value, tx + 14, ty + 44)
@@ -218,7 +237,7 @@ export default function ImpactPage() {
       const cardsY = sectionY + tileH * 2 + tileGap * 2 + 16
       const leftW = 300
       const rightW = cw - leftW - tileGap
-      const cardH = 210
+      const cardH = 230
 
       // Helper: card outline
       function drawCard(x: number, y: number, w: number, h: number) {
@@ -328,17 +347,16 @@ export default function ImpactPage() {
         doc.setDrawColor(210, 230, 218)
         doc.roundedRect(mx, coY, cw, 46, 8, 8, 'FD')
 
-        // Green dot as leaf stand-in
         doc.setFillColor(...ACCENT)
         doc.circle(mx + 26, coY + 23, 6, 'F')
-        doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(255, 255, 255)
-        doc.text('✰', mx + 22.5, coY + 26)
 
+        const prefix = `Your team avoided ${dashboard.co2_avoided_kg.toFixed(1)} kg of `
         doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...NAVY)
-        doc.text(
-          `Your team avoided ${dashboard.co2_avoided_kg.toFixed(1)} kg of CO₂ this period`,
-          mx + 44, coY + 20,
-        )
+        doc.text(prefix, mx + 44, coY + 20)
+        const prefixW = doc.getTextWidth(prefix)
+        const co2W = drawCO2(mx + 44 + prefixW, coY + 20, 11, NAVY, 'bold')
+        doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...NAVY)
+        doc.text(' this period', mx + 44 + prefixW + co2W, coY + 20)
         doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...MUTED)
         doc.text(
           `That's about the same as charging ${Math.round(dashboard.co2_avoided_kg * 122).toLocaleString()} smartphones.`,
