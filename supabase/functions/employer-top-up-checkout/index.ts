@@ -216,7 +216,7 @@ serve(async (req: Request) => {
             product_data: {
               name: `Shift reward pool top-up — ${group.name}`,
               description:
-                "Adds funds to your Shift rewards pool. Redeemable by your employees as gift cards and transit passes.",
+                "Adds funds to your Shift rewards pool. Redeemable by your employees as gift cards and bank transfers.",
             },
           },
           quantity: 1,
