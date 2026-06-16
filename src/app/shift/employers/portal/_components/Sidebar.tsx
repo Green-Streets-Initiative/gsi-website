@@ -59,7 +59,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
 
 function ChevronMark({ size = 36 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 36 28" width={size} height={size * (28 / 36)}>
+    <svg viewBox="0 1 35 26" width={size} height={size * (26 / 35)}>
       <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
       <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
     </svg>
