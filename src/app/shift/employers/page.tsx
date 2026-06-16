@@ -91,7 +91,12 @@ export default function ShiftEmployersPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
-            2 · WHAT EMPLOYERS GET
+            2 · EMPLOYER LOGIN
+        ══════════════════════════════════════════════════════════ */}
+        <EmployerLogin />
+
+        {/* ══════════════════════════════════════════════════════════
+            3 · WHAT EMPLOYERS GET
         ══════════════════════════════════════════════════════════ */}
         <section className="bg-[#242538] px-8 py-24">
           <div className="mx-auto max-w-[1120px]">
@@ -242,11 +247,6 @@ export default function ShiftEmployersPage() {
             <FAQ items={employerFaqItems} />
           </div>
         </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            6 · EMPLOYER LOGIN
-        ══════════════════════════════════════════════════════════ */}
-        <EmployerLogin />
 
         {/* ══════════════════════════════════════════════════════════
             7 · CLOSING CTA
