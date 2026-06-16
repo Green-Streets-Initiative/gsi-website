@@ -221,10 +221,39 @@ export default function ShareKitPage() {
             sub="Share these steps with employees who need help getting started"
           />
           <div className="px-6 pb-6">
+            <div className="mb-5 rounded-xl border border-accent/15 bg-accent-soft px-5 py-4">
+              <p className="mb-2 text-[13.5px] font-semibold text-ink">
+                Easiest way to join: share the deep link
+              </p>
+              <p className="mb-3 text-[13px] leading-[1.55] text-ink-muted">
+                This link opens the Shift app and joins the employee to {group.name} automatically. If they don&apos;t have the app yet, they&apos;ll see download links first.
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={joinUrl}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="flex-1 rounded-[10px] border border-line bg-surface px-3 py-2 text-[13px] text-ink outline-none focus:border-accent/40"
+                />
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={Copy}
+                  onClick={() => copy(joinUrl, 'steps-link')}
+                >
+                  {copiedField === 'steps-link' ? 'Copied!' : 'Copy link'}
+                </Button>
+              </div>
+            </div>
+
+            <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
+              Manual steps (if the link doesn&apos;t work)
+            </p>
             <div className="mb-6 grid gap-5 sm:grid-cols-3">
               {/* Step 1 */}
               <div className="flex flex-col items-center text-center">
-                <span className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[14px] font-bold text-white">
+                <span className="mb-4 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[14px] font-bold text-white">
                   1
                 </span>
                 <p className="mb-1 text-[14px] font-semibold text-ink">Download the Shift app</p>
@@ -253,7 +282,7 @@ export default function ShareKitPage() {
 
               {/* Step 2 */}
               <div className="flex flex-col items-center text-center">
-                <span className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[14px] font-bold text-white">
+                <span className="mb-4 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[14px] font-bold text-white">
                   2
                 </span>
                 <p className="mb-1 text-[14px] font-semibold text-ink">
@@ -272,7 +301,7 @@ export default function ShareKitPage() {
 
               {/* Step 3 */}
               <div className="flex flex-col items-center text-center">
-                <span className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[14px] font-bold text-white">
+                <span className="mb-4 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[14px] font-bold text-white">
                   3
                 </span>
                 <p className="mb-1 text-[14px] font-semibold text-ink">
