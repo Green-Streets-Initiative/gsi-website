@@ -65,6 +65,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  @media print {
+    body {
+      background-color: white;
+    }
+  }
 }
 
 @keyframes animate-in {
