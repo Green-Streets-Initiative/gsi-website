@@ -8,6 +8,7 @@ export function partnerBlockSchema(_platform: Platform) {
     perk: z.string().min(1).max(80),
     category: z.string().max(40).nullable().optional(),                      // e.g. "Bike shop"
     neighborhood: z.string().max(60).nullable().optional(),
+    locationIcon: z.enum(['map-pin', 'globe-simple']).default('map-pin').optional(),
     unlock: z.string().max(30).default('Mover'),
   });
 }

@@ -74,6 +74,9 @@ export async function renderSocialImage(input: RenderInput): Promise<RenderResul
   //     Injected raw via the `_html` suffix convention.
   preprocessLogoPlate(input.vars, 'logoSrc', 'partner');
   preprocessDonorLogo(input.vars, 'donorLogo', 'donor');
+  if (['partner_block', 'partner_photo'].includes(input.template)) {
+    preprocessPartnerLocation(input.vars);
+  }
 
   // 3a. Pre-render array vars (secondary_stats, forecast_days,
   //     alternatives, items) into HTML strings keyed as `<name>_html`.
@@ -255,6 +258,31 @@ function preprocessDonorLogo(
       `<span class="sx-meta">${escapeHtmlAttr(name)}</span>`;
   }
   delete vars[logoKey];
+}
+
+/**
+ * Pre-process partner location fields into `location_html`.
+ * When neighborhood is present, renders the full `.sx-loc` div with the
+ * appropriate icon (map-pin for physical, globe-simple for online).
+ * When absent, produces empty string — no orphan pin icon.
+ */
+function preprocessPartnerLocation(vars: Record<string, unknown>): void {
+  const neighborhood = typeof vars['neighborhood'] === 'string' ? vars['neighborhood'].trim() : '';
+  const iconName = typeof vars['locationIcon'] === 'string' ? vars['locationIcon'] : 'map-pin';
+
+  if (neighborhood) {
+    const iconSvg = phosphorIcon(iconName, { width: '36', height: '36' });
+    vars['location_html'] =
+      `<div class="sx-loc">` +
+      `${iconSvg} ` +
+      `${escapeHtmlAttr(neighborhood)}` +
+      `</div>`;
+  } else {
+    vars['location_html'] = '';
+  }
+
+  delete vars['neighborhood'];
+  delete vars['locationIcon'];
 }
 
 function escapeHtmlAttr(s: string): string {

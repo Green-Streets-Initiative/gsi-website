@@ -8,6 +8,7 @@ export function partnerPhotoSchema(_platform: Platform) {
     partner: z.string().min(1).max(60),                           // partner name
     perk: z.string().min(1).max(80),                              // offer text (rendered large)
     neighborhood: z.string().max(60).nullable().optional(),                  // e.g. "Inman Square, Cambridge"
+    locationIcon: z.enum(['map-pin', 'globe-simple']).default('map-pin').optional(),
     unlock: z.string().max(30).default('Mover'),                  // tier name (never "points")
     photoAttribution: z.string().nullable().optional(),
     photoAttributionUrl: z.string().url().nullable().optional(),

@@ -82,6 +82,7 @@ export const ALLOWED_ICONS = [
   'ticket',
   'calendar-blank',
   'mountains',
+  'globe-simple',
 ] as const;
 
 export type IconName = (typeof ALLOWED_ICONS)[number];
