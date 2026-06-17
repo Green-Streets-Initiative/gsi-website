@@ -204,6 +204,7 @@ export default async function FlyerPage({
       <style>{`
         @page { size: letter; margin: 0.25in 0.5in; }
         @media print {
+          body { background: white !important; }
           .flyer-no-print { display: none !important; }
           .flyer-root { background: white !important; min-height: 0 !important; }
           body > :not(.flyer-root) { display: none !important; }
