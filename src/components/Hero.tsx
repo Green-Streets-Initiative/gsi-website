@@ -19,7 +19,7 @@ export default function Hero() {
       </div>
 
       <div className="relative mx-auto max-w-[1120px] px-8">
-        <div className="grid min-h-[calc(100vh-60px)] items-center gap-16 lg:grid-cols-2">
+        <div className="grid items-center gap-16 py-20 lg:grid-cols-2 lg:py-24">
 
           {/* Left copy */}
           <div className="py-20 lg:py-16">
