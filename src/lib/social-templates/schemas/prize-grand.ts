@@ -7,9 +7,11 @@ export function prizeGrandSchema(_platform: Platform) {
     prize: z.string().min(1).max(80),                             // prize name
     sub: z.string().max(100).nullable().optional(),                          // subtitle, e.g. "+ a 3-piece accessory bundle"
     value: z.string().max(30).nullable().optional(),                         // e.g. "~$2,000 value"
+    tag: z.string().max(30).default('GIVEAWAY'),                  // top badge label
+    tag_icon: z.string().max(40).default('gift'),                 // Phosphor icon name
     donor: z.string().max(40).nullable().optional(),                         // donor name (text fallback)
     donorLogo: z.string().url().nullable().optional(),             // donor logo on white chip
     mechanic: z.string().max(60).default('1 entry per active trip'),
-    dates: z.string().max(40).default('June 15 – August 15'),
+    dates: z.string().max(40).default('Shift Your Summer 2026'),
   });
 }
