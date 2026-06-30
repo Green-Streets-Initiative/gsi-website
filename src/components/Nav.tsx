@@ -32,6 +32,9 @@ export default function Nav() {
           <Link href="/guides" className="whitespace-nowrap text-[0.8125rem] font-medium text-white transition-opacity hover:opacity-80">
             Guides
           </Link>
+          <Link href="/events" className="whitespace-nowrap text-[0.8125rem] font-medium text-white transition-opacity hover:opacity-80">
+            Events
+          </Link>
           <Link href="/get-involved" className="whitespace-nowrap text-[0.8125rem] font-medium text-white transition-opacity hover:opacity-80">
             Get involved
           </Link>
@@ -75,6 +78,7 @@ export default function Nav() {
             <Link href="/programs" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Programs</Link>
             <Link href="/commute-advisor" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Commute Advisor</Link>
             <Link href="/guides" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Guides</Link>
+            <Link href="/events" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Events</Link>
             <Link href="/about" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>About</Link>
             <Link href="/get-involved" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Get involved</Link>
             <Link href="/contact" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Contact</Link>

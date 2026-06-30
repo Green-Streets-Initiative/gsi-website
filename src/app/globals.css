@@ -3,6 +3,7 @@
 @theme {
   --font-display: 'Bricolage Grotesque', sans-serif;
   --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
   --font-serif: 'Instrument Serif', serif;
 
   --color-lime: #BAF14D;
