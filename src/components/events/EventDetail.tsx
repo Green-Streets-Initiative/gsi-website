@@ -8,10 +8,13 @@ import {
   ChevronLeft, Bookmark, Share2, Globe, ExternalLink, Ticket,
   Clock, Mail,
 } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import {
   type CommunityEvent, getTypeMeta, getTagMeta, formatTime, dateLong, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
 } from '@/lib/events'
+
+const EventMap = dynamic(() => import('./EventMap'), { ssr: false })
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
@@ -94,18 +97,13 @@ export default function EventDetail({ event }: EventDetailProps) {
             {/* Map card */}
             {(event.location_lat && event.location_lng) && (
               <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-card">
-                <div className="relative flex h-48 items-center justify-center bg-[#1F2034]">
-                  {/* Placeholder grid pattern */}
-                  <div className="absolute inset-0 opacity-10" style={{
-                    backgroundImage: 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)',
-                    backgroundSize: '24px 24px',
-                  }} />
-                  <MapPin size={32} className="relative text-lime" />
+                <div className="h-48">
+                  <EventMap lat={event.location_lat} lng={event.location_lng} label={event.location_name} />
                 </div>
                 <div className="p-4">
                   <p className="text-[14px] font-semibold text-white">{event.location_name}</p>
                   {event.location_address && (
-                    <p className="mt-0.5 text-[13px] text-white/55">{event.location_address}, MA</p>
+                    <p className="mt-0.5 text-[13px] text-white/55">{event.location_address}</p>
                   )}
                   <a
                     href={directionsUrl(event)}
