@@ -479,6 +479,7 @@ export default function EventsPage({ events }: EventsPageProps) {
                       const meta = EVENT_TYPES[t]
                       if (!meta) return null
                       const count = typeCounts[t] ?? 0
+                      if (count === 0) return null
                       return (
                         <button
                           key={t}
