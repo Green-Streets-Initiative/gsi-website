@@ -9,7 +9,7 @@ import {
   Clock, Mail,
 } from 'lucide-react'
 import {
-  type CommunityEvent, getTypeMeta, formatTime, dateLong, parseEventDate,
+  type CommunityEvent, getTypeMeta, getTagMeta, formatTime, dateLong, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
 } from '@/lib/events'
 
@@ -153,9 +153,27 @@ export default function EventDetail({ event }: EventDetailProps) {
             </div>
 
             {/* Title */}
-            <h1 className="mb-6 font-display text-[clamp(28px,3.5vw,40px)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h1 className="mb-4 font-display text-[clamp(28px,3.5vw,40px)] font-extrabold leading-[1.1] tracking-tight text-white">
               {event.title}
             </h1>
+
+            {/* Tags */}
+            {event.tags.length > 0 && (
+              <div className="mb-6 flex flex-wrap gap-1.5">
+                {event.tags.map(tag => {
+                  const tm = getTagMeta(tag)
+                  return (
+                    <span
+                      key={tag}
+                      className="inline-block rounded-full px-3 py-1 text-[12px] font-semibold"
+                      style={{ color: tm.color, backgroundColor: tm.bg }}
+                    >
+                      {tm.label}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
 
             {/* Action row */}
             <div className="mb-8 flex flex-wrap gap-2">

@@ -2,6 +2,12 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 const REQUIRED = ['title', 'eventType', 'description', 'date', 'startTime', 'venueName', 'city', 'contactEmail'] as const
 
+const VALID_TAGS = [
+  'free', 'paid', 'beginner_friendly', 'registration_required',
+  'family_friendly', 'seniors', 'lgbtq', 'women',
+  'spanish', 'bilingual',
+]
+
 export async function POST(request: Request) {
   const body = await request.json()
 
@@ -47,6 +53,7 @@ export async function POST(request: Request) {
 
   const lat = body.lat ? parseFloat(body.lat) : null
   const lng = body.lng ? parseFloat(body.lng) : null
+  const tags = Array.isArray(body.tags) ? body.tags.filter((t: string) => VALID_TAGS.includes(t)) : []
 
   const { error: edError } = await supabase.from('event_details').insert({
     content_id: contentId,
@@ -62,6 +69,7 @@ export async function POST(request: Request) {
     organizer_url: body.organizerUrl?.trim() || null,
     event_url: body.eventUrl?.trim() || null,
     registration_url: body.registrationUrl?.trim() || null,
+    tags,
   })
 
   if (edError) {

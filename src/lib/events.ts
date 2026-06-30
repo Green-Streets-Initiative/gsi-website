@@ -23,6 +23,7 @@ export interface CommunityEvent {
   registration_url: string | null
   image_url: string | null
   source_id: string | null
+  tags: string[]
 }
 
 export interface EventOrganizer {
@@ -83,6 +84,27 @@ export function haversine(lat1: number, lng1: number, lat2: number, lng2: number
     Math.sin(dLat / 2) ** 2 +
     Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLng / 2) ** 2
   return 2 * R * Math.asin(Math.sqrt(a))
+}
+
+// ---------------------------------------------------------------------------
+// Tag metadata — display labels and pill colors
+// ---------------------------------------------------------------------------
+
+export const TAG_META: Record<string, { label: string; color: string; bg: string }> = {
+  free:                  { label: 'Free',                 color: '#4ADE80', bg: '#4ADE8020' },
+  paid:                  { label: 'Paid',                 color: '#FBBF24', bg: '#FBBF2420' },
+  beginner_friendly:     { label: 'Beginner-friendly',    color: '#60A5FA', bg: '#60A5FA20' },
+  registration_required: { label: 'Registration req’d', color: '#F97316', bg: '#F9731620' },
+  family_friendly:       { label: 'Family-friendly',      color: '#F472B6', bg: '#F472B620' },
+  seniors:               { label: 'Seniors',              color: '#A78BFA', bg: '#A78BFA20' },
+  lgbtq:                 { label: 'LGBTQ+',               color: '#E879F9', bg: '#E879F920' },
+  women:                 { label: 'Women',                color: '#FB7185', bg: '#FB718520' },
+  spanish:               { label: 'En español',           color: '#FCD34D', bg: '#FCD34D20' },
+  bilingual:             { label: 'Bilingual',            color: '#FCD34D', bg: '#FCD34D20' },
+}
+
+export function getTagMeta(tag: string) {
+  return TAG_META[tag] ?? { label: tag, color: '#94A3B8', bg: '#94A3B820' }
 }
 
 export function formatDistance(miles: number): string {

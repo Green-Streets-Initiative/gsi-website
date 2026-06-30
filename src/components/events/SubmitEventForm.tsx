@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Check, Info } from 'lucide-react'
-import { EVENT_TYPES, TYPE_FILTER_ORDER } from '@/lib/events'
+import { EVENT_TYPES, TYPE_FILTER_ORDER, TAG_META } from '@/lib/events'
 
 interface FormData {
   title: string
@@ -66,6 +66,7 @@ function isValidEmail(email: string) {
 
 export default function SubmitEventForm() {
   const [form, setForm] = useState<FormData>(EMPTY_FORM)
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -109,7 +110,7 @@ export default function SubmitEventForm() {
       const res = await fetch('/api/events/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, tags: selectedTags }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -152,7 +153,7 @@ export default function SubmitEventForm() {
                 Back to events
               </Link>
               <button
-                onClick={() => { setForm(EMPTY_FORM); setErrors({}); setSubmitted(false) }}
+                onClick={() => { setForm(EMPTY_FORM); setSelectedTags([]); setErrors({}); setSubmitted(false) }}
                 className="rounded-[10px] bg-lime px-5 py-2.5 text-[13px] font-bold text-navy transition-opacity hover:opacity-85"
               >
                 Submit another
@@ -206,6 +207,33 @@ export default function SubmitEventForm() {
                 <textarea value={form.description} onChange={set('description')} rows={4} className={inputClass('description')} placeholder="What happens, who it's for, what to bring…" />
                 {errors.description && <p className="mt-1 text-[12px] text-[#FF6B6B]">{errors.description}</p>}
               </div>
+            </div>
+          </fieldset>
+
+          {/* Tags */}
+          <fieldset className="rounded-2xl border border-white/[0.07] bg-card p-6">
+            <legend className="mb-1 font-display text-lg font-bold text-white">Who is it for?</legend>
+            <p className="mb-4 text-[13px] text-white/60">Select all that apply. Helps people find the right events.</p>
+            <div className="flex flex-wrap gap-2">
+              {(['free', 'beginner_friendly', 'family_friendly', 'seniors', 'lgbtq', 'women', 'registration_required', 'spanish', 'bilingual'] as const).map(tag => {
+                const tm = TAG_META[tag]
+                const active = selectedTags.includes(tag)
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setSelectedTags(prev => active ? prev.filter(t => t !== tag) : [...prev, tag])}
+                    className="rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-all"
+                    style={{
+                      borderColor: active ? tm.color : 'rgba(255,255,255,0.14)',
+                      backgroundColor: active ? tm.bg : 'transparent',
+                      color: active ? tm.color : 'rgba(255,255,255,0.6)',
+                    }}
+                  >
+                    {tm.label}
+                  </button>
+                )
+              })}
             </div>
           </fieldset>
 

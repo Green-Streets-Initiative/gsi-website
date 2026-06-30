@@ -6,7 +6,7 @@ import {
   MapPin, Calendar, GraduationCap, Wrench, Flag, Users, Bookmark,
   Clock,
 } from 'lucide-react'
-import { type CommunityEvent, getTypeMeta, formatTime, formatDistance, haversine, parseEventDate, dateShort } from '@/lib/events'
+import { type CommunityEvent, getTypeMeta, getTagMeta, formatTime, formatDistance, haversine, parseEventDate, dateShort } from '@/lib/events'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
@@ -69,6 +69,22 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
         <p className="mt-1 truncate text-[13px] text-white/55">
           {metaParts.join(' · ')}
         </p>
+        {event.tags.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {event.tags.slice(0, 3).map(tag => {
+              const tm = getTagMeta(tag)
+              return (
+                <span
+                  key={tag}
+                  className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight"
+                  style={{ color: tm.color, backgroundColor: tm.bg }}
+                >
+                  {tm.label}
+                </span>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Bookmark */}
