@@ -218,14 +218,37 @@ export default function EventsPage({ events }: EventsPageProps) {
     )
   }
 
-  const handleSetTown = () => {
-    const coords = lookupTown(addressInput)
+  const handleSetTown = async () => {
+    const q = addressInput.trim()
+    if (!q) return
+
+    const coords = lookupTown(q)
     if (coords) {
-      setUserLoc({ lat: coords[0], lng: coords[1], label: addressInput.trim() })
+      setUserLoc({ lat: coords[0], lng: coords[1], label: q })
       setGeoStatus('active')
-      showToast(`Showing events near ${addressInput.trim()}`)
-    } else {
-      showToast('Town not recognized — try a Massachusetts city name.')
+      showToast(`Near ${q}`)
+      return
+    }
+
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ', Massachusetts')}&format=json&limit=3&addressdetails=1`,
+        { headers: { 'Accept': 'application/json' } },
+      )
+      const data = await res.json()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const place = data.find((r: any) => r.address?.city || r.address?.town || r.address?.village) ?? data[0]
+      if (place) {
+        const label = place.address?.city || place.address?.town || place.address?.village || place.display_name.split(',')[0]
+        setUserLoc({ lat: parseFloat(place.lat), lng: parseFloat(place.lon), label })
+        setGeoStatus('active')
+        setAddressInput(label)
+        showToast(`Near ${label}`)
+      } else {
+        showToast('Location not found — try a Massachusetts city or town.')
+      }
+    } catch {
+      showToast('Could not look up location. Try again.')
     }
   }
 
