@@ -26,6 +26,12 @@ import { prizeFeaturedSchema } from './prize-featured';
 import { prizePoolSchema } from './prize-pool';
 import { roamPosterSchema } from './roam-poster';
 import { roamCollectionSchema } from './roam-collection';
+import { ceWeekSchema } from './ce-week';
+import { ceSpotlightSchema } from './ce-spotlight';
+import { ceMonthSchema } from './ce-month';
+import { ceWeekFbSchema } from './ce-week-fb';
+import { ceCarouselCoverSchema } from './ce-carousel-cover';
+import { ceCarouselWeekSchema } from './ce-carousel-week';
 import { type Platform } from '../platform-overrides';
 
 type SchemaFactory = (platform: Platform) => ZodTypeAny;
@@ -49,6 +55,13 @@ export const TEMPLATE_SCHEMAS: Record<string, SchemaFactory> = {
   prize_pool: prizePoolSchema,
   roam_poster: roamPosterSchema,
   roam_collection: roamCollectionSchema,
+  // Community events templates
+  ce_week: ceWeekSchema,
+  ce_spotlight: ceSpotlightSchema,
+  ce_month: ceMonthSchema,
+  ce_week_fb: ceWeekFbSchema,
+  ce_carousel_cover: ceCarouselCoverSchema,
+  ce_carousel_week: ceCarouselWeekSchema,
 };
 
 export const TEMPLATE_IDS = Object.keys(TEMPLATE_SCHEMAS);

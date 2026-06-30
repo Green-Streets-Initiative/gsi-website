@@ -8,7 +8,7 @@ import { ASPECT_RATIOS, type AspectRatio } from './aspect-ratios';
 import { type Platform } from './platform-overrides';
 import { phosphorIcon } from './icons';
 import { getTemplateFile } from './default-ratios';
-import { expandArrayVars } from './array-renderers';
+import { expandArrayVars, renderCeSpotlightHero, renderCeTypeTile } from './array-renderers';
 import { createServerSupabaseClient } from '../supabase-server';
 
 /**
@@ -76,6 +76,10 @@ export async function renderSocialImage(input: RenderInput): Promise<RenderResul
   preprocessDonorLogo(input.vars, 'donorLogo', 'donor');
   if (['partner_block', 'partner_photo'].includes(input.template)) {
     preprocessPartnerLocation(input.vars);
+  }
+
+  if (input.template === 'ce_spotlight') {
+    preprocessCeSpotlight(input.vars);
   }
 
   // 3a. Pre-render array vars (secondary_stats, forecast_days,
@@ -291,4 +295,14 @@ function escapeHtmlAttr(s: string): string {
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+function preprocessCeSpotlight(vars: Record<string, unknown>): void {
+  const imageUrl = typeof vars['image_url'] === 'string' ? vars['image_url'] : null;
+  vars['hero_html'] = renderCeSpotlightHero(imageUrl);
+  delete vars['image_url'];
+
+  const eventType = typeof vars['event_type'] === 'string' ? vars['event_type'] : '';
+  vars['type_tile_html'] = renderCeTypeTile(eventType);
+  delete vars['event_type'];
 }

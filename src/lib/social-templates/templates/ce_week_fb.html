@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:{{__width__}}px; height:{{__height__}}px; overflow:hidden; -webkit-font-smoothing:antialiased; }
+  body {
+    width:{{__width__}}px; height:{{__height__}}px;
+    background:#191A2E;
+    display:flex;
+    font-family:'Source Sans 3',system-ui,sans-serif;
+    color:rgba(255,255,255,0.92);
+  }
+  .left-panel {
+    width:454px; flex:0 0 454px; background:#BAF14D; padding:64px 56px;
+    display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .lp-badge {
+    font-size:22px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase;
+    color:rgba(25,26,46,0.65); margin-bottom:18px;
+  }
+  .lp-headline {
+    font-family:'Bricolage Grotesque',serif; font-weight:800;
+    font-size:72px; line-height:0.95; letter-spacing:-0.035em; color:#191A2E;
+  }
+  .lp-range { font-family:'DM Mono',monospace; font-size:26px; font-weight:500; color:rgba(25,26,46,0.8); margin-bottom:8px; }
+  .lp-handle { font-size:26px; font-weight:700; color:#191A2E; }
+  .right-panel { flex:1; min-width:0; padding:54px 60px; display:flex; flex-direction:column; justify-content:center; }
+</style>
+</head>
+<body>
+  <!-- Left panel (lime) -->
+  <div class="left-panel">
+    <div>
+      <div class="lp-badge">This week</div>
+      <h2 class="lp-headline">Get out and move.</h2>
+    </div>
+    <div>
+      <div class="lp-range">{{week_range}}</div>
+      <div class="lp-handle">gogreenstreets.org/events</div>
+    </div>
+  </div>
+
+  <!-- Right panel (event rows) -->
+  <div class="right-panel">
+    {{events_html}}
+  </div>
+</body>
+</html>

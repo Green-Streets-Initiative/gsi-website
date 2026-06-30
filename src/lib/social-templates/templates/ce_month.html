@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:{{__width__}}px; height:{{__height__}}px; overflow:hidden; -webkit-font-smoothing:antialiased; }
+  body {
+    width:{{__width__}}px; height:{{__height__}}px;
+    background:#191A2E; padding:80px 80px 72px;
+    display:flex; flex-direction:column;
+    font-family:'Source Sans 3',system-ui,sans-serif;
+    color:rgba(255,255,255,0.92);
+  }
+  .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:44px; }
+  .header-left { }
+  .eyebrow {
+    font-size:24px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
+    color:#BAF14D; white-space:nowrap; margin-bottom:16px;
+  }
+  .month-name {
+    font-family:'Bricolage Grotesque',serif; font-weight:800;
+    font-size:88px; line-height:0.9; letter-spacing:-0.035em; color:#fff;
+  }
+  .calendar { }
+  .legend { margin-top:auto; display:flex; flex-direction:column; padding-top:8px; }
+  .footer-handle {
+    border-top:1px solid rgba(255,255,255,0.1); padding-top:26px; margin-top:26px;
+    font-size:26px; font-weight:600; color:rgba(255,255,255,0.9); text-align:center;
+  }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="eyebrow">{{event_count}} events this month</div>
+      <h2 class="month-name">{{month_name}}</h2>
+    </div>
+    <svg viewBox="0 0 380 30" xmlns="http://www.w3.org/2000/svg" style="height:32px;display:block;flex:0 0 auto">
+      <text y="24" font-family="'Trebuchet MS','Lucida Grande',Verdana,sans-serif" font-size="22" letter-spacing="0.3">
+        <tspan fill="#52B788" font-weight="700">Green Streets</tspan><tspan fill="#FFFFFF" font-weight="400"> Initiative</tspan>
+      </text>
+    </svg>
+  </div>
+
+  <!-- Calendar grid -->
+  <div class="calendar">
+    {{calendar_weeks_html}}
+  </div>
+
+  <!-- Type legend -->
+  <div class="legend">
+    {{legend_types_html}}
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-handle">gogreenstreets.org/events</div>
+</body>
+</html>

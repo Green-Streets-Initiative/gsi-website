@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:{{__width__}}px; height:{{__height__}}px; overflow:hidden; -webkit-font-smoothing:antialiased; }
+  body {
+    width:{{__width__}}px; height:{{__height__}}px;
+    background:#191A2E; padding:80px;
+    display:flex; flex-direction:column;
+    font-family:'Source Sans 3',system-ui,sans-serif;
+    color:rgba(255,255,255,0.92);
+  }
+  .header { display:flex; align-items:center; justify-content:space-between; }
+  .counter { font-family:'DM Mono',monospace; font-size:24px; color:rgba(255,255,255,0.5); }
+  .eyebrow {
+    font-size:26px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;
+    color:#BAF14D; margin-bottom:24px;
+  }
+  .headline {
+    font-family:'Bricolage Grotesque',serif; font-weight:800;
+    font-size:112px; line-height:0.92; letter-spacing:-0.04em;
+    margin:0 0 32px; color:#fff;
+  }
+  .intro { font-size:34px; line-height:1.4; color:rgba(255,255,255,0.65); max-width:24ch; }
+  .footer {
+    margin-top:auto; display:flex; align-items:center; justify-content:space-between;
+    border-top:1px solid rgba(255,255,255,0.12); padding-top:34px;
+  }
+  .handle { font-size:30px; font-weight:600; color:rgba(255,255,255,0.85); }
+  .cta {
+    display:inline-flex; align-items:center; gap:14px;
+    font-family:'Bricolage Grotesque',serif; font-size:32px; font-weight:800; color:#BAF14D;
+  }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <svg viewBox="0 0 380 30" xmlns="http://www.w3.org/2000/svg" style="height:36px;display:block">
+      <text y="24" font-family="'Trebuchet MS','Lucida Grande',Verdana,sans-serif" font-size="22" letter-spacing="0.3">
+        <tspan fill="#52B788" font-weight="700">Green Streets</tspan><tspan fill="#FFFFFF" font-weight="400"> Initiative</tspan>
+      </text>
+    </svg>
+    <span class="counter">1 / {{total_slides}}</span>
+  </div>
+
+  <!-- Content -->
+  <div style="margin-top:auto">
+    <div class="eyebrow">Community events · {{month_name}} {{year}}</div>
+    <h2 class="headline">{{event_count}} ways<br>to get<br>moving.</h2>
+    <p class="intro">Group rides, e&#8209;bike demos, walks, open streets and more — all across Massachusetts.</p>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span class="handle">gogreenstreets.org/events</span>
+    <span class="cta">
+      Swipe for the month
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#BAF14D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </span>
+  </div>
+</body>
+</html>
