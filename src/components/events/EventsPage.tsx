@@ -401,9 +401,6 @@ export default function EventsPage({ events }: EventsPageProps) {
                 List
               </button>
             </div>
-            <span className="hidden text-[13px] text-white/50 md:inline">
-              Pick the view that suits you — both show the same events.
-            </span>
           </div>
         </div>
       </section>

@@ -30,6 +30,8 @@ export default function EventDetail({ event }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = ICON_MAP[meta.icon] ?? Calendar
   const evDate = parseEventDate(event.event_date)
+  const hasMap = !!(event.location_lat && event.location_lng)
+  const hasLeftColumn = !!(event.image_url || hasMap)
 
   const [saved, setSaved] = useState(false)
   const [calMenuOpen, setCalMenuOpen] = useState(false)
@@ -80,44 +82,40 @@ export default function EventDetail({ event }: EventDetailProps) {
           All events
         </Link>
 
-        <div className="grid gap-10 lg:grid-cols-2">
+        <div className={`grid gap-10 ${hasLeftColumn ? 'lg:grid-cols-2' : ''}`}>
           {/* ---- LEFT COLUMN ---- */}
-          <div>
-            {/* Flyer image placeholder */}
-            {event.image_url ? (
-              <div className="mb-6 aspect-[4/5] overflow-hidden rounded-2xl border border-white/[0.07]">
-                <img src={event.image_url} alt={event.title} className="h-full w-full object-cover" />
-              </div>
-            ) : (
-              <div className="mb-6 flex aspect-[4/5] items-center justify-center rounded-2xl border border-white/[0.07] bg-card">
-                <Icon size={64} style={{ color: meta.color, opacity: 0.3 }} />
-              </div>
-            )}
+          {hasLeftColumn && (
+            <div>
+              {event.image_url && (
+                <div className="mb-6 aspect-[4/5] overflow-hidden rounded-2xl border border-white/[0.07]">
+                  <img src={event.image_url} alt={event.title} className="h-full w-full object-cover" />
+                </div>
+              )}
 
-            {/* Map card */}
-            {(event.location_lat && event.location_lng) && (
-              <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-card">
-                <div className="h-48">
-                  <EventMap lat={event.location_lat} lng={event.location_lng} label={event.location_name} />
+              {hasMap && (
+                <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-card">
+                  <div className={event.image_url ? 'h-48' : 'h-72'}>
+                    <EventMap lat={event.location_lat!} lng={event.location_lng!} label={event.location_name} />
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[14px] font-semibold text-white">{event.location_name}</p>
+                    {event.location_address && (
+                      <p className="mt-0.5 text-[13px] text-white/55">{event.location_address}</p>
+                    )}
+                    <a
+                      href={directionsUrl(event)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-white/[0.14] px-4 py-2 text-[13px] font-medium text-white/75 transition-colors hover:bg-white/[0.06]"
+                    >
+                      <MapPin size={14} />
+                      Directions
+                    </a>
+                  </div>
                 </div>
-                <div className="p-4">
-                  <p className="text-[14px] font-semibold text-white">{event.location_name}</p>
-                  {event.location_address && (
-                    <p className="mt-0.5 text-[13px] text-white/55">{event.location_address}</p>
-                  )}
-                  <a
-                    href={directionsUrl(event)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-white/[0.14] px-4 py-2 text-[13px] font-medium text-white/75 transition-colors hover:bg-white/[0.06]"
-                  >
-                    <MapPin size={14} />
-                    Directions
-                  </a>
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* ---- RIGHT COLUMN ---- */}
           <div>
