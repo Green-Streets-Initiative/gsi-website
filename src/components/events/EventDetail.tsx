@@ -99,8 +99,8 @@ export default function EventDetail({ event }: EventDetailProps) {
           {hasLeftColumn && (
             <div>
               {event.image_url && (
-                <div className="mb-6 aspect-[4/5] overflow-hidden rounded-2xl border border-white/[0.07]">
-                  <img src={event.image_url} alt={event.title} className="h-full w-full object-cover" />
+                <div className="mb-6 overflow-hidden rounded-2xl border border-white/[0.07]">
+                  <img src={event.image_url} alt={event.title} className="w-full object-contain" />
                 </div>
               )}
 
