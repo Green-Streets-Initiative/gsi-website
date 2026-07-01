@@ -216,47 +216,5 @@ export function directionsUrl(ev: CommunityEvent): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`
 }
 
-// ---------------------------------------------------------------------------
-// MA town lookup (for distance filter)
-// ---------------------------------------------------------------------------
-
-export const MA_TOWNS: Record<string, [number, number]> = {
-  boston:       [42.3601, -71.0589],
-  cambridge:   [42.3736, -71.1097],
-  somerville:  [42.3876, -71.0995],
-  arlington:   [42.4154, -71.1565],
-  worcester:   [42.2626, -71.8023],
-  salem:       [42.5195, -70.8967],
-  lowell:      [42.6334, -71.3162],
-  northampton: [42.3251, -72.6412],
-  amherst:     [42.3732, -72.5199],
-  everett:     [42.4084, -71.0537],
-  quincy:      [42.2529, -71.0023],
-  newton:      [42.3370, -71.2092],
-  brookline:   [42.3318, -71.1212],
-  medford:     [42.4184, -71.1062],
-  waltham:     [42.3765, -71.2356],
-  framingham:  [42.2793, -71.4162],
-  springfield: [42.1015, -72.5898],
-  pittsfield:  [42.4501, -73.2526],
-  plymouth:    [41.9584, -70.6673],
-  barnstable:  [41.7003, -70.3002],
-  gloucester:  [42.6159, -70.6620],
-  newburyport: [42.8126, -70.8773],
-  beverly:     [42.5584, -70.8800],
-  brockton:    [42.0834, -71.0184],
-  'new bedford': [41.6362, -70.9342],
-  'fall river': [41.7015, -71.1550],
-}
-
-export function lookupTown(query: string): [number, number] | null {
-  const q = query.trim().toLowerCase()
-  if (!q) return null
-  for (const [name, coords] of Object.entries(MA_TOWNS)) {
-    if (name.startsWith(q) || q.startsWith(name)) return coords
-  }
-  return null
-}
-
 // Default reference location
 export const DEFAULT_LOCATION = { lat: 42.3736, lng: -71.1097, label: 'Cambridge, MA' }

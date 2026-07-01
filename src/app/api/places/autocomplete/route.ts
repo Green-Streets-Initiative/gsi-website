@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 const API_KEY = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY!
 
 export async function POST(req: NextRequest) {
-  const { input } = (await req.json()) as { input?: string }
+  const { input, types } = (await req.json()) as { input?: string; types?: string[] }
 
   if (!input || input.trim().length < 3) {
     return Response.json({ predictions: [] })
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       input,
       includedRegionCodes: ['us'],
-      includedPrimaryTypes: ['street_address', 'premise', 'subpremise', 'establishment'],
+      includedPrimaryTypes: types ?? ['street_address', 'premise', 'subpremise', 'establishment'],
       locationBias: {
         circle: {
           center: { latitude: 42.3736, longitude: -71.1097 },

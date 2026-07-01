@@ -10,11 +10,12 @@ import {
 } from 'lucide-react'
 import {
   type CommunityEvent, getTypeMeta, haversine, parseEventDate,
-  dateKey, groupLabel, todayKey, lookupTown, DEFAULT_LOCATION,
+  dateKey, groupLabel, todayKey, DEFAULT_LOCATION,
   TYPE_FILTER_ORDER, EVENT_TYPES,
 } from '@/lib/events'
 import CalendarGrid from './CalendarGrid'
 import EventCard from './EventCard'
+import CityAutocomplete from './CityAutocomplete'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
@@ -67,7 +68,6 @@ export default function EventsPage({ events }: EventsPageProps) {
   // Location state
   const [userLoc, setUserLoc] = useState(DEFAULT_LOCATION)
   const [geoStatus, setGeoStatus] = useState<'idle' | 'locating' | 'active'>('idle')
-  const [addressInput, setAddressInput] = useState('')
 
   // Calendar state
   const now = new Date()
@@ -205,10 +205,19 @@ export default function EventsPage({ events }: EventsPageProps) {
     }
     setGeoStatus('locating')
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: 'Your location' })
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords
+        setUserLoc({ lat, lng, label: 'Your location' })
         setGeoStatus('active')
-        showToast('Using your location')
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10`,
+            { headers: { Accept: 'application/json' } },
+          )
+          const data = await res.json()
+          const city = data.address?.city || data.address?.town || data.address?.village || data.address?.hamlet
+          if (city) setUserLoc({ lat, lng, label: city })
+        } catch { /* best-effort */ }
       },
       () => {
         setGeoStatus('idle')
@@ -218,38 +227,10 @@ export default function EventsPage({ events }: EventsPageProps) {
     )
   }
 
-  const handleSetTown = async () => {
-    const q = addressInput.trim()
-    if (!q) return
-
-    const coords = lookupTown(q)
-    if (coords) {
-      setUserLoc({ lat: coords[0], lng: coords[1], label: q })
-      setGeoStatus('active')
-      showToast(`Near ${q}`)
-      return
-    }
-
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ', Massachusetts')}&format=json&limit=3&addressdetails=1`,
-        { headers: { 'Accept': 'application/json' } },
-      )
-      const data = await res.json()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const place = data.find((r: any) => r.address?.city || r.address?.town || r.address?.village) ?? data[0]
-      if (place) {
-        const label = place.address?.city || place.address?.town || place.address?.village || place.display_name.split(',')[0]
-        setUserLoc({ lat: parseFloat(place.lat), lng: parseFloat(place.lon), label })
-        setGeoStatus('active')
-        setAddressInput(label)
-        showToast(`Near ${label}`)
-      } else {
-        showToast('Location not found — try a Massachusetts city or town.')
-      }
-    } catch {
-      showToast('Could not look up location. Try again.')
-    }
+  const handleCitySelect = (loc: { lat: number; lng: number; label: string }) => {
+    setUserLoc(loc)
+    setGeoStatus('active')
+    showToast(`Near ${loc.label}`)
   }
 
   const handleToggleSave = (id: string) => {
@@ -291,22 +272,7 @@ export default function EventsPage({ events }: EventsPageProps) {
           {geoStatus === 'locating' ? 'Locating…' : 'Use my location'}
         </button>
       </div>
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={addressInput}
-          onChange={(e) => setAddressInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSetTown()}
-          placeholder="Town or city"
-          className="flex-1 rounded-lg border border-white/[0.14] bg-[#1F2034] px-3 py-1.5 text-[13px] text-white placeholder:text-white/50 focus:border-lime focus:outline-none"
-        />
-        <button
-          onClick={handleSetTown}
-          className="rounded-lg border border-white/[0.14] px-3 py-1.5 text-[12px] font-medium text-white/75 transition-colors hover:bg-white/[0.06]"
-        >
-          Set
-        </button>
-      </div>
+      <CityAutocomplete onSelect={handleCitySelect} />
       {geoStatus === 'active' && (
         <p className="mt-1.5 text-[11px] text-lime/80">
           Near {userLoc.label}
