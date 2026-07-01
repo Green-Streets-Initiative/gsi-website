@@ -123,70 +123,83 @@ export async function renderSocialImage(input: RenderInput): Promise<RenderResul
   const isVercel = !!process.env.VERCEL;
   const localChromiumPath = process.env.PLAYWRIGHT_LOCAL_CHROMIUM_PATH;
 
-  const browser = await chromium.launch({
-    args: isVercel
-      ? sparticuzChromium.args
-      : ['--no-sandbox', '--disable-setuid-sandbox'],
-    executablePath: isVercel
-      ? await sparticuzChromium.executablePath()
-      : (localChromiumPath || (await sparticuzChromium.executablePath())),
-    headless: true,
-  });
+  async function launchBrowser() {
+    return chromium.launch({
+      args: isVercel
+        ? sparticuzChromium.args
+        : ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: isVercel
+        ? await sparticuzChromium.executablePath()
+        : (localChromiumPath || (await sparticuzChromium.executablePath())),
+      headless: true,
+    });
+  }
 
-  let storage_path: string;
-  let publicUrl: string;
-
-  try {
+  async function captureScreenshot(browser: Awaited<ReturnType<typeof chromium.launch>>): Promise<Buffer> {
     const page = await browser.newPage({
       viewport: { width: dims.width, height: dims.height },
       deviceScaleFactor: 1,
     });
     await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 10_000 });
 
-    // Wait for fonts + images to load. domcontentloaded is faster than
-    // networkidle (which can hang on long-polling or slow CDN requests).
-    // We explicitly wait for the two things that matter: fonts and images.
     await page.evaluate(() => Promise.all([
       document.fonts.ready,
       ...Array.from(document.images)
         .filter((img) => !img.complete)
         .map((img) => new Promise((resolve) => {
           img.onload = resolve;
-          img.onerror = resolve; // don't block on broken images
+          img.onerror = resolve;
         })),
     ]));
-    // Small buffer for pending paints. Wrapped in try/catch because on
-    // Vercel cold-start cleanup the browser context can close before this
-    // completes — the screenshot still succeeds since fonts+images are
-    // already loaded above.
     try { await page.waitForTimeout(200); } catch { /* context may be closing */ }
 
-    const screenshot = await page.screenshot({
+    return page.screenshot({
       type: 'png',
       fullPage: false,
       clip: { x: 0, y: 0, width: dims.width, height: dims.height },
     });
-
-    // 6. Upload to Supabase Storage
-    const supabase = createServerSupabaseClient();
-    const filename = buildFilename(input);
-    storage_path = filename;
-
-    const { error: uploadErr } = await supabase.storage
-      .from('social-images')
-      .upload(filename, screenshot, {
-        contentType: 'image/png',
-        upsert: false,
-      });
-    if (uploadErr) throw new Error(`Storage upload failed: ${uploadErr.message}`);
-
-    const { data: urlData } = supabase.storage
-      .from('social-images')
-      .getPublicUrl(filename);
-    publicUrl = urlData.publicUrl;
-  } finally {
-    await browser.close();
   }
+
+  let storage_path: string;
+  let publicUrl: string;
+
+  // Chromium on Vercel can die mid-render ("Target page, context or
+  // browser has been closed") due to /tmp contention or cold-start
+  // recycling. One retry with a fresh browser handles it.
+  let screenshot: Buffer;
+  let browser = await launchBrowser();
+  try {
+    screenshot = await captureScreenshot(browser);
+  } catch (firstErr) {
+    await browser.close().catch(() => {});
+    if (isVercel && firstErr instanceof Error && firstErr.message.includes('has been closed')) {
+      console.warn('[render] browser died, retrying with fresh instance');
+      browser = await launchBrowser();
+      screenshot = await captureScreenshot(browser);
+    } else {
+      throw firstErr;
+    }
+  } finally {
+    await browser.close().catch(() => {});
+  }
+
+  // 6. Upload to Supabase Storage
+  const supabase = createServerSupabaseClient();
+  const filename = buildFilename(input);
+  storage_path = filename;
+
+  const { error: uploadErr } = await supabase.storage
+    .from('social-images')
+    .upload(filename, screenshot, {
+      contentType: 'image/png',
+      upsert: false,
+    });
+  if (uploadErr) throw new Error(`Storage upload failed: ${uploadErr.message}`);
+
+  const { data: urlData } = supabase.storage
+    .from('social-images')
+    .getPublicUrl(filename);
+  publicUrl = urlData.publicUrl;
 
   return {
     image_url: publicUrl,
