@@ -16,6 +16,18 @@ import {
 
 const EventMap = dynamic(() => import('./EventMap'), { ssr: false })
 
+function withUtm(url: string): string {
+  try {
+    const u = new URL(url)
+    u.searchParams.set('utm_source', 'gsi')
+    u.searchParams.set('utm_medium', 'events_calendar')
+    u.searchParams.set('utm_campaign', 'community_events')
+    return u.toString()
+  } catch {
+    return url
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Bike, Zap, Package, Footprints, Bus, Megaphone, PartyPopper,
@@ -276,7 +288,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/50">Organizer</p>
                     {event.organizer_url ? (
-                      <a href={event.organizer_url} target="_blank" rel="noopener noreferrer" className="text-[14px] text-lime hover:underline">
+                      <a href={withUtm(event.organizer_url)} target="_blank" rel="noopener noreferrer" className="text-[14px] text-lime hover:underline">
                         {event.organizer_name} <ExternalLink size={12} className="inline" />
                       </a>
                     ) : (
@@ -291,7 +303,7 @@ export default function EventDetail({ event }: EventDetailProps) {
             <div className="flex flex-wrap gap-2">
               {event.event_url && (
                 <a
-                  href={event.event_url}
+                  href={withUtm(event.event_url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-[10px] border border-white/[0.18] px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/[0.06]"
@@ -302,7 +314,7 @@ export default function EventDetail({ event }: EventDetailProps) {
               )}
               {event.registration_url && (
                 <a
-                  href={event.registration_url}
+                  href={withUtm(event.registration_url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-[10px] bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-85"
