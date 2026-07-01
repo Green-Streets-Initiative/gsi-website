@@ -32,6 +32,8 @@ import { ceMonthSchema } from './ce-month';
 import { ceWeekFbSchema } from './ce-week-fb';
 import { ceCarouselCoverSchema } from './ce-carousel-cover';
 import { ceCarouselWeekSchema } from './ce-carousel-week';
+import { ceFbCarouselCoverSchema } from './ce-fb-carousel-cover';
+import { ceFbCarouselWeekSchema } from './ce-fb-carousel-week';
 import { type Platform } from '../platform-overrides';
 
 type SchemaFactory = (platform: Platform) => ZodTypeAny;
@@ -62,6 +64,8 @@ export const TEMPLATE_SCHEMAS: Record<string, SchemaFactory> = {
   ce_week_fb: ceWeekFbSchema,
   ce_carousel_cover: ceCarouselCoverSchema,
   ce_carousel_week: ceCarouselWeekSchema,
+  ce_fb_carousel_cover: ceFbCarouselCoverSchema,
+  ce_fb_carousel_week: ceFbCarouselWeekSchema,
 };
 
 export const TEMPLATE_IDS = Object.keys(TEMPLATE_SCHEMAS);

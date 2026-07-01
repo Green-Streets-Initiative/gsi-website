@@ -328,6 +328,31 @@ export function renderCeCarouselEvents(events: CeEvent[]): string {
   }).join('');
 }
 
+// ── ce_fb_carousel_week: event rows (FB square, compact) ─────────────
+
+export function renderCeFbCarouselEvents(events: CeEvent[]): string {
+  return events.map((ev) => {
+    const meta = ceTypeMeta(ev.event_type);
+    return `
+      <div style="display:flex;align-items:center;gap:22px;padding:20px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
+        <div style="flex:0 0 100px;text-align:center">
+          <div style="font-family:'Source Sans 3',system-ui,sans-serif;font-size:17px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#BAF14D">${escapeHtml(ev.weekday)}</div>
+          <div style="font-family:'Bricolage Grotesque',serif;font-size:44px;font-weight:800;line-height:1;color:#fff">${escapeHtml(ev.day_num)}</div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:30px;line-height:1.12;letter-spacing:-0.02em;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(ev.title)}</div>
+          <div style="font-size:22px;color:rgba(255,255,255,0.6);margin-top:4px">${escapeHtml(ev.time)} · ${escapeHtml(ev.city)}</div>
+        </div>
+        <div style="flex:0 0 auto;display:flex;align-items:center;gap:14px">
+          <span style="width:108px;font-size:16px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:${meta.color};text-align:right;line-height:1.08">${escapeHtml(ev.type_label)}</span>
+          <div style="flex:0 0 72px;width:72px;height:72px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:${ceTint(meta.color, 0.16)}">
+            ${ceIcon(meta.icon, 34, 2, meta.color)}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
 // ── ce_spotlight: hero image section ───────────────────────────────────
 
 export function renderCeSpotlightHero(imageUrl: string | null): string {
@@ -465,6 +490,8 @@ export function expandArrayVars(
             out[`${key}_html`] = renderCeWeekFbEvents(value as CeEvent[]);
           } else if (template === 'ce_carousel_week') {
             out[`${key}_html`] = renderCeCarouselEvents(value as CeEvent[]);
+          } else if (template === 'ce_fb_carousel_week') {
+            out[`${key}_html`] = renderCeFbCarouselEvents(value as CeEvent[]);
           }
           continue;
         case 'calendar_weeks':

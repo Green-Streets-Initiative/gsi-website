@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:{{__width__}}px; height:{{__height__}}px; overflow:hidden; -webkit-font-smoothing:antialiased; }
+  body {
+    width:{{__width__}}px; height:{{__height__}}px;
+    background:#191A2E; padding:76px;
+    display:flex; flex-direction:column;
+    font-family:'Source Sans 3',system-ui,sans-serif;
+    color:rgba(255,255,255,0.92);
+  }
+  .header { display:flex; align-items:center; justify-content:space-between; }
+  .counter { font-family:'DM Mono',monospace; font-size:24px; color:rgba(255,255,255,0.5); }
+  .week-header {
+    margin-top:36px; display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom:2px solid rgba(255,255,255,0.12); padding-bottom:24px;
+  }
+  .week-label {
+    font-family:'Bricolage Grotesque',serif; font-weight:800;
+    font-size:64px; line-height:0.95; letter-spacing:-0.035em; color:#fff;
+  }
+  .week-meta-right { text-align:right; }
+  .week-range { font-family:'DM Mono',monospace; font-size:28px; color:#BAF14D; }
+  .week-count { font-size:22px; color:rgba(255,255,255,0.5); margin-top:6px; }
+  .rows { margin-top:4px; display:flex; flex-direction:column; }
+  .footer-handle {
+    margin-top:auto; border-top:1px solid rgba(255,255,255,0.12); padding-top:24px;
+    font-size:26px; font-weight:600; color:rgba(255,255,255,0.85); text-align:center;
+  }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <svg viewBox="0 0 380 30" xmlns="http://www.w3.org/2000/svg" style="height:32px;display:block">
+      <text y="24" font-family="'Trebuchet MS','Lucida Grande',Verdana,sans-serif" font-size="22" letter-spacing="0.3">
+        <tspan fill="#52B788" font-weight="700">Green Streets</tspan><tspan fill="#FFFFFF" font-weight="400"> Initiative</tspan>
+      </text>
+    </svg>
+    <span class="counter">{{slide_no}} / {{total_slides}}</span>
+  </div>
+
+  <!-- Week header -->
+  <div class="week-header">
+    <h2 class="week-label">{{week_label}}</h2>
+    <div class="week-meta-right">
+      <div class="week-range">{{week_range}}</div>
+      <div class="week-count">{{count_label}}</div>
+    </div>
+  </div>
+
+  <!-- Event rows -->
+  <div class="rows">
+    {{events_html}}
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-handle">gogreenstreets.org/events</div>
+</body>
+</html>

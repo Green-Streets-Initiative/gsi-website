@@ -54,6 +54,8 @@ export const DEFAULT_RATIOS: Record<string, Record<Platform, AspectRatio>> = {
   'ce_week_fb':        { instagram: '1.91:1',facebook: '1.91:1',linkedin: '1.91:1',bluesky: '1.91:1' },
   'ce_carousel_cover': { instagram: '4:5',   facebook: '4:5',   linkedin: '4:5',   bluesky: '4:5' },
   'ce_carousel_week':  { instagram: '4:5',   facebook: '4:5',   linkedin: '4:5',   bluesky: '4:5' },
+  'ce_fb_carousel_cover': { instagram: '1:1', facebook: '1:1', linkedin: '1:1', bluesky: '1:1' },
+  'ce_fb_carousel_week':  { instagram: '1:1', facebook: '1:1', linkedin: '1:1', bluesky: '1:1' },
 };
 
 export function getDefaultRatio(template: string, platform: Platform): AspectRatio {
