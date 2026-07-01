@@ -373,7 +373,7 @@ export function renderCeCalendar(weeks: CeCalendarDay[][]): string {
         ? `<span style="width:14px;height:14px;border-radius:9999px;background:${c.dot_color}"></span>`
         : '';
       return `
-        <div style="height:103px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:${bg};border:${border}">
+        <div style="height:96px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:${bg};border:${border}">
           <span style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:34px;color:${textColor}">${escapeHtml(c.day)}</span>
           ${dot}
         </div>`;
@@ -398,15 +398,15 @@ export function renderCeLegend(types: CeLegendType[], moreCount: number, monthAb
   const rows = types.slice(0, 5).map((t) => {
     const meta = ceTypeMeta(t.event_type);
     return `
-      <div style="display:flex;align-items:center;gap:18px;padding:16px 0;border-top:1px solid rgba(255,255,255,0.1)">
-        <span style="flex:0 0 15px;width:15px;height:15px;border-radius:9999px;background:${meta.color}"></span>
-        <span style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:30px;letter-spacing:-0.02em;color:#fff;flex:0 0 300px;width:300px">${escapeHtml(t.type_label)}</span>
-        <span style="font-family:'DM Mono',monospace;font-size:24px;color:rgba(255,255,255,0.78);white-space:nowrap">${escapeHtml(monthAbbr)} ${escapeHtml(t.dates)}</span>
+      <div style="display:flex;align-items:center;gap:16px;padding:12px 0;border-top:1px solid rgba(255,255,255,0.1)">
+        <span style="flex:0 0 13px;width:13px;height:13px;border-radius:9999px;background:${meta.color}"></span>
+        <span style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:28px;letter-spacing:-0.02em;color:#fff;flex:0 0 240px;width:240px">${escapeHtml(t.type_label)}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:22px;color:rgba(255,255,255,0.65);white-space:nowrap">${escapeHtml(monthAbbr)} ${escapeHtml(t.dates)}</span>
       </div>`;
   }).join('');
 
   const more = moreCount > 0
-    ? `<div style="padding:16px 0 0;border-top:1px solid rgba(255,255,255,0.1);font-size:24px;font-weight:600;color:rgba(255,255,255,0.4)">+ ${moreCount} more event types at the link</div>`
+    ? `<div style="padding:10px 0 0;border-top:1px solid rgba(255,255,255,0.1);font-size:22px;font-weight:600;color:rgba(255,255,255,0.4)">+ ${moreCount} more event types at the link</div>`
     : '';
 
   return rows + more;
