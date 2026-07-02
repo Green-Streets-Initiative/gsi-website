@@ -1,6 +1,8 @@
 -- Add miles_in_period and co2_avoided_in_period to get_employer_members
 -- Also broaden auth check to include group_admins (viewers) via is_group_team()
 
+DROP FUNCTION IF EXISTS public.get_employer_members(uuid, integer);
+
 CREATE OR REPLACE FUNCTION public.get_employer_members(p_group_id uuid, p_days integer DEFAULT 30)
  RETURNS TABLE(
    user_id              uuid,
