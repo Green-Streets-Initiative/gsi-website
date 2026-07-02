@@ -44,6 +44,7 @@ export const EMPTY_PRIZE_FORM: PrizeFormState = {
   tremendous_product_id: '',
   prize_description: '',
   auto_draw: true,
+  budget_cap_dollars: '',
 }
 
 export const MODE_LABEL: Record<string, string> = {

@@ -80,6 +80,7 @@ export type ChallengePrize = {
   draw_status: 'pending' | 'drawn' | 'fulfilled'
   drawn_at: string | null
   display_order: number
+  budget_cap_cents: number | null
 }
 
 export type PrizeWinner = {
@@ -107,6 +108,7 @@ export type PrizeFormState = {
   tremendous_product_id: string
   prize_description: string
   auto_draw: boolean
+  budget_cap_dollars: string
 }
 
 export type TremendousProduct = {

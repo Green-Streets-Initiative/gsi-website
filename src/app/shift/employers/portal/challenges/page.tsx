@@ -15,6 +15,7 @@ import {
   Search,
   Ban,
   Info,
+  Trash2,
 } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
 import { usePortal } from '../_lib/portal-context'
@@ -169,6 +170,9 @@ export default function ChallengesPage() {
           tremendous_product_id: p.tremendous_product_id || '',
           prize_description: p.prize_description || '',
           auto_draw: p.auto_draw,
+          budget_cap_dollars: p.budget_cap_cents
+            ? String(p.budget_cap_cents / 100)
+            : '',
         })),
       )
       setEditMode(true)
@@ -247,7 +251,7 @@ export default function ChallengesPage() {
       }
 
       // Save prizes
-      if (competitionId && tierAtLeast('premium') && prizeForms.length > 0) {
+      if (competitionId && (tierAtLeast('premium') || isGsiAdmin) && prizeForms.length > 0) {
         for (let i = 0; i < prizeForms.length; i++) {
           const pf = prizeForms[i]
           const prizePayload = {
@@ -257,7 +261,7 @@ export default function ChallengesPage() {
             award_mode: pf.award_mode,
             metric: pf.metric,
             min_threshold:
-              pf.award_mode === 'drawing' && pf.min_threshold
+              pf.min_threshold
                 ? parseFloat(pf.min_threshold)
                 : null,
             winner_count: parseInt(pf.winner_count, 10) || 1,
@@ -274,6 +278,10 @@ export default function ChallengesPage() {
               ? pf.prize_description.trim() || null
               : null,
             auto_draw: pf.auto_draw,
+            budget_cap_cents:
+              pf.funded_from_pool && pf.budget_cap_dollars
+                ? Math.round(parseFloat(pf.budget_cap_dollars) * 100)
+                : null,
             display_order: i,
           }
           if (pf.id) {
@@ -375,6 +383,28 @@ export default function ChallengesPage() {
     setChallenges,
     setChallengePrizes,
   ])
+
+  async function deleteChallenge(challengeId: string) {
+    const hasDrawn = challengePrizes.some(
+      (p) => p.competition_id === challengeId && p.draw_status !== 'pending',
+    )
+    const msg = hasDrawn
+      ? 'This challenge has drawn prizes. Deleting it will remove all winner records. Continue?'
+      : 'Delete this challenge and all its prizes? This cannot be undone.'
+    if (!confirm(msg)) return
+
+    const { error } = await supabase
+      .from('competitions')
+      .delete()
+      .eq('id', challengeId)
+    if (error) {
+      toast(error.message, { type: 'error' })
+      return
+    }
+    setChallenges(challenges.filter((c) => c.id !== challengeId))
+    setChallengePrizes(challengePrizes.filter((p) => p.competition_id !== challengeId))
+    toast('Challenge deleted')
+  }
 
   async function drawPrize(prizeId: string) {
     setDrawingPrizeId(prizeId)
@@ -483,6 +513,12 @@ export default function ChallengesPage() {
                       >
                         Edit
                       </Button>
+                      <button
+                        className="grid h-8 w-8 place-items-center rounded-lg text-ink-faint hover:text-ep-danger"
+                        onClick={() => deleteChallenge(c.id)}
+                      >
+                        <Trash2 size={15} strokeWidth={1.75} />
+                      </button>
                     </div>
                   )}
                 </div>
@@ -588,7 +624,7 @@ export default function ChallengesPage() {
             </div>
 
             {/* Prizes */}
-            {tierAtLeast('premium') && (
+            {(tierAtLeast('premium') || isGsiAdmin) && (
               <div>
                 <div className="mb-2.5 text-[12.5px] font-semibold text-ink-muted">
                   Prizes{' '}
@@ -803,6 +839,9 @@ function PrizeCard({
               · {p.funded_from_pool
                 ? `$${(p.amount_cents ?? 0) / 100}${productName ? ` ${productName}` : ' from pool'}`
                 : 'Self-fulfilled'}
+              {p.budget_cap_cents != null && (
+                <> · Budget: ${(p.budget_cap_cents / 100).toLocaleString()}</>
+              )}
             </div>
           </div>
         </div>
@@ -1117,12 +1156,20 @@ function PrizeEditor({
             <input
               type="number"
               min="1"
+              max="500"
               className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
               value={p.winner_count}
               onChange={(e) => onChange({ winner_count: e.target.value })}
             />
           </div>
         </div>
+        {p.award_mode === 'merit' && p.min_threshold && Number(p.min_threshold) > 0 && (
+          <p className="text-[12px] leading-[1.5] text-ink-faint">
+            {Number(p.winner_count) >= 100
+              ? `All employees reaching ${p.min_threshold} ${PRIZE_METRIC_UNITS[p.metric] ?? '%'} ${PRIZE_METRIC_LABELS[p.metric] ?? 'Shift Rate'} will receive this prize (up to ${p.winner_count}).`
+              : `Everyone meeting this threshold is eligible. The top ${p.winner_count} by ${PRIZE_METRIC_LABELS[p.metric] ?? 'Shift Rate'} will win. Set a high winner count to include everyone who qualifies.`}
+          </p>
+        )}
 
         <div>
           <div className="mb-2 text-[12.5px] font-semibold text-ink-muted">
@@ -1169,6 +1216,29 @@ function PrizeEditor({
                   onChange={(e) => onChange({ amount_dollars: e.target.value })}
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                Budget cap <span className="font-normal text-ink-faint">· optional</span>
+              </label>
+              <div className="flex items-center rounded-[10px] border border-line bg-surface">
+                <span className="pl-3 text-[14px] text-ink-faint">$</span>
+                <input
+                  type="number"
+                  min="1"
+                  className="w-full border-0 bg-transparent px-2 py-2.5 text-[14px] text-ink outline-none"
+                  placeholder="No limit"
+                  value={p.budget_cap_dollars}
+                  onChange={(e) => onChange({ budget_cap_dollars: e.target.value })}
+                />
+              </div>
+              <p className="mt-1.5 text-[12px] leading-[1.5] text-ink-faint">
+                Limits total spend for this prize.
+                {p.budget_cap_dollars && p.amount_dollars && parseFloat(p.amount_dollars) > 0
+                  ? ` Up to ${Math.floor(parseFloat(p.budget_cap_dollars) / parseFloat(p.amount_dollars))} recipients.`
+                  : ' If more people qualify than the budget covers, top performers receive the prize.'}
+              </p>
             </div>
 
             <div>
