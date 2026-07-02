@@ -160,11 +160,19 @@ export function PortalProvider({ children }: { children: ReactNode }) {
               .maybeSingle()
           : Promise.resolve({ data: null, error: null } as const)
 
-      const [challengeRes, memberRes, dashboardRes, membersRes, poolRes, adminsRes] = await Promise.all([
+      const [challengeRes, flagshipRes, memberRes, dashboardRes, membersRes, poolRes, adminsRes] = await Promise.all([
         supabase
           .from('competitions')
           .select('id, name, metric, starts_at, ends_at, prize_description')
           .eq('group_id', groupData.id)
+          .order('starts_at', { ascending: false }),
+        supabase
+          .from('competitions')
+          .select('id, name, metric, starts_at, ends_at, prize_description')
+          .eq('is_public', true)
+          .is('group_id', null)
+          .gte('ends_at', now)
+          .contains('matchup_group_ids', [groupData.id])
           .order('starts_at', { ascending: false }),
         supabase
           .from('group_members')
@@ -186,14 +194,23 @@ export function PortalProvider({ children }: { children: ReactNode }) {
           .order('created_at'),
       ])
 
-      if (challengeRes.data && challengeRes.data.length > 0) {
-        const allChallenges = challengeRes.data.map((c) => ({
-          ...c,
-          public_leaderboard: groupData.public_leaderboard ?? false,
-        })) as Challenge[]
-        setChallenges(allChallenges)
+      const groupChallenges = (challengeRes.data ?? []).map((c) => ({
+        ...c,
+        public_leaderboard: groupData.public_leaderboard ?? false,
+      })) as Challenge[]
+      const flagships = (flagshipRes.data ?? []).map((c) => ({
+        ...c,
+        public_leaderboard: true,
+        is_flagship: true,
+      })) as Challenge[]
+      const existingIds = new Set(groupChallenges.map((c) => c.id))
+      const uniqueFlagships = flagships.filter((c) => !existingIds.has(c.id))
+      const allChallenges = [...groupChallenges, ...uniqueFlagships]
+      setChallenges(allChallenges)
 
-        const challengeIds = allChallenges.map((c) => c.id)
+      if (groupChallenges.length > 0) {
+
+        const challengeIds = groupChallenges.map((c) => c.id)
         const { data: prizesData } = await supabase
           .from('employer_challenge_prizes')
           .select('*')

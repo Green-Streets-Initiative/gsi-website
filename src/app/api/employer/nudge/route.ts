@@ -66,7 +66,7 @@ export async function POST(request: Request) {
 
   const now = new Date().toISOString()
 
-  const [groupRes, memberRes, userRes, challengeRes, dashRes] = await Promise.all([
+  const [groupRes, memberRes, userRes, challengeRes, flagshipRes, dashRes] = await Promise.all([
     sb.from('groups').select('name, invite_code').eq('id', groupId).single(),
     sb.from('group_members').select('user_id').eq('group_id', groupId).eq('user_id', userId).maybeSingle(),
     sb.from('users').select('display_name, email').eq('id', userId).maybeSingle(),
@@ -75,6 +75,14 @@ export async function POST(request: Request) {
       .eq('group_id', groupId)
       .gte('ends_at', now)
       .lte('starts_at', now)
+      .order('ends_at'),
+    sb.from('competitions')
+      .select('name, ends_at, prize_description')
+      .eq('is_public', true)
+      .is('group_id', null)
+      .gte('ends_at', now)
+      .lte('starts_at', now)
+      .contains('matchup_group_ids', [groupId])
       .order('ends_at'),
     sb.rpc('get_employer_dashboard_data', { p_group_id: groupId, p_days: 30 }),
   ])
@@ -91,7 +99,10 @@ export async function POST(request: Request) {
 
   const group = groupRes.data
   const dashboard = dashRes.data as { member_count?: number; active_trips_this_period?: number } | null
-  const activeChallenges = (challengeRes.data ?? []) as ActiveChallenge[]
+  const activeChallenges = [
+    ...(challengeRes.data ?? []),
+    ...(flagshipRes.data ?? []),
+  ] as ActiveChallenge[]
 
   const teamSize = dashboard?.member_count ?? 0
   const teamActiveCount = dashboard?.active_trips_this_period ?? 0

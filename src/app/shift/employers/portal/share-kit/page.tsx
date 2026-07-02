@@ -48,6 +48,9 @@ export default function ShareKitPage() {
   }
 
   const now = new Date()
+  const activeFlagship = challenges.find(
+    (c) => c.is_flagship && new Date(c.starts_at) <= now && new Date(c.ends_at) >= now,
+  )
   const activeChallenge = challenges.find(
     (c) => new Date(c.starts_at) <= now && new Date(c.ends_at) >= now,
   )
@@ -362,6 +365,28 @@ export default function ShareKitPage() {
             </Button>
           </a>
         </Card>
+
+        {/* Flagship challenge flyer */}
+        {activeFlagship && (
+          <Card pad>
+            <div className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-accent">
+              {activeFlagship.name} flyer
+            </div>
+            <p className="mb-4 text-[14px] leading-[1.6] text-ink-muted">
+              A custom flyer for {group.name}&apos;s participation in {activeFlagship.name}. Share with your team to drive sign-ups during the challenge.
+            </p>
+            <a
+              href={`https://gogreenstreets.org/events/shift-your-summer/share/${group.slug ?? group.invite_code}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="contents"
+            >
+              <Button variant="primary" icon={ExternalLink}>
+                Open {activeFlagship.name} flyer
+              </Button>
+            </a>
+          </Card>
+        )}
       </div>
 
       {lightboxSrc && (

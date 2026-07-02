@@ -25,6 +25,7 @@ export type Challenge = {
   ends_at: string
   prize_description: string | null
   public_leaderboard: boolean
+  is_flagship?: boolean
 }
 
 export type DashboardData = {

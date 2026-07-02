@@ -429,7 +429,7 @@ export default function ChallengesPage() {
         <div className="grid gap-4">
           {challenges.map((c) => {
             const st = statusOf(c)
-            const prizes = prizesFor(c.id)
+            const prizes = c.is_flagship ? [] : prizesFor(c.id)
             return (
               <Card pad key={c.id}>
                 <div className="flex flex-wrap items-start justify-between gap-3.5">
@@ -439,7 +439,12 @@ export default function ChallengesPage() {
                       <Badge tone={st.tone} dot={false}>
                         {st.label}
                       </Badge>
-                      {c.public_leaderboard && (
+                      {c.is_flagship && (
+                        <Badge tone="info" dot={false}>
+                          Flagship
+                        </Badge>
+                      )}
+                      {!c.is_flagship && c.public_leaderboard && (
                         <Badge tone="info" dot={false}>
                           Public board
                         </Badge>
@@ -451,14 +456,22 @@ export default function ChallengesPage() {
                         {formatDate(c.starts_at)} →{' '}
                         {formatDate(c.ends_at)}
                       </span>
-                      <span className="flex items-center gap-1.5">
-                        <Gift size={14} strokeWidth={1.75} />
-                        {prizes.length}{' '}
-                        {prizes.length === 1 ? 'prize' : 'prizes'}
-                      </span>
+                      {!c.is_flagship && (
+                        <span className="flex items-center gap-1.5">
+                          <Gift size={14} strokeWidth={1.75} />
+                          {prizes.length}{' '}
+                          {prizes.length === 1 ? 'prize' : 'prizes'}
+                        </span>
+                      )}
+                      {c.is_flagship && c.prize_description && (
+                        <span className="flex items-center gap-1.5">
+                          <Gift size={14} strokeWidth={1.75} />
+                          {c.prize_description}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  {isAdmin && (
+                  {isAdmin && !c.is_flagship && (
                     <div className="flex gap-2">
                       <Button
                         variant="secondary"
