@@ -503,7 +503,7 @@ function EmployeeDrawer({ member, onClose }: { member: EmployerMember; onClose: 
                           </div>
                         ))}
                         <p className="mt-1.5 text-[11px] text-[#2D6A4F]">
-                          Log your trips now to get on the board before {activeChallenges.length > 1 ? 'they end' : 'it ends'}.
+                          Get on the board before {activeChallenges.length > 1 ? 'they end' : 'it ends'}!
                         </p>
                       </div>
                     )}
@@ -522,8 +522,8 @@ function EmployeeDrawer({ member, onClose }: { member: EmployerMember; onClose: 
 
                     <p className="mb-2.5">
                       Every trip counts — whether you walked, biked, took the bus, or carpooled.
-                      Just open the Shift app and tap <strong>Log a trip</strong> to record your
-                      commute. It takes about 10 seconds.
+                      Shift automatically tracks your trips, so all you have to do is choose how
+                      you get around.
                     </p>
                     <p className="mb-3">
                       Your participation helps {groupName} track its impact and unlock rewards

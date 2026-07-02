@@ -7,9 +7,12 @@ const SHIFT_LOGO_URL =
   'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-mark.png'
 
 interface ActiveChallenge {
+  id: string
   name: string
   ends_at: string
   prize_description: string | null
+  prize_headline: string | null
+  prize_total: number
 }
 
 interface NudgeData {
@@ -71,13 +74,13 @@ export async function POST(request: Request) {
     sb.from('group_members').select('user_id').eq('group_id', groupId).eq('user_id', userId).maybeSingle(),
     sb.from('users').select('display_name, email').eq('id', userId).maybeSingle(),
     sb.from('competitions')
-      .select('name, ends_at, prize_description')
+      .select('id, name, ends_at, prize_description')
       .eq('group_id', groupId)
       .gte('ends_at', now)
       .lte('starts_at', now)
       .order('ends_at'),
     sb.from('competitions')
-      .select('name, ends_at, prize_description')
+      .select('id, name, ends_at, prize_description')
       .eq('is_public', true)
       .is('group_id', null)
       .gte('ends_at', now)
@@ -99,10 +102,41 @@ export async function POST(request: Request) {
 
   const group = groupRes.data
   const dashboard = dashRes.data as { member_count?: number; active_trips_this_period?: number } | null
-  const activeChallenges = [
+  const rawChallenges = [
     ...(challengeRes.data ?? []),
     ...(flagshipRes.data ?? []),
-  ] as ActiveChallenge[]
+  ] as { id: string; name: string; ends_at: string; prize_description: string | null }[]
+
+  let activeChallenges: ActiveChallenge[] = rawChallenges.map((c) => ({
+    ...c,
+    prize_headline: null,
+    prize_total: 0,
+  }))
+
+  if (rawChallenges.length > 0) {
+    const challengeIds = rawChallenges.map((c) => c.id)
+    const { data: prizeRows } = await sb
+      .from('competition_prizes')
+      .select('competition_id, description, value_amount')
+      .in('competition_id', challengeIds)
+      .eq('prize_type', 'individual')
+      .order('value_amount', { ascending: false })
+
+    if (prizeRows && prizeRows.length > 0) {
+      const prizeMap = new Map<string, { headline: string; total: number }>()
+      for (const p of prizeRows) {
+        const entry = prizeMap.get(p.competition_id) ?? { headline: '', total: 0 }
+        if (!entry.headline && p.description) entry.headline = p.description
+        entry.total += p.value_amount ?? 0
+        prizeMap.set(p.competition_id, entry)
+      }
+      activeChallenges = activeChallenges.map((c) => {
+        const info = prizeMap.get(c.id)
+        if (!info) return c
+        return { ...c, prize_headline: info.headline, prize_total: info.total }
+      })
+    }
+  }
 
   const teamSize = dashboard?.member_count ?? 0
   const teamActiveCount = dashboard?.active_trips_this_period ?? 0
@@ -157,12 +191,20 @@ function buildNudgeHtml(opts: NudgeData) {
   if (activeChallenges.length > 0) {
     const items = activeChallenges.map((c) => {
       const ends = formatDateShort(c.ends_at)
-      const prize = c.prize_description
-        ? ` &mdash; <span style="color:#2D6A4F;font-weight:600;">${escapeHtml(c.prize_description)}</span>`
-        : ''
+      let prizeText = ''
+      if (c.prize_headline && c.prize_total > 0) {
+        const totalStr = c.prize_total >= 100
+          ? `$${Math.round(c.prize_total / 100).toLocaleString('en-US')}`
+          : ''
+        prizeText = `<br/><span style="color:#2D6A4F;font-weight:600;">Win ${escapeHtml(c.prize_headline)} and more${totalStr ? ` &mdash; ${totalStr}+ in prizes` : ''}</span>`
+      } else if (c.prize_headline) {
+        prizeText = `<br/><span style="color:#2D6A4F;font-weight:600;">Win ${escapeHtml(c.prize_headline)}</span>`
+      } else if (c.prize_description) {
+        prizeText = `<br/><span style="color:#2D6A4F;font-weight:600;">${escapeHtml(c.prize_description)}</span>`
+      }
       return `<tr>
         <td style="padding:6px 0;font-size:14px;line-height:1.4;">
-          <strong>${escapeHtml(c.name)}</strong>${prize}
+          <strong>${escapeHtml(c.name)}</strong>${prizeText}
           <br/><span style="color:#6b7280;font-size:12px;">Ends ${ends}</span>
         </td>
       </tr>`
@@ -172,7 +214,7 @@ function buildNudgeHtml(opts: NudgeData) {
       <div style="background:#E7F0EA;border-radius:10px;padding:16px 20px;margin-bottom:16px;">
         <div style="font-size:13px;font-weight:700;color:#2D6A4F;margin-bottom:8px;">&#127942; Active challenge${activeChallenges.length > 1 ? 's' : ''} you can join</div>
         <table cellpadding="0" cellspacing="0" style="width:100%;">${items}</table>
-        <p style="margin:8px 0 0;font-size:13px;color:#2D6A4F;">Log your trips now to get on the board before ${activeChallenges.length > 1 ? 'they end' : 'it ends'}.</p>
+        <p style="margin:8px 0 0;font-size:13px;color:#2D6A4F;">Get on the board before ${activeChallenges.length > 1 ? 'they end' : 'it ends'}!</p>
       </div>`
   }
 
@@ -212,7 +254,7 @@ function buildNudgeHtml(opts: NudgeData) {
       ${challengeSection}
       ${leaderboardSection}
       <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#1a1a2e;">
-        Every trip counts &mdash; whether you walked, biked, took the bus, or carpooled. Just open the Shift app and tap <strong>Log a trip</strong> to record your commute. It takes about 10 seconds.
+        Every trip counts &mdash; whether you walked, biked, took the bus, or carpooled. Shift automatically tracks your trips, so all you have to do is choose how you get around.
       </p>
       <p style="margin:0 0 24px;font-size:15px;line-height:1.55;color:#1a1a2e;">
         Your participation helps ${escapeHtml(groupName)} track its impact and unlock rewards for the whole team.

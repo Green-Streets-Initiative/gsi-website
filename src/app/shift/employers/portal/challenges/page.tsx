@@ -329,37 +329,11 @@ export default function ChallengesPage() {
         : form.public_leaderboard
       const wantsPublic = form.public_leaderboard
       if (wantsPublic !== wasPublic) {
-        await supabase
-          .from('groups')
-          .update({ public_leaderboard: wantsPublic })
-          .eq('id', group.id)
-        const now = new Date().toISOString()
-        const { data: flagships } = await supabase
-          .from('competitions')
-          .select('id, matchup_group_ids')
-          .eq('is_public', true)
-          .is('group_id', null)
-          .gte('ends_at', now)
-          .order('starts_at', { ascending: true })
-        if (flagships) {
-          for (const flagship of flagships) {
-            const currentIds: string[] = flagship.matchup_group_ids ?? []
-            let newIds: string[]
-            if (wantsPublic && !currentIds.includes(group.id)) {
-              newIds = [...currentIds, group.id]
-            } else if (!wantsPublic) {
-              newIds = currentIds.filter((id) => id !== group.id)
-            } else {
-              newIds = currentIds
-            }
-            if (newIds !== currentIds) {
-              await supabase
-                .from('competitions')
-                .update({ matchup_group_ids: newIds })
-                .eq('id', flagship.id)
-            }
-          }
-        }
+        const { error: syncErr } = await supabase.rpc('sync_group_public_leaderboard', {
+          p_group_id: group.id,
+          p_wants_public: wantsPublic,
+        })
+        if (syncErr) console.error('Leaderboard sync error:', syncErr)
       }
 
       setBuilderOpen(false)
