@@ -323,8 +323,10 @@ export default function ChallengesPage() {
         }
       }
 
-      // Public leaderboard
-      const wasPublic = group.public_leaderboard ?? false
+      // Public leaderboard — only sync when editing and the toggle actually changed
+      const wasPublic = editMode
+        ? (editingChallenge?.public_leaderboard ?? group.public_leaderboard ?? false)
+        : form.public_leaderboard
       const wantsPublic = form.public_leaderboard
       if (wantsPublic !== wasPublic) {
         await supabase
