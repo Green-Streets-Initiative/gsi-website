@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Copy,
@@ -19,7 +19,12 @@ import {
   MapPin,
   Share2,
   ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  Send,
+  Check,
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
 import { formatDateShort } from '../_lib/portal-utils'
 import PortalPageHead from '../_components/PortalPageHead'
@@ -338,9 +343,40 @@ export default function EmployeesPage() {
 }
 
 function EmployeeDrawer({ member, onClose }: { member: EmployerMember; onClose: () => void }) {
+  const { group, isAdmin } = usePortal()
   const rate = member.trips_in_period
     ? Math.round((member.active_trips_in_period / member.trips_in_period) * 100)
     : 0
+
+  const [showPreview, setShowPreview] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  const sendNudge = useCallback(async () => {
+    if (!group || sending || sent) return
+    setSending(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+      const res = await fetch('/api/employer/nudge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ userId: member.user_id, groupId: group.id }),
+      })
+      if (res.ok) {
+        setSent(true)
+      }
+    } finally {
+      setSending(false)
+    }
+  }, [group, member.user_id, sending, sent])
+
+  const groupName = group?.name ?? 'your team'
+  const employeeName = member.display_name
+  const greeting = employeeName ? `Hi ${employeeName},` : 'Hi there,'
 
   return (
     <>
@@ -410,7 +446,80 @@ function EmployeeDrawer({ member, onClose }: { member: EmployerMember; onClose: 
             what they share inside the Shift app.
           </p>
 
-          <Button variant="secondary" icon={Mail}>Send a nudge</Button>
+          {/* Nudge section */}
+          {isAdmin && (
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => setShowPreview(!showPreview)}
+                className="flex w-full items-center justify-between rounded-xl border border-line bg-surface px-4 py-3 text-left transition-colors hover:bg-surface-2"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Mail size={16} strokeWidth={1.75} className="text-ink-muted" />
+                  <span className="text-[13.5px] font-semibold text-ink">Send a nudge</span>
+                </div>
+                {showPreview
+                  ? <ChevronUp size={16} className="text-ink-faint" />
+                  : <ChevronDown size={16} className="text-ink-faint" />
+                }
+              </button>
+
+              {showPreview && (
+                <div className="space-y-3">
+                  <div className="overflow-hidden rounded-xl border border-line">
+                    <div className="bg-[#191A2E] px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[14px] font-black text-white">Shift</span>
+                        <span className="text-[11px] font-bold text-[#52B788]">Green Streets</span>
+                      </div>
+                    </div>
+                    <div className="bg-white px-4 py-4 text-[12.5px] leading-relaxed text-[#1a1a2e]">
+                      <p className="mb-2.5">{greeting}</p>
+                      <p className="mb-2.5">
+                        Your team at <strong>{groupName}</strong> is logging commute trips with Shift,
+                        and we noticed you haven&apos;t logged one in a while.
+                      </p>
+                      <p className="mb-2.5">
+                        Every trip counts — whether you walked, biked, took the bus, or carpooled.
+                        Just open the Shift app and tap <strong>Log a trip</strong> to record your
+                        commute. It takes about 10 seconds.
+                      </p>
+                      <p className="mb-3">
+                        Your participation helps {groupName} track its impact and unlock rewards
+                        for the whole team.
+                      </p>
+                      <span className="inline-block rounded-lg bg-[#2D6A4F] px-4 py-2 text-[12px] font-semibold text-white">
+                        Open Shift &rarr;
+                      </span>
+                    </div>
+                    <div className="border-t border-line bg-[#f9fafb] px-4 py-2.5 text-center text-[10px] text-[#9CA3AF]">
+                      Sent on behalf of {groupName}
+                    </div>
+                  </div>
+
+                  <p className="text-[11.5px] leading-relaxed text-ink-faint">
+                    Subject: <em>Your team at {groupName} is counting on you!</em>
+                  </p>
+
+                  {sent ? (
+                    <div className="flex items-center gap-2 rounded-xl bg-accent-softer px-4 py-3">
+                      <Check size={16} className="text-accent" />
+                      <span className="text-[13px] font-medium text-accent">Nudge sent</span>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      icon={Send}
+                      onClick={sendNudge}
+                      disabled={sending}
+                    >
+                      {sending ? 'Sending...' : 'Send this email'}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </aside>
 
