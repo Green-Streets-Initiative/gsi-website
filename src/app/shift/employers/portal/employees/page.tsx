@@ -343,10 +343,16 @@ export default function EmployeesPage() {
 }
 
 function EmployeeDrawer({ member, onClose }: { member: EmployerMember; onClose: () => void }) {
-  const { group, isAdmin } = usePortal()
+  const { group, challenges, dashboard, members: teamMembers } = usePortal()
   const rate = member.trips_in_period
     ? Math.round((member.active_trips_in_period / member.trips_in_period) * 100)
     : 0
+
+  const now = new Date()
+  const activeChallenges = (challenges ?? []).filter(
+    (c) => new Date(c.starts_at) <= now && new Date(c.ends_at) >= now,
+  )
+  const teamSize = dashboard?.member_count ?? teamMembers.length
 
   const [showPreview, setShowPreview] = useState(false)
   const [sending, setSending] = useState(false)
@@ -447,79 +453,113 @@ function EmployeeDrawer({ member, onClose }: { member: EmployerMember; onClose: 
           </p>
 
           {/* Nudge section */}
-          {isAdmin && (
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => setShowPreview(!showPreview)}
-                className="flex w-full items-center justify-between rounded-xl border border-line bg-surface px-4 py-3 text-left transition-colors hover:bg-surface-2"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Mail size={16} strokeWidth={1.75} className="text-ink-muted" />
-                  <span className="text-[13.5px] font-semibold text-ink">Send a nudge</span>
-                </div>
-                {showPreview
-                  ? <ChevronUp size={16} className="text-ink-faint" />
-                  : <ChevronDown size={16} className="text-ink-faint" />
-                }
-              </button>
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => setShowPreview(!showPreview)}
+              className="flex w-full items-center justify-between rounded-xl border border-line bg-surface px-4 py-3 text-left transition-colors hover:bg-surface-2"
+            >
+              <div className="flex items-center gap-2.5">
+                <Mail size={16} strokeWidth={1.75} className="text-ink-muted" />
+                <span className="text-[13.5px] font-semibold text-ink">Send a nudge</span>
+              </div>
+              {showPreview
+                ? <ChevronUp size={16} className="text-ink-faint" />
+                : <ChevronDown size={16} className="text-ink-faint" />
+              }
+            </button>
 
-              {showPreview && (
-                <div className="space-y-3">
-                  <div className="overflow-hidden rounded-xl border border-line">
-                    <div className="bg-[#191A2E] px-4 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[14px] font-black text-white">Shift</span>
-                        <span className="text-[11px] font-bold text-[#52B788]">Green Streets</span>
-                      </div>
-                    </div>
-                    <div className="bg-white px-4 py-4 text-[12.5px] leading-relaxed text-[#1a1a2e]">
-                      <p className="mb-2.5">{greeting}</p>
-                      <p className="mb-2.5">
-                        Your team at <strong>{groupName}</strong> is logging commute trips with Shift,
-                        and we noticed you haven&apos;t logged one in a while.
-                      </p>
-                      <p className="mb-2.5">
-                        Every trip counts — whether you walked, biked, took the bus, or carpooled.
-                        Just open the Shift app and tap <strong>Log a trip</strong> to record your
-                        commute. It takes about 10 seconds.
-                      </p>
-                      <p className="mb-3">
-                        Your participation helps {groupName} track its impact and unlock rewards
-                        for the whole team.
-                      </p>
-                      <span className="inline-block rounded-lg bg-[#2D6A4F] px-4 py-2 text-[12px] font-semibold text-white">
-                        Open Shift &rarr;
-                      </span>
-                    </div>
-                    <div className="border-t border-line bg-[#f9fafb] px-4 py-2.5 text-center text-[10px] text-[#9CA3AF]">
-                      Sent on behalf of {groupName}
+            {showPreview && (
+              <div className="space-y-3">
+                <div className="overflow-hidden rounded-xl border border-line">
+                  <div className="bg-[#191A2E] px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[14px] font-black text-white">Shift</span>
+                      <span className="text-[11px] font-bold text-[#52B788]">Green Streets</span>
                     </div>
                   </div>
+                  <div className="bg-white px-4 py-4 text-[12.5px] leading-relaxed text-[#1a1a2e]">
+                    <p className="mb-2.5">{greeting}</p>
+                    <p className="mb-2.5">
+                      Your team at <strong>{groupName}</strong> is logging commute trips with Shift,
+                      and we noticed you haven&apos;t logged one in a while.
+                    </p>
 
-                  <p className="text-[11.5px] leading-relaxed text-ink-faint">
-                    Subject: <em>Your team at {groupName} is counting on you!</em>
-                  </p>
+                    {activeChallenges.length > 0 && (
+                      <div className="mb-3 rounded-lg bg-[#E7F0EA] px-3.5 py-3">
+                        <div className="mb-1.5 text-[11px] font-bold text-[#2D6A4F]">
+                          🏆 Active challenge{activeChallenges.length > 1 ? 's' : ''} you can join
+                        </div>
+                        {activeChallenges.map((c) => (
+                          <div key={c.id} className="mb-1 last:mb-0">
+                            <span className="font-semibold">{c.name}</span>
+                            {c.prize_description && (
+                              <span className="text-[#2D6A4F]"> — {c.prize_description}</span>
+                            )}
+                            <br />
+                            <span className="text-[10.5px] text-[#6b7280]">
+                              Ends {formatDateShort(c.ends_at)}
+                            </span>
+                          </div>
+                        ))}
+                        <p className="mt-1.5 text-[11px] text-[#2D6A4F]">
+                          Log your trips now to get on the board before {activeChallenges.length > 1 ? 'they end' : 'it ends'}.
+                        </p>
+                      </div>
+                    )}
 
-                  {sent ? (
-                    <div className="flex items-center gap-2 rounded-xl bg-accent-softer px-4 py-3">
-                      <Check size={16} className="text-accent" />
-                      <span className="text-[13px] font-medium text-accent">Nudge sent</span>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      icon={Send}
-                      onClick={sendNudge}
-                      disabled={sending}
-                    >
-                      {sending ? 'Sending...' : 'Send this email'}
-                    </Button>
-                  )}
+                    {teamSize > 1 && (
+                      <div className="mb-3 rounded-lg bg-[#F0F4FF] px-3.5 py-3">
+                        <div className="mb-1 text-[11px] font-bold text-[#3B5998]">
+                          📈 Team leaderboard
+                        </div>
+                        <p className="text-[12px]">
+                          {teamSize} people from {groupName} are on the leaderboard.
+                          Every active trip you log moves you up the rankings.
+                        </p>
+                      </div>
+                    )}
+
+                    <p className="mb-2.5">
+                      Every trip counts — whether you walked, biked, took the bus, or carpooled.
+                      Just open the Shift app and tap <strong>Log a trip</strong> to record your
+                      commute. It takes about 10 seconds.
+                    </p>
+                    <p className="mb-3">
+                      Your participation helps {groupName} track its impact and unlock rewards
+                      for the whole team.
+                    </p>
+                    <span className="inline-block rounded-lg bg-[#2D6A4F] px-4 py-2 text-[12px] font-semibold text-white">
+                      Open Shift &rarr;
+                    </span>
+                  </div>
+                  <div className="border-t border-line bg-[#f9fafb] px-4 py-2.5 text-center text-[10px] text-[#9CA3AF]">
+                    Sent on behalf of {groupName}
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
+
+                <p className="text-[11.5px] leading-relaxed text-ink-faint">
+                  Subject: <em>Your team at {groupName} is counting on you!</em>
+                </p>
+
+                {sent ? (
+                  <div className="flex items-center gap-2 rounded-xl bg-accent-softer px-4 py-3">
+                    <Check size={16} className="text-accent" />
+                    <span className="text-[13px] font-medium text-accent">Nudge sent</span>
+                  </div>
+                ) : (
+                  <Button
+                    variant="primary"
+                    icon={Send}
+                    onClick={sendNudge}
+                    disabled={sending}
+                  >
+                    {sending ? 'Sending...' : 'Send this email'}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 

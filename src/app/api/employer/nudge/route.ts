@@ -6,6 +6,21 @@ const resend = new Resend(process.env.RESEND_API_KEY!)
 const SHIFT_LOGO_URL =
   'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-mark.png'
 
+interface ActiveChallenge {
+  name: string
+  ends_at: string
+  prize_description: string | null
+}
+
+interface NudgeData {
+  employeeName: string | null
+  groupName: string
+  inviteCode: string | null
+  activeChallenges: ActiveChallenge[]
+  teamSize: number
+  teamActiveCount: number
+}
+
 export async function POST(request: Request) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) {
@@ -28,79 +43,136 @@ export async function POST(request: Request) {
 
   const sb = createServerSupabaseClient()
 
-  const { data: adminRow } = await sb
-    .from('group_admins')
-    .select('role')
-    .eq('group_id', groupId)
-    .eq('email', user.email!)
-    .maybeSingle()
+  const [adminRes, gsiRes] = await Promise.all([
+    sb.from('group_admins')
+      .select('role')
+      .eq('group_id', groupId)
+      .eq('email', user.email!)
+      .maybeSingle(),
+    sb.from('school_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'gsi_admin')
+      .maybeSingle(),
+  ])
 
-  if (!adminRow || adminRow.role !== 'admin') {
-    return Response.json({ error: 'Only group admins can send nudges' }, { status: 403 })
+  const isGroupAdmin = adminRes.data?.role === 'admin'
+  const isGsiAdmin = !!gsiRes.data
+  const isGroupMember = !!adminRes.data
+
+  if (!isGroupAdmin && !isGsiAdmin && !isGroupMember) {
+    return Response.json({ error: 'Not authorized to send nudges for this group' }, { status: 403 })
   }
 
-  const { data: group } = await sb
-    .from('groups')
-    .select('name, invite_code')
-    .eq('id', groupId)
-    .single()
+  const now = new Date().toISOString()
 
-  if (!group) {
+  const [groupRes, memberRes, userRes, challengeRes, dashRes] = await Promise.all([
+    sb.from('groups').select('name, invite_code').eq('id', groupId).single(),
+    sb.from('group_members').select('user_id').eq('group_id', groupId).eq('user_id', userId).maybeSingle(),
+    sb.from('users').select('display_name, email').eq('id', userId).maybeSingle(),
+    sb.from('competitions')
+      .select('name, ends_at, prize_description')
+      .eq('group_id', groupId)
+      .gte('ends_at', now)
+      .lte('starts_at', now)
+      .order('ends_at'),
+    sb.rpc('get_employer_dashboard_data', { p_group_id: groupId, p_days: 30 }),
+  ])
+
+  if (!groupRes.data) {
     return Response.json({ error: 'Group not found' }, { status: 404 })
   }
-
-  const { data: member } = await sb
-    .from('group_members')
-    .select('user_id')
-    .eq('group_id', groupId)
-    .eq('user_id', userId)
-    .maybeSingle()
-
-  if (!member) {
+  if (!memberRes.data) {
     return Response.json({ error: 'User is not a member of this group' }, { status: 404 })
   }
-
-  const { data: userRow } = await sb
-    .from('users')
-    .select('display_name, email')
-    .eq('id', userId)
-    .maybeSingle()
-
-  if (!userRow?.email) {
+  if (!userRes.data?.email) {
     return Response.json({ error: 'Could not find email for this employee' }, { status: 404 })
   }
 
-  const html = buildNudgeHtml({
-    employeeName: userRow.display_name,
+  const group = groupRes.data
+  const dashboard = dashRes.data as { member_count?: number; active_trips_this_period?: number } | null
+  const activeChallenges = (challengeRes.data ?? []) as ActiveChallenge[]
+
+  const teamSize = dashboard?.member_count ?? 0
+  const teamActiveCount = dashboard?.active_trips_this_period ?? 0
+
+  const nudgeData: NudgeData = {
+    employeeName: userRes.data.display_name,
     groupName: group.name,
     inviteCode: group.invite_code,
-  })
+    activeChallenges,
+    teamSize,
+    teamActiveCount,
+  }
+
+  const html = buildNudgeHtml(nudgeData)
 
   try {
     await resend.emails.send({
       from: 'Shift <noreply@gogreenstreets.org>',
-      to: userRow.email,
+      to: userRes.data.email,
       subject: `Your team at ${group.name} is counting on you!`,
       html,
     })
   } catch (err) {
-    console.error(`Nudge email failed for ${userRow.email}:`, err)
+    console.error(`Nudge email failed for ${userRes.data.email}:`, err)
     return Response.json({ error: 'Failed to send email' }, { status: 500 })
   }
 
-  return Response.json({ ok: true, email: userRow.email })
+  return Response.json({ ok: true, email: userRes.data.email })
 }
 
-function buildNudgeHtml(opts: {
-  employeeName: string | null
-  groupName: string
-  inviteCode: string | null
-}) {
-  const { employeeName, groupName, inviteCode } = opts
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function formatDateShort(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function buildNudgeHtml(opts: NudgeData) {
+  const { employeeName, groupName, inviteCode, activeChallenges, teamSize } = opts
   const greeting = employeeName ? `Hi ${employeeName},` : 'Hi there,'
   const deepLink = inviteCode
     ? `https://shift.gogreenstreets.org/join/${inviteCode}`
     : 'https://shift.gogreenstreets.org'
+
+  let challengeSection = ''
+  if (activeChallenges.length > 0) {
+    const items = activeChallenges.map((c) => {
+      const ends = formatDateShort(c.ends_at)
+      const prize = c.prize_description
+        ? ` &mdash; <span style="color:#2D6A4F;font-weight:600;">${escapeHtml(c.prize_description)}</span>`
+        : ''
+      return `<tr>
+        <td style="padding:6px 0;font-size:14px;line-height:1.4;">
+          <strong>${escapeHtml(c.name)}</strong>${prize}
+          <br/><span style="color:#6b7280;font-size:12px;">Ends ${ends}</span>
+        </td>
+      </tr>`
+    }).join('')
+
+    challengeSection = `
+      <div style="background:#E7F0EA;border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#2D6A4F;margin-bottom:8px;">&#127942; Active challenge${activeChallenges.length > 1 ? 's' : ''} you can join</div>
+        <table cellpadding="0" cellspacing="0" style="width:100%;">${items}</table>
+        <p style="margin:8px 0 0;font-size:13px;color:#2D6A4F;">Log your trips now to get on the board before ${activeChallenges.length > 1 ? 'they end' : 'it ends'}.</p>
+      </div>`
+  }
+
+  const leaderboardSection = teamSize > 1
+    ? `<div style="background:#F0F4FF;border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#3B5998;margin-bottom:4px;">&#128200; Team leaderboard</div>
+        <p style="margin:0;font-size:14px;line-height:1.5;color:#1a1a2e;">
+          ${teamSize} people from ${escapeHtml(groupName)} are on the leaderboard. Every active trip you log moves you up the rankings.
+        </p>
+      </div>`
+    : ''
 
   return `<!DOCTYPE html>
 <html>
@@ -124,13 +196,15 @@ function buildNudgeHtml(opts: {
     <td style="padding:28px;">
       <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#1a1a2e;">${greeting}</p>
       <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#1a1a2e;">
-        Your team at <strong>${groupName}</strong> is logging commute trips with Shift, and we noticed you haven't logged one in a while.
+        Your team at <strong>${escapeHtml(groupName)}</strong> is logging commute trips with Shift, and we noticed you haven't logged one in a while.
       </p>
+      ${challengeSection}
+      ${leaderboardSection}
       <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#1a1a2e;">
-        Every trip counts — whether you walked, biked, took the bus, or carpooled. Just open the Shift app and tap <strong>Log a trip</strong> to record your commute. It takes about 10 seconds.
+        Every trip counts &mdash; whether you walked, biked, took the bus, or carpooled. Just open the Shift app and tap <strong>Log a trip</strong> to record your commute. It takes about 10 seconds.
       </p>
       <p style="margin:0 0 24px;font-size:15px;line-height:1.55;color:#1a1a2e;">
-        Your participation helps ${groupName} track its impact and unlock rewards for the whole team.
+        Your participation helps ${escapeHtml(groupName)} track its impact and unlock rewards for the whole team.
       </p>
       <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
         <tr>
@@ -151,7 +225,7 @@ function buildNudgeHtml(opts: {
         <a href="https://gogreenstreets.org" style="color:#9CA3AF;text-decoration:none;">Green Streets Initiative</a> &middot; Shift
       </p>
       <p style="margin:4px 0 0;font-size:11px;color:#9CA3AF;">
-        Sent on behalf of ${groupName}
+        Sent on behalf of ${escapeHtml(groupName)}
       </p>
     </td>
   </tr>
