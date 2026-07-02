@@ -61,8 +61,10 @@ export default function ChallengesPage() {
     rewardPool,
     tierAtLeast,
     isAdmin,
+    isGsiAdmin,
     refreshPool,
   } = usePortal()
+  const canManage = isAdmin || isGsiAdmin
   const toast = useToast()
 
   const [builderOpen, setBuilderOpen] = useState(false)
@@ -416,7 +418,7 @@ export default function ChallengesPage() {
         title="Challenges"
         subtitle="Create friendly competitions to drive participation"
         actions={
-          !builderOpen && isAdmin && (
+          !builderOpen && canManage && (
             <Button variant="primary" icon={Plus} onClick={() => openEditor()}>
               Create a challenge
             </Button>
@@ -471,7 +473,7 @@ export default function ChallengesPage() {
                       )}
                     </div>
                   </div>
-                  {isAdmin && !c.is_flagship && (
+                  {canManage && !c.is_flagship && (
                     <div className="flex gap-2">
                       <Button
                         variant="secondary"
@@ -530,7 +532,7 @@ export default function ChallengesPage() {
             Kick off a friendly competition to drive sign-ups and active trips.
             Set a date range and add optional prizes.
           </p>
-          {isAdmin && (
+          {canManage && (
             <Button variant="primary" icon={Plus} onClick={() => openEditor()}>
               Create a challenge
             </Button>
@@ -718,7 +720,8 @@ function PrizeCard({
   onWinnersUpdated: (w: PrizeWinner[]) => void
   onPrizeUpdated: (p: ChallengePrize) => void
 }) {
-  const { members, refreshPool, rewardPool, isAdmin } = usePortal()
+  const { members, refreshPool, rewardPool, isAdmin, isGsiAdmin } = usePortal()
+  const canManage = isAdmin || isGsiAdmin
   const toast = useToast()
   const [expanded, setExpanded] = useState(false)
   const [fulfilling, setFulfilling] = useState(false)
@@ -804,7 +807,7 @@ function PrizeCard({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin && p.draw_status === 'pending' && challengeStatus === 'Ended' && (
+          {canManage && p.draw_status === 'pending' && challengeStatus === 'Ended' && (
             <Button
               variant="primary"
               size="sm"
@@ -814,7 +817,7 @@ function PrizeCard({
               {drawing ? 'Drawing...' : 'Draw winners'}
             </Button>
           )}
-          {isAdmin && p.draw_status === 'drawn' && p.funded_from_pool && pendingCount > 0 && (
+          {canManage && p.draw_status === 'drawn' && p.funded_from_pool && pendingCount > 0 && (
             <Button
               variant="primary"
               size="sm"

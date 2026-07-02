@@ -376,7 +376,7 @@ export default function ShareKitPage() {
               A custom flyer for {group.name}&apos;s participation in {activeFlagship.name}. Share with your team to drive sign-ups during the challenge.
             </p>
             <a
-              href={`https://gogreenstreets.org/events/shift-your-summer/share/${group.slug ?? group.invite_code}`}
+              href={`https://www.gogreenstreets.org/events/shift-your-summer/flyer?group=${group.slug ?? group.invite_code}`}
               target="_blank"
               rel="noopener noreferrer"
               className="contents"
