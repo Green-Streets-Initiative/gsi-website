@@ -43,6 +43,7 @@ interface PortalContextValue {
   authenticated: boolean
 
   isAdmin: boolean
+  isGsiAdmin: boolean
 
   tierAtLeast: (tier: 'starter' | 'basic' | 'standard' | 'premium') => boolean
 
@@ -93,6 +94,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const [challengePrizes, setChallengePrizes] = useState<ChallengePrize[]>([])
   const [prizeWinnersMap, setPrizeWinnersMap] = useState<Record<string, PrizeWinner[]>>({})
   const [benefitsForm, setBenefitsForm] = useState<EmployerBenefits>({})
+  const [isGsiAdmin, setIsGsiAdmin] = useState(false)
 
   const tierAtLeast = useCallback(
     (tier: 'starter' | 'basic' | 'standard' | 'premium') => isTierAtLeast(group, tier),
@@ -100,17 +102,27 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   )
 
   const fetchData = useCallback(
-    async (email: string) => {
+    async (email: string, userId: string) => {
       try {
         await supabase.rpc('link_employer_on_login')
       } catch {}
 
-      const { data: adminRow } = await supabase
-        .from('group_admins')
-        .select('group_id, role')
-        .eq('email', email)
-        .limit(1)
-        .maybeSingle()
+      const [{ data: adminRow }, { data: gsiRow }] = await Promise.all([
+        supabase
+          .from('group_admins')
+          .select('group_id, role')
+          .eq('email', email)
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('school_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .eq('role', 'gsi_admin')
+          .maybeSingle(),
+      ])
+
+      setIsGsiAdmin(!!gsiRow)
 
       if (!adminRow) {
         router.push('/shift/employers')
@@ -264,7 +276,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       }
 
       setAuthenticated(true)
-      fetchData(session.user.email)
+      fetchData(session.user.email, session.user.id)
     }
     checkAuth()
   }, [fetchData, router, searchParams])
@@ -334,6 +346,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     loadingMembers,
     authenticated,
     isAdmin,
+    isGsiAdmin,
     tierAtLeast,
     setGroup,
     setChallenges,

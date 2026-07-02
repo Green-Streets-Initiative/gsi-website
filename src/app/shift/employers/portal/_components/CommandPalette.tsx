@@ -40,7 +40,7 @@ const PAGES: ResultItem[] = [
 
 export default function CommandPalette({ onClose }: { onClose: () => void }) {
   const router = useRouter()
-  const { members, isAdmin } = usePortal()
+  const { members, isAdmin, isGsiAdmin } = usePortal()
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
   const [activeIdx, setActiveIdx] = useState(0)
@@ -51,7 +51,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
 
   const results = useMemo(() => {
     const q = query.toLowerCase().trim()
-    const visible = isAdmin ? PAGES : PAGES.filter((p) => p.id !== 'p-billing')
+    const visible = (isAdmin || isGsiAdmin) ? PAGES : PAGES.filter((p) => p.id !== 'p-billing')
     const pages = q
       ? visible.filter((p) => p.label.toLowerCase().includes(q))
       : visible

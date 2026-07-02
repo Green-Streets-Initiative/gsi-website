@@ -46,6 +46,8 @@ export type EmployerMember = {
   joined_at: string
   trips_in_period: number
   active_trips_in_period: number
+  miles_in_period: number
+  co2_avoided_in_period: number
 }
 
 export type RewardPool = {

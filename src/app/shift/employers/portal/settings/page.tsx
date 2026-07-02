@@ -29,7 +29,8 @@ import Button from '@/components/employer/Button'
 import Toggle from '@/components/employer/Toggle'
 
 export default function SettingsPage() {
-  const { group, setGroup, isAdmin, admins, setAdmins, signOut, loading } = usePortal()
+  const { group, setGroup, isAdmin, isGsiAdmin, admins, setAdmins, signOut, loading } = usePortal()
+  const canManage = isAdmin || isGsiAdmin
 
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -223,7 +224,7 @@ export default function SettingsPage() {
             <CardHead
               title="Account details"
               action={
-                isAdmin ? (
+                canManage ? (
                   editing ? (
                     <div className="flex gap-2">
                       <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
@@ -266,7 +267,7 @@ export default function SettingsPage() {
           </Card>
 
           {/* Branding / Logo upload */}
-          {isAdmin && (
+          {canManage && (
             <Card>
             <CardHead title="Branding" sub="Your logo, shown to employees" />
             <div className="p-6">
@@ -345,7 +346,7 @@ export default function SettingsPage() {
           </Card>
 
           {/* Team */}
-          {isAdmin && (
+          {canManage && (
             <Card>
               <CardHead title="Team" sub="People who can access this portal" />
               <div className="px-6 pb-2">
@@ -432,7 +433,7 @@ export default function SettingsPage() {
             <CardHead
               title="Plan & access"
               action={
-                isAdmin ? (
+                canManage ? (
                   <Link href="/shift/employers/portal/billing">
                     <Button variant="secondary" size="sm" icon={ArrowRight}>
                       Manage billing
@@ -486,7 +487,7 @@ export default function SettingsPage() {
               <Button variant="danger" size="sm" icon={LogOut} onClick={signOut}>
                 Sign out
               </Button>
-              {isAdmin && (
+              {canManage && (
                 <Button variant="danger" size="sm" icon={Pause} onClick={() => {}}>
                   Pause account
                 </Button>

@@ -85,15 +85,15 @@ const LB_METRICS: {
   {
     id: 'miles',
     label: 'Miles shifted',
-    get: (m) => (m as EmployerMember & { miles_in_period?: number }).miles_in_period ?? 0,
-    fmt: (m) => ((m as EmployerMember & { miles_in_period?: number }).miles_in_period ?? 0).toFixed(1),
+    get: (m) => m.miles_in_period,
+    fmt: (m) => m.miles_in_period.toFixed(1),
     unit: 'mi',
   },
   {
     id: 'co2',
     label: 'CO₂ avoided',
-    get: (m) => (m as EmployerMember & { co2_avoided_in_period?: number }).co2_avoided_in_period ?? 0,
-    fmt: (m) => ((m as EmployerMember & { co2_avoided_in_period?: number }).co2_avoided_in_period ?? 0).toFixed(1),
+    get: (m) => m.co2_avoided_in_period,
+    fmt: (m) => m.co2_avoided_in_period.toFixed(1),
     unit: 'kg',
   },
 ]
