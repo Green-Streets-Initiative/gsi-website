@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getQualifyingTowns } from '@/lib/towns/queries'
 
 const SITE_URL = 'https://www.gogreenstreets.org'
 
@@ -11,7 +12,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/`, lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
     { url: `${SITE_URL}/guides`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${SITE_URL}/commute-advisor`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${SITE_URL}/shift/towns`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
   ]
+
+  // Town pages — only towns above the publication gate are emitted.
+  let townEntries: MetadataRoute.Sitemap = []
+  try {
+    const towns = await getQualifyingTowns()
+    townEntries = towns.map((t) => ({
+      url: `${SITE_URL}/shift/towns/${t.slug}`,
+      lastModified: now,
+      changeFrequency: 'daily' as const,
+      priority: 0.8,
+    }))
+  } catch {
+    // DB unreachable at regeneration time — ship the rest of the sitemap.
+  }
 
   let guideEntries: MetadataRoute.Sitemap = []
   try {
@@ -35,5 +51,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // rather than failing the whole sitemap.
   }
 
-  return [...staticEntries, ...guideEntries]
+  return [...staticEntries, ...townEntries, ...guideEntries]
 }
