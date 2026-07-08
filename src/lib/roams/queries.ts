@@ -93,10 +93,14 @@ export function normalizeRouteGeometry(raw: unknown): [number, number][] | null 
 
 export async function getActiveRoams(): Promise<RoamSummary[]> {
   const supabase = createServerSupabaseClient()
+  const today = new Date().toISOString().slice(0, 10)
   const { data } = await supabase
     .from('roams')
     .select('id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, featured')
     .eq('active', true)
+    // Event-bound roams (e.g. World Cup trains, tall ships) disappear from the
+    // public site once their window ends, even if still flagged active.
+    .or(`event_end.is.null,event_end.gte.${today}`)
     .order('featured', { ascending: false })
     .order('sort_order', { ascending: true })
   return (data ?? []) as RoamSummary[]
@@ -105,6 +109,7 @@ export async function getActiveRoams(): Promise<RoamSummary[]> {
 export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
   const supabase = createServerSupabaseClient()
 
+  const today = new Date().toISOString().slice(0, 10)
   const [roamRes, checkpointsRes, legsRes] = await Promise.all([
     supabase
       .from('roams')
@@ -113,6 +118,7 @@ export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
       )
       .eq('id', id)
       .eq('active', true)
+      .or(`event_end.is.null,event_end.gte.${today}`)
       .maybeSingle(),
     supabase
       .from('roam_checkpoints')

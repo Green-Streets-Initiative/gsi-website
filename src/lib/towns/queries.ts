@@ -196,10 +196,13 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
 export async function getTownRoams(state: string, limit = 3): Promise<TownRoam[]> {
   if (state !== 'MA') return []
   const supabase = createServerSupabaseClient()
+  const today = new Date().toISOString().slice(0, 10)
   const { data } = await supabase
     .from('roams')
     .select('id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region')
     .eq('active', true)
+    // Hide event-bound roams once their window ends (matches roams/queries.ts).
+    .or(`event_end.is.null,event_end.gte.${today}`)
     .order('featured', { ascending: false })
     .order('sort_order', { ascending: true })
     .limit(limit)
