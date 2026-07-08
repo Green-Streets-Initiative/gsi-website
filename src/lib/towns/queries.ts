@@ -52,6 +52,9 @@ export interface TownEvent {
   event_time: string | null
   location_name: string | null
   event_type: string | null
+  /** Miles from the town centroid */
+  distance_miles: number
+  tags: string[]
 }
 
 export interface TownRoam {
@@ -62,6 +65,7 @@ export interface TownRoam {
   estimated_minutes: number | null
   hook: string | null
   hero_image_url: string | null
+  region: string | null
 }
 
 export interface TownPartner {
@@ -144,14 +148,14 @@ export async function getTownCentroid(groupId: string): Promise<{ lat: number; l
 const EVENT_RADIUS_MILES = 8
 
 /** Upcoming approved community events within EVENT_RADIUS_MILES of the town centroid. */
-export async function getTownEvents(centroid: { lat: number; lng: number } | null, limit = 4): Promise<TownEvent[]> {
+export async function getTownEvents(centroid: { lat: number; lng: number } | null, limit = 8): Promise<TownEvent[]> {
   if (!centroid) return []
   const supabase = createServerSupabaseClient()
   const today = new Date().toISOString().slice(0, 10)
   const { data } = await supabase
     .from('event_details')
     .select(`
-      content_id, event_date, event_time, location_name, location_lat, location_lng, event_type,
+      content_id, event_date, event_time, location_name, location_lat, location_lng, event_type, tags,
       content_items!inner ( id, title, status )
     `)
     .eq('content_items.status', 'approved')
@@ -166,7 +170,8 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
     const lat = row.location_lat != null ? Number(row.location_lat) : null
     const lng = row.location_lng != null ? Number(row.location_lng) : null
     if (lat == null || lng == null) continue
-    if (haversineMiles(centroid.lat, centroid.lng, lat, lng) > EVENT_RADIUS_MILES) continue
+    const distance = haversineMiles(centroid.lat, centroid.lng, lat, lng)
+    if (distance > EVENT_RADIUS_MILES) continue
     const ci = row.content_items as Record<string, unknown>
     events.push({
       id: ci.id as string,
@@ -175,6 +180,8 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
       event_time: (row.event_time as string) ?? null,
       location_name: (row.location_name as string) ?? null,
       event_type: (row.event_type as string) ?? null,
+      distance_miles: distance,
+      tags: (row.tags as string[]) ?? [],
     })
     if (events.length >= limit) break
   }
@@ -191,7 +198,7 @@ export async function getTownRoams(state: string, limit = 3): Promise<TownRoam[]
   const supabase = createServerSupabaseClient()
   const { data } = await supabase
     .from('roams')
-    .select('id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url')
+    .select('id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region')
     .eq('active', true)
     .order('featured', { ascending: false })
     .order('sort_order', { ascending: true })

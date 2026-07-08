@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import RoamCard from '@/components/roams/RoamCard'
+import TownEventsPanel from '@/components/towns/TownEventsPanel'
 import type {
   TownEvent,
   TownPageStats,
@@ -27,7 +29,7 @@ export function StatRow({ stats }: { stats: TownPageStats }) {
     { value: m.active_trips.toLocaleString(), label: 'active trips this month' },
     { value: m.active_miles.toLocaleString(), label: 'active miles' },
     { value: m.co2_lbs.toLocaleString(), label: 'lbs CO₂ avoided*' },
-    { value: m.active_users.toLocaleString(), label: 'neighbors moving' },
+    { value: m.active_users.toLocaleString(), label: 'neighbors moving this month' },
   ]
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
@@ -161,7 +163,7 @@ export function TownLeaderboard({
               </span>
               <span className="truncate">
                 <span className={`font-medium ${isMe ? 'text-[#BAF14D]' : 'text-white'}`}>{t.town_name}</span>
-                <span className="ml-2 hidden text-xs text-white/60 md:inline">{t.member_count} members</span>
+                <span className="ml-2 hidden text-xs text-white/60 md:inline">{t.member_count} on Shift</span>
               </span>
               <span className="block h-2.5 overflow-hidden rounded-lg bg-white/[0.07]">
                 <span
@@ -278,60 +280,24 @@ export function EventsRoamsPanels({
   return (
     <section className="mx-auto max-w-[960px]">
       <div className={`grid gap-5 ${both ? 'md:grid-cols-2' : ''}`}>
-        {events.length > 0 && (
-          <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] p-6">
-            <h3 className="mb-4 font-display text-lg font-bold tracking-tight text-white">
-              Events near {townName}
-            </h3>
-            <div className="space-y-3">
-              {events.map((e) => (
-                <Link
-                  key={e.id}
-                  href={`/events/${encodeURIComponent(e.id)}`}
-                  className="block rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3 transition-colors hover:bg-white/[0.06]"
-                >
-                  <p className="text-sm font-semibold leading-snug text-white">{e.title}</p>
-                  <p className="mt-0.5 text-xs text-white/75">
-                    {new Date(`${e.event_date}T00:00:00`).toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                    {e.location_name ? ` · ${e.location_name}` : ''}
-                  </p>
-                </Link>
-              ))}
-            </div>
-            <Link href="/events" className="mt-4 inline-block text-sm font-semibold text-[#BAF14D]">
-              All community events &rarr;
-            </Link>
-          </div>
-        )}
+        {events.length > 0 && <TownEventsPanel events={events} townName={townName} />}
         {roams.length > 0 && (
           <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] p-6">
             <h3 className="mb-1 font-display text-lg font-bold tracking-tight text-white">
               Roams to try
             </h3>
             <p className="mb-4 text-xs text-white/75">
-              Guided routes in the Shift app — explore, check in, earn badges.
+              Guided routes — preview the full route here, then check in at each stop in the Shift
+              app to earn the badge.
             </p>
             <div className="space-y-3">
               {roams.map((r) => (
-                <div key={r.id} className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3">
-                  <p className="text-sm font-semibold leading-snug text-white">{r.name}</p>
-                  <p className="mt-0.5 text-xs text-white/75">
-                    {[
-                      r.mode,
-                      r.distance_miles != null ? `${r.distance_miles} mi` : null,
-                      r.estimated_minutes != null ? `~${r.estimated_minutes} min` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </p>
-                  {r.hook && <p className="mt-1 text-xs leading-snug text-white/75">{r.hook}</p>}
-                </div>
+                <RoamCard key={r.id} roam={r} />
               ))}
             </div>
+            <Link href="/shift/roams" className="mt-4 inline-block text-sm font-semibold text-[#BAF14D]">
+              All roams &rarr;
+            </Link>
           </div>
         )}
       </div>

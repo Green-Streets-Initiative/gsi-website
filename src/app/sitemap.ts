@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getQualifyingTowns } from '@/lib/towns/queries'
+import { getActiveRoams } from '@/lib/roams/queries'
 
 const SITE_URL = 'https://www.gogreenstreets.org'
 
@@ -13,6 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/guides`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${SITE_URL}/commute-advisor`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${SITE_URL}/shift/towns`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${SITE_URL}/shift/roams`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
   ]
 
   // Town pages — only towns above the publication gate are emitted.
@@ -27,6 +29,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }))
   } catch {
     // DB unreachable at regeneration time — ship the rest of the sitemap.
+  }
+
+  // Roam pages — evergreen curated routes.
+  let roamEntries: MetadataRoute.Sitemap = []
+  try {
+    const roams = await getActiveRoams()
+    roamEntries = roams.map((r) => ({
+      url: `${SITE_URL}/shift/roams/${encodeURIComponent(r.id)}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    }))
+  } catch {
+    // DB unreachable — ship the rest.
   }
 
   let guideEntries: MetadataRoute.Sitemap = []
@@ -51,5 +67,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // rather than failing the whole sitemap.
   }
 
-  return [...staticEntries, ...townEntries, ...guideEntries]
+  return [...staticEntries, ...townEntries, ...roamEntries, ...guideEntries]
 }
