@@ -55,6 +55,10 @@ export interface TownEvent {
   /** Miles from the town centroid */
   distance_miles: number
   tags: string[]
+  /** How many upcoming occurrences this series has (1 = one-off) */
+  occurrences: number
+  /** Weekday name when a recurring series always falls on the same day */
+  recurring_weekday: string | null
 }
 
 export interface TownRoam {
@@ -66,6 +70,15 @@ export interface TownRoam {
   hook: string | null
   hero_image_url: string | null
   region: string | null
+}
+
+export interface TownHeatmapLayer {
+  mode_group: 'all' | 'walk' | 'bike' | 'transit'
+  geojson: GeoJSON.FeatureCollection
+  distinct_users: number
+  trip_count: number
+  segment_count: number
+  computed_at: string
 }
 
 export interface TownPartner {
@@ -160,12 +173,16 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
     `)
     .eq('content_items.status', 'approved')
     .eq('content_items.content_type', 'community_event')
-    .not('qc_passed_at', 'is', null)
+    // NOTE: content_items.status='approved' is the publication gate — same as
+    // the public events calendar. qc_passed_at is NOT required (most approved
+    // events don't carry it; filtering on it silently hid Open Streets,
+    // festivals, and most group rides — caught by Keith 2026-07-09).
     .gte('event_date', today)
     .order('event_date', { ascending: true })
     .limit(200)
 
-  const events: TownEvent[] = []
+  // Pool of upcoming events within the radius.
+  const pool: TownEvent[] = []
   for (const row of (data ?? []) as Array<Record<string, unknown>>) {
     const lat = row.location_lat != null ? Number(row.location_lat) : null
     const lng = row.location_lng != null ? Number(row.location_lng) : null
@@ -173,7 +190,7 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
     const distance = haversineMiles(centroid.lat, centroid.lng, lat, lng)
     if (distance > EVENT_RADIUS_MILES) continue
     const ci = row.content_items as Record<string, unknown>
-    events.push({
+    pool.push({
       id: ci.id as string,
       title: ci.title as string,
       event_date: row.event_date as string,
@@ -182,10 +199,55 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
       event_type: (row.event_type as string) ?? null,
       distance_miles: distance,
       tags: (row.tags as string[]) ?? [],
+      occurrences: 1,
+      recurring_weekday: null,
     })
-    if (events.length >= limit) break
   }
-  return events
+
+  // Series dedupe: weekly series (Open Newbury, Monday-night rides, …) collapse
+  // into one card showing the next occurrence + "repeats <weekday>".
+  const bySeries = new Map<string, TownEvent[]>()
+  for (const e of pool) {
+    const key = `${e.title}|${e.location_name ?? ''}`
+    const list = bySeries.get(key)
+    if (list) list.push(e)
+    else bySeries.set(key, [e])
+  }
+  const deduped: TownEvent[] = []
+  for (const list of bySeries.values()) {
+    list.sort((a, b) => a.event_date.localeCompare(b.event_date))
+    const next = list[0]
+    next.occurrences = list.length
+    if (list.length >= 2) {
+      const weekdays = new Set(
+        list.map((e) => new Date(`${e.event_date}T00:00:00`).getDay()),
+      )
+      if (weekdays.size === 1) {
+        next.recurring_weekday = new Date(`${next.event_date}T00:00:00`).toLocaleDateString(
+          'en-US',
+          { weekday: 'long' },
+        )
+      }
+    }
+    deduped.push(next)
+  }
+
+  // Priority selection (Keith, 2026-07-09):
+  //   1. Open Streets within ~3 miles — the marquee car-free events.
+  //   2. Family- or beginner-friendly tagged events.
+  //   3. Everything else by date.
+  // 3.5mi cutoff: "within ~3 miles" measured from the neighborhood-average
+  // centroid, which can sit ~0.5mi from the town's conventional center.
+  const isTier1 = (e: TownEvent) => e.event_type === 'open_streets' && e.distance_miles <= 3.5
+  const isTier2 = (e: TownEvent) =>
+    !isTier1(e) && (e.tags.includes('family_friendly') || e.tags.includes('beginner_friendly'))
+  const byDate = (a: TownEvent, b: TownEvent) => a.event_date.localeCompare(b.event_date)
+
+  const tier1 = deduped.filter(isTier1).sort(byDate)
+  const tier2 = deduped.filter(isTier2).sort(byDate)
+  const tier3 = deduped.filter((e) => !isTier1(e) && !isTier2(e)).sort(byDate)
+
+  return [...tier1, ...tier2, ...tier3].slice(0, limit)
 }
 
 /**
@@ -207,6 +269,23 @@ export async function getTownRoams(state: string, limit = 3): Promise<TownRoam[]
     .order('sort_order', { ascending: true })
     .limit(limit)
   return (data ?? []) as TownRoam[]
+}
+
+/**
+ * K-anonymized corridor heatmap layers for a town (nightly-computed cache;
+ * see Shift migration 00557). No rows = below the privacy/publication floor —
+ * the section hides entirely.
+ */
+export async function getTownHeatmap(groupId: string): Promise<TownHeatmapLayer[]> {
+  const supabase = createServerSupabaseClient()
+  const { data } = await supabase
+    .from('town_corridor_heatmap')
+    .select('mode_group, geojson, distinct_users, trip_count, segment_count, computed_at')
+    .eq('town_group_id', groupId)
+  const order = { all: 0, walk: 1, bike: 2, transit: 3 } as Record<string, number>
+  return ((data ?? []) as TownHeatmapLayer[]).sort(
+    (a, b) => (order[a.mode_group] ?? 9) - (order[b.mode_group] ?? 9),
+  )
 }
 
 /**

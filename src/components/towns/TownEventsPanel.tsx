@@ -14,7 +14,7 @@ import {
   Wrench,
   Zap,
 } from 'lucide-react'
-import { formatDistance, getTypeMeta, parseEventDate, TYPE_FILTER_ORDER } from '@/lib/events'
+import { formatDistance, getTagMeta, getTypeMeta, parseEventDate, TYPE_FILTER_ORDER } from '@/lib/events'
 import type { TownEvent } from '@/lib/towns/queries'
 
 /**
@@ -49,9 +49,11 @@ function eventDateLabel(e: TownEvent): string {
 export default function TownEventsPanel({ events, townName }: { events: TownEvent[]; townName: string }) {
   if (events.length === 0) return null
 
-  // Group by type in the canonical order; unknown types fold into "other".
+  // Group by type in the canonical order — but Open Streets hoists to the top
+  // when present (the marquee car-free events lead the panel).
+  const groupOrder = ['open_streets', ...TYPE_FILTER_ORDER.filter((t) => t !== 'open_streets')]
   const groups: Array<{ type: string; items: TownEvent[] }> = []
-  for (const type of TYPE_FILTER_ORDER) {
+  for (const type of groupOrder) {
     const items = events.filter((e) => normalizeType(e.event_type) === type)
     if (items.length > 0) groups.push({ type, items })
   }
@@ -91,10 +93,27 @@ export default function TownEventsPanel({ events, townName }: { events: TownEven
                   >
                     <p className="text-sm font-semibold leading-snug text-white">{e.title}</p>
                     <p className="mt-0.5 text-xs text-white/75">
+                      {e.recurring_weekday ? `${e.recurring_weekday}s · next ` : ''}
                       {eventDateLabel(e)}
                       {e.location_name ? ` · ${e.location_name}` : ''}
                       {` · ${formatDistance(e.distance_miles)} away`}
                     </p>
+                    {e.tags.length > 0 && (
+                      <span className="mt-1.5 flex flex-wrap gap-1.5">
+                        {e.tags.slice(0, 3).map((tag) => {
+                          const meta = getTagMeta(tag)
+                          return (
+                            <span
+                              key={tag}
+                              className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                              style={{ color: meta.color, backgroundColor: meta.bg }}
+                            >
+                              {meta.label}
+                            </span>
+                          )
+                        })}
+                      </span>
+                    )}
                   </Link>
                 ))}
               </div>
