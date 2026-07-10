@@ -52,7 +52,7 @@ export default function RoamMap({ routeCoordinates, checkpoints }: Props) {
 
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+        style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
         bounds: [[minLng, minLat], [maxLng, maxLat]],
         fitBoundsOptions: { padding: 48 },
         attributionControl: false,
@@ -79,14 +79,14 @@ export default function RoamMap({ routeCoordinates, checkpoints }: Props) {
             type: 'line',
             source: 'roam-route',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
-            paint: { 'line-color': '#BAF14D', 'line-width': 8, 'line-opacity': 0.25 },
+            paint: { 'line-color': '#2966E5', 'line-width': 8, 'line-opacity': 0.2 },
           })
           map.addLayer({
             id: 'roam-route-line',
             type: 'line',
             source: 'roam-route',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
-            paint: { 'line-color': '#BAF14D', 'line-width': 3 },
+            paint: { 'line-color': '#2966E5', 'line-width': 3 },
           })
         }
       })

@@ -1,8 +1,12 @@
 import Link from 'next/link'
+import ModeSplitChart from '@/components/towns/ModeSplitChart'
 import RoamCard from '@/components/roams/RoamCard'
 import TownEventsPanel from '@/components/towns/TownEventsPanel'
+import TownHeatmap from '@/components/towns/TownHeatmap'
+import TownLeaderboardBoard from '@/components/towns/TownLeaderboardBoard'
 import type {
   TownEvent,
+  TownHeatmapLayer,
   TownPageStats,
   TownPartner,
   TownRoam,
@@ -25,11 +29,12 @@ import type {
 
 export function StatRow({ stats }: { stats: TownPageStats }) {
   const m = stats.month
+  const month = new Date().toLocaleDateString('en-US', { month: 'long' })
   const cells = [
-    { value: m.active_trips.toLocaleString(), label: 'active trips this month' },
+    { value: m.active_trips.toLocaleString(), label: `active trips so far in ${month}` },
     { value: m.active_miles.toLocaleString(), label: 'active miles' },
     { value: m.co2_lbs.toLocaleString(), label: 'lbs CO₂ avoided*' },
-    { value: m.active_users.toLocaleString(), label: 'neighbors moving this month' },
+    { value: m.active_users.toLocaleString(), label: `neighbors active so far in ${month}` },
   ]
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
@@ -51,10 +56,51 @@ export function StatRow({ stats }: { stats: TownPageStats }) {
 export function DataDisclaimer({ townName }: { townName: string }) {
   return (
     <p className="mx-auto mt-4 max-w-[620px] text-center text-[12.5px] leading-relaxed text-white/75">
-      Based on trips logged by <b className="text-white">Shift users who live in {townName}</b> — a
+      Counts cover {new Date().toLocaleDateString('en-US', { month: 'long' })} 1 through today,
+      based on trips logged by <b className="text-white">Shift users who live in {townName}</b> — a
       growing sample, meant as an interesting local signal, not an official or census-level count.
       *CO&#8322; avoided is estimated from active miles traveled (EPA 404&nbsp;g/mi baseline).
     </p>
+  )
+}
+
+/* ── corridor heatmap ─────────────────────────────────────── */
+
+export function HeatmapSection({
+  layers,
+  townName,
+}: {
+  layers: TownHeatmapLayer[]
+  townName: string
+}) {
+  if (layers.length === 0) return null
+  const all = layers.find((l) => l.mode_group === 'all') ?? layers[0]
+  const topNames = (all.named_corridors ?? []).slice(0, 3).map((c) => c.name)
+  return (
+    <section className="mx-auto max-w-[960px]">
+      <h2 className="mb-1 text-center font-display text-2xl font-bold tracking-tight text-white">
+        Where {townName} moves
+      </h2>
+      {/* Server-rendered summary — crawlers and screen readers get the story
+          (including the top corridor names) even though the map is client-only. */}
+      <p className="mx-auto mb-6 max-w-[640px] text-center text-sm leading-relaxed text-white/75">
+        New to {townName}? You&apos;re joining a town that moves — neighbors logged{' '}
+        {all.trip_count.toLocaleString()} trips on foot, by bike, and on transit in the last 90
+        days{topNames.length > 0 ? (
+          <>
+            , and {topNames.slice(0, -1).join(', ')}
+            {topNames.length > 1 ? ' and ' : ''}
+            {topNames[topNames.length - 1]}{' '}are where you&apos;ll find them
+          </>
+        ) : (
+          ''
+        )}
+        . A corridor appears only once three or more different people have traveled it — and it
+        follows {townName} residents wherever they go, including into neighboring towns, within
+        about six miles of the town center.
+      </p>
+      <TownHeatmap layers={layers} />
+    </section>
   )
 }
 
@@ -86,7 +132,7 @@ export function MomentumSparkline({ stats, townName }: { stats: TownPageStats; t
         Momentum
       </h2>
       <p className="mb-5 text-center text-sm text-white/75">
-        Weekly active trips in {townName}, last {weeks.length} completed weeks
+        Active trips in {townName} by week ending, last {weeks.length} completed weeks
         {rising ? ' — and climbing' : ''}
       </p>
       <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] px-6 pb-4 pt-6">
@@ -98,11 +144,15 @@ export function MomentumSparkline({ stats, townName }: { stats: TownPageStats; t
           ))}
         </svg>
         <div className="mt-1 flex justify-between text-[11px] font-medium text-white/70">
-          {weeks.map((d) => (
-            <span key={d.week_start}>
-              {new Date(`${d.week_start}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-          ))}
+          {weeks.map((d) => {
+            const end = new Date(`${d.week_start}T00:00:00`)
+            end.setDate(end.getDate() + 6)
+            return (
+              <span key={d.week_start}>
+                {end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </span>
+            )
+          })}
         </div>
       </div>
     </section>
@@ -114,7 +164,7 @@ export function MomentumSparkline({ stats, townName }: { stats: TownPageStats; t
 export function TownLeaderboard({
   directory,
   highlightGroupId,
-  title = 'The friendly race',
+  title = 'Friendly competition',
 }: {
   directory: TownSummary[]
   highlightGroupId?: string
@@ -122,122 +172,17 @@ export function TownLeaderboard({
 }) {
   const qualifying = directory.filter((t) => t.rank > 0)
   if (qualifying.length < 2) return null
-  const maxTrips = Math.max(...qualifying.map((t) => t.active_trips_month), 1)
-  const highlighted = qualifying.find((t) => t.group_id === highlightGroupId)
-  const leader = qualifying[0]
-  const gap =
-    highlighted && highlighted.rank > 1
-      ? leader.active_trips_month - highlighted.active_trips_month
-      : 0
-
   return (
     <section className="mx-auto max-w-[820px]">
-      <h2 className="mb-1 text-center font-display text-2xl font-bold tracking-tight text-white">
-        {title}
-      </h2>
-      <p className="mb-5 text-center text-sm text-white/75">
-        Active trips this month, town vs. town
-        {highlighted && gap > 0 && (
-          <>
-            {' '}&middot;{' '}
-            <span className="font-semibold text-[#EDB93C]">
-              {highlighted.town_name} is {gap.toLocaleString()} trips from #1
-            </span>
-          </>
-        )}
-      </p>
-      <div className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#242538]">
-        {qualifying.map((t) => {
-          const isMe = t.group_id === highlightGroupId
-          const pct = Math.max(4, Math.round((t.active_trips_month / maxTrips) * 100))
-          return (
-            <Link
-              key={t.group_id}
-              href={`/shift/towns/${t.slug}`}
-              className={`grid grid-cols-[2.5rem_8.5rem_1fr_4.5rem] items-center gap-3 border-b border-white/[0.05] px-5 py-3 transition-colors last:border-b-0 hover:bg-white/[0.04] md:grid-cols-[2.5rem_11rem_1fr_5.5rem] ${
-                isMe ? 'bg-[#BAF14D]/[0.07]' : ''
-              }`}
-            >
-              <span className={`text-right font-display text-base font-bold ${t.rank <= 3 ? 'text-[#EDB93C]' : 'text-white/60'}`}>
-                {t.rank}
-              </span>
-              <span className="truncate">
-                <span className={`font-medium ${isMe ? 'text-[#BAF14D]' : 'text-white'}`}>{t.town_name}</span>
-                <span className="ml-2 hidden text-xs text-white/60 md:inline">{t.member_count} on Shift</span>
-              </span>
-              <span className="block h-2.5 overflow-hidden rounded-lg bg-white/[0.07]">
-                <span
-                  className="block h-full rounded-lg"
-                  style={{ width: `${pct}%`, backgroundColor: isMe ? '#BAF14D' : '#5d6a94' }}
-                />
-              </span>
-              <span className="text-right font-display text-sm font-bold text-white">
-                {t.active_trips_month.toLocaleString()}
-              </span>
-            </Link>
-          )
-        })}
-      </div>
+      <TownLeaderboardBoard directory={directory} highlightGroupId={highlightGroupId} title={title} />
     </section>
   )
 }
 
 /* ── mode split ───────────────────────────────────────────── */
 
-const MODE_META: Record<string, { label: string; color: string }> = {
-  walk: { label: 'Walking', color: '#BAF14D' },
-  bike: { label: 'Biking & scooting', color: '#2966E5' },
-  transit: { label: 'Transit', color: '#EDB93C' },
-}
-
 export function ModeSplit({ stats, townName }: { stats: TownPageStats; townName: string }) {
-  const rows = stats.mode_split ?? []
-  const totalTrips = rows.reduce((s, r) => s + r.trips, 0)
-  if (totalTrips === 0) return null
-  const maxTrips = Math.max(...rows.map((r) => r.trips), 1)
-  const maxMiles = Math.max(...rows.map((r) => r.miles), 1)
-
-  return (
-    <section className="mx-auto max-w-[720px]">
-      <h2 className="mb-1 text-center font-display text-2xl font-bold tracking-tight text-white">
-        How {townName} moves
-      </h2>
-      <p className="mb-5 text-center text-sm text-white/75">Active trips and miles this month, by mode</p>
-      <div className="space-y-4 rounded-[18px] border border-white/[0.08] bg-[#242538] p-6">
-        {rows.map((r) => {
-          const meta = MODE_META[r.mode_group] ?? { label: r.mode_group, color: '#5d6a94' }
-          return (
-            <div key={r.mode_group}>
-              <div className="mb-1.5 flex items-baseline justify-between">
-                <span className="text-sm font-semibold text-white">{meta.label}</span>
-                <span className="text-xs text-white/75">
-                  {r.trips.toLocaleString()} trips &middot; {r.miles.toLocaleString()} mi
-                </span>
-              </div>
-              <div className="space-y-1">
-                <span className="block h-2.5 overflow-hidden rounded-lg bg-white/[0.07]">
-                  <span
-                    className="block h-full rounded-lg"
-                    style={{ width: `${Math.max(3, Math.round((r.trips / maxTrips) * 100))}%`, backgroundColor: meta.color }}
-                  />
-                </span>
-                <span className="block h-1.5 overflow-hidden rounded-lg bg-white/[0.05]">
-                  <span
-                    className="block h-full rounded-lg opacity-50"
-                    style={{ width: `${Math.max(3, Math.round((r.miles / maxMiles) * 100))}%`, backgroundColor: meta.color }}
-                  />
-                </span>
-              </div>
-            </div>
-          )
-        })}
-        <p className="pt-1 text-[11px] text-white/70">
-          Thick bar = trips &middot; thin bar = miles. Transit trips cover the most ground; walking
-          trips happen most often.
-        </p>
-      </div>
-    </section>
-  )
+  return <ModeSplitChart stats={stats} townName={townName} />
 }
 
 /* ── explainer ────────────────────────────────────────────── */

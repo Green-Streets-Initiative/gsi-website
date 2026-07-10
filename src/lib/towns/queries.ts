@@ -26,11 +26,13 @@ export interface TownDirectoryRow {
   active_trips_month: number
   active_miles_month: number
   active_users_month: number
+  /** Active trips as % of all confirmed trips this month */
+  shift_rate: number
 }
 
 export interface TownSummary extends TownDirectoryRow {
   slug: string
-  /** 1-based rank among qualifying towns by month active trips */
+  /** 1-based rank among qualifying towns by Shift Rate (the default metric) */
   rank: number
 }
 
@@ -41,7 +43,7 @@ export interface TownPageStats {
     co2_lbs: number
     active_users: number
   }
-  mode_split: Array<{ mode_group: 'walk' | 'bike' | 'transit'; trips: number; miles: number }>
+  mode_split: Array<{ mode_group: 'walk' | 'bike' | 'bus' | 'train'; trips: number; miles: number }>
   momentum: Array<{ week_start: string; active_trips: number }>
 }
 
@@ -72,6 +74,17 @@ export interface TownRoam {
   region: string | null
 }
 
+export interface NamedCorridor {
+  /** Cluster id — matches feature.properties.corridor for map highlighting */
+  id: string
+  name: string
+  score: number
+  segments: number
+  newer: boolean
+  /** Transit entries only: "train" | "commuter rail" | "bus" */
+  mode?: string
+}
+
 export interface TownHeatmapLayer {
   mode_group: 'all' | 'walk' | 'bike' | 'transit'
   geojson: GeoJSON.FeatureCollection
@@ -79,6 +92,7 @@ export interface TownHeatmapLayer {
   trip_count: number
   segment_count: number
   computed_at: string
+  named_corridors: NamedCorridor[] | null
 }
 
 export interface TownPartner {
@@ -100,18 +114,17 @@ export async function getTownDirectory(): Promise<TownSummary[]> {
   const { data, error } = await supabase.rpc('get_town_directory')
   if (error || !data) return []
   const rows = data as TownDirectoryRow[]
-  // Directory comes back ordered by month active trips desc; rank only the
-  // qualifying towns so sub-gate towns never claim a public standing.
-  let rank = 0
-  return rows.map((row) => {
-    const qualifies = row.member_count >= PUBLICATION_GATE
-    if (qualifies) rank += 1
-    return {
-      ...row,
-      slug: townSlug(row.town_name, row.state),
-      rank: qualifies ? rank : 0,
-    }
-  })
+  // Rank qualifying towns by Shift Rate (size-independent default metric);
+  // sub-gate towns never claim a public standing.
+  const qualifying = rows
+    .filter((r) => r.member_count >= PUBLICATION_GATE)
+    .sort((a, b) => b.shift_rate - a.shift_rate || b.active_trips_month - a.active_trips_month)
+  const rankById = new Map(qualifying.map((r, i) => [r.group_id, i + 1]))
+  return rows.map((row) => ({
+    ...row,
+    slug: townSlug(row.town_name, row.state),
+    rank: rankById.get(row.group_id) ?? 0,
+  }))
 }
 
 export async function getQualifyingTowns(): Promise<TownSummary[]> {
@@ -164,7 +177,11 @@ const EVENT_RADIUS_MILES = 8
 export async function getTownEvents(centroid: { lat: number; lng: number } | null, limit = 8): Promise<TownEvent[]> {
   if (!centroid) return []
   const supabase = createServerSupabaseClient()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = new Date()
+  const todayStr = today.toISOString().slice(0, 10)
+  // Selection window: the next 30 days. The section is "a few picks", not the
+  // calendar — an event four months out doesn't belong here.
+  const horizon = new Date(today.getTime() + 30 * 24 * 3600 * 1000).toISOString().slice(0, 10)
   const { data } = await supabase
     .from('event_details')
     .select(`
@@ -177,7 +194,8 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
     // the public events calendar. qc_passed_at is NOT required (most approved
     // events don't carry it; filtering on it silently hid Open Streets,
     // festivals, and most group rides — caught by Keith 2026-07-09).
-    .gte('event_date', today)
+    .gte('event_date', todayStr)
+    .lte('event_date', horizon)
     .order('event_date', { ascending: true })
     .limit(200)
 
@@ -251,24 +269,54 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
 }
 
 /**
- * Featured roams. Curated Massachusetts content today, so gated to MA towns —
- * a town page in another state simply omits the section (degradation
- * contract). Proximity-based matching is the phase-2 upgrade.
+ * Roams nearest the town: distance from the town centroid to each roam's
+ * starting checkpoint. A Somerville page suggests the Community Path, not a
+ * Cape Cod rail trail. Degrades to [] when no centroid or nothing within
+ * range (national-scale contract). Read-only on roam data.
  */
-export async function getTownRoams(state: string, limit = 3): Promise<TownRoam[]> {
-  if (state !== 'MA') return []
+const ROAM_RADIUS_MILES = 12
+
+export async function getTownRoams(
+  centroid: { lat: number; lng: number } | null,
+  limit = 3,
+): Promise<TownRoam[]> {
+  if (!centroid) return []
   const supabase = createServerSupabaseClient()
   const today = new Date().toISOString().slice(0, 10)
-  const { data } = await supabase
-    .from('roams')
-    .select('id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region')
-    .eq('active', true)
-    // Hide event-bound roams once their window ends (matches roams/queries.ts).
-    .or(`event_end.is.null,event_end.gte.${today}`)
-    .order('featured', { ascending: false })
-    .order('sort_order', { ascending: true })
-    .limit(limit)
-  return (data ?? []) as TownRoam[]
+  const [roamsRes, cpsRes] = await Promise.all([
+    supabase
+      .from('roams')
+      .select('id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region')
+      .eq('active', true)
+      // Hide event-bound roams once their window ends (matches roams/queries.ts).
+      .or(`event_end.is.null,event_end.gte.${today}`),
+    supabase
+      .from('roam_checkpoints')
+      .select('roam_id, lat, lng, sequence_order')
+      .eq('required', true)
+      .order('sequence_order', { ascending: true }),
+  ])
+
+  // First required checkpoint per roam = the roam's starting point.
+  const startByRoam = new Map<string, { lat: number; lng: number }>()
+  for (const cp of cpsRes.data ?? []) {
+    if (!startByRoam.has(cp.roam_id)) {
+      startByRoam.set(cp.roam_id, { lat: Number(cp.lat), lng: Number(cp.lng) })
+    }
+  }
+
+  return ((roamsRes.data ?? []) as TownRoam[])
+    .map((r) => {
+      const start = startByRoam.get(r.id)
+      const dist = start
+        ? haversineMiles(centroid.lat, centroid.lng, start.lat, start.lng)
+        : Infinity
+      return { roam: r, dist }
+    })
+    .filter((x) => x.dist <= ROAM_RADIUS_MILES)
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, limit)
+    .map((x) => x.roam)
 }
 
 /**
@@ -280,7 +328,7 @@ export async function getTownHeatmap(groupId: string): Promise<TownHeatmapLayer[
   const supabase = createServerSupabaseClient()
   const { data } = await supabase
     .from('town_corridor_heatmap')
-    .select('mode_group, geojson, distinct_users, trip_count, segment_count, computed_at')
+    .select('mode_group, geojson, distinct_users, trip_count, segment_count, computed_at, named_corridors')
     .eq('town_group_id', groupId)
   const order = { all: 0, walk: 1, bike: 2, transit: 3 } as Record<string, number>
   return ((data ?? []) as TownHeatmapLayer[]).sort(

@@ -60,9 +60,12 @@ export default function TownEventsPanel({ events, townName }: { events: TownEven
 
   return (
     <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] p-6">
-      <h3 className="mb-4 font-display text-lg font-bold tracking-tight text-white">
+      <h3 className="mb-1 font-display text-lg font-bold tracking-tight text-white">
         Events near {townName}
       </h3>
+      <p className="mb-4 text-xs text-white/75">
+        A few picks over the next 30 days — the full calendar has everything.
+      </p>
       <div className="space-y-5">
         {groups.map(({ type, items }) => {
           const meta = getTypeMeta(type)

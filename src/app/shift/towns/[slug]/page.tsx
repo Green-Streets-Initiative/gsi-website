@@ -9,6 +9,7 @@ import {
   getTownBySlug,
   getTownCentroid,
   getTownEvents,
+  getTownHeatmap,
   getTownPageStats,
   getTownPartners,
   getTownRoams,
@@ -16,6 +17,7 @@ import {
 import {
   DataDisclaimer,
   EventsRoamsPanels,
+  HeatmapSection,
   ModeSplit,
   MomentumSparkline,
   RewardsPartners,
@@ -67,14 +69,15 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
   const { town, directory } = result
   const name = town.town_name
 
-  // Everything else in parallel (project rule: parallelize independent queries).
-  const [stats, centroid, roams, partners] = await Promise.all([
+  // Centroid first (events + roams both need it), then the rest in parallel.
+  const centroid = await getTownCentroid(town.group_id)
+  const [stats, roams, partners, heatmapLayers, events] = await Promise.all([
     getTownPageStats(town.group_id),
-    getTownCentroid(town.group_id),
-    getTownRoams(town.state),
+    getTownRoams(centroid),
     getTownPartners(name),
+    getTownHeatmap(town.group_id),
+    getTownEvents(centroid),
   ])
-  const events = await getTownEvents(centroid)
 
   if (!stats) notFound()
 
@@ -82,6 +85,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
   const iosUrl = withUtm(IOS_URL, utm) ?? IOS_URL
   const androidUrl = withUtm(ANDROID_URL, utm) ?? ANDROID_URL
   const qualifyingCount = directory.filter((t) => t.rank > 0).length
+  const monthName = new Date().toLocaleDateString('en-US', { month: 'long' })
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -130,34 +134,65 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
             </h1>
             <p className="mx-auto mb-2 max-w-[560px] text-lg leading-[1.7] text-white/90">
               {town.rank === 1 ? (
-                <>#1 of {qualifyingCount} towns this month — leading the friendly race.</>
+                <>#1 of {qualifyingCount} towns by Shift Rate so far in {monthName}: share of active transportation trips (walk, micromobility, transit).</>
               ) : (
-                <>#{town.rank} of {qualifyingCount} towns this month in the friendly race to move actively.</>
+                <>#{town.rank} of {qualifyingCount} towns by Shift Rate so far in {monthName}: share of active transportation trips (walk, micromobility, transit).</>
               )}
             </p>
           </div>
         </section>
 
+        {/* Table of contents — anchor chips, sticky under the site nav */}
+        <nav
+          aria-label="Page sections"
+          className="sticky top-[60px] z-20 border-b border-white/[0.06] bg-[#191A2E]/95 px-4 py-2 backdrop-blur"
+        >
+          <div className="mx-auto flex max-w-[960px] gap-1.5 overflow-x-auto whitespace-nowrap text-xs font-semibold">
+            {[
+              ['#stats', 'Stats'],
+              ...(heatmapLayers.length > 0 ? [['#moves', `Where we move`]] : []),
+              ['#momentum', 'Momentum'],
+              ['#competition', 'Competition'],
+              ['#modes', 'Modes'],
+              ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events & Roams']] : []),
+              ...(partners.length > 0 ? [['#rewards', 'Rewards']] : []),
+            ].map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="rounded-full bg-white/[0.06] px-3 py-1.5 text-white/75 transition-colors hover:bg-white/[0.12] hover:text-white"
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+        </nav>
+
         {/* Stats + disclaimer */}
-        <section className="px-8 pb-14">
+        <section id="stats" className="scroll-mt-28 px-8 pb-14 pt-10">
           <div className="mx-auto max-w-[860px]">
             <StatRow stats={stats} />
             <DataDisclaimer townName={name} />
           </div>
         </section>
 
+        {/* Corridor heatmap */}
+        <section id="moves" className="scroll-mt-28 px-8 pb-14">
+          <HeatmapSection layers={heatmapLayers} townName={name} />
+        </section>
+
         {/* Momentum */}
-        <section className="px-8 pb-14">
+        <section id="momentum" className="scroll-mt-28 px-8 pb-14">
           <MomentumSparkline stats={stats} townName={name} />
         </section>
 
         {/* Leaderboard */}
-        <section className="px-8 pb-14">
+        <section id="competition" className="scroll-mt-28 px-8 pb-14">
           <TownLeaderboard directory={directory} highlightGroupId={town.group_id} />
         </section>
 
         {/* Mode split */}
-        <section className="px-8 pb-14">
+        <section id="modes" className="scroll-mt-28 px-8 pb-14">
           <ModeSplit stats={stats} townName={name} />
         </section>
 
@@ -167,12 +202,12 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         </section>
 
         {/* Events + roams */}
-        <section className="px-8 pb-14">
+        <section id="events" className="scroll-mt-28 px-8 pb-14">
           <EventsRoamsPanels events={events} roams={roams} townName={name} />
         </section>
 
         {/* Rewards Partners */}
-        <section className="px-8 pb-14">
+        <section id="rewards" className="scroll-mt-28 px-8 pb-14">
           <RewardsPartners partners={partners} townName={name} />
         </section>
 
@@ -180,7 +215,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         <section className="px-8 pb-24 pt-4">
           <div className="mx-auto max-w-[560px] text-center">
             <h2 className="mb-4 font-display text-[clamp(1.9rem,4vw,2.8rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              {town.rank === 1 ? `Keep ${name} on top` : `Help ${name} catch #1`}
+              {town.rank === 1 ? `Keep ${name} on top` : `Help ${name} climb the board`}
             </h2>
             <p className="mb-8 text-lg leading-relaxed text-white/90">
               Every walk, ride, and transit trip counts automatically. Download Shift free and put
@@ -189,7 +224,11 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
             <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} className="justify-center" />
             <p className="mt-8 text-xs leading-relaxed text-white/70">
               Community stats reflect trips logged by Shift users who live in {name} and refresh
-              hourly. A project of Green Streets Initiative, a 501(c)(3) nonprofit.
+              hourly. Municipalities and community groups can request aggregate data at{' '}
+              <a href="mailto:info@gogreenstreets.org" className="underline">
+                info@gogreenstreets.org
+              </a>
+              . A project of Green Streets Initiative, a 501(c)(3) nonprofit.
             </p>
           </div>
         </section>

@@ -17,12 +17,12 @@ const ANDROID_URL = process.env.NEXT_PUBLIC_ANDROID_URL || ''
 export const metadata: Metadata = {
   title: 'Shift Towns — How Our Communities Move | Green Streets Initiative',
   description:
-    'Live community stats on walking, biking, and transit, town by town. See which towns are moving the most, follow the friendly race, and put your town on the board.',
+    'Live community stats on walking, biking, and transit, town by town. See which towns are moving the most, follow the friendly competition, and put your town on the board.',
   alternates: { canonical: `${SITE_URL}/shift/towns` },
   openGraph: {
     title: 'Shift Towns — How Our Communities Move',
     description:
-      'Live community stats on walking, biking, and transit, town by town. Follow the friendly race between towns.',
+      'Live community stats on walking, biking, and transit, town by town. Follow the friendly competition between towns.',
     url: `${SITE_URL}/shift/towns`,
     siteName: 'Green Streets Initiative',
     type: 'website',
@@ -72,7 +72,8 @@ export default async function TownsHubPage() {
             </h1>
             <p className="mx-auto mb-6 max-w-[600px] text-lg leading-[1.7] text-white/90">
               Every walk, bike ride, and transit trip logged on Shift adds to a town&apos;s totals.
-              This month, {totals.users.toLocaleString()} neighbors have logged{' '}
+              So far in {new Date().toLocaleDateString('en-US', { month: 'long' })},{' '}
+              {totals.users.toLocaleString()} neighbors have logged{' '}
               {totals.trips.toLocaleString()} active trips across {qualifying.length} towns.
             </p>
             <p className="mx-auto max-w-[560px] text-[12.5px] leading-relaxed text-white/75">
@@ -85,7 +86,7 @@ export default async function TownsHubPage() {
 
         {/* The race */}
         <section className="px-8 pb-14">
-          <TownLeaderboard directory={directory} title="This month's standings" />
+          <TownLeaderboard directory={directory} title="Friendly competition" />
           <p className="mt-4 text-center text-sm text-white/75">
             Tap a town to see its full page — stats, momentum, events, and local rewards.
           </p>

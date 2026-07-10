@@ -29,7 +29,7 @@ export default function EventMap({ lat, lng, label }: Props) {
 
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+        style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
         center: [lng, lat],
         zoom: 14.5,
         attributionControl: false,
