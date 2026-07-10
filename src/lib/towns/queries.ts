@@ -326,10 +326,11 @@ export async function getTownRoams(
  */
 export async function getTownHeatmap(groupId: string): Promise<TownHeatmapLayer[]> {
   const supabase = createServerSupabaseClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('town_corridor_heatmap')
     .select('mode_group, geojson, distinct_users, trip_count, segment_count, computed_at, named_corridors')
     .eq('town_group_id', groupId)
+  if (error) console.error('[getTownHeatmap]', groupId, error.message)
   const order = { all: 0, walk: 1, bike: 2, transit: 3 } as Record<string, number>
   return ((data ?? []) as TownHeatmapLayer[]).sort(
     (a, b) => (order[a.mode_group] ?? 9) - (order[b.mode_group] ?? 9),
