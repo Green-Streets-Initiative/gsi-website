@@ -31,7 +31,46 @@ const BAND_COLORS: [number, string][] = [
  * riders" chips render only when the flag discriminates (if nearly every
  * corridor carries it — true while the app is young — showing it is noise).
  */
-export default function TownHeatmap({ layers }: { layers: TownHeatmapLayer[] }) {
+/**
+ * Default view frames the TOWN (centroid ± ~1.2mi), not the full feature
+ * extent — commute traces reach ~6mi out and were forcing a regional zoom
+ * where the basemap has no street detail. Panning still reveals the rest.
+ */
+const TOWN_SPAN_LAT = 0.017 // ≈1.2mi half-span
+function townBounds(
+  centroid: { lat: number; lng: number } | null,
+  layer: TownHeatmapLayer,
+): [[number, number], [number, number]] {
+  let c = centroid
+  if (!c) {
+    // median of feature coords — robust against far-flung commute traces
+    const lngs: number[] = [], lats: number[] = []
+    for (const f of layer.geojson.features) {
+      const [lng, lat] = (f.geometry as GeoJSON.LineString).coordinates[0] as [number, number]
+      lngs.push(lng)
+      lats.push(lat)
+    }
+    if (lngs.length === 0) return [[-71.1, 42.35], [-71.0, 42.42]]
+    lngs.sort((a, b) => a - b)
+    lats.sort((a, b) => a - b)
+    c = { lng: lngs[Math.floor(lngs.length / 2)], lat: lats[Math.floor(lats.length / 2)] }
+  }
+  const spanLng = TOWN_SPAN_LAT / Math.cos((c.lat * Math.PI) / 180)
+  return [
+    [c.lng - spanLng, c.lat - TOWN_SPAN_LAT],
+    [c.lng + spanLng, c.lat + TOWN_SPAN_LAT],
+  ]
+}
+
+const FIT_OPTS = { padding: 8, maxZoom: 14.5 }
+
+export default function TownHeatmap({
+  layers,
+  centroid,
+}: {
+  layers: TownHeatmapLayer[]
+  centroid: { lat: number; lng: number } | null
+}) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [active, setActive] = useState<string>(layers[0]?.mode_group ?? 'all')
@@ -56,23 +95,13 @@ export default function TownHeatmap({ layers }: { layers: TownHeatmapLayer[] }) 
       const maplibregl = await loadMaplibre()
       if (cancelled || !containerRef.current) return
 
-      let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity
-      for (const f of layers[0].geojson.features) {
-        const coords = (f.geometry as GeoJSON.LineString).coordinates
-        for (const [lng, lat] of coords) {
-          if (lng < minLng) minLng = lng
-          if (lng > maxLng) maxLng = lng
-          if (lat < minLat) minLat = lat
-          if (lat > maxLat) maxLat = lat
-        }
-      }
-      if (!isFinite(minLng)) return
+      const bounds = townBounds(centroid, layers[0])
 
       const map = new maplibregl.Map({
         container: containerRef.current,
         style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-        bounds: [[minLng, minLat], [maxLng, maxLat]],
-        fitBoundsOptions: { padding: 32 },
+        bounds,
+        fitBoundsOptions: FIT_OPTS,
         attributionControl: false,
         cooperativeGestures: true,
       })
@@ -145,21 +174,7 @@ export default function TownHeatmap({ layers }: { layers: TownHeatmapLayer[] }) 
         map.setLayoutProperty(`hm-${layer.mode_group}-hl`, 'visibility', vis)
       }
     }
-    const l = layers.find((x) => x.mode_group === active)
-    if (l) {
-      let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity
-      for (const f of l.geojson.features) {
-        for (const [lng, lat] of (f.geometry as GeoJSON.LineString).coordinates) {
-          if (lng < minLng) minLng = lng
-          if (lng > maxLng) maxLng = lng
-          if (lat < minLat) minLat = lat
-          if (lat > maxLat) maxLat = lat
-        }
-      }
-      if (isFinite(minLng)) {
-        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 32, duration: 600 })
-      }
-    }
+    map.fitBounds(townBounds(centroid, layers[0]), { ...FIT_OPTS, duration: 600 })
     setSelectedId(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, ready])

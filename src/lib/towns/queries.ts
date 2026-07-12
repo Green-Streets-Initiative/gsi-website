@@ -95,6 +95,22 @@ export interface TownHeatmapLayer {
   named_corridors: NamedCorridor[] | null
 }
 
+export interface TownResource {
+  id: string
+  category: 'town_dept' | 'report_issue' | 'public_meetings' | 'advocacy_group' | 'bike_ped_committee'
+  scope: 'local' | 'regional' | 'statewide'
+  name: string
+  description: string | null
+  url: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  sort_order: number
+  /** Dated items (meetings/deadlines); soonest future one leads the section */
+  happens_at: string | null
+  /** Curated verb phrase; presence promotes the row to a one-line action row */
+  action_label: string | null
+}
+
 export interface TownPartner {
   id: string
   name: string
@@ -334,6 +350,26 @@ export async function getTownHeatmap(groupId: string): Promise<TownHeatmapLayer[
   const order = { all: 0, walk: 1, bike: 2, transit: 3 } as Record<string, number>
   return ((data ?? []) as TownHeatmapLayer[]).sort(
     (a, b) => (order[a.mode_group] ?? 9) - (order[b.mode_group] ?? 9),
+  )
+}
+
+/**
+ * Approved civic/advocacy resources for the Get Involved section. The server
+ * client bypasses RLS, so the approved filter is explicit here — pending
+ * rows must never leak to the public page.
+ */
+export async function getTownResources(groupId: string): Promise<TownResource[]> {
+  const supabase = createServerSupabaseClient()
+  const { data } = await supabase
+    .from('town_resources')
+    .select('id, category, scope, name, description, url, contact_email, contact_phone, sort_order, happens_at, action_label')
+    .eq('group_id', groupId)
+    .eq('status', 'approved')
+    .order('sort_order')
+  // Past-dated items (a meeting that already happened) never render publicly.
+  const now = Date.now()
+  return ((data ?? []) as TownResource[]).filter(
+    (r) => !r.happens_at || new Date(r.happens_at).getTime() > now,
   )
 }
 

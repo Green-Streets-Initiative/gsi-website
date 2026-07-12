@@ -12,11 +12,13 @@ import {
   getTownHeatmap,
   getTownPageStats,
   getTownPartners,
+  getTownResources,
   getTownRoams,
 } from '@/lib/towns/queries'
 import {
   DataDisclaimer,
   EventsRoamsPanels,
+  GetInvolved,
   HeatmapSection,
   ModeSplit,
   MomentumSparkline,
@@ -71,12 +73,13 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
 
   // Centroid first (events + roams both need it), then the rest in parallel.
   const centroid = await getTownCentroid(town.group_id)
-  const [stats, roams, partners, heatmapLayers, events] = await Promise.all([
+  const [stats, roams, partners, heatmapLayers, events, resources] = await Promise.all([
     getTownPageStats(town.group_id),
     getTownRoams(centroid),
     getTownPartners(name),
     getTownHeatmap(town.group_id),
     getTownEvents(centroid),
+    getTownResources(town.group_id),
   ])
 
   if (!stats) notFound()
@@ -155,6 +158,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
               ['#competition', 'Competition'],
               ['#modes', 'Modes'],
               ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events & Roams']] : []),
+              ...(resources.length > 0 ? [['#involved', 'Get Involved']] : []),
               ...(partners.length > 0 ? [['#rewards', 'Rewards']] : []),
             ].map(([href, label]) => (
               <a
@@ -178,7 +182,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
 
         {/* Corridor heatmap */}
         <section id="moves" className="scroll-mt-28 px-8 pb-14">
-          <HeatmapSection layers={heatmapLayers} townName={name} />
+          <HeatmapSection layers={heatmapLayers} townName={name} centroid={centroid} />
         </section>
 
         {/* Momentum */}
@@ -205,6 +209,13 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         <section id="events" className="scroll-mt-28 px-8 pb-14">
           <EventsRoamsPanels events={events} roams={roams} townName={name} />
         </section>
+
+        {/* Get involved — civic & advocacy */}
+        {resources.length > 0 && (
+          <section id="involved" className="scroll-mt-28 px-8 pb-14">
+            <GetInvolved resources={resources} townName={name} townSlug={slug} />
+          </section>
+        )}
 
         {/* Rewards Partners */}
         <section id="rewards" className="scroll-mt-28 px-8 pb-14">

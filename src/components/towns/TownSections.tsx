@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { withUtm } from '@/lib/utm'
 import ModeSplitChart from '@/components/towns/ModeSplitChart'
 import RoamCard from '@/components/roams/RoamCard'
 import TownEventsPanel from '@/components/towns/TownEventsPanel'
@@ -9,6 +10,7 @@ import type {
   TownHeatmapLayer,
   TownPageStats,
   TownPartner,
+  TownResource,
   TownRoam,
   TownSummary,
 } from '@/lib/towns/queries'
@@ -69,9 +71,11 @@ export function DataDisclaimer({ townName }: { townName: string }) {
 export function HeatmapSection({
   layers,
   townName,
+  centroid,
 }: {
   layers: TownHeatmapLayer[]
   townName: string
+  centroid: { lat: number; lng: number } | null
 }) {
   if (layers.length === 0) return null
   const all = layers.find((l) => l.mode_group === 'all') ?? layers[0]
@@ -99,7 +103,7 @@ export function HeatmapSection({
         follows {townName} residents wherever they go, including into neighboring towns, within
         about six miles of the town center.
       </p>
-      <TownHeatmap layers={layers} />
+      <TownHeatmap layers={layers} centroid={centroid} />
     </section>
   )
 }
@@ -246,6 +250,175 @@ export function EventsRoamsPanels({
           </div>
         )}
       </div>
+    </section>
+  )
+}
+
+/* ── get involved (civic / advocacy) ──────────────────────── */
+
+/**
+ * Get Involved v2 — one timely thing, three verbs, and a drawer.
+ * A novice gets a 5-second read: what's happening now (if anything), the
+ * easiest actions, and one expandable for everything else. The rendering
+ * rule is deterministic: future happens_at within 30 days -> featured
+ * (soonest wins); action_label set -> action row; otherwise -> drawer.
+ */
+
+const DRAWER_CATEGORY_META: Record<string, string> = {
+  town_dept: 'Your transportation department',
+  public_meetings: 'Meetings & comment pathways',
+  bike_ped_committee: 'City committees you can join',
+  advocacy_group: 'Advocacy groups',
+  report_issue: 'Report an issue',
+}
+const DRAWER_CATEGORY_ORDER = [
+  'bike_ped_committee',
+  'advocacy_group',
+  'public_meetings',
+  'town_dept',
+  'report_issue',
+]
+
+function featuredDateChip(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  }) + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
+export function GetInvolved({ resources, townName, townSlug }: { resources: TownResource[]; townName: string; townSlug: string }) {
+  const civicUrl = (url: string | null) =>
+    withUtm(url, { medium: 'town_page', campaign: townSlug, content: 'get_involved' }) ?? '#'
+  if (resources.length === 0) return null
+
+  // The one rule.
+  const now = Date.now()
+  const horizon = now + 30 * 24 * 3600 * 1000
+  const dated = resources
+    .filter((r) => r.happens_at && new Date(r.happens_at).getTime() > now && new Date(r.happens_at).getTime() < horizon)
+    .sort((a, b) => new Date(a.happens_at!).getTime() - new Date(b.happens_at!).getTime())
+  const featured = dated[0] ?? null
+  const ACTION_ORDER = ['report_issue', 'public_meetings', 'town_dept', 'bike_ped_committee', 'advocacy_group']
+  const actions = resources
+    .filter((r) => r !== featured && r.action_label && !r.happens_at)
+    .sort((a, b) => ACTION_ORDER.indexOf(a.category) - ACTION_ORDER.indexOf(b.category))
+  const drawer = resources.filter((r) => r !== featured && !actions.includes(r))
+
+  return (
+    <section className="mx-auto max-w-[720px]">
+      <h2 className="mb-1 text-center font-display text-2xl font-bold tracking-tight text-white">
+        Get involved in {townName}
+      </h2>
+      <p className="mx-auto mb-6 max-w-[560px] text-center text-sm text-white/75">
+        Safer streets are made by neighbors who speak up. Start small:
+      </p>
+
+      {/* 1. Happening now — zero or one */}
+      {featured && (
+        <a
+          href={civicUrl(featured.url)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-4 block rounded-[16px] border border-[#EDB93C]/35 bg-[#EDB93C]/[0.07] p-5 transition-colors hover:bg-[#EDB93C]/[0.12]"
+        >
+          <div className="mb-1.5 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-[#EDB93C] px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-[#191A2E]">
+              Happening now
+            </span>
+            <span className="text-xs font-semibold text-[#EDB93C]">
+              {featuredDateChip(featured.happens_at!)}
+            </span>
+          </div>
+          <p className="font-display text-lg font-bold leading-snug text-white">{featured.name}</p>
+          {featured.description && (
+            <p className="mt-1 text-sm leading-relaxed text-white/80">{featured.description}</p>
+          )}
+          {featured.action_label && (
+            <span className="mt-3 inline-block rounded-full bg-[#EDB93C] px-4 py-2 text-sm font-bold text-[#191A2E]">
+              {featured.action_label} &rarr;
+            </span>
+          )}
+        </a>
+      )}
+
+      {/* 2. Action rows — verbs, not cards */}
+      {actions.length > 0 && (
+        <div className="space-y-2">
+          {actions.map((r) => (
+            <a
+              key={r.id}
+              href={civicUrl(r.url)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between gap-3 rounded-[12px] border border-white/[0.08] bg-white/[0.04] px-4 py-3.5 transition-colors hover:bg-white/[0.08]"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-bold text-white">{r.action_label}</span>
+                <span className="block text-xs text-white/70">{r.name}</span>
+              </span>
+              <span className="shrink-0 text-[#BAF14D]">&rarr;</span>
+            </a>
+          ))}
+        </div>
+      )}
+
+      {/* 3. Everything else — one quiet drawer */}
+      {drawer.length > 0 && (
+        <details className="group mt-4">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[12px] border border-white/[0.12] bg-white/[0.04] px-4 py-3.5 transition-colors hover:bg-white/[0.08] [&::-webkit-details-marker]:hidden">
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-white">More ways to get involved</span>
+              <span className="block text-xs text-white/70">
+                {drawer.length}{' '}more &mdash; committees you can join, advocacy groups, and city contacts
+              </span>
+            </span>
+            <span className="shrink-0 text-[#BAF14D] transition-transform group-open:rotate-90">&rarr;</span>
+          </summary>
+          <div className="mt-3 space-y-4 rounded-[12px] border border-white/[0.06] bg-white/[0.02] p-4">
+            {DRAWER_CATEGORY_ORDER.map((cat) => {
+              const inCat = drawer.filter((r) => r.category === cat)
+              if (inCat.length === 0) return null
+              const ordered = [
+                ...inCat.filter((r) => r.scope === 'local'),
+                ...inCat.filter((r) => r.scope !== 'local'),
+              ]
+              return (
+                <div key={cat}>
+                  <p className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-white/60">
+                    {DRAWER_CATEGORY_META[cat] ?? cat}
+                  </p>
+                  <ul className="space-y-1.5">
+                    {ordered.map((r) => (
+                      <li key={r.id} className="text-sm leading-snug">
+                        {r.url ? (
+                          <a href={civicUrl(r.url)} target="_blank" rel="noopener noreferrer" className="font-semibold text-white underline decoration-white/30 underline-offset-2 hover:decoration-[#BAF14D]">
+                            {r.name}
+                          </a>
+                        ) : (
+                          <span className="font-semibold text-white">{r.name}</span>
+                        )}
+                        {r.scope !== 'local' && (
+                          <span className="ml-1.5 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-white/70">
+                            {r.scope}
+                          </span>
+                        )}
+                        {r.description && <span className="text-white/75"> — {r.description}</span>}
+                        {(r.contact_email || r.contact_phone) && (
+                          <span className="text-white/60">
+                            {' '}({[r.contact_email, r.contact_phone].filter(Boolean).join(' · ')})
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })}
+          </div>
+        </details>
+      )}
     </section>
   )
 }
