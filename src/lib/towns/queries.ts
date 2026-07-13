@@ -360,17 +360,20 @@ export async function getTownHeatmap(groupId: string): Promise<TownHeatmapLayer[
  */
 export async function getTownResources(groupId: string): Promise<TownResource[]> {
   const supabase = createServerSupabaseClient()
+  // group_id NULL = GLOBAL row (statewide/regional org, approved once,
+  // applies to every town — 00581). Town-specific rows win name collisions.
   const { data } = await supabase
     .from('town_resources')
-    .select('id, category, scope, name, description, url, contact_email, contact_phone, sort_order, happens_at, action_label')
-    .eq('group_id', groupId)
+    .select('id, category, scope, name, description, url, contact_email, contact_phone, sort_order, happens_at, action_label, group_id')
+    .or(`group_id.eq.${groupId},group_id.is.null`)
     .eq('status', 'approved')
     .order('sort_order')
-  // Past-dated items (a meeting that already happened) never render publicly.
   const now = Date.now()
-  return ((data ?? []) as TownResource[]).filter(
+  const rows = ((data ?? []) as Array<TownResource & { group_id: string | null }>).filter(
     (r) => !r.happens_at || new Date(r.happens_at).getTime() > now,
   )
+  const townNames = new Set(rows.filter((r) => r.group_id !== null).map((r) => r.name))
+  return rows.filter((r) => r.group_id !== null || !townNames.has(r.name))
 }
 
 /**
