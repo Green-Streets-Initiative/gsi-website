@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { withUtm } from '@/lib/utm'
+import type { TownCivicEvent } from '@/lib/towns/queries'
 import ModeSplitChart from '@/components/towns/ModeSplitChart'
 import RoamCard from '@/components/roams/RoamCard'
 import TownEventsPanel from '@/components/towns/TownEventsPanel'
@@ -279,32 +280,131 @@ const DRAWER_CATEGORY_ORDER = [
   'report_issue',
 ]
 
+/**
+ * All town pages are Massachusetts — format meeting times in ET explicitly.
+ * Vercel renders in UTC; relying on server-local time showed the July 14
+ * McGrath meeting as "11:00 PM" in production (caught 07-13).
+ */
+const TOWN_TZ = 'America/New_York'
+
 function featuredDateChip(iso: string): string {
   const d = new Date(iso)
-  return d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  }) + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  return (
+    d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: TOWN_TZ }) +
+    ' · ' +
+    d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: TOWN_TZ })
+  )
 }
 
-export function GetInvolved({ resources, townName, townSlug }: { resources: TownResource[]; townName: string; townSlug: string }) {
+/** Date-only strings ("2026-07-16") — no timezone round-trip at all. */
+function dateOnlyChip(isoDate: string): string {
+  return new Date(isoDate + 'T12:00:00Z').toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
+  })
+}
+
+/** Wall-clock "19:00[:00]" → "7:00 PM" — pipeline times are already local. */
+function wallTime(hhmm: string | null): string | null {
+  const m = hhmm?.match(/^(\d{2}):(\d{2})/)
+  if (!m) return null
+  const h = Number(m[1])
+  return `${h % 12 === 0 ? 12 : h % 12}:${m[2]} ${h >= 12 ? 'PM' : 'AM'}`
+}
+
+function sigTokens(s: string): Set<string> {
+  return new Set(s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((t) => t.length >= 4))
+}
+
+const etDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-CA', { timeZone: TOWN_TZ })
+
+interface FeaturedItem {
+  key: string
+  chip: string
+  title: string
+  desc: string | null
+  label: string
+  href: string
+  sort: number
+}
+
+export function GetInvolved({
+  resources,
+  civicEvents,
+  townName,
+  townSlug,
+}: {
+  resources: TownResource[]
+  civicEvents: TownCivicEvent[]
+  townName: string
+  townSlug: string
+}) {
   const civicUrl = (url: string | null) =>
     withUtm(url, { medium: 'town_page', campaign: townSlug, content: 'get_involved' }) ?? '#'
-  if (resources.length === 0) return null
+  if (resources.length === 0 && civicEvents.length === 0) return null
 
-  // The one rule.
   const now = Date.now()
   const horizon = now + 30 * 24 * 3600 * 1000
-  const dated = resources
-    .filter((r) => r.happens_at && new Date(r.happens_at).getTime() > now && new Date(r.happens_at).getTime() < horizon)
-    .sort((a, b) => new Date(a.happens_at!).getTime() - new Date(b.happens_at!).getTime())
-  const featured = dated[0] ?? null
-  const ACTION_ORDER = ['report_issue', 'public_meetings', 'town_dept', 'bike_ped_committee', 'advocacy_group']
-  const actions = resources
-    .filter((r) => r !== featured && r.action_label && !r.happens_at)
-    .sort((a, b) => ACTION_ORDER.indexOf(a.category) - ACTION_ORDER.indexOf(b.category))
-  const drawer = resources.filter((r) => r !== featured && !actions.includes(r))
+
+  // Pipeline items (admin-published meetings/hearings/comment periods).
+  const civicFeatured: FeaturedItem[] = civicEvents
+    .map((ce) => {
+      const sort = ce.hearing_date
+        ? new Date(`${ce.hearing_date}T${(ce.hearing_time ?? '12:00').slice(0, 5)}:00-04:00`).getTime()
+        : new Date(`${ce.comment_deadline}T23:59:00-04:00`).getTime()
+      const t = wallTime(ce.hearing_time)
+      const chip = ce.hearing_date
+        ? dateOnlyChip(ce.hearing_date) + (t ? ` · ${t}` : '') + (ce.hearing_type === 'virtual' ? ' · virtual' : '')
+        : `Comment by ${dateOnlyChip(ce.comment_deadline!)}`
+      return {
+        key: `civic-${ce.id}`,
+        chip,
+        title: ce.title,
+        desc: ce.description,
+        label: ce.action_label ?? (ce.virtual_link ? 'Register' : 'See details'),
+        href: civicUrl(ce.virtual_link ?? ce.source_url),
+        sort,
+      }
+    })
+    .filter((f) => f.sort > now && f.sort < horizon)
+
+  // Hand-entered dated resources still work — but the pipeline wins when both
+  // carry the same meeting (same ET date + shared title tokens).
+  const isDupOfCivic = (r: TownResource) =>
+    civicEvents.some((ce) => {
+      if (!ce.hearing_date || !r.happens_at) return false
+      if (etDate(r.happens_at) !== ce.hearing_date) return false
+      const a = sigTokens(r.name)
+      let shared = 0
+      for (const t of sigTokens(ce.title)) if (a.has(t)) shared++
+      return shared >= 2
+    })
+
+  const civicDupIds = new Set(resources.filter((r) => r.happens_at && isDupOfCivic(r)).map((r) => r.id))
+  const datedResources = resources.filter((r) => {
+    if (!r.happens_at || civicDupIds.has(r.id)) return false
+    const t = new Date(r.happens_at).getTime()
+    return t > now && t < horizon
+  })
+  const resourceFeatured: FeaturedItem[] = datedResources.map((r) => ({
+    key: `res-${r.id}`,
+    chip: featuredDateChip(r.happens_at!),
+    title: r.name,
+    desc: r.description,
+    label: r.action_label ?? 'See details',
+    href: civicUrl(r.url),
+    sort: new Date(r.happens_at!).getTime(),
+  }))
+
+  const candidates = [...civicFeatured, ...resourceFeatured].sort((a, b) => a.sort - b.sort)
+  const featured = candidates[0] ?? null
+  const upNext = candidates.slice(1, 3)
+  const shownResourceIds = new Set(
+    [featured, ...upNext].filter((c): c is FeaturedItem => Boolean(c && c.key.startsWith('res-'))).map((c) => c.key.slice(4)),
+  )
+
+  const actions = resources.filter((r) => r.action_label && !r.happens_at)
+  const drawer = resources.filter((r) => !actions.includes(r) && !shownResourceIds.has(r.id) && !civicDupIds.has(r.id))
 
   return (
     <section className="mx-auto max-w-[720px]">
@@ -318,29 +418,43 @@ export function GetInvolved({ resources, townName, townSlug }: { resources: Town
       {/* 1. Happening now — zero or one */}
       {featured && (
         <a
-          href={civicUrl(featured.url)}
+          href={featured.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="mb-4 block rounded-[16px] border border-[#EDB93C]/35 bg-[#EDB93C]/[0.07] p-5 transition-colors hover:bg-[#EDB93C]/[0.12]"
+          className="mb-3 block rounded-[16px] border border-[#EDB93C]/35 bg-[#EDB93C]/[0.07] p-5 transition-colors hover:bg-[#EDB93C]/[0.12]"
         >
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-[#EDB93C] px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-[#191A2E]">
               Happening now
             </span>
-            <span className="text-xs font-semibold text-[#EDB93C]">
-              {featuredDateChip(featured.happens_at!)}
-            </span>
+            <span className="text-xs font-semibold text-[#EDB93C]">{featured.chip}</span>
           </div>
-          <p className="font-display text-lg font-bold leading-snug text-white">{featured.name}</p>
-          {featured.description && (
-            <p className="mt-1 text-sm leading-relaxed text-white/80">{featured.description}</p>
+          <p className="font-display text-lg font-bold leading-snug text-white">{featured.title}</p>
+          {featured.desc && (
+            <p className="mt-1 text-sm leading-relaxed text-white/80">{featured.desc}</p>
           )}
-          {featured.action_label && (
-            <span className="mt-3 inline-block rounded-full bg-[#EDB93C] px-4 py-2 text-sm font-bold text-[#191A2E]">
-              {featured.action_label} &rarr;
-            </span>
-          )}
+          <span className="mt-3 inline-block rounded-full bg-[#EDB93C] px-4 py-2 text-sm font-bold text-[#191A2E]">
+            {featured.label} &rarr;
+          </span>
         </a>
+      )}
+
+      {/* Also coming up — at most two slim rows */}
+      {upNext.length > 0 && (
+        <div className="mb-4 space-y-1.5">
+          {upNext.map((c) => (
+            <a
+              key={c.key}
+              href={c.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-baseline gap-2.5 rounded-[10px] border border-[#EDB93C]/[0.15] bg-[#EDB93C]/[0.03] px-4 py-2.5 transition-colors hover:bg-[#EDB93C]/[0.08]"
+            >
+              <span className="shrink-0 text-xs font-semibold text-[#EDB93C]">{c.chip}</span>
+              <span className="min-w-0 truncate text-sm font-semibold text-white">{c.title}</span>
+            </a>
+          ))}
+        </div>
       )}
 
       {/* 2. Action rows — verbs, not cards */}
@@ -364,7 +478,7 @@ export function GetInvolved({ resources, townName, townSlug }: { resources: Town
         </div>
       )}
 
-      {/* 3. Everything else — one quiet drawer */}
+      {/* 3. Everything else — one drawer */}
       {drawer.length > 0 && (
         <details className="group mt-4">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[12px] border border-white/[0.12] bg-white/[0.04] px-4 py-3.5 transition-colors hover:bg-white/[0.08] [&::-webkit-details-marker]:hidden">
@@ -404,7 +518,7 @@ export function GetInvolved({ resources, townName, townSlug }: { resources: Town
                             {r.scope}
                           </span>
                         )}
-                        {r.description && <span className="text-white/75"> — {r.description}</span>}
+                        {r.description && <span className="text-white/75"> &mdash; {r.description}</span>}
                         {(r.contact_email || r.contact_phone) && (
                           <span className="text-white/60">
                             {' '}({[r.contact_email, r.contact_phone].filter(Boolean).join(' · ')})

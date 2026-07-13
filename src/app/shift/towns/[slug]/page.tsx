@@ -11,6 +11,7 @@ import {
   getTownEvents,
   getTownHeatmap,
   getTownPageStats,
+  getTownCivicEvents,
   getTownPartners,
   getTownResources,
   getTownRoams,
@@ -73,13 +74,14 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
 
   // Centroid first (events + roams both need it), then the rest in parallel.
   const centroid = await getTownCentroid(town.group_id)
-  const [stats, roams, partners, heatmapLayers, events, resources] = await Promise.all([
+  const [stats, roams, partners, heatmapLayers, events, resources, civicEvents] = await Promise.all([
     getTownPageStats(town.group_id),
     getTownRoams(centroid),
     getTownPartners(name),
     getTownHeatmap(town.group_id),
     getTownEvents(centroid),
     getTownResources(town.group_id),
+    getTownCivicEvents(name),
   ])
 
   if (!stats) notFound()
@@ -158,7 +160,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
               ['#competition', 'Competition'],
               ['#modes', 'Modes'],
               ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events & Roams']] : []),
-              ...(resources.length > 0 ? [['#involved', 'Get Involved']] : []),
+              ...(resources.length > 0 || civicEvents.length > 0 ? [['#involved', 'Get Involved']] : []),
               ...(partners.length > 0 ? [['#rewards', 'Rewards']] : []),
             ].map(([href, label]) => (
               <a
@@ -211,9 +213,9 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         </section>
 
         {/* Get involved — civic & advocacy */}
-        {resources.length > 0 && (
+        {(resources.length > 0 || civicEvents.length > 0) && (
           <section id="involved" className="scroll-mt-28 px-8 pb-14">
-            <GetInvolved resources={resources} townName={name} townSlug={slug} />
+            <GetInvolved resources={resources} civicEvents={civicEvents} townName={name} townSlug={slug} />
           </section>
         )}
 
