@@ -210,7 +210,7 @@ async function recentlyPublishedCivic(
 ): Promise<TownCivicEvent[]> {
   const { data } = await sb
     .from('infrastructure_hearings')
-    .select('id, title, description, hearing_date, hearing_time, hearing_type, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns')
+    .select('id, title, description, hearing_date, hearing_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes')
     .eq('status', 'published')
     .or(`municipality.eq.${townName},affected_towns.cs.{${townName}}`)
     .gte('published_at', cutoffIso)

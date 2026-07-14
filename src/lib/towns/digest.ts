@@ -158,8 +158,9 @@ export function buildTownDigest(opts: {
   const time = wallTime(item.hearing_time)
 
   // Chip: "Mon, Jul 14 · 7:00 PM ET · virtual public meeting"
+  const typeWord = item.hearing_type === 'virtual' ? 'virtual ' : item.hearing_type === 'hybrid' ? 'hybrid ' : ''
   const chip = item.hearing_date
-    ? `${dateOnlyChip(item.hearing_date)}${time ? ` · ${time} ET` : ''} · ${item.hearing_type === 'virtual' ? 'virtual ' : ''}${noun}`
+    ? `${dateOnlyChip(item.hearing_date)}${time ? ` · ${time} ET` : ''} · ${typeWord}${noun}`
     : `Comments open through ${dateOnlyChip(item.comment_deadline!)}`
 
   // Subject + lede state the thing.
@@ -174,14 +175,19 @@ export function buildTownDigest(opts: {
     ? `${title} — and ${townName} gets a say.`
     : `${title} — ${townName} can weigh in through ${dateOnlyChip(item.comment_deadline!)}.`
 
-  // "How to weigh in" — one line per real channel.
+  // "How to weigh in" — one line per real channel. Hybrid meetings list both.
   const weighIn: string[] = []
   if (item.virtual_link) {
     weighIn.push(
-      `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">Join the ${item.hearing_type === 'virtual' ? 'virtual ' : ''}${noun}</a> — registration takes a minute`,
+      `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">Join the ${item.hearing_type === 'virtual' ? 'virtual ' : ''}${noun} online</a> — registration takes a minute`,
     )
-  } else if (item.hearing_date) {
-    weighIn.push(`Show up in person${time ? ` — ${weekdayName(item.hearing_date)} at ${time}` : ''}`)
+  }
+  if (item.hearing_date && item.hearing_type !== 'virtual') {
+    const where = item.hearing_location_name ? ` at ${escapeHtml(item.hearing_location_name)}` : ''
+    weighIn.push(`${item.virtual_link ? 'Or show' : 'Show'} up in person${where}${time ? ` — ${weekdayName(item.hearing_date)} at ${time}` : ''}`)
+  }
+  if (item.access_notes) {
+    weighIn.push(escapeHtml(item.access_notes))
   }
   if (item.comment_deadline) {
     weighIn.push(
