@@ -2,14 +2,13 @@ import 'server-only'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
 /**
- * Town digest — signed unsubscribe tokens (verify side).
+ * Town digest — signed unsubscribe tokens (sign + verify).
  *
- * The Shift repo's town-digest edge function signs a token per subscriber
- * into every digest's unsubscribe link (see
- * Shift/supabase/functions/_shared/town-digest-token.ts — the two files must
- * stay format-compatible: HS256 JWT-shaped, base64url, no expiry). Shared
- * secret: TOWN_DIGEST_TOKEN_SECRET, set in both the edge function secrets
- * and this app's env.
+ * The town-digest cron route (src/app/api/cron/town-digest) signs a token
+ * per subscriber into every digest's unsubscribe link; /api/towns/unsubscribe
+ * verifies it. HS256 JWT-shaped, base64url, deliberately NO expiry — an
+ * unsubscribe link must keep working however old the email is. Secret:
+ * TOWN_DIGEST_TOKEN_SECRET.
  */
 
 const SCOPE = 'town_digest_unsubscribe'
@@ -23,6 +22,25 @@ export interface TownDigestUnsubTokenPayload {
 
 function base64UrlDecode(str: string): Buffer {
   return Buffer.from(str.replace(/-/g, '+').replace(/_/g, '/'), 'base64')
+}
+
+function base64UrlEncode(buf: Buffer): string {
+  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+export function signTownDigestUnsubToken(email: string, townSlug: string): string {
+  const secret = process.env.TOWN_DIGEST_TOKEN_SECRET
+  if (!secret) throw new Error('TOWN_DIGEST_TOKEN_SECRET not set')
+  const payload: TownDigestUnsubTokenPayload = {
+    email,
+    town_slug: townSlug,
+    scope: SCOPE,
+    iat: Math.floor(Date.now() / 1000),
+  }
+  const header = base64UrlEncode(Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })))
+  const body = base64UrlEncode(Buffer.from(JSON.stringify(payload)))
+  const sig = createHmac('sha256', secret).update(`${header}.${body}`).digest()
+  return `${header}.${body}.${base64UrlEncode(sig)}`
 }
 
 export function verifyTownDigestUnsubToken(

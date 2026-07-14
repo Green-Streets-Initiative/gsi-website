@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { withUtm } from '@/lib/utm'
+import { buildFeaturedCandidates, type FeaturedItem } from '@/lib/towns/civic-featured'
 import type { TownCivicEvent } from '@/lib/towns/queries'
 import ModeSplitChart from '@/components/towns/ModeSplitChart'
 import RoamCard from '@/components/roams/RoamCard'
@@ -282,53 +283,9 @@ const DRAWER_CATEGORY_ORDER = [
   'report_issue',
 ]
 
-/**
- * All town pages are Massachusetts — format meeting times in ET explicitly.
- * Vercel renders in UTC; relying on server-local time showed the July 14
- * McGrath meeting as "11:00 PM" in production (caught 07-13).
- */
-const TOWN_TZ = 'America/New_York'
-
-function featuredDateChip(iso: string): string {
-  const d = new Date(iso)
-  return (
-    d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: TOWN_TZ }) +
-    ' · ' +
-    d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: TOWN_TZ })
-  )
-}
-
-/** Date-only strings ("2026-07-16") — no timezone round-trip at all. */
-function dateOnlyChip(isoDate: string): string {
-  return new Date(isoDate + 'T12:00:00Z').toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-  })
-}
-
-/** Wall-clock "19:00[:00]" → "7:00 PM" — pipeline times are already local. */
-function wallTime(hhmm: string | null): string | null {
-  const m = hhmm?.match(/^(\d{2}):(\d{2})/)
-  if (!m) return null
-  const h = Number(m[1])
-  return `${h % 12 === 0 ? 12 : h % 12}:${m[2]} ${h >= 12 ? 'PM' : 'AM'}`
-}
-
-function sigTokens(s: string): Set<string> {
-  return new Set(s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((t) => t.length >= 4))
-}
-
-const etDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-CA', { timeZone: TOWN_TZ })
-
-interface FeaturedItem {
-  key: string
-  chip: string
-  title: string
-  desc: string | null
-  label: string
-  href: string
-  sort: number
-}
+// Timely-item selection + ET-safe date helpers moved to
+// src/lib/towns/civic-featured.ts, shared with the town digest email so the
+// page and the email can never drift.
 
 export function GetInvolved({
   resources,
@@ -345,60 +302,7 @@ export function GetInvolved({
     withUtm(url, { medium: 'town_page', campaign: townSlug, content: 'get_involved' }) ?? '#'
   if (resources.length === 0 && civicEvents.length === 0) return null
 
-  const now = Date.now()
-  const horizon = now + 30 * 24 * 3600 * 1000
-
-  // Pipeline items (admin-published meetings/hearings/comment periods).
-  const civicFeatured: FeaturedItem[] = civicEvents
-    .map((ce) => {
-      const sort = ce.hearing_date
-        ? new Date(`${ce.hearing_date}T${(ce.hearing_time ?? '12:00').slice(0, 5)}:00-04:00`).getTime()
-        : new Date(`${ce.comment_deadline}T23:59:00-04:00`).getTime()
-      const t = wallTime(ce.hearing_time)
-      const chip = ce.hearing_date
-        ? dateOnlyChip(ce.hearing_date) + (t ? ` · ${t}` : '') + (ce.hearing_type === 'virtual' ? ' · virtual' : '')
-        : `Comment by ${dateOnlyChip(ce.comment_deadline!)}`
-      return {
-        key: `civic-${ce.id}`,
-        chip,
-        title: ce.title,
-        desc: ce.description,
-        label: ce.action_label ?? (ce.virtual_link ? 'Register' : 'See details'),
-        href: civicUrl(ce.virtual_link ?? ce.source_url),
-        sort,
-      }
-    })
-    .filter((f) => f.sort > now && f.sort < horizon)
-
-  // Hand-entered dated resources still work — but the pipeline wins when both
-  // carry the same meeting (same ET date + shared title tokens).
-  const isDupOfCivic = (r: TownResource) =>
-    civicEvents.some((ce) => {
-      if (!ce.hearing_date || !r.happens_at) return false
-      if (etDate(r.happens_at) !== ce.hearing_date) return false
-      const a = sigTokens(r.name)
-      let shared = 0
-      for (const t of sigTokens(ce.title)) if (a.has(t)) shared++
-      return shared >= 2
-    })
-
-  const civicDupIds = new Set(resources.filter((r) => r.happens_at && isDupOfCivic(r)).map((r) => r.id))
-  const datedResources = resources.filter((r) => {
-    if (!r.happens_at || civicDupIds.has(r.id)) return false
-    const t = new Date(r.happens_at).getTime()
-    return t > now && t < horizon
-  })
-  const resourceFeatured: FeaturedItem[] = datedResources.map((r) => ({
-    key: `res-${r.id}`,
-    chip: featuredDateChip(r.happens_at!),
-    title: r.name,
-    desc: r.description,
-    label: r.action_label ?? 'See details',
-    href: civicUrl(r.url),
-    sort: new Date(r.happens_at!).getTime(),
-  }))
-
-  const candidates = [...civicFeatured, ...resourceFeatured].sort((a, b) => a.sort - b.sort)
+  const { candidates, civicDupIds } = buildFeaturedCandidates(civicEvents, resources, civicUrl)
   const featured = candidates[0] ?? null
   const upNext = candidates.slice(1, 3)
   const shownResourceIds = new Set(
