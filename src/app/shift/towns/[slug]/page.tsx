@@ -5,6 +5,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import StoreButtons from '@/components/StoreButtons'
 import TownDigestSignup from '@/components/towns/TownDigestSignup'
+import TownToc from '@/components/towns/TownToc'
 import { withUtm } from '@/lib/utm'
 import {
   getTownBySlug,
@@ -148,32 +149,19 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
           </div>
         </section>
 
-        {/* Table of contents — anchor chips, sticky under the site nav */}
-        <nav
-          aria-label="Page sections"
-          className="sticky top-[60px] z-20 border-b border-white/[0.06] bg-[#191A2E]/95 px-4 py-2 backdrop-blur"
-        >
-          <div className="mx-auto flex max-w-[960px] gap-1.5 overflow-x-auto whitespace-nowrap text-xs font-semibold">
-            {[
-              ['#stats', 'Stats'],
-              ...(heatmapLayers.length > 0 ? [['#moves', `Where we move`]] : []),
-              ['#momentum', 'Momentum'],
-              ['#competition', 'Competition'],
-              ['#modes', 'Modes'],
-              ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events & Roams']] : []),
-              ...(resources.length > 0 || civicEvents.length > 0 ? [['#involved', 'Get Involved']] : []),
-              ...(partners.length > 0 ? [['#rewards', 'Rewards']] : []),
-            ].map(([href, label]) => (
-              <a
-                key={href}
-                href={href}
-                className="rounded-full bg-white/[0.06] px-3 py-1.5 text-white/75 transition-colors hover:bg-white/[0.12] hover:text-white"
-              >
-                {label}
-              </a>
-            ))}
-          </div>
-        </nav>
+        {/* Table of contents — scrollspy chips, sticky under the site nav */}
+        <TownToc
+          sections={[
+            ['#stats', 'Stats'],
+            ...(heatmapLayers.length > 0 ? [['#moves', 'Where we move'] as [string, string]] : []),
+            ['#momentum', 'Momentum'],
+            ['#competition', 'Competition'],
+            ['#modes', 'Modes'],
+            ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events & Roams'] as [string, string]] : []),
+            ...(resources.length > 0 || civicEvents.length > 0 ? [['#involved', 'Get Involved'] as [string, string]] : []),
+            ...(partners.length > 0 ? [['#rewards', 'Rewards'] as [string, string]] : []),
+          ]}
+        />
 
         {/* Stats + disclaimer */}
         <section id="stats" className="scroll-mt-28 px-8 pb-14 pt-10">

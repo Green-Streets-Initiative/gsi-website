@@ -32,11 +32,11 @@ const BAND_COLORS: [number, string][] = [
  * corridor carries it — true while the app is young — showing it is noise).
  */
 /**
- * Default view frames the TOWN (centroid ± ~1.2mi), not the full feature
+ * Default view frames the TOWN (centroid ± ~1.8mi), not the full feature
  * extent — commute traces reach ~6mi out and were forcing a regional zoom
  * where the basemap has no street detail. Panning still reveals the rest.
  */
-const TOWN_SPAN_LAT = 0.017 // ≈1.2mi half-span
+const TOWN_SPAN_LAT = 0.026 // ≈1.8mi half-span — whole town + edges (Keith 07-14: 0.017 cropped corridors)
 function townBounds(
   centroid: { lat: number; lng: number } | null,
   layer: TownHeatmapLayer,
@@ -62,7 +62,7 @@ function townBounds(
   ]
 }
 
-const FIT_OPTS = { padding: 8, maxZoom: 14.5 }
+const FIT_OPTS = { padding: 8, maxZoom: 13.75 }
 
 export default function TownHeatmap({
   layers,

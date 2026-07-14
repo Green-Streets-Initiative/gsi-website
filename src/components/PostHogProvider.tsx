@@ -16,19 +16,31 @@ import { Suspense, useEffect } from 'react'
 const POSTHOG_KEY =
   process.env.NEXT_PUBLIC_POSTHOG_KEY || 'phc_tZDqVkUx4TmwYokjRBVLpEBpycp4PZWCr9bWEbN3SBpb'
 
-if (typeof window !== 'undefined' && !posthog.__loaded) {
-  posthog.init(POSTHOG_KEY, {
-    api_host: 'https://us.i.posthog.com',
-    capture_pageview: false, // manual below — SPA navigations
-    capture_pageleave: true,
-    persistence: 'localStorage+cookie',
-    respect_dnt: true,
-  })
-}
-
 function PageviewTracker() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
+
+  // Init AFTER hydration: module-scope init injected the posthog <script>
+  // into the DOM before React hydrated, producing a hydration mismatch
+  // (and breaking sibling client components' effects). useEffect runs
+  // post-hydration, so React's tree is settled first.
+  useEffect(() => {
+    if (!posthog.__loaded) {
+      posthog.init(POSTHOG_KEY, {
+        api_host: 'https://us.i.posthog.com',
+        capture_pageview: false, // manual below — SPA navigations
+        capture_pageleave: true,
+        persistence: 'localStorage+cookie',
+        respect_dnt: true,
+        // PostHog's loader injects its remote-config <script> before the
+        // document's FIRST script tag — the town pages' JSON-LD block —
+        // which breaks React's streamed hydration. This flag disables all
+        // external script injection (we don't use session recording or
+        // surveys; events/autocapture are unaffected).
+        disable_external_dependency_loading: true,
+      })
+    }
+  }, [])
 
   useEffect(() => {
     if (!pathname) return
