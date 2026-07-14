@@ -270,11 +270,13 @@ const DRAWER_CATEGORY_META: Record<string, string> = {
   public_meetings: 'Meetings & comment pathways',
   bike_ped_committee: 'City committees you can join',
   advocacy_group: 'Advocacy groups',
+  commuter_services: 'Free commuter perks & shuttles',
   report_issue: 'Report an issue',
 }
 const DRAWER_CATEGORY_ORDER = [
   'bike_ped_committee',
   'advocacy_group',
+  'commuter_services',
   'public_meetings',
   'town_dept',
   'report_issue',
