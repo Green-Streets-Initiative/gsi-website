@@ -122,6 +122,21 @@ export async function POST(req: Request) {
     }
   }
 
+  // Town-digest mirror: a Loops-side unsubscribe/bounce/complaint must also
+  // silence every town digest for that email (town_digest_subscribers is the
+  // sender's source of truth; it has no contactId — match by email).
+  // Best-effort: contact.unsubscribed also arrives via our own unsubscribe
+  // mirror call, so rows may already be marked; the IS NULL guard keeps the
+  // earliest reason.
+  if (reason && reason !== 'deleted_in_loops' && email) {
+    const { error: tdError } = await sb
+      .from('town_digest_subscribers')
+      .update({ unsubscribed_at: new Date().toISOString(), unsubscribe_reason: reason })
+      .eq('email', email)
+      .is('unsubscribed_at', null)
+    if (tdError) console.error('town_digest_subscribers webhook mirror failed:', tdError.message)
+  }
+
   // Always log (success path or log-only events).
   await sb.from('contact_webhook_log').insert({
     webhook_id: webhookId,

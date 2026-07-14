@@ -218,6 +218,26 @@ export async function subscribeTownDigest(
   return { ok: true }
 }
 
+/**
+ * Unsubscribe an email-only contact (town-digest subscribers have no CRM
+ * userId — Loops matches by email alone).
+ */
+export async function unsubscribeTownDigestContact(
+  email: string,
+  reason: string,
+): Promise<{ ok: boolean; status?: number }> {
+  const res = await loopsFetch('/contacts/update', {
+    method: 'PUT',
+    body: JSON.stringify({
+      email,
+      subscribed: false,
+      source: `town_digest_${reason}`,
+    }),
+  })
+  if (!res.ok) return { ok: false, status: res.status }
+  return { ok: true }
+}
+
 export function verifyLoopsSignature(rawBody: string, signatureHeader: string | null): boolean {
   const secret = process.env.LOOPS_WEBHOOK_SECRET
   if (!secret) throw new Error('LOOPS_WEBHOOK_SECRET not set')
