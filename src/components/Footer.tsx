@@ -18,7 +18,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="grid gap-12 md:grid-cols-4">
+        <div className="grid gap-12 md:grid-cols-5">
           {/* Brand */}
           <div className="md:col-span-1">
             <Link href="/" className="mb-4 inline-flex items-center no-underline">
@@ -71,6 +71,65 @@ export default function Footer() {
               <li>
                 <Link href="/events/shift-your-summer" className="text-sm text-white transition-colors hover:text-white">
                   Flagship events
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Shift Towns — civic pages; also crawler equity */}
+          <div>
+            <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest text-white">
+              Shift Towns
+            </h4>
+            <ul className="flex flex-col gap-2.5">
+              <li>
+                <Link href="/shift/towns/somerville-ma?utm_content=footer_towns" className="text-sm text-white transition-colors hover:text-white">
+                  Somerville
+                </Link>
+              </li>
+              <li>
+                <Link href="/shift/towns/cambridge-ma?utm_content=footer_towns" className="text-sm text-white transition-colors hover:text-white">
+                  Cambridge
+                </Link>
+              </li>
+              <li>
+                <Link href="/shift/towns/boston-ma?utm_content=footer_towns" className="text-sm text-white transition-colors hover:text-white">
+                  Boston
+                </Link>
+              </li>
+              <li>
+                <Link href="/shift/towns/medford-ma?utm_content=footer_towns" className="text-sm text-white transition-colors hover:text-white">
+                  Medford
+                </Link>
+              </li>
+              <li>
+                <Link href="/shift/towns/arlington-ma?utm_content=footer_towns" className="text-sm text-white transition-colors hover:text-white">
+                  Arlington
+                </Link>
+              </li>
+              <li>
+                <Link href="/shift/towns/brookline-ma?utm_content=footer_towns" className="text-sm text-white transition-colors hover:text-white">
+                  Brookline
+                </Link>
+              </li>
+              <li>
+                <Link href="/shift/towns/watertown-ma?utm_content=footer_towns" className="text-sm text-white transition-colors hover:text-white">
+                  Watertown
+                </Link>
+              </li>
+              <li>
+                <Link href="/shift/towns/everett-ma?utm_content=footer_towns" className="text-sm text-white transition-colors hover:text-white">
+                  Everett
+                </Link>
+              </li>
+              <li>
+                <Link href="/shift/towns/newton-ma?utm_content=footer_towns" className="text-sm text-white transition-colors hover:text-white">
+                  Newton
+                </Link>
+              </li>
+              <li>
+                <Link href="/shift/towns?utm_content=footer_towns" className="text-sm font-semibold text-white transition-colors hover:text-white">
+                  All towns &rarr;
                 </Link>
               </li>
             </ul>

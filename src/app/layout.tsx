@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Bricolage_Grotesque, DM_Sans, DM_Mono, Instrument_Serif } from 'next/font/google'
 import './globals.css'
+import PostHogProvider from '@/components/PostHogProvider'
 
 const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -52,7 +53,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${bricolage.variable} ${dmSans.variable} ${dmMono.variable} ${instrumentSerif.variable}`}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans"><PostHogProvider />{children}</body>
     </html>
   )
 }

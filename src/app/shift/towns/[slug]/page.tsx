@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import StoreButtons from '@/components/StoreButtons'
+import TownDigestSignup from '@/components/towns/TownDigestSignup'
 import { withUtm } from '@/lib/utm'
 import {
   getTownBySlug,
@@ -222,6 +223,11 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         {/* Rewards Partners */}
         <section id="rewards" className="scroll-mt-28 px-8 pb-14">
           <RewardsPartners partners={partners} townName={name} />
+        </section>
+
+        {/* Town digest signup — E19's front door */}
+        <section className="px-8 pb-14">
+          <TownDigestSignup townName={name} townSlug={slug} />
         </section>
 
         {/* CTA */}

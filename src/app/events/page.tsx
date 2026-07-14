@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import EventsPage from '@/components/events/EventsPage'
+import { TownChipsStrip } from '@/components/towns/TownsCrossLink'
 import type { CommunityEvent } from '@/lib/events'
 
 export const metadata = {
@@ -78,6 +79,7 @@ export default async function EventsListingPage() {
       <Nav />
       <main style={{ paddingTop: '60px' }}>
         <EventsPage events={events} />
+        <TownChipsStrip utmContent="events_page_xlink" />
       </main>
       <Footer />
     </>

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { TownsTeaserBand } from '@/components/towns/TownsCrossLink'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
@@ -153,6 +154,8 @@ export default function ShiftPage() {
             </FeatureRow>
           </FadeIn>
         </section>
+
+        <TownsTeaserBand />
 
         {/* ═══════════════════════════════════════════════════════
             3 · COMMUTE ADVISOR

@@ -190,6 +190,34 @@ export async function unsubscribeContact(args: {
 // supports the common t=...,v1=... pattern and a plain HMAC fallback.
 // ---------------------------------------------------------------------------
 
+
+/**
+ * Town-digest signup (E19's front door — town pages' email capture).
+ * Anonymous web visitors: no userId; Loops upserts by email. The contact
+ * lands on the newsletter list with townDigest carrying the town slug so
+ * the future digest can segment per town.
+ */
+export async function subscribeTownDigest(
+  email: string,
+  townSlug: string,
+): Promise<{ ok: boolean; status?: number }> {
+  const body: Record<string, unknown> = {
+    email,
+    source: 'town_page',
+    subscribed: true,
+    townDigest: townSlug,
+  }
+  if (LOOPS_LIST_IDS.newsletter) {
+    body.mailingLists = { [LOOPS_LIST_IDS.newsletter]: true }
+  }
+  const res = await loopsFetch('/contacts/update', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) return { ok: false, status: res.status }
+  return { ok: true }
+}
+
 export function verifyLoopsSignature(rawBody: string, signatureHeader: string | null): boolean {
   const secret = process.env.LOOPS_WEBHOOK_SECRET
   if (!secret) throw new Error('LOOPS_WEBHOOK_SECRET not set')
