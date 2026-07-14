@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/employer-digest",
       "schedule": "0 13 * * 1"
+    },
+    {
+      "path": "/api/cron/town-digest",
+      "schedule": "0 12 * * *"
     }
   ]
 }
