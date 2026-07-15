@@ -28,7 +28,7 @@ export const maxDuration = 120
  * Scheduled via vercel.json cron ONLY after Keith's copy sign-off.
  */
 
-const FROM = 'Shift <noreply@gogreenstreets.org>'
+const FROM = 'Green Streets Initiative <noreply@gogreenstreets.org>'
 const REPLY_TO = 'info@gogreenstreets.org'
 const ADMIN_EMAIL = 'keith@gogreenstreets.org'
 const SITE = 'https://www.gogreenstreets.org'
