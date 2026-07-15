@@ -311,6 +311,13 @@ export function GetInvolved({
 
   const actions = resources.filter((r) => r.action_label && !r.happens_at)
   const drawer = resources.filter((r) => !actions.includes(r) && !shownResourceIds.has(r.id) && !civicDupIds.has(r.id))
+  // Town first, always visible; the shared regional/statewide tail (identical
+  // on every town page) is the only part that collapses.
+  const localResources = drawer.filter((r) => r.scope === 'local')
+  const sharedResources = [
+    ...drawer.filter((r) => r.scope === 'regional'),
+    ...drawer.filter((r) => r.scope === 'statewide'),
+  ]
 
   return (
     <section className="mx-auto max-w-[720px]">
@@ -384,63 +391,77 @@ export function GetInvolved({
         </div>
       )}
 
-      {/* 3. Everything else — one drawer */}
-      {drawer.length > 0 && (
+      {/* 3. Town-level directory — ALWAYS visible (Keith 07-16: a user on a
+          town page sees that town's content first; hidden ≠ ok for local). */}
+      {localResources.length > 0 && (
+        <div className="mt-4 space-y-4 rounded-[12px] border border-white/[0.06] bg-white/[0.02] p-4">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-[#BAF14D]">
+            In {townName}
+          </p>
+          {resourceGroups(localResources, civicUrl)}
+        </div>
+      )}
+
+      {/* 4. Shared regional/statewide tail — the one list that's identical on
+          every town page stays behind the drawer. */}
+      {sharedResources.length > 0 && (
         <details className="group mt-4">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[12px] border border-white/[0.12] bg-white/[0.04] px-4 py-3.5 transition-colors hover:bg-white/[0.08] [&::-webkit-details-marker]:hidden">
             <span className="min-w-0">
-              <span className="block text-sm font-bold text-white">More ways to get involved</span>
+              <span className="block text-sm font-bold text-white">Regional &amp; statewide groups</span>
               <span className="block text-xs text-white/70">
-                {drawer.length}{' '}more &mdash; committees you can join, advocacy groups, and city contacts
+                {sharedResources.length}{' '}more &mdash; research, campaigns, and coalitions you can join
               </span>
             </span>
             <span className="shrink-0 text-[#BAF14D] transition-transform group-open:rotate-90">&rarr;</span>
           </summary>
           <div className="mt-3 space-y-4 rounded-[12px] border border-white/[0.06] bg-white/[0.02] p-4">
-            {DRAWER_CATEGORY_ORDER.map((cat) => {
-              const inCat = drawer.filter((r) => r.category === cat)
-              if (inCat.length === 0) return null
-              const ordered = [
-                ...inCat.filter((r) => r.scope === 'local'),
-                ...inCat.filter((r) => r.scope !== 'local'),
-              ]
-              return (
-                <div key={cat}>
-                  <p className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-white/60">
-                    {DRAWER_CATEGORY_META[cat] ?? cat}
-                  </p>
-                  <ul className="space-y-1.5">
-                    {ordered.map((r) => (
-                      <li key={r.id} className="text-sm leading-snug">
-                        {r.url ? (
-                          <a href={civicUrl(r.url)} target="_blank" rel="noopener noreferrer" className="font-semibold text-white underline decoration-white/30 underline-offset-2 hover:decoration-[#BAF14D]">
-                            {r.name}
-                          </a>
-                        ) : (
-                          <span className="font-semibold text-white">{r.name}</span>
-                        )}
-                        {r.scope !== 'local' && (
-                          <span className="ml-1.5 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-white/70">
-                            {r.scope}
-                          </span>
-                        )}
-                        {r.description && <span className="text-white/75"> &mdash; {r.description}</span>}
-                        {(r.contact_email || r.contact_phone) && (
-                          <span className="text-white/60">
-                            {' '}({[r.contact_email, r.contact_phone].filter(Boolean).join(' · ')})
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )
-            })}
+            {resourceGroups(sharedResources, civicUrl)}
           </div>
         </details>
       )}
     </section>
   )
+}
+
+/** Category-grouped resource list shared by the visible local block and the
+ *  regional/statewide drawer. Input order is preserved within a category. */
+function resourceGroups(list: TownResource[], civicUrl: (url: string | null) => string) {
+  return DRAWER_CATEGORY_ORDER.map((cat) => {
+    const inCat = list.filter((r) => r.category === cat)
+    if (inCat.length === 0) return null
+    return (
+      <div key={cat}>
+        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-white/60">
+          {DRAWER_CATEGORY_META[cat] ?? cat}
+        </p>
+        <ul className="space-y-1.5">
+          {inCat.map((r) => (
+            <li key={r.id} className="text-sm leading-snug">
+              {r.url ? (
+                <a href={civicUrl(r.url)} target="_blank" rel="noopener noreferrer" className="font-semibold text-white underline decoration-white/30 underline-offset-2 hover:decoration-[#BAF14D]">
+                  {r.name}
+                </a>
+              ) : (
+                <span className="font-semibold text-white">{r.name}</span>
+              )}
+              {r.scope !== 'local' && (
+                <span className="ml-1.5 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-white/70">
+                  {r.scope}
+                </span>
+              )}
+              {r.description && <span className="text-white/75"> &mdash; {r.description}</span>}
+              {(r.contact_email || r.contact_phone) && (
+                <span className="text-white/60">
+                  {' '}({[r.contact_email, r.contact_phone].filter(Boolean).join(' · ')})
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  })
 }
 
 /* ── rewards partners ─────────────────────────────────────── */
