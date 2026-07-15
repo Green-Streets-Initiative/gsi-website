@@ -201,9 +201,9 @@ export function buildTownDigest(opts: {
       ? ` — comments due ${whenPhrase(item.comment_deadline, todayIso)}`
       : ''
   const subject = `${townName}: ${truncate(headline, 60)}${subjectTail}`
-  const h1 = !item.hearing_date && item.comment_deadline
-    ? `${headline} — ${townName} can weigh in through ${dateOnlyChip(item.comment_deadline)}.`
-    : `${headline} — and ${townName} gets a say.`
+  // The headline stands alone — no editorial tail (Keith 07-15: "gets a say"
+  // reads AI-authored). The eyebrow + card chip carry the "you can act" part.
+  const h1 = headline
 
   // "How to weigh in" — one line per real channel. Hybrid meetings list both.
   const weighIn: string[] = []
@@ -266,10 +266,25 @@ export function buildTownDigest(opts: {
     ? `Plus: ${preheaderBits.join(', ')}.`
     : `How to make your voice count in ${townName}.`
 
+  // "Also" rows: the PROJECT leads in bold (which street, which routes); the
+  // input channel + date follow in lighter text. Every row is here because
+  // input is open — the channel phrase says so explicitly per row.
+  const alsoRow = (a: FeaturedItem): string => {
+    const label = truncate(a.civic ? headlineFor(a.civic, townNames) : a.title, 80)
+    const c = a.civic
+    const channel = c
+      ? c.hearing_date
+        ? `${c.hearing_type === 'virtual' ? 'virtual ' : c.hearing_type === 'hybrid' ? 'hybrid ' : ''}${meetingNoun(c)} ${dateOnlyChip(c.hearing_date)}${wallTime(c.hearing_time) ? ` · ${wallTime(c.hearing_time)}` : ''}`
+        : c.comment_deadline
+          ? `feedback open through ${dateOnlyChip(c.comment_deadline)}`
+          : 'open for feedback now'
+      : a.chip
+    return `<p style="margin:0 0 6px;font-size:14px;line-height:1.5;color:#5A5C6E;"><a href="${a.href}" style="color:#191A2E;font-weight:700;">${escapeHtml(label)}</a> — ${escapeHtml(channel)}</p>`
+  }
   const alsoSection = also.length
     ? `<tr><td style="padding:0 32px 24px;">
-        <p style="margin:0 0 8px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.1em;color:#5A5C6E;">ALSO TAKING FEEDBACK</p>
-        ${also.map((a) => `<p style="margin:0 0 6px;font-size:14px;color:#3A3C4E;"><b style="color:#191A2E;">${escapeHtml(a.chip)}</b> · <a href="${a.href}" style="color:#3A3C4E;">${escapeHtml(truncate(a.civic ? headlineFor(a.civic, townNames) : a.title, 90))}</a></p>`).join('\n')}
+        <p style="margin:0 0 8px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.1em;color:#5A5C6E;">ALSO OPEN FOR INPUT</p>
+        ${also.map(alsoRow).join('\n')}
       </td></tr>`
     : ''
 
