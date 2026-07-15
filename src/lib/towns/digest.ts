@@ -33,7 +33,9 @@ import type {
  */
 
 const SITE = 'https://www.gogreenstreets.org'
-const WORDMARK_URL = `${SITE}/assets/wayfinding/shift-wordmark.png`
+// Lead with the organization, not the product (Keith 07-15) — Shift appears
+// where it's relevant in the body (pulse, perk, footer).
+const GSI_WORDMARK_URL = `${SITE}/assets/email/gsi-wordmark-dark.png`
 export const UNSUB_PLACEHOLDER = '%%UNSUB_URL%%'
 /** Replaced per recipient: '' for web subscribers, a proximity line for app users near the project. */
 export const PROXIMITY_PLACEHOLDER = '%%PROXIMITY_LINE%%'
@@ -356,12 +358,12 @@ export function buildTownDigest(opts: {
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0;">
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
-  <!-- Header: real wordmark on a light band -->
+  <!-- Header: GSI wordmark on navy, lime accent rule -->
   <tr>
-    <td style="padding:22px 32px 18px;border-bottom:3px solid #191A2E;">
+    <td style="background:#191A2E;padding:20px 32px 18px;border-bottom:3px solid #BAF14D;">
       <table width="100%" cellpadding="0" cellspacing="0"><tr>
-        <td><img src="${WORDMARK_URL}" alt="Shift" width="110" style="display:block;" /></td>
-        <td align="right" style="font-family:${FONT_DISPLAY};font-size:11px;font-weight:700;letter-spacing:0.14em;color:#5A5C6E;vertical-align:middle;">YOUR ${escapeHtml(townName.toUpperCase())} UPDATE</td>
+        <td><img src="${GSI_WORDMARK_URL}" alt="Green Streets Initiative" width="215" style="display:block;" /></td>
+        <td align="right" style="font-family:${FONT_DISPLAY};font-size:11px;font-weight:700;letter-spacing:0.14em;color:rgba(255,255,255,0.78);vertical-align:middle;">YOUR ${escapeHtml(townName.toUpperCase())} UPDATE</td>
       </tr></table>
     </td>
   </tr>
