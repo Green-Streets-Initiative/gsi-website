@@ -400,6 +400,8 @@ export interface TownCivicEvent {
   affected_towns: string[] | null
   /** Extra attendance channels beyond venue + virtual_link (dial-in, meeting ID). */
   access_notes: string | null
+  /** Short resident-facing headline written by the fact-check gate; null on manual publishes. */
+  digest_headline: string | null
 }
 
 export async function getTownCivicEvents(townName: string): Promise<TownCivicEvent[]> {
@@ -407,15 +409,15 @@ export async function getTownCivicEvents(townName: string): Promise<TownCivicEve
   const todayStr = new Date().toISOString().slice(0, 10)
   const { data } = await supabase
     .from('infrastructure_hearings')
-    .select('id, title, description, hearing_date, hearing_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes')
+    .select('id, title, description, hearing_date, hearing_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline')
     .eq('status', 'published')
     .or(`municipality.eq.${townName},affected_towns.cs.{${townName}}`)
     .order('hearing_date', { ascending: true, nullsFirst: false })
     .limit(20)
-  // Upcoming only: a dated meeting must be today-or-later; an undated comment
-  // period must have a live deadline.
+  // Upcoming only: a dated meeting must be today-or-later; a comment period
+  // must have a live deadline — or none at all (open-ended surveys stay live).
   return ((data ?? []) as TownCivicEvent[]).filter((h) =>
-    h.hearing_date ? h.hearing_date >= todayStr : (h.comment_deadline ?? '') >= todayStr,
+    h.hearing_date ? h.hearing_date >= todayStr : !h.comment_deadline || h.comment_deadline >= todayStr,
   )
 }
 

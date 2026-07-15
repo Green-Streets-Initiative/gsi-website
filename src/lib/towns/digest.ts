@@ -3,6 +3,7 @@ import { withUtm } from '@/lib/utm'
 import {
   buildFeaturedCandidates,
   dateOnlyChip,
+  TOWN_TZ,
   wallTime,
   type FeaturedItem,
 } from '@/lib/towns/civic-featured'
@@ -86,6 +87,31 @@ export function shortCivicTitle(item: TownCivicEvent, townNames: string[]): stri
 }
 
 /**
+ * The subject/lede headline: the fact-check gate's digest_headline when it
+ * exists (short, resident-phrased, source-derived), else the title cleaned
+ * of agency prefixes ("Public Meeting | …"), format suffixes ("(Virtual)"),
+ * and town-name prefixes.
+ */
+export function headlineFor(item: TownCivicEvent, townNames: string[]): string {
+  if (item.digest_headline?.trim()) return item.digest_headline.trim()
+  let t = shortCivicTitle(item, townNames)
+  const pipe = t.lastIndexOf('| ')
+  if (pipe >= 0) t = t.slice(pipe + 2)
+  t = t.replace(/\s*\((virtual|in[- ]person|hybrid)\)\s*$/i, '').trim()
+  return t
+}
+
+/** "Tuesday" only when it's unambiguous (within 6 days of `today`); else "July 21". */
+function whenPhrase(isoDate: string, todayIso: string): string {
+  const days = Math.round((Date.parse(isoDate) - Date.parse(todayIso)) / 86400000)
+  const d = new Date(isoDate + 'T12:00:00Z')
+  if (days >= 0 && days <= 6) {
+    return days === 0 ? 'today' : d.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })
+  }
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })
+}
+
+/**
  * The organizer's own noun for the event — scanned from the item's text.
  * Keith 07-14: "we refer to the meeting as a 'hearing,' but the hosts
  * themselves do not." Default is the most neutral term.
@@ -154,26 +180,30 @@ export function buildTownDigest(opts: {
   const itemIds = [item.id, ...also.map((a) => a.civic?.id).filter((id): id is string => !!id)]
 
   const noun = meetingNoun(item)
-  const title = shortCivicTitle(item, [...(item.affected_towns ?? []), item.municipality, townName])
+  const townNames = [...(item.affected_towns ?? []), item.municipality, townName]
+  const headline = headlineFor(item, townNames)
+  const todayIso = new Date(now).toLocaleDateString('en-CA', { timeZone: TOWN_TZ })
   const time = wallTime(item.hearing_time)
 
   // Chip: "Mon, Jul 14 · 7:00 PM ET · virtual public meeting"
   const typeWord = item.hearing_type === 'virtual' ? 'virtual ' : item.hearing_type === 'hybrid' ? 'hybrid ' : ''
   const chip = item.hearing_date
     ? `${dateOnlyChip(item.hearing_date)}${time ? ` · ${time} ET` : ''} · ${typeWord}${noun}`
-    : `Comments open through ${dateOnlyChip(item.comment_deadline!)}`
-
-  // Subject + lede state the thing.
-  const shortT = truncate(title, 64)
-  const subjectTail = item.hearing_date
-    ? ` — weigh in ${weekdayName(item.hearing_date)}`
     : item.comment_deadline
-      ? ` — comments due ${dateOnlyChip(item.comment_deadline).replace(/^\w+, /, '')}`
+      ? `Comments open through ${dateOnlyChip(item.comment_deadline)}`
+      : 'Open for feedback now'
+
+  // Subject + lede state the thing — via the generated headline, never a
+  // truncated scrape title.
+  const subjectTail = item.hearing_date
+    ? ` — weigh in ${whenPhrase(item.hearing_date, todayIso)}`
+    : item.comment_deadline
+      ? ` — comments due ${whenPhrase(item.comment_deadline, todayIso)}`
       : ''
-  const subject = `${townName}: ${shortT}${subjectTail}`
-  const h1 = item.hearing_date
-    ? `${title} — and ${townName} gets a say.`
-    : `${title} — ${townName} can weigh in through ${dateOnlyChip(item.comment_deadline!)}.`
+  const subject = `${townName}: ${truncate(headline, 60)}${subjectTail}`
+  const h1 = !item.hearing_date && item.comment_deadline
+    ? `${headline} — ${townName} can weigh in through ${dateOnlyChip(item.comment_deadline)}.`
+    : `${headline} — and ${townName} gets a say.`
 
   // "How to weigh in" — one line per real channel. Hybrid meetings list both.
   const weighIn: string[] = []
@@ -238,8 +268,8 @@ export function buildTownDigest(opts: {
 
   const alsoSection = also.length
     ? `<tr><td style="padding:0 32px 24px;">
-        <p style="margin:0 0 8px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.1em;color:#5A5C6E;">ALSO WORTH YOUR VOICE</p>
-        ${also.map((a) => `<p style="margin:0 0 6px;font-size:14px;color:#3A3C4E;"><b style="color:#191A2E;">${escapeHtml(a.chip)}</b> · <a href="${a.href}" style="color:#3A3C4E;">${escapeHtml(truncate(a.title, 90))}</a></p>`).join('\n')}
+        <p style="margin:0 0 8px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.1em;color:#5A5C6E;">ALSO TAKING FEEDBACK</p>
+        ${also.map((a) => `<p style="margin:0 0 6px;font-size:14px;color:#3A3C4E;"><b style="color:#191A2E;">${escapeHtml(a.chip)}</b> · <a href="${a.href}" style="color:#3A3C4E;">${escapeHtml(truncate(a.civic ? headlineFor(a.civic, townNames) : a.title, 90))}</a></p>`).join('\n')}
       </td></tr>`
     : ''
 
@@ -255,7 +285,7 @@ export function buildTownDigest(opts: {
     ? `<tr><td style="padding:0 32px 24px;">
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F1;border-radius:12px;"><tr><td style="padding:16px 20px;">
           <p style="margin:0 0 4px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.1em;color:#2D6A4F;">A LOCAL PERK</p>
-          <p style="margin:0;font-size:14px;line-height:1.55;color:#3A3C4E;"><b style="color:#191A2E;">${escapeHtml(partner.name)}</b>${partner.discount_description ? ` — ${escapeHtml(partner.discount_description.trim().replace(/\.$/, ''))}` : ''}. One of ${partners.length} ${escapeHtml(townName)} businesses that thank you for arriving car-free, through the free Shift app.</p>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#3A3C4E;"><b style="color:#191A2E;">${escapeHtml(partner.name)}</b>${partner.discount_description ? ` — ${escapeHtml(partner.discount_description.trim().replace(/\.$/, ''))}` : ''}. One of ${partners.length} ${escapeHtml(townName)} businesses that reward people for moving actively — Shift users unlock offers like this at the Mover tier.</p>
           <p style="margin:8px 0 0;font-size:13px;"><a href="${townUrl('rewards_more', '#rewards')}" style="color:#2D6A4F;font-weight:700;text-decoration:none;">See all ${escapeHtml(townName)} Rewards Partners &rarr;</a></p>
         </td></tr></table>
       </td></tr>`
@@ -286,7 +316,7 @@ export function buildTownDigest(opts: {
   <!-- Lede -->
   <tr>
     <td style="padding:28px 32px 8px;">
-      <p style="margin:0 0 6px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.12em;color:#2966E5;">WORTH YOUR VOICE</p>
+      <p style="margin:0 0 6px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.12em;color:#2966E5;">SHARE YOUR VIEWS</p>
       <h1 style="margin:0;font-family:${FONT_DISPLAY};font-size:25px;font-weight:800;letter-spacing:-0.02em;line-height:1.18;color:#191A2E;">${escapeHtml(h1)}</h1>
     </td>
   </tr>

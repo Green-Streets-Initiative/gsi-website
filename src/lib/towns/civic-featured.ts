@@ -76,15 +76,21 @@ export function buildFeaturedCandidates(
   const horizon = now + horizonDays * 24 * 3600 * 1000
 
   // Pipeline items (admin-published meetings/hearings/comment periods).
+  // Fully undated items are open-ended feedback windows: always in-window,
+  // ranked after anything with a real date.
   const civicFeatured: FeaturedItem[] = civicEvents
     .map((ce) => {
       const sort = ce.hearing_date
         ? new Date(`${ce.hearing_date}T${(ce.hearing_time ?? '12:00').slice(0, 5)}:00-04:00`).getTime()
-        : new Date(`${ce.comment_deadline}T23:59:00-04:00`).getTime()
+        : ce.comment_deadline
+        ? new Date(`${ce.comment_deadline}T23:59:00-04:00`).getTime()
+        : horizon - 60000
       const t = wallTime(ce.hearing_time)
       const chip = ce.hearing_date
         ? dateOnlyChip(ce.hearing_date) + (t ? ` · ${t}` : '') + (ce.hearing_type === 'virtual' ? ' · virtual' : '')
-        : `Comment by ${dateOnlyChip(ce.comment_deadline!)}`
+        : ce.comment_deadline
+        ? `Comment by ${dateOnlyChip(ce.comment_deadline)}`
+        : 'Open for feedback'
       return {
         key: `civic-${ce.id}`,
         chip,
