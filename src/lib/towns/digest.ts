@@ -49,13 +49,17 @@ const FONT_BODY = "'DM Sans','Helvetica Neue',Arial,sans-serif"
 export interface TownDigestContent {
   subject: string
   preheader: string
-  /** Full email HTML with UNSUB_PLACEHOLDER + PROXIMITY_PLACEHOLDER slots. */
+  /** Web-subscriber HTML (install CTA footer) with UNSUB + proximity slots. */
   html: string
+  /** App-enrolled variant: "you're in the {town} group" footer, no install CTA. */
+  htmlAppAuto: string
   /** infrastructure_hearings ids included — the send-log idempotency set. */
   itemIds: string[]
   /** Featured project's location, when it has one — drives per-recipient proximity lines. */
   featuredLat: number | null
   featuredLng: number | null
+  /** Locations of "Also" items with coordinates — per-recipient distance tags via %%PROXALSO:<id>%% slots. */
+  itemLocations: Record<string, { lat: number; lng: number }>
 }
 
 function escapeHtml(str: string): string {
@@ -274,6 +278,7 @@ export function buildTownDigest(opts: {
   // "Also" rows: the PROJECT leads in bold (which street, which routes); the
   // input channel + date follow in lighter text. Every row is here because
   // input is open — the channel phrase says so explicitly per row.
+  const itemLocations: Record<string, { lat: number; lng: number }> = {}
   const alsoRow = (a: FeaturedItem): string => {
     const label = truncate(a.civic ? headlineFor(a.civic, townNames) : a.title, 80)
     const c = a.civic
@@ -284,7 +289,12 @@ export function buildTownDigest(opts: {
           ? `feedback open through ${dateOnlyChip(c.comment_deadline)}`
           : 'open for feedback now'
       : a.chip
-    return `<p style="margin:0 0 6px;font-size:14px;line-height:1.5;color:#5A5C6E;"><a href="${a.href}" style="color:#191A2E;font-weight:700;">${escapeHtml(label)}</a> — ${escapeHtml(channel)}</p>`
+    let proximitySlot = ''
+    if (c && c.lat != null && c.lng != null) {
+      itemLocations[c.id] = { lat: c.lat, lng: c.lng }
+      proximitySlot = `%%PROXALSO:${c.id}%%`
+    }
+    return `<p style="margin:0 0 6px;font-size:14px;line-height:1.5;color:#5A5C6E;"><a href="${a.href}" style="color:#191A2E;font-weight:700;">${escapeHtml(label)}</a> — ${escapeHtml(channel)}${proximitySlot}</p>`
   }
   const alsoSection = also.length
     ? `<tr><td style="padding:0 32px 24px;">
@@ -301,19 +311,20 @@ export function buildTownDigest(opts: {
       </td></tr>`
     : ''
 
-  // Logos must be raster — Gmail and friends drop SVGs silently.
+  // Logo like the town page presents it: a generous white tile above the
+  // text, logo rendered large. Raster only — mail clients drop SVGs silently.
   const partnerLogo = partner?.logo_url && !/\.svg(\?|$)/i.test(partner.logo_url)
-    ? `<td width="72" style="padding:16px 0 16px 20px;vertical-align:top;">
-        <table cellpadding="0" cellspacing="0"><tr><td style="background:#ffffff;border-radius:8px;padding:6px;border:1px solid #E5E7EB;">
-          <img src="${partner.logo_url}" alt="${escapeHtml(partner.name)}" width="48" style="display:block;max-height:48px;object-fit:contain;" />
+    ? `<tr><td style="padding:16px 20px 0;">
+        <table cellpadding="0" cellspacing="0"><tr><td style="background:#ffffff;border-radius:10px;padding:12px 22px;border:1px solid #E5E7EB;">
+          <img src="${partner.logo_url}" alt="${escapeHtml(partner.name)}" width="170" style="display:block;max-width:170px;max-height:64px;height:auto;object-fit:contain;" />
         </td></tr></table>
-      </td>`
+      </td></tr>`
     : ''
   const perkSection = partner
     ? `<tr><td style="padding:0 32px 24px;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F1;border-radius:12px;"><tr>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F1;border-radius:12px;">
           ${partnerLogo}
-          <td style="padding:16px 20px;">
+          <tr><td style="padding:${partnerLogo ? '12px' : '16px'} 20px 16px;">
           <p style="margin:0 0 4px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.1em;color:#2D6A4F;">A LOCAL PERK</p>
           <p style="margin:0;font-size:14px;line-height:1.55;color:#3A3C4E;"><b style="color:#191A2E;">${escapeHtml(partner.name)}</b>${partner.discount_description ? ` — ${escapeHtml(partner.discount_description.trim().replace(/\.$/, ''))}` : ''}. One of ${partners.length} ${escapeHtml(townName)} businesses that reward people for moving actively — Shift users unlock offers like this at the Mover tier.</p>
           <p style="margin:8px 0 0;font-size:13px;"><a href="${townUrl('rewards_more', '#rewards')}" style="color:#2D6A4F;font-weight:700;text-decoration:none;">See all ${escapeHtml(townName)} Rewards Partners &rarr;</a></p>
@@ -321,7 +332,18 @@ export function buildTownDigest(opts: {
       </td></tr>`
     : ''
 
-  const html = `<!DOCTYPE html>
+  // Footer differs by how the subscriber got here (Keith 07-15: state the
+  // frequency plainly; we are not the arbiter of "when something matters").
+  const footerWhyFor = (src: string) =>
+    src === 'app_auto'
+      ? `You're getting this because you're in the ${escapeHtml(townName)} group on Shift — expect 1–2 emails a month.`
+      : `You asked for occasional ${escapeHtml(townName)} updates — expect 1–2 a month.`
+  const installTailFor = (src: string) =>
+    src === 'app_auto'
+      ? ''
+      : ` &nbsp;&middot;&nbsp; Want your trips to count too? <a href="${linkFor('install')(`${SITE}/shift`)}" style="color:rgba(255,255,255,0.78);">Shift is free</a>`
+
+  const renderFor = (src: string) => `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width">
@@ -376,8 +398,8 @@ export function buildTownDigest(opts: {
   <!-- Footer -->
   <tr>
     <td style="background:#191A2E;padding:18px 32px;text-align:center;">
-      <p style="margin:0 0 5px;font-size:12px;color:rgba(255,255,255,0.78);">You asked for occasional ${escapeHtml(townName)} updates &mdash; only when something matters.</p>
-      <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.78);"><a href="${UNSUB_PLACEHOLDER}" style="color:rgba(255,255,255,0.78);">Unsubscribe</a> &nbsp;&middot;&nbsp; <a href="${SITE}" style="color:rgba(255,255,255,0.78);text-decoration:none;">Green Streets Initiative</a> &nbsp;&middot;&nbsp; Want your trips to count too? <a href="${linkFor('install')(`${SITE}/shift`)}" style="color:rgba(255,255,255,0.78);">Shift is free</a></p>
+      <p style="margin:0 0 5px;font-size:12px;color:rgba(255,255,255,0.78);">${footerWhyFor(src)}</p>
+      <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.78);"><a href="${UNSUB_PLACEHOLDER}" style="color:rgba(255,255,255,0.78);">Unsubscribe</a> &nbsp;&middot;&nbsp; <a href="${SITE}" style="color:rgba(255,255,255,0.78);text-decoration:none;">Green Streets Initiative</a>${installTailFor(src)}</p>
     </td>
   </tr>
 </table>
@@ -386,5 +408,14 @@ export function buildTownDigest(opts: {
 </body>
 </html>`
 
-  return { subject, preheader, html, itemIds, featuredLat: item.lat, featuredLng: item.lng }
+  return {
+    subject,
+    preheader,
+    html: renderFor('town_page'),
+    htmlAppAuto: renderFor('app_auto'),
+    itemIds,
+    featuredLat: item.lat,
+    featuredLng: item.lng,
+    itemLocations,
+  }
 }

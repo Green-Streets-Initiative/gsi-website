@@ -142,7 +142,7 @@ export async function GET(req: Request) {
         continue
       }
 
-      let recipients: Array<{ email: string; user_id: string | null }>
+      let recipients: Array<{ email: string; user_id: string | null; source: string }>
       if (dryRun) {
         // Preview carries a real proximity line: borrow the town's first
         // app-linked subscriber (usually Keith's own account).
@@ -153,11 +153,11 @@ export async function GET(req: Request) {
           .is('unsubscribed_at', null)
           .not('user_id', 'is', null)
           .limit(1)
-        recipients = [{ email: ADMIN_EMAIL, user_id: demoSub?.[0]?.user_id ?? null }]
+        recipients = [{ email: ADMIN_EMAIL, user_id: demoSub?.[0]?.user_id ?? null, source: 'town_page' }]
       } else {
         const { data: subs, error: subsErr } = await sb
           .from('town_digest_subscribers')
-          .select('email, user_id')
+          .select('email, user_id, source')
           .eq('town_slug', slug)
           .is('unsubscribed_at', null)
         if (subsErr) throw new Error(subsErr.message)
@@ -173,7 +173,9 @@ export async function GET(req: Request) {
       // project has a location.
       const homeByUser = new Map<string, { lat: number; lng: number }>()
       const userIds = recipients.map((r) => r.user_id).filter((id): id is string => !!id)
-      if (userIds.length > 0 && content.featuredLat != null && content.featuredLng != null) {
+      const anyLocations = (content.featuredLat != null && content.featuredLng != null) ||
+        Object.keys(content.itemLocations).length > 0
+      if (userIds.length > 0 && anyLocations) {
         const { data: homes } = await sb
           .from('users')
           .select('id, home_lat, home_lng')
@@ -193,9 +195,16 @@ export async function GET(req: Request) {
         const miles = home && content.featuredLat != null && content.featuredLng != null
           ? haversineMiles(home.lat, home.lng, content.featuredLat, content.featuredLng)
           : null
-        const html = content.html
+        let html = (r.source === 'app_auto' ? content.htmlAppAuto : content.html)
           .replaceAll(UNSUB_PLACEHOLDER, unsubUrl)
           .replace(PROXIMITY_PLACEHOLDER, proximityLine(miles))
+        for (const [itemId, loc] of Object.entries(content.itemLocations)) {
+          const d = home ? haversineMiles(home.lat, home.lng, loc.lat, loc.lng) : null
+          const tag = d != null && d <= PROXIMITY_MAX_MILES
+            ? ` <span style="color:#2D6A4F;font-weight:700;">· ${d < 0.2 ? 'a few blocks' : `${d < 1 ? d.toFixed(1) : Math.round(d * 2) / 2} mi`} from home</span>`
+            : ''
+          html = html.replace(`%%PROXALSO:${itemId}%%`, tag)
+        }
         if (dryRun && !previewHtml) previewHtml = html
         try {
           const res = await resend.emails.send({

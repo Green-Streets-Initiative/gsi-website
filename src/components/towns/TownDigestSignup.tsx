@@ -33,7 +33,7 @@ export default function TownDigestSignup({ townName, townSlug }: { townName: str
       </h2>
       <p className="mx-auto mb-4 max-w-[420px] text-sm leading-relaxed text-white/75">
         New street projects, meetings worth your voice, and how {townName} is moving —
-        an occasional email, only when something matters.
+        1–2 emails a month.
       </p>
       {state === 'done' ? (
         <p className="text-sm font-semibold text-[#BAF14D]">
