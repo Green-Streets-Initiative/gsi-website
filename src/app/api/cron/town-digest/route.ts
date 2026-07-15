@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { buildTownDigest, UNSUB_PLACEHOLDER } from '@/lib/towns/digest'
+import { buildTownDigest, PROXIMITY_PLACEHOLDER, UNSUB_PLACEHOLDER } from '@/lib/towns/digest'
 import { signTownDigestUnsubToken } from '@/lib/town-digest-token'
 import {
   getTownCentroid,
@@ -37,6 +37,26 @@ const MAX_SENDS_PER_30D = 2
 interface SendRow {
   item_ids: string[] | null
   sent_at: string
+}
+
+/** Show "near your home" only when it's meaningfully close. */
+const PROXIMITY_MAX_MILES = 2.5
+
+function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const R = 3958.8
+  const a =
+    Math.sin(toRad(lat2 - lat1) / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(toRad(lng2 - lng1) / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(a))
+}
+
+function proximityLine(miles: number | null): string {
+  if (miles == null || miles > PROXIMITY_MAX_MILES) return ''
+  const phrase = miles < 0.2
+    ? 'This project is just a few blocks from your home.'
+    : `This project is about ${miles < 1 ? miles.toFixed(1) : Math.round(miles * 2) / 2} mile${miles >= 0.95 && miles < 1.05 ? '' : 's'} from your home.`
+  return `<p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#2D6A4F;">${phrase}</p>`
 }
 
 export async function GET(req: Request) {
@@ -122,13 +142,22 @@ export async function GET(req: Request) {
         continue
       }
 
-      let recipients: Array<{ email: string }>
+      let recipients: Array<{ email: string; user_id: string | null }>
       if (dryRun) {
-        recipients = [{ email: ADMIN_EMAIL }]
+        // Preview carries a real proximity line: borrow the town's first
+        // app-linked subscriber (usually Keith's own account).
+        const { data: demoSub } = await sb
+          .from('town_digest_subscribers')
+          .select('user_id')
+          .eq('town_slug', slug)
+          .is('unsubscribed_at', null)
+          .not('user_id', 'is', null)
+          .limit(1)
+        recipients = [{ email: ADMIN_EMAIL, user_id: demoSub?.[0]?.user_id ?? null }]
       } else {
         const { data: subs, error: subsErr } = await sb
           .from('town_digest_subscribers')
-          .select('email')
+          .select('email, user_id')
           .eq('town_slug', slug)
           .is('unsubscribed_at', null)
         if (subsErr) throw new Error(subsErr.message)
@@ -139,12 +168,34 @@ export async function GET(req: Request) {
         }
       }
 
+      // Home coordinates for app-linked recipients, one query — powers the
+      // per-recipient "about X miles from your home" line when the featured
+      // project has a location.
+      const homeByUser = new Map<string, { lat: number; lng: number }>()
+      const userIds = recipients.map((r) => r.user_id).filter((id): id is string => !!id)
+      if (userIds.length > 0 && content.featuredLat != null && content.featuredLng != null) {
+        const { data: homes } = await sb
+          .from('users')
+          .select('id, home_lat, home_lng')
+          .in('id', userIds)
+          .not('home_lat', 'is', null)
+        for (const u of homes ?? []) {
+          homeByUser.set(u.id as string, { lat: Number(u.home_lat), lng: Number(u.home_lng) })
+        }
+      }
+
       let sent = 0
       let errors = 0
       for (const r of recipients) {
         const token = signTownDigestUnsubToken(r.email.toLowerCase(), slug)
         const unsubUrl = `${SITE}/api/towns/unsubscribe?token=${token}`
-        const html = content.html.replaceAll(UNSUB_PLACEHOLDER, unsubUrl)
+        const home = r.user_id ? homeByUser.get(r.user_id) : undefined
+        const miles = home && content.featuredLat != null && content.featuredLng != null
+          ? haversineMiles(home.lat, home.lng, content.featuredLat, content.featuredLng)
+          : null
+        const html = content.html
+          .replaceAll(UNSUB_PLACEHOLDER, unsubUrl)
+          .replace(PROXIMITY_PLACEHOLDER, proximityLine(miles))
         if (dryRun && !previewHtml) previewHtml = html
         try {
           const res = await resend.emails.send({
@@ -210,7 +261,7 @@ async function recentlyPublishedCivic(
 ): Promise<TownCivicEvent[]> {
   const { data } = await sb
     .from('infrastructure_hearings')
-    .select('id, title, description, hearing_date, hearing_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline')
+    .select('id, title, description, hearing_date, hearing_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline, lat, lng')
     .eq('status', 'published')
     .or(`municipality.eq.${townName},affected_towns.cs.{${townName}}`)
     .gte('published_at', cutoffIso)

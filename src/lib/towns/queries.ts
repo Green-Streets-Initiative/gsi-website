@@ -402,6 +402,9 @@ export interface TownCivicEvent {
   access_notes: string | null
   /** Short resident-facing headline written by the fact-check gate; null on manual publishes. */
   digest_headline: string | null
+  /** The PROJECT's location (geocoded by the fact-check gate); null for network-wide items. */
+  lat: number | null
+  lng: number | null
 }
 
 export async function getTownCivicEvents(townName: string): Promise<TownCivicEvent[]> {
@@ -409,7 +412,7 @@ export async function getTownCivicEvents(townName: string): Promise<TownCivicEve
   const todayStr = new Date().toISOString().slice(0, 10)
   const { data } = await supabase
     .from('infrastructure_hearings')
-    .select('id, title, description, hearing_date, hearing_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline')
+    .select('id, title, description, hearing_date, hearing_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline, lat, lng')
     .eq('status', 'published')
     .or(`municipality.eq.${townName},affected_towns.cs.{${townName}}`)
     .order('hearing_date', { ascending: true, nullsFirst: false })

@@ -35,6 +35,8 @@ import type {
 const SITE = 'https://www.gogreenstreets.org'
 const WORDMARK_URL = `${SITE}/assets/wayfinding/shift-wordmark.png`
 export const UNSUB_PLACEHOLDER = '%%UNSUB_URL%%'
+/** Replaced per recipient: '' for web subscribers, a proximity line for app users near the project. */
+export const PROXIMITY_PLACEHOLDER = '%%PROXIMITY_LINE%%'
 
 const STATE_NAMES: Record<string, string> = {
   MA: 'Massachusetts', NH: 'New Hampshire', RI: 'Rhode Island', CT: 'Connecticut',
@@ -47,10 +49,13 @@ const FONT_BODY = "'DM Sans','Helvetica Neue',Arial,sans-serif"
 export interface TownDigestContent {
   subject: string
   preheader: string
-  /** Full email HTML with UNSUB_PLACEHOLDER where the per-subscriber unsubscribe URL goes. */
+  /** Full email HTML with UNSUB_PLACEHOLDER + PROXIMITY_PLACEHOLDER slots. */
   html: string
   /** infrastructure_hearings ids included — the send-log idempotency set. */
   itemIds: string[]
+  /** Featured project's location, when it has one — drives per-recipient proximity lines. */
+  featuredLat: number | null
+  featuredLng: number | null
 }
 
 function escapeHtml(str: string): string {
@@ -296,9 +301,19 @@ export function buildTownDigest(opts: {
       </td></tr>`
     : ''
 
+  // Logos must be raster — Gmail and friends drop SVGs silently.
+  const partnerLogo = partner?.logo_url && !/\.svg(\?|$)/i.test(partner.logo_url)
+    ? `<td width="72" style="padding:16px 0 16px 20px;vertical-align:top;">
+        <table cellpadding="0" cellspacing="0"><tr><td style="background:#ffffff;border-radius:8px;padding:6px;border:1px solid #E5E7EB;">
+          <img src="${partner.logo_url}" alt="${escapeHtml(partner.name)}" width="48" style="display:block;max-height:48px;object-fit:contain;" />
+        </td></tr></table>
+      </td>`
+    : ''
   const perkSection = partner
     ? `<tr><td style="padding:0 32px 24px;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F1;border-radius:12px;"><tr><td style="padding:16px 20px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F1;border-radius:12px;"><tr>
+          ${partnerLogo}
+          <td style="padding:16px 20px;">
           <p style="margin:0 0 4px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.1em;color:#2D6A4F;">A LOCAL PERK</p>
           <p style="margin:0;font-size:14px;line-height:1.55;color:#3A3C4E;"><b style="color:#191A2E;">${escapeHtml(partner.name)}</b>${partner.discount_description ? ` — ${escapeHtml(partner.discount_description.trim().replace(/\.$/, ''))}` : ''}. One of ${partners.length} ${escapeHtml(townName)} businesses that reward people for moving actively — Shift users unlock offers like this at the Mover tier.</p>
           <p style="margin:8px 0 0;font-size:13px;"><a href="${townUrl('rewards_more', '#rewards')}" style="color:#2D6A4F;font-weight:700;text-decoration:none;">See all ${escapeHtml(townName)} Rewards Partners &rarr;</a></p>
@@ -339,7 +354,7 @@ export function buildTownDigest(opts: {
   <tr>
     <td style="padding:18px 32px 22px;">
       <table width="100%" cellpadding="0" cellspacing="0" style="border:1.5px solid #E3B23C;background:#FDF8EC;border-radius:12px;"><tr><td style="padding:20px 22px;">
-        <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#8a6612;">${escapeHtml(chip)}</p>
+        <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#8a6612;">${escapeHtml(chip)}</p>${PROXIMITY_PLACEHOLDER}
         ${item.description ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#3A3C4E;">${escapeHtml(truncate(item.description, 420))}</p>` : ''}
         ${weighIn.length ? `<p style="margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:0.08em;color:#8a6612;font-family:${FONT_DISPLAY};">HOW TO WEIGH IN</p>
         ${weighIn.map((w) => `<p style="margin:0 0 3px;font-size:14px;line-height:1.5;color:#3A3C4E;">&bull;&nbsp; ${w}</p>`).join('\n')}` : ''}
@@ -371,5 +386,5 @@ export function buildTownDigest(opts: {
 </body>
 </html>`
 
-  return { subject, preheader, html, itemIds }
+  return { subject, preheader, html, itemIds, featuredLat: item.lat, featuredLng: item.lng }
 }
