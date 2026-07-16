@@ -261,10 +261,13 @@ export interface CeEvent {
   more_count?: number | string;
 }
 
-function ceMoreSuffix(ev: CeEvent, fontSize: number): string {
+// Rendered as a second line under the type label (the subtitle column is
+// too narrow — a suffix there wraps mid-phrase). Parent span is uppercase
+// with letter-spacing, so both are reset here.
+function ceMoreBadge(ev: CeEvent, fontSize: number): string {
   const more = Number(ev.more_count ?? 0);
   if (!Number.isFinite(more) || more < 1) return '';
-  return ` · <span style="font-size:${fontSize}px;font-weight:600;color:#BAF14D">+${more} more</span>`;
+  return `<br><span style="font-size:${fontSize}px;font-weight:600;letter-spacing:0;text-transform:none;color:#BAF14D">+${more}&nbsp;more</span>`;
 }
 
 // ── ce_week / ce_carousel_week: event rows (IG square / portrait) ──────
@@ -280,10 +283,10 @@ export function renderCeWeekEvents(events: CeEvent[]): string {
         </div>
         <div style="flex:1;min-width:0">
           <div style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:34px;line-height:1.12;letter-spacing:-0.02em;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(ev.title)}</div>
-          <div style="font-size:24px;color:rgba(255,255,255,0.6);margin-top:6px">${escapeHtml(ev.time)} · ${escapeHtml(ev.city)}${ceMoreSuffix(ev, 24)}</div>
+          <div style="font-size:24px;color:rgba(255,255,255,0.6);margin-top:6px">${escapeHtml(ev.time)} · ${escapeHtml(ev.city)}</div>
         </div>
         <div style="flex:0 0 auto;display:flex;align-items:center;gap:18px">
-          <span style="width:140px;font-size:20px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${meta.color};text-align:right;line-height:1.08">${escapeHtml(ev.type_label)}</span>
+          <span style="width:140px;font-size:20px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${meta.color};text-align:right;line-height:1.08">${escapeHtml(ev.type_label)}${ceMoreBadge(ev, 18)}</span>
           <div style="flex:0 0 96px;width:96px;height:96px;border-radius:22px;display:flex;align-items:center;justify-content:center;background:${ceTint(meta.color, 0.16)}">
             ${ceIcon(meta.icon, 44, 2, meta.color)}
           </div>
@@ -305,10 +308,10 @@ export function renderCeWeekFbEvents(events: CeEvent[]): string {
         </div>
         <div style="flex:1;min-width:0">
           <div style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:30px;line-height:1.1;letter-spacing:-0.02em;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(ev.title)}</div>
-          <div style="font-size:21px;color:rgba(255,255,255,0.6);margin-top:4px">${escapeHtml(ev.time)} · ${escapeHtml(ev.city)}${ceMoreSuffix(ev, 21)}</div>
+          <div style="font-size:21px;color:rgba(255,255,255,0.6);margin-top:4px">${escapeHtml(ev.time)} · ${escapeHtml(ev.city)}</div>
         </div>
         <div style="flex:0 0 auto;display:flex;align-items:center;gap:14px">
-          <span style="width:104px;font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:${meta.color};text-align:right;line-height:1.08">${escapeHtml(ev.type_label)}</span>
+          <span style="width:104px;font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:${meta.color};text-align:right;line-height:1.08">${escapeHtml(ev.type_label)}${ceMoreBadge(ev, 14)}</span>
           <div style="flex:0 0 72px;width:72px;height:72px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:${ceTint(meta.color, 0.16)}">
             ${ceIcon(meta.icon, 34, 2, meta.color)}
           </div>
