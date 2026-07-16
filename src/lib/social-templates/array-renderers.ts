@@ -276,7 +276,7 @@ export function renderCeWeekEvents(events: CeEvent[]): string {
   return events.slice(0, 4).map((ev) => {
     const meta = ceTypeMeta(ev.event_type);
     return `
-      <div style="display:flex;align-items:center;gap:28px;padding:18px 0;border-top:2px solid rgba(255,255,255,0.1)">
+      <div style="display:flex;align-items:center;gap:28px;padding:12px 0;border-top:2px solid rgba(255,255,255,0.1)">
         <div style="flex:0 0 128px;text-align:center">
           <div style="font-family:'Source Sans 3',system-ui,sans-serif;font-size:22px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#BAF14D">${escapeHtml(ev.weekday)}</div>
           <div style="font-family:'Bricolage Grotesque',serif;font-size:58px;font-weight:800;line-height:1;color:#fff">${escapeHtml(ev.day_num)}</div>
@@ -301,17 +301,17 @@ export function renderCeWeekFbEvents(events: CeEvent[]): string {
   return events.slice(0, 4).map((ev) => {
     const meta = ceTypeMeta(ev.event_type);
     return `
-      <div style="display:flex;align-items:center;gap:24px;padding:22px 0;border-bottom:2px solid rgba(255,255,255,0.09)">
-        <div style="flex:0 0 108px;text-align:center">
+      <div style="display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:2px solid rgba(255,255,255,0.09)">
+        <div style="flex:0 0 96px;text-align:center">
           <div style="font-family:'Source Sans 3',system-ui,sans-serif;font-size:18px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#BAF14D">${escapeHtml(ev.weekday)}</div>
           <div style="font-family:'Bricolage Grotesque',serif;font-size:44px;font-weight:800;line-height:1;color:#fff">${escapeHtml(ev.day_num)}</div>
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:30px;line-height:1.1;letter-spacing:-0.02em;color:#fff;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2">${escapeHtml(ev.title)}</div>
+          <div style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:28px;line-height:1.1;letter-spacing:-0.02em;color:#fff;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2">${escapeHtml(ev.title)}</div>
           <div style="font-size:21px;color:rgba(255,255,255,0.6);margin-top:4px">${escapeHtml(ev.time)} · ${escapeHtml(ev.city)}</div>
         </div>
         <div style="flex:0 0 auto;display:flex;align-items:center;gap:14px">
-          <span style="width:104px;font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:${meta.color};text-align:right;line-height:1.08">${escapeHtml(ev.type_label)}${ceMoreBadge(ev, 14)}</span>
+          <span style="width:96px;font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:${meta.color};text-align:right;line-height:1.08">${escapeHtml(ev.type_label)}${ceMoreBadge(ev, 14)}</span>
           <div style="flex:0 0 72px;width:72px;height:72px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:${ceTint(meta.color, 0.16)}">
             ${ceIcon(meta.icon, 34, 2, meta.color)}
           </div>
