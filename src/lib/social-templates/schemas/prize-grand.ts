@@ -3,6 +3,7 @@ import { type Platform } from '../platform-overrides';
 
 export function prizeGrandSchema(_platform: Platform) {
   return z.object({
+    campaign_label: z.string().max(40).default('Shift Your Summer'),
     image: z.string().url(),                                      // product shot (transparent/clean bg)
     prize: z.string().min(1).max(80),                             // prize name
     sub: z.string().max(100).nullable().optional(),                          // subtitle, e.g. "+ a 3-piece accessory bundle"

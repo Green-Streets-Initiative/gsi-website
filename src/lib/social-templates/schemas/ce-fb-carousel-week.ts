@@ -13,6 +13,7 @@ const ceEventSchema = z.object({
 
 export function ceFbCarouselWeekSchema(_platform: Platform) {
   return z.object({
+    handle: z.string().max(40).default('gogreenstreets.org/events'),
     week_label: z.string().max(20),
     week_range: z.string().max(30),
     count_label: z.string().max(20),

@@ -6,6 +6,7 @@ const pct = z.coerce.number().min(0).max(100);
 
 export function leaderboardSchema(_platform: Platform) {
   return z.object({
+    heading: z.string().max(40).default('This week in Shift'),
     period: z.string().min(1).max(40),                         // "Apr 28 – May 3"
     rank_1_name: z.string().min(1).max(30),
     rank_1_value: z.string().min(1).max(12),                   // "4,218" — formatted upstream

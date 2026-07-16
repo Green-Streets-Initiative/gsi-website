@@ -16,6 +16,9 @@ export function ceWeekSchema(_platform: Platform) {
   return z.object({
     week_range: z.string().max(30),
     badge_label: z.string().max(24).default('This week'),
+    headline: z.string().max(60).default('Get out\nand move.'),
+    cta_label: z.string().max(30).default('Full calendar in bio'),
+    handle: z.string().max(40).default('gogreenstreets.org/events'),
     events: z.array(ceEventSchema).min(1).max(4),
   });
 }

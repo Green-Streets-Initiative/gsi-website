@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
     platform?: string;
     ratio?: string;
     vars?: Record<string, string>;
+    validate_only?: boolean;
   };
   try {
     body = await req.json();
@@ -100,6 +101,17 @@ export async function POST(req: NextRequest) {
       (i) => `vars.${i.path.join('.')}: ${i.message}`,
     );
     return badRequest('VALIDATION_FAILED', issues);
+  }
+
+  // Validation-only pre-flight — lets callers (revise flow, field editor)
+  // check vars cheaply without spinning up Chromium.
+  if (body.validate_only) {
+    return NextResponse.json({
+      valid: true,
+      template,
+      platform,
+      ratio: effectiveRatio,
+    });
   }
 
   // ── Render ────────────────────────────────────────────────────────

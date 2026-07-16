@@ -3,6 +3,7 @@ import { type Platform } from '../platform-overrides';
 
 export function partnerBlockSchema(_platform: Platform) {
   return z.object({
+    perk_label: z.string().max(30).default('The perk'),
     logoSrc: z.string().url().nullable().optional(),
     partner: z.string().min(1).max(60),
     perk: z.string().min(1).max(80),

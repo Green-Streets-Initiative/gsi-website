@@ -16,6 +16,7 @@ const legendTypeSchema = z.object({
 
 export function ceMonthSchema(_platform: Platform) {
   return z.object({
+    handle: z.string().max(40).default('gogreenstreets.org/events'),
     month_name: z.string().max(20),
     month_abbr: z.string().max(3),
     event_count: z.string().max(10),

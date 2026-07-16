@@ -21,7 +21,7 @@
   .headline {
     font-family:'Bricolage Grotesque',serif; font-weight:800;
     font-size:84px; line-height:0.98; letter-spacing:-0.035em;
-    margin:0; color:#fff;
+    margin:0; color:#fff; white-space:pre-line;
   }
   .rows { margin-top:36px; display:flex; flex-direction:column; flex:1; }
   .footer {
@@ -49,7 +49,7 @@
   <!-- Headline block -->
   <div style="margin-top:40px">
     <div class="range">{{week_range}}</div>
-    <h2 class="headline">Get out<br>and move.</h2>
+    <h2 class="headline">{{headline}}</h2>
   </div>
 
   <!-- Event rows -->
@@ -59,9 +59,9 @@
 
   <!-- Footer -->
   <div class="footer">
-    <span class="handle">gogreenstreets.org/events</span>
+    <span class="handle">{{handle}}</span>
     <span class="cta">
-      Full calendar in bio
+      {{cta_label}}
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#BAF14D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
     </span>
   </div>
