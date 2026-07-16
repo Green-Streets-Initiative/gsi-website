@@ -282,7 +282,7 @@ export function renderCeWeekEvents(events: CeEvent[]): string {
           <div style="font-family:'Bricolage Grotesque',serif;font-size:58px;font-weight:800;line-height:1;color:#fff">${escapeHtml(ev.day_num)}</div>
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:34px;line-height:1.12;letter-spacing:-0.02em;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(ev.title)}</div>
+          <div style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:34px;line-height:1.12;letter-spacing:-0.02em;color:#fff;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2">${escapeHtml(ev.title)}</div>
           <div style="font-size:24px;color:rgba(255,255,255,0.6);margin-top:6px">${escapeHtml(ev.time)} · ${escapeHtml(ev.city)}</div>
         </div>
         <div style="flex:0 0 auto;display:flex;align-items:center;gap:18px">
@@ -307,7 +307,7 @@ export function renderCeWeekFbEvents(events: CeEvent[]): string {
           <div style="font-family:'Bricolage Grotesque',serif;font-size:44px;font-weight:800;line-height:1;color:#fff">${escapeHtml(ev.day_num)}</div>
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:30px;line-height:1.1;letter-spacing:-0.02em;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(ev.title)}</div>
+          <div style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:30px;line-height:1.1;letter-spacing:-0.02em;color:#fff;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2">${escapeHtml(ev.title)}</div>
           <div style="font-size:21px;color:rgba(255,255,255,0.6);margin-top:4px">${escapeHtml(ev.time)} · ${escapeHtml(ev.city)}</div>
         </div>
         <div style="flex:0 0 auto;display:flex;align-items:center;gap:14px">
