@@ -9,6 +9,7 @@ const ceEventSchema = z.object({
   city: z.string().max(60),
   type_label: z.string().max(30),
   event_type: z.string().max(30),
+  more_count: z.coerce.number().int().min(0).optional(),
 });
 
 export function ceWeekFbSchema(_platform: Platform) {

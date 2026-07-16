@@ -251,6 +251,15 @@ export interface CeEvent {
   city: string;
   type_label: string;
   event_type: string;
+  // How many additional events of this type fall in the range but aren't
+  // shown on the card ("+N more"). Omitted or 0 = no suffix.
+  more_count?: number | string;
+}
+
+function ceMoreSuffix(ev: CeEvent, fontSize: number): string {
+  const more = Number(ev.more_count ?? 0);
+  if (!Number.isFinite(more) || more < 1) return '';
+  return ` · <span style="font-size:${fontSize}px;font-weight:600;color:#BAF14D">+${more} more</span>`;
 }
 
 // ── ce_week / ce_carousel_week: event rows (IG square / portrait) ──────
@@ -266,7 +275,7 @@ export function renderCeWeekEvents(events: CeEvent[]): string {
         </div>
         <div style="flex:1;min-width:0">
           <div style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:34px;line-height:1.12;letter-spacing:-0.02em;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(ev.title)}</div>
-          <div style="font-size:24px;color:rgba(255,255,255,0.6);margin-top:6px">${escapeHtml(ev.time)} · ${escapeHtml(ev.city)}</div>
+          <div style="font-size:24px;color:rgba(255,255,255,0.6);margin-top:6px">${escapeHtml(ev.time)} · ${escapeHtml(ev.city)}${ceMoreSuffix(ev, 24)}</div>
         </div>
         <div style="flex:0 0 auto;display:flex;align-items:center;gap:18px">
           <span style="width:140px;font-size:20px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${meta.color};text-align:right;line-height:1.08">${escapeHtml(ev.type_label)}</span>
@@ -291,7 +300,7 @@ export function renderCeWeekFbEvents(events: CeEvent[]): string {
         </div>
         <div style="flex:1;min-width:0">
           <div style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:30px;line-height:1.1;letter-spacing:-0.02em;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(ev.title)}</div>
-          <div style="font-size:21px;color:rgba(255,255,255,0.6);margin-top:4px">${escapeHtml(ev.time)} · ${escapeHtml(ev.city)}</div>
+          <div style="font-size:21px;color:rgba(255,255,255,0.6);margin-top:4px">${escapeHtml(ev.time)} · ${escapeHtml(ev.city)}${ceMoreSuffix(ev, 21)}</div>
         </div>
         <div style="flex:0 0 auto;display:flex;align-items:center;gap:14px">
           <span style="width:104px;font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:${meta.color};text-align:right;line-height:1.08">${escapeHtml(ev.type_label)}</span>
