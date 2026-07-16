@@ -15,6 +15,7 @@ const ceEventSchema = z.object({
 export function ceWeekSchema(_platform: Platform) {
   return z.object({
     week_range: z.string().max(30),
+    badge_label: z.string().max(24).default('This week'),
     events: z.array(ceEventSchema).min(1).max(4),
   });
 }

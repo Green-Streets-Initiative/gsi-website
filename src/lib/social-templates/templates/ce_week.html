@@ -10,7 +10,7 @@
   html, body { width:{{__width__}}px; height:{{__height__}}px; overflow:hidden; -webkit-font-smoothing:antialiased; }
   body {
     width:{{__width__}}px; height:{{__height__}}px;
-    background:#191A2E; padding:84px 80px;
+    background:#191A2E; padding:64px 80px;
     display:flex; flex-direction:column;
     font-family:'Source Sans 3',system-ui,sans-serif;
     color:rgba(255,255,255,0.92);
@@ -23,10 +23,10 @@
     font-size:84px; line-height:0.98; letter-spacing:-0.035em;
     margin:0; color:#fff;
   }
-  .rows { margin-top:54px; display:flex; flex-direction:column; flex:1; }
+  .rows { margin-top:36px; display:flex; flex-direction:column; flex:1; }
   .footer {
     display:flex; align-items:center; justify-content:space-between;
-    border-top:2px solid rgba(255,255,255,0.1); padding-top:34px; margin-top:8px;
+    border-top:2px solid rgba(255,255,255,0.1); padding-top:26px; margin-top:8px;
   }
   .handle { font-size:26px; font-weight:600; color:rgba(255,255,255,0.85); }
   .cta {
@@ -43,11 +43,11 @@
         <tspan fill="#52B788" font-weight="700">Green Streets</tspan><tspan fill="#FFFFFF" font-weight="400"> Initiative</tspan>
       </text>
     </svg>
-    <span class="badge">This week</span>
+    <span class="badge">{{badge_label}}</span>
   </div>
 
   <!-- Headline block -->
-  <div style="margin-top:56px">
+  <div style="margin-top:40px">
     <div class="range">{{week_range}}</div>
     <h2 class="headline">Get out<br>and move.</h2>
   </div>
