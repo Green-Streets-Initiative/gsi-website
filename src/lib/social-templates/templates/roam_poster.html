@@ -78,6 +78,16 @@
 
   .rp-footer-loc { font-size:26px; }
 
+  .rp-credit {
+    margin-top:22px;
+    font-family:var(--mono);
+    font-size:20px;
+    letter-spacing:0.01em;
+    color:rgba(232,232,238,0.55);
+    text-align:right;
+  }
+  .rp-credit:empty { display:none; }
+
   /* ── roam badge stamp ── */
   .rp-badge {
     position:relative;
@@ -89,7 +99,9 @@
     position:absolute; inset:0;
     border-radius:50%;
     background:var(--navy-3);
-    border:4px solid var(--lime);
+    /* Ring uses the roam's real app accent color (set inline on .rp-badge);
+       falls back to lime for older drafts that don't send one. */
+    border:5px solid var(--badge-accent, #BAF14D);
   }
   .rp-badge-glyph {
     position:absolute; inset:26%;
@@ -122,27 +134,14 @@
           <span>Roam</span>
         </span>
 
-        <!-- roam badge stamp -->
-        <div class="rp-badge">
+        <!-- roam badge stamp: navy disc + accent ring + the real badge
+             glyph, mirroring the app (which shows just the accent-colored
+             glyph). No invented arc text or dot decoration. -->
+        <div class="rp-badge" style="--badge-accent:{{badgeAccent}}">
           <div class="rp-badge-plate"></div>
           <div class="rp-badge-glyph">
             <img src="{{badge}}" alt="" />
           </div>
-          <svg class="rp-badge-arcs" viewBox="0 0 200 200">
-            <defs>
-              <path id="rb-top" d="M100,100 m-74,0 a74,74 0 1,1 148,0" fill="none" />
-              <path id="rb-bot" d="M100,100 m-66,0 a66,66 0 1,0 132,0" fill="none" />
-            </defs>
-            <circle cx="100" cy="100" r="86" fill="none" stroke="rgba(232,232,238,0.22)" stroke-width="1.5" stroke-dasharray="2 6" stroke-linecap="round" />
-            <text font-family="var(--mono)" font-size="12.5" font-weight="500" letter-spacing="3.2" fill="var(--soft-white)">
-              <textPath href="#rb-top" startOffset="50%" text-anchor="middle">{{badgeTop}}</textPath>
-            </text>
-            <text font-family="var(--mono)" font-size="11" font-weight="500" letter-spacing="2.4" fill="var(--lime)">
-              <textPath href="#rb-bot" startOffset="50%" text-anchor="middle">{{badgeRegion}}</textPath>
-            </text>
-            <circle cx="22" cy="100" r="3" fill="var(--lime)" />
-            <circle cx="178" cy="100" r="3" fill="var(--lime)" />
-          </svg>
         </div>
       </div>
 
@@ -171,6 +170,9 @@
           </span>
           <svg width="150" viewBox="0 0 125 40" xmlns="http://www.w3.org/2000/svg" style="display:block"><text x="0" y="30" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#FFFFFF">Shift</text><path d="M85,7 L101,20 L85,33 L85,26 L95,20 L85,14Z" fill="#BAF14D" /><path d="M104,7 L120,20 L104,33 L104,26 L114,20 L104,14Z" fill="#2966E5" /></svg>
         </div>
+
+        <!-- photo credit -->
+        <div class="rp-credit">{{photoAttribution}}</div>
       </div>
     </div>
   </div>
