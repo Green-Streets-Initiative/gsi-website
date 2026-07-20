@@ -25,6 +25,7 @@ import { prizeGrandSchema } from './prize-grand';
 import { prizeFeaturedSchema } from './prize-featured';
 import { prizePoolSchema } from './prize-pool';
 import { roamPosterSchema } from './roam-poster';
+import { roamMapSchema } from './roam-map';
 import { roamCollectionSchema } from './roam-collection';
 import { ceWeekSchema } from './ce-week';
 import { ceSpotlightSchema } from './ce-spotlight';
@@ -56,6 +57,7 @@ export const TEMPLATE_SCHEMAS: Record<string, SchemaFactory> = {
   prize_featured: prizeFeaturedSchema,
   prize_pool: prizePoolSchema,
   roam_poster: roamPosterSchema,
+  roam_map: roamMapSchema,
   roam_collection: roamCollectionSchema,
   // Community events templates
   ce_week: ceWeekSchema,

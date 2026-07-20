@@ -9,6 +9,7 @@ import { type Platform } from './platform-overrides';
 import { phosphorIcon } from './icons';
 import { getTemplateFile } from './default-ratios';
 import { expandArrayVars, renderCeSpotlightHero, renderCeTypeTile } from './array-renderers';
+import { renderRoamMapLayer, renderRoamStopList, type RoamMapCheckpoint } from './roam-map';
 import { createServerSupabaseClient } from '../supabase-server';
 
 /**
@@ -80,6 +81,10 @@ export async function renderSocialImage(input: RenderInput): Promise<RenderResul
 
   if (input.template === 'ce_spotlight') {
     preprocessCeSpotlight(input.vars);
+  }
+
+  if (input.template === 'roam_map') {
+    preprocessRoamMap(input.vars);
   }
 
   // 3a. Pre-render array vars (secondary_stats, forecast_days,
@@ -318,4 +323,18 @@ function preprocessCeSpotlight(vars: Record<string, unknown>): void {
   const eventType = typeof vars['event_type'] === 'string' ? vars['event_type'] : '';
   vars['type_tile_html'] = renderCeTypeTile(eventType);
   delete vars['event_type'];
+}
+
+// Build the roam map layer + numbered stop list from checkpoints/route,
+// then drop those array vars so the generic substitution loop skips them.
+// Map region is 1080×760 to match roam_map.html.
+function preprocessRoamMap(vars: Record<string, unknown>): void {
+  const checkpoints = (Array.isArray(vars['checkpoints']) ? vars['checkpoints'] : []) as RoamMapCheckpoint[];
+  const route = (Array.isArray(vars['route']) ? vars['route'] : null) as [number, number][] | null;
+  const accent = typeof vars['badgeAccent'] === 'string' ? (vars['badgeAccent'] as string) : '#BAF14D';
+
+  vars['map_html'] = renderRoamMapLayer({ checkpoints, route, width: 1080, height: 760, accent });
+  vars['stops_html'] = renderRoamStopList(checkpoints);
+  delete vars['checkpoints'];
+  delete vars['route'];
 }

@@ -45,6 +45,7 @@ export const DEFAULT_RATIOS: Record<string, Record<Platform, AspectRatio>> = {
   'prize_featured':   { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
   'prize_pool':       { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
   'roam_poster':      { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
+  'roam_map':         { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
   'roam_collection':  { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
 
   // Community events templates — each pinned to its design canvas size
