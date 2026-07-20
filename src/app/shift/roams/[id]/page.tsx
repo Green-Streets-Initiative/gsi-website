@@ -196,8 +196,37 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
           </section>
         )}
 
-        {/* Itinerary */}
-        {roam.legs.length > 0 ? (
+        {/* Stops — always show the named required checkpoints with their
+            descriptions. (Previously this was hidden whenever a roam had
+            route legs, which buried the richest per-stop detail.) */}
+        {requiredStops.length > 0 && (
+          <section className="px-8 pt-12">
+            <div className="mx-auto max-w-[860px]">
+              <h2 className="mb-4 font-display text-2xl font-bold tracking-tight text-white">
+                The stops
+              </h2>
+              <div className="space-y-3">
+                {requiredStops.map((c, i) => (
+                  <div key={c.id} className="flex gap-4 rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-xs font-extrabold text-[#BAF14D]">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{c.label}</p>
+                      {c.description && (
+                        <p className="mt-1 text-[0.8125rem] leading-relaxed text-white/75">{c.description}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Leg-by-leg routing — only worth showing when at least one leg
+            carries a narrative; bare A→B rows add little over the stop list. */}
+        {roam.legs.some((leg) => leg.narrative_snippet) && (
           <section className="px-8 pt-12">
             <div className="mx-auto max-w-[860px]">
               <h2 className="mb-4 font-display text-2xl font-bold tracking-tight text-white">
@@ -210,29 +239,6 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               </div>
             </div>
           </section>
-        ) : (
-          requiredStops.length > 0 && (
-            <section className="px-8 pt-12">
-              <div className="mx-auto max-w-[860px]">
-                <h2 className="mb-4 font-display text-2xl font-bold tracking-tight text-white">Stops</h2>
-                <div className="space-y-3">
-                  {requiredStops.map((c, i) => (
-                    <div key={c.id} className="flex gap-4 rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-xs font-extrabold text-[#BAF14D]">
-                        {i + 1}
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold text-white">{c.label}</p>
-                        {c.description && (
-                          <p className="mt-1 text-[0.8125rem] leading-relaxed text-white/75">{c.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )
         )}
 
         {/* Bonus stops */}
