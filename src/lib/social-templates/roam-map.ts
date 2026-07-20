@@ -134,14 +134,30 @@ export function renderRoamMapLayer(opts: {
 
   // 6. Markers: required stops numbered in the accent color; bonus stops
   //    a small gold-ringed dot. Numbers follow required-stop order.
+  // Nudge numbered pins that would land on top of an already-placed one
+  // (adjacent real-world stops, e.g. a museum next to a memorial) so no
+  // number disappears under another.
+  const placed: { x: number; y: number }[] = [];
+  function deCollide(x: number, y: number): { x: number; y: number } {
+    let px = x, py = y;
+    for (let guard = 0; guard < 12; guard++) {
+      const hit = placed.find((q) => Math.hypot(q.x - px, q.y - py) < 46);
+      if (!hit) break;
+      px += 34; py += 20; // step down-right until clear
+    }
+    return { x: px, y: py };
+  }
   const markers: string[] = [];
   let n = 0;
   for (const c of checkpoints) {
     const p = project(c.lat, c.lng, zoom);
-    const left = p.x - originX;
-    const top = p.y - originY;
+    let left = p.x - originX;
+    let top = p.y - originY;
     if (left < -40 || left > width + 40 || top < -40 || top > height + 40) continue;
     if (c.required) {
+      const nudged = deCollide(left, top);
+      left = nudged.x; top = nudged.y;
+      placed.push({ x: left, y: top });
       n += 1;
       markers.push(
         `<div style="position:absolute;left:${left}px;top:${top}px;transform:translate(-50%,-50%);` +
