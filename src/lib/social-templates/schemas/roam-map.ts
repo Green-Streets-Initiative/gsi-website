@@ -13,6 +13,9 @@ export function roamMapSchema(_platform: Platform) {
   return z.object({
     name: z.string().min(1).max(60),                                     // roam name
     region: z.string().max(60).nullable().optional(),                    // e.g. "Marblehead · Swampscott"
+    eyebrow: z.string().max(24).default('Roam'),                         // "Featured roam" for featured roams
+    reward_badge: z.string().max(60).nullable().optional(),              // "Earn the X badge"
+    reward_sweeps: z.string().max(70).nullable().optional(),             // "Every trip enters the Y sweepstakes"
     badge: z.string().url(),                                             // badge glyph SVG
     badgeAccent: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default('#BAF14D'),
     // Checkpoints + route are consumed server-side (render.ts) into the

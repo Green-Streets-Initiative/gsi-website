@@ -62,11 +62,18 @@ export function renderRoamMapLayer(opts: {
 }): string {
   const { checkpoints, route, width, height, accent } = opts;
 
-  // 1. Collect all points to frame.
+  // 1. Frame to the actual trail — the route line plus the required
+  //    (numbered) stops. Bonus stops are off-route detours; including
+  //    them in the bounds zooms the map out and leaves dead margin, so
+  //    they're excluded from framing (still drawn if they fall in view).
   const framePoints: LngLat[] = [
     ...(route ?? []),
-    ...checkpoints.map((c) => [c.lng, c.lat] as LngLat),
+    ...checkpoints.filter((c) => c.required).map((c) => [c.lng, c.lat] as LngLat),
   ];
+  if (framePoints.length === 0) {
+    // Fall back to all checkpoints if there's no route/required set.
+    framePoints.push(...checkpoints.map((c) => [c.lng, c.lat] as LngLat));
+  }
   if (framePoints.length === 0) {
     return `<div style="width:${width}px;height:${height}px;background:#20223A"></div>`;
   }
@@ -81,7 +88,7 @@ export function renderRoamMapLayer(opts: {
   const centerLat = (minLat + maxLat) / 2;
 
   // 2. Pick the highest zoom at which the framed span fits with padding.
-  const padFactor = 0.82; // leave a margin so pins aren't at the edge
+  const padFactor = 0.92; // tight framing → more map detail, less dead margin
   let zoom = 3;
   for (let z = 18; z >= 3; z--) {
     const a = project(maxLat, minLng, z);

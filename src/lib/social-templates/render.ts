@@ -333,8 +333,20 @@ function preprocessRoamMap(vars: Record<string, unknown>): void {
   const route = (Array.isArray(vars['route']) ? vars['route'] : null) as [number, number][] | null;
   const accent = typeof vars['badgeAccent'] === 'string' ? (vars['badgeAccent'] as string) : '#BAF14D';
 
-  vars['map_html'] = renderRoamMapLayer({ checkpoints, route, width: 1080, height: 760, accent });
+  vars['map_html'] = renderRoamMapLayer({ checkpoints, route, width: 1080, height: 678, accent });
   vars['stops_html'] = renderRoamStopList(checkpoints);
+
+  // Reward rows — only render the ones with content (each has an icon,
+  // so an empty {{var}} + :empty wouldn't hide an unused row).
+  const badgeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="#BAF14D" width="34" height="34"><path d="M232,64H208V56a16,16,0,0,0-16-16H64A16,16,0,0,0,48,56v8H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64ZM48,120A24,24,0,0,1,24,96V80H48v32q0,4,.39,8Zm184-24a24,24,0,0,1-24,24h-.39q.39-4,.39-8V80h24Z"/></svg>';
+  const ticketIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="#BAF14D" width="34" height="34"><path d="M243.31,136,144,36.69A15.86,15.86,0,0,0,132.69,32H40a8,8,0,0,0-8,8v92.69A15.86,15.86,0,0,0,36.69,144L136,243.31a16,16,0,0,0,22.63,0l84.68-84.68a16,16,0,0,0,0-22.63Zm-96,96L48,132.69V48h84.69L232,147.31ZM88,80a8,8,0,1,1-8,8A8,8,0,0,1,88,80Z"/></svg>';
+  const esc = (s: unknown) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const rewardRow = (icon: string, text: unknown) =>
+    text ? `<div class="reward-row">${icon}<span>${esc(text)}</span></div>` : '';
+  vars['reward_html'] =
+    rewardRow(badgeIcon, vars['reward_badge']) + rewardRow(ticketIcon, vars['reward_sweeps']);
+  delete vars['reward_badge'];
+  delete vars['reward_sweeps'];
   delete vars['checkpoints'];
   delete vars['route'];
 }

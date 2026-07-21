@@ -13,26 +13,50 @@
   .card { position:relative; width:1080px; height:1350px; overflow:hidden; display:flex; flex-direction:column; }
 
   /* ── Map region ── */
-  .map { position:relative; width:1080px; height:760px; flex:0 0 760px; background:#EDECE6; }
-  .map-fade { position:absolute; left:0; right:0; bottom:0; height:160px; background:linear-gradient(180deg,rgba(25,26,46,0) 0%,#191A2E 100%); pointer-events:none; }
+  .map { position:relative; width:1080px; height:678px; flex:0 0 678px; background:#EDECE6; }
+  .map-fade { position:absolute; left:0; right:0; bottom:0; height:150px; background:linear-gradient(180deg,rgba(25,26,46,0) 0%,#191A2E 100%); pointer-events:none; }
   .map-eyebrow {
-    position:absolute; top:48px; left:56px;
-    font-family:'DM Mono',monospace; font-weight:500; font-size:26px; letter-spacing:0.2em; text-transform:uppercase;
+    position:absolute; top:44px; left:52px;
+    font-family:'DM Mono',monospace; font-weight:500; font-size:25px; letter-spacing:0.18em; text-transform:uppercase;
     color:#191A2E; background:#BAF14D; padding:8px 20px; border-radius:9999px;
     display:inline-flex; align-items:center; gap:10px;
   }
-  .map-badge { position:absolute; top:40px; right:52px; width:132px; height:132px; filter:drop-shadow(0 10px 22px rgba(0,0,0,0.4)); }
+  .map-badge { position:absolute; top:38px; right:48px; width:122px; height:122px; filter:drop-shadow(0 10px 22px rgba(0,0,0,0.4)); }
   .map-badge-plate { position:absolute; inset:0; border-radius:50%; background:#15162a; border:4px solid var(--acc,#BAF14D); }
   .map-badge-glyph { position:absolute; inset:26%; }
   .map-badge-glyph img { width:100%; height:100%; object-fit:contain; }
 
+  /* legend — explains the map markers */
+  .map-legend {
+    position:absolute; left:44px; bottom:40px; z-index:2;
+    display:flex; gap:22px; align-items:center;
+    background:rgba(25,26,46,0.82); border:1px solid rgba(255,255,255,0.12);
+    padding:12px 20px; border-radius:14px;
+    font-family:'DM Mono',monospace; font-size:21px; color:#E8E8EE; letter-spacing:0.01em;
+  }
+  .lg-item { display:inline-flex; align-items:center; gap:10px; }
+  .lg-pin { width:26px; height:26px; border-radius:50%; background:var(--acc,#BAF14D); border:2px solid #191A2E; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque',serif; font-weight:800; font-size:14px; color:#191A2E; }
+  .lg-bonus { width:20px; height:20px; border-radius:50%; background:#242538; border:4px solid #EDB93C; }
+
   /* ── Content panel ── */
-  .panel { position:relative; z-index:1; flex:1; padding:8px 56px 56px; display:flex; flex-direction:column; }
-  .region { font-family:'DM Mono',monospace; font-weight:500; font-size:26px; letter-spacing:0.02em; color:#BAF14D; margin-bottom:8px; }
+  .panel { position:relative; z-index:1; flex:1; padding:4px 52px 48px; display:flex; flex-direction:column; }
+  .region { font-family:'DM Mono',monospace; font-weight:500; font-size:25px; letter-spacing:0.02em; color:#BAF14D; margin-bottom:6px; }
   .region:empty { display:none; }
-  .name { font-family:'Bricolage Grotesque',serif; font-weight:800; font-size:66px; line-height:0.98; letter-spacing:-0.035em; color:#fff; margin-bottom:22px; }
+  .name { font-family:'Bricolage Grotesque',serif; font-weight:800; font-size:62px; line-height:0.98; letter-spacing:-0.035em; color:#fff; margin-bottom:18px; }
+
+  /* reward strip */
+  .reward { display:flex; flex-direction:column; gap:8px; background:rgba(186,241,77,0.10); border:1px solid rgba(186,241,77,0.28); border-radius:16px; padding:18px 22px; margin-bottom:20px; }
+  .reward:empty { display:none; }
+  .reward-row { display:flex; align-items:center; gap:14px; font-family:'Bricolage Grotesque',serif; font-weight:600; font-size:28px; color:#E8E8EE; letter-spacing:-0.01em; }
+  .reward-row svg { flex:0 0 auto; }
+  .reward-row:empty { display:none; }
+
   .stops { flex:1; }
-  .footer { display:flex; align-items:center; justify-content:space-between; border-top:2px solid rgba(232,232,238,0.14); padding-top:26px; margin-top:16px; }
+  .stop-row { display:flex; align-items:center; gap:18px; padding:8px 0; }
+  .stop-n { flex:0 0 42px; width:42px; height:42px; border-radius:50%; background:rgba(186,241,77,0.16); display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque',serif; font-weight:800; font-size:21px; color:#BAF14D; }
+  .stop-name { font-family:'Bricolage Grotesque',serif; font-weight:600; font-size:30px; letter-spacing:-0.01em; color:#E8E8EE; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .footer { display:flex; align-items:center; justify-content:space-between; border-top:2px solid rgba(232,232,238,0.14); padding-top:22px; margin-top:14px; }
   .footer-loc { display:inline-flex; align-items:center; gap:12px; font-weight:600; font-size:28px; color:#E8E8EE; }
 </style>
 </head>
@@ -44,11 +68,15 @@
       <div class="map-fade"></div>
       <div class="map-eyebrow">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" width="26" height="26" style="vertical-align:-0.15em"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM172.42,72.84l-64,32a8.05,8.05,0,0,0-3.58,3.58l-32,64A8,8,0,0,0,80,184a8.1,8.1,0,0,0,3.58-.84l64-32a8.05,8.05,0,0,0,3.58-3.58l32-64a8,8,0,0,0-10.74-10.74ZM138,138,97.89,158.11,118,118l40.15-20.07Z"/></svg>
-        Roam
+        {{eyebrow}}
       </div>
       <div class="map-badge" style="--acc:{{badgeAccent}}">
         <div class="map-badge-plate"></div>
         <div class="map-badge-glyph"><img src="{{badge}}" alt="" /></div>
+      </div>
+      <div class="map-legend" style="--acc:{{badgeAccent}}">
+        <span class="lg-item"><span class="lg-pin">1</span> Stop</span>
+        <span class="lg-item"><span class="lg-bonus"></span> Bonus stop</span>
       </div>
     </div>
 
@@ -56,6 +84,9 @@
     <div class="panel">
       <div class="region">{{region}}</div>
       <div class="name">{{name}}</div>
+
+      <div class="reward">{{reward_html}}</div>
+
       <div class="stops">{{stops_html}}</div>
       <div class="footer">
         <span class="footer-loc">
