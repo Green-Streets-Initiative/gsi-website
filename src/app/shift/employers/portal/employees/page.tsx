@@ -343,7 +343,8 @@ export default function EmployeesPage() {
 }
 
 function EmployeeDrawer({ member, onClose }: { member: EmployerMember; onClose: () => void }) {
-  const { group, challenges, dashboard, members: teamMembers } = usePortal()
+  const { group, challenges, dashboard, members: teamMembers, isAdmin, isGsiAdmin } = usePortal()
+  const canNudge = isAdmin || isGsiAdmin
   const rate = member.trips_in_period
     ? Math.round((member.active_trips_in_period / member.trips_in_period) * 100)
     : 0
@@ -357,10 +358,12 @@ function EmployeeDrawer({ member, onClose }: { member: EmployerMember; onClose: 
   const [showPreview, setShowPreview] = useState(false)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
 
   const sendNudge = useCallback(async () => {
     if (!group || sending || sent) return
     setSending(true)
+    setSendError(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) return
@@ -374,6 +377,9 @@ function EmployeeDrawer({ member, onClose }: { member: EmployerMember; onClose: 
       })
       if (res.ok) {
         setSent(true)
+      } else {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null
+        setSendError(body?.error ?? "We couldn't send the nudge. Please try again.")
       }
     } finally {
       setSending(false)
@@ -547,15 +553,24 @@ function EmployeeDrawer({ member, onClose }: { member: EmployerMember; onClose: 
                     <Check size={16} className="text-accent" />
                     <span className="text-[13px] font-medium text-accent">Nudge sent</span>
                   </div>
+                ) : canNudge ? (
+                  <>
+                    <Button
+                      variant="primary"
+                      icon={Send}
+                      onClick={sendNudge}
+                      disabled={sending}
+                    >
+                      {sending ? 'Sending...' : 'Send this email'}
+                    </Button>
+                    {sendError && (
+                      <p className="text-[12.5px] text-ep-danger">{sendError}</p>
+                    )}
+                  </>
                 ) : (
-                  <Button
-                    variant="primary"
-                    icon={Send}
-                    onClick={sendNudge}
-                    disabled={sending}
-                  >
-                    {sending ? 'Sending...' : 'Send this email'}
-                  </Button>
+                  <p className="text-[12.5px] text-ink-faint">
+                    Only workspace admins can send nudges.
+                  </p>
                 )}
               </div>
             )}

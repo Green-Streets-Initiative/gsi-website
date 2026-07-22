@@ -56,6 +56,7 @@ function statCell(label: string, value: string, change: string): string {
 
 function buildDigestHtml(opts: {
   groupName: string
+  groupLogoUrl: string | null
   thisWeek: DashboardRow
   priorWeek: { active_trips: number; miles: number; co2: number; shift_rate: number }
   newMemberCount: number
@@ -63,7 +64,7 @@ function buildDigestHtml(opts: {
   milestone: number | null
   showMilestone: boolean
 }): string {
-  const { groupName, thisWeek, priorWeek, newMemberCount, showNewMembers, milestone, showMilestone } = opts
+  const { groupName, groupLogoUrl, thisWeek, priorWeek, newMemberCount, showNewMembers, milestone, showMilestone } = opts
 
   const newMembersSection = showNewMembers && newMemberCount > 0
     ? `<tr><td style="padding:0 32px 24px;">
@@ -76,8 +77,8 @@ function buildDigestHtml(opts: {
   const milestoneSection = showMilestone && milestone
     ? `<tr><td style="padding:0 32px 24px;">
         <div style="background:#FFF8E1;border-radius:10px;padding:16px 20px;border:1px solid #FFE082;">
-          <span style="font-size:14px;color:#F57F17;font-weight:600;">&#127942; Your team hit ${milestone} active commuters!</span>
-          <div style="font-size:13px;color:#795548;margin-top:4px;">That's a real milestone. Keep the momentum going.</div>
+          <span style="font-size:14px;color:#F57F17;font-weight:600;">&#127942; Your team is now ${milestone} strong!</span>
+          <div style="font-size:13px;color:#795548;margin-top:4px;">${milestone} teammates have joined Shift. Keep the momentum going.</div>
         </div>
       </td></tr>`
     : ''
@@ -92,11 +93,16 @@ function buildDigestHtml(opts: {
   <!-- Header -->
   <tr>
     <td style="background:#191A2E;padding:24px 32px;">
-      <table cellpadding="0" cellspacing="0"><tr>
-        <td style="font-family:'Arial Black',Arial,sans-serif;font-size:22px;font-weight:900;color:#FFFFFF;letter-spacing:-0.5px;">Shift</td>
-        <td style="padding-left:6px;"><img src="${SHIFT_LOGO_URL}" alt=">>" width="40" style="display:block;" /></td>
+      <table width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td>
+          <table cellpadding="0" cellspacing="0"><tr>
+            <td style="font-family:'Arial Black',Arial,sans-serif;font-size:22px;font-weight:900;color:#FFFFFF;letter-spacing:-0.5px;">Shift</td>
+            <td style="padding-left:6px;"><img src="${SHIFT_LOGO_URL}" alt=">>" width="40" style="display:block;" /></td>
+          </tr></table>
+          <p style="margin:4px 0 0;font-size:12px;"><span style="color:#52B788;font-weight:700;">Green Streets</span> <span style="color:#FFFFFF;">Initiative</span></p>
+        </td>
+        ${groupLogoUrl ? `<td align="right" style="vertical-align:middle;"><img src="${groupLogoUrl}" alt="${escapeHtml(groupName)}" height="36" style="display:block;background:#FFFFFF;border-radius:8px;padding:4px;" /></td>` : ''}
       </tr></table>
-      <p style="margin:4px 0 0;font-size:12px;"><span style="color:#52B788;font-weight:700;">Green Streets</span> <span style="color:#FFFFFF;">Initiative</span></p>
     </td>
   </tr>
   <!-- Greeting -->
@@ -160,20 +166,30 @@ export async function GET(req: Request) {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return new Response('RESEND_API_KEY not set', { status: 500 })
 
+  // ?dryRun=1 renders and reports without sending or mutating state.
+  const dryRun = new URL(req.url).searchParams.get('dryRun') === '1'
+
+  const startedAt = new Date().toISOString()
   const resend = new Resend(apiKey)
   const sb = createServerSupabaseClient()
 
+  // This is the employer digest — the copy is hard-branded "your team".
+  // Other group types (schools, towns, neighborhoods) must never receive it.
   const { data: groups } = await sb
     .from('groups')
     .select('id, name, logo_url, invite_code, milestone_last_notified')
     .eq('status', 'active')
+    .eq('type', 'workplace')
 
   if (!groups || groups.length === 0) {
-    return Response.json({ sent: 0, message: 'no active groups' })
+    return Response.json({ sent: 0, message: 'no active workplace groups' })
   }
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   let totalSent = 0
+  let totalErrors = 0
+  const skipped: string[] = []
+  const dryRunPreview: Array<Record<string, unknown>> = []
 
   for (const group of groups) {
     const { data: allAdmins } = await sb
@@ -204,36 +220,49 @@ export async function GET(req: Request) {
 
     if (!thisWeek) continue
 
+    const newMemberCount = newMembersRes.count ?? 0
+
+    // A digest that is all zeros helps nobody: skip groups with no trips
+    // in the last 14 days and no new joins this week (covers both
+    // brand-new and dormant teams).
+    const fortnightTrips = twoWeek?.trips_this_period ?? thisWeek.trips_this_period
+    if (fortnightTrips === 0 && newMemberCount === 0) {
+      skipped.push(group.name)
+      continue
+    }
+
+    // Prior week = the 14-day window minus this week's 7-day window.
+    // The shift rate must be re-derived from those trip counts — the
+    // 14-day rate itself is a different (overlapping) denominator.
+    const priorTrips = twoWeek
+      ? twoWeek.trips_this_period - thisWeek.trips_this_period
+      : 0
+    const priorActiveTrips = twoWeek
+      ? twoWeek.active_trips_this_period - thisWeek.active_trips_this_period
+      : 0
     const priorWeek = twoWeek
       ? {
-          active_trips: twoWeek.active_trips_this_period - thisWeek.active_trips_this_period,
+          active_trips: priorActiveTrips,
           miles: twoWeek.miles_shifted - thisWeek.miles_shifted,
           co2: twoWeek.co2_avoided_kg - thisWeek.co2_avoided_kg,
-          shift_rate: twoWeek.shift_rate_trip_pct,
+          shift_rate: priorTrips > 0 ? (priorActiveTrips / priorTrips) * 100 : 0,
         }
       : { active_trips: 0, miles: 0, co2: 0, shift_rate: 0 }
 
-    const newMemberCount = newMembersRes.count ?? 0
-
-    // Milestone check
-    const activeParticipants = thisWeek.member_count
+    // Milestone check (total enrolled members)
     const lastNotified = group.milestone_last_notified ?? 0
     const crossedMilestone = MILESTONES.filter(
-      (m) => activeParticipants >= m && m > lastNotified,
+      (m) => thisWeek.member_count >= m && m > lastNotified,
     ).pop() ?? null
 
-    if (crossedMilestone) {
-      await sb
-        .from('groups')
-        .update({ milestone_last_notified: crossedMilestone })
-        .eq('id', group.id)
-    }
+    let milestoneDelivered = false
 
     for (const admin of digestRecipients) {
       const prefs: NotifPrefs = admin.notification_prefs ?? DEFAULT_PREFS
 
       const html = buildDigestHtml({
         groupName: group.name,
+        groupLogoUrl: group.logo_url ?? null,
         thisWeek,
         priorWeek,
         newMemberCount,
@@ -242,19 +271,67 @@ export async function GET(req: Request) {
         showMilestone: prefs.challenge_milestones,
       })
 
+      if (dryRun) {
+        dryRunPreview.push({
+          group: group.name,
+          to: admin.email,
+          milestone: prefs.challenge_milestones ? crossedMilestone : null,
+          this_week: thisWeek,
+          prior_week: priorWeek,
+          html_bytes: html.length,
+        })
+        continue
+      }
+
       try {
         await resend.emails.send({
           from: FROM,
           to: admin.email,
           subject: `Your weekly Shift report — ${group.name}`,
           html,
+          headers: {
+            'List-Unsubscribe': `<${PORTAL_URL}/settings>`,
+          },
         })
         totalSent++
+        if (crossedMilestone && prefs.challenge_milestones) milestoneDelivered = true
       } catch (err) {
+        totalErrors++
         console.error(`Failed to send digest to ${admin.email}:`, err)
       }
     }
+
+    // Only consume the milestone once someone who wants milestone
+    // banners has actually received it — otherwise it can never re-fire.
+    if (crossedMilestone && milestoneDelivered && !dryRun) {
+      await sb
+        .from('groups')
+        .update({ milestone_last_notified: crossedMilestone })
+        .eq('id', group.id)
+    }
   }
 
-  return Response.json({ sent: totalSent, groups: groups.length })
+  if (!dryRun) {
+    try {
+      await sb.rpc('record_cron_heartbeat', {
+        p_function_name: 'employer-digest',
+        p_started_at: startedAt,
+        p_finished_at: new Date().toISOString(),
+        p_status: totalErrors > 0 ? 'partial' : 'success',
+        p_sent: totalSent,
+        p_errors: totalErrors,
+        p_message: skipped.length > 0 ? `skipped (no activity): ${skipped.join(', ')}` : null,
+      })
+    } catch (err) {
+      console.error('Failed to record cron heartbeat:', err)
+    }
+  }
+
+  return Response.json({
+    sent: totalSent,
+    errors: totalErrors,
+    groups: groups.length,
+    skipped,
+    ...(dryRun ? { dryRun: true, preview: dryRunPreview } : {}),
+  })
 }

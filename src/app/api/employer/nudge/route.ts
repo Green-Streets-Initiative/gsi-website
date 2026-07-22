@@ -1,10 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { nudgeUnsubscribeSig } from '@/lib/employer-nudge'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 const SHIFT_LOGO_URL =
   'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-mark.png'
+const SITE_URL = 'https://www.gogreenstreets.org'
+// One nudge per employee per week — this lands in an individual's inbox,
+// so it must never be re-firable at will.
+const NUDGE_COOLDOWN_DAYS = 7
 
 interface ActiveChallenge {
   id: string
@@ -22,6 +27,7 @@ interface NudgeData {
   activeChallenges: ActiveChallenge[]
   teamSize: number
   teamActiveCount: number
+  unsubscribeUrl: string
 }
 
 export async function POST(request: Request) {
@@ -61,17 +67,18 @@ export async function POST(request: Request) {
 
   const isGroupAdmin = adminRes.data?.role === 'admin'
   const isGsiAdmin = !!gsiRes.data
-  const isGroupMember = !!adminRes.data
 
-  if (!isGroupAdmin && !isGsiAdmin && !isGroupMember) {
-    return Response.json({ error: 'Not authorized to send nudges for this group' }, { status: 403 })
+  // Admins only — viewers are read-only by definition, and this endpoint
+  // emails an individual employee on the company's behalf.
+  if (!isGroupAdmin && !isGsiAdmin) {
+    return Response.json({ error: 'Only workspace admins can send nudges' }, { status: 403 })
   }
 
   const now = new Date().toISOString()
 
   const [groupRes, memberRes, userRes, challengeRes, flagshipRes, dashRes] = await Promise.all([
     sb.from('groups').select('name, invite_code').eq('id', groupId).single(),
-    sb.from('group_members').select('user_id').eq('group_id', groupId).eq('user_id', userId).maybeSingle(),
+    sb.from('group_members').select('user_id, last_nudged_at, nudge_opt_out').eq('group_id', groupId).eq('user_id', userId).maybeSingle(),
     sb.from('users').select('display_name, email').eq('id', userId).maybeSingle(),
     sb.from('competitions')
       .select('id, name, ends_at, prize_description')
@@ -98,6 +105,28 @@ export async function POST(request: Request) {
   }
   if (!userRes.data?.email) {
     return Response.json({ error: 'Could not find email for this employee' }, { status: 404 })
+  }
+
+  if (memberRes.data.nudge_opt_out) {
+    return Response.json(
+      { error: 'This employee has opted out of nudge emails' },
+      { status: 409 },
+    )
+  }
+
+  if (memberRes.data.last_nudged_at) {
+    const nextAllowed =
+      new Date(memberRes.data.last_nudged_at).getTime() +
+      NUDGE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000
+    if (Date.now() < nextAllowed) {
+      return Response.json(
+        {
+          error: `This employee was already nudged in the last ${NUDGE_COOLDOWN_DAYS} days`,
+          next_allowed_at: new Date(nextAllowed).toISOString(),
+        },
+        { status: 429 },
+      )
+    }
   }
 
   const group = groupRes.data
@@ -141,6 +170,8 @@ export async function POST(request: Request) {
   const teamSize = dashboard?.member_count ?? 0
   const teamActiveCount = dashboard?.active_trips_this_period ?? 0
 
+  const unsubscribeUrl = `${SITE_URL}/api/employer/nudge/unsubscribe?g=${groupId}&u=${userId}&sig=${nudgeUnsubscribeSig(groupId, userId)}`
+
   const nudgeData: NudgeData = {
     employeeName: userRes.data.display_name,
     groupName: group.name,
@@ -148,6 +179,7 @@ export async function POST(request: Request) {
     activeChallenges,
     teamSize,
     teamActiveCount,
+    unsubscribeUrl,
   }
 
   const html = buildNudgeHtml(nudgeData)
@@ -158,11 +190,20 @@ export async function POST(request: Request) {
       to: userRes.data.email,
       subject: `Your team at ${group.name} is counting on you!`,
       html,
+      headers: {
+        'List-Unsubscribe': `<${unsubscribeUrl}>`,
+      },
     })
   } catch (err) {
     console.error(`Nudge email failed for ${userRes.data.email}:`, err)
     return Response.json({ error: 'Failed to send email' }, { status: 500 })
   }
+
+  await sb
+    .from('group_members')
+    .update({ last_nudged_at: new Date().toISOString() })
+    .eq('group_id', groupId)
+    .eq('user_id', userId)
 
   return Response.json({ ok: true, email: userRes.data.email })
 }
@@ -181,7 +222,7 @@ function formatDateShort(iso: string): string {
 }
 
 function buildNudgeHtml(opts: NudgeData) {
-  const { employeeName, groupName, inviteCode, activeChallenges, teamSize } = opts
+  const { employeeName, groupName, inviteCode, activeChallenges, teamSize, unsubscribeUrl } = opts
   const greeting = employeeName ? `Hi ${employeeName},` : 'Hi there,'
   const deepLink = inviteCode
     ? `https://shift.gogreenstreets.org/join/${inviteCode}`
@@ -279,6 +320,9 @@ function buildNudgeHtml(opts: NudgeData) {
       </p>
       <p style="margin:4px 0 0;font-size:11px;color:#9CA3AF;">
         Sent on behalf of ${escapeHtml(groupName)}
+      </p>
+      <p style="margin:4px 0 0;font-size:11px;color:#9CA3AF;">
+        Don't want these reminders? <a href="${unsubscribeUrl}" style="color:#9CA3AF;">Unsubscribe</a>
       </p>
     </td>
   </tr>
