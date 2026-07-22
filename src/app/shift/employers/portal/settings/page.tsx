@@ -10,7 +10,6 @@ import {
   Globe,
   Edit,
   LogOut,
-  Pause,
   Upload,
   ArrowRight,
   UserPlus,
@@ -29,7 +28,7 @@ import Button from '@/components/employer/Button'
 import Toggle from '@/components/employer/Toggle'
 
 export default function SettingsPage() {
-  const { group, setGroup, isAdmin, isGsiAdmin, admins, setAdmins, signOut, loading } = usePortal()
+  const { group, setGroup, isAdmin, isGsiAdmin, admins, setAdmins, sessionEmail, signOut, loading } = usePortal()
   const canManage = isAdmin || isGsiAdmin
 
   const [editing, setEditing] = useState(false)
@@ -49,7 +48,11 @@ export default function SettingsPage() {
   const defaultPrefs = { weekly_impact: true, new_employee: true, challenge_milestones: false }
   const [notifPrefs, setNotifPrefs] = useState(defaultPrefs)
 
-  const currentAdmin = admins.find((a) => a.email === group?.admin_email)
+  // Prefs belong to whoever is logged in — not to the group's primary
+  // admin_email. Any invited teammate must be able to save their own.
+  const currentAdmin = admins.find(
+    (a) => a.email.toLowerCase() === (sessionEmail ?? ''),
+  )
 
   useEffect(() => {
     if (!currentAdmin) return
@@ -67,10 +70,17 @@ export default function SettingsPage() {
           .update({ notification_prefs: next })
           .eq('id', currentAdmin.id)
           .then()
+        // Keep the shared admins list in sync so the notification bell
+        // (which reads prefs from context) reflects the change immediately.
+        setAdmins(
+          admins.map((a) =>
+            a.id === currentAdmin.id ? { ...a, notification_prefs: next } : a,
+          ),
+        )
       }
       return next
     })
-  }, [currentAdmin])
+  }, [currentAdmin, admins, setAdmins])
 
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<'admin' | 'viewer'>('viewer')
@@ -487,12 +497,19 @@ export default function SettingsPage() {
               <Button variant="danger" size="sm" icon={LogOut} onClick={signOut}>
                 Sign out
               </Button>
-              {canManage && (
-                <Button variant="danger" size="sm" icon={Pause} onClick={() => {}}>
-                  Pause account
-                </Button>
-              )}
             </div>
+            {canManage && (
+              <p className="mt-3 text-[12.5px] leading-relaxed text-ink-faint">
+                Need to pause or cancel your subscription? Email{' '}
+                <a
+                  href={`mailto:info@gogreenstreets.org?subject=${encodeURIComponent(`Pause account — ${group.name}`)}`}
+                  className="font-semibold text-accent hover:underline"
+                >
+                  info@gogreenstreets.org
+                </a>{' '}
+                and we&apos;ll take care of it.
+              </p>
+            )}
           </Card>
         </div>
       </div>

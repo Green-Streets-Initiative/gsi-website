@@ -40,21 +40,32 @@ function setLastSeen(groupId: string) {
   } catch {}
 }
 
-function getPrefs(groupId: string): Record<string, boolean> {
-  try {
-    const raw = localStorage.getItem(`ep_notif_prefs_${groupId}`)
-    if (raw) return JSON.parse(raw)
-  } catch {}
-  return { weekly_impact: true, new_employee: true, challenge_milestones: false }
+const DEFAULT_PREFS: Record<string, boolean> = {
+  weekly_impact: true,
+  new_employee: true,
+  challenge_milestones: false,
+}
+
+// Prefs live in group_admins.notification_prefs (saved from Settings) —
+// read them from context, never from localStorage.
+export function prefsForCurrentAdmin(
+  admins: { email: string; notification_prefs: Record<string, boolean> | null }[],
+  sessionEmail: string | null,
+): Record<string, boolean> {
+  const me = admins.find((a) => a.email.toLowerCase() === (sessionEmail ?? ''))
+  return { ...DEFAULT_PREFS, ...(me?.notification_prefs ?? {}) }
 }
 
 export default function NotificationsDropdown({ onClose }: { onClose: () => void }) {
-  const { group, members, challenges } = usePortal()
+  const { group, members, challenges, admins, sessionEmail } = usePortal()
   const panelRef = useRef<HTMLDivElement>(null)
 
   const groupId = group?.id ?? ''
   const lastSeen = useMemo(() => getLastSeen(groupId), [groupId])
-  const prefs = useMemo(() => getPrefs(groupId), [groupId])
+  const prefs = useMemo(
+    () => prefsForCurrentAdmin(admins, sessionEmail),
+    [admins, sessionEmail],
+  )
 
   useEffect(() => {
     if (groupId) setLastSeen(groupId)
@@ -180,13 +191,13 @@ export function hasUnreadNotifications(
   groupId: string,
   members: { joined_at: string }[],
   challenges: { id: string; starts_at: string }[],
+  prefs: Record<string, boolean> = DEFAULT_PREFS,
 ): boolean {
   const lastSeen = getLastSeen(groupId)
   if (!lastSeen) return members.length > 0 || challenges.length > 0
 
   const cutoff = new Date(lastSeen)
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
-  const prefs = getPrefs(groupId)
 
   if (prefs.new_employee !== false) {
     for (const m of members) {

@@ -102,7 +102,7 @@ export default function Sidebar() {
                 style={{ fontFamily: "'Bricolage Grotesque', var(--font-display), sans-serif" }}>
                 Shift
               </span>
-              <span className="text-[14px] text-white/60"
+              <span className="text-[14px] text-white/75"
                 style={{ fontFamily: "'Source Sans 3', var(--font-sans), sans-serif" }}>
                 for Employers
               </span>
@@ -135,7 +135,7 @@ export default function Sidebar() {
                     className={`flex items-center gap-[11px] rounded-[9px] px-[11px] py-[9px] text-[14px] no-underline transition-colors duration-[120ms] ${
                       active
                         ? 'bg-white/[0.14] font-semibold text-white'
-                        : 'font-medium text-white/[0.74] hover:bg-white/[0.08] hover:text-white'
+                        : 'font-medium text-white/80 hover:bg-white/[0.08] hover:text-white'
                     }`}
                   >
                     <Icon size={18} strokeWidth={1.75} className="shrink-0" />
@@ -178,7 +178,7 @@ export default function Sidebar() {
             <div className="truncate text-[12px] font-semibold text-white/90">
               {group?.name ?? '...'}
             </div>
-            <div className="truncate text-[11.5px] text-white/70">
+            <div className="truncate text-[11.5px] text-white/75">
               {group?.admin_name ?? group?.admin_email ?? ''} · {role === 'admin' ? 'Admin' : 'Viewer'}
             </div>
           </div>

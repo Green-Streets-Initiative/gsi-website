@@ -38,7 +38,8 @@ type PrizeRow = {
 function sanitizeSlug(value: string | string[] | undefined): string | null {
   const raw = Array.isArray(value) ? value[0] : value
   if (!raw) return null
-  if (!/^[a-z0-9-]{1,80}$/.test(raw)) return null
+  // Uppercase allowed: this parameter can also carry an invite code (B613C9).
+  if (!/^[a-zA-Z0-9-]{1,80}$/.test(raw)) return null
   return raw
 }
 
@@ -85,12 +86,24 @@ export default async function EmployerFlyerPage({
 
   const supabase = createServerSupabaseClient()
 
-  const { data: groupData } = await supabase
+  // The Share Kit links here with `slug ?? invite_code`, so accept either —
+  // a newly provisioned group may not have a slug yet.
+  let { data: groupData } = await supabase
     .from('groups')
     .select('id, name, slug, invite_code, logo_url, status, access_ends_at')
     .eq('slug', groupSlug)
     .in('status', ['active', 'cancelled'])
     .maybeSingle()
+
+  if (!groupData) {
+    const byInvite = await supabase
+      .from('groups')
+      .select('id, name, slug, invite_code, logo_url, status, access_ends_at')
+      .ilike('invite_code', groupSlug)
+      .in('status', ['active', 'cancelled'])
+      .maybeSingle()
+    groupData = byInvite.data
+  }
 
   if (!groupData) {
     return (

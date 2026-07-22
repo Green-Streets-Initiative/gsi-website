@@ -288,20 +288,107 @@ export default function AdvisorPage() {
                 </div>
               ))}
 
-              <div className="flex items-center justify-between px-0.5 py-1.5">
-                <div>
-                  <div className="text-[14px] font-semibold">
-                    Shuttle routes
+              <div className="px-0.5 py-1.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[14px] font-semibold">
+                      Shuttle routes
+                    </div>
+                    <div className="text-[12.5px] text-ink-faint">
+                      {form.shuttle_routes?.length
+                        ? `${form.shuttle_routes.length} route${form.shuttle_routes.length === 1 ? '' : 's'}`
+                        : 'No routes added yet'}
+                    </div>
                   </div>
-                  <div className="text-[12.5px] text-ink-faint">
-                    {form.shuttle_routes?.length
-                      ? `${form.shuttle_routes.length} routes`
-                      : 'No routes added yet'}
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={Plus}
+                    onClick={() =>
+                      update({
+                        shuttle_routes: [
+                          ...(form.shuttle_routes ?? []),
+                          { name: '', from_stop: '', schedule: '', details: '' },
+                        ],
+                      })
+                    }
+                  >
+                    Add route
+                  </Button>
                 </div>
-                <Button variant="ghost" size="sm" icon={Plus}>
-                  Add route
-                </Button>
+
+                {(form.shuttle_routes ?? []).map((route, i) => (
+                  <div
+                    key={i}
+                    className="mt-3 grid gap-2.5 rounded-[10px] border border-line bg-surface-2 p-3.5"
+                  >
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <input
+                        className="rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
+                        placeholder="Route name (e.g. North Station shuttle)"
+                        value={route.name}
+                        onChange={(e) =>
+                          update({
+                            shuttle_routes: form.shuttle_routes!.map((r, j) =>
+                              j === i ? { ...r, name: e.target.value } : r,
+                            ),
+                          })
+                        }
+                      />
+                      <input
+                        className="rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
+                        placeholder="Departs from (e.g. North Station)"
+                        value={route.from_stop}
+                        onChange={(e) =>
+                          update({
+                            shuttle_routes: form.shuttle_routes!.map((r, j) =>
+                              j === i ? { ...r, from_stop: e.target.value } : r,
+                            ),
+                          })
+                        }
+                      />
+                    </div>
+                    <input
+                      className="rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
+                      placeholder="Schedule (e.g. Every 20 min, 7–10am and 4–7pm)"
+                      value={route.schedule}
+                      onChange={(e) =>
+                        update({
+                          shuttle_routes: form.shuttle_routes!.map((r, j) =>
+                            j === i ? { ...r, schedule: e.target.value } : r,
+                          ),
+                        })
+                      }
+                    />
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        className="flex-1 rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
+                        placeholder="Details (optional — boarding notes, badge required, etc.)"
+                        value={route.details}
+                        onChange={(e) =>
+                          update({
+                            shuttle_routes: form.shuttle_routes!.map((r, j) =>
+                              j === i ? { ...r, details: e.target.value } : r,
+                            ),
+                          })
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          update({
+                            shuttle_routes: form.shuttle_routes!.filter(
+                              (_, j) => j !== i,
+                            ),
+                          })
+                        }
+                        className="shrink-0 text-[12.5px] font-semibold text-ep-danger hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </Card>
@@ -485,9 +572,8 @@ export default function AdvisorPage() {
 
       {/* Sticky save bar */}
       <div
-        className="fixed bottom-0 right-0 z-30 flex items-center justify-end gap-2.5 border-t border-line px-6 py-3"
+        className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-end gap-2.5 border-t border-line px-6 py-3 min-[980px]:left-[256px]"
         style={{
-          left: '256px',
           background: 'rgba(255,255,255,0.9)',
           backdropFilter: 'blur(8px)',
         }}

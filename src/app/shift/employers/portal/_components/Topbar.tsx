@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { LayoutGrid, Search, Bell, HelpCircle } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
 import CommandPalette from './CommandPalette'
-import NotificationsDropdown, { hasUnreadNotifications } from './NotificationsDropdown'
+import NotificationsDropdown, { hasUnreadNotifications, prefsForCurrentAdmin } from './NotificationsDropdown'
 import HelpDrawer from './HelpDrawer'
 
 const ROUTE_META: Record<string, { label: string }> = {
@@ -25,12 +25,17 @@ type Panel = 'search' | 'notifications' | 'help' | null
 export default function Topbar() {
   const pathname = usePathname()
   const meta = ROUTE_META[pathname] ?? { label: 'Dashboard' }
-  const { group, members, challenges } = usePortal()
+  const { group, members, challenges, admins, sessionEmail } = usePortal()
 
   const [activePanel, setActivePanel] = useState<Panel>(null)
 
   const showUnread = group
-    ? hasUnreadNotifications(group.id, members, challenges)
+    ? hasUnreadNotifications(
+        group.id,
+        members,
+        challenges,
+        prefsForCurrentAdmin(admins, sessionEmail),
+      )
     : false
 
   const closePanel = useCallback(() => setActivePanel(null), [])

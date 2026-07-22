@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Wallet, Download, Sparkles } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
@@ -27,11 +27,13 @@ export default function BillingPage() {
   const [portalError, setPortalError] = useState<string | null>(null)
   const [openingPortal, setOpeningPortal] = useState(false)
 
-  if (!group) return null
-  if (!isAdmin) {
-    router.push('/shift/employers/portal/dashboard')
-    return null
-  }
+  // Navigation belongs in an effect — calling router.push during render
+  // triggers React warnings and can loop.
+  useEffect(() => {
+    if (group && !isAdmin) router.push('/shift/employers/portal/dashboard')
+  }, [group, isAdmin, router])
+
+  if (!group || !isAdmin) return null
 
   const tier = group.tier || 'starter'
   const tierLabel = TIER_LABEL[tier] || tier
