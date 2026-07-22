@@ -103,19 +103,42 @@ export default function SettingsPage() {
     }
     setInviting(true)
     setInviteError('')
-    const { data, error } = await supabase
-      .from('group_admins')
-      .insert({ group_id: group.id, email, role: inviteRole })
-      .select('id, group_id, email, role, name, created_at, notification_prefs')
-      .single()
-    if (error) {
-      setInviteError(error.message)
+    // The edge function owns the insert AND the invitation email — a bare
+    // insert grants silent access the invitee never learns about.
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      setInviteError('Session expired — refresh and try again')
       setInviting(false)
       return
     }
-    setAdmins([...admins, data as GroupAdmin])
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/employer-invite`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
+        body: JSON.stringify({ group_id: group.id, email, role: inviteRole }),
+      },
+    )
+    const payload = (await res.json().catch(() => null)) as
+      | { admin_row?: GroupAdmin; email_sent?: boolean; error?: string }
+      | null
+    if (!res.ok || !payload?.admin_row) {
+      setInviteError(payload?.error ?? "Couldn't send the invite. Please try again.")
+      setInviting(false)
+      return
+    }
+    setAdmins([...admins, payload.admin_row])
     setInviteEmail('')
     setInviting(false)
+    if (!payload.email_sent) {
+      setInviteError(
+        'Added to the team, but the invite email failed to send — share the login page with them directly.',
+      )
+    }
   }
 
   async function removeMember(id: string) {
