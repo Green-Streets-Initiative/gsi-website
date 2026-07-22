@@ -165,8 +165,6 @@ async function handleCheckoutCompleted(
     return;
   }
 
-  const supabase = createAdminClient();
-
   const customerId =
     typeof session.customer === "string"
       ? session.customer
@@ -195,6 +193,34 @@ async function handleCheckoutCompleted(
     );
     return;
   }
+
+  await provisionEmployer(stripe, {
+    customerId,
+    subscriptionId,
+    adminEmail,
+    companyName,
+    tier,
+  });
+}
+
+/**
+ * Shared provisioning core: group row + group_admins + welcome email.
+ * Idempotent on stripe_customer_id (Stripe replays events). Reached from
+ * card checkout (checkout.session.completed) AND from invoiced deals
+ * (customer.subscription.created with metadata — see below).
+ */
+async function provisionEmployer(
+  stripe: ReturnType<typeof createStripeClient>,
+  args: {
+    customerId: string;
+    subscriptionId: string;
+    adminEmail: string;
+    companyName: string;
+    tier: string;
+  },
+): Promise<void> {
+  const { customerId, subscriptionId, adminEmail, companyName, tier } = args;
+  const supabase = createAdminClient();
 
   // Fetch the subscription to get exact period dates from Stripe (not guessed).
   // Period bounds live on the item in modern API versions; our subscriptions
@@ -309,6 +335,63 @@ async function handleCheckoutCompleted(
     companyName,
     inviteCode,
     magicLink,
+    tier,
+  });
+}
+
+/**
+ * Invoiced (net-30) deals: GSI creates the Customer + Subscription in the
+ * Stripe dashboard with collection_method='send_invoice' and stamps three
+ * metadata keys on the SUBSCRIPTION: company_name, admin_email, tier.
+ * That fires customer.subscription.created, which provisions here exactly
+ * like a card checkout. Subscriptions without the metadata (or any other
+ * source) are logged and ignored. We deliberately provision at creation,
+ * not invoice.paid — never gate launch on payment clearing.
+ */
+async function handleSubscriptionCreated(
+  stripe: ReturnType<typeof createStripeClient>,
+  event: Stripe.Event,
+): Promise<void> {
+  const subscription = event.data.object as Stripe.Subscription;
+
+  const companyName = subscription.metadata?.company_name?.trim() ?? "";
+  const adminEmail = subscription.metadata?.admin_email?.trim().toLowerCase() ?? "";
+  const tier = subscription.metadata?.tier?.trim().toLowerCase() ?? "";
+
+  if (!companyName || !adminEmail || !tier) {
+    console.log(
+      `[EmployerWebhook] subscription.created ${subscription.id} without provisioning metadata — ignoring (checkout-created subscriptions provision via checkout.session.completed)`,
+    );
+    return;
+  }
+
+  const VALID_TIERS = ["starter", "basic", "standard", "premium"];
+  if (!VALID_TIERS.includes(tier)) {
+    console.error(
+      `[EmployerWebhook] subscription.created ${subscription.id} has invalid metadata.tier "${tier}" — expected one of ${VALID_TIERS.join(", ")}. Not provisioning.`,
+    );
+    return;
+  }
+
+  const customerId =
+    typeof subscription.customer === "string"
+      ? subscription.customer
+      : subscription.customer?.id ?? null;
+  if (!customerId) {
+    console.error(
+      `[EmployerWebhook] subscription.created ${subscription.id} has no customer — not provisioning`,
+    );
+    return;
+  }
+
+  console.log(
+    `[EmployerWebhook] Provisioning invoiced deal: ${companyName} (${tier}) for ${adminEmail}`,
+  );
+  await provisionEmployer(stripe, {
+    customerId,
+    subscriptionId: subscription.id,
+    adminEmail,
+    companyName,
     tier,
   });
 }
@@ -593,6 +676,9 @@ serve(async (req: Request) => {
     switch (event.type) {
       case "checkout.session.completed":
         await handleCheckoutCompleted(stripe, event);
+        break;
+      case "customer.subscription.created":
+        await handleSubscriptionCreated(stripe, event);
         break;
       case "customer.subscription.updated":
         await handleSubscriptionUpdated(stripe, event);
