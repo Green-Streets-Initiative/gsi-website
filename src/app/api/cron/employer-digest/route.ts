@@ -157,6 +157,105 @@ function buildDigestHtml(opts: {
 </html>`
 }
 
+function buildLaunchProgressHtml(opts: {
+  groupName: string
+  groupLogoUrl: string | null
+  memberCount: number
+  inviteCode: string | null
+  headcount: number | null
+  targetSignupPct: number | null
+  launchDate: string | null
+}): string {
+  const { groupName, groupLogoUrl, memberCount, inviteCode, headcount, targetSignupPct, launchDate } = opts
+
+  const goalCount =
+    headcount && targetSignupPct ? Math.ceil((headcount * targetSignupPct) / 100) : null
+  const progressLine = goalCount
+    ? `<strong>${memberCount}</strong> of your goal of <strong>${goalCount}</strong> employees have joined so far.`
+    : `<strong>${memberCount}</strong> employee${memberCount === 1 ? ' has' : 's have'} joined so far.`
+  const launchLine = launchDate
+    ? `<p style="margin:8px 0 0;font-size:13px;color:#5A5C6E;">Your launch date: <strong>${escapeHtml(launchDate)}</strong></p>`
+    : ''
+
+  const steps = [
+    inviteCode
+      ? `Share your join code <span style="font-family:monospace;font-weight:700;">${escapeHtml(inviteCode)}</span> — the <a href="${PORTAL_URL}/share-kit" style="color:#2D6A4F;">Share Kit</a> has a QR poster, email templates, and a printable flyer.`
+      : `Open the <a href="${PORTAL_URL}/share-kit" style="color:#2D6A4F;">Share Kit</a> for a QR poster, email templates, and a printable flyer.`,
+    `Ask a leader (not HR) to send the announcement email — it's the single biggest driver of sign-ups.`,
+    `Line up a launch challenge with weekly prize drawings in <a href="${PORTAL_URL}/challenges" style="color:#2D6A4F;">Challenges</a>.`,
+  ]
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:'Helvetica Neue',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 0;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
+  <tr>
+    <td style="background:#191A2E;padding:24px 32px;">
+      <table width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td>
+          <table cellpadding="0" cellspacing="0"><tr>
+            <td style="font-family:'Arial Black',Arial,sans-serif;font-size:22px;font-weight:900;color:#FFFFFF;letter-spacing:-0.5px;">Shift</td>
+            <td style="padding-left:6px;"><img src="${SHIFT_LOGO_URL}" alt=">>" width="40" style="display:block;" /></td>
+          </tr></table>
+          <p style="margin:4px 0 0;font-size:12px;"><span style="color:#52B788;font-weight:700;">Green Streets</span> <span style="color:#FFFFFF;">Initiative</span></p>
+        </td>
+        ${groupLogoUrl ? `<td align="right" style="vertical-align:middle;"><img src="${groupLogoUrl}" alt="${escapeHtml(groupName)}" height="36" style="display:block;background:#FFFFFF;border-radius:8px;padding:4px;" /></td>` : ''}
+      </tr></table>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:32px 32px 16px;">
+      <h1 style="margin:0;font-size:18px;color:#191A2E;">Getting ${escapeHtml(groupName)} launched</h1>
+      <p style="margin:8px 0 0;font-size:14px;color:#374151;line-height:1.6;">${progressLine}</p>
+      ${launchLine}
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:8px 32px 24px;">
+      <div style="background:#F4F6F1;border-radius:10px;padding:16px 20px;">
+        <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:#2D6A4F;">This week's launch checklist</p>
+        ${steps.map((s) => `<p style="margin:0 0 8px;font-size:13px;color:#374151;line-height:1.5;">&#10003;&nbsp; ${s}</p>`).join('')}
+      </div>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:0 32px 24px;">
+      <p style="margin:0;font-size:13px;color:#5A5C6E;line-height:1.6;">
+        Want a hand planning your launch? Just reply — we help every new team get going.
+      </p>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:0 32px 32px;text-align:center;">
+      <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+        <tr>
+          <td style="background:#2D6A4F;border-radius:8px;">
+            <a href="${PORTAL_URL}/setup" style="display:inline-block;padding:12px 28px;font-size:14px;font-weight:600;color:#FFFFFF;text-decoration:none;">Open your setup checklist &rarr;</a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td style="background:#f9fafb;padding:16px 32px;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#9CA3AF;">
+        <a href="https://gogreenstreets.org" style="color:#9CA3AF;text-decoration:none;">Green Streets Initiative</a> &middot; Shift Employer Platform
+      </p>
+      <p style="margin:4px 0 0;font-size:11px;color:#9CA3AF;">
+        Manage your notification preferences in <a href="${PORTAL_URL}/settings" style="color:#9CA3AF;">Settings</a>.
+      </p>
+    </td>
+  </tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`
+}
+
 export async function GET(req: Request) {
   const auth = req.headers.get('authorization') ?? ''
   const expected = process.env.CRON_SECRET
@@ -177,7 +276,7 @@ export async function GET(req: Request) {
   // Other group types (schools, towns, neighborhoods) must never receive it.
   const { data: groups } = await sb
     .from('groups')
-    .select('id, name, logo_url, invite_code, milestone_last_notified')
+    .select('id, name, logo_url, invite_code, milestone_last_notified, access_starts_at, onboarding')
     .eq('status', 'active')
     .eq('type', 'workplace')
 
@@ -238,11 +337,59 @@ export async function GET(req: Request) {
     const newMemberCount = newMembersRes.count ?? 0
 
     // A digest that is all zeros helps nobody: skip groups with no trips
-    // in the last 14 days and no new joins this week (covers both
-    // brand-new and dormant teams).
+    // in the last 14 days and no new joins this week — EXCEPT groups still
+    // in their launch window (<45 days), which get a launch-progress email
+    // instead. A stalled launch is the one case that must not go dark.
     const fortnightTrips = twoWeek?.trips_this_period ?? thisWeek.trips_this_period
     if (fortnightTrips === 0 && newMemberCount === 0) {
-      skipped.push(group.name)
+      const ageDays = group.access_starts_at
+        ? (Date.now() - new Date(group.access_starts_at).getTime()) / 86400000
+        : Infinity
+      if (ageDays > 45) {
+        skipped.push(group.name)
+        continue
+      }
+
+      const onboarding = (group.onboarding ?? {}) as {
+        headcount?: number | null
+        target_signup_pct?: number | null
+        launch_date?: string | null
+      }
+      const launchHtml = buildLaunchProgressHtml({
+        groupName: group.name,
+        groupLogoUrl: group.logo_url ?? null,
+        memberCount: thisWeek.member_count,
+        inviteCode: group.invite_code,
+        headcount: onboarding.headcount ?? null,
+        targetSignupPct: onboarding.target_signup_pct ?? null,
+        launchDate: onboarding.launch_date ?? null,
+      })
+
+      for (const admin of digestRecipients) {
+        if (dryRun) {
+          dryRunPreview.push({
+            group: group.name,
+            to: admin.email,
+            variant: 'launch_progress',
+            member_count: thisWeek.member_count,
+          })
+          continue
+        }
+        try {
+          await resend.emails.send({
+            from: FROM,
+            to: admin.email,
+            replyTo: 'info@gogreenstreets.org',
+            subject: `Getting ${group.name} launched on Shift`,
+            html: launchHtml,
+            headers: { 'List-Unsubscribe': `<${PORTAL_URL}/settings>` },
+          })
+          totalSent++
+        } catch (err) {
+          totalErrors++
+          console.error(`Failed to send launch email to ${admin.email}:`, err)
+        }
+      }
       continue
     }
 

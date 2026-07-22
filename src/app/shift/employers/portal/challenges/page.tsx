@@ -141,7 +141,11 @@ export default function ChallengesPage() {
 
   const set = (k: string, v: unknown) =>
     setForm((p) => ({ ...p, [k]: v }))
-  const canSave = form.name.trim() && form.starts_at && form.ends_at
+  const dateError =
+    form.starts_at && form.ends_at && form.ends_at <= form.starts_at
+      ? 'End date must be after the start date'
+      : null
+  const canSave = !!(form.name.trim() && form.starts_at && form.ends_at && !dateError)
 
   const openEditor = (c?: Challenge) => {
     if (c) {
@@ -583,7 +587,24 @@ export default function ChallengesPage() {
                   type="date"
                   className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
                   value={form.starts_at}
-                  onChange={(e) => set('starts_at', e.target.value)}
+                  onChange={(e) => {
+                    const starts = e.target.value
+                    setForm((p) => ({
+                      ...p,
+                      starts_at: starts,
+                      // Default a 4-week window — the sweet spot for
+                      // engagement challenges (3-4 weeks; >1 month drags).
+                      ends_at:
+                        starts && (!p.ends_at || p.ends_at <= starts)
+                          ? new Date(
+                              new Date(starts + 'T12:00:00').getTime() +
+                                28 * 86400000,
+                            )
+                              .toISOString()
+                              .slice(0, 10)
+                          : p.ends_at,
+                    }))
+                  }}
                 />
               </div>
               <div>
@@ -597,6 +618,15 @@ export default function ChallengesPage() {
                   onChange={(e) => set('ends_at', e.target.value)}
                 />
               </div>
+              {dateError && (
+                <p className="col-span-2 -mt-2 text-[12.5px] text-ep-danger">
+                  {dateError}
+                </p>
+              )}
+              <p className="col-span-2 -mt-1 text-[12.5px] text-ink-faint">
+                Tip: 3–4 weeks works best. Weekly prize drawings for anyone who
+                logs a green commute beat one big end prize for participation.
+              </p>
             </div>
 
             {/* Prizes */}
