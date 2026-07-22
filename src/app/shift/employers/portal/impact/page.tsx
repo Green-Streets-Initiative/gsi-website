@@ -30,8 +30,8 @@ import {
   prettyMode,
   formatDate,
   loadImageForPdf,
+  resolveImpactWindow,
 } from '../_lib/portal-utils'
-import type { ImpactPreset } from '../_lib/portal-types'
 
 const MODE_ICON: Record<string, React.ElementType> = {
   walk: Footprints,
@@ -45,25 +45,36 @@ const MODE_ICON: Record<string, React.ElementType> = {
 }
 
 export default function ImpactPage() {
-  const { group, challenges, dashboard, memberCount, refreshDashboard } =
+  const { group, challenges, dashboard, dashboardError, memberCount, refreshDashboard } =
     usePortal()
 
   const [range, setRange] = useState<string>('Last 30 days')
   const [downloading, setDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!group) return
-    const presetMap: Record<string, ImpactPreset> = {
-      'Last 7 days': 'last_30',
-      'Last 30 days': 'last_30',
-      'This quarter': 'this_quarter',
-      'Year to date': 'ytd',
+    if (range === 'Last 7 days') {
+      refreshDashboard({ days: 7 })
+      return
     }
-    const preset = presetMap[range]
-    if (!preset) return
-    const days =
-      range === 'Last 7 days' ? 7 : range === 'Last 30 days' ? 30 : undefined
-    refreshDashboard({ days })
+    if (range === 'Last 30 days') {
+      refreshDashboard({ days: 30 })
+      return
+    }
+    // Quarter/YTD need an explicit window — the RPC's p_days fallback
+    // would silently return 30-day data labeled with the longer range.
+    const win = resolveImpactWindow(
+      range === 'This quarter' ? 'this_quarter' : 'ytd',
+      '',
+      '',
+    )
+    if (win) {
+      refreshDashboard({
+        startDate: win.start.toISOString(),
+        endDate: win.end.toISOString(),
+      })
+    }
   }, [range, group?.id])
 
   const modes = useMemo(() => {
@@ -96,6 +107,7 @@ export default function ImpactPage() {
   async function handleDownloadReport() {
     if (!group || !dashboard) return
     setDownloading(true)
+    setDownloadError(null)
     try {
       // @ts-expect-error — no type declarations for the direct ES bundle
       const { jsPDF } = await import('jspdf/dist/jspdf.es.min.js')
@@ -306,6 +318,9 @@ export default function ImpactPage() {
         doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(...FAINT)
         doc.text('12 weeks ago', chartX, cardsY + cardH - 14)
         doc.text('This week', chartX + chartW, cardsY + cardH - 14, { align: 'right' })
+      } else {
+        doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...FAINT)
+        doc.text('Trend appears after a few weeks of commute activity.', mx + lPad, cardsY + 70)
       }
 
       // ── Right card: Mode breakdown ──
@@ -387,20 +402,25 @@ export default function ImpactPage() {
       const slug = group.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
       const dateSlug = new Date().toISOString().split('T')[0]
       doc.save(`${slug}-shift-impact-report-${dateSlug}.pdf`)
+    } catch {
+      setDownloadError(
+        "We couldn't generate the report. Try again — if this keeps happening, contact info@gogreenstreets.org.",
+      )
     } finally {
       setDownloading(false)
     }
   }
 
-  // SVG sparkline for shift rate trend (placeholder — a real trend endpoint would supply weekly data)
+  // Real 12-week trend from the dashboard RPC. Weeks with no trips carry a
+  // null rate; require a few weeks of real activity before drawing a trend
+  // so a new team sees an honest "not yet" state instead of a flat line.
   const trendData = useMemo(() => {
-    if (!shiftRate) return null
-    // Simulate a rising trend ending at current shift rate
-    const base = Math.max(shiftRate - 22, 10)
-    return Array.from({ length: 12 }, (_, i) =>
-      Math.round(base + ((shiftRate - base) * i) / 11 + (i % 3) - 1),
-    )
-  }, [shiftRate])
+    const weeks = dashboard?.weekly_shift_rates
+    if (!weeks || weeks.length < 2) return null
+    const weeksWithTrips = weeks.filter((w) => w.trips > 0).length
+    if (weeksWithTrips < 3) return null
+    return weeks.map((w) => w.shift_rate_pct ?? 0)
+  }, [dashboard])
 
   const sparkline = useMemo(() => {
     if (!trendData) return null
@@ -431,6 +451,12 @@ export default function ImpactPage() {
         subtitle="Track your team's commute data and environmental impact"
       />
 
+      {dashboardError && (
+        <Card pad>
+          <p className="text-[13.5px] text-ep-danger">{dashboardError}</p>
+        </Card>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SegmentedControl
           options={[
@@ -452,6 +478,10 @@ export default function ImpactPage() {
           {downloading ? 'Generating...' : 'Download report'}
         </Button>
       </div>
+
+      {downloadError && (
+        <p className="text-[13px] text-ep-danger">{downloadError}</p>
+      )}
 
       {/* Stat grid */}
       <div className="grid grid-cols-3 gap-5">
@@ -573,7 +603,7 @@ export default function ImpactPage() {
               </>
             ) : (
               <div className="flex h-[160px] items-center justify-center text-[13px] text-ink-faint">
-                No trend data available yet
+                Trend appears after a few weeks of commute activity
               </div>
             )}
           </div>

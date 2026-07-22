@@ -13,8 +13,9 @@ import {
   Bike,
   Sparkles,
   ArrowUpRight,
+  Trophy,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { usePortal } from '../_lib/portal-context'
 import { prettyMode, formatDateShort } from '../_lib/portal-utils'
@@ -41,9 +42,36 @@ const MODE_ICON: Record<string, string> = {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { group, challenges, memberCount, dashboard, members, benefitsForm, loading } = usePortal()
+  const { group, challenges, memberCount, dashboard, dashboardError, members, benefitsForm, loading } = usePortal()
   const [copied, setCopied] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
+
+  const recentActivity = useMemo(() => {
+    const thirtyDaysAgo = Date.now() - 30 * 86400000
+    const items = [
+      ...members
+        .filter((m) => new Date(m.joined_at).getTime() > thirtyDaysAgo)
+        .map((m) => ({
+          id: `join-${m.user_id}`,
+          type: 'join' as const,
+          title: m.display_name || 'A new teammate',
+          subtitle: 'joined your team',
+          timestamp: m.joined_at,
+        })),
+      ...challenges
+        .filter((c) => new Date(c.starts_at).getTime() > thirtyDaysAgo)
+        .map((c) => ({
+          id: `challenge-${c.id}`,
+          type: 'challenge' as const,
+          title: c.name,
+          subtitle: 'challenge started',
+          timestamp: c.starts_at,
+        })),
+    ]
+    return items
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 6)
+  }, [members, challenges])
 
   if (loading || !group) {
     return (
@@ -116,6 +144,12 @@ export default function DashboardPage() {
           </>
         }
       />
+
+      {dashboardError && (
+        <Card pad className="mb-5">
+          <p className="text-[13.5px] text-ep-danger">{dashboardError}</p>
+        </Card>
+      )}
 
       <div className="grid items-start gap-6" style={{ gridTemplateColumns: 'minmax(0,1fr) 360px' }}>
         {/* LEFT COLUMN */}
@@ -318,20 +352,29 @@ export default function DashboardPage() {
             </Link>
           </Card>
 
-          {/* Recent activity (placeholder — we don't have an activity feed yet) */}
+          {/* Recent activity: latest joins + recently started challenges */}
           <Card>
             <CardHead title="Recent activity" />
             <div className="space-y-4 px-6 py-4">
-              {memberCount > 0 ? (
-                <div className="flex items-start gap-3">
-                  <div className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
-                    <UserPlus size={15} strokeWidth={1.75} />
+              {recentActivity.length > 0 ? (
+                recentActivity.map((item) => (
+                  <div key={item.id} className="flex items-start gap-3">
+                    <div className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
+                      {item.type === 'join' ? (
+                        <UserPlus size={15} strokeWidth={1.75} />
+                      ) : (
+                        <Trophy size={15} strokeWidth={1.75} />
+                      )}
+                    </div>
+                    <div className="text-[13.5px] leading-snug">
+                      <strong className="text-ink">{item.title}</strong>{' '}
+                      <span className="text-ink-muted">{item.subtitle}</span>
+                      <div className="text-[12px] text-ink-faint">
+                        {formatDateShort(item.timestamp)}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-[13.5px] leading-snug">
-                    <strong className="text-ink">{memberCount} employees</strong>{' '}
-                    <span className="text-ink-muted">have joined your team</span>
-                  </div>
-                </div>
+                ))
               ) : (
                 <p className="py-4 text-center text-[13px] text-ink-faint">
                   Activity will show up here once your team gets going.

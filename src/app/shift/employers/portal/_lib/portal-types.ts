@@ -38,6 +38,14 @@ export type DashboardData = {
   mode_breakdown: Array<{ mode: string; trip_count: number }>
   shift_rate_trip_pct: number
   shift_rate_7d: number
+  // 12 rolling weekly buckets, oldest first; shift_rate_pct is null
+  // for weeks with no trips (distinct from a real 0%).
+  weekly_shift_rates?: Array<{
+    week_start: string
+    trips: number
+    active_trips: number
+    shift_rate_pct: number | null
+  }>
 }
 
 export type EmployerMember = {

@@ -28,10 +28,12 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 interface PortalContextValue {
   group: Group | null
   role: 'admin' | 'viewer'
+  sessionEmail: string | null
   admins: GroupAdmin[]
   challenges: Challenge[]
   memberCount: number
   dashboard: DashboardData | null
+  dashboardError: string | null
   members: EmployerMember[]
   rewardPool: RewardPool | null
   challengePrizes: ChallengePrize[]
@@ -84,10 +86,12 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const [authenticated, setAuthenticated] = useState(false)
   const [group, setGroup] = useState<Group | null>(null)
   const [role, setRole] = useState<'admin' | 'viewer'>('admin')
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null)
   const [admins, setAdmins] = useState<GroupAdmin[]>([])
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const [memberCount, setMemberCount] = useState(0)
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
+  const [dashboardError, setDashboardError] = useState<string | null>(null)
   const [members, setMembers] = useState<EmployerMember[]>([])
   const [loadingMembers, setLoadingMembers] = useState(false)
   const [rewardPool, setRewardPool] = useState<RewardPool | null>(null)
@@ -246,6 +250,17 @@ export function PortalProvider({ children }: { children: ReactNode }) {
 
       if (dashboardRes.data && !(dashboardRes.data as { error?: string }).error) {
         setDashboard(dashboardRes.data as DashboardData)
+        setDashboardError(null)
+      } else {
+        const code =
+          (dashboardRes.data as { error?: string } | null)?.error ??
+          dashboardRes.error?.message ??
+          'unknown'
+        setDashboardError(
+          code === 'forbidden'
+            ? "This account doesn't have access to this dashboard. Ask a teammate with admin access to re-invite you, or contact info@gogreenstreets.org."
+            : "We couldn't load your dashboard data. Try refreshing — if this keeps happening, contact info@gogreenstreets.org.",
+        )
       }
 
       if (membersRes.data) {
@@ -293,6 +308,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       }
 
       setAuthenticated(true)
+      setSessionEmail(session.user.email.toLowerCase())
       fetchData(session.user.email, session.user.id)
     }
     checkAuth()
@@ -322,9 +338,17 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       if (params.startDate) rpcParams.p_starts_at = params.startDate
       if (params.endDate) rpcParams.p_ends_at = params.endDate
 
-      const { data } = await supabase.rpc('get_employer_dashboard_data', rpcParams)
+      const { data, error } = await supabase.rpc('get_employer_dashboard_data', rpcParams)
       if (data && !(data as { error?: string }).error) {
         setDashboard(data as DashboardData)
+        setDashboardError(null)
+      } else {
+        const code = (data as { error?: string } | null)?.error ?? error?.message ?? 'unknown'
+        setDashboardError(
+          code === 'forbidden'
+            ? "This account doesn't have access to this dashboard. Ask a teammate with admin access to re-invite you, or contact info@gogreenstreets.org."
+            : "We couldn't load your dashboard data. Try refreshing — if this keeps happening, contact info@gogreenstreets.org.",
+        )
       }
     },
     [group],
@@ -350,10 +374,12 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const value: PortalContextValue = {
     group,
     role,
+    sessionEmail,
     admins,
     challenges,
     memberCount,
     dashboard,
+    dashboardError,
     members,
     rewardPool,
     challengePrizes,
