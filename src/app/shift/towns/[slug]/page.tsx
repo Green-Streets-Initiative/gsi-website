@@ -230,7 +230,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
             </p>
             <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} className="justify-center" />
             <p className="mt-8 text-xs leading-relaxed text-white/70">
-              Community stats reflect trips logged by Shift users who live in {name} and refresh
+              Community stats reflect trips by Shift community members that start or end in {name} and refresh
               hourly. Municipalities and community groups can request aggregate data at{' '}
               <a href="mailto:info@gogreenstreets.org" className="underline">
                 info@gogreenstreets.org

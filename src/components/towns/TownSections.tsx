@@ -61,7 +61,8 @@ export function DataDisclaimer({ townName }: { townName: string }) {
   return (
     <p className="mx-auto mt-4 max-w-[620px] text-center text-[12.5px] leading-relaxed text-white/75">
       Counts cover {new Date().toLocaleDateString('en-US', { month: 'long' })} 1 through today,
-      based on trips logged by <b className="text-white">Shift users who live in {townName}</b> — a
+      based on trips logged by Shift community members that{' '}
+      <b className="text-white">start or end in {townName}</b> — a
       growing sample, meant as an interesting local signal, not an official or census-level count.
       *CO&#8322; avoided is estimated from active miles traveled (EPA 404&nbsp;g/mi baseline).
     </p>
