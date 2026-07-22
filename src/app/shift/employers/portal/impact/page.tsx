@@ -104,6 +104,24 @@ export default function ImpactPage() {
     (m) => !['drive', 'carpool', 'other'].includes(m.mode),
   )
 
+  // "Goal: 35% of ~350 employees signed up (≈123). Currently 42 (12%)."
+  const goalCard = useMemo(() => {
+    const ob = group?.onboarding
+    const signups = dashboard?.member_count ?? memberCount
+    if (!ob?.headcount || !ob.target_signup_pct || ob.headcount < 1) return null
+    const goalCount = Math.ceil((ob.headcount * ob.target_signup_pct) / 100)
+    const currentPct = Math.round((signups / ob.headcount) * 100)
+    return {
+      title: `Sign-up goal: ${ob.target_signup_pct}% of ~${ob.headcount} employees (≈${goalCount})`,
+      currentLabel: `${signups} joined · ${currentPct}%`,
+      pct: Math.min(100, Math.round((signups / goalCount) * 100)),
+      subtitle:
+        signups >= goalCount
+          ? 'Goal reached — nice work. Consider setting a weekly-active goal next.'
+          : `Set on your success plan${ob.launch_date ? ` · launch ${ob.launch_date}` : ''} — update it any time from Setup.`,
+    }
+  }, [group?.onboarding, dashboard?.member_count, memberCount])
+
   async function handleDownloadReport() {
     if (!group || !dashboard) return
     setDownloading(true)
@@ -454,6 +472,20 @@ export default function ImpactPage() {
       {dashboardError && (
         <Card pad>
           <p className="text-[13.5px] text-ep-danger">{dashboardError}</p>
+        </Card>
+      )}
+
+      {/* Goal vs actual — driven by the success plan captured at setup */}
+      {goalCard && (
+        <Card pad>
+          <div className="mb-1.5 flex items-center justify-between">
+            <strong className="text-[14px]">{goalCard.title}</strong>
+            <span className="text-[13px] font-semibold text-ink-muted">
+              {goalCard.currentLabel}
+            </span>
+          </div>
+          <ProgressBar pct={goalCard.pct} />
+          <p className="mt-1.5 text-[12.5px] text-ink-faint">{goalCard.subtitle}</p>
         </Card>
       )}
 

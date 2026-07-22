@@ -1,5 +1,20 @@
 import type { EmployerBenefits } from '@/lib/types/commute'
 
+// Onboarding intake captured on the kickoff call / setup page.
+// Mirrors the groups.onboarding JSONB column (all keys optional).
+export type EmployerOnboarding = {
+  success_definition?: string
+  headcount?: number | null
+  target_signup_pct?: number | null
+  target_weekly_active_pct?: number | null
+  launch_date?: string | null
+  key_dates?: Array<{ label: string; date: string }>
+  champions?: string[]
+  comms_channels?: string
+  kickoff_at?: string | null
+  notes?: string
+}
+
 export type Group = {
   id: string
   name: string
@@ -15,6 +30,7 @@ export type Group = {
   access_starts_at: string | null
   access_ends_at: string | null
   public_leaderboard: boolean
+  onboarding?: EmployerOnboarding | null
 }
 
 export type Challenge = {

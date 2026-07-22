@@ -82,6 +82,11 @@ export default function DashboardPage() {
   }
 
   const setupSteps = [
+    {
+      id: 'success',
+      label: 'Success plan defined',
+      done: !!(group.onboarding?.success_definition || group.onboarding?.launch_date),
+    },
     { id: 'profile', label: 'Company profile complete', done: true },
     { id: 'logo', label: 'Logo uploaded', done: !!group.logo_url },
     { id: 'advisor', label: 'Commute Advisor configured', done: !!benefitsForm?.destination_address },
