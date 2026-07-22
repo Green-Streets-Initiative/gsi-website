@@ -342,18 +342,25 @@ export async function GET(req: Request) {
     // instead. A stalled launch is the one case that must not go dark.
     const fortnightTrips = twoWeek?.trips_this_period ?? thisWeek.trips_this_period
     if (fortnightTrips === 0 && newMemberCount === 0) {
-      const ageDays = group.access_starts_at
-        ? (Date.now() - new Date(group.access_starts_at).getTime()) / 86400000
-        : Infinity
-      if (ageDays > 45) {
-        skipped.push(group.name)
-        continue
-      }
-
       const onboarding = (group.onboarding ?? {}) as {
         headcount?: number | null
         target_signup_pct?: number | null
         launch_date?: string | null
+      }
+
+      // "Launching" = provisioned within the last 45 days, OR a launch date
+      // from the kickoff intake that is upcoming or less than 45 days past.
+      // The launch-date arm matters for customers (like our first) whose
+      // account was provisioned well before their kickoff call.
+      const ageDays = group.access_starts_at
+        ? (Date.now() - new Date(group.access_starts_at).getTime()) / 86400000
+        : Infinity
+      const daysSinceLaunch = onboarding.launch_date
+        ? (Date.now() - new Date(onboarding.launch_date + 'T12:00:00').getTime()) / 86400000
+        : Infinity
+      if (ageDays > 45 && daysSinceLaunch > 45) {
+        skipped.push(group.name)
+        continue
       }
       const launchHtml = buildLaunchProgressHtml({
         groupName: group.name,
