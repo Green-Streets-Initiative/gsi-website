@@ -192,6 +192,7 @@ export async function GET(req: Request) {
   const dryRunPreview: Array<Record<string, unknown>> = []
 
   for (const group of groups) {
+    try {
     const { data: allAdmins } = await sb
       .from('group_admins')
       .select('id, email, notification_prefs')
@@ -215,10 +216,24 @@ export async function GET(req: Request) {
         .gte('joined_at', sevenDaysAgo),
     ])
 
-    const thisWeek: DashboardRow | null = thisWeekRes.data
-    const twoWeek: DashboardRow | null = twoWeekRes.data
+    // The RPC reports authorization problems as {error: ...} payloads,
+    // not thrown errors — treat those as missing data, never as a
+    // DashboardRow (reading stats off one crashes the whole run).
+    const asRow = (d: unknown): DashboardRow | null =>
+      d && typeof d === 'object' && !('error' in (d as object))
+        ? (d as DashboardRow)
+        : null
+    const thisWeek = asRow(thisWeekRes.data)
+    const twoWeek = asRow(twoWeekRes.data)
 
-    if (!thisWeek) continue
+    if (!thisWeek) {
+      totalErrors++
+      console.error(
+        `Digest: no dashboard data for ${group.name}:`,
+        JSON.stringify(thisWeekRes.data ?? thisWeekRes.error ?? null),
+      )
+      continue
+    }
 
     const newMemberCount = newMembersRes.count ?? 0
 
@@ -308,6 +323,11 @@ export async function GET(req: Request) {
         .from('groups')
         .update({ milestone_last_notified: crossedMilestone })
         .eq('id', group.id)
+    }
+    } catch (err) {
+      // One broken group must never take down the rest of the send.
+      totalErrors++
+      console.error(`Digest failed for group ${group.name}:`, err)
     }
   }
 

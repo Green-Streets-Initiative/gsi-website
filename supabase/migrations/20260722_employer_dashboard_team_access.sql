@@ -46,10 +46,14 @@ BEGIN
   -- predates their group_admins row. COALESCE matters: with an
   -- unclaimed group (user_id NULL) the equality is NULL, and a
   -- bare IF NOT NULL would skip the forbidden branch entirely.
+  -- service_role must be allowed EXPLICITLY: the digest cron and
+  -- nudge endpoint call this server-side, where auth.uid() is NULL —
+  -- they previously worked only via the NULL-propagation hole above.
   IF NOT COALESCE(
     v_admin_id = auth.uid()
     OR public.is_group_team(p_group_id)
-    OR public.is_gsi_admin(),
+    OR public.is_gsi_admin()
+    OR (SELECT auth.role()) = 'service_role',
     false
   ) THEN
     RETURN jsonb_build_object('error', 'forbidden');
