@@ -18,6 +18,7 @@ import {
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { usePortal } from '../_lib/portal-context'
+import { computeSetupSteps } from '../_lib/setup-steps'
 import { prettyMode, formatDateShort } from '../_lib/portal-utils'
 import { TIER_LABEL, TIER_ANNUAL_PRICE } from '../_lib/portal-constants'
 import PortalPageHead from '../_components/PortalPageHead'
@@ -81,18 +82,7 @@ export default function DashboardPage() {
     )
   }
 
-  const setupSteps = [
-    {
-      id: 'success',
-      label: 'Success plan defined',
-      done: !!(group.onboarding?.success_definition || group.onboarding?.launch_date),
-    },
-    { id: 'profile', label: 'Company profile complete', done: true },
-    { id: 'logo', label: 'Logo uploaded', done: !!group.logo_url },
-    { id: 'advisor', label: 'Commute Advisor configured', done: !!benefitsForm?.destination_address },
-    { id: 'employees', label: 'Employees joined', done: memberCount > 0 },
-    { id: 'challenge', label: 'Active challenge running', done: challenges.length > 0 },
-  ]
+  const setupSteps = computeSetupSteps({ group, benefitsForm, memberCount, challenges })
   const setupDone = setupSteps.filter((s) => s.done).length
   const setupPct = Math.round((setupDone / setupSteps.length) * 100)
   const nextStep = setupSteps.find((s) => !s.done)

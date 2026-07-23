@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutGrid, Search, Bell, HelpCircle } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
@@ -66,9 +67,15 @@ export default function Topbar() {
           WebkitBackdropFilter: 'saturate(1.4) blur(8px)',
         }}
       >
-        {/* Breadcrumb */}
+        {/* Breadcrumb — the grid icon is a real link home */}
         <div className="flex items-center gap-2 text-[14px]">
-          <LayoutGrid size={16} strokeWidth={1.75} className="text-ink-faint" />
+          <Link
+            href="/shift/employers/portal/dashboard"
+            aria-label="Dashboard"
+            className="grid h-7 w-7 place-items-center rounded-lg text-ink-faint transition-colors hover:bg-surface-2 hover:text-ink"
+          >
+            <LayoutGrid size={16} strokeWidth={1.75} />
+          </Link>
           <span className="text-ink-faint">/</span>
           <span className="font-semibold text-ink">{meta.label}</span>
         </div>

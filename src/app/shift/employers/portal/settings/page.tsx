@@ -195,6 +195,39 @@ export default function SettingsPage() {
     setSaving(false)
   }
 
+  // The mobile app renders logo_url with React Native <Image>, which can't
+  // display SVG — an SVG here looks fine on the web but shows employees a
+  // blank box in the app. Convert SVGs to a 512px PNG before upload.
+  async function rasterizeSvg(file: File): Promise<Blob> {
+    const svgBlob = new Blob([await file.text()], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(svgBlob)
+    try {
+      const img = new Image()
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve()
+        img.onerror = () => reject(new Error('Could not read SVG'))
+        img.src = url
+      })
+      const TARGET = 512
+      const w = img.naturalWidth || TARGET
+      const h = img.naturalHeight || TARGET
+      const scale = TARGET / Math.max(w, h)
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(w * scale))
+      canvas.height = Math.max(1, Math.round(h * scale))
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Canvas unavailable')
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/png'),
+      )
+      if (!blob) throw new Error('Could not convert SVG')
+      return blob
+    } finally {
+      URL.revokeObjectURL(url)
+    }
+  }
+
   async function handleLogoFile(file: File) {
     if (!group) return
     setLogoError('')
@@ -208,16 +241,29 @@ export default function SettingsPage() {
       return
     }
     setUploadingLogo(true)
-    const ext = (file.name.split('.').pop() || 'png').toLowerCase()
+
+    let uploadBody: Blob = file
+    let ext = (file.name.split('.').pop() || 'png').toLowerCase()
+    if (file.type === 'image/svg+xml') {
+      try {
+        uploadBody = await rasterizeSvg(file)
+        ext = 'png'
+      } catch {
+        setLogoError("This SVG couldn't be converted — please upload a PNG or JPG instead.")
+        setUploadingLogo(false)
+        return
+      }
+    }
+
     const mimeMap: Record<string, string> = {
-      svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg',
+      png: 'image/png', jpg: 'image/jpeg',
       jpeg: 'image/jpeg', webp: 'image/webp',
     }
     const contentType = mimeMap[ext] || file.type
     const path = `logos/${Date.now()}-${group.id.slice(0, 8)}.${ext}`
     const { error: uploadErr } = await supabase.storage
       .from('employer-logos')
-      .upload(path, file, { contentType })
+      .upload(path, uploadBody, { contentType })
     if (uploadErr) {
       setLogoError(uploadErr.message)
       setUploadingLogo(false)
@@ -296,6 +342,13 @@ export default function SettingsPage() {
                   </div>
                 )
               })}
+              <p className="border-t border-line-2 py-3 text-[12.5px] text-ink-faint">
+                Looking for your office address? It lives in{' '}
+                <Link href="/shift/employers/portal/advisor" className="font-semibold text-accent hover:underline">
+                  Commute Advisor
+                </Link>{' '}
+                — it&apos;s the destination employees&apos; commute plans are built around.
+              </p>
             </div>
           </Card>
 
@@ -348,7 +401,7 @@ export default function SettingsPage() {
                       </button>
                       <span className="text-[14px] text-ink-faint"> or drag and drop</span>
                     </div>
-                    <p className="text-[12px] text-ink-faint">PNG, JPG, SVG, or WebP up to 5 MB</p>
+                    <p className="text-[12px] text-ink-faint">PNG, JPG, SVG, or WebP up to 5 MB — SVGs are converted to PNG automatically</p>
                   </>
                 )}
                 <input

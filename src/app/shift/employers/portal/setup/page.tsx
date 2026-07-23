@@ -7,72 +7,17 @@ import PortalPageHead from '../_components/PortalPageHead'
 import { usePortal } from '../_lib/portal-context'
 import { supabase } from '@/lib/supabase'
 import type { EmployerOnboarding } from '../_lib/portal-types'
+import { computeSetupSteps } from '../_lib/setup-steps'
 import { Card } from '@/components/employer/Card'
 import Badge from '@/components/employer/Badge'
 import ProgressBar from '@/components/employer/ProgressBar'
 import Button from '@/components/employer/Button'
 
-interface SetupStep {
-  id: string
-  label: string
-  desc: string
-  done: boolean
-  route: string | null
-}
-
 export default function SetupPage() {
   const { group, challenges, memberCount, benefitsForm } = usePortal()
   const router = useRouter()
 
-  const onboarding = (group?.onboarding ?? {}) as EmployerOnboarding
-  const successDone = !!(onboarding.success_definition || onboarding.launch_date)
-
-  const steps: SetupStep[] = [
-    {
-      id: 'success',
-      label: 'Success plan defined',
-      desc: 'What does "this worked" look like? Set your goal and launch date.',
-      done: successDone,
-      route: null,
-    },
-    {
-      id: 'profile',
-      label: 'Company profile complete',
-      desc: 'Name, address, and admin contact on file.',
-      done: !!(group?.name && group?.admin_name),
-      route: '/shift/employers/portal/settings',
-    },
-    {
-      id: 'logo',
-      label: 'Logo uploaded',
-      desc: 'Shown to employees on your join page.',
-      done: !!group?.logo_url,
-      route: '/shift/employers/portal/settings',
-    },
-    {
-      id: 'advisor',
-      label: 'Commute Advisor configured',
-      desc: 'Benefits and routes published for your team.',
-      done: !!(
-        benefitsForm.destination_address || benefitsForm.transit_subsidy_monthly
-      ),
-      route: '/shift/employers/portal/advisor',
-    },
-    {
-      id: 'employees',
-      label: 'Employees joined',
-      desc: 'Invite your team with your join code or link.',
-      done: memberCount > 0,
-      route: '/shift/employers/portal/employees',
-    },
-    {
-      id: 'challenge',
-      label: 'Active challenge running',
-      desc: "Kick off a friendly competition to drive sign-ups.",
-      done: challenges.length > 0,
-      route: '/shift/employers/portal/challenges',
-    },
-  ]
+  const steps = computeSetupSteps({ group, benefitsForm, memberCount, challenges })
 
   const firstIncomplete = steps.find((s) => !s.done)
   const [openId, setOpenId] = useState<string | null>(
