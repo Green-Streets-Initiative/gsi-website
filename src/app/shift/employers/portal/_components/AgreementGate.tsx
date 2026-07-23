@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
 import { Card } from '@/components/employer/Card'
@@ -25,6 +25,20 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
   const [checked, setChecked] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Accept enables only after the terms have been scrolled to the bottom —
+  // the gold-standard assent pattern (and auto-enables if no scroll needed).
+  const [scrolledToEnd, setScrolledToEnd] = useState(false)
+
+  const termsRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return
+    const check = () => {
+      if (el.scrollHeight - el.scrollTop - el.clientHeight < 24) {
+        setScrolledToEnd(true)
+      }
+    }
+    check()
+    el.addEventListener('scroll', check, { passive: true })
+  }, [])
 
   const gated =
     !loading &&
@@ -68,6 +82,7 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
           group_id: group.id,
           name: name.trim(),
           title: title.trim(),
+          version: AGREEMENT_VERSION,
         }),
       })
       const payload = (await res.json().catch(() => null)) as {
@@ -100,7 +115,7 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
           </p>
         </div>
 
-        <div className="max-h-[46vh] overflow-y-auto px-7 py-5">
+        <div ref={termsRef} className="max-h-[46vh] overflow-y-auto px-7 py-5">
           <p className="text-[13.5px] leading-relaxed text-ink-muted">
             {AGREEMENT_PREAMBLE}
           </p>
@@ -157,10 +172,17 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
             <Button
               variant="primary"
               onClick={accept}
-              disabled={submitting || !checked || !name.trim() || !title.trim()}
+              disabled={
+                submitting || !checked || !name.trim() || !title.trim() || !scrolledToEnd
+              }
             >
               {submitting ? 'Recording…' : 'Accept and continue'}
             </Button>
+            {!scrolledToEnd && (
+              <span className="text-[12.5px] text-ink-faint">
+                Scroll through the agreement to enable Accept
+              </span>
+            )}
             {error && <span className="text-[13px] text-ep-danger">{error}</span>}
           </div>
         </div>

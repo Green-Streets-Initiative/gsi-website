@@ -254,6 +254,65 @@ function buildLaunchProgressHtml(opts: {
 </html>`
 }
 
+function buildRenewalReminderHtml(opts: {
+  groupName: string
+  groupLogoUrl: string | null
+  renewalDate: string
+  tierLabel: string
+  price: string
+}): string {
+  const { groupName, groupLogoUrl, renewalDate, tierLabel, price } = opts
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:'Helvetica Neue',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 0;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
+  <tr>
+    <td style="background:#191A2E;padding:24px 32px;">
+      <table width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td><img src="${SHIFT_WORDMARK_URL}" alt="Shift" height="26" style="display:block;" />
+          <p style="margin:4px 0 0;font-size:12px;"><span style="color:#52B788;font-weight:700;">Green Streets</span> <span style="color:#FFFFFF;">Initiative</span></p>
+        </td>
+        ${groupLogoUrl ? `<td align="right" style="vertical-align:middle;"><img src="${groupLogoUrl}" alt="${escapeHtml(groupName)}" height="36" style="display:block;background:#FFFFFF;border-radius:8px;padding:4px;" /></td>` : ''}
+      </tr></table>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:32px;">
+      <h1 style="margin:0 0 12px;font-size:18px;color:#191A2E;">Your Shift subscription renews soon</h1>
+      <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
+        ${escapeHtml(groupName)}'s <strong>${escapeHtml(tierLabel)}</strong> subscription
+        (${price}/year) renews on <strong>${escapeHtml(renewalDate)}</strong>. For
+        invoice-billed accounts, we'll send the renewal invoice with Net-30 terms —
+        no card will be charged automatically.
+      </p>
+      <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
+        Nothing to do if you'd like to continue. To make changes or decline renewal,
+        use your portal's Rewards &amp; billing page or just reply to this email
+        before the renewal date.
+      </p>
+      <p style="margin:0;font-size:13px;color:#5A5C6E;line-height:1.6;">
+        Your subscription is governed by the Shift Employer Platform Agreement:
+        <a href="https://www.gogreenstreets.org/shift/employers/agreement" style="color:#2D6A4F;">gogreenstreets.org/shift/employers/agreement</a>
+      </p>
+    </td>
+  </tr>
+  <tr>
+    <td style="background:#f9fafb;padding:16px 32px;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#9CA3AF;">
+        <a href="https://gogreenstreets.org" style="color:#9CA3AF;text-decoration:none;">Green Streets Initiative</a> &middot; Shift Employer Platform &middot; info@gogreenstreets.org
+      </p>
+    </td>
+  </tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`
+}
+
 export async function GET(req: Request) {
   const auth = req.headers.get('authorization') ?? ''
   const expected = process.env.CRON_SECRET
@@ -274,7 +333,7 @@ export async function GET(req: Request) {
   // Other group types (schools, towns, neighborhoods) must never receive it.
   const { data: groups } = await sb
     .from('groups')
-    .select('id, name, logo_url, invite_code, milestone_last_notified, access_starts_at, onboarding')
+    .select('id, name, logo_url, invite_code, milestone_last_notified, access_starts_at, access_ends_at, tier, onboarding')
     .eq('status', 'active')
     .eq('type', 'workplace')
 
@@ -480,6 +539,75 @@ export async function GET(req: Request) {
       // One broken group must never take down the rest of the send.
       totalErrors++
       console.error(`Digest failed for group ${group.name}:`, err)
+    }
+  }
+
+  // ── Renewal reminders ─────────────────────────────────────────
+  // Groups whose access ends 30-37 days from now get exactly one
+  // reminder (weekly cron × 7-day window = one hit). This is an
+  // account notice, not marketing: it goes to every admin regardless
+  // of digest preferences, satisfies the agreement's 30-day renewal
+  // notice commitment, and moots B2B auto-renewal statutes (e.g. NY
+  // GOL 5-903) if we ever have customers in those states.
+  const TIER_PRICES: Record<string, string> = {
+    starter: '$500', basic: '$1,000', standard: '$3,000', premium: '$5,000',
+  }
+  for (const group of groups) {
+    try {
+      if (!group.access_ends_at) continue
+      const daysToRenewal =
+        (new Date(group.access_ends_at).getTime() - Date.now()) / 86400000
+      if (daysToRenewal < 30 || daysToRenewal >= 37) continue
+      const price = TIER_PRICES[group.tier as string]
+      if (!price) continue // free/comped groups don't renew for money
+
+      const { data: allAdmins } = await sb
+        .from('group_admins')
+        .select('email, role')
+        .eq('group_id', group.id)
+        .eq('role', 'admin')
+      if (!allAdmins?.length) continue
+
+      const renewalDate = new Date(group.access_ends_at).toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric',
+      })
+      const tierLabel =
+        (group.tier as string).charAt(0).toUpperCase() + (group.tier as string).slice(1)
+      const html = buildRenewalReminderHtml({
+        groupName: group.name,
+        groupLogoUrl: group.logo_url ?? null,
+        renewalDate,
+        tierLabel,
+        price,
+      })
+
+      for (const admin of allAdmins) {
+        if (dryRun) {
+          dryRunPreview.push({
+            group: group.name,
+            to: admin.email,
+            variant: 'renewal_reminder',
+            renewal_date: renewalDate,
+          })
+          continue
+        }
+        try {
+          await resend.emails.send({
+            from: FROM,
+            to: admin.email,
+            replyTo: 'info@gogreenstreets.org',
+            subject: `${group.name}'s Shift subscription renews ${renewalDate}`,
+            html,
+          })
+          totalSent++
+        } catch (err) {
+          totalErrors++
+          console.error(`Renewal reminder failed for ${admin.email}:`, err)
+        }
+      }
+    } catch (err) {
+      totalErrors++
+      console.error(`Renewal check failed for ${group.name}:`, err)
     }
   }
 

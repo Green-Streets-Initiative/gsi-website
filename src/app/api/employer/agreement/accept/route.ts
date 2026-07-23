@@ -6,6 +6,7 @@ import {
   AGREEMENT_PREAMBLE,
   AGREEMENT_SECTIONS,
   AGREEMENT_VERSION,
+  agreementPlainText,
 } from '@/lib/employer-agreement'
 
 export const runtime = 'nodejs'
@@ -98,12 +99,23 @@ export async function POST(request: Request) {
     group_id?: string
     name?: string
     title?: string
+    version?: string
   } | null
   const groupId = body?.group_id
   const acceptedName = body?.name?.trim()
   const acceptedTitle = body?.title?.trim()
   if (!groupId || !acceptedName || !acceptedTitle) {
     return Response.json({ error: 'group_id, name, and title are required' }, { status: 400 })
+  }
+
+  // The client sends the version it DISPLAYED; if a deploy changed the text
+  // between page load and click, refuse rather than stamping acceptance of
+  // text the user never saw.
+  if (body?.version && body.version !== AGREEMENT_VERSION) {
+    return Response.json(
+      { error: 'The agreement was updated while you were reading — please refresh and review the current version.' },
+      { status: 409 },
+    )
   }
 
   const sb = createServerSupabaseClient()
@@ -155,6 +167,25 @@ export async function POST(request: Request) {
   if (updateErr) {
     console.error('[AgreementAccept] update failed:', updateErr)
     return Response.json({ error: 'Could not record acceptance' }, { status: 500 })
+  }
+
+  // Append-only evidentiary archive: the full accepted text plus who/when/
+  // how. This row — not the email, not the mutable groups columns — is the
+  // durable proof of exactly what was accepted.
+  const { error: archiveErr } = await sb.from('agreement_acceptances').insert({
+    group_id: groupId,
+    accepted_by_email: callerEmail,
+    accepted_name: acceptedName,
+    accepted_title: acceptedTitle,
+    version: AGREEMENT_VERSION,
+    text_snapshot: agreementPlainText(),
+    ip_address:
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null,
+    user_agent: request.headers.get('user-agent') ?? null,
+  })
+  if (archiveErr) {
+    // Acceptance is stamped; log loudly but don't fail the request.
+    console.error('[AgreementAccept] archive insert failed:', archiveErr)
   }
 
   // Confirmation copies — the accepter's signed copy and GSI's file copy.
