@@ -17,8 +17,8 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const RESEND_FROM =
   Deno.env.get("RESEND_FROM_EMAIL") ?? "Shift <onboarding@resend.dev>";
 
-const SHIFT_LOGO_URL =
-  "https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-mark.png";
+const SHIFT_WORDMARK_URL =
+  "https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-wordmark-white.png?v=20260422";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -48,8 +48,7 @@ function buildEmailHtml(companyName: string, magicLink: string): string {
   <tr>
     <td style="background:#191A2E;padding:24px 32px;">
       <table cellpadding="0" cellspacing="0"><tr>
-        <td style="font-family:'Arial Black',Arial,sans-serif;font-size:22px;font-weight:900;color:#FFFFFF;letter-spacing:-0.5px;">Shift</td>
-        <td style="padding-left:6px;"><img src="${SHIFT_LOGO_URL}" alt=">>" width="40" style="display:block;" /></td>
+        <td><img src="${SHIFT_WORDMARK_URL}" alt="Shift" height="26" style="display:block;" /></td>
       </tr></table>
       <p style="margin:4px 0 0;font-size:12px;"><span style="color:#52B788;font-weight:700;">Green Streets</span> <span style="color:#FFFFFF;">Initiative</span></p>
     </td>
@@ -132,9 +131,12 @@ serve(async (req: Request) => {
     .limit(1)
     .maybeSingle();
 
-  const group = adminRow
-    ? { id: (adminRow.groups as { id: string; name: string }).id, name: (adminRow.groups as { id: string; name: string }).name }
+  // Supabase types embedded relations as arrays even for a to-one join —
+  // cast through unknown to the actual single-object shape.
+  const groupRow = adminRow
+    ? (adminRow.groups as unknown as { id: string; name: string })
     : null;
+  const group = groupRow ? { id: groupRow.id, name: groupRow.name } : null;
 
   if (!group) {
     console.log(`[EmployerMagicLink] No active group for ${email}`);

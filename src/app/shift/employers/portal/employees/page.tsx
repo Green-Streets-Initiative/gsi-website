@@ -479,8 +479,13 @@ function EmployeeDrawer({ member, onClose }: { member: EmployerMember; onClose: 
               <div className="space-y-3">
                 <div className="overflow-hidden rounded-xl border border-line">
                   <div className="bg-[#191A2E] px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[14px] font-black text-white">Shift</span>
+                    <div className="flex items-center gap-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-wordmark-white.png?v=20260422"
+                        alt="Shift"
+                        className="h-[18px] w-auto"
+                      />
                       <span className="text-[11px] font-bold text-[#52B788]">Green Streets</span>
                     </div>
                   </div>

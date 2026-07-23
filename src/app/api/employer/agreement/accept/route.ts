@@ -10,6 +10,9 @@ import {
 
 export const runtime = 'nodejs'
 
+const SHIFT_WORDMARK_URL =
+  'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-wordmark-white.png?v=20260422'
+
 const AGREEMENT_URL = 'https://www.gogreenstreets.org/shift/employers/agreement'
 
 function escapeHtml(str: string): string {
@@ -43,7 +46,7 @@ function buildConfirmationHtml(opts: {
 <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
   <tr>
     <td style="background:#191A2E;padding:24px 32px;">
-      <span style="font-family:'Arial Black',Arial,sans-serif;font-size:22px;font-weight:900;color:#FFFFFF;letter-spacing:-0.5px;">Shift</span>
+      <img src="${SHIFT_WORDMARK_URL}" alt="Shift" height="26" style="display:block;" />
       <p style="margin:4px 0 0;font-size:12px;"><span style="color:#52B788;font-weight:700;">Green Streets</span> <span style="color:#FFFFFF;">Initiative</span></p>
     </td>
   </tr>

@@ -5,8 +5,8 @@ export const runtime = 'nodejs'
 export const maxDuration = 120
 
 const FROM = 'Shift <noreply@gogreenstreets.org>'
-const SHIFT_LOGO_URL =
-  'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-mark.png'
+const SHIFT_WORDMARK_URL =
+  'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-wordmark-white.png?v=20260422'
 const PORTAL_URL = 'https://www.gogreenstreets.org/shift/employers/portal'
 const MILESTONES = [10, 25, 50, 100, 250, 500]
 
@@ -96,8 +96,7 @@ function buildDigestHtml(opts: {
       <table width="100%" cellpadding="0" cellspacing="0"><tr>
         <td>
           <table cellpadding="0" cellspacing="0"><tr>
-            <td style="font-family:'Arial Black',Arial,sans-serif;font-size:22px;font-weight:900;color:#FFFFFF;letter-spacing:-0.5px;">Shift</td>
-            <td style="padding-left:6px;"><img src="${SHIFT_LOGO_URL}" alt=">>" width="40" style="display:block;" /></td>
+            <td><img src="${SHIFT_WORDMARK_URL}" alt="Shift" height="26" style="display:block;" /></td>
           </tr></table>
           <p style="margin:4px 0 0;font-size:12px;"><span style="color:#52B788;font-weight:700;">Green Streets</span> <span style="color:#FFFFFF;">Initiative</span></p>
         </td>
@@ -197,8 +196,7 @@ function buildLaunchProgressHtml(opts: {
       <table width="100%" cellpadding="0" cellspacing="0"><tr>
         <td>
           <table cellpadding="0" cellspacing="0"><tr>
-            <td style="font-family:'Arial Black',Arial,sans-serif;font-size:22px;font-weight:900;color:#FFFFFF;letter-spacing:-0.5px;">Shift</td>
-            <td style="padding-left:6px;"><img src="${SHIFT_LOGO_URL}" alt=">>" width="40" style="display:block;" /></td>
+            <td><img src="${SHIFT_WORDMARK_URL}" alt="Shift" height="26" style="display:block;" /></td>
           </tr></table>
           <p style="margin:4px 0 0;font-size:12px;"><span style="color:#52B788;font-weight:700;">Green Streets</span> <span style="color:#FFFFFF;">Initiative</span></p>
         </td>
