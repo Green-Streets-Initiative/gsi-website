@@ -143,7 +143,7 @@ export default function SetupPage() {
                       {s.id === 'profile' && 'Edit company profile'}
                       {s.id === 'logo' && 'Manage logo'}
                       {s.id === 'advisor' && 'Open Commute Advisor'}
-                      {s.id === 'employees' && 'Invite employees'}
+                      {s.id === 'employees' && 'Open the Share Kit'}
                       {s.id === 'challenge' && 'Create a challenge'}
                     </Button>
                   </div>

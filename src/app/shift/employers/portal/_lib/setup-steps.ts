@@ -59,9 +59,9 @@ export function computeSetupSteps(args: {
     {
       id: 'employees',
       label: 'Employees joined',
-      desc: 'Invite your team with your join code or link.',
+      desc: 'The Share Kit has your join code, QR poster, email templates, and printable flyer.',
       done: memberCount > 0,
-      route: '/shift/employers/portal/employees',
+      route: '/shift/employers/portal/share-kit',
     },
     {
       id: 'challenge',
