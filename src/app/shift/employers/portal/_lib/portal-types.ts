@@ -31,6 +31,10 @@ export type Group = {
   access_ends_at: string | null
   public_leaderboard: boolean
   onboarding?: EmployerOnboarding | null
+  agreement_required?: boolean
+  agreement_version?: string | null
+  agreement_accepted_at?: string | null
+  agreement_accepted_by_email?: string | null
 }
 
 export type Challenge = {

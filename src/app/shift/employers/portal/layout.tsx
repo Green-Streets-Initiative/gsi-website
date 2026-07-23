@@ -6,6 +6,7 @@ import { PortalProvider } from './_lib/portal-context'
 import { ToastProvider } from '@/components/employer/Toast'
 import Sidebar from './_components/Sidebar'
 import Topbar from './_components/Topbar'
+import AgreementGate from './_components/AgreementGate'
 import './portal.css'
 
 const sourceSans = Source_Sans_3({
@@ -35,7 +36,7 @@ function PortalShell({ children }: { children: React.ReactNode }) {
             <Topbar />
             <main className="flex-1 overflow-y-auto">
               <div className="mx-auto max-w-[1200px] px-6 py-6">
-                {children}
+                <AgreementGate>{children}</AgreementGate>
               </div>
             </main>
           </div>

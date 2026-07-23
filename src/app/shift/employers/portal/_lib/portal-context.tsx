@@ -138,7 +138,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       const { data: groupData } = await supabase
         .from('groups')
         .select(
-          'id, name, slug, status, admin_name, admin_email, admin_phone, website_url, logo_url, invite_code, tier, access_starts_at, access_ends_at, public_leaderboard, employer_benefits, onboarding',
+          'id, name, slug, status, admin_name, admin_email, admin_phone, website_url, logo_url, invite_code, tier, access_starts_at, access_ends_at, public_leaderboard, employer_benefits, onboarding, agreement_required, agreement_version, agreement_accepted_at, agreement_accepted_by_email',
         )
         .eq('id', adminRow.group_id)
         .maybeSingle()
