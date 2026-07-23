@@ -217,9 +217,12 @@ async function provisionEmployer(
     adminEmail: string;
     companyName: string;
     tier: string;
+    // Set for demo→paid conversions: adopt this group in place instead of
+    // creating a new one (keeps members, admins, invite code, slug).
+    existingGroupId?: string | null;
   },
 ): Promise<void> {
-  const { customerId, subscriptionId, adminEmail, companyName, tier } = args;
+  const { customerId, subscriptionId, adminEmail, companyName, tier, existingGroupId } = args;
   const supabase = createAdminClient();
 
   // Fetch the subscription to get exact period dates from Stripe (not guessed).
@@ -255,6 +258,7 @@ async function provisionEmployer(
         status: "active",
         access_starts_at: accessStartsAt,
         access_ends_at: accessEndsAt,
+        agreement_required: true,
       })
       .eq("id", existing.id);
     if (error) {
@@ -264,6 +268,57 @@ async function provisionEmployer(
     groupId = existing.id;
     inviteCode = existing.invite_code;
     console.log(`[EmployerWebhook] Updated existing group ${groupId}`);
+  } else if (existingGroupId) {
+    // Demo→paid conversion: adopt the named group in place. Guard against
+    // clobbering a group already attached to a DIFFERENT Stripe customer.
+    const { data: adoptee } = await supabase
+      .from("groups")
+      .select("id, name, invite_code, stripe_customer_id")
+      .eq("id", existingGroupId)
+      .maybeSingle();
+
+    if (!adoptee) {
+      console.error(
+        `[EmployerWebhook] metadata.group_id ${existingGroupId} not found — not provisioning`,
+      );
+      return;
+    }
+    if (adoptee.stripe_customer_id && adoptee.stripe_customer_id !== customerId) {
+      console.error(
+        `[EmployerWebhook] group ${existingGroupId} already belongs to Stripe customer ${adoptee.stripe_customer_id} — refusing to adopt for ${customerId}`,
+      );
+      return;
+    }
+
+    const { error } = await supabase
+      .from("groups")
+      .update({
+        tier,
+        status: "active",
+        access_starts_at: accessStartsAt,
+        access_ends_at: accessEndsAt,
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscriptionId,
+        agreement_required: true,
+      })
+      .eq("id", adoptee.id);
+    if (error) {
+      console.error("[EmployerWebhook] adopt group failed:", error);
+      return;
+    }
+
+    // Ensure the paying admin has portal access (may already exist from
+    // the demo phase — upsert keeps it idempotent).
+    await supabase.from("group_admins").upsert(
+      { group_id: adoptee.id, email: adminEmail, role: "admin" },
+      { onConflict: "group_id,email" },
+    );
+
+    groupId = adoptee.id;
+    inviteCode = adoptee.invite_code;
+    console.log(
+      `[EmployerWebhook] Adopted group ${groupId} (${adoptee.name}) as ${tier} for ${customerId}`,
+    );
   } else {
     const slug = companyName
       .toLowerCase()
@@ -271,25 +326,41 @@ async function provisionEmployer(
       .replace(/^-+|-+$/g, "")
       .slice(0, 60);
 
-    const { data: inserted, error } = await supabase
-      .from("groups")
-      .insert({
-        name: companyName,
-        slug: slug || null,
-        description: `${companyName} employees`,
-        type: "workplace",
-        visibility: "gated",
-        admin_email: adminEmail,
-        tier,
-        status: "active",
-        access_starts_at: accessStartsAt,
-        access_ends_at: accessEndsAt,
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscriptionId,
-        public_leaderboard: false,
-      })
-      .select("id, invite_code")
-      .single();
+    const insertGroup = (slugValue: string | null) =>
+      supabase
+        .from("groups")
+        .insert({
+          name: companyName,
+          slug: slugValue,
+          description: `${companyName} employees`,
+          type: "workplace",
+          visibility: "gated",
+          admin_email: adminEmail,
+          tier,
+          status: "active",
+          access_starts_at: accessStartsAt,
+          access_ends_at: accessEndsAt,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscriptionId,
+          public_leaderboard: false,
+          agreement_required: true,
+        })
+        .select("id, invite_code")
+        .single();
+
+    let { data: inserted, error } = await insertGroup(slug || null);
+
+    // Slug collision (an existing group with the same name, e.g. a demo the
+    // metadata forgot to reference): retry once with a suffixed slug rather
+    // than dying. 23505 = unique_violation.
+    if (error?.code === "23505" && slug) {
+      console.warn(
+        `[EmployerWebhook] slug "${slug}" taken — retrying with suffix. If this was meant to convert an existing group, use metadata.group_id instead.`,
+      );
+      ({ data: inserted, error } = await insertGroup(
+        `${slug}-${Date.now().toString(36).slice(-4)}`,
+      ));
+    }
 
     if (error || !inserted) {
       console.error(
@@ -341,12 +412,14 @@ async function provisionEmployer(
 
 /**
  * Invoiced (net-30) deals: GSI creates the Customer + Subscription in the
- * Stripe dashboard with collection_method='send_invoice' and stamps three
- * metadata keys on the SUBSCRIPTION: company_name, admin_email, tier.
- * That fires customer.subscription.created, which provisions here exactly
- * like a card checkout. Subscriptions without the metadata (or any other
- * source) are logged and ignored. We deliberately provision at creation,
- * not invoice.paid — never gate launch on payment clearing.
+ * Stripe dashboard with collection_method='send_invoice' and stamps
+ * metadata on the SUBSCRIPTION: company_name, admin_email, tier — plus an
+ * optional group_id to ADOPT an existing group (demo→paid conversion)
+ * instead of creating a new one. That fires customer.subscription.created,
+ * which provisions here exactly like a card checkout. Subscriptions
+ * without the metadata (or any other source) are logged and ignored. We
+ * deliberately provision at creation, not invoice.paid — never gate
+ * launch on payment clearing.
  */
 async function handleSubscriptionCreated(
   stripe: ReturnType<typeof createStripeClient>,
@@ -357,6 +430,7 @@ async function handleSubscriptionCreated(
   const companyName = subscription.metadata?.company_name?.trim() ?? "";
   const adminEmail = subscription.metadata?.admin_email?.trim().toLowerCase() ?? "";
   const tier = subscription.metadata?.tier?.trim().toLowerCase() ?? "";
+  const existingGroupId = subscription.metadata?.group_id?.trim() || null;
 
   if (!companyName || !adminEmail || !tier) {
     console.log(
@@ -385,7 +459,7 @@ async function handleSubscriptionCreated(
   }
 
   console.log(
-    `[EmployerWebhook] Provisioning invoiced deal: ${companyName} (${tier}) for ${adminEmail}`,
+    `[EmployerWebhook] Provisioning invoiced deal: ${companyName} (${tier}) for ${adminEmail}${existingGroupId ? ` adopting group ${existingGroupId}` : ""}`,
   );
   await provisionEmployer(stripe, {
     customerId,
@@ -393,6 +467,7 @@ async function handleSubscriptionCreated(
     adminEmail,
     companyName,
     tier,
+    existingGroupId,
   });
 }
 
