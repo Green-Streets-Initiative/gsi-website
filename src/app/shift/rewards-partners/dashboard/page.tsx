@@ -253,15 +253,21 @@ function DashboardPage() {
       const tokenHash = searchParams.get('token_hash')
       const type = searchParams.get('type')
 
-      if (tokenHash && type === 'magiclink') {
+      if (tokenHash && (type === 'magiclink' || type === 'email')) {
+        // 'email' verifies both magiclink AND first-login confirmation
+        // tokens — a brand-new user's generateLink token is a confirmation
+        // token, which strict 'magiclink' verification rejects.
         const { error } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
-          type: 'magiclink',
+          type: 'email',
         })
         if (error) {
-          console.error('Magic link verification failed:', error.message)
-          router.push('/shift/rewards-partners')
-          return
+          const { data: { session: existingSession } } = await supabase.auth.getSession()
+          if (!existingSession) {
+            console.error('Magic link verification failed:', error.message)
+            router.push('/shift/rewards-partners')
+            return
+          }
         }
         window.history.replaceState({}, '', window.location.pathname)
       }

@@ -285,15 +285,25 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       const tokenHash = searchParams.get('token_hash')
       const type = searchParams.get('type')
 
-      if (tokenHash && type === 'magiclink') {
+      if (tokenHash && (type === 'magiclink' || type === 'email')) {
+        // Verify with the universal 'email' type: a brand-new admin's first
+        // link carries a signup CONFIRMATION token (generateLink creates the
+        // user), not a magiclink token — verifying strictly as 'magiclink'
+        // rejected every first-ever login.
         const { error } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
-          type: 'magiclink',
+          type: 'email',
         })
         if (error) {
-          console.error('Magic link verification failed:', error.message)
-          router.push('/shift/employers')
-          return
+          // The token may already be consumed (double-click, second tab,
+          // email-scanner prefetch). If a session exists anyway, proceed
+          // instead of bouncing a signed-in user.
+          const { data: { session: existingSession } } = await supabase.auth.getSession()
+          if (!existingSession) {
+            console.error('Magic link verification failed:', error.message)
+            router.push('/shift/employers')
+            return
+          }
         }
         window.history.replaceState({}, '', window.location.pathname)
       }
