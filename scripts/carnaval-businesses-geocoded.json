@@ -1,0 +1,650 @@
+[
+  {
+    "name": "Gauchão Brazilian Cuisine",
+    "category": "Restaurant",
+    "description": "Gauchão Brazilian Cuisine brings the rich, bold traditions of a Brazilian churrascaria to the heart of Somerville, Massachusetts. Named in honor of the legendary gauchos — the skilled cowboys of southern Brazil — they honor their tradition of gathering around the fire to share extraordinary meat-roasting techniques and warm hospitality.",
+    "address": "102 Broadway",
+    "lat": 42.3873757,
+    "lng": -71.0835482,
+    "google_place_id": null
+  },
+  {
+    "name": "Rei Da Picanha",
+    "category": "Restaurant",
+    "description": "Go on a Brazilian adventure in the heart of Somerville, MA while enjoying authentic Brazilian cuisine in a great atmosphere.",
+    "address": "129 Broadway",
+    "lat": 42.3881527,
+    "lng": -71.0841093,
+    "google_place_id": null
+  },
+  {
+    "name": "Montecristo's",
+    "category": "Restaurant",
+    "description": "Comfortable restaurant with outdoor patio dishing up generous portions of Mexican and El Salvadoran fare such as tacos and pupusas.",
+    "address": "146 Broadway",
+    "lat": 42.3880836,
+    "lng": -71.0850222,
+    "google_place_id": null
+  },
+  {
+    "name": "Rincón Mexicano",
+    "category": "Restaurant",
+    "description": "Chef Lorenzo Reyes serves up traditional Mexican fare such as tacos, burritos & tortas alongside a full bar and patio.",
+    "address": "99 Broadway",
+    "lat": 42.387597,
+    "lng": -71.0828095,
+    "google_place_id": null
+  },
+  {
+    "name": "Maya Sol",
+    "category": "Restaurant",
+    "description": "Experience authentic Mexican flavors in Somerville. Join them for breakfast, lunch, or dinner.",
+    "address": "179 Broadway",
+    "lat": 42.3891721,
+    "lng": -71.0864186,
+    "google_place_id": null
+  },
+  {
+    "name": "Taco Loco",
+    "category": "Restaurant",
+    "description": "Offering counter-serve Mexican cuisine with the option to dine-in or take-out since 1994.",
+    "address": "46 Broadway",
+    "lat": 42.3863524,
+    "lng": -71.0799415,
+    "google_place_id": null
+  },
+  {
+    "name": "Tapatio",
+    "category": "Restaurant",
+    "description": "Casual restaurant dishing up pupusas, burritos, and Mexican eats, including vegetarian options.",
+    "address": "82 Broadway",
+    "lat": 42.3869442,
+    "lng": -71.0821363,
+    "google_place_id": null
+  },
+  {
+    "name": "Tulum Mexican Cuisine",
+    "category": "Restaurant",
+    "description": "Authentic Mexican food served in a vibrant ambiance. Dine in or book for your next special event.",
+    "address": "3 Washington",
+    "lat": 42.3823133,
+    "lng": -71.0812161,
+    "google_place_id": null
+  },
+  {
+    "name": "La Cosecha",
+    "category": "Restaurant",
+    "description": "An authentic Colombian dining spot featuring empanadas, smoothies and delicious pastries.",
+    "address": "85 Broadway",
+    "lat": 42.3874392,
+    "lng": -71.0822627,
+    "google_place_id": null
+  },
+  {
+    "name": "Los Paisanos",
+    "category": "Restaurant",
+    "description": "Los Paisanos Restaurant offers exquisite Latin American cuisine in a cozy setting.",
+    "address": "62 Broadway",
+    "lat": 42.3865581,
+    "lng": -71.0807435,
+    "google_place_id": null
+  },
+  {
+    "name": "Los Toritos",
+    "category": "Meat Market",
+    "description": "Fresh meat, fruits and vegetables. Freshly baked bread, spices and other high quality products.",
+    "address": "139 Broadway",
+    "lat": 42.388234,
+    "lng": -71.0844227,
+    "google_place_id": null
+  },
+  {
+    "name": "Sisters Caribbean",
+    "category": "Restaurant",
+    "description": "Relaxed eatery for authentic Haitian food such as beef stew and fried pork, plus Caribbean meals.",
+    "address": "83B Broadway",
+    "lat": 42.387425,
+    "lng": -71.0821872,
+    "google_place_id": null
+  },
+  {
+    "name": "Mount Vernon Restaurant & Pub",
+    "category": "Restaurant",
+    "description": "Classic American dishes like pork chops & fried clams offered in vintage digs with old-school style.",
+    "address": "14 Broadway",
+    "lat": 42.3859235,
+    "lng": -71.0783294,
+    "google_place_id": null
+  },
+  {
+    "name": "Vinny's Ristorante",
+    "category": "Restaurant",
+    "description": "Homey spot with a bar & deli dishing up huge portions of homestyle Italian pastas & entrees.",
+    "address": "76 Broadway",
+    "lat": 42.3868153,
+    "lng": -71.0816778,
+    "google_place_id": null
+  },
+  {
+    "name": "Oliveira's Steakhouse",
+    "category": "Restaurant",
+    "description": "Casual Brazilian chophouse featuring all-you-can-eat rodízio-style meats & buffet options.",
+    "address": "120 Washington St",
+    "lat": 42.3808219,
+    "lng": -71.0869984,
+    "google_place_id": null
+  },
+  {
+    "name": "Creation Meat Market",
+    "category": "Restaurant",
+    "description": "Meat Market offering a wide selection of the best Latin American products and fresh, high-quality foods.",
+    "address": "166 Broadway",
+    "lat": 42.3883941,
+    "lng": -71.0858503,
+    "google_place_id": null
+  },
+  {
+    "name": "Amigos Grocery",
+    "category": "Restaurant",
+    "description": "Grocery, supermarket and convenience store stocking familiar Latin produce and snacks",
+    "address": "86 Broadway",
+    "lat": 42.3869759,
+    "lng": -71.082322,
+    "google_place_id": null
+  },
+  {
+    "name": "Minute Market",
+    "category": "Shop",
+    "description": "Local convenience store offering quick grab items as well as lottery.",
+    "address": "141 Broadway",
+    "lat": 42.3883372,
+    "lng": -71.0847013,
+    "google_place_id": null
+  },
+  {
+    "name": "Royal Pizza",
+    "category": "Restaurant",
+    "description": "Royal Pizza Subs is your one stop shop for all delectable and delicious foods. From their bagels to their burgers, from their delicious custom made salads, to their mouthwatering paninis and sandwiches.",
+    "address": "23 Washington St",
+    "lat": 42.3821019,
+    "lng": -71.0820783,
+    "google_place_id": null
+  },
+  {
+    "name": "Michette",
+    "category": "Cafe",
+    "description": "Renowned French bakery specializing in breakfast cookies and pastries, plus latte and cold brew.",
+    "address": "164 Broadway",
+    "lat": 42.3884324,
+    "lng": -71.0858451,
+    "google_place_id": null
+  },
+  {
+    "name": "Ola Café",
+    "category": "Cafe",
+    "description": "Cozy Portuguese coffeehouse with pastries, breakfast sandwiches, and other comfort food.",
+    "address": "112 Broadway",
+    "lat": 42.3875832,
+    "lng": -71.0839174,
+    "google_place_id": null
+  },
+  {
+    "name": "Pastelaria Vitória",
+    "category": "Restaurant",
+    "description": "Restaurant serving Brazilian street food including pateis, coxinha, and acai bowls.",
+    "address": "192 Broadway",
+    "lat": 42.38908,
+    "lng": -71.0873452,
+    "google_place_id": null
+  },
+  {
+    "name": "Casey's",
+    "category": "Bar",
+    "description": "Pizza, sandwiches & bar bites in a relaxed taproom also offering keno & weekend live music.",
+    "address": "173 Broadway",
+    "lat": 42.3891294,
+    "lng": -71.0863374,
+    "google_place_id": null
+  },
+  {
+    "name": "Michael's Bar",
+    "category": "Bar",
+    "description": "Great local dive featuring a pool table, darts, and well-priced drinks.",
+    "address": "97 Washington St",
+    "lat": 42.3816108,
+    "lng": -71.0858973,
+    "google_place_id": null
+  },
+  {
+    "name": "Mount Vernon Pub",
+    "category": "Restaurant",
+    "description": "A traditional American restaurant with a satisfying full menu and bar. Known for its seafood dishes for over 80 years!",
+    "address": "14 Broadway",
+    "lat": 42.3859235,
+    "lng": -71.0783294,
+    "google_place_id": null
+  },
+  {
+    "name": "Bairo's Liquors",
+    "category": "Liquor Store",
+    "description": "Liquor Store",
+    "address": "78 Broadway",
+    "lat": 42.3869343,
+    "lng": -71.0819646,
+    "google_place_id": null
+  },
+  {
+    "name": "Joe's Liquors",
+    "category": "Liquor Store",
+    "description": "Liquor Store",
+    "address": "168 Broadway",
+    "lat": 42.3885781,
+    "lng": -71.0862513,
+    "google_place_id": null
+  },
+  {
+    "name": "Sullivan Sq Liquors",
+    "category": "Liquor Store",
+    "description": "Liquor Store",
+    "address": "88 Broadway",
+    "lat": 42.3870385,
+    "lng": -71.0826903,
+    "google_place_id": null
+  },
+  {
+    "name": "Curl Bar",
+    "category": "Hair Salon + Barber",
+    "description": "Curly hair salon (dry cuts, treatments and washes) run by stylists who specialize in curly hair and offer guidance for at-home maintenance.",
+    "address": "76 Cross St",
+    "lat": 42.385439,
+    "lng": -71.0878577,
+    "google_place_id": null
+  },
+  {
+    "name": "The Blessing",
+    "category": "Hair Salon + Barber",
+    "description": "Barbershop and hair design. Walk-ins welcome.",
+    "address": "135 Broadway",
+    "lat": 42.3881923,
+    "lng": -71.0843415,
+    "google_place_id": null
+  },
+  {
+    "name": "Visual Hair Design",
+    "category": "Hair Salon + Barber",
+    "description": "With 32 years of excellence, Alfredo Ribeiro and his team offer personalized haircuts in a comfortable environment. Walk-ins welcome.",
+    "address": "88 Broadway",
+    "lat": 42.3870385,
+    "lng": -71.0826903,
+    "google_place_id": null
+  },
+  {
+    "name": "Wally's Barber",
+    "category": "Hair Salon + Barber",
+    "description": "Local barbershop offering the highest quality and cleanest cuts.",
+    "address": "140 Broadway",
+    "lat": 42.3880525,
+    "lng": -71.0849436,
+    "google_place_id": null
+  },
+  {
+    "name": "Coco Flow Style Barbers",
+    "category": "Hair Salon + Barber",
+    "description": "Barbershop",
+    "address": "85a Broadway",
+    "lat": 42.3874005,
+    "lng": -71.0821983,
+    "google_place_id": null
+  },
+  {
+    "name": "DaMata Barber Shop",
+    "category": "Hair Salon + Barber",
+    "description": "Barbershop",
+    "address": "244 Broadway",
+    "lat": 42.3901912,
+    "lng": -71.0898813,
+    "google_place_id": null
+  },
+  {
+    "name": "Marlon's Barbers",
+    "category": "Hair Salon + Barber",
+    "description": "Marlon’s Barbers offers high level barber skills for every person, and makes sure all clients get the utmost respect, appreciation, and gratitude. They have a barbershop that is very clean, sanitized, and an outstanding greeting process. Marlon's Barbers will host a price level that fits the needs of each client, key products will include shampoos, hair products, combs, brushes, and creams. Customers are the top determination and emphasis of Marlon’s Barbers, because without them there is no community or business.",
+    "address": "160 Broadway",
+    "lat": 42.3883895,
+    "lng": -71.0858534,
+    "google_place_id": null
+  },
+  {
+    "name": "Fadil Hair Braiding",
+    "category": "Hair Salon + Barber",
+    "description": "Local salon that crafts a variety of African braids for adults and children, plus weaves.",
+    "address": "2 Broadway",
+    "lat": 42.3857418,
+    "lng": -71.0777544,
+    "google_place_id": null
+  },
+  {
+    "name": "Marilene's Day Spa",
+    "category": "Hair Salon + Barber",
+    "description": "Spa featuring laser hair removal and a selection of facials, as well as massage services.",
+    "address": "52 Broadway",
+    "lat": 42.3862694,
+    "lng": -71.0803196,
+    "google_place_id": null
+  },
+  {
+    "name": "Bella's Manitas Learning Center",
+    "category": "Daycare Center",
+    "description": "A bilingual daycare center that gives your child the opportunity to enjoy and learn the Spanish language as well as academics taught in English (Math, Science, Music, Art, Social Studies and Reading).",
+    "address": "126 Pearl Street",
+    "lat": 42.3855537,
+    "lng": -71.0877293,
+    "google_place_id": null
+  },
+  {
+    "name": "Ana's Perfumes",
+    "category": "Shop",
+    "description": "Perfumerie and gift store carrying Brazilian and select American fragrances, perfumes, colognes, lingerie,and handmade soaps.",
+    "address": "135 Broadway",
+    "lat": 42.3881923,
+    "lng": -71.0843415,
+    "google_place_id": null
+  },
+  {
+    "name": "Eye Associates of Somerville",
+    "category": "Health and Wellness",
+    "description": "Experienced Optometrist providing dedicated and friendly eye care services.",
+    "address": "174 Broadway",
+    "lat": 42.3886537,
+    "lng": -71.08647,
+    "google_place_id": null
+  },
+  {
+    "name": "Somerville Orthodontics",
+    "category": "Health and Wellness",
+    "description": "Orthodontist specializing in Invisalign and metal braces, in a modern dental facility.",
+    "address": "51 Cross St",
+    "lat": 42.3863982,
+    "lng": -71.0876049,
+    "google_place_id": null
+  },
+  {
+    "name": "Lang's Dental Center",
+    "category": "Health and Wellness",
+    "description": "A team of dedicated doctors and dental professionals who are here for all your short and long term dental needs with comprehensive care.",
+    "address": "593 McGrath Hwy",
+    "lat": 42.3875821,
+    "lng": -71.0896803,
+    "google_place_id": null
+  },
+  {
+    "name": "Smiles by Rosie",
+    "category": "Health and Wellness",
+    "description": "Smiles By Rosie Family Dentistry is a comprehensive dental practice for adults and children. Their practice is particularly designed for people with dental anxiety and who fear being judged about their teeth.  They happily welcome patients with special needs and those with mobility and/or sensory impairment.",
+    "address": "6 Kensington Ave",
+    "lat": 42.3898146,
+    "lng": -71.0872721,
+    "google_place_id": null
+  },
+  {
+    "name": "Somerville Boxing Club",
+    "category": "Fitness Training and Martial Arts",
+    "description": "Somerville Boxing Club is a tight-knit community of boxers, trainers, and members of all ages and abilities. They offer training, conditioning, competition, and support to help their members achieve more, both in and out of the ring. Their whole-athlete approach has helped hundreds dig deep, get in shape, find their grit and reach their goals.",
+    "address": "11 Otis St",
+    "lat": 42.3873464,
+    "lng": -71.0875891,
+    "google_place_id": null
+  },
+  {
+    "name": "Sityodtong Muay Thai",
+    "category": "Fitness Training and Martial Arts",
+    "description": "Founded by Kru Mark DellaGrotte, directly appointed by the legendary Kru Yodtong, this premier training facility upholds the sacred art of Muay Thai. Since 1996, Sityodtong Boston has been a beacon for aspiring martial artists, blending traditional Muay Thai with diverse combat disciplines. Their expert certified trainers empower individuals, from beginners to world champions, forging skill and confidence.",
+    "address": "100 Broadway",
+    "lat": 42.3872681,
+    "lng": -71.0832737,
+    "google_place_id": null
+  },
+  {
+    "name": "Rx Strength Training",
+    "category": "Fitness Training and Martial Arts",
+    "description": "Weightlifting-focused gym offering boot camps, CrossFit-style classes and personal training by certified coaches.",
+    "address": "50 Tufts St",
+    "lat": 42.3821063,
+    "lng": -71.0888155,
+    "google_place_id": null
+  },
+  {
+    "name": "Durbrow Training",
+    "category": "Fitness Training and Martial Arts",
+    "description": "A highly-rated group personal training and strength & conditioning gym in East Somerville. They offer an inclusive, supportive environment that blends the motivation of a group atmosphere with individualized coaching for all fitness levels. [1, 2]",
+    "address": "10 Garfield Ave",
+    "lat": 42.389668,
+    "lng": -71.0863715,
+    "google_place_id": null
+  },
+  {
+    "name": "beTone",
+    "category": "Fitness Training and Martial Arts",
+    "description": "An approachable hybrid of Pilates-inspired movements & strength training, delivered in a 45-minute, joyful flow that packs a serious punch.",
+    "address": "158 Broadway",
+    "lat": 42.3883151,
+    "lng": -71.0856026,
+    "google_place_id": null
+  },
+  {
+    "name": "Jaxon Golf",
+    "category": "Shop",
+    "description": "Fittings, alterations (grips, shafts, etc.) and lessons for golf clubs.",
+    "address": "129 Pearl St",
+    "lat": 42.3858514,
+    "lng": -71.0878881,
+    "google_place_id": null
+  },
+  {
+    "name": "All She Wrote Books",
+    "category": "Shop",
+    "description": "An intersectional, inclusive feminist and queer bookstore that supports, celebrates, and amplifies underrepresented voices through our thoughtfully curated selection of books spanning across all genres.",
+    "address": "75 Washington St",
+    "lat": 42.3817724,
+    "lng": -71.0846652,
+    "google_place_id": null
+  },
+  {
+    "name": "Super Dollar Plus",
+    "category": "Shop",
+    "description": "Local dollar store and giftshop, providing the East Somerville area with all their gifting needs!",
+    "address": "82 Broadway",
+    "lat": 42.3869442,
+    "lng": -71.0821363,
+    "google_place_id": null
+  },
+  {
+    "name": "Lotus Xpress",
+    "category": "Restaurant",
+    "description": "Restaurant specializing in delicious Asian food ranging from spicy Szechuan dishes to Chinese staples like General Gao's Chicken, their menu aims to tantalize your taste buds with the best that Asia has to offer.",
+    "address": "167 Broadway",
+    "lat": 42.3889622,
+    "lng": -71.0859124,
+    "google_place_id": null
+  },
+  {
+    "name": "Aggies Place",
+    "category": "Shop",
+    "description": "Great local bodega offering home basics, cooking essentials, and lottery.",
+    "address": "69 Pearl St",
+    "lat": 42.3846636,
+    "lng": -71.0839615,
+    "google_place_id": null
+  },
+  {
+    "name": "Mudflat",
+    "category": "Art and Design",
+    "description": "A nonprofit clay studio for students and artists of all ages and levels in metro Boston offering a dynamic artistic community, featuring classes, workshops, outreach programming and events, plus a mix of studio rentals for 36 professional clay artists.",
+    "address": "81 Broadway",
+    "lat": 42.3874321,
+    "lng": -71.0819493,
+    "google_place_id": null
+  },
+  {
+    "name": "New Impressions Print Studio",
+    "category": "Art and Design",
+    "description": "New Impressions Print Studio is a supportive artistic community that provides space and specialized equipment for artists working in the medium of printmaking.",
+    "address": "52 Broadway",
+    "lat": 42.3862694,
+    "lng": -71.0803196,
+    "google_place_id": null
+  },
+  {
+    "name": "Quality Graphics",
+    "category": "Art and Design",
+    "description": "A premier full-service print management company offering printing, t-shirt, apparel & uniform.",
+    "address": "11 Blakely Ave",
+    "lat": 42.3901703,
+    "lng": -71.0851628,
+    "google_place_id": null
+  },
+  {
+    "name": "Atomik Design",
+    "category": "Art and Design",
+    "description": "A studio that provides the full spectrum of graphic design services—our portfolio includes web, mobile, and responsive design; print design; publishing; advertising; and production for large and small clients.",
+    "address": "60 Tufts St #2",
+    "lat": 42.3829247,
+    "lng": -71.089578,
+    "google_place_id": null
+  },
+  {
+    "name": "Embroidery by Rosa",
+    "category": "Art and Design",
+    "description": "Embroidery by Rosa has provided quality embroidery for 25 years. Customers recognize their ability to deliver excellent quality, complete orders on time, and provide great service and response time to questions or requests.",
+    "address": "33 Kensington Ave",
+    "lat": 42.3903996,
+    "lng": -71.086141,
+    "google_place_id": null
+  },
+  {
+    "name": "Pearl Street Tattoo",
+    "category": "Tattoo Studio",
+    "description": "A body art studio offering custom, detailed tattoos in a welcoming, inclusive atmosphere",
+    "address": "76 Cross St",
+    "lat": 42.385439,
+    "lng": -71.0878577,
+    "google_place_id": null
+  },
+  {
+    "name": "Glass & Mirror",
+    "category": "Services",
+    "description": "A fully licensed and insured, complete glass and mirror company founded in 1934 serving all of New England from their office based in Somerville, MA.",
+    "address": "190 Broadway",
+    "lat": 42.3889999,
+    "lng": -71.0871983,
+    "google_place_id": null
+  },
+  {
+    "name": "Instant Shoe Repair",
+    "category": "Services",
+    "description": "Instant specializes in repairing zippers on luggage and bags and shoe repair services such as stretching, resoling, and re-heeling. The store stocks secondhand items including clothing and homegoods.",
+    "address": "20 Broadway",
+    "lat": 42.3859864,
+    "lng": -71.0787176,
+    "google_place_id": null
+  },
+  {
+    "name": "Somerville Communications",
+    "category": "Services",
+    "description": "Phone and tech business that sells used and refurbished phones and repairs broken phones and ipads.",
+    "address": "52 Broadway Ste 1",
+    "lat": 42.3863296,
+    "lng": -71.0803375,
+    "google_place_id": null
+  },
+  {
+    "name": "Computer Clinic",
+    "category": "Services",
+    "description": "Offers computer services and repair.",
+    "address": "18 Broadway",
+    "lat": 42.3859947,
+    "lng": -71.0786357,
+    "google_place_id": null
+  },
+  {
+    "name": "Upstate Door",
+    "category": "Services",
+    "description": "Since 1987, Upstate Door has been designing, manufacturing, and servicing their technologically advanced, beautifully crafted, premium exterior window and door products.",
+    "address": "16 Garfield Ave",
+    "lat": 42.3899034,
+    "lng": -71.086144,
+    "google_place_id": null
+  },
+  {
+    "name": "City Line Laundromat",
+    "category": "Services",
+    "description": "Laundromat",
+    "address": "110 Broadway",
+    "lat": 42.3874636,
+    "lng": -71.0837911,
+    "google_place_id": null
+  },
+  {
+    "name": "Sudzy Sal's Laundromat",
+    "category": "Services",
+    "description": "Laundromat",
+    "address": "47A Cross St",
+    "lat": 42.3867142,
+    "lng": -71.0873396,
+    "google_place_id": null
+  },
+  {
+    "name": "Deano's Pasta",
+    "category": "Shop",
+    "description": "Fourth generation local pasta makers in Somerville, making artisan noodles, raviolis, and sauces since 1947. Pastas and sauces made fresh daily.",
+    "address": "15 Garfield Ave",
+    "lat": 42.3898913,
+    "lng": -71.0857272,
+    "google_place_id": null
+  },
+  {
+    "name": "El Jalisco",
+    "category": "Restaurant",
+    "description": "A family-owned casual neighborhood Mexican restaurant and bar known for their relaxed dining experience where every guest is made to feel welcomed and at home. Featuring delicious entrees and generous portions.",
+    "address": "145 Broadway",
+    "lat": 42.3883488,
+    "lng": -71.0848299,
+    "google_place_id": null
+  },
+  {
+    "name": "Ravelo's Auto Sales & Repair",
+    "category": "Auto",
+    "description": "From routine maintenance, such as oil changes and tire rotations, to complex engine repairs and transmission overhauls, brakes, suspension, tires, Ravelo's Auto Repair has the expertise to handle any automotive challenge. They also offer used cars for sale",
+    "address": "63 Washington St",
+    "lat": 42.3818976,
+    "lng": -71.0834365,
+    "google_place_id": null
+  },
+  {
+    "name": "Somerville No Touch Car Wash",
+    "category": "Auto",
+    "description": "Car wash",
+    "address": "31 Washington St",
+    "lat": 42.382016,
+    "lng": -71.0827166,
+    "google_place_id": null
+  },
+  {
+    "name": "United Divers",
+    "category": "Shop",
+    "description": "The Boston area's oldest dive shop, with over 50 years of experience in SDI and ERDI training, specializing in education, Public Safety equipment supply & servicing, and drysuit/wetsuit repair & tailoring.",
+    "address": "59 Washington St",
+    "lat": 42.3819311,
+    "lng": -71.0832474,
+    "google_place_id": null
+  },
+  {
+    "name": "Touched by a Rose",
+    "category": "Hair Salon + Barber",
+    "description": "Rose is a cosmetologist with over 7 years experience specializing in hair extensions and silk presses, focusing on enhancing the natural beauty of your hair while maintaining its integrity. Whether you’re looking to add volume, length, or simply enjoy a smooth, sleek look, they are committed to providing results that make you feel your best.",
+    "address": "4 Lincoln St",
+    "lat": 42.3865339,
+    "lng": -71.0808013,
+    "google_place_id": null
+  }
+]

@@ -1,0 +1,380 @@
+[
+  {
+    "id": "b1",
+    "name": "Gauchão Brazilian Cuisine",
+    "website_url": null,
+    "google_place_id": "ChIJEalB9tpw44kRIR4EqysYXB8"
+  },
+  {
+    "id": "b2",
+    "name": "Rei Da Picanha",
+    "website_url": "https://reidapicanhasomerville.com/",
+    "google_place_id": "ChIJoa_wZtpw44kR3hcF6YMTo8o"
+  },
+  {
+    "id": "b6",
+    "name": "Taco Loco",
+    "website_url": "http://tacolocorestaurant.com/",
+    "google_place_id": "ChIJtbLSfNtw44kR25KofPDZl3M"
+  },
+  {
+    "id": "b7",
+    "name": "Tapatio",
+    "website_url": null,
+    "google_place_id": "ChIJZWCrANtw44kRXWBHooFaO1k"
+  },
+  {
+    "id": "b8",
+    "name": "Tulum Mexican Cuisine",
+    "website_url": "https://tulumsomerville.com/",
+    "google_place_id": "ChIJyTS9lBxx44kRYsyLGU9N6sE"
+  },
+  {
+    "id": "b9",
+    "name": "La Cosecha",
+    "website_url": "https://www.lacosecharestaurantma.com/",
+    "google_place_id": "ChIJE6hmWPJx44kR2boK6zOXGz0"
+  },
+  {
+    "id": "b10",
+    "name": "Los Paisanos",
+    "website_url": "http://www.lospaisanos.us/",
+    "google_place_id": "ChIJ2cSvc9tw44kRUKnF29-Q3bo"
+  },
+  {
+    "id": "b11",
+    "name": "Los Toritos",
+    "website_url": null,
+    "google_place_id": "ChIJ42rhZdpw44kRQ0s0mxfdBsw"
+  },
+  {
+    "id": "b12",
+    "name": "Sisters Caribbean",
+    "website_url": null,
+    "google_place_id": "ChIJsRBOVdpw44kRaJlfIaYcIbM"
+  },
+  {
+    "id": "b15",
+    "name": "Oliveira's Steakhouse",
+    "website_url": "https://oliveirassomerville.com/",
+    "google_place_id": "ChIJO03Gtchw44kRaJm0taIIUvk"
+  },
+  {
+    "id": "b16",
+    "name": "Creation Meat Market",
+    "website_url": null,
+    "google_place_id": "ChIJ93CoL3Zx44kRMQtqHRUaMIY"
+  },
+  {
+    "id": "b17",
+    "name": "Amigos Grocery",
+    "website_url": null,
+    "google_place_id": "ChIJh1GRAdtw44kRuY2lFFuBaNE"
+  },
+  {
+    "id": "b18",
+    "name": "Minute Market",
+    "website_url": null,
+    "google_place_id": "ChIJhUouZdpw44kRgXevN4jRr7w"
+  },
+  {
+    "id": "b19",
+    "name": "Royal Pizza",
+    "website_url": "http://royalpizzaandsubs.com/",
+    "google_place_id": "ChIJdXDrUcRw44kR_RJR5kDwKUs"
+  },
+  {
+    "id": "b20",
+    "name": "Michette",
+    "website_url": "https://michette-bakery.com/",
+    "google_place_id": "ChIJ02mmn7px44kRAxnMgQEPC8g"
+  },
+  {
+    "id": "b22",
+    "name": "Pastelaria Vitória",
+    "website_url": "https://pastelariavitoriabroadway.shop/",
+    "google_place_id": "ChIJ1WFe6dBw44kRJUBchSYYOwQ"
+  },
+  {
+    "id": "b24",
+    "name": "Michael's Bar",
+    "website_url": null,
+    "google_place_id": "ChIJE_7PW89w44kR-KWwQjrAJJw"
+  },
+  {
+    "id": "b25",
+    "name": "Bairo's Liquors",
+    "website_url": null,
+    "google_place_id": "ChIJv_RfBttw44kRftdg_46NDPc"
+  },
+  {
+    "id": "b26",
+    "name": "Joe's Liquors",
+    "website_url": null,
+    "google_place_id": "ChIJndCPhNBw44kRueT1VVGW3Xs"
+  },
+  {
+    "id": "b27",
+    "name": "Sullivan Sq Liquors",
+    "website_url": "https://sullivansqliquors.com/",
+    "google_place_id": "ChIJVVUl_Npw44kR-LPiAFlrjrg"
+  },
+  {
+    "id": "b28",
+    "name": "Curl Bar",
+    "website_url": "https://www.thecurlbarboston.com/",
+    "google_place_id": "ChIJuxxOfjNx44kRTZz2M-kgKRk"
+  },
+  {
+    "id": "b29",
+    "name": "The Blessing",
+    "website_url": null,
+    "google_place_id": "ChIJLSocGwB344kRGKSh4sJwluw"
+  },
+  {
+    "id": "b30",
+    "name": "Visual Hair Design",
+    "website_url": null,
+    "google_place_id": "ChIJgegk_tpw44kRFd9Nhgaun-k"
+  },
+  {
+    "id": "b31",
+    "name": "Wally's Barber",
+    "website_url": null,
+    "google_place_id": "ChIJZebxe9pw44kRmy8P7K74Znk"
+  },
+  {
+    "id": "b32",
+    "name": "Coco Flow Style Barbers",
+    "website_url": null,
+    "google_place_id": "ChIJvchFqttw44kRCQbutT-GJMc"
+  },
+  {
+    "id": "b33",
+    "name": "DaMata Barber Shop",
+    "website_url": "http://www.damatabarbers.com/",
+    "google_place_id": "ChIJk1RDZtpw44kRXYcN-NNLWdM"
+  },
+  {
+    "id": "b34",
+    "name": "Marlon's Barbers",
+    "website_url": "https://www.marlonbarber.com/",
+    "google_place_id": "ChIJzURrVoxx44kRYI8Y_gaSfdE"
+  },
+  {
+    "id": "b35",
+    "name": "Fadil Hair Braiding",
+    "website_url": "http://www.fadilafricanhairbraiding.com/",
+    "google_place_id": "ChIJ9Woh0FJ344kR2GJQQaB7PTE"
+  },
+  {
+    "id": "b36",
+    "name": "Marilene's Day Spa",
+    "website_url": "https://marilenesdayspa.zoca.com/?utm_source=googlemaps&utm_medium=googlemaps&utm_campaign=googlemaps",
+    "google_place_id": "ChIJAyfHCHJx44kR5edunFs2npM"
+  },
+  {
+    "id": "b37",
+    "name": "Bella's Manitas Learning Center",
+    "website_url": "https://www.bellasmanitaslc.com/",
+    "google_place_id": "ChIJa5tR5JRx44kRwqCNWObvHj8"
+  },
+  {
+    "id": "b38",
+    "name": "Ana's Perfumes",
+    "website_url": null,
+    "google_place_id": "ChIJ6bqHfC1x44kRJpazGuhHQOA"
+  },
+  {
+    "id": "b39",
+    "name": "Eye Associates of Somerville",
+    "website_url": "http://somervilleeyes.com/",
+    "google_place_id": "ChIJxxeZkdBw44kRX6nj9QZnW5g"
+  },
+  {
+    "id": "b40",
+    "name": "Somerville Orthodontics",
+    "website_url": "https://www.somervilleorthodontics.com/",
+    "google_place_id": "ChIJXVcBIA1x44kRhY5jH76O5Rs"
+  },
+  {
+    "id": "b41",
+    "name": "Lang's Dental Center",
+    "website_url": "http://www.langsdentalcenter.com/",
+    "google_place_id": "ChIJmQpGvtFw44kRERm4hESWHCw"
+  },
+  {
+    "id": "b42",
+    "name": "Smiles by Rosie",
+    "website_url": "http://www.smilesbyrosie.com/",
+    "google_place_id": "ChIJw2tLwdBw44kRFba_DA_Hx1g"
+  },
+  {
+    "id": "b43",
+    "name": "Somerville Boxing Club",
+    "website_url": null,
+    "google_place_id": "ChIJZ2-kSNBw44kR7Kw2PiqMBZ0"
+  },
+  {
+    "id": "b44",
+    "name": "Sityodtong Muay Thai",
+    "website_url": "https://www.sityodtong.com/",
+    "google_place_id": "ChIJP9n999pw44kRKHH0RazTCFQ"
+  },
+  {
+    "id": "b45",
+    "name": "Rx Strength Training",
+    "website_url": "http://rxstrengthtraining.com/",
+    "google_place_id": "ChIJs1gr3c5w44kR2AAL_TXU0Zs"
+  },
+  {
+    "id": "b46",
+    "name": "Durbrow Training",
+    "website_url": "http://www.durbrowperformance.com/",
+    "google_place_id": "ChIJs1gr3c5w44kROR_TFWeTFv0"
+  },
+  {
+    "id": "b47",
+    "name": "beTone",
+    "website_url": "https://www.btonefitness.com/locations/somerville",
+    "google_place_id": "ChIJvyL2BVhx44kRlyqNbk3X2yg"
+  },
+  {
+    "id": "b48",
+    "name": "Jaxon Golf",
+    "website_url": "https://jaxongolf.com/",
+    "google_place_id": "ChIJjTBC4UN344kRMSmQ7xTFEQM"
+  },
+  {
+    "id": "b49",
+    "name": "All She Wrote Books",
+    "website_url": "http://www.allshewrotebooks.com/",
+    "google_place_id": "ChIJR1cMBT1x44kRFq0OOK6-jPA"
+  },
+  {
+    "id": "b50",
+    "name": "Super Dollar Plus",
+    "website_url": "https://legiserranoshop.com/",
+    "google_place_id": "ChIJZWCrANtw44kRa4Qj9709Kzw"
+  },
+  {
+    "id": "b52",
+    "name": "Aggies Place",
+    "website_url": null,
+    "google_place_id": "ChIJs9niN8Vw44kRe_W_a0NJdcs"
+  },
+  {
+    "id": "b53",
+    "name": "Mudflat",
+    "website_url": "http://www.mudflat.org/",
+    "google_place_id": "ChIJgdSnetpw44kRq6lJtIR-mZk"
+  },
+  {
+    "id": "b54",
+    "name": "New Impressions Print Studio",
+    "website_url": "http://newimprintstudio.com/",
+    "google_place_id": "ChIJhZEQe6dx44kRmUvm-oaItH0"
+  },
+  {
+    "id": "b55",
+    "name": "Quality Graphics",
+    "website_url": "https://www.qualitygraphicsinc.com/",
+    "google_place_id": "ChIJK8rfAdpw44kR_1fYEPO2eww"
+  },
+  {
+    "id": "b56",
+    "name": "Atomik Design",
+    "website_url": "http://www.atomikdesignstudio.com/",
+    "google_place_id": "ChIJ9S587c5w44kRxHG2zEI0X6M"
+  },
+  {
+    "id": "b57",
+    "name": "Embroidery by Rosa",
+    "website_url": "http://www.embroiderybyrosa.com/",
+    "google_place_id": "ChIJ1VeaUtdw44kRXJdjYL1s95Y"
+  },
+  {
+    "id": "b58",
+    "name": "Pearl Street Tattoo",
+    "website_url": "http://www.pearlstreettattoo.com/",
+    "google_place_id": "ChIJEweqPdNx44kRCWjMAG8cPdY"
+  },
+  {
+    "id": "b59",
+    "name": "Glass & Mirror",
+    "website_url": "http://www.glassandmirror.us/",
+    "google_place_id": "ChIJdXGT69Bw44kRx2pkOXnAVv8"
+  },
+  {
+    "id": "b60",
+    "name": "Instant Shoe Repair",
+    "website_url": null,
+    "google_place_id": "ChIJmZeUj9xw44kRm3y9u5-wIao"
+  },
+  {
+    "id": "b61",
+    "name": "Somerville Communications",
+    "website_url": null,
+    "google_place_id": "ChIJIXeCVtpw44kRE3JyxobikvA"
+  },
+  {
+    "id": "b62",
+    "name": "Computer Clinic",
+    "website_url": "https://www.facebook.com/profile.php?id=100090148862724",
+    "google_place_id": "ChIJ94JyFspw44kRwefMloogzDk"
+  },
+  {
+    "id": "b63",
+    "name": "Upstate Door",
+    "website_url": "http://archop.com/",
+    "google_place_id": "ChIJ3cnUr9Bw44kREXDS6wjuqUw"
+  },
+  {
+    "id": "b64",
+    "name": "City Line Laundromat",
+    "website_url": null,
+    "google_place_id": "ChIJo_R3X9pw44kRiO7lR-c-cSc"
+  },
+  {
+    "id": "b65",
+    "name": "Sudzy Sal's Laundromat",
+    "website_url": null,
+    "google_place_id": "ChIJNY67qu9x44kRNkKjeupUrdc"
+  },
+  {
+    "id": "b66",
+    "name": "Deano's Pasta",
+    "website_url": "https://deanospasta.com/",
+    "google_place_id": "ChIJdzJZB9pw44kRdpBciXFRYFc"
+  },
+  {
+    "id": "b67",
+    "name": "El Jalisco",
+    "website_url": "https://www.eljaliscomexicangrillsomerville.com/",
+    "google_place_id": "ChIJhQAKFmxx44kRig1v9Wv0HAE"
+  },
+  {
+    "id": "b68",
+    "name": "Ravelo's Auto Sales & Repair",
+    "website_url": "http://raveloauto.com/",
+    "google_place_id": "ChIJw_NsVs5244kR1brchHoYPXk"
+  },
+  {
+    "id": "b69",
+    "name": "Somerville No Touch Car Wash",
+    "website_url": "http://www.seeyoushine.com/",
+    "google_place_id": "ChIJawa-ssVw44kRPZRALCdPaB0"
+  },
+  {
+    "id": "b70",
+    "name": "United Divers",
+    "website_url": "http://www.uniteddivers.com/",
+    "google_place_id": "ChIJqRAOusVw44kRItqgMy1JU_I"
+  },
+  {
+    "id": "b71",
+    "name": "Touched by a Rose",
+    "website_url": "https://massageluxe.com/locations/somerville-ma/",
+    "google_place_id": "ChIJrSwDRKFx44kRNsMIAcMW-QM"
+  }
+]
