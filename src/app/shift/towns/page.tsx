@@ -87,9 +87,6 @@ export default async function TownsHubPage() {
         {/* The race */}
         <section className="px-8 pb-14">
           <TownLeaderboard directory={directory} title="Friendly competition" />
-          <p className="mt-4 text-center text-sm text-white/75">
-            Tap a town to see its full page — stats, momentum, events, and local rewards.
-          </p>
         </section>
 
         {/* Getting started */}
