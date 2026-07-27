@@ -18,6 +18,8 @@ import {
   getTownPartners,
   getTownResources,
   getTownRoams,
+  stateLabel,
+  MIN_RANKED_TRIPS,
 } from '@/lib/towns/queries'
 import {
   DataDisclaimer,
@@ -54,11 +56,8 @@ const SITE_URL = 'https://www.gogreenstreets.org'
 const IOS_URL = process.env.NEXT_PUBLIC_IOS_URL || ''
 const ANDROID_URL = process.env.NEXT_PUBLIC_ANDROID_URL || ''
 
-const STATE_NAMES: Record<string, string> = {
-  MA: 'Massachusetts', NH: 'New Hampshire', RI: 'Rhode Island', CT: 'Connecticut',
-  VT: 'Vermont', ME: 'Maine', NY: 'New York', NJ: 'New Jersey', PA: 'Pennsylvania',
-}
-const stateLabel = (abbr: string) => STATE_NAMES[abbr] ?? abbr
+// stateLabel now lives with the directory data so the hub, the board and this
+// page all label states the same way (and cover all 50, not just the northeast).
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -106,8 +105,12 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
   const utm = { source: 'web_town', medium: 'town_page', campaign: slug }
   const iosUrl = withUtm(IOS_URL, utm) ?? IOS_URL
   const androidUrl = withUtm(ANDROID_URL, utm) ?? ANDROID_URL
-  const qualifyingCount = directory.filter((t) => t.rank > 0).length
   const monthName = new Date().toLocaleDateString('en-US', { month: 'long' })
+  // A town can be unranked for two different reasons, and saying the wrong one
+  // is worse than saying nothing: it either hasn't logged enough trips, or its
+  // state doesn't yet have enough towns to hold a race.
+  const hasStateBoard = directory.some((t) => t.state === town.state && t.rank > 0)
+  const showCompetition = directory.filter((t) => t.state === town.state && t.rank > 0).length >= 2
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -155,10 +158,13 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
               {name} is on the move
             </h1>
             <p className="mx-auto mb-2 max-w-[560px] text-lg leading-[1.7] text-white/90">
-              {town.rank === 1 ? (
-                <>#1 of {qualifyingCount} towns by Shift Rate so far in {monthName}: share of active transportation trips (walk, micromobility, transit).</>
+              {town.rank > 0 ? (
+                <>#{town.rank} of {town.rankedInState} {town.stateName} towns by Shift Rate so far in {monthName}: share of active transportation trips (walk, micromobility, transit).</>
               ) : (
-                <>#{town.rank} of {qualifyingCount} towns by Shift Rate so far in {monthName}: share of active transportation trips (walk, micromobility, transit).</>
+                <>Shift Rate so far in {monthName}: share of active transportation trips (walk, micromobility, transit).{' '}
+                  {hasStateBoard
+                    ? `${name} joins the ${town.stateName} board once it logs ${MIN_RANKED_TRIPS}+ trips in a month.`
+                    : `A ${town.stateName} board opens once more towns there are on Shift.`}</>
               )}
             </p>
           </div>
@@ -170,7 +176,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
             ['#stats', 'Stats'],
             ...(heatmapLayers.length > 0 ? [['#moves', 'Where we move'] as [string, string]] : []),
             ['#momentum', 'Momentum'],
-            ['#competition', 'Competition'],
+            ...(showCompetition ? [['#competition', 'Competition'] as [string, string]] : []),
             ['#modes', 'Modes'],
             ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events & Roams'] as [string, string]] : []),
             ...(resources.length > 0 || civicEvents.length > 0 ? [['#involved', 'Get Involved'] as [string, string]] : []),
@@ -196,10 +202,12 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
           <MomentumSparkline stats={stats} townName={name} />
         </section>
 
-        {/* Leaderboard */}
-        <section id="competition" className="scroll-mt-28 px-8 pb-14">
-          <TownLeaderboard directory={directory} highlightGroupId={town.group_id} />
-        </section>
+        {/* Leaderboard — only where the town's state actually has a board. */}
+        {showCompetition && (
+          <section id="competition" className="scroll-mt-28 px-8 pb-14">
+            <TownLeaderboard directory={directory} state={town.state} highlightGroupId={town.group_id} />
+          </section>
+        )}
 
         {/* Mode split */}
         <section id="modes" className="scroll-mt-28 px-8 pb-14">
@@ -237,7 +245,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         <section className="px-8 pb-24 pt-4">
           <div className="mx-auto max-w-[560px] text-center">
             <h2 className="mb-4 font-display text-[clamp(1.9rem,4vw,2.8rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              {town.rank === 1 ? `Keep ${name} on top` : `Help ${name} climb the board`}
+              {town.rank === 1 ? `Keep ${name} on top` : town.rank > 0 ? `Help ${name} climb the board` : `Put ${name} on the board`}
             </h2>
             <p className="mb-8 text-lg leading-relaxed text-white/90">
               Every walk, ride, and transit trip counts automatically. Download Shift free and put

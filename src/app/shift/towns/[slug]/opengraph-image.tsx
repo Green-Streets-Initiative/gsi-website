@@ -127,7 +127,7 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
   }
   if (!result) return fallbackCard(fonts)
 
-  const { town, directory } = result
+  const { town } = result
 
   let stats = null
   try {
@@ -150,12 +150,11 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
 
   // Supporting chips — render only the ones that carry real signal.
   const chips: string[] = []
-  // Rank is assigned only to towns above PUBLICATION_GATE (others get rank 0),
-  // so the denominator must be the *ranked* count — not the full directory,
-  // which includes every sub-gate town and would read "#6 of 185".
-  const rankedCount = directory.filter((t) => t.rank > 0).length
-  if (town.rank > 0 && rankedCount >= 2) {
-    chips.push(`#${town.rank} of ${rankedCount} towns`)
+  // Rank is scoped to the town's own state and assigned only above the trip
+  // floor (others get rank 0), so the denominator is that state's ranked count
+  // — not the full directory, which would read "#6 of 185".
+  if (town.rank > 0 && town.rankedInState >= 2) {
+    chips.push(`#${town.rank} of ${town.rankedInState} ${town.state} towns`)
   }
   if (town.shift_rate > 0) {
     chips.push(`${Math.round(town.shift_rate)}% Shift Rate`)

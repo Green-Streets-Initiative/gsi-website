@@ -170,18 +170,27 @@ export function MomentumSparkline({ stats, townName }: { stats: TownPageStats; t
 
 export function TownLeaderboard({
   directory,
+  state,
   highlightGroupId,
   title = 'Friendly competition',
 }: {
   directory: TownSummary[]
+  /** Board is scoped to this state — towns only race towns in their own state. */
+  state: string
   highlightGroupId?: string
   title?: string
 }) {
-  const qualifying = directory.filter((t) => t.rank > 0)
+  const qualifying = directory.filter((t) => t.rank > 0 && t.state === state)
   if (qualifying.length < 2) return null
   return (
     <section className="mx-auto max-w-[820px]">
-      <TownLeaderboardBoard directory={directory} highlightGroupId={highlightGroupId} title={title} />
+      <TownLeaderboardBoard
+        directory={directory}
+        state={state}
+        stateName={qualifying[0].stateName}
+        highlightGroupId={highlightGroupId}
+        title={title}
+      />
     </section>
   )
 }

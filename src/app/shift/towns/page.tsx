@@ -4,7 +4,14 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import StoreButtons from '@/components/StoreButtons'
 import { withUtm } from '@/lib/utm'
-import { getTownDirectory, PUBLICATION_GATE } from '@/lib/towns/queries'
+import {
+  getTownDirectory,
+  rankedStates,
+  stateLabel,
+  PUBLICATION_GATE,
+  MIN_RANKED_TRIPS,
+  MIN_RANKED_TOWNS_PER_STATE,
+} from '@/lib/towns/queries'
 import { TownLeaderboard } from '@/components/towns/TownSections'
 
 // Evergreen hub — the internal-link parent for every town page.
@@ -31,10 +38,24 @@ export const metadata: Metadata = {
 
 export default async function TownsHubPage() {
   const directory = await getTownDirectory()
-  const qualifying = directory.filter((t) => t.rank > 0)
-  const gettingStarted = directory.filter((t) => t.rank === 0)
+  // Three tiers, and they are not the same question:
+  //   published  — has a town page (member gate)
+  //   boards     — states with enough ranked towns to publish a standing
+  //   unranked   — has a page, but too few trips this month to claim a rank
+  //   belowGate  — no page yet
+  const published = directory.filter((t) => t.member_count >= PUBLICATION_GATE)
+  const boards = rankedStates(directory)
+  const unranked = published.filter((t) => t.rank === 0)
+  const belowGate = directory
+    .filter((t) => t.member_count < PUBLICATION_GATE)
+    .sort((a, b) => b.member_count - a.member_count)
+  // The full sub-gate list runs to well over a hundred towns — name the ones
+  // closest to qualifying and count the rest.
+  const NEARLY_THERE = 12
+  const nearlyThere = belowGate.slice(0, NEARLY_THERE)
+  const remaining = belowGate.length - nearlyThere.length
 
-  const totals = qualifying.reduce(
+  const totals = published.reduce(
     (acc, t) => ({
       trips: acc.trips + t.active_trips_month,
       miles: acc.miles + t.active_miles_month,
@@ -74,7 +95,7 @@ export default async function TownsHubPage() {
               Every walk, bike ride, and transit trip logged on Shift adds to a town&apos;s totals.
               So far in {new Date().toLocaleDateString('en-US', { month: 'long' })},{' '}
               {totals.users.toLocaleString()} neighbors have logged{' '}
-              {totals.trips.toLocaleString()} active trips across {qualifying.length} towns.
+              {totals.trips.toLocaleString()} active trips across {published.length} towns.
             </p>
             <p className="mx-auto max-w-[560px] text-[12.5px] leading-relaxed text-white/75">
               Based on trips logged by <b className="text-white">Shift users</b> in each town — a
@@ -84,22 +105,60 @@ export default async function TownsHubPage() {
           </div>
         </section>
 
-        {/* The race */}
-        <section className="px-8 pb-14">
-          <TownLeaderboard directory={directory} title="Friendly competition" />
-        </section>
+        {/* The race — one board per state. Towns race their own state, the
+            same rule the app uses; a national mix put New York above Boston. */}
+        {boards.map((state, i) => (
+          <section key={state} className="px-8 pb-14">
+            <TownLeaderboard
+              directory={directory}
+              state={state}
+              title={i === 0 ? 'Friendly competition' : `${stateLabel(state)} towns`}
+            />
+          </section>
+        ))}
+
+        {/* Published, but not ranked — these have pages and deserve the link;
+            they just don't have enough trips this month to claim a standing. */}
+        {unranked.length > 0 && (
+          <section className="px-8 pb-14">
+            <div className="mx-auto max-w-[720px] rounded-[18px] border border-white/[0.08] bg-white/[0.04] px-8 py-7 text-center">
+              <h2 className="mb-2 font-display text-lg font-bold tracking-tight text-white">
+                Also on Shift
+              </h2>
+              <p className="text-sm leading-relaxed text-white/75">
+                {unranked.map((t, i) => (
+                  <span key={t.group_id}>
+                    {i > 0 && ', '}
+                    <Link href={`/shift/towns/${t.slug}`} className="text-white/90 underline decoration-white/30 underline-offset-2 hover:text-[#BAF14D]">
+                      {t.town_name}
+                      {t.state !== boards[0] && ` (${t.state})`}
+                    </Link>
+                  </span>
+                ))}{' '}
+                {unranked.length === 1
+                  ? "has a page but isn't on a board yet."
+                  : "have pages but aren't on a board yet."}{' '}
+                A town joins its state&apos;s board once it logs {MIN_RANKED_TRIPS}+ trips in a
+                month — and a state needs at least {MIN_RANKED_TOWNS_PER_STATE} of them to hold a race.
+              </p>
+            </div>
+          </section>
+        )}
 
         {/* Getting started */}
-        {gettingStarted.length > 0 && (
+        {nearlyThere.length > 0 && (
           <section className="px-8 pb-14">
             <div className="mx-auto max-w-[720px] rounded-[18px] border border-white/[0.08] bg-white/[0.04] px-8 py-7 text-center">
               <h2 className="mb-2 font-display text-lg font-bold tracking-tight text-white">
                 Just getting started
               </h2>
               <p className="text-sm leading-relaxed text-white/75">
-                {gettingStarted.map((t) => t.town_name).join(', ')}{' '}
-                {gettingStarted.length === 1 ? 'is' : 'are'} building momentum. A town gets its own
-                page once {PUBLICATION_GATE}+ neighbors are on Shift — invite yours in.
+                {nearlyThere
+                  .map((t) => (t.state === boards[0] ? t.town_name : `${t.town_name} (${t.state})`))
+                  .join(', ')}
+                {remaining > 0 && `, and ${remaining.toLocaleString()} more towns`}{' '}
+                {nearlyThere.length === 1 && remaining === 0 ? 'is' : 'are'} building momentum. A town
+                gets its own page once {PUBLICATION_GATE}+ neighbors are on Shift — invite yours in.
               </p>
             </div>
           </section>

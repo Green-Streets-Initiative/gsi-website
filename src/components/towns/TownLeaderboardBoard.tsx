@@ -19,25 +19,37 @@ function Chevron({ className = '' }: { className?: string }) {
  * Defaults to Shift Rate so larger towns don't automatically lead.
  * Every population figure shown is "active this month" — the same metric as
  * the hero stat card (one metric, clearly labeled, everywhere).
+ *
+ * Scoped to ONE state: towns only race towns in their own state, matching the
+ * in-app standings (Shift migration 00619). Callers render one board per state.
  */
 export default function TownLeaderboardBoard({
   directory,
+  state,
+  stateName,
   highlightGroupId,
   title = 'Friendly competition',
 }: {
   directory: TownSummary[]
+  state: string
+  stateName: string
   highlightGroupId?: string
   title?: string
 }) {
   const [metric, setMetric] = useState<Metric>('shift_rate')
   const month = new Date().toLocaleDateString('en-US', { month: 'long' })
-  const qualifying = directory.filter((t) => t.rank > 0)
+  const qualifying = directory.filter((t) => t.rank > 0 && t.state === state)
   if (qualifying.length < 2) return null
 
   const value = (t: TownSummary) => (metric === 'shift_rate' ? t.shift_rate : t.active_trips_month)
-  const sorted = [...qualifying].sort(
-    (a, b) => value(b) - value(a) || b.active_trips_month - a.active_trips_month,
-  )
+  // Shift Rate order comes from `rank`, not from the displayed percent: the
+  // percent is rounded to whole numbers, so sorting on it would tie Boston,
+  // Cambridge and Watertown at "85" and order them differently than each
+  // town's own page claims. Active trips has no such rounding.
+  const sorted =
+    metric === 'shift_rate'
+      ? [...qualifying].sort((a, b) => a.rank - b.rank)
+      : [...qualifying].sort((a, b) => b.active_trips_month - a.active_trips_month)
   const maxVal = Math.max(...sorted.map(value), 1)
   const highlighted = highlightGroupId ? sorted.find((t) => t.group_id === highlightGroupId) : undefined
   const pos = highlighted ? sorted.indexOf(highlighted) + 1 : 0
@@ -51,8 +63,8 @@ export default function TownLeaderboardBoard({
       </h2>
       <p className="mb-4 text-center text-sm text-white/75">
         {metric === 'shift_rate'
-          ? `Shift Rate so far in ${month} — the share of trips taken actively`
-          : `Active trips so far in ${month}, town vs. town`}
+          ? `${stateName} towns by Shift Rate so far in ${month} — the share of trips taken actively`
+          : `${stateName} towns by active trips so far in ${month}`}
         {highlighted && gap > 0 && (
           <>
             {' '}&middot;{' '}

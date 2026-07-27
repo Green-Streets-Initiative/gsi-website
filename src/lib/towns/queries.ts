@@ -14,9 +14,48 @@ import { slugify } from '@/lib/utm'
  * Publication gate: a town page publishes (and enters the sitemap) only when
  * the town has >= PUBLICATION_GATE members. Below the gate the slug 404s —
  * thin pages hurt SEO and tiny samples risk reading as individual behavior.
+ *
+ * Ranking is a SEPARATE, stricter question, and follows the in-app rules from
+ * Shift migration 00619: a town is ranked only against towns in its OWN state,
+ * and only once it has enough trips for a percentage to mean anything. Town
+ * groups are auto-created for any US state whenever a trip or home address
+ * lands there, so an unscoped board put New York NY at #1 above Boston, and
+ * published a 10% Shift Rate for a town with one trip all month.
+ *
+ * Publishing and ranking are deliberately decoupled: a town below the trip
+ * floor (or in a state with too few towns to race) keeps its page and its
+ * internal links, it just doesn't claim a standing.
  */
 
 export const PUBLICATION_GATE = 10
+
+/** Confirmed trips this month before a town is ranked. Matches Shift 00619. */
+export const MIN_RANKED_TRIPS = 20
+
+/**
+ * Ranked towns a state needs before ranks are published for it. Below this
+ * there is no field to be first in — "#1 of 1" on a page headed "Friendly
+ * competition" reads as a bug, not an achievement.
+ */
+export const MIN_RANKED_TOWNS_PER_STATE = 3
+
+const STATE_NAMES: Record<string, string> = {
+  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
+  CO: 'Colorado', CT: 'Connecticut', DC: 'Washington, DC', DE: 'Delaware',
+  FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois',
+  IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana',
+  ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan',
+  MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri', MT: 'Montana',
+  NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
+  NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota',
+  OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania',
+  RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota',
+  TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia',
+  WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
+}
+
+/** "MA" → "Massachusetts". Falls back to the code for anything unmapped. */
+export const stateLabel = (abbr: string) => STATE_NAMES[abbr] ?? abbr
 
 export interface TownDirectoryRow {
   group_id: string
@@ -26,14 +65,20 @@ export interface TownDirectoryRow {
   active_trips_month: number
   active_miles_month: number
   active_users_month: number
-  /** Active trips as % of all confirmed trips this month */
+  /** Active trips as % of all confirmed trips this month, rounded for display */
   shift_rate: number
+  /** All confirmed trips this month (active + drive/carpool/other) */
+  total_trips_month: number
 }
 
 export interface TownSummary extends TownDirectoryRow {
   slug: string
-  /** 1-based rank among qualifying towns by Shift Rate (the default metric) */
+  /** 1-based rank by Shift Rate among ranked towns IN THE SAME STATE. 0 = unranked. */
   rank: number
+  /** Ranked towns in this town's state — the denominator for `rank`. 0 when unranked. */
+  rankedInState: number
+  /** "Massachusetts" — for copy that would otherwise read "MA towns". */
+  stateName: string
 }
 
 export interface TownPageStats {
@@ -125,22 +170,70 @@ export function townSlug(name: string, state: string): string {
   return `${slugify(name)}-${state.toLowerCase()}`
 }
 
+/**
+ * Exact active-trip share. Ranking must NOT use `shift_rate`, which the RPC
+ * rounds to whole percent for display: that ties Boston (85.1), Watertown
+ * (84.7) and Cambridge (84.7) at "85" and hands three different towns #1.
+ */
+const exactRate = (t: TownDirectoryRow) =>
+  t.total_trips_month > 0 ? t.active_trips_month / t.total_trips_month : 0
+
 export async function getTownDirectory(): Promise<TownSummary[]> {
   const supabase = createServerSupabaseClient()
   const { data, error } = await supabase.rpc('get_town_directory')
   if (error || !data) return []
   const rows = data as TownDirectoryRow[]
-  // Rank qualifying towns by Shift Rate (size-independent default metric);
-  // sub-gate towns never claim a public standing.
-  const qualifying = rows
-    .filter((r) => r.member_count >= PUBLICATION_GATE)
-    .sort((a, b) => b.shift_rate - a.shift_rate || b.active_trips_month - a.active_trips_month)
-  const rankById = new Map(qualifying.map((r, i) => [r.group_id, i + 1]))
+
+  // Rankable = publishes a page AND has enough trips for a percentage to mean
+  // something. Everything else still gets listed, just without a standing.
+  const rankable = rows.filter(
+    (r) => r.member_count >= PUBLICATION_GATE && r.total_trips_month >= MIN_RANKED_TRIPS,
+  )
+
+  const byState = new Map<string, TownDirectoryRow[]>()
+  for (const r of rankable) {
+    const list = byState.get(r.state)
+    if (list) list.push(r)
+    else byState.set(r.state, [r])
+  }
+
+  const rankById = new Map<string, number>()
+  const rankedCountByState = new Map<string, number>()
+  for (const [state, towns] of byState) {
+    if (towns.length < MIN_RANKED_TOWNS_PER_STATE) continue
+    const sorted = [...towns].sort(
+      (a, b) => exactRate(b) - exactRate(a) || b.active_trips_month - a.active_trips_month,
+    )
+    rankedCountByState.set(state, sorted.length)
+    // Standard competition ranking — genuine ties share a rank, matching the
+    // app's RANK() (Shift 00619). Ties are rare once the exact rate is used.
+    let prevRate = Number.NaN
+    let prevRank = 0
+    sorted.forEach((t, i) => {
+      const rate = exactRate(t)
+      const rank = rate === prevRate ? prevRank : i + 1
+      rankById.set(t.group_id, rank)
+      prevRate = rate
+      prevRank = rank
+    })
+  }
+
   return rows.map((row) => ({
     ...row,
     slug: townSlug(row.town_name, row.state),
     rank: rankById.get(row.group_id) ?? 0,
+    rankedInState: rankedCountByState.get(row.state) ?? 0,
+    stateName: stateLabel(row.state),
   }))
+}
+
+/** States with a published board, most towns first. Drives the hub's sections. */
+export function rankedStates(directory: TownSummary[]): string[] {
+  const states = new Map<string, number>()
+  for (const t of directory) {
+    if (t.rank > 0) states.set(t.state, t.rankedInState)
+  }
+  return [...states.entries()].sort((a, b) => b[1] - a[1]).map(([s]) => s)
 }
 
 export async function getQualifyingTowns(): Promise<TownSummary[]> {
