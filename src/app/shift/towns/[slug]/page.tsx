@@ -8,6 +8,7 @@ import TownDigestSignup from '@/components/towns/TownDigestSignup'
 import TownToc from '@/components/towns/TownToc'
 import { withUtm } from '@/lib/utm'
 import {
+  getQualifyingTowns,
   getTownBySlug,
   getTownCentroid,
   getTownEvents,
@@ -34,6 +35,20 @@ import {
 // Evergreen, crawlable town pages — ISR, not force-dynamic. Stats refresh
 // hourly, which is plenty for month-to-date aggregates.
 export const revalidate = 3600
+
+// Prebuild every published town (and its OG image) so the first Facebook scrape
+// of a cold slug doesn't pay the full Supabase chain inside the scraper's
+// timeout — the wrong failure mode on exactly the pages we're driving traffic to.
+// try/catch mirrors sitemap.ts: a DB blip degrades, it doesn't fail the build.
+// dynamicParams stays default-true so newly-qualifying towns still resolve.
+export async function generateStaticParams() {
+  try {
+    const towns = await getQualifyingTowns()
+    return towns.map((t) => ({ slug: t.slug }))
+  } catch {
+    return []
+  }
+}
 
 const SITE_URL = 'https://www.gogreenstreets.org'
 const IOS_URL = process.env.NEXT_PUBLIC_IOS_URL || ''
