@@ -139,7 +139,8 @@ export default async function TownsHubPage() {
                   ? "has a page but isn't on a board yet."
                   : "have pages but aren't on a board yet."}{' '}
                 A town joins its state&apos;s board once it logs {MIN_RANKED_TRIPS}+ trips in a
-                month — and a state needs at least {MIN_RANKED_TOWNS_PER_STATE} of them to hold a race.
+                month — and a state needs at least {MIN_RANKED_TOWNS_PER_STATE} of them to hold a
+                competition.
               </p>
             </div>
           </section>

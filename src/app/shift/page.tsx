@@ -10,6 +10,10 @@ import PhoneFrame from './_components/PhoneFrame'
 import FeatureRow, { Bullet } from './_components/FeatureRow'
 import TierLadder from './_components/TierLadder'
 
+// The towns teaser band counts published town pages, so the page can't be
+// fully static any more. Hourly ISR — same cadence as the towns hub.
+export const revalidate = 3600
+
 const IOS_URL = process.env.NEXT_PUBLIC_IOS_URL || ''
 const ANDROID_URL = process.env.NEXT_PUBLIC_ANDROID_URL || ''
 const IS_LIVE = !!(IOS_URL && ANDROID_URL)
