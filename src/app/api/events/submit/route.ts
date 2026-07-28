@@ -130,7 +130,7 @@ function buildAdminNotificationHtml(ev: {
       <tr><td style="padding: 6px 0; color: #6b7280;">Submitted by</td><td style="padding: 6px 0;">${ev.contactName ? `${ev.contactName} &lt;${ev.contactEmail}&gt;` : ev.contactEmail}</td></tr>
     </table>
     <div style="margin-top: 24px;">
-      <a href="https://shift.gogreenstreets.org/community-events" style="display: inline-block; background: #4A82F0; color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">Open triage queue</a>
+      <a href="https://admin.gogreenstreets.org/admin/community-events" style="display: inline-block; background: #4A82F0; color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">Open triage queue</a>
     </div>
   </div>
 </div>`
