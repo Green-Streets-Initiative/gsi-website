@@ -11,8 +11,103 @@ const VALID_TAGS = [
   'spanish', 'bilingual',
 ]
 
+// Set well above what a real organizer needs — someone posting a season of
+// group rides in one sitting is a user we want, not one to block. This is only
+// a flood cap; the honeypot and content checks below do the real work.
+const RATE_LIMIT_MAX = 10
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
+const rateLimitMap = new Map<string, number[]>()
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const timestamps = (rateLimitMap.get(ip) ?? []).filter(
+    (ts) => now - ts < RATE_LIMIT_WINDOW_MS,
+  )
+  if (timestamps.length >= RATE_LIMIT_MAX) {
+    rateLimitMap.set(ip, timestamps)
+    return true
+  }
+  timestamps.push(now)
+  rateLimitMap.set(ip, timestamps)
+  return false
+}
+
+// Real people take longer than this to fill in an event form. Bots post instantly.
+const MIN_FILL_MS = 3000
+
+// How far ahead an event can reasonably be scheduled.
+const MAX_DAYS_AHEAD = 730
+
+// Shown when a submission trips a spam check. Deliberately gives a real person
+// a way through, since no heuristic is perfect.
+const TRY_AGAIN_MESSAGE =
+  "We couldn't process this submission. If you're a person, email info@gogreenstreets.org and we'll add your event by hand."
+
+/**
+ * Scores a single free-text field for "random token" junk — the signature of
+ * the link-spam bots that hit this form. Real venue and organizer names are
+ * either short, multi-word, or ordinary English; generated tokens like
+ * "GOBwbQeLVWhuhAXwBqtW" are long, single-word, vowel-starved, and switch
+ * case at random. Short and multi-word values are always given a pass, so
+ * legitimate names ("MassBike", "Somerville Bike Co-op") never trip this.
+ */
+function looksLikeRandomToken(value: string): boolean {
+  const v = value.trim()
+  if (v.length < 12) return false
+  if (/\s/.test(v)) return false
+
+  const letters = v.replace(/[^a-zA-Z]/g, '')
+  if (letters.length < 12) return false
+
+  const vowels = (letters.match(/[aeiouyAEIOUY]/g) ?? []).length
+  if (vowels / letters.length < 0.32) return true
+
+  // CamelCase words concatenate a few times; random tokens flip case constantly.
+  const caseSwitches = (letters.match(/[a-z][A-Z]/g) ?? []).length
+  return caseSwitches >= 4
+}
+
+function spamScore(body: Record<string, unknown>): number {
+  const fields = ['title', 'description', 'venueName', 'organizerName', 'city', 'address']
+  return fields.reduce((score, field) => {
+    const v = body[field]
+    return typeof v === 'string' && looksLikeRandomToken(v) ? score + 1 : score
+  }, 0)
+}
+
 export async function POST(request: Request) {
-  const body = await request.json()
+  const clientIp =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    request.headers.get('cf-connecting-ip') ??
+    'unknown'
+  if (isRateLimited(clientIp)) {
+    return Response.json(
+      { error: 'Too many submissions. Please try again later.' },
+      { status: 429 },
+    )
+  }
+
+  let body
+  try {
+    body = await request.json()
+  } catch {
+    return Response.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  // Honeypot — hidden from real users, bots fill it in. Accept silently so the
+  // bot has no signal to retry against.
+  if (body.website) {
+    return Response.json({ ok: true, id: null })
+  }
+
+  // Bots post the instant they parse the form. This field is stamped when the
+  // form mounts; our form is the only caller, so a missing value is a bot too.
+  // Unlike the honeypot this answers with an error rather than a silent accept:
+  // a false positive here must never swallow a real person's event.
+  const loadedAt = Number(body.formLoadedAt)
+  if (!Number.isFinite(loadedAt) || loadedAt <= 0 || Date.now() - loadedAt < MIN_FILL_MS) {
+    return Response.json({ error: TRY_AGAIN_MESSAGE }, { status: 400 })
+  }
 
   for (const field of REQUIRED) {
     if (!body[field]?.trim()) {
@@ -22,6 +117,29 @@ export async function POST(request: Request) {
 
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.contactEmail)) {
     return Response.json({ error: 'Invalid email address' }, { status: 400 })
+  }
+
+  // Date sanity — the 1970 dates spam submits, and genuine typos, both land here.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
+    return Response.json({ error: 'Please enter a valid date.' }, { status: 400 })
+  }
+  const eventDate = new Date(`${body.date}T12:00:00`)
+  if (Number.isNaN(eventDate.getTime())) {
+    return Response.json({ error: 'Please enter a valid date.' }, { status: 400 })
+  }
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const maxDate = new Date(today.getTime() + MAX_DAYS_AHEAD * 24 * 60 * 60 * 1000)
+  if (eventDate < today) {
+    return Response.json({ error: 'That date has already passed. Pick an upcoming date.' }, { status: 400 })
+  }
+  if (eventDate > maxDate) {
+    return Response.json({ error: 'That date is too far in the future. Pick a date within the next two years.' }, { status: 400 })
+  }
+
+  // Two or more junk-looking fields is well past coincidence.
+  if (spamScore(body) >= 2) {
+    return Response.json({ error: TRY_AGAIN_MESSAGE }, { status: 400 })
   }
 
   const supabase = createServerSupabaseClient()

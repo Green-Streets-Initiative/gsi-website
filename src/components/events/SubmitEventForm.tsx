@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { Check, Info } from 'lucide-react'
 import { EVENT_TYPES, TYPE_FILTER_ORDER, TAG_META } from '@/lib/events'
@@ -64,6 +64,9 @@ function isValidEmail(email: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)
 }
 
+// Mirrors the window the API accepts, so typos get caught before submitting.
+const MAX_DAYS_AHEAD = 730
+
 export default function SubmitEventForm() {
   const [form, setForm] = useState<FormData>(EMPTY_FORM)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -72,7 +75,15 @@ export default function SubmitEventForm() {
   const [submitted, setSubmitted] = useState(false)
   const [submittedEmail, setSubmittedEmail] = useState('')
   const [toast, setToast] = useState<string | null>(null)
+  const [honeypot, setHoneypot] = useState('')
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const loadedAt = useRef(0)
+
+  // Stamped on mount rather than during render so it reflects when this person
+  // actually opened the form, not when the page was rendered or cached.
+  useEffect(() => {
+    loadedAt.current = Date.now()
+  }, [])
 
   const showToast = useCallback((msg: string) => {
     setToast(msg)
@@ -93,9 +104,22 @@ export default function SubmitEventForm() {
     if (form.contactEmail && !isValidEmail(form.contactEmail)) {
       errs.contactEmail = 'Enter a valid email address.'
     }
+    if (form.date) {
+      const picked = new Date(`${form.date}T12:00:00`)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const maxDate = new Date(today.getTime() + MAX_DAYS_AHEAD * 24 * 60 * 60 * 1000)
+      if (Number.isNaN(picked.getTime())) {
+        errs.date = 'Enter a valid date.'
+      } else if (picked < today) {
+        errs.date = 'That date has already passed. Pick an upcoming date.'
+      } else if (picked > maxDate) {
+        errs.date = 'Pick a date within the next two years.'
+      }
+    }
     setErrors(errs)
     if (Object.keys(errs).length > 0) {
-      showToast('Please fill in the required fields.')
+      showToast('Please check the highlighted fields.')
       return false
     }
     return true
@@ -110,7 +134,12 @@ export default function SubmitEventForm() {
       const res = await fetch('/api/events/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, tags: selectedTags }),
+        body: JSON.stringify({
+          ...form,
+          tags: selectedTags,
+          website: honeypot,
+          formLoadedAt: loadedAt.current,
+        }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -179,6 +208,17 @@ export default function SubmitEventForm() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-10 flex flex-col gap-8">
+          {/* Honeypot — hidden from real users */}
+          <input
+            type="text"
+            name="website"
+            className="hidden"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypot}
+            onChange={e => setHoneypot(e.target.value)}
+          />
+
           {/* Section 1: The basics */}
           <fieldset className="rounded-2xl border border-white/[0.07] bg-card p-6">
             <legend className="mb-4 font-display text-lg font-bold text-white">The basics</legend>
