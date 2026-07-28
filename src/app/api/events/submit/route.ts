@@ -11,6 +11,13 @@ const VALID_TAGS = [
   'spanish', 'bilingual',
 ]
 
+// Mirrors FEED_TYPE_OPTIONS in SubmitEventForm. Stored as submitted rather than
+// mapped onto event_sources.source_type: 'social' has no equivalent there, and
+// an admin decides what kind of source a feed request becomes.
+const VALID_FEED_TYPES = [
+  'not_applicable', 'ical', 'google_calendar', 'website', 'social', 'other',
+]
+
 // Set well above what a real organizer needs — someone posting a season of
 // group rides in one sitting is a user we want, not one to block. This is only
 // a flood cap; the honeypot and content checks below do the real work.
@@ -190,15 +197,39 @@ export async function POST(request: Request) {
     organizer_url: body.organizerUrl?.trim() || null,
     event_url: body.eventUrl?.trim() || null,
     registration_url: body.registrationUrl?.trim() || null,
+    distance_text: body.length?.trim() || null,
     tags,
-    submitter_email: body.contactEmail.trim(),
-    submitter_name: body.contactName?.trim() || null,
   })
 
   if (edError) {
     console.error('event_details insert error:', edError)
     await supabase.from('content_items').delete().eq('id', contentId)
     return Response.json({ error: 'Failed to save event details. Please try again.' }, { status: 500 })
+  }
+
+  // Submitter contact details and any feed request go in the admin-only table.
+  // They must not land on event_details, which anyone can read with the anon key.
+  const feedType = VALID_FEED_TYPES.includes(body.feedType) ? body.feedType : null
+  const feedUrl = body.feedUrl?.trim() || null
+  const wantsFeed = feedType !== null && feedType !== 'not_applicable' && feedUrl !== null
+
+  const { error: esError } = await supabase.from('event_submissions').insert({
+    content_id: contentId,
+    submitter_email: body.contactEmail.trim(),
+    submitter_name: body.contactName?.trim() || null,
+    submitter_phone: body.contactPhone?.trim() || null,
+    feed_type: wantsFeed ? feedType : null,
+    feed_url: wantsFeed ? feedUrl : null,
+  })
+
+  if (esError) {
+    // Without the contact details we could never tell this person their event
+    // went live, and the success screen promises exactly that. Roll back and
+    // let them retry rather than accept a submission we can't follow up on.
+    console.error('event_submissions insert error:', esError)
+    await supabase.from('event_details').delete().eq('content_id', contentId)
+    await supabase.from('content_items').delete().eq('id', contentId)
+    return Response.json({ error: 'Failed to save your contact details. Please try again.' }, { status: 500 })
   }
 
   try {

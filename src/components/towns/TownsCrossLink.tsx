@@ -2,22 +2,24 @@ import Link from 'next/link'
 import { getQualifyingTowns } from '@/lib/towns/queries'
 
 /**
- * Cross-link modules pointing at the town pages (paths Phase 1). The chip
- * strip stays static — a fixed set of anchor towns, no query, on a list page
- * where the latency isn't worth it. The teaser band counts towns for real:
- * it was hardcoded at "Nine towns" and went stale within months.
- * utm_content identifies the entry point.
+ * Cross-link modules pointing at the town pages (paths Phase 1). Both read the
+ * live directory now — each was hardcoded to the original nine towns and went
+ * stale within months. utm_content identifies the entry point.
  */
 
-const TOWNS = [
-  'Somerville', 'Cambridge', 'Boston', 'Medford', 'Arlington',
-  'Brookline', 'Watertown', 'Everett', 'Newton',
-] as const
+/** Chips shown before "All towns" takes over. The rest of the list is a click away. */
+const CHIP_LIMIT = 12
 
-const slug = (t: string) => `${t.toLowerCase()}-ma`
+/**
+ * Compact chip strip — events page. Renders inline, NOT behind Suspense: these
+ * chips are internal links first and UI second, and a Suspense boundary ships
+ * them inside a trailing `<div hidden>` that only lands once React's swap
+ * script runs. The ~350ms the directory RPC adds to an already-dynamic page is
+ * the cheaper side of that trade.
+ */
+export async function TownChipsStrip({ utmContent }: { utmContent: string }) {
+  const towns = await topTowns()
 
-/** Compact chip strip — events page. */
-export function TownChipsStrip({ utmContent }: { utmContent: string }) {
   return (
     <section className="border-t border-white/[0.06] bg-[#191A2E] px-6 py-10">
       <div className="mx-auto max-w-[960px] text-center">
@@ -28,13 +30,13 @@ export function TownChipsStrip({ utmContent }: { utmContent: string }) {
           Live community stats, popular routes, and ways to get involved — town by town.
         </p>
         <div className="flex flex-wrap justify-center gap-2">
-          {TOWNS.map((t) => (
+          {towns.map((t) => (
             <Link
-              key={t}
-              href={`/shift/towns/${slug(t)}?utm_content=${utmContent}`}
+              key={t.slug}
+              href={`/shift/towns/${t.slug}?utm_content=${utmContent}`}
               className="rounded-full bg-white/[0.06] px-3.5 py-1.5 text-sm font-semibold text-white/85 transition-colors hover:bg-white/[0.12] hover:text-white"
             >
-              {t}
+              {t.town_name}
             </Link>
           ))}
           <Link
@@ -50,9 +52,21 @@ export function TownChipsStrip({ utmContent }: { utmContent: string }) {
 }
 
 /**
+ * Biggest towns first — this is wayfinding, so the chips a visitor is most
+ * likely to be looking for should be the ones that fit. Member count rather
+ * than monthly trips: it's the more stable signal, and a nav element that
+ * reshuffles week to week is worse than one that's slightly out of date.
+ */
+async function topTowns() {
+  return [...(await getQualifyingTowns())]
+    .sort((a, b) => b.member_count - a.member_count)
+    .slice(0, CHIP_LIMIT)
+}
+
+/**
  * Teaser band — /shift marketing page. Counts published town pages (the same
  * set the hub lists) so the headline can't drift out of date. Digits, not
- * words: "Twenty-six towns" is a mouthful and only gets worse from here.
+ * words: spelled-out compounds ("Twenty-five towns") only get worse from here.
  * Falls back to a countless headline if the directory query comes back empty.
  */
 export async function TownsTeaserBand() {

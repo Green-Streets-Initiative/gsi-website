@@ -27,6 +27,16 @@ import { slugify } from '@/lib/utm'
  * internal links, it just doesn't claim a standing.
  */
 
+/**
+ * States Shift covers today. Town groups are auto-created for ANY US state the
+ * moment a trip or home address lands there — 180 of 206 groups are currently
+ * outside Massachusetts — so the public round-ups have to be scoped explicitly
+ * or they fill with places Shift isn't running yet. Every town surface reads
+ * from `getTownDirectory`, so adding a state here is the whole change: hub,
+ * town pages, sitemap, cross-link chips, and the digest all follow.
+ */
+export const COVERED_STATES: readonly string[] = ['MA']
+
 export const PUBLICATION_GATE = 10
 
 /** Confirmed trips this month before a town is ranked. Matches Shift 00619. */
@@ -182,7 +192,9 @@ export async function getTownDirectory(): Promise<TownSummary[]> {
   const supabase = createServerSupabaseClient()
   const { data, error } = await supabase.rpc('get_town_directory')
   if (error || !data) return []
-  const rows = data as TownDirectoryRow[]
+  // Coverage scope first — an out-of-state town shouldn't count toward a board,
+  // a headline count, or the sitemap. See COVERED_STATES.
+  const rows = (data as TownDirectoryRow[]).filter((r) => COVERED_STATES.includes(r.state))
 
   // Rankable = publishes a page AND has enough trips for a percentage to mean
   // something. Everything else still gets listed, just without a standing.
