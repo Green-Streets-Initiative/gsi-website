@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
   const { data: events } = await supabase
     .from('content_items')
-    .select('id, title, event_details(event_date, event_time, location_name, submitter_email, submitter_name)')
+    .select('id, title, event_details(event_date, event_time, location_name), event_submissions(submitter_email, submitter_name)')
     .in('id', eventIds)
     .eq('status', 'approved')
 
@@ -39,19 +39,21 @@ export async function POST(request: Request) {
   let sent = 0
   for (const ev of events) {
     const ed = Array.isArray(ev.event_details) ? ev.event_details[0] : ev.event_details
-    if (!ed?.submitter_email) continue
+    const sub = Array.isArray(ev.event_submissions) ? ev.event_submissions[0] : ev.event_submissions
+    // Contact details moved off event_details, which is publicly readable.
+    if (!sub?.submitter_email || !ed) continue
 
     try {
       await resend.emails.send({
         from: 'Shift Events <noreply@gogreenstreets.org>',
-        to: ed.submitter_email,
+        to: sub.submitter_email,
         subject: `Your event is live: ${ev.title}`,
         html: buildApprovalHtml({
           title: ev.title,
           date: ed.event_date,
           time: ed.event_time,
           location: ed.location_name,
-          submitterName: ed.submitter_name,
+          submitterName: sub.submitter_name,
           eventUrl: `https://gogreenstreets.org/events/${ev.id}`,
         }),
       })
