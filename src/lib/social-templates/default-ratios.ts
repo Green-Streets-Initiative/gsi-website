@@ -34,9 +34,12 @@ export const DEFAULT_RATIOS: Record<string, Record<Platform, AspectRatio>> = {
   'leaderboard': { instagram: '1:1', facebook: '1.91:1', linkedin: '1.91:1', bluesky: '1:1' },
   'partner':     { instagram: '1:1', facebook: '1.91:1', linkedin: '1.91:1', bluesky: '1:1' },
   'prize':       { instagram: '1:1', facebook: '1.91:1', linkedin: '1.91:1', bluesky: '1:1' },
-  'sponsor':     { instagram: '1:1', facebook: '1.91:1', linkedin: '1.91:1', bluesky: '1:1' },
 
-  // Social card templates v2 — all 4:5 only
+  // Social card templates v2 — all 4:5 only.
+  // `sponsor` sits here rather than with the square templates above: it was
+  // rebuilt in the v2 idiom against a 1080×1350 canvas, and at 1:1 the copy
+  // collides with the stats rule and the footer falls off the bottom edge.
+  'sponsor':          { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
   'dyk_number':       { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
   'dyk_editorial':    { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },
   'partner_photo':    { instagram: '4:5', facebook: '4:5', linkedin: '4:5', bluesky: '4:5' },

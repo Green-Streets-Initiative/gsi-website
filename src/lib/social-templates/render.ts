@@ -79,6 +79,10 @@ export async function renderSocialImage(input: RenderInput): Promise<RenderResul
     preprocessPartnerLocation(input.vars);
   }
 
+  if (input.template === 'sponsor') {
+    preprocessSponsor(input.vars);
+  }
+
   if (input.template === 'ce_spotlight') {
     preprocessCeSpotlight(input.vars);
   }
@@ -305,6 +309,41 @@ function preprocessPartnerLocation(vars: Record<string, unknown>): void {
 
   delete vars['neighborhood'];
   delete vars['locationIcon'];
+}
+
+/**
+ * Pre-process the sponsor card's two conditional regions.
+ *
+ * `sponsor_name_html` — the name under the logo tile. Most sponsor
+ * logos are wordmarks that already say the name, so repeating it below
+ * reads as a stutter. Suppressed when `show_name` is false.
+ *
+ * `stats_html` — the proof strip (up to 3 campaign stats). Empty when
+ * no stats were supplied, which collapses the strip via `:empty`.
+ */
+function preprocessSponsor(vars: Record<string, unknown>): void {
+  const showName = vars['show_name'] !== false;
+  const name = typeof vars['sponsor_name'] === 'string' ? vars['sponsor_name'].trim() : '';
+  vars['sponsor_name_html'] = showName && name ? escapeHtmlAttr(name) : '';
+  delete vars['show_name'];
+  delete vars['sponsor_name'];
+
+  const cells: string[] = [];
+  for (let i = 1; i <= 3; i++) {
+    const value = typeof vars[`stat_${i}_value`] === 'string' ? (vars[`stat_${i}_value`] as string).trim() : '';
+    const label = typeof vars[`stat_${i}_label`] === 'string' ? (vars[`stat_${i}_label`] as string).trim() : '';
+    if (value && label) {
+      cells.push(
+        `<div class="stat">` +
+          `<div class="stat-value">${escapeHtmlAttr(value)}</div>` +
+          `<div class="stat-label">${escapeHtmlAttr(label)}</div>` +
+          `</div>`,
+      );
+    }
+    delete vars[`stat_${i}_value`];
+    delete vars[`stat_${i}_label`];
+  }
+  vars['stats_html'] = cells.join('');
 }
 
 function escapeHtmlAttr(s: string): string {
