@@ -526,7 +526,12 @@ export function expandArrayVars(
           continue;
       }
     }
-    out[key] = String(value);
+    // null/undefined mean "this optional field wasn't filled", so they
+    // must become empty — String(null) yields the literal text "null",
+    // which then substitutes into the template as visible copy. Where a
+    // template gates on :empty (the CTA pill), a "null" string is not
+    // empty, so the element renders with "null" inside it.
+    out[key] = value == null ? '' : String(value);
   }
   return out;
 }
