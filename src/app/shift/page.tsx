@@ -392,7 +392,7 @@ export default function ShiftPage() {
                 <Bullet><b className="font-display font-bold text-white">Live and local.</b> Real-time Bluebikes counts, route-comfort ratings, and points of interest along the way.</Bullet>
                 <Bullet><b className="font-display font-bold text-white">Filter by your mood.</b> Chill, active, social, or exploring.</Bullet>
                 <Bullet><b className="font-display font-bold text-white">Badge series.</b> Collect adventures and unlock recognition as you go.</Bullet>
-                <Bullet><b className="font-display font-bold text-white">Bonus during Shift Your Summer.</b> Completing Roams earns extra sweepstakes entries.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Bonus during Shift Your Summer.</b> Completing Roams adds extra sweepstakes entries.</Bullet>
               </ul>
             </FeatureRow>
           </FadeIn>

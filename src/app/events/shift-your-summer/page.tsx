@@ -1253,7 +1253,7 @@ function HowToJoin() {
     {
       num: '3',
       title: 'Win prizes',
-      body: 'Every active trip is a prize entry. Earn bonus entries by referring friends, completing Roams, and submitting What Moves Us videos.',
+      body: 'Every active trip is a prize entry. Get bonus entries by referring friends, completing Roams, and submitting What Moves Us videos.',
     },
   ]
 

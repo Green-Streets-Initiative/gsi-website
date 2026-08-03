@@ -234,7 +234,7 @@ const faqSections = [
       {
         question: 'What do I earn for completing a Roam?',
         answer:
-          'Completing a Roam earns you a badge and XP. Some Roams are part of collections — finish all Roams in a collection for a bonus badge. During Shift Your Summer, completing a Roam also earns bonus sweepstakes entries.',
+          'Completing a Roam earns you a badge and XP. Some Roams are part of collections — finish all Roams in a collection for a bonus badge. During Shift Your Summer, completing a Roam also adds bonus sweepstakes entries.',
       },
       {
         question: 'Any safety tips for Roams?',
@@ -282,7 +282,7 @@ const faqSections = [
       {
         question: 'What is Shift Your Summer?',
         answer:
-          'Shift Your Summer is our flagship summer event \u2014 a sweepstakes where your active trips, Roam completions, referrals, and other actions earn you entries into prize draws from leading brands and local partners. It runs from mid-June through mid-August. Check the Community tab during the event for full details and a live look at available prizes.',
+          'Shift Your Summer is our flagship summer event \u2014 a sweepstakes where your active trips, Roam completions, referrals, and other actions all count as entries into prize draws from leading brands and local partners. It runs from mid-June through mid-August. Check the Community tab during the event for full details and a live look at available prizes.',
       },
       {
         question: 'Who is eligible?',
@@ -302,35 +302,35 @@ const faqSections = [
         ),
       },
       {
-        question: 'How do I earn sweepstakes entries?',
+        question: 'How do I get sweepstakes entries?',
         answer: (
           <div>
-            <p>There are several ways to earn entries during the event:</p>
+            <p>There are several ways to get entries during the event:</p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>
                 <strong>Active trips</strong> &mdash; Each walk, bike, or
-                transit trip earns 1 entry, up to 6 entries per day.
+                transit trip counts as 1 entry, up to 6 entries per day.
               </li>
               <li>
-                <strong>Roam completion</strong> &mdash; Completing a Roam earns
+                <strong>Roam completion</strong> &mdash; Completing a Roam adds
                 10 bonus entries.
               </li>
               <li>
                 <strong>Checkpoint visits</strong> &mdash; Each Roam checkpoint
-                you visit earns 1 entry.
+                you visit adds 1 entry.
               </li>
               <li>
                 <strong>Collection completion</strong> &mdash; Finishing all
-                Roams in a collection earns 50 bonus entries.
+                Roams in a collection adds 50 bonus entries.
               </li>
               <li>
                 <strong>What Moves Us videos</strong> &mdash; Submitting a video
-                to an eligible What Moves Us campaign earns 5 entries.
+                to an eligible What Moves Us campaign adds 5 entries.
               </li>
               <li>
                 <strong>Referrals</strong> &mdash; For each friend who joins
                 Shift using your referral code and takes a verified trip, you
-                earn up to 10 entries. New users who join through a referral
+                get up to 10 entries. New users who join through a referral
                 start with 2 entries. Limit 10 referred friends (up to 100
                 referral entries total).
               </li>
@@ -351,9 +351,9 @@ const faqSections = [
         ),
       },
       {
-        question: 'Is there a limit on how many entries I can earn?',
+        question: 'Is there a limit on how many entries I can get?',
         answer:
-          'Trip entries are capped at 6 per day. Referral entries max out at 10 referred friends. All other entry types (Roams, checkpoints, collections, What Moves Us) have no daily cap \u2014 the more you do, the more entries you earn.',
+          'Trip entries are capped at 6 per day. Referral entries max out at 10 referred friends. All other entry types (Roams, checkpoints, collections, What Moves Us) have no daily cap \u2014 the more you do, the more entries you add.',
       },
       {
         question: 'How are winners chosen?',
