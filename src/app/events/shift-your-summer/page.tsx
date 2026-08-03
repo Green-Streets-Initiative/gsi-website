@@ -16,8 +16,10 @@ import {
   type PrizeTier,
 } from './_lib/prizes'
 
-// This is a live leaderboard — always fetch fresh data, never use cached HTML.
-export const dynamic = 'force-dynamic'
+// Live leaderboard, but the standings queries are expensive: serve a cached
+// page and regenerate it at most once a minute. Visitors always load
+// instantly; the data is never more than ~60s old.
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Shift Your Summer — Live Leaderboard | Green Streets Initiative',
@@ -509,7 +511,7 @@ function ActiveEvent({
                     Live standings
                   </h2>
                   <p className="mt-1 text-sm text-white/75">
-                    Updated when you load this page.
+                    Updated every minute.
                   </p>
                 </div>
                 <RefreshButton />
