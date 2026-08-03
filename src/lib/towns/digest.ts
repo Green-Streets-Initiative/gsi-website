@@ -104,11 +104,20 @@ export function shortCivicTitle(item: TownCivicEvent, townNames: string[]): stri
  * and town-name prefixes.
  */
 export function headlineFor(item: TownCivicEvent, townNames: string[]): string {
-  if (item.digest_headline?.trim()) return item.digest_headline.trim()
-  let t = shortCivicTitle(item, townNames)
-  const pipe = t.lastIndexOf('| ')
-  if (pipe >= 0) t = t.slice(pipe + 2)
-  t = t.replace(/\s*\((virtual|in[- ]person|hybrid)\)\s*$/i, '').trim()
+  let t: string
+  if (item.digest_headline?.trim()) {
+    t = item.digest_headline.trim()
+  } else {
+    t = shortCivicTitle(item, townNames)
+    const pipe = t.lastIndexOf('| ')
+    if (pipe >= 0) t = t.slice(pipe + 2)
+    t = t.replace(/\s*\((virtual|in[- ]person|hybrid)\)\s*$/i, '').trim()
+  }
+  // Lead with the community name ("Reid Overpass") when the headline doesn't
+  // already carry it — official agency titles are unrecognizable to the
+  // residents who know the project by its local name.
+  const name = item.community_name?.trim()
+  if (name && !t.toLowerCase().includes(name.toLowerCase())) return `${name}: ${t}`
   return t
 }
 

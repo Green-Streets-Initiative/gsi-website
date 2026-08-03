@@ -91,10 +91,16 @@ export function buildFeaturedCandidates(
         : ce.comment_deadline
         ? `Comment by ${dateOnlyChip(ce.comment_deadline)}`
         : 'Open for feedback'
+      // Lead with the community name ("Reid Overpass") when the official
+      // title doesn't carry it — that's the name residents scan for.
+      const name = ce.community_name?.trim()
+      const title = name && !ce.title.toLowerCase().includes(name.toLowerCase())
+        ? `${name}: ${ce.title}`
+        : ce.title
       return {
         key: `civic-${ce.id}`,
         chip,
-        title: ce.title,
+        title,
         desc: ce.description,
         label: ce.action_label ?? (ce.virtual_link ? 'Register' : 'See details'),
         href: linkFor(ce.virtual_link ?? ce.source_url),
