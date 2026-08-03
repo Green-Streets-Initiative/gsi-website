@@ -65,7 +65,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!result) return { title: 'Town not found' }
   const { town } = result
   const title = `Walking, Biking & Transit in ${town.town_name}, ${town.state} — Shift`
-  const description = `${town.town_name} neighbors have logged ${town.active_trips_month.toLocaleString()} active trips this month on Shift. See how ${town.town_name} moves — live stats, the town-vs-town leaderboard, local events, and rewards.`
+  // Lead with what the page helps you do, not with a stat. Four weeks of Search
+  // Console data (2026-07-04→08-01) says the searches this page can win are
+  // practical and personal — "how long does it take to walk a 20 minute drive",
+  // "safest ways to bike commute in boston", "commute map" — and none of the
+  // 188 queries the site received were about a town's collective trip count.
+  // The trip total stays, one clause later, as supporting proof.
+  // Kept under ~155 chars so Google doesn't truncate it mid-sentence; the
+  // longest town name in the directory still lands inside the budget.
+  const description = `How ${town.town_name} gets around without driving — walking, biking and transit routes neighbors use, plus local rides, events and community stats.`
   return {
     title,
     description,
@@ -119,7 +127,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         '@type': 'WebPage',
         name: `Walking, Biking & Transit in ${name}, ${town.state}`,
         url: `${SITE_URL}/shift/towns/${slug}`,
-        description: `Live community stats on walking, biking, and transit in ${name}, ${stateLabel(town.state)}, from the Shift app by Green Streets Initiative.`,
+        description: `How ${name}, ${stateLabel(town.state)} gets around without driving — walking, biking and transit routes, local rides and events, and live community stats from the Shift app by Green Streets Initiative.`,
         isPartOf: { '@type': 'WebSite', name: 'Green Streets Initiative', url: SITE_URL },
         about: { '@type': 'City', name, address: { '@type': 'PostalAddress', addressLocality: name, addressRegion: town.state, addressCountry: 'US' } },
       },
@@ -154,10 +162,22 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
               <Link href="/shift/towns" className="hover:text-white">Shift Towns</Link>
               &nbsp;&middot;&nbsp;{stateLabel(town.state)}
             </Eyebrow>
+            {/* The h1 names the subject rather than making a claim about it.
+                "{name} is on the move" was a headline for people who already
+                know what Shift is; nobody searches for it. This matches the
+                title tag and the practical, how-do-I-get-around intent behind
+                the queries the site actually receives. */}
             <h1 className="mb-4 font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              {name} is on the move
+              Walking, biking &amp; transit in {name}
             </h1>
-            <p className="mx-auto mb-2 max-w-[560px] text-lg leading-[1.7] text-white/90">
+            <p className="mx-auto mb-3 max-w-[600px] text-lg leading-[1.7] text-white/90">
+              See the routes {name}{' '}neighbors actually walk, ride and take transit on, what&apos;s
+              happening locally, and how the town is trending — built from real trips logged in the
+              Shift app.
+            </p>
+            {/* Rank and Shift Rate demoted from the opening line to supporting
+                proof. Still prominent, no longer the first thing read. */}
+            <p className="mx-auto mb-2 max-w-[560px] text-base leading-[1.7] text-white/75">
               {town.rank > 0 ? (
                 <>#{town.rank} of {town.rankedInState} {town.stateName} towns by Shift Rate so far in {monthName}: share of active transportation trips (walk, micromobility, transit).</>
               ) : (
