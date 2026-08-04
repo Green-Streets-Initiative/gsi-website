@@ -334,7 +334,7 @@ function SuccessPlanForm() {
         {(form.key_dates ?? []).map((k, i) => (
           <div key={i} className="mb-2 flex items-center gap-2.5">
             <input
-              className={`${fieldClass} flex-1`}
+              className={`${fieldClass} min-w-0 flex-1`}
               placeholder="e.g. Annual sustainability report due"
               value={k.label}
               onChange={(e) =>
@@ -346,9 +346,13 @@ function SuccessPlanForm() {
                 })
               }
             />
+            {/* basis + shrink-0, not a width utility: fieldClass already sets
+                w-full and the CSS-order coin flip let it beat w-[170px],
+                ballooning the date input and crushing the label to a nub.
+                flex-basis wins over width on the flex main axis regardless. */}
             <input
               type="date"
-              className={`${fieldClass} w-[170px]`}
+              className={`${fieldClass} shrink-0 basis-[170px]`}
               value={k.date}
               onChange={(e) =>
                 setForm({
