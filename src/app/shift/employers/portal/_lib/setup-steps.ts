@@ -67,7 +67,9 @@ export function computeSetupSteps(args: {
       id: 'challenge',
       label: 'Active challenge running',
       desc: 'Kick off a friendly competition to drive sign-ups.',
-      done: challenges.length > 0,
+      // Only challenges this employer created count — being eligible for a
+      // public flagship (e.g. Shift Your Summer) isn't a setup action.
+      done: challenges.some((c) => !c.is_flagship),
       route: '/shift/employers/portal/challenges',
     },
   ]

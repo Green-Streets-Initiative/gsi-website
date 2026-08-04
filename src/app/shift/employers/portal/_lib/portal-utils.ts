@@ -19,6 +19,18 @@ export function formatDate(iso: string) {
   })
 }
 
+// For contract/access dates stored as midnight UTC — rendering those in ET
+// shows the previous day (a June 3 start reads "June 2"). Format in UTC so
+// the calendar date matches what's on the invoice.
+export function formatDateUTC(iso: string) {
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
 export function formatDateShort(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
     month: 'short',

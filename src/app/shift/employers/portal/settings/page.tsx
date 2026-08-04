@@ -20,7 +20,7 @@ import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
 import type { GroupAdmin } from '../_lib/portal-types'
 import { TIER_LABEL, TIER_ANNUAL_PRICE } from '../_lib/portal-constants'
-import { formatDate } from '../_lib/portal-utils'
+import { formatDateUTC } from '../_lib/portal-utils'
 import PortalPageHead from '../_components/PortalPageHead'
 import { Card, CardHead } from '@/components/employer/Card'
 import Badge from '@/components/employer/Badge'
@@ -549,13 +549,13 @@ export default function SettingsPage() {
                 {group.access_starts_at && (
                   <div className="flex justify-between">
                     <span className="text-ink-muted">Started</span>
-                    <span className="font-semibold text-ink">{formatDate(group.access_starts_at)}</span>
+                    <span className="font-semibold text-ink">{formatDateUTC(group.access_starts_at)}</span>
                   </div>
                 )}
                 {group.access_ends_at && (
                   <div className="flex justify-between">
                     <span className="text-ink-muted">Renews</span>
-                    <span className="font-semibold text-ink">{formatDate(group.access_ends_at)}</span>
+                    <span className="font-semibold text-ink">{formatDateUTC(group.access_ends_at)}</span>
                   </div>
                 )}
               </div>

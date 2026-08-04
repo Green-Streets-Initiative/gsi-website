@@ -163,10 +163,10 @@ export default function SetupPage() {
               Why finish setup?
             </div>
             <p className="text-[13.5px] leading-[1.5] text-ink-muted">
-              Teams that complete all five steps before inviting employees see
-              roughly twice the join rate in the first two weeks. The last two —
-              getting employees in and starting a challenge — drive the most
-              momentum.
+              Finishing setup before you invite employees makes the first
+              impression count — everyone lands on a complete page. The last
+              two steps — getting employees in and starting a challenge —
+              drive the most momentum.
             </p>
           </Card>
 
