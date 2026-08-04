@@ -265,7 +265,7 @@ function buildAdminNotificationHtml(ev: {
   return `
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 520px; margin: 0 auto; color: #1a1a2e;">
   <div style="background: #191A2E; padding: 24px 28px; border-radius: 12px 12px 0 0;">
-    <img src="https://gogreenstreets.org/shift-wordmark-white.svg" alt="Shift" width="72" style="display: block;" />
+    <img src="https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-wordmark-white.png?v=20260422" alt="Shift" width="72" style="display: block;" />
   </div>
   <div style="background: #ffffff; padding: 28px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
     <h2 style="margin: 0 0 4px; font-size: 18px; color: #1a1a2e;">New event submitted</h2>
