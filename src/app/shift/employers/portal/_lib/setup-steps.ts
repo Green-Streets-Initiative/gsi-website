@@ -51,8 +51,18 @@ export function computeSetupSteps(args: {
       id: 'advisor',
       label: 'Commute Advisor configured',
       desc: 'Office address, benefits, and routes published for your team.',
+      // An address alone isn't a configured advisor — require at least one
+      // published benefit or amenity alongside it.
       done: !!(
-        benefitsForm.destination_address || benefitsForm.transit_subsidy_monthly
+        benefitsForm.destination_address &&
+        (benefitsForm.transit_subsidy_monthly ||
+          benefitsForm.bluebikes_subsidized ||
+          benefitsForm.bike_parking ||
+          benefitsForm.showers ||
+          benefitsForm.free_parking ||
+          benefitsForm.parking_cost_monthly ||
+          (benefitsForm.shuttle_routes?.length ?? 0) > 0 ||
+          benefitsForm.other_benefits)
       ),
       route: '/shift/employers/portal/advisor',
     },
