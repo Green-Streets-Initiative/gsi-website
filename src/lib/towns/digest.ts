@@ -253,6 +253,25 @@ export function buildTownDigest(opts: {
     )
   }
 
+  // "What's being decided" — the pipeline's neutral, source-verified
+  // background (the alternatives on the table, what input can still change,
+  // how the project got here). Renders only when verification passed.
+  const wd = item.whats_deciding?.status === 'ok' ? item.whats_deciding : null
+  const wdBullets = wd
+    ? [wd.on_the_table, wd.still_open, wd.how_we_got_here].filter((s): s is string => !!s?.trim())
+    : []
+  const decidedBlock = wdBullets.length
+    ? `<p style="margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:0.08em;color:#8a6612;font-family:${FONT_DISPLAY};">WHAT&rsquo;S BEING DECIDED</p>
+        ${wdBullets.map((b) => `<p style="margin:0 0 3px;font-size:14px;line-height:1.5;color:#3A3C4E;">&bull;&nbsp; ${escapeHtml(b)}</p>`).join('\n')}
+        <div style="height:10px;line-height:10px;">&nbsp;</div>`
+    : ''
+
+  // Local groups' commentary — their voice, clearly attributed, never ours.
+  const communityLinks = (item.community_links ?? []).filter((l) => l?.url && l?.label).slice(0, 3)
+  const communityLine = communityLinks.length
+    ? `<p style="margin:12px 0 0;font-size:13px;line-height:1.5;color:#5A5C6E;">What local groups are saying: ${communityLinks.map((l) => `<a href="${linkFor('community_link')(l.url)}" style="color:#2966E5;font-weight:700;">${escapeHtml(l.label)}</a>`).join(' &nbsp;&middot;&nbsp; ')}</p>`
+    : ''
+
   const ctaHref = item.virtual_link
     ? linkFor('featured_cta')(item.virtual_link)
     : item.source_url
@@ -389,11 +408,12 @@ export function buildTownDigest(opts: {
       <table width="100%" cellpadding="0" cellspacing="0" style="border:1.5px solid #E3B23C;background:#FDF8EC;border-radius:12px;"><tr><td style="padding:20px 22px;">
         <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#8a6612;">${escapeHtml(chip)}</p>${PROXIMITY_PLACEHOLDER}
         ${item.description ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#3A3C4E;">${escapeHtml(truncate(item.description, 420))}</p>` : ''}
+        ${decidedBlock}
         ${weighIn.length ? `<p style="margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:0.08em;color:#8a6612;font-family:${FONT_DISPLAY};">HOW TO WEIGH IN</p>
         ${weighIn.map((w) => `<p style="margin:0 0 3px;font-size:14px;line-height:1.5;color:#3A3C4E;">&bull;&nbsp; ${w}</p>`).join('\n')}` : ''}
         <table cellpadding="0" cellspacing="0" style="margin:14px 0 0;"><tr><td style="background:#191A2E;border-radius:999px;">
           <a href="${ctaHref}" style="display:inline-block;padding:11px 26px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;font-family:${FONT_BODY};">${escapeHtml(ctaLabel)} &rarr;</a>
-        </td></tr></table>
+        </td></tr></table>${communityLine}
       </td></tr></table>
     </td>
   </tr>
@@ -404,6 +424,12 @@ export function buildTownDigest(opts: {
   <tr>
     <td style="padding:0 32px 26px;">
       <p style="margin:0;font-size:14px;line-height:1.6;color:#3A3C4E;border-top:1px solid #E5E7EB;padding-top:16px;">${escapeHtml(townName)} neighbors on Shift have logged <b style="color:#191A2E;">${trips} walking, biking, and transit trips</b> so far this month${escapeHtml(rankClause)}. <a href="${townUrl('pulse')}" style="color:#2966E5;font-weight:700;text-decoration:none;">See how ${escapeHtml(townName)} moves &rarr;</a></p>
+    </td>
+  </tr>
+  <!-- Forward nudge — the digest's growth loop -->
+  <tr>
+    <td style="padding:0 32px 26px;">
+      <p style="margin:0;font-size:13px;line-height:1.6;color:#5A5C6E;">Know a neighbor who cares about ${escapeHtml(townName)}&rsquo;s streets? <b style="color:#191A2E;">Forward them this email</b> — anyone can <a href="${townUrl('forward_signup', '#digest')}" style="color:#2966E5;font-weight:700;text-decoration:none;">sign up for ${escapeHtml(townName)} updates here</a>.</p>
     </td>
   </tr>
   <!-- Footer -->

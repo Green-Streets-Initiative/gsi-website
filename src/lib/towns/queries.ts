@@ -509,6 +509,16 @@ export interface TownCivicEvent {
   digest_headline: string | null
   /** Name locals actually use for the asset ("Reid Overpass") when it differs from the official title. */
   community_name: string | null
+  /** Neutral "what's being decided" background, pipeline-written and verified; status 'ok' means renderable. */
+  whats_deciding: {
+    status: string
+    on_the_table?: string
+    still_open?: string
+    how_we_got_here?: string | null
+    ways_to_weigh_in?: string[]
+  } | null
+  /** Admin-entered links to local groups' commentary: [{label, url}]. */
+  community_links: Array<{ label: string; url: string }> | null
   /** The PROJECT's location (geocoded by the fact-check gate); null for network-wide items. */
   lat: number | null
   lng: number | null
@@ -519,7 +529,7 @@ export async function getTownCivicEvents(townName: string): Promise<TownCivicEve
   const todayStr = new Date().toISOString().slice(0, 10)
   const { data } = await supabase
     .from('infrastructure_hearings')
-    .select('id, title, description, hearing_date, hearing_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline, community_name, lat, lng')
+    .select('id, title, description, hearing_date, hearing_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline, community_name, whats_deciding, community_links, lat, lng')
     .eq('status', 'published')
     .or(`municipality.eq.${townName},affected_towns.cs.{${townName}}`)
     .order('hearing_date', { ascending: true, nullsFirst: false })

@@ -32,12 +32,19 @@ const FROM = 'Green Streets Initiative <noreply@gogreenstreets.org>'
 const REPLY_TO = 'info@gogreenstreets.org'
 const ADMIN_EMAIL = 'keith@gogreenstreets.org'
 const SITE = 'https://www.gogreenstreets.org'
-const MAX_SENDS_PER_30D = 2
+// Announcements + reminders share this budget (raised 2 → 3 when reminders
+// landed, Keith 2026-08-04).
+const MAX_SENDS_PER_30D = 3
 
 interface SendRow {
   item_ids: string[] | null
   sent_at: string
+  /** 'announcement' (first mention) or 'reminder' (the ~3-days-out second send). */
+  kind: string | null
 }
+
+/** Meeting/deadline this many days out triggers the reminder send. */
+const REMINDER_LEAD_DAYS = 3
 
 /** Show "near your home" only when it's meaningfully close. */
 const PROXIMITY_MAX_MILES = 2.5
@@ -104,7 +111,7 @@ export async function GET(req: Request) {
     try {
       const { data: sends } = await sb
         .from('town_digest_sends')
-        .select('item_ids, sent_at')
+        .select('item_ids, sent_at, kind')
         .eq('town_slug', slug)
       const sentItemIds = new Set(((sends ?? []) as SendRow[]).flatMap((s) => s.item_ids ?? []))
       const recentSends = ((sends ?? []) as SendRow[]).filter((s) => s.sent_at >= cutoff30).length
@@ -115,9 +122,35 @@ export async function GET(req: Request) {
 
       // Dry-run relaxes "upcoming only" to "published in the last 30 days" so
       // a just-passed meeting still renders for copy review.
+      const allCivic: TownCivicEvent[] = dryRun ? [] : await getTownCivicEvents(town.town_name)
       const civic: TownCivicEvent[] = dryRun
         ? await recentlyPublishedCivic(sb, town.town_name, cutoff30)
-        : (await getTownCivicEvents(town.town_name)).filter((c) => !sentItemIds.has(c.id))
+        : allCivic.filter((c) => !sentItemIds.has(c.id))
+
+      // Reminder pass (Keith 2026-08-04): an item announced weeks ago whose
+      // meeting (or comment deadline) is now REMINDER_LEAD_DAYS out gets one
+      // second email, featured this time — the Reid Overpass lesson: the
+      // announcement landed 3 weeks early as a footnote, then silence.
+      // Guardrails: previously-sent items only (fresh ones are announcements),
+      // one reminder per item ever, nothing emailed to this town in the last
+      // 7 days, and the send counts against the 30-day cap like any other.
+      const todayEt = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+      const reminderTarget = new Date(Date.parse(`${todayEt}T12:00:00Z`) + REMINDER_LEAD_DAYS * 86400000)
+        .toISOString().slice(0, 10)
+      const remindedIds = new Set(
+        ((sends ?? []) as SendRow[]).filter((s) => s.kind === 'reminder').flatMap((s) => s.item_ids ?? []),
+      )
+      const cutoff7 = new Date(Date.now() - 7 * 86400000).toISOString()
+      const recentIds = new Set(
+        ((sends ?? []) as SendRow[]).filter((s) => s.sent_at >= cutoff7).flatMap((s) => s.item_ids ?? []),
+      )
+      const reminders = dryRun ? [] : allCivic.filter((c) =>
+        sentItemIds.has(c.id) &&
+        !remindedIds.has(c.id) &&
+        !recentIds.has(c.id) &&
+        (c.hearing_date === reminderTarget || (!c.hearing_date && c.comment_deadline === reminderTarget)),
+      )
+      const isReminder = reminders.length > 0
 
       const centroid = await getTownCentroid(town.group_id)
       const [events, partners, resources] = await Promise.all([
@@ -129,7 +162,10 @@ export async function GET(req: Request) {
       const content = buildTownDigest({
         town,
         qualifyingCount,
-        civic,
+        // Reminder items lead; unsent items may ride along (both get logged
+        // as sent). Soonest-first selection naturally features the ~3-days-out
+        // reminder unless something even sooner is brand new — also correct.
+        civic: isReminder ? [...reminders, ...civic] : civic,
         resources,
         events,
         partners,
@@ -233,10 +269,11 @@ export async function GET(req: Request) {
           subscriber_count: sent,
           error_count: errors,
           subject: content.subject,
+          kind: isReminder ? 'reminder' : 'announcement',
         })
       }
 
-      results.push({ town: slug, sent, errors, subject: content.subject, item_ids: content.itemIds, dry_run: dryRun })
+      results.push({ town: slug, sent, errors, subject: content.subject, item_ids: content.itemIds, kind: isReminder ? 'reminder' : 'announcement', dry_run: dryRun })
     } catch (err) {
       results.push({ town: slug, error: String(err) })
     }

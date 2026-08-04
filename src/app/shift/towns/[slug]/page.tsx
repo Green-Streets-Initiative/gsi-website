@@ -256,8 +256,9 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
           <RewardsPartners partners={partners} townName={name} />
         </section>
 
-        {/* Town digest signup — E19's front door */}
-        <section className="px-8 pb-14">
+        {/* Town digest signup — E19's front door. Anchored: digest emails'
+            forward-nudge links land forwarded readers right here. */}
+        <section id="digest" className="scroll-mt-28 px-8 pb-14">
           <TownDigestSignup townName={name} townSlug={slug} />
         </section>
 
