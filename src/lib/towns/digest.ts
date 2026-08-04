@@ -266,6 +266,40 @@ export function buildTownDigest(opts: {
         <div style="height:10px;line-height:10px;">&nbsp;</div>`
     : ''
 
+  // Calendar + map — one slim utility line under the CTA (Keith 2026-08-04:
+  // the email is bulky, so links, not widgets/images). Floating local times,
+  // same convention as lib/events.ts buildIcs/gcalUrl; timeless meetings
+  // become all-day entries.
+  const calStamp = (t: string | null) =>
+    item.hearing_date!.replace(/-/g, '') + 'T' + (t ?? '18:00').replace(/:/g, '').slice(0, 4) + '00'
+  let gcalHref: string | null = null
+  if (item.hearing_date) {
+    const dates = item.hearing_time
+      ? `${calStamp(item.hearing_time)}/${calStamp(item.hearing_end_time ?? item.hearing_time)}`
+      : `${item.hearing_date.replace(/-/g, '')}/${item.hearing_date.replace(/-/g, '')}`
+    gcalHref = `https://calendar.google.com/calendar/render?${new URLSearchParams({
+      action: 'TEMPLATE',
+      text: headline,
+      dates,
+      details: `${item.description ?? ''}\n\n${item.source_url ?? ''}\nvia Green Streets Initiative`.trim(),
+      location: item.hearing_location_name ?? '',
+    })}`
+  }
+  const mapHref = item.lat != null && item.lng != null
+    ? `https://www.google.com/maps?q=${item.lat},${item.lng}`
+    : null
+  const utilityBits = [
+    gcalHref
+      ? `Add to calendar: <a href="${gcalHref}" style="color:#2966E5;font-weight:700;">Google</a> &middot; <a href="${SITE}/api/civic/${item.id}/ics" style="color:#2966E5;font-weight:700;">Apple / Outlook</a>`
+      : '',
+    mapHref
+      ? `<a href="${mapHref}" style="color:#2966E5;font-weight:700;">See the project area on a map</a>`
+      : '',
+  ].filter(Boolean)
+  const utilityLine = utilityBits.length
+    ? `<p style="margin:10px 0 0;font-size:13px;line-height:1.5;color:#5A5C6E;">${utilityBits.join(' &nbsp;&middot;&nbsp; ')}</p>`
+    : ''
+
   // Local groups' commentary — their voice, clearly attributed, never ours.
   const communityLinks = (item.community_links ?? []).filter((l) => l?.url && l?.label).slice(0, 3)
   const communityLine = communityLinks.length
@@ -413,7 +447,7 @@ export function buildTownDigest(opts: {
         ${weighIn.map((w) => `<p style="margin:0 0 3px;font-size:14px;line-height:1.5;color:#3A3C4E;">&bull;&nbsp; ${w}</p>`).join('\n')}` : ''}
         <table cellpadding="0" cellspacing="0" style="margin:14px 0 0;"><tr><td style="background:#191A2E;border-radius:999px;">
           <a href="${ctaHref}" style="display:inline-block;padding:11px 26px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;font-family:${FONT_BODY};">${escapeHtml(ctaLabel)} &rarr;</a>
-        </td></tr></table>${communityLine}
+        </td></tr></table>${utilityLine}${communityLine}
       </td></tr></table>
     </td>
   </tr>

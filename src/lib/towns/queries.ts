@@ -505,6 +505,7 @@ export interface TownCivicEvent {
   description: string | null
   hearing_date: string | null
   hearing_time: string | null
+  hearing_end_time: string | null
   hearing_type: string
   hearing_location_name: string | null
   virtual_link: string | null
@@ -540,7 +541,7 @@ export async function getTownCivicEvents(townName: string): Promise<TownCivicEve
   const todayStr = new Date().toISOString().slice(0, 10)
   const { data } = await supabase
     .from('infrastructure_hearings')
-    .select('id, title, description, hearing_date, hearing_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline, community_name, whats_deciding, community_links, lat, lng')
+    .select('id, title, description, hearing_date, hearing_time, hearing_end_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline, community_name, whats_deciding, community_links, lat, lng')
     .eq('status', 'published')
     .or(`municipality.eq.${townName},affected_towns.cs.{${townName}}`)
     .order('hearing_date', { ascending: true, nullsFirst: false })
