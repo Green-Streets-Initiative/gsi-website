@@ -120,12 +120,15 @@ export async function GET(req: Request) {
         continue
       }
 
-      // Dry-run relaxes "upcoming only" to "published in the last 30 days" so
-      // a just-passed meeting still renders for copy review.
-      const allCivic: TownCivicEvent[] = dryRun ? [] : await getTownCivicEvents(town.town_name)
-      const civic: TownCivicEvent[] = dryRun
-        ? await recentlyPublishedCivic(sb, town.town_name, cutoff30)
-        : allCivic.filter((c) => !sentItemIds.has(c.id))
+      // Dry-run runs the SAME selection as a real send — a preview that
+      // diverges from what will actually go out is worse than none (Keith
+      // hit exactly that 2026-08-04: preview featured a July 14 webinar with
+      // a dead Zoom link while the real send would feature the Reid
+      // reminder). Only when the real selection has nothing does dry-run
+      // fall back to a rewound "recently published" window for copy review,
+      // clearly labeled in the subject.
+      const allCivic: TownCivicEvent[] = await getTownCivicEvents(town.town_name)
+      const civic: TownCivicEvent[] = allCivic.filter((c) => !sentItemIds.has(c.id))
 
       // Reminder pass (Keith 2026-08-04): an item announced weeks ago whose
       // meeting (or comment deadline) is now REMINDER_LEAD_DAYS out gets one
@@ -148,7 +151,7 @@ export async function GET(req: Request) {
       // would otherwise skip an item permanently, and items already inside
       // the window when this shipped would never remind at all.
       const inWindow = (d: string | null) => !!d && d > todayEt && d <= reminderTarget
-      const reminders = dryRun ? [] : allCivic.filter((c) =>
+      const reminders = allCivic.filter((c) =>
         sentItemIds.has(c.id) &&
         !remindedIds.has(c.id) &&
         !recentIds.has(c.id) &&
@@ -163,7 +166,7 @@ export async function GET(req: Request) {
         getTownResources(town.group_id),
       ])
 
-      const content = buildTownDigest({
+      let content = buildTownDigest({
         town,
         qualifyingCount,
         // Reminder items lead; unsent items may ride along (both get logged
@@ -174,9 +177,25 @@ export async function GET(req: Request) {
         events,
         partners,
         priorSendCount: (sends ?? []).length,
-        now: dryRun ? Date.now() - 30 * 86400000 : undefined,
-        horizonDays: dryRun ? 60 : undefined,
       })
+      // Copy-review fallback: nothing due today, so preview recent past
+      // items with a rewound clock — labeled so it can't be mistaken for a
+      // real upcoming send.
+      let previewFallback = false
+      if (!content && dryRun) {
+        previewFallback = true
+        content = buildTownDigest({
+          town,
+          qualifyingCount,
+          civic: await recentlyPublishedCivic(sb, town.town_name, cutoff30),
+          resources,
+          events,
+          partners,
+          priorSendCount: (sends ?? []).length,
+          now: Date.now() - 30 * 86400000,
+          horizonDays: 60,
+        })
+      }
       if (!content) {
         results.push({ town: slug, skipped: 'no new published items' })
         continue
@@ -251,7 +270,9 @@ export async function GET(req: Request) {
             from: FROM,
             to: r.email,
             replyTo: REPLY_TO,
-            subject: dryRun ? `[Preview — ${slug}] ${content.subject}` : content.subject,
+            subject: dryRun
+              ? `[Preview — ${slug}${previewFallback ? ' — nothing due today; showing recent items' : ''}] ${content.subject}`
+              : content.subject,
             html,
             headers: {
               'List-Unsubscribe': `<${unsubUrl}>`,

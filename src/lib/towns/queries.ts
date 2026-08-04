@@ -107,6 +107,11 @@ export interface TownEvent {
   title: string
   event_date: string
   event_time: string | null
+  event_end_time: string | null
+  summary: string | null
+  organizer_name: string | null
+  organizer_url: string | null
+  image_url: string | null
   location_name: string | null
   event_type: string | null
   /** Miles from the town centroid */
@@ -306,8 +311,9 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
   const { data } = await supabase
     .from('event_details')
     .select(`
-      content_id, event_date, event_time, location_name, location_lat, location_lng, event_type, tags,
-      content_items!inner ( id, title, status )
+      content_id, event_date, event_time, event_end_time, location_name, location_lat, location_lng, event_type, tags,
+      organizer_name, organizer_url, image_url,
+      content_items!inner ( id, title, status, summary )
     `)
     .eq('content_items.status', 'approved')
     .eq('content_items.content_type', 'community_event')
@@ -334,6 +340,11 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
       title: ci.title as string,
       event_date: row.event_date as string,
       event_time: (row.event_time as string) ?? null,
+      event_end_time: (row.event_end_time as string) ?? null,
+      summary: (ci.summary as string) ?? null,
+      organizer_name: (row.organizer_name as string) ?? null,
+      organizer_url: (row.organizer_url as string) ?? null,
+      image_url: (row.image_url as string) ?? null,
       location_name: (row.location_name as string) ?? null,
       event_type: (row.event_type as string) ?? null,
       distance_miles: distance,
@@ -552,6 +563,11 @@ export async function getTownPartners(townName: string): Promise<TownPartner[]> 
     .from('sponsors')
     .select('id, name, logo_url, website_url, address, discount_description')
     .eq('status', 'active')
+    // Rewards Partners only — same set the public rewards-partners page uses.
+    // Without this, event/prize sponsors with a local address (MBTAgifts, a
+    // Shift Your Summer prize donor) render as "businesses that reward people
+    // for moving actively", which is false: they offer app users nothing.
+    .in('sponsor_type', ['community_reward', 'local', 'merchant_partner'])
     .ilike('address', `%${townName}%`)
     .order('name', { ascending: true })
     .limit(8)

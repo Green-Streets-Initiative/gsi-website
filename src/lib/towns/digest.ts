@@ -336,7 +336,7 @@ export function buildTownDigest(opts: {
   const eventsSection = eventPicks.length
     ? `<tr><td style="padding:0 32px 24px;">
         <p style="margin:0 0 10px;font-family:${FONT_DISPLAY};font-size:16px;font-weight:700;color:#191A2E;">Happening around ${escapeHtml(townName)}</p>
-        ${eventPicks.map((e) => `<p style="margin:0 0 7px;font-size:14px;line-height:1.5;color:#3A3C4E;"><b style="color:#191A2E;">${escapeHtml(eventDateLabel(e))}</b> · ${escapeHtml(e.title)}${e.location_name ? ` — ${escapeHtml(e.location_name)}` : ''}${eventTag(e)}</p>`).join('\n')}
+        ${eventPicks.map((e) => `<p style="margin:0 0 7px;font-size:14px;line-height:1.5;color:#3A3C4E;"><b style="color:#191A2E;">${escapeHtml(eventDateLabel(e))}</b> · <a href="${linkFor('event')(`${SITE}/events/${encodeURIComponent(e.id)}`)}" style="color:#191A2E;font-weight:700;">${escapeHtml(e.title)}</a>${e.location_name ? ` — ${escapeHtml(e.location_name)}` : ''}${eventTag(e)}</p>`).join('\n')}
         <p style="margin:10px 0 0;font-size:13px;"><a href="${townUrl('events_more', '#events')}" style="color:#2966E5;font-weight:700;text-decoration:none;">See all events near ${escapeHtml(townName)} &rarr;</a></p>
       </td></tr>`
     : ''
