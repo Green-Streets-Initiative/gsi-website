@@ -8,3 +8,6 @@ CREATE TABLE IF NOT EXISTS freshness_snapshots (
   prices      text[] NOT NULL DEFAULT '{}',
   fetched_at  timestamptz NOT NULL DEFAULT now()
 );
+
+-- RLS: no public read/write — only the service-role cron touches this table
+ALTER TABLE freshness_snapshots ENABLE ROW LEVEL SECURITY;
