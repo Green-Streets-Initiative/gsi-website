@@ -144,11 +144,15 @@ export async function GET(req: Request) {
       const recentIds = new Set(
         ((sends ?? []) as SendRow[]).filter((s) => s.sent_at >= cutoff7).flatMap((s) => s.item_ids ?? []),
       )
+      // Window (1..LEAD days out), not exact-day equality: a missed cron run
+      // would otherwise skip an item permanently, and items already inside
+      // the window when this shipped would never remind at all.
+      const inWindow = (d: string | null) => !!d && d > todayEt && d <= reminderTarget
       const reminders = dryRun ? [] : allCivic.filter((c) =>
         sentItemIds.has(c.id) &&
         !remindedIds.has(c.id) &&
         !recentIds.has(c.id) &&
-        (c.hearing_date === reminderTarget || (!c.hearing_date && c.comment_deadline === reminderTarget)),
+        (inWindow(c.hearing_date) || (!c.hearing_date && inWindow(c.comment_deadline))),
       )
       const isReminder = reminders.length > 0
 
