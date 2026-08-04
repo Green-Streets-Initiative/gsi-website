@@ -255,7 +255,7 @@ export default function ChallengesPage() {
       }
 
       // Save prizes
-      if (competitionId && (tierAtLeast('premium') || isGsiAdmin) && prizeForms.length > 0) {
+      if (competitionId && (tierAtLeast('standard') || isGsiAdmin) && prizeForms.length > 0) {
         for (let i = 0; i < prizeForms.length; i++) {
           const pf = prizeForms[i]
           const prizePayload = {
@@ -630,7 +630,7 @@ export default function ChallengesPage() {
             </div>
 
             {/* Prizes */}
-            {(tierAtLeast('premium') || isGsiAdmin) && (
+            {(tierAtLeast('standard') || isGsiAdmin) && (
               <div>
                 <div className="mb-2.5 text-[12.5px] font-semibold text-ink-muted">
                   Prizes{' '}

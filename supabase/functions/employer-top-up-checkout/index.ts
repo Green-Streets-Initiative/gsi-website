@@ -7,9 +7,8 @@
  *
  * Flow:
  *   1. Verify the caller's Supabase JWT — derive admin email.
- *   2. Find their group by admin_email; require tier='premium' + a
- *      stripe_customer_id (employers on other tiers don't currently
- *      fund reward pools).
+ *   2. Find their group by admin_email; require tier standard or above
+ *      (rewards moved from Premium-only into Standard on 2026-08-04).
  *   3. Find-or-create a reward_pools row for the group (owner_type=
  *      'employer'). A pool is created lazily here so admins don't
  *      need ops to provision it.
@@ -123,9 +122,9 @@ serve(async (req: Request) => {
     return jsonResponse({ error: "Admin role required for billing" }, 403);
   }
   const group = adminRow.groups as { id: string; name: string; tier: string; stripe_customer_id: string | null; admin_email: string | null };
-  if (group.tier !== "premium") {
+  if (group.tier !== "standard" && group.tier !== "premium") {
     return jsonResponse(
-      { error: "Reward pool funding is a Premium-tier feature" },
+      { error: "Reward pool funding requires the Standard plan or above" },
       403,
     );
   }

@@ -148,7 +148,7 @@ export default function BillingPage() {
         {/* Left column */}
         <div className="grid gap-5">
           {/* Rewards pool */}
-          {tierAtLeast('premium') && (
+          {tierAtLeast('standard') && (
             <Card>
               <CardHead
                 title="Employee rewards pool"

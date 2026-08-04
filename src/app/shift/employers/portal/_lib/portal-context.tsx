@@ -154,7 +154,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
 
       const now = new Date().toISOString()
       const poolPromise =
-        groupData.tier === 'premium'
+        groupData.tier === 'standard' || groupData.tier === 'premium'
           ? supabase
               .from('reward_pools')
               .select('id, name, balance_cents, lifetime_funded_cents, lifetime_spent_cents, active')
