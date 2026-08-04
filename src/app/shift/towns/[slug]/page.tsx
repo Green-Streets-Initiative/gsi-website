@@ -141,7 +141,16 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         '@type': 'Event',
         name: e.title,
         startDate: e.event_time ? `${e.event_date}T${e.event_time}` : e.event_date,
+        // These are approved upcoming events by construction (getTownEvents
+        // filters on status + date), so "scheduled" is always accurate.
+        eventStatus: 'https://schema.org/EventScheduled',
         url: `${SITE_URL}/events/${encodeURIComponent(e.id)}`,
+        ...(e.event_time && e.event_end_time ? { endDate: `${e.event_date}T${e.event_end_time}` } : {}),
+        ...(e.summary ? { description: e.summary } : {}),
+        ...(e.image_url ? { image: e.image_url } : {}),
+        ...(e.organizer_name
+          ? { organizer: { '@type': 'Organization', name: e.organizer_name, ...(e.organizer_url ? { url: e.organizer_url } : {}) } }
+          : {}),
         ...(e.location_name
           ? { location: { '@type': 'Place', name: e.location_name, address: { '@type': 'PostalAddress', addressLocality: name, addressRegion: town.state } } }
           : {}),
