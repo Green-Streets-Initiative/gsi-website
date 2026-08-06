@@ -3,6 +3,7 @@ import { withUtm } from '@/lib/utm'
 import {
   buildFeaturedCandidates,
   dateOnlyChip,
+  isRecruitment,
   TOWN_TZ,
   wallTime,
   type FeaturedItem,
@@ -200,6 +201,9 @@ export function buildTownDigest(opts: {
   const itemIds = [item.id, ...also.map((a) => a.civic?.id).filter((id): id is string => !!id)]
 
   const noun = meetingNoun(item)
+  // Undated recruitment items (committee applications) get "apply" copy, not
+  // meeting/feedback copy. Dated ones (e.g. an info session) keep meeting copy.
+  const recruit = isRecruitment(item) && !item.hearing_date
   const townNames = [...(item.affected_towns ?? []), item.municipality, townName]
   const headline = headlineFor(item, townNames)
   const todayIso = new Date(now).toLocaleDateString('en-CA', { timeZone: TOWN_TZ })
@@ -211,7 +215,9 @@ export function buildTownDigest(opts: {
     ? `${dateOnlyChip(item.hearing_date)}${time ? ` · ${time} ET` : ''} · ${typeWord}${noun}`
     : item.comment_deadline
       ? `Comments open through ${dateOnlyChip(item.comment_deadline)}`
-      : 'Open for feedback now'
+      : recruit
+        ? 'Applications open now'
+        : 'Open for feedback now'
 
   // Subject + lede state the thing — via the generated headline, never a
   // truncated scrape title.
@@ -229,7 +235,9 @@ export function buildTownDigest(opts: {
   const weighIn: string[] = []
   if (item.virtual_link) {
     weighIn.push(
-      `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">Join the ${item.hearing_type === 'virtual' ? 'virtual ' : ''}${noun} online</a> — registration takes a minute`,
+      recruit
+        ? `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">Apply online</a> — the application takes a few minutes`
+        : `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">Join the ${item.hearing_type === 'virtual' ? 'virtual ' : ''}${noun} online</a> — registration takes a minute`,
     )
   }
   if (item.hearing_date && item.hearing_type !== 'virtual') {
@@ -312,7 +320,9 @@ export function buildTownDigest(opts: {
       ? linkFor('featured_cta')(item.source_url)
       : townUrl('featured_cta', '#involved')
   const ctaLabel = item.action_label ??
-    (item.virtual_link ? `Register for the ${noun}` : item.comment_deadline ? 'Submit a comment' : 'See the details')
+    (item.virtual_link
+      ? recruit ? 'Apply online' : `Register for the ${noun}`
+      : item.comment_deadline ? 'Submit a comment' : 'See the details')
 
   // Community events — fun, not duty.
   const eventPicks = events.slice(0, 3)
@@ -351,7 +361,9 @@ export function buildTownDigest(opts: {
         ? `${c.hearing_type === 'virtual' ? 'virtual ' : c.hearing_type === 'hybrid' ? 'hybrid ' : ''}${meetingNoun(c)} ${dateOnlyChip(c.hearing_date)}${wallTime(c.hearing_time) ? ` · ${wallTime(c.hearing_time)}` : ''}`
         : c.comment_deadline
           ? `feedback open through ${dateOnlyChip(c.comment_deadline)}`
-          : 'open for feedback now'
+          : isRecruitment(c)
+            ? 'applications open now'
+            : 'open for feedback now'
       : a.chip
     let proximitySlot = ''
     if (c && c.lat != null && c.lng != null) {

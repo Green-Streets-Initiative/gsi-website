@@ -30,6 +30,17 @@ export function dateOnlyChip(isoDate: string): string {
   })
 }
 
+/**
+ * Recruitment items (committee/board member applications) are neither
+ * meetings nor comment windows — "join the public meeting" / "open for
+ * feedback" copy misdescribes them. Same detection as the Shift app's
+ * lib/civic.ts inputNoun() so app and email label these identically.
+ */
+export function isRecruitment(item: TownCivicEvent): boolean {
+  const text = `${item.title} ${item.description ?? ''}`.toLowerCase()
+  return /\bmember(ship)? application\b|\bseeking (new )?members\b|\brecruiting members\b/.test(text)
+}
+
 /** Wall-clock "19:00[:00]" → "7:00 PM" — pipeline times are already local. */
 export function wallTime(hhmm: string | null): string | null {
   const m = hhmm?.match(/^(\d{2}):(\d{2})/)
@@ -90,6 +101,8 @@ export function buildFeaturedCandidates(
         ? dateOnlyChip(ce.hearing_date) + (t ? ` · ${t}` : '') + (ce.hearing_type === 'virtual' ? ' · virtual' : '')
         : ce.comment_deadline
         ? `Comment by ${dateOnlyChip(ce.comment_deadline)}`
+        : isRecruitment(ce)
+        ? 'Applications open'
         : 'Open for feedback'
       // Lead with the community name ("Reid Overpass") when the official
       // title doesn't carry it — that's the name residents scan for.
