@@ -5,7 +5,7 @@ import { formatDistance, walkTimeMinutes } from '@/lib/wayfinding/geo'
 import { lineColor, lineTextColor, directionsUrl } from '@/lib/nearby/transit-ui'
 import posthog from 'posthog-js'
 import NearbyMap, { type NearbyMarker } from './NearbyMap'
-import { userDotHtml, busStopHtml, trainStopHtml } from './markers'
+import { userDotHtml, busStopHtml, trainStopHtml, stopPopupHtml, type PopupRoute } from './markers'
 import type { SectionData } from './types'
 import { SectionShell, SkeletonRows, ErrorCard } from './SectionShell'
 
@@ -50,6 +50,31 @@ function groupStops(rows: MBTAStopLive[]): StationGroup[] {
   return [...groups.values()].sort((a, b) => a.dist - b.dist)
 }
 
+/** "Spring Hill ↔ Kendall/MIT" — a route's end points, i.e. where it goes. */
+function routeTermini(route: StationGroup['routes'][number]): string {
+  const ends = [...new Set(route.arrivals.map(a => a.direction).filter(Boolean))]
+  return ends.join(' ↔ ')
+}
+
+function stopPopup(g: StationGroup): string {
+  const routes: PopupRoute[] = g.routes.map(r => ({
+    label: /^\d/.test(r.name) ? `Route ${r.name}` : r.name,
+    color: lineColor(r.id),
+    textColor: lineTextColor(r.id),
+    termini: routeTermini(r),
+    nextMin: r.arrivals
+      .map(a => a.nextMin)
+      .filter((m): m is number => m !== null)
+      .sort((a, b) => a - b)[0] ?? null,
+  }))
+  return stopPopupHtml({
+    name: g.name,
+    walkMins: walkTimeMinutes(g.dist),
+    routes,
+    directionsHref: directionsUrl(g.lat, g.lng),
+  })
+}
+
 interface Props {
   center: { lat: number; lng: number }
   rail: SectionData<MBTAStopLive[]>
@@ -68,6 +93,8 @@ export default function TransitSection({ center, rail, bus, onRetry }: Props) {
       lat: g.lat,
       lng: g.lng,
       html: trainStopHtml(lineColor(g.routes[0]?.id ?? ''), g.name),
+      popupHtml: stopPopup(g),
+      analyticsType: 'train',
       zIndex: 3,
     })),
     ...busGroups.map(g => ({
@@ -75,6 +102,8 @@ export default function TransitSection({ center, rail, bus, onRetry }: Props) {
       lat: g.lat,
       lng: g.lng,
       html: busStopHtml(`${g.name} — routes ${g.routes.map(r => r.name).join(', ')}`),
+      popupHtml: stopPopup(g),
+      analyticsType: 'bus',
       zIndex: 2,
     })),
   ]
@@ -87,7 +116,7 @@ export default function TransitSection({ center, rail, bus, onRetry }: Props) {
     <SectionShell
       eyebrow="Getting around by T & bus"
       title="Your transit picture"
-      subtitle="Live arrivals from the MBTA — they refresh every 30 seconds."
+      subtitle="Live arrivals from the MBTA, refreshing every 30 seconds. Tap any stop on the map to see where its routes go."
     >
       <NearbyMap center={center} markers={markers} fitCount={6} />
 
@@ -143,24 +172,30 @@ export default function TransitSection({ center, rail, bus, onRetry }: Props) {
             </div>
             <div className="space-y-2.5">
               {busGroups.map(g => (
-                <div key={g.key} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <div className="flex shrink-0 gap-1">
-                      {g.routes.slice(0, 3).map(r => (
-                        <span
-                          key={r.id}
-                          className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-                          style={{ backgroundColor: lineColor(r.id), color: lineTextColor(r.id) }}
-                        >
-                          {r.name}
-                        </span>
-                      ))}
+                <div key={g.key}>
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <div className="flex shrink-0 gap-1">
+                        {g.routes.slice(0, 3).map(r => (
+                          <span
+                            key={r.id}
+                            className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                            style={{ backgroundColor: lineColor(r.id), color: lineTextColor(r.id) }}
+                          >
+                            {r.name}
+                          </span>
+                        ))}
+                      </div>
+                      <span className="truncate text-[0.85rem] text-white">{g.name}</span>
                     </div>
-                    <span className="truncate text-[0.85rem] text-white">{g.name}</span>
+                    <div className="flex items-center gap-3">
+                      <NextArrival group={g} kind="bus" />
+                      <span className="text-[0.75rem] text-white/70">{walkTimeMinutes(g.dist)} min walk</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <NextArrival group={g} kind="bus" />
-                    <span className="text-[0.75rem] text-white/70">{walkTimeMinutes(g.dist)} min walk</span>
+                  {/* Where those numbers actually take you */}
+                  <div className="mt-0.5 truncate text-[0.75rem] text-white/70">
+                    {g.routes.slice(0, 2).map(r => `${r.name}: ${routeTermini(r)}`).filter(t => !t.endsWith(': ')).join(' · ')}
                   </div>
                 </div>
               ))}

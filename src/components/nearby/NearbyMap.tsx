@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import posthog from 'posthog-js'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
 
@@ -10,6 +11,10 @@ export interface NearbyMarker {
   lng: number
   /** Marker element markup — build with the factories in ./markers */
   html: string
+  /** Tap detail card markup — build with the popup factories in ./markers */
+  popupHtml?: string
+  /** posthog snapshot_marker_tapped type (omit = not tracked) */
+  analyticsType?: string
   /** Larger sorts above smaller when pins overlap */
   zIndex?: number
 }
@@ -101,6 +106,10 @@ export default function NearbyMap({ center, markers, lines, paintedVisible = tru
       const maplibregl = await loadMaplibre()
       if (cancelled || !mapRef.current) return
 
+      // Don't yank a detail card out of someone's hands mid-read: if a popup
+      // is open, skip this refresh cycle — the next one lands after it closes.
+      if (markersRef.current.some(m => m.getPopup()?.isOpen())) return
+
       markersRef.current.forEach(m => m.remove())
       markersRef.current = []
 
@@ -108,9 +117,20 @@ export default function NearbyMap({ center, markers, lines, paintedVisible = tru
       for (const spec of sorted) {
         const el = document.createElement('div')
         el.innerHTML = spec.html
+        if (spec.popupHtml) el.style.cursor = 'pointer'
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat([spec.lng, spec.lat])
           .addTo(map!)
+        if (spec.popupHtml) {
+          marker.setPopup(
+            new maplibregl.Popup({ offset: 20, className: 'nearby-popup', maxWidth: '300px' })
+              .setHTML(spec.popupHtml)
+          )
+        }
+        if (spec.analyticsType) {
+          const type = spec.analyticsType
+          el.addEventListener('click', () => posthog.capture('snapshot_marker_tapped', { type }))
+        }
         markersRef.current.push(marker)
       }
 
@@ -206,4 +226,35 @@ function applyLines(map: maplibregl.Map, lines: GeoJSON.FeatureCollection, paint
     },
     layout: { 'line-cap': 'round', 'line-join': 'round' },
   })
+
+  // Tap a lane to learn its name and how protected it is. Registered once,
+  // here, because this branch only runs when the layers are first created.
+  for (const layerId of ['bike-separated', 'bike-painted']) {
+    map.on('click', layerId, async (e) => {
+      const feature = e.features?.[0]
+      if (!feature) return
+      const maplibregl = await loadMaplibre()
+      const quality = feature.properties?.quality as string | undefined
+      const name = (feature.properties?.name as string | undefined) || null
+
+      const wrap = document.createElement('div')
+      const title = document.createElement('div')
+      title.textContent = name ?? (quality === 'separated' ? 'Protected route' : 'Painted bike lane')
+      title.style.cssText = 'font-weight:700;font-size:14px;color:#fff;margin-bottom:3px'
+      const sub = document.createElement('div')
+      sub.textContent = quality === 'separated'
+        ? 'Protected lane or car-free path — comfortable even if you’re new to riding'
+        : 'Painted lane — you share the road, with paint marking your space'
+      sub.style.cssText = 'font-size:12px;line-height:1.5;color:rgba(255,255,255,0.8)'
+      wrap.append(title, sub)
+
+      new maplibregl.Popup({ className: 'nearby-popup', maxWidth: '280px' })
+        .setLngLat(e.lngLat)
+        .setDOMContent(wrap)
+        .addTo(map)
+      posthog.capture('snapshot_marker_tapped', { type: 'bike-lane', named: !!name })
+    })
+    map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer' })
+    map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = '' })
+  }
 }

@@ -141,6 +141,30 @@
   select.form-input {
     appearance: auto;
   }
+
+  /* Dark-theme MapLibre popups for the /nearby snapshot maps */
+  .nearby-popup .maplibregl-popup-content {
+    background: #242538;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    font-family: var(--font-dm-sans), system-ui, sans-serif;
+  }
+  .nearby-popup .maplibregl-popup-tip {
+    border-top-color: #242538;
+    border-bottom-color: #242538;
+  }
+  .nearby-popup .maplibregl-popup-close-button {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 16px;
+    padding: 2px 6px;
+  }
+  .nearby-popup .maplibregl-popup-close-button:hover {
+    color: #fff;
+    background: transparent;
+  }
 }
 
 @layer utilities {

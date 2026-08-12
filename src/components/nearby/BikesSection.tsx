@@ -7,7 +7,7 @@ import { directionsUrl } from '@/lib/nearby/transit-ui'
 import { BLUEBIKES_NOTE } from '@/lib/nearby/config'
 import posthog from 'posthog-js'
 import NearbyMap, { type NearbyMarker } from './NearbyMap'
-import { userDotHtml, bluebikeHtml, protectedPathFlagHtml } from './markers'
+import { userDotHtml, bluebikeHtml, protectedPathFlagHtml, dockPopupHtml } from './markers'
 import type { SectionData, BikeNetworkData } from './types'
 import { SectionShell, SkeletonRows, ErrorCard } from './SectionShell'
 
@@ -35,6 +35,15 @@ export default function BikesSection({ center, bluebikes, bikeNetwork, onRetry }
       lat: d.lat,
       lng: d.lng,
       html: bluebikeHtml(d.num_bikes_available, d.name),
+      popupHtml: dockPopupHtml({
+        name: d.name,
+        bikes: d.num_bikes_available,
+        ebikes: d.num_ebikes_available,
+        docksFree: d.num_docks_available,
+        walkMins: walkTimeMinutes(d.distance_meters),
+        directionsHref: directionsUrl(d.lat, d.lng),
+      }),
+      analyticsType: 'bluebike',
       zIndex: 3,
     })),
     ...(nearest
@@ -46,7 +55,7 @@ export default function BikesSection({ center, bluebikes, bikeNetwork, onRetry }
     <SectionShell
       eyebrow="Getting around by bike"
       title="The comfortable bike network"
-      subtitle="Green lines are routes a brand-new rider can trust — protected lanes and car-free paths. Bluebikes pins show how many bikes are docked right now."
+      subtitle="Green lines are routes a brand-new rider can trust — protected lanes and car-free paths. Tap any line to see its name; tap a Bluebikes pin for live bikes and docks."
     >
       <NearbyMap
         center={center}

@@ -49,6 +49,59 @@ export function protectedPathFlagHtml(name: string | null): string {
     "><span style="width:7px;height:7px;border-radius:50%;background:#BAF14D"></span>${escapeHtml(name ?? 'Protected route')}</div>`
 }
 
+/* ── Tap-detail popups ── */
+
+export interface PopupRoute {
+  label: string
+  color: string
+  textColor: string
+  /** Where this route goes: its two end points, e.g. "Spring Hill ↔ Kendall/MIT" */
+  termini: string
+  nextMin: number | null
+}
+
+/** Stop/station detail: name, each route with where it goes, next arrivals. */
+export function stopPopupHtml(opts: {
+  name: string
+  walkMins: number
+  routes: PopupRoute[]
+  directionsHref: string
+}): string {
+  const routeRows = opts.routes.map(r => `
+    <div style="display:flex;align-items:baseline;gap:7px;margin-top:7px">
+      <span style="flex-shrink:0;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;background:${r.color};color:${r.textColor}">${escapeHtml(r.label)}</span>
+      <span style="min-width:0;font-size:12px;line-height:1.45;color:rgba(255,255,255,0.85)">
+        ${escapeHtml(r.termini)}${r.nextMin !== null ? ` · <strong style="color:#BAF14D">next ${r.nextMin === 0 ? 'now' : `in ${r.nextMin} min`}</strong>` : ''}
+      </span>
+    </div>`).join('')
+
+  return `
+    <div style="font-weight:700;font-size:14px;color:#fff">${escapeHtml(opts.name)}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px">${opts.walkMins} min walk from you</div>
+    ${routeRows}
+    <a href="${escapeAttr(opts.directionsHref)}" target="_blank" rel="noopener noreferrer"
+       style="display:inline-block;margin-top:9px;font-size:12px;font-weight:700;color:#BAF14D;text-decoration:none">Walk there →</a>`
+}
+
+/** Bluebikes dock detail. */
+export function dockPopupHtml(opts: {
+  name: string
+  bikes: number
+  ebikes: number
+  docksFree: number
+  walkMins: number
+  directionsHref: string
+}): string {
+  return `
+    <div style="font-weight:700;font-size:14px;color:#fff">${escapeHtml(opts.name)}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px">${opts.walkMins} min walk from you</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:6px">
+      <strong style="color:#BAF14D">${opts.bikes} bikes</strong>${opts.ebikes > 0 ? ` (${opts.ebikes} electric)` : ''} · ${opts.docksFree} open docks
+    </div>
+    <a href="${escapeAttr(opts.directionsHref)}" target="_blank" rel="noopener noreferrer"
+       style="display:inline-block;margin-top:9px;font-size:12px;font-weight:700;color:#BAF14D;text-decoration:none">Walk there →</a>`
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
