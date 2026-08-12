@@ -17,8 +17,10 @@ type AdvisorGroupRow = {
 export default async function EmployerAdvisorPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
-  // Demo page is handled by /commute-advisor/demo/page.tsx
-  if (slug === 'demo') return null
+  // Demo page is handled by /commute-advisor/demo/page.tsx. This route
+  // shouldn't match 'demo' while that static sibling exists, but if it ever
+  // does, send the visitor there instead of rendering an empty page.
+  if (slug === 'demo') redirect('/commute-advisor/demo')
 
   const supabase = createServerSupabaseClient()
 
