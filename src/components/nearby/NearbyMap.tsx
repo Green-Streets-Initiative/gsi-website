@@ -11,12 +11,8 @@ export interface NearbyMarker {
   lng: number
   /** Marker element markup — build with the factories in ./markers */
   html: string
-  /** Tap detail card markup (docks, info pins) — build with the popup factories in ./markers */
-  popupHtml?: string
-  /** Single-corridor stop: tap selects this corridor directly, no popup */
-  corridorId?: string
-  /** Multi-corridor stop: tap opens a chip picker; a chip tap selects */
-  corridorChoices?: { corridorId: string; label: string; color: string; textColor: string }[]
+  /** Tappable — reports id via onMarkerTap (details render in the panel under the map) */
+  tappable?: boolean
   /** posthog snapshot_marker_tapped type (omit = not tracked) */
   analyticsType?: string
   /** Larger sorts above smaller when pins overlap */
@@ -25,10 +21,16 @@ export interface NearbyMarker {
 
 export type CorridorSelectSource = 'map-line' | 'map-stop' | 'map-stop-chip' | 'background'
 
+export interface LaneTapInfo {
+  quality: string
+  source: string | null
+  name: string | null
+}
+
 interface Props {
   center: { lat: number; lng: number }
   markers: NearbyMarker[]
-  /** Unnamed bike-lane background with properties.quality 'separated'|'painted' */
+  /** Unnamed bike-lane background with properties.quality path/protected/painted */
   lines?: GeoJSON.FeatureCollection | null
   /** Show painted (non-protected) background lanes */
   paintedVisible?: boolean
@@ -36,6 +38,11 @@ interface Props {
   corridorLines?: GeoJSON.FeatureCollection | null
   selectedCorridorId?: string | null
   onCorridorSelect?: (id: string | null, source: CorridorSelectSource) => void
+  /** Marker tapped — the page shows details in its panel (no popups: they
+   *  clip and trap scroll on mobile) */
+  onMarkerTap?: (id: string) => void
+  /** Unnamed lane segment tapped */
+  onLaneTap?: (info: LaneTapInfo) => void
   /** Fit viewport to user + this many nearest markers, once (default: all) */
   fitCount?: number
   heightClass?: string
@@ -56,6 +63,7 @@ const BIKE_BG_OPACITY = { separated: 0.9, glow: 0.15, painted: 0.65 }
 export default function NearbyMap({
   center, markers, lines, paintedVisible = true,
   corridorLines, selectedCorridorId = null, onCorridorSelect,
+  onMarkerTap, onLaneTap,
   fitCount, heightClass = 'h-[320px] sm:h-[380px]',
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -70,6 +78,10 @@ export default function NearbyMap({
   paintedRef.current = paintedVisible
   const onSelectRef = useRef(onCorridorSelect)
   onSelectRef.current = onCorridorSelect
+  const onMarkerTapRef = useRef(onMarkerTap)
+  onMarkerTapRef.current = onMarkerTap
+  const onLaneTapRef = useRef(onLaneTap)
+  onLaneTapRef.current = onLaneTap
   const corridorLinesRef = useRef(corridorLines)
   corridorLinesRef.current = corridorLines
 
@@ -96,10 +108,14 @@ export default function NearbyMap({
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
       mapRef.current = map
 
-      // Bridge for module-level layer handlers (applyCorridors) to reach the
-      // current onCorridorSelect without stale closures
-      ;(map as unknown as { __nearbyOnSelect?: (id: string, s: CorridorSelectSource) => void }).__nearbyOnSelect =
-        (id, s) => onSelectRef.current?.(id, s)
+      // Bridges for module-level layer handlers to reach current callbacks
+      // without stale closures
+      const bridge = map as unknown as {
+        __nearbyOnSelect?: (id: string, s: CorridorSelectSource) => void
+        __nearbyOnLaneTap?: (info: LaneTapInfo) => void
+      }
+      bridge.__nearbyOnSelect = (id, s) => onSelectRef.current?.(id, s)
+      bridge.__nearbyOnLaneTap = (info) => onLaneTapRef.current?.(info)
 
       requestAnimationFrame(() => map.resize())
 
@@ -151,9 +167,6 @@ export default function NearbyMap({
       const maplibregl = await loadMaplibre()
       if (cancelled || !mapRef.current) return
 
-      // Don't yank an open detail card out of someone's hands mid-read
-      if (markersRef.current.some(m => m.getPopup()?.isOpen())) return
-
       markersRef.current.forEach(m => m.remove())
       markersRef.current = []
 
@@ -163,48 +176,14 @@ export default function NearbyMap({
         el.innerHTML = spec.html
         const marker = new maplibregl.Marker({ element: el }).setLngLat([spec.lng, spec.lat]).addTo(map!)
 
-        const choices = spec.corridorChoices ?? []
-        if (choices.length > 0 && spec.popupHtml) {
-          // Stop tap: the popup names the STATION (people need to see what
-          // each station is); chips select corridors. A single-route stop
-          // also selects its corridor immediately on tap.
-          el.style.cursor = 'pointer'
-          const popup = new maplibregl.Popup({ offset: 20, className: 'nearby-popup', maxWidth: '300px' })
-            .setHTML(spec.popupHtml)
-          popup.on('open', () => {
-            const popupEl = popup.getElement()
-            if (!popupEl || popupEl.dataset.wired) return
-            popupEl.dataset.wired = '1'
-            popupEl.addEventListener('click', (ev) => {
-              const chip = (ev.target as HTMLElement).closest<HTMLElement>('[data-corridor-id]')
-              if (!chip?.dataset.corridorId) return
-              onSelectRef.current?.(chip.dataset.corridorId, 'map-stop-chip')
-              popup.remove()
-            })
-          })
-          marker.setPopup(popup)
-          if (choices.length === 1) {
-            const target = choices[0].corridorId
-            el.addEventListener('click', () => {
-              onSelectRef.current?.(target, 'map-stop')
-            })
-          }
-        } else if (spec.corridorId) {
-          // Corridor-linked marker without a popup: tap selects directly
-          const target = spec.corridorId
+        if (spec.tappable) {
+          const id = spec.id
           el.style.cursor = 'pointer'
           el.addEventListener('click', (ev) => {
             ev.stopPropagation()
-            onSelectRef.current?.(target, 'map-stop')
+            onMarkerTapRef.current?.(id)
           })
-        } else if (spec.popupHtml) {
-          // Info pins (docks): plain detail popup
-          el.style.cursor = 'pointer'
-          marker.setPopup(
-            new maplibregl.Popup({ offset: 20, className: 'nearby-popup', maxWidth: '300px' }).setHTML(spec.popupHtml)
-          )
         }
-
         if (spec.analyticsType) {
           const type = spec.analyticsType
           el.addEventListener('click', () => posthog.capture('snapshot_marker_tapped', { type }))
@@ -389,57 +368,20 @@ function applyBikeBackground(map: maplibregl.Map, lines: GeoJSON.FeatureCollecti
     layout: { 'line-cap': 'round', 'line-join': 'round' },
   })
 
-  // Tap an unnamed lane segment for a small what-is-this card
+  // Tap an unnamed lane segment — details render in the page's panel
+  // under the map (popups clip and trap scroll on mobile)
   for (const layerId of ['bike-separated', 'bike-painted']) {
-    map.on('click', layerId, async (e) => {
+    map.on('click', layerId, (e) => {
       const feature = e.features?.[0]
       if (!feature) return
       // Named features belong to corridors — let corridor selection handle them
       if ((feature.properties as { corridorId?: string })?.corridorId) return
-      const maplibregl = await loadMaplibre()
-      const quality = feature.properties?.quality as string | undefined
-      const source = feature.properties?.source as string | undefined
-
-      const TIER_COPY: Record<string, { title: string; detail: string }> = {
-        path: {
-          title: 'Car-free path',
-          detail: 'Fully separate from traffic — no cars at all. The most comfortable riding there is.',
-        },
-        protected: {
-          title: 'Protected bike lane',
-          detail: 'A physical barrier — curb, posts, or parking — sits between you and traffic.',
-        },
-        painted: {
-          title: 'Painted bike lane',
-          detail: 'You share the road, with paint marking your space. Fine for confident riders.',
-        },
-      }
-      const SOURCE_LABEL: Record<string, string> = {
-        mapc: 'MAPC TrailMap',
-        massdot: 'MassDOT inventory',
-        osm: 'OpenStreetMap',
-      }
-      const copy = TIER_COPY[quality ?? ''] ?? TIER_COPY.painted
-
-      const wrap = document.createElement('div')
-      const title = document.createElement('div')
-      title.textContent = copy.title
-      title.style.cssText = 'font-weight:700;font-size:14px;color:#fff;margin-bottom:3px'
-      const sub = document.createElement('div')
-      sub.textContent = copy.detail
-      sub.style.cssText = 'font-size:12px;line-height:1.5;color:rgba(255,255,255,0.8)'
-      wrap.append(title, sub)
-      if (source && SOURCE_LABEL[source]) {
-        const src = document.createElement('div')
-        src.textContent = `Data: ${SOURCE_LABEL[source]}`
-        src.style.cssText = 'font-size:10.5px;margin-top:6px;color:rgba(255,255,255,0.7)'
-        wrap.append(src)
-      }
-
-      new maplibregl.Popup({ className: 'nearby-popup', maxWidth: '280px' })
-        .setLngLat(e.lngLat)
-        .setDOMContent(wrap)
-        .addTo(map)
+      const handler = (map as unknown as { __nearbyOnLaneTap?: (info: LaneTapInfo) => void }).__nearbyOnLaneTap
+      handler?.({
+        quality: (feature.properties?.quality as string) ?? 'painted',
+        source: (feature.properties?.source as string) ?? null,
+        name: (feature.properties?.name as string) ?? null,
+      })
       posthog.capture('snapshot_marker_tapped', { type: 'bike-lane' })
     })
     map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer' })

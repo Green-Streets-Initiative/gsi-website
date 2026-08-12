@@ -1,17 +1,14 @@
 'use client'
 
-import { useMemo, useRef, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import { BLUEBIKES_NOTE } from '@/lib/nearby/config'
-import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
-import NearbyMap, { type NearbyMarker, type CorridorSelectSource } from './NearbyMap'
-import {
-  userDotHtml, busStopHtml, trainStopHtml, bluebikeHtml,
-  dockPopupHtml, stopRoutePickerHtml, dockStatsText,
-} from './markers'
+import type { TransitCorridor, BikeCorridor, FrequencyInfo } from '@/lib/nearby/corridors'
+import NearbyMap, { type NearbyMarker, type LaneTapInfo } from './NearbyMap'
+import { userDotHtml, busStopHtml, trainStopHtml, bluebikeHtml, dockStatsText } from './markers'
 import type { SectionStatus } from './types'
 import { SkeletonRows, ErrorCard } from './SectionShell'
 
@@ -28,7 +25,22 @@ interface Props {
   onRetry: () => void
 }
 
-/* ── Stop grouping (by station name — MBTA lists each platform separately) ── */
+/**
+ * Everything tapped on the map shows up in ONE place: a detail panel pinned
+ * directly under the map. No popups (they clip and trap scroll on mobile),
+ * no scrolling the page to some distant card — your eyes never leave the
+ * map area. The list below is for browsing; it highlights the map but never
+ * the other way around.
+ */
+
+type Selection =
+  | { type: 'corridor'; id: string }
+  | { type: 'station'; key: string }
+  | { type: 'dock'; id: string }
+  | { type: 'lane'; info: LaneTapInfo }
+  | null
+
+/* ── Station grouping (by name — MBTA lists each platform separately) ── */
 
 interface StationGroup {
   key: string
@@ -70,15 +82,47 @@ function routeTermini(route: StationGroup['routes'][number]): string {
   return ends.join(' ↔ ')
 }
 
+function soonestAtStation(route: StationGroup['routes'][number]): number | null {
+  const mins = route.arrivals.map(a => a.nextMin).filter((m): m is number => m !== null)
+  return mins.length ? Math.min(...mins) : null
+}
+
+/** Compact frequency for list rows: "every ~11 min" / "18 trips/day" */
+function freqShort(freq: TransitCorridor['frequency']): string | null {
+  if (freq === null || freq === 'unavailable') return null
+  if (freq.headwayMin !== null) return `every ~${freq.headwayMin} min`
+  if (freq.tripsPerDay) return `${freq.tripsPerDay} trips/day`
+  return null
+}
+
+const TIER_COPY: Record<string, { title: string; detail: string }> = {
+  path: {
+    title: 'Car-free path',
+    detail: 'Fully separate from traffic — no cars at all. The most comfortable riding there is.',
+  },
+  protected: {
+    title: 'Protected bike lane',
+    detail: 'A physical barrier — curb, posts, or parking — sits between you and traffic.',
+  },
+  painted: {
+    title: 'Painted bike lane',
+    detail: 'You share the road, with paint marking your space. Fine for confident riders.',
+  },
+}
+const SOURCE_LABEL: Record<string, string> = {
+  mapc: 'MAPC TrailMap',
+  massdot: 'MassDOT inventory',
+  osm: 'OpenStreetMap',
+}
+
 /* ── Explorer ── */
 
 export default function CorridorExplorer({
   center, transitCorridors, bikeCorridors, rail, bus, docks,
   backgroundLines, transitStatus, onRetry,
 }: Props) {
-  const [selected, setSelected] = useState<string | null>(null)
+  const [selection, setSelection] = useState<Selection>(null)
   const [showPainted, setShowPainted] = useState(false)
-  const cardRefs = useRef(new Map<string, HTMLElement>())
 
   const corridorById = useMemo(() => {
     const m = new Map<string, TransitCorridor | BikeCorridor>()
@@ -87,7 +131,30 @@ export default function CorridorExplorer({
     return m
   }, [transitCorridors, bikeCorridors])
 
-  // All corridor shapes in one collection for the map
+  // Stations, with any corridor whose boarding stop didn't make the nearby
+  // cut appended as its own card — every line stays reachable from the list
+  const stations = useMemo(() => {
+    const groups = [...groupStops(rail, true).slice(0, 4), ...groupStops(bus, false).slice(0, 5)]
+    const covered = new Set(groups.flatMap(g => g.routes.map(r => r.id)))
+    for (const c of transitCorridors) {
+      if (covered.has(c.routeId)) continue
+      const key = c.access.stopName.toLowerCase()
+      let g = groups.find(x => x.key === key)
+      if (!g) {
+        g = {
+          key, name: c.access.stopName, lat: c.access.lat, lng: c.access.lng,
+          dist: c.access.walkMin * 80, isRail: c.kind !== 'bus', routes: [],
+        }
+        groups.push(g)
+      }
+      g.routes.push({ id: c.routeId, name: c.name, arrivals: c.endpoints.filter(Boolean).map(d => ({ direction: d, nextMin: null })) })
+      covered.add(c.routeId)
+    }
+    return groups
+  }, [rail, bus, transitCorridors])
+
+  const stationByKey = useMemo(() => new Map(stations.map(s => [s.key, s])), [stations])
+
   const corridorLines = useMemo<GeoJSON.FeatureCollection>(() => ({
     type: 'FeatureCollection',
     features: [
@@ -96,105 +163,67 @@ export default function CorridorExplorer({
     ],
   }), [transitCorridors, bikeCorridors])
 
-  // Soonest live arrival per route id (feeds the de-emphasized "Next:" line)
-  const liveArrivals = useMemo(() => {
-    const m = new Map<string, number>()
-    for (const row of [...rail, ...bus]) {
-      if (row.next_arrival_minutes === null) continue
-      const prev = m.get(row.route_id)
-      if (prev === undefined || row.next_arrival_minutes < prev) m.set(row.route_id, row.next_arrival_minutes)
+  // The map highlights a corridor when one is selected — directly, or via a
+  // station that only one line serves
+  const highlightedCorridorId = useMemo(() => {
+    if (selection?.type === 'corridor') return selection.id
+    if (selection?.type === 'station') {
+      const st = stationByKey.get(selection.key)
+      if (st?.routes.length === 1) return `transit:${st.routes[0].id}`
     }
-    return m
-  }, [rail, bus])
+    return null
+  }, [selection, stationByKey])
 
-  const handleSelect = useCallback((id: string | null, source: CorridorSelectSource | 'card') => {
-    setSelected(prev => {
-      const next = prev === id && source === 'card' ? null : id
-      if (next && source !== 'card') {
-        // Map-side selection: bring the matching card into view
-        requestAnimationFrame(() => {
-          cardRefs.current.get(next)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-        })
-      }
-      if (next) {
-        const c = corridorById.get(next)
-        posthog.capture('corridor_selected', { kind: c?.kind ?? 'unknown', corridor: next, source })
-      }
-      return next
-    })
-  }, [corridorById])
-
-  const markers = useMemo<NearbyMarker[]>(() => {
-    const railGroups = groupStops(rail, true).slice(0, 4)
-    const busGroups = groupStops(bus, false).slice(0, 5)
-
-    const stopMarker = (g: StationGroup): NearbyMarker => {
-      const choices = g.routes.map(r => {
-        const c = corridorById.get(`transit:${r.id}`)
-        return {
-          corridorId: `transit:${r.id}`,
-          label: /^\d/.test(r.name) ? `Route ${r.name}` : r.name,
-          color: (c as TransitCorridor | undefined)?.color ?? '#666',
-          textColor: (c as TransitCorridor | undefined)?.textColor ?? '#fff',
-          termini: routeTermini(r),
-        }
-      }).filter(ch => corridorById.has(ch.corridorId))
-
-      const base = {
-        id: `${g.isRail ? 'rail' : 'bus'}-${g.key}`,
-        lat: g.lat,
-        lng: g.lng,
-        html: g.isRail
-          ? trainStopHtml((corridorById.get(`transit:${g.routes[0]?.id}`) as TransitCorridor | undefined)?.color ?? '#666', g.name)
-          : busStopHtml(`${g.name} — routes ${g.routes.map(r => r.name).join(', ')}`),
-        analyticsType: g.isRail ? 'train' : 'bus',
-        zIndex: g.isRail ? 3 : 2,
-      }
-      if (choices.length > 0) {
-        // Even single-route stops get the popup — it names the STATION,
-        // which is what someone new to the area is actually looking at
-        return {
-          ...base,
-          corridorChoices: choices,
-          popupHtml: stopRoutePickerHtml({ name: g.name, walkMins: walkTimeMinutes(g.dist), choices }),
-        }
-      }
-      return base
+  const select = useCallback((next: Selection, source: string) => {
+    setSelection(next)
+    if (next) posthog.capture('snapshot_detail_viewed', { type: next.type, source })
+    if (next?.type === 'corridor') {
+      posthog.capture('corridor_selected', { corridor: next.id, source })
     }
+  }, [])
 
-    return [
-      { id: 'user', lat: center.lat, lng: center.lng, html: userDotHtml(), zIndex: 10 },
-      ...railGroups.map(stopMarker),
-      ...busGroups.map(stopMarker),
-      ...docks.slice(0, 8).map(d => ({
-        id: `dock-${d.station_id}`,
-        lat: d.lat,
-        lng: d.lng,
-        html: bluebikeHtml(d.num_bikes_available, d.num_ebikes_available, d.name),
-        popupHtml: dockPopupHtml({
-          name: d.name,
-          bikes: d.num_bikes_available,
-          ebikes: d.num_ebikes_available,
-          docksFree: d.num_docks_available,
-          walkMins: walkTimeMinutes(d.distance_meters),
-          directionsHref: directionsUrl(d.lat, d.lng),
-        }),
-        analyticsType: 'bluebike',
-        zIndex: 1,
-      })),
-    ]
-  }, [center, rail, bus, docks, corridorById])
+  const handleMarkerTap = useCallback((id: string) => {
+    if (id.startsWith('rail-') || id.startsWith('bus-')) {
+      select({ type: 'station', key: id.replace(/^(rail|bus)-/, '') }, 'map')
+    } else if (id.startsWith('dock-')) {
+      select({ type: 'dock', id: id.replace(/^dock-/, '') }, 'map')
+    }
+  }, [select])
 
-  const setCardRef = (id: string) => (el: HTMLElement | null) => {
-    if (el) cardRefs.current.set(id, el)
-    else cardRefs.current.delete(id)
-  }
+  const markers = useMemo<NearbyMarker[]>(() => [
+    { id: 'user', lat: center.lat, lng: center.lng, html: userDotHtml(), zIndex: 10 },
+    ...groupStops(rail, true).slice(0, 4).map(g => ({
+      id: `rail-${g.key}`,
+      lat: g.lat,
+      lng: g.lng,
+      html: trainStopHtml((corridorById.get(`transit:${g.routes[0]?.id}`) as TransitCorridor | undefined)?.color ?? '#666', g.name),
+      tappable: true,
+      analyticsType: 'train',
+      zIndex: 3,
+    })),
+    ...groupStops(bus, false).slice(0, 5).map(g => ({
+      id: `bus-${g.key}`,
+      lat: g.lat,
+      lng: g.lng,
+      html: busStopHtml(`${g.name} — routes ${g.routes.map(r => r.name).join(', ')}`),
+      tappable: true,
+      analyticsType: 'bus',
+      zIndex: 2,
+    })),
+    ...docks.slice(0, 8).map(d => ({
+      id: `dock-${d.station_id}`,
+      lat: d.lat,
+      lng: d.lng,
+      html: bluebikeHtml(d.num_bikes_available, d.num_ebikes_available, d.name),
+      tappable: true,
+      analyticsType: 'bluebike',
+      zIndex: 1,
+    })),
+  ], [center, rail, bus, docks, corridorById])
 
-  const cardClass = (id: string) =>
-    `w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
-      selected === id
-        ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.06)]'
-        : 'border-white/[0.08] bg-[#242538] hover:border-white/[0.2]'
+  const rowClass = (active: boolean) =>
+    `flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg px-2.5 py-2 text-left transition-colors ${
+      active ? 'bg-[rgba(186,241,77,0.08)]' : 'hover:bg-white/[0.05]'
     }`
 
   return (
@@ -205,11 +234,41 @@ export default function CorridorExplorer({
         lines={backgroundLines}
         paintedVisible={showPainted}
         corridorLines={corridorLines}
-        selectedCorridorId={selected}
-        onCorridorSelect={handleSelect}
+        selectedCorridorId={highlightedCorridorId}
+        onCorridorSelect={(id, source) => {
+          if (id) select({ type: 'corridor', id }, source)
+          else select(null, source)
+        }}
+        onMarkerTap={handleMarkerTap}
+        onLaneTap={(info) => select({ type: 'lane', info }, 'map')}
         fitCount={7}
         heightClass="h-[360px] sm:h-[420px]"
       />
+
+      {/* Detail panel — everything tapped on the map lands HERE, right under
+          your thumb, never down the page */}
+      {selection && (
+        <div className="mt-2.5 rounded-xl border border-[rgba(186,241,77,0.25)] bg-[#242538] px-4 py-3.5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <DetailContent
+                selection={selection}
+                stationByKey={stationByKey}
+                corridorById={corridorById}
+                docks={docks}
+                onSelectCorridor={(id) => select({ type: 'corridor', id }, 'panel')}
+              />
+            </div>
+            <button
+              onClick={() => select(null, 'panel-close')}
+              aria-label="Close details"
+              className="shrink-0 rounded-lg border border-white/[0.15] px-2.5 py-1 text-[0.9rem] font-bold text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Legend + painted toggle */}
       <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[0.75rem] text-white/75">
@@ -236,52 +295,59 @@ export default function CorridorExplorer({
         </button>
       </div>
 
-      {/* ── Trains & buses ── */}
+      {/* ── Stations first: the landmarks people actually navigate by ── */}
       <div className="mt-5">
         <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
-          Trains & buses
+          Trains & buses — stations near you
         </div>
         {transitStatus === 'loading' && <SkeletonRows count={3} />}
         {transitStatus === 'error' && <ErrorCard label="Couldn't reach the MBTA right now." onRetry={onRetry} />}
-        {transitStatus === 'ready' && transitCorridors.length === 0 && (
+        {transitStatus === 'ready' && stations.length === 0 && (
           <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
-            No MBTA routes close to this spot — the map shows what's in the wider area.
+            No MBTA stations or stops close to this spot — the map shows what's in the wider area.
           </p>
         )}
         <div className="space-y-2.5">
-          {transitCorridors.map(c => (
-            <button key={c.id} ref={setCardRef(c.id)} onClick={() => handleSelect(c.id, 'card')} className={cardClass(c.id)}>
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className="rounded px-2 py-0.5 text-[0.72rem] font-bold"
-                  style={{ backgroundColor: c.color, color: c.textColor }}
-                >
-                  {/^\d/.test(c.name) ? `Route ${c.name}` : c.name}
+          {stations.map(st => (
+            <div key={`${st.isRail ? 'r' : 'b'}-${st.key}`} className="rounded-xl border border-white/[0.08] bg-[#242538] px-3 py-3">
+              {/* Station identity leads */}
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 px-1.5">
+                <span className="text-[0.95rem] font-bold text-white">{st.name}</span>
+                <span className="text-[0.78rem] text-white/75">
+                  {walkTimeMinutes(st.dist)} min walk · {formatDistance(st.dist)}
                 </span>
-                {(c.endpoints[0] || c.endpoints[1]) && (
-                  <span className="min-w-0 text-[0.85rem] text-white">
-                    {[c.endpoints[0], c.endpoints[1]].filter(Boolean).join(' ↔ ')}
-                  </span>
-                )}
               </div>
-              <div className="mt-1.5 text-[0.9rem] font-semibold text-white">
-                {c.frequency === null && (
-                  <span className="inline-block h-4 w-52 animate-pulse rounded bg-white/[0.08] align-middle" aria-hidden="true" />
-                )}
-                {c.frequency === 'unavailable' && <span className="text-white/75">Schedule unavailable right now</span>}
-                {c.frequency !== null && c.frequency !== 'unavailable' && (
-                  <FrequencyLine label={c.frequency.label} headway={c.frequency.headwayMin} />
-                )}
+              {/* Lines serving it — tap one to light it up on the map */}
+              <div className="mt-1.5 space-y-0.5">
+                {st.routes.map(r => {
+                  const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
+                  const active = highlightedCorridorId === `transit:${r.id}`
+                  const next = soonestAtStation(r)
+                  const fs = corridor ? freqShort(corridor.frequency) : null
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => select({ type: 'corridor', id: `transit:${r.id}` }, 'list')}
+                      className={rowClass(active)}
+                    >
+                      <span
+                        className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                        style={{ backgroundColor: corridor?.color ?? '#666', color: corridor?.textColor ?? '#fff' }}
+                      >
+                        {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-[0.8rem] text-white/80">{routeTermini(r)}</span>
+                      <span className="text-[0.75rem] text-white/75">
+                        {corridor?.frequency === null && <span className="inline-block h-3 w-20 animate-pulse rounded bg-white/[0.08] align-middle" aria-hidden="true" />}
+                        {corridor?.frequency === 'unavailable' && 'schedule unavailable'}
+                        {fs}
+                        {next !== null && <strong className="ml-1.5 font-bold text-[#BAF14D]">{next === 0 ? 'now' : `in ${next} min`}</strong>}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
-              <div className="mt-1 text-[0.8rem] text-white/80">
-                Board at <span className="font-semibold text-white">{c.access.stopName}</span> · {c.access.walkMin} min walk
-              </div>
-              {liveArrivals.has(c.routeId) && (
-                <div className="mt-0.5 text-[0.75rem] text-white/70">
-                  Next: {liveArrivals.get(c.routeId) === 0 ? 'now' : `in ${liveArrivals.get(c.routeId)} min`}
-                </div>
-              )}
-            </button>
+            </div>
           ))}
         </div>
       </div>
@@ -294,7 +360,15 @@ export default function CorridorExplorer({
           </div>
           <div className="space-y-2.5">
             {bikeCorridors.map(c => (
-              <button key={c.id} ref={setCardRef(c.id)} onClick={() => handleSelect(c.id, 'card')} className={cardClass(c.id)}>
+              <button
+                key={c.id}
+                onClick={() => select({ type: 'corridor', id: c.id }, 'list')}
+                className={`w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
+                  highlightedCorridorId === c.id
+                    ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.06)]'
+                    : 'border-white/[0.08] bg-[#242538] hover:border-white/[0.2]'
+                }`}
+              >
                 <div className="text-[0.9rem] font-semibold text-white">{c.name}</div>
                 <div className="mt-0.5 text-[0.8rem]">
                   {c.protection === 'path' && <span className="font-bold text-[#BAF14D]">Car-free path — no traffic at all</span>}
@@ -358,14 +432,141 @@ export default function CorridorExplorer({
   )
 }
 
-/** Frequency headline with the headway number in lime. */
-function FrequencyLine({ label, headway }: { label: string; headway: number | null }) {
-  if (headway === null) return <span className="text-white">{label}</span>
-  const parts = label.split(String(headway))
-  if (parts.length !== 2) return <span className="text-white">{label}</span>
+/* ── Detail panel content per selection type ── */
+
+function DetailContent({ selection, stationByKey, corridorById, docks, onSelectCorridor }: {
+  selection: NonNullable<Selection>
+  stationByKey: Map<string, StationGroup>
+  corridorById: Map<string, TransitCorridor | BikeCorridor>
+  docks: BluebikeStationLive[]
+  onSelectCorridor: (id: string) => void
+}) {
+  if (selection.type === 'station') {
+    const st = stationByKey.get(selection.key)
+    if (!st) return null
+    return (
+      <div>
+        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
+          {st.isRail ? 'Station' : 'Bus stop'}
+        </div>
+        <div className="text-[0.95rem] font-bold text-white">{st.name}</div>
+        <div className="text-[0.78rem] text-white/75">
+          {walkTimeMinutes(st.dist)} min walk · {formatDistance(st.dist)}
+        </div>
+        <div className="mt-1.5 space-y-0.5">
+          {st.routes.map(r => {
+            const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
+            const next = soonestAtStation(r)
+            return (
+              <button
+                key={r.id}
+                onClick={() => onSelectCorridor(`transit:${r.id}`)}
+                className="flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-white/[0.05]"
+              >
+                <span
+                  className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                  style={{ backgroundColor: corridor?.color ?? '#666', color: corridor?.textColor ?? '#fff' }}
+                >
+                  {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[0.78rem] text-white/80">{routeTermini(r)}</span>
+                {next !== null && (
+                  <strong className="text-[0.75rem] font-bold text-[#BAF14D]">{next === 0 ? 'now' : `in ${next} min`}</strong>
+                )}
+              </button>
+            )
+          })}
+        </div>
+        <div className="mt-1 text-[0.72rem] text-white/70">Tap a route to see the whole line on the map</div>
+      </div>
+    )
+  }
+
+  if (selection.type === 'corridor') {
+    const c = corridorById.get(selection.id)
+    if (!c) return null
+    if (c.kind === 'bike') {
+      return (
+        <div>
+          <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">Bike route — shown on the map</div>
+          <div className="text-[0.95rem] font-bold text-white">{c.name}</div>
+          <div className="mt-0.5 text-[0.8rem]">
+            {c.protection === 'path' && <span className="font-bold text-[#BAF14D]">Car-free path — no traffic at all</span>}
+            {c.protection === 'protected' && <span className="font-bold text-[#BAF14D]">Protected end to end</span>}
+            {c.protection === 'mostly-protected' && <span className="text-white/80">Mostly protected — some painted stretches</span>}
+            {c.protection === 'painted' && <span className="text-white/80">Painted lane — paint marks your space</span>}
+          </div>
+          <div className="mt-0.5 text-[0.78rem] text-white/80">
+            {c.lengthMiles} mi through this area · nearest point {walkTimeMinutes(c.accessDistanceMeters)} min walk
+          </div>
+        </div>
+      )
+    }
+    const freq = c.frequency
+    return (
+      <div>
+        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
+          {c.kind === 'bus' ? 'Bus route — shown on the map' : 'Line — shown on the map'}
+        </div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-2">
+          <span className="rounded px-2 py-0.5 text-[0.72rem] font-bold" style={{ backgroundColor: c.color, color: c.textColor }}>
+            {/^\d/.test(c.name) ? `Route ${c.name}` : c.name}
+          </span>
+          {(c.endpoints[0] || c.endpoints[1]) && (
+            <span className="text-[0.85rem] font-semibold text-white">
+              {[c.endpoints[0], c.endpoints[1]].filter(Boolean).join(' ↔ ')}
+            </span>
+          )}
+        </div>
+        <div className="mt-1 text-[0.85rem] text-white">
+          {freq === null && <span className="inline-block h-4 w-44 animate-pulse rounded bg-white/[0.08]" aria-hidden="true" />}
+          {freq === 'unavailable' && <span className="text-white/75">Schedule unavailable right now</span>}
+          {freq !== null && freq !== 'unavailable' && (freq as FrequencyInfo).label}
+        </div>
+        <div className="mt-0.5 text-[0.78rem] text-white/80">
+          Board at <span className="font-semibold text-white">{c.access.stopName}</span> · {c.access.walkMin} min walk
+        </div>
+      </div>
+    )
+  }
+
+  if (selection.type === 'dock') {
+    const d = docks.find(x => x.station_id === selection.id)
+    if (!d) return null
+    return (
+      <div>
+        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">Bluebikes dock</div>
+        <div className="text-[0.95rem] font-bold text-white">{d.name}</div>
+        <div className="text-[0.78rem] text-white/75">
+          {walkTimeMinutes(d.distance_meters)} min walk · {formatDistance(d.distance_meters)}
+        </div>
+        <div className="mt-1 text-[0.8rem] text-white/80">
+          <strong className="font-bold text-[#BAF14D]">{dockStatsText(d.num_bikes_available, d.num_ebikes_available)}</strong>
+          {' · '}{d.num_docks_available} open docks
+        </div>
+        <a
+          href={directionsUrl(d.lat, d.lng)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'bluebike' })}
+          className="mt-1 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+        >
+          Walk there →
+        </a>
+      </div>
+    )
+  }
+
+  // Unnamed lane segment
+  const copy = TIER_COPY[selection.info.quality] ?? TIER_COPY.painted
   return (
-    <span className="text-white">
-      {parts[0]}<span className="font-bold text-[#BAF14D]">{headway}</span>{parts[1]}
-    </span>
+    <div>
+      <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">Bike infrastructure</div>
+      <div className="text-[0.95rem] font-bold text-white">{selection.info.name ?? copy.title}</div>
+      <div className="mt-0.5 text-[0.8rem] leading-relaxed text-white/80">{copy.detail}</div>
+      {selection.info.source && SOURCE_LABEL[selection.info.source] && (
+        <div className="mt-1 text-[0.72rem] text-white/70">Data: {SOURCE_LABEL[selection.info.source]}</div>
+      )}
+    </div>
   )
 }

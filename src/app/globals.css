@@ -143,35 +143,6 @@
   }
 }
 
-/* Dark-theme MapLibre popups for the /nearby snapshot maps.
-   Unlayered ON PURPOSE: maplibre-gl.css is unlayered, and unlayered author
-   CSS always beats @layer'd CSS — inside @layer these rules lose to
-   maplibre's white default (the "white box" bug). These selectors touch
-   only maplibre's own classes, so the repo's @layer rule (which protects
-   Tailwind v4 utilities from being silently overridden) does not apply. */
-.nearby-popup.maplibregl-popup .maplibregl-popup-content {
-  background: #242538;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 12px;
-  padding: 12px 14px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
-  font-family: var(--font-dm-sans), system-ui, sans-serif;
-}
-.nearby-popup.maplibregl-popup .maplibregl-popup-tip {
-  border-top-color: #242538;
-  border-bottom-color: #242538;
-}
-.nearby-popup.maplibregl-popup .maplibregl-popup-close-button {
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 16px;
-  padding: 2px 6px;
-}
-.nearby-popup.maplibregl-popup .maplibregl-popup-close-button:hover {
-  color: #fff;
-  background: transparent;
-}
-
 @layer utilities {
   .ticker-track {
     display: flex;
