@@ -10,30 +10,41 @@ import type { SectionData } from './types'
 import { SectionShell, SkeletonRows, ErrorCard } from './SectionShell'
 
 interface StationGroup {
-  stop_id: string
+  key: string
   name: string
   lat: number
   lng: number
   dist: number
-  routes: { id: string; name: string; nextMin: number | null; direction: string }[]
+  routes: { id: string; name: string; arrivals: { direction: string; nextMin: number | null }[] }[]
 }
 
-/** Collapse (stop × route × direction) rows into one group per stop, with the
- *  soonest arrival per route. */
+/**
+ * Collapse (stop × route × direction) rows into one group per STATION NAME.
+ * MBTA gives each boarding platform its own stop id, so grouping by id shows
+ * "East Somerville" twice (once per direction) — grouping by name merges the
+ * platforms and keeps the soonest arrival per (route, direction) instead.
+ */
 function groupStops(rows: MBTAStopLive[]): StationGroup[] {
   const groups = new Map<string, StationGroup>()
   for (const row of rows) {
-    let g = groups.get(row.stop_id)
+    const key = row.name.toLowerCase()
+    let g = groups.get(key)
     if (!g) {
-      g = { stop_id: row.stop_id, name: row.name, lat: row.lat, lng: row.lng, dist: row.distance_meters, routes: [] }
-      groups.set(row.stop_id, g)
+      g = { key, name: row.name, lat: row.lat, lng: row.lng, dist: row.distance_meters, routes: [] }
+      groups.set(key, g)
     }
-    const existing = g.routes.find(r => r.id === row.route_id)
-    if (!existing) {
-      g.routes.push({ id: row.route_id, name: row.route_name, nextMin: row.next_arrival_minutes, direction: row.direction })
-    } else if (row.next_arrival_minutes !== null && (existing.nextMin === null || row.next_arrival_minutes < existing.nextMin)) {
-      existing.nextMin = row.next_arrival_minutes
-      existing.direction = row.direction
+    g.dist = Math.min(g.dist, row.distance_meters)
+
+    let route = g.routes.find(r => r.id === row.route_id)
+    if (!route) {
+      route = { id: row.route_id, name: row.route_name, arrivals: [] }
+      g.routes.push(route)
+    }
+    const arrival = route.arrivals.find(a => a.direction === row.direction)
+    if (!arrival) {
+      route.arrivals.push({ direction: row.direction, nextMin: row.next_arrival_minutes })
+    } else if (row.next_arrival_minutes !== null && (arrival.nextMin === null || row.next_arrival_minutes < arrival.nextMin)) {
+      arrival.nextMin = row.next_arrival_minutes
     }
   }
   return [...groups.values()].sort((a, b) => a.dist - b.dist)
@@ -53,14 +64,14 @@ export default function TransitSection({ center, rail, bus, onRetry }: Props) {
   const markers: NearbyMarker[] = [
     { id: 'user', lat: center.lat, lng: center.lng, html: userDotHtml(), zIndex: 10 },
     ...railGroups.map(g => ({
-      id: `rail-${g.stop_id}`,
+      id: `rail-${g.key}`,
       lat: g.lat,
       lng: g.lng,
       html: trainStopHtml(lineColor(g.routes[0]?.id ?? ''), g.name),
       zIndex: 3,
     })),
     ...busGroups.map(g => ({
-      id: `bus-${g.stop_id}`,
+      id: `bus-${g.key}`,
       lat: g.lat,
       lng: g.lng,
       html: busStopHtml(`${g.name} — routes ${g.routes.map(r => r.name).join(', ')}`),
@@ -90,7 +101,7 @@ export default function TransitSection({ center, rail, bus, onRetry }: Props) {
         )}
 
         {railGroups.map(g => (
-          <div key={g.stop_id} className="rounded-xl border border-white/[0.08] bg-[#242538] px-4 py-3.5">
+          <div key={g.key} className="rounded-xl border border-white/[0.08] bg-[#242538] px-4 py-3.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex min-w-0 items-center gap-2.5">
                 <div className="flex shrink-0 gap-1">
@@ -111,7 +122,7 @@ export default function TransitSection({ center, rail, bus, onRetry }: Props) {
               </span>
             </div>
             <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
-              <NextArrival routes={g.routes} kind="train" />
+              <NextArrival group={g} kind="train" />
               <a
                 href={directionsUrl(g.lat, g.lng)}
                 target="_blank"
@@ -132,7 +143,7 @@ export default function TransitSection({ center, rail, bus, onRetry }: Props) {
             </div>
             <div className="space-y-2.5">
               {busGroups.map(g => (
-                <div key={g.stop_id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <div key={g.key} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <div className="flex min-w-0 items-center gap-2">
                     <div className="flex shrink-0 gap-1">
                       {g.routes.slice(0, 3).map(r => (
@@ -148,7 +159,7 @@ export default function TransitSection({ center, rail, bus, onRetry }: Props) {
                     <span className="truncate text-[0.85rem] text-white">{g.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <NextArrival routes={g.routes} kind="bus" />
+                    <NextArrival group={g} kind="bus" />
                     <span className="text-[0.75rem] text-white/70">{walkTimeMinutes(g.dist)} min walk</span>
                   </div>
                 </div>
@@ -161,19 +172,47 @@ export default function TransitSection({ center, rail, bus, onRetry }: Props) {
   )
 }
 
-function NextArrival({ routes, kind }: { routes: StationGroup['routes']; kind: 'train' | 'bus' }) {
-  const soonest = routes
-    .filter(r => r.nextMin !== null)
-    .sort((a, b) => (a.nextMin ?? 99) - (b.nextMin ?? 99))[0]
+function NextArrival({ group, kind }: { group: StationGroup; kind: 'train' | 'bus' }) {
+  // Every (route × direction) with a live prediction, soonest first
+  const live = group.routes
+    .flatMap(r => r.arrivals
+      .filter(a => a.nextMin !== null)
+      .map(a => ({ routeName: r.name, direction: a.direction, nextMin: a.nextMin as number })))
+    .sort((a, b) => a.nextMin - b.nextMin)
 
-  if (!soonest) {
+  if (live.length === 0) {
     return <span className="text-[0.8rem] text-white/70">No live arrivals right now</span>
   }
-  const when = soonest.nextMin === 0 ? 'now' : `in ${soonest.nextMin} min`
+
+  const fmtWhen = (min: number) => (min === 0 ? 'now' : `in ${min} min`)
+  // "toward Union Square" at Union Square station says nothing — drop it there
+  const fmtDirection = (dir: string) =>
+    dir && dir.toLowerCase() !== group.name.toLowerCase() ? ` toward ${dir}` : ''
+
+  if (kind === 'bus') {
+    const s = live[0]
+    return (
+      <span className="text-[0.8rem] text-white/80">
+        Next Route {s.routeName}{fmtDirection(s.direction)}{' '}
+        <strong className="font-bold text-[#BAF14D]">{fmtWhen(s.nextMin)}</strong>
+      </span>
+    )
+  }
+
+  // Trains: both directions of the station in one card
   return (
-    <span className="text-[0.8rem] text-white/80">
-      Next {kind === 'bus' ? `Route ${soonest.name}` : 'train'}
-      {soonest.direction ? ` toward ${soonest.direction}` : ''} <strong className="font-bold text-[#BAF14D]">{when}</strong>
+    <span className="text-[0.8rem] leading-relaxed text-white/80">
+      {live.slice(0, 2).map((s, i) => {
+        const dir = fmtDirection(s.direction) // " toward X" or ""
+        const lead = i === 0 ? `Next train${dir}` : (dir ? dir.trim() : 'next')
+        return (
+          <span key={`${s.routeName}-${s.direction}`}>
+            {i > 0 && <span className="text-white/70"> · </span>}
+            {lead}{' '}
+            <strong className="font-bold text-[#BAF14D]">{fmtWhen(s.nextMin)}</strong>
+          </span>
+        )
+      })}
     </span>
   )
 }

@@ -9,3 +9,24 @@ export const OUTSIDE_AREA_MILES = 40
 // Bluebikes pricing changes (annual membership; income-eligible program).
 export const BLUEBIKES_NOTE =
   'Bluebikes membership is $119/year for unlimited 45-minute rides — with a reduced-price option if you qualify for select public assistance programs.'
+
+/**
+ * Landmark destinations for the "where can you get from here?" section —
+ * the places a newcomer actually wants to reach. Curated, not exhaustive;
+ * edit freely. (Foxborough is deliberately absent: commuter rail there runs
+ * mainly on event days, so a typical-weekday time would mislead.)
+ */
+export const REACH_DESTINATIONS = [
+  { id: 'harvard', name: 'Harvard Square', lat: 42.3736, lng: -71.1190 },
+  { id: 'kendall', name: 'Kendall / MIT', lat: 42.3625, lng: -71.0862 },
+  { id: 'downtown', name: 'Downtown Crossing', lat: 42.3555, lng: -71.0605 },
+  { id: 'backbay', name: 'Back Bay', lat: 42.3473, lng: -71.0755 },
+  { id: 'fenway', name: 'Fenway Park', lat: 42.3467, lng: -71.0972 },
+  { id: 'seaport', name: 'Seaport', lat: 42.3519, lng: -71.0430 },
+  { id: 'northstation', name: 'North Station', lat: 42.3664, lng: -71.0620 },
+  { id: 'airport', name: 'Logan Airport', lat: 42.3656, lng: -71.0096 },
+] as const
+
+/** Skip destinations closer than this — "how do I get there" isn't a question
+ *  when you can see it from your porch. */
+export const REACH_SKIP_WITHIN_MILES = 0.75

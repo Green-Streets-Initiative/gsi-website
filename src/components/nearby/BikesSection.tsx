@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
@@ -18,6 +19,11 @@ interface Props {
 }
 
 export default function BikesSection({ center, bluebikes, bikeNetwork, onRetry }: Props) {
+  // Comfort-first by default (à la Reconnect Rochester's ROC Easy Bike map):
+  // show only the network a brand-new rider can trust — protected lanes and
+  // car-free paths. Painted lanes are one tap away for confident riders.
+  const [showPainted, setShowPainted] = useState(false)
+
   const docks = bluebikes.data.slice(0, 8)
   const net = bikeNetwork.data
   const nearest = net?.nearest_protected ?? null
@@ -39,27 +45,37 @@ export default function BikesSection({ center, bluebikes, bikeNetwork, onRetry }
   return (
     <SectionShell
       eyebrow="Getting around by bike"
-      title="Bikes & bike lanes"
-      subtitle="Bluebikes dock pins show how many bikes are there right now. Solid green lines are protected lanes and car-free paths; dashed blue are painted lanes."
+      title="The comfortable bike network"
+      subtitle="Green lines are routes a brand-new rider can trust — protected lanes and car-free paths. Bluebikes pins show how many bikes are docked right now."
     >
       <NearbyMap
         center={center}
         markers={markers}
         lines={net?.geojson ?? null}
+        paintedVisible={showPainted}
         fitCount={5}
       />
 
-      {/* Legend */}
+      {/* Legend + painted-lane toggle */}
       <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[0.75rem] text-white/75">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-[3px] w-6 rounded bg-[#BAF14D]" /> Protected lane / path
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-[3px] w-6 rounded bg-[#7FB5FF] [background-image:repeating-linear-gradient(90deg,#7FB5FF_0_5px,transparent_5px_9px)]" /> Painted lane
-        </span>
-        <span className="flex items-center gap-1.5">
           <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#2B6CB0] text-[8px] font-bold text-white">4</span> Bluebikes (bikes now)
         </span>
+        <button
+          onClick={() => setShowPainted(v => !v)}
+          aria-pressed={showPainted}
+          className={`flex items-center gap-1.5 rounded-full border px-3 py-1 font-semibold transition-colors ${
+            showPainted
+              ? 'border-[#7FB5FF]/60 bg-[#7FB5FF]/15 text-white'
+              : 'border-white/[0.15] text-white/75 hover:border-white/[0.3]'
+          }`}
+        >
+          <span className="inline-block h-[3px] w-6 rounded [background-image:repeating-linear-gradient(90deg,#7FB5FF_0_5px,transparent_5px_9px)]" />
+          {showPainted ? 'Painted lanes shown' : 'Show painted lanes too'}
+        </button>
       </div>
 
       <div className="mt-4 space-y-2.5">

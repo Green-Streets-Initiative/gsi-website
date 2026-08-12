@@ -30,6 +30,23 @@ export interface CommunityData {
   partners: { count: number; names: string[] }
 }
 
+export interface ReachStep {
+  label: string
+  color: string
+  textColor: string
+}
+
+export interface ReachRow {
+  id: string
+  name: string
+  lat: number
+  lng: number
+  distance_miles: number
+  transit_minutes: number | null
+  steps: ReachStep[]
+  bike_minutes: number
+}
+
 export interface GuideItem {
   id: string
   slug: string | null

@@ -10,8 +10,9 @@ import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBluebikes, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
 import { round3, parseSnapshotParams, buildShareUrl, isOutsideArea } from '@/lib/nearby/share'
 import { NEARBY_PATH } from '@/lib/nearby/config'
-import type { SectionData, BikeNetworkData, CommunityData, GuideItem } from './types'
+import type { SectionData, BikeNetworkData, CommunityData, GuideItem, ReachRow } from './types'
 import TransitSection from './TransitSection'
+import ReachSection, { captureReachLoaded } from './ReachSection'
 import BikesSection from './BikesSection'
 import EventsGuides from './EventsGuides'
 
@@ -46,6 +47,7 @@ export default function NearbySnapshot() {
   const [bikeNetwork, setBikeNetwork] = useState<SectionData<BikeNetworkData | null>>({ status: 'loading', data: null })
   const [community, setCommunity] = useState<SectionData<CommunityData | null>>({ status: 'loading', data: null })
   const [guides, setGuides] = useState<SectionData<GuideItem[]>>({ status: 'loading', data: [] })
+  const [reach, setReach] = useState<SectionData<ReachRow[]>>({ status: 'loading', data: [] })
 
   const refreshBusyRef = useRef(false)
   const cityRef = useRef('')
@@ -85,6 +87,7 @@ export default function NearbySnapshot() {
     setBikeNetwork({ status: 'loading', data: null })
     setCommunity({ status: 'loading', data: null })
     setGuides({ status: 'loading', data: [] })
+    setReach({ status: 'loading', data: [] })
 
     fetchTrainStops(lat, lng, RAIL_ROUTE_TYPES, RAIL_CACHE_PREFIX).then(rows => {
       setRail({ status: 'ready', data: rows })
@@ -117,6 +120,20 @@ export default function NearbySnapshot() {
       } catch {
         setBikeNetwork({ status: 'error', data: null })
         posthog.capture('snapshot_section_error', { section: 'bike_network' })
+      }
+    })()
+
+    // Non-car highways: transit + bike times to landmark destinations
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}`)
+        if (!res.ok) throw new Error(`reach ${res.status}`)
+        const data = await res.json()
+        setReach({ status: 'ready', data: data.destinations ?? [] })
+        captureReachLoaded((data.destinations ?? []).length)
+      } catch {
+        setReach({ status: 'error', data: [] })
+        posthog.capture('snapshot_section_error', { section: 'reach' })
       }
     })()
 
@@ -368,6 +385,7 @@ export default function NearbySnapshot() {
       </div>
 
       <TransitSection center={location} rail={rail} bus={bus} onRetry={retry} />
+      <ReachSection reach={reach} onRetry={retry} />
       <BikesSection center={location} bluebikes={bluebikes} bikeNetwork={bikeNetwork} onRetry={retry} />
       <EventsGuides community={community} guides={guides} />
 

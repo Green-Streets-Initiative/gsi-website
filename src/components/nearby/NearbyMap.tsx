@@ -19,6 +19,8 @@ interface Props {
   markers: NearbyMarker[]
   /** Bike-lane FeatureCollection with properties.quality 'separated'|'painted' */
   lines?: GeoJSON.FeatureCollection | null
+  /** Show painted (non-protected) lanes — comfort-first pages default this off */
+  paintedVisible?: boolean
   /** Fit viewport to user + this many nearest markers, once (default: all) */
   fitCount?: number
   heightClass?: string
@@ -30,13 +32,15 @@ interface Props {
  * page, never the map. Markers are DOM elements (live-count badges); the
  * viewport fits data once and stays put through 30-second refreshes.
  */
-export default function NearbyMap({ center, markers, lines, fitCount, heightClass = 'h-[300px] sm:h-[340px]' }: Props) {
+export default function NearbyMap({ center, markers, lines, paintedVisible = true, fitCount, heightClass = 'h-[300px] sm:h-[340px]' }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const markersRef = useRef<maplibregl.Marker[]>([])
   const loadedRef = useRef(false)
   const didFitRef = useRef(false)
   const pendingLinesRef = useRef<GeoJSON.FeatureCollection | null>(null)
+  const paintedRef = useRef(paintedVisible)
+  paintedRef.current = paintedVisible
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -68,7 +72,7 @@ export default function NearbyMap({ center, markers, lines, fitCount, heightClas
         if (cancelled) return
         loadedRef.current = true
         if (pendingLinesRef.current) {
-          applyLines(map, pendingLinesRef.current)
+          applyLines(map, pendingLinesRef.current, paintedRef.current)
           pendingLinesRef.current = null
         }
       })
@@ -137,16 +141,26 @@ export default function NearbyMap({ center, markers, lines, fitCount, heightClas
       pendingLinesRef.current = lines
       return
     }
-    applyLines(map, lines)
-  }, [lines])
+    applyLines(map, lines, paintedVisible)
+  }, [lines, paintedVisible])
+
+  // Painted-lane visibility toggle
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current || !map.getLayer('bike-painted')) return
+    map.setLayoutProperty('bike-painted', 'visibility', paintedVisible ? 'visible' : 'none')
+  }, [paintedVisible])
 
   return <div ref={containerRef} className={`${heightClass} w-full`} />
 }
 
-function applyLines(map: maplibregl.Map, lines: GeoJSON.FeatureCollection) {
+function applyLines(map: maplibregl.Map, lines: GeoJSON.FeatureCollection, paintedVisible: boolean) {
   const existing = map.getSource('bike-network') as maplibregl.GeoJSONSource | undefined
   if (existing) {
     existing.setData(lines)
+    if (map.getLayer('bike-painted')) {
+      map.setLayoutProperty('bike-painted', 'visibility', paintedVisible ? 'visible' : 'none')
+    }
     return
   }
 
@@ -164,7 +178,7 @@ function applyLines(map: maplibregl.Map, lines: GeoJSON.FeatureCollection) {
       'line-opacity': 0.65,
       'line-dasharray': [2, 3],
     },
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    layout: { 'line-cap': 'round', 'line-join': 'round', visibility: paintedVisible ? 'visible' : 'none' },
   })
 
   // Separated/protected on top: lime glow + solid line
