@@ -17,7 +17,7 @@ export interface BikeComfort {
 }
 export type DistanceCategory = 'short' | 'medium' | 'long'
 export type BarrierCode = 'safety' | 'routes' | 'sweating' | 'gear' | 'bike_parking' | 'planning' | 'weather' | 'time' | 'carrying' | 'habit'
-export type CurrentCommuteMode = 'drive' | 'carpool' | 'rideshare' | 'bike' | 'transit' | 'bus' | 'commuter_rail' | 'walk'
+export type CurrentCommuteMode = 'drive' | 'carpool' | 'rideshare' | 'bike' | 'transit' | 'bus' | 'commuter_rail' | 'walk' | 'new'
 
 export interface BluebikeStation {
   station_id: string

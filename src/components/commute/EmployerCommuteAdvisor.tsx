@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
+import posthog from 'posthog-js'
 import { Check } from '@phosphor-icons/react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import RecommendationCard from '@/components/commute/RecommendationCard'
@@ -12,6 +13,8 @@ import EmployerBenefits from '@/components/commute/EmployerBenefits'
 import EmployerSavingsComparison from '@/components/commute/EmployerSavingsComparison'
 import ModeComparisonTable from '@/components/commute/ModeComparisonTable'
 import ModeIcon from '@/components/commute/ModeIcon'
+import LoadingMessages from '@/components/commute/LoadingMessages'
+import { co2Equivalency } from '@/lib/co2-equivalency'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import type { EmployerGroup, EmployerBenefits as EmployerBenefitsConfig, RecommendationResponse, BarrierCode, CurrentCommuteMode, Mode } from '@/lib/types/commute'
@@ -108,6 +111,10 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
   const benefits = group.employer_benefits
   const isPremium = group.tier === 'premium'
 
+  const track = useCallback((event: string, props?: Record<string, unknown>) => {
+    posthog.capture(event, { advisor_variant: 'employer', employer_slug: group.slug, is_demo: !!isDemo, ...props })
+  }, [group.slug, isDemo])
+
   // Inputs
   const [distance, setDistance] = useState(0)
   const [driveDays, setDriveDays] = useState(5)
@@ -194,19 +201,32 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
       }
       const res = await fetch(`/api/commute/recommend?${params}`)
       const data = await res.json()
-      if (data.error === 'outside_ma') { setOutsideMA(true); setRecommendation(null); return }
+      if (data.error === 'outside_ma') {
+        setOutsideMA(true); setRecommendation(null)
+        track('advisor_results_failed', { reason: 'outside_ma' })
+        return
+      }
       setRecommendation(data)
       setSelectedMode(data.primary?.modes?.[0] || data.comparisons?.[0]?.mode || null)
+      track('advisor_results_shown', {
+        recommended_mode: data.primary?.modes?.[0] ?? 'drive',
+        distance_miles: data.distance_miles,
+        has_addresses: true,
+      })
       const recMode = data.primary?.modes?.[0]
       if (recMode === 'walk') setAltMode('walk')
       else if (recMode === 'bike') setAltMode('bike')
       else if (recMode === 'ebike') setAltMode('ebike')
       else if (recMode === 'transit' || recMode === 'bus') setAltMode('mbta')
       else if (recMode === 'commuter_rail') setAltMode('commuter_rail')
-    } catch { setRecError('Unable to load recommendation.') } finally { setRecLoading(false) }
-  }, [homePlaceData, workPlaceData, commuteMode, rideshareDaily, carpoolDaily])
+    } catch {
+      setRecError('Unable to load recommendation.')
+      track('advisor_results_failed', { reason: 'error' })
+    } finally { setRecLoading(false) }
+  }, [homePlaceData, workPlaceData, commuteMode, rideshareDaily, carpoolDaily, track])
 
   const handleSeeOptions = () => {
+    track('advisor_step_completed', { step: 2, commute_mode: commuteMode })
     setStep(3); setSelectedBarriers([]); fetchRecommendation()
     setTimeout(() => recommendRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
   }
@@ -225,6 +245,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
   const handleModeSelect = (mode: string) => {
     setSelectedMode(mode)
     setSelectedBarriers([])
+    track('advisor_mode_selected', { mode })
   }
 
   // Calculate savings — with and without employer benefits
@@ -378,7 +399,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
             <span className="text-[0.8125rem] font-semibold text-white">
               This is a personalized preview for {group.name}
             </span>
-            <span className="mx-2 text-white/40">·</span>
+            <span className="mx-2 text-white/70">·</span>
             <Link href="/contact?inquiry=employer" className="text-[0.8125rem] font-semibold text-white underline">
               Contact us to get started
             </Link>
@@ -434,12 +455,20 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                   onPlaceSelected={setWorkPlaceData}
                   label={benefits.destination_address ? 'Your workplace' : 'Work address'}
                   variant="light" placeholder="Where do you work?" />
+                <p className="text-[0.75rem] leading-snug text-[#5A5C6E]">
+                  Addresses are only used to look up routes — never saved to a profile or shared.
+                </p>
               </div>
 
               {/* Employer benefits checklist */}
               {!isDemo && <EmployerBenefits companyName={group.name} benefits={benefits} />}
 
-              <button onClick={() => setStep(2)} disabled={!homePlaceData}
+              <button
+                onClick={() => {
+                  track('advisor_step_completed', { step: 1, has_addresses: !!(homePlaceData && workPlaceData) })
+                  setStep(2)
+                }}
+                disabled={!homePlaceData || !workPlaceData}
                 className="mt-6 w-full rounded-[10px] bg-[#2D6A4F] py-3 text-[0.9375rem] font-bold text-white transition-colors hover:bg-[#1F4D3A] disabled:opacity-30">
                 Next
               </button>
@@ -463,11 +492,14 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                   { value: 'bus', label: 'Bus' },
                   { value: 'commuter_rail', label: 'Commuter Rail' },
                   { value: 'walk', label: 'Walk' },
+                  { value: 'new', label: "I'm new here — still figuring it out" },
                 ] as const).map(opt => (
                   <button
                     key={opt.value}
                     onClick={() => setCommuteMode(opt.value)}
                     className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-[0.8125rem] font-semibold transition-colors ${
+                      opt.value === 'new' ? 'col-span-2' : ''
+                    } ${
                       commuteMode === opt.value
                         ? 'border-[#2D6A4F] bg-[#E7F0EA] text-[#2D6A4F]'
                         : 'border-[rgba(25,26,46,0.09)] text-[#191A2E] hover:border-[rgba(25,26,46,0.18)]'
@@ -479,7 +511,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                 ))}
               </div>
 
-              <Field label="Days in the office per week">
+              <Field label={commuteMode === 'new' ? "Days you'll commute per week" : 'Days in the office per week'}>
                 <div className="mb-2.5 text-base font-bold text-[#2D6A4F]">
                   {driveDays} day{driveDays > 1 ? 's' : ''}/week
                 </div>
@@ -532,6 +564,12 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
               {(commuteMode === 'bike' || commuteMode === 'walk') && (
                 <div className="mt-1 rounded-xl border border-[rgba(25,26,46,0.06)] bg-[#FAFBF8] px-5 py-3 text-[0.8125rem] text-[#5A5C6E]">
                   No commute costs to track — we&apos;ll show you how your current commute compares.
+                </div>
+              )}
+
+              {commuteMode === 'new' && (
+                <div className="mt-1 rounded-xl border border-[rgba(25,26,46,0.06)] bg-[#FAFBF8] px-5 py-3 text-[0.8125rem] text-[#5A5C6E]">
+                  Just moved or starting fresh? We&apos;ll show what each option would cost — no current commute needed.
                 </div>
               )}
 
@@ -613,7 +651,19 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
             {recLoading && !recommendation && (
               <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-7 text-center shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
                 <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-[rgba(25,26,46,0.12)] border-t-[#2D6A4F]" />
-                <p className="text-sm text-[#5A5C6E]">Analyzing your commute...</p>
+                <LoadingMessages theme="light" />
+              </div>
+            )}
+
+            {/* Missing-input fallback */}
+            {!recLoading && !recommendation && !recError && !outsideMA && (
+              <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-7 text-center shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
+                <p className="text-[0.9375rem] text-[#191A2E]">
+                  We need one more detail — add your home and work addresses and we&apos;ll compare your options.
+                </p>
+                <button onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-[#2D6A4F]">
+                  &larr; Back to Step 1
+                </button>
               </div>
             )}
             {outsideMA && (
@@ -730,7 +780,8 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                 {withBenefits && withoutBenefits && (
                   <EmployerSavingsComparison
                     withBenefits={withBenefits} withoutBenefits={withoutBenefits}
-                    companyName={group.name} showComparison={isPremium} />
+                    companyName={group.name} showComparison={isPremium}
+                    costOnly={commuteMode === 'new'} />
                 )}
 
                 {/* Health + environment */}
@@ -749,6 +800,9 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                         <div className="text-base font-bold text-[#C97A2E]">{fmtCO2(withBenefits.co2)}</div>
                         <div className="mt-0.5 text-[9px] leading-snug text-[#5A5C6E]">CO₂ saved/yr</div>
                       </div>
+                    </div>
+                    <div className="mt-2 text-center text-[0.75rem] text-[#5A5C6E]">
+                      {co2Equivalency(withBenefits.co2)}
                     </div>
                   </div>
                 )}
@@ -791,7 +845,10 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                   <div className="mb-3.5 text-[0.8rem] leading-relaxed text-[#5A5C6E]">
                     Track your commute with Shift — {group.name} employees who use Shift can join the company challenge and compete with teammates.
                   </div>
-                  <a href="/shift" className="inline-block rounded-lg bg-[#2D6A4F] px-4 py-2 text-[0.8125rem] font-bold text-white transition-colors hover:bg-[#1F4D3A]">
+                  <a
+                    href="/shift"
+                    onClick={() => track('advisor_app_cta_clicked')}
+                    className="inline-block rounded-lg bg-[#2D6A4F] px-4 py-2 text-[0.8125rem] font-bold text-white transition-colors hover:bg-[#1F4D3A]">
                     Download the app &rarr;
                   </a>
                 </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useState } from 'react'
+import posthog from 'posthog-js'
 import type { BikeComfort, ModeComparison } from '@/lib/types/commute'
 import ModeIcon from '@/components/commute/ModeIcon'
 import ComfortBar from '@/components/commute/ComfortBar'
@@ -173,6 +174,7 @@ export default function ModeComparisonTable({
                       href={buildGoogleMapsUrl(originLat!, originLng!, destLat!, destLng!, c.mode)}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => posthog.capture('advisor_directions_clicked', { mode: c.mode })}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-[#2D6A4F] px-4 py-2 text-[0.8125rem] font-bold text-white transition-colors hover:bg-[#1F4D3A]"
                     >
                       Get directions

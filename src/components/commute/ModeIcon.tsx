@@ -1,8 +1,9 @@
 'use client'
 
+import { Compass } from '@phosphor-icons/react'
 import type { Mode } from '@/lib/types/commute'
 
-type IconMode = Mode | 'drive' | 'carpool' | 'rideshare' | 'commuter_rail'
+type IconMode = Mode | 'drive' | 'carpool' | 'rideshare' | 'commuter_rail' | 'new'
 
 export default function ModeIcon({ mode, size = 28, className = '' }: { mode: IconMode; size?: number; className?: string }) {
   const base = `inline-block shrink-0 ${className}`
@@ -61,6 +62,9 @@ export default function ModeIcon({ mode, size = 28, className = '' }: { mode: Ic
           <path d="M200,48H56A24,24,0,0,0,32,72V200a24,24,0,0,0,24,24h8.11l-10.5,14A8,8,0,0,0,60,248H68a8,8,0,0,0,6.4-3.2L93.33,224h69.34l18.93,20.8A8,8,0,0,0,188,248h8a8,8,0,0,0,6.4-10L191.89,224H200a24,24,0,0,0,24-24V72A24,24,0,0,0,200,48ZM56,64H200a8,8,0,0,1,8,8v48H48V72A8,8,0,0,1,56,64Zm144,144H56a8,8,0,0,1-8-8V136H208v64A8,8,0,0,1,200,208ZM96,176a12,12,0,1,1-12-12A12,12,0,0,1,96,176Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,176Z" />
         </svg>
       )
+    case 'new':
+      // Phosphor Compass (bold) — "still finding my way"
+      return <Compass size={size} weight="bold" className={base} />
     default:
       return (
         <svg className={base} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">

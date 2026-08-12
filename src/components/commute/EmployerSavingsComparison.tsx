@@ -12,6 +12,7 @@ interface EmployerSavingsComparisonProps {
   withBenefits: SavingsData
   companyName: string
   showComparison: boolean // false for basic tier — show only "with benefits"
+  costOnly?: boolean // "I'm new here" — no baseline to save against, show the option's own cost
 }
 
 const fmt = (n: number) =>
@@ -22,6 +23,7 @@ export default function EmployerSavingsComparison({
   withBenefits,
   companyName,
   showComparison,
+  costOnly,
 }: EmployerSavingsComparisonProps) {
   const extraSavings = withBenefits.net - withoutBenefits.net
 
@@ -30,9 +32,9 @@ export default function EmployerSavingsComparison({
     return (
       <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-7 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
         <div className="mb-4 text-[0.9375rem] font-bold text-[#191A2E]">
-          Your estimated annual savings
+          {costOnly ? 'Your estimated annual cost' : 'Your estimated annual savings'}
         </div>
-        <SavingsColumn data={withBenefits} label="With your benefits" />
+        <SavingsColumn data={withBenefits} label="With your benefits" costOnly={costOnly} />
       </div>
     )
   }
@@ -41,11 +43,11 @@ export default function EmployerSavingsComparison({
   return (
     <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-7 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
       <div className="mb-4 text-[0.9375rem] font-bold text-[#191A2E]">
-        Estimated annual savings
+        {costOnly ? 'Estimated annual cost' : 'Estimated annual savings'}
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        <SavingsColumn data={withoutBenefits} label="Without your benefits" muted />
-        <SavingsColumn data={withBenefits} label="With your benefits" />
+        <SavingsColumn data={withoutBenefits} label="Without your benefits" muted costOnly={costOnly} />
+        <SavingsColumn data={withBenefits} label="With your benefits" costOnly={costOnly} />
       </div>
       {extraSavings > 0 && (
         <div className="mt-5 rounded-xl border border-[rgba(45,106,79,0.12)] bg-[#E7F0EA] px-5 py-4 text-center">
@@ -61,7 +63,7 @@ export default function EmployerSavingsComparison({
   )
 }
 
-function SavingsColumn({ data, label, muted }: { data: SavingsData; label: string; muted?: boolean }) {
+function SavingsColumn({ data, label, muted, costOnly }: { data: SavingsData; label: string; muted?: boolean; costOnly?: boolean }) {
   return (
     <div className={muted ? 'opacity-50' : ''}>
       <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A5C6E]">
@@ -75,7 +77,7 @@ function SavingsColumn({ data, label, muted }: { data: SavingsData; label: strin
         <div className={`text-[1.75rem] font-extrabold leading-none tracking-tighter ${
           muted ? 'text-[#8A8B9A]' : 'text-[#2D6A4F]'
         }`}>
-          {fmt(data.net)}
+          {fmt(costOnly ? Math.abs(data.net) : data.net)}
         </div>
         <div className={`mt-1 text-[0.7rem] ${muted ? 'text-[#8A8B9A]' : 'text-[#2D6A4F]/60'}`}>
           per year
@@ -86,18 +88,18 @@ function SavingsColumn({ data, label, muted }: { data: SavingsData; label: strin
           <Row key={item.label} label={item.label} value={`+${fmt(item.value)}`} positive />
         ))}
         {data.altCostItems.filter(item => item.value > 0).map((item) => (
-          <Row key={item.label} label={item.label} value={`-${fmt(item.value)}`} />
+          <Row key={item.label} label={item.label} value={costOnly ? fmt(item.value) : `-${fmt(item.value)}`} neutral={costOnly} />
         ))}
       </div>
     </div>
   )
 }
 
-function Row({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
+function Row({ label, value, positive, neutral }: { label: string; value: string; positive?: boolean; neutral?: boolean }) {
   return (
     <div className="flex justify-between text-[0.8125rem]">
       <span className="text-[#5A5C6E]">{label}</span>
-      <span className={positive ? 'font-semibold text-[#2D6A4F]' : 'font-semibold text-[#B3361F]'}>
+      <span className={`font-semibold ${positive ? 'text-[#2D6A4F]' : neutral ? 'text-[#191A2E]' : 'text-[#B3361F]'}`}>
         {value}
       </span>
     </div>

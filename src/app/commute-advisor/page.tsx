@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
+import posthog from 'posthog-js'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
@@ -11,6 +12,8 @@ import CommuteMap from '@/components/commute/CommuteMap'
 import StarterGuides from '@/components/commute/StarterGuides'
 import ModeComparisonTable from '@/components/commute/ModeComparisonTable'
 import ModeIcon from '@/components/commute/ModeIcon'
+import LoadingMessages from '@/components/commute/LoadingMessages'
+import { co2Equivalency } from '@/lib/co2-equivalency'
 import type { RecommendationResponse, CurrentCommuteMode, Mode } from '@/lib/types/commute'
 
 type PlaceData = { placeId: string; lat: number; lng: number }
@@ -43,18 +46,6 @@ const MODES: Record<string, { met: number; mph: number | null; label: string; he
 
 const DRIVE_MPH = 14
 
-/** Translate CO₂ kg into a relatable equivalency (from Shift app's impact engine) */
-function co2Equivalency(kg: number): string {
-  const grams = kg * 1000
-  if (grams < 5000) {
-    const bags = grams / 1000
-    if (bags < 1.5) return 'Like keeping a bag of trash out of a landfill'
-    return `Like keeping ${Math.round(bags)} bags of trash out of a landfill`
-  }
-  const trees = grams / 22000
-  if (trees < 1.5) return 'Like planting a tree for a year'
-  return `Like planting ${Math.round(trees)} trees for a year`
-}
 // Default pricing — overridden by /api/pricing on mount
 let MBTA_SUBWAY_SINGLE = 2.40
 let MBTA_SUBWAY_MONTHLY = 90
@@ -309,6 +300,12 @@ export default function CommuteCalculator() {
           })
           const recMode = modes[0] || candidates[0]?.mode || null
           setSelectedMode(recMode)
+          posthog.capture('advisor_results_shown', {
+            advisor_variant: 'public',
+            recommended_mode: winner.mode,
+            distance_miles: d,
+            has_addresses: false,
+          })
         } finally {
           setRecLoading(false)
         }
@@ -344,17 +341,25 @@ export default function CommuteCalculator() {
       if (data.error === 'outside_ma') {
         setOutsideMA(true)
         setRecommendation(null)
+        posthog.capture('advisor_results_failed', { advisor_variant: 'public', reason: 'outside_ma' })
         return
       }
 
       if (!res.ok || data.error) {
         setRecError('Unable to load recommendation. Please try again.')
+        posthog.capture('advisor_results_failed', { advisor_variant: 'public', reason: 'error' })
         return
       }
 
       setRecommendation(data)
       const recMode = data.primary?.modes?.[0] || data.comparisons?.[0]?.mode || null
       setSelectedMode(recMode)
+      posthog.capture('advisor_results_shown', {
+        advisor_variant: 'public',
+        recommended_mode: recMode ?? 'drive',
+        distance_miles: data.distance_miles,
+        has_addresses: true,
+      })
       // Sync altMode to recommended mode for savings calculation
       if (recMode === 'walk') setAltMode('walk')
       else if (recMode === 'bike') setAltMode('bike')
@@ -363,6 +368,7 @@ export default function CommuteCalculator() {
       else if (recMode === 'commuter_rail') setAltMode('commuter_rail')
     } catch {
       setRecError('Unable to load recommendation. Please try again.')
+      posthog.capture('advisor_results_failed', { advisor_variant: 'public', reason: 'error' })
     } finally {
       setRecLoading(false)
     }
@@ -370,6 +376,7 @@ export default function CommuteCalculator() {
 
   // Handle "See my options" — transition to Step 3 and fetch recommendation
   const handleSeeOptions = () => {
+    posthog.capture('advisor_step_completed', { advisor_variant: 'public', step: 2, commute_mode: commuteMode })
     setStep(3)
     fetchRecommendation()
     // Pin to the top of the page so the header + step indicator + loading
@@ -397,6 +404,7 @@ export default function CommuteCalculator() {
 
   const handleModeSelect = (mode: string) => {
     setSelectedMode(mode)
+    posthog.capture('advisor_mode_selected', { advisor_variant: 'public', mode })
   }
 
   // Calculate results
@@ -576,7 +584,7 @@ export default function CommuteCalculator() {
           <h1 className="mb-3 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.15] tracking-tighter text-white">
             Find your <em className="not-italic text-[#BAF14D]">best commute</em>
           </h1>
-          <p className="text-[1rem] leading-relaxed text-white/70">
+          <p className="text-[1rem] leading-relaxed text-white/75">
             Tell us where you&apos;re going and we&apos;ll recommend the fastest, cheapest way to get there.
           </p>
         </div>
@@ -591,7 +599,7 @@ export default function CommuteCalculator() {
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
                   s === step ? 'bg-[#BAF14D] text-[#191A2E]'
                   : s < step ? 'bg-[#BAF14D]/20 text-[#BAF14D] hover:bg-[#BAF14D]/30'
-                  : 'bg-white/[0.08] text-white/50'
+                  : 'bg-white/[0.08] text-white/60'
                 }`}
               >
                 {s < step ? <Check size={14} weight="bold" /> : s}
@@ -624,6 +632,9 @@ export default function CommuteCalculator() {
                   variant="dark"
                   placeholder="Where do you work?"
                 />
+                <p className="text-[0.75rem] leading-snug text-white/75">
+                  Addresses are only used to look up routes — never saved to a profile or shared.
+                </p>
               </div>
 
               <Field label="Or enter distance manually">
@@ -637,8 +648,15 @@ export default function CommuteCalculator() {
               </Field>
 
               <button
-                onClick={() => setStep(2)}
-                disabled={!homePlaceData && !workPlaceData && distance <= 0}
+                onClick={() => {
+                  posthog.capture('advisor_step_completed', {
+                    advisor_variant: 'public',
+                    step: 1,
+                    has_addresses: !!(homePlaceData && workPlaceData),
+                  })
+                  setStep(2)
+                }}
+                disabled={!(homePlaceData && workPlaceData) && distance <= 0}
                 className="mt-4 w-full rounded-xl bg-[#BAF14D] py-3 text-[0.9375rem] font-bold text-[#191A2E] transition-opacity hover:opacity-90 disabled:opacity-30"
               >
                 Next
@@ -663,11 +681,14 @@ export default function CommuteCalculator() {
                   { value: 'bus', label: 'Bus' },
                   { value: 'commuter_rail', label: 'Commuter Rail' },
                   { value: 'walk', label: 'Walk' },
+                  { value: 'new', label: "I'm new here — still figuring it out" },
                 ] as const).map(opt => (
                   <button
                     key={opt.value}
                     onClick={() => setCommuteMode(opt.value)}
                     className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-[0.8125rem] font-semibold transition-colors ${
+                      opt.value === 'new' ? 'col-span-2' : ''
+                    } ${
                       commuteMode === opt.value
                         ? 'border-[#BAF14D] bg-[#BAF14D]/[0.12] text-[#BAF14D]'
                         : 'border-white/[0.12] text-white hover:border-white/[0.25]'
@@ -679,7 +700,7 @@ export default function CommuteCalculator() {
                 ))}
               </div>
 
-              <Field label="Days in the office per week">
+              <Field label={commuteMode === 'new' ? "Days you'll commute per week" : 'Days in the office per week'}>
                 <div className="mb-2.5 font-display text-base font-bold text-[#BAF14D]">
                   {driveDays} day{driveDays > 1 ? 's' : ''}/week
                 </div>
@@ -737,8 +758,14 @@ export default function CommuteCalculator() {
               )}
 
               {(commuteMode === 'bike' || commuteMode === 'walk') && (
-                <div className="mt-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-3 text-[0.8125rem] text-white/70">
+                <div className="mt-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-3 text-[0.8125rem] text-white/75">
                   No commute costs to track — we&apos;ll show you how your current commute compares.
+                </div>
+              )}
+
+              {commuteMode === 'new' && (
+                <div className="mt-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-3 text-[0.8125rem] text-white/75">
+                  Just moved or starting fresh? We&apos;ll show what each option would cost — no current commute needed.
                 </div>
               )}
 
@@ -829,7 +856,20 @@ export default function CommuteCalculator() {
             {recLoading && !recommendation && (
               <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7 text-center">
                 <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-[#BAF14D]" />
-                <p className="text-sm text-white/70">Analyzing your commute...</p>
+                <LoadingMessages theme="dark" />
+              </div>
+            )}
+
+            {/* Missing-input fallback — protects restored sessions and any
+                path that reaches Step 3 without enough to compare */}
+            {!recLoading && !recommendation && !recError && !outsideMA && (
+              <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7 text-center">
+                <p className="text-[0.9375rem] text-white">
+                  We need one more detail — add both addresses, or a distance, and we&apos;ll compare your options.
+                </p>
+                <button onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-[#BAF14D]">
+                  ← Back to Step 1
+                </button>
               </div>
             )}
 
@@ -934,7 +974,7 @@ export default function CommuteCalculator() {
                 })()}
 
                 {!homePlaceData && (
-                  <p className="text-center text-[0.8125rem] text-white/70">
+                  <p className="text-center text-[0.8125rem] text-white/75">
                     Enter your home and work addresses in Step 1 for live transit and Bluebikes availability.
                   </p>
                 )}
@@ -958,7 +998,8 @@ export default function CommuteCalculator() {
                 {r && (
                   <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
                     <div className="mb-4 font-display text-[0.9375rem] font-bold text-white">
-                      {r.baselineAnnualCost === 0 ? 'Annual commute cost comparison' : 'Estimated annual savings'}
+                      {commuteMode === 'new' ? 'Estimated annual cost'
+                        : r.baselineAnnualCost === 0 ? 'Annual commute cost comparison' : 'Estimated annual savings'}
                     </div>
 
                     <div className={`mb-4 rounded-[14px] border px-6 py-4 text-center ${
@@ -969,12 +1010,14 @@ export default function CommuteCalculator() {
                       <div className={`font-display text-[2.25rem] font-extrabold leading-none tracking-tighter ${
                         r.baselineAnnualCost === 0 ? 'text-white' : 'text-[#BAF14D]'
                       }`}>
-                        {fmt(r.net)}
+                        {commuteMode === 'new' ? fmt(Math.abs(r.net)) : fmt(r.net)}
                       </div>
-                      <div className="mt-1 text-[0.75rem] text-[rgba(186,241,77,0.5)]">
-                        {r.baselineAnnualCost === 0
-                          ? `switching from ${r.baselineLabel} would cost this per year`
-                          : r.net >= 0 ? `per year vs. ${r.baselineLabel}` : `transit cost exceeds ${r.baselineLabel} savings at this distance`}
+                      <div className="mt-1 text-[0.75rem] text-[rgba(186,241,77,0.78)]">
+                        {commuteMode === 'new'
+                          ? (r.transitCost > 0 ? 'estimated cost per year for this option' : 'free — no fares, no fuel')
+                          : r.baselineAnnualCost === 0
+                            ? `switching from ${r.baselineLabel} would cost this per year`
+                            : r.net >= 0 ? `per year vs. ${r.baselineLabel}` : `transit cost exceeds ${r.baselineLabel} savings at this distance`}
                       </div>
                     </div>
 
@@ -994,7 +1037,9 @@ export default function CommuteCalculator() {
                         </>
                       ) : null}
                       {!r.isActive && r.transitCost > 0 && (
-                        <ResultRow label={r.transitLabel} value={`-${fmt(r.transitCost)}`} type="neg" />
+                        commuteMode === 'new'
+                          ? <ResultRow label={r.transitLabel} value={fmt(r.transitCost)} type="neu" />
+                          : <ResultRow label={r.transitLabel} value={`-${fmt(r.transitCost)}`} type="neg" />
                       )}
                     </div>
 
@@ -1016,20 +1061,25 @@ export default function CommuteCalculator() {
 
                     {/* Health */}
                     {r.isActive && (
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
-                          <div className="font-display text-base font-bold text-[#EDB93C]">{r.activeMins}</div>
-                          <div className="mt-0.5 text-[9px] leading-snug text-white/70">active min/week</div>
+                      <>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
+                            <div className="font-display text-base font-bold text-[#EDB93C]">{r.activeMins}</div>
+                            <div className="mt-0.5 text-[9px] leading-snug text-white/70">active min/week</div>
+                          </div>
+                          <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
+                            <div className="font-display text-base font-bold text-[#EDB93C]">{r.weeklyCals.toLocaleString()}</div>
+                            <div className="mt-0.5 text-[9px] leading-snug text-white/70">cal/week</div>
+                          </div>
+                          <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
+                            <div className="font-display text-base font-bold text-[#EDB93C]">{fmtCO2(r.co2)}</div>
+                            <div className="mt-0.5 text-[9px] leading-snug text-white/70">CO₂ saved/yr</div>
+                          </div>
                         </div>
-                        <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
-                          <div className="font-display text-base font-bold text-[#EDB93C]">{r.weeklyCals.toLocaleString()}</div>
-                          <div className="mt-0.5 text-[9px] leading-snug text-white/70">cal/week</div>
+                        <div className="mt-2 text-center text-[0.75rem] text-white/75">
+                          {co2Equivalency(r.co2)}
                         </div>
-                        <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
-                          <div className="font-display text-base font-bold text-[#EDB93C]">{fmtCO2(r.co2)}</div>
-                          <div className="mt-0.5 text-[9px] leading-snug text-white/70">CO₂ saved/yr</div>
-                        </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -1048,7 +1098,11 @@ export default function CommuteCalculator() {
                   <div className="mb-3.5 text-[0.8rem] leading-relaxed text-white">
                     Track your active trips with Shift to see what you&rsquo;re saving, feel the health gains, and unlock perks at partner businesses around town.
                   </div>
-                  <a href="/shift" className="inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85">
+                  <a
+                    href="/shift"
+                    onClick={() => posthog.capture('advisor_app_cta_clicked', { advisor_variant: 'public' })}
+                    className="inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                  >
                     Download the app &rarr;
                   </a>
                 </div>
@@ -1056,7 +1110,7 @@ export default function CommuteCalculator() {
                 {/* Edit inputs */}
                 <button
                   onClick={() => setStep(1)}
-                  className="w-full rounded-xl border border-white/[0.08] py-3 text-[0.8125rem] font-semibold text-white/70 transition-colors hover:border-white/[0.15] hover:text-white/90"
+                  className="w-full rounded-xl border border-white/[0.08] py-3 text-[0.8125rem] font-semibold text-white/75 transition-colors hover:border-white/[0.15] hover:text-white/90"
                 >
                   ← Edit your commute details
                 </button>

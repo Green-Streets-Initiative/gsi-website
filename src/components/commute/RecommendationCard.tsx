@@ -1,5 +1,6 @@
 'use client'
 
+import posthog from 'posthog-js'
 import type { RecommendationPrimary, RecommendationSecondary, Mode } from '@/lib/types/commute'
 import ModeIcon from '@/components/commute/ModeIcon'
 
@@ -89,6 +90,7 @@ export default function RecommendationCard({
           href={primary.google_maps_url}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => posthog.capture('advisor_directions_clicked', { mode: primary.modes[0] ?? 'drive' })}
           className="inline-flex items-center gap-2 rounded-full bg-[#2D6A4F] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1F4D3A]"
         >
           Get directions in Google Maps
