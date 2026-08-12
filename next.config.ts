@@ -29,6 +29,13 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
 
+      // New Routes campaign URL → neighborhood snapshot page
+      {
+        source: '/new-routes',
+        destination: '/nearby',
+        permanent: false,
+      },
+
       // Shift leaderboard shortcut
       {
         source: '/shift/leaderboard',
