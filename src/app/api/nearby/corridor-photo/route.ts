@@ -19,7 +19,11 @@ import { resolveUnsplashPhoto } from '@/lib/unsplash'
  * key incident); never expose it in a client-visible URL.
  */
 
-const GOOGLE_KEY = process.env.GOOGLE_ROUTES_API_KEY || ''
+// Places key first: the Routes key carries an API-restrictions list that
+// does NOT include Street View Static (verified 2026-08-12 — its metadata
+// calls return REQUEST_DENIED while the Places key returns OK). Same
+// fallback order the /api/places/* routes use.
+const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY || ''
 
 const META_OK_TTL = 7 * 24 * 60 * 60 * 1000
 const META_MISS_TTL = 10 * 60 * 1000 // short: recovers quickly once the API is enabled
@@ -61,8 +65,11 @@ export async function GET(req: NextRequest) {
   let meta = metaCache.get(metaKey)
   if (!meta || meta.expires <= Date.now()) {
     try {
+      // radius: default pano search is ~50m; station platforms and path
+      // midpoints often sit farther than that from the nearest street
+      // imagery — 150m snaps to the closest block instead of missing
       const res = await fetch(
-        `https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat4},${lng4}&source=outdoor&key=${GOOGLE_KEY}`,
+        `https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat4},${lng4}&radius=150&source=outdoor&key=${GOOGLE_KEY}`,
         { signal: AbortSignal.timeout(6000) }
       )
       const data = await res.json()
@@ -82,6 +89,7 @@ export async function GET(req: NextRequest) {
   const params = new URLSearchParams({
     size: '640x360',
     location: `${lat4},${lng4}`,
+    radius: '150',
     fov: '80',
     source: 'outdoor',
     key: GOOGLE_KEY,
