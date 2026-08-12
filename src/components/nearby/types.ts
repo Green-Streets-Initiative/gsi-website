@@ -45,6 +45,8 @@ export interface ReachRow {
   transit_minutes: number | null
   steps: ReachStep[]
   bike_minutes: number
+  bike_is_estimate?: boolean
+  bike_steps?: ReachStep[]
 }
 
 export interface GuideItem {

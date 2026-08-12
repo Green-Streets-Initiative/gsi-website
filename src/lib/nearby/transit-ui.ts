@@ -12,12 +12,17 @@ export const ROUTE_COLORS: Record<string, string> = {
 
 const COMMUTER_RAIL_COLOR = '#80276C'
 const BUS_COLOR = '#FFC72C'
+const SILVER_COLOR = '#7C878E'
 
-/** Color for any MBTA route id — subway lines by table, CR-* purple, numeric bus yellow. */
+/** Silver Line GTFS route ids (SL1–SL5 + Silver Line Way). */
+const SILVER_IDS = new Set(['741', '742', '743', '746', '749', '751'])
+
+/** Color for any MBTA route id — subway lines by table, CR-* purple, SL gray, numeric bus yellow. */
 export function lineColor(routeId: string): string {
   if (ROUTE_COLORS[routeId]) return ROUTE_COLORS[routeId]
   if (routeId.startsWith('CR-')) return COMMUTER_RAIL_COLOR
-  if (/^\d+$|^SL\d|^CT\d|^7\d\d$/.test(routeId)) return BUS_COLOR
+  if (SILVER_IDS.has(routeId) || /^SL\d/.test(routeId)) return SILVER_COLOR
+  if (/^\d+$|^CT\d/.test(routeId)) return BUS_COLOR
   return '#666666'
 }
 

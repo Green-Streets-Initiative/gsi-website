@@ -26,7 +26,7 @@ interface ModeOption {
 /** Rank-ordered ways to get there, fastest first. */
 function modeOptions(row: ReachRow): ModeOption[] {
   const options: ModeOption[] = [
-    { key: 'bike', label: 'Bike', minutes: row.bike_minutes, estimate: true },
+    { key: 'bike', label: 'Bike', minutes: row.bike_minutes, estimate: row.bike_is_estimate ?? true },
   ]
   const walkMin = Math.round((row.distance_miles * WALK_ROUTE_FACTOR / WALK_MPH) * 60)
   if (walkMin <= WALK_SHOW_MAX_MIN) {
@@ -91,6 +91,23 @@ export default function ReachSection({ reach, onRetry }: Props) {
                       </span>
                     )}
                   </div>
+                  {/* The bike corridors the ride actually follows */}
+                  {(row.bike_steps?.length ?? 0) > 0 && (
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <span className="text-white/75"><ModeIcon mode="bike" size={13} /></span>
+                      {row.bike_steps!.map((s, j) => (
+                        <span key={`${s.label}-${j}`} className="flex items-center gap-1.5">
+                          {j > 0 && <span className="text-[0.7rem] text-white/70">→</span>}
+                          <span
+                            className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                            style={{ backgroundColor: s.color, color: s.textColor }}
+                          >
+                            {s.label}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Ranked mode options, fastest first */}
@@ -118,7 +135,7 @@ export default function ReachSection({ reach, onRetry }: Props) {
 
       {reach.status === 'ready' && (
         <p className="mt-2.5 px-1 text-[0.75rem] leading-snug text-white/70">
-          Transit times assume a weekday morning. Bike and walk times (~) are relaxed-pace estimates.
+          Transit and bike times assume a weekday morning. ~ marks a rough estimate; walk times are always estimates.
         </p>
       )}
     </SectionShell>

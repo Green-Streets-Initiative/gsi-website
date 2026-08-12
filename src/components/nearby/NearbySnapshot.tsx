@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import posthog from 'posthog-js'
@@ -10,14 +10,17 @@ import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBluebikes, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
 import { round3, parseSnapshotParams, buildShareUrl, isOutsideArea } from '@/lib/nearby/share'
 import { NEARBY_PATH } from '@/lib/nearby/config'
+import {
+  buildTransitCorridors, buildBikeCorridors, fetchCorridorMeta,
+  SNAPSHOT_BUS_OPTS, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_TYPES, SNAPSHOT_MAX_STOPS,
+  type TransitCorridor,
+} from '@/lib/nearby/corridors'
 import type { SectionData, BikeNetworkData, CommunityData, GuideItem, ReachRow } from './types'
-import TransitSection from './TransitSection'
+import { SectionShell } from './SectionShell'
+import CorridorExplorer from './CorridorExplorer'
 import ReachSection, { captureReachLoaded } from './ReachSection'
-import BikesSection from './BikesSection'
 import EventsGuides from './EventsGuides'
 
-const RAIL_ROUTE_TYPES = '0,1,2' // subway + light rail + commuter rail
-const RAIL_CACHE_PREFIX = 'mbta-rail012-v1'
 const REFRESH_MS = 30_000
 
 interface Located {
@@ -48,9 +51,11 @@ export default function NearbySnapshot() {
   const [community, setCommunity] = useState<SectionData<CommunityData | null>>({ status: 'loading', data: null })
   const [guides, setGuides] = useState<SectionData<GuideItem[]>>({ status: 'loading', data: [] })
   const [reach, setReach] = useState<SectionData<ReachRow[]>>({ status: 'loading', data: [] })
+  const [transitCorridors, setTransitCorridors] = useState<SectionData<TransitCorridor[]>>({ status: 'loading', data: [] })
 
   const refreshBusyRef = useRef(false)
   const cityRef = useRef('')
+  const loadSeqRef = useRef(0)
 
   /** Single entry point for a chosen location — rounds coords, updates the
    *  URL (refresh keeps state, link is shareable), fires analytics. */
@@ -88,12 +93,71 @@ export default function NearbySnapshot() {
     setCommunity({ status: 'loading', data: null })
     setGuides({ status: 'loading', data: [] })
     setReach({ status: 'loading', data: [] })
+    setTransitCorridors({ status: 'loading', data: [] })
 
-    fetchTrainStops(lat, lng, RAIL_ROUTE_TYPES, RAIL_CACHE_PREFIX).then(rows => {
+    // Corridors: list first (from the same cached stop topology), then fill
+    // each corridor's end-to-end shape and weekday frequency as they resolve
+    const seq = ++loadSeqRef.current
+    ;(async () => {
+      try {
+        const corridors = await buildTransitCorridors(lat, lng)
+        if (loadSeqRef.current !== seq) return
+        setTransitCorridors({ status: 'ready', data: corridors })
+        posthog.capture('snapshot_section_loaded', { section: 'corridors', count: corridors.length })
+
+        for (const corridor of corridors) {
+          fetchCorridorMeta(corridor)
+            .then(meta => {
+              if (loadSeqRef.current !== seq) return
+              setTransitCorridors(prev => ({
+                ...prev,
+                data: prev.data.map(c => (c.id === corridor.id
+                  ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable' }
+                  : c)),
+              }))
+            })
+            .catch(() => {
+              if (loadSeqRef.current !== seq) return
+              setTransitCorridors(prev => ({
+                ...prev,
+                data: prev.data.map(c => (c.id === corridor.id ? { ...c, frequency: 'unavailable' as const } : c)),
+              }))
+            })
+        }
+      } catch {
+        if (loadSeqRef.current !== seq) return
+        setTransitCorridors({ status: 'error', data: [] })
+      }
+    })()
+
+    // Self-heal: transient upstream failures (rate limits) leave a corridor
+    // "unavailable" — retry those once after the rate window resets
+    setTimeout(() => {
+      if (loadSeqRef.current !== seq) return
+      setTransitCorridors(prev => {
+        for (const corridor of prev.data) {
+          if (corridor.frequency !== 'unavailable' && corridor.shape !== null) continue
+          fetchCorridorMeta(corridor)
+            .then(meta => {
+              if (loadSeqRef.current !== seq) return
+              setTransitCorridors(p => ({
+                ...p,
+                data: p.data.map(c => (c.id === corridor.id
+                  ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable' }
+                  : c)),
+              }))
+            })
+            .catch(() => {})
+        }
+        return prev
+      })
+    }, 75_000)
+
+    fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_MAX_STOPS).then(rows => {
       setRail({ status: 'ready', data: rows })
       posthog.capture('snapshot_section_loaded', { section: 'rail', count: rows.length })
     })
-    fetchMBTAStops(lat, lng).then(rows => {
+    fetchMBTAStops(lat, lng, SNAPSHOT_BUS_OPTS).then(rows => {
       setBus({ status: 'ready', data: rows })
       posthog.capture('snapshot_section_loaded', { section: 'bus', count: rows.length })
     })
@@ -176,8 +240,8 @@ export default function NearbySnapshot() {
       refreshBusyRef.current = true
       try {
         const [railRows, busRows, bbRows] = await Promise.all([
-          fetchTrainStops(lat, lng, RAIL_ROUTE_TYPES, RAIL_CACHE_PREFIX),
-          fetchMBTAStops(lat, lng),
+          fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_MAX_STOPS),
+          fetchMBTAStops(lat, lng, SNAPSHOT_BUS_OPTS),
           fetchBluebikes(lat, lng),
         ])
         setRail({ status: 'ready', data: railRows })
@@ -262,6 +326,24 @@ export default function NearbySnapshot() {
   }
 
   const retry = useCallback(() => { if (location) loadAll(location) }, [location, loadAll])
+
+  // Named bike corridors become selectable entities; unnamed segments stay
+  // as background lines on the map
+  const bikeCorridors = useMemo(
+    () => (location && bikeNetwork.data ? buildBikeCorridors(bikeNetwork.data.geojson, location.lat, location.lng) : []),
+    [bikeNetwork.data, location]
+  )
+  const backgroundLines = useMemo<GeoJSON.FeatureCollection | null>(
+    () => bikeNetwork.data
+      ? {
+          type: 'FeatureCollection',
+          features: bikeNetwork.data.geojson.features.filter(
+            f => !(f.properties as { name?: string | null })?.name
+          ),
+        }
+      : null,
+    [bikeNetwork.data]
+  )
 
   /* ── Render ── */
 
@@ -384,9 +466,24 @@ export default function NearbySnapshot() {
         )}
       </div>
 
-      <TransitSection center={location} rail={rail} bus={bus} onRetry={retry} />
+      <SectionShell
+        eyebrow="Getting in and out"
+        title="Your corridors"
+        subtitle="Every route worth knowing — T lines, buses, and comfortable bike routes, with how often they run. Tap any route on the map or in the list to see the whole line and where it goes."
+      >
+        <CorridorExplorer
+          center={location}
+          transitCorridors={transitCorridors.data}
+          bikeCorridors={bikeCorridors}
+          rail={rail.data}
+          bus={bus.data}
+          docks={bluebikes.data}
+          backgroundLines={backgroundLines}
+          transitStatus={transitCorridors.status}
+          onRetry={retry}
+        />
+      </SectionShell>
       <ReachSection reach={reach} onRetry={retry} />
-      <BikesSection center={location} bluebikes={bluebikes} bikeNetwork={bikeNetwork} onRetry={retry} />
       <EventsGuides community={community} guides={guides} />
 
       {/* CTA bridge */}

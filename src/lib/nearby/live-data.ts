@@ -70,10 +70,13 @@ interface TopologyOptions {
   routeTypes: string
   /** filter[radius] in DEGREES (MBTA's unit): 0.01 ≈ 0.7 mi, 0.02 ≈ 1.4 mi */
   radiusDeg: number
-  /** sessionStorage key prefix — distinct per routeTypes so caches never mix */
+  /** sessionStorage key prefix — distinct per routeTypes AND maxStops so caches never mix */
   cachePrefix: string
   /** 'short' = bare route number (bus), 'long' = route long_name (rail) */
   nameStyle: 'short' | 'long'
+  /** Stops to keep (each costs one /routes call — the anonymous MBTA API
+   *  allows ~20 req/min, so budget-sensitive pages pass fewer). Default 10. */
+  maxStops?: number
 }
 
 /** Nearby stops with the routes serving them. Cached 30 min per rounded coord. */
@@ -100,7 +103,7 @@ export async function fetchStopTopology(lat: number, lng: number, opts: Topology
   }
 
   nearbyStops.sort((a, b) => a.dist - b.dist)
-  const topStops = nearbyStops.slice(0, 10)
+  const topStops = nearbyStops.slice(0, opts.maxStops ?? 10)
   if (topStops.length === 0) return []
 
   const routeResults = await Promise.all(
@@ -178,11 +181,17 @@ export function mergePredictions(topology: StopTopology[], predMap: Map<string, 
   return stops.sort((a, b) => a.distance_meters - b.distance_meters)
 }
 
-/** Composed bus fetch — behavior and cache keys identical to the original wayfinding version. */
-export async function fetchMBTAStops(lat: number, lng: number): Promise<MBTAStopLive[]> {
+/** Composed bus fetch — defaults keep behavior and cache keys identical to
+ *  the original wayfinding version; budget-sensitive pages pass overrides. */
+export async function fetchMBTAStops(
+  lat: number, lng: number,
+  overrides?: { cachePrefix?: string; maxStops?: number },
+): Promise<MBTAStopLive[]> {
   try {
     const topology = await fetchStopTopology(lat, lng, {
-      routeTypes: '3', radiusDeg: 0.01, cachePrefix: 'mbta-stops-v2', nameStyle: 'short',
+      routeTypes: '3', radiusDeg: 0.01, nameStyle: 'short',
+      cachePrefix: overrides?.cachePrefix ?? 'mbta-stops-v2',
+      maxStops: overrides?.maxStops,
     })
     if (topology.length === 0) return []
     const predMap = await fetchPredictions(topology.map(s => s.id), '3')
@@ -199,10 +208,11 @@ export async function fetchTrainStops(
   lat: number, lng: number,
   routeTypes = '0,1',
   cachePrefix = 'mbta-train-v2',
+  maxStops?: number,
 ): Promise<MBTAStopLive[]> {
   try {
     const topology = await fetchStopTopology(lat, lng, {
-      routeTypes, radiusDeg: 0.02, cachePrefix, nameStyle: 'long',
+      routeTypes, radiusDeg: 0.02, cachePrefix, nameStyle: 'long', maxStops,
     })
     if (topology.length === 0) return []
     const predMap = await fetchPredictions(topology.map(s => s.id), routeTypes)

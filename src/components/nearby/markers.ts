@@ -11,9 +11,21 @@ export function userDotHtml(): string {
   return `<div style="width:18px;height:18px;border-radius:50%;background:#BAF14D;border:3px solid #191A2E;box-shadow:0 0 0 2px #BAF14D,0 0 14px rgba(186,241,77,0.55)" title="Your location"></div>`
 }
 
-export function bluebikeHtml(bikesAvailable: number, name: string): string {
+/** GBFS num_bikes_available INCLUDES e-bikes — split it for display. */
+export function dockCounts(bikesAvailable: number, ebikes: number) {
+  return { classic: Math.max(0, bikesAvailable - ebikes), ebikes }
+}
+
+/** "3 classic · 2 e-bikes" (or the zero-classic variant) — one wording everywhere. */
+export function dockStatsText(bikesAvailable: number, ebikes: number): string {
+  const { classic } = dockCounts(bikesAvailable, ebikes)
+  if (classic === 0 && ebikes > 0) return `no classic bikes right now — ${ebikes} e-bike${ebikes === 1 ? '' : 's'}`
+  return `${classic} classic · ${ebikes} e-bike${ebikes === 1 ? '' : 's'}`
+}
+
+export function bluebikeHtml(bikesAvailable: number, ebikes: number, name: string): string {
   return `
-    <div title="${escapeAttr(name)} — ${bikesAvailable} bikes available" style="
+    <div title="${escapeAttr(name)} — Bluebikes dock, ${escapeAttr(dockStatsText(bikesAvailable, ebikes))}" style="
       display:flex;align-items:center;justify-content:center;
       min-width:28px;height:28px;padding:0 4px;border-radius:50%;
       background:#2B6CB0;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);
@@ -83,6 +95,28 @@ export function stopPopupHtml(opts: {
        style="display:inline-block;margin-top:9px;font-size:12px;font-weight:700;color:#BAF14D;text-decoration:none">Walk there →</a>`
 }
 
+/** Multi-route stop: chip picker — tapping a chip selects that corridor.
+ *  Chips carry data-corridor-id; NearbyMap wires a delegated click listener. */
+export function stopRoutePickerHtml(opts: {
+  name: string
+  walkMins: number
+  choices: { corridorId: string; label: string; color: string; textColor: string; termini: string }[]
+}): string {
+  const chips = opts.choices.map(c => `
+    <button type="button" data-corridor-id="${escapeAttr(c.corridorId)}" style="
+      display:flex;align-items:center;gap:8px;width:100%;margin-top:7px;padding:7px 9px;
+      background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);border-radius:9px;
+      cursor:pointer;text-align:left">
+      <span style="flex-shrink:0;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;background:${c.color};color:${c.textColor};pointer-events:none">${escapeHtml(c.label)}</span>
+      <span style="min-width:0;font-size:11.5px;line-height:1.4;color:rgba(255,255,255,0.85);pointer-events:none">${escapeHtml(c.termini)}</span>
+    </button>`).join('')
+
+  return `
+    <div style="font-weight:700;font-size:14px;color:#fff">${escapeHtml(opts.name)}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px">${opts.walkMins} min walk from you · tap a route to see where it goes</div>
+    ${chips}`
+}
+
 /** Bluebikes dock detail. */
 export function dockPopupHtml(opts: {
   name: string
@@ -92,11 +126,16 @@ export function dockPopupHtml(opts: {
   walkMins: number
   directionsHref: string
 }): string {
+  const { classic } = dockCounts(opts.bikes, opts.ebikes)
+  const stats = classic === 0 && opts.ebikes > 0
+    ? `no classic bikes right now — <strong style="color:#BAF14D">${opts.ebikes} e-bike${opts.ebikes === 1 ? '' : 's'}</strong>`
+    : `<strong style="color:#BAF14D">${classic} classic</strong> · ${opts.ebikes} e-bike${opts.ebikes === 1 ? '' : 's'}`
   return `
-    <div style="font-weight:700;font-size:14px;color:#fff">${escapeHtml(opts.name)}</div>
+    <div style="font-size:10px;font-weight:800;letter-spacing:0.1em;color:#7FB5FF">BLUEBIKES DOCK</div>
+    <div style="font-weight:700;font-size:14px;color:#fff;margin-top:2px">${escapeHtml(opts.name)}</div>
     <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px">${opts.walkMins} min walk from you</div>
     <div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:6px">
-      <strong style="color:#BAF14D">${opts.bikes} bikes</strong>${opts.ebikes > 0 ? ` (${opts.ebikes} electric)` : ''} · ${opts.docksFree} open docks
+      ${stats} · ${opts.docksFree} open docks
     </div>
     <a href="${escapeAttr(opts.directionsHref)}" target="_blank" rel="noopener noreferrer"
        style="display:inline-block;margin-top:9px;font-size:12px;font-weight:700;color:#BAF14D;text-decoration:none">Walk there →</a>`

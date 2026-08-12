@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { REACH_DESTINATIONS, REACH_SKIP_WITHIN_MILES } from '@/lib/nearby/config'
+import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
+import { decodePolyline } from '@/lib/geo/polyline'
 
 /**
  * "Non-car highways" for the /nearby snapshot: real transit times and route
@@ -31,6 +33,10 @@ interface ReachRow {
   transit_minutes: number | null
   steps: ReachStep[]
   bike_minutes: number
+  /** false once Google's cycling router answered */
+  bike_is_estimate: boolean
+  /** Named bike corridors the ride actually follows, e.g. "Somerville Community Path" */
+  bike_steps: ReachStep[]
 }
 
 const cache = new Map<string, { data: { destinations: ReachRow[] }; expires: number }>()
@@ -118,6 +124,112 @@ async function queryTransit(
   }
 }
 
+async function queryBikeRoute(
+  origin: { lat: number; lng: number },
+  dest: { lat: number; lng: number },
+): Promise<{ minutes: number; encodedPolyline: string | null } | null> {
+  if (!GOOGLE_ROUTES_KEY) return null
+  try {
+    const resp = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_ROUTES_KEY,
+        'X-Goog-FieldMask': 'routes.duration,routes.polyline.encodedPolyline',
+      },
+      body: JSON.stringify({
+        origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+        destination: { location: { latLng: { latitude: dest.lat, longitude: dest.lng } } },
+        travelMode: 'BICYCLE',
+        computeAlternativeRoutes: false,
+      }),
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!resp.ok) return null
+    const data = await resp.json()
+    const route = data.routes?.[0]
+    if (!route) return null
+    return {
+      minutes: Math.round(parseInt(route.duration?.replace('s', '') ?? '0') / 60),
+      encodedPolyline: route.polyline?.encodedPolyline ?? null,
+    }
+  } catch {
+    return null
+  }
+}
+
+/* ── Match a bike route against named corridors in the lane network ── */
+
+interface NamedVertex { lat: number; lng: number; key: string; display: string; separated: boolean }
+
+function buildNamedIndex(network: BikeNetworkResponse): NamedVertex[] {
+  const index: NamedVertex[] = []
+  for (const f of network.geojson.features) {
+    const name = f.properties.name?.trim()
+    if (!name) continue
+    const key = name.toLowerCase()
+    const separated = f.properties.quality === 'separated'
+    for (const [x, y] of f.geometry.coordinates) {
+      index.push({ lat: y, lng: x, key, display: name, separated })
+    }
+  }
+  return index
+}
+
+const SAMPLE_STEP_METERS = 240 // ~0.15 mi
+const MATCH_RADIUS_METERS = 40
+const MIN_COVERAGE = 0.15
+
+/** Named corridors the ride follows, ranked by how much of it they carry.
+ *  Samples beyond the loaded network radius simply won't match — the chips
+ *  describe the corridors you'd START on, which is the orientation question. */
+function matchBikeCorridors(encodedPolyline: string, index: NamedVertex[]): ReachStep[] {
+  if (index.length === 0) return []
+  const path = decodePolyline(encodedPolyline)
+  if (path.length < 2) return []
+
+  // Sample the route every ~SAMPLE_STEP_METERS of cumulative distance
+  const samples: [number, number][] = [path[0]]
+  let sinceLast = 0
+  for (let i = 1; i < path.length; i++) {
+    sinceLast += haversineMeters(path[i - 1][0], path[i - 1][1], path[i][0], path[i][1])
+    if (sinceLast >= SAMPLE_STEP_METERS) {
+      samples.push(path[i])
+      sinceLast = 0
+    }
+  }
+
+  const hits = new Map<string, { display: string; count: number; separated: number }>()
+  for (const [slat, slng] of samples) {
+    let best: NamedVertex | null = null
+    let bestD = MATCH_RADIUS_METERS
+    for (const v of index) {
+      // Cheap prefilter (~0.0006° ≈ 60 m) before the exact distance
+      if (Math.abs(v.lat - slat) > 0.0006 || Math.abs(v.lng - slng) > 0.0008) continue
+      const d = haversineMeters(slat, slng, v.lat, v.lng)
+      if (d < bestD) { bestD = d; best = v }
+    }
+    if (!best) continue
+    const h = hits.get(best.key) ?? { display: best.display, count: 0, separated: 0 }
+    h.count++
+    if (best.separated) h.separated++
+    hits.set(best.key, h)
+  }
+
+  return [...hits.values()]
+    .filter(h => h.count / samples.length >= MIN_COVERAGE)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 2)
+    .map(h => {
+      const protectedDominant = h.separated / h.count >= 0.5
+      return {
+        label: h.display,
+        color: protectedDominant ? '#BAF14D' : '#7FB5FF',
+        textColor: '#191A2E',
+      }
+    })
+}
+
 export const maxDuration = 30
 
 export async function GET(req: NextRequest) {
@@ -142,9 +254,17 @@ export async function GET(req: NextRequest) {
     .map(d => ({ ...d, distance_miles: haversineMiles(lat3, lng3, d.lat, d.lng) }))
     .filter(d => d.distance_miles >= REACH_SKIP_WITHIN_MILES)
 
+  // Named-corridor index for bike-route matching (shared 24h cache)
+  const namedIndex = buildNamedIndex(await getBikeNetwork(lat3, lng3, 3).catch(
+    () => ({ geojson: { type: 'FeatureCollection' as const, features: [] }, nearest_protected: null, counts: { separated: 0, painted: 0 } })
+  ))
+
   const rows: ReachRow[] = await Promise.all(
     candidates.map(async d => {
-      const transit = await queryTransit({ lat: lat3, lng: lng3 }, d, departureTime)
+      const [transit, bike] = await Promise.all([
+        queryTransit({ lat: lat3, lng: lng3 }, d, departureTime),
+        queryBikeRoute({ lat: lat3, lng: lng3 }, d),
+      ])
       return {
         id: d.id,
         name: d.name,
@@ -153,7 +273,9 @@ export async function GET(req: NextRequest) {
         distance_miles: Math.round(d.distance_miles * 10) / 10,
         transit_minutes: transit?.minutes ?? null,
         steps: transit?.steps ?? [],
-        bike_minutes: Math.max(5, Math.round((d.distance_miles * BIKE_ROUTE_FACTOR / BIKE_MPH) * 60)),
+        bike_minutes: bike?.minutes ?? Math.max(5, Math.round((d.distance_miles * BIKE_ROUTE_FACTOR / BIKE_MPH) * 60)),
+        bike_is_estimate: bike === null,
+        bike_steps: bike?.encodedPolyline ? matchBikeCorridors(bike.encodedPolyline, namedIndex) : [],
       }
     })
   )
