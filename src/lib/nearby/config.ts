@@ -30,3 +30,15 @@ export const REACH_DESTINATIONS = [
 /** Skip destinations closer than this — "how do I get there" isn't a question
  *  when you can see it from your porch. */
 export const REACH_SKIP_WITHIN_MILES = 0.75
+
+/**
+ * Curated Unsplash photos for marquee corridors — same mechanism Roams use.
+ * Key: the corridor's lowercase name (as reported by the bike-network data,
+ * e.g. 'somerville community path'); value: an Unsplash photo id.
+ * When a corridor has an entry here it beats the Street View default —
+ * a golden-hour greenway shot sells the ride better than a gray street
+ * frame. Attribution renders automatically (Unsplash requires it).
+ */
+export const CORRIDOR_UNSPLASH: Record<string, string> = {
+  // 'somerville community path': 'AbC123xyz',
+}

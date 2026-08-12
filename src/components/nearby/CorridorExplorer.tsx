@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
-import { BLUEBIKES_NOTE } from '@/lib/nearby/config'
+import { BLUEBIKES_NOTE, CORRIDOR_UNSPLASH } from '@/lib/nearby/config'
+import { bearingDegrees } from '@/lib/geo/polyline'
 import type { TransitCorridor, BikeCorridor, FrequencyInfo } from '@/lib/nearby/corridors'
 import NearbyMap, { type NearbyMarker, type LaneTapInfo } from './NearbyMap'
 import { userDotHtml, busStopHtml, trainStopHtml, bluebikeHtml, dockStatsText } from './markers'
@@ -113,6 +114,103 @@ const SOURCE_LABEL: Record<string, string> = {
   mapc: 'MAPC TrailMap',
   massdot: 'MassDOT inventory',
   osm: 'OpenStreetMap',
+}
+
+/* ── Panel photos: curated Unsplash when we've picked one, otherwise a
+      Street View frame of the actual infrastructure, aimed along it ── */
+
+type PhotoSpec =
+  | { kind: 'sv'; lat: number; lng: number; heading?: number }
+  | { kind: 'unsplash'; id: string }
+
+/** Bearing along a corridor's geometry from the vertex nearest a point. */
+function headingAlong(features: GeoJSON.Feature[], nearLat: number, nearLng: number): number | undefined {
+  let best: { coords: [number, number][]; i: number; d: number } | null = null
+  for (const f of features) {
+    if (f.geometry.type !== 'LineString') continue
+    const coords = f.geometry.coordinates as [number, number][]
+    for (let i = 0; i < coords.length; i++) {
+      const d = (coords[i][1] - nearLat) ** 2 + (coords[i][0] - nearLng) ** 2
+      if (!best || d < best.d) best = { coords, i, d }
+    }
+  }
+  if (!best) return undefined
+  const { coords, i } = best
+  const neighbor = coords[Math.min(i + 3, coords.length - 1)] ?? coords[Math.max(i - 3, 0)]
+  const here = coords[i]
+  if (!neighbor || (neighbor[0] === here[0] && neighbor[1] === here[1])) return undefined
+  return bearingDegrees(here[1], here[0], neighbor[1], neighbor[0])
+}
+
+function corridorPhotoSpec(c: TransitCorridor | BikeCorridor): PhotoSpec {
+  const curated = CORRIDOR_UNSPLASH[c.name.toLowerCase()]
+  if (curated) return { kind: 'unsplash', id: curated }
+  if (c.kind === 'bike') {
+    return {
+      kind: 'sv',
+      lat: c.accessPoint.lat,
+      lng: c.accessPoint.lng,
+      heading: headingAlong(c.geojson.features, c.accessPoint.lat, c.accessPoint.lng),
+    }
+  }
+  return {
+    kind: 'sv',
+    lat: c.access.lat,
+    lng: c.access.lng,
+    heading: c.shape ? headingAlong(c.shape.features, c.access.lat, c.access.lng) : undefined,
+  }
+}
+
+function PanelPhoto({ spec, alt }: { spec: PhotoSpec; alt: string }) {
+  const [hidden, setHidden] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const [unsplash, setUnsplash] = useState<{ url: string; attribution: string; attributionUrl: string } | null>(null)
+
+  const specKey = spec.kind === 'unsplash' ? spec.id : `${spec.lat},${spec.lng}`
+  useEffect(() => {
+    setHidden(false)
+    setLoaded(false)
+    setUnsplash(null)
+    if (spec.kind !== 'unsplash') return
+    let cancelled = false
+    fetch(`/api/nearby/corridor-photo?unsplash=${encodeURIComponent(spec.id)}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (!cancelled) data ? setUnsplash(data) : setHidden(true) })
+      .catch(() => { if (!cancelled) setHidden(true) })
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spec.kind, specKey])
+
+  if (hidden) return null
+
+  const src = spec.kind === 'unsplash'
+    ? unsplash?.url
+    : (() => {
+        const params = new URLSearchParams({ lat: String(spec.lat), lng: String(spec.lng) })
+        if (spec.heading !== undefined) params.set('heading', String(Math.round(spec.heading)))
+        return `/api/nearby/corridor-photo?${params}`
+      })()
+  if (!src) return null
+
+  // Eager load (it's one on-demand image) and collapsed until it actually
+  // arrives — no empty gray block while pending, nothing at all on 404
+  return (
+    <div className={loaded ? 'mt-2' : 'h-0 overflow-hidden'}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        className="h-32 w-full rounded-lg object-cover sm:h-36"
+        onLoad={() => setLoaded(true)}
+        onError={() => setHidden(true)}
+      />
+      {spec.kind === 'unsplash' && unsplash && (
+        <a href={unsplash.attributionUrl} target="_blank" rel="noopener noreferrer" className="mt-0.5 block text-[0.65rem] text-white/70 hover:text-white">
+          {unsplash.attribution}
+        </a>
+      )}
+    </div>
+  )
 }
 
 /* ── Explorer ── */
@@ -478,6 +576,7 @@ function DetailContent({ selection, stationByKey, corridorById, docks, onSelectC
           })}
         </div>
         <div className="mt-1 text-[0.72rem] text-white/70">Tap a route to see the whole line on the map</div>
+        <PanelPhoto spec={{ kind: 'sv', lat: st.lat, lng: st.lng }} alt={st.name} />
       </div>
     )
   }
@@ -499,6 +598,7 @@ function DetailContent({ selection, stationByKey, corridorById, docks, onSelectC
           <div className="mt-0.5 text-[0.78rem] text-white/80">
             {c.lengthMiles} mi through this area · nearest point {walkTimeMinutes(c.accessDistanceMeters)} min walk
           </div>
+          <PanelPhoto spec={corridorPhotoSpec(c)} alt={c.name} />
         </div>
       )
     }
@@ -526,6 +626,7 @@ function DetailContent({ selection, stationByKey, corridorById, docks, onSelectC
         <div className="mt-0.5 text-[0.78rem] text-white/80">
           Board at <span className="font-semibold text-white">{c.access.stopName}</span> · {c.access.walkMin} min walk
         </div>
+        <PanelPhoto spec={corridorPhotoSpec(c)} alt={`${c.name} at ${c.access.stopName}`} />
       </div>
     )
   }
