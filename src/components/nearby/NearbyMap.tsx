@@ -164,11 +164,13 @@ export default function NearbyMap({
         const marker = new maplibregl.Marker({ element: el }).setLngLat([spec.lng, spec.lat]).addTo(map!)
 
         const choices = spec.corridorChoices ?? []
-        if (choices.length > 1) {
-          // Multi-route stop: chip picker popup; a chip tap selects that corridor
+        if (choices.length > 0 && spec.popupHtml) {
+          // Stop tap: the popup names the STATION (people need to see what
+          // each station is); chips select corridors. A single-route stop
+          // also selects its corridor immediately on tap.
           el.style.cursor = 'pointer'
           const popup = new maplibregl.Popup({ offset: 20, className: 'nearby-popup', maxWidth: '300px' })
-            .setHTML(spec.popupHtml ?? '')
+            .setHTML(spec.popupHtml)
           popup.on('open', () => {
             const popupEl = popup.getElement()
             if (!popupEl || popupEl.dataset.wired) return
@@ -181,9 +183,15 @@ export default function NearbyMap({
             })
           })
           marker.setPopup(popup)
-        } else if (spec.corridorId || choices.length === 1) {
-          // Single-route stop: tap selects the corridor directly, no popup
-          const target = spec.corridorId ?? choices[0].corridorId
+          if (choices.length === 1) {
+            const target = choices[0].corridorId
+            el.addEventListener('click', () => {
+              onSelectRef.current?.(target, 'map-stop')
+            })
+          }
+        } else if (spec.corridorId) {
+          // Corridor-linked marker without a popup: tap selects directly
+          const target = spec.corridorId
           el.style.cursor = 'pointer'
           el.addEventListener('click', (ev) => {
             ev.stopPropagation()
@@ -363,18 +371,20 @@ function applyBikeBackground(map: maplibregl.Map, lines: GeoJSON.FeatureCollecti
     },
     layout: { 'line-cap': 'round', 'line-join': 'round', visibility: paintedVisible ? 'visible' : 'none' },
   })
+  // 'path' (car-free) and 'protected' (physical barrier) both draw lime —
+  // the comfortable network; the tap popup states the exact tier
   map.addLayer({
     id: 'bike-separated-glow',
     type: 'line',
     source: 'bike-network',
-    filter: ['==', ['get', 'quality'], 'separated'],
+    filter: ['!=', ['get', 'quality'], 'painted'],
     paint: { 'line-color': '#BAF14D', 'line-width': 9, 'line-opacity': BIKE_BG_OPACITY.glow, 'line-blur': 4 },
   })
   map.addLayer({
     id: 'bike-separated',
     type: 'line',
     source: 'bike-network',
-    filter: ['==', ['get', 'quality'], 'separated'],
+    filter: ['!=', ['get', 'quality'], 'painted'],
     paint: { 'line-color': '#BAF14D', 'line-width': 3, 'line-opacity': BIKE_BG_OPACITY.separated },
     layout: { 'line-cap': 'round', 'line-join': 'round' },
   })
@@ -388,17 +398,43 @@ function applyBikeBackground(map: maplibregl.Map, lines: GeoJSON.FeatureCollecti
       if ((feature.properties as { corridorId?: string })?.corridorId) return
       const maplibregl = await loadMaplibre()
       const quality = feature.properties?.quality as string | undefined
+      const source = feature.properties?.source as string | undefined
+
+      const TIER_COPY: Record<string, { title: string; detail: string }> = {
+        path: {
+          title: 'Car-free path',
+          detail: 'Fully separate from traffic — no cars at all. The most comfortable riding there is.',
+        },
+        protected: {
+          title: 'Protected bike lane',
+          detail: 'A physical barrier — curb, posts, or parking — sits between you and traffic.',
+        },
+        painted: {
+          title: 'Painted bike lane',
+          detail: 'You share the road, with paint marking your space. Fine for confident riders.',
+        },
+      }
+      const SOURCE_LABEL: Record<string, string> = {
+        mapc: 'MAPC TrailMap',
+        massdot: 'MassDOT inventory',
+        osm: 'OpenStreetMap',
+      }
+      const copy = TIER_COPY[quality ?? ''] ?? TIER_COPY.painted
 
       const wrap = document.createElement('div')
       const title = document.createElement('div')
-      title.textContent = quality === 'separated' ? 'Protected route' : 'Painted bike lane'
+      title.textContent = copy.title
       title.style.cssText = 'font-weight:700;font-size:14px;color:#fff;margin-bottom:3px'
       const sub = document.createElement('div')
-      sub.textContent = quality === 'separated'
-        ? 'Protected lane or car-free path — comfortable even if you’re new to riding'
-        : 'Painted lane — you share the road, with paint marking your space'
+      sub.textContent = copy.detail
       sub.style.cssText = 'font-size:12px;line-height:1.5;color:rgba(255,255,255,0.8)'
       wrap.append(title, sub)
+      if (source && SOURCE_LABEL[source]) {
+        const src = document.createElement('div')
+        src.textContent = `Data: ${SOURCE_LABEL[source]}`
+        src.style.cssText = 'font-size:10.5px;margin-top:6px;color:rgba(255,255,255,0.7)'
+        wrap.append(src)
+      }
 
       new maplibregl.Popup({ className: 'nearby-popup', maxWidth: '280px' })
         .setLngLat(e.lngLat)

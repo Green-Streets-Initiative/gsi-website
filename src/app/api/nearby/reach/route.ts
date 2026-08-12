@@ -168,7 +168,7 @@ function buildNamedIndex(network: BikeNetworkResponse): NamedVertex[] {
     const name = f.properties.name?.trim()
     if (!name) continue
     const key = name.toLowerCase()
-    const separated = f.properties.quality === 'separated'
+    const separated = f.properties.quality !== 'painted' // path or protected
     for (const [x, y] of f.geometry.coordinates) {
       index.push({ lat: y, lng: x, key, display: name, separated })
     }
@@ -256,7 +256,7 @@ export async function GET(req: NextRequest) {
 
   // Named-corridor index for bike-route matching (shared 24h cache)
   const namedIndex = buildNamedIndex(await getBikeNetwork(lat3, lng3, 3).catch(
-    () => ({ geojson: { type: 'FeatureCollection' as const, features: [] }, nearest_protected: null, counts: { separated: 0, painted: 0 } })
+    () => ({ geojson: { type: 'FeatureCollection' as const, features: [] }, nearest_protected: null, counts: { path: 0, protected: 0, painted: 0 } })
   ))
 
   const rows: ReachRow[] = await Promise.all(

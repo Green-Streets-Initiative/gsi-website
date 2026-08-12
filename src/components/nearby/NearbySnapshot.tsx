@@ -179,7 +179,7 @@ export default function NearbySnapshot() {
         setBikeNetwork({ status: 'ready', data })
         posthog.capture('snapshot_section_loaded', {
           section: 'bike_network',
-          count: data.counts.separated + data.counts.painted,
+          count: data.counts.path + data.counts.protected + data.counts.painted,
         })
       } catch {
         setBikeNetwork({ status: 'error', data: null })

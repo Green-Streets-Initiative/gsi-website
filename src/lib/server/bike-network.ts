@@ -17,17 +17,18 @@ import 'server-only'
 
 const MAPC_SERVICE = 'https://geo.mapc.org/server/rest/services/TrailMap_map_svc_v01/MapServer'
 const MAPC_LAYERS: Array<{ id: number; quality: Quality }> = [
-  { id: 0, quality: 'separated' },  // Existing Protected Bike Lanes
-  { id: 8, quality: 'separated' },  // Existing Paved Shared Use Paths
-  { id: 10, quality: 'separated' }, // Existing Unimproved Shared Use Paths
-  { id: 2, quality: 'painted' },    // Existing Bike Lanes
+  { id: 0, quality: 'protected' },  // Existing Protected Bike Lanes (on-street, physical barrier)
+  { id: 8, quality: 'path' },       // Existing Paved Shared Use Paths (car-free)
+  { id: 10, quality: 'path' },      // Existing Unimproved Shared Use Paths (car-free, unpaved)
+  { id: 2, quality: 'painted' },    // Existing Bike Lanes (paint only)
 ]
 const MAPC_PAGE_SIZE = 1000
 const MAPC_MAX_PAGES = 4
 
 const MASSDOT_URL = 'https://gis.massdot.state.ma.us/arcgis/rest/services/Multimodal/BikeInventory/MapServer/0/query'
-const MASSDOT_SEPARATED = new Set([2, 5]) // separated bike lane, shared-use path
-const MASSDOT_PAINTED = new Set([1, 4])   // bike lane, paved shoulder
+const MASSDOT_PROTECTED = new Set([2]) // separated bike lane
+const MASSDOT_PATH = new Set([5])      // shared-use path (car-free)
+const MASSDOT_PAINTED = new Set([1, 4]) // bike lane, paved shoulder
 
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
@@ -38,7 +39,13 @@ const OVERPASS_UA = 'GreenStreetsInitiative-Website/1.0 (info@gogreenstreets.org
 const CACHE_TTL_MS = (parseInt(process.env.BIKE_NETWORK_CACHE_SECONDS || '') || 86400) * 1000
 const CACHE_MAX_ENTRIES = 500
 
-export type Quality = 'separated' | 'painted'
+/**
+ * Infrastructure granularity, best-first:
+ *  - 'path'      car-free (shared-use path / greenway — no cars at all)
+ *  - 'protected' on-street with a physical barrier between bikes and traffic
+ *  - 'painted'   paint only, shared road
+ */
+export type Quality = 'path' | 'protected' | 'painted'
 
 export interface LaneFeature {
   type: 'Feature'
@@ -49,7 +56,7 @@ export interface LaneFeature {
 export interface BikeNetworkResponse {
   geojson: { type: 'FeatureCollection'; features: LaneFeature[] }
   nearest_protected: { name: string | null; distance_meters: number; lat: number; lng: number } | null
-  counts: { separated: number; painted: number }
+  counts: { path: number; protected: number; painted: number }
 }
 
 const cache = new Map<string, { data: BikeNetworkResponse; expires: number }>()
@@ -163,7 +170,8 @@ async function fetchMassDot(lat: number, lng: number, radiusMiles: number): Prom
     for (const f of json.features ?? []) {
       const facType = f.attributes?.Fac_Type
       if (typeof facType !== 'number') continue
-      const quality: Quality | null = MASSDOT_SEPARATED.has(facType) ? 'separated'
+      const quality: Quality | null = MASSDOT_PROTECTED.has(facType) ? 'protected'
+        : MASSDOT_PATH.has(facType) ? 'path'
         : MASSDOT_PAINTED.has(facType) ? 'painted'
         : null
       if (!quality) continue
@@ -214,10 +222,11 @@ async function fetchOsm(lat: number, lng: number, radiusMiles: number): Promise<
       for (const el of json.elements ?? []) {
         if (el.type !== 'way' || !Array.isArray(el.geometry) || el.geometry.length < 2) continue
         const tags: Record<string, string> = el.tags ?? {}
-        const isTrack = tags.highway === 'cycleway'
-          || tags.bicycle === 'designated'
-          || tags.cycleway === 'track' || tags['cycleway:left'] === 'track' || tags['cycleway:right'] === 'track'
-        const quality: Quality = isTrack ? 'separated' : 'painted'
+        // Dedicated cycleway or bike-designated path = car-free; a cycleway
+        // "track" alongside a road = protected; a "lane" = paint
+        const isPath = tags.highway === 'cycleway' || tags.bicycle === 'designated'
+        const isTrack = tags.cycleway === 'track' || tags['cycleway:left'] === 'track' || tags['cycleway:right'] === 'track'
+        const quality: Quality = isPath ? 'path' : isTrack ? 'protected' : 'painted'
         out.push({
           type: 'Feature',
           geometry: { type: 'LineString', coordinates: el.geometry.map((p: { lat: number; lon: number }) => [p.lon, p.lat] as [number, number]) },
@@ -240,7 +249,7 @@ function nearestProtected(features: LaneFeature[], lat: number, lng: number): Bi
   let bestNamed: Candidate | null = null
 
   for (const f of features) {
-    if (f.properties.quality !== 'separated') continue
+    if (f.properties.quality === 'painted') continue
     for (const [x, y] of f.geometry.coordinates) {
       const d = haversineMeters(lat, lng, y, x)
       if (!best || d < best.distance_meters) {
@@ -284,7 +293,8 @@ export async function getBikeNetwork(lat: number, lng: number, radiusMiles: numb
     geojson: { type: 'FeatureCollection', features },
     nearest_protected: nearestProtected(features, lat3, lng3),
     counts: {
-      separated: features.filter(f => f.properties.quality === 'separated').length,
+      path: features.filter(f => f.properties.quality === 'path').length,
+      protected: features.filter(f => f.properties.quality === 'protected').length,
       painted: features.filter(f => f.properties.quality === 'painted').length,
     },
   }

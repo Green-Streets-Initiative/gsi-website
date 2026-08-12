@@ -10,7 +10,7 @@ export interface SectionData<T> {
 export interface BikeNetworkData {
   geojson: GeoJSON.FeatureCollection
   nearest_protected: { name: string | null; distance_meters: number; lat: number; lng: number } | null
-  counts: { separated: number; painted: number }
+  counts: { path: number; protected: number; painted: number }
 }
 
 /** Shapes returned by /api/nearby/events (subset of the town-page types) */

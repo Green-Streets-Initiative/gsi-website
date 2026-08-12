@@ -150,14 +150,15 @@ export default function CorridorExplorer({
         analyticsType: g.isRail ? 'train' : 'bus',
         zIndex: g.isRail ? 3 : 2,
       }
-      if (choices.length > 1) {
+      if (choices.length > 0) {
+        // Even single-route stops get the popup — it names the STATION,
+        // which is what someone new to the area is actually looking at
         return {
           ...base,
           corridorChoices: choices,
           popupHtml: stopRoutePickerHtml({ name: g.name, walkMins: walkTimeMinutes(g.dist), choices }),
         }
       }
-      if (choices.length === 1) return { ...base, corridorId: choices[0].corridorId }
       return base
     }
 
@@ -273,7 +274,7 @@ export default function CorridorExplorer({
                 )}
               </div>
               <div className="mt-1 text-[0.8rem] text-white/80">
-                Board at {c.access.stopName} · {c.access.walkMin} min walk
+                Board at <span className="font-semibold text-white">{c.access.stopName}</span> · {c.access.walkMin} min walk
               </div>
               {liveArrivals.has(c.routeId) && (
                 <div className="mt-0.5 text-[0.75rem] text-white/70">
@@ -296,7 +297,8 @@ export default function CorridorExplorer({
               <button key={c.id} ref={setCardRef(c.id)} onClick={() => handleSelect(c.id, 'card')} className={cardClass(c.id)}>
                 <div className="text-[0.9rem] font-semibold text-white">{c.name}</div>
                 <div className="mt-0.5 text-[0.8rem]">
-                  {c.protection === 'protected' && <span className="font-bold text-[#BAF14D]">Protected end to end</span>}
+                  {c.protection === 'path' && <span className="font-bold text-[#BAF14D]">Car-free path — no traffic at all</span>}
+                  {c.protection === 'protected' && <span className="font-bold text-[#BAF14D]">Protected end to end — barrier from traffic</span>}
                   {c.protection === 'mostly-protected' && <span className="text-white/80">Mostly protected — some painted stretches</span>}
                   {c.protection === 'painted' && <span className="text-white/80">Painted lane — paint marks your space</span>}
                 </div>

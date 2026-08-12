@@ -37,7 +37,9 @@ export interface BikeCorridor {
   id: string
   kind: 'bike'
   name: string
-  protection: 'protected' | 'mostly-protected' | 'painted'
+  /** 'path' = car-free the whole way; 'protected' = physical separation;
+   *  'mostly-protected' = comfortable majority; 'painted' = paint only */
+  protection: 'path' | 'protected' | 'mostly-protected' | 'painted'
   lengthMiles: number
   accessDistanceMeters: number
   accessPoint: { lat: number; lng: number }
@@ -207,7 +209,8 @@ export function buildBikeCorridors(
     // over-counts; per-source totals with max-across-sources is an honest
     // approximation of real length within the loaded radius.
     const totalBySource = new Map<string, number>()
-    const separatedBySource = new Map<string, number>()
+    const pathBySource = new Map<string, number>()
+    const comfortableBySource = new Map<string, number>() // path + protected
     let nearestM = Infinity
     let nearestPt = { lat, lng }
 
@@ -215,8 +218,11 @@ export function buildBikeCorridors(
       const len = featureLengthMeters(f)
       const src = f.properties.source
       totalBySource.set(src, (totalBySource.get(src) ?? 0) + len)
-      if (f.properties.quality === 'separated') {
-        separatedBySource.set(src, (separatedBySource.get(src) ?? 0) + len)
+      if (f.properties.quality === 'path') {
+        pathBySource.set(src, (pathBySource.get(src) ?? 0) + len)
+      }
+      if (f.properties.quality !== 'painted') {
+        comfortableBySource.set(src, (comfortableBySource.get(src) ?? 0) + len)
       }
       for (const [x, y] of f.geometry.coordinates) {
         const d = haversineMeters(lat, lng, y, x)
@@ -232,13 +238,20 @@ export function buildBikeCorridors(
     const lengthMiles = bestLen / 1609.34
     if (lengthMiles < 0.4) continue
 
-    const sepFraction = bestLen > 0 ? (separatedBySource.get(bestSource) ?? 0) / bestLen : 0
-    const protection = sepFraction >= 0.9 ? 'protected' : sepFraction >= 0.5 ? 'mostly-protected' : 'painted'
+    const pathFraction = bestLen > 0 ? (pathBySource.get(bestSource) ?? 0) / bestLen : 0
+    const comfortableFraction = bestLen > 0 ? (comfortableBySource.get(bestSource) ?? 0) / bestLen : 0
+    const protection = pathFraction >= 0.9 ? 'path'
+      : comfortableFraction >= 0.9 ? 'protected'
+      : comfortableFraction >= 0.5 ? 'mostly-protected'
+      : 'painted'
 
     const corridorId = `bike:${key.replace(/[^a-z0-9]+/g, '-')}`
+    // Color must be stamped here — the map's corridor layer reads
+    // properties.color, and a missing value renders invisibly on dark
+    const color = protection === 'painted' ? '#7FB5FF' : '#BAF14D'
     const features = group.features.map(f => ({
       ...f,
-      properties: { ...f.properties, corridorId },
+      properties: { ...f.properties, corridorId, color, kind: 'bike' },
     }))
 
     corridors.push({

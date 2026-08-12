@@ -43,13 +43,23 @@ export function busStopHtml(title: string): string {
 }
 
 export function trainStopHtml(color: string, title: string): string {
+  // Station name rides along under the icon — stations are landmarks, and
+  // people need to see at a glance which one is which
   return `
-    <div title="${escapeAttr(title)}" style="
-      display:flex;align-items:center;justify-content:center;
-      width:28px;height:28px;border-radius:50%;
-      background:${color};border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);
-      color:#fff;font:800 13px/1 -apple-system,sans-serif;cursor:default;
-    ">T</div>`
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
+      <div title="${escapeAttr(title)}" style="
+        display:flex;align-items:center;justify-content:center;
+        width:28px;height:28px;border-radius:50%;
+        background:${color};border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);
+        color:#fff;font:800 13px/1 -apple-system,sans-serif;
+      ">T</div>
+      <div style="
+        max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        background:rgba(25,26,46,0.92);border:1px solid rgba(255,255,255,0.18);
+        border-radius:99px;padding:2px 8px;
+        color:#fff;font:700 10.5px/1.3 -apple-system,sans-serif;
+      ">${escapeHtml(title)}</div>
+    </div>`
 }
 
 export function protectedPathFlagHtml(name: string | null): string {
