@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import posthog from 'posthog-js'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
@@ -45,6 +45,11 @@ interface Props {
   onLaneTap?: (info: LaneTapInfo) => void
   /** Fit viewport to user + this many nearest markers, once (default: all) */
   fitCount?: number
+  /** Fit the viewport to corridorLines instead of markers — for route maps
+   *  where the drawn line, not the neighborhood, is the subject */
+  fitToLines?: boolean
+  /** Draw corridor lines at full strength instead of as faint background */
+  lineEmphasis?: boolean
   heightClass?: string
 }
 
@@ -64,10 +69,14 @@ export default function NearbyMap({
   center, markers, lines, paintedVisible = true,
   corridorLines, selectedCorridorId = null, onCorridorSelect,
   onMarkerTap, onLaneTap,
-  fitCount, heightClass = 'h-[320px] sm:h-[380px]',
+  fitCount, fitToLines = false, lineEmphasis = false,
+  heightClass = 'h-[320px] sm:h-[380px]',
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
+  // Bumped once the map instance exists so the marker effect re-runs —
+  // without it, markers passed statically at mount would never render
+  const [mapReadyTick, setMapReadyTick] = useState(0)
   const markersRef = useRef<maplibregl.Marker[]>([])
   const loadedRef = useRef(false)
   const didFitRef = useRef(false)
@@ -84,6 +93,10 @@ export default function NearbyMap({
   onLaneTapRef.current = onLaneTap
   const corridorLinesRef = useRef(corridorLines)
   corridorLinesRef.current = corridorLines
+  const fitToLinesRef = useRef(fitToLines)
+  fitToLinesRef.current = fitToLines
+  const lineEmphasisRef = useRef(lineEmphasis)
+  lineEmphasisRef.current = lineEmphasis
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -107,6 +120,7 @@ export default function NearbyMap({
       map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
       mapRef.current = map
+      setMapReadyTick(t => t + 1)
 
       // Bridges for module-level layer handlers to reach current callbacks
       // without stale closures
@@ -127,7 +141,15 @@ export default function NearbyMap({
           pendingLinesRef.current = null
         }
         if (pendingCorridorsRef.current) {
-          applyCorridors(map, pendingCorridorsRef.current)
+          applyCorridors(map, pendingCorridorsRef.current, lineEmphasisRef.current)
+          if (fitToLinesRef.current) {
+            const bounds = linesBounds(maplibregl, pendingCorridorsRef.current)
+            if (bounds) {
+              didFitRef.current = true
+              homeBoundsRef.current = bounds
+              map.fitBounds(bounds, { padding: 44, maxZoom: 15, duration: 0 })
+            }
+          }
           pendingCorridorsRef.current = null
         }
       })
@@ -192,8 +214,9 @@ export default function NearbyMap({
       }
 
       // One-time fit: user location + the nearest data points; remember it
-      // as "home" so deselecting a corridor can ease back to it
-      if (!didFitRef.current && markers.length > 0) {
+      // as "home" so deselecting a corridor can ease back to it. (Route maps
+      // fit to their drawn lines instead — see fitToLines.)
+      if (!didFitRef.current && markers.length > 0 && !fitToLinesRef.current) {
         didFitRef.current = true
         const byDist = [...markers].sort((a, b) =>
           (Math.abs(a.lat - center.lat) + Math.abs(a.lng - center.lng)) -
@@ -210,7 +233,7 @@ export default function NearbyMap({
     render()
     return () => { cancelled = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [markers])
+  }, [markers, mapReadyTick])
 
   // Bike-lane background
   useEffect(() => {
@@ -238,7 +261,19 @@ export default function NearbyMap({
       pendingCorridorsRef.current = corridorLines
       return
     }
-    applyCorridors(map, corridorLines)
+    applyCorridors(map, corridorLines, lineEmphasisRef.current)
+    if (fitToLinesRef.current && !didFitRef.current) {
+      ;(async () => {
+        const maplibregl = await loadMaplibre()
+        if (!mapRef.current) return
+        const bounds = linesBounds(maplibregl, corridorLines)
+        if (bounds) {
+          didFitRef.current = true
+          homeBoundsRef.current = bounds
+          mapRef.current.fitBounds(bounds, { padding: 44, maxZoom: 15, duration: 0 })
+        }
+      })()
+    }
   }, [corridorLines])
 
   // Selection: highlight via paint expressions, fit to the selected shape,
@@ -286,7 +321,24 @@ export default function NearbyMap({
 
 /* ── Layer setup ── */
 
-function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollection) {
+/** Bounds of every LineString in the collection, or null when there are none. */
+function linesBounds(
+  maplibregl: typeof import('maplibre-gl'),
+  fc: GeoJSON.FeatureCollection,
+): maplibregl.LngLatBounds | null {
+  const bounds = new maplibregl.LngLatBounds()
+  let hasPoint = false
+  for (const f of fc.features) {
+    if (f.geometry.type !== 'LineString') continue
+    for (const c of f.geometry.coordinates) {
+      bounds.extend(c as [number, number])
+      hasPoint = true
+    }
+  }
+  return hasPoint ? bounds : null
+}
+
+function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollection, emphasis = false) {
   const existing = map.getSource('corridors') as maplibregl.GeoJSONSource | undefined
   if (existing) {
     existing.setData(corridors)
@@ -300,7 +352,7 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
     id: 'corridor-casing',
     type: 'line',
     source: 'corridors',
-    paint: { 'line-color': '#191A2E', 'line-width': 5, 'line-opacity': 0.6 },
+    paint: { 'line-color': '#191A2E', 'line-width': emphasis ? 6 : 5, 'line-opacity': emphasis ? 0.8 : 0.6 },
     layout: { 'line-cap': 'round', 'line-join': 'round' },
   })
   map.addLayer({
@@ -309,8 +361,8 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
     source: 'corridors',
     paint: {
       'line-color': ['get', 'color'],
-      'line-width': CORRIDOR_WIDTH_DEFAULT,
-      'line-opacity': CORRIDOR_OPACITY_DEFAULT,
+      'line-width': emphasis ? 3.5 : CORRIDOR_WIDTH_DEFAULT,
+      'line-opacity': emphasis ? 0.95 : CORRIDOR_OPACITY_DEFAULT,
     },
     layout: { 'line-cap': 'round', 'line-join': 'round' },
   })

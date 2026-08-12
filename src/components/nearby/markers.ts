@@ -62,6 +62,27 @@ export function trainStopHtml(color: string, title: string): string {
     </div>`
 }
 
+const FLAG_SVG = '<svg width="13" height="13" viewBox="0 0 256 256" fill="#191A2E"><path d="M42.76,50A8,8,0,0,0,40,56V224a8,8,0,0,0,16,0V179.77c26.79-21.16,49.87-9.75,76.45,3.41,16.4,8.11,34.06,16.85,53,16.85,13.93,0,28.54-4.75,43.82-18a8,8,0,0,0,2.76-6V56A8,8,0,0,0,218.76,50c-28,24.23-51.72,12.49-79.21-1.12C111.07,34.76,78.78,18.79,42.76,50Z"/></svg>'
+
+/** Destination flag for route maps — white so it can't be confused with the
+ *  lime you-are-here dot, name label riding along underneath. */
+export function destinationPinHtml(name: string): string {
+  return `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
+      <div title="${escapeAttr(name)}" style="
+        display:flex;align-items:center;justify-content:center;
+        width:26px;height:26px;border-radius:50%;
+        background:#fff;border:2.5px solid #191A2E;box-shadow:0 2px 6px rgba(0,0,0,0.4);
+      ">${FLAG_SVG}</div>
+      <div style="
+        max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        background:rgba(25,26,46,0.92);border:1px solid rgba(255,255,255,0.18);
+        border-radius:99px;padding:2px 8px;
+        color:#fff;font:700 10.5px/1.3 -apple-system,sans-serif;
+      ">${escapeHtml(name)}</div>
+    </div>`
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }

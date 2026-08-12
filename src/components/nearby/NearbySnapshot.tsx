@@ -169,7 +169,7 @@ export default function NearbySnapshot() {
     // Bike network: widen once to 3 mi if no protected route in the default radius
     ;(async () => {
       try {
-        let res = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=1.5`)
+        const res = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=1.5`)
         if (!res.ok) throw new Error(`bike-network ${res.status}`)
         let data: BikeNetworkData = await res.json()
         if (!data.nearest_protected) {
@@ -190,7 +190,9 @@ export default function NearbySnapshot() {
     // Non-car highways: transit + bike times to landmark destinations
     ;(async () => {
       try {
-        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}`)
+        // v=2 busts browser HTTP caches (max-age=86400) when the response
+        // shape grows — bump it alongside the server's cache-key version
+        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=2`)
         if (!res.ok) throw new Error(`reach ${res.status}`)
         const data = await res.json()
         setReach({ status: 'ready', data: data.destinations ?? [] })
@@ -483,7 +485,7 @@ export default function NearbySnapshot() {
           onRetry={retry}
         />
       </SectionShell>
-      <ReachSection reach={reach} onRetry={retry} />
+      <ReachSection center={location} reach={reach} onRetry={retry} />
       <EventsGuides community={community} guides={guides} />
 
       {/* CTA bridge */}

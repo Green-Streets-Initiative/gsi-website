@@ -14,6 +14,32 @@ export function bearingDegrees(lat1: number, lng1: number, lat2: number, lng2: n
   return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360
 }
 
+/** Inverse of decodePolyline — used server-side to merge walking legs into
+ *  one compact segment instead of shipping raw coordinate arrays. */
+export function encodePolyline(points: [number, number][]): string {
+  let out = ''
+  let prevLat = 0
+  let prevLng = 0
+  for (const [lat, lng] of points) {
+    const iLat = Math.round(lat * 1e5)
+    const iLng = Math.round(lng * 1e5)
+    out += encodeSigned(iLat - prevLat) + encodeSigned(iLng - prevLng)
+    prevLat = iLat
+    prevLng = iLng
+  }
+  return out
+}
+
+function encodeSigned(v: number): string {
+  let value = v < 0 ? ~(v << 1) : v << 1
+  let s = ''
+  while (value >= 0x20) {
+    s += String.fromCharCode((0x20 | (value & 0x1f)) + 63)
+    value >>= 5
+  }
+  return s + String.fromCharCode(value + 63)
+}
+
 export function decodePolyline(encoded: string): [number, number][] {
   const out: [number, number][] = []
   let index = 0

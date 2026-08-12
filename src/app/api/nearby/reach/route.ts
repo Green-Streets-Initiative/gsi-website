@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { REACH_DESTINATIONS, REACH_SKIP_WITHIN_MILES } from '@/lib/nearby/config'
 import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
-import { decodePolyline } from '@/lib/geo/polyline'
+import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 
 /**
  * "Non-car highways" for the /nearby snapshot: real transit times and route
@@ -24,6 +24,13 @@ const BIKE_MPH = 10.5
 
 interface ReachStep { label: string; color: string; textColor: string }
 
+/** One drawable piece of the door-to-door transit trip: a transit leg in its
+ *  line's color, or the merged walking legs around it. */
+interface ReachSegment { mode: 'walk' | 'transit'; polyline: string; color: string; label: string | null }
+
+// Walking connectors on the dark route map — light slate, clearly not a line color
+const WALK_SEGMENT_COLOR = '#9BA3BF'
+
 interface ReachRow {
   id: string
   name: string
@@ -32,11 +39,15 @@ interface ReachRow {
   distance_miles: number
   transit_minutes: number | null
   steps: ReachStep[]
+  /** The transit trip as drawable colored polyline segments */
+  transit_segments: ReachSegment[]
   bike_minutes: number
   /** false once Google's cycling router answered */
   bike_is_estimate: boolean
   /** Named bike corridors the ride actually follows, e.g. "Somerville Community Path" */
   bike_steps: ReachStep[]
+  /** Google's cycling route, encoded — drawn when the row's bike view is opened */
+  bike_polyline: string | null
 }
 
 const cache = new Map<string, { data: { destinations: ReachRow[] }; expires: number }>()
@@ -79,11 +90,16 @@ function toStep(line: { name?: string; nameShort?: string }): ReachStep {
   return { label: short || name || 'Transit', color: '#666666', textColor: '#fff' }
 }
 
+interface GoogleStep {
+  polyline?: { encodedPolyline?: string }
+  transitDetails?: { transitLine?: { name?: string; nameShort?: string } }
+}
+
 async function queryTransit(
   origin: { lat: number; lng: number },
   dest: { lat: number; lng: number },
   departureTime: string,
-): Promise<{ minutes: number; steps: ReachStep[] } | null> {
+): Promise<{ minutes: number; steps: ReachStep[]; segments: ReachSegment[] } | null> {
   if (!GOOGLE_ROUTES_KEY) return null
   try {
     const resp = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
@@ -91,7 +107,7 @@ async function queryTransit(
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_ROUTES_KEY,
-        'X-Goog-FieldMask': 'routes.duration,routes.legs.steps.transitDetails.transitLine',
+        'X-Goog-FieldMask': 'routes.duration,routes.legs.steps.transitDetails.transitLine,routes.legs.steps.polyline.encodedPolyline',
       },
       body: JSON.stringify({
         origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
@@ -108,17 +124,40 @@ async function queryTransit(
     if (!route) return null
 
     const minutes = Math.round(parseInt(route.duration?.replace('s', '') ?? '0') / 60)
-    const rawSteps = (route.legs ?? [])
-      .flatMap((leg: { steps?: { transitDetails?: { transitLine?: { name?: string; nameShort?: string } } }[] }) => leg.steps ?? [])
-      .filter((s: { transitDetails?: unknown }) => s.transitDetails)
-      .map((s: { transitDetails: { transitLine?: { name?: string; nameShort?: string } } }) => toStep(s.transitDetails.transitLine ?? {}))
+    const allSteps: GoogleStep[] = (route.legs ?? []).flatMap((leg: { steps?: GoogleStep[] }) => leg.steps ?? [])
 
-    // Collapse repeats (a transfer within the same line) and cap the chain
+    // One pass builds both the chip chain and the drawable segments. Google
+    // returns every walking turn as its own step — merge consecutive walks
+    // into a single re-encoded polyline so the payload stays compact.
     const steps: ReachStep[] = []
-    for (const s of rawSteps) {
-      if (steps[steps.length - 1]?.label !== s.label) steps.push(s)
+    const segments: ReachSegment[] = []
+    let walkBuf: [number, number][] = []
+    const flushWalk = () => {
+      if (walkBuf.length >= 2) {
+        segments.push({ mode: 'walk', polyline: encodePolyline(walkBuf), color: WALK_SEGMENT_COLOR, label: null })
+      }
+      walkBuf = []
     }
-    return { minutes, steps: steps.slice(0, 4) }
+    for (const s of allSteps) {
+      if (s.transitDetails) {
+        const chip = toStep(s.transitDetails.transitLine ?? {})
+        // Collapse repeats in the chip chain (a transfer within the same line)
+        if (steps[steps.length - 1]?.label !== chip.label) steps.push(chip)
+        flushWalk()
+        if (s.polyline?.encodedPolyline) {
+          segments.push({ mode: 'transit', polyline: s.polyline.encodedPolyline, color: chip.color, label: chip.label })
+        }
+      } else if (s.polyline?.encodedPolyline) {
+        const pts = decodePolyline(s.polyline.encodedPolyline)
+        // Steps share their junction point — drop the duplicate
+        const last = walkBuf[walkBuf.length - 1]
+        if (last && pts.length && last[0] === pts[0][0] && last[1] === pts[0][1]) pts.shift()
+        walkBuf.push(...pts)
+      }
+    }
+    flushWalk()
+
+    return { minutes, steps: steps.slice(0, 4), segments }
   } catch {
     return null
   }
@@ -242,7 +281,8 @@ export async function GET(req: NextRequest) {
 
   const lat3 = Math.round(lat * 1000) / 1000
   const lng3 = Math.round(lng * 1000) / 1000
-  const cacheKey = `${lat3},${lng3}`
+  // v2: rows carry drawable route geometry — don't serve pre-geometry entries
+  const cacheKey = `v2:${lat3},${lng3}`
 
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) {
@@ -273,9 +313,11 @@ export async function GET(req: NextRequest) {
         distance_miles: Math.round(d.distance_miles * 10) / 10,
         transit_minutes: transit?.minutes ?? null,
         steps: transit?.steps ?? [],
+        transit_segments: transit?.segments ?? [],
         bike_minutes: bike?.minutes ?? Math.max(5, Math.round((d.distance_miles * BIKE_ROUTE_FACTOR / BIKE_MPH) * 60)),
         bike_is_estimate: bike === null,
         bike_steps: bike?.encodedPolyline ? matchBikeCorridors(bike.encodedPolyline, namedIndex) : [],
+        bike_polyline: bike?.encodedPolyline ?? null,
       }
     })
   )

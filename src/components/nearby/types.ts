@@ -36,6 +36,15 @@ export interface ReachStep {
   textColor: string
 }
 
+/** Drawable piece of a door-to-door transit trip (from /api/nearby/reach) */
+export interface ReachSegment {
+  mode: 'walk' | 'transit'
+  /** Google-encoded polyline — decode with decodePolyline */
+  polyline: string
+  color: string
+  label: string | null
+}
+
 export interface ReachRow {
   id: string
   name: string
@@ -44,9 +53,11 @@ export interface ReachRow {
   distance_miles: number
   transit_minutes: number | null
   steps: ReachStep[]
+  transit_segments?: ReachSegment[]
   bike_minutes: number
   bike_is_estimate?: boolean
   bike_steps?: ReachStep[]
+  bike_polyline?: string | null
 }
 
 export interface GuideItem {
