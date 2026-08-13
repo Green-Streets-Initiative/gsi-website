@@ -89,66 +89,71 @@ export function ReachList({ center, rows, onRowTap, modeFilter }: {
             const drawable = hasTransitRoute(row) || hasBikeRoute(row)
             const isOpen = expanded?.id === row.id
 
-            const body = (
-              <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-                <div className="min-w-0">
-                  <div className="text-[0.9rem] font-semibold text-white">{row.name}</div>
-                  <div className="mt-0.5 text-[0.72rem] text-white/70">{row.distance_miles} mi away</div>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    {row.steps.length > 0 ? (
-                      row.steps.map((s, j) => (
-                        <span key={`${s.label}-${j}`} className="flex items-center gap-1.5">
-                          {j > 0 && <span className="text-[0.7rem] text-white/70">→</span>}
-                          <span
-                            className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-                            style={{ backgroundColor: s.color, color: s.textColor }}
-                          >
-                            {s.label}
-                          </span>
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-[0.75rem] text-white/75">
-                        {row.transit_minutes !== null ? 'close enough to skip transit' : 'no direct transit route'}
-                      </span>
-                    )}
-                  </div>
-                  {/* The bike corridors the ride actually follows */}
-                  {(row.bike_steps?.length ?? 0) > 0 && (
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <span className="text-white/75"><ModeIcon mode="bike" size={13} /></span>
-                      {row.bike_steps!.map((s, j) => (
-                        <span key={`${s.label}-${j}`} className="flex items-center gap-1.5">
-                          {j > 0 && <span className="text-[0.7rem] text-white/70">→</span>}
-                          <span
-                            className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-                            style={{ backgroundColor: s.color, color: s.textColor }}
-                          >
-                            {s.label}
-                          </span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
+            // Collapsed by default: name, distance, and the time by mode.
+            // The line/corridor chips live in the expanded (or detail) view
+            const compactBody = (chevron: boolean) => (
+              <div>
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 truncate text-[0.9rem] font-semibold text-white">{row.name}</span>
+                  <span className="flex shrink-0 items-baseline gap-1.5 text-[0.72rem] text-white/70">
+                    {row.distance_miles} mi
+                    {chevron && <span className="text-[0.85rem] font-bold leading-none text-[#BAF14D]">›</span>}
+                  </span>
                 </div>
-
-                {/* Ranked mode options, fastest first */}
-                <div className="space-y-1">
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
                   {options.map((o, j) => (
-                    <div
+                    <span
                       key={o.key}
-                      className={`flex items-center justify-end gap-2 ${
-                        j === emphasisIdx ? 'text-[0.9rem] font-bold text-[#BAF14D]' : 'text-[0.8rem] text-white/80'
+                      className={`flex items-center gap-1.5 tabular-nums ${
+                        j === emphasisIdx ? 'text-[0.85rem] font-bold text-[#BAF14D]' : 'text-[0.78rem] text-white/80'
                       }`}
                     >
-                      <ModeIcon mode={o.key} size={j === emphasisIdx ? 16 : 14} />
-                      <span>{o.label}</span>
-                      <span className="min-w-[64px] text-right tabular-nums">
-                        {o.estimate ? '~' : ''}{o.minutes} min
-                      </span>
-                    </div>
+                      <ModeIcon mode={o.key} size={j === emphasisIdx ? 15 : 13} />
+                      {o.estimate ? '~' : ''}{o.minutes} min
+                    </span>
                   ))}
                 </div>
+              </div>
+            )
+
+            const chipsBlock = (
+              <div className="mb-2.5">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {row.steps.length > 0 ? (
+                    row.steps.map((s, j) => (
+                      <span key={`${s.label}-${j}`} className="flex items-center gap-1.5">
+                        {j > 0 && <span className="text-[0.7rem] text-white/70">→</span>}
+                        <span
+                          className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                          style={{ backgroundColor: s.color, color: s.textColor }}
+                        >
+                          {s.label}
+                        </span>
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[0.75rem] text-white/75">
+                      {row.transit_minutes !== null ? 'close enough to skip transit' : 'no direct transit route'}
+                    </span>
+                  )}
+                </div>
+                {/* The bike corridors the ride actually follows */}
+                {(row.bike_steps?.length ?? 0) > 0 && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span className="text-white/75"><ModeIcon mode="bike" size={13} /></span>
+                    {row.bike_steps!.map((s, j) => (
+                      <span key={`${s.label}-${j}`} className="flex items-center gap-1.5">
+                        {j > 0 && <span className="text-[0.7rem] text-white/70">→</span>}
+                        <span
+                          className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                          style={{ backgroundColor: s.color, color: s.textColor }}
+                        >
+                          {s.label}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )
 
@@ -157,22 +162,25 @@ export function ReachList({ center, rows, onRowTap, modeFilter }: {
                 {drawable ? (
                   <button
                     onClick={() => toggleRow(row)}
-                    aria-expanded={isOpen}
-                    className="w-full px-4 py-3.5 text-left transition-colors hover:bg-white/[0.04]"
+                    aria-expanded={onRowTap ? undefined : isOpen}
+                    className="w-full px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
                   >
-                    {body}
-                    <div className="mt-2 text-[0.72rem] font-semibold text-[#BAF14D]">
-                      {isOpen ? 'Hide the route ▴' : 'See the route on the map ▾'}
-                    </div>
+                    {compactBody(!!onRowTap)}
+                    {!onRowTap && (
+                      <div className="mt-1.5 text-[0.72rem] font-semibold text-[#BAF14D]">
+                        {isOpen ? 'Hide details ▴' : 'Details & route ▾'}
+                      </div>
+                    )}
                   </button>
                 ) : (
-                  <div className="px-4 py-3.5">{body}</div>
+                  <div className="px-4 py-3">{compactBody(false)}</div>
                 )}
 
                 {/* The route, drawn right here under the tapped row — the
                     page never scrolls anywhere as a side effect */}
                 {isOpen && expanded && (
                   <div className="border-t border-white/[0.07] bg-[#1F2030] px-4 pb-4 pt-3">
+                    {chipsBlock}
                     {hasTransitRoute(row) && hasBikeRoute(row) && (
                       <div className="mb-2.5 flex flex-wrap items-center gap-2">
                         <button

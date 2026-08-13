@@ -200,9 +200,19 @@ export default function NearbyShell({
   return (
     // Fixed to the viewport (below the fixed Nav) rather than sized with
     // dvh math — Safari's URL-bar dance and scroll quirks can't touch it
-    <div ref={shellRef} className="fixed inset-x-0 bottom-0 top-[60px] z-30 overflow-hidden bg-[#191A2E]">
-      {/* The stage. Attribution rides above the sheet's peek height so the
-          license line is readable whenever the sheet is tucked away */}
+    <div className="fixed inset-x-0 bottom-0 top-[60px] z-30 flex flex-col overflow-hidden bg-[#191A2E]">
+      {/* Thin orientation strip — tells you what page you're on without
+          spending real screen space */}
+      <div className="flex h-7 shrink-0 items-center border-b border-white/[0.08] px-4">
+        <span className="truncate text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#BAF14D]">
+          Your neighborhood snapshot
+        </span>
+      </div>
+
+      {/* The stage (sheet snap heights + camera padding measure this box).
+          Attribution rides above the sheet's peek height so the license
+          line is readable whenever the sheet is tucked away */}
+      <div ref={shellRef} className="relative min-h-0 flex-1">
       <div className="absolute inset-0 [&_.maplibregl-ctrl-bottom-right]:!bottom-[88px]">
         <NearbyMap
           center={center}
@@ -367,6 +377,7 @@ export default function NearbyShell({
           </div>
         </div>
       </NearbySheet>
+      </div>
     </div>
   )
 }
