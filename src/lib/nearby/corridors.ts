@@ -8,8 +8,8 @@
  * across visitors) with a sessionStorage layer on top.
  */
 import { decodePolyline, bearingDegrees } from '@/lib/geo/polyline'
-import { haversineMeters, walkTimeMinutes } from '@/lib/wayfinding/geo'
-import { fetchStopTopology } from './live-data'
+import { haversineMeters, walkTimeMinutes } from '@/lib/geo/measure'
+import { fetchStopTopology, type StopTopology } from './live-data'
 import { canonicalStreetKey, displayStreetName } from './street-names'
 import { lineColor, lineTextColor, ROUTE_COLORS } from './transit-ui'
 
@@ -96,7 +96,12 @@ export async function buildTransitCorridors(lat: number, lng: number): Promise<T
       cachePrefix: SNAPSHOT_RAIL_PREFIX, maxStops: SNAPSHOT_MAX_STOPS,
     }),
   ])
+  return corridorsFromTopology(rail, bus)
+}
 
+/** Pure topology→corridor step, shared with server callers (the print page
+ *  fetches topology server-side and feeds it here). */
+export function corridorsFromTopology(rail: StopTopology[], bus: StopTopology[]): TransitCorridor[] {
   const byRoute = new Map<string, TransitCorridor>()
   // Topologies are distance-sorted, so the first stop seen per route is the nearest
   for (const stop of [...rail, ...bus]) {

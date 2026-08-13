@@ -1,17 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server'
+import 'server-only'
+
 import { REACH_DESTINATIONS, REACH_SKIP_WITHIN_MILES } from '@/lib/nearby/config'
 import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
 import { canonicalStreetKey, displayStreetName } from '@/lib/nearby/street-names'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 
 /**
- * "Non-car highways" for the /nearby snapshot: real transit times and route
+ * "Everyday routes" for the /nearby snapshot: real transit times and route
  * chains from the visitor's location to a curated list of landmark
  * destinations (Harvard Square, Downtown, Fenway, …), plus a bike-time
  * estimate. One Google Routes TRANSIT call per destination, departure
  * anchored to the next Monday 8:30 AM (same convention as the Commute
  * Advisor), cached in memory for 24 h per rounded coordinate so a
  * neighborhood's first visitor pays for everyone.
+ *
+ * Extracted from /api/nearby/reach (now a thin wrapper) so the
+ * /nearby/print server component can call getReach directly — one shared
+ * cross-visitor cache, no HTTP-to-own-origin.
  */
 
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
@@ -54,7 +59,7 @@ interface BikeComfort {
   streets: StreetComfort[]
 }
 
-interface ReachRow {
+export interface ReachRow {
   id: string
   name: string
   lat: number
@@ -458,27 +463,19 @@ function chooseBikeRoute(
     .sort((a, b) => (b.scored?.score ?? 0) - (a.scored?.score ?? 0) || a.minutes - b.minutes)[0]
 }
 
-export const maxDuration = 30
-
-export async function GET(req: NextRequest) {
-  const { searchParams } = req.nextUrl
-  const lat = parseFloat(searchParams.get('lat') || '')
-  const lng = parseFloat(searchParams.get('lng') || '')
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < 40 || lat > 44 || lng < -75 || lng > -69) {
-    return NextResponse.json({ error: 'valid lat and lng required' }, { status: 400 })
-  }
-
+/** Takes already-validated coordinates; rounds to 3 decimals internally so
+ *  cache keys coincide across visitors in one area. */
+export async function getReach(lat: number, lng: number): Promise<{ destinations: ReachRow[] }> {
   const lat3 = Math.round(lat * 1000) / 1000
   const lng3 = Math.round(lng * 1000) / 1000
   // v4: bike chips + comfort streets are in travel order — don't serve older ordering
   // v5: comfort tiers split 'path' from 'protected'
   // v6: sidepath detection reclassifies street-named "paths" as protected lanes
-  const cacheKey = `v6:${lat3},${lng3}`
+  // v7: unnamed lanes inherit names from overlapping segments
+  const cacheKey = `v7:${lat3},${lng3}`
 
   const cached = cache.get(cacheKey)
-  if (cached && cached.expires > Date.now()) {
-    return NextResponse.json(cached.data, { headers: { 'Cache-Control': 'public, max-age=86400' } })
-  }
+  if (cached && cached.expires > Date.now()) return cached.data
 
   const departureTime = nextMonday830()
   const candidates = REACH_DESTINATIONS
@@ -524,5 +521,5 @@ export async function GET(req: NextRequest) {
   }
   cache.set(cacheKey, { data, expires: Date.now() + CACHE_TTL_MS })
 
-  return NextResponse.json(data, { headers: { 'Cache-Control': 'public, max-age=86400' } })
+  return data
 }
