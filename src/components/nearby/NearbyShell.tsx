@@ -78,11 +78,19 @@ export default function NearbyShell({
     corridorLines, highlightedCorridorId, markers, accessPoints,
   } = model
 
-  // The screen is the app — the page behind must not scroll
+  // The screen is the app. The shell is position:fixed, so the page behind
+  // can't scroll into view even on iOS Safari (which ignores overflow:hidden
+  // scroll locks); these are belt-and-suspenders against rubber-banding.
   useEffect(() => {
-    const prev = document.documentElement.style.overflow
-    document.documentElement.style.overflow = 'hidden'
-    return () => { document.documentElement.style.overflow = prev }
+    const html = document.documentElement
+    const prevOverflow = html.style.overflow
+    const prevOverscroll = html.style.overscrollBehavior
+    html.style.overflow = 'hidden'
+    html.style.overscrollBehavior = 'none'
+    return () => {
+      html.style.overflow = prevOverflow
+      html.style.overscrollBehavior = prevOverscroll
+    }
   }, [])
 
   // Camera fits land in the window above the half sheet
@@ -190,7 +198,9 @@ export default function NearbyShell({
   )
 
   return (
-    <div ref={shellRef} className="relative overflow-hidden" style={{ height: 'calc(100dvh - 60px)' }}>
+    // Fixed to the viewport (below the fixed Nav) rather than sized with
+    // dvh math — Safari's URL-bar dance and scroll quirks can't touch it
+    <div ref={shellRef} className="fixed inset-x-0 bottom-0 top-[60px] z-30 overflow-hidden bg-[#191A2E]">
       {/* The stage. Attribution rides above the sheet's peek height so the
           license line is readable whenever the sheet is tucked away */}
       <div className="absolute inset-0 [&_.maplibregl-ctrl-bottom-right]:!bottom-[88px]">
