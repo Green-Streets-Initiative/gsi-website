@@ -360,6 +360,16 @@ export default function CorridorExplorer({
     })),
   ], [center, rail, bus, docks, corridorById])
 
+  // Boarding locations belong in the first frame even when their stations
+  // didn't make the marker cut
+  const accessPoints = useMemo(
+    () => [
+      ...transitCorridors.map(c => ({ lat: c.access.lat, lng: c.access.lng })),
+      ...bikeCorridors.map(c => ({ lat: c.accessPoint.lat, lng: c.accessPoint.lng })),
+    ],
+    [transitCorridors, bikeCorridors]
+  )
+
   const rowClass = (active: boolean) =>
     `flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg px-2.5 py-2 text-left transition-colors ${
       active ? 'bg-[rgba(186,241,77,0.08)]' : 'hover:bg-white/[0.05]'
@@ -381,6 +391,7 @@ export default function CorridorExplorer({
         onMarkerTap={handleMarkerTap}
         onLaneTap={(info) => select({ type: 'lane', info }, 'map')}
         fitCount={7}
+        extraFitPoints={accessPoints}
         heightClass="h-[360px] sm:h-[420px]"
       />
 

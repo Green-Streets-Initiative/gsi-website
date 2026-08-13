@@ -45,6 +45,9 @@ interface Props {
   onLaneTap?: (info: LaneTapInfo) => void
   /** Fit viewport to user + this many nearest markers, once (default: all) */
   fitCount?: number
+  /** Extra coordinates the one-time fit must include (e.g. corridor access
+   *  points whose stations didn't make the marker cut) */
+  extraFitPoints?: { lat: number; lng: number }[]
   /** Fit the viewport to corridorLines instead of markers — for route maps
    *  where the drawn line, not the neighborhood, is the subject */
   fitToLines?: boolean
@@ -69,7 +72,7 @@ export default function NearbyMap({
   center, markers, lines, paintedVisible = true,
   corridorLines, selectedCorridorId = null, onCorridorSelect,
   onMarkerTap, onLaneTap,
-  fitCount, fitToLines = false, lineEmphasis = false,
+  fitCount, extraFitPoints, fitToLines = false, lineEmphasis = false,
   heightClass = 'h-[320px] sm:h-[380px]',
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -95,6 +98,8 @@ export default function NearbyMap({
   corridorLinesRef.current = corridorLines
   const fitToLinesRef = useRef(fitToLines)
   fitToLinesRef.current = fitToLines
+  const extraFitPointsRef = useRef(extraFitPoints)
+  extraFitPointsRef.current = extraFitPoints
   const lineEmphasisRef = useRef(lineEmphasis)
   lineEmphasisRef.current = lineEmphasis
 
@@ -225,8 +230,9 @@ export default function NearbyMap({
         const toFit = fitCount ? byDist.slice(0, fitCount) : byDist
         const bounds = new maplibregl.LngLatBounds([center.lng, center.lat], [center.lng, center.lat])
         for (const m of toFit) bounds.extend([m.lng, m.lat])
+        for (const p of extraFitPointsRef.current ?? []) bounds.extend([p.lng, p.lat])
         homeBoundsRef.current = bounds
-        map!.fitBounds(bounds, { padding: 52, maxZoom: 15.5, duration: 600 })
+        map!.fitBounds(bounds, { padding: 52, maxZoom: 14, duration: 600 })
       }
     }
 
@@ -311,7 +317,7 @@ export default function NearbyMap({
         }
         map.fitBounds(bounds, { padding: 48, maxZoom: 14, duration: 700 })
       } else if (!sel && homeBoundsRef.current) {
-        map.fitBounds(homeBoundsRef.current, { padding: 52, maxZoom: 15.5, duration: 700 })
+        map.fitBounds(homeBoundsRef.current, { padding: 52, maxZoom: 14, duration: 700 })
       }
     })()
   }, [selectedCorridorId])

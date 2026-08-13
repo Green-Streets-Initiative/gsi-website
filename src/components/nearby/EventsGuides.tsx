@@ -53,7 +53,7 @@ export default function EventsGuides({ community, guides }: Props) {
             Happening near you
           </div>
           <div className="space-y-2.5">
-            {events.map(e => (
+            {events.slice(0, 3).map(e => (
               <Link
                 key={e.id}
                 href={`/events/${e.id}`}
@@ -68,6 +68,11 @@ export default function EventsGuides({ community, guides }: Props) {
               </Link>
             ))}
           </div>
+          {events.length > 3 && (
+            <Link href="/events" className="mt-2.5 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80">
+              See all events →
+            </Link>
+          )}
         </div>
       )}
 
@@ -78,12 +83,17 @@ export default function EventsGuides({ community, guides }: Props) {
             Explore your new neighborhood
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            {roams.map(r => (
+            {roams.slice(0, 3).map(r => (
               <div key={r.id} onClick={() => posthog.capture('snapshot_roam_clicked', { id: r.id })}>
                 <RoamCard roam={r} />
               </div>
             ))}
           </div>
+          {roams.length > 3 && (
+            <Link href="/shift/roams" className="mt-2.5 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80">
+              More roams →
+            </Link>
+          )}
         </div>
       )}
     </SectionShell>
