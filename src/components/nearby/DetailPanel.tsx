@@ -21,8 +21,8 @@ import {
 
 const TIER_COPY: Record<string, { title: string; detail: string }> = {
   path: {
-    title: 'Car-free path',
-    detail: 'Fully separate from traffic — no cars at all. The most comfortable riding there is.',
+    title: 'Multi-use path',
+    detail: 'A path with its own right-of-way — walk, ride, or roll. The most comfortable riding there is.',
   },
   protected: {
     title: 'Protected bike lane',
@@ -242,7 +242,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, on
           <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">Bike route — shown on the map</div>
           <div className="text-[0.95rem] font-bold text-white">{c.name}</div>
           <div className="mt-0.5 text-[0.8rem]">
-            {c.protection === 'path' && <span className="font-bold text-[#BAF14D]">Car-free path — no traffic at all</span>}
+            {c.protection === 'path' && <span className="font-bold text-[#BAF14D]">Multi-use path — a route all its own</span>}
             {c.protection === 'protected' && <span className="font-bold text-[#BAF14D]">Protected end to end</span>}
             {c.protection === 'mostly-protected' && <span className="text-white/80">Mostly protected — some painted stretches</span>}
             {c.protection === 'painted' && <span className="text-white/80">Painted lane — paint marks your space</span>}

@@ -62,7 +62,7 @@ export default function ReachSection({ center, reach, onRetry }: Props) {
     <SectionShell
       eyebrow="Your everyday routes"
       title="Where can you get from here?"
-      subtitle="The places everyone ends up going — with your ways of getting there ranked fastest-first, and the line or bus you'd probably ride. Tap a place to see the route drawn on a map."
+      subtitle="Popular destinations, with your ways of getting there ranked fastest-first — and the line or bus you'd probably ride. Tap a place to see the route drawn on a map."
     >
       {reach.status === 'loading' && <SkeletonRows count={4} />}
       {reach.status === 'error' && <ErrorCard label="Couldn't compute travel times right now." onRetry={onRetry} />}

@@ -162,7 +162,7 @@ export function BikeRouteList({ bikeCorridors, highlightedCorridorId, onSelect }
           >
             <div className="text-[0.9rem] font-semibold text-white">{c.name}</div>
             <div className="mt-0.5 text-[0.8rem]">
-              {c.protection === 'path' && <span className="font-bold text-[#BAF14D]">Car-free path — no traffic at all</span>}
+              {c.protection === 'path' && <span className="font-bold text-[#BAF14D]">Multi-use path — a route all its own</span>}
               {c.protection === 'protected' && <span className="font-bold text-[#BAF14D]">Protected end to end — barrier from traffic</span>}
               {c.protection === 'mostly-protected' && <span className="text-white/80">Mostly protected — some painted stretches</span>}
               {c.protection === 'painted' && <span className="text-white/80">Painted lane — paint marks your space</span>}

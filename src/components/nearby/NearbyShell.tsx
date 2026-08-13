@@ -18,7 +18,7 @@ import {
 import { DetailContent } from './DetailPanel'
 import { MapLegend, StationList, BikeRouteList, DockList } from './AroundYouLists'
 import { ReachList } from './ReachSection'
-import { ExploreBody } from './EventsGuides'
+import { ExploreBody, GuidesBlock } from './EventsGuides'
 import { SkeletonRows, ErrorCard } from './SectionShell'
 
 /**
@@ -29,12 +29,12 @@ import { SkeletonRows, ErrorCard } from './SectionShell'
  * highlight in view above. (≥ lg renders the classic column instead.)
  */
 
-type Tab = 'transit' | 'destinations' | 'fun'
+type Tab = 'transit' | 'destinations' | 'explore'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'transit', label: 'Transit & bike' },
   { id: 'destinations', label: 'Destinations' },
-  { id: 'fun', label: 'Nearby fun' },
+  { id: 'explore', label: 'Explore nearby' },
 ]
 
 interface Props {
@@ -282,25 +282,32 @@ export default function NearbyShell({
             </p>
           )}
           <MapLegend visible={visibleLayers} onToggle={toggleLayer} />
-          <StationList
-            stations={stations}
-            corridorById={corridorById}
-            highlightedCorridorId={highlightedCorridorId}
-            status={transitStatus}
-            onRetry={onRetry}
-            onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
-          />
-          <BikeRouteList
-            bikeCorridors={bikeCorridors}
-            highlightedCorridorId={highlightedCorridorId}
-            onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
-          />
-          <DockList docks={docks} />
+          {/* Lists mirror the legend toggles — hide a layer on the map and
+              its section below goes with it */}
+          {visibleLayers.transit && (
+            <StationList
+              stations={stations}
+              corridorById={corridorById}
+              highlightedCorridorId={highlightedCorridorId}
+              status={transitStatus}
+              onRetry={onRetry}
+              onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+            />
+          )}
+          {visibleLayers.bike && (
+            <BikeRouteList
+              bikeCorridors={bikeCorridors}
+              highlightedCorridorId={highlightedCorridorId}
+              onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+            />
+          )}
+          {visibleLayers.bluebikes && <DockList docks={docks} />}
+          <GuidesBlock guides={guides} title="Starter guides" />
         </div>
 
         <div className={selection || tab !== 'destinations' ? 'hidden' : ''}>
           <p className="mt-2 text-[0.8rem] leading-snug text-white/75">
-            The places everyone ends up going — tap one to see the route.
+            Popular destinations — tap one to see the route.
           </p>
           <div className="mt-3">
             {reach.status === 'loading' && <SkeletonRows count={4} />}
@@ -320,9 +327,9 @@ export default function NearbyShell({
           </div>
         </div>
 
-        <div className={selection || tab !== 'fun' ? 'hidden' : ''}>
+        <div className={selection || tab !== 'explore' ? 'hidden' : ''}>
           <div className="mt-2">
-            <ExploreBody community={community} guides={guides} />
+            <ExploreBody community={community} />
           </div>
           <div className="mt-5 space-y-3">
             <div className="rounded-xl border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-4 py-3.5">

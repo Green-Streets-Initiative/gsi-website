@@ -116,22 +116,28 @@ export default function CorridorExplorer({
 
       <MapLegend visible={visibleLayers} onToggle={toggleLayer} />
 
-      <StationList
-        stations={stations}
-        corridorById={corridorById}
-        highlightedCorridorId={highlightedCorridorId}
-        status={transitStatus}
-        onRetry={onRetry}
-        onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
-      />
+      {/* Lists mirror the legend toggles — hide a layer on the map and its
+          section below goes with it */}
+      {visibleLayers.transit && (
+        <StationList
+          stations={stations}
+          corridorById={corridorById}
+          highlightedCorridorId={highlightedCorridorId}
+          status={transitStatus}
+          onRetry={onRetry}
+          onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+        />
+      )}
 
-      <BikeRouteList
-        bikeCorridors={bikeCorridors}
-        highlightedCorridorId={highlightedCorridorId}
-        onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
-      />
+      {visibleLayers.bike && (
+        <BikeRouteList
+          bikeCorridors={bikeCorridors}
+          highlightedCorridorId={highlightedCorridorId}
+          onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+        />
+      )}
 
-      <DockList docks={docks} />
+      {visibleLayers.bluebikes && <DockList docks={docks} />}
     </div>
   )
 }
