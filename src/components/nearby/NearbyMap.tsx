@@ -27,6 +27,10 @@ export interface LaneTapInfo {
   quality: string
   source: string | null
   name: string | null
+  /** The name was borrowed from a nearby segment server-side — hedge it. */
+  nameInferred?: boolean
+  /** Where the tap landed — lets detail views anchor to the spot. */
+  lngLat?: { lng: number; lat: number }
 }
 
 interface Props {
@@ -526,10 +530,13 @@ function applyBikeBackground(
       // Named features belong to corridors — let corridor selection handle them
       if ((feature.properties as { corridorId?: string })?.corridorId) return
       const handler = (map as unknown as { __nearbyOnLaneTap?: (info: LaneTapInfo) => void }).__nearbyOnLaneTap
+      const rawName = feature.properties?.name as string | undefined
       handler?.({
         quality: (feature.properties?.quality as string) ?? 'painted',
         source: (feature.properties?.source as string) ?? null,
-        name: (feature.properties?.name as string) ?? null,
+        name: rawName?.trim() ? rawName : null,
+        nameInferred: Boolean(feature.properties?.nameInferred),
+        lngLat: { lng: e.lngLat.lng, lat: e.lngLat.lat },
       })
       posthog.capture('snapshot_marker_tapped', { type: 'bike-lane' })
     })

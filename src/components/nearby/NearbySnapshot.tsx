@@ -172,8 +172,9 @@ export default function NearbySnapshot() {
     ;(async () => {
       try {
         // v= busts browser HTTP caches (max-age=86400) when the lane
-        // classification changes server-side (v2: sidepath detection)
-        const res = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=1.5&v=2`)
+        // classification changes server-side (v2: sidepath detection,
+        // v3: name inheritance)
+        const res = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=1.5&v=3`)
         if (!res.ok) throw new Error(`bike-network ${res.status}`)
         const data: BikeNetworkData = await res.json()
         if (loadSeqRef.current !== seq) return
@@ -182,7 +183,7 @@ export default function NearbySnapshot() {
           section: 'bike_network',
           count: data.counts.path + data.counts.protected + data.counts.painted,
         })
-        const wide = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=3&v=2`)
+        const wide = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=3&v=3`)
         if (wide.ok) {
           const wideData: BikeNetworkData = await wide.json()
           if (loadSeqRef.current !== seq) return
@@ -200,8 +201,8 @@ export default function NearbySnapshot() {
       try {
         // v= busts browser HTTP caches (max-age=86400) when the response
         // shape or lane classification changes — bump it alongside the
-        // server's cache-key version (v6: sidepath-aware comfort tiers)
-        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=6`)
+        // server's cache-key version (v7: inherited lane names)
+        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=7`)
         if (!res.ok) throw new Error(`reach ${res.status}`)
         const data = await res.json()
         setReach({ status: 'ready', data: data.destinations ?? [] })

@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { looksLikeStreetName } from '@/lib/nearby/street-names'
+import { bearingDegrees } from '@/lib/geo/polyline'
 
 /**
  * Bike-lane network geometry around a point, merged from three sources —
@@ -60,7 +61,18 @@ export interface LaneFeature {
     /** OSM only: a separated lane that runs in one direction (oneway=yes on
      *  its own cycleway geometry). Absent = unknown, not two-way. */
     oneway?: boolean
+    /** Name borrowed from an overlapping named feature of another source —
+     *  the UI hedges attribution when set. */
+    nameInferred?: boolean
   }
+}
+
+/** ArcGIS returns empty strings (not null) for unpopulated text fields, and
+ *  `??` doesn't catch those — they'd render a BLANK card title downstream. */
+function cleanName(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const trimmed = raw.trim()
+  return trimmed.length > 0 ? trimmed : null
 }
 
 /** Sources record sidepaths — separated on-street lanes drawn as their own
@@ -142,7 +154,7 @@ async function fetchMapc(lat: number, lng: number, radiusMiles: number): Promise
 
           const features = json.features ?? []
           for (const f of features) {
-            const name = f.attributes?.local_name ?? f.attributes?.reg_name ?? null
+            const name = cleanName(f.attributes?.local_name) ?? cleanName(f.attributes?.reg_name)
             for (const path of f.geometry?.paths ?? []) {
               if (!Array.isArray(path) || path.length < 2) continue
               out.push({
@@ -193,7 +205,7 @@ async function fetchMassDot(lat: number, lng: number, radiusMiles: number): Prom
         : MASSDOT_PAINTED.has(facType) ? 'painted'
         : null
       if (!quality) continue
-      const name = f.attributes?.Local_Name ?? null
+      const name = cleanName(f.attributes?.Local_Name)
       for (const path of f.geometry?.paths ?? []) {
         if (!Array.isArray(path) || path.length < 2) continue
         out.push({
@@ -244,10 +256,11 @@ async function fetchOsm(lat: number, lng: number, radiusMiles: number): Promise<
         // it's a sidepath (is_sidepath=yes, or named after the street it runs
         // along): that's a separated lane. A "track" tagged on the road way =
         // protected; a "lane" = paint.
+        const name = cleanName(tags.name)
         const ownGeometry = tags.highway === 'cycleway'
           || ((tags.highway === 'path' || tags.highway === 'track') && tags.bicycle === 'designated')
         const isTrack = tags.cycleway === 'track' || tags['cycleway:left'] === 'track' || tags['cycleway:right'] === 'track'
-        const sidepath = tags.is_sidepath === 'yes' || looksLikeStreetName(tags.name)
+        const sidepath = tags.is_sidepath === 'yes' || looksLikeStreetName(name)
         const quality: Quality = ownGeometry ? (sidepath ? 'protected' : 'path') : isTrack ? 'protected' : 'painted'
         // Direction is only trustworthy on own-geometry ways — oneway on a
         // road way describes the cars, not the bike lane
@@ -255,7 +268,7 @@ async function fetchOsm(lat: number, lng: number, radiusMiles: number): Promise<
         out.push({
           type: 'Feature',
           geometry: { type: 'LineString', coordinates: el.geometry.map((p: { lat: number; lon: number }) => [p.lon, p.lat] as [number, number]) },
-          properties: { quality, name: tags.name ?? null, source: 'osm', ...(oneway ? { oneway: true } : {}) },
+          properties: { quality, name, source: 'osm', ...(oneway ? { oneway: true } : {}) },
         })
       }
       return out
@@ -264,6 +277,99 @@ async function fetchOsm(lat: number, lng: number, radiusMiles: number): Promise<
     }
   }
   return []
+}
+
+/* ── Name inheritance ──
+ * The three sources overlap undeduped, so an unnamed MAPC/OSM segment
+ * usually lies meters from a NAMED duplicate of the same street in the same
+ * array. Unnamed features borrow the closest parallel named neighbor's name:
+ * 25 m keeps donors on the same street (40 m can reach a parallel one), and
+ * the bearing gate keeps a cross-street at an intersection from donating.
+ * Runs inside the 24 h memo, so both consumers (map drawing + reach comfort)
+ * get named lanes; newly named mileage also joins corridor grouping. */
+const INHERIT_M = 25
+const INHERIT_BEARING_DEG = 30
+const INHERIT_CELL_DEG = 0.0005 // ~55 m grid cells
+
+function overallBearing(coords: [number, number][]): number {
+  const [x1, y1] = coords[0]
+  const [x2, y2] = coords[coords.length - 1]
+  return bearingDegrees(y1, x1, y2, x2)
+}
+
+/** Direction-insensitive: 0° and 180° are the same street axis. */
+function bearingsParallel(a: number, b: number, tolDeg: number): boolean {
+  const diff = Math.abs(a - b) % 180
+  return Math.min(diff, 180 - diff) <= tolDeg
+}
+
+function sampleVertices(coords: [number, number][]): [number, number][] {
+  const step = Math.max(1, Math.floor(coords.length / 8))
+  const pts: [number, number][] = []
+  for (let i = 0; i < coords.length; i += step) pts.push(coords[i])
+  pts.push(coords[coords.length - 1])
+  return pts
+}
+
+function inheritNames(features: LaneFeature[]): void {
+  const named: number[] = []
+  const unnamed: number[] = []
+  features.forEach((f, i) => (f.properties.name ? named : unnamed).push(i))
+  if (named.length === 0 || unnamed.length === 0) return
+
+  const bearingCache = new Map<number, number>()
+  const bearingOf = (i: number): number => {
+    let b = bearingCache.get(i)
+    if (b === undefined) {
+      b = overallBearing(features[i].geometry.coordinates)
+      bearingCache.set(i, b)
+    }
+    return b
+  }
+
+  // Grid-index the named features' sample vertices so the scan stays linear
+  // instead of all-pairs across a few thousand features
+  const grid = new Map<string, { fi: number; lat: number; lng: number }[]>()
+  for (const i of named) {
+    for (const [x, y] of sampleVertices(features[i].geometry.coordinates)) {
+      const key = `${Math.round(y / INHERIT_CELL_DEG)},${Math.round(x / INHERIT_CELL_DEG)}`
+      const cell = grid.get(key) ?? []
+      cell.push({ fi: i, lat: y, lng: x })
+      grid.set(key, cell)
+    }
+  }
+
+  for (const i of unnamed) {
+    let bestName: string | null = null
+    let bestD = Infinity
+    for (const [x, y] of sampleVertices(features[i].geometry.coordinates)) {
+      const cy = Math.round(y / INHERIT_CELL_DEG)
+      const cx = Math.round(x / INHERIT_CELL_DEG)
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const cell = grid.get(`${cy + dy},${cx + dx}`)
+          if (!cell) continue
+          for (const s of cell) {
+            // Degree prefilter before the exact distance (reach-route idiom)
+            if (Math.abs(s.lat - y) > 0.0003 || Math.abs(s.lng - x) > 0.0004) continue
+            const d = haversineMeters(y, x, s.lat, s.lng)
+            if (d > INHERIT_M || d >= bestD) continue
+            if (!bearingsParallel(bearingOf(i), bearingOf(s.fi), INHERIT_BEARING_DEG)) continue
+            bestD = d
+            bestName = features[s.fi].properties.name
+          }
+        }
+      }
+    }
+    if (bestName) {
+      const p = features[i].properties
+      p.name = bestName
+      p.nameInferred = true
+      // A borrowed street name also means "this is a lane along that street,
+      // not a greenway" — re-run the sidepath check
+      p.quality = dePath(p.quality, bestName)
+    }
+  }
 }
 
 /** Nearest separated feature: closest vertex wins; a named feature within
@@ -313,6 +419,7 @@ export async function getBikeNetwork(lat: number, lng: number, radiusMiles: numb
   ])
 
   const features = withinRadius([...mapc, ...massdot, ...osm], lat3, lng3, radius)
+  inheritNames(features)
 
   const data: BikeNetworkResponse = {
     geojson: { type: 'FeatureCollection', features },
