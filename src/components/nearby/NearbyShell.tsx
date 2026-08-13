@@ -5,8 +5,11 @@ import Link from 'next/link'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive, SheetSnap } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
+import ModeIcon from '@/components/commute/ModeIcon'
+import { reachRouteFeatures } from '@/lib/nearby/route-lines'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
-import NearbyMap, { type FitPadding } from './NearbyMap'
+import NearbyMap, { type FitPadding, type NearbyMarker } from './NearbyMap'
+import { destinationPinHtml } from './markers'
 import NearbySheet from './NearbySheet'
 import {
   useNearbyModel, selectionLayer, DEFAULT_VISIBLE_LAYERS,
@@ -128,6 +131,35 @@ export default function NearbyShell({
     selectReveal(next, source)
   }, [corridorById, selectReveal])
 
+  // ── Reach routes draw on the MAIN map (no nested mini-map in the sheet) ──
+  const reachRow = selection?.type === 'reach'
+    ? reach.data.find(r => r.id === selection.id)
+    : undefined
+
+  const shellCorridorLines = useMemo<GeoJSON.FeatureCollection>(() => {
+    if (!reachRow || selection?.type !== 'reach') return corridorLines
+    return {
+      type: 'FeatureCollection',
+      features: [
+        ...corridorLines.features,
+        ...reachRouteFeatures(reachRow, selection.mode, `reach:${reachRow.id}`),
+      ],
+    }
+  }, [corridorLines, reachRow, selection])
+
+  const shellMarkers = useMemo<NearbyMarker[]>(() => (
+    reachRow
+      ? [...markers, { id: `reachdest-${reachRow.id}`, lat: reachRow.lat, lng: reachRow.lng, html: destinationPinHtml(reachRow.name), zIndex: 5 }]
+      : markers
+  ), [markers, reachRow])
+
+  const effectiveHighlight = selection?.type === 'reach' ? `reach:${selection.id}` : highlightedCorridorId
+
+  const selectReach = useCallback((row: ReachRow, mode: 'transit' | 'bike', source: string) => {
+    selectReveal({ type: 'reach', id: row.id, mode }, source)
+    posthog.capture('reach_route_viewed', { destination: row.id, mode })
+  }, [selectReveal])
+
   const changeTab = useCallback((next: Tab) => {
     setTab(next)
     if (selection) select(null, 'tab-change')
@@ -164,12 +196,12 @@ export default function NearbyShell({
       <div className="absolute inset-0 [&_.maplibregl-ctrl-bottom-right]:!bottom-[88px]">
         <NearbyMap
           center={center}
-          markers={markers}
+          markers={shellMarkers}
           lines={backgroundLines}
           paintedVisible={visibleLayers.painted}
           separatedVisible={visibleLayers.bike}
-          corridorLines={corridorLines}
-          selectedCorridorId={highlightedCorridorId}
+          corridorLines={shellCorridorLines}
+          selectedCorridorId={effectiveHighlight}
           onCorridorSelect={(id, source) => {
             if (id) selectReveal({ type: 'corridor', id }, source)
             else select(null, source)
@@ -213,13 +245,23 @@ export default function NearbyShell({
             >
               ← Back
             </button>
-            <DetailContent
-              selection={selection}
-              stationByKey={stationByKey}
-              corridorById={corridorById}
-              docks={docks}
-              onSelectCorridor={(id) => selectShowing({ type: 'corridor', id }, 'panel')}
-            />
+            {selection.type === 'reach' ? (
+              reachRow ? (
+                <ReachDetail
+                  row={reachRow}
+                  mode={selection.mode}
+                  onMode={(m) => selectReach(reachRow, m, 'panel')}
+                />
+              ) : null
+            ) : (
+              <DetailContent
+                selection={selection}
+                stationByKey={stationByKey}
+                corridorById={corridorById}
+                docks={docks}
+                onSelectCorridor={(id) => selectShowing({ type: 'corridor', id }, 'panel')}
+              />
+            )}
           </div>
         )}
 
@@ -253,7 +295,13 @@ export default function NearbyShell({
           <div className="mt-3">
             {reach.status === 'loading' && <SkeletonRows count={4} />}
             {reach.status === 'error' && <ErrorCard label="Couldn't compute travel times right now." onRetry={onRetry} />}
-            {reach.status === 'ready' && reach.data.length > 0 && <ReachList center={center} rows={reach.data} />}
+            {reach.status === 'ready' && reach.data.length > 0 && (
+              <ReachList
+                center={center}
+                rows={reach.data}
+                onRowTap={(row) => selectReach(row, (row.transit_segments?.length ?? 0) > 0 ? 'transit' : 'bike', 'list')}
+              />
+            )}
             {reach.status === 'ready' && reach.data.length === 0 && (
               <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
                 No destination times for this spot yet.
@@ -294,6 +342,68 @@ export default function NearbyShell({
           </div>
         </div>
       </NearbySheet>
+    </div>
+  )
+}
+
+/* ── Destination route detail: the route is on the MAIN map above ── */
+
+function ReachDetail({ row, mode, onMode }: {
+  row: ReachRow
+  mode: 'transit' | 'bike'
+  onMode: (mode: 'transit' | 'bike') => void
+}) {
+  const hasTransit = (row.transit_segments?.length ?? 0) > 0
+  const hasBike = !!row.bike_polyline
+  const steps = mode === 'transit' ? row.steps : (row.bike_steps ?? [])
+
+  const chip = (active: boolean) =>
+    `flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.75rem] font-semibold transition-colors ${
+      active
+        ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.12)] text-white'
+        : 'border-white/[0.15] text-white/75 hover:border-white/[0.3]'
+    }`
+
+  return (
+    <div>
+      <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
+        Route — shown on the map
+      </div>
+      <div className="text-[0.95rem] font-bold text-white">{row.name}</div>
+      <div className="text-[0.78rem] text-white/75">{row.distance_miles} mi away</div>
+
+      {hasTransit && hasBike && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <button onClick={() => onMode('transit')} aria-pressed={mode === 'transit'} className={chip(mode === 'transit')}>
+            <ModeIcon mode="transit" size={13} /> T &amp; bus · {row.transit_minutes} min
+          </button>
+          <button onClick={() => onMode('bike')} aria-pressed={mode === 'bike'} className={chip(mode === 'bike')}>
+            <ModeIcon mode="bike" size={13} /> Bike · {row.bike_is_estimate ? '~' : ''}{row.bike_minutes} min
+          </button>
+        </div>
+      )}
+
+      {steps.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {steps.map((s, j) => (
+            <span key={`${s.label}-${j}`} className="flex items-center gap-1.5">
+              {j > 0 && <span className="text-[0.7rem] text-white/70">→</span>}
+              <span
+                className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                style={{ backgroundColor: s.color, color: s.textColor }}
+              >
+                {s.label}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {mode === 'transit' && (
+        <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
+          Colored stretches are the ride; lighter gray stretches are the walks between.
+        </p>
+      )}
     </div>
   )
 }

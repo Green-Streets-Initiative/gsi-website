@@ -19,6 +19,7 @@ export type Selection =
   | { type: 'station'; key: string }
   | { type: 'dock'; id: string }
   | { type: 'lane'; info: LaneTapInfo }
+  | { type: 'reach'; id: string; mode: 'transit' | 'bike' }
   | null
 
 /** Legend-controlled map layer visibility — every legend entry is a toggle. */
@@ -102,6 +103,7 @@ export function selectionLayer(
   if (sel.type === 'dock') return 'bluebikes'
   if (sel.type === 'corridor') return corridorById.get(sel.id)?.kind === 'bike' ? 'bike' : 'transit'
   if (sel.type === 'lane') return sel.info.quality === 'painted' ? 'painted' : 'bike'
+  // reach routes draw their own geometry — not tied to any legend layer
   return null
 }
 

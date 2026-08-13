@@ -311,15 +311,20 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, on
   }
 
   // Unnamed lane segment
-  const copy = TIER_COPY[selection.info.quality] ?? TIER_COPY.painted
-  return (
-    <div>
-      <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">Bike infrastructure</div>
-      <div className="text-[0.95rem] font-bold text-white">{selection.info.name ?? copy.title}</div>
-      <div className="mt-0.5 text-[0.8rem] leading-relaxed text-white/80">{copy.detail}</div>
-      {selection.info.source && SOURCE_LABEL[selection.info.source] && (
-        <div className="mt-1 text-[0.72rem] text-white/70">Data: {SOURCE_LABEL[selection.info.source]}</div>
-      )}
-    </div>
-  )
+  if (selection.type === 'lane') {
+    const copy = TIER_COPY[selection.info.quality] ?? TIER_COPY.painted
+    return (
+      <div>
+        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">Bike infrastructure</div>
+        <div className="text-[0.95rem] font-bold text-white">{selection.info.name ?? copy.title}</div>
+        <div className="mt-0.5 text-[0.8rem] leading-relaxed text-white/80">{copy.detail}</div>
+        {selection.info.source && SOURCE_LABEL[selection.info.source] && (
+          <div className="mt-1 text-[0.72rem] text-white/70">Data: {SOURCE_LABEL[selection.info.source]}</div>
+        )}
+      </div>
+    )
+  }
+
+  // 'reach' renders via the shell's own ReachDetail — nothing to show here
+  return null
 }

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import posthog from 'posthog-js'
 import ModeIcon from '@/components/commute/ModeIcon'
-import { decodePolyline } from '@/lib/geo/polyline'
+import { reachRouteFeatures } from '@/lib/nearby/route-lines'
 import type { SectionData, ReachRow } from './types'
 import { SectionShell, SkeletonRows, ErrorCard } from './SectionShell'
 import NearbyMap, { type NearbyMarker } from './NearbyMap'
@@ -71,12 +71,21 @@ export default function ReachSection({ center, reach, onRetry }: Props) {
   )
 }
 
-/** The destination rows + in-place route expansion — reused inside the
- *  mobile sheet's Destinations tab. */
-export function ReachList({ center, rows }: { center: { lat: number; lng: number }; rows: ReachRow[] }) {
+/** The destination rows + in-place route expansion. With `onRowTap` the
+ *  rows become plain selectors instead (the mobile shell draws the route
+ *  on the main map rather than in an embedded mini-map). */
+export function ReachList({ center, rows, onRowTap }: {
+  center: { lat: number; lng: number }
+  rows: ReachRow[]
+  onRowTap?: (row: ReachRow) => void
+}) {
   const [expanded, setExpanded] = useState<{ id: string; mode: 'transit' | 'bike' } | null>(null)
 
   function toggleRow(row: ReachRow) {
+    if (onRowTap) {
+      onRowTap(row)
+      return
+    }
     if (expanded?.id === row.id) {
       setExpanded(null)
       return
@@ -239,25 +248,10 @@ function RouteMiniMap({ center, row, mode }: {
   row: ReachRow
   mode: 'transit' | 'bike'
 }) {
-  const routeLines = useMemo<GeoJSON.FeatureCollection>(() => {
-    const features: GeoJSON.Feature[] = []
-    const push = (polyline: string, color: string) => {
-      const coords = decodePolyline(polyline).map(([lat, lng]) => [lng, lat])
-      if (coords.length >= 2) {
-        features.push({
-          type: 'Feature',
-          properties: { corridorId: 'route', color },
-          geometry: { type: 'LineString', coordinates: coords },
-        })
-      }
-    }
-    if (mode === 'transit') {
-      for (const seg of row.transit_segments ?? []) push(seg.polyline, seg.color)
-    } else if (row.bike_polyline) {
-      push(row.bike_polyline, '#BAF14D')
-    }
-    return { type: 'FeatureCollection', features }
-  }, [row, mode])
+  const routeLines = useMemo<GeoJSON.FeatureCollection>(() => ({
+    type: 'FeatureCollection',
+    features: reachRouteFeatures(row, mode, 'route'),
+  }), [row, mode])
 
   const markers = useMemo<NearbyMarker[]>(() => [
     { id: 'user', lat: center.lat, lng: center.lng, html: userDotHtml(), zIndex: 2 },
