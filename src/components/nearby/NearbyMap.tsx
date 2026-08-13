@@ -21,6 +21,8 @@ export interface NearbyMarker {
 
 export type CorridorSelectSource = 'map-line' | 'map-stop' | 'map-stop-chip' | 'background'
 
+export type FitPadding = number | { top: number; bottom: number; left: number; right: number }
+
 export interface LaneTapInfo {
   quality: string
   source: string | null
@@ -55,6 +57,15 @@ interface Props {
   fitToLines?: boolean
   /** Draw corridor lines at full strength instead of as faint background */
   lineEmphasis?: boolean
+  /** One-finger pan scrolls the page (true, default) vs pans the map
+   *  (false — the app shell, where the map is the stage) */
+  cooperative?: boolean
+  /** Control placement — the shell moves attribution up so the sheet
+   *  can't bury it, and drops the zoom buttons (pinch is the idiom) */
+  controls?: { attribution?: 'top-right' | 'bottom-right'; showZoom?: boolean }
+  /** Camera padding for every fit (initial/home/select) — the shell passes
+   *  asymmetric padding so fits land in the window above the sheet */
+  fitPadding?: FitPadding
   heightClass?: string
 }
 
@@ -75,6 +86,7 @@ export default function NearbyMap({
   corridorLines, selectedCorridorId = null, onCorridorSelect,
   onMarkerTap, onLaneTap,
   fitCount, extraFitPoints, fitToLines = false, lineEmphasis = false,
+  cooperative = true, controls, fitPadding,
   heightClass = 'h-[320px] sm:h-[380px]',
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -104,6 +116,8 @@ export default function NearbyMap({
   fitToLinesRef.current = fitToLines
   const extraFitPointsRef = useRef(extraFitPoints)
   extraFitPointsRef.current = extraFitPoints
+  const fitPaddingRef = useRef(fitPadding)
+  fitPaddingRef.current = fitPadding
   const lineEmphasisRef = useRef(lineEmphasis)
   lineEmphasisRef.current = lineEmphasis
 
@@ -121,13 +135,15 @@ export default function NearbyMap({
         center: [center.lng, center.lat],
         zoom: 13.5,
         attributionControl: false,
-        cooperativeGestures: true,
+        cooperativeGestures: cooperative,
         maxZoom: 17.5,
         minZoom: 8,
       })
 
-      map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
-      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+      map.addControl(new maplibregl.AttributionControl({ compact: true }), controls?.attribution ?? 'bottom-right')
+      if (controls?.showZoom !== false) {
+        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+      }
       mapRef.current = map
       setMapReadyTick(t => t + 1)
 
@@ -224,8 +240,10 @@ export default function NearbyMap({
 
       // One-time fit: user location + the nearest data points; remember it
       // as "home" so deselecting a corridor can ease back to it. (Route maps
-      // fit to their drawn lines instead — see fitToLines.)
-      if (!didFitRef.current && markers.length > 0 && !fitToLinesRef.current) {
+      // fit to their drawn lines instead — see fitToLines.) The user dot
+      // alone doesn't count — wait for real data or the fit locks in early
+      const hasContent = markers.length > 1 || (extraFitPointsRef.current?.length ?? 0) > 0
+      if (!didFitRef.current && hasContent && !fitToLinesRef.current) {
         didFitRef.current = true
         const byDist = [...markers].sort((a, b) =>
           (Math.abs(a.lat - center.lat) + Math.abs(a.lng - center.lng)) -
@@ -236,7 +254,7 @@ export default function NearbyMap({
         for (const m of toFit) bounds.extend([m.lng, m.lat])
         for (const p of extraFitPointsRef.current ?? []) bounds.extend([p.lng, p.lat])
         homeBoundsRef.current = bounds
-        map!.fitBounds(bounds, { padding: 52, maxZoom: 14, duration: 600 })
+        map!.fitBounds(bounds, { padding: clampedPadding(map!, fitPaddingRef.current, 52), maxZoom: 14, duration: 600 })
       }
     }
 
@@ -328,9 +346,9 @@ export default function NearbyMap({
           if (geom.type !== 'LineString') continue
           for (const c of geom.coordinates) bounds.extend(c as [number, number])
         }
-        map.fitBounds(bounds, { padding: 48, maxZoom: 14, duration: 700 })
+        map.fitBounds(bounds, { padding: clampedPadding(map, fitPaddingRef.current, 48), maxZoom: 14, duration: 700 })
       } else if (!sel && homeBoundsRef.current) {
-        map.fitBounds(homeBoundsRef.current, { padding: 52, maxZoom: 14, duration: 700 })
+        map.fitBounds(homeBoundsRef.current, { padding: clampedPadding(map, fitPaddingRef.current, 52), maxZoom: 14, duration: 700 })
       }
     })()
   }, [selectedCorridorId])
@@ -339,6 +357,20 @@ export default function NearbyMap({
 }
 
 /* ── Layer setup ── */
+
+/** Fit padding with a safety clamp — MapLibre errors (and skips the fit)
+ *  when padding exceeds the map's dimensions, e.g. a half-sheet bottom pad
+ *  on a short phone. */
+function clampedPadding(map: maplibregl.Map, padding: FitPadding | undefined, fallback: number): FitPadding {
+  const p = padding ?? fallback
+  if (typeof p === 'number') return p
+  const h = map.getContainer().clientHeight
+  if (h > 0 && p.top + p.bottom > h * 0.75) {
+    const scale = (h * 0.75) / (p.top + p.bottom)
+    return { ...p, top: Math.floor(p.top * scale), bottom: Math.floor(p.bottom * scale) }
+  }
+  return p
+}
 
 /** Bounds of every LineString in the collection, or null when there are none. */
 function linesBounds(

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Suspense } from 'react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
@@ -23,6 +23,14 @@ export const metadata: Metadata = {
     locale: 'en_US',
     type: 'website',
   },
+}
+
+// viewport-fit=cover lets the app shell's bottom sheet clear the iPhone
+// home indicator via env(safe-area-inset-bottom)
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 }
 
 // The interactive child is a client component reading search params; the page

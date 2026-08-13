@@ -1,0 +1,299 @@
+'use client'
+
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import Link from 'next/link'
+import posthog from 'posthog-js'
+import type { BluebikeStationLive, MBTAStopLive, SheetSnap } from '@/lib/wayfinding/types'
+import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
+import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
+import NearbyMap, { type FitPadding } from './NearbyMap'
+import NearbySheet from './NearbySheet'
+import {
+  useNearbyModel, selectionLayer, DEFAULT_VISIBLE_LAYERS,
+  type Selection, type VisibleLayers,
+} from './useNearbyModel'
+import { DetailContent } from './DetailPanel'
+import { MapLegend, StationList, BikeRouteList, DockList } from './AroundYouLists'
+import { ReachList } from './ReachSection'
+import { ExploreBody } from './EventsGuides'
+import { SkeletonRows, ErrorCard } from './SectionShell'
+
+/**
+ * The phone experience: one screen, no page scroll. The map is the stage;
+ * everything else lives in a draggable bottom sheet with three always-
+ * visible tabs. Tapping anything — a marker, a line, a list row — shows its
+ * details at the top of the sheet, right under your thumb, with the map
+ * highlight in view above. (≥ lg renders the classic column instead.)
+ */
+
+type Tab = 'transit' | 'destinations' | 'fun'
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'transit', label: 'Transit & bike' },
+  { id: 'destinations', label: 'Destinations' },
+  { id: 'fun', label: 'Nearby fun' },
+]
+
+interface Props {
+  center: { lat: number; lng: number }
+  displayLabel: string
+  outside: boolean
+  copied: boolean
+  onCopyLink: () => void
+  onChangeLocation: () => void
+  onAdvisorCta: () => void
+  partnerLine: string
+  transitCorridors: TransitCorridor[]
+  bikeCorridors: BikeCorridor[]
+  rail: MBTAStopLive[]
+  bus: MBTAStopLive[]
+  docks: BluebikeStationLive[]
+  backgroundLines: GeoJSON.FeatureCollection | null
+  transitStatus: SectionStatus
+  reach: SectionData<ReachRow[]>
+  community: SectionData<CommunityData | null>
+  guides: SectionData<GuideItem[]>
+  onRetry: () => void
+}
+
+export default function NearbyShell({
+  center, displayLabel, outside, copied, onCopyLink, onChangeLocation,
+  onAdvisorCta, partnerLine,
+  transitCorridors, bikeCorridors, rail, bus, docks,
+  backgroundLines, transitStatus, reach, community, guides, onRetry,
+}: Props) {
+  const [tab, setTab] = useState<Tab>('transit')
+  const [snap, setSnap] = useState<SheetSnap>('half')
+  const [visibleLayers, setVisibleLayers] = useState<VisibleLayers>(DEFAULT_VISIBLE_LAYERS)
+
+  const model = useNearbyModel({
+    center, transitCorridors, bikeCorridors, rail, bus, docks, visibleLayers,
+  })
+  const {
+    selection, select, handleMarkerTap,
+    corridorById, stations, stationByKey,
+    corridorLines, highlightedCorridorId, markers, accessPoints,
+  } = model
+
+  // The screen is the app — the page behind must not scroll
+  useEffect(() => {
+    const prev = document.documentElement.style.overflow
+    document.documentElement.style.overflow = 'hidden'
+    return () => { document.documentElement.style.overflow = prev }
+  }, [])
+
+  // Camera fits land in the window above the half sheet
+  const shellRef = useRef<HTMLDivElement>(null)
+  const [shellH, setShellH] = useState(0)
+  useEffect(() => {
+    const el = shellRef.current
+    if (!el) return
+    const measure = () => setShellH(el.clientHeight)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const fitPadding = useMemo<FitPadding | undefined>(
+    () => (shellH ? { top: 96, bottom: Math.round(shellH * 0.45) + 24, left: 40, right: 40 } : undefined),
+    [shellH]
+  )
+
+  // Any new selection reveals the sheet at half — detail under the thumb,
+  // map highlight in view above
+  const selectReveal = useCallback((next: Selection, source: string) => {
+    select(next, source)
+    if (next) setSnap('half')
+  }, [select])
+
+  const markerTapReveal = useCallback((id: string) => {
+    handleMarkerTap(id)
+    setSnap('half')
+  }, [handleMarkerTap])
+
+  const toggleLayer = useCallback((layer: keyof VisibleLayers) => {
+    setVisibleLayers(prev => {
+      const next = { ...prev, [layer]: !prev[layer] }
+      posthog.capture('nearby_layer_toggled', { layer, visible: next[layer] })
+      return next
+    })
+    if (visibleLayers[layer] && selectionLayer(selection, corridorById) === layer) {
+      select(null, 'layer-hidden')
+    }
+  }, [visibleLayers, selection, corridorById, select])
+
+  const selectShowing = useCallback((next: Selection, source: string) => {
+    const layer = selectionLayer(next, corridorById)
+    if (layer) setVisibleLayers(prev => (prev[layer] ? prev : { ...prev, [layer]: true }))
+    selectReveal(next, source)
+  }, [corridorById, selectReveal])
+
+  const changeTab = useCallback((next: Tab) => {
+    setTab(next)
+    if (selection) select(null, 'tab-change')
+    setSnap(s => (s === 'peek' ? 'half' : s))
+    posthog.capture('nearby_tab_changed', { tab: next })
+  }, [selection, select])
+
+  const handleSnapChange = useCallback((next: SheetSnap, source: 'drag' | 'tap') => {
+    setSnap(next)
+    posthog.capture('nearby_sheet_snap', { snap: next, source })
+  }, [])
+
+  const tabBar = (
+    <div className="mx-4 mb-2 flex gap-1 rounded-xl bg-white/[0.05] p-1">
+      {TABS.map(t => (
+        <button
+          key={t.id}
+          onClick={() => changeTab(t.id)}
+          aria-pressed={tab === t.id}
+          className={`flex-1 rounded-lg py-2 text-[0.8rem] font-bold transition-colors ${
+            tab === t.id ? 'bg-[#BAF14D] text-[#191A2E]' : 'text-white/75 hover:text-white'
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  )
+
+  return (
+    <div ref={shellRef} className="relative overflow-hidden" style={{ height: 'calc(100dvh - 60px)' }}>
+      {/* The stage. Attribution rides above the sheet's peek height so the
+          license line is readable whenever the sheet is tucked away */}
+      <div className="absolute inset-0 [&_.maplibregl-ctrl-bottom-right]:!bottom-[88px]">
+        <NearbyMap
+          center={center}
+          markers={markers}
+          lines={backgroundLines}
+          paintedVisible={visibleLayers.painted}
+          separatedVisible={visibleLayers.bike}
+          corridorLines={corridorLines}
+          selectedCorridorId={highlightedCorridorId}
+          onCorridorSelect={(id, source) => {
+            if (id) selectReveal({ type: 'corridor', id }, source)
+            else select(null, source)
+          }}
+          onMarkerTap={markerTapReveal}
+          onLaneTap={(info) => selectReveal({ type: 'lane', info }, 'map')}
+          fitCount={7}
+          extraFitPoints={accessPoints}
+          cooperative={false}
+          controls={{ showZoom: false }}
+          fitPadding={fitPadding}
+          heightClass="h-full"
+        />
+      </div>
+
+      {/* Compact location pill over the map */}
+      <div className="absolute left-3 right-3 top-3 z-10 flex items-center gap-2 rounded-full border border-white/[0.1] bg-[#191A2E]/85 py-1.5 pl-4 pr-1.5 backdrop-blur">
+        <span className="min-w-0 flex-1 truncate text-[0.85rem] font-bold text-white">{displayLabel}</span>
+        <button
+          onClick={onCopyLink}
+          className="shrink-0 rounded-full px-2.5 py-1 text-[0.72rem] font-semibold text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white"
+        >
+          {copied ? 'Copied ✓' : 'Copy link'}
+        </button>
+        <button
+          onClick={onChangeLocation}
+          className="shrink-0 rounded-full bg-white/[0.08] px-2.5 py-1 text-[0.72rem] font-semibold text-white transition-colors hover:bg-white/[0.14]"
+        >
+          Change
+        </button>
+      </div>
+
+      <NearbySheet snap={snap} onSnapChange={handleSnapChange} header={tabBar}>
+        {/* Detail view replaces the tab content; tabs stay mounted below so
+            list scroll positions survive */}
+        {selection && (
+          <div>
+            <button
+              onClick={() => select(null, 'sheet-back')}
+              className="mb-2 flex items-center gap-1.5 rounded-lg py-1 text-[0.8rem] font-semibold text-[#BAF14D] transition-opacity hover:opacity-80"
+            >
+              ← Back
+            </button>
+            <DetailContent
+              selection={selection}
+              stationByKey={stationByKey}
+              corridorById={corridorById}
+              docks={docks}
+              onSelectCorridor={(id) => selectShowing({ type: 'corridor', id }, 'panel')}
+            />
+          </div>
+        )}
+
+        <div className={selection || tab !== 'transit' ? 'hidden' : ''}>
+          {outside && (
+            <p className="mb-2 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-4 py-3 text-[0.82rem] leading-relaxed text-white">
+              This spot looks like it&apos;s outside Greater Boston, where our transit and Bluebikes data lives. Bike-path data covers all of Massachusetts, so parts of the picture may still fill in.
+            </p>
+          )}
+          <MapLegend visible={visibleLayers} onToggle={toggleLayer} />
+          <StationList
+            stations={stations}
+            corridorById={corridorById}
+            highlightedCorridorId={highlightedCorridorId}
+            status={transitStatus}
+            onRetry={onRetry}
+            onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+          />
+          <BikeRouteList
+            bikeCorridors={bikeCorridors}
+            highlightedCorridorId={highlightedCorridorId}
+            onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+          />
+          <DockList docks={docks} />
+        </div>
+
+        <div className={selection || tab !== 'destinations' ? 'hidden' : ''}>
+          <p className="mt-2 text-[0.8rem] leading-snug text-white/75">
+            The places everyone ends up going — tap one to see the route.
+          </p>
+          <div className="mt-3">
+            {reach.status === 'loading' && <SkeletonRows count={4} />}
+            {reach.status === 'error' && <ErrorCard label="Couldn't compute travel times right now." onRetry={onRetry} />}
+            {reach.status === 'ready' && reach.data.length > 0 && <ReachList center={center} rows={reach.data} />}
+            {reach.status === 'ready' && reach.data.length === 0 && (
+              <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
+                No destination times for this spot yet.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className={selection || tab !== 'fun' ? 'hidden' : ''}>
+          <div className="mt-2">
+            <ExploreBody community={community} guides={guides} />
+          </div>
+          <div className="mt-5 space-y-3">
+            <div className="rounded-xl border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-4 py-3.5">
+              <div className="text-[0.9rem] font-bold text-white">Have a destination in mind?</div>
+              <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">
+                The Commute Advisor compares every way to get there — with your home already filled in.
+              </p>
+              <Link
+                href="/commute-advisor"
+                onClick={onAdvisorCta}
+                className="mt-2 inline-block rounded-lg bg-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+              >
+                Compare your options →
+              </Link>
+            </div>
+            <div className="rounded-xl border border-white/[0.1] bg-[#242538] px-4 py-3.5">
+              <div className="text-[0.9rem] font-bold text-white">Get the Shift app</div>
+              <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
+              <a
+                href="/shift"
+                onClick={() => posthog.capture('snapshot_app_cta_clicked')}
+                className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
+              >
+                Download the app →
+              </a>
+            </div>
+          </div>
+        </div>
+      </NearbySheet>
+    </div>
+  )
+}

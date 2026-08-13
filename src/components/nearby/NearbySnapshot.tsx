@@ -20,6 +20,8 @@ import { SectionShell } from './SectionShell'
 import CorridorExplorer from './CorridorExplorer'
 import ReachSection, { captureReachLoaded } from './ReachSection'
 import EventsGuides from './EventsGuides'
+import NearbyShell from './NearbyShell'
+import { useIsDesktop } from './useIsDesktop'
 
 const REFRESH_MS = 30_000
 
@@ -36,6 +38,7 @@ interface Located {
 
 export default function NearbySnapshot() {
   const searchParams = useSearchParams()
+  const isDesktop = useIsDesktop()
 
   const [location, setLocation] = useState<Located | null>(null)
   const [locating, setLocating] = useState(false)
@@ -431,6 +434,34 @@ export default function NearbySnapshot() {
   const partnerLine = community.data?.partners && community.data.partners.count > 0
     ? `Unlock perks at ${community.data.partners.count} local business${community.data.partners.count === 1 ? '' : 'es'} near you${community.data.partners.names[0] ? ` — like ${community.data.partners.names.slice(0, 2).join(' and ')}` : ''}.`
     : 'Track your trips, feel the health gains, and unlock perks at partner businesses around town.'
+
+  // Phones and tablets get the app shell: map stage + tabbed bottom sheet,
+  // no page scroll. Desktop keeps the classic column below.
+  if (!isDesktop) {
+    return (
+      <NearbyShell
+        center={location}
+        displayLabel={displayLabel}
+        outside={outside}
+        copied={copied}
+        onCopyLink={handleCopyLink}
+        onChangeLocation={handleChangeLocation}
+        onAdvisorCta={handleAdvisorCta}
+        partnerLine={partnerLine}
+        transitCorridors={transitCorridors.data}
+        bikeCorridors={bikeCorridors}
+        rail={rail.data}
+        bus={bus.data}
+        docks={bluebikes.data}
+        backgroundLines={backgroundLines}
+        transitStatus={transitCorridors.status}
+        reach={reach}
+        community={community}
+        guides={guides}
+        onRetry={retry}
+      />
+    )
+  }
 
   return (
     <div className="pb-20">
