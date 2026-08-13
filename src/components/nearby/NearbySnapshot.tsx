@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import posthog from 'posthog-js'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
@@ -16,13 +15,9 @@ import {
   type TransitCorridor,
 } from '@/lib/nearby/corridors'
 import type { SectionData, BikeNetworkData, CommunityData, GuideItem, ReachRow } from './types'
-import { type ModeFilter, MODE_FILTER_DEFAULT, PAINTED_DEFAULT } from './useNearbyModel'
-import ModeFilterChips from './ModeFilterChips'
-import { SectionShell } from './SectionShell'
-import CorridorExplorer from './CorridorExplorer'
-import ReachSection, { captureReachLoaded } from './ReachSection'
-import EventsGuides from './EventsGuides'
+import { captureReachLoaded } from './ReachSection'
 import NearbyShell from './NearbyShell'
+import NearbyDesktop from './NearbyDesktop'
 import { useIsDesktop } from './useIsDesktop'
 
 const REFRESH_MS = 30_000
@@ -176,7 +171,9 @@ export default function NearbySnapshot() {
     // Minuteman, …) swaps in when it arrives. Both radii are server-cached.
     ;(async () => {
       try {
-        const res = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=1.5`)
+        // v= busts browser HTTP caches (max-age=86400) when the lane
+        // classification changes server-side (v2: sidepath detection)
+        const res = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=1.5&v=2`)
         if (!res.ok) throw new Error(`bike-network ${res.status}`)
         const data: BikeNetworkData = await res.json()
         if (loadSeqRef.current !== seq) return
@@ -185,7 +182,7 @@ export default function NearbySnapshot() {
           section: 'bike_network',
           count: data.counts.path + data.counts.protected + data.counts.painted,
         })
-        const wide = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=3`)
+        const wide = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=3&v=2`)
         if (wide.ok) {
           const wideData: BikeNetworkData = await wide.json()
           if (loadSeqRef.current !== seq) return
@@ -201,9 +198,10 @@ export default function NearbySnapshot() {
     // Non-car highways: transit + bike times to landmark destinations
     ;(async () => {
       try {
-        // v=4 busts browser HTTP caches (max-age=86400) when the response
-        // shape grows — bump it alongside the server's cache-key version
-        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=5`)
+        // v= busts browser HTTP caches (max-age=86400) when the response
+        // shape or lane classification changes — bump it alongside the
+        // server's cache-key version (v6: sidepath-aware comfort tiers)
+        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=6`)
         if (!res.ok) throw new Error(`reach ${res.status}`)
         const data = await res.json()
         setReach({ status: 'ready', data: data.destinations ?? [] })
@@ -226,18 +224,18 @@ export default function NearbySnapshot() {
       }
     })()
 
-    // Starter guides for transit / cycling / walking
+    // The full approved guide library (~20 rows) — the contextual pickers
+    // choose per section, so the Bluebikes guide (not a starter) is in reach
     ;(async () => {
       const { data } = await supabase
         .from('content_items')
-        .select('id, slug, title, summary, primary_mode')
+        .select('id, slug, title, summary, primary_mode, topics, is_starter')
         .eq('content_type', 'micro_guide')
         .eq('status', 'approved')
-        .eq('is_starter', true)
         .in('primary_mode', ['cycling', 'transit', 'walking'])
         .contains('surfaces', ['guide_library'])
         .order('title', { ascending: true })
-        .limit(6)
+        .limit(30)
       setGuides({ status: 'ready', data: (data ?? []) as GuideItem[] })
     })()
   }, [])
@@ -339,11 +337,6 @@ export default function NearbySnapshot() {
   }
 
   const retry = useCallback(() => { if (location) loadAll(location) }, [location, loadAll])
-
-  // Page-wide mode filter (desktop column): the chips above the corridors
-  // section drive the map layers, every list, guides, and reach emphasis
-  const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
-  const [paintedOn, setPaintedOn] = useState(PAINTED_DEFAULT)
 
   // Named bike corridors become selectable entities; everything else —
   // unnamed segments, named lanes that didn't make the corridor cut, and
@@ -449,135 +442,30 @@ export default function NearbySnapshot() {
     ? `Unlock perks at ${community.data.partners.count} local business${community.data.partners.count === 1 ? '' : 'es'} near you${community.data.partners.names[0] ? ` — like ${community.data.partners.names.slice(0, 2).join(' and ')}` : ''}.`
     : 'Track your trips, feel the health gains, and unlock perks at partner businesses around town.'
 
-  // Phones and tablets get the app shell: map stage + tabbed bottom sheet,
-  // no page scroll. Desktop keeps the classic column below.
-  if (!isDesktop) {
-    return (
-      <NearbyShell
-        center={location}
-        displayLabel={displayLabel}
-        outside={outside}
-        copied={copied}
-        onCopyLink={handleCopyLink}
-        onChangeLocation={handleChangeLocation}
-        onAdvisorCta={handleAdvisorCta}
-        partnerLine={partnerLine}
-        transitCorridors={transitCorridors.data}
-        bikeCorridors={bikeCorridors}
-        rail={rail.data}
-        bus={bus.data}
-        docks={bluebikes.data}
-        backgroundLines={backgroundLines}
-        transitStatus={transitCorridors.status}
-        reach={reach}
-        community={community}
-        guides={guides}
-        onRetry={retry}
-      />
-    )
+  // Phones and tablets get the app shell (map stage + tabbed bottom sheet);
+  // desktop gets the two-pane layout (sticky map + content rail). Both own
+  // their mode-filter state and consume the same model/overlay hooks.
+  const surfaceProps = {
+    center: location,
+    displayLabel,
+    outside,
+    copied,
+    onCopyLink: handleCopyLink,
+    onChangeLocation: handleChangeLocation,
+    onAdvisorCta: handleAdvisorCta,
+    partnerLine,
+    transitCorridors: transitCorridors.data,
+    bikeCorridors,
+    rail: rail.data,
+    bus: bus.data,
+    docks: bluebikes.data,
+    backgroundLines,
+    transitStatus: transitCorridors.status,
+    reach,
+    community,
+    guides,
+    onRetry: retry,
   }
 
-  return (
-    <div className="pb-20">
-      {/* Location header */}
-      <div className="mx-auto max-w-[720px] px-6 pt-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#BAF14D]">
-              Your neighborhood snapshot
-            </div>
-            <h1 className="mt-1 truncate font-display text-[1.5rem] font-extrabold tracking-tight text-white">
-              {displayLabel}
-            </h1>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              onClick={handleCopyLink}
-              className="rounded-lg border border-white/[0.15] px-3.5 py-2 text-[0.8125rem] font-semibold text-white transition-colors hover:bg-white/[0.06]"
-            >
-              {copied ? 'Copied ✓' : 'Copy link'}
-            </button>
-            <button
-              onClick={handleChangeLocation}
-              className="rounded-lg border border-white/[0.15] px-3.5 py-2 text-[0.8125rem] font-semibold text-white transition-colors hover:bg-white/[0.06]"
-            >
-              Change location
-            </button>
-          </div>
-        </div>
-
-        {outside && (
-          <p className="mt-4 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-5 py-3.5 text-[0.875rem] leading-relaxed text-white">
-            This spot looks like it&apos;s outside Greater Boston, where our transit and Bluebikes data lives. Bike-path data covers all of Massachusetts, so parts of the picture may still fill in.
-          </p>
-        )}
-      </div>
-
-      {/* One selector for the whole page: pick a mode, everything below follows */}
-      <div className="mx-auto max-w-[720px] px-6 pt-6">
-        <ModeFilterChips
-          mode={modeFilter}
-          onMode={setModeFilter}
-          painted={paintedOn}
-          onPaintedToggle={() => setPaintedOn(p => !p)}
-        />
-      </div>
-
-      <SectionShell
-        eyebrow="Getting in and out"
-        title="Your corridors"
-        subtitle="The T lines, buses, and comfortable bike routes near you, with how often they run — so you can beat traffic instead of being traffic. Tap any route to see the whole line and where it goes."
-      >
-        <CorridorExplorer
-          center={location}
-          transitCorridors={transitCorridors.data}
-          bikeCorridors={bikeCorridors}
-          rail={rail.data}
-          bus={bus.data}
-          docks={bluebikes.data}
-          backgroundLines={backgroundLines}
-          transitStatus={transitCorridors.status}
-          onRetry={retry}
-          modeFilter={modeFilter}
-          paintedVisible={paintedOn}
-          onShowPainted={() => setPaintedOn(true)}
-        />
-      </SectionShell>
-      <ReachSection center={location} reach={reach} onRetry={retry} modeFilter={modeFilter} />
-      <EventsGuides community={community} guides={guides} modeFilter={modeFilter} />
-
-      {/* CTA bridge */}
-      <div className="mx-auto max-w-[720px] space-y-4 px-6 pt-2">
-        <div className="rounded-2xl border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-7 py-6">
-          <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight text-white">
-            Have a destination in mind?
-          </div>
-          <p className="mb-3.5 text-[0.85rem] leading-relaxed text-white/80">
-            Add where you work or study and the Commute Advisor compares every way to get there — time, cost, and health — with your home already filled in.
-          </p>
-          <Link
-            href="/commute-advisor"
-            onClick={handleAdvisorCta}
-            className="inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-          >
-            Compare your options →
-          </Link>
-        </div>
-
-        <div className="rounded-2xl border border-white/[0.1] bg-[#242538] px-7 py-6">
-          <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight text-white">
-            Get the Shift app
-          </div>
-          <p className="mb-3.5 text-[0.85rem] leading-relaxed text-white/80">{partnerLine}</p>
-          <a
-            href="/shift"
-            onClick={() => posthog.capture('snapshot_app_cta_clicked')}
-            className="inline-block rounded-lg border border-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
-          >
-            Download the app →
-          </a>
-        </div>
-      </div>
-    </div>
-  )
+  return isDesktop ? <NearbyDesktop {...surfaceProps} /> : <NearbyShell {...surfaceProps} />
 }

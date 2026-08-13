@@ -1,61 +1,36 @@
 'use client'
 
-import { useMemo, useState } from 'react'
 import posthog from 'posthog-js'
 import ModeIcon from '@/components/commute/ModeIcon'
-import { reachRouteFeatures } from '@/lib/nearby/route-lines'
 import { modeOptions, hasTransitRoute, hasBikeRoute, defaultRouteMode, reachModeFor } from '@/lib/nearby/reach-ui'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import type { ModeFilter } from './useNearbyModel'
 import BikeComfortBlock from './BikeComfortBlock'
-import type { SectionData, ReachRow } from './types'
-import { SectionShell, SkeletonRows, ErrorCard } from './SectionShell'
-import NearbyMap, { type NearbyMarker } from './NearbyMap'
-import { userDotHtml, destinationPinHtml } from './markers'
-
-interface Props {
-  /** The visitor's (rounded) location — origin of every drawn route */
-  center: { lat: number; lng: number }
-  reach: SectionData<ReachRow[]>
-  onRetry: () => void
-  /** Page-wide mode filter — that mode's time gets the emphasis in each row */
-  modeFilter?: ModeFilter
-}
+import type { ReachRow } from './types'
 
 /**
  * The everyday-routes picture: for a newcomer, bus numbers and line names
  * mean nothing until they're attached to places. Each destination shows the
  * ways to get there ranked fastest-first, plus the corridor — the line or
- * bus someone would probably ride. Tapping a place expands it IN PLACE with
- * the actual route drawn on a compact map (never a popup, never a scroll
- * jump to somewhere else on the page).
+ * bus someone would probably ride. Rows expand IN PLACE (never a popup,
+ * never a scroll jump); the route draws on the page's main map.
  */
-export default function ReachSection({ center, reach, onRetry, modeFilter }: Props) {
-  if (reach.status === 'ready' && reach.data.length === 0) return null
 
-  return (
-    <SectionShell
-      eyebrow="Your everyday routes"
-      title="Where can you get from here?"
-      subtitle="Popular destinations, with your ways of getting there ranked fastest-first — and the line or bus you'd probably ride. Tap a place to see the route drawn on a map."
-    >
-      {reach.status === 'loading' && <SkeletonRows count={4} />}
-      {reach.status === 'error' && <ErrorCard label="Couldn't compute travel times right now." onRetry={onRetry} />}
-      {reach.status === 'ready' && <ReachList center={center} rows={reach.data} modeFilter={modeFilter} />}
-    </SectionShell>
-  )
-}
-
-/** The destination rows + in-place route expansion. With `onRowTap` the
- *  rows become plain selectors instead (the mobile shell draws the route
- *  on the main map rather than in an embedded mini-map). */
-export function ReachList({ center, rows, onRowTap, modeFilter }: {
+/** The destination rows. Two modes, both drawing on the page's MAIN map:
+ *  - `onRowTap` (mobile shell): rows are plain selectors — the sheet shows
+ *    the route detail and the shell draws the route.
+ *  - `routeSelection`/`onRouteSelect` (desktop two-pane): rows expand in
+ *    place, following the PAGE selection — the parent owns the state and
+ *    fires the reach_route_viewed analytics. */
+export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect }: {
   center: { lat: number; lng: number }
   rows: ReachRow[]
   onRowTap?: (row: ReachRow) => void
   modeFilter?: ModeFilter
+  routeSelection?: { id: string; mode: 'transit' | 'bike' } | null
+  onRouteSelect?: (sel: { id: string; mode: 'transit' | 'bike' } | null) => void
 }) {
-  const [expanded, setExpanded] = useState<{ id: string; mode: 'transit' | 'bike' } | null>(null)
+  const expanded = routeSelection ?? null
   const preferred = reachModeFor(modeFilter ?? 'all')
 
   function toggleRow(row: ReachRow) {
@@ -64,18 +39,15 @@ export function ReachList({ center, rows, onRowTap, modeFilter }: {
       return
     }
     if (expanded?.id === row.id) {
-      setExpanded(null)
+      onRouteSelect?.(null)
       return
     }
-    const mode = defaultRouteMode(row, preferred ?? undefined)
-    setExpanded({ id: row.id, mode })
-    posthog.capture('reach_route_viewed', { destination: row.id, mode })
+    onRouteSelect?.({ id: row.id, mode: defaultRouteMode(row, preferred ?? undefined) })
   }
 
   function switchMode(row: ReachRow, mode: 'transit' | 'bike') {
     if (expanded?.mode === mode) return
-    setExpanded({ id: row.id, mode })
-    posthog.capture('reach_route_viewed', { destination: row.id, mode })
+    onRouteSelect?.({ id: row.id, mode })
   }
 
   return (
@@ -207,8 +179,8 @@ export function ReachList({ center, rows, onRowTap, modeFilter }: {
                         </button>
                       </div>
                     )}
-                    <div className="overflow-hidden rounded-lg">
-                      <RouteMiniMap key={expanded.mode} center={center} row={row} mode={expanded.mode} />
+                    <div className="mb-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
+                      Route — shown on the map
                     </div>
                     {expanded.mode === 'transit' && (
                       <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
@@ -247,35 +219,6 @@ export function ReachList({ center, rows, onRowTap, modeFilter }: {
         Transit and bike times assume a weekday morning. ~ marks a rough estimate; walk times are always estimates.
       </p>
     </>
-  )
-}
-
-/** Compact route map: the door-to-door trip drawn full-strength, viewport
- *  fitted to the route itself, destination flagged by name. */
-function RouteMiniMap({ center, row, mode }: {
-  center: { lat: number; lng: number }
-  row: ReachRow
-  mode: 'transit' | 'bike'
-}) {
-  const routeLines = useMemo<GeoJSON.FeatureCollection>(() => ({
-    type: 'FeatureCollection',
-    features: reachRouteFeatures(row, mode, 'route'),
-  }), [row, mode])
-
-  const markers = useMemo<NearbyMarker[]>(() => [
-    { id: 'user', lat: center.lat, lng: center.lng, html: userDotHtml(), zIndex: 2 },
-    { id: 'dest', lat: row.lat, lng: row.lng, html: destinationPinHtml(row.name), zIndex: 3 },
-  ], [center.lat, center.lng, row])
-
-  return (
-    <NearbyMap
-      center={center}
-      markers={markers}
-      corridorLines={routeLines}
-      fitToLines
-      lineEmphasis
-      heightClass="h-[230px] sm:h-[260px]"
-    />
   )
 }
 

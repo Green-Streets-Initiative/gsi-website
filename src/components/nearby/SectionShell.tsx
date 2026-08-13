@@ -1,20 +1,8 @@
 'use client'
 
-export function SectionShell({ eyebrow, title, subtitle, children }: {
-  eyebrow: string
-  title: string
-  subtitle?: string
-  children: React.ReactNode
-}) {
-  return (
-    <section className="mx-auto max-w-[720px] px-6 py-8">
-      <div className="mb-1 text-[0.7rem] font-bold uppercase tracking-[0.14em] text-[#BAF14D]">{eyebrow}</div>
-      <h2 className="font-display text-[1.35rem] font-bold tracking-tight text-white">{title}</h2>
-      {subtitle && <p className="mt-1 text-[0.875rem] text-white/75">{subtitle}</p>}
-      <div className="mt-4">{children}</div>
-    </section>
-  )
-}
+/** Shared loading/error primitives for the nearby sections. (The old
+ *  SectionShell chrome — eyebrow + h2 + subtitle in a 720px column — is
+ *  gone; both surfaces use compact inline labels now.) */
 
 export function SkeletonRows({ count }: { count: number }) {
   return (

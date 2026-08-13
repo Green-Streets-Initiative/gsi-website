@@ -22,10 +22,12 @@ const TRANSITION = 'height 0.3s cubic-bezier(0.2, 0, 0, 1)'
 interface Props {
   snap: SheetSnap
   onSnapChange: (snap: SheetSnap, source: 'drag' | 'tap') => void
-  /** Pinned under the grab handle; part of the drag surface (tab bar) */
+  /** Pinned under the grab handle; part of the drag surface (tab bar +
+   *  mode chips). Its real height is MEASURED for the peek snap, so
+   *  whatever rides here stays fully visible when the sheet is tucked. */
   header?: React.ReactNode
   children: React.ReactNode
-  /** Height of handle + header visible at peek, before safe-area (default 76) */
+  /** Pre-measure fallback for the peek height, before safe-area (default 76) */
   peekContentPx?: number
 }
 
@@ -38,9 +40,24 @@ const NearbySheet = forwardRef<NearbySheetRef, Props>(function NearbySheet(
   ref,
 ) {
   const sheetRef = useRef<HTMLDivElement>(null)
+  const dragRef = useRef<HTMLDivElement>(null)
   const dragState = useRef<{ startY: number; startHeight: number; startTime: number; moved: boolean } | null>(null)
   const [containerH, setContainerH] = useState(0)
   const [safeBottom, setSafeBottom] = useState(0)
+  const [headerH, setHeaderH] = useState(0)
+
+  // Peek must show the whole drag surface (handle + tabs + chips), whose
+  // height varies — chips wrap on narrow phones and the painted toggle
+  // comes and goes — so measure it rather than trusting a constant
+  useEffect(() => {
+    const el = dragRef.current
+    if (!el) return
+    const measure = () => setHeaderH(el.offsetHeight)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   useImperativeHandle(ref, () => ({
     snapTo: (s: SheetSnap) => onSnapChange(s, 'tap'),
@@ -75,11 +92,11 @@ const NearbySheet = forwardRef<NearbySheetRef, Props>(function NearbySheet(
   }, [])
 
   const points = useCallback((): Record<SheetSnap, number> => ({
-    peek: peekContentPx + safeBottom,
+    peek: (headerH || peekContentPx) + safeBottom,
     // full leaves a sliver of map — "there's a map behind this" stays legible
     half: Math.round(containerH * 0.45),
     full: Math.max(0, containerH - 12),
-  }), [containerH, safeBottom, peekContentPx])
+  }), [containerH, safeBottom, peekContentPx, headerH])
 
   // Apply the current snap height (also re-applies on container resize)
   useEffect(() => {
@@ -162,6 +179,7 @@ const NearbySheet = forwardRef<NearbySheetRef, Props>(function NearbySheet(
     >
       {/* Drag surface: handle + header */}
       <div
+        ref={dragRef}
         className="shrink-0 touch-none"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

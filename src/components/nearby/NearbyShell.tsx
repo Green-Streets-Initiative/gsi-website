@@ -6,13 +6,12 @@ import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive, SheetSnap } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import ModeIcon from '@/components/commute/ModeIcon'
-import { reachRouteFeatures } from '@/lib/nearby/route-lines'
 import { defaultRouteMode, reachModeFor } from '@/lib/nearby/reach-ui'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import BikeComfortBlock from './BikeComfortBlock'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
-import NearbyMap, { type FitPadding, type NearbyMarker } from './NearbyMap'
-import { destinationPinHtml } from './markers'
+import NearbyMap, { type FitPadding } from './NearbyMap'
+import { useReachOverlay } from './useReachOverlay'
 import NearbySheet from './NearbySheet'
 import {
   useNearbyModel, MODE_FILTER_DEFAULT, PAINTED_DEFAULT,
@@ -22,7 +21,8 @@ import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
 import { StationList, BikeRouteList, DockList } from './AroundYouLists'
 import { ReachList } from './ReachSection'
-import { ExploreBody, GuidesBlock } from './EventsGuides'
+import { ExploreBody } from './ExploreBody'
+import GuideLinks from './GuideLinks'
 import { SkeletonRows, ErrorCard } from './SectionShell'
 
 /**
@@ -140,28 +140,9 @@ export default function NearbyShell({
   }, [corridorById, paintedOn, selectReveal])
 
   // ── Reach routes draw on the MAIN map (no nested mini-map in the sheet) ──
-  const reachRow = selection?.type === 'reach'
-    ? reach.data.find(r => r.id === selection.id)
-    : undefined
-
-  const shellCorridorLines = useMemo<GeoJSON.FeatureCollection>(() => {
-    if (!reachRow || selection?.type !== 'reach') return corridorLines
-    return {
-      type: 'FeatureCollection',
-      features: [
-        ...corridorLines.features,
-        ...reachRouteFeatures(reachRow, selection.mode, `reach:${reachRow.id}`),
-      ],
-    }
-  }, [corridorLines, reachRow, selection])
-
-  const shellMarkers = useMemo<NearbyMarker[]>(() => (
-    reachRow
-      ? [...markers, { id: `reachdest-${reachRow.id}`, lat: reachRow.lat, lng: reachRow.lng, html: destinationPinHtml(reachRow.name), zIndex: 5 }]
-      : markers
-  ), [markers, reachRow])
-
-  const effectiveHighlight = selection?.type === 'reach' ? `reach:${selection.id}` : highlightedCorridorId
+  const { reachRow, lines: shellCorridorLines, markers: shellMarkers, highlight: effectiveHighlight } = useReachOverlay({
+    selection, reachRows: reach.data, corridorLines, markers, highlightedCorridorId,
+  })
 
   const selectReach = useCallback((row: ReachRow, mode: 'transit' | 'bike', source: string) => {
     selectReveal({ type: 'reach', id: row.id, mode }, source)
@@ -180,21 +161,34 @@ export default function NearbyShell({
     posthog.capture('nearby_sheet_snap', { snap: next, source })
   }, [])
 
+  // Tab bar + mode chips ride in the sheet's pinned header (the drag
+  // surface), so they stay put on every tab while the content scrolls —
+  // and the sheet's measured peek height keeps them visible when tucked
   const tabBar = (
-    <div className="mx-4 mb-2 flex gap-1 rounded-xl bg-white/[0.05] p-1">
-      {TABS.map(t => (
-        <button
-          key={t.id}
-          onClick={() => changeTab(t.id)}
-          aria-pressed={tab === t.id}
-          className={`flex-1 rounded-lg py-2 text-[0.8rem] font-bold transition-colors ${
-            tab === t.id ? 'bg-[#BAF14D] text-[#191A2E]' : 'text-white/75 hover:text-white'
-          }`}
-        >
-          {t.label}
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="mx-4 mb-2 flex gap-1 rounded-xl bg-white/[0.05] p-1">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => changeTab(t.id)}
+            aria-pressed={tab === t.id}
+            className={`flex-1 rounded-lg py-2 text-[0.8rem] font-bold transition-colors ${
+              tab === t.id ? 'bg-[#BAF14D] text-[#191A2E]' : 'text-white/75 hover:text-white'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="mx-4 mb-2.5">
+        <ModeFilterChips
+          mode={modeFilter}
+          onMode={setModeFilter}
+          painted={paintedOn}
+          onPaintedToggle={() => setPaintedOn(p => !p)}
+        />
+      </div>
+    </>
   )
 
   return (
@@ -292,34 +286,31 @@ export default function NearbyShell({
               This spot looks like it&apos;s outside Greater Boston, where our transit and Bluebikes data lives. Bike-path data covers all of Massachusetts, so parts of the picture may still fill in.
             </p>
           )}
-          {/* One selector for the whole sheet: pick a mode, map + lists follow */}
-          <div className="mt-2.5">
-            <ModeFilterChips
-              mode={modeFilter}
-              onMode={setModeFilter}
-              painted={paintedOn}
-              onPaintedToggle={() => setPaintedOn(p => !p)}
-            />
-          </div>
           {(showRail || showBus) && (
-            <StationList
-              stations={stations}
-              corridorById={corridorById}
-              highlightedCorridorId={highlightedCorridorId}
-              status={transitStatus}
-              onRetry={onRetry}
-              onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
-            />
+            <>
+              <StationList
+                stations={stations}
+                corridorById={corridorById}
+                highlightedCorridorId={highlightedCorridorId}
+                status={transitStatus}
+                onRetry={onRetry}
+                onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+              />
+              <GuideLinks context="stations" guides={guides.data} modeFilter={modeFilter} />
+            </>
           )}
           {showBike && (
-            <BikeRouteList
-              bikeCorridors={bikeCorridors}
-              highlightedCorridorId={highlightedCorridorId}
-              onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
-            />
+            <>
+              <BikeRouteList
+                bikeCorridors={bikeCorridors}
+                highlightedCorridorId={highlightedCorridorId}
+                onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+              />
+              <GuideLinks context="bike" guides={guides.data} modeFilter={modeFilter} />
+              <DockList docks={docks} />
+              <GuideLinks context="docks" guides={guides.data} modeFilter={modeFilter} />
+            </>
           )}
-          {showBike && <DockList docks={docks} />}
-          <GuidesBlock guides={guides} title="Starter guides" modeFilter={modeFilter} />
         </div>
 
         <div className={selection || tab !== 'destinations' ? 'hidden' : ''}>

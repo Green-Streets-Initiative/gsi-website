@@ -6,87 +6,15 @@ import { CalendarBlank } from '@phosphor-icons/react'
 import RoamCard from '@/components/roams/RoamCard'
 import { getTypeMeta, parseEventDate, formatDistance } from '@/lib/events'
 import { EVENT_TYPE_ICONS } from '@/components/events/event-type-icons'
-import type { ModeFilter } from './useNearbyModel'
-import type { SectionData, CommunityData, GuideItem } from './types'
-import { SectionShell, SkeletonRows } from './SectionShell'
+import type { SectionData, CommunityData } from './types'
+import { SkeletonRows } from './SectionShell'
 
-interface Props {
+/** Community events + Roams — the mobile Explore nearby tab body and the
+ *  desktop rail. `compact` narrows the roams grid to fit a ~440px column. */
+export function ExploreBody({ community, compact }: {
   community: SectionData<CommunityData | null>
-  guides: SectionData<GuideItem[]>
-  modeFilter?: ModeFilter
-}
-
-/** Desktop "Start exploring" section: starter guides + events + Roams.
- *  (The mobile shell splits these: guides ride under the mode-relevant
- *  lists in Transit & bike; Explore nearby gets events + Roams.) */
-export default function EventsGuides({ community, guides, modeFilter }: Props) {
-  const events = community.data?.events ?? []
-  const roams = community.data?.roams ?? []
-  const nothing =
-    community.status !== 'loading' && guides.status !== 'loading' &&
-    events.length === 0 && roams.length === 0 && guides.data.length === 0
-
-  if (nothing) return null
-
-  return (
-    <SectionShell
-      eyebrow="Make it yours"
-      title="Start exploring"
-      subtitle="Beginner-friendly ways to try your new options — no experience needed."
-    >
-      <div className="space-y-5">
-        <GuidesBlock guides={guides} modeFilter={modeFilter} />
-        <ExploreBody community={community} />
-      </div>
-    </SectionShell>
-  )
-}
-
-/** The mode filter narrows guides to the mode being explored; events and
- *  Roams stay visible in every view. */
-const GUIDE_MODE: Record<ModeFilter, string | null> = {
-  all: null,
-  train: 'transit',
-  bus: 'transit',
-  bike: 'cycling',
-}
-
-/** Starter micro-guides grid — slots beneath whatever content it's
- *  relevant to (transit/bike lists on mobile, the explore section here). */
-export function GuidesBlock({ guides, title, modeFilter }: {
-  guides: SectionData<GuideItem[]>
-  title?: string
-  modeFilter?: ModeFilter
+  compact?: boolean
 }) {
-  const wanted = GUIDE_MODE[modeFilter ?? 'all']
-  const items = wanted ? guides.data.filter(g => g.primary_mode === wanted) : guides.data
-  if (items.length === 0) return null
-  return (
-    <div className={title ? 'mt-5' : ''}>
-      {title && (
-        <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
-          {title}
-        </div>
-      )}
-      <div className="grid gap-3 sm:grid-cols-2">
-        {items.slice(0, 4).map(g => (
-          <Link
-            key={g.id}
-            href={`/guides/${g.slug ?? g.id}`}
-            onClick={() => posthog.capture('snapshot_guide_clicked', { slug: g.slug ?? g.id })}
-            className="block rounded-xl border border-white/[0.08] bg-white/[0.04] p-4 transition-colors hover:bg-white/[0.07]"
-          >
-            <p className="text-sm font-semibold leading-snug text-white">{g.title}</p>
-            {g.summary && <p className="mt-1 line-clamp-2 text-xs leading-snug text-white/75">{g.summary}</p>}
-          </Link>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/** Community events + Roams — the mobile Explore nearby tab body. */
-export function ExploreBody({ community }: { community: SectionData<CommunityData | null> }) {
   const events = community.data?.events ?? []
   const roams = community.data?.roams ?? []
 
@@ -146,7 +74,7 @@ export function ExploreBody({ community }: { community: SectionData<CommunityDat
           <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
             Explore your new neighborhood
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className={`grid gap-3 ${compact ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
             {roams.slice(0, 3).map(r => (
               <div key={r.id} onClick={() => posthog.capture('snapshot_roam_clicked', { id: r.id })}>
                 <RoamCard roam={r} />

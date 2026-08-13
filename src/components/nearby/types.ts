@@ -96,4 +96,6 @@ export interface GuideItem {
   title: string
   summary: string | null
   primary_mode: string
+  topics: string[] | null
+  is_starter: boolean
 }
