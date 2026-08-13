@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
-import { formatDistance, walkTimeMinutes } from '@/lib/wayfinding/geo'
+import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import { CORRIDOR_UNSPLASH } from '@/lib/nearby/config'
 import { bearingDegrees } from '@/lib/geo/polyline'
@@ -263,7 +263,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, on
             {c.protection === 'painted' && <span className="text-white/80">Painted lane — paint marks your space</span>}
           </div>
           <div className="mt-0.5 text-[0.78rem] text-white/80">
-            {c.lengthMiles} mi through this area · nearest point {walkTimeMinutes(c.accessDistanceMeters)} min walk
+            {c.lengthMiles} mi through this area · nearest point {bikeTimeMinutes(c.accessDistanceMeters)} min ride
           </div>
           <PanelPhoto spec={corridorPhotoSpec(c)} alt={c.name} />
         </div>

@@ -40,11 +40,21 @@ export const hasBikeRoute = (row: ReachRow) => !!row.bike_polyline
 /**
  * The mode a row's route map should open with: the best-ranked mode that we
  * can actually draw (walk has no geometry, so it defers to the next option).
+ * With the page's mode filter set, that mode wins whenever it's drawable.
  */
-export function defaultRouteMode(row: ReachRow): 'transit' | 'bike' {
+export function defaultRouteMode(row: ReachRow, prefer?: 'transit' | 'bike'): 'transit' | 'bike' {
+  if (prefer === 'bike' && hasBikeRoute(row)) return 'bike'
+  if (prefer === 'transit' && hasTransitRoute(row)) return 'transit'
   for (const o of modeOptions(row)) {
     if (o.key === 'bike' && hasBikeRoute(row)) return 'bike'
     if (o.key === 'transit' && hasTransitRoute(row)) return 'transit'
   }
   return hasTransitRoute(row) ? 'transit' : 'bike'
+}
+
+/** The everyday-routes mode a page-wide filter maps to (null = no preference). */
+export function reachModeFor(filter: 'all' | 'train' | 'bus' | 'bike'): 'transit' | 'bike' | null {
+  if (filter === 'bike') return 'bike'
+  if (filter === 'train' || filter === 'bus') return 'transit'
+  return null
 }

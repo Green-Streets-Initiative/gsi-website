@@ -1,18 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import {
-  Bike, Zap, Package, Footprints, Bus, Megaphone, PartyPopper,
-  MapPin, Calendar, GraduationCap, Wrench, Flag, Users, Bookmark,
-  Clock,
-} from 'lucide-react'
+import { Calendar, Bookmark, Clock } from 'lucide-react'
 import { type CommunityEvent, getTypeMeta, getTagMeta, formatTime, formatDistance, haversine, parseEventDate, dateShort } from '@/lib/events'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
-  Bike, Zap, Package, Footprints, Bus, Megaphone, PartyPopper,
-  MapPin, Calendar, GraduationCap, Wrench, Flag, Users,
-}
+import { EVENT_TYPE_ICONS } from './event-type-icons'
 
 interface EventCardProps {
   event: CommunityEvent
@@ -25,7 +16,7 @@ interface EventCardProps {
 
 export default function EventCard({ event, userLat, userLng, showDate, saved, onToggleSave }: EventCardProps) {
   const meta = getTypeMeta(event.event_type)
-  const Icon = ICON_MAP[meta.icon] ?? Calendar
+  const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
 
   const distance = event.location_lat && event.location_lng
     ? haversine(userLat, userLng, event.location_lat, event.location_lng)

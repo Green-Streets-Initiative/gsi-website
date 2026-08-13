@@ -22,6 +22,9 @@ export interface NearbyEvent {
   location_name: string | null
   summary: string | null
   distance_miles: number
+  event_type: string | null
+  tags?: string[]
+  recurring_weekday?: string | null
 }
 
 export interface CommunityData {

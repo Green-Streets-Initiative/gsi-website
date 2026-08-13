@@ -1,17 +1,13 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import posthog from 'posthog-js'
+import { useCallback } from 'react'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import NearbyMap from './NearbyMap'
 import type { SectionStatus } from './types'
-import {
-  useNearbyModel, selectionLayer, DEFAULT_VISIBLE_LAYERS,
-  type Selection, type VisibleLayers,
-} from './useNearbyModel'
+import { useNearbyModel, type ModeFilter, type Selection } from './useNearbyModel'
 import { DetailContent } from './DetailPanel'
-import { MapLegend, StationList, BikeRouteList, DockList } from './AroundYouLists'
+import { StationList, BikeRouteList, DockList } from './AroundYouLists'
 
 interface Props {
   center: { lat: number; lng: number }
@@ -24,6 +20,11 @@ interface Props {
   backgroundLines: GeoJSON.FeatureCollection | null
   transitStatus: SectionStatus
   onRetry: () => void
+  /** Page-wide mode filter, owned by the page (the chips render above) */
+  modeFilter: ModeFilter
+  paintedVisible: boolean
+  /** A list tap on a painted corridor while painted lanes are hidden */
+  onShowPainted: () => void
 }
 
 /**
@@ -36,37 +37,28 @@ interface Props {
 export default function CorridorExplorer({
   center, transitCorridors, bikeCorridors, rail, bus, docks,
   backgroundLines, transitStatus, onRetry,
+  modeFilter, paintedVisible, onShowPainted,
 }: Props) {
-  const [visibleLayers, setVisibleLayers] = useState<VisibleLayers>(DEFAULT_VISIBLE_LAYERS)
-
   const model = useNearbyModel({
-    center, transitCorridors, bikeCorridors, rail, bus, docks, visibleLayers,
+    center, transitCorridors, bikeCorridors, rail, bus, docks,
+    modeFilter, paintedVisible,
   })
   const {
     selection, select, handleMarkerTap,
     corridorById, stations, stationByKey,
     corridorLines, highlightedCorridorId, markers, accessPoints,
+    showRail, showBus, showBike,
   } = model
 
-  const toggleLayer = useCallback((layer: keyof VisibleLayers) => {
-    setVisibleLayers(prev => {
-      const next = { ...prev, [layer]: !prev[layer] }
-      posthog.capture('nearby_layer_toggled', { layer, visible: next[layer] })
-      return next
-    })
-    // Hiding the category a selection lives in would leave an orphaned panel
-    if (visibleLayers[layer] && selectionLayer(selection, corridorById) === layer) {
-      select(null, 'layer-hidden')
-    }
-  }, [visibleLayers, selection, corridorById, select])
-
-  // List taps can target a hidden category — bring its layer back so the
-  // selection actually draws
+  // A list tap can target a painted corridor while painted lanes are hidden —
+  // bring them back so the selection actually draws
   const selectShowing = useCallback((next: Selection, source: string) => {
-    const layer = selectionLayer(next, corridorById)
-    if (layer) setVisibleLayers(prev => (prev[layer] ? prev : { ...prev, [layer]: true }))
+    if (next?.type === 'corridor') {
+      const c = corridorById.get(next.id)
+      if (c?.kind === 'bike' && c.protection === 'painted' && !paintedVisible) onShowPainted()
+    }
     select(next, source)
-  }, [corridorById, select])
+  }, [corridorById, paintedVisible, onShowPainted, select])
 
   return (
     <div>
@@ -74,8 +66,8 @@ export default function CorridorExplorer({
         center={center}
         markers={markers}
         lines={backgroundLines}
-        paintedVisible={visibleLayers.painted}
-        separatedVisible={visibleLayers.bike}
+        paintedVisible={showBike && paintedVisible}
+        separatedVisible={showBike}
         corridorLines={corridorLines}
         selectedCorridorId={highlightedCorridorId}
         onCorridorSelect={(id, source) => {
@@ -114,11 +106,8 @@ export default function CorridorExplorer({
         </div>
       )}
 
-      <MapLegend visible={visibleLayers} onToggle={toggleLayer} />
-
-      {/* Lists mirror the legend toggles — hide a layer on the map and its
-          section below goes with it */}
-      {visibleLayers.transit && (
+      {/* Lists mirror the mode filter — a hidden mode's section goes with it */}
+      {(showRail || showBus) && (
         <StationList
           stations={stations}
           corridorById={corridorById}
@@ -129,7 +118,7 @@ export default function CorridorExplorer({
         />
       )}
 
-      {visibleLayers.bike && (
+      {showBike && (
         <BikeRouteList
           bikeCorridors={bikeCorridors}
           highlightedCorridorId={highlightedCorridorId}
@@ -137,7 +126,7 @@ export default function CorridorExplorer({
         />
       )}
 
-      {visibleLayers.bluebikes && <DockList docks={docks} />}
+      {showBike && <DockList docks={docks} />}
     </div>
   )
 }

@@ -4,8 +4,9 @@ import { useMemo, useState } from 'react'
 import posthog from 'posthog-js'
 import ModeIcon from '@/components/commute/ModeIcon'
 import { reachRouteFeatures } from '@/lib/nearby/route-lines'
-import { modeOptions, hasTransitRoute, hasBikeRoute, defaultRouteMode } from '@/lib/nearby/reach-ui'
+import { modeOptions, hasTransitRoute, hasBikeRoute, defaultRouteMode, reachModeFor } from '@/lib/nearby/reach-ui'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
+import type { ModeFilter } from './useNearbyModel'
 import BikeComfortBlock from './BikeComfortBlock'
 import type { SectionData, ReachRow } from './types'
 import { SectionShell, SkeletonRows, ErrorCard } from './SectionShell'
@@ -17,6 +18,8 @@ interface Props {
   center: { lat: number; lng: number }
   reach: SectionData<ReachRow[]>
   onRetry: () => void
+  /** Page-wide mode filter — that mode's time gets the emphasis in each row */
+  modeFilter?: ModeFilter
 }
 
 /**
@@ -27,7 +30,7 @@ interface Props {
  * the actual route drawn on a compact map (never a popup, never a scroll
  * jump to somewhere else on the page).
  */
-export default function ReachSection({ center, reach, onRetry }: Props) {
+export default function ReachSection({ center, reach, onRetry, modeFilter }: Props) {
   if (reach.status === 'ready' && reach.data.length === 0) return null
 
   return (
@@ -38,7 +41,7 @@ export default function ReachSection({ center, reach, onRetry }: Props) {
     >
       {reach.status === 'loading' && <SkeletonRows count={4} />}
       {reach.status === 'error' && <ErrorCard label="Couldn't compute travel times right now." onRetry={onRetry} />}
-      {reach.status === 'ready' && <ReachList center={center} rows={reach.data} />}
+      {reach.status === 'ready' && <ReachList center={center} rows={reach.data} modeFilter={modeFilter} />}
     </SectionShell>
   )
 }
@@ -46,12 +49,14 @@ export default function ReachSection({ center, reach, onRetry }: Props) {
 /** The destination rows + in-place route expansion. With `onRowTap` the
  *  rows become plain selectors instead (the mobile shell draws the route
  *  on the main map rather than in an embedded mini-map). */
-export function ReachList({ center, rows, onRowTap }: {
+export function ReachList({ center, rows, onRowTap, modeFilter }: {
   center: { lat: number; lng: number }
   rows: ReachRow[]
   onRowTap?: (row: ReachRow) => void
+  modeFilter?: ModeFilter
 }) {
   const [expanded, setExpanded] = useState<{ id: string; mode: 'transit' | 'bike' } | null>(null)
+  const preferred = reachModeFor(modeFilter ?? 'all')
 
   function toggleRow(row: ReachRow) {
     if (onRowTap) {
@@ -62,7 +67,7 @@ export function ReachList({ center, rows, onRowTap }: {
       setExpanded(null)
       return
     }
-    const mode = defaultRouteMode(row)
+    const mode = defaultRouteMode(row, preferred ?? undefined)
     setExpanded({ id: row.id, mode })
     posthog.capture('reach_route_viewed', { destination: row.id, mode })
   }
@@ -78,6 +83,9 @@ export function ReachList({ center, rows, onRowTap }: {
       <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#242538]">
           {rows.map((row, i) => {
             const options = modeOptions(row)
+            // Fastest gets the emphasis — unless the page's mode filter names
+            // a mode, in which case that mode's time is the headline
+            const emphasisIdx = preferred ? Math.max(0, options.findIndex(o => o.key === preferred)) : 0
             const drawable = hasTransitRoute(row) || hasBikeRoute(row)
             const isOpen = expanded?.id === row.id
 
@@ -130,10 +138,10 @@ export function ReachList({ center, rows, onRowTap }: {
                     <div
                       key={o.key}
                       className={`flex items-center justify-end gap-2 ${
-                        j === 0 ? 'text-[0.9rem] font-bold text-[#BAF14D]' : 'text-[0.8rem] text-white/80'
+                        j === emphasisIdx ? 'text-[0.9rem] font-bold text-[#BAF14D]' : 'text-[0.8rem] text-white/80'
                       }`}
                     >
-                      <ModeIcon mode={o.key} size={j === 0 ? 16 : 14} />
+                      <ModeIcon mode={o.key} size={j === emphasisIdx ? 16 : 14} />
                       <span>{o.label}</span>
                       <span className="min-w-[64px] text-right tabular-nums">
                         {o.estimate ? '~' : ''}{o.minutes} min

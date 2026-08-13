@@ -36,12 +36,8 @@ export function canonicalStreetKey(name: string): string {
     .filter(Boolean)
     .map(w => SUFFIXES[w] ?? w)
     .join(' ')
-}
-
-/** Stable corridor id for a street name — the corridor builder and anything
- *  that references a corridor by name alone must agree on this. */
-export function bikeCorridorIdForName(name: string): string {
-  return `bike:${canonicalStreetKey(name).replace(/[^a-z0-9]+/g, '-')}`
+    // "X Bike Path" and "X Path" are the same facility to our sources
+    .replace(/\bbike path\b/, 'path')
 }
 
 const isShouty = (s: string) => s === s.toUpperCase() && /[A-Z]/.test(s)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
@@ -22,20 +22,13 @@ export type Selection =
   | { type: 'reach'; id: string; mode: 'transit' | 'bike' }
   | null
 
-/** Legend-controlled map layer visibility — every legend entry is a toggle. */
-export interface VisibleLayers {
-  transit: boolean
-  bike: boolean
-  bluebikes: boolean
-  painted: boolean
-}
+/** Page-wide mode filter — one selector drives the map layers AND the lists
+ *  below it, so the page shows only what the rider cares about right now. */
+export type ModeFilter = 'all' | 'train' | 'bus' | 'bike'
 
-export const DEFAULT_VISIBLE_LAYERS: VisibleLayers = {
-  transit: true,
-  bike: true,
-  bluebikes: true,
-  painted: false,
-}
+export const MODE_FILTER_DEFAULT: ModeFilter = 'all'
+/** Painted lanes are the network's connective tissue — visible by default. */
+export const PAINTED_DEFAULT = true
 
 /* ── Station grouping (by name — MBTA lists each platform separately) ── */
 
@@ -92,21 +85,6 @@ export function freqShort(freq: TransitCorridor['frequency']): string | null {
   return null
 }
 
-/** Which legend layer a selection belongs to — used to clear a selection
- *  when its category is hidden, and to re-show a category on list select. */
-export function selectionLayer(
-  sel: Selection,
-  corridorById: Map<string, TransitCorridor | BikeCorridor>,
-): keyof VisibleLayers | null {
-  if (!sel) return null
-  if (sel.type === 'station') return 'transit'
-  if (sel.type === 'dock') return 'bluebikes'
-  if (sel.type === 'corridor') return corridorById.get(sel.id)?.kind === 'bike' ? 'bike' : 'transit'
-  if (sel.type === 'lane') return sel.info.quality === 'painted' ? 'painted' : 'bike'
-  // reach routes draw their own geometry — not tied to any legend layer
-  return null
-}
-
 /* ── The model hook ── */
 
 export interface NearbyModelInput {
@@ -116,17 +94,21 @@ export interface NearbyModelInput {
   rail: MBTAStopLive[]
   bus: MBTAStopLive[]
   docks: BluebikeStationLive[]
-  /** Hidden categories drop out of markers + corridor lines (default: all visible) */
-  visibleLayers?: VisibleLayers
+  /** Page-wide mode filter — hidden modes drop out of markers, lines, AND lists */
+  modeFilter?: ModeFilter
+  /** Painted-lane sub-toggle (only meaningful in All/Bike views) */
+  paintedVisible?: boolean
 }
 
 export function useNearbyModel({
   center, transitCorridors, bikeCorridors, rail, bus, docks,
-  visibleLayers,
+  modeFilter, paintedVisible,
 }: NearbyModelInput) {
-  const showTransit = visibleLayers?.transit ?? true
-  const showBike = visibleLayers?.bike ?? true
-  const showBluebikes = visibleLayers?.bluebikes ?? true
+  const mode = modeFilter ?? MODE_FILTER_DEFAULT
+  const painted = paintedVisible ?? PAINTED_DEFAULT
+  const showRail = mode === 'all' || mode === 'train'
+  const showBus = mode === 'all' || mode === 'bus'
+  const showBike = mode === 'all' || mode === 'bike'
   const [selection, setSelection] = useState<Selection>(null)
 
   const corridorById = useMemo(() => {
@@ -137,12 +119,17 @@ export function useNearbyModel({
   }, [transitCorridors, bikeCorridors])
 
   // Stations, with any corridor whose boarding stop didn't make the nearby
-  // cut appended as its own card — every line stays reachable from the list
+  // cut appended as its own card — every line stays reachable from the list.
+  // The mode filter decides which families (rail vs bus) appear at all.
   const stations = useMemo(() => {
-    const groups = [...groupStops(rail, true).slice(0, 4), ...groupStops(bus, false).slice(0, 5)]
+    const groups = [
+      ...(showRail ? groupStops(rail, true).slice(0, 4) : []),
+      ...(showBus ? groupStops(bus, false).slice(0, 5) : []),
+    ]
     const covered = new Set(groups.flatMap(g => g.routes.map(r => r.id)))
     for (const c of transitCorridors) {
-      if (covered.has(c.routeId)) continue
+      const visible = c.kind === 'bus' ? showBus : showRail
+      if (!visible || covered.has(c.routeId)) continue
       const key = c.access.stopName.toLowerCase()
       let g = groups.find(x => x.key === key)
       if (!g) {
@@ -156,17 +143,22 @@ export function useNearbyModel({
       covered.add(c.routeId)
     }
     return groups
-  }, [rail, bus, transitCorridors])
+  }, [rail, bus, transitCorridors, showRail, showBus])
 
   const stationByKey = useMemo(() => new Map(stations.map(s => [s.key, s])), [stations])
 
   const corridorLines = useMemo<GeoJSON.FeatureCollection>(() => ({
     type: 'FeatureCollection',
     features: [
-      ...(showTransit ? transitCorridors.flatMap(c => c.shape?.features ?? []) : []),
-      ...(showBike ? bikeCorridors.flatMap(c => c.geojson.features) : []),
+      ...transitCorridors
+        .filter(c => (c.kind === 'bus' ? showBus : showRail))
+        .flatMap(c => c.shape?.features ?? []),
+      // Painted corridors follow the painted toggle, matching the legend
+      ...(showBike
+        ? bikeCorridors.filter(c => c.protection !== 'painted' || painted).flatMap(c => c.geojson.features)
+        : []),
     ],
-  }), [transitCorridors, bikeCorridors, showTransit, showBike])
+  }), [transitCorridors, bikeCorridors, showRail, showBus, showBike, painted])
 
   // The map highlights a corridor when one is selected — directly, or via a
   // station that only one line serves
@@ -187,6 +179,26 @@ export function useNearbyModel({
     }
   }, [])
 
+  // Filtering away the mode a selection lives in would leave an orphaned
+  // detail panel pointing at nothing on the map — clear it instead
+  useEffect(() => {
+    if (!selection) return
+    let hidden = false
+    if (selection.type === 'station') {
+      hidden = !stationByKey.has(selection.key)
+    } else if (selection.type === 'dock') {
+      hidden = !showBike
+    } else if (selection.type === 'lane') {
+      hidden = !showBike || (selection.info.quality === 'painted' && !painted)
+    } else if (selection.type === 'corridor') {
+      const c = corridorById.get(selection.id)
+      if (!c) hidden = true
+      else if (c.kind === 'bike') hidden = !showBike || (c.protection === 'painted' && !painted)
+      else hidden = c.kind === 'bus' ? !showBus : !showRail
+    }
+    if (hidden) setSelection(null)
+  }, [selection, stationByKey, corridorById, showRail, showBus, showBike, painted])
+
   const handleMarkerTap = useCallback((id: string) => {
     if (id.startsWith('rail-') || id.startsWith('bus-')) {
       select({ type: 'station', key: id.replace(/^(rail|bus)-/, '') }, 'map')
@@ -197,7 +209,7 @@ export function useNearbyModel({
 
   const markers = useMemo<NearbyMarker[]>(() => [
     { id: 'user', lat: center.lat, lng: center.lng, html: userDotHtml(), zIndex: 10 },
-    ...(showTransit ? groupStops(rail, true).slice(0, 4).map(g => ({
+    ...(showRail ? groupStops(rail, true).slice(0, 4).map(g => ({
       id: `rail-${g.key}`,
       lat: g.lat,
       lng: g.lng,
@@ -206,7 +218,7 @@ export function useNearbyModel({
       analyticsType: 'train',
       zIndex: 3,
     })) : []),
-    ...(showTransit ? groupStops(bus, false).slice(0, 5).map(g => ({
+    ...(showBus ? groupStops(bus, false).slice(0, 5).map(g => ({
       id: `bus-${g.key}`,
       lat: g.lat,
       lng: g.lng,
@@ -215,7 +227,7 @@ export function useNearbyModel({
       analyticsType: 'bus',
       zIndex: 2,
     })) : []),
-    ...(showBluebikes ? docks.slice(0, 8).map(d => ({
+    ...(showBike ? docks.slice(0, 8).map(d => ({
       id: `dock-${d.station_id}`,
       lat: d.lat,
       lng: d.lng,
@@ -224,7 +236,7 @@ export function useNearbyModel({
       analyticsType: 'bluebike',
       zIndex: 1,
     })) : []),
-  ], [center, rail, bus, docks, corridorById, showTransit, showBluebikes])
+  ], [center, rail, bus, docks, corridorById, showRail, showBus, showBike])
 
   // Boarding locations belong in the first frame even when their stations
   // didn't make the marker cut
@@ -241,5 +253,6 @@ export function useNearbyModel({
     corridorById, stations, stationByKey,
     corridorLines, highlightedCorridorId,
     markers, accessPoints,
+    showRail, showBus, showBike,
   }
 }

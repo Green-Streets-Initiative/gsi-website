@@ -3,11 +3,7 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  Calendar as CalendarIcon, List, Search, Navigation, MapPin,
-  Bike, Zap, Package, Footprints, Bus, Megaphone, PartyPopper,
-  GraduationCap, Wrench, Flag, Users,
-} from 'lucide-react'
+import { Calendar as CalendarIcon, List, Search, Navigation } from 'lucide-react'
 import {
   type CommunityEvent, getTypeMeta, haversine, parseEventDate,
   dateKey, groupLabel, todayKey, DEFAULT_LOCATION,
@@ -16,12 +12,6 @@ import {
 import CalendarGrid from './CalendarGrid'
 import EventCard from './EventCard'
 import CityAutocomplete from './CityAutocomplete'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
-  Bike, Zap, Package, Footprints, Bus, Megaphone, PartyPopper,
-  MapPin, CalendarIcon, GraduationCap, Wrench, Flag, Users,
-}
 
 // ---------------------------------------------------------------------------
 // Distance pills

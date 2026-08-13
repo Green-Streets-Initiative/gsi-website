@@ -203,11 +203,64 @@ function featureLengthMeters(f: LaneFeatureLike): number {
   return total
 }
 
+/** Split a street's features into spatially contiguous clusters. Metro areas
+ *  reuse street names — Broadway exists in Somerville, Cambridge, Everett AND
+ *  Boston — and grouping by name alone merges physically different streets
+ *  into one highlight (same fix as the town heatmaps' corridor clustering).
+ *  Single-link union-find: features join a cluster when any pair of sampled
+ *  vertices sits within CLUSTER_M. */
+function clusterFeatures(features: LaneFeatureLike[]): LaneFeatureLike[][] {
+  const CLUSTER_M = 400
+  // A handful of sampled vertices per feature keeps the pairwise test cheap
+  const samples = features.map(f => {
+    const c = f.geometry.coordinates
+    const step = Math.max(1, Math.floor(c.length / 8))
+    const pts: [number, number][] = []
+    for (let i = 0; i < c.length; i += step) pts.push(c[i])
+    pts.push(c[c.length - 1])
+    return pts
+  })
+  const near = (a: number, b: number): boolean => {
+    for (const [ax, ay] of samples[a]) {
+      for (const [bx, by] of samples[b]) {
+        // Degree prefilter (~440+ m) before the exact distance
+        if (Math.abs(ay - by) > 0.004 || Math.abs(ax - bx) > 0.005) continue
+        if (haversineMeters(ay, ax, by, bx) <= CLUSTER_M) return true
+      }
+    }
+    return false
+  }
+  const parent = features.map((_, i) => i)
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])))
+  for (let i = 0; i < features.length; i++) {
+    for (let j = i + 1; j < features.length; j++) {
+      if (find(i) !== find(j) && near(i, j)) parent[find(i)] = find(j)
+    }
+  }
+  const byRoot = new Map<number, LaneFeatureLike[]>()
+  features.forEach((f, i) => {
+    const root = find(i)
+    const list = byRoot.get(root) ?? []
+    list.push(f)
+    byRoot.set(root, list)
+  })
+  return [...byRoot.values()]
+}
+
+const MAX_BIKE_CORRIDORS = 8
+
+export interface BikeCorridorBuild {
+  corridors: BikeCorridor[]
+  /** Source features a listed corridor claimed — everything else should stay
+   *  drawn as background lanes (identity match against the network GeoJSON) */
+  claimed: Set<unknown>
+}
+
 export function buildBikeCorridors(
   network: GeoJSON.FeatureCollection,
   lat: number,
   lng: number,
-): BikeCorridor[] {
+): BikeCorridorBuild {
   // Group by canonical street key so "Somerville Ave" / "SOMERVILLE AVE" /
   // "Somerville Avenue" (three sources, three spellings) count as ONE street
   const groups = new Map<string, { variants: Map<string, number>; features: LaneFeatureLike[] }>()
@@ -222,18 +275,34 @@ export function buildBikeCorridors(
     groups.set(key, g)
   }
 
-  const corridors: BikeCorridor[] = []
+  const candidates: { corridor: BikeCorridor; source: LaneFeatureLike[]; score: number }[] = []
   for (const [key, group] of groups) {
+    // Per name, only the spatially contiguous cluster NEAREST the visitor
+    // becomes a card — the other towns' same-named streets stay background
+    const clusters = clusterFeatures(group.features)
+    let cluster: LaneFeatureLike[] = []
+    let nearestM = Infinity
+    let nearestPt = { lat, lng }
+    for (const c of clusters) {
+      let cNearest = Infinity
+      let cPt = { lat, lng }
+      for (const f of c) {
+        for (const [x, y] of f.geometry.coordinates) {
+          const d = haversineMeters(lat, lng, y, x)
+          if (d < cNearest) { cNearest = d; cPt = { lat: y, lng: x } }
+        }
+      }
+      if (cNearest < nearestM) { nearestM = cNearest; nearestPt = cPt; cluster = c }
+    }
+    if (cluster.length === 0) continue
+
     // The three sources draw overlapping duplicates, so summing everything
     // over-counts; per-source totals with max-across-sources is an honest
     // approximation of real length within the loaded radius.
     const totalBySource = new Map<string, number>()
     const pathBySource = new Map<string, number>()
     const comfortableBySource = new Map<string, number>() // path + protected
-    let nearestM = Infinity
-    let nearestPt = { lat, lng }
-
-    for (const f of group.features) {
+    for (const f of cluster) {
       const len = featureLengthMeters(f)
       const src = f.properties.source
       totalBySource.set(src, (totalBySource.get(src) ?? 0) + len)
@@ -242,10 +311,6 @@ export function buildBikeCorridors(
       }
       if (f.properties.quality !== 'painted') {
         comfortableBySource.set(src, (comfortableBySource.get(src) ?? 0) + len)
-      }
-      for (const [x, y] of f.geometry.coordinates) {
-        const d = haversineMeters(lat, lng, y, x)
-        if (d < nearestM) { nearestM = d; nearestPt = { lat: y, lng: x } }
       }
     }
 
@@ -266,24 +331,40 @@ export function buildBikeCorridors(
 
     const corridorId = `bike:${key.replace(/[^a-z0-9]+/g, '-')}`
     // Color must be stamped here — the map's corridor layer reads
-    // properties.color, and a missing value renders invisibly on dark
+    // properties.color, and a missing value renders invisibly on dark.
+    // Painted corridors carry dash:1 so they render through the dashed twin
+    // layer, matching the legend's "dashed blue = painted" language.
     const color = protection === 'painted' ? '#7FB5FF' : '#BAF14D'
-    const features = group.features.map(f => ({
+    const features = cluster.map(f => ({
       ...f,
-      properties: { ...f.properties, corridorId, color, kind: 'bike' },
+      properties: {
+        ...f.properties, corridorId, color, kind: 'bike',
+        ...(protection === 'painted' ? { dash: 1 } : {}),
+      },
     }))
 
-    corridors.push({
-      id: corridorId,
-      kind: 'bike',
-      name: displayStreetName(group.variants),
-      protection,
-      lengthMiles: Math.round(lengthMiles * 10) / 10,
-      accessDistanceMeters: Math.round(nearestM),
-      accessPoint: nearestPt,
-      geojson: { type: 'FeatureCollection', features: features as unknown as GeoJSON.Feature[] },
+    candidates.push({
+      corridor: {
+        id: corridorId,
+        kind: 'bike',
+        name: displayStreetName(group.variants),
+        protection,
+        lengthMiles: Math.round(lengthMiles * 10) / 10,
+        accessDistanceMeters: Math.round(nearestM),
+        accessPoint: nearestPt,
+        geojson: { type: 'FeatureCollection', features: features as unknown as GeoJSON.Feature[] },
+      },
+      source: cluster,
+      // Nearness-aware ranking: a reachable connector beats a long street a
+      // mile away — this is a "what can I actually use" list
+      score: lengthMiles / (1 + nearestM / 1609.34),
     })
   }
 
-  return corridors.sort((a, b) => b.lengthMiles - a.lengthMiles).slice(0, 6)
+  const kept = candidates.sort((a, b) => b.score - a.score).slice(0, MAX_BIKE_CORRIDORS)
+  const claimed = new Set<unknown>()
+  for (const k of kept) {
+    for (const f of k.source) claimed.add(f)
+  }
+  return { corridors: kept.map(k => k.corridor), claimed }
 }

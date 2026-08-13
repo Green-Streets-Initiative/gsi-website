@@ -1,8 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
-import { formatDistance, walkTimeMinutes } from '@/lib/wayfinding/geo'
+import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import { BLUEBIKES_NOTE } from '@/lib/nearby/config'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
@@ -11,60 +12,14 @@ import { dockStatsText } from './markers'
 import type { SectionStatus } from './types'
 import { SkeletonRows, ErrorCard } from './SectionShell'
 import {
-  type StationGroup, type VisibleLayers, routeTermini, freqShort,
+  type StationGroup, routeTermini, soonestAtStation, freqShort,
 } from './useNearbyModel'
 
 /**
  * The browsable lists under the map: stations (landmarks first), bike
- * corridors, Bluebikes docks — plus the map legend, where every entry is a
- * toggle so riders can hide categories and focus the map.
+ * corridors, Bluebikes docks. What appears here follows the page's mode
+ * filter (ModeFilterChips) — the old per-layer legend lives on in it.
  */
-
-/* ── Legend: every entry shows/hides its map layer ── */
-
-const legendChipClass = (on: boolean) =>
-  `flex items-center gap-1.5 rounded-full border px-3 py-1 font-semibold transition-colors ${
-    on
-      ? 'border-white/[0.25] bg-white/[0.06] text-white'
-      : 'border-white/[0.12] text-white/70 opacity-70 hover:border-white/[0.3]'
-  }`
-
-export function MapLegend({ visible, onToggle }: {
-  visible: VisibleLayers
-  onToggle: (layer: keyof VisibleLayers) => void
-}) {
-  return (
-    <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[0.75rem] text-white/75">
-      <button onClick={() => onToggle('transit')} aria-pressed={visible.transit} className={legendChipClass(visible.transit)}>
-        <span className={`flex items-center gap-0.5 ${visible.transit ? 'text-white/90' : 'text-white/60'}`}>
-          <TrainIcon size={13} />
-          <BusIcon size={13} />
-        </span>
-        T &amp; bus routes
-      </button>
-      <button onClick={() => onToggle('bike')} aria-pressed={visible.bike} className={legendChipClass(visible.bike)}>
-        <span className={`inline-block h-[3px] w-6 rounded bg-[#BAF14D] ${visible.bike ? '' : 'opacity-40'}`} />
-        Comfortable bike routes
-      </button>
-      <button onClick={() => onToggle('bluebikes')} aria-pressed={visible.bluebikes} className={legendChipClass(visible.bluebikes)}>
-        <span className={`flex h-4 w-4 items-center justify-center rounded-full bg-[#2B6CB0] text-[8px] font-bold text-white ${visible.bluebikes ? '' : 'opacity-40'}`}>4</span>
-        Bluebikes
-      </button>
-      <button
-        onClick={() => onToggle('painted')}
-        aria-pressed={visible.painted}
-        className={`flex items-center gap-1.5 rounded-full border px-3 py-1 font-semibold transition-colors ${
-          visible.painted
-            ? 'border-[#7FB5FF]/60 bg-[#7FB5FF]/15 text-white'
-            : 'border-white/[0.15] text-white/75 hover:border-white/[0.3]'
-        }`}
-      >
-        <span className="inline-block h-[3px] w-6 rounded [background-image:repeating-linear-gradient(90deg,#7FB5FF_0_5px,transparent_5px_9px)]" />
-        {visible.painted ? 'Painted lanes shown' : 'Show painted lanes too'}
-      </button>
-    </div>
-  )
-}
 
 /* ── Stations first: the landmarks people actually navigate by ── */
 
@@ -81,6 +36,21 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
   onRetry: () => void
   onSelectRoute: (corridorId: string) => void
 }) {
+  // Collapsed by default — the summary line answers "what's here, how soon";
+  // the per-direction detail expands in place for whoever wants it
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const toggleCard = (key: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else {
+        next.add(key)
+        posthog.capture('snapshot_station_expanded', { station: key })
+      }
+      return next
+    })
+  }
+
   return (
     <div className="mt-5">
       <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
@@ -94,65 +64,102 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
         </p>
       )}
       <div className="space-y-2.5">
-        {stations.map(st => (
-          <div key={`${st.isRail ? 'r' : 'b'}-${st.key}`} className="rounded-xl border border-white/[0.08] bg-[#242538] px-3 py-3">
-            {/* Station identity leads — the glyph says train or bus at a glance */}
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 px-1.5">
-              <span className="flex items-center gap-1.5 text-[0.95rem] font-bold text-white">
-                <span className="text-white/80">{st.isRail ? <TrainIcon size={15} /> : <BusIcon size={15} />}</span>
-                {st.name}
-              </span>
-              <span className="text-[0.78rem] text-white/75">
-                {walkTimeMinutes(st.dist)} min walk · {formatDistance(st.dist)}
-              </span>
-            </div>
-            {/* Lines serving it — tap one to light it up on the map */}
-            <div className="mt-1.5 space-y-0.5">
-              {st.routes.map(r => {
-                const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
-                const active = highlightedCorridorId === `transit:${r.id}`
-                const fs = corridor ? freqShort(corridor.frequency) : null
-                const dirs = r.arrivals.filter(a => a.direction)
-                return (
-                  <button
-                    key={r.id}
-                    onClick={() => onSelectRoute(`transit:${r.id}`)}
-                    className={rowClass(active)}
-                  >
-                    <span
-                      className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-                      style={{ backgroundColor: corridor?.color ?? '#666', color: corridor?.textColor ?? '#fff' }}
-                    >
-                      {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
-                    </span>
-                    <span className="ml-auto text-[0.75rem] text-white/75">
-                      {corridor?.frequency === null && <span className="inline-block h-3 w-20 animate-pulse rounded bg-white/[0.08] align-middle" aria-hidden="true" />}
-                      {corridor?.frequency === 'unavailable' && 'schedule unavailable'}
-                      {fs}
-                    </span>
-                    {/* One line per direction — a new rider needs to know which WAY the next one is going */}
-                    {dirs.length > 0 ? (
-                      <span className="w-full space-y-0.5">
-                        {dirs.map(a => (
-                          <span key={a.direction} className="flex items-baseline justify-between gap-2">
-                            <span className="min-w-0 truncate text-[0.8rem] text-white/80">→ {a.direction}</span>
-                            {a.nextMin !== null && (
-                              <strong className="shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
-                                {a.nextMin === 0 ? 'now' : `in ${a.nextMin} min`}
-                              </strong>
-                            )}
+        {stations.map(st => {
+          const cardKey = `${st.isRail ? 'r' : 'b'}-${st.key}`
+          const open = expanded.has(cardKey)
+          return (
+            <div key={cardKey} className="rounded-xl border border-white/[0.08] bg-[#242538] px-3 py-3">
+              {/* Header + compact summary toggle the card open; the full
+                  per-direction detail only takes space when asked for */}
+              <button
+                onClick={() => toggleCard(cardKey)}
+                aria-expanded={open}
+                className="w-full px-1.5 text-left"
+              >
+                <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                  <span className="flex items-center gap-1.5 text-[0.95rem] font-bold text-white">
+                    <span className="text-white/80">{st.isRail ? <TrainIcon size={15} /> : <BusIcon size={15} />}</span>
+                    {st.name}
+                  </span>
+                  <span className="text-[0.78rem] text-white/75">
+                    {walkTimeMinutes(st.dist)} min walk · {formatDistance(st.dist)}
+                    <span className="ml-1.5 font-semibold text-[#BAF14D]">{open ? '▴' : '▾'}</span>
+                  </span>
+                </span>
+                {!open && (
+                  <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {st.routes.map(r => {
+                      const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
+                      const next = soonestAtStation(r)
+                      return (
+                        <span key={r.id} className="flex items-center gap-1.5">
+                          <span
+                            className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                            style={{ backgroundColor: corridor?.color ?? '#666', color: corridor?.textColor ?? '#fff' }}
+                          >
+                            {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
                           </span>
-                        ))}
-                      </span>
-                    ) : (
-                      <span className="min-w-0 flex-1 truncate text-[0.8rem] text-white/80">{routeTermini(r)}</span>
-                    )}
-                  </button>
-                )
-              })}
+                          {next !== null && (
+                            <strong className="text-[0.75rem] font-bold text-[#BAF14D]">
+                              {next === 0 ? 'now' : `in ${next} min`}
+                            </strong>
+                          )}
+                        </span>
+                      )
+                    })}
+                  </span>
+                )}
+              </button>
+              {/* Lines serving it — tap one to light it up on the map */}
+              {open && (
+                <div className="mt-1.5 space-y-0.5">
+                  {st.routes.map(r => {
+                    const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
+                    const active = highlightedCorridorId === `transit:${r.id}`
+                    const fs = corridor ? freqShort(corridor.frequency) : null
+                    const dirs = r.arrivals.filter(a => a.direction)
+                    return (
+                      <button
+                        key={r.id}
+                        onClick={() => onSelectRoute(`transit:${r.id}`)}
+                        className={rowClass(active)}
+                      >
+                        <span
+                          className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                          style={{ backgroundColor: corridor?.color ?? '#666', color: corridor?.textColor ?? '#fff' }}
+                        >
+                          {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
+                        </span>
+                        <span className="ml-auto text-[0.75rem] text-white/75">
+                          {corridor?.frequency === null && <span className="inline-block h-3 w-20 animate-pulse rounded bg-white/[0.08] align-middle" aria-hidden="true" />}
+                          {corridor?.frequency === 'unavailable' && 'schedule unavailable'}
+                          {fs}
+                        </span>
+                        {/* One line per direction — a new rider needs to know which WAY the next one is going */}
+                        {dirs.length > 0 ? (
+                          <span className="w-full space-y-0.5">
+                            {dirs.map(a => (
+                              <span key={a.direction} className="flex items-baseline justify-between gap-2">
+                                <span className="min-w-0 truncate text-[0.8rem] text-white/80">→ {a.direction}</span>
+                                {a.nextMin !== null && (
+                                  <strong className="shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
+                                    {a.nextMin === 0 ? 'now' : `in ${a.nextMin} min`}
+                                  </strong>
+                                )}
+                              </span>
+                            ))}
+                          </span>
+                        ) : (
+                          <span className="min-w-0 flex-1 truncate text-[0.8rem] text-white/80">{routeTermini(r)}</span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
@@ -190,7 +197,7 @@ export function BikeRouteList({ bikeCorridors, highlightedCorridorId, onSelect }
               {c.protection === 'painted' && <span className="text-white/80">Painted lane — paint marks your space</span>}
             </div>
             <div className="mt-1 text-[0.8rem] text-white/80">
-              {c.lengthMiles} mi through this area · nearest point {walkTimeMinutes(c.accessDistanceMeters)} min walk ({formatDistance(c.accessDistanceMeters)})
+              {c.lengthMiles} mi through this area · nearest point {bikeTimeMinutes(c.accessDistanceMeters)} min ride ({formatDistance(c.accessDistanceMeters)})
             </div>
           </button>
         ))}

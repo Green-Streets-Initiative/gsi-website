@@ -274,8 +274,9 @@ function matchBikeCorridors(encodedPolyline: string, index: LaneVertex[]): Reach
     }
   }
 
-  const hits = new Map<string, { variants: Map<string, number>; count: number; separated: number }>()
-  for (const [slat, slng] of samples) {
+  const hits = new Map<string, { variants: Map<string, number>; count: number; separated: number; firstIdx: number }>()
+  for (let s = 0; s < samples.length; s++) {
+    const [slat, slng] = samples[s]
     let best: LaneVertex | null = null
     let bestD = MATCH_RADIUS_METERS
     for (const v of index) {
@@ -286,17 +287,20 @@ function matchBikeCorridors(encodedPolyline: string, index: LaneVertex[]): Reach
       if (d < bestD) { bestD = d; best = v }
     }
     if (!best?.key || !best.display) continue
-    const h = hits.get(best.key) ?? { variants: new Map(), count: 0, separated: 0 }
+    const h = hits.get(best.key) ?? { variants: new Map(), count: 0, separated: 0, firstIdx: s }
     h.variants.set(best.display, (h.variants.get(best.display) ?? 0) + 1)
     h.count++
     if (best.quality !== 'painted') h.separated++
     hits.set(best.key, h)
   }
 
+  // Top corridors by coverage, then presented in TRAVEL ORDER — the chip
+  // chain reads as the actual journey, first leg first
   return [...hits.values()]
     .filter(h => h.count / samples.length >= MIN_COVERAGE)
     .sort((a, b) => b.count - a.count)
-    .slice(0, 2)
+    .slice(0, 3)
+    .sort((a, b) => a.firstIdx - b.firstIdx)
     .map(h => {
       const protectedDominant = h.separated / h.count >= 0.5
       return {
@@ -387,7 +391,7 @@ function scoreBikeComfort(
   }
 
   // Per-street rollup: dominant tier + mileage per named street
-  const byStreet = new Map<string, { variants: Map<string, number>; meters: Record<ComfortRating, number> }>()
+  const byStreet = new Map<string, { variants: Map<string, number>; meters: Record<ComfortRating, number>; firstIdx: number }>()
   const meterByRating: Record<ComfortRating, number> = { protected: 0, bike_lane: 0, shared_road: 0 }
   for (let s = 0; s < samples.length; s++) {
     const startIdx = samples[s].idx
@@ -397,14 +401,16 @@ function scoreBikeComfort(
     meterByRating[samples[s].rating] += meters
     const key = samples[s].streetKey
     if (!key || !samples[s].streetDisplay) continue
-    const st = byStreet.get(key) ?? { variants: new Map(), meters: { protected: 0, bike_lane: 0, shared_road: 0 } }
+    const st = byStreet.get(key) ?? { variants: new Map(), meters: { protected: 0, bike_lane: 0, shared_road: 0 }, firstIdx: s }
     st.variants.set(samples[s].streetDisplay!, (st.variants.get(samples[s].streetDisplay!) ?? 0) + 1)
     st.meters[samples[s].rating] += meters
     byStreet.set(key, st)
   }
 
-  const streets: StreetComfort[] = [...byStreet.values()]
-    .map(st => {
+  // Longest streets make the list, but they're presented in TRAVEL ORDER —
+  // the list reads start-of-ride first, matching the map
+  const streets: StreetComfort[] = [...byStreet.entries()]
+    .map(([, st]) => {
       const entries = Object.entries(st.meters) as [ComfortRating, number][]
       entries.sort((a, b) => b[1] - a[1])
       const totalStreetM = entries.reduce((a, [, m]) => a + m, 0)
@@ -412,11 +418,14 @@ function scoreBikeComfort(
         label: displayStreetName(st.variants),
         rating: entries[0][0],
         distance_mi: Math.round((totalStreetM / 1609.34) * 10) / 10,
+        firstIdx: st.firstIdx,
       }
     })
     .filter(st => st.distance_mi >= 0.1)
     .sort((a, b) => b.distance_mi - a.distance_mi)
     .slice(0, 6)
+    .sort((a, b) => a.firstIdx - b.firstIdx)
+    .map(({ label, rating, distance_mi }) => ({ label, rating, distance_mi }))
 
   const rating: BikeComfort['rating'] =
     meterByRating.protected / totalM >= 0.8 ? 'protected'
@@ -458,8 +467,8 @@ export async function GET(req: NextRequest) {
 
   const lat3 = Math.round(lat * 1000) / 1000
   const lng3 = Math.round(lng * 1000) / 1000
-  // v3: comfort-first bike routes + bike_comfort breakdown — don't serve older shapes
-  const cacheKey = `v3:${lat3},${lng3}`
+  // v4: bike chips + comfort streets are in travel order — don't serve older ordering
+  const cacheKey = `v4:${lat3},${lng3}`
 
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) {

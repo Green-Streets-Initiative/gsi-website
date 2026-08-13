@@ -7,7 +7,7 @@ import type { BluebikeStationLive, MBTAStopLive, SheetSnap } from '@/lib/wayfind
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import ModeIcon from '@/components/commute/ModeIcon'
 import { reachRouteFeatures } from '@/lib/nearby/route-lines'
-import { defaultRouteMode } from '@/lib/nearby/reach-ui'
+import { defaultRouteMode, reachModeFor } from '@/lib/nearby/reach-ui'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import BikeComfortBlock from './BikeComfortBlock'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
@@ -15,11 +15,12 @@ import NearbyMap, { type FitPadding, type NearbyMarker } from './NearbyMap'
 import { destinationPinHtml } from './markers'
 import NearbySheet from './NearbySheet'
 import {
-  useNearbyModel, selectionLayer, DEFAULT_VISIBLE_LAYERS,
-  type Selection, type VisibleLayers,
+  useNearbyModel, MODE_FILTER_DEFAULT, PAINTED_DEFAULT,
+  type ModeFilter, type Selection,
 } from './useNearbyModel'
 import { DetailContent } from './DetailPanel'
-import { MapLegend, StationList, BikeRouteList, DockList } from './AroundYouLists'
+import ModeFilterChips from './ModeFilterChips'
+import { StationList, BikeRouteList, DockList } from './AroundYouLists'
 import { ReachList } from './ReachSection'
 import { ExploreBody, GuidesBlock } from './EventsGuides'
 import { SkeletonRows, ErrorCard } from './SectionShell'
@@ -70,15 +71,18 @@ export default function NearbyShell({
 }: Props) {
   const [tab, setTab] = useState<Tab>('transit')
   const [snap, setSnap] = useState<SheetSnap>('half')
-  const [visibleLayers, setVisibleLayers] = useState<VisibleLayers>(DEFAULT_VISIBLE_LAYERS)
+  const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
+  const [paintedOn, setPaintedOn] = useState(PAINTED_DEFAULT)
 
   const model = useNearbyModel({
-    center, transitCorridors, bikeCorridors, rail, bus, docks, visibleLayers,
+    center, transitCorridors, bikeCorridors, rail, bus, docks,
+    modeFilter, paintedVisible: paintedOn,
   })
   const {
     selection, select, handleMarkerTap,
     corridorById, stations, stationByKey,
     corridorLines, highlightedCorridorId, markers, accessPoints,
+    showRail, showBus, showBike,
   } = model
 
   // The screen is the app. The shell is position:fixed, so the page behind
@@ -125,22 +129,15 @@ export default function NearbyShell({
     setSnap('half')
   }, [handleMarkerTap])
 
-  const toggleLayer = useCallback((layer: keyof VisibleLayers) => {
-    setVisibleLayers(prev => {
-      const next = { ...prev, [layer]: !prev[layer] }
-      posthog.capture('nearby_layer_toggled', { layer, visible: next[layer] })
-      return next
-    })
-    if (visibleLayers[layer] && selectionLayer(selection, corridorById) === layer) {
-      select(null, 'layer-hidden')
-    }
-  }, [visibleLayers, selection, corridorById, select])
-
+  // A list tap can target a painted corridor while painted lanes are hidden —
+  // bring them back so the selection actually draws
   const selectShowing = useCallback((next: Selection, source: string) => {
-    const layer = selectionLayer(next, corridorById)
-    if (layer) setVisibleLayers(prev => (prev[layer] ? prev : { ...prev, [layer]: true }))
+    if (next?.type === 'corridor') {
+      const c = corridorById.get(next.id)
+      if (c?.kind === 'bike' && c.protection === 'painted' && !paintedOn) setPaintedOn(true)
+    }
     selectReveal(next, source)
-  }, [corridorById, selectReveal])
+  }, [corridorById, paintedOn, selectReveal])
 
   // ── Reach routes draw on the MAIN map (no nested mini-map in the sheet) ──
   const reachRow = selection?.type === 'reach'
@@ -211,8 +208,8 @@ export default function NearbyShell({
           center={center}
           markers={shellMarkers}
           lines={backgroundLines}
-          paintedVisible={visibleLayers.painted}
-          separatedVisible={visibleLayers.bike}
+          paintedVisible={showBike && paintedOn}
+          separatedVisible={showBike}
           corridorLines={shellCorridorLines}
           selectedCorridorId={effectiveHighlight}
           onCorridorSelect={(id, source) => {
@@ -285,10 +282,16 @@ export default function NearbyShell({
               This spot looks like it&apos;s outside Greater Boston, where our transit and Bluebikes data lives. Bike-path data covers all of Massachusetts, so parts of the picture may still fill in.
             </p>
           )}
-          <MapLegend visible={visibleLayers} onToggle={toggleLayer} />
-          {/* Lists mirror the legend toggles — hide a layer on the map and
-              its section below goes with it */}
-          {visibleLayers.transit && (
+          {/* One selector for the whole sheet: pick a mode, map + lists follow */}
+          <div className="mt-2.5">
+            <ModeFilterChips
+              mode={modeFilter}
+              onMode={setModeFilter}
+              painted={paintedOn}
+              onPaintedToggle={() => setPaintedOn(p => !p)}
+            />
+          </div>
+          {(showRail || showBus) && (
             <StationList
               stations={stations}
               corridorById={corridorById}
@@ -298,15 +301,15 @@ export default function NearbyShell({
               onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
             />
           )}
-          {visibleLayers.bike && (
+          {showBike && (
             <BikeRouteList
               bikeCorridors={bikeCorridors}
               highlightedCorridorId={highlightedCorridorId}
               onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
             />
           )}
-          {visibleLayers.bluebikes && <DockList docks={docks} />}
-          <GuidesBlock guides={guides} title="Starter guides" />
+          {showBike && <DockList docks={docks} />}
+          <GuidesBlock guides={guides} title="Starter guides" modeFilter={modeFilter} />
         </div>
 
         <div className={selection || tab !== 'destinations' ? 'hidden' : ''}>
@@ -320,7 +323,8 @@ export default function NearbyShell({
               <ReachList
                 center={center}
                 rows={reach.data}
-                onRowTap={(row) => selectReach(row, defaultRouteMode(row), 'list')}
+                modeFilter={modeFilter}
+                onRowTap={(row) => selectReach(row, defaultRouteMode(row, reachModeFor(modeFilter) ?? undefined), 'list')}
               />
             )}
             {reach.status === 'ready' && reach.data.length === 0 && (

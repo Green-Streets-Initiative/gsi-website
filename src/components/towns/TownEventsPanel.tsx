@@ -1,20 +1,7 @@
 import Link from 'next/link'
-import {
-  Bike,
-  Bus,
-  Calendar,
-  Flag,
-  Footprints,
-  GraduationCap,
-  MapPin,
-  Megaphone,
-  Package,
-  PartyPopper,
-  Users,
-  Wrench,
-  Zap,
-} from 'lucide-react'
+import { Calendar } from 'lucide-react'
 import { formatDistance, getTagMeta, getTypeMeta, parseEventDate, TYPE_FILTER_ORDER } from '@/lib/events'
+import { EVENT_TYPE_ICONS } from '@/components/events/event-type-icons'
 import type { TownEvent } from '@/lib/towns/queries'
 
 /**
@@ -23,23 +10,6 @@ import type { TownEvent } from '@/lib/towns/queries'
  * the type color — same visual language as the events calendar's EventCard.
  * Rows show date · location · distance from the town.
  */
-
-// Local ICON_MAP mirroring EventCard.tsx (its map isn't exported).
-const ICON_MAP: Record<string, React.ComponentType<{ size?: number; style?: React.CSSProperties }>> = {
-  Bike,
-  Bus,
-  Calendar,
-  Flag,
-  Footprints,
-  GraduationCap,
-  MapPin,
-  Megaphone,
-  Package,
-  PartyPopper,
-  Users,
-  Wrench,
-  Zap,
-}
 
 function eventDateLabel(e: TownEvent): string {
   const d = parseEventDate(e.event_date)
@@ -69,7 +39,7 @@ export default function TownEventsPanel({ events, townName }: { events: TownEven
       <div className="space-y-5">
         {groups.map(({ type, items }) => {
           const meta = getTypeMeta(type)
-          const Icon = ICON_MAP[meta.icon] ?? Calendar
+          const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
           return (
             <div key={type}>
               <div className="mb-2 flex items-center gap-2.5">

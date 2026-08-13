@@ -3,12 +3,12 @@
 import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import {
-  Bike, Zap, Package, Footprints, Bus, Megaphone, PartyPopper,
-  MapPin, Calendar, GraduationCap, Wrench, Flag, Users,
+  MapPin, Calendar, Users,
   ChevronLeft, Bookmark, Share2, Globe, ExternalLink, Ticket,
   Clock, Mail,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import { EVENT_TYPE_ICONS } from './event-type-icons'
 import {
   type CommunityEvent, getTypeMeta, getTagMeta, formatTime, dateLong, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
@@ -28,19 +28,13 @@ function withUtm(url: string): string {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
-  Bike, Zap, Package, Footprints, Bus, Megaphone, PartyPopper,
-  MapPin, Calendar, GraduationCap, Wrench, Flag, Users,
-}
-
 interface EventDetailProps {
   event: CommunityEvent
 }
 
 export default function EventDetail({ event }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
-  const Icon = ICON_MAP[meta.icon] ?? Calendar
+  const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
   const evDate = parseEventDate(event.event_date)
   const hasMap = !!(event.location_lat && event.location_lng)
   const hasLeftColumn = !!(event.image_url || hasMap)

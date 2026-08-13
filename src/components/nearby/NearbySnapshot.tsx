@@ -15,8 +15,9 @@ import {
   SNAPSHOT_BUS_OPTS, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_TYPES, SNAPSHOT_MAX_STOPS,
   type TransitCorridor,
 } from '@/lib/nearby/corridors'
-import { bikeCorridorIdForName } from '@/lib/nearby/street-names'
 import type { SectionData, BikeNetworkData, CommunityData, GuideItem, ReachRow } from './types'
+import { type ModeFilter, MODE_FILTER_DEFAULT, PAINTED_DEFAULT } from './useNearbyModel'
+import ModeFilterChips from './ModeFilterChips'
 import { SectionShell } from './SectionShell'
 import CorridorExplorer from './CorridorExplorer'
 import ReachSection, { captureReachLoaded } from './ReachSection'
@@ -170,22 +171,28 @@ export default function NearbySnapshot() {
       posthog.capture('snapshot_section_loaded', { section: 'bluebikes', count: rows.length })
     })
 
-    // Bike network: widen once to 3 mi if no protected route in the default radius
+    // Bike network, progressively: the close-in network paints immediately,
+    // then the full 3-mile network (the connectors — Paul Dudley path,
+    // Minuteman, …) swaps in when it arrives. Both radii are server-cached.
     ;(async () => {
       try {
         const res = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=1.5`)
         if (!res.ok) throw new Error(`bike-network ${res.status}`)
-        let data: BikeNetworkData = await res.json()
-        if (!data.nearest_protected) {
-          const wide = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=3`)
-          if (wide.ok) data = await wide.json()
-        }
+        const data: BikeNetworkData = await res.json()
+        if (loadSeqRef.current !== seq) return
         setBikeNetwork({ status: 'ready', data })
         posthog.capture('snapshot_section_loaded', {
           section: 'bike_network',
           count: data.counts.path + data.counts.protected + data.counts.painted,
         })
+        const wide = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=3`)
+        if (wide.ok) {
+          const wideData: BikeNetworkData = await wide.json()
+          if (loadSeqRef.current !== seq) return
+          setBikeNetwork({ status: 'ready', data: wideData })
+        }
       } catch {
+        if (loadSeqRef.current !== seq) return
         setBikeNetwork({ status: 'error', data: null })
         posthog.capture('snapshot_section_error', { section: 'bike_network' })
       }
@@ -194,9 +201,9 @@ export default function NearbySnapshot() {
     // Non-car highways: transit + bike times to landmark destinations
     ;(async () => {
       try {
-        // v=3 busts browser HTTP caches (max-age=86400) when the response
+        // v=4 busts browser HTTP caches (max-age=86400) when the response
         // shape grows — bump it alongside the server's cache-key version
-        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=3`)
+        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=4`)
         if (!res.ok) throw new Error(`reach ${res.status}`)
         const data = await res.json()
         setReach({ status: 'ready', data: data.destinations ?? [] })
@@ -333,24 +340,29 @@ export default function NearbySnapshot() {
 
   const retry = useCallback(() => { if (location) loadAll(location) }, [location, loadAll])
 
+  // Page-wide mode filter (desktop column): the chips above the corridors
+  // section drive the map layers, every list, guides, and reach emphasis
+  const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
+  const [paintedOn, setPaintedOn] = useState(PAINTED_DEFAULT)
+
   // Named bike corridors become selectable entities; everything else —
-  // unnamed segments AND named lanes that didn't make the corridor cut —
-  // stays as background lines, tappable with their street name
-  const bikeCorridors = useMemo(
-    () => (location && bikeNetwork.data ? buildBikeCorridors(bikeNetwork.data.geojson, location.lat, location.lng) : []),
+  // unnamed segments, named lanes that didn't make the corridor cut, and
+  // same-named streets in OTHER towns — stays as background lines, tappable
+  // with their street name. Claimed features are matched by identity.
+  const bikeBuild = useMemo(
+    () => (location && bikeNetwork.data
+      ? buildBikeCorridors(bikeNetwork.data.geojson, location.lat, location.lng)
+      : { corridors: [], claimed: new Set<unknown>() }),
     [bikeNetwork.data, location]
   )
+  const bikeCorridors = bikeBuild.corridors
   const backgroundLines = useMemo<GeoJSON.FeatureCollection | null>(() => {
     if (!bikeNetwork.data) return null
-    const corridorIds = new Set(bikeCorridors.map(c => c.id))
     return {
       type: 'FeatureCollection',
-      features: bikeNetwork.data.geojson.features.filter(f => {
-        const name = (f.properties as { name?: string | null })?.name
-        return !name || !corridorIds.has(bikeCorridorIdForName(name))
-      }),
+      features: bikeNetwork.data.geojson.features.filter(f => !bikeBuild.claimed.has(f)),
     }
-  }, [bikeNetwork.data, bikeCorridors])
+  }, [bikeNetwork.data, bikeBuild])
 
   /* ── Render ── */
 
@@ -501,6 +513,16 @@ export default function NearbySnapshot() {
         )}
       </div>
 
+      {/* One selector for the whole page: pick a mode, everything below follows */}
+      <div className="mx-auto max-w-[720px] px-6 pt-6">
+        <ModeFilterChips
+          mode={modeFilter}
+          onMode={setModeFilter}
+          painted={paintedOn}
+          onPaintedToggle={() => setPaintedOn(p => !p)}
+        />
+      </div>
+
       <SectionShell
         eyebrow="Getting in and out"
         title="Your corridors"
@@ -516,10 +538,13 @@ export default function NearbySnapshot() {
           backgroundLines={backgroundLines}
           transitStatus={transitCorridors.status}
           onRetry={retry}
+          modeFilter={modeFilter}
+          paintedVisible={paintedOn}
+          onShowPainted={() => setPaintedOn(true)}
         />
       </SectionShell>
-      <ReachSection center={location} reach={reach} onRetry={retry} />
-      <EventsGuides community={community} guides={guides} />
+      <ReachSection center={location} reach={reach} onRetry={retry} modeFilter={modeFilter} />
+      <EventsGuides community={community} guides={guides} modeFilter={modeFilter} />
 
       {/* CTA bridge */}
       <div className="mx-auto max-w-[720px] space-y-4 px-6 pt-2">
