@@ -22,6 +22,9 @@ export interface PrintMarker {
   kind: 'home' | 'station' | 'dock'
   color?: string
   label?: string
+  /** White fill with a colored ring — bus stops would otherwise vanish
+   *  into route lines of the same color. */
+  hollow?: boolean
 }
 
 export default function PrintMap({ center, lines, markers, width, height }: {
@@ -84,21 +87,29 @@ export default function PrintMap({ center, lines, markers, width, height }: {
       })
       .join(' ')
 
-  // Station labels get a simple down-right nudge when they'd collide
-  const placedLabels: { x: number; y: number }[] = []
-  const deCollide = (x: number, y: number): { x: number; y: number } => {
-    let px = x, py = y
-    for (let guard = 0; guard < 8; guard++) {
-      const hit = placedLabels.find(q => Math.hypot(q.x - px, q.y - py) < 30)
-      if (!hit) break
-      px += 8
-      py += 14
-    }
-    placedLabels.push({ x: px, y: py })
-    return { x: px, y: py }
-  }
-
   const homePx = toPixel(vp, center.lat, center.lng)
+
+  // Dots stay geographically true; LABELS step downward until they clear
+  // every previously placed label (long bus-stop names collide easily).
+  // The "You're here" pill is reserved first so nothing lands on it.
+  const placedRects: { x1: number; y1: number; x2: number; y2: number }[] = [
+    { x1: homePx.x - 34, y1: homePx.y + 14, x2: homePx.x + 34, y2: homePx.y + 32 },
+  ]
+  const labelOffsetY = (x: number, y: number, text: string): number => {
+    const w = 8 + text.length * 5.2
+    let py = y
+    for (let guard = 0; guard < 10; guard++) {
+      const r = { x1: x + 8, y1: py - 10, x2: x + 8 + w, y2: py + 4 }
+      const hit = placedRects.some(q => r.x1 < q.x2 && r.x2 > q.x1 && r.y1 < q.y2 && r.y2 > q.y1)
+      if (!hit) {
+        placedRects.push(r)
+        return py - y
+      }
+      py += 13
+    }
+    placedRects.push({ x1: x + 8, y1: py - 10, x2: x + 8 + 8 + w, y2: py + 4 })
+    return py - y
+  }
 
   return (
     <div style={{ position: 'relative', width, height, overflow: 'hidden', background: '#EDECE6' }}>
@@ -135,19 +146,20 @@ export default function PrintMap({ center, lines, markers, width, height }: {
             }} />
           )
         }
+        const dy = m.label ? labelOffsetY(p.x, p.y, m.label) : 0
         const label = m.label && (
           <div style={{
-            position: 'absolute', left: 8, top: -6, whiteSpace: 'nowrap',
+            position: 'absolute', left: 8, top: dy - 6, whiteSpace: 'nowrap',
             fontSize: 9, fontWeight: 700, color: '#191A2E',
             textShadow: '0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff',
           }}>{m.label}</div>
         )
-        const pos = m.label ? deCollide(p.x, p.y) : p
         return (
-          <div key={i} style={{ position: 'absolute', left: pos.x, top: pos.y, transform: 'translate(-50%,-50%)' }}>
+          <div key={i} style={{ position: 'absolute', left: p.x, top: p.y, transform: 'translate(-50%,-50%)' }}>
             <div style={{
               width: 11, height: 11, borderRadius: '50%',
-              background: m.color ?? '#191A2E', border: '2px solid #ffffff',
+              background: m.hollow ? '#ffffff' : (m.color ?? '#191A2E'),
+              border: m.hollow ? `2.5px solid ${m.color ?? '#191A2E'}` : '2px solid #ffffff',
               boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
             }} />
             {label}

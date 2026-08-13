@@ -126,11 +126,14 @@ export default async function NearbyPrintPage({ searchParams }: {
     }
   }
 
+  // Every listed station gets a name label (the dedupe caps this at ~8);
+  // bus stops draw hollow so they don't vanish into same-colored route lines
   const markers: PrintMarker[] = [
     ...stations.map(s => ({
       lat: s.lat, lng: s.lng, kind: 'station' as const,
       color: s.lines[0]?.color ?? '#191A2E',
-      label: s.isRail ? s.name : undefined,
+      label: s.name,
+      hollow: !s.isRail,
     })),
     ...printDocks.map(d => ({ lat: d.lat, lng: d.lng, kind: 'dock' as const })),
   ]

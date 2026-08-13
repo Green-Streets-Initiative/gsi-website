@@ -63,21 +63,32 @@ function groupTopology(
 /** Closest stations first, capped for single-page print discipline. Bus
  *  corridors put a stop every block — on paper, a stop that serves no NEW
  *  route is noise (four Highland Ave stops all saying "88 · 90"), so only
- *  bus stations that add at least one unseen route make the cut. */
+ *  bus stations that add at least one unseen route make the cut. Beyond
+ *  the station caps, a total ROUTE-ROW budget keeps route-dense areas
+ *  (Union Sq: stops serving 3–4 lines each) from spilling the page — the
+ *  vertical cost of this section is its route rows, not its stations. */
+const LINE_BUDGET = 12
+
 export function buildPrintStations(
   rail: StopTopology[],
   bus: StopTopology[],
   freqByRoute: Map<string, string | null>,
   caps: { rail: number; bus: number } = { rail: 4, bus: 4 },
 ): PrintStation[] {
+  const railKept = groupTopology(rail, true, freqByRoute).slice(0, caps.rail)
+  let lineRows = railKept.reduce((a, s) => a + s.lines.length, 0)
+
   const seenBusRoutes = new Set<string>()
-  const busStations = groupTopology(bus, false, freqByRoute).filter(s => {
+  const busKept: PrintStation[] = []
+  for (const s of groupTopology(bus, false, freqByRoute)) {
+    if (busKept.length >= caps.bus) break
     const fresh = s.lines.some(l => !seenBusRoutes.has(l.routeId))
+    if (!fresh) continue
+    // The nearest bus station always makes the page, budget or not
+    if (busKept.length > 0 && lineRows + s.lines.length > LINE_BUDGET) continue
     for (const l of s.lines) seenBusRoutes.add(l.routeId)
-    return fresh
-  })
-  return [
-    ...groupTopology(rail, true, freqByRoute).slice(0, caps.rail),
-    ...busStations.slice(0, caps.bus),
-  ]
+    busKept.push(s)
+    lineRows += s.lines.length
+  }
+  return [...railKept, ...busKept]
 }
