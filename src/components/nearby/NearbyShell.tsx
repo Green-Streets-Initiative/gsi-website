@@ -445,7 +445,7 @@ function ReachDetail({ row, mode, center, onMode }: {
       {mode === 'bike' && row.bike_comfort && (
         <>
           <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
-            Bright green stretches are protected or a path; dashed blue are painted lanes; gray stretches share the road.
+            Lime stretches are multi-use path, teal are protected lanes, dashed blue are painted lanes, and gray share the road.
           </p>
           <BikeComfortBlock comfort={row.bike_comfort} />
         </>

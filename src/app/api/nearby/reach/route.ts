@@ -32,10 +32,11 @@ interface ReachSegment { mode: 'walk' | 'transit'; polyline: string; color: stri
 // Walking connectors on the dark route map — light slate, clearly not a line color
 const WALK_SEGMENT_COLOR = '#9BA3BF'
 
-/** Comfort tiers for the ride, ComfortBar vocabulary: 'protected' covers
- *  paths and physically separated lanes, 'bike_lane' is paint, 'shared_road'
+/** Comfort tiers for the ride, ComfortBar vocabulary: 'path' is a multi-use
+ *  path with its own right-of-way, 'protected' is a physically separated
+ *  on-street lane (not the same thing), 'bike_lane' is paint, 'shared_road'
  *  means no mapped bike infrastructure there. */
-type ComfortRating = 'protected' | 'bike_lane' | 'shared_road'
+type ComfortRating = 'path' | 'protected' | 'bike_lane' | 'shared_road'
 
 interface ComfortSegment {
   rating: ComfortRating
@@ -341,7 +342,8 @@ function classifySample(
     if (q > bestQ) bestQ = q
     if (v.key && d < streetD) { streetD = d; streetKey = v.key; streetDisplay = v.display }
   }
-  const rating: ComfortRating = bestQ >= 2 ? 'protected' : bestQ === 1 ? 'bike_lane' : 'shared_road'
+  const rating: ComfortRating =
+    bestQ >= 3 ? 'path' : bestQ === 2 ? 'protected' : bestQ === 1 ? 'bike_lane' : 'shared_road'
   return { rating, streetKey, streetDisplay }
 }
 
@@ -392,7 +394,7 @@ function scoreBikeComfort(
 
   // Per-street rollup: dominant tier + mileage per named street
   const byStreet = new Map<string, { variants: Map<string, number>; meters: Record<ComfortRating, number>; firstIdx: number }>()
-  const meterByRating: Record<ComfortRating, number> = { protected: 0, bike_lane: 0, shared_road: 0 }
+  const meterByRating: Record<ComfortRating, number> = { path: 0, protected: 0, bike_lane: 0, shared_road: 0 }
   for (let s = 0; s < samples.length; s++) {
     const startIdx = samples[s].idx
     const endIdx = s + 1 < samples.length ? samples[s + 1].idx : path.length - 1
@@ -401,7 +403,7 @@ function scoreBikeComfort(
     meterByRating[samples[s].rating] += meters
     const key = samples[s].streetKey
     if (!key || !samples[s].streetDisplay) continue
-    const st = byStreet.get(key) ?? { variants: new Map(), meters: { protected: 0, bike_lane: 0, shared_road: 0 }, firstIdx: s }
+    const st = byStreet.get(key) ?? { variants: new Map(), meters: { path: 0, protected: 0, bike_lane: 0, shared_road: 0 }, firstIdx: s }
     st.variants.set(samples[s].streetDisplay!, (st.variants.get(samples[s].streetDisplay!) ?? 0) + 1)
     st.meters[samples[s].rating] += meters
     byStreet.set(key, st)
@@ -428,14 +430,15 @@ function scoreBikeComfort(
     .map(({ label, rating, distance_mi }) => ({ label, rating, distance_mi }))
 
   const rating: BikeComfort['rating'] =
-    meterByRating.protected / totalM >= 0.8 ? 'protected'
+    meterByRating.path / totalM >= 0.8 ? 'path'
+      : (meterByRating.path + meterByRating.protected) / totalM >= 0.8 ? 'protected'
       : meterByRating.bike_lane / totalM >= 0.8 ? 'bike_lane'
       : meterByRating.shared_road / totalM >= 0.8 ? 'shared_road'
       : 'mixed'
 
   return {
     comfort: { rating, segments, streets },
-    score: (meterByRating.protected + 0.5 * meterByRating.bike_lane) / totalM,
+    score: (meterByRating.path + meterByRating.protected + 0.5 * meterByRating.bike_lane) / totalM,
   }
 }
 
@@ -468,7 +471,8 @@ export async function GET(req: NextRequest) {
   const lat3 = Math.round(lat * 1000) / 1000
   const lng3 = Math.round(lng * 1000) / 1000
   // v4: bike chips + comfort streets are in travel order — don't serve older ordering
-  const cacheKey = `v4:${lat3},${lng3}`
+  // v5: comfort tiers split 'path' from 'protected'
+  const cacheKey = `v5:${lat3},${lng3}`
 
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) {

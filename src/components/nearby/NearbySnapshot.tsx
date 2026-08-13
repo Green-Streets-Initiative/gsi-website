@@ -203,7 +203,7 @@ export default function NearbySnapshot() {
       try {
         // v=4 busts browser HTTP caches (max-age=86400) when the response
         // shape grows — bump it alongside the server's cache-key version
-        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=4`)
+        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=5`)
         if (!res.ok) throw new Error(`reach ${res.status}`)
         const data = await res.json()
         setReach({ status: 'ready', data: data.destinations ?? [] })

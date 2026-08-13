@@ -334,7 +334,10 @@ export function buildBikeCorridors(
     // properties.color, and a missing value renders invisibly on dark.
     // Painted corridors carry dash:1 so they render through the dashed twin
     // layer, matching the legend's "dashed blue = painted" language.
-    const color = protection === 'painted' ? '#7FB5FF' : '#BAF14D'
+    // Lime = multi-use path, teal = protected lane — not the same thing.
+    const color = protection === 'painted' ? '#7FB5FF'
+      : protection === 'path' ? '#BAF14D'
+      : '#2DD4BF'
     const features = cluster.map(f => ({
       ...f,
       properties: {

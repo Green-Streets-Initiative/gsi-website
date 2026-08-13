@@ -49,9 +49,10 @@ export interface ReachSegment {
 }
 
 /** Comfort tiers in ComfortBar vocabulary: 'protected' covers paths and
- *  separated lanes, 'bike_lane' is paint, 'shared_road' has no mapped
+ *  separated lanes ('path' = multi-use path with its own right-of-way,
+ *  'protected' = separated on-street lane), 'bike_lane' is paint, 'shared_road' has no mapped
  *  bike infrastructure. */
-export type BikeComfortTier = 'protected' | 'bike_lane' | 'shared_road'
+export type BikeComfortTier = 'path' | 'protected' | 'bike_lane' | 'shared_road'
 
 export interface BikeComfortSegmentData {
   rating: BikeComfortTier

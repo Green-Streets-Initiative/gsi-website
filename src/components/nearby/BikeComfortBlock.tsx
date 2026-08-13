@@ -11,13 +11,15 @@ import type { BikeComfortData, BikeComfortTier } from './types'
  */
 
 export const NEARBY_COMFORT_COLORS: Record<BikeComfortTier, string> = {
-  protected: '#BAF14D',
+  path: '#BAF14D',
+  protected: '#2DD4BF',
   bike_lane: '#7FB5FF',
   shared_road: '#6B6E85',
 }
 
 const NEARBY_COMFORT_LABELS: Record<BikeComfortTier, string> = {
-  protected: 'Protected or path',
+  path: 'Multi-use path',
+  protected: 'Protected lane',
   bike_lane: 'Painted lane',
   shared_road: 'Shared road',
 }

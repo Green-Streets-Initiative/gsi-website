@@ -332,7 +332,10 @@ export default function NearbyMap({
     // Dim the unnamed bike background while anything is selected
     if (map.getLayer('bike-separated')) {
       map.setPaintProperty('bike-separated', 'line-opacity', sel ? 0.12 : BIKE_BG_OPACITY.separated)
-      map.setPaintProperty('bike-separated-glow', 'line-opacity', sel ? 0.04 : BIKE_BG_OPACITY.glow)
+      // Restore the zoom ramp, not a scalar — the glow only exists near
+      // street-level zooms (see applyBikeBackground)
+      map.setPaintProperty('bike-separated-glow', 'line-opacity',
+        sel ? 0.04 : ['interpolate', ['linear'], ['zoom'], 12.5, 0, 14, BIKE_BG_OPACITY.glow])
       map.setPaintProperty('bike-painted', 'line-opacity', sel ? 0.08 : BIKE_BG_OPACITY.painted)
     }
 
@@ -471,6 +474,8 @@ function applyBikeBackground(
 
   map.addSource('bike-network', { type: 'geojson', data: lines })
 
+  // Widths scale with zoom so the wide first frame reads as a network
+  // sketch, not a tangle — full weight only arrives at street-level zooms
   map.addLayer({
     id: 'bike-painted',
     type: 'line',
@@ -478,20 +483,25 @@ function applyBikeBackground(
     filter: ['==', ['get', 'quality'], 'painted'],
     paint: {
       'line-color': '#7FB5FF',
-      'line-width': 2,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.75, 13, 1.25, 15, 2],
       'line-opacity': BIKE_BG_OPACITY.painted,
       'line-dasharray': [2, 3],
     },
     layout: { 'line-cap': 'round', 'line-join': 'round', visibility: paintedVisible ? 'visible' : 'none' },
   })
-  // 'path' (car-free) and 'protected' (physical barrier) both draw lime —
-  // the comfortable network; the tap popup states the exact tier
+  // Multi-use paths draw lime, protected lanes teal — they're not the same
+  // thing, and the comfort bar / route legs use the same two colors
   map.addLayer({
     id: 'bike-separated-glow',
     type: 'line',
     source: 'bike-network',
     filter: ['!=', ['get', 'quality'], 'painted'],
-    paint: { 'line-color': '#BAF14D', 'line-width': 9, 'line-opacity': BIKE_BG_OPACITY.glow, 'line-blur': 4 },
+    paint: {
+      'line-color': ['match', ['get', 'quality'], 'path', '#BAF14D', '#2DD4BF'],
+      'line-width': 9,
+      'line-opacity': ['interpolate', ['linear'], ['zoom'], 12.5, 0, 14, BIKE_BG_OPACITY.glow],
+      'line-blur': 4,
+    },
     layout: { visibility: separatedVisible ? 'visible' : 'none' },
   })
   map.addLayer({
@@ -499,7 +509,11 @@ function applyBikeBackground(
     type: 'line',
     source: 'bike-network',
     filter: ['!=', ['get', 'quality'], 'painted'],
-    paint: { 'line-color': '#BAF14D', 'line-width': 3, 'line-opacity': BIKE_BG_OPACITY.separated },
+    paint: {
+      'line-color': ['match', ['get', 'quality'], 'path', '#BAF14D', '#2DD4BF'],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 13, 1.75, 15, 3],
+      'line-opacity': BIKE_BG_OPACITY.separated,
+    },
     layout: { 'line-cap': 'round', 'line-join': 'round', visibility: separatedVisible ? 'visible' : 'none' },
   })
 

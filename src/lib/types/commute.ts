@@ -2,7 +2,7 @@ export type Mode = 'walk' | 'bike' | 'ebike' | 'transit' | 'bus'
 
 export type BikeInfraQuality = 'protected' | 'shared' | 'none' | 'unknown'
 
-export type BikeComfortRating = 'protected' | 'bike_lane' | 'shared_road' | 'mixed'
+export type BikeComfortRating = 'path' | 'protected' | 'bike_lane' | 'shared_road' | 'mixed'
 
 export interface BikeComfortSegment {
   label: string

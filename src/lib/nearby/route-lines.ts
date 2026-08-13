@@ -7,10 +7,12 @@ import { decodePolyline } from '@/lib/geo/polyline'
  */
 
 // Bike routes draw in the corridor legend's language: lime solid for
-// protected stretches, painted-lane blue DASHED for paint, gray for shared
-// road. Same colors as BikeComfortBlock so bar and map agree.
+// multi-use path, teal solid for protected lanes, painted-lane blue DASHED
+// for paint, gray for shared road. Same colors as BikeComfortBlock so bar
+// and map agree.
 const BIKE_TIER_STYLE: Record<string, { color: string; dash: boolean }> = {
-  protected: { color: '#BAF14D', dash: false },
+  path: { color: '#BAF14D', dash: false },
+  protected: { color: '#2DD4BF', dash: false },
   bike_lane: { color: '#7FB5FF', dash: true },
   shared_road: { color: '#6B6E85', dash: false },
 }

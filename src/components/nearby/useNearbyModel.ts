@@ -27,8 +27,9 @@ export type Selection =
 export type ModeFilter = 'all' | 'train' | 'bus' | 'bike'
 
 export const MODE_FILTER_DEFAULT: ModeFilter = 'all'
-/** Painted lanes are the network's connective tissue — visible by default. */
-export const PAINTED_DEFAULT = true
+/** Painted lanes stay one tap away — on by default they bury the
+ *  comfortable network under blue (Keith: "why is the map so congested?"). */
+export const PAINTED_DEFAULT = false
 
 /* ── Station grouping (by name — MBTA lists each platform separately) ── */
 
