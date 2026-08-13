@@ -7,6 +7,9 @@
 
 const BUS_SVG = '<svg width="13" height="13" viewBox="0 0 256 256" fill="#191A2E"><path d="M184,28H72A36,36,0,0,0,36,64V208a20,20,0,0,0,20,20H84a20,20,0,0,0,20-20V192h48v16a20,20,0,0,0,20,20h28a20,20,0,0,0,20-20V64A36,36,0,0,0,184,28ZM60,168V112H196v56ZM72,52H184a12,12,0,0,1,12,12V88H60V64A12,12,0,0,1,72,52Zm8,152H60V192H80Zm96,0V192h20v12Zm-68-64a16,16,0,1,1-16-16A16,16,0,0,1,108,140Zm72,0a16,16,0,1,1-16-16A16,16,0,0,1,180,140Z"/></svg>'
 
+// Phosphor Train — white so it reads on any official line color
+const TRAIN_SVG = '<svg width="15" height="15" viewBox="0 0 256 256" fill="#fff"><path d="M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM56,120V80h64v40Zm80-40h64v40H136ZM72,40H184a16,16,0,0,1,16,16v8H56V56A16,16,0,0,1,72,40ZM184,200H72a16,16,0,0,1-16-16V136H200v48A16,16,0,0,1,184,200ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"/></svg>'
+
 export function userDotHtml(): string {
   return `<div style="width:18px;height:18px;border-radius:50%;background:#BAF14D;border:3px solid #191A2E;box-shadow:0 0 0 2px #BAF14D,0 0 14px rgba(186,241,77,0.55)" title="Your location"></div>`
 }
@@ -44,15 +47,15 @@ export function busStopHtml(title: string): string {
 
 export function trainStopHtml(color: string, title: string): string {
   // Station name rides along under the icon — stations are landmarks, and
-  // people need to see at a glance which one is which
+  // people need to see at a glance which one is which. The train glyph
+  // pairs with the bus marker's bus glyph so the two read as one language.
   return `
     <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
       <div title="${escapeAttr(title)}" style="
         display:flex;align-items:center;justify-content:center;
         width:28px;height:28px;border-radius:50%;
         background:${color};border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);
-        color:#fff;font:800 13px/1 -apple-system,sans-serif;
-      ">T</div>
+      ">${TRAIN_SVG}</div>
       <div style="
         max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
         background:rgba(25,26,46,0.92);border:1px solid rgba(255,255,255,0.18);

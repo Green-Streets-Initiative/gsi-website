@@ -7,6 +7,9 @@ import type { BluebikeStationLive, MBTAStopLive, SheetSnap } from '@/lib/wayfind
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import ModeIcon from '@/components/commute/ModeIcon'
 import { reachRouteFeatures } from '@/lib/nearby/route-lines'
+import { defaultRouteMode } from '@/lib/nearby/reach-ui'
+import { directionsUrl } from '@/lib/nearby/transit-ui'
+import BikeComfortBlock from './BikeComfortBlock'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
 import NearbyMap, { type FitPadding, type NearbyMarker } from './NearbyMap'
 import { destinationPinHtml } from './markers'
@@ -260,6 +263,7 @@ export default function NearbyShell({
                 <ReachDetail
                   row={reachRow}
                   mode={selection.mode}
+                  center={center}
                   onMode={(m) => selectReach(reachRow, m, 'panel')}
                 />
               ) : null
@@ -316,7 +320,7 @@ export default function NearbyShell({
               <ReachList
                 center={center}
                 rows={reach.data}
-                onRowTap={(row) => selectReach(row, (row.transit_segments?.length ?? 0) > 0 ? 'transit' : 'bike', 'list')}
+                onRowTap={(row) => selectReach(row, defaultRouteMode(row), 'list')}
               />
             )}
             {reach.status === 'ready' && reach.data.length === 0 && (
@@ -365,9 +369,10 @@ export default function NearbyShell({
 
 /* ── Destination route detail: the route is on the MAIN map above ── */
 
-function ReachDetail({ row, mode, onMode }: {
+function ReachDetail({ row, mode, center, onMode }: {
   row: ReachRow
   mode: 'transit' | 'bike'
+  center: { lat: number; lng: number }
   onMode: (mode: 'transit' | 'bike') => void
 }) {
   const hasTransit = (row.transit_segments?.length ?? 0) > 0
@@ -421,6 +426,29 @@ function ReachDetail({ row, mode, onMode }: {
           Colored stretches are the ride; lighter gray stretches are the walks between.
         </p>
       )}
+
+      {mode === 'bike' && row.bike_comfort && (
+        <>
+          <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
+            Bright green stretches are protected or a path; dashed blue are painted lanes; gray stretches share the road.
+          </p>
+          <BikeComfortBlock comfort={row.bike_comfort} />
+        </>
+      )}
+
+      {/* Hand off to their maps app for the actual trip — turn-by-turn is its job */}
+      <a
+        href={directionsUrl(row.lat, row.lng, {
+          mode: mode === 'bike' ? 'bicycling' : 'transit',
+          origin: center,
+        })}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'reach', mode })}
+        className="mt-2 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+      >
+        Open in Maps ↗
+      </a>
     </div>
   )
 }

@@ -31,11 +31,23 @@ export function lineTextColor(routeId: string): string {
   return lineColor(routeId) === BUS_COLOR ? '#191A2E' : '#FFFFFF'
 }
 
-/** Walking directions deep link — Apple Maps on iOS, Google Maps elsewhere. */
-export function directionsUrl(lat: number, lng: number): string {
+export type DirectionsMode = 'walking' | 'bicycling' | 'transit'
+
+const APPLE_DIRFLG: Record<DirectionsMode, string> = { walking: 'w', bicycling: 'cy', transit: 'r' }
+
+/** Directions deep link — Apple Maps on iOS, Google Maps elsewhere.
+ *  Walking by default; pass mode/origin for door-to-door trips. */
+export function directionsUrl(
+  lat: number,
+  lng: number,
+  opts?: { mode?: DirectionsMode; origin?: { lat: number; lng: number } },
+): string {
+  const mode = opts?.mode ?? 'walking'
   const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
   if (isIOS) {
-    return `maps://maps.apple.com/?daddr=${lat},${lng}&dirflg=w`
+    const saddr = opts?.origin ? `&saddr=${opts.origin.lat},${opts.origin.lng}` : ''
+    return `maps://maps.apple.com/?daddr=${lat},${lng}${saddr}&dirflg=${APPLE_DIRFLG[mode]}`
   }
-  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`
+  const origin = opts?.origin ? `&origin=${opts.origin.lat},${opts.origin.lng}` : ''
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}${origin}&travelmode=${mode}`
 }

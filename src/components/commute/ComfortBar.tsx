@@ -37,7 +37,14 @@ function rollup(segments: BikeComfortSegment[]) {
     .filter((x) => x.miles > 0)
 }
 
-export default function ComfortBar({ rating, segments, theme = 'dark' }: Pick<BikeComfort, 'rating' | 'segments'> & { theme?: 'dark' | 'light' }) {
+export default function ComfortBar({ rating, segments, theme = 'dark', colors, labels }: Pick<BikeComfort, 'rating' | 'segments'> & {
+  theme?: 'dark' | 'light'
+  /** Per-rating overrides so host pages can match their own map legend */
+  colors?: Record<string, string>
+  labels?: Record<string, string>
+}) {
+  const C = { ...SEGMENT_COLORS, ...colors }
+  const L = { ...SEGMENT_LABELS, ...labels }
   const hasSegments = !!segments && segments.length > 0
   const totalDistance = hasSegments
     ? segments!.reduce((sum, s) => sum + (s.distance_mi || 0), 0)
@@ -45,9 +52,9 @@ export default function ComfortBar({ rating, segments, theme = 'dark' }: Pick<Bi
   const breakdown = hasSegments ? rollup(segments!) : []
 
   const a11yLabel = hasSegments
-    ? `Route comfort: ${breakdown.map((b) => `${b.miles.toFixed(1)} miles ${SEGMENT_LABELS[b.rating] ?? b.rating}`).join(', ')}`
+    ? `Route comfort: ${breakdown.map((b) => `${b.miles.toFixed(1)} miles ${L[b.rating] ?? b.rating}`).join(', ')}`
     : rating
-      ? `Route comfort: ${SEGMENT_LABELS[rating] ?? rating}`
+      ? `Route comfort: ${L[rating] ?? rating}`
       : 'Route comfort'
 
   return (
@@ -67,7 +74,7 @@ export default function ComfortBar({ rating, segments, theme = 'dark' }: Pick<Bi
               key={i}
               style={{
                 flex: seg.distance_mi || 1,
-                backgroundColor: SEGMENT_COLORS[seg.rating] ?? '#6B6E85',
+                backgroundColor: C[seg.rating] ?? '#6B6E85',
               }}
               className="rounded-[3px]"
             />
@@ -76,7 +83,7 @@ export default function ComfortBar({ rating, segments, theme = 'dark' }: Pick<Bi
           <div
             style={{
               flex: 1,
-              backgroundColor: rating ? (SEGMENT_COLORS[rating] ?? '#6B6E85') : '#6B6E85',
+              backgroundColor: rating ? (C[rating] ?? '#6B6E85') : '#6B6E85',
             }}
             className="rounded-[3px]"
           />
@@ -89,19 +96,19 @@ export default function ComfortBar({ rating, segments, theme = 'dark' }: Pick<Bi
             <div key={b.rating} className="flex items-center gap-1.5">
               <span
                 className="inline-block h-2 w-2 rounded-full"
-                style={{ backgroundColor: SEGMENT_COLORS[b.rating] }}
+                style={{ backgroundColor: C[b.rating] }}
               />
-              {b.miles.toFixed(1)} mi {SEGMENT_LABELS[b.rating]?.toLowerCase()}
+              {b.miles.toFixed(1)} mi {L[b.rating]?.toLowerCase()}
             </div>
           ))}
         </div>
       ) : (
         <div className={`mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] ${theme === 'light' ? 'text-[#5A5C6E]' : 'text-white/75'}`}>
-          {Object.entries(SEGMENT_LABELS).map(([key, label]) => (
+          {Object.entries(L).map(([key, label]) => (
             <div key={key} className="flex items-center gap-1.5">
               <span
                 className="inline-block h-2 w-2 rounded-full"
-                style={{ backgroundColor: SEGMENT_COLORS[key] }}
+                style={{ backgroundColor: C[key] }}
               />
               {label}
             </div>

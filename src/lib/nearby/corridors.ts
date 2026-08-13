@@ -10,6 +10,7 @@
 import { decodePolyline } from '@/lib/geo/polyline'
 import { haversineMeters, walkTimeMinutes } from '@/lib/wayfinding/geo'
 import { fetchStopTopology } from './live-data'
+import { canonicalStreetKey, displayStreetName } from './street-names'
 import { lineColor, lineTextColor, ROUTE_COLORS } from './transit-ui'
 
 export type CorridorKind = 'subway' | 'commuter-rail' | 'bus' | 'bike'
@@ -18,6 +19,12 @@ export interface FrequencyInfo {
   headwayMin: number | null
   label: string
   tripsPerDay?: number
+}
+
+/** Every stop along a route in one direction, in travel order. */
+export interface DirectionStops {
+  directionId: number
+  stops: { id: string; name: string }[]
 }
 
 export interface TransitCorridor {
@@ -31,6 +38,8 @@ export interface TransitCorridor {
   access: { stopId: string; stopName: string; lat: number; lng: number; walkMin: number }
   shape: GeoJSON.FeatureCollection | null
   frequency: FrequencyInfo | null | 'unavailable'
+  /** Filled by corridor-meta alongside shape/frequency */
+  directions?: DirectionStops[]
 }
 
 export interface BikeCorridor {
@@ -118,12 +127,15 @@ const META_CACHE_TTL = 24 * 60 * 60 * 1000
 export interface CorridorMeta {
   shape: GeoJSON.FeatureCollection
   frequency: FrequencyInfo | null
+  directions: DirectionStops[]
 }
 
 export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<CorridorMeta> {
-  const cacheKey = `nearby-meta-v1-${corridor.routeId}-${corridor.access.stopId}`
+  // v2: responses carry per-direction stop lists
+  const cacheKey = `nearby-meta-v2-${corridor.routeId}-${corridor.access.stopId}`
   let polylines: string[] | null = null
   let frequency: FrequencyInfo | null = null
+  let directions: DirectionStops[] = []
   let haveCache = false
 
   try {
@@ -133,6 +145,7 @@ export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<Corr
       if (Date.now() - cached.ts <= META_CACHE_TTL) {
         polylines = cached.polylines
         frequency = cached.frequency
+        directions = cached.directions ?? []
         haveCache = true
       }
     }
@@ -146,11 +159,12 @@ export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<Corr
     const data = await res.json()
     polylines = data.polylines ?? []
     frequency = data.frequency ?? null
-    // Only cache complete answers — a null frequency or empty shape may be
-    // a transient upstream failure, and the next visit should retry it
-    if (frequency !== null && (polylines?.length ?? 0) > 0) {
+    directions = data.directions ?? []
+    // Only cache complete answers — a null frequency, empty shape, or empty
+    // stop list may be a transient upstream failure the next visit should retry
+    if (frequency !== null && (polylines?.length ?? 0) > 0 && directions.length > 0) {
       try {
-        sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), polylines, frequency }))
+        sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), polylines, frequency, directions }))
       } catch {}
     }
   }
@@ -168,6 +182,7 @@ export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<Corr
       })),
     },
     frequency,
+    directions,
   }
 }
 
@@ -193,12 +208,16 @@ export function buildBikeCorridors(
   lat: number,
   lng: number,
 ): BikeCorridor[] {
-  const groups = new Map<string, { display: string; features: LaneFeatureLike[] }>()
+  // Group by canonical street key so "Somerville Ave" / "SOMERVILLE AVE" /
+  // "Somerville Avenue" (three sources, three spellings) count as ONE street
+  const groups = new Map<string, { variants: Map<string, number>; features: LaneFeatureLike[] }>()
   for (const f of network.features as unknown as LaneFeatureLike[]) {
     const name = f.properties?.name?.trim()
     if (!name || f.geometry?.type !== 'LineString') continue
-    const key = name.toLowerCase()
-    const g = groups.get(key) ?? { display: name, features: [] }
+    const key = canonicalStreetKey(name)
+    if (!key) continue
+    const g = groups.get(key) ?? { variants: new Map<string, number>(), features: [] as LaneFeatureLike[] }
+    g.variants.set(name, (g.variants.get(name) ?? 0) + 1)
     g.features.push(f)
     groups.set(key, g)
   }
@@ -257,7 +276,7 @@ export function buildBikeCorridors(
     corridors.push({
       id: corridorId,
       kind: 'bike',
-      name: group.display,
+      name: displayStreetName(group.variants),
       protection,
       lengthMiles: Math.round(lengthMiles * 10) / 10,
       accessDistanceMeters: Math.round(nearestM),

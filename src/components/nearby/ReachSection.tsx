@@ -4,6 +4,9 @@ import { useMemo, useState } from 'react'
 import posthog from 'posthog-js'
 import ModeIcon from '@/components/commute/ModeIcon'
 import { reachRouteFeatures } from '@/lib/nearby/route-lines'
+import { modeOptions, hasTransitRoute, hasBikeRoute, defaultRouteMode } from '@/lib/nearby/reach-ui'
+import { directionsUrl } from '@/lib/nearby/transit-ui'
+import BikeComfortBlock from './BikeComfortBlock'
 import type { SectionData, ReachRow } from './types'
 import { SectionShell, SkeletonRows, ErrorCard } from './SectionShell'
 import NearbyMap, { type NearbyMarker } from './NearbyMap'
@@ -15,37 +18,6 @@ interface Props {
   reach: SectionData<ReachRow[]>
   onRetry: () => void
 }
-
-// Walk estimate mirrors the bike one: straight-line × road factor at 3 mph.
-// Only shown when it's a realistic option, not an endurance event.
-const WALK_ROUTE_FACTOR = 1.3
-const WALK_MPH = 3.0
-const WALK_SHOW_MAX_MIN = 40
-
-interface ModeOption {
-  key: 'walk' | 'bike' | 'transit'
-  label: string
-  minutes: number
-  estimate: boolean
-}
-
-/** Rank-ordered ways to get there, fastest first. */
-function modeOptions(row: ReachRow): ModeOption[] {
-  const options: ModeOption[] = [
-    { key: 'bike', label: 'Bike', minutes: row.bike_minutes, estimate: row.bike_is_estimate ?? true },
-  ]
-  const walkMin = Math.round((row.distance_miles * WALK_ROUTE_FACTOR / WALK_MPH) * 60)
-  if (walkMin <= WALK_SHOW_MAX_MIN) {
-    options.push({ key: 'walk', label: 'Walk', minutes: walkMin, estimate: true })
-  }
-  if (row.transit_minutes !== null) {
-    options.push({ key: 'transit', label: 'T & bus', minutes: row.transit_minutes, estimate: false })
-  }
-  return options.sort((a, b) => a.minutes - b.minutes)
-}
-
-const hasTransitRoute = (row: ReachRow) => (row.transit_segments?.length ?? 0) > 0
-const hasBikeRoute = (row: ReachRow) => !!row.bike_polyline
 
 /**
  * The everyday-routes picture: for a newcomer, bus numbers and line names
@@ -90,7 +62,7 @@ export function ReachList({ center, rows, onRowTap }: {
       setExpanded(null)
       return
     }
-    const mode = hasTransitRoute(row) ? 'transit' : 'bike'
+    const mode = defaultRouteMode(row)
     setExpanded({ id: row.id, mode })
     posthog.capture('reach_route_viewed', { destination: row.id, mode })
   }
@@ -227,6 +199,27 @@ export function ReachList({ center, rows, onRowTap }: {
                         Colored stretches are the ride; lighter gray stretches are the walks between.
                       </p>
                     )}
+                    {expanded.mode === 'bike' && row.bike_comfort && (
+                      <>
+                        <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
+                          Bright green stretches are protected or a path; dashed blue are painted lanes; gray stretches share the road.
+                        </p>
+                        <BikeComfortBlock comfort={row.bike_comfort} />
+                      </>
+                    )}
+                    {/* Hand off to their maps app for the actual trip — turn-by-turn is its job */}
+                    <a
+                      href={directionsUrl(row.lat, row.lng, {
+                        mode: expanded.mode === 'bike' ? 'bicycling' : 'transit',
+                        origin: center,
+                      })}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'reach', mode: expanded.mode })}
+                      className="mt-2 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+                    >
+                      Open in Maps ↗
+                    </a>
                   </div>
                 )}
               </div>

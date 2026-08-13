@@ -303,6 +303,10 @@ export async function getBikeNetwork(lat: number, lng: number, radiusMiles: numb
     const oldest = cache.keys().next().value
     if (oldest) cache.delete(oldest)
   }
-  cache.set(cacheKey, { data, expires: Date.now() + CACHE_TTL_MS })
+  // OSM is the only source that names most on-street lanes; when Overpass is
+  // overloaded (returns []), keep the merged result for just an hour instead
+  // of a day so street names self-heal once Overpass recovers.
+  const ttl = osm.length === 0 ? 60 * 60 * 1000 : CACHE_TTL_MS
+  cache.set(cacheKey, { data, expires: Date.now() + ttl })
   return data
 }

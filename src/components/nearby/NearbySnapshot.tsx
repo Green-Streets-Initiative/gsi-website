@@ -15,6 +15,7 @@ import {
   SNAPSHOT_BUS_OPTS, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_TYPES, SNAPSHOT_MAX_STOPS,
   type TransitCorridor,
 } from '@/lib/nearby/corridors'
+import { bikeCorridorIdForName } from '@/lib/nearby/street-names'
 import type { SectionData, BikeNetworkData, CommunityData, GuideItem, ReachRow } from './types'
 import { SectionShell } from './SectionShell'
 import CorridorExplorer from './CorridorExplorer'
@@ -115,7 +116,7 @@ export default function NearbySnapshot() {
               setTransitCorridors(prev => ({
                 ...prev,
                 data: prev.data.map(c => (c.id === corridor.id
-                  ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable' }
+                  ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable', directions: meta.directions }
                   : c)),
               }))
             })
@@ -146,7 +147,7 @@ export default function NearbySnapshot() {
               setTransitCorridors(p => ({
                 ...p,
                 data: p.data.map(c => (c.id === corridor.id
-                  ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable' }
+                  ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable', directions: meta.directions }
                   : c)),
               }))
             })
@@ -193,9 +194,9 @@ export default function NearbySnapshot() {
     // Non-car highways: transit + bike times to landmark destinations
     ;(async () => {
       try {
-        // v=2 busts browser HTTP caches (max-age=86400) when the response
+        // v=3 busts browser HTTP caches (max-age=86400) when the response
         // shape grows — bump it alongside the server's cache-key version
-        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=2`)
+        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=3`)
         if (!res.ok) throw new Error(`reach ${res.status}`)
         const data = await res.json()
         setReach({ status: 'ready', data: data.destinations ?? [] })
@@ -332,23 +333,24 @@ export default function NearbySnapshot() {
 
   const retry = useCallback(() => { if (location) loadAll(location) }, [location, loadAll])
 
-  // Named bike corridors become selectable entities; unnamed segments stay
-  // as background lines on the map
+  // Named bike corridors become selectable entities; everything else —
+  // unnamed segments AND named lanes that didn't make the corridor cut —
+  // stays as background lines, tappable with their street name
   const bikeCorridors = useMemo(
     () => (location && bikeNetwork.data ? buildBikeCorridors(bikeNetwork.data.geojson, location.lat, location.lng) : []),
     [bikeNetwork.data, location]
   )
-  const backgroundLines = useMemo<GeoJSON.FeatureCollection | null>(
-    () => bikeNetwork.data
-      ? {
-          type: 'FeatureCollection',
-          features: bikeNetwork.data.geojson.features.filter(
-            f => !(f.properties as { name?: string | null })?.name
-          ),
-        }
-      : null,
-    [bikeNetwork.data]
-  )
+  const backgroundLines = useMemo<GeoJSON.FeatureCollection | null>(() => {
+    if (!bikeNetwork.data) return null
+    const corridorIds = new Set(bikeCorridors.map(c => c.id))
+    return {
+      type: 'FeatureCollection',
+      features: bikeNetwork.data.geojson.features.filter(f => {
+        const name = (f.properties as { name?: string | null })?.name
+        return !name || !corridorIds.has(bikeCorridorIdForName(name))
+      }),
+    }
+  }, [bikeNetwork.data, bikeCorridors])
 
   /* ── Render ── */
 
@@ -502,7 +504,7 @@ export default function NearbySnapshot() {
       <SectionShell
         eyebrow="Getting in and out"
         title="Your corridors"
-        subtitle="Every route worth knowing — T lines, buses, and comfortable bike routes, with how often they run. Tap any route on the map or in the list to see the whole line and where it goes."
+        subtitle="The T lines, buses, and comfortable bike routes near you, with how often they run — so you can beat traffic instead of being traffic. Tap any route to see the whole line and where it goes."
       >
         <CorridorExplorer
           center={location}

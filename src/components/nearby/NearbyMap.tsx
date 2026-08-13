@@ -182,7 +182,7 @@ export default function NearbyMap({
       // Background tap clears the selection (layer taps are handled by the
       // layer's own handler — skip when the tap actually hit a line)
       map.on('click', (e) => {
-        const layers = ['corridor-lines', 'bike-separated', 'bike-painted'].filter(l => map.getLayer(l))
+        const layers = ['corridor-lines', 'corridor-lines-dashed', 'bike-separated', 'bike-painted'].filter(l => map.getLayer(l))
         if (layers.length > 0) {
           const hits = map.queryRenderedFeatures(e.point, { layers })
           if (hits.length > 0) return
@@ -320,10 +320,13 @@ export default function NearbyMap({
     if (!map || !loadedRef.current || !map.getLayer('corridor-lines')) return
     const sel = selectedCorridorId
 
-    map.setPaintProperty('corridor-lines', 'line-opacity',
-      sel ? ['case', ['==', ['get', 'corridorId'], sel], 0.95, 0.12] : CORRIDOR_OPACITY_DEFAULT)
-    map.setPaintProperty('corridor-lines', 'line-width',
-      sel ? ['case', ['==', ['get', 'corridorId'], sel], 4, 2] : CORRIDOR_WIDTH_DEFAULT)
+    for (const layerId of ['corridor-lines', 'corridor-lines-dashed']) {
+      if (!map.getLayer(layerId)) continue
+      map.setPaintProperty(layerId, 'line-opacity',
+        sel ? ['case', ['==', ['get', 'corridorId'], sel], 0.95, 0.12] : CORRIDOR_OPACITY_DEFAULT)
+      map.setPaintProperty(layerId, 'line-width',
+        sel ? ['case', ['==', ['get', 'corridorId'], sel], 4, 2] : CORRIDOR_WIDTH_DEFAULT)
+    }
     map.setPaintProperty('corridor-casing', 'line-opacity', sel ? 0.25 : 0.6)
 
     // Dim the unnamed bike background while anything is selected
@@ -410,6 +413,7 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
     id: 'corridor-lines',
     type: 'line',
     source: 'corridors',
+    filter: ['!=', ['get', 'dash'], 1],
     paint: {
       'line-color': ['get', 'color'],
       'line-width': emphasis ? 3.5 : CORRIDOR_WIDTH_DEFAULT,
@@ -417,15 +421,32 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
     },
     layout: { 'line-cap': 'round', 'line-join': 'round' },
   })
-
-  map.on('click', 'corridor-lines', (e) => {
-    const id = (e.features?.[0]?.properties as { corridorId?: string })?.corridorId
-    if (!id) return
-    const handler = (map as unknown as { __nearbyOnSelect?: (id: string, s: string) => void }).__nearbyOnSelect
-    handler?.(id, 'map-line')
+  // Dashed twin for painted-lane stretches of bike routes — dasharray can't
+  // be data-driven, so features with dash:1 render here instead
+  map.addLayer({
+    id: 'corridor-lines-dashed',
+    type: 'line',
+    source: 'corridors',
+    filter: ['==', ['get', 'dash'], 1],
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': emphasis ? 3.5 : CORRIDOR_WIDTH_DEFAULT,
+      'line-opacity': emphasis ? 0.95 : CORRIDOR_OPACITY_DEFAULT,
+      'line-dasharray': [1.6, 1.8],
+    },
+    layout: { 'line-join': 'round' },
   })
-  map.on('mouseenter', 'corridor-lines', () => { map.getCanvas().style.cursor = 'pointer' })
-  map.on('mouseleave', 'corridor-lines', () => { map.getCanvas().style.cursor = '' })
+
+  for (const layerId of ['corridor-lines', 'corridor-lines-dashed']) {
+    map.on('click', layerId, (e) => {
+      const id = (e.features?.[0]?.properties as { corridorId?: string })?.corridorId
+      if (!id) return
+      const handler = (map as unknown as { __nearbyOnSelect?: (id: string, s: string) => void }).__nearbyOnSelect
+      handler?.(id, 'map-line')
+    })
+    map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer' })
+    map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = '' })
+  }
 }
 
 function applyBikeBackground(

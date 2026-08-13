@@ -27,8 +27,14 @@ export interface FrequencyInfo {
   tripsPerDay?: number
 }
 
+export interface DirectionStops {
+  directionId: number
+  stops: { id: string; name: string }[]
+}
+
 const shapeCache = new Map<string, { polylines: string[]; expires: number }>()
 const freqCache = new Map<string, { freq: FrequencyInfo | null; expires: number }>()
+const stopsCache = new Map<string, { directions: DirectionStops[]; expires: number }>()
 
 function mbtaUrl(path: string, params: URLSearchParams): string {
   if (MBTA_API_KEY) params.set('api_key', MBTA_API_KEY)
@@ -63,6 +69,39 @@ async function getShapes(routeId: string): Promise<string[]> {
     shapeCache.set(routeId, { polylines, expires: Date.now() + SHAPE_TTL_MS })
   }
   return polylines
+}
+
+/** Every stop along the route, per direction, in travel order — the MBTA
+ *  returns stop-sequence order when both route and direction_id are set.
+ *  As static as the shape, so it shares the 7-day cache convention. */
+async function getRouteStops(routeId: string): Promise<DirectionStops[]> {
+  const cached = stopsCache.get(routeId)
+  if (cached && cached.expires > Date.now()) return cached.directions
+
+  const directions: DirectionStops[] = []
+  for (const dir of [0, 1]) {
+    const res = await fetch(
+      mbtaUrl('/stops', new URLSearchParams({
+        'filter[route]': routeId,
+        'filter[direction_id]': String(dir),
+        'fields[stop]': 'name',
+        'page[limit]': '200',
+      })),
+      { signal: AbortSignal.timeout(8000) }
+    )
+    const data = await res.json()
+    if (!res.ok || data.errors) throw new Error(`stops ${res.status}`)
+    const stops = ((data.data ?? []) as { id: string; attributes?: { name?: string } }[])
+      .map(s => ({ id: s.id, name: s.attributes?.name ?? '' }))
+      .filter(s => s.name)
+    if (stops.length > 0) directions.push({ directionId: dir, stops })
+  }
+
+  if (directions.length > 0) {
+    evictIfFull(stopsCache)
+    stopsCache.set(routeId, { directions, expires: Date.now() + SHAPE_TTL_MS })
+  }
+  return directions
 }
 
 /** Today if a weekday, else next Monday — labels always say "weekdays". */
@@ -183,13 +222,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'route and stop required' }, { status: 400 })
   }
 
-  const [polylines, frequency] = await Promise.all([
+  const [polylines, frequency, directions] = await Promise.all([
     getShapes(routeId).catch(() => [] as string[]),
     getFrequency(routeId, stopId).catch(() => null),
+    getRouteStops(routeId).catch(() => [] as DirectionStops[]),
   ])
 
   return NextResponse.json(
-    { polylines, frequency },
+    { polylines, frequency, directions },
     { headers: { 'Cache-Control': 'public, max-age=3600, stale-while-revalidate=3600' } }
   )
 }

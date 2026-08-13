@@ -45,6 +45,31 @@ export interface ReachSegment {
   label: string | null
 }
 
+/** Comfort tiers in ComfortBar vocabulary: 'protected' covers paths and
+ *  separated lanes, 'bike_lane' is paint, 'shared_road' has no mapped
+ *  bike infrastructure. */
+export type BikeComfortTier = 'protected' | 'bike_lane' | 'shared_road'
+
+export interface BikeComfortSegmentData {
+  rating: BikeComfortTier
+  distance_mi: number
+  /** This stretch of the route, encoded — drawn in tier colors on the map */
+  polyline: string
+}
+
+export interface BikeStreetComfort {
+  label: string
+  rating: BikeComfortTier
+  distance_mi: number
+}
+
+export interface BikeComfortData {
+  rating: BikeComfortTier | 'mixed' | null
+  segments: BikeComfortSegmentData[]
+  /** Per-street rollup, longest first */
+  streets: BikeStreetComfort[]
+}
+
 export interface ReachRow {
   id: string
   name: string
@@ -58,6 +83,7 @@ export interface ReachRow {
   bike_is_estimate?: boolean
   bike_steps?: ReachStep[]
   bike_polyline?: string | null
+  bike_comfort?: BikeComfortData | null
 }
 
 export interface GuideItem {

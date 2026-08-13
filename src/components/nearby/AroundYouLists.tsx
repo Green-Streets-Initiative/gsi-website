@@ -6,11 +6,12 @@ import { formatDistance, walkTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import { BLUEBIKES_NOTE } from '@/lib/nearby/config'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
+import { TrainIcon, BusIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
 import type { SectionStatus } from './types'
 import { SkeletonRows, ErrorCard } from './SectionShell'
 import {
-  type StationGroup, type VisibleLayers, routeTermini, soonestAtStation, freqShort,
+  type StationGroup, type VisibleLayers, routeTermini, freqShort,
 } from './useNearbyModel'
 
 /**
@@ -35,7 +36,10 @@ export function MapLegend({ visible, onToggle }: {
   return (
     <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[0.75rem] text-white/75">
       <button onClick={() => onToggle('transit')} aria-pressed={visible.transit} className={legendChipClass(visible.transit)}>
-        <span className={`inline-block h-[3px] w-6 rounded bg-[#ED8B00] ${visible.transit ? '' : 'opacity-40'}`} />
+        <span className={`flex items-center gap-0.5 ${visible.transit ? 'text-white/90' : 'text-white/60'}`}>
+          <TrainIcon size={13} />
+          <BusIcon size={13} />
+        </span>
         T &amp; bus routes
       </button>
       <button onClick={() => onToggle('bike')} aria-pressed={visible.bike} className={legendChipClass(visible.bike)}>
@@ -92,9 +96,12 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
       <div className="space-y-2.5">
         {stations.map(st => (
           <div key={`${st.isRail ? 'r' : 'b'}-${st.key}`} className="rounded-xl border border-white/[0.08] bg-[#242538] px-3 py-3">
-            {/* Station identity leads */}
+            {/* Station identity leads — the glyph says train or bus at a glance */}
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 px-1.5">
-              <span className="text-[0.95rem] font-bold text-white">{st.name}</span>
+              <span className="flex items-center gap-1.5 text-[0.95rem] font-bold text-white">
+                <span className="text-white/80">{st.isRail ? <TrainIcon size={15} /> : <BusIcon size={15} />}</span>
+                {st.name}
+              </span>
               <span className="text-[0.78rem] text-white/75">
                 {walkTimeMinutes(st.dist)} min walk · {formatDistance(st.dist)}
               </span>
@@ -104,8 +111,8 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
               {st.routes.map(r => {
                 const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
                 const active = highlightedCorridorId === `transit:${r.id}`
-                const next = soonestAtStation(r)
                 const fs = corridor ? freqShort(corridor.frequency) : null
+                const dirs = r.arrivals.filter(a => a.direction)
                 return (
                   <button
                     key={r.id}
@@ -118,13 +125,28 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                     >
                       {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[0.8rem] text-white/80">{routeTermini(r)}</span>
-                    <span className="text-[0.75rem] text-white/75">
+                    <span className="ml-auto text-[0.75rem] text-white/75">
                       {corridor?.frequency === null && <span className="inline-block h-3 w-20 animate-pulse rounded bg-white/[0.08] align-middle" aria-hidden="true" />}
                       {corridor?.frequency === 'unavailable' && 'schedule unavailable'}
                       {fs}
-                      {next !== null && <strong className="ml-1.5 font-bold text-[#BAF14D]">{next === 0 ? 'now' : `in ${next} min`}</strong>}
                     </span>
+                    {/* One line per direction — a new rider needs to know which WAY the next one is going */}
+                    {dirs.length > 0 ? (
+                      <span className="w-full space-y-0.5">
+                        {dirs.map(a => (
+                          <span key={a.direction} className="flex items-baseline justify-between gap-2">
+                            <span className="min-w-0 truncate text-[0.8rem] text-white/80">→ {a.direction}</span>
+                            {a.nextMin !== null && (
+                              <strong className="shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
+                                {a.nextMin === 0 ? 'now' : `in ${a.nextMin} min`}
+                              </strong>
+                            )}
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="min-w-0 flex-1 truncate text-[0.8rem] text-white/80">{routeTermini(r)}</span>
+                    )}
                   </button>
                 )
               })}
