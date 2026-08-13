@@ -282,12 +282,14 @@ async function fetchOsm(lat: number, lng: number, radiusMiles: number): Promise<
 /* ── Name inheritance ──
  * The three sources overlap undeduped, so an unnamed MAPC/OSM segment
  * usually lies meters from a NAMED duplicate of the same street in the same
- * array. Unnamed features borrow the closest parallel named neighbor's name:
- * 25 m keeps donors on the same street (40 m can reach a parallel one), and
- * the bearing gate keeps a cross-street at an intersection from donating.
- * Runs inside the 24 h memo, so both consumers (map drawing + reach comfort)
+ * array. Unnamed features borrow the closest parallel named neighbor's name.
+ * 45 m spans a wide arterial (Cambridge St digitizes a side per row ~41 m
+ * apart — a real miss at 25 m) while the ±30° bearing gate keeps
+ * cross-streets from donating; adjacent parallel streets sit ≥60 m apart in
+ * this metro, so nearest-parallel-wins stays on the right street. Runs
+ * inside the 24 h memo, so both consumers (map drawing + reach comfort)
  * get named lanes; newly named mileage also joins corridor grouping. */
-const INHERIT_M = 25
+const INHERIT_M = 45
 const INHERIT_BEARING_DEG = 30
 const INHERIT_CELL_DEG = 0.0005 // ~55 m grid cells
 
@@ -351,7 +353,7 @@ function inheritNames(features: LaneFeature[]): void {
           if (!cell) continue
           for (const s of cell) {
             // Degree prefilter before the exact distance (reach-route idiom)
-            if (Math.abs(s.lat - y) > 0.0003 || Math.abs(s.lng - x) > 0.0004) continue
+            if (Math.abs(s.lat - y) > 0.0005 || Math.abs(s.lng - x) > 0.0006) continue
             const d = haversineMeters(y, x, s.lat, s.lng)
             if (d > INHERIT_M || d >= bestD) continue
             if (!bearingsParallel(bearingOf(i), bearingOf(s.fi), INHERIT_BEARING_DEG)) continue

@@ -329,6 +329,11 @@ const QUALITY_RANK: Record<LaneVertex['quality'], number> = { path: 3, protected
 const COMFORT_EXTRA_MIN = 5
 const COMFORT_EXTRA_RATIO = 1.25
 
+/** A named lane this far out can still NAME a sample (not rate it) — the
+ *  rated lane may be an anonymous row whose named twin is across a wide
+ *  street. Keeps the per-street list covering what the route actually rides. */
+const NAME_FALLBACK_RADIUS_METERS = 80
+
 function classifySample(
   slat: number,
   slng: number,
@@ -338,9 +343,13 @@ function classifySample(
   let streetKey: string | null = null
   let streetDisplay: string | null = null
   let streetD = MATCH_RADIUS_METERS
+  let farKey: string | null = null
+  let farDisplay: string | null = null
+  let farD = NAME_FALLBACK_RADIUS_METERS
   for (const v of index) {
-    if (Math.abs(v.lat - slat) > 0.0006 || Math.abs(v.lng - slng) > 0.0008) continue
+    if (Math.abs(v.lat - slat) > 0.001 || Math.abs(v.lng - slng) > 0.0012) continue
     const d = haversineMeters(slat, slng, v.lat, v.lng)
+    if (v.key && d < farD) { farD = d; farKey = v.key; farDisplay = v.display }
     if (d >= MATCH_RADIUS_METERS) continue
     // Overlapping sources may disagree — take the BEST infrastructure present
     const q = QUALITY_RANK[v.quality]
@@ -349,6 +358,9 @@ function classifySample(
   }
   const rating: ComfortRating =
     bestQ >= 3 ? 'path' : bestQ === 2 ? 'protected' : bestQ === 1 ? 'bike_lane' : 'shared_road'
+  // Only rated samples borrow the wider name — a shared-road stretch with no
+  // lane at all shouldn't claim a street it isn't riding infrastructure on
+  if (!streetKey && bestQ > 0) return { rating, streetKey: farKey, streetDisplay: farDisplay }
   return { rating, streetKey, streetDisplay }
 }
 
@@ -472,7 +484,8 @@ export async function getReach(lat: number, lng: number): Promise<{ destinations
   // v5: comfort tiers split 'path' from 'protected'
   // v6: sidepath detection reclassifies street-named "paths" as protected lanes
   // v7: unnamed lanes inherit names from overlapping segments
-  const cacheKey = `v7:${lat3},${lng3}`
+  // v8: 45 m inheritance + comfort street-name fallback (80 m)
+  const cacheKey = `v8:${lat3},${lng3}`
 
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) return cached.data

@@ -34,25 +34,42 @@ export default function BikeComfortBlock({ comfort }: { comfort: BikeComfortData
         colors={NEARBY_COMFORT_COLORS}
         labels={NEARBY_COMFORT_LABELS}
       />
-      {comfort.streets.length > 0 && (
-        <div className="space-y-0.5 px-0.5">
-          {comfort.streets.slice(0, 4).map(s => (
-            <div key={s.label} className="flex items-baseline justify-between gap-2 text-[0.78rem]">
-              <span className="flex min-w-0 items-center gap-1.5 text-white/80">
-                <span
-                  className="h-2 w-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: NEARBY_COMFORT_COLORS[s.rating] }}
-                  aria-hidden="true"
-                />
-                <span className="truncate">{s.label}</span>
-              </span>
-              <span className="shrink-0 tabular-nums text-white/75">
-                {s.distance_mi} mi {NEARBY_COMFORT_LABELS[s.rating].toLowerCase()}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      {comfort.streets.length > 0 && (() => {
+        // The server sends up to 6 streets; show them all, and account for
+        // whatever the named list doesn't cover (unnamed lanes, connectors,
+        // short blocks) so the list always adds up to the route
+        const totalMi = comfort.segments.reduce((a, s) => a + s.distance_mi, 0)
+        const listedMi = comfort.streets.reduce((a, s) => a + s.distance_mi, 0)
+        const otherMi = Math.round((totalMi - listedMi) * 10) / 10
+        return (
+          <div className="space-y-0.5 px-0.5">
+            {comfort.streets.map(s => (
+              <div key={s.label} className="flex items-baseline justify-between gap-2 text-[0.78rem]">
+                <span className="flex min-w-0 items-center gap-1.5 text-white/80">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: NEARBY_COMFORT_COLORS[s.rating] }}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">{s.label}</span>
+                </span>
+                <span className="shrink-0 tabular-nums text-white/75">
+                  {s.distance_mi} mi {NEARBY_COMFORT_LABELS[s.rating].toLowerCase()}
+                </span>
+              </div>
+            ))}
+            {otherMi >= 0.2 && (
+              <div className="flex items-baseline justify-between gap-2 text-[0.78rem]">
+                <span className="flex min-w-0 items-center gap-1.5 text-white/75">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-white/[0.25]" aria-hidden="true" />
+                  <span className="truncate">Connecting stretches</span>
+                </span>
+                <span className="shrink-0 tabular-nums text-white/75">{otherMi} mi</span>
+              </div>
+            )}
+          </div>
+        )
+      })()}
     </div>
   )
 }
