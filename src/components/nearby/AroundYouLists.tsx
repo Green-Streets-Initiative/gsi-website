@@ -6,6 +6,7 @@ import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import { BLUEBIKES_NOTE } from '@/lib/nearby/config'
+import { protectionLabel } from '@/lib/nearby/bike-labels'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
@@ -191,10 +192,10 @@ export function BikeRouteList({ bikeCorridors, highlightedCorridorId, onSelect }
           >
             <div className="text-[0.9rem] font-semibold text-white">{c.name}</div>
             <div className="mt-0.5 text-[0.8rem]">
-              {c.protection === 'path' && <span className="font-bold text-[#BAF14D]">Multi-use path</span>}
-              {c.protection === 'protected' && <span className="font-bold text-[#BAF14D]">Protected end to end — barrier from traffic</span>}
-              {c.protection === 'mostly-protected' && <span className="text-white/80">Mostly protected — some painted stretches</span>}
-              {c.protection === 'painted' && <span className="text-white/80">Painted lane — paint marks your space</span>}
+              {(() => {
+                const p = protectionLabel(c.protection, c.onewayOnly)
+                return <span className={p.emphasis ? 'font-bold text-[#BAF14D]' : 'text-white/80'}>{p.text}</span>
+              })()}
             </div>
             <div className="mt-1 text-[0.8rem] text-white/80">
               {c.lengthMiles} mi through this area · nearest point {bikeTimeMinutes(c.accessDistanceMeters)} min ride ({formatDistance(c.accessDistanceMeters)})

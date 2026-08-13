@@ -40,6 +40,36 @@ export function canonicalStreetKey(name: string): string {
     .replace(/\bbike path\b/, 'path')
 }
 
+/** Last-word vocabulary that marks a name as a STREET ("Summer Street",
+ *  "McGrath Highway") rather than a standalone facility ("Community Path",
+ *  "Minuteman Bikeway"). Compared after canonicalStreetKey expansion, so
+ *  "Summer St" and "SUMMER ST" match too. "Broadway" is its own entry —
+ *  the region's Broadways are streets, and the word never splits. */
+const STREET_TYPE_WORDS = new Set([
+  'street', 'avenue', 'road', 'highway', 'boulevard', 'parkway', 'turnpike',
+  'pike', 'drive', 'place', 'square', 'row', 'bridge', 'court', 'terrace',
+  'circle', 'extension', 'lane', 'broadway',
+])
+
+/** Any of these words anywhere in the name marks a genuinely car-free
+ *  facility ("McGrath Pedestrian Bridge", "Alewife Greenway") — they veto
+ *  the street-name call even when the last word is street-like. */
+const PATHISH_WORDS = new Set([
+  'path', 'trail', 'greenway', 'esplanade', 'bikeway', 'footbridge',
+  'pedestrian', 'riverwalk', 'walkway', 'boardwalk', 'rail',
+])
+
+/** True when a bike-facility name reads as a street name. The sources often
+ *  carry a separated on-street lane as its own line named after the street
+ *  it runs along — that's a sidepath (protected lane), not a car-free path. */
+export function looksLikeStreetName(name: string | null | undefined): boolean {
+  if (!name) return false
+  const words = canonicalStreetKey(name).split(' ').filter(Boolean)
+  if (words.length === 0) return false
+  if (words.some(w => PATHISH_WORDS.has(w))) return false
+  return STREET_TYPE_WORDS.has(words[words.length - 1])
+}
+
 const isShouty = (s: string) => s === s.toUpperCase() && /[A-Z]/.test(s)
 
 /** The spelling to display for a merged group: the most common variant,

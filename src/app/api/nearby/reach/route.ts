@@ -472,7 +472,8 @@ export async function GET(req: NextRequest) {
   const lng3 = Math.round(lng * 1000) / 1000
   // v4: bike chips + comfort streets are in travel order — don't serve older ordering
   // v5: comfort tiers split 'path' from 'protected'
-  const cacheKey = `v5:${lat3},${lng3}`
+  // v6: sidepath detection reclassifies street-named "paths" as protected lanes
+  const cacheKey = `v6:${lat3},${lng3}`
 
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) {

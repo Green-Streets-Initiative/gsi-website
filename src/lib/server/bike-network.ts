@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { looksLikeStreetName } from '@/lib/nearby/street-names'
+
 /**
  * Bike-lane network geometry around a point, merged from three sources —
  * MAPC TrailMap, MassDOT BikeInventory, OpenStreetMap Overpass. Shared by
@@ -50,7 +52,23 @@ export type Quality = 'path' | 'protected' | 'painted'
 export interface LaneFeature {
   type: 'Feature'
   geometry: { type: 'LineString'; coordinates: [number, number][] }
-  properties: { quality: Quality; name: string | null; source: 'mapc' | 'massdot' | 'osm'; unpaved?: boolean }
+  properties: {
+    quality: Quality
+    name: string | null
+    source: 'mapc' | 'massdot' | 'osm'
+    unpaved?: boolean
+    /** OSM only: a separated lane that runs in one direction (oneway=yes on
+     *  its own cycleway geometry). Absent = unknown, not two-way. */
+    oneway?: boolean
+  }
+}
+
+/** Sources record sidepaths — separated on-street lanes drawn as their own
+ *  line — under the adjacent street's name ("Summer Street"), in the same
+ *  layers/tags as car-free paths. A "path" named like a street is a
+ *  separated lane, not a greenway. */
+function dePath(quality: Quality, name: string | null): Quality {
+  return quality === 'path' && looksLikeStreetName(name) ? 'protected' : quality
 }
 
 export interface BikeNetworkResponse {
@@ -130,7 +148,7 @@ async function fetchMapc(lat: number, lng: number, radiusMiles: number): Promise
               out.push({
                 type: 'Feature',
                 geometry: { type: 'LineString', coordinates: path as [number, number][] },
-                properties: { quality, name, source: 'mapc', ...(id === 10 ? { unpaved: true } : {}) },
+                properties: { quality: dePath(quality, name), name, source: 'mapc', ...(id === 10 ? { unpaved: true } : {}) },
               })
             }
           }
@@ -181,7 +199,7 @@ async function fetchMassDot(lat: number, lng: number, radiusMiles: number): Prom
         out.push({
           type: 'Feature',
           geometry: { type: 'LineString', coordinates: path as [number, number][] },
-          properties: { quality, name, source: 'massdot' },
+          properties: { quality: dePath(quality, name), name, source: 'massdot' },
         })
       }
     }
@@ -222,15 +240,22 @@ async function fetchOsm(lat: number, lng: number, radiusMiles: number): Promise<
       for (const el of json.elements ?? []) {
         if (el.type !== 'way' || !Array.isArray(el.geometry) || el.geometry.length < 2) continue
         const tags: Record<string, string> = el.tags ?? {}
-        // Dedicated cycleway or bike-designated path = car-free; a cycleway
-        // "track" alongside a road = protected; a "lane" = paint
-        const isPath = tags.highway === 'cycleway' || tags.bicycle === 'designated'
+        // A way drawn as its own cycleway/path geometry is car-free — UNLESS
+        // it's a sidepath (is_sidepath=yes, or named after the street it runs
+        // along): that's a separated lane. A "track" tagged on the road way =
+        // protected; a "lane" = paint.
+        const ownGeometry = tags.highway === 'cycleway'
+          || ((tags.highway === 'path' || tags.highway === 'track') && tags.bicycle === 'designated')
         const isTrack = tags.cycleway === 'track' || tags['cycleway:left'] === 'track' || tags['cycleway:right'] === 'track'
-        const quality: Quality = isPath ? 'path' : isTrack ? 'protected' : 'painted'
+        const sidepath = tags.is_sidepath === 'yes' || looksLikeStreetName(tags.name)
+        const quality: Quality = ownGeometry ? (sidepath ? 'protected' : 'path') : isTrack ? 'protected' : 'painted'
+        // Direction is only trustworthy on own-geometry ways — oneway on a
+        // road way describes the cars, not the bike lane
+        const oneway = ownGeometry && tags.oneway === 'yes' && tags['oneway:bicycle'] !== 'no'
         out.push({
           type: 'Feature',
           geometry: { type: 'LineString', coordinates: el.geometry.map((p: { lat: number; lon: number }) => [p.lon, p.lat] as [number, number]) },
-          properties: { quality, name: tags.name ?? null, source: 'osm' },
+          properties: { quality, name: tags.name ?? null, source: 'osm', ...(oneway ? { oneway: true } : {}) },
         })
       }
       return out

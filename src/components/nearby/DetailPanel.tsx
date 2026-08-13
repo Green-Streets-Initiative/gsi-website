@@ -6,6 +6,7 @@ import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import { CORRIDOR_UNSPLASH } from '@/lib/nearby/config'
+import { protectionLabel, LANE_TIER_COPY, LANE_SOURCE_LABEL } from '@/lib/nearby/bike-labels'
 import { bearingDegrees } from '@/lib/geo/polyline'
 import type { TransitCorridor, BikeCorridor, FrequencyInfo } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon } from '@/components/wayfinding/WayfindingIcons'
@@ -20,25 +21,8 @@ import {
  * bottom sheet on mobile — same content, different frame.
  */
 
-const TIER_COPY: Record<string, { title: string; detail: string }> = {
-  path: {
-    title: 'Multi-use path',
-    detail: 'A path with its own right-of-way — walk, ride, or roll. The most comfortable riding there is.',
-  },
-  protected: {
-    title: 'Protected bike lane',
-    detail: 'A physical barrier — curb, posts, or parking — sits between you and traffic.',
-  },
-  painted: {
-    title: 'Painted bike lane',
-    detail: 'You share the road, with paint marking your space. Fine for confident riders.',
-  },
-}
-const SOURCE_LABEL: Record<string, string> = {
-  mapc: 'MAPC TrailMap',
-  massdot: 'MassDOT inventory',
-  osm: 'OpenStreetMap',
-}
+const TIER_COPY = LANE_TIER_COPY
+const SOURCE_LABEL = LANE_SOURCE_LABEL
 
 /* ── Panel photos. Priority: curated Unsplash override → the server's
       recognizable-photo pipeline (Wikipedia lead image / vision-picked
@@ -257,14 +241,17 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, on
           <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">Bike route — shown on the map</div>
           <div className="text-[0.95rem] font-bold text-white">{c.name}</div>
           <div className="mt-0.5 text-[0.8rem]">
-            {c.protection === 'path' && <span className="font-bold text-[#BAF14D]">Multi-use path</span>}
-            {c.protection === 'protected' && <span className="font-bold text-[#BAF14D]">Protected end to end</span>}
-            {c.protection === 'mostly-protected' && <span className="text-white/80">Mostly protected — some painted stretches</span>}
-            {c.protection === 'painted' && <span className="text-white/80">Painted lane — paint marks your space</span>}
+            {(() => {
+              const p = protectionLabel(c.protection, c.onewayOnly)
+              return <span className={p.emphasis ? 'font-bold text-[#BAF14D]' : 'text-white/80'}>{p.text}</span>
+            })()}
           </div>
           <div className="mt-0.5 text-[0.78rem] text-white/80">
             {c.lengthMiles} mi through this area · nearest point {bikeTimeMinutes(c.accessDistanceMeters)} min ride
           </div>
+          {SOURCE_LABEL[c.source] && (
+            <div className="mt-1 text-[0.72rem] text-white/70">Data: {SOURCE_LABEL[c.source]}</div>
+          )}
           <PanelPhoto spec={corridorPhotoSpec(c)} alt={c.name} />
         </div>
       )

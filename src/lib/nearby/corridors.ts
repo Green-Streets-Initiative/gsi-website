@@ -7,7 +7,7 @@
  * /api/nearby/corridor-meta endpoint (server-side MBTA calls, cached
  * across visitors) with a sessionStorage layer on top.
  */
-import { decodePolyline } from '@/lib/geo/polyline'
+import { decodePolyline, bearingDegrees } from '@/lib/geo/polyline'
 import { haversineMeters, walkTimeMinutes } from '@/lib/wayfinding/geo'
 import { fetchStopTopology } from './live-data'
 import { canonicalStreetKey, displayStreetName } from './street-names'
@@ -46,9 +46,20 @@ export interface BikeCorridor {
   id: string
   kind: 'bike'
   name: string
-  /** 'path' = car-free the whole way; 'protected' = physical separation;
-   *  'mostly-protected' = comfortable majority; 'painted' = paint only */
+  /** 'path' = car-free; 'protected' = physical separation; 'mostly-protected'
+   *  = comfortable majority; 'painted' = paint only. Fractions are of MAPPED
+   *  facility length within the winning source — stretches with no mapped
+   *  facility are invisible to them, so labels must never claim the street
+   *  is covered end to end. */
   protection: 'path' | 'protected' | 'mostly-protected' | 'painted'
+  pathFraction: number
+  comfortableFraction: number
+  /** Every separated OSM segment is oneway, all pointing the same way —
+   *  the separation runs in one direction only (e.g. Summer St). */
+  onewayOnly: boolean
+  /** The source whose mileage won ('mapc' | 'massdot' | 'osm') — shown as
+   *  the data attribution on the corridor detail card. */
+  source: string
   lengthMiles: number
   accessDistanceMeters: number
   accessPoint: { lat: number; lng: number }
@@ -191,7 +202,7 @@ export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<Corr
 interface LaneFeatureLike {
   type: 'Feature'
   geometry: { type: 'LineString'; coordinates: [number, number][] }
-  properties: { quality: string; name: string | null; source: string; corridorId?: string }
+  properties: { quality: string; name: string | null; source: string; corridorId?: string; oneway?: boolean }
 }
 
 function featureLengthMeters(f: LaneFeatureLike): number {
@@ -329,6 +340,23 @@ export function buildBikeCorridors(
       : comfortableFraction >= 0.5 ? 'mostly-protected'
       : 'painted'
 
+    // One-direction call: only OSM carries direction. All separated OSM
+    // segments oneway AND pointing roughly the same way = the separation
+    // serves one direction (a pair of opposite one-way tracks would be
+    // both directions, and fails the bearing check at ~180° apart).
+    const osmSeparated = cluster.filter(f => f.properties.source === 'osm' && f.properties.quality !== 'painted')
+    let onewayOnly = false
+    if (osmSeparated.length > 0 && osmSeparated.every(f => f.properties.oneway === true)) {
+      const bearings = osmSeparated.map(f => {
+        const c = f.geometry.coordinates
+        return bearingDegrees(c[0][1], c[0][0], c[c.length - 1][1], c[c.length - 1][0])
+      })
+      onewayOnly = bearings.every(b => {
+        const diff = Math.abs(b - bearings[0]) % 360
+        return Math.min(diff, 360 - diff) <= 120
+      })
+    }
+
     const corridorId = `bike:${key.replace(/[^a-z0-9]+/g, '-')}`
     // Color must be stamped here — the map's corridor layer reads
     // properties.color, and a missing value renders invisibly on dark.
@@ -352,6 +380,10 @@ export function buildBikeCorridors(
         kind: 'bike',
         name: displayStreetName(group.variants),
         protection,
+        pathFraction: Math.round(pathFraction * 100) / 100,
+        comfortableFraction: Math.round(comfortableFraction * 100) / 100,
+        onewayOnly,
+        source: bestSource,
         lengthMiles: Math.round(lengthMiles * 10) / 10,
         accessDistanceMeters: Math.round(nearestM),
         accessPoint: nearestPt,
