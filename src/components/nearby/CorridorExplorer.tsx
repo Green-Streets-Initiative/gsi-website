@@ -116,12 +116,16 @@ const SOURCE_LABEL: Record<string, string> = {
   osm: 'OpenStreetMap',
 }
 
-/* ── Panel photos: curated Unsplash when we've picked one, otherwise a
-      Street View frame of the actual infrastructure, aimed along it ── */
+/* ── Panel photos. Priority: curated Unsplash override → the server's
+      recognizable-photo pipeline (Wikipedia lead image / vision-picked
+      Places photo) → Street View aimed along the infrastructure ── */
+
+interface SvSpec { lat: number; lng: number; heading?: number }
 
 type PhotoSpec =
   | { kind: 'sv'; lat: number; lng: number; heading?: number }
   | { kind: 'unsplash'; id: string }
+  | { kind: 'resolve'; name: string; photoKind: 'station' | 'bike' | 'line'; lat: number; lng: number; sv?: SvSpec }
 
 /** Bearing along a corridor's geometry from the vertex nearest a point. */
 function headingAlong(features: GeoJSON.Feature[], nearLat: number, nearLng: number): number | undefined {
@@ -146,50 +150,75 @@ function corridorPhotoSpec(c: TransitCorridor | BikeCorridor): PhotoSpec {
   const curated = CORRIDOR_UNSPLASH[c.name.toLowerCase()]
   if (curated) return { kind: 'unsplash', id: curated }
   if (c.kind === 'bike') {
-    return {
-      kind: 'sv',
+    const sv: SvSpec = {
       lat: c.accessPoint.lat,
       lng: c.accessPoint.lng,
       heading: headingAlong(c.geojson.features, c.accessPoint.lat, c.accessPoint.lng),
     }
+    return { kind: 'resolve', name: c.name, photoKind: 'bike', lat: c.accessPoint.lat, lng: c.accessPoint.lng, sv }
   }
-  return {
-    kind: 'sv',
+  const sv: SvSpec = {
     lat: c.access.lat,
     lng: c.access.lng,
     heading: c.shape ? headingAlong(c.shape.features, c.access.lat, c.access.lng) : undefined,
   }
+  // Rail lines have recognizable canonical photos; bus routes don't — a
+  // Street View of the boarding corner is the more useful picture there
+  if (c.kind === 'bus') return { kind: 'sv', ...sv }
+  return { kind: 'resolve', name: c.name, photoKind: 'line', lat: c.access.lat, lng: c.access.lng, sv }
 }
+
+function svProxyUrl(sv: SvSpec): string {
+  const params = new URLSearchParams({ lat: String(sv.lat), lng: String(sv.lng) })
+  if (sv.heading !== undefined) params.set('heading', String(Math.round(sv.heading)))
+  return `/api/nearby/corridor-photo?${params}`
+}
+
+interface PhotoMeta { url: string; attribution?: string | null; attributionUrl?: string | null }
 
 function PanelPhoto({ spec, alt }: { spec: PhotoSpec; alt: string }) {
   const [hidden, setHidden] = useState(false)
   const [loaded, setLoaded] = useState(false)
-  const [unsplash, setUnsplash] = useState<{ url: string; attribution: string; attributionUrl: string } | null>(null)
+  const [meta, setMeta] = useState<PhotoMeta | null>(null)
+  // Resolve mode degrades to the Street View spec when the pipeline has
+  // nothing (or its image fails to load)
+  const [useSv, setUseSv] = useState(false)
 
-  const specKey = spec.kind === 'unsplash' ? spec.id : `${spec.lat},${spec.lng}`
+  const specKey = spec.kind === 'unsplash' ? spec.id
+    : spec.kind === 'resolve' ? `${spec.photoKind}:${spec.name}`
+    : `${spec.lat},${spec.lng}`
   useEffect(() => {
     setHidden(false)
     setLoaded(false)
-    setUnsplash(null)
-    if (spec.kind !== 'unsplash') return
+    setMeta(null)
+    setUseSv(false)
+    if (spec.kind === 'sv') return
     let cancelled = false
-    fetch(`/api/nearby/corridor-photo?unsplash=${encodeURIComponent(spec.id)}`)
+    const url = spec.kind === 'unsplash'
+      ? `/api/nearby/corridor-photo?unsplash=${encodeURIComponent(spec.id)}`
+      : `/api/nearby/corridor-photo?resolve=1&name=${encodeURIComponent(spec.name)}&kind=${spec.photoKind}&lat=${spec.lat}&lng=${spec.lng}`
+    fetch(url)
       .then(r => (r.ok ? r.json() : null))
-      .then(data => { if (!cancelled) data ? setUnsplash(data) : setHidden(true) })
-      .catch(() => { if (!cancelled) setHidden(true) })
+      .then(data => {
+        if (cancelled) return
+        if (data?.url) setMeta(data)
+        else if (spec.kind === 'resolve' && spec.sv) setUseSv(true)
+        else setHidden(true)
+      })
+      .catch(() => {
+        if (cancelled) return
+        if (spec.kind === 'resolve' && spec.sv) setUseSv(true)
+        else setHidden(true)
+      })
     return () => { cancelled = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spec.kind, specKey])
 
   if (hidden) return null
 
-  const src = spec.kind === 'unsplash'
-    ? unsplash?.url
-    : (() => {
-        const params = new URLSearchParams({ lat: String(spec.lat), lng: String(spec.lng) })
-        if (spec.heading !== undefined) params.set('heading', String(Math.round(spec.heading)))
-        return `/api/nearby/corridor-photo?${params}`
-      })()
+  const src = spec.kind === 'sv' ? svProxyUrl(spec)
+    : useSv && spec.kind === 'resolve' && spec.sv ? svProxyUrl(spec.sv)
+    : meta?.url
   if (!src) return null
 
   // Eager load (it's one on-demand image) and collapsed until it actually
@@ -202,12 +231,24 @@ function PanelPhoto({ spec, alt }: { spec: PhotoSpec; alt: string }) {
         alt={alt}
         className="h-32 w-full rounded-lg object-cover sm:h-36"
         onLoad={() => setLoaded(true)}
-        onError={() => setHidden(true)}
+        onError={() => {
+          setLoaded(false)
+          if (!useSv && spec.kind === 'resolve' && spec.sv) {
+            setMeta(null)
+            setUseSv(true)
+          } else {
+            setHidden(true)
+          }
+        }}
       />
-      {spec.kind === 'unsplash' && unsplash && (
-        <a href={unsplash.attributionUrl} target="_blank" rel="noopener noreferrer" className="mt-0.5 block text-[0.65rem] text-white/70 hover:text-white">
-          {unsplash.attribution}
-        </a>
+      {!useSv && meta?.attribution && (
+        meta.attributionUrl ? (
+          <a href={meta.attributionUrl} target="_blank" rel="noopener noreferrer" className="mt-0.5 block text-[0.65rem] text-white/70 hover:text-white">
+            {meta.attribution}
+          </a>
+        ) : (
+          <span className="mt-0.5 block text-[0.65rem] text-white/70">{meta.attribution}</span>
+        )
       )}
     </div>
   )
@@ -402,7 +443,7 @@ export default function CorridorExplorer({
         {transitStatus === 'error' && <ErrorCard label="Couldn't reach the MBTA right now." onRetry={onRetry} />}
         {transitStatus === 'ready' && stations.length === 0 && (
           <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
-            No MBTA stations or stops close to this spot — the map shows what's in the wider area.
+            No MBTA stations or stops close to this spot — the map shows what&apos;s in the wider area.
           </p>
         )}
         <div className="space-y-2.5">
@@ -576,7 +617,12 @@ function DetailContent({ selection, stationByKey, corridorById, docks, onSelectC
           })}
         </div>
         <div className="mt-1 text-[0.72rem] text-white/70">Tap a route to see the whole line on the map</div>
-        <PanelPhoto spec={{ kind: 'sv', lat: st.lat, lng: st.lng }} alt={st.name} />
+        <PanelPhoto
+          spec={st.isRail
+            ? { kind: 'resolve', name: st.name, photoKind: 'station', lat: st.lat, lng: st.lng, sv: { lat: st.lat, lng: st.lng } }
+            : { kind: 'sv', lat: st.lat, lng: st.lng }}
+          alt={st.name}
+        />
       </div>
     )
   }

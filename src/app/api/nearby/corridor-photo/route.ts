@@ -1,22 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveUnsplashPhoto } from '@/lib/unsplash'
+import {
+  resolveNearbyPhoto, isValidPlacePhotoName, fetchPlacePhotoStream, type PhotoKind,
+} from '@/lib/server/nearby-photos'
 
 /**
- * Corridor/station photos for the /nearby snapshot, two modes:
+ * Corridor/station photos for the /nearby snapshot, four modes:
+ *
+ *  ?resolve=1&name=&kind=&lat=&lng=  → JSON { url, attribution, attributionUrl, source }
+ *    The recognizable-photo pipeline (Wikipedia lead image → Google Places
+ *    + vision pick → 404). Resolution persists per location in Supabase, so
+ *    each place is resolved once, ever. 404 = client falls back to Street
+ *    View or no photo.
+ *
+ *  ?placephoto=<resource>    → streams a Google Places photo JPEG
+ *    Serves photos the pipeline picked. Keyed media URL stays server-side.
  *
  *  ?unsplash=<photoId>       → JSON { url, attribution, attributionUrl }
  *    Curated beauty shot resolved through the existing unsplash-proxy
  *    (same mechanism Roams use). Unsplash requires visible attribution.
  *
  *  ?lat=&lng=[&heading=]     → streams a Street View JPEG of that spot
- *    The default: an eye-level photo of the actual infrastructure at the
- *    corridor's access point, facing along it. Requires the Street View
- *    Static API to be enabled on the Google Cloud project — until then the
- *    metadata check returns REQUEST_DENIED and this responds 404, which the
- *    client treats as "no photo" (image simply doesn't render).
+ *    Last resort: eye-level photo at the access point, facing along the
+ *    corridor. Street View shoots from the road, so paths/stations often
+ *    get a photo of the nearest street — hence the pipeline above.
  *
- * The Google key stays server-side (it's unrestricted — see the 2026-06-02
- * key incident); never expose it in a client-visible URL.
+ * Google keys stay server-side (see the 2026-06-02 key incident); never
+ * expose them in a client-visible URL.
  */
 
 // Places key first: the Routes key carries an API-restrictions list that
@@ -31,10 +41,46 @@ const metaCache = new Map<string, { ok: boolean; expires: number }>()
 
 const round4 = (n: number) => Math.round(n * 10000) / 10000
 
-export const maxDuration = 15
+export const maxDuration = 60
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
+
+  // Recognizable-photo pipeline mode
+  if (searchParams.get('resolve')) {
+    const name = (searchParams.get('name') ?? '').trim().replace(/\s+/g, ' ')
+    const kind = searchParams.get('kind') as PhotoKind
+    const rlat = parseFloat(searchParams.get('lat') || '')
+    const rlng = parseFloat(searchParams.get('lng') || '')
+    if (
+      name.length < 2 || name.length > 80 ||
+      !['station', 'bike', 'line'].includes(kind) ||
+      !Number.isFinite(rlat) || !Number.isFinite(rlng) || rlat < 40 || rlat > 44 || rlng < -75 || rlng > -69
+    ) {
+      return NextResponse.json({ error: 'name, kind, lat, lng required' }, { status: 400 })
+    }
+    const photo = await resolveNearbyPhoto(name, kind, rlat, rlng)
+    if (!photo) return NextResponse.json({ error: 'no photo' }, { status: 404 })
+    return NextResponse.json(photo, {
+      headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=604800' },
+    })
+  }
+
+  // Places photo streaming mode (photos the pipeline picked)
+  const placePhoto = searchParams.get('placephoto')
+  if (placePhoto) {
+    if (!isValidPlacePhotoName(placePhoto)) {
+      return NextResponse.json({ error: 'invalid photo reference' }, { status: 400 })
+    }
+    const img = await fetchPlacePhotoStream(placePhoto)
+    if (!img) return new NextResponse(null, { status: 404 })
+    return new NextResponse(img.body, {
+      headers: {
+        'Content-Type': img.headers.get('Content-Type') ?? 'image/jpeg',
+        'Cache-Control': 'public, max-age=604800, s-maxage=2592000, immutable',
+      },
+    })
+  }
 
   // Curated Unsplash mode
   const unsplashId = searchParams.get('unsplash')
