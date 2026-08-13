@@ -14,7 +14,6 @@ interface Props {
 export default function EventsGuides({ community, guides }: Props) {
   const events = community.data?.events ?? []
   const roams = community.data?.roams ?? []
-  const loading = community.status === 'loading' && guides.status === 'loading'
   const nothing =
     community.status !== 'loading' && guides.status !== 'loading' &&
     events.length === 0 && roams.length === 0 && guides.data.length === 0
@@ -27,6 +26,20 @@ export default function EventsGuides({ community, guides }: Props) {
       title="Start exploring"
       subtitle="Beginner-friendly ways to try your new options — no experience needed."
     >
+      <ExploreBody community={community} guides={guides} />
+    </SectionShell>
+  )
+}
+
+/** The guides/events/Roams content — reused inside the mobile sheet's
+ *  Nearby fun tab. */
+export function ExploreBody({ community, guides }: Props) {
+  const events = community.data?.events ?? []
+  const roams = community.data?.roams ?? []
+  const loading = community.status === 'loading' && guides.status === 'loading'
+
+  return (
+    <>
       {loading && <SkeletonRows count={2} />}
 
       {/* Starter guides */}
@@ -96,6 +109,6 @@ export default function EventsGuides({ community, guides }: Props) {
           )}
         </div>
       )}
-    </SectionShell>
+    </>
   )
 }

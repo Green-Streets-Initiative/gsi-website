@@ -56,7 +56,24 @@ const hasBikeRoute = (row: ReachRow) => !!row.bike_polyline
  * jump to somewhere else on the page).
  */
 export default function ReachSection({ center, reach, onRetry }: Props) {
-  const rows = reach.data
+  if (reach.status === 'ready' && reach.data.length === 0) return null
+
+  return (
+    <SectionShell
+      eyebrow="Your everyday routes"
+      title="Where can you get from here?"
+      subtitle="The places everyone ends up going — with your ways of getting there ranked fastest-first, and the line or bus you'd probably ride. Tap a place to see the route drawn on a map."
+    >
+      {reach.status === 'loading' && <SkeletonRows count={4} />}
+      {reach.status === 'error' && <ErrorCard label="Couldn't compute travel times right now." onRetry={onRetry} />}
+      {reach.status === 'ready' && <ReachList center={center} rows={reach.data} />}
+    </SectionShell>
+  )
+}
+
+/** The destination rows + in-place route expansion — reused inside the
+ *  mobile sheet's Destinations tab. */
+export function ReachList({ center, rows }: { center: { lat: number; lng: number }; rows: ReachRow[] }) {
   const [expanded, setExpanded] = useState<{ id: string; mode: 'transit' | 'bike' } | null>(null)
 
   function toggleRow(row: ReachRow) {
@@ -75,19 +92,9 @@ export default function ReachSection({ center, reach, onRetry }: Props) {
     posthog.capture('reach_route_viewed', { destination: row.id, mode })
   }
 
-  if (reach.status === 'ready' && rows.length === 0) return null
-
   return (
-    <SectionShell
-      eyebrow="Your everyday routes"
-      title="Where can you get from here?"
-      subtitle="The places everyone ends up going — with your ways of getting there ranked fastest-first, and the line or bus you'd probably ride. Tap a place to see the route drawn on a map."
-    >
-      {reach.status === 'loading' && <SkeletonRows count={4} />}
-      {reach.status === 'error' && <ErrorCard label="Couldn't compute travel times right now." onRetry={onRetry} />}
-
-      {reach.status === 'ready' && (
-        <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#242538]">
+    <>
+      <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#242538]">
           {rows.map((row, i) => {
             const options = modeOptions(row)
             const drawable = hasTransitRoute(row) || hasBikeRoute(row)
@@ -217,14 +224,11 @@ export default function ReachSection({ center, reach, onRetry }: Props) {
             )
           })}
         </div>
-      )}
 
-      {reach.status === 'ready' && (
-        <p className="mt-2.5 px-1 text-[0.75rem] leading-snug text-white/70">
-          Transit and bike times assume a weekday morning. ~ marks a rough estimate; walk times are always estimates.
-        </p>
-      )}
-    </SectionShell>
+      <p className="mt-2.5 px-1 text-[0.75rem] leading-snug text-white/70">
+        Transit and bike times assume a weekday morning. ~ marks a rough estimate; walk times are always estimates.
+      </p>
+    </>
   )
 }
 

@@ -34,6 +34,8 @@ interface Props {
   lines?: GeoJSON.FeatureCollection | null
   /** Show painted (non-protected) background lanes */
   paintedVisible?: boolean
+  /** Show the lime car-free/protected background lanes */
+  separatedVisible?: boolean
   /** Corridor shapes — features carry properties.corridorId/color/kind */
   corridorLines?: GeoJSON.FeatureCollection | null
   selectedCorridorId?: string | null
@@ -69,7 +71,7 @@ const BIKE_BG_OPACITY = { separated: 0.9, glow: 0.15, painted: 0.65 }
  * back to the neighborhood view.
  */
 export default function NearbyMap({
-  center, markers, lines, paintedVisible = true,
+  center, markers, lines, paintedVisible = true, separatedVisible = true,
   corridorLines, selectedCorridorId = null, onCorridorSelect,
   onMarkerTap, onLaneTap,
   fitCount, extraFitPoints, fitToLines = false, lineEmphasis = false,
@@ -88,6 +90,8 @@ export default function NearbyMap({
   const pendingCorridorsRef = useRef<GeoJSON.FeatureCollection | null>(null)
   const paintedRef = useRef(paintedVisible)
   paintedRef.current = paintedVisible
+  const separatedRef = useRef(separatedVisible)
+  separatedRef.current = separatedVisible
   const onSelectRef = useRef(onCorridorSelect)
   onSelectRef.current = onCorridorSelect
   const onMarkerTapRef = useRef(onMarkerTap)
@@ -142,7 +146,7 @@ export default function NearbyMap({
         if (cancelled) return
         loadedRef.current = true
         if (pendingLinesRef.current) {
-          applyBikeBackground(map, pendingLinesRef.current, paintedRef.current)
+          applyBikeBackground(map, pendingLinesRef.current, paintedRef.current, separatedRef.current)
           pendingLinesRef.current = null
         }
         if (pendingCorridorsRef.current) {
@@ -249,8 +253,8 @@ export default function NearbyMap({
       pendingLinesRef.current = lines
       return
     }
-    applyBikeBackground(map, lines, paintedVisible)
-  }, [lines, paintedVisible])
+    applyBikeBackground(map, lines, paintedVisible, separatedVisible)
+  }, [lines, paintedVisible, separatedVisible])
 
   // Painted-lane visibility toggle
   useEffect(() => {
@@ -258,6 +262,15 @@ export default function NearbyMap({
     if (!map || !loadedRef.current || !map.getLayer('bike-painted')) return
     map.setLayoutProperty('bike-painted', 'visibility', paintedVisible ? 'visible' : 'none')
   }, [paintedVisible])
+
+  // Lime separated-lane visibility toggle
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current || !map.getLayer('bike-separated')) return
+    for (const layer of ['bike-separated', 'bike-separated-glow']) {
+      map.setLayoutProperty(layer, 'visibility', separatedVisible ? 'visible' : 'none')
+    }
+  }, [separatedVisible])
 
   // Corridor shapes
   useEffect(() => {
@@ -383,12 +396,22 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
   map.on('mouseleave', 'corridor-lines', () => { map.getCanvas().style.cursor = '' })
 }
 
-function applyBikeBackground(map: maplibregl.Map, lines: GeoJSON.FeatureCollection, paintedVisible: boolean) {
+function applyBikeBackground(
+  map: maplibregl.Map,
+  lines: GeoJSON.FeatureCollection,
+  paintedVisible: boolean,
+  separatedVisible: boolean,
+) {
   const existing = map.getSource('bike-network') as maplibregl.GeoJSONSource | undefined
   if (existing) {
     existing.setData(lines)
     if (map.getLayer('bike-painted')) {
       map.setLayoutProperty('bike-painted', 'visibility', paintedVisible ? 'visible' : 'none')
+    }
+    if (map.getLayer('bike-separated')) {
+      for (const layer of ['bike-separated', 'bike-separated-glow']) {
+        map.setLayoutProperty(layer, 'visibility', separatedVisible ? 'visible' : 'none')
+      }
     }
     return
   }
@@ -416,6 +439,7 @@ function applyBikeBackground(map: maplibregl.Map, lines: GeoJSON.FeatureCollecti
     source: 'bike-network',
     filter: ['!=', ['get', 'quality'], 'painted'],
     paint: { 'line-color': '#BAF14D', 'line-width': 9, 'line-opacity': BIKE_BG_OPACITY.glow, 'line-blur': 4 },
+    layout: { visibility: separatedVisible ? 'visible' : 'none' },
   })
   map.addLayer({
     id: 'bike-separated',
@@ -423,7 +447,7 @@ function applyBikeBackground(map: maplibregl.Map, lines: GeoJSON.FeatureCollecti
     source: 'bike-network',
     filter: ['!=', ['get', 'quality'], 'painted'],
     paint: { 'line-color': '#BAF14D', 'line-width': 3, 'line-opacity': BIKE_BG_OPACITY.separated },
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    layout: { 'line-cap': 'round', 'line-join': 'round', visibility: separatedVisible ? 'visible' : 'none' },
   })
 
   // Tap an unnamed lane segment — details render in the page's panel
