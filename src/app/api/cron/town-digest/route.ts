@@ -162,7 +162,7 @@ export async function GET(req: Request) {
       const centroid = await getTownCentroid(town.group_id)
       const [events, partners, resources] = await Promise.all([
         getTownEvents(centroid, 3),
-        getTownPartners(town.town_name),
+        getTownPartners(town.town_name, town.state),
         getTownResources(town.group_id),
       ])
 

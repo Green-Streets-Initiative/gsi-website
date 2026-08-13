@@ -101,7 +101,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
   const [stats, roams, partners, heatmapLayers, events, resources, civicEvents] = await Promise.all([
     getTownPageStats(town.group_id),
     getTownRoams(centroid),
-    getTownPartners(name),
+    getTownPartners(name, town.state),
     getTownHeatmap(town.group_id),
     getTownEvents(centroid),
     getTownResources(town.group_id),

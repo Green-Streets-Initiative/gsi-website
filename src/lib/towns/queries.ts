@@ -554,13 +554,23 @@ export async function getTownCivicEvents(townName: string): Promise<TownCivicEve
 }
 
 /**
- * Rewards Partners with a storefront in this town. Interim match on the
- * free-text address until sponsors get a structured town field (spec
- * follow-up). Never call these "sponsors" in user-facing copy.
+ * Rewards Partners with a storefront in this town. Matches the structured
+ * `sponsors.town` column (Shift migration 00678) — never the free-text
+ * address. The old `address ilike '%town%'` match put TreeTop Adventures
+ * (Canton) on Boston's page via "New Boston Drive", the same substring
+ * collision as New Bedford/Bedford. Never call these "sponsors" in
+ * user-facing copy.
+ *
+ * Pass `state` wherever the caller has it — town names collide across states
+ * (Bedford MA vs NH, Portland OR vs ME) and >half our town groups are
+ * out-of-state.
  */
-export async function getTownPartners(townName: string): Promise<TownPartner[]> {
+export async function getTownPartners(
+  townName: string,
+  state?: string | null,
+): Promise<TownPartner[]> {
   const supabase = createServerSupabaseClient()
-  const { data } = await supabase
+  let q = supabase
     .from('sponsors')
     .select('id, name, logo_url, website_url, address, discount_description')
     .eq('status', 'active')
@@ -569,8 +579,8 @@ export async function getTownPartners(townName: string): Promise<TownPartner[]> 
     // Shift Your Summer prize donor) render as "businesses that reward people
     // for moving actively", which is false: they offer app users nothing.
     .in('sponsor_type', ['community_reward', 'local', 'merchant_partner'])
-    .ilike('address', `%${townName}%`)
-    .order('name', { ascending: true })
-    .limit(8)
+    .eq('town', townName)
+  if (state) q = q.eq('state', state)
+  const { data } = await q.order('name', { ascending: true }).limit(8)
   return (data ?? []) as TownPartner[]
 }
