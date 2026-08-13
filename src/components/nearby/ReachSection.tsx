@@ -1,12 +1,32 @@
 'use client'
 
+import Link from 'next/link'
 import posthog from 'posthog-js'
 import ModeIcon from '@/components/commute/ModeIcon'
 import { modeOptions, hasTransitRoute, hasBikeRoute, defaultRouteMode, reachModeFor } from '@/lib/nearby/reach-ui'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import type { ModeFilter } from './useNearbyModel'
-import BikeComfortBlock from './BikeComfortBlock'
-import type { ReachRow } from './types'
+import type { RouteLegTapInfo } from './NearbyMap'
+import BikeComfortBlock, { NEARBY_COMFORT_COLORS, NEARBY_COMFORT_LABELS } from './BikeComfortBlock'
+import type { ReachRow, BikeComfortTier } from './types'
+
+/** What a tapped stretch of the drawn route is — rendered inside the
+ *  expanded row (desktop) and the sheet detail (mobile). */
+export function RouteLegNote({ info }: { info: RouteLegTapInfo }) {
+  const tier = (info.legRating ?? null) as BikeComfortTier | null
+  const text = info.leg === 'walk'
+    ? 'Walking connection between rides'
+    : info.leg === 'transit'
+      ? (info.legLabel ? `${info.legLabel} — the riding leg` : 'The riding leg')
+      : `${tier ? NEARBY_COMFORT_LABELS[tier] : 'Bike'} stretch${info.legMiles ? ` · ${info.legMiles} mi` : ''}`
+  const dotColor = info.leg === 'bike' && tier ? NEARBY_COMFORT_COLORS[tier] : '#9BA3BF'
+  return (
+    <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-white/[0.14] bg-white/[0.05] px-3 py-1.5 text-[0.78rem] text-white">
+      <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: dotColor }} aria-hidden="true" />
+      <span className="min-w-0">You tapped: <span className="font-semibold">{text}</span></span>
+    </div>
+  )
+}
 
 /**
  * The everyday-routes picture: for a newcomer, bus numbers and line names
@@ -22,13 +42,17 @@ import type { ReachRow } from './types'
  *  - `routeSelection`/`onRouteSelect` (desktop two-pane): rows expand in
  *    place, following the PAGE selection — the parent owns the state and
  *    fires the reach_route_viewed analytics. */
-export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect }: {
+export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, onPlanCommute }: {
   center: { lat: number; lng: number }
   rows: ReachRow[]
   onRowTap?: (row: ReachRow) => void
   modeFilter?: ModeFilter
   routeSelection?: { id: string; mode: 'transit' | 'bike' } | null
   onRouteSelect?: (sel: { id: string; mode: 'transit' | 'bike' } | null) => void
+  /** A tapped stretch of the drawn route, shown inside the expanded row */
+  legInfo?: RouteLegTapInfo | null
+  /** Renders the "Plan this commute" advisor handoff in expanded rows */
+  onPlanCommute?: (row: ReachRow) => void
 }) {
   const expanded = routeSelection ?? null
   const preferred = reachModeFor(modeFilter ?? 'all')
@@ -180,8 +204,9 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                       </div>
                     )}
                     <div className="mb-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
-                      Route — shown on the map
+                      Route — shown on the map · tap any stretch to see what it is
                     </div>
+                    {legInfo && <RouteLegNote info={legInfo} />}
                     {expanded.mode === 'transit' && (
                       <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
                         Colored stretches are the ride; lighter gray stretches are the walks between.
@@ -208,6 +233,17 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                     >
                       Open in Maps ↗
                     </a>
+                    {/* The natural next step: this exact trip, compared across
+                        every way to make it — home + destination prefilled */}
+                    {onPlanCommute && (
+                      <Link
+                        href="/commute-advisor"
+                        onClick={() => onPlanCommute(row)}
+                        className="mt-3 block rounded-lg bg-[#BAF14D] px-4 py-2 text-center text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                      >
+                        Plan this commute — compare time, cost &amp; health →
+                      </Link>
+                    )}
                   </div>
                 )}
               </div>

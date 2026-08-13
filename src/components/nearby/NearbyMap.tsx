@@ -33,6 +33,17 @@ export interface LaneTapInfo {
   lngLat?: { lng: number; lat: number }
 }
 
+/** A tapped stretch of a drawn destination route (reach:* features). */
+export interface RouteLegTapInfo {
+  corridorId: string
+  leg: 'walk' | 'transit' | 'bike'
+  /** Transit line name for riding legs, when known */
+  legLabel: string | null
+  /** Bike comfort tier for bike legs */
+  legRating: string | null
+  legMiles: number | null
+}
+
 interface Props {
   center: { lat: number; lng: number }
   markers: NearbyMarker[]
@@ -51,6 +62,8 @@ interface Props {
   onMarkerTap?: (id: string) => void
   /** Unnamed lane segment tapped */
   onLaneTap?: (info: LaneTapInfo) => void
+  /** A stretch of a drawn destination route tapped (reach:* features) */
+  onReachLegTap?: (info: RouteLegTapInfo) => void
   /** Fit viewport to user + this many nearest markers, once (default: all) */
   fitCount?: number
   /** Extra coordinates the one-time fit must include (e.g. corridor access
@@ -88,7 +101,7 @@ const BIKE_BG_OPACITY = { separated: 0.9, glow: 0.15, painted: 0.65 }
 export default function NearbyMap({
   center, markers, lines, paintedVisible = true, separatedVisible = true,
   corridorLines, selectedCorridorId = null, onCorridorSelect,
-  onMarkerTap, onLaneTap,
+  onMarkerTap, onLaneTap, onReachLegTap,
   fitCount, extraFitPoints, fitToLines = false, lineEmphasis = false,
   cooperative = true, controls, fitPadding,
   heightClass = 'h-[320px] sm:h-[380px]',
@@ -114,6 +127,8 @@ export default function NearbyMap({
   onMarkerTapRef.current = onMarkerTap
   const onLaneTapRef = useRef(onLaneTap)
   onLaneTapRef.current = onLaneTap
+  const onReachLegTapRef = useRef(onReachLegTap)
+  onReachLegTapRef.current = onReachLegTap
   const corridorLinesRef = useRef(corridorLines)
   corridorLinesRef.current = corridorLines
   const fitToLinesRef = useRef(fitToLines)
@@ -156,9 +171,11 @@ export default function NearbyMap({
       const bridge = map as unknown as {
         __nearbyOnSelect?: (id: string, s: CorridorSelectSource) => void
         __nearbyOnLaneTap?: (info: LaneTapInfo) => void
+        __nearbyOnLegTap?: (info: RouteLegTapInfo) => void
       }
       bridge.__nearbyOnSelect = (id, s) => onSelectRef.current?.(id, s)
       bridge.__nearbyOnLaneTap = (info) => onLaneTapRef.current?.(info)
+      bridge.__nearbyOnLegTap = (info) => onReachLegTapRef.current?.(info)
 
       requestAnimationFrame(() => map.resize())
 
@@ -186,7 +203,7 @@ export default function NearbyMap({
       // Background tap clears the selection (layer taps are handled by the
       // layer's own handler — skip when the tap actually hit a line)
       map.on('click', (e) => {
-        const layers = ['corridor-lines', 'corridor-lines-dashed', 'bike-separated', 'bike-painted'].filter(l => map.getLayer(l))
+        const layers = ['corridor-lines', 'corridor-lines-dashed', 'corridor-lines-hit', 'bike-separated', 'bike-painted'].filter(l => map.getLayer(l))
         if (layers.length > 0) {
           const hits = map.queryRenderedFeatures(e.point, { layers })
           if (hits.length > 0) return
@@ -408,6 +425,18 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
 
   map.addSource('corridors', { type: 'geojson', data: corridors })
 
+  // Near-invisible wide hit area under the route legs — a 3px line is an
+  // impossible tap target, especially on phones. Only route-leg features
+  // (they carry `leg`) get it, so corridor taps stay precise.
+  map.addLayer({
+    id: 'corridor-lines-hit',
+    type: 'line',
+    source: 'corridors',
+    filter: ['has', 'leg'],
+    paint: { 'line-color': '#000000', 'line-width': 24, 'line-opacity': 0.01 },
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+  })
+
   // Dark casing keeps overlapping corridor colors readable on the basemap
   map.addLayer({
     id: 'corridor-casing',
@@ -444,10 +473,33 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
     layout: { 'line-join': 'round' },
   })
 
-  for (const layerId of ['corridor-lines', 'corridor-lines-dashed']) {
+  for (const layerId of ['corridor-lines', 'corridor-lines-dashed', 'corridor-lines-hit']) {
     map.on('click', layerId, (e) => {
-      const id = (e.features?.[0]?.properties as { corridorId?: string })?.corridorId
+      // Overlapping layers (visible line + its hit area) each fire — handle once
+      const evt = e.originalEvent as MouseEvent & { __nearbyHandled?: boolean }
+      if (evt.__nearbyHandled) return
+      evt.__nearbyHandled = true
+      const props = e.features?.[0]?.properties as {
+        corridorId?: string; leg?: 'walk' | 'transit' | 'bike'
+        legLabel?: string; legRating?: string; legMiles?: number
+      } | undefined
+      const id = props?.corridorId
       if (!id) return
+      // A drawn destination route: the tap means "what is this stretch?",
+      // not "select a corridor" (there's no corridor by that id anyway)
+      if (id.startsWith('reach:')) {
+        const legHandler = (map as unknown as { __nearbyOnLegTap?: (info: RouteLegTapInfo) => void }).__nearbyOnLegTap
+        if (props?.leg) {
+          legHandler?.({
+            corridorId: id,
+            leg: props.leg,
+            legLabel: props.legLabel ?? null,
+            legRating: props.legRating ?? null,
+            legMiles: props.legMiles ?? null,
+          })
+        }
+        return
+      }
       const handler = (map as unknown as { __nearbyOnSelect?: (id: string, s: string) => void }).__nearbyOnSelect
       handler?.(id, 'map-line')
     })

@@ -10,7 +10,7 @@ import { defaultRouteMode, reachModeFor } from '@/lib/nearby/reach-ui'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import BikeComfortBlock from './BikeComfortBlock'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
-import NearbyMap, { type FitPadding } from './NearbyMap'
+import NearbyMap, { type FitPadding, type RouteLegTapInfo } from './NearbyMap'
 import { useReachOverlay } from './useReachOverlay'
 import NearbySheet from './NearbySheet'
 import {
@@ -20,7 +20,7 @@ import {
 import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
 import { StationList, BikeRouteList, DockList } from './AroundYouLists'
-import { ReachList } from './ReachSection'
+import { ReachList, RouteLegNote } from './ReachSection'
 import { ExploreBody } from './ExploreBody'
 import GuideLinks from './GuideLinks'
 import { SkeletonRows, ErrorCard } from './SectionShell'
@@ -50,6 +50,7 @@ interface Props {
   onChangeLocation: () => void
   onPrint: () => void
   onAdvisorCta: () => void
+  onPlanCommute: (row: ReachRow) => void
   partnerLine: string
   transitCorridors: TransitCorridor[]
   bikeCorridors: BikeCorridor[]
@@ -66,7 +67,7 @@ interface Props {
 
 export default function NearbyShell({
   center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
-  onAdvisorCta, partnerLine,
+  onAdvisorCta, onPlanCommute, partnerLine,
   transitCorridors, bikeCorridors, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, onRetry,
 }: Props) {
@@ -150,6 +151,15 @@ export default function NearbyShell({
     posthog.capture('reach_route_viewed', { destination: row.id, mode })
   }, [selectReveal])
 
+  // A tapped stretch of the drawn route; cleared whenever the selection moves
+  const [legInfo, setLegInfo] = useState<RouteLegTapInfo | null>(null)
+  useEffect(() => { setLegInfo(null) }, [selection])
+  const handleLegTap = useCallback((info: RouteLegTapInfo) => {
+    setLegInfo(info)
+    setSnap('half')
+    posthog.capture('reach_leg_tapped', { leg: info.leg })
+  }, [])
+
   const changeTab = useCallback((next: Tab) => {
     setTab(next)
     if (selection) select(null, 'tab-change')
@@ -223,6 +233,7 @@ export default function NearbyShell({
           }}
           onMarkerTap={markerTapReveal}
           onLaneTap={(info) => selectReveal({ type: 'lane', info }, 'map')}
+          onReachLegTap={handleLegTap}
           fitCount={7}
           extraFitPoints={accessPoints}
           cooperative={false}
@@ -273,6 +284,8 @@ export default function NearbyShell({
                   mode={selection.mode}
                   center={center}
                   onMode={(m) => selectReach(reachRow, m, 'panel')}
+                  legInfo={legInfo}
+                  onPlanCommute={onPlanCommute}
                 />
               ) : null
             ) : (
@@ -382,11 +395,13 @@ export default function NearbyShell({
 
 /* ── Destination route detail: the route is on the MAIN map above ── */
 
-function ReachDetail({ row, mode, center, onMode }: {
+function ReachDetail({ row, mode, center, onMode, legInfo, onPlanCommute }: {
   row: ReachRow
   mode: 'transit' | 'bike'
   center: { lat: number; lng: number }
   onMode: (mode: 'transit' | 'bike') => void
+  legInfo?: RouteLegTapInfo | null
+  onPlanCommute?: (row: ReachRow) => void
 }) {
   const hasTransit = (row.transit_segments?.length ?? 0) > 0
   const hasBike = !!row.bike_polyline
@@ -402,10 +417,11 @@ function ReachDetail({ row, mode, center, onMode }: {
   return (
     <div>
       <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
-        Route — shown on the map
+        Route — shown on the map · tap any stretch to see what it is
       </div>
       <div className="text-[0.95rem] font-bold text-white">{row.name}</div>
       <div className="text-[0.78rem] text-white/75">{row.distance_miles} mi away</div>
+      {legInfo && <div className="mt-2"><RouteLegNote info={legInfo} /></div>}
 
       {hasTransit && hasBike && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -462,6 +478,17 @@ function ReachDetail({ row, mode, center, onMode }: {
       >
         Open in Maps ↗
       </a>
+      {/* The natural next step: this exact trip, compared across every way
+          to make it — home + destination prefilled */}
+      {onPlanCommute && (
+        <Link
+          href="/commute-advisor"
+          onClick={() => onPlanCommute(row)}
+          className="mt-3 block rounded-lg bg-[#BAF14D] px-4 py-2 text-center text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+        >
+          Plan this commute — compare time, cost &amp; health →
+        </Link>
+      )}
     </div>
   )
 }

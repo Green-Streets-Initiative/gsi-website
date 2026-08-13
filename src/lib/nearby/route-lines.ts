@@ -18,9 +18,9 @@ const BIKE_TIER_STYLE: Record<string, { color: string; dash: boolean }> = {
 }
 
 interface RouteGeometry {
-  transit_segments?: { polyline: string; color: string }[]
+  transit_segments?: { polyline: string; color: string; mode?: 'walk' | 'transit'; label?: string | null }[]
   bike_polyline?: string | null
-  bike_comfort?: { segments: { rating: string; polyline: string }[] } | null
+  bike_comfort?: { segments: { rating: string; polyline: string; distance_mi?: number }[] } | null
 }
 
 export function reachRouteFeatures(
@@ -29,25 +29,35 @@ export function reachRouteFeatures(
   corridorId: string,
 ): GeoJSON.Feature[] {
   const features: GeoJSON.Feature[] = []
-  const push = (polyline: string, color: string, dash = false) => {
+  // legProps make each drawn stretch tappable — "what is this leg?"
+  const push = (polyline: string, color: string, dash = false, legProps: Record<string, unknown> = {}) => {
     const coords = decodePolyline(polyline).map(([lat, lng]) => [lng, lat])
     if (coords.length >= 2) {
       features.push({
         type: 'Feature',
-        properties: { corridorId, color, ...(dash ? { dash: 1 } : {}) },
+        properties: { corridorId, color, ...(dash ? { dash: 1 } : {}), ...legProps },
         geometry: { type: 'LineString', coordinates: coords },
       })
     }
   }
   if (mode === 'transit') {
-    for (const seg of row.transit_segments ?? []) push(seg.polyline, seg.color)
+    for (const seg of row.transit_segments ?? []) {
+      push(seg.polyline, seg.color, false, {
+        leg: seg.mode ?? 'transit',
+        ...(seg.label ? { legLabel: seg.label } : {}),
+      })
+    }
   } else if ((row.bike_comfort?.segments?.length ?? 0) > 0) {
     for (const seg of row.bike_comfort!.segments) {
       const style = BIKE_TIER_STYLE[seg.rating] ?? BIKE_TIER_STYLE.shared_road
-      push(seg.polyline, style.color, style.dash)
+      push(seg.polyline, style.color, style.dash, {
+        leg: 'bike',
+        legRating: seg.rating,
+        ...(seg.distance_mi !== undefined ? { legMiles: seg.distance_mi } : {}),
+      })
     }
   } else if (row.bike_polyline) {
-    push(row.bike_polyline, '#BAF14D')
+    push(row.bike_polyline, '#BAF14D', false, { leg: 'bike' })
   }
   return features
 }

@@ -17,7 +17,7 @@ export const NEARBY_COMFORT_COLORS: Record<BikeComfortTier, string> = {
   shared_road: '#6B6E85',
 }
 
-const NEARBY_COMFORT_LABELS: Record<BikeComfortTier, string> = {
+export const NEARBY_COMFORT_LABELS: Record<BikeComfortTier, string> = {
   path: 'Multi-use path',
   protected: 'Protected lane',
   bike_lane: 'Painted lane',

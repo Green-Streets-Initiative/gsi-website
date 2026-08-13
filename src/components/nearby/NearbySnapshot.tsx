@@ -345,6 +345,22 @@ export default function NearbySnapshot() {
     } catch {}
   }
 
+  /** Hand a specific destination to the Commute Advisor — home AND
+   *  destination prefilled, so the user lands one tap from a comparison. */
+  const handlePlanCommute = useCallback((row: { id: string; name: string; lat: number; lng: number }) => {
+    posthog.capture('snapshot_plan_commute_clicked', { destination: row.id })
+    if (!location) return
+    try {
+      sessionStorage.setItem('commute-advisor-state', JSON.stringify({
+        homeAddress: location.fullAddress ?? location.label,
+        homePlaceData: { placeId: '', lat: location.lat, lng: location.lng },
+        workAddress: row.name,
+        workPlaceData: { placeId: '', lat: row.lat, lng: row.lng },
+        step: 1,
+      }))
+    } catch {}
+  }, [location])
+
   const retry = useCallback(() => { if (location) loadAll(location) }, [location, loadAll])
 
   // Named bike corridors become selectable entities; everything else —
@@ -463,6 +479,7 @@ export default function NearbySnapshot() {
     onChangeLocation: handleChangeLocation,
     onPrint: handlePrint,
     onAdvisorCta: handleAdvisorCta,
+    onPlanCommute: handlePlanCommute,
     partnerLine,
     transitCorridors: transitCorridors.data,
     bikeCorridors,

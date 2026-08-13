@@ -1,12 +1,12 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
-import NearbyMap from './NearbyMap'
+import NearbyMap, { type RouteLegTapInfo } from './NearbyMap'
 import {
   useNearbyModel, MODE_FILTER_DEFAULT, PAINTED_DEFAULT,
   type ModeFilter, type Selection,
@@ -39,6 +39,7 @@ interface Props {
   onChangeLocation: () => void
   onPrint: () => void
   onAdvisorCta: () => void
+  onPlanCommute: (row: ReachRow) => void
   partnerLine: string
   transitCorridors: TransitCorridor[]
   bikeCorridors: BikeCorridor[]
@@ -53,9 +54,16 @@ interface Props {
   onRetry: () => void
 }
 
+const RAIL_TABS = [
+  { id: 'transit' as const, label: 'Transit & bike' },
+  { id: 'destinations' as const, label: 'Destinations' },
+  { id: 'explore' as const, label: 'Explore nearby' },
+]
+type RailTab = (typeof RAIL_TABS)[number]['id']
+
 export default function NearbyDesktop({
   center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
-  onAdvisorCta, partnerLine,
+  onAdvisorCta, onPlanCommute, partnerLine,
   transitCorridors, bikeCorridors, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, onRetry,
 }: Props) {
@@ -101,6 +109,24 @@ export default function NearbyDesktop({
     select({ type: 'reach', id: sel.id, mode: sel.mode }, 'list')
     posthog.capture('reach_route_viewed', { destination: sel.id, mode: sel.mode })
   }, [select])
+
+  // Rail tabs — the mobile sheet's three-way split, so the rail is a set of
+  // short panes instead of one long scroll. Content stays mounted (hidden)
+  // so scroll positions and expanded rows survive tab hops.
+  const [railTab, setRailTab] = useState<RailTab>('transit')
+  const changeRailTab = useCallback((next: RailTab) => {
+    setRailTab(next)
+    if (selection) select(null, 'tab-change')
+    posthog.capture('nearby_tab_changed', { tab: next, surface: 'desktop' })
+  }, [selection, select])
+
+  // A tapped stretch of the drawn route; cleared whenever the selection moves
+  const [legInfo, setLegInfo] = useState<RouteLegTapInfo | null>(null)
+  useEffect(() => { setLegInfo(null) }, [selection])
+  const handleLegTap = useCallback((info: RouteLegTapInfo) => {
+    setLegInfo(info)
+    posthog.capture('reach_leg_tapped', { leg: info.leg, surface: 'desktop' })
+  }, [])
 
   return (
     <div className="pb-20">
@@ -180,6 +206,7 @@ export default function NearbyDesktop({
                 }}
                 onMarkerTap={handleMarkerTap}
                 onLaneTap={(info) => select({ type: 'lane', info }, 'map')}
+                onReachLegTap={handleLegTap}
                 fitCount={7}
                 extraFitPoints={accessPoints}
                 heightClass="h-full"
@@ -213,70 +240,80 @@ export default function NearbyDesktop({
             )}
           </div>
 
-          {/* RIGHT: the content rail */}
+          {/* RIGHT: the content rail, split into the mobile sheet's three
+              panes. The tab bar sticks just under the top bar (60+52=112). */}
           <div className="min-w-0">
-            {(showRail || showBus) && (
-              <>
-                <StationList
-                  stations={stations}
-                  corridorById={corridorById}
-                  highlightedCorridorId={highlightedCorridorId}
-                  status={transitStatus}
-                  onRetry={onRetry}
-                  onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
-                />
-                <GuideLinks context="stations" guides={guides.data} modeFilter={modeFilter} />
-              </>
-            )}
-
-            {showBike && (
-              <>
-                <BikeRouteList
-                  bikeCorridors={bikeCorridors}
-                  highlightedCorridorId={highlightedCorridorId}
-                  onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
-                />
-                <GuideLinks context="bike" guides={guides.data} modeFilter={modeFilter} />
-                <DockList docks={docks} />
-                <GuideLinks context="docks" guides={guides.data} modeFilter={modeFilter} />
-              </>
-            )}
-
-            {/* Destinations — rows expand in place, route draws on the map */}
-            <h2 className="mb-1 mt-8 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
-              Where can you get from here?
-            </h2>
-            <p className="mb-3 text-[0.8rem] leading-snug text-white/75">
-              Popular destinations — tap a place to see the route on the map.
-            </p>
-            {reach.status === 'loading' && <SkeletonRows count={4} />}
-            {reach.status === 'error' && <ErrorCard label="Couldn't compute travel times right now." onRetry={onRetry} />}
-            {reach.status === 'ready' && reach.data.length > 0 && (
-              <ReachList
-                center={center}
-                rows={reach.data}
-                modeFilter={modeFilter}
-                routeSelection={routeSelection}
-                onRouteSelect={onRouteSelect}
-              />
-            )}
-            {reach.status === 'ready' && reach.data.length === 0 && (
-              <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
-                No destination times for this spot yet.
-              </p>
-            )}
-
-            {/* Events + Roams (each block carries its own compact label) */}
-            <div className="mt-8">
-              <ExploreBody community={community} compact />
+            <div className="sticky top-[112px] z-10 bg-[#191A2E] pb-2.5 pt-1">
+              <div className="flex gap-1 rounded-xl bg-white/[0.05] p-1">
+                {RAIL_TABS.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => changeRailTab(t.id)}
+                    aria-pressed={railTab === t.id}
+                    className={`flex-1 rounded-lg py-2 text-[0.8rem] font-bold transition-colors ${
+                      railTab === t.id ? 'bg-[#BAF14D] text-[#191A2E]' : 'text-white/75 hover:text-white'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* CTA bridge — compact cards, same as the mobile explore tab */}
-            <div className="mt-8 space-y-3">
-              <div className="rounded-xl border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-4 py-3.5">
-                <div className="text-[0.9rem] font-bold text-white">Have a destination in mind?</div>
+            <div className={railTab === 'transit' ? '' : 'hidden'}>
+              {(showRail || showBus) && (
+                <>
+                  <StationList
+                    stations={stations}
+                    corridorById={corridorById}
+                    highlightedCorridorId={highlightedCorridorId}
+                    status={transitStatus}
+                    onRetry={onRetry}
+                    onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+                  />
+                  <GuideLinks context="stations" guides={guides.data} modeFilter={modeFilter} />
+                </>
+              )}
+              {showBike && (
+                <>
+                  <BikeRouteList
+                    bikeCorridors={bikeCorridors}
+                    highlightedCorridorId={highlightedCorridorId}
+                    onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+                  />
+                  <GuideLinks context="bike" guides={guides.data} modeFilter={modeFilter} />
+                  <DockList docks={docks} />
+                  <GuideLinks context="docks" guides={guides.data} modeFilter={modeFilter} />
+                </>
+              )}
+            </div>
+
+            <div className={railTab === 'destinations' ? '' : 'hidden'}>
+              <p className="mb-3 text-[0.8rem] leading-snug text-white/75">
+                Popular destinations — tap a place to see the route on the map.
+              </p>
+              {reach.status === 'loading' && <SkeletonRows count={4} />}
+              {reach.status === 'error' && <ErrorCard label="Couldn't compute travel times right now." onRetry={onRetry} />}
+              {reach.status === 'ready' && reach.data.length > 0 && (
+                <ReachList
+                  center={center}
+                  rows={reach.data}
+                  modeFilter={modeFilter}
+                  routeSelection={routeSelection}
+                  onRouteSelect={onRouteSelect}
+                  legInfo={legInfo}
+                  onPlanCommute={onPlanCommute}
+                />
+              )}
+              {reach.status === 'ready' && reach.data.length === 0 && (
+                <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
+                  No destination times for this spot yet.
+                </p>
+              )}
+              <div className="mt-4 rounded-xl border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-4 py-3.5">
+                <div className="text-[0.9rem] font-bold text-white">Somewhere else in mind?</div>
                 <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">
-                  The Commute Advisor compares every way to get there — time, cost, and health — with your home already filled in.
+                  The Commute Advisor compares every way to get anywhere — time, cost, and health — with your home already filled in.
                 </p>
                 <Link
                   href="/commute-advisor"
@@ -286,7 +323,11 @@ export default function NearbyDesktop({
                   Compare your options →
                 </Link>
               </div>
-              <div className="rounded-xl border border-white/[0.1] bg-[#242538] px-4 py-3.5">
+            </div>
+
+            <div className={railTab === 'explore' ? '' : 'hidden'}>
+              <ExploreBody community={community} compact />
+              <div className="mt-4 rounded-xl border border-white/[0.1] bg-[#242538] px-4 py-3.5">
                 <div className="text-[0.9rem] font-bold text-white">Get the Shift app</div>
                 <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
                 <a
