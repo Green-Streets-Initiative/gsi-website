@@ -317,6 +317,14 @@ export default function NearbySnapshot() {
     }).catch(() => {})
   }
 
+  // The page URL already carries the rounded coords + city-only label (the
+  // full address never leaves the browser), so the print link is just the
+  // current query on the print path
+  function handlePrint() {
+    posthog.capture('snapshot_print_clicked')
+    window.location.assign(`/nearby/print${window.location.search}`)
+  }
+
   function handleChangeLocation() {
     setLocation(null)
     setAddress('')
@@ -453,6 +461,7 @@ export default function NearbySnapshot() {
     copied,
     onCopyLink: handleCopyLink,
     onChangeLocation: handleChangeLocation,
+    onPrint: handlePrint,
     onAdvisorCta: handleAdvisorCta,
     partnerLine,
     transitCorridors: transitCorridors.data,

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import QRCode from 'qrcode'
 import { parseSnapshotParams, buildShareUrl, isOutsideArea } from '@/lib/nearby/share'
 import { getStopTopology } from '@/lib/server/mbta-topology'
@@ -14,6 +14,7 @@ import { decodePolyline } from '@/lib/geo/polyline'
 import { buildPrintStations } from '@/lib/nearby/print-model'
 import PrintMap, { type PrintLine, type PrintMarker } from './PrintMap'
 import PrintButton from './PrintButton'
+import SheetViewport from './SheetViewport'
 
 /**
  * The static print snapshot — the master for mailers, brochures, and
@@ -39,6 +40,14 @@ const MAX_PRINT_DESTINATIONS = 6
 export const metadata: Metadata = {
   title: 'Print your neighborhood snapshot — Green Streets Initiative',
   robots: { index: false },
+}
+
+// The page is a fixed letter-sheet layout — on phones it should render
+// scaled to fit (pinch-zoomable), not reflow into a cramped column. The
+// SheetViewport client component enforces this; see its comment for why
+// the declarative export doesn't fire on this route.
+export const viewport: Viewport = {
+  width: 800,
 }
 
 export const maxDuration = 60
@@ -136,6 +145,7 @@ export default async function NearbyPrintPage({ searchParams }: {
 
   return (
     <main className="print-root min-h-screen bg-white text-[#191A2E]">
+      <SheetViewport />
       <style>{`
         @page { size: letter; margin: 0.4in 0.5in; }
         @media print {
@@ -153,7 +163,8 @@ export default async function NearbyPrintPage({ searchParams }: {
       {/* On-screen toolbar — hidden in print */}
       <div className="print-no-print flex items-center justify-between gap-4 bg-[#191A2E] px-6 py-3">
         <p className="text-sm text-white/80">
-          This page is sized for letter paper — Chrome gives the most faithful print. The QR code opens the live version.
+          Sized for letter paper — on a computer, Chrome gives the most faithful print. On a phone, the button opens your
+          system&apos;s print sheet, where you can also save a PDF to share.
         </p>
         <PrintButton />
       </div>

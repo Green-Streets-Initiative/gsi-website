@@ -48,6 +48,7 @@ interface Props {
   copied: boolean
   onCopyLink: () => void
   onChangeLocation: () => void
+  onPrint: () => void
   onAdvisorCta: () => void
   partnerLine: string
   transitCorridors: TransitCorridor[]
@@ -64,7 +65,7 @@ interface Props {
 }
 
 export default function NearbyShell({
-  center, displayLabel, outside, copied, onCopyLink, onChangeLocation,
+  center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onAdvisorCta, partnerLine,
   transitCorridors, bikeCorridors, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, onRetry,
@@ -239,6 +240,12 @@ export default function NearbyShell({
           className="shrink-0 rounded-full px-2.5 py-1 text-[0.72rem] font-semibold text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white"
         >
           {copied ? 'Copied ✓' : 'Copy link'}
+        </button>
+        <button
+          onClick={onPrint}
+          className="shrink-0 rounded-full px-2.5 py-1 text-[0.72rem] font-semibold text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white"
+        >
+          Print
         </button>
         <button
           onClick={onChangeLocation}

@@ -37,6 +37,7 @@ interface Props {
   copied: boolean
   onCopyLink: () => void
   onChangeLocation: () => void
+  onPrint: () => void
   onAdvisorCta: () => void
   partnerLine: string
   transitCorridors: TransitCorridor[]
@@ -53,7 +54,7 @@ interface Props {
 }
 
 export default function NearbyDesktop({
-  center, displayLabel, outside, copied, onCopyLink, onChangeLocation,
+  center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onAdvisorCta, partnerLine,
   transitCorridors, bikeCorridors, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, onRetry,
@@ -136,6 +137,12 @@ export default function NearbyDesktop({
               className="shrink-0 rounded-lg border border-white/[0.15] px-3 py-1.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-white/[0.06]"
             >
               Change location
+            </button>
+            <button
+              onClick={onPrint}
+              className="shrink-0 rounded-lg border border-white/[0.15] px-3 py-1.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-white/[0.06]"
+            >
+              Print version
             </button>
             <div className="ml-auto shrink-0 pl-2">
               <ModeFilterChips
