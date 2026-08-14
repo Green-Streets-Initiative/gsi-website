@@ -50,10 +50,13 @@ export function PrintMarkerIcon({ kind, color, size }: {
   const path = kind === 'rail' ? TRAIN_PATH : kind === 'bus' ? BUS_PATH : BICYCLE_PATH
   const glyph = Math.round(s * 0.66)
   return (
+    // No box-shadow anywhere in this file: the print pipeline rasterizes
+    // shadows into gray boxes behind the icons. The white ring alone
+    // separates markers from the basemap, and it prints as crisp vector.
     <span style={{
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       width: s, height: s, borderRadius: '50%', background: bg,
-      border: '1.5px solid #ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
+      border: '1.5px solid #ffffff',
       verticalAlign: 'middle',
     }}>
       <svg width={glyph} height={glyph} viewBox="0 0 256 256" fill={glyphFill}>
@@ -198,7 +201,7 @@ export default function PrintMap({ center, lines, markers, width, height }: {
       <div style={{ position: 'absolute', left: homePx.x, top: homePx.y, transform: 'translate(-50%,-50%)' }}>
         <div style={{
           width: 14, height: 14, borderRadius: '50%', background: '#191A2E',
-          border: '3px solid #BAF14D', boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+          border: '3px solid #BAF14D',
         }} />
         <div style={{
           position: 'absolute', left: '50%', top: 16, transform: 'translateX(-50%)',
