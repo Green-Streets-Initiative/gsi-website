@@ -11,8 +11,8 @@ import { protectionLabel } from '@/lib/nearby/bike-labels'
 import { modeOptions } from '@/lib/nearby/reach-ui'
 import { bikeTimeMinutes } from '@/lib/geo/measure'
 import { decodePolyline } from '@/lib/geo/polyline'
-import { buildPrintStations } from '@/lib/nearby/print-model'
-import PrintMap, { type PrintLine, type PrintMarker } from './PrintMap'
+import { buildPrintStations, shortFrequencyLabel } from '@/lib/nearby/print-model'
+import PrintMap, { PrintMarkerIcon, type PrintLine, type PrintMarker } from './PrintMap'
 import PrintButton from './PrintButton'
 import SheetViewport from './SheetViewport'
 
@@ -32,8 +32,10 @@ const SITE_URL = 'https://gogreenstreets.org'
 // growing anything here
 const MAP_W = 720
 const MAP_H = 264
-const MAX_PRINT_TRANSIT = 6
-const MAX_PRINT_BIKE = 4
+const MAX_PRINT_TRANSIT = 8
+// The bike column runs shorter than the transit column, so a fifth route is
+// vertically free
+const MAX_PRINT_BIKE = 5
 const MAX_PRINT_DOCKS = 3
 const MAX_PRINT_DESTINATIONS = 6
 
@@ -81,15 +83,22 @@ export default async function NearbyPrintPage({ searchParams }: {
   ])
 
   // Shapes + weekday frequency per transit corridor; failures degrade to
-  // "see live schedule online" per line rather than failing the page
-  const corridors = corridorsFromTopology(railTopo, busTopo).slice(0, MAX_PRINT_TRANSIT)
+  // "see live schedule online" per line rather than failing the page.
+  // Rail first: the topology sorts by walk distance, and in bus-dense areas
+  // every bus route is closer than the T — which silently dropped the T
+  // lines' shapes (no rail on the printed map) and their frequencies.
+  const allCorridors = corridorsFromTopology(railTopo, busTopo)
+  const corridors = [
+    ...allCorridors.filter(c => c.kind !== 'bus'),
+    ...allCorridors.filter(c => c.kind === 'bus'),
+  ].slice(0, MAX_PRINT_TRANSIT)
   const metaByRoute = new Map<string, CorridorMetaResult>()
   await Promise.allSettled(corridors.map(async c => {
     metaByRoute.set(c.routeId, await getCorridorMeta(c.routeId, c.access.stopId))
   }))
 
   const freqByRoute = new Map<string, string | null>()
-  for (const [routeId, meta] of metaByRoute) freqByRoute.set(routeId, meta.frequency?.label ?? null)
+  for (const [routeId, meta] of metaByRoute) freqByRoute.set(routeId, shortFrequencyLabel(meta.frequency))
 
   const stations = buildPrintStations(railTopo, busTopo, freqByRoute)
 
@@ -99,12 +108,41 @@ export default async function NearbyPrintPage({ searchParams }: {
   const destinations = reach.destinations.slice(0, MAX_PRINT_DESTINATIONS)
   const printDocks = docks.slice(0, MAX_PRINT_DOCKS)
 
-  // Map layers, bottom to top: painted bike (dashed) → separated bike →
-  // bus shapes → rail shapes, so the highest-signal lines stay on top
+  // Map layers, bottom to top: full lane network (thin) → named bike
+  // corridors → bus shapes → rail shapes, so the highest-signal lines stay
+  // on top
   const lines: PrintLine[] = []
+
+  // EVERY mapped lane draws as a thin background line, exactly like the
+  // interactive map — only bolding the top corridors made whole streets of
+  // real infrastructure (Somerville Ave's painted lanes) vanish from paper.
+  // The bold corridors re-draw over their own thin twins, so no dedupe
+  // bookkeeping is needed. Bounds-filtered to what the ~1 mi viewport can
+  // show; the network load radius (1.5 mi) is wider than the map.
+  const QUALITY_COLOR: Record<string, string> = { path: '#BAF14D', protected: '#2DD4BF', painted: '#7FB5FF' }
+  const drawnTiers = new Set<string>()
+  const inMapBox = (coords: [number, number][]) =>
+    coords.some(([x, y]) => Math.abs(y - loc.lat) < 0.011 && Math.abs(x - loc.lng) < 0.03)
+  if (network) {
+    for (const f of network.geojson.features) {
+      if (f.geometry.type !== 'LineString') continue
+      const coords = f.geometry.coordinates as [number, number][]
+      if (!inMapBox(coords)) continue
+      const quality = (f.properties as { quality?: string })?.quality ?? 'painted'
+      drawnTiers.add(quality)
+      lines.push({
+        coords,
+        color: QUALITY_COLOR[quality] ?? '#7FB5FF',
+        dashed: quality === 'painted',
+        thin: true,
+      })
+    }
+  }
+
   const bikeByTier = [...bikeCorridors].sort((a, b) =>
     (a.protection === 'painted' ? 0 : 1) - (b.protection === 'painted' ? 0 : 1))
   for (const c of bikeByTier) {
+    drawnTiers.add(c.protection === 'path' ? 'path' : c.protection === 'painted' ? 'painted' : 'protected')
     for (const f of c.geojson.features) {
       if (f.geometry.type !== 'LineString') continue
       lines.push({
@@ -127,13 +165,12 @@ export default async function NearbyPrintPage({ searchParams }: {
   }
 
   // Every listed station gets a name label (the dedupe caps this at ~8);
-  // bus stops draw hollow so they don't vanish into same-colored route lines
+  // markers carry the same Phosphor glyphs as the interactive map's pins
   const markers: PrintMarker[] = [
     ...stations.map(s => ({
-      lat: s.lat, lng: s.lng, kind: 'station' as const,
+      lat: s.lat, lng: s.lng, kind: s.isRail ? ('rail' as const) : ('bus' as const),
       color: s.lines[0]?.color ?? '#191A2E',
       label: s.name,
-      hollow: !s.isRail,
     })),
     ...printDocks.map(d => ({ lat: d.lat, lng: d.lng, kind: 'dock' as const })),
   ]
@@ -141,10 +178,12 @@ export default async function NearbyPrintPage({ searchParams }: {
   const legend: { swatch: React.ReactNode; label: string }[] = []
   if (railTopo.length > 0) legend.push({ swatch: <LegendLine color="#DA291C" />, label: 'T lines (line colors)' })
   if (busTopo.length > 0) legend.push({ swatch: <LegendLine color="#FFC72C" />, label: 'Bus routes' })
-  if (bikeCorridors.some(c => c.protection === 'path')) legend.push({ swatch: <LegendLine color="#BAF14D" />, label: 'Multi-use path' })
-  if (bikeCorridors.some(c => c.protection === 'protected' || c.protection === 'mostly-protected')) legend.push({ swatch: <LegendLine color="#2DD4BF" />, label: 'Separated bike lane' })
-  if (bikeCorridors.some(c => c.protection === 'painted')) legend.push({ swatch: <LegendLine color="#7FB5FF" dashed />, label: 'Painted bike lane' })
-  if (printDocks.length > 0) legend.push({ swatch: <span className="inline-block h-2 w-2 rounded-full border border-white bg-[#2966E5]" />, label: 'Bluebikes dock' })
+  if (drawnTiers.has('path')) legend.push({ swatch: <LegendLine color="#BAF14D" />, label: 'Multi-use path' })
+  if (drawnTiers.has('protected')) legend.push({ swatch: <LegendLine color="#2DD4BF" />, label: 'Separated bike lane' })
+  if (drawnTiers.has('painted')) legend.push({ swatch: <LegendLine color="#7FB5FF" dashed />, label: 'Painted bike lane' })
+  if (stations.some(s => s.isRail)) legend.push({ swatch: <PrintMarkerIcon kind="rail" color="#DA291C" size={13} />, label: 'T station' })
+  if (stations.some(s => !s.isRail)) legend.push({ swatch: <PrintMarkerIcon kind="bus" size={13} />, label: 'Bus stop' })
+  if (printDocks.length > 0) legend.push({ swatch: <PrintMarkerIcon kind="dock" size={13} />, label: 'Bluebikes dock' })
 
   return (
     <main className="print-root min-h-screen bg-white text-[#191A2E]">
@@ -207,7 +246,7 @@ export default async function NearbyPrintPage({ searchParams }: {
         )}
 
         {/* Two columns: transit | bike + docks */}
-        <div className="mt-3 grid grid-cols-2 gap-5">
+        <div className="mt-2.5 grid grid-cols-2 gap-5">
           <section className="print-card">
             <h2 className="mb-2 text-[0.72rem] font-bold uppercase tracking-wider text-[#191A2E]/70">
               Trains &amp; buses near you
@@ -215,7 +254,7 @@ export default async function NearbyPrintPage({ searchParams }: {
             {stations.length === 0 && (
               <p className="text-[0.8rem] text-[#191A2E]/70">No MBTA stations within a short walk of this spot.</p>
             )}
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {stations.map(s => (
                 <div key={s.name}>
                   <div className="flex items-baseline justify-between gap-2">
@@ -223,21 +262,28 @@ export default async function NearbyPrintPage({ searchParams }: {
                     <span className="shrink-0 text-[0.72rem] text-[#191A2E]/70">{s.walkMin} min walk</span>
                   </div>
                   {s.lines.map(l => (
-                    <div key={l.routeId} className="mt-0.5 flex items-center gap-1.5">
+                    <div key={l.routeId} className="mt-0.5 flex items-baseline gap-1.5">
                       <span
-                        className="rounded px-1.5 py-px text-[0.62rem] font-bold"
+                        className="shrink-0 rounded px-1.5 py-px text-[0.62rem] font-bold"
                         style={{ backgroundColor: l.color, color: l.textColor }}
                       >
                         {l.label}
                       </span>
-                      <span className="min-w-0 truncate text-[0.7rem] text-[#191A2E]/80">
-                        {l.frequencyLabel ?? 'See live schedule online'}
+                      <span className="min-w-0 text-[0.68rem] leading-snug text-[#191A2E]/80">
+                        {l.endpoints && <span className="font-semibold text-[#191A2E]/90">{l.endpoints}</span>}
+                        {l.endpoints && l.frequencyLabel && ' · '}
+                        {l.frequencyLabel ?? (l.endpoints ? '' : 'see live schedule online')}
                       </span>
                     </div>
                   ))}
                 </div>
               ))}
             </div>
+            {stations.length > 0 && (
+              <p className="mt-1.5 text-[0.65rem] text-[#191A2E]/60">
+                Weekday daytime frequencies — scan the code for live arrivals.
+              </p>
+            )}
           </section>
 
           <section className="print-card">
@@ -247,7 +293,7 @@ export default async function NearbyPrintPage({ searchParams }: {
             {bikeCorridors.length === 0 && (
               <p className="text-[0.8rem] text-[#191A2E]/70">No mapped bike routes within riding distance yet.</p>
             )}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {bikeCorridors.map(c => (
                 <div key={c.id}>
                   <div className="flex items-baseline justify-between gap-2">
@@ -279,45 +325,49 @@ export default async function NearbyPrintPage({ searchParams }: {
                 </p>
               </>
             )}
+
+            {/* QR rides in this column's slack (the transit column nearly
+                always runs longer) instead of costing page height below */}
+            <div className="mt-3 flex items-center gap-3 rounded-lg border border-[#191A2E]/15 p-2.5">
+              <div className="h-[70px] w-[70px] shrink-0" dangerouslySetInnerHTML={{ __html: qrSvg }} />
+              <div className="min-w-0">
+                <p className="text-[0.78rem] font-bold leading-snug">
+                  Scan for the live version — real-time arrivals on a tappable map.
+                </p>
+                <p className="mt-0.5 break-all text-[0.68rem] font-semibold text-[#4A7729]">{shortUrl}</p>
+              </div>
+            </div>
           </section>
         </div>
 
         {/* Destinations */}
         {destinations.length > 0 && (
-          <section className="print-card mt-3">
-            <h2 className="mb-2 text-[0.72rem] font-bold uppercase tracking-wider text-[#191A2E]/70">
+          <section className="print-card mt-2.5">
+            <h2 className="mb-1.5 text-[0.72rem] font-bold uppercase tracking-wider text-[#191A2E]/70">
               Where can you get from here?
             </h2>
-            <div className="grid grid-cols-2 gap-x-5 gap-y-1.5">
+            <div className="grid grid-cols-2 gap-x-5 gap-y-1">
               {destinations.map(row => (
-                <div key={row.id} className="flex items-baseline justify-between gap-2 border-b border-[#191A2E]/10 pb-1">
-                  <span className="min-w-0 truncate text-[0.8rem] font-semibold">{row.name}</span>
-                  <span className="shrink-0 text-[0.7rem] tabular-nums text-[#191A2E]/80">
+                <div key={row.id} className="flex items-baseline justify-between gap-2 border-b border-[#191A2E]/10 pb-0.5">
+                  <span className="min-w-0 truncate text-[0.78rem] font-semibold">{row.name}</span>
+                  <span className="shrink-0 text-[0.68rem] tabular-nums text-[#191A2E]/80">
                     {modeOptions(row).map(o => `${MODE_LABEL[o.key] ?? o.key} ${o.estimate ? '~' : ''}${o.minutes}`).join(' · ')} min
                   </span>
                 </div>
               ))}
             </div>
-            <p className="mt-1 text-[0.65rem] text-[#191A2E]/60">
+            <p className="mt-1 text-[0.62rem] text-[#191A2E]/60">
               Times assume a weekday morning; ~ marks an estimate.
             </p>
           </section>
         )}
 
-        {/* Footer: QR + attribution */}
-        <footer className="print-card mt-3 flex items-center gap-4 border-t border-[#191A2E]/15 pt-2.5">
-          <div className="h-[88px] w-[88px] shrink-0" dangerouslySetInnerHTML={{ __html: qrSvg }} />
-          <div className="min-w-0">
-            <p className="text-[0.85rem] font-bold">
-              Scan for the live version — real-time arrivals, routes on a tappable map, and more.
-            </p>
-            <p className="text-[0.75rem] font-semibold text-[#4A7729]">{shortUrl}</p>
-            <p className="mt-1.5 text-[0.62rem] leading-snug text-[#191A2E]/60">
-              Green Streets Initiative, a 501(c)(3) · gogreenstreets.org
-              <br />
-              Data: MBTA · MAPC TrailMap · MassDOT · Bluebikes · OpenStreetMap contributors · Map © OpenStreetMap contributors © CARTO
-            </p>
-          </div>
+        {/* Footer: attribution only — the QR lives up in the bike column */}
+        <footer className="print-card mt-2.5 border-t border-[#191A2E]/15 pt-1.5">
+          <p className="text-[0.62rem] leading-snug text-[#191A2E]/60">
+            Green Streets Initiative, a 501(c)(3) · gogreenstreets.org · Data: MBTA · MAPC TrailMap · MassDOT ·
+            Bluebikes · OpenStreetMap contributors · Map © OpenStreetMap contributors © CARTO
+          </p>
         </footer>
       </article>
     </main>

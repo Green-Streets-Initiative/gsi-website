@@ -1,4 +1,5 @@
 import type { StopTopology } from './live-data'
+import type { FrequencyInfo } from '@/lib/server/corridor-meta'
 import { lineColor, lineTextColor } from './transit-ui'
 import { walkTimeMinutes } from '@/lib/geo/measure'
 
@@ -16,6 +17,9 @@ export interface PrintStationLine {
   color: string
   textColor: string
   frequencyLabel: string | null
+  /** Both termini ("Medford/Tufts ↔ Heath Street") when the MBTA reports
+   *  them — on paper, where a line GOES matters more than its next arrival. */
+  endpoints: string | null
 }
 
 export interface PrintStation {
@@ -25,6 +29,19 @@ export interface PrintStation {
   walkMin: number
   isRail: boolean
   lines: PrintStationLine[]
+}
+
+/** The interactive page's frequency sentences ("A couple of times an hour
+ *  on weekdays (~every 40 min)") are too wide once each line row also names
+ *  its termini — compress to the number and let one section footnote say
+ *  "weekdays" for everybody. */
+export function shortFrequencyLabel(f: FrequencyInfo | null): string | null {
+  if (!f) return null
+  if (f.headwayMin === null) {
+    return f.tripsPerDay != null ? `${f.tripsPerDay} trips a day` : f.label
+  }
+  if (f.headwayMin <= 8) return 'every few minutes'
+  return `every ~${f.headwayMin} min`
 }
 
 function groupTopology(
@@ -48,12 +65,20 @@ function groupTopology(
     }
     for (const route of stop.routes) {
       if (g.lines.some(l => l.routeId === route.id)) continue
+      const termini = (route.directions ?? [])
+        .filter(Boolean)
+        // "Sullivan Square Station" → "Sullivan Square" (never bare
+        // "Station" strips — "North Station" must survive intact), and
+        // "Central Square, Cambridge" → "Central Square" — the city
+        // qualifier wraps rows on paper without adding much
+        .map(d => d.replace(/ Square Station$/, ' Square').replace(/,\s+[A-Z][a-z]+$/, ''))
       g.lines.push({
         routeId: route.id,
         label: /^\d/.test(route.name) ? `Route ${route.name}` : route.name,
         color: lineColor(route.id),
         textColor: lineTextColor(route.id),
         frequencyLabel: freqByRoute.get(route.id) ?? null,
+        endpoints: termini.length === 2 ? termini.join(' ↔ ') : null,
       })
     }
   }
