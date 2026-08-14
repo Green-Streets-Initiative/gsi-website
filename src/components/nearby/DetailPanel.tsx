@@ -328,7 +328,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, on
         {selection.info.source && SOURCE_LABEL[selection.info.source] && (
           <div className="mt-1 text-[0.72rem] text-white/70">
             Data: {SOURCE_LABEL[selection.info.source]}
-            {selection.info.nameInferred && ' · street name from a nearby segment'}
+            {selection.info.nameInferred && ' · street name from nearby map data'}
           </div>
         )}
       </div>

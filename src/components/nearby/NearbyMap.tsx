@@ -583,11 +583,31 @@ function applyBikeBackground(
       if ((feature.properties as { corridorId?: string })?.corridorId) return
       const handler = (map as unknown as { __nearbyOnLaneTap?: (info: LaneTapInfo) => void }).__nearbyOnLaneTap
       const rawName = feature.properties?.name as string | undefined
+      let name = rawName?.trim() ? rawName : null
+      let nameInferred = Boolean(feature.properties?.nameInferred)
+      // ~90 lanes per area have no named twin in ANY bike dataset — but the
+      // basemap under the tap knows the street ("Washington Street" is
+      // literally printed there). Borrow its label rather than showing an
+      // anonymous "bike infrastructure" card.
+      if (!name) {
+        const pad = 30
+        const box: [maplibregl.PointLike, maplibregl.PointLike] = [
+          [e.point.x - pad, e.point.y - pad],
+          [e.point.x + pad, e.point.y + pad],
+        ]
+        const road = map.queryRenderedFeatures(box).find(f =>
+          f.sourceLayer === 'transportation_name' && typeof f.properties?.name === 'string' && f.properties.name.trim())
+        const roadName = road?.properties?.name as string | undefined
+        if (roadName?.trim()) {
+          name = roadName.trim()
+          nameInferred = true
+        }
+      }
       handler?.({
         quality: (feature.properties?.quality as string) ?? 'painted',
         source: (feature.properties?.source as string) ?? null,
-        name: rawName?.trim() ? rawName : null,
-        nameInferred: Boolean(feature.properties?.nameInferred),
+        name,
+        nameInferred,
         lngLat: { lng: e.lngLat.lng, lat: e.lngLat.lat },
       })
       posthog.capture('snapshot_marker_tapped', { type: 'bike-lane' })
