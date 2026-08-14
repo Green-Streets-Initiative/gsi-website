@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import posthog from 'posthog-js'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
+import { haversineMeters } from '@/lib/geo/measure'
+import { bearingDegrees } from '@/lib/geo/polyline'
 
 export interface NearbyMarker {
   id: string
@@ -508,6 +510,77 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
   }
 }
 
+/** Bearing of the tapped lane at the vertex nearest the tap — lets the
+ *  basemap name lookup prefer the street the lane runs ALONG over a
+ *  cross-street at an intersection. */
+function laneBearingAt(
+  feature: GeoJSON.Feature | maplibregl.MapGeoJSONFeature,
+  lngLat: { lng: number; lat: number },
+): number | null {
+  const geom = feature.geometry
+  if (geom.type !== 'LineString') return null
+  const coords = geom.coordinates as [number, number][]
+  if (coords.length < 2) return null
+  let bi = 0
+  let bd = Infinity
+  for (let i = 0; i < coords.length; i++) {
+    const d = Math.abs(coords[i][1] - lngLat.lat) + Math.abs(coords[i][0] - lngLat.lng)
+    if (d < bd) { bd = d; bi = i }
+  }
+  const j = bi < coords.length - 1 ? bi + 1 : bi - 1
+  return bearingDegrees(coords[bi][1], coords[bi][0], coords[j][1], coords[j][0])
+}
+
+/** Street name from the basemap's SOURCE tiles: the nearest named road
+ *  centerline to the tap. Rendered labels draw sparsely (a street's name
+ *  appears every few hundred px at best), so query the tile data — it has
+ *  every named road in view. A parallel candidate (±35°) wins out to 60 m;
+ *  a non-parallel one only when nearly on top of the tap (≤25 m), so an
+ *  intersection's cross-street can't donate its name. */
+function nearestRoadName(
+  map: maplibregl.Map,
+  lngLat: { lng: number; lat: number },
+  laneBearing: number | null,
+): string | null {
+  let feats: GeoJSON.Feature[]
+  try {
+    feats = map.querySourceFeatures('carto', { sourceLayer: 'transportation_name' })
+  } catch {
+    return null
+  }
+  let best: { name: string; d: number; parallel: boolean } | null = null
+  for (const f of feats) {
+    const nm = typeof f.properties?.name === 'string' ? f.properties.name.trim() : ''
+    if (!nm) continue
+    const geom = f.geometry
+    const lines: [number, number][][] =
+      geom.type === 'LineString' ? [geom.coordinates as [number, number][]]
+        : geom.type === 'MultiLineString' ? (geom.coordinates as [number, number][][])
+        : []
+    for (const line of lines) {
+      for (let i = 0; i < line.length; i++) {
+        const [x, y] = line[i]
+        // Degree prefilter (~90 m) before the exact distance
+        if (Math.abs(y - lngLat.lat) > 0.0008 || Math.abs(x - lngLat.lng) > 0.001) continue
+        const d = haversineMeters(lngLat.lat, lngLat.lng, y, x)
+        if (d > 60) continue
+        let parallel = false
+        if (laneBearing !== null && line.length >= 2) {
+          const j = i < line.length - 1 ? i + 1 : i - 1
+          const b = bearingDegrees(y, x, line[j][1], line[j][0])
+          const diff = Math.abs(b - laneBearing) % 180
+          parallel = Math.min(diff, 180 - diff) <= 35
+        }
+        if (!parallel && d > 25) continue
+        if (!best || (parallel && !best.parallel) || (parallel === best.parallel && d < best.d)) {
+          best = { name: nm, d, parallel }
+        }
+      }
+    }
+  }
+  return best?.name ?? null
+}
+
 function applyBikeBackground(
   map: maplibregl.Map,
   lines: GeoJSON.FeatureCollection,
@@ -586,20 +659,13 @@ function applyBikeBackground(
       let name = rawName?.trim() ? rawName : null
       let nameInferred = Boolean(feature.properties?.nameInferred)
       // ~90 lanes per area have no named twin in ANY bike dataset — but the
-      // basemap under the tap knows the street ("Washington Street" is
-      // literally printed there). Borrow its label rather than showing an
-      // anonymous "bike infrastructure" card.
+      // basemap under the tap knows the street. Query the tile DATA (not the
+      // rendered labels — those draw sparsely, which left Webster Ave blank
+      // while Washington St worked) for the nearest parallel named road.
       if (!name) {
-        const pad = 30
-        const box: [maplibregl.PointLike, maplibregl.PointLike] = [
-          [e.point.x - pad, e.point.y - pad],
-          [e.point.x + pad, e.point.y + pad],
-        ]
-        const road = map.queryRenderedFeatures(box).find(f =>
-          f.sourceLayer === 'transportation_name' && typeof f.properties?.name === 'string' && f.properties.name.trim())
-        const roadName = road?.properties?.name as string | undefined
-        if (roadName?.trim()) {
-          name = roadName.trim()
+        const roadName = nearestRoadName(map, e.lngLat, laneBearingAt(feature, e.lngLat))
+        if (roadName) {
+          name = roadName
           nameInferred = true
         }
       }
