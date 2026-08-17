@@ -20,7 +20,7 @@ const BIKE_TIER_STYLE: Record<string, { color: string; dash: boolean }> = {
 interface RouteGeometry {
   transit_segments?: { polyline: string; color: string; mode?: 'walk' | 'transit'; label?: string | null }[]
   bike_polyline?: string | null
-  bike_comfort?: { segments: { rating: string; polyline: string; distance_mi?: number }[] } | null
+  bike_comfort?: { segments: { rating: string; polyline: string; distance_mi?: number; street?: string | null }[] } | null
 }
 
 export function reachRouteFeatures(
@@ -54,6 +54,7 @@ export function reachRouteFeatures(
         leg: 'bike',
         legRating: seg.rating,
         ...(seg.distance_mi !== undefined ? { legMiles: seg.distance_mi } : {}),
+        ...(seg.street ? { legStreet: seg.street } : {}),
       })
     }
   } else if (row.bike_polyline) {

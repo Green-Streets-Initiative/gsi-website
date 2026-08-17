@@ -12,7 +12,7 @@ import type { TransitCorridor, BikeCorridor, FrequencyInfo } from '@/lib/nearby/
 import { TrainIcon, BusIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
 import {
-  type Selection, type StationGroup, routeTermini,
+  type Selection, type StationGroup, routeEndpoints,
 } from './useNearbyModel'
 
 /**
@@ -215,7 +215,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, on
                     ))}
                   </span>
                 ) : (
-                  <span className="min-w-0 flex-1 truncate text-[0.78rem] text-white/80">{routeTermini(r)}</span>
+                  <span className="min-w-0 flex-1 truncate text-[0.78rem] text-white/80">{routeEndpoints(corridor, r)}</span>
                 )}
               </button>
             )

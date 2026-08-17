@@ -13,7 +13,7 @@ import { dockStatsText } from './markers'
 import type { SectionStatus } from './types'
 import { SkeletonRows, ErrorCard } from './SectionShell'
 import {
-  type StationGroup, routeTermini, soonestAtStation, freqShort,
+  type StationGroup, routeEndpoints, soonestAtStation, freqShort,
 } from './useNearbyModel'
 
 /**
@@ -88,20 +88,27 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                   </span>
                 </span>
                 {!open && (
-                  <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  // One line per route, each naming where it runs — a badge
+                  // alone doesn't tell a newcomer whether this bus is any use
+                  // to them, and that's the question the closed card must answer
+                  <span className="mt-1.5 flex flex-col gap-y-1">
                     {st.routes.map(r => {
                       const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
                       const next = soonestAtStation(r)
+                      const ends = routeEndpoints(corridor, r)
                       return (
-                        <span key={r.id} className="flex items-center gap-1.5">
+                        <span key={r.id} className="flex items-baseline gap-1.5">
                           <span
-                            className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                            className="shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
                             style={{ backgroundColor: corridor?.color ?? '#666', color: corridor?.textColor ?? '#fff' }}
                           >
                             {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
                           </span>
+                          {ends && (
+                            <span className="min-w-0 flex-1 truncate text-[0.78rem] text-white/80">{ends}</span>
+                          )}
                           {next !== null && (
-                            <strong className="text-[0.75rem] font-bold text-[#BAF14D]">
+                            <strong className="ml-auto shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
                               {next === 0 ? 'now' : `in ${next} min`}
                             </strong>
                           )}
@@ -151,7 +158,7 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                             ))}
                           </span>
                         ) : (
-                          <span className="min-w-0 flex-1 truncate text-[0.8rem] text-white/80">{routeTermini(r)}</span>
+                          <span className="min-w-0 flex-1 truncate text-[0.8rem] text-white/80">{routeEndpoints(corridor, r)}</span>
                         )}
                       </button>
                     )

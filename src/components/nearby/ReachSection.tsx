@@ -14,11 +14,20 @@ import type { ReachRow, BikeComfortTier } from './types'
  *  expanded row (desktop) and the sheet detail (mobile). */
 export function RouteLegNote({ info }: { info: RouteLegTapInfo }) {
   const tier = (info.legRating ?? null) as BikeComfortTier | null
+  // Name the road first when we know it — "what street is this?" is the
+  // question a tap is asking; the comfort tier is the follow-up
+  const bikeText = () => {
+    const tierText = tier ? NEARBY_COMFORT_LABELS[tier] : 'Bike'
+    const miles = info.legMiles ? ` · ${info.legMiles} mi` : ''
+    return info.legStreet
+      ? `${info.legStreet} — ${tierText.toLowerCase()}${miles}`
+      : `${tierText} stretch${miles}`
+  }
   const text = info.leg === 'walk'
     ? 'Walking connection between rides'
     : info.leg === 'transit'
       ? (info.legLabel ? `${info.legLabel} — the riding leg` : 'The riding leg')
-      : `${tier ? NEARBY_COMFORT_LABELS[tier] : 'Bike'} stretch${info.legMiles ? ` · ${info.legMiles} mi` : ''}`
+      : bikeText()
   const dotColor = info.leg === 'bike' && tier ? NEARBY_COMFORT_COLORS[tier] : '#9BA3BF'
   return (
     <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-white/[0.14] bg-white/[0.05] px-3 py-1.5 text-[0.78rem] text-white">

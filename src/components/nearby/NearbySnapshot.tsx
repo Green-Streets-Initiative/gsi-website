@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBluebikes, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
 import { round3, parseSnapshotParams, buildShareUrl, isOutsideArea } from '@/lib/nearby/share'
+import { resolvePlaceLabel, combinePlaceLabel, splitPlaceLabel } from '@/lib/nearby/neighborhood'
 import { NEARBY_PATH } from '@/lib/nearby/config'
 import {
   buildTransitCorridors, buildBikeCorridors, fetchCorridorMeta,
@@ -25,10 +26,15 @@ const REFRESH_MS = 30_000
 interface Located {
   lat: number
   lng: number
-  /** Shareable label — city/town only, never a street address (it goes in the URL) */
+  /** Shareable label — "Neighborhood, Town" (or just town); never a street
+   *  address (it goes in the URL). Neighborhood is a district, not PII. */
   label: string
+  /** Town (Google locality) — drives the events/town query and the sub-label */
   city: string
-  /** Full address for on-screen display + advisor prefill; never leaves this browser */
+  /** Neighborhood from the shared `neighborhoods` table; null until resolved
+   *  or when the point falls in no mapped neighborhood */
+  neighborhood: string | null
+  /** Full address for advisor prefill; never leaves this browser or the URL */
   fullAddress: string | null
   source: 'geolocation' | 'address' | 'url'
 }
@@ -71,16 +77,46 @@ export default function NearbySnapshot() {
     })
   }, [])
 
-  // URL hydration — a valid ?lat&lng skips the gate entirely
+  // URL hydration — a valid ?lat&lng skips the gate entirely. The label
+  // param already carries "Neighborhood, Town" from whoever shared it, so
+  // split it for instant display instead of re-resolving over the network.
   useEffect(() => {
     const parsed = parseSnapshotParams(new URLSearchParams(searchParams.toString()))
     posthog.capture('snapshot_viewed', { has_url_coords: !!parsed })
     if (parsed) {
-      setLocation({ ...parsed, city: parsed.label, fullAddress: null, source: 'url' })
+      const { neighborhood, town } = splitPlaceLabel(parsed.label)
+      setLocation({ ...parsed, city: town ?? '', neighborhood, fullAddress: null, source: 'url' })
     }
   // Mount only — later URL changes come from our own replaceState
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Resolve neighborhood + town from the shared Supabase source (same data
+  // the Shift app uses) for locations we set ourselves — geolocation gives
+  // only coords, and the address path's town needs its neighborhood filled
+  // in. URL-hydrated locations already carry a parsed label, so skip them.
+  useEffect(() => {
+    if (!location || location.source === 'url') return
+    let cancelled = false
+    ;(async () => {
+      const resolved = await resolvePlaceLabel(location.lat, location.lng, location.city || cityRef.current || null)
+      if (cancelled) return
+      const label = combinePlaceLabel(resolved)
+      setLocation(prev => {
+        if (!prev) return prev
+        if (label) window.history.replaceState(null, '', buildShareUrl(prev.lat, prev.lng, label))
+        return {
+          ...prev,
+          neighborhood: resolved.neighborhood,
+          city: resolved.town ?? prev.city,
+          label: label || prev.label,
+        }
+      })
+    })()
+    return () => { cancelled = true }
+  // Keyed on the point only — resolveLabel patches label/neighborhood, not coords
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location?.lat, location?.lng])
 
   /* ── Data loading ── */
 
@@ -201,8 +237,8 @@ export default function NearbySnapshot() {
       try {
         // v= busts browser HTTP caches (max-age=86400) when the response
         // shape or lane classification changes — bump it alongside the
-        // server's cache-key version (v8: comfort street name fallback)
-        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=8`)
+        // server's cache-key version (v9: comfort segments name their street)
+        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=9`)
         if (!res.ok) throw new Error(`reach ${res.status}`)
         const data = await res.json()
         setReach({ status: 'ready', data: data.destinations ?? [] })
@@ -278,27 +314,11 @@ export default function NearbySnapshot() {
     setGeoError(null)
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
+      (pos) => {
         const lat = round3(pos.coords.latitude)
         const lng = round3(pos.coords.longitude)
-        setLocated({ lat, lng, label: '', city: '', fullAddress: null, source: 'geolocation' })
-        // Best-effort city label for the header + share URL
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
-            { headers: { Accept: 'application/json' } }
-          )
-          const data = await res.json()
-          const city = data.address?.city ?? data.address?.town ?? data.address?.village ?? ''
-          if (city) {
-            cityRef.current = city
-            setLocation(prev => {
-              if (!prev) return prev
-              window.history.replaceState(null, '', buildShareUrl(prev.lat, prev.lng, city))
-              return { ...prev, label: city, city }
-            })
-          }
-        } catch { /* label stays generic */ }
+        // Neighborhood + town fill in via the resolve effect (shared source)
+        setLocated({ lat, lng, label: '', city: '', neighborhood: null, fullAddress: null, source: 'geolocation' })
       },
       () => {
         setLocating(false)
@@ -432,12 +452,10 @@ export default function NearbySnapshot() {
             value={address}
             onChange={setAddress}
             onCityDetected={(city) => {
+              // Interim town label; the resolve effect fills in the
+              // neighborhood and rewrites this to "Neighborhood, Town"
               cityRef.current = city
-              setLocation(prev => {
-                if (!prev) return prev
-                window.history.replaceState(null, '', buildShareUrl(prev.lat, prev.lng, city))
-                return { ...prev, label: city, city }
-              })
+              setLocation(prev => (prev ? { ...prev, city } : prev))
             }}
             onPlaceSelected={(place) => {
               setLocated({
@@ -445,6 +463,7 @@ export default function NearbySnapshot() {
                 lng: place.lng,
                 label: cityRef.current,
                 city: cityRef.current,
+                neighborhood: null,
                 fullAddress: place.address,
                 source: 'address',
               })
@@ -462,7 +481,11 @@ export default function NearbySnapshot() {
   }
 
   const outside = isOutsideArea(location.lat, location.lng)
-  const displayLabel = location.fullAddress ?? (location.label || 'Your location')
+  // Neighborhood is the headline; town rides beneath it (or is the headline
+  // when no neighborhood resolved). The full street address is never shown —
+  // it stays in-browser for the advisor handoff only.
+  const displayLabel = location.neighborhood || location.city || 'Your location'
+  const subLabel = location.neighborhood ? location.city : null
   const partnerLine = community.data?.partners && community.data.partners.count > 0
     ? `Unlock perks at ${community.data.partners.count} local business${community.data.partners.count === 1 ? '' : 'es'} near you${community.data.partners.names[0] ? ` — like ${community.data.partners.names.slice(0, 2).join(' and ')}` : ''}.`
     : 'Track your trips, feel the health gains, and unlock perks at partner businesses around town.'
@@ -473,6 +496,7 @@ export default function NearbySnapshot() {
   const surfaceProps = {
     center: location,
     displayLabel,
+    subLabel,
     outside,
     copied,
     onCopyLink: handleCopyLink,

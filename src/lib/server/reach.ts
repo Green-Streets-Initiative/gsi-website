@@ -48,6 +48,12 @@ interface ComfortSegment {
   distance_mi: number
   /** This stretch of the route, encoded — lets the map draw it in tier colors */
   polyline: string
+  /** The street(s) this stretch rides, so a tapped leg can name the road
+   *  instead of only its comfort tier. A stretch is a run of same-RATING
+   *  samples, so it can cross streets — hence up to two, in travel order.
+   *  Null on shared-road runs: those samples match no lane, and classifySample
+   *  deliberately refuses to let them claim a street. */
+  street: string | null
 }
 
 interface StreetComfort { label: string; rating: ComfortRating; distance_mi: number }
@@ -391,6 +397,38 @@ function scoreBikeComfort(
   }
   if (samples.length === 0) return null
 
+  /** Meters this sample covers, up to the next sample (or the path's end). */
+  const sampleMeters = (s: number): number => {
+    const startIdx = samples[s].idx
+    const endIdx = s + 1 < samples.length ? samples[s + 1].idx : path.length - 1
+    return Math.max(0, cum[endIdx] - cum[startIdx])
+  }
+
+  /** Name a run of samples: the streets carrying a real share of it, in
+   *  travel order. A quarter of the run is the bar — below that a street is
+   *  a passing block, not what you'd say you rode. */
+  const RUN_NAME_MIN_SHARE = 0.25
+  const runStreetName = (from: number, to: number, runMeters: number): string | null => {
+    if (runMeters <= 0) return null
+    const byKey = new Map<string, { variants: Map<string, number>; meters: number; firstAt: number }>()
+    for (let s = from; s < to; s++) {
+      const key = samples[s].streetKey
+      const display = samples[s].streetDisplay
+      if (!key || !display) continue
+      const st = byKey.get(key) ?? { variants: new Map<string, number>(), meters: 0, firstAt: s }
+      st.variants.set(display, (st.variants.get(display) ?? 0) + 1)
+      st.meters += sampleMeters(s)
+      byKey.set(key, st)
+    }
+    const named = [...byKey.values()]
+      .filter(st => st.meters / runMeters >= RUN_NAME_MIN_SHARE)
+      .sort((a, b) => b.meters - a.meters)
+      .slice(0, 2)
+      .sort((a, b) => a.firstAt - b.firstAt)
+    if (named.length === 0) return null
+    return named.map(st => displayStreetName(st.variants)).join(' → ')
+  }
+
   // Same-tier runs become drawable segments (geometry sliced from the path)
   const segments: ComfortSegment[] = []
   let runStart = 0
@@ -404,6 +442,7 @@ function scoreBikeComfort(
         rating: samples[runStart].rating,
         distance_mi: Math.round((meters / 1609.34) * 100) / 100,
         polyline: encodePolyline(path.slice(startIdx, endIdx + 1)),
+        street: runStreetName(runStart, s, meters),
       })
     }
     runStart = s
@@ -484,8 +523,8 @@ export async function getReach(lat: number, lng: number): Promise<{ destinations
   // v5: comfort tiers split 'path' from 'protected'
   // v6: sidepath detection reclassifies street-named "paths" as protected lanes
   // v7: unnamed lanes inherit names from overlapping segments
-  // v8: 45 m inheritance + comfort street-name fallback (80 m)
-  const cacheKey = `v8:${lat3},${lng3}`
+  // v9: comfort segments carry the street they ride (tapped-leg naming)
+  const cacheKey = `v9:${lat3},${lng3}`
 
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) return cached.data

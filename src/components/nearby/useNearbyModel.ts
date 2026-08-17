@@ -73,6 +73,18 @@ export function routeTermini(route: StationGroup['routes'][number]): string {
   return ends.join(' ↔ ')
 }
 
+/** Where a route runs, end to end — "Assembly Row ↔ Ruggles Station". A route
+ *  number means nothing to a newcomer until it's attached to places, so this
+ *  reads off the corridor's static direction destinations and only falls back
+ *  to the stop's own rows. */
+export function routeEndpoints(
+  corridor: TransitCorridor | undefined,
+  route: StationGroup['routes'][number],
+): string {
+  const ends = (corridor?.endpoints ?? []).filter(Boolean)
+  return ends.length > 0 ? ends.join(' ↔ ') : routeTermini(route)
+}
+
 export function soonestAtStation(route: StationGroup['routes'][number]): number | null {
   const mins = route.arrivals.map(a => a.nextMin).filter((m): m is number => m !== null)
   return mins.length ? Math.min(...mins) : null

@@ -44,6 +44,9 @@ export interface RouteLegTapInfo {
   /** Bike comfort tier for bike legs */
   legRating: string | null
   legMiles: number | null
+  /** The street this bike stretch rides ("Webster Avenue"), when the lane
+   *  network names it — shared-road stretches have none */
+  legStreet: string | null
 }
 
 interface Props {
@@ -483,7 +486,7 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
       evt.__nearbyHandled = true
       const props = e.features?.[0]?.properties as {
         corridorId?: string; leg?: 'walk' | 'transit' | 'bike'
-        legLabel?: string; legRating?: string; legMiles?: number
+        legLabel?: string; legRating?: string; legMiles?: number; legStreet?: string
       } | undefined
       const id = props?.corridorId
       if (!id) return
@@ -498,6 +501,7 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
             legLabel: props.legLabel ?? null,
             legRating: props.legRating ?? null,
             legMiles: props.legMiles ?? null,
+            legStreet: props.legStreet ?? null,
           })
         }
         return

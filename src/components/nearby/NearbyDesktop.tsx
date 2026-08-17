@@ -33,6 +33,8 @@ import { SkeletonRows, ErrorCard } from './SectionShell'
 interface Props {
   center: { lat: number; lng: number }
   displayLabel: string
+  /** Town, shown beneath the neighborhood headline (null when no neighborhood) */
+  subLabel: string | null
   outside: boolean
   copied: boolean
   onCopyLink: () => void
@@ -62,7 +64,7 @@ const RAIL_TABS = [
 type RailTab = (typeof RAIL_TABS)[number]['id']
 
 export default function NearbyDesktop({
-  center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
+  center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onAdvisorCta, onPlanCommute, partnerLine,
   transitCorridors, bikeCorridors, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, onRetry,
@@ -130,7 +132,9 @@ export default function NearbyDesktop({
 
   return (
     <div className="pb-20">
-      {/* Compact header — the h1 stays for SEO/a11y; actions live in the bar */}
+      {/* Compact header — the h1 stays for SEO/a11y; actions live in the bar.
+          Neighborhood is the headline; the town rides beneath it, so the
+          "Your neighborhood snapshot" eyebrow finally reads true. */}
       <div className="mx-auto max-w-[1200px] px-6 pb-4 pt-6 lg:px-8">
         <div className="text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#BAF14D]">
           Your neighborhood snapshot
@@ -138,6 +142,9 @@ export default function NearbyDesktop({
         <h1 className="mt-1 truncate font-display text-[1.35rem] font-extrabold tracking-tight text-white">
           {displayLabel}
         </h1>
+        {subLabel && (
+          <div className="mt-0.5 text-[0.9rem] font-semibold text-white/70">{subLabel}</div>
+        )}
         {outside && (
           <p className="mt-3 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-5 py-3.5 text-[0.875rem] leading-relaxed text-white">
             This spot looks like it&apos;s outside Greater Boston, where our transit and Bluebikes data lives. Bike-path data covers all of Massachusetts, so parts of the picture may still fill in.
@@ -151,7 +158,9 @@ export default function NearbyDesktop({
       <div className="sticky top-[60px] z-20 border-b border-white/[0.12] bg-[#191A2E]/95 backdrop-blur">
         <div className="relative mx-auto max-w-[1200px]">
           <div className="flex h-[52px] items-center gap-3 overflow-x-auto whitespace-nowrap px-6 lg:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <span className="min-w-0 shrink truncate text-[0.85rem] font-bold text-white">{displayLabel}</span>
+            <span className="min-w-0 shrink truncate text-[0.85rem] font-bold text-white">
+              {displayLabel}{subLabel && <span className="font-semibold text-white/70">{` · ${subLabel}`}</span>}
+            </span>
             <button
               onClick={onCopyLink}
               className="shrink-0 rounded-lg border border-white/[0.15] px-3 py-1.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-white/[0.06]"
