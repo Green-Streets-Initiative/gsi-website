@@ -265,6 +265,16 @@ function clusterFeatures(features: LaneFeatureLike[]): LaneFeatureLike[][] {
 
 const MAX_BIKE_CORRIDORS = 8
 
+/** Ranking tilt by comfort tier — path/protected rank at full strength, a
+ *  painted lane is halved so a closer separated route wins the top slots.
+ *  Not a hard filter: a long, close painted connector can still make the cut. */
+const COMFORT_WEIGHT: Record<BikeCorridor['protection'], number> = {
+  path: 1,
+  protected: 1,
+  'mostly-protected': 0.8,
+  painted: 0.5,
+}
+
 export interface BikeCorridorBuild {
   corridors: BikeCorridor[]
   /** Source features a listed corridor claimed — everything else should stay
@@ -395,9 +405,12 @@ export function buildBikeCorridors(
         geojson: { type: 'FeatureCollection', features: features as unknown as GeoJSON.Feature[] },
       },
       source: cluster,
-      // Nearness-aware ranking: a reachable connector beats a long street a
-      // mile away — this is a "what can I actually use" list
-      score: lengthMiles / (1 + nearestM / 1609.34),
+      // Nearness-aware ranking, comfort-weighted: a reachable connector beats
+      // a long street a mile away, AND — since the section is "comfortable
+      // bike routes" — a painted lane must be substantially longer/closer to
+      // outrank a separated one. Without this, a long painted street (Main
+      // St, Broadway) buried a closer protected lane in the top slots.
+      score: (lengthMiles / (1 + nearestM / 1609.34)) * COMFORT_WEIGHT[protection],
     })
   }
 

@@ -77,6 +77,12 @@ export default function NearbyShell({
   const [snap, setSnap] = useState<SheetSnap>('half')
   const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
   const [paintedOn, setPaintedOn] = useState(PAINTED_DEFAULT)
+  // Selecting Bike turns painted lanes on — part of the bike picture, not
+  // clutter. The user can still toggle them back off.
+  const handleModeChange = useCallback((m: ModeFilter) => {
+    setModeFilter(m)
+    if (m === 'bike') setPaintedOn(true)
+  }, [])
 
   const model = useNearbyModel({
     center, transitCorridors, bikeCorridors, rail, bus, docks,
@@ -196,7 +202,7 @@ export default function NearbyShell({
       <div className="mx-4 mb-2.5">
         <ModeFilterChips
           mode={modeFilter}
-          onMode={setModeFilter}
+          onMode={handleModeChange}
           painted={paintedOn}
           onPaintedToggle={() => setPaintedOn(p => !p)}
         />

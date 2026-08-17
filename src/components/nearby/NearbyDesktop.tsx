@@ -71,6 +71,12 @@ export default function NearbyDesktop({
 }: Props) {
   const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
   const [paintedOn, setPaintedOn] = useState(PAINTED_DEFAULT)
+  // Selecting Bike turns painted lanes on — in the bike view they're part of
+  // the picture, not clutter. The user can still toggle them back off.
+  const handleModeChange = useCallback((m: ModeFilter) => {
+    setModeFilter(m)
+    if (m === 'bike') setPaintedOn(true)
+  }, [])
 
   const model = useNearbyModel({
     center, transitCorridors, bikeCorridors, rail, bus, docks,
@@ -264,7 +270,7 @@ export default function NearbyDesktop({
               <div className="mt-2">
                 <ModeFilterChips
                   mode={modeFilter}
-                  onMode={setModeFilter}
+                  onMode={handleModeChange}
                   painted={paintedOn}
                   onPaintedToggle={() => setPaintedOn(p => !p)}
                 />
