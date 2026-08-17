@@ -5,20 +5,18 @@ movers) put on QR codes, inserts, and welcome packets.
 
 ## Adding a partner (no deploy needed)
 
-1. In the Supabase dashboard, add a row to the `partners` table:
-   - `slug` — url-safe, lowercase, hyphens only (e.g. `bozzuto`). This is what
-     goes in the URL.
-   - `name` — display name (e.g. `Bozzuto`), shown as "Provided in partnership
-     with {name}".
-   - `logo_url` — public URL of the logo. Upload a transparent-background PNG
-     or SVG (~≤400px wide) to the public `partner-logos` storage bucket and
-     copy its public URL. On the dark website header the logo sits in a small
-     white chip, so dark and light marks both work; the print page shows it on
-     white paper directly.
-   - `active` — leave `true`. Setting it `false` instantly reverts every URL
-     using that slug to the default page (the public read policy only exposes
-     active rows).
-2. That's it — `?partner=<slug>` works immediately.
+Use the admin dashboard: **admin.gogreenstreets.org → Community → Outreach
+Partners** ("+ Add partner"). Enter the name, keep or adjust the suggested
+slug, and drop in the logo — a transparent-background PNG (~≤400px wide) works
+best. On the dark website header the logo sits in a small white chip, so dark
+and light marks both work; the print page shows it on white paper directly.
+The page shows the finished link with a copy button; `?partner=<slug>` works
+the moment you save.
+
+**Deactivate** (same page) instantly reverts every URL using that slug to the
+default page — no deploy, and the partner can be reactivated later. (Under the
+hood this is the `partners` table; the public read policy only exposes active
+rows.)
 
 ## URL template
 
