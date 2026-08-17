@@ -68,7 +68,7 @@ interface Props {
 }
 
 export default function NearbyShell({
-  center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
+  center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onAdvisorCta, onPlanCommute, partnerLine,
   transitCorridors, bikeCorridors, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, onRetry,
@@ -253,8 +253,11 @@ export default function NearbyShell({
 
       {/* Compact location pill over the map */}
       <div className="absolute left-3 right-3 top-3 z-10 flex items-center gap-2 rounded-full border border-white/[0.1] bg-[#191A2E]/85 py-1.5 pl-4 pr-1.5 backdrop-blur">
+        {/* Neighborhood only on the tight mobile pill — the town is on the
+            map (and in the desktop header). Appending "· Town" here just ate
+            the width and truncated ("Union Square · So…"). */}
         <span className="min-w-0 flex-1 truncate text-[0.85rem] font-bold text-white">
-          {displayLabel}{subLabel && <span className="font-semibold text-white/70">{` · ${subLabel}`}</span>}
+          {displayLabel}
         </span>
         <button
           onClick={onCopyLink}
