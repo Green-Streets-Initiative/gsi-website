@@ -187,7 +187,7 @@ export function BikeRouteList({ bikeCorridors, highlightedCorridorId, onSelect }
   // novices ride past without realizing they're built for them.
   const shelves = [
     {
-      label: 'Multi-use paths — car-free',
+      label: 'Multi-use paths',
       hint: null as string | null,
       items: bikeCorridors.filter(c => c.protection === 'path'),
     },
