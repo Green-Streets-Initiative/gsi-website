@@ -179,14 +179,6 @@ export default function NearbyDesktop({
             >
               Print version
             </button>
-            <div className="ml-auto shrink-0 pl-2">
-              <ModeFilterChips
-                mode={modeFilter}
-                onMode={setModeFilter}
-                painted={paintedOn}
-                onPaintedToggle={() => setPaintedOn(p => !p)}
-              />
-            </div>
           </div>
           <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#191A2E] to-transparent" />
         </div>
@@ -250,7 +242,9 @@ export default function NearbyDesktop({
           </div>
 
           {/* RIGHT: the content rail, split into the mobile sheet's three
-              panes. The tab bar sticks just under the top bar (60+52=112). */}
+              panes. Macro tabs sit ABOVE the mode chips — same order as the
+              mobile sheet header. Both stick just under the top bar
+              (60+52=112). */}
           <div className="min-w-0">
             <div className="sticky top-[112px] z-10 bg-[#191A2E] pb-2.5 pt-1">
               <div className="flex gap-1 rounded-xl bg-white/[0.05] p-1">
@@ -266,6 +260,14 @@ export default function NearbyDesktop({
                     {t.label}
                   </button>
                 ))}
+              </div>
+              <div className="mt-2">
+                <ModeFilterChips
+                  mode={modeFilter}
+                  onMode={setModeFilter}
+                  painted={paintedOn}
+                  onPaintedToggle={() => setPaintedOn(p => !p)}
+                />
               </div>
             </div>
 
@@ -298,8 +300,24 @@ export default function NearbyDesktop({
             </div>
 
             <div className={railTab === 'destinations' ? '' : 'hidden'}>
-              <p className="mb-3 text-[0.8rem] leading-snug text-white/75">
-                Popular destinations — tap a place to see the route on the map.
+              {/* Planning a specific trip leads — most people arrive wanting
+                  their own destination, not our curated set. */}
+              <div className="rounded-xl border border-[rgba(186,241,77,0.25)] bg-[linear-gradient(135deg,rgba(41,102,229,0.18),rgba(186,241,77,0.1))] px-4 py-4">
+                <div className="text-[0.95rem] font-bold text-white">Have a specific place to get to?</div>
+                <p className="mt-1 text-[0.82rem] leading-snug text-white/80">
+                  Plan any trip with the Commute Advisor — it compares every way to get there by time, cost, and health, with your home already filled in.
+                </p>
+                <Link
+                  href="/commute-advisor"
+                  onClick={onAdvisorCta}
+                  className="mt-2.5 inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                >
+                  Plan your trip →
+                </Link>
+              </div>
+
+              <p className="mb-3 mt-6 text-[0.8rem] leading-snug text-white/75">
+                Or explore popular destinations nearby — tap a place to see the route on the map.
               </p>
               {reach.status === 'loading' && <SkeletonRows count={4} />}
               {reach.status === 'error' && <ErrorCard label="Couldn't compute travel times right now." onRetry={onRetry} />}
@@ -319,19 +337,6 @@ export default function NearbyDesktop({
                   No destination times for this spot yet.
                 </p>
               )}
-              <div className="mt-4 rounded-xl border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-4 py-3.5">
-                <div className="text-[0.9rem] font-bold text-white">Somewhere else in mind?</div>
-                <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">
-                  The Commute Advisor compares every way to get anywhere — time, cost, and health — with your home already filled in.
-                </p>
-                <Link
-                  href="/commute-advisor"
-                  onClick={onAdvisorCta}
-                  className="mt-2 inline-block rounded-lg bg-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-                >
-                  Compare your options →
-                </Link>
-              </div>
             </div>
 
             <div className={railTab === 'explore' ? '' : 'hidden'}>

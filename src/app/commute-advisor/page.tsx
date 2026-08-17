@@ -115,7 +115,10 @@ export default function CommuteCalculator() {
   const [gasPrice, setGasPrice] = useState(s?.gasPrice ?? 3.59)
   const [parkMode, setParkMode] = useState(s?.parkMode ?? 'free')
   const [parkingCost, setParkingCost] = useState(s?.parkingCost ?? 15)
-  const [commuteMode, setCommuteMode] = useState<CurrentCommuteMode>(s?.commuteMode ?? 'drive')
+  // Default to "new here — still figuring it out" (not Drive): the advisor's
+  // audience skews newcomers, and it opens the comparison without presuming a
+  // car commute. Results still baseline against driving cost (see calc).
+  const [commuteMode, setCommuteMode] = useState<CurrentCommuteMode>(s?.commuteMode ?? 'new')
   const [rideshareDaily, setRideshareDaily] = useState(s?.rideshareDaily ?? 30)
   const [carpoolDaily, setCarpoolDaily] = useState(s?.carpoolDaily ?? 20)
   const [transitMonthly, setTransitMonthly] = useState(s?.transitMonthly ?? 90)
