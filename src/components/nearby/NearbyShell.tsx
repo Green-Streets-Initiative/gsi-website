@@ -56,6 +56,7 @@ interface Props {
   partnerLine: string
   transitCorridors: TransitCorridor[]
   bikeCorridors: BikeCorridor[]
+  popularBikeStreetKeys: Set<string>
   rail: MBTAStopLive[]
   bus: MBTAStopLive[]
   docks: BluebikeStationLive[]
@@ -70,7 +71,7 @@ interface Props {
 export default function NearbyShell({
   center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onAdvisorCta, onPlanCommute, partnerLine,
-  transitCorridors, bikeCorridors, rail, bus, docks,
+  transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, onRetry,
 }: Props) {
   const [tab, setTab] = useState<Tab>('transit')
@@ -336,6 +337,7 @@ export default function NearbyShell({
             <>
               <BikeRouteList
                 bikeCorridors={bikeCorridors}
+                popularStreetKeys={popularBikeStreetKeys}
                 highlightedCorridorId={highlightedCorridorId}
                 onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
               />

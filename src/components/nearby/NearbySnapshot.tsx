@@ -9,6 +9,7 @@ import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBluebikes, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
 import { round3, parseSnapshotParams, buildShareUrl, isOutsideArea } from '@/lib/nearby/share'
 import { resolvePlaceLabel, combinePlaceLabel, splitPlaceLabel } from '@/lib/nearby/neighborhood'
+import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
 import { NEARBY_PATH } from '@/lib/nearby/config'
 import {
   buildTransitCorridors, buildBikeCorridors, fetchCorridorMeta,
@@ -58,6 +59,9 @@ export default function NearbySnapshot() {
   const [guides, setGuides] = useState<SectionData<GuideItem[]>>({ status: 'loading', data: [] })
   const [reach, setReach] = useState<SectionData<ReachRow[]>>({ status: 'loading', data: [] })
   const [transitCorridors, setTransitCorridors] = useState<SectionData<TransitCorridor[]>>({ status: 'loading', data: [] })
+  // Streets Shift riders actually ride (town heatmap) — badge data only,
+  // never part of ranking. Empty until the town resolves; empty = no badges.
+  const [popularBikeStreetKeys, setPopularBikeStreetKeys] = useState<Set<string>>(new Set())
 
   const refreshBusyRef = useRef(false)
   const cityRef = useRef('')
@@ -117,6 +121,21 @@ export default function NearbySnapshot() {
   // Keyed on the point only — resolveLabel patches label/neighborhood, not coords
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location?.lat, location?.lng])
+
+  // Popular-with-Shift-riders lookup, keyed on the resolved town. Two small
+  // anon reads; fails soft to an empty set (no badges, section unchanged).
+  useEffect(() => {
+    const town = location?.city
+    if (!town) {
+      setPopularBikeStreetKeys(new Set())
+      return
+    }
+    let cancelled = false
+    fetchPopularBikeStreets(town).then(keys => {
+      if (!cancelled) setPopularBikeStreetKeys(keys)
+    })
+    return () => { cancelled = true }
+  }, [location?.city])
 
   /* ── Data loading ── */
 
@@ -507,6 +526,7 @@ export default function NearbySnapshot() {
     partnerLine,
     transitCorridors: transitCorridors.data,
     bikeCorridors,
+    popularBikeStreetKeys,
     rail: rail.data,
     bus: bus.data,
     docks: bluebikes.data,

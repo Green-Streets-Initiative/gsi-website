@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import QRCode from 'qrcode'
 import { parseSnapshotParams, buildShareUrl, isOutsideArea } from '@/lib/nearby/share'
+import { splitPlaceLabel } from '@/lib/nearby/neighborhood'
+import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
+import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import { getStopTopology } from '@/lib/server/mbta-topology'
 import { getCorridorMeta, type CorridorMetaResult } from '@/lib/server/corridor-meta'
 import { getReach } from '@/lib/server/reach'
@@ -73,13 +76,16 @@ export default async function NearbyPrintPage({ searchParams }: {
   const shareUrl = `${SITE_URL}${buildShareUrl(loc.lat, loc.lng, loc.label)}`
   const shortUrl = shareUrl.replace(/^https:\/\//, '')
 
-  const [busTopo, railTopo, reach, docks, network, qrSvg] = await Promise.all([
+  const [busTopo, railTopo, reach, docks, network, qrSvg, popularStreetKeys] = await Promise.all([
     getStopTopology(loc.lat, loc.lng, { routeTypes: '3', radiusDeg: 0.01, nameStyle: 'short', maxStops: SNAPSHOT_MAX_STOPS }).catch(() => []),
     getStopTopology(loc.lat, loc.lng, { routeTypes: SNAPSHOT_RAIL_TYPES, radiusDeg: 0.02, nameStyle: 'long', maxStops: SNAPSHOT_RAIL_MAX_STATIONS, perStation: true }).catch(() => []),
     getReach(loc.lat, loc.lng).catch(() => ({ destinations: [] })),
     getBluebikesDocks(loc.lat, loc.lng),
     getBikeNetwork(loc.lat, loc.lng, 1.5).catch(() => null),
     QRCode.toString(shareUrl, { type: 'svg', margin: 0, color: { dark: '#191A2E', light: '#ffffff' } }),
+    // "Popular with Shift riders" markers — the label param carries
+    // "Neighborhood, Town", and the lookup fails soft to an empty set
+    fetchPopularBikeStreets(splitPlaceLabel(loc.label ?? '').town),
   ])
 
   // Shapes + weekday frequency per transit corridor; failures degrade to
@@ -304,6 +310,9 @@ export default async function NearbyPrintPage({ searchParams }: {
                   </div>
                   <div className="text-[0.7rem] text-[#191A2E]/80">
                     {protectionLabel(c.protection, c.onewayOnly).text} · {c.lengthMiles} mi through the area
+                    {popularStreetKeys.has(canonicalStreetKey(c.name)) && (
+                      <span className="font-semibold text-[#4A7729]"> · Popular with Shift riders</span>
+                    )}
                   </div>
                 </div>
               ))}

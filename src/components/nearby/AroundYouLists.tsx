@@ -7,6 +7,7 @@ import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfindi
 import { directionsUrl, lineColor, lineTextColor } from '@/lib/nearby/transit-ui'
 import { BLUEBIKES_NOTE } from '@/lib/nearby/config'
 import { protectionLabel } from '@/lib/nearby/bike-labels'
+import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
@@ -175,8 +176,11 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
 
 /* ── Bike routes ── */
 
-export function BikeRouteList({ bikeCorridors, highlightedCorridorId, onSelect }: {
+export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCorridorId, onSelect }: {
   bikeCorridors: BikeCorridor[]
+  /** Canonical keys of streets Shift riders actually ride (town heatmap).
+   *  Badge only — never feeds the ordering. Empty set = no badges. */
+  popularStreetKeys: Set<string>
   highlightedCorridorId: string | null
   onSelect: (corridorId: string) => void
 }) {
@@ -224,7 +228,14 @@ export function BikeRouteList({ bikeCorridors, highlightedCorridorId, onSelect }
                     : 'border-white/[0.08] bg-[#242538] hover:border-white/[0.2]'
                 }`}
               >
-                <div className="text-[0.9rem] font-semibold text-white">{c.name}</div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="text-[0.9rem] font-semibold text-white">{c.name}</span>
+                  {popularStreetKeys.has(canonicalStreetKey(c.name)) && (
+                    <span className="rounded-full bg-[#BAF14D]/15 px-2 py-0.5 text-[0.68rem] font-semibold text-[#BAF14D]">
+                      Popular with Shift riders
+                    </span>
+                  )}
+                </div>
                 <div className="mt-0.5 text-[0.8rem]">
                   {(() => {
                     const p = protectionLabel(c.protection, c.onewayOnly)

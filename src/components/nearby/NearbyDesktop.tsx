@@ -45,6 +45,7 @@ interface Props {
   partnerLine: string
   transitCorridors: TransitCorridor[]
   bikeCorridors: BikeCorridor[]
+  popularBikeStreetKeys: Set<string>
   rail: MBTAStopLive[]
   bus: MBTAStopLive[]
   docks: BluebikeStationLive[]
@@ -66,7 +67,7 @@ type RailTab = (typeof RAIL_TABS)[number]['id']
 export default function NearbyDesktop({
   center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onAdvisorCta, onPlanCommute, partnerLine,
-  transitCorridors, bikeCorridors, rail, bus, docks,
+  transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, onRetry,
 }: Props) {
   const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
@@ -295,6 +296,7 @@ export default function NearbyDesktop({
                 <>
                   <BikeRouteList
                     bikeCorridors={bikeCorridors}
+                    popularStreetKeys={popularBikeStreetKeys}
                     highlightedCorridorId={highlightedCorridorId}
                     onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
                   />
