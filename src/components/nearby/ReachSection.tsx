@@ -51,7 +51,7 @@ export function RouteLegNote({ info }: { info: RouteLegTapInfo }) {
  *  - `routeSelection`/`onRouteSelect` (desktop two-pane): rows expand in
  *    place, following the PAGE selection — the parent owns the state and
  *    fires the reach_route_viewed analytics. */
-export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, onPlanCommute }: {
+export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, onPlanCommute, partnerSlug }: {
   center: { lat: number; lng: number }
   rows: ReachRow[]
   onRowTap?: (row: ReachRow) => void
@@ -62,6 +62,8 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
   legInfo?: RouteLegTapInfo | null
   /** Renders the "Plan this commute" advisor handoff in expanded rows */
   onPlanCommute?: (row: ReachRow) => void
+  /** Co-brand slug — rides the advisor handoff link when present */
+  partnerSlug?: string | null
 }) {
   const expanded = routeSelection ?? null
   const preferred = reachModeFor(modeFilter ?? 'all')
@@ -246,7 +248,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                         every way to make it — home + destination prefilled */}
                     {onPlanCommute && (
                       <Link
-                        href="/commute-advisor"
+                        href={partnerSlug ? `/commute-advisor?partner=${partnerSlug}` : '/commute-advisor'}
                         onClick={() => onPlanCommute(row)}
                         className="mt-3 block rounded-lg bg-[#BAF14D] px-4 py-2 text-center text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
                       >

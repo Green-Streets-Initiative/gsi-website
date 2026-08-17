@@ -17,6 +17,8 @@ import ModeFilterChips from './ModeFilterChips'
 import { StationList, BikeRouteList, DockList } from './AroundYouLists'
 import { ReachList } from './ReachSection'
 import { ExploreBody } from './ExploreBody'
+import PartnerCobrand from './PartnerCobrand'
+import type { NearbyPartner } from '@/lib/nearby/partner'
 import GuideLinks from './GuideLinks'
 import { SkeletonRows, ErrorCard } from './SectionShell'
 
@@ -35,6 +37,10 @@ interface Props {
   displayLabel: string
   /** Town, shown beneath the neighborhood headline (null when no neighborhood) */
   subLabel: string | null
+  /** Outreach co-brand (null = default branding); slug also tags analytics
+   *  and rides the Download-Shift / advisor links */
+  partner: NearbyPartner | null
+  partnerSlug: string | null
   outside: boolean
   copied: boolean
   onCopyLink: () => void
@@ -66,7 +72,7 @@ type RailTab = (typeof RAIL_TABS)[number]['id']
 
 export default function NearbyDesktop({
   center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
-  onAdvisorCta, onPlanCommute, partnerLine,
+  onAdvisorCta, onPlanCommute, partnerLine, partner, partnerSlug,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, onRetry,
 }: Props) {
@@ -143,15 +149,22 @@ export default function NearbyDesktop({
           Neighborhood is the headline; the town rides beneath it, so the
           "Your neighborhood snapshot" eyebrow finally reads true. */}
       <div className="mx-auto max-w-[1200px] px-6 pb-4 pt-6 lg:px-8">
-        <div className="text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#BAF14D]">
-          Your neighborhood snapshot
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+          <div className="min-w-0">
+            <div className="text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#BAF14D]">
+              Your neighborhood snapshot
+            </div>
+            <h1 className="mt-1 truncate font-display text-[1.35rem] font-extrabold tracking-tight text-white">
+              {displayLabel}
+            </h1>
+            {subLabel && (
+              <div className="mt-0.5 text-[0.9rem] font-semibold text-white/70">{subLabel}</div>
+            )}
+          </div>
+          {/* Partner co-brand — secondary to the GSI headline, hugging the
+              right edge of the header (never the load-bearing sticky bar) */}
+          {partner && <PartnerCobrand partner={partner} logoClass="max-h-9" />}
         </div>
-        <h1 className="mt-1 truncate font-display text-[1.35rem] font-extrabold tracking-tight text-white">
-          {displayLabel}
-        </h1>
-        {subLabel && (
-          <div className="mt-0.5 text-[0.9rem] font-semibold text-white/70">{subLabel}</div>
-        )}
         {outside && (
           <p className="mt-3 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-5 py-3.5 text-[0.875rem] leading-relaxed text-white">
             This spot looks like it&apos;s outside Greater Boston, where our transit and Bluebikes data lives. Bike-path data covers all of Massachusetts, so parts of the picture may still fill in.
@@ -316,7 +329,7 @@ export default function NearbyDesktop({
                   Plan any trip with the Commute Advisor — it compares every way to get there by time, cost, and health, with your home already filled in.
                 </p>
                 <Link
-                  href="/commute-advisor"
+                  href={partnerSlug ? `/commute-advisor?partner=${partnerSlug}` : '/commute-advisor'}
                   onClick={onAdvisorCta}
                   className="mt-2.5 inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
                 >
@@ -338,6 +351,7 @@ export default function NearbyDesktop({
                   onRouteSelect={onRouteSelect}
                   legInfo={legInfo}
                   onPlanCommute={onPlanCommute}
+                  partnerSlug={partnerSlug}
                 />
               )}
               {reach.status === 'ready' && reach.data.length === 0 && (
@@ -353,8 +367,8 @@ export default function NearbyDesktop({
                 <div className="text-[0.9rem] font-bold text-white">Get the Shift app</div>
                 <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
                 <a
-                  href="/shift"
-                  onClick={() => posthog.capture('snapshot_app_cta_clicked')}
+                  href={partnerSlug ? `/shift?partner=${partnerSlug}` : '/shift'}
+                  onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
                   className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
                 >
                   Download the app →

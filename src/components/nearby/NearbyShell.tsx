@@ -22,6 +22,8 @@ import ModeFilterChips from './ModeFilterChips'
 import { StationList, BikeRouteList, DockList } from './AroundYouLists'
 import { ReachList, RouteLegNote } from './ReachSection'
 import { ExploreBody } from './ExploreBody'
+import PartnerCobrand from './PartnerCobrand'
+import type { NearbyPartner } from '@/lib/nearby/partner'
 import GuideLinks from './GuideLinks'
 import { SkeletonRows, ErrorCard } from './SectionShell'
 
@@ -54,6 +56,10 @@ interface Props {
   onAdvisorCta: () => void
   onPlanCommute: (row: ReachRow) => void
   partnerLine: string
+  /** Outreach co-brand (null = default branding); slug also tags analytics
+   *  and rides the Download-Shift / advisor links */
+  partner: NearbyPartner | null
+  partnerSlug: string | null
   transitCorridors: TransitCorridor[]
   bikeCorridors: BikeCorridor[]
   popularBikeStreetKeys: Set<string>
@@ -70,7 +76,7 @@ interface Props {
 
 export default function NearbyShell({
   center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
-  onAdvisorCta, onPlanCommute, partnerLine,
+  onAdvisorCta, onPlanCommute, partnerLine, partner, partnerSlug,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, onRetry,
 }: Props) {
@@ -222,6 +228,13 @@ export default function NearbyShell({
           Your neighborhood snapshot
         </span>
       </div>
+      {/* Partner co-brand row — only exists on partner deep links; the stage
+          below flexes to the remaining height, so sheet snaps stay correct */}
+      {partner && (
+        <div className="flex h-10 shrink-0 items-center border-b border-white/[0.08] px-4">
+          <PartnerCobrand partner={partner} logoClass="max-h-6" textClass="text-[0.7rem]" />
+        </div>
+      )}
 
       {/* The stage (sheet snap heights + camera padding measure this box).
           Attribution rides above the sheet's peek height so the license
@@ -300,6 +313,7 @@ export default function NearbyShell({
                   onMode={(m) => selectReach(reachRow, m, 'panel')}
                   legInfo={legInfo}
                   onPlanCommute={onPlanCommute}
+                  partnerSlug={partnerSlug}
                 />
               ) : null
             ) : (
@@ -357,7 +371,7 @@ export default function NearbyShell({
               Plan any trip with the Commute Advisor — it compares every way to get there by time, cost, and health, with your home already filled in.
             </p>
             <Link
-              href="/commute-advisor"
+              href={partnerSlug ? `/commute-advisor?partner=${partnerSlug}` : '/commute-advisor'}
               onClick={onAdvisorCta}
               className="mt-2.5 inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
             >
@@ -395,8 +409,8 @@ export default function NearbyShell({
               <div className="text-[0.9rem] font-bold text-white">Get the Shift app</div>
               <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
               <a
-                href="/shift"
-                onClick={() => posthog.capture('snapshot_app_cta_clicked')}
+                href={partnerSlug ? `/shift?partner=${partnerSlug}` : '/shift'}
+                onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
                 className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
               >
                 Download the app →
@@ -412,13 +426,14 @@ export default function NearbyShell({
 
 /* ── Destination route detail: the route is on the MAIN map above ── */
 
-function ReachDetail({ row, mode, center, onMode, legInfo, onPlanCommute }: {
+function ReachDetail({ row, mode, center, onMode, legInfo, onPlanCommute, partnerSlug }: {
   row: ReachRow
   mode: 'transit' | 'bike'
   center: { lat: number; lng: number }
   onMode: (mode: 'transit' | 'bike') => void
   legInfo?: RouteLegTapInfo | null
   onPlanCommute?: (row: ReachRow) => void
+  partnerSlug?: string | null
 }) {
   const hasTransit = (row.transit_segments?.length ?? 0) > 0
   const hasBike = !!row.bike_polyline
@@ -499,7 +514,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, onPlanCommute }: {
           to make it — home + destination prefilled */}
       {onPlanCommute && (
         <Link
-          href="/commute-advisor"
+          href={partnerSlug ? `/commute-advisor?partner=${partnerSlug}` : '/commute-advisor'}
           onClick={() => onPlanCommute(row)}
           className="mt-3 block rounded-lg bg-[#BAF14D] px-4 py-2 text-center text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
         >

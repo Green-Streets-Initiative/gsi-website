@@ -26,9 +26,25 @@ export function parseSnapshotParams(searchParams: URLSearchParams): SnapshotLoca
   return { lat: round3(lat), lng: round3(lng), label }
 }
 
-export function buildShareUrl(lat: number, lng: number, label: string): string {
+/**
+ * Params that must survive the page's own URL rewrites: the partner
+ * co-brand slug plus any utm_* a campaign link arrived with. Everything
+ * else stays out of share URLs on purpose — the builder constructing its
+ * params from scratch is what keeps stray query junk from spreading.
+ */
+export function stickyParams(search: string): URLSearchParams {
+  const current = new URLSearchParams(search)
+  const keep = new URLSearchParams()
+  for (const [k, v] of current) {
+    if (k === 'partner' || k.startsWith('utm_')) keep.append(k, v)
+  }
+  return keep
+}
+
+export function buildShareUrl(lat: number, lng: number, label: string, sticky?: URLSearchParams): string {
   const params = new URLSearchParams({ lat: String(round3(lat)), lng: String(round3(lng)) })
   if (label) params.set('label', label)
+  if (sticky) for (const [k, v] of sticky) params.append(k, v)
   return `${NEARBY_PATH}?${params.toString()}`
 }
 

@@ -7,7 +7,8 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBluebikes, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
-import { round3, parseSnapshotParams, buildShareUrl, isOutsideArea } from '@/lib/nearby/share'
+import { round3, parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
+import { parsePartnerSlug, fetchPartner, type NearbyPartner } from '@/lib/nearby/partner'
 import { resolvePlaceLabel, combinePlaceLabel, splitPlaceLabel } from '@/lib/nearby/neighborhood'
 import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
 import { NEARBY_PATH } from '@/lib/nearby/config'
@@ -20,6 +21,7 @@ import type { SectionData, BikeNetworkData, CommunityData, GuideItem, ReachRow }
 import { captureReachLoaded } from './ReachSection'
 import NearbyShell from './NearbyShell'
 import NearbyDesktop from './NearbyDesktop'
+import PartnerCobrand from './PartnerCobrand'
 import { useIsDesktop } from './useIsDesktop'
 
 const REFRESH_MS = 30_000
@@ -67,26 +69,48 @@ export default function NearbySnapshot() {
   const cityRef = useRef('')
   const loadSeqRef = useRef(0)
 
+  // Partner co-brand (outreach deep links): the slug is read once at mount,
+  // independently of the coord params — every combination of partner/coords
+  // must work. Malformed or unknown slugs resolve to null silently.
+  const partnerSlug = useMemo(
+    () => parsePartnerSlug(new URLSearchParams(searchParams.toString())),
+    // Mount only — the slug never changes without a full navigation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
+  const [partner, setPartner] = useState<NearbyPartner | null>(null)
+  useEffect(() => {
+    if (!partnerSlug) return
+    let cancelled = false
+    fetchPartner(partnerSlug).then(p => { if (!cancelled) setPartner(p) })
+    return () => { cancelled = true }
+  }, [partnerSlug])
+
   /** Single entry point for a chosen location — rounds coords, updates the
-   *  URL (refresh keeps state, link is shareable), fires analytics. */
+   *  URL (refresh keeps state, link is shareable; partner/utm params ride
+   *  along), fires analytics. */
   const setLocated = useCallback((loc: Located) => {
     const rounded = { ...loc, lat: round3(loc.lat), lng: round3(loc.lng) }
     setLocation(rounded)
     setLocating(false)
     setGeoError(null)
-    window.history.replaceState(null, '', buildShareUrl(rounded.lat, rounded.lng, rounded.label))
+    window.history.replaceState(null, '', buildShareUrl(rounded.lat, rounded.lng, rounded.label, stickyParams(window.location.search)))
     posthog.capture('snapshot_location_set', {
       method: rounded.source,
       outside_area: isOutsideArea(rounded.lat, rounded.lng),
+      ...(partnerSlug ? { partner: partnerSlug } : {}),
     })
-  }, [])
+  }, [partnerSlug])
 
   // URL hydration — a valid ?lat&lng skips the gate entirely. The label
   // param already carries "Neighborhood, Town" from whoever shared it, so
   // split it for instant display instead of re-resolving over the network.
   useEffect(() => {
     const parsed = parseSnapshotParams(new URLSearchParams(searchParams.toString()))
-    posthog.capture('snapshot_viewed', { has_url_coords: !!parsed })
+    posthog.capture('snapshot_viewed', {
+      has_url_coords: !!parsed,
+      ...(partnerSlug ? { partner: partnerSlug } : {}),
+    })
     if (parsed) {
       const { neighborhood, town } = splitPlaceLabel(parsed.label)
       setLocation({ ...parsed, city: town ?? '', neighborhood, fullAddress: null, source: 'url' })
@@ -108,7 +132,7 @@ export default function NearbySnapshot() {
       const label = combinePlaceLabel(resolved)
       setLocation(prev => {
         if (!prev) return prev
-        if (label) window.history.replaceState(null, '', buildShareUrl(prev.lat, prev.lng, label))
+        if (label) window.history.replaceState(null, '', buildShareUrl(prev.lat, prev.lng, label, stickyParams(window.location.search)))
         return {
           ...prev,
           neighborhood: resolved.neighborhood,
@@ -369,7 +393,9 @@ export default function NearbySnapshot() {
     setAddress('')
     setGeoError(null)
     cityRef.current = ''
-    window.history.replaceState(null, '', NEARBY_PATH)
+    // Location params go; the partner co-brand and any campaign utm stay
+    const sticky = stickyParams(window.location.search).toString()
+    window.history.replaceState(null, '', sticky ? `${NEARBY_PATH}?${sticky}` : NEARBY_PATH)
   }
 
   function handleAdvisorCta() {
@@ -436,6 +462,11 @@ export default function NearbySnapshot() {
           <p className="mx-auto mt-3 max-w-[46ch] text-[1rem] leading-relaxed text-white/75">
             The T stations, bus routes, Bluebikes docks, and bike paths around your new home — live, on a map, in seconds.
           </p>
+          {partner && (
+            <div className="mt-4">
+              <PartnerCobrand partner={partner} center logoClass="max-h-7" />
+            </div>
+          )}
         </div>
 
         <div className="mx-auto mt-8 max-w-[440px] rounded-[20px] border border-white/[0.12] bg-[#242538] p-7">
@@ -524,6 +555,8 @@ export default function NearbySnapshot() {
     onAdvisorCta: handleAdvisorCta,
     onPlanCommute: handlePlanCommute,
     partnerLine,
+    partner,
+    partnerSlug,
     transitCorridors: transitCorridors.data,
     bikeCorridors,
     popularBikeStreetKeys,

@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import QRCode from 'qrcode'
-import { parseSnapshotParams, buildShareUrl, isOutsideArea } from '@/lib/nearby/share'
+import { parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
 import { splitPlaceLabel } from '@/lib/nearby/neighborhood'
 import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
+import { parsePartnerSlug, fetchPartner } from '@/lib/nearby/partner'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import { getStopTopology } from '@/lib/server/mbta-topology'
 import { getCorridorMeta, type CorridorMetaResult } from '@/lib/server/corridor-meta'
@@ -73,10 +74,12 @@ export default async function NearbyPrintPage({ searchParams }: {
 
   const outside = isOutsideArea(loc.lat, loc.lng)
   const label = loc.label || 'your neighborhood'
-  const shareUrl = `${SITE_URL}${buildShareUrl(loc.lat, loc.lng, loc.label)}`
+  // The QR keeps the partner/utm params, so a scanned print lands on the
+  // co-branded interactive page and the visit still attributes
+  const shareUrl = `${SITE_URL}${buildShareUrl(loc.lat, loc.lng, loc.label, stickyParams(params.toString()))}`
   const shortUrl = shareUrl.replace(/^https:\/\//, '')
 
-  const [busTopo, railTopo, reach, docks, network, qrSvg, popularStreetKeys] = await Promise.all([
+  const [busTopo, railTopo, reach, docks, network, qrSvg, popularStreetKeys, partner] = await Promise.all([
     getStopTopology(loc.lat, loc.lng, { routeTypes: '3', radiusDeg: 0.01, nameStyle: 'short', maxStops: SNAPSHOT_MAX_STOPS }).catch(() => []),
     getStopTopology(loc.lat, loc.lng, { routeTypes: SNAPSHOT_RAIL_TYPES, radiusDeg: 0.02, nameStyle: 'long', maxStops: SNAPSHOT_RAIL_MAX_STATIONS, perStation: true }).catch(() => []),
     getReach(loc.lat, loc.lng).catch(() => ({ destinations: [] })),
@@ -86,6 +89,8 @@ export default async function NearbyPrintPage({ searchParams }: {
     // "Popular with Shift riders" markers — the label param carries
     // "Neighborhood, Town", and the lookup fails soft to an empty set
     fetchPopularBikeStreets(splitPlaceLabel(loc.label ?? '').town),
+    // Partner co-brand for outreach prints; null (default header) on any miss
+    fetchPartner(parsePartnerSlug(params)),
   ])
 
   // Shapes + weekday frequency per transit corridor; failures degrade to
@@ -228,9 +233,23 @@ export default async function NearbyPrintPage({ searchParams }: {
               Getting around {label}
             </h1>
           </div>
-          <p className="max-w-[220px] text-right text-[0.7rem] leading-snug text-[#191A2E]/70">
-            The trains, buses, bike routes, and Bluebikes within reach of your new home.
-          </p>
+          {/* Partner co-brand replaces the generic tagline (a swap, not an
+              addition — the one-page vertical budget stays untouched) */}
+          {partner ? (
+            <div className="flex max-w-[260px] flex-col items-end gap-1 text-right">
+              {partner.logoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={partner.logoUrl} alt={partner.name} className="max-h-[32px] w-auto" />
+              )}
+              <p className="text-[0.7rem] leading-snug text-[#191A2E]/80">
+                Provided in partnership with <span className="font-semibold text-[#191A2E]">{partner.name}</span>
+              </p>
+            </div>
+          ) : (
+            <p className="max-w-[220px] text-right text-[0.7rem] leading-snug text-[#191A2E]/70">
+              The trains, buses, bike routes, and Bluebikes within reach of your new home.
+            </p>
+          )}
         </header>
 
         {outside && (
