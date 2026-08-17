@@ -18,7 +18,14 @@ export async function GET(req: NextRequest) {
   const radius = Math.min(3, Math.max(0.25, parseFloat(searchParams.get('radius') || '') || 1.5))
 
   const data = await getBikeNetwork(lat, lng, radius)
+  // OSM names most on-street lanes and carries the protected quick-builds —
+  // when Overpass was overloaded and the merge is OSM-less, a day-long
+  // browser cache pins visitors to the degraded network long after the
+  // server self-heals (its own TTL already drops to 1 h in this case).
+  // Mirror that in the HTTP lifetime so browsers re-ask within the hour.
+  const hasOsm = data.geojson.features.some(f => f.properties.source === 'osm')
+  const maxAge = hasOsm ? 86400 : 3600
   return NextResponse.json(data, {
-    headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=86400' },
+    headers: { 'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}` },
   })
 }

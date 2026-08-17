@@ -181,35 +181,64 @@ export function BikeRouteList({ bikeCorridors, highlightedCorridorId, onSelect }
   onSelect: (corridorId: string) => void
 }) {
   if (bikeCorridors.length === 0) return null
+
+  // Two shelves teach the taxonomy: car-free paths, then the on-street
+  // protected tier that sits between paint and full separation — the lanes
+  // novices ride past without realizing they're built for them.
+  const shelves = [
+    {
+      label: 'Multi-use paths — car-free',
+      hint: null as string | null,
+      items: bikeCorridors.filter(c => c.protection === 'path'),
+    },
+    {
+      label: 'Protected lanes on the street',
+      hint: 'A curb, posts, or parking sits between you and traffic — the newest kind of on-street lane, and a comfortable step beyond the paths.',
+      items: bikeCorridors.filter(c => c.protection === 'protected' || c.protection === 'mostly-protected'),
+    },
+    {
+      label: 'Painted lanes',
+      hint: null as string | null,
+      items: bikeCorridors.filter(c => c.protection === 'painted'),
+    },
+  ].filter(s => s.items.length > 0)
+
   return (
     <div className="mt-5">
-      <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
-        Bike routes
-      </div>
-      <div className="space-y-2.5">
-        {bikeCorridors.map(c => (
-          <button
-            key={c.id}
-            onClick={() => onSelect(c.id)}
-            className={`w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
-              highlightedCorridorId === c.id
-                ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.06)]'
-                : 'border-white/[0.08] bg-[#242538] hover:border-white/[0.2]'
-            }`}
-          >
-            <div className="text-[0.9rem] font-semibold text-white">{c.name}</div>
-            <div className="mt-0.5 text-[0.8rem]">
-              {(() => {
-                const p = protectionLabel(c.protection, c.onewayOnly)
-                return <span className={p.emphasis ? 'font-bold text-[#BAF14D]' : 'text-white/80'}>{p.text}</span>
-              })()}
-            </div>
-            <div className="mt-1 text-[0.8rem] text-white/80">
-              {c.lengthMiles} mi through this area · nearest point {bikeTimeMinutes(c.accessDistanceMeters)} min ride ({formatDistance(c.accessDistanceMeters)})
-            </div>
-          </button>
-        ))}
-      </div>
+      {shelves.map(shelf => (
+        <div key={shelf.label} className="mb-4">
+          <div className="mb-1 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
+            {shelf.label}
+          </div>
+          {shelf.hint && (
+            <p className="mb-2 text-[0.78rem] leading-snug text-white/75">{shelf.hint}</p>
+          )}
+          <div className="space-y-2.5">
+            {shelf.items.map(c => (
+              <button
+                key={c.id}
+                onClick={() => onSelect(c.id)}
+                className={`w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
+                  highlightedCorridorId === c.id
+                    ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.06)]'
+                    : 'border-white/[0.08] bg-[#242538] hover:border-white/[0.2]'
+                }`}
+              >
+                <div className="text-[0.9rem] font-semibold text-white">{c.name}</div>
+                <div className="mt-0.5 text-[0.8rem]">
+                  {(() => {
+                    const p = protectionLabel(c.protection, c.onewayOnly)
+                    return <span className={p.emphasis ? 'font-bold text-[#BAF14D]' : 'text-white/80'}>{p.text}</span>
+                  })()}
+                </div>
+                <div className="mt-1 text-[0.8rem] text-white/80">
+                  {c.lengthMiles} mi through this area · nearest point {bikeTimeMinutes(c.accessDistanceMeters)} min ride ({formatDistance(c.accessDistanceMeters)})
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

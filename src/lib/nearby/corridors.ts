@@ -230,7 +230,12 @@ function featureLengthMeters(f: LaneFeatureLike): number {
  *  Single-link union-find: features join a cluster when any pair of sampled
  *  vertices sits within CLUSTER_M. */
 function clusterFeatures(features: LaneFeatureLike[]): LaneFeatureLike[][] {
-  const CLUSTER_M = 400
+  // 700 m: wide enough that a quick-build street mapped in discontinuous
+  // chunks (Washington St's protected lane is built block-by-block, and only
+  // blocks WITH facilities appear in the data) still coalesces into one
+  // corridor, while same-named streets in other towns — the reason this
+  // clustering exists — sit miles apart and still split.
+  const CLUSTER_M = 700
   // A handful of sampled vertices per feature keeps the pairwise test cheap
   const samples = features.map(f => {
     const c = f.geometry.coordinates
@@ -243,8 +248,8 @@ function clusterFeatures(features: LaneFeatureLike[]): LaneFeatureLike[][] {
   const near = (a: number, b: number): boolean => {
     for (const [ax, ay] of samples[a]) {
       for (const [bx, by] of samples[b]) {
-        // Degree prefilter (~440+ m) before the exact distance
-        if (Math.abs(ay - by) > 0.004 || Math.abs(ax - bx) > 0.005) continue
+        // Degree prefilter (~790+ m, just over CLUSTER_M) before the exact distance
+        if (Math.abs(ay - by) > 0.0072 || Math.abs(ax - bx) > 0.009) continue
         if (haversineMeters(ay, ax, by, bx) <= CLUSTER_M) return true
       }
     }
@@ -350,14 +355,28 @@ export function buildBikeCorridors(
       if (len > bestLen) { bestLen = len; bestSource = src }
     }
     const lengthMiles = bestLen / 1609.34
-    if (lengthMiles < 0.4) continue
 
-    const pathFraction = bestLen > 0 ? (pathBySource.get(bestSource) ?? 0) / bestLen : 0
-    const comfortableFraction = bestLen > 0 ? (comfortableBySource.get(bestSource) ?? 0) / bestLen : 0
+    // Tier mileage takes the MAX across sources, not the winning source's
+    // own rows: sources specialize (OSM maps the separated lanes the state
+    // inventories still list as paint), and winner-take-all let a
+    // painted-heavy source erase a real protected lane from the tier vote
+    // (Webster Ave). Length still comes from the longest source — honest —
+    // while the tier reflects the best-informed source's separated mileage.
+    const maxPathM = Math.max(0, ...pathBySource.values())
+    const maxComfortableM = Math.max(0, ...comfortableBySource.values())
+    const pathFraction = bestLen > 0 ? Math.min(1, maxPathM / bestLen) : 0
+    const comfortableFraction = bestLen > 0 ? Math.min(1, maxComfortableM / bestLen) : 0
     const protection = pathFraction >= 0.9 ? 'path'
       : comfortableFraction >= 0.9 ? 'protected'
       : comfortableFraction >= 0.5 ? 'mostly-protected'
       : 'painted'
+
+    // On-street separated quick-builds are inherently short — a quarter-mile
+    // protected lane is real infrastructure (Somerville/Cambridge build in
+    // exactly these increments). Paths and painted keep the longer bar
+    // that filters mapping noise.
+    const minMiles = protection === 'protected' || protection === 'mostly-protected' ? 0.2 : 0.4
+    if (lengthMiles < minMiles) continue
 
     // One-direction call: only OSM carries direction. All separated OSM
     // segments oneway AND pointing roughly the same way = the separation
@@ -418,7 +437,27 @@ export function buildBikeCorridors(
     })
   }
 
-  const kept = candidates.sort((a, b) => b.score - a.score).slice(0, MAX_BIKE_CORRIDORS)
+  // Two shelves + leftovers: a single length-driven ranking buries the
+  // on-street protected tier (half a mile is a LONG protected lane; regional
+  // paths run 3–15 mi), so paths and street-protected each get guaranteed
+  // slots, nearest-first — this is a "from your door" list. Painted only
+  // fills space the comfortable tiers leave empty.
+  const byAccess = (a: (typeof candidates)[number], b: (typeof candidates)[number]) =>
+    a.corridor.accessDistanceMeters - b.corridor.accessDistanceMeters
+  const paths = candidates.filter(c => c.corridor.protection === 'path').sort(byAccess)
+  const streetProtected = candidates
+    .filter(c => c.corridor.protection === 'protected' || c.corridor.protection === 'mostly-protected')
+    .sort(byAccess)
+  const painted = candidates
+    .filter(c => c.corridor.protection === 'painted')
+    .sort((a, b) => b.score - a.score)
+
+  const kept = [...paths.slice(0, 4), ...streetProtected.slice(0, 4)]
+  for (const c of [...paths.slice(4), ...streetProtected.slice(4), ...painted]) {
+    if (kept.length >= MAX_BIKE_CORRIDORS) break
+    kept.push(c)
+  }
+
   const claimed = new Set<unknown>()
   for (const k of kept) {
     for (const f of k.source) claimed.add(f)

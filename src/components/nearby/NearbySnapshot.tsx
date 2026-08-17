@@ -210,7 +210,7 @@ export default function NearbySnapshot() {
         // v= busts browser HTTP caches (max-age=86400) when the lane
         // classification changes server-side (v2: sidepath detection,
         // v3: name inheritance, v4: 45 m inheritance radius)
-        const res = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=1.5&v=4`)
+        const res = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=1.5&v=5`)
         if (!res.ok) throw new Error(`bike-network ${res.status}`)
         const data: BikeNetworkData = await res.json()
         if (loadSeqRef.current !== seq) return
@@ -219,7 +219,7 @@ export default function NearbySnapshot() {
           section: 'bike_network',
           count: data.counts.path + data.counts.protected + data.counts.painted,
         })
-        const wide = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=3&v=4`)
+        const wide = await fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=3&v=5`)
         if (wide.ok) {
           const wideData: BikeNetworkData = await wide.json()
           if (loadSeqRef.current !== seq) return
