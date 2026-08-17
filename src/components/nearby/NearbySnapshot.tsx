@@ -12,7 +12,7 @@ import { resolvePlaceLabel, combinePlaceLabel, splitPlaceLabel } from '@/lib/nea
 import { NEARBY_PATH } from '@/lib/nearby/config'
 import {
   buildTransitCorridors, buildBikeCorridors, fetchCorridorMeta,
-  SNAPSHOT_BUS_OPTS, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_TYPES, SNAPSHOT_MAX_STOPS,
+  SNAPSHOT_BUS_OPTS, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_MAX_STATIONS,
   type TransitCorridor,
 } from '@/lib/nearby/corridors'
 import type { SectionData, BikeNetworkData, CommunityData, GuideItem, ReachRow } from './types'
@@ -189,7 +189,7 @@ export default function NearbySnapshot() {
       })
     }, 75_000)
 
-    fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_MAX_STOPS).then(rows => {
+    fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_MAX_STATIONS).then(rows => {
       setRail({ status: 'ready', data: rows })
       posthog.capture('snapshot_section_loaded', { section: 'rail', count: rows.length })
     })
@@ -288,7 +288,7 @@ export default function NearbySnapshot() {
       refreshBusyRef.current = true
       try {
         const [railRows, busRows, bbRows] = await Promise.all([
-          fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_MAX_STOPS),
+          fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_MAX_STATIONS),
           fetchMBTAStops(lat, lng, SNAPSHOT_BUS_OPTS),
           fetchBluebikes(lat, lng),
         ])

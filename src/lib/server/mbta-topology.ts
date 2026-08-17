@@ -32,13 +32,18 @@ export interface ServerTopologyOptions {
   radiusDeg: number
   /** 'short' = bare route number (bus), 'long' = route long_name (rail) */
   nameStyle: 'short' | 'long'
+  /** With `perStation`, counts STATIONS, not platforms. */
   maxStops?: number
+  /** Cap by unique station (keeping all platforms), fetching /routes once per
+   *  station — rail lists 2 platforms/station, so a raw cap misses nearby
+   *  stations like Sullivan/Assembly. Mirrors the client fetcher. */
+  perStation?: boolean
 }
 
 export async function getStopTopology(lat: number, lng: number, opts: ServerTopologyOptions): Promise<StopTopology[]> {
   const lat3 = Math.round(lat * 1000) / 1000
   const lng3 = Math.round(lng * 1000) / 1000
-  const cacheKey = `${opts.routeTypes}|${opts.maxStops ?? 10}|${opts.nameStyle}|${lat3},${lng3}`
+  const cacheKey = `${opts.routeTypes}|${opts.maxStops ?? 10}|${opts.perStation ? 'st' : 'pl'}|${opts.nameStyle}|${lat3},${lng3}`
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) return cached.data
 
@@ -68,11 +73,28 @@ export async function getStopTopology(lat: number, lng: number, opts: ServerTopo
   }
 
   nearbyStops.sort((a, b) => a.dist - b.dist)
-  const topStops = nearbyStops.slice(0, opts.maxStops ?? 10)
+
+  // perStation: cap by unique station (nearest-first), keep all platforms,
+  // fetch /routes once per station. Else the platform is the unit.
+  let topStops = nearbyStops
+  let routeStops = nearbyStops
+  const routeKey = (s: { id: string; name: string }) => (opts.perStation ? s.name.toLowerCase() : s.id)
+  if (opts.perStation) {
+    const byStation = new Map<string, typeof nearbyStops>()
+    for (const s of nearbyStops) {
+      ;(byStation.get(s.name.toLowerCase()) ?? byStation.set(s.name.toLowerCase(), []).get(s.name.toLowerCase())!).push(s)
+    }
+    const kept = [...byStation.values()].slice(0, opts.maxStops ?? 10)
+    topStops = kept.flat()
+    routeStops = kept.map(g => g[0])
+  } else {
+    topStops = nearbyStops.slice(0, opts.maxStops ?? 10)
+    routeStops = topStops
+  }
   if (topStops.length === 0) return []
 
   const routeResults = await Promise.all(
-    topStops.map(async (s) => {
+    routeStops.map(async (s) => {
       const res = await fetch(
         mbtaUrl('/routes', new URLSearchParams({ 'filter[stop]': s.id, 'filter[type]': opts.routeTypes })),
         { signal: AbortSignal.timeout(8000) }
@@ -84,12 +106,12 @@ export async function getStopTopology(lat: number, lng: number, opts: ServerTopo
         name: opts.nameStyle === 'short' ? r.id.replace(/^0*/, '') : (r.attributes.long_name ?? r.id),
         directions: r.attributes.direction_destinations || r.attributes.direction_names || [],
       }))
-      return { stopId: s.id, routes }
+      return { key: routeKey(s), routes }
     })
   )
 
-  const routesByStop = new Map(routeResults.map(r => [r.stopId, r.routes]))
-  const topology = topStops.map(s => ({ ...s, routes: routesByStop.get(s.id) || [] }))
+  const routesByKey = new Map(routeResults.map(r => [r.key, r.routes]))
+  const topology = topStops.map(s => ({ ...s, routes: routesByKey.get(routeKey(s)) || [] }))
 
   if (cache.size >= CACHE_MAX) {
     const oldest = cache.keys().next().value

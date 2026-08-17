@@ -75,8 +75,14 @@ interface TopologyOptions {
   /** 'short' = bare route number (bus), 'long' = route long_name (rail) */
   nameStyle: 'short' | 'long'
   /** Stops to keep (each costs one /routes call — the anonymous MBTA API
-   *  allows ~20 req/min, so budget-sensitive pages pass fewer). Default 10. */
+   *  allows ~20 req/min, so budget-sensitive pages pass fewer). Default 10.
+   *  With `perStation`, this counts STATIONS, not platforms. */
   maxStops?: number
+  /** Rail stations list each platform as its own stop, so a raw maxStops of 5
+   *  yields only ~3 stations (Sullivan/Assembly fall off). With perStation,
+   *  the cap counts unique stations and keeps ALL their platforms (so
+   *  per-direction arrivals survive), fetching /routes just once per station. */
+  perStation?: boolean
 }
 
 /** Nearby stops with the routes serving them. Cached 30 min per rounded coord. */
@@ -103,15 +109,36 @@ export async function fetchStopTopology(lat: number, lng: number, opts: Topology
   }
 
   nearbyStops.sort((a, b) => a.dist - b.dist)
-  const topStops = nearbyStops.slice(0, opts.maxStops ?? 10)
+
+  // Which stops to keep, and which represent a station for the /routes call.
+  // perStation: cap by unique station (nearest-first, nearbyStops is sorted),
+  // keep ALL their platforms, and fetch routes once per station. Otherwise:
+  // the platform IS the unit (bus poles are distinct locations).
+  let topStops = nearbyStops
+  let routeStops = nearbyStops
+  const routeKey = (s: { id: string; name: string }) =>
+    opts.perStation ? s.name.toLowerCase() : s.id
+  if (opts.perStation) {
+    const byStation = new Map<string, typeof nearbyStops>()
+    for (const s of nearbyStops) {
+      const k = s.name.toLowerCase()
+      ;(byStation.get(k) ?? byStation.set(k, []).get(k)!).push(s)
+    }
+    const keptStations = [...byStation.values()].slice(0, opts.maxStops ?? 10)
+    topStops = keptStations.flat()
+    routeStops = keptStations.map(g => g[0]) // nearest platform speaks for the station
+  } else {
+    topStops = nearbyStops.slice(0, opts.maxStops ?? 10)
+    routeStops = topStops
+  }
   if (topStops.length === 0) return []
 
   const routeResults = await Promise.all(
-    topStops.map(async (s) => {
+    routeStops.map(async (s) => {
       const res = await fetch(`https://api-v3.mbta.com/routes?filter[stop]=${s.id}&filter[type]=${opts.routeTypes}`)
       const data = await res.json()
       return {
-        stopId: s.id,
+        key: routeKey(s),
         routes: (data.data || []).map((r: { id: string; attributes: { long_name?: string; direction_names?: string[]; direction_destinations?: string[] } }) => ({
           id: r.id,
           name: opts.nameStyle === 'short' ? r.id.replace(/^0*/, '') : (r.attributes.long_name ?? r.id),
@@ -121,8 +148,8 @@ export async function fetchStopTopology(lat: number, lng: number, opts: Topology
     })
   )
 
-  const routesByStop = new Map(routeResults.map(r => [r.stopId, r.routes]))
-  const topology = topStops.map(s => ({ ...s, routes: routesByStop.get(s.id) || [] }))
+  const routesByKey = new Map(routeResults.map(r => [r.key, r.routes]))
+  const topology = topStops.map(s => ({ ...s, routes: routesByKey.get(routeKey(s)) || [] }))
 
   setCachedTopology(opts.cachePrefix, lat, lng, topology)
   return topology
@@ -211,8 +238,11 @@ export async function fetchTrainStops(
   maxStops?: number,
 ): Promise<MBTAStopLive[]> {
   try {
+    // Rail: cap by station (each has 2 platforms) so both directions'
+    // arrivals survive and nearby stations like Sullivan/Assembly aren't
+    // pushed off by a closer station's second platform.
     const topology = await fetchStopTopology(lat, lng, {
-      routeTypes, radiusDeg: 0.02, cachePrefix, nameStyle: 'long', maxStops,
+      routeTypes, radiusDeg: 0.02, cachePrefix, nameStyle: 'long', maxStops, perStation: true,
     })
     if (topology.length === 0) return []
     const predMap = await fetchPredictions(topology.map(s => s.id), routeTypes)

@@ -6,7 +6,7 @@ import { getCorridorMeta, type CorridorMetaResult } from '@/lib/server/corridor-
 import { getReach } from '@/lib/server/reach'
 import { getBluebikesDocks } from '@/lib/server/bluebikes'
 import { getBikeNetwork } from '@/lib/server/bike-network'
-import { corridorsFromTopology, buildBikeCorridors, SNAPSHOT_RAIL_TYPES, SNAPSHOT_MAX_STOPS } from '@/lib/nearby/corridors'
+import { corridorsFromTopology, buildBikeCorridors, SNAPSHOT_RAIL_TYPES, SNAPSHOT_MAX_STOPS, SNAPSHOT_RAIL_MAX_STATIONS } from '@/lib/nearby/corridors'
 import { protectionLabel } from '@/lib/nearby/bike-labels'
 import { modeOptions } from '@/lib/nearby/reach-ui'
 import { bikeTimeMinutes } from '@/lib/geo/measure'
@@ -75,7 +75,7 @@ export default async function NearbyPrintPage({ searchParams }: {
 
   const [busTopo, railTopo, reach, docks, network, qrSvg] = await Promise.all([
     getStopTopology(loc.lat, loc.lng, { routeTypes: '3', radiusDeg: 0.01, nameStyle: 'short', maxStops: SNAPSHOT_MAX_STOPS }).catch(() => []),
-    getStopTopology(loc.lat, loc.lng, { routeTypes: SNAPSHOT_RAIL_TYPES, radiusDeg: 0.02, nameStyle: 'long', maxStops: SNAPSHOT_MAX_STOPS }).catch(() => []),
+    getStopTopology(loc.lat, loc.lng, { routeTypes: SNAPSHOT_RAIL_TYPES, radiusDeg: 0.02, nameStyle: 'long', maxStops: SNAPSHOT_RAIL_MAX_STATIONS, perStation: true }).catch(() => []),
     getReach(loc.lat, loc.lng).catch(() => ({ destinations: [] })),
     getBluebikesDocks(loc.lat, loc.lng),
     getBikeNetwork(loc.lat, loc.lng, 1.5).catch(() => null),
