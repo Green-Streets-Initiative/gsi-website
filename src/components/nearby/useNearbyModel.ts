@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect, useCallback } from 'react'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
+import { lineColor } from '@/lib/nearby/transit-ui'
 import type { NearbyMarker, LaneTapInfo } from './NearbyMap'
 import { userDotHtml, busStopHtml, trainStopHtml, bluebikeHtml } from './markers'
 
@@ -226,7 +227,10 @@ export function useNearbyModel({
       id: `rail-${g.key}`,
       lat: g.lat,
       lng: g.lng,
-      html: trainStopHtml((corridorById.get(`transit:${g.routes[0]?.id}`) as TransitCorridor | undefined)?.color ?? '#666', g.name),
+      // Color by the line itself, not the corridor list — a farther line
+      // (Orange at Sullivan) that didn't make the top-8 corridors still gets
+      // its brand color, not the gray fallback.
+      html: trainStopHtml(g.routes[0] ? lineColor(g.routes[0].id) : '#666', g.name),
       tappable: true,
       analyticsType: 'train',
       zIndex: 3,

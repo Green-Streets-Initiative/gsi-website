@@ -4,7 +4,7 @@ import { useState } from 'react'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
-import { directionsUrl } from '@/lib/nearby/transit-ui'
+import { directionsUrl, lineColor, lineTextColor } from '@/lib/nearby/transit-ui'
 import { BLUEBIKES_NOTE } from '@/lib/nearby/config'
 import { protectionLabel } from '@/lib/nearby/bike-labels'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
@@ -100,7 +100,7 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                         <span key={r.id} className="flex items-baseline gap-1.5">
                           <span
                             className="shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-                            style={{ backgroundColor: corridor?.color ?? '#666', color: corridor?.textColor ?? '#fff' }}
+                            style={{ backgroundColor: lineColor(r.id), color: lineTextColor(r.id) }}
                           >
                             {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
                           </span>
@@ -134,7 +134,7 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                       >
                         <span
                           className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-                          style={{ backgroundColor: corridor?.color ?? '#666', color: corridor?.textColor ?? '#fff' }}
+                          style={{ backgroundColor: lineColor(r.id), color: lineTextColor(r.id) }}
                         >
                           {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
                         </span>
