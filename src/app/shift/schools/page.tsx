@@ -160,6 +160,34 @@ export default function ShiftSchoolsPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
+            2b · HIGH SCHOOL VIDEO CONTEST CALLOUT
+        ══════════════════════════════════════════════════════════ */}
+        <section className="bg-white px-8 pb-24">
+          <div className="mx-auto max-w-[1120px]">
+            <div className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-[#F7F5FF] p-8 md:p-10">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#7C5CE0]">
+                For high schoolers · Fall 2026
+              </div>
+              <h2 className="mb-3 font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
+                Calling high school filmmakers
+              </h2>
+              <p className="mb-6 max-w-[680px] text-[1rem] leading-[1.65] text-[#4A4D68]">
+                MassDOT&apos;s Safe Streets Smart Trips video contest invites students in grades
+                9&ndash;12 to create a 30&ndash;60 second PSA celebrating safe e-bike and e-scooter
+                riding. Winning videos earn up to $500 in Amazon gift cards and are featured at the
+                2026 &ldquo;Moving Together&rdquo; Conference. Entries close Sunday, October 4.
+              </p>
+              <Link
+                href="/events/ce_massdot-video-contest_20261004"
+                className="inline-block rounded-full bg-[#191A2E] px-7 py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-85"
+              >
+                Contest details &rarr;
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════
             3 · WHAT SCHOOLS GET
         ══════════════════════════════════════════════════════════ */}
         <section className="bg-[#191A2E] px-8 py-24">

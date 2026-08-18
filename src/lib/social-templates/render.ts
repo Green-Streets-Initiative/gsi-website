@@ -356,10 +356,11 @@ function escapeHtmlAttr(s: string): string {
 
 function preprocessCeSpotlight(vars: Record<string, unknown>): void {
   const imageUrl = typeof vars['image_url'] === 'string' ? vars['image_url'] : null;
-  vars['hero_html'] = renderCeSpotlightHero(imageUrl);
+  const eventType = typeof vars['event_type'] === 'string' ? vars['event_type'] : '';
+
+  vars['hero_html'] = renderCeSpotlightHero(imageUrl, eventType);
   delete vars['image_url'];
 
-  const eventType = typeof vars['event_type'] === 'string' ? vars['event_type'] : '';
   vars['type_tile_html'] = renderCeTypeTile(eventType);
   delete vars['event_type'];
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Calendar, Bookmark, Clock } from 'lucide-react'
-import { type CommunityEvent, getTypeMeta, getTagMeta, formatTime, formatDistance, haversine, parseEventDate, dateShort } from '@/lib/events'
+import { type CommunityEvent, getTypeMeta, getTagMeta, formatTime, formatDistance, haversine, isDeadline, parseEventDate, dateShort } from '@/lib/events'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 
 interface EventCardProps {
@@ -30,6 +30,9 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
   if (datePart && timeStr) metaParts.push(`${datePart} · ${timeStr}`)
   else if (datePart) metaParts.push(datePart)
   else if (timeStr) metaParts.push(timeStr)
+  if (isDeadline(event.event_type) && metaParts.length > 0) {
+    metaParts[0] = `Entry deadline: ${metaParts[0]}`
+  }
 
   const locationParts: string[] = []
   if (event.location_name && event.location_name !== 'See event page for details') locationParts.push(event.location_name)

@@ -255,7 +255,7 @@ export default function SubmitEventForm() {
             <legend className="mb-1 font-display text-lg font-bold text-white">Who is it for?</legend>
             <p className="mb-4 text-[13px] text-white/60">Select all that apply. Helps people find the right events.</p>
             <div className="flex flex-wrap gap-2">
-              {(['free', 'beginner_friendly', 'family_friendly', 'seniors', 'lgbtq', 'women', 'registration_required', 'spanish', 'bilingual'] as const).map(tag => {
+              {(['free', 'beginner_friendly', 'family_friendly', 'students', 'seniors', 'lgbtq', 'women', 'registration_required', 'spanish', 'bilingual'] as const).map(tag => {
                 const tm = TAG_META[tag]
                 const active = selectedTags.includes(tag)
                 return (

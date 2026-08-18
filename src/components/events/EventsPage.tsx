@@ -3,12 +3,13 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Calendar as CalendarIcon, List, Search, Navigation } from 'lucide-react'
+import { ArrowRight, Calendar as CalendarIcon, List, Search, Navigation } from 'lucide-react'
 import {
   type CommunityEvent, getTypeMeta, haversine, parseEventDate,
-  dateKey, groupLabel, todayKey, DEFAULT_LOCATION,
+  dateKey, dateLong, formatTime, groupLabel, isDeadline, todayKey, DEFAULT_LOCATION,
   TYPE_FILTER_ORDER, EVENT_TYPES,
 } from '@/lib/events'
+import { EVENT_TYPE_ICONS } from './event-type-icons'
 import CalendarGrid from './CalendarGrid'
 import EventCard from './EventCard'
 import CityAutocomplete from './CityAutocomplete'
@@ -34,6 +35,57 @@ const DATE_RANGE_OPTIONS = [
   { value: 'weekend', label: 'This weekend' },
   { value: 'month', label: 'Next 30 days' },
 ] as const
+
+// ---------------------------------------------------------------------------
+// Spotlight — featured events pinned above the calendar, unaffected by the
+// distance/type filters (a statewide contest shouldn't vanish under "5 mi").
+// ---------------------------------------------------------------------------
+
+function SpotlightCard({ event }: { event: CommunityEvent }) {
+  const meta = getTypeMeta(event.event_type)
+  const Icon = EVENT_TYPE_ICONS[meta.icon] ?? CalendarIcon
+  const evDate = parseEventDate(event.event_date)
+  const timeStr = event.event_time ? formatTime(event.event_time) : null
+  const dateLine =
+    (isDeadline(event.event_type) ? 'Entry deadline: ' : '') +
+    dateLong(evDate) +
+    (timeStr ? ` · ${timeStr}` : '')
+  const summary = event.body?.split('\n').find((line) => line.trim()) ?? null
+
+  return (
+    <Link
+      href={`/events/${encodeURIComponent(event.id)}`}
+      className="group flex items-start gap-5 rounded-2xl border p-6 transition-all duration-200 hover:brightness-110 sm:p-7"
+      style={{ borderColor: meta.color + '55', backgroundColor: meta.color + '12' }}
+    >
+      <div
+        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[13px]"
+        style={{ backgroundColor: meta.color + '29' }}
+      >
+        <Icon size={26} style={{ color: meta.color }} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: meta.color }}>
+          Spotlight · {meta.label}
+        </p>
+        <h2 className="mt-1 font-display text-[20px] font-bold leading-snug text-white sm:text-[22px]">
+          {event.title}
+        </h2>
+        <p className="mt-1 text-[13px] font-medium text-white/75">{dateLine}</p>
+        {summary && (
+          <p className="mt-2 line-clamp-2 text-[14px] leading-relaxed text-white/75">{summary}</p>
+        )}
+      </div>
+      <span
+        className="mt-1 hidden shrink-0 items-center gap-1.5 text-[13px] font-semibold sm:flex"
+        style={{ color: meta.color }}
+      >
+        See details
+        <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+      </span>
+    </Link>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -81,6 +133,16 @@ export default function EventsPage({ events }: EventsPageProps) {
   // --- Filtering ---
 
   const today = todayKey()
+
+  // Featured events for the Spotlight strip — kept out of the filter pipeline.
+  const spotlightEvents = useMemo(
+    () =>
+      events
+        .filter((ev) => ev.featured && ev.event_date >= today)
+        .sort((a, b) => a.event_date.localeCompare(b.event_date))
+        .slice(0, 2),
+    [events, today],
+  )
 
   const filtered = useMemo(() => {
     return events.filter((ev) => {
@@ -355,6 +417,17 @@ export default function EventsPage({ events }: EventsPageProps) {
           </Link>
         </div>
       </section>
+
+      {/* Spotlight */}
+      {spotlightEvents.length > 0 && (
+        <section className="px-8 pb-6">
+          <div className="mx-auto flex max-w-[1200px] flex-col gap-4">
+            {spotlightEvents.map((ev) => (
+              <SpotlightCard key={ev.id} event={ev} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* View switcher */}
       <section className="px-8 pb-6">

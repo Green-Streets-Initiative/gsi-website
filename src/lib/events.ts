@@ -24,6 +24,7 @@ export interface CommunityEvent {
   image_url: string | null
   source_id: string | null
   tags: string[]
+  featured: boolean
 }
 
 export interface EventOrganizer {
@@ -56,7 +57,13 @@ export const EVENT_TYPES: Record<string, TypeMeta> = {
   civic_action:   { label: 'Civic Action',   icon: 'Megaphone',   color: '#F5C04A' },
   festival:       { label: 'Festival',       icon: 'PartyPopper', color: '#FF8A65' },
   open_streets:   { label: 'Open Streets',   icon: 'MapPin',      color: '#FF8A65' },
+  contest:        { label: 'Contest',        icon: 'Trophy',      color: '#A78BFA' },
   other:          { label: 'Other',          icon: 'Calendar',    color: 'rgba(255,255,255,0.6)' },
+}
+
+// Deadline-style types: `event_date` is an entry deadline, not a start time.
+export function isDeadline(eventType: string): boolean {
+  return eventType === 'contest'
 }
 
 export function getTypeMeta(eventType: string): TypeMeta {
@@ -68,7 +75,7 @@ export const TYPE_FILTER_ORDER = [
   'guided_ride', 'group_ride', 'class', 'ebike_demo', 'cargo_bike_demo',
   'bike_repair', 'bike_rodeo', 'bike_bus',
   'walking_tour', 'transit_buddy', 'civic_action',
-  'festival', 'open_streets', 'other',
+  'festival', 'open_streets', 'contest', 'other',
 ] as const
 
 // ---------------------------------------------------------------------------
@@ -101,6 +108,7 @@ export const TAG_META: Record<string, { label: string; color: string; bg: string
   women:                 { label: 'Women',                color: '#FB7185', bg: '#FB718520' },
   spanish:               { label: 'En español',           color: '#FCD34D', bg: '#FCD34D20' },
   bilingual:             { label: 'Bilingual',            color: '#FCD34D', bg: '#FCD34D20' },
+  students:              { label: 'Students',             color: '#2DD4BF', bg: '#2DD4BF20' },
 }
 
 export function getTagMeta(tag: string) {

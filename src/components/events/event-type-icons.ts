@@ -1,7 +1,7 @@
 import type { ComponentType, CSSProperties } from 'react'
 import {
   Bike, Bus, Calendar, Flag, Footprints, GraduationCap, MapPin,
-  Megaphone, Package, PartyPopper, Users, Wrench, Zap,
+  Megaphone, Package, PartyPopper, Trophy, Users, Wrench, Zap,
 } from 'lucide-react'
 
 /**
@@ -21,6 +21,7 @@ export const EVENT_TYPE_ICONS: Record<string, ComponentType<{ size?: number; sty
   Megaphone,
   Package,
   PartyPopper,
+  Trophy,
   Users,
   Wrench,
   Zap,

@@ -36,6 +36,7 @@ export default async function EventsListingPage() {
       image_url,
       source_id,
       tags,
+      featured,
       content_items!inner (
         id,
         title,
@@ -71,6 +72,7 @@ export default async function EventsListingPage() {
       image_url: row.image_url as string | null,
       source_id: row.source_id as string | null,
       tags: (row.tags as string[] | null) ?? [],
+      featured: (row.featured as boolean | null) ?? false,
     }
   })
 

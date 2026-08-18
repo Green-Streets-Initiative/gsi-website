@@ -10,7 +10,7 @@ import {
 import dynamic from 'next/dynamic'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import {
-  type CommunityEvent, getTypeMeta, getTagMeta, formatTime, dateLong, parseEventDate,
+  type CommunityEvent, getTypeMeta, getTagMeta, formatTime, dateLong, isDeadline, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
 } from '@/lib/events'
 
@@ -36,7 +36,10 @@ export default function EventDetail({ event }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
   const evDate = parseEventDate(event.event_date)
-  const hasMap = !!(event.location_lat && event.location_lng)
+  // Deadline-style events (contests) are places to enter, not places to go —
+  // no map, no directions.
+  const deadline = isDeadline(event.event_type)
+  const hasMap = !!(event.location_lat && event.location_lng) && !deadline
   const hasLeftColumn = !!(event.image_url || hasMap)
 
   const [saved, setSaved] = useState(false)
@@ -138,9 +141,10 @@ export default function EventDetail({ event }: EventDetailProps) {
                   {meta.label}
                 </p>
                 <p className="text-[13px] text-white/60">
+                  {deadline && 'Entry deadline: '}
                   {dateLong(evDate)}
                   {timeStr && ` · ${timeStr}`}
-                  {endTimeStr && ` – ${endTimeStr}`}
+                  {!deadline && endTimeStr && ` – ${endTimeStr}`}
                 </p>
               </div>
               <div className="ml-auto">
@@ -179,7 +183,7 @@ export default function EventDetail({ event }: EventDetailProps) {
 
             {/* Action row */}
             <div className="mb-8 flex flex-wrap gap-2">
-              {(event.location_lat && event.location_lng) && (
+              {(event.location_lat && event.location_lng) && !deadline && (
                 <a
                   href={directionsUrl(event)}
                   target="_blank"
@@ -252,7 +256,7 @@ export default function EventDetail({ event }: EventDetailProps) {
               <div className="flex gap-3">
                 <Calendar size={16} className="mt-0.5 shrink-0 text-white/40" />
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/50">Date</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">{deadline ? 'Entry deadline' : 'Date'}</p>
                   <p className="text-[14px] text-white/80">{dateLong(evDate)}</p>
                 </div>
               </div>
@@ -260,7 +264,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                 <div className="flex gap-3">
                   <Clock size={16} className="mt-0.5 shrink-0 text-white/40" />
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/50">Time</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">Time</p>
                     <p className="text-[14px] text-white/80">
                       {timeStr}{endTimeStr && ` – ${endTimeStr}`}
                     </p>
@@ -271,7 +275,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                 <div className="flex gap-3">
                   <MapPin size={16} className="mt-0.5 shrink-0 text-white/40" />
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/50">Where</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">Where</p>
                     <p className="text-[14px] text-white/80">{location}</p>
                   </div>
                 </div>
@@ -280,7 +284,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                 <div className="flex gap-3">
                   <Users size={16} className="mt-0.5 shrink-0 text-white/40" />
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/50">Organizer</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">Organizer</p>
                     {event.organizer_url ? (
                       <a href={withUtm(event.organizer_url)} target="_blank" rel="noopener noreferrer" className="text-[14px] text-lime hover:underline">
                         {event.organizer_name} <ExternalLink size={12} className="inline" />

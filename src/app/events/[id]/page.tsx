@@ -50,6 +50,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       image_url,
       source_id,
       tags,
+      featured,
       content_items!inner (
         id,
         title,
@@ -85,6 +86,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     image_url: data.image_url as string | null,
     source_id: data.source_id as string | null,
     tags: (data.tags as string[] | null) ?? [],
+    featured: (data.featured as boolean | null) ?? false,
   }
 
   return (
