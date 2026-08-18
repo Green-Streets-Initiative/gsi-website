@@ -31,6 +31,9 @@ import SheetViewport from './SheetViewport'
  */
 
 const SITE_URL = 'https://gogreenstreets.org'
+// The real GSI wordmark (brand-assets bucket, same file the employer PDFs
+// use) — printed pieces must carry the actual mark, not styled text
+const GSI_WORDMARK = 'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/gsi-wordmark.png'
 // Sized so header + map + legend + columns + destinations + QR footer land
 // on ONE letter page (10.2in printable ≈ 980 CSS px) — check the PDF after
 // growing anything here
@@ -223,33 +226,39 @@ export default async function NearbyPrintPage({ searchParams }: {
       </div>
 
       <article className="print-article mx-auto max-w-[760px] px-5 py-5">
-        {/* Header */}
+        {/* Header. The right block always leads with the real GSI wordmark —
+            printed pieces are our brand's face, so the mark itself must be on
+            paper, not just green text (the eyebrow drops the org name so it
+            doesn't say it twice). Partnered prints stack "In partnership
+            with" + the partner's logo beneath it: both marks, ours first. */}
         <header className="mb-2.5 flex items-end justify-between gap-4">
           <div>
             <div className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#4A7729]">
-              Green Streets Initiative · Your neighborhood snapshot
+              Your neighborhood snapshot
             </div>
             <h1 className="font-display text-[1.7rem] font-extrabold leading-tight tracking-tight">
               Getting around {label}
             </h1>
           </div>
-          {/* Partner co-brand replaces the generic tagline (a swap, not an
-              addition — the one-page vertical budget stays untouched) */}
-          {partner ? (
-            <div className="flex max-w-[260px] flex-col items-end gap-1 text-right">
-              {partner.logoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={partner.logoUrl} alt={partner.name} className="max-h-[32px] w-auto" />
-              )}
-              <p className="text-[0.7rem] leading-snug text-[#191A2E]/80">
-                Provided in partnership with <span className="font-semibold text-[#191A2E]">{partner.name}</span>
+          <div className="flex max-w-[260px] flex-col items-end gap-1 text-right">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={GSI_WORDMARK} alt="Green Streets Initiative" className="max-h-[26px] w-auto" />
+            {partner ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[0.7rem] leading-snug text-[#191A2E]/80">
+                  In partnership with{partner.logoUrl ? '' : <> <span className="font-semibold text-[#191A2E]">{partner.name}</span></>}
+                </span>
+                {partner.logoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={partner.logoUrl} alt={partner.name} className="max-h-[24px] w-auto" />
+                )}
+              </div>
+            ) : (
+              <p className="text-[0.7rem] leading-snug text-[#191A2E]/70">
+                The trains, buses, bike routes, and Bluebikes within reach of your new home.
               </p>
-            </div>
-          ) : (
-            <p className="max-w-[220px] text-right text-[0.7rem] leading-snug text-[#191A2E]/70">
-              The trains, buses, bike routes, and Bluebikes within reach of your new home.
-            </p>
-          )}
+            )}
+          </div>
         </header>
 
         {outside && (
