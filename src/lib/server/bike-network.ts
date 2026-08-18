@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { unstable_cache } from 'next/cache'
 import { looksLikeStreetName } from '@/lib/nearby/street-names'
 import { bearingDegrees } from '@/lib/geo/polyline'
 
@@ -414,6 +415,35 @@ export async function getBikeNetwork(lat: number, lng: number, radiusMiles: numb
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) return cached.data
 
+  // Durable layer for small radii only: the print page's 1.5 mi network
+  // (~0.8 MB) fits Vercel's 2 MB data-cache item limit; the 3 mi network
+  // (~2.3 MB) does not, so wide requests stay on the in-memory path. The
+  // durable window is one HOUR regardless of OSM health — long enough to
+  // spare repeat print visits the fan-out, short enough that an
+  // Overpass-empty window still self-heals (the Round 10 lesson).
+  const { data, osmEmpty } = radius <= 2
+    ? await durableBikeNetwork(lat3, lng3, radius)
+    : await computeBikeNetwork(lat3, lng3, radius)
+
+  if (cache.size >= CACHE_MAX_ENTRIES) {
+    const oldest = cache.keys().next().value
+    if (oldest) cache.delete(oldest)
+  }
+  // OSM is the only source that names most on-street lanes; when Overpass is
+  // overloaded (returns []), keep the merged result for just an hour instead
+  // of a day so street names self-heal once Overpass recovers.
+  const ttl = osmEmpty ? 60 * 60 * 1000 : CACHE_TTL_MS
+  cache.set(cacheKey, { data, expires: Date.now() + ttl })
+  return data
+}
+
+const durableBikeNetwork = unstable_cache(computeBikeNetwork, ['nearby-bike-network-v1'], {
+  revalidate: 60 * 60,
+})
+
+async function computeBikeNetwork(
+  lat3: number, lng3: number, radius: number,
+): Promise<{ data: BikeNetworkResponse; osmEmpty: boolean }> {
   const [mapc, massdot, osm] = await Promise.all([
     fetchMapc(lat3, lng3, radius),
     fetchMassDot(lat3, lng3, radius),
@@ -432,15 +462,5 @@ export async function getBikeNetwork(lat: number, lng: number, radiusMiles: numb
       painted: features.filter(f => f.properties.quality === 'painted').length,
     },
   }
-
-  if (cache.size >= CACHE_MAX_ENTRIES) {
-    const oldest = cache.keys().next().value
-    if (oldest) cache.delete(oldest)
-  }
-  // OSM is the only source that names most on-street lanes; when Overpass is
-  // overloaded (returns []), keep the merged result for just an hour instead
-  // of a day so street names self-heal once Overpass recovers.
-  const ttl = osm.length === 0 ? 60 * 60 * 1000 : CACHE_TTL_MS
-  cache.set(cacheKey, { data, expires: Date.now() + ttl })
-  return data
+  return { data, osmEmpty: osm.length === 0 }
 }

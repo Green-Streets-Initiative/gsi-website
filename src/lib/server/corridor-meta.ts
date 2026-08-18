@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { unstable_cache } from 'next/cache'
+
 /**
  * Shape + weekday frequency + per-direction stops for one MBTA route,
  * fetched server-side. Extracted from /api/nearby/corridor-meta (which is
@@ -53,28 +55,48 @@ function evictIfFull<K, V>(cache: Map<K, V>) {
   if (oldest !== undefined) cache.delete(oldest)
 }
 
+/** Thrown inside a durable wrapper to keep an empty (likely transient)
+ *  result OUT of the durable cache — mirrors the in-memory rule of only
+ *  storing non-empty results. Callers translate it back to empty. */
+class EmptyResultError extends Error {}
+
 async function getShapes(routeId: string): Promise<string[]> {
   const cached = shapeCache.get(routeId)
   if (cached && cached.expires > Date.now()) return cached.polylines
 
+  let polylines: string[]
+  try {
+    polylines = await durableShapes(routeId)
+  } catch (e) {
+    if (e instanceof EmptyResultError || (e as Error)?.name === 'EmptyResultError') return []
+    throw e
+  }
+  if (polylines.length > 0) {
+    evictIfFull(shapeCache)
+    shapeCache.set(routeId, { polylines, expires: Date.now() + SHAPE_TTL_MS })
+  }
+  return polylines
+}
+
+const durableShapes = unstable_cache(async (routeId: string) => {
+  const polylines = await fetchShapes(routeId)
+  if (polylines.length === 0) throw new EmptyResultError()
+  return polylines
+}, ['nearby-shapes-v1'], { revalidate: SHAPE_TTL_MS / 1000 })
+
+async function fetchShapes(routeId: string): Promise<string[]> {
   const res = await fetch(
     mbtaUrl('/shapes', new URLSearchParams({ 'filter[route]': routeId, 'page[limit]': '10' })),
     { signal: AbortSignal.timeout(8000) }
   )
   const data = await res.json()
   if (!res.ok || data.errors) throw new Error(`shapes ${res.status}`)
-  const polylines = ((data.data ?? []) as { attributes?: { polyline?: string } }[])
+  return ((data.data ?? []) as { attributes?: { polyline?: string } }[])
     .map(s => s.attributes?.polyline ?? '')
     .filter(Boolean)
     // Longest variants cover both directions plus major branches
     .sort((a, b) => b.length - a.length)
     .slice(0, MAX_SHAPES_PER_ROUTE)
-
-  if (polylines.length > 0) {
-    evictIfFull(shapeCache)
-    shapeCache.set(routeId, { polylines, expires: Date.now() + SHAPE_TTL_MS })
-  }
-  return polylines
 }
 
 /** Every stop along the route, per direction, in travel order — the MBTA
@@ -84,6 +106,27 @@ async function getRouteStops(routeId: string): Promise<DirectionStops[]> {
   const cached = stopsCache.get(routeId)
   if (cached && cached.expires > Date.now()) return cached.directions
 
+  let directions: DirectionStops[]
+  try {
+    directions = await durableRouteStops(routeId)
+  } catch (e) {
+    if (e instanceof EmptyResultError || (e as Error)?.name === 'EmptyResultError') return []
+    throw e
+  }
+  if (directions.length > 0) {
+    evictIfFull(stopsCache)
+    stopsCache.set(routeId, { directions, expires: Date.now() + SHAPE_TTL_MS })
+  }
+  return directions
+}
+
+const durableRouteStops = unstable_cache(async (routeId: string) => {
+  const directions = await fetchRouteStops(routeId)
+  if (directions.length === 0) throw new EmptyResultError()
+  return directions
+}, ['nearby-route-stops-v1'], { revalidate: SHAPE_TTL_MS / 1000 })
+
+async function fetchRouteStops(routeId: string): Promise<DirectionStops[]> {
   const directions: DirectionStops[] = []
   for (const dir of [0, 1]) {
     const res = await fetch(
@@ -101,11 +144,6 @@ async function getRouteStops(routeId: string): Promise<DirectionStops[]> {
       .map(s => ({ id: s.id, name: s.attributes?.name ?? '' }))
       .filter(s => s.name)
     if (stops.length > 0) directions.push({ directionId: dir, stops })
-  }
-
-  if (directions.length > 0) {
-    evictIfFull(stopsCache)
-    stopsCache.set(routeId, { directions, expires: Date.now() + SHAPE_TTL_MS })
   }
   return directions
 }
@@ -154,6 +192,21 @@ async function getFrequency(routeId: string, stopId: string): Promise<FrequencyI
   const cached = freqCache.get(cacheKey)
   if (cached && cached.expires > Date.now()) return cached.freq
 
+  // Durable layer: null (genuinely no weekday schedule) IS cached, matching
+  // the in-memory rule below; transient MBTA failures throw and are not.
+  // The service date is an argument so the durable key rolls over daily.
+  const freq = await durableFrequency(routeId, stopId, date)
+
+  evictIfFull(freqCache)
+  freqCache.set(cacheKey, { freq, expires: Date.now() + FREQ_TTL_MS })
+  return freq
+}
+
+const durableFrequency = unstable_cache(computeFrequency, ['nearby-frequency-v1'], {
+  revalidate: FREQ_TTL_MS / 1000,
+})
+
+async function computeFrequency(routeId: string, stopId: string, date: string): Promise<FrequencyInfo | null> {
   let rows = await fetchScheduleRows(routeId, stopId, date)
 
   // Schedules attach to child platforms, not parent stations — when the
@@ -211,10 +264,9 @@ async function getFrequency(routeId: string, stopId: string): Promise<FrequencyI
     }
   }
 
-  // Cache nulls too — a route with no weekday schedule at this stop won't
-  // grow one before tomorrow, and retrying burns rate limit
-  evictIfFull(freqCache)
-  freqCache.set(cacheKey, { freq, expires: Date.now() + FREQ_TTL_MS })
+  // Nulls are returned (and cached by the layers above) — a route with no
+  // weekday schedule at this stop won't grow one before tomorrow, and
+  // retrying burns rate limit
   return freq
 }
 

@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { unstable_cache } from 'next/cache'
 import { REACH_DESTINATIONS, REACH_SKIP_WITHIN_MILES } from '@/lib/nearby/config'
 import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
 import { canonicalStreetKey, displayStreetName } from '@/lib/nearby/street-names'
@@ -529,6 +530,40 @@ export async function getReach(lat: number, lng: number): Promise<{ destinations
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) return cached.data
 
+  // Durable layer: these rows are Google Routes calls (paid) and the reason
+  // cold print renders took ~20 s — serverless instances recycle within
+  // minutes, so the in-memory cache never survives to the next real visit.
+  // A fully-degraded result (every transit lookup failed) is served but NOT
+  // durably cached, so an outage never freezes bad rows for 24 h.
+  let data: { destinations: ReachRow[] }
+  try {
+    data = await durableReach(lat3, lng3)
+  } catch (e) {
+    if (e instanceof DegradedResultError || (e as Error)?.name === 'DegradedResultError') {
+      data = await computeReach(lat3, lng3)
+    } else {
+      throw e
+    }
+  }
+
+  if (cache.size >= CACHE_MAX_ENTRIES) {
+    const oldest = cache.keys().next().value
+    if (oldest) cache.delete(oldest)
+  }
+  cache.set(cacheKey, { data, expires: Date.now() + CACHE_TTL_MS })
+  return data
+}
+
+class DegradedResultError extends Error {}
+
+const durableReach = unstable_cache(async (lat3: number, lng3: number) => {
+  const data = await computeReach(lat3, lng3)
+  const anyReal = data.destinations.some(r => r.transit_minutes !== null || !r.bike_is_estimate)
+  if (data.destinations.length > 0 && !anyReal) throw new DegradedResultError()
+  return data
+}, ['nearby-reach-v9'], { revalidate: CACHE_TTL_MS / 1000 })
+
+async function computeReach(lat3: number, lng3: number): Promise<{ destinations: ReachRow[] }> {
   const departureTime = nextMonday830()
   const candidates = REACH_DESTINATIONS
     .map(d => ({ ...d, distance_miles: haversineMiles(lat3, lng3, d.lat, d.lng) }))
@@ -566,12 +601,5 @@ export async function getReach(lat: number, lng: number): Promise<{ destinations
 
   rows.sort((a, b) => (a.transit_minutes ?? 999) - (b.transit_minutes ?? 999))
 
-  const data = { destinations: rows }
-  if (cache.size >= CACHE_MAX_ENTRIES) {
-    const oldest = cache.keys().next().value
-    if (oldest) cache.delete(oldest)
-  }
-  cache.set(cacheKey, { data, expires: Date.now() + CACHE_TTL_MS })
-
-  return data
+  return { destinations: rows }
 }

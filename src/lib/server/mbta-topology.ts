@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { unstable_cache } from 'next/cache'
 import type { StopTopology, StopRoute } from '@/lib/nearby/live-data'
 import { capitalizeStopName } from '@/lib/nearby/live-data'
 import { haversineMeters } from '@/lib/geo/measure'
@@ -47,6 +48,25 @@ export async function getStopTopology(lat: number, lng: number, opts: ServerTopo
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) return cached.data
 
+  // Durable layer (Vercel data cache): serverless instances are recycled
+  // within minutes of going idle, so the in-memory cache above only ever
+  // helps back-to-back requests — real print visits arrive cold. MBTA
+  // failures throw and are never cached.
+  const topology = await durableTopology(lat3, lng3, opts)
+
+  if (cache.size >= CACHE_MAX) {
+    const oldest = cache.keys().next().value
+    if (oldest) cache.delete(oldest)
+  }
+  cache.set(cacheKey, { data: topology, expires: Date.now() + CACHE_TTL_MS })
+  return topology
+}
+
+const durableTopology = unstable_cache(computeTopology, ['nearby-topology-v1'], {
+  revalidate: CACHE_TTL_MS / 1000,
+})
+
+async function computeTopology(lat3: number, lng3: number, opts: ServerTopologyOptions): Promise<StopTopology[]> {
   const stopsRes = await fetch(
     mbtaUrl('/stops', new URLSearchParams({
       'filter[latitude]': String(lat3),
@@ -111,12 +131,5 @@ export async function getStopTopology(lat: number, lng: number, opts: ServerTopo
   )
 
   const routesByKey = new Map(routeResults.map(r => [r.key, r.routes]))
-  const topology = topStops.map(s => ({ ...s, routes: routesByKey.get(routeKey(s)) || [] }))
-
-  if (cache.size >= CACHE_MAX) {
-    const oldest = cache.keys().next().value
-    if (oldest) cache.delete(oldest)
-  }
-  cache.set(cacheKey, { data: topology, expires: Date.now() + CACHE_TTL_MS })
-  return topology
+  return topStops.map(s => ({ ...s, routes: routesByKey.get(routeKey(s)) || [] }))
 }
