@@ -1,7 +1,8 @@
 import 'server-only'
 
 import { unstable_cache } from 'next/cache'
-import { REACH_DESTINATIONS, REACH_SKIP_WITHIN_MILES } from '@/lib/nearby/config'
+import { REACH_SKIP_WITHIN_MILES } from '@/lib/nearby/config'
+import { resolveRegion } from '@/lib/nearby/regions'
 import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
 import { canonicalStreetKey, displayStreetName } from '@/lib/nearby/street-names'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
@@ -87,7 +88,10 @@ export interface ReachRow {
   bike_comfort: BikeComfort | null
 }
 
-const cache = new Map<string, { data: { destinations: ReachRow[] }; expires: number }>()
+const cache = new Map<
+  string,
+  { data: { destinations: ReachRow[]; region: ReachRegionInfo | null }; expires: number }
+>()
 
 function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (d: number) => (d * Math.PI) / 180
@@ -517,7 +521,15 @@ function chooseBikeRoute(
 
 /** Takes already-validated coordinates; rounds to 3 decimals internally so
  *  cache keys coincide across visitors in one area. */
-export async function getReach(lat: number, lng: number): Promise<{ destinations: ReachRow[] }> {
+export interface ReachRegionInfo {
+  id: string
+  label: string
+}
+
+export async function getReach(
+  lat: number,
+  lng: number,
+): Promise<{ destinations: ReachRow[]; region: ReachRegionInfo | null }> {
   const lat3 = Math.round(lat * 1000) / 1000
   const lng3 = Math.round(lng * 1000) / 1000
   // v4: bike chips + comfort streets are in travel order — don't serve older ordering
@@ -525,7 +537,8 @@ export async function getReach(lat: number, lng: number): Promise<{ destinations
   // v6: sidepath detection reclassifies street-named "paths" as protected lanes
   // v7: unnamed lanes inherit names from overlapping segments
   // v9: comfort segments carry the street they ride (tapped-leg naming)
-  const cacheKey = `v9:${lat3},${lng3}`
+  // v10: regional destination lists (Around You M6) + region metadata
+  const cacheKey = `v10:${lat3},${lng3}`
 
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) return cached.data
@@ -535,7 +548,7 @@ export async function getReach(lat: number, lng: number): Promise<{ destinations
   // minutes, so the in-memory cache never survives to the next real visit.
   // A fully-degraded result (every transit lookup failed) is served but NOT
   // durably cached, so an outage never freezes bad rows for 24 h.
-  let data: { destinations: ReachRow[] }
+  let data: { destinations: ReachRow[]; region: ReachRegionInfo | null }
   try {
     data = await durableReach(lat3, lng3)
   } catch (e) {
@@ -561,11 +574,15 @@ const durableReach = unstable_cache(async (lat3: number, lng3: number) => {
   const anyReal = data.destinations.some(r => r.transit_minutes !== null || !r.bike_is_estimate)
   if (data.destinations.length > 0 && !anyReal) throw new DegradedResultError()
   return data
-}, ['nearby-reach-v9'], { revalidate: CACHE_TTL_MS / 1000 })
+}, ['nearby-reach-v10'], { revalidate: CACHE_TTL_MS / 1000 })
 
-async function computeReach(lat3: number, lng3: number): Promise<{ destinations: ReachRow[] }> {
+async function computeReach(
+  lat3: number,
+  lng3: number,
+): Promise<{ destinations: ReachRow[]; region: ReachRegionInfo | null }> {
   const departureTime = nextMonday830()
-  const candidates = REACH_DESTINATIONS
+  const region = resolveRegion(lat3, lng3)
+  const candidates = (region?.destinations ?? [])
     .map(d => ({ ...d, distance_miles: haversineMiles(lat3, lng3, d.lat, d.lng) }))
     .filter(d => d.distance_miles >= REACH_SKIP_WITHIN_MILES)
 
@@ -601,5 +618,5 @@ async function computeReach(lat3: number, lng3: number): Promise<{ destinations:
 
   rows.sort((a, b) => (a.transit_minutes ?? 999) - (b.transit_minutes ?? 999))
 
-  return { destinations: rows }
+  return { destinations: rows, region: region ? { id: region.id, label: region.label } : null }
 }
