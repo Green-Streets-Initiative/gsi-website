@@ -231,8 +231,8 @@ export default async function NearbyPrintPage({ searchParams }: {
             paper, not just green text (the eyebrow drops the org name so it
             doesn't say it twice). Partnered prints stack "In partnership
             with" + the partner's logo beneath it: both marks, ours first. */}
-        <header className="mb-2.5 flex items-end justify-between gap-4">
-          <div>
+        <header className="mb-2 flex items-end justify-between gap-4">
+          <div className="min-w-0 flex-1">
             <div className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#4A7729]">
               Your neighborhood snapshot
             </div>
@@ -240,7 +240,9 @@ export default async function NearbyPrintPage({ searchParams }: {
               Getting around {label}
             </h1>
           </div>
-          <div className="flex max-w-[260px] flex-col items-end gap-1 text-right">
+          {/* Narrow enough that a typical "Neighborhood, Town" headline stays
+              on ONE line — a wrapped h1 costs the page ~36px it can't spare */}
+          <div className="flex max-w-[200px] shrink-0 flex-col items-end gap-1 text-right">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={GSI_WORDMARK} alt="Green Streets Initiative" className="max-h-[26px] w-auto" />
             {partner ? (
@@ -255,7 +257,7 @@ export default async function NearbyPrintPage({ searchParams }: {
               </div>
             ) : (
               <p className="text-[0.7rem] leading-snug text-[#191A2E]/70">
-                The trains, buses, bike routes, and Bluebikes within reach of your new home.
+                Trains, buses, bike routes &amp; Bluebikes near your new home.
               </p>
             )}
           </div>
@@ -272,7 +274,7 @@ export default async function NearbyPrintPage({ searchParams }: {
           <PrintMap center={loc} lines={lines} markers={markers} width={MAP_W} height={MAP_H} />
         </div>
         {legend.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.68rem] text-[#191A2E]/80">
+          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[0.68rem] text-[#191A2E]/80">
             {legend.map((l, i) => (
               <span key={i} className="flex items-center gap-1.5">{l.swatch}{l.label}</span>
             ))}
@@ -280,7 +282,7 @@ export default async function NearbyPrintPage({ searchParams }: {
         )}
 
         {/* Two columns: transit | bike + docks */}
-        <div className="mt-2.5 grid grid-cols-2 gap-5">
+        <div className="mt-2 grid grid-cols-2 gap-5">
           <section className="print-card">
             <h2 className="mb-2 text-[0.72rem] font-bold uppercase tracking-wider text-[#191A2E]/70">
               Trains &amp; buses near you
@@ -288,7 +290,7 @@ export default async function NearbyPrintPage({ searchParams }: {
             {stations.length === 0 && (
               <p className="text-[0.8rem] text-[#191A2E]/70">No MBTA stations within a short walk of this spot.</p>
             )}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {stations.map(s => (
                 <div key={s.name}>
                   <div className="flex items-baseline justify-between gap-2">
@@ -314,7 +316,7 @@ export default async function NearbyPrintPage({ searchParams }: {
               ))}
             </div>
             {stations.length > 0 && (
-              <p className="mt-1.5 text-[0.65rem] text-[#191A2E]/60">
+              <p className="mt-1 text-[0.65rem] text-[#191A2E]/60">
                 Weekday daytime frequencies — scan the code for live arrivals.
               </p>
             )}
@@ -379,7 +381,7 @@ export default async function NearbyPrintPage({ searchParams }: {
 
         {/* Destinations */}
         {destinations.length > 0 && (
-          <section className="print-card mt-2.5">
+          <section className="print-card mt-2">
             <h2 className="mb-1.5 text-[0.72rem] font-bold uppercase tracking-wider text-[#191A2E]/70">
               Where can you get from here?
             </h2>
@@ -400,10 +402,11 @@ export default async function NearbyPrintPage({ searchParams }: {
         )}
 
         {/* Footer: attribution only — the QR lives up in the bike column */}
-        <footer className="print-card mt-2.5 border-t border-[#191A2E]/15 pt-1.5">
+        <footer className="print-card mt-2 border-t border-[#191A2E]/15 pt-1.5">
+          {/* One line — the doubled OpenStreetMap credit wrapped it to two */}
           <p className="text-[0.62rem] leading-snug text-[#191A2E]/60">
             Green Streets Initiative, a 501(c)(3) · gogreenstreets.org · Data: MBTA · MAPC TrailMap · MassDOT ·
-            Bluebikes · OpenStreetMap contributors · Map © OpenStreetMap contributors © CARTO
+            Bluebikes · Map © OpenStreetMap contributors © CARTO
           </p>
         </footer>
       </article>

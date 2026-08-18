@@ -107,8 +107,13 @@ export function buildPrintStations(
   const busKept: PrintStation[] = []
   for (const s of groupTopology(bus, false, freqByRoute)) {
     if (busKept.length >= caps.bus) break
-    const fresh = s.lines.some(l => !seenBusRoutes.has(l.routeId))
-    if (!fresh) continue
+    const freshCount = s.lines.filter(l => !seenBusRoutes.has(l.routeId)).length
+    if (freshCount === 0) continue
+    // A stop must be MOSTLY new routes to earn a block — spending a
+    // ~5-line block to add one route on top of a neighbor's (McGrath @
+    // Alston re-listing 80/88 to introduce the ~45-min Route 90) is what
+    // pushed dense pages onto a second sheet. The QR's live page has it.
+    if (freshCount * 2 < s.lines.length) continue
     // The nearest bus station always makes the page, budget or not
     if (busKept.length > 0 && lineRows + s.lines.length > LINE_BUDGET) continue
     for (const l of s.lines) seenBusRoutes.add(l.routeId)
