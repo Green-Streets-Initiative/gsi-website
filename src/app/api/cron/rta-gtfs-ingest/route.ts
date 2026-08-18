@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-// @ts-expect-error — plain ESM module shared with scripts/ingest-rta.mjs
 import { ingestAgency } from '@/lib/rta/ingest.mjs'
 
 export const runtime = 'nodejs'
