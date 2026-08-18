@@ -6,7 +6,7 @@ const RESEND_FROM =
   Deno.env.get("RESEND_FROM_EMAIL") ?? "Shift Rewards <onboarding@resend.dev>";
 const ADMIN_EMAILS = ["keith@gogreenstreets.org", "info@gogreenstreets.org"];
 const ADMIN_DASHBOARD_URL =
-  "https://shift-admin.vercel.app/admin/sponsors";
+  "https://admin.gogreenstreets.org/admin/sponsors";
 
 async function sendEmail(
   to: string | string[],
