@@ -20,6 +20,7 @@ export type Selection =
   | { type: 'corridor'; id: string }
   | { type: 'station'; key: string }
   | { type: 'dock'; id: string }
+  | { type: 'borrow'; id: string }
   | { type: 'lane'; info: LaneTapInfo }
   | { type: 'reach'; id: string; mode: 'transit' | 'bike' }
   | null
@@ -201,7 +202,7 @@ export function useNearbyModel({
     let hidden = false
     if (selection.type === 'station') {
       hidden = !stationByKey.has(selection.key)
-    } else if (selection.type === 'dock') {
+    } else if (selection.type === 'dock' || selection.type === 'borrow') {
       hidden = !showBike
     } else if (selection.type === 'lane') {
       hidden = !showBike || (selection.info.quality === 'painted' && !painted)
@@ -219,6 +220,8 @@ export function useNearbyModel({
       select({ type: 'station', key: id.replace(/^(rail|bus)-/, '') }, 'map')
     } else if (id.startsWith('dock-')) {
       select({ type: 'dock', id: id.replace(/^dock-/, '') }, 'map')
+    } else if (id.startsWith('borrow-')) {
+      select({ type: 'borrow', id: id.replace(/^borrow-/, '') }, 'map')
     }
   }, [select])
 
@@ -232,9 +235,14 @@ export function useNearbyModel({
       id: `borrow-${p.id}`,
       lat: p.lat,
       lng: p.lng,
-      html: borrowRentHtml(p.name),
+      html: borrowRentHtml(
+        p.name,
+        p.org === 'cargob' ? 'CargoB' : 'Pedal Power',
+        selection?.type === 'borrow' && selection.id === p.id,
+      ),
+      tappable: true,
       analyticsType: 'borrow',
-      zIndex: 1,
+      zIndex: selection?.type === 'borrow' && selection.id === p.id ? 6 : 1,
     })) : []),
     ...(showRail ? groupStops(rail, true).slice(0, 4).map(g => ({
       id: `rail-${g.key}`,
@@ -261,12 +269,17 @@ export function useNearbyModel({
       id: `dock-${d.station_id}`,
       lat: d.lat,
       lng: d.lng,
-      html: bluebikeHtml(d.num_bikes_available, d.num_ebikes_available, d.name),
+      html: bluebikeHtml(
+        d.num_bikes_available,
+        d.num_ebikes_available,
+        d.name,
+        selection?.type === 'dock' && selection.id === d.station_id,
+      ),
       tappable: true,
       analyticsType: 'bluebike',
-      zIndex: 1,
+      zIndex: selection?.type === 'dock' && selection.id === d.station_id ? 6 : 1,
     })) : []),
-  ], [center, rail, bus, docks, borrowRent, corridorById, showRail, showBus, showBike])
+  ], [center, rail, bus, docks, borrowRent, corridorById, showRail, showBus, showBike, selection])
 
   // Boarding locations belong in the first frame even when their stations
   // didn't make the marker cut

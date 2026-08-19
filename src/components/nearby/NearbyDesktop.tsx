@@ -15,7 +15,7 @@ import { useReachOverlay } from './useReachOverlay'
 import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
 import { StationList, BikeRouteList, DockList, BorrowRentList, AlertBanner } from './AroundYouLists'
-import { topAlert, alertedRouteIds, type SurfacedAlert } from '@/lib/nearby/alerts'
+import { pickBannerAlert, alertedRouteIds, type SurfacedAlert } from '@/lib/nearby/alerts'
 import { ReachList } from './ReachSection'
 import { ExploreBody } from './ExploreBody'
 import PartnerCobrand from './PartnerCobrand'
@@ -248,6 +248,7 @@ export default function NearbyDesktop({
                       stationByKey={stationByKey}
                       corridorById={corridorById}
                       docks={docks}
+                      borrowRent={model.borrowRent}
                       onSelectCorridor={(id) => selectShowing({ type: 'corridor', id }, 'panel')}
                     />
                   </div>
@@ -294,9 +295,11 @@ export default function NearbyDesktop({
             </div>
 
             <div className={railTab === 'transit' ? '' : 'hidden'}>
-              {(showRail || showBus) && topAlert(alerts) && (
-                <AlertBanner alert={topAlert(alerts)!} />
-              )}
+              {(showRail || showBus) && (() => {
+                const visibleRouteIds = new Set(stations.flatMap(st => st.routes.map(r => r.id)))
+                const banner = pickBannerAlert(alerts, visibleRouteIds)
+                return banner ? <AlertBanner alert={banner.alert} compact={banner.compact} /> : null
+              })()}
               {(showRail || showBus) && (
                 <>
                   <StationList
@@ -321,7 +324,7 @@ export default function NearbyDesktop({
                   />
                   <GuideLinks context="bike" guides={guides.data} modeFilter={modeFilter} />
                   <BorrowRentList points={model.borrowRent} />
-                  <DockList docks={docks} />
+                  <DockList docks={docks} onSelect={(id) => selectShowing({ type: 'dock', id }, 'list')} selectedId={selection?.type === 'dock' ? selection.id : null} />
                   <GuideLinks context="docks" guides={guides.data} modeFilter={modeFilter} />
                 </>
               )}

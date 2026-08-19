@@ -267,7 +267,11 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
 
 /* ── Bluebikes docks ── */
 
-export function DockList({ docks }: { docks: BluebikeStationLive[] }) {
+export function DockList({ docks, onSelect, selectedId }: {
+  docks: BluebikeStationLive[]
+  onSelect?: (id: string) => void
+  selectedId?: string | null
+}) {
   return (
     <div className="mt-5">
       <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
@@ -280,7 +284,15 @@ export function DockList({ docks }: { docks: BluebikeStationLive[] }) {
       ) : (
         <div className="space-y-2.5">
           {docks.slice(0, 3).map(d => (
-            <div key={d.station_id} className="rounded-xl border border-white/[0.08] bg-[#242538] px-4 py-3.5">
+            <button
+              key={d.station_id}
+              onClick={() => onSelect?.(d.station_id)}
+              className={`w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
+                selectedId === d.station_id
+                  ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.06)]'
+                  : 'border-white/[0.08] bg-[#242538] hover:border-white/[0.2]'
+              }`}
+            >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">Bluebikes dock</div>
@@ -299,13 +311,13 @@ export function DockList({ docks }: { docks: BluebikeStationLive[] }) {
                   href={directionsUrl(d.lat, d.lng)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'bluebike' })}
+                  onClick={(e) => { e.stopPropagation(); posthog.capture('snapshot_directions_clicked', { type: 'bluebike' }) }}
                   className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
                 >
                   Walk there →
                 </a>
               </div>
-            </div>
+            </button>
           ))}
           <p className="px-1 text-[0.8rem] leading-relaxed text-white/75">{BLUEBIKES_NOTE}</p>
         </div>
@@ -358,7 +370,7 @@ export function BorrowRentList({ points }: {
 /* ── Service-disruption banner: the at-most-one major alert, in-context
       above the stations list. Mirrors the Shift app's expandable banner. ── */
 
-export function AlertBanner({ alert }: { alert: SurfacedAlert }) {
+export function AlertBanner({ alert, compact = false }: { alert: SurfacedAlert; compact?: boolean }) {
   const [open, setOpen] = useState(false)
   return (
     <button
@@ -368,7 +380,7 @@ export function AlertBanner({ alert }: { alert: SurfacedAlert }) {
     >
       <Warning size={18} weight="fill" className="mt-0.5 shrink-0 text-[#EDB93C]" aria-hidden="true" />
       <span className="min-w-0 flex-1">
-        <span className={`block text-[0.82rem] leading-relaxed text-white ${open ? '' : 'line-clamp-3'}`}>
+        <span className={`block text-[0.82rem] leading-relaxed text-white ${open ? '' : compact ? 'truncate' : 'line-clamp-3'}`}>
           {alert.header}
         </span>
         {open && alert.description && (

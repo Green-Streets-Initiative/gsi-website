@@ -21,7 +21,35 @@ export interface SurfacedAlert {
   header: string
   description: string | null
   url: string | null
+  /** active_period start (ISO) — long-running closures age out of the banner. */
+  startedAt: string | null
   routeIds: string[]
+}
+
+/** A disruption older than this reads as baseline, not news — a multi-year
+ *  rebuild shouldn't sit in the banner for years (Keith). Kept in sync with
+ *  the Shift app (TransitBikePane ALERT_FRESH_DAYS). */
+export const ALERT_FRESH_DAYS = 30
+
+export function isFreshAlert(a: { startedAt: string | null }): boolean {
+  if (!a.startedAt) return true
+  const days = (Date.now() - new Date(a.startedAt).getTime()) / 86_400_000
+  return Number.isNaN(days) || days <= ALERT_FRESH_DAYS
+}
+
+/** The banner to show, if any: the freshest disruption gets the full banner;
+ *  failing that, an aged closure still touching a nearby line gets a
+ *  collapsed reminder ("near a line that intersects with it"). */
+export function pickBannerAlert(
+  alerts: SurfacedAlert[],
+  visibleRouteIds: Set<string>,
+): { alert: SurfacedAlert; compact: boolean } | null {
+  const fresh = alerts.find(isFreshAlert)
+  if (fresh) return { alert: fresh, compact: false }
+  const aged = alerts.find(
+    a => !isFreshAlert(a) && a.routeIds.some(id => visibleRouteIds.has(id)),
+  )
+  return aged ? { alert: aged, compact: true } : null
 }
 
 /**
@@ -61,6 +89,10 @@ export async function fetchNearbyAlerts(routeIds: string[]): Promise<SurfacedAle
         header,
         description,
         url: typeof a?.attributes?.url === 'string' && a.attributes.url ? a.attributes.url : null,
+        startedAt:
+          typeof a?.attributes?.active_period?.[0]?.start === 'string'
+            ? a.attributes.active_period[0].start
+            : null,
         routeIds: routeIdsForAlert,
       })
     }

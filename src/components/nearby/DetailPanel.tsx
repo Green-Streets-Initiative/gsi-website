@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import posthog from 'posthog-js'
+import { BORROW_RENT_BLURB, type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
@@ -164,11 +165,12 @@ export function PanelPhoto({ spec, alt }: { spec: PhotoSpec; alt: string }) {
 
 /* ── Detail content per selection type ── */
 
-export function DetailContent({ selection, stationByKey, corridorById, docks, onSelectCorridor }: {
+export function DetailContent({ selection, stationByKey, corridorById, docks, borrowRent, onSelectCorridor }: {
   selection: NonNullable<Selection>
   stationByKey: Map<string, StationGroup>
   corridorById: Map<string, TransitCorridor | BikeCorridor>
   docks: BluebikeStationLive[]
+  borrowRent: (BorrowRentPoint & { distMiles: number })[]
   onSelectCorridor: (id: string) => void
 }) {
   if (selection.type === 'station') {
@@ -309,6 +311,31 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, on
           className="mt-1 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
         >
           Walk there →
+        </a>
+      </div>
+    )
+  }
+
+  // Borrow & rent point — CargoB hub or Community Pedal Power pickup
+  if (selection.type === 'borrow') {
+    const p = borrowRent.find(x => x.id === selection.id)
+    if (!p) return null
+    return (
+      <div>
+        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#EDB93C]">Borrow &amp; rent</div>
+        <div className="text-[0.95rem] font-bold text-white">{p.name}</div>
+        <div className="mt-1 text-[0.82rem] text-white/80">
+          {BORROW_RENT_BLURB[p.org]}
+          {p.approximate ? ' · exact address shared when you book' : ''}
+        </div>
+        <a
+          href={p.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => posthog.capture('snapshot_borrow_clicked', { org: p.org })}
+          className="mt-2 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+        >
+          Open site ↗
         </a>
       </div>
     )
