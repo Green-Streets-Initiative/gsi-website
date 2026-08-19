@@ -7,6 +7,7 @@ import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfindi
 import { directionsUrl, lineColor, lineTextColor } from '@/lib/nearby/transit-ui'
 import { BLUEBIKES_NOTE } from '@/lib/nearby/config'
 import { protectionLabel } from '@/lib/nearby/bike-labels'
+import { BORROW_RENT_BLURB, type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon } from '@/components/wayfinding/WayfindingIcons'
@@ -299,6 +300,46 @@ export function DockList({ docks }: { docks: BluebikeStationLive[] }) {
           <p className="px-1 text-[0.8rem] leading-relaxed text-white/75">{BLUEBIKES_NOTE}</p>
         </div>
       )}
+    </div>
+  )
+}
+
+
+/* ── Borrow & rent: bikes you don't have to own (CargoB, Pedal Power) ── */
+
+export function BorrowRentList({ points }: {
+  points: (BorrowRentPoint & { distMiles: number })[]
+}) {
+  if (points.length === 0) return null
+  return (
+    <div className="mt-5">
+      <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
+        Borrow &amp; rent
+      </div>
+      <div className="space-y-2.5">
+        {points.map(p => (
+          <a
+            key={p.id}
+            href={p.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => posthog.capture('snapshot_borrow_clicked', { org: p.org })}
+            className="block rounded-xl border border-white/[0.08] bg-[#242538] px-4 py-3.5 transition-colors hover:border-white/[0.2]"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+              <span className="text-[0.9rem] font-semibold text-white">{p.name}</span>
+              <span className="text-[0.78rem] text-white/75">
+                {formatDistance(p.distMiles * 1609.34)}
+              </span>
+            </div>
+            <div className="mt-1 text-[0.82rem] text-white/80">
+              {BORROW_RENT_BLURB[p.org]}
+              {p.approximate ? ' · exact address shared when you book' : ''}
+              <span className="ml-1.5 font-semibold text-[#BAF14D]">Open site ↗</span>
+            </div>
+          </a>
+        ))}
+      </div>
     </div>
   )
 }

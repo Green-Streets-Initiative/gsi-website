@@ -6,7 +6,8 @@ import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { lineColor } from '@/lib/nearby/transit-ui'
 import type { NearbyMarker, LaneTapInfo } from './NearbyMap'
-import { userDotHtml, busStopHtml, trainStopHtml, bluebikeHtml } from './markers'
+import { userDotHtml, busStopHtml, trainStopHtml, bluebikeHtml, borrowRentHtml } from './markers'
+import { nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
 
 /**
  * Shared derivation layer for the corridor explorer: station grouping,
@@ -221,8 +222,20 @@ export function useNearbyModel({
     }
   }, [select])
 
+  // Borrow & rent (CargoB / Community Pedal Power) — static curated set,
+  // 2 mi radius, nearest first (same data as the Shift app's layer)
+  const borrowRent = useMemo(() => nearbyBorrowRent(center.lat, center.lng), [center])
+
   const markers = useMemo<NearbyMarker[]>(() => [
     { id: 'user', lat: center.lat, lng: center.lng, html: userDotHtml(), zIndex: 10 },
+    ...(showBike ? borrowRent.map(p => ({
+      id: `borrow-${p.id}`,
+      lat: p.lat,
+      lng: p.lng,
+      html: borrowRentHtml(p.name),
+      analyticsType: 'borrow',
+      zIndex: 1,
+    })) : []),
     ...(showRail ? groupStops(rail, true).slice(0, 4).map(g => ({
       id: `rail-${g.key}`,
       lat: g.lat,
@@ -253,7 +266,7 @@ export function useNearbyModel({
       analyticsType: 'bluebike',
       zIndex: 1,
     })) : []),
-  ], [center, rail, bus, docks, corridorById, showRail, showBus, showBike])
+  ], [center, rail, bus, docks, borrowRent, corridorById, showRail, showBus, showBike])
 
   // Boarding locations belong in the first frame even when their stations
   // didn't make the marker cut
@@ -267,7 +280,7 @@ export function useNearbyModel({
 
   return {
     selection, select, handleMarkerTap,
-    corridorById, stations, stationByKey,
+    corridorById, stations, stationByKey, borrowRent,
     corridorLines, highlightedCorridorId,
     markers, accessPoints,
     showRail, showBus, showBike,

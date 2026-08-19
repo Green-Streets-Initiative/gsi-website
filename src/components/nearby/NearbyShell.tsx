@@ -19,7 +19,7 @@ import {
 } from './useNearbyModel'
 import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
-import { StationList, BikeRouteList, DockList } from './AroundYouLists'
+import { StationList, BikeRouteList, DockList, BorrowRentList } from './AroundYouLists'
 import { ReachList, RouteLegNote } from './ReachSection'
 import { ExploreBody } from './ExploreBody'
 import PartnerCobrand from './PartnerCobrand'
@@ -356,6 +356,7 @@ export default function NearbyShell({
                 onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
               />
               <GuideLinks context="bike" guides={guides.data} modeFilter={modeFilter} />
+              <BorrowRentList points={model.borrowRent} />
               <DockList docks={docks} />
               <GuideLinks context="docks" guides={guides.data} modeFilter={modeFilter} />
             </>

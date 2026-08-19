@@ -65,6 +65,20 @@ export function trainStopHtml(color: string, title: string): string {
     </div>`
 }
 
+// Phosphor Bicycle — dark so it reads on the gold borrow/rent pin
+const BICYCLE_SVG = '<svg width="14" height="14" viewBox="0 0 256 256" fill="#191A2E"><path d="M208,112a47.81,47.81,0,0,0-16.93,3.09L165.93,72H192a8,8,0,0,1,8,8,8,8,0,0,0,16,0,24,24,0,0,0-24-24H152a8,8,0,0,0-6.91,12l11.65,20H99.26L82.91,60A8,8,0,0,0,76,56H48a8,8,0,0,0,0,16H71.41L85.12,95.51,69.41,119.1a48,48,0,1,0,13.32,8.89l11.81-17.72L125.6,164a8,8,0,0,0,13.84-8l-30.07-51.57h47.11l11.78,20.2A48,48,0,1,0,208,112ZM80,160a32,32,0,1,1-20.21-29.74l-16.45,24.67a8,8,0,0,0,13.32,8.88l16.44-24.66A31.87,31.87,0,0,1,80,160Zm128,32a32,32,0,0,1-15.62-59.91l11.71,20.08a8,8,0,1,0,13.82-8.06l-11.72-20.09A32,32,0,1,1,208,192Z"/></svg>'
+
+/** Gold circle for CargoB hubs / Community Pedal Power pickups — bikes you
+ *  can borrow or rent without owning one. */
+export function borrowRentHtml(title: string): string {
+  return `
+    <div title="${escapeAttr(title)}" style="
+      display:flex;align-items:center;justify-content:center;
+      width:24px;height:24px;border-radius:50%;
+      background:#EDB93C;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,0.35);cursor:default;
+    ">${BICYCLE_SVG}</div>`
+}
+
 const FLAG_SVG = '<svg width="13" height="13" viewBox="0 0 256 256" fill="#191A2E"><path d="M42.76,50A8,8,0,0,0,40,56V224a8,8,0,0,0,16,0V179.77c26.79-21.16,49.87-9.75,76.45,3.41,16.4,8.11,34.06,16.85,53,16.85,13.93,0,28.54-4.75,43.82-18a8,8,0,0,0,2.76-6V56A8,8,0,0,0,218.76,50c-28,24.23-51.72,12.49-79.21-1.12C111.07,34.76,78.78,18.79,42.76,50Z"/></svg>'
 
 /** Destination flag for route maps — white so it can't be confused with the
