@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { Warning } from '@phosphor-icons/react'
+import type { SurfacedAlert } from '@/lib/nearby/alerts'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
@@ -31,13 +33,15 @@ const rowClass = (active: boolean) =>
     active ? 'bg-[rgba(186,241,77,0.08)]' : 'hover:bg-white/[0.05]'
   }`
 
-export function StationList({ stations, corridorById, highlightedCorridorId, status, onRetry, onSelectRoute }: {
+export function StationList({ stations, corridorById, highlightedCorridorId, status, onRetry, onSelectRoute, alertRouteIds }: {
   stations: StationGroup[]
   corridorById: Map<string, TransitCorridor | BikeCorridor>
   highlightedCorridorId: string | null
   status: SectionStatus
   onRetry: () => void
   onSelectRoute: (corridorId: string) => void
+  /** Route ids named by an active service alert — get a warning glyph. */
+  alertRouteIds: Set<string>
 }) {
   // Collapsed by default — the summary line answers "what's here, how soon";
   // the per-direction detail expands in place for whoever wants it
@@ -106,6 +110,9 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                           >
                             {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
                           </span>
+                          {alertRouteIds.has(r.id) && (
+                            <Warning size={13} weight="fill" className="shrink-0 text-[#EDB93C]" aria-label="Service alert" />
+                          )}
                           {ends && (
                             <span className="min-w-0 flex-1 truncate text-[0.78rem] text-white/80">{ends}</span>
                           )}
@@ -140,6 +147,9 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                         >
                           {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
                         </span>
+                        {alertRouteIds.has(r.id) && (
+                          <Warning size={13} weight="fill" className="text-[#EDB93C]" aria-label="Service alert" />
+                        )}
                         <span className="ml-auto text-[0.75rem] text-white/75">
                           {corridor?.frequency === null && <span className="inline-block h-3 w-20 animate-pulse rounded bg-white/[0.08] align-middle" aria-hidden="true" />}
                           {corridor?.frequency === 'unavailable' && 'schedule unavailable'}
@@ -341,5 +351,43 @@ export function BorrowRentList({ points }: {
         ))}
       </div>
     </div>
+  )
+}
+
+
+/* ── Service-disruption banner: the at-most-one major alert, in-context
+      above the stations list. Mirrors the Shift app's expandable banner. ── */
+
+export function AlertBanner({ alert }: { alert: SurfacedAlert }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={() => setOpen(o => !o)}
+      className="mb-2.5 flex w-full items-start gap-2 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-4 py-3 text-left"
+    >
+      <Warning size={18} weight="fill" className="mt-0.5 shrink-0 text-[#EDB93C]" aria-hidden="true" />
+      <span className="min-w-0 flex-1">
+        <span className={`block text-[0.82rem] leading-relaxed text-white ${open ? '' : 'line-clamp-3'}`}>
+          {alert.header}
+        </span>
+        {open && alert.description && (
+          <span className="mt-1.5 block text-[0.8rem] leading-relaxed text-white/80">{alert.description}</span>
+        )}
+        {open ? (
+          <a
+            href={alert.url ?? 'https://www.mbta.com/alerts'}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            className="mt-2 inline-block text-[0.8rem] font-bold text-[#BAF14D]"
+          >
+            Full details at mbta.com &rarr;
+          </a>
+        ) : (
+          <span className="mt-1 block text-[0.72rem] text-white/60">Tap for details</span>
+        )}
+      </span>
+    </button>
   )
 }

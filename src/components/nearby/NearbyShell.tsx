@@ -19,7 +19,8 @@ import {
 } from './useNearbyModel'
 import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
-import { StationList, BikeRouteList, DockList, BorrowRentList } from './AroundYouLists'
+import { StationList, BikeRouteList, DockList, BorrowRentList, AlertBanner } from './AroundYouLists'
+import { topAlert, alertedRouteIds, type SurfacedAlert } from '@/lib/nearby/alerts'
 import { ReachList, RouteLegNote } from './ReachSection'
 import { ExploreBody } from './ExploreBody'
 import PartnerCobrand from './PartnerCobrand'
@@ -71,6 +72,7 @@ interface Props {
   reach: SectionData<ReachRow[]>
   community: SectionData<CommunityData | null>
   guides: SectionData<GuideItem[]>
+  alerts: SurfacedAlert[]
   onRetry: () => void
 }
 
@@ -78,7 +80,7 @@ export default function NearbyShell({
   center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onAdvisorCta, onPlanCommute, partnerLine, partner, partnerSlug,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, docks,
-  backgroundLines, transitStatus, reach, community, guides, onRetry,
+  backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
 }: Props) {
   const [tab, setTab] = useState<Tab>('transit')
   const [snap, setSnap] = useState<SheetSnap>('half')
@@ -334,6 +336,9 @@ export default function NearbyShell({
               This spot looks like it&apos;s outside Greater Boston, where our transit and Bluebikes data lives. Bike-path data covers all of Massachusetts, so parts of the picture may still fill in.
             </p>
           )}
+          {(showRail || showBus) && topAlert(alerts) && (
+            <AlertBanner alert={topAlert(alerts)!} />
+          )}
           {(showRail || showBus) && (
             <>
               <StationList
@@ -343,6 +348,7 @@ export default function NearbyShell({
                 status={transitStatus}
                 onRetry={onRetry}
                 onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+                alertRouteIds={alertedRouteIds(alerts)}
               />
               <GuideLinks context="stations" guides={guides.data} modeFilter={modeFilter} />
             </>

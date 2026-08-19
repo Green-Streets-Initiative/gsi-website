@@ -14,7 +14,8 @@ import {
 import { useReachOverlay } from './useReachOverlay'
 import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
-import { StationList, BikeRouteList, DockList, BorrowRentList } from './AroundYouLists'
+import { StationList, BikeRouteList, DockList, BorrowRentList, AlertBanner } from './AroundYouLists'
+import { topAlert, alertedRouteIds, type SurfacedAlert } from '@/lib/nearby/alerts'
 import { ReachList } from './ReachSection'
 import { ExploreBody } from './ExploreBody'
 import PartnerCobrand from './PartnerCobrand'
@@ -60,6 +61,7 @@ interface Props {
   reach: SectionData<ReachRow[]>
   community: SectionData<CommunityData | null>
   guides: SectionData<GuideItem[]>
+  alerts: SurfacedAlert[]
   onRetry: () => void
 }
 
@@ -74,7 +76,7 @@ export default function NearbyDesktop({
   center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onAdvisorCta, onPlanCommute, partnerLine, partner, partnerSlug,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, docks,
-  backgroundLines, transitStatus, reach, community, guides, onRetry,
+  backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
 }: Props) {
   const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
   const [paintedOn, setPaintedOn] = useState(PAINTED_DEFAULT)
@@ -292,6 +294,9 @@ export default function NearbyDesktop({
             </div>
 
             <div className={railTab === 'transit' ? '' : 'hidden'}>
+              {(showRail || showBus) && topAlert(alerts) && (
+                <AlertBanner alert={topAlert(alerts)!} />
+              )}
               {(showRail || showBus) && (
                 <>
                   <StationList
@@ -301,6 +306,7 @@ export default function NearbyDesktop({
                     status={transitStatus}
                     onRetry={onRetry}
                     onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+                    alertRouteIds={alertedRouteIds(alerts)}
                   />
                   <GuideLinks context="stations" guides={guides.data} modeFilter={modeFilter} />
                 </>

@@ -7,6 +7,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBluebikes, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
+import { fetchNearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
 import { round3, parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
 import { parsePartnerSlug, fetchPartner, type NearbyPartner } from '@/lib/nearby/partner'
 import { resolvePlaceLabel, combinePlaceLabel, splitPlaceLabel } from '@/lib/nearby/neighborhood'
@@ -55,6 +56,7 @@ export default function NearbySnapshot() {
   // Per-section data
   const [rail, setRail] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
   const [bus, setBus] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
+  const [alerts, setAlerts] = useState<SurfacedAlert[]>([])
   const [bluebikes, setBluebikes] = useState<SectionData<BluebikeStationLive[]>>({ status: 'loading', data: [] })
   const [bikeNetwork, setBikeNetwork] = useState<SectionData<BikeNetworkData | null>>({ status: 'loading', data: null })
   const [community, setCommunity] = useState<SectionData<CommunityData | null>>({ status: 'loading', data: null })
@@ -232,14 +234,20 @@ export default function NearbySnapshot() {
       })
     }, 75_000)
 
-    fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_MAX_STATIONS).then(rows => {
+    const railP = fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_MAX_STATIONS)
+    const busP = fetchMBTAStops(lat, lng, SNAPSHOT_BUS_OPTS)
+    railP.then(rows => {
       setRail({ status: 'ready', data: rows })
       posthog.capture('snapshot_section_loaded', { section: 'rail', count: rows.length })
     })
-    fetchMBTAStops(lat, lng, SNAPSHOT_BUS_OPTS).then(rows => {
+    busP.then(rows => {
       setBus({ status: 'ready', data: rows })
       posthog.capture('snapshot_section_loaded', { section: 'bus', count: rows.length })
     })
+    // Service alerts for the routes we're about to show (major effects only).
+    Promise.all([railP, busP]).then(([railRows, busRows]) =>
+      fetchNearbyAlerts([...railRows, ...busRows].map(r => r.route_id)).then(setAlerts),
+    )
     fetchBluebikes(lat, lng).then(rows => {
       setBluebikes({ status: 'ready', data: rows })
       posthog.capture('snapshot_section_loaded', { section: 'bluebikes', count: rows.length })
@@ -338,6 +346,7 @@ export default function NearbySnapshot() {
         setRail({ status: 'ready', data: railRows })
         setBus({ status: 'ready', data: busRows })
         setBluebikes({ status: 'ready', data: bbRows })
+        fetchNearbyAlerts([...railRows, ...busRows].map(r => r.route_id)).then(setAlerts)
       } finally {
         refreshBusyRef.current = false
       }
@@ -568,6 +577,7 @@ export default function NearbySnapshot() {
     reach,
     community,
     guides,
+    alerts,
     onRetry: retry,
   }
 
