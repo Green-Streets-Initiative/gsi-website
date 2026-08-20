@@ -1,0 +1,4 @@
+{
+  "_comment": "Search Console property identifier. Domain property -> 'sc-domain:gogreenstreets.org'. URL-prefix property -> 'https://www.gogreenstreets.org/'. Confirmed during the one-time setup (scripts/seo/pull-gsc.mjs --mode check). Default assumes a Domain property.",
+  "siteUrl": "sc-domain:gogreenstreets.org"
+}

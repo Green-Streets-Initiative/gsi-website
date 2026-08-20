@@ -1,0 +1,270 @@
+{
+  "_comment": "Machine-readable source of truth for the SEO/AEO routine. The routine reads this each run; the monthly deep-dive edits it (promotes unmatched queries, retires dead ones, re-ranks priority). gsc_patterns are lowercase JS-regex strings used by scripts/seo/pull-gsc.mjs to bucket Search Console query rows into clusters. Messaging must always follow seo/strategy.md: positive framing, 'active transportation' not 'sustainable', never positioned against cars.",
+  "version": 1,
+  "clusters": [
+    {
+      "id": "used-car-to-ebike",
+      "audience": "People shopping for a car (especially a used car) who could be won over to an e-bike on cost and practicality.",
+      "intent": "consideration",
+      "priority": 1,
+      "queries": [
+        "e-bike vs used car cost",
+        "is an e-bike worth it",
+        "e-bike total cost of ownership",
+        "cost of commuting by car vs bike",
+        "cheapest way to commute to Boston",
+        "how much does commuting cost per month",
+        "e-bike to save money commuting"
+      ],
+      "gsc_patterns": [
+        "e-?bike.*(cost|worth|vs|versus|save|price|money)",
+        "(used )?car.*(vs|versus|instead).*(bike|e-?bike)",
+        "(cheap|cost|price).*commut",
+        "commut.*(cost|cheap|save|expensive)"
+      ],
+      "target_urls": ["/commute-advisor"],
+      "proposed_assets": ["/guides/ebike-vs-used-car-costs (new micro-guide)"],
+      "aeo_questions": [
+        "How much money can you save commuting by e-bike instead of a car?",
+        "Is an e-bike cheaper than a used car?"
+      ],
+      "messaging_notes": "Lead with what the e-bike GIVES — money kept, time reclaimed, no parking hunt, daily fresh air. Present numbers honestly (the commute advisor already frames 'X min vs Y min driving'). Never disparage cars or car owners; this is an additive comparison, not a takedown."
+    },
+    {
+      "id": "new-to-boston",
+      "audience": "People who just moved (or are about to move) to the Greater Boston area and are rethinking how they'll get around.",
+      "intent": "informational",
+      "priority": 1,
+      "queries": [
+        "moving to Boston how to get around",
+        "do I need a car in Boston",
+        "getting around Boston without a car",
+        "best Boston neighborhoods for walking",
+        "how to get a CharlieCard",
+        "is Boston a walkable city",
+        "Boston public transit guide for newcomers"
+      ],
+      "gsc_patterns": [
+        "(moving|move|new).*(boston|cambridge|somerville)",
+        "(need|without|no).*car.*(boston|cambridge|somerville)",
+        "get around.*(boston|cambridge|somerville)",
+        "charliecard",
+        "walkable.*(boston|cambridge|somerville)"
+      ],
+      "target_urls": ["/nearby", "/shift/towns", "/commute-advisor"],
+      "proposed_assets": ["/guides/getting-around-boston-newcomers (new micro-guide)"],
+      "aeo_questions": [
+        "Do you need a car to live in Boston?",
+        "What's the best way to get around Boston without a car?"
+      ],
+      "messaging_notes": "Frame as a warm welcome and a practical head start, not a lecture. Show the options that already work well here (T, bus, Bluebikes, walkable neighborhoods). /nearby is the killer asset — it answers 'what's near my new address' instantly."
+    },
+    {
+      "id": "family-logistics",
+      "audience": "Parents wondering whether they can realistically carry kids and cargo by bike.",
+      "intent": "consideration",
+      "priority": 1,
+      "queries": [
+        "cargo bike for kids",
+        "biking with a toddler",
+        "bike trailer vs cargo bike",
+        "how do families bike to school",
+        "carrying groceries by bike",
+        "best family cargo bike",
+        "electric cargo bike for family"
+      ],
+      "gsc_patterns": [
+        "cargo bike",
+        "(bike|biking|cycling).*(kid|kids|toddler|child|children|baby|family)",
+        "(bike|bicycle).*(trailer|seat)",
+        "(carry|carrying|haul).*(groceries|cargo).*bike"
+      ],
+      "target_urls": ["/guides"],
+      "proposed_assets": ["Verify/expand existing cargo-bike + carrying guides; consider a 'family by bike' hub"],
+      "aeo_questions": [
+        "Can you carry kids and groceries by bike?",
+        "What's the best cargo bike for a family?"
+      ],
+      "messaging_notes": "Show families that this is joyful and doable — 'here's how families around here actually do it.' Concrete gear, real setups, school-run logistics. Never imply anyone should give up their car; add a capability, don't subtract one."
+    },
+    {
+      "id": "year-round-weather",
+      "audience": "Greater-Boston residents worried they can't walk/bike/ride transit year-round because of weather.",
+      "intent": "informational",
+      "priority": 1,
+      "queries": [
+        "biking in Boston winter",
+        "winter bike commuting gear",
+        "biking to work in the rain",
+        "is it safe to bike in snow",
+        "walking to work in winter",
+        "cold weather bike commuting tips"
+      ],
+      "gsc_patterns": [
+        "(bike|biking|cycling|walk|walking|commut).*(winter|snow|rain|cold|weather)",
+        "(winter|rain|cold|snow).*(bike|biking|commut|walk)",
+        "(gear|clothing|layers).*(bike|winter|cold)"
+      ],
+      "target_urls": ["/guides"],
+      "proposed_assets": ["Confirm existing weather guides rank; consider a seasonal 'year-round riding' hub refreshed each fall"],
+      "aeo_questions": [
+        "Can you bike through a Boston winter?",
+        "What gear do you need to bike commute in the cold?"
+      ],
+      "messaging_notes": "Normalize and equip: 'plenty of Bostonians ride all winter — here's the gear and the know-how.' No toughness-shaming, no 'excuses' framing. Practical, encouraging, specific to New England conditions."
+    },
+    {
+      "id": "town-commuters",
+      "audience": "Boston-area residents searching for how to walk/bike/ride transit in their specific town — the core organic asset.",
+      "intent": "informational",
+      "priority": 1,
+      "queries": [
+        "bike commute Somerville to Boston",
+        "biking in Cambridge",
+        "Bluebikes how does it work",
+        "Somerville bike routes",
+        "car free Somerville",
+        "bike to work for beginners Boston",
+        "Medford to Boston bike route"
+      ],
+      "gsc_patterns": [
+        "(bike|biking|cycling|walk|transit|commut).*(somerville|cambridge|medford|arlington|boston|brookline|watertown|everett|newton)",
+        "(somerville|cambridge|medford|arlington|brookline|watertown|everett|newton).*(bike|biking|commut|transit|car.?free)",
+        "bluebikes"
+      ],
+      "target_urls": ["/shift/towns", "/nearby", "/commute-advisor", "/guides"],
+      "proposed_assets": ["Extend town pages as new towns pass the publication gate; consider neighborhood-level pages for the biggest towns"],
+      "aeo_questions": [
+        "How do people bike commute in Somerville?",
+        "How does Bluebikes work?"
+      ],
+      "messaging_notes": "Town pages already lead with the question people search (per recent Search Console-driven rewrites). Keep titles answer-shaped; keep live local stats front and center."
+    },
+    {
+      "id": "ebike-curious",
+      "audience": "People already curious about e-bikes, researching before buying — feeds the used-car cluster.",
+      "intent": "consideration",
+      "priority": 2,
+      "queries": [
+        "e-bike commuting for beginners",
+        "e-bike rebate Massachusetts",
+        "how far can an e-bike go on a charge",
+        "e-bike vs regular bike for commuting",
+        "where to try an e-bike near me",
+        "best e-bike for commuting"
+      ],
+      "gsc_patterns": [
+        "e-?bike.*(beginner|commut|range|charge|rebate|incentive|try|demo|best)",
+        "(rebate|incentive).*(e-?bike|bike).*(ma|massachusetts)",
+        "e-?bike.*(vs|versus).*(regular|normal|acoustic) bike"
+      ],
+      "target_urls": ["/guides", "/events", "/commute-advisor"],
+      "proposed_assets": ["Guide on the MA e-bike incentive landscape; surface e-bike demo events from the events calendar"],
+      "aeo_questions": [
+        "Is there an e-bike rebate in Massachusetts?",
+        "How far can an e-bike go on one charge?"
+      ],
+      "messaging_notes": "The Massachusetts e-bike incentive angle is a high-intent magnet. Keep facts current (freshness-check territory). Route demo-seekers to real local events."
+    },
+    {
+      "id": "employers-rto",
+      "audience": "HR and sustainability leaders looking for commute programs, RTO support, and workplace challenges.",
+      "intent": "commercial",
+      "priority": 2,
+      "queries": [
+        "employee commute benefits program",
+        "workplace commuter challenge ideas",
+        "return to office commute support",
+        "corporate sustainability commuting program",
+        "commuter benefits for employees",
+        "employee wellness transportation program"
+      ],
+      "gsc_patterns": [
+        "(employee|employer|workplace|corporate|company).*(commut|transportation|challenge)",
+        "commut.*(benefit|program|challenge).*(employee|employer|work)",
+        "return to office.*commut"
+      ],
+      "target_urls": ["/shift/employers", "/programs/corporate-challenge"],
+      "proposed_assets": ["Comparison/how-to content for HR buyers"],
+      "aeo_questions": [
+        "How do you run an employee commuter challenge?",
+        "What are commuter benefits for employees?"
+      ],
+      "messaging_notes": "Searchers may type 'sustainability' — target the query, but our copy says 'active transportation.' Lead with what teams get: participation, aggregate impact reporting, easy setup, privacy-safe."
+    },
+    {
+      "id": "schools-wellness",
+      "audience": "Teachers, PTAs, and district staff looking for school wellness and safe-routes programming.",
+      "intent": "commercial",
+      "priority": 2,
+      "queries": [
+        "safe routes to school Massachusetts",
+        "walking school bus how to start",
+        "school wellness program ideas active",
+        "bike to school program",
+        "get kids walking to school",
+        "school active transportation program"
+      ],
+      "gsc_patterns": [
+        "(safe routes|walking school bus|walk to school|bike to school)",
+        "school.*(wellness|active|transportation|walk|bike).*program",
+        "(get )?kids.*(walk|bike).*school"
+      ],
+      "target_urls": ["/shift/schools", "/programs/what-moves-us/everett-schools"],
+      "proposed_assets": ["How-to content for teachers/PTAs starting a program"],
+      "aeo_questions": [
+        "How do you start a walking school bus?",
+        "What is a good active school wellness program?"
+      ],
+      "messaging_notes": "Lead on simplicity and the no-student-data design. Free for MA schools. Health, focus, and community independence framing (matches the schools page)."
+    },
+    {
+      "id": "local-business-partners",
+      "audience": "Local business owners who could join the Rewards Partner network — low volume, highest commercial intent.",
+      "intent": "commercial",
+      "priority": 2,
+      "queries": [
+        "bike friendly business Boston",
+        "partner with local nonprofit Boston",
+        "local business community rewards program",
+        "reach local customers Somerville",
+        "small business marketing Cambridge foot traffic"
+      ],
+      "gsc_patterns": [
+        "(bike|walk).?friendly business",
+        "partner.*(nonprofit|local).*(boston|cambridge|somerville)",
+        "(local business|small business).*(reward|community|foot traffic|marketing)"
+      ],
+      "target_urls": ["/shift/rewards-partners"],
+      "proposed_assets": ["Rewards Partners page rewrite (current page is client-rendered, thin on ranking content) — first structural experiment candidate"],
+      "aeo_questions": [
+        "How can a local business reach people who walk and bike nearby?"
+      ],
+      "messaging_notes": "Free to join, no fees, no contracts, no POS integration. Frame as reaching engaged local neighbors. This is the weakest-vs-intent page; prioritize its rewrite."
+    },
+    {
+      "id": "aeo-sentinels",
+      "audience": "Cross-cutting question-shaped queries used to measure answer-engine presence. Not a landing-page target on its own — each maps to a page above.",
+      "intent": "informational",
+      "priority": 1,
+      "queries": [
+        "how much money do you save biking to work",
+        "what is the cheapest way to get around Boston",
+        "can you commute by bike with kids",
+        "how do people bike in winter in Boston",
+        "do you need a car in Boston",
+        "how does Bluebikes work"
+      ],
+      "gsc_patterns": [],
+      "target_urls": ["/commute-advisor", "/nearby", "/guides", "/shift/towns"],
+      "proposed_assets": [],
+      "aeo_questions": [
+        "How much money do you save biking to work?",
+        "What is the cheapest way to get around Boston?",
+        "Can you commute by bike with kids?",
+        "How do people bike in winter in Boston?"
+      ],
+      "messaging_notes": "These six are the fixed AEO sentinels the routine spot-checks every run for citation presence. Keep them stable so the citation-count trend is comparable over time. gsc_patterns is empty on purpose — this cluster is measured by live search/AEO checks, not GSC bucketing."
+    }
+  ]
+}

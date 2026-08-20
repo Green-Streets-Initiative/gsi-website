@@ -1,0 +1,17 @@
+{
+  "_comment": "Run state for the SEO/AEO routine. Updated each run. Baselines are a cache; the authoritative time series is the committed seo/data/gsc/ files.",
+  "last_run": null,
+  "last_deep_dive": null,
+  "serp_rotation_index": 0,
+  "stagnant_weeks": 0,
+  "baselines": {
+    "clicks_4wk": null,
+    "clicks_12wk": null
+  },
+  "health": {
+    "sitemap_loc_count": null,
+    "llms_txt_hash": null,
+    "robots_hash": null
+  },
+  "pending": []
+}
