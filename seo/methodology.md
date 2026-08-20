@@ -168,24 +168,20 @@ it is never re-proposed without new evidence.
 - SELECT-only for any DB access. No emails to anyone but Keith. No PII in
   reports.
 
-## One-time GSC setup (Keith does this once; a session walks him through it)
+## GSC access — already set up
 
-1. console.cloud.google.com → sign in with the Google account that has Search
-   Console access → new project `gsi-seo`.
-2. APIs & Services → Library → enable **Google Search Console API**.
-3. IAM & Admin → Service Accounts → create `gsi-seo-reader` → skip roles → Done.
-4. Open it → Keys → Add key → Create new key → **JSON** (a file downloads).
-   Copy the service-account email (…@gsi-seo.iam.gserviceaccount.com).
-5. search.google.com/search-console → the gogreenstreets.org property →
-   Settings → Users and permissions → Add user → paste that email →
-   permission **Full** (Restricted sometimes 403s the API; it stays read-only
-   for our purposes).
-6. In Claude Code, say "finish the GSC key setup": the session moves the
-   downloaded JSON to `~/.config/gsi-seo/gsc-service-account.json`, `chmod 600`s
-   it, confirms the property id in `seo/gsc-config.json`
-   (Domain → `sc-domain:gogreenstreets.org`; URL-prefix →
-   `https://www.gogreenstreets.org/`), and runs
-   `node scripts/seo/pull-gsc.mjs --mode check`.
+The puller reuses the existing GSI service account
+`shift-plg@shift-490216.iam.gserviceaccount.com`, whose key is at
+`~/.config/gsc/shift-plg.json` and which is already a user on the
+gogreenstreets.org **Domain** property (`sc-domain:gogreenstreets.org`).
+"Restricted" permission is confirmed sufficient for the search-analytics read.
+No setup is required — `node scripts/seo/pull-gsc.mjs --mode check` works today.
+
+**Fallback — if that key is ever removed/rotated** and you need a fresh one:
+console.cloud.google.com → new project → enable "Google Search Console API" →
+create a service account → add a JSON key → in Search Console add the service
+account's email as a user (Restricted is fine) → save the key file and point
+`$GSC_KEY_FILE` at it (or update the default path in `scripts/seo/pull-gsc.mjs`).
 
 ## First run (baseline)
 

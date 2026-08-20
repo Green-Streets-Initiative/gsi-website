@@ -1,0 +1,522 @@
+{
+  "mode": "weekly",
+  "range": {
+    "startDate": "2026-08-11",
+    "endDate": "2026-08-17"
+  },
+  "priorRange": {
+    "startDate": "2026-08-04",
+    "endDate": "2026-08-10"
+  },
+  "totals": {
+    "clicks": 3,
+    "impressions": 238,
+    "ctr": 0.0126,
+    "position": 16.8
+  },
+  "priorTotals": {
+    "clicks": 2,
+    "impressions": 252,
+    "ctr": 0.0079,
+    "position": 12.6
+  },
+  "clusters": [
+    {
+      "id": "used-car-to-ebike",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "new-to-boston",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "family-logistics",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "year-round-weather",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "town-commuters",
+      "clicks": 0,
+      "impressions": 15,
+      "avg_position": 40.4,
+      "top_queries": [
+        {
+          "query": "commuter benefits cambridge ma",
+          "clicks": 0,
+          "impressions": 7,
+          "ctr": 0,
+          "position": 57.142857142857146
+        },
+        {
+          "query": "walkways newton ma",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 19
+        },
+        {
+          "query": "bike paths cambridge",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 30
+        },
+        {
+          "query": "bike path cambridge",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 39
+        },
+        {
+          "query": "biking in cambridge",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 23
+        },
+        {
+          "query": "cambridge bike lanes",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 27
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 1
+    },
+    {
+      "id": "ebike-curious",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "employers-rto",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "schools-wellness",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "local-business-partners",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "aeo-sentinels",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    }
+  ],
+  "unmatched_top_queries": [
+    {
+      "query": "greenstreets",
+      "clicks": 0,
+      "impressions": 51,
+      "ctr": 0,
+      "position": 9.411764705882353
+    },
+    {
+      "query": "frisoli youth center",
+      "clicks": 0,
+      "impressions": 17,
+      "ctr": 0,
+      "position": 7.529411764705882
+    },
+    {
+      "query": "green streets",
+      "clicks": 0,
+      "impressions": 17,
+      "ctr": 0,
+      "position": 9.058823529411764
+    },
+    {
+      "query": "getting around cambridge",
+      "clicks": 0,
+      "impressions": 12,
+      "ctr": 0,
+      "position": 18.333333333333332
+    },
+    {
+      "query": "recreation sundays",
+      "clicks": 0,
+      "impressions": 10,
+      "ctr": 0,
+      "position": 12.7
+    },
+    {
+      "query": "car donation cambridge ma",
+      "clicks": 0,
+      "impressions": 9,
+      "ctr": 0,
+      "position": 41.888888888888886
+    },
+    {
+      "query": "recreation sunday memorial drive",
+      "clicks": 0,
+      "impressions": 9,
+      "ctr": 0,
+      "position": 7.888888888888889
+    },
+    {
+      "query": "green streets initiative",
+      "clicks": 3,
+      "impressions": 7,
+      "ctr": 0.42857142857142855,
+      "position": 1
+    },
+    {
+      "query": "\"tern gsd\" used \"$3000\"",
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 8.166666666666668
+    },
+    {
+      "query": "green street",
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "query": "shift town",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 3
+    },
+    {
+      "query": "15 minute drive to walk",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "query": "commute times",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "query": "commuting routes",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 9.666666666666666
+    },
+    {
+      "query": "go mass commute",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 42.333333333333336
+    },
+    {
+      "query": "10 min drive to walk",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 10.5
+    },
+    {
+      "query": "10 minute drive to walk",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 16
+    },
+    {
+      "query": "15 min drive to walk",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 10.5
+    },
+    {
+      "query": "community initiatives off-road",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 63
+    },
+    {
+      "query": "communityinitiatives off-road",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 63.5
+    },
+    {
+      "query": "frisoli youth center cambridge",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 7.5
+    },
+    {
+      "query": "go-shift.app",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "query": "ridj it",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 29.5
+    },
+    {
+      "query": "\"2023 rideshare data report\" \"malden\"",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "query": "#a-town",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 50
+    },
+    {
+      "query": "0.5miles walking time",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "query": "3 minute drive is how long of a walk",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 27
+    },
+    {
+      "query": "30 minute drive to walk",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 20
+    },
+    {
+      "query": "4 min drive to walk",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 17
+    },
+    {
+      "query": "8 minute drive to walk",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 22
+    }
+  ],
+  "top_pages": [
+    {
+      "page": "https://www.gogreenstreets.org/",
+      "clicks": 8,
+      "impressions": 118,
+      "position": 8.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/everett-ma?utm_content=footer_towns",
+      "clicks": 3,
+      "impressions": 59,
+      "position": 10.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/commute-advisor",
+      "clicks": 1,
+      "impressions": 344,
+      "position": 10.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/get-involved",
+      "clicks": 1,
+      "impressions": 20,
+      "position": 3.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift",
+      "clicks": 1,
+      "impressions": 19,
+      "position": 7.7
+    },
+    {
+      "page": "https://media.gogreenstreets.org/docs/everett-schools-final-report.pdf",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 33
+    },
+    {
+      "page": "https://media.gogreenstreets.org/docs/frisoli-survey-data.pdf",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 31
+    },
+    {
+      "page": "https://media.gogreenstreets.org/docs/frisoli-survey-questions.pdf",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 32
+    },
+    {
+      "page": "https://www.gogreenstreets.org/about",
+      "clicks": 0,
+      "impressions": 26,
+      "position": 4.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/contact",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 4.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/donate",
+      "clicks": 0,
+      "impressions": 16,
+      "position": 24.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 21.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_free-bike-repair-workshop-at-bpl-east-boston_2026-09-15",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_free-bike-repair-workshop-at-bpl-east-boston_2026-10-20",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_weekly-social-bike-ride_2026-08-13",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 16.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_intro_to_bluebikes_group_ride_20260808",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 9.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_learn-to-ride-malden-kids_2026-08-18",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_charlestown_road_2026-10-04",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_memdrive_2026-09-20",
+      "clicks": 0,
+      "impressions": 48,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_newbury_2026-09-13",
+      "clicks": 0,
+      "impressions": 11,
+      "position": 17.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/submit",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 9.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/bike-commute-gear",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 11
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/cold-weather-biking",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/picking-a-bike-route",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/planning-a-transit-trip",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 7.3
+    }
+  ]
+}

@@ -28,8 +28,11 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const DATA_DIR = path.join(REPO_ROOT, 'seo', 'data', 'gsc')
 const CONFIG_PATH = path.join(REPO_ROOT, 'seo', 'gsc-config.json')
 const PORTFOLIO_PATH = path.join(REPO_ROOT, 'seo', 'keyword-portfolio.json')
+// Reuses the existing GSI service-account key (shift-plg@shift-490216), which
+// is already a user on the gogreenstreets.org Search Console property. Override
+// with $GSC_KEY_FILE to point at a different key.
 const KEY_FILE =
-  process.env.GSC_KEY_FILE || path.join(os.homedir(), '.config', 'gsi-seo', 'gsc-service-account.json')
+  process.env.GSC_KEY_FILE || path.join(os.homedir(), '.config', 'gsc', 'shift-plg.json')
 
 const SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly'
 const API = 'https://searchconsole.googleapis.com/webmasters/v3/sites'
