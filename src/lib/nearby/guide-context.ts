@@ -9,7 +9,7 @@
 import type { GuideItem } from '@/components/nearby/types'
 import type { ModeFilter } from '@/components/nearby/useNearbyModel'
 
-export type GuideContext = 'stations' | 'bike' | 'docks'
+export type GuideContext = 'stations' | 'bike' | 'borrow' | 'docks'
 
 /** Best-first slugs per context; the stations list biases by mode filter. */
 const STATION_SLUGS: Record<'all' | 'train' | 'bus', string[]> = {
@@ -20,11 +20,14 @@ const STATION_SLUGS: Record<'all' | 'train' | 'bus', string[]> = {
 
 const BIKE_SLUGS = ['picking-a-bike-route', 'your-first-ride-in-a-bike-lane', 'bike-commute-gear']
 
+const BORROW_SLUGS = ['what-you-can-do-with-an-e-cargo-bike']
+
 const DOCK_SLUGS = ['how-to-use-bluebikes']
 
 const CONTEXT_MODE: Record<GuideContext, string> = {
   stations: 'transit',
   bike: 'cycling',
+  borrow: 'cycling',
   docks: 'cycling',
 }
 
@@ -34,11 +37,13 @@ export function guidesFor(
   context: GuideContext,
   guides: GuideItem[],
   modeFilter: ModeFilter,
-  cap = context === 'docks' ? 1 : 2,
+  cap = context === 'docks' || context === 'borrow' ? 1 : 2,
 ): GuideItem[] {
   const slugs = context === 'stations'
     ? STATION_SLUGS[modeFilter === 'train' || modeFilter === 'bus' ? modeFilter : 'all']
-    : context === 'bike' ? BIKE_SLUGS : DOCK_SLUGS
+    : context === 'bike' ? BIKE_SLUGS
+      : context === 'borrow' ? BORROW_SLUGS
+        : DOCK_SLUGS
 
   const bySlug = new Map(guides.filter(g => g.slug).map(g => [g.slug as string, g]))
   const picked: GuideItem[] = []

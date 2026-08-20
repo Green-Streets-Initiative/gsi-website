@@ -376,6 +376,9 @@ export default function NearbyShell({
               />
               <GuideLinks context="bike" guides={guides.data} modeFilter={modeFilter} />
               <BorrowRentList points={model.borrowRent} />
+              {model.borrowRent.length > 0 && (
+                <GuideLinks context="borrow" guides={guides.data} modeFilter={modeFilter} />
+              )}
               <DockList docks={docks} onSelect={(id) => selectShowing({ type: 'dock', id }, 'list')} selectedId={selection?.type === 'dock' ? selection.id : null} />
               <GuideLinks context="docks" guides={guides.data} modeFilter={modeFilter} />
             </>
