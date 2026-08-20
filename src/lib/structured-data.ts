@@ -32,7 +32,11 @@ export function organizationSchema(): Record<string, unknown> {
     nonprofitStatus: 'Nonprofit501c3',
     // EIN is public (printed on the donate page).
     taxID: '26-1484405',
-    // sameAs: [ ... ]  // TODO(Keith): add official social profile URLs.
+    sameAs: [
+      'https://www.instagram.com/gogreenstreets/',
+      'https://www.facebook.com/GreenStreetsInitiative',
+      'https://bsky.app/profile/gogreenstreets.bsky.social',
+    ],
   }
 }
 
