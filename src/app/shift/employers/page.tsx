@@ -3,6 +3,8 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import FAQ from '@/components/FAQ'
+import JsonLd from '@/components/JsonLd'
+import { faqPageSchema } from '@/lib/structured-data'
 import EmployerLogin from './EmployerLogin'
 import EmployerPricing from './EmployerPricing'
 import CheckoutBanner from './CheckoutBanner'
@@ -60,6 +62,7 @@ export default function ShiftEmployersPage() {
   return (
     <>
       <Nav />
+      <JsonLd data={faqPageSchema(employerFaqItems)} />
       <main style={{ paddingTop: '60px' }}>
         {/* Post-checkout success / cancel banner — only renders when
             the marketing page is loaded from a Stripe redirect. */}

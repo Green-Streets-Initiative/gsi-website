@@ -5,7 +5,9 @@ import { notFound, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import JsonLd from '@/components/JsonLd'
 import { pageMetadata } from '@/lib/seo'
+import { guideArticleSchema, breadcrumbSchema } from '@/lib/structured-data'
 
 interface GuideRow {
   id: string
@@ -103,9 +105,27 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     related.sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999))
   }
 
+  const guideSlug = g.slug ?? slug
+
   return (
     <>
       <Nav />
+      <JsonLd
+        data={[
+          guideArticleSchema({
+            title: g.title,
+            description: g.summary,
+            slug: guideSlug,
+            datePublished: g.created_at,
+            dateModified: g.last_reviewed_at,
+          }),
+          breadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Guides', path: '/guides' },
+            { name: g.title, path: `/guides/${guideSlug}` },
+          ]),
+        ]}
+      />
       <main className="bg-[#191A2E]" style={{ paddingTop: '60px' }}>
         <article className="mx-auto max-w-[680px] px-8 pb-20 pt-12">
           {/* Breadcrumb */}

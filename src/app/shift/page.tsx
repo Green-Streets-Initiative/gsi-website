@@ -9,6 +9,8 @@ import StoreButtons from '@/components/StoreButtons'
 import PhoneFrame from './_components/PhoneFrame'
 import FeatureRow, { Bullet } from './_components/FeatureRow'
 import TierLadder from './_components/TierLadder'
+import JsonLd from '@/components/JsonLd'
+import { shiftAppSchema } from '@/lib/structured-data'
 
 // The towns teaser band counts published town pages, so the page can't be
 // fully static any more. Hourly ISR — same cadence as the towns hub.
@@ -46,6 +48,7 @@ export default function ShiftPage() {
   return (
     <>
       <Nav />
+      <JsonLd data={shiftAppSchema()} />
       <main style={{ paddingTop: '60px' }}>
 
         {/* ═══════════════════════════════════════════════════════

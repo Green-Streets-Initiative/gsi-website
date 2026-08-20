@@ -2,6 +2,8 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import FAQ from '@/components/FAQ'
+import JsonLd from '@/components/JsonLd'
+import { faqPageSchema } from '@/lib/structured-data'
 
 export const metadata = {
   title: 'Help — Green Streets Initiative',
@@ -615,9 +617,19 @@ const faqSections = [
 /* ------------------------------------------------------------------ */
 
 export default function HelpPage() {
+  // FAQPage structured data. Only string answers are included so the markup
+  // matches the visible text verbatim; ~16 answers are JSX (they embed links)
+  // and are intentionally omitted. TODO: convert those to plain-text-first
+  // authoring so every Q&A can be represented.
+  const faqSchemaItems = faqSections
+    .flatMap((s) => s.items)
+    .filter((it) => typeof it.answer === 'string')
+    .map((it) => ({ question: it.question, answer: it.answer as string }))
+
   return (
     <>
       <Nav />
+      <JsonLd data={faqPageSchema(faqSchemaItems)} />
       <main style={{ paddingTop: '60px' }}>
         {/* ---- Hero ---- */}
         <section className="bg-[#191A2E] px-8 py-24 md:py-32">

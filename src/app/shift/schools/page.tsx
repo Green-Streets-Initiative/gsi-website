@@ -2,6 +2,8 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import FAQ from '@/components/FAQ'
+import JsonLd from '@/components/JsonLd'
+import { faqPageSchema } from '@/lib/structured-data'
 
 export const metadata = {
   title: 'Shift for Schools — Green Streets Initiative',
@@ -66,6 +68,7 @@ export default function ShiftSchoolsPage() {
   return (
     <>
       <Nav />
+      <JsonLd data={faqPageSchema(schoolFaqItems)} />
       <main style={{ paddingTop: '60px' }}>
 
         {/* ══════════════════════════════════════════════════════════
