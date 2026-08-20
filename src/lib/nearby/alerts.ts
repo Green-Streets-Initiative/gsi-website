@@ -132,6 +132,41 @@ export function topAlert(alerts: SurfacedAlert[]): SurfacedAlert | null {
   return alerts[0] ?? null
 }
 
+/* ── Contextual "bike instead" promo (Bluebikes/BCBSMA), matched to an alert
+ *    and shown under its detail. Config comes from /api/nearby/promo. ── */
+
+export interface NearbyPromo {
+  id: string
+  /** Effects this promo covers (empty = any). */
+  targetEffects: string[]
+  /** Route ids this promo covers (empty = any line). */
+  targetRouteIds: string[]
+  provider: string | null
+  title: string
+  subtitle: string | null
+  code: string | null
+  amount: string | null
+  sponsor: string | null
+  sponsorLogoUrl: string | null
+  ctaLabel: string | null
+  ctaUrl: string | null
+  ctaUrlIos: string | null
+  ctaUrlAndroid: string | null
+  finePrint: string | null
+}
+
+/** The first active promo matching this alert: its effect is targeted (or the
+ *  promo targets any effect) AND its routes intersect (or the promo targets any
+ *  line). KEEP IN SYNC with the Shift app (`lib/nearby/transit.ts` matchPromo). */
+export function matchPromo(alert: SurfacedAlert, promos: NearbyPromo[]): NearbyPromo | null {
+  for (const p of promos) {
+    const effectOk = p.targetEffects.length === 0 || p.targetEffects.includes(alert.effect)
+    const routeOk = p.targetRouteIds.length === 0 || p.targetRouteIds.some(id => alert.routeIds.includes(id))
+    if (effectOk && routeOk) return p
+  }
+  return null
+}
+
 /** Route ids named by any surfaced alert — drives the per-route glyph. */
 export function alertedRouteIds(alerts: SurfacedAlert[]): Set<string> {
   return new Set(alerts.flatMap((a) => a.routeIds))

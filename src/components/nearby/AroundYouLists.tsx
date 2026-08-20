@@ -2,7 +2,7 @@
 
 import { useState, type KeyboardEvent } from 'react'
 import { Warning } from '@phosphor-icons/react'
-import { alertsForRoute, type SurfacedAlert } from '@/lib/nearby/alerts'
+import { alertsForRoute, matchPromo, type SurfacedAlert } from '@/lib/nearby/alerts'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
@@ -16,6 +16,8 @@ import { dockStatsText } from './markers'
 import type { SectionStatus } from './types'
 import { SkeletonRows, ErrorCard } from './SectionShell'
 import { useNearbyT } from './NearbyI18n'
+import { useNearbyPromos } from './NearbyPromos'
+import NearbyPromoCard from './NearbyPromoCard'
 import {
   type StationGroup, routeEndpoints, soonestAtStation, freqShort,
 } from './useNearbyModel'
@@ -69,12 +71,15 @@ function AlertPill({ open, onToggle }: { open: boolean; onToggle: () => void }) 
 // propagation so taps inside don't toggle the enclosing card/row.
 function AlertDetailBlock({ alerts }: { alerts: SurfacedAlert[] }) {
   const tr = useNearbyT()
+  const promos = useNearbyPromos()
   return (
     <span
       className="mt-1 flex w-full flex-col gap-1.5"
       onClick={e => e.stopPropagation()}
     >
-      {alerts.map(a => (
+      {alerts.map(a => {
+        const promo = matchPromo(a, promos)
+        return (
         <span key={a.id} className="block rounded-lg border border-[#EDB93C]/25 bg-[#EDB93C]/[0.06] px-3 py-2">
           <span className="block text-[0.78rem] leading-relaxed text-white">{a.header}</span>
           {a.description && (
@@ -89,8 +94,10 @@ function AlertDetailBlock({ alerts }: { alerts: SurfacedAlert[] }) {
           >
             {tr('lists.full_details')}
           </a>
+          {promo && <NearbyPromoCard promo={promo} />}
         </span>
-      ))}
+        )
+      })}
     </span>
   )
 }
@@ -522,41 +529,47 @@ function AlertLineBadges({ routeIds, routeNames, size = 'sm' }: {
 // the full MBTA description and the official outlink.
 function AlertRow({ alert, routeNames }: { alert: SurfacedAlert; routeNames: Map<string, string> }) {
   const tr = useNearbyT()
+  const promos = useNearbyPromos()
   const [open, setOpen] = useState(false)
+  const promo = matchPromo(alert, promos)
   return (
-    <button
-      type="button"
-      onClick={() => {
-        if (!open) posthog.capture('snapshot_alert_expanded', { effect: alert.effect })
-        setOpen(o => !o)
-      }}
-      aria-expanded={open}
-      className="flex w-full items-start gap-2 rounded-lg bg-white/[0.04] px-3 py-2.5 text-left"
-    >
-      <span className="min-w-0 flex-1">
-        <AlertLineBadges routeIds={alert.routeIds} routeNames={routeNames} size="xs" />
-        <span className={`mt-1 block text-[0.8rem] leading-relaxed text-white ${open ? '' : 'line-clamp-2'}`}>
-          {alert.header}
+    <div>
+      <button
+        type="button"
+        onClick={() => {
+          if (!open) posthog.capture('snapshot_alert_expanded', { effect: alert.effect })
+          setOpen(o => !o)
+        }}
+        aria-expanded={open}
+        className="flex w-full items-start gap-2 rounded-lg bg-white/[0.04] px-3 py-2.5 text-left"
+      >
+        <span className="min-w-0 flex-1">
+          <AlertLineBadges routeIds={alert.routeIds} routeNames={routeNames} size="xs" />
+          <span className={`mt-1 block text-[0.8rem] leading-relaxed text-white ${open ? '' : 'line-clamp-2'}`}>
+            {alert.header}
+          </span>
+          {open && alert.description && (
+            <span className="mt-1.5 block text-[0.78rem] leading-relaxed text-white/80">{alert.description}</span>
+          )}
+          {open ? (
+            <a
+              href={alert.url ?? 'https://www.mbta.com/alerts'}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => { e.stopPropagation(); posthog.capture('snapshot_alert_link', { effect: alert.effect }) }}
+              className="mt-2 inline-block text-[0.78rem] font-bold text-[#BAF14D]"
+            >
+              {tr('lists.full_details')}
+            </a>
+          ) : (
+            <span className="mt-1 block text-[0.7rem] text-white/60">{tr('lists.tap_for_details')}</span>
+          )}
         </span>
-        {open && alert.description && (
-          <span className="mt-1.5 block text-[0.78rem] leading-relaxed text-white/80">{alert.description}</span>
-        )}
-        {open ? (
-          <a
-            href={alert.url ?? 'https://www.mbta.com/alerts'}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e => { e.stopPropagation(); posthog.capture('snapshot_alert_link', { effect: alert.effect }) }}
-            className="mt-2 inline-block text-[0.78rem] font-bold text-[#BAF14D]"
-          >
-            {tr('lists.full_details')}
-          </a>
-        ) : (
-          <span className="mt-1 block text-[0.7rem] text-white/60">{tr('lists.tap_for_details')}</span>
-        )}
-      </span>
-      <span className="shrink-0 text-[0.72rem] font-semibold text-[#BAF14D]" aria-hidden="true">{open ? '▴' : '▾'}</span>
-    </button>
+        <span className="shrink-0 text-[0.72rem] font-semibold text-[#BAF14D]" aria-hidden="true">{open ? '▴' : '▾'}</span>
+      </button>
+      {/* Promo sits OUTSIDE the button (its own buttons/links can't nest in one) */}
+      {open && promo && <NearbyPromoCard promo={promo} />}
+    </div>
   )
 }
 

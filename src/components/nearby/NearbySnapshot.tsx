@@ -7,7 +7,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBluebikes, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
-import { fetchNearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
+import { fetchNearbyAlerts, type SurfacedAlert, type NearbyPromo } from '@/lib/nearby/alerts'
 import { round3, parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
 import { parsePartnerSlug, fetchPartner, type NearbyPartner } from '@/lib/nearby/partner'
 import { resolvePlaceLabel, combinePlaceLabel, splitPlaceLabel } from '@/lib/nearby/neighborhood'
@@ -26,6 +26,7 @@ import PartnerCobrand from './PartnerCobrand'
 import { useIsDesktop } from './useIsDesktop'
 import { t, resolveNearbyLocale } from '@/lib/nearby/i18n'
 import { NearbyI18nProvider } from './NearbyI18n'
+import { NearbyPromosProvider } from './NearbyPromos'
 import NearbyLanguagePill from './NearbyLanguagePill'
 
 const REFRESH_MS = 30_000
@@ -72,6 +73,17 @@ export default function NearbySnapshot() {
   const [rail, setRail] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
   const [bus, setBus] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
   const [alerts, setAlerts] = useState<SurfacedAlert[]>([])
+  // Contextual promos (Bluebikes closure credit, etc.) — global config, matched
+  // to alerts in the detail blocks. Fetched once; fails soft to none.
+  const [promos, setPromos] = useState<NearbyPromo[]>([])
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/nearby/promo')
+      .then(r => (r.ok ? r.json() : { promos: [] }))
+      .then(d => { if (!cancelled) setPromos(Array.isArray(d?.promos) ? d.promos : []) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [bluebikes, setBluebikes] = useState<SectionData<BluebikeStationLive[]>>({ status: 'loading', data: [] })
   const [bikeNetwork, setBikeNetwork] = useState<SectionData<BikeNetworkData | null>>({ status: 'loading', data: null })
   const [community, setCommunity] = useState<SectionData<CommunityData | null>>({ status: 'loading', data: null })
@@ -652,7 +664,9 @@ export default function NearbySnapshot() {
 
   return (
     <NearbyI18nProvider locale={locale}>
-      {isDesktop ? <NearbyDesktop {...surfaceProps} /> : <NearbyShell {...surfaceProps} />}
+      <NearbyPromosProvider promos={promos}>
+        {isDesktop ? <NearbyDesktop {...surfaceProps} /> : <NearbyShell {...surfaceProps} />}
+      </NearbyPromosProvider>
     </NearbyI18nProvider>
   )
 }

@@ -271,6 +271,13 @@ const en: Dict = {
   'borrow.cargob': 'Rent an e-cargo bike by the minute',
   'borrow.pedal_power': 'Borrow an e-bike free for a week',
   'misc.bluebikes_note': 'Bluebikes membership is $119/year for unlimited 45-minute rides — with a reduced-price option if you qualify for select public assistance programs.',
+
+  // ── promo (contextual "bike instead" card chrome; the offer text is data) ──
+  'promo.eyebrow': 'Bike instead',
+  'promo.copy_hint': 'Tap to copy',
+  'promo.copied': 'Copied ✓',
+  'promo.get_app': 'Get the Bluebikes app',
+  'promo.sponsored_by': 'Sponsored by {sponsor}',
 }
 
 const es: Dict = {
@@ -489,6 +496,11 @@ const es: Dict = {
   "borrow.cargob": "Renta una bici de carga eléctrica por minuto",
   "borrow.pedal_power": "Pide prestada una bici eléctrica gratis por una semana",
   "misc.bluebikes_note": "La membresía de Bluebikes cuesta $119/año con viajes ilimitados de 45 minutos — con precio reducido si calificas para ciertos programas de asistencia pública.",
+  "promo.eyebrow": "Ve en bici",
+  "promo.copy_hint": "Toca para copiar",
+  "promo.copied": "Copiado ✓",
+  "promo.get_app": "Descarga la app Bluebikes",
+  "promo.sponsored_by": "Patrocinado por {sponsor}",
 }
 
 const ptBR: Dict = {
@@ -707,6 +719,11 @@ const ptBR: Dict = {
   "borrow.cargob": "Alugue uma cargo bike elétrica por minuto",
   "borrow.pedal_power": "Empreste uma bike elétrica grátis por uma semana",
   "misc.bluebikes_note": "A assinatura da Bluebikes custa US$ 119/ano com corridas ilimitadas de 45 minutos — com desconto para quem se qualifica em certos programas de assistência pública.",
+  "promo.eyebrow": "Vá de bike",
+  "promo.copy_hint": "Toque para copiar",
+  "promo.copied": "Copiado ✓",
+  "promo.get_app": "Baixe o app Bluebikes",
+  "promo.sponsored_by": "Patrocinado por {sponsor}",
 }
 
 const zhHans: Dict = {
@@ -925,6 +942,11 @@ const zhHans: Dict = {
   "borrow.cargob": "按分钟租用电动载货自行车",
   "borrow.pedal_power": "免费借用电动自行车一周",
   "misc.bluebikes_note": "Bluebikes 会员每年 $119，可无限次骑行（每次 45 分钟）— 符合特定公共援助计划条件者可享优惠价。",
+  "promo.eyebrow": "改骑单车",
+  "promo.copy_hint": "点按复制",
+  "promo.copied": "已复制 ✓",
+  "promo.get_app": "下载 Bluebikes 应用",
+  "promo.sponsored_by": "由 {sponsor} 赞助",
 }
 
 const strings: Record<NearbyLocale, Dict> = {
