@@ -114,11 +114,14 @@ export interface NearbyModelInput {
   modeFilter?: ModeFilter
   /** Painted-lane sub-toggle (only meaningful in All/Bike views) */
   paintedVisible?: boolean
+  /** Fetch + draw a line whose corridor fell outside the nearby top-8 when its
+   *  station is tapped (the Orange Line at Sullivan Sq). No-op when absent. */
+  onRequestCorridorShape?: (routeId: string, stopId: string) => void
 }
 
 export function useNearbyModel({
   center, transitCorridors, bikeCorridors, rail, bus, docks,
-  modeFilter, paintedVisible,
+  modeFilter, paintedVisible, onRequestCorridorShape,
 }: NearbyModelInput) {
   const mode = modeFilter ?? MODE_FILTER_DEFAULT
   const painted = paintedVisible ?? PAINTED_DEFAULT
@@ -186,6 +189,21 @@ export function useNearbyModel({
     }
     return null
   }, [selection, stationByKey])
+
+  // A tapped station whose line's corridor didn't make the nearby top-8 has no
+  // shape loaded, so nothing draws (the Orange Line at Sullivan Sq). Ask the
+  // owner to fetch that line on demand from a live stop row and append it.
+  useEffect(() => {
+    if (selection?.type !== 'station' || !onRequestCorridorShape) return
+    const st = stationByKey.get(selection.key)
+    if (!st) return
+    const rows = st.isRail ? rail : bus
+    for (const route of st.routes) {
+      if (corridorById.has(`transit:${route.id}`)) continue
+      const row = rows.find(r => r.name.toLowerCase() === selection.key && r.route_id === route.id)
+      if (row) onRequestCorridorShape(route.id, row.stop_id)
+    }
+  }, [selection, stationByKey, corridorById, rail, bus, onRequestCorridorShape])
 
   const select = useCallback((next: Selection, source: string) => {
     setSelection(next)

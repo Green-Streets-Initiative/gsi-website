@@ -14,7 +14,7 @@ import { resolvePlaceLabel, combinePlaceLabel, splitPlaceLabel } from '@/lib/nea
 import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
 import { NEARBY_PATH } from '@/lib/nearby/config'
 import {
-  buildTransitCorridors, buildBikeCorridors, fetchCorridorMeta,
+  buildTransitCorridors, buildBikeCorridors, fetchCorridorMeta, seedCorridorFromStop,
   SNAPSHOT_BUS_OPTS, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_MAX_STATIONS,
   type TransitCorridor,
 } from '@/lib/nearby/corridors'
@@ -85,6 +85,9 @@ export default function NearbySnapshot() {
   const refreshBusyRef = useRef(false)
   const cityRef = useRef('')
   const loadSeqRef = useRef(0)
+  // Routes we've already fetched on demand (a tapped station whose line was
+  // outside the nearby top-8), so a marker/live refresh doesn't refetch.
+  const onDemandRoutesRef = useRef<Set<string>>(new Set())
 
   // Partner co-brand (outreach deep links): the slug is read once at mount,
   // independently of the coord params — every combination of partner/coords
@@ -190,6 +193,7 @@ export default function NearbySnapshot() {
     setGuides({ status: 'loading', data: [] })
     setReach({ status: 'loading', data: [] })
     setTransitCorridors({ status: 'loading', data: [] })
+    onDemandRoutesRef.current = new Set()
 
     // Corridors: list first (from the same cached stop topology), then fill
     // each corridor's end-to-end shape and weekday frequency as they resolve
@@ -452,6 +456,42 @@ export default function NearbySnapshot() {
 
   const retry = useCallback(() => { if (location) loadAll(location) }, [location, loadAll])
 
+  /** A tapped station whose line fell outside the nearby top-8 has no shape to
+   *  draw (the Orange Line at Sullivan Sq). Fetch that one line on demand from
+   *  a live stop row and append it to the corridor set so its polyline draws.
+   *  One extra call, only on tap; deduped per route, cleared on relocation. */
+  const requestCorridorShape = useCallback((routeId: string, stopId: string) => {
+    if (onDemandRoutesRef.current.has(routeId)) return
+    const rows = [...rail.data, ...bus.data]
+    const row = rows.find(r => r.stop_id === stopId && r.route_id === routeId)
+      ?? rows.find(r => r.route_id === routeId)
+    if (!row) return
+    onDemandRoutesRef.current.add(routeId)
+    const seed = seedCorridorFromStop(routeId, row)
+    const seq = loadSeqRef.current
+    setTransitCorridors(prev =>
+      prev.data.some(c => c.routeId === routeId) ? prev : { ...prev, data: [...prev.data, seed] },
+    )
+    fetchCorridorMeta(seed)
+      .then(meta => {
+        if (loadSeqRef.current !== seq) return
+        setTransitCorridors(prev => ({
+          ...prev,
+          data: prev.data.map(c => (c.id === seed.id
+            ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable', directions: meta.directions }
+            : c)),
+        }))
+      })
+      .catch(() => {
+        if (loadSeqRef.current !== seq) return
+        onDemandRoutesRef.current.delete(routeId)
+        setTransitCorridors(prev => ({
+          ...prev,
+          data: prev.data.map(c => (c.id === seed.id ? { ...c, frequency: 'unavailable' as const } : c)),
+        }))
+      })
+  }, [rail.data, bus.data])
+
   // Named bike corridors become selectable entities; everything else —
   // unnamed segments, named lanes that didn't make the corridor cut, and
   // same-named streets in OTHER towns — stays as background lines, tappable
@@ -607,6 +647,7 @@ export default function NearbySnapshot() {
     guides,
     alerts,
     onRetry: retry,
+    onRequestCorridorShape: requestCorridorShape,
   }
 
   return (

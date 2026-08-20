@@ -137,6 +137,37 @@ export function corridorsFromTopology(rail: StopTopology[], bus: StopTopology[])
     .slice(0, MAX_TRANSIT_CORRIDORS)
 }
 
+/** A shapeless corridor for one route, seeded from a live stop row — so a
+ *  station whose line fell outside the nearby top-8 (the Orange Line at
+ *  Sullivan Sq, whose nearest access is far enough to be cut) can still fetch
+ *  and draw its shape on demand when the visitor taps it. Feed the result to
+ *  fetchCorridorMeta to fill in shape/frequency/directions. Endpoints stay
+ *  blank: the station card carries its own arrivals, and a station selection
+ *  shows the station detail, not the corridor's. */
+export function seedCorridorFromStop(
+  routeId: string,
+  stop: { stop_id: string; name: string; lat: number; lng: number; route_name: string; distance_meters: number },
+): TransitCorridor {
+  return {
+    id: `transit:${routeId}`,
+    kind: routeKind(routeId),
+    routeId,
+    name: stop.route_name,
+    color: lineColor(routeId),
+    textColor: lineTextColor(routeId),
+    endpoints: ['', ''],
+    access: {
+      stopId: stop.stop_id,
+      stopName: stop.name,
+      lat: stop.lat,
+      lng: stop.lng,
+      walkMin: walkTimeMinutes(stop.distance_meters),
+    },
+    shape: null,
+    frequency: null,
+  }
+}
+
 /* ── Shape + frequency, one call per corridor via our server endpoint ──
    Server-side because the anonymous MBTA API allows ~20 req/min per IP and
    the client already spends its budget on stops/routes/predictions; the

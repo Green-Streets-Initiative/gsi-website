@@ -65,6 +65,7 @@ interface Props {
   guides: SectionData<GuideItem[]>
   alerts: SurfacedAlert[]
   onRetry: () => void
+  onRequestCorridorShape: (routeId: string, stopId: string) => void
 }
 
 const RAIL_TABS = [
@@ -85,6 +86,7 @@ export default function NearbyDesktop({
   onAdvisorCta, onPlanCommute, partnerLine, partner, partnerSlug,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
+  onRequestCorridorShape,
 }: Props) {
   const tr = useNearbyT()
   const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
@@ -98,7 +100,7 @@ export default function NearbyDesktop({
 
   const model = useNearbyModel({
     center, transitCorridors, bikeCorridors, rail, bus, docks,
-    modeFilter, paintedVisible: paintedOn,
+    modeFilter, paintedVisible: paintedOn, onRequestCorridorShape,
   })
   const {
     selection, select, handleMarkerTap,
