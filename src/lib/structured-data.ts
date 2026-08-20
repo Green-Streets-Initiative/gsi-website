@@ -36,6 +36,7 @@ export function organizationSchema(): Record<string, unknown> {
       'https://www.instagram.com/gogreenstreets/',
       'https://www.facebook.com/GreenStreetsInitiative',
       'https://bsky.app/profile/gogreenstreets.bsky.social',
+      'https://www.linkedin.com/company/green-streets-initiative',
     ],
   }
 }
