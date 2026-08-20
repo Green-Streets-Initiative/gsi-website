@@ -9,30 +9,32 @@ import type { ModeFilter } from './useNearbyModel'
 import type { RouteLegTapInfo } from './NearbyMap'
 import BikeComfortBlock, { NEARBY_COMFORT_COLORS, NEARBY_COMFORT_LABELS } from './BikeComfortBlock'
 import type { ReachRow, BikeComfortTier } from './types'
+import { useNearbyT } from './NearbyI18n'
 
 /** What a tapped stretch of the drawn route is — rendered inside the
  *  expanded row (desktop) and the sheet detail (mobile). */
 export function RouteLegNote({ info }: { info: RouteLegTapInfo }) {
+  const tr = useNearbyT()
   const tier = (info.legRating ?? null) as BikeComfortTier | null
   // Name the road first when we know it — "what street is this?" is the
   // question a tap is asking; the comfort tier is the follow-up
   const bikeText = () => {
-    const tierText = tier ? NEARBY_COMFORT_LABELS[tier] : 'Bike'
-    const miles = info.legMiles ? ` · ${info.legMiles} mi` : ''
+    const tierText = tier ? NEARBY_COMFORT_LABELS[tier] : tr('reach.tier_bike')
+    const miles = info.legMiles ? tr('reach.leg_miles', { miles: info.legMiles }) : ''
     return info.legStreet
-      ? `${info.legStreet} — ${tierText.toLowerCase()}${miles}`
-      : `${tierText} stretch${miles}`
+      ? tr('reach.leg_street', { street: info.legStreet, tier: tierText.toLowerCase(), miles })
+      : tr('reach.leg_stretch', { tier: tierText, miles })
   }
   const text = info.leg === 'walk'
-    ? 'Walking connection between rides'
+    ? tr('reach.walk_connection')
     : info.leg === 'transit'
-      ? (info.legLabel ? `${info.legLabel} — the riding leg` : 'The riding leg')
+      ? (info.legLabel ? tr('reach.riding_leg_labeled', { label: info.legLabel }) : tr('reach.riding_leg'))
       : bikeText()
   const dotColor = info.leg === 'bike' && tier ? NEARBY_COMFORT_COLORS[tier] : '#9BA3BF'
   return (
     <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-white/[0.14] bg-white/[0.05] px-3 py-1.5 text-[0.78rem] text-white">
       <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: dotColor }} aria-hidden="true" />
-      <span className="min-w-0">You tapped: <span className="font-semibold">{text}</span></span>
+      <span className="min-w-0">{tr('reach.you_tapped')} <span className="font-semibold">{text}</span></span>
     </div>
   )
 }
@@ -65,6 +67,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
   /** Co-brand slug — rides the advisor handoff link when present */
   partnerSlug?: string | null
 }) {
+  const tr = useNearbyT()
   const expanded = routeSelection ?? null
   const preferred = reachModeFor(modeFilter ?? 'all')
 
@@ -103,7 +106,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="min-w-0 truncate text-[0.9rem] font-semibold text-white">{row.name}</span>
                   <span className="flex shrink-0 items-baseline gap-1.5 text-[0.72rem] text-white/70">
-                    {row.distance_miles} mi
+                    {tr('reach.mi', { miles: row.distance_miles })}
                     {chevron && <span className="text-[0.85rem] font-bold leading-none text-[#BAF14D]">›</span>}
                   </span>
                 </div>
@@ -116,7 +119,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                       }`}
                     >
                       <ModeIcon mode={o.key} size={j === emphasisIdx ? 15 : 13} />
-                      {o.estimate ? '~' : ''}{o.minutes} min
+                      {tr('reach.mode_minutes', { estimate: o.estimate ? '~' : '', minutes: o.minutes })}
                     </span>
                   ))}
                 </div>
@@ -140,7 +143,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                     ))
                   ) : (
                     <span className="text-[0.75rem] text-white/75">
-                      {row.transit_minutes !== null ? 'close enough to skip transit' : 'no direct transit route'}
+                      {row.transit_minutes !== null ? tr('reach.close_enough') : tr('reach.no_direct_transit')}
                     </span>
                   )}
                 </div>
@@ -175,7 +178,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                     {compactBody(!!onRowTap)}
                     {!onRowTap && (
                       <div className="mt-1.5 text-[0.72rem] font-semibold text-[#BAF14D]">
-                        {isOpen ? 'Hide details ▴' : 'Details & route ▾'}
+                        {isOpen ? tr('reach.hide_details') : tr('reach.details_route')}
                       </div>
                     )}
                   </button>
@@ -199,7 +202,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                               : 'border-white/[0.15] text-white/75 hover:border-white/[0.3]'
                           }`}
                         >
-                          <ModeIcon mode="transit" size={13} /> T & bus · {row.transit_minutes} min
+                          <ModeIcon mode="transit" size={13} /> {tr('reach.transit_mode', { minutes: row.transit_minutes })}
                         </button>
                         <button
                           onClick={() => switchMode(row, 'bike')}
@@ -210,23 +213,23 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                               : 'border-white/[0.15] text-white/75 hover:border-white/[0.3]'
                           }`}
                         >
-                          <ModeIcon mode="bike" size={13} /> Bike · {row.bike_is_estimate ? '~' : ''}{row.bike_minutes} min
+                          <ModeIcon mode="bike" size={13} /> {tr('reach.bike_mode', { estimate: row.bike_is_estimate ? '~' : '', minutes: row.bike_minutes })}
                         </button>
                       </div>
                     )}
                     <div className="mb-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
-                      Route — shown on the map · tap any stretch to see what it is
+                      {tr('reach.route_hint')}
                     </div>
                     {legInfo && <RouteLegNote info={legInfo} />}
                     {expanded.mode === 'transit' && (
                       <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
-                        Colored stretches are the ride; lighter gray stretches are the walks between.
+                        {tr('reach.transit_leg_hint')}
                       </p>
                     )}
                     {expanded.mode === 'bike' && row.bike_comfort && (
                       <>
                         <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
-                          Lime stretches are multi-use path, teal are protected lanes, dashed blue are painted lanes, and gray share the road.
+                          {tr('reach.bike_leg_hint')}
                         </p>
                         <BikeComfortBlock comfort={row.bike_comfort} />
                       </>
@@ -242,7 +245,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                       onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'reach', mode: expanded.mode })}
                       className="mt-2 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
                     >
-                      Open in Maps ↗
+                      {tr('reach.open_in_maps')}
                     </a>
                     {/* The natural next step: this exact trip, compared across
                         every way to make it — home + destination prefilled */}
@@ -252,7 +255,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                         onClick={() => onPlanCommute(row)}
                         className="mt-3 block rounded-lg bg-[#BAF14D] px-4 py-2 text-center text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
                       >
-                        Plan this commute — compare time, cost &amp; health →
+                        {tr('reach.plan_commute')}
                       </Link>
                     )}
                   </div>
@@ -263,7 +266,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
         </div>
 
       <p className="mt-2.5 px-1 text-[0.75rem] leading-snug text-white/70">
-        Transit and bike times assume a weekday morning. ~ marks a rough estimate; walk times are always estimates.
+        {tr('reach.times_note')}
       </p>
     </>
   )

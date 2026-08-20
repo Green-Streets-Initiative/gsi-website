@@ -1,5 +1,6 @@
 'use client'
 
+import { useNearbyT } from './NearbyI18n'
 import type { NearbyPartner } from '@/lib/nearby/partner'
 
 /**
@@ -16,6 +17,7 @@ export default function PartnerCobrand({ partner, logoClass = 'max-h-8', textCla
   textClass?: string
   center?: boolean
 }) {
+  const tr = useNearbyT()
   // The logo already carries the partner's name — repeating it in the text
   // read as clutter (Keith, 2026-08-18). Name-in-text only when there's no
   // logo to say it.
@@ -23,8 +25,8 @@ export default function PartnerCobrand({ partner, logoClass = 'max-h-8', textCla
     <div className={`flex items-center gap-2.5 ${center ? 'justify-center' : ''}`}>
       <span className={`${textClass} leading-snug text-white/80`}>
         {partner.logoUrl
-          ? 'In partnership with'
-          : <>In partnership with <span className="font-semibold text-white">{partner.name}</span></>}
+          ? tr('partner.in_partnership_with')
+          : <>{tr('partner.in_partnership_with')} <span className="font-semibold text-white">{partner.name}</span></>}
       </span>
       {partner.logoUrl && (
         <span className="shrink-0 rounded-md bg-white px-2 py-1">

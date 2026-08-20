@@ -19,6 +19,7 @@ import { buildPrintStations, shortFrequencyLabel } from '@/lib/nearby/print-mode
 import PrintMap, { PrintMarkerIcon, type PrintLine, type PrintMarker } from './PrintMap'
 import PrintButton from './PrintButton'
 import SheetViewport from './SheetViewport'
+import { t, resolveNearbyLocale, type NearbyLocale } from '@/lib/nearby/i18n'
 
 /**
  * The static print snapshot — the master for mailers, brochures, and
@@ -61,22 +62,24 @@ export const viewport: Viewport = {
 
 export const maxDuration = 60
 
-const MODE_LABEL: Record<string, string> = { walk: 'Walk', bike: 'Bike', transit: 'T & bus' }
+const MODE_LABEL_KEY: Record<string, string> = { walk: 'print.mode_walk', bike: 'print.mode_bike', transit: 'print.mode_transit' }
 
 export default async function NearbyPrintPage({ searchParams }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const sp = await searchParams
+  const locale = resolveNearbyLocale(typeof sp.lang === 'string' ? sp.lang : null, null)
+  const tr = (key: string, r?: Record<string, string | number | null | undefined>) => t(locale, key, r)
   const params = new URLSearchParams()
   for (const [k, v] of Object.entries(sp)) {
     if (typeof v === 'string') params.set(k, v)
   }
   const loc = parseSnapshotParams(params)
 
-  if (!loc) return <PrintGate />
+  if (!loc) return <PrintGate locale={locale} />
 
   const outside = isOutsideArea(loc.lat, loc.lng)
-  const label = loc.label || 'your neighborhood'
+  const label = loc.label || tr('print.your_neighborhood')
   // The QR keeps the partner/utm params, so a scanned print lands on the
   // co-branded interactive page and the visit still attributes
   const shareUrl = `${SITE_URL}${buildShareUrl(loc.lat, loc.lng, loc.label, stickyParams(params.toString()))}`
@@ -190,14 +193,14 @@ export default async function NearbyPrintPage({ searchParams }: {
   ]
 
   const legend: { swatch: React.ReactNode; label: string }[] = []
-  if (railTopo.length > 0) legend.push({ swatch: <LegendLine color="#DA291C" />, label: 'T lines (line colors)' })
-  if (busTopo.length > 0) legend.push({ swatch: <LegendLine color="#FFC72C" />, label: 'Bus routes' })
-  if (drawnTiers.has('path')) legend.push({ swatch: <LegendLine color="#BAF14D" />, label: 'Multi-use path' })
-  if (drawnTiers.has('protected')) legend.push({ swatch: <LegendLine color="#2DD4BF" />, label: 'Separated bike lane' })
-  if (drawnTiers.has('painted')) legend.push({ swatch: <LegendLine color="#7FB5FF" dashed />, label: 'Painted bike lane' })
-  if (stations.some(s => s.isRail)) legend.push({ swatch: <PrintMarkerIcon kind="rail" color="#DA291C" size={13} />, label: 'T station' })
-  if (stations.some(s => !s.isRail)) legend.push({ swatch: <PrintMarkerIcon kind="bus" size={13} />, label: 'Bus stop' })
-  if (printDocks.length > 0) legend.push({ swatch: <PrintMarkerIcon kind="dock" size={13} />, label: 'Bluebikes dock' })
+  if (railTopo.length > 0) legend.push({ swatch: <LegendLine color="#DA291C" />, label: tr('print.legend_t_lines') })
+  if (busTopo.length > 0) legend.push({ swatch: <LegendLine color="#FFC72C" />, label: tr('print.legend_bus_routes') })
+  if (drawnTiers.has('path')) legend.push({ swatch: <LegendLine color="#BAF14D" />, label: tr('print.legend_path') })
+  if (drawnTiers.has('protected')) legend.push({ swatch: <LegendLine color="#2DD4BF" />, label: tr('print.legend_protected') })
+  if (drawnTiers.has('painted')) legend.push({ swatch: <LegendLine color="#7FB5FF" dashed />, label: tr('print.legend_painted') })
+  if (stations.some(s => s.isRail)) legend.push({ swatch: <PrintMarkerIcon kind="rail" color="#DA291C" size={13} />, label: tr('print.legend_t_station') })
+  if (stations.some(s => !s.isRail)) legend.push({ swatch: <PrintMarkerIcon kind="bus" size={13} />, label: tr('print.legend_bus_stop') })
+  if (printDocks.length > 0) legend.push({ swatch: <PrintMarkerIcon kind="dock" size={13} />, label: tr('print.legend_dock') })
 
   return (
     <main className="print-root min-h-screen bg-white text-[#191A2E]">
@@ -219,8 +222,7 @@ export default async function NearbyPrintPage({ searchParams }: {
       {/* On-screen toolbar — hidden in print */}
       <div className="print-no-print flex items-center justify-between gap-4 bg-[#191A2E] px-6 py-3">
         <p className="text-sm text-white/80">
-          Sized for letter paper — on a computer, Chrome gives the most faithful print. On a phone, the button opens your
-          system&apos;s print sheet, where you can also save a PDF to share.
+          {tr('print.toolbar_note')}
         </p>
         <PrintButton />
       </div>
@@ -234,10 +236,10 @@ export default async function NearbyPrintPage({ searchParams }: {
         <header className="mb-2 flex items-end justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#4A7729]">
-              Your neighborhood snapshot
+              {tr('print.eyebrow_snapshot')}
             </div>
             <h1 className="font-display text-[1.7rem] font-extrabold leading-tight tracking-tight">
-              Getting around {label}
+              {tr('print.getting_around', { label })}
             </h1>
           </div>
           {/* Narrow enough that a typical "Neighborhood, Town" headline stays
@@ -248,7 +250,7 @@ export default async function NearbyPrintPage({ searchParams }: {
             {partner ? (
               <div className="flex items-center gap-1.5">
                 <span className="text-[0.7rem] leading-snug text-[#191A2E]/80">
-                  In partnership with{partner.logoUrl ? '' : <> <span className="font-semibold text-[#191A2E]">{partner.name}</span></>}
+                  {tr('print.in_partnership_with')}{partner.logoUrl ? '' : <> <span className="font-semibold text-[#191A2E]">{partner.name}</span></>}
                 </span>
                 {partner.logoUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -257,7 +259,7 @@ export default async function NearbyPrintPage({ searchParams }: {
               </div>
             ) : (
               <p className="text-[0.7rem] leading-snug text-[#191A2E]/70">
-                Trains, buses, bike routes &amp; Bluebikes near your new home.
+                {tr('print.header_tagline')}
               </p>
             )}
           </div>
@@ -265,7 +267,7 @@ export default async function NearbyPrintPage({ searchParams }: {
 
         {outside && (
           <p className="print-card mb-3 rounded-lg border border-[#B7791F]/40 bg-[#FEF6E7] px-4 py-2.5 text-[0.8rem] leading-snug">
-            This spot is outside Greater Boston, where our transit and Bluebikes data lives — parts of this page may be sparse. Bike-path data covers all of Massachusetts.
+            {tr('print.outside_banner')}
           </p>
         )}
 
@@ -285,17 +287,17 @@ export default async function NearbyPrintPage({ searchParams }: {
         <div className="mt-2 grid grid-cols-2 gap-5">
           <section className="print-card">
             <h2 className="mb-2 text-[0.72rem] font-bold uppercase tracking-wider text-[#191A2E]/70">
-              Trains &amp; buses near you
+              {tr('print.transit_heading')}
             </h2>
             {stations.length === 0 && (
-              <p className="text-[0.8rem] text-[#191A2E]/70">No MBTA stations within a short walk of this spot.</p>
+              <p className="text-[0.8rem] text-[#191A2E]/70">{tr('print.no_stations')}</p>
             )}
             <div className="space-y-1.5">
               {stations.map(s => (
                 <div key={s.name}>
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-[0.85rem] font-bold">{s.name}</span>
-                    <span className="shrink-0 text-[0.72rem] text-[#191A2E]/70">{s.walkMin} min walk</span>
+                    <span className="shrink-0 text-[0.72rem] text-[#191A2E]/70">{tr('print.min_walk', { minutes: s.walkMin })}</span>
                   </div>
                   {s.lines.map(l => (
                     <div key={l.routeId} className="mt-0.5 flex items-baseline gap-1.5">
@@ -308,7 +310,7 @@ export default async function NearbyPrintPage({ searchParams }: {
                       <span className="min-w-0 text-[0.68rem] leading-snug text-[#191A2E]/80">
                         {l.endpoints && <span className="font-semibold text-[#191A2E]/90">{l.endpoints}</span>}
                         {l.endpoints && l.frequencyLabel && ' · '}
-                        {l.frequencyLabel ?? (l.endpoints ? '' : 'see live schedule online')}
+                        {l.frequencyLabel ?? (l.endpoints ? '' : tr('print.see_live_schedule'))}
                       </span>
                     </div>
                   ))}
@@ -317,17 +319,17 @@ export default async function NearbyPrintPage({ searchParams }: {
             </div>
             {stations.length > 0 && (
               <p className="mt-1 text-[0.65rem] text-[#191A2E]/60">
-                Weekday daytime frequencies — scan the code for live arrivals.
+                {tr('print.freq_note')}
               </p>
             )}
           </section>
 
           <section className="print-card">
             <h2 className="mb-2 text-[0.72rem] font-bold uppercase tracking-wider text-[#191A2E]/70">
-              Comfortable bike routes
+              {tr('print.bike_heading')}
             </h2>
             {bikeCorridors.length === 0 && (
-              <p className="text-[0.8rem] text-[#191A2E]/70">No mapped bike routes within riding distance yet.</p>
+              <p className="text-[0.8rem] text-[#191A2E]/70">{tr('print.no_bike')}</p>
             )}
             <div className="space-y-1.5">
               {bikeCorridors.map(c => (
@@ -335,13 +337,13 @@ export default async function NearbyPrintPage({ searchParams }: {
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-[0.85rem] font-bold">{c.name}</span>
                     <span className="shrink-0 text-[0.72rem] text-[#191A2E]/70">
-                      {bikeTimeMinutes(c.accessDistanceMeters)} min ride away
+                      {tr('print.ride_away', { minutes: bikeTimeMinutes(c.accessDistanceMeters) })}
                     </span>
                   </div>
                   <div className="text-[0.7rem] text-[#191A2E]/80">
-                    {protectionLabel(c.protection, c.onewayOnly).text} · {c.lengthMiles} mi through the area
+                    {protectionLabel(c.protection, c.onewayOnly, tr).text} · {tr('print.mi_through_area', { miles: c.lengthMiles })}
                     {popularStreetKeys.has(canonicalStreetKey(c.name)) && (
-                      <span className="font-semibold text-[#4A7729]"> · Popular with Shift riders</span>
+                      <span className="font-semibold text-[#4A7729]">{tr('print.popular_riders')}</span>
                     )}
                   </div>
                 </div>
@@ -351,14 +353,14 @@ export default async function NearbyPrintPage({ searchParams }: {
             {printDocks.length > 0 && (
               <>
                 <h2 className="mb-1 mt-3 text-[0.72rem] font-bold uppercase tracking-wider text-[#191A2E]/70">
-                  Bluebikes docks
+                  {tr('print.docks_heading')}
                 </h2>
                 <p className="text-[0.75rem] leading-snug text-[#191A2E]/85">
                   {printDocks.map((d, i) => (
                     <span key={d.station_id}>
                       {i > 0 && ' · '}
                       <span className="font-semibold text-[#191A2E]">{d.name}</span>
-                      {` (${Math.round(d.distance_meters / 80)} min walk)`}
+                      {tr('print.min_walk_paren', { minutes: Math.round(d.distance_meters / 80) })}
                     </span>
                   ))}
                 </p>
@@ -371,7 +373,7 @@ export default async function NearbyPrintPage({ searchParams }: {
               <div className="h-[70px] w-[70px] shrink-0" dangerouslySetInnerHTML={{ __html: qrSvg }} />
               <div className="min-w-0">
                 <p className="text-[0.78rem] font-bold leading-snug">
-                  Scan for the live version — real-time arrivals on a tappable map.
+                  {tr('print.qr_text')}
                 </p>
                 <p className="mt-0.5 break-all text-[0.68rem] font-semibold text-[#4A7729]">{shortUrl}</p>
               </div>
@@ -383,20 +385,20 @@ export default async function NearbyPrintPage({ searchParams }: {
         {destinations.length > 0 && (
           <section className="print-card mt-2">
             <h2 className="mb-1.5 text-[0.72rem] font-bold uppercase tracking-wider text-[#191A2E]/70">
-              Where can you get from here?
+              {tr('print.destinations_heading')}
             </h2>
             <div className="grid grid-cols-2 gap-x-5 gap-y-1">
               {destinations.map(row => (
                 <div key={row.id} className="flex items-baseline justify-between gap-2 border-b border-[#191A2E]/10 pb-0.5">
                   <span className="min-w-0 truncate text-[0.78rem] font-semibold">{row.name}</span>
                   <span className="shrink-0 text-[0.68rem] tabular-nums text-[#191A2E]/80">
-                    {modeOptions(row).map(o => `${MODE_LABEL[o.key] ?? o.key} ${o.estimate ? '~' : ''}${o.minutes}`).join(' · ')} min
+                    {modeOptions(row).map(o => `${MODE_LABEL_KEY[o.key] ? tr(MODE_LABEL_KEY[o.key]) : o.key} ${o.estimate ? '~' : ''}${o.minutes}`).join(' · ')} {tr('print.min_unit')}
                   </span>
                 </div>
               ))}
             </div>
             <p className="mt-1 text-[0.62rem] text-[#191A2E]/60">
-              Times assume a weekday morning; ~ marks an estimate.
+              {tr('print.destinations_note')}
             </p>
           </section>
         )}
@@ -426,7 +428,8 @@ function LegendLine({ color, dashed }: { color: string; dashed?: boolean }) {
 }
 
 /** No-coordinates visit: point at the interactive page instead of erroring. */
-async function PrintGate() {
+async function PrintGate({ locale }: { locale: NearbyLocale }) {
+  const tr = (key: string, r?: Record<string, string | number | null | undefined>) => t(locale, key, r)
   const qrSvg = await QRCode.toString(`${SITE_URL}/nearby`, {
     type: 'svg', margin: 0, color: { dark: '#191A2E', light: '#ffffff' },
   })
@@ -437,10 +440,10 @@ async function PrintGate() {
           Green Streets Initiative
         </div>
         <h1 className="mt-1 font-display text-[1.4rem] font-extrabold tracking-tight">
-          Print a neighborhood snapshot
+          {tr('print.gate_title')}
         </h1>
         <p className="mt-2 text-[0.85rem] leading-relaxed text-[#191A2E]/80">
-          Open <strong>gogreenstreets.org/nearby</strong>, pick a location, and follow the print link there — this page needs a neighborhood to draw.
+          {tr('print.gate_body_pre')}<strong>gogreenstreets.org/nearby</strong>{tr('print.gate_body_post')}
         </p>
         <div className="mx-auto mt-4 h-[110px] w-[110px]" dangerouslySetInnerHTML={{ __html: qrSvg }} />
       </div>

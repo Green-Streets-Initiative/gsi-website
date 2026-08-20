@@ -1,6 +1,7 @@
 'use client'
 
 import ComfortBar from '@/components/commute/ComfortBar'
+import { useNearbyT } from './NearbyI18n'
 import type { BikeComfortData, BikeComfortTier } from './types'
 
 /**
@@ -25,14 +26,21 @@ export const NEARBY_COMFORT_LABELS: Record<BikeComfortTier, string> = {
 }
 
 export default function BikeComfortBlock({ comfort }: { comfort: BikeComfortData }) {
+  const tr = useNearbyT()
   if (!comfort.segments || comfort.segments.length === 0) return null
+  const labels: Record<BikeComfortTier, string> = {
+    path: tr('bike.path'),
+    protected: tr('bike.protected'),
+    bike_lane: tr('bike.bike_lane'),
+    shared_road: tr('bike.shared_road'),
+  }
   return (
     <div className="mt-2.5 space-y-2">
       <ComfortBar
         rating={comfort.rating}
         segments={comfort.segments.map(s => ({ label: '', rating: s.rating, distance_mi: s.distance_mi }))}
         colors={NEARBY_COMFORT_COLORS}
-        labels={NEARBY_COMFORT_LABELS}
+        labels={labels}
       />
       {comfort.streets.length > 0 && (() => {
         // The server sends up to 6 streets; show them all, and account for
@@ -54,7 +62,7 @@ export default function BikeComfortBlock({ comfort }: { comfort: BikeComfortData
                   <span className="truncate">{s.label}</span>
                 </span>
                 <span className="shrink-0 tabular-nums text-white/75">
-                  {s.distance_mi} mi {NEARBY_COMFORT_LABELS[s.rating].toLowerCase()}
+                  {s.distance_mi} {tr('bike.unit_mi')} {labels[s.rating].toLowerCase()}
                 </span>
               </div>
             ))}
@@ -62,9 +70,9 @@ export default function BikeComfortBlock({ comfort }: { comfort: BikeComfortData
               <div className="flex items-baseline justify-between gap-2 text-[0.78rem]">
                 <span className="flex min-w-0 items-center gap-1.5 text-white/75">
                   <span className="h-2 w-2 shrink-0 rounded-full bg-white/[0.25]" aria-hidden="true" />
-                  <span className="truncate">Connecting stretches</span>
+                  <span className="truncate">{tr('bike.connecting_stretches')}</span>
                 </span>
-                <span className="shrink-0 tabular-nums text-white/75">{otherMi} mi</span>
+                <span className="shrink-0 tabular-nums text-white/75">{otherMi} {tr('bike.unit_mi')}</span>
               </div>
             )}
           </div>

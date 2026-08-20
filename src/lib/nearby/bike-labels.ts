@@ -7,6 +7,11 @@
  */
 import type { BikeCorridor } from './corridors'
 
+/** A bound nearby-translate function (from useNearbyT / a print-page tr). When
+ *  omitted, these helpers fall back to the English source inline (no i18n
+ *  import — this file is the English source of truth for bike copy). */
+type NearbyTr = (key: string, replacements?: Record<string, string | number | null | undefined>) => string
+
 export const LANE_SOURCE_LABEL: Record<string, string> = {
   mapc: 'MAPC TrailMap',
   massdot: 'MassDOT inventory',
@@ -37,11 +42,27 @@ export interface ProtectionLabel {
 }
 
 /** Corridor-level protection line. `onewayOnly` appends the one-direction
- *  note the separated tiers earned from OSM direction tags. */
+ *  note the separated tiers earned from OSM direction tags. Pass a `tr` (from
+ *  useNearbyT / the print page) to localize; without it, the English source
+ *  here is returned inline. */
 export function protectionLabel(
   protection: BikeCorridor['protection'],
   onewayOnly?: boolean,
+  tr?: NearbyTr,
 ): ProtectionLabel {
+  if (tr) {
+    const oneDir = onewayOnly ? tr('bikelabel.one_direction') : ''
+    switch (protection) {
+      case 'path':
+        return { text: tr('bikelabel.path'), emphasis: true }
+      case 'protected':
+        return { text: tr('bikelabel.protected', { oneDir }), emphasis: true }
+      case 'mostly-protected':
+        return { text: tr('bikelabel.mostly', { oneDir }), emphasis: false }
+      case 'painted':
+        return { text: tr('bikelabel.painted'), emphasis: false }
+    }
+  }
   const oneDir = onewayOnly ? ' · one direction' : ''
   switch (protection) {
     case 'path':
@@ -53,4 +74,17 @@ export function protectionLabel(
     case 'painted':
       return { text: 'Painted lane — paint marks your space', emphasis: false }
   }
+}
+
+/** Localized copy for a tapped background-lane tier (DetailPanel lane case).
+ *  Pass a `tr` to localize; falls back to the English `LANE_TIER_COPY`. */
+export function laneTierCopy(tier: string, tr?: NearbyTr): { title: string; detail: string } {
+  const key = tier === 'path' ? 'path' : tier === 'protected' ? 'protected' : 'painted'
+  if (tr) {
+    return {
+      title: tr(`bikelabel.lane_${key}_title`),
+      detail: tr(`bikelabel.lane_${key}_detail`),
+    }
+  }
+  return LANE_TIER_COPY[key]
 }

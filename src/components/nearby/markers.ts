@@ -19,9 +19,19 @@ export function dockCounts(bikesAvailable: number, ebikes: number) {
   return { classic: Math.max(0, bikesAvailable - ebikes), ebikes }
 }
 
-/** "3 classic · 2 e-bikes" (or the zero-classic variant) — one wording everywhere. */
-export function dockStatsText(bikesAvailable: number, ebikes: number): string {
+/** "3 classic · 2 e-bikes" (or the zero-classic variant) — one wording
+ *  everywhere. Pass a `tr` (from useNearbyT) to localize; without it the
+ *  English source is returned inline (the map-marker tooltips use this). */
+type NearbyTr = (key: string, replacements?: Record<string, string | number | null | undefined>) => string
+
+export function dockStatsText(bikesAvailable: number, ebikes: number, tr?: NearbyTr): string {
   const { classic } = dockCounts(bikesAvailable, ebikes)
+  if (tr) {
+    if (classic === 0 && ebikes > 0) {
+      return tr(ebikes === 1 ? 'dock.no_classic_one' : 'dock.no_classic_other', { ebikes })
+    }
+    return tr(ebikes === 1 ? 'dock.stats_one' : 'dock.stats_other', { classic, ebikes })
+  }
   if (classic === 0 && ebikes > 0) return `no classic bikes right now — ${ebikes} e-bike${ebikes === 1 ? '' : 's'}`
   return `${classic} classic · ${ebikes} e-bike${ebikes === 1 ? '' : 's'}`
 }

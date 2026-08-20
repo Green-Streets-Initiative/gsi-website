@@ -24,6 +24,9 @@ import NearbyShell from './NearbyShell'
 import NearbyDesktop from './NearbyDesktop'
 import PartnerCobrand from './PartnerCobrand'
 import { useIsDesktop } from './useIsDesktop'
+import { t, resolveNearbyLocale } from '@/lib/nearby/i18n'
+import { NearbyI18nProvider } from './NearbyI18n'
+import NearbyLanguagePill from './NearbyLanguagePill'
 
 const REFRESH_MS = 30_000
 
@@ -46,6 +49,18 @@ interface Located {
 export default function NearbySnapshot() {
   const searchParams = useSearchParams()
   const isDesktop = useIsDesktop()
+
+  // Locale from ?lang= (wins) or the browser; provided to the whole tree below.
+  // Browser language resolves after mount to avoid a hydration mismatch (server
+  // has no navigator), so a non-English browser without ?lang= starts in
+  // English for one paint, then switches.
+  const langParam = searchParams.get('lang')
+  const [browserLang, setBrowserLang] = useState<string | null>(null)
+  useEffect(() => {
+    setBrowserLang(typeof navigator !== 'undefined' ? navigator.language : null)
+  }, [])
+  const locale = resolveNearbyLocale(langParam, browserLang)
+  const tr = (key: string, replacements?: Record<string, string | number>) => t(locale, key, replacements)
 
   const [location, setLocation] = useState<Located | null>(null)
   const [locating, setLocating] = useState(false)
@@ -360,7 +375,7 @@ export default function NearbySnapshot() {
 
   function handleUseMyLocation() {
     if (!navigator.geolocation) {
-      setGeoError('Location isn’t available in this browser — type an address instead.')
+      setGeoError(tr('snap.geo_unavailable'))
       return
     }
     setGeoError(null)
@@ -374,7 +389,7 @@ export default function NearbySnapshot() {
       },
       () => {
         setLocating(false)
-        setGeoError('Location access was denied — type an address instead and we’ll take it from there.')
+        setGeoError(tr('snap.geo_denied'))
         posthog.capture('snapshot_location_denied')
       },
       { timeout: 8000, maximumAge: 60_000 }
@@ -460,16 +475,20 @@ export default function NearbySnapshot() {
 
   if (!location) {
     return (
+      <NearbyI18nProvider locale={locale}>
       <div className="mx-auto max-w-[640px] px-6 pb-24 pt-14">
+        <div className="mb-4 flex justify-end">
+          <NearbyLanguagePill />
+        </div>
         <div className="text-center">
           <div className="mb-2 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#BAF14D]">
-            New to the area?
+            {tr('snap.eyebrow')}
           </div>
           <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold leading-[1.12] tracking-tighter text-white">
-            See how your neighborhood <em className="not-italic text-[#BAF14D]">moves</em>
+            {tr('snap.headline_lead')}<em className="not-italic text-[#BAF14D]">{tr('snap.headline_em')}</em>{tr('snap.headline_tail')}
           </h1>
           <p className="mx-auto mt-3 max-w-[46ch] text-[1rem] leading-relaxed text-white/75">
-            The T stations, bus routes, Bluebikes docks, and bike paths around your new home — live, on a map, in seconds.
+            {tr('snap.subtitle')}
           </p>
           {partner && (
             <div className="mt-4">
@@ -487,12 +506,12 @@ export default function NearbySnapshot() {
             {locating ? (
               <>
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#191A2E]/30 border-t-[#191A2E]" />
-                Finding you…
+                {tr('snap.finding_you')}
               </>
             ) : (
               <>
                 <svg className="h-4 w-4" viewBox="0 0 256 256" fill="currentColor"><path d="M128,64a40,40,0,1,0,40,40A40,40,0,0,0,128,64Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,128Zm0-112a88.1,88.1,0,0,0-88,88c0,31.4,14.51,64.68,42,96.25a254.19,254.19,0,0,0,41.45,38.3,8,8,0,0,0,9.18,0A254.19,254.19,0,0,0,174,200.25c27.45-31.57,42-64.85,42-96.25A88.1,88.1,0,0,0,128,16Zm0,206c-16.53-13-72-60.75-72-118a72,72,0,0,1,144,0C200,161.23,144.53,209,128,222Z"/></svg>
-                Use my location
+                {tr('snap.use_my_location')}
               </>
             )}
           </button>
@@ -503,7 +522,7 @@ export default function NearbySnapshot() {
 
           <div className="my-5 flex items-center gap-3">
             <div className="h-px flex-1 bg-white/[0.12]" />
-            <span className="text-[0.75rem] font-semibold uppercase tracking-wider text-white/70">or</span>
+            <span className="text-[0.75rem] font-semibold uppercase tracking-wider text-white/70">{tr('snap.or')}</span>
             <div className="h-px flex-1 bg-white/[0.12]" />
           </div>
 
@@ -529,13 +548,14 @@ export default function NearbySnapshot() {
             }}
             label={null}
             variant="dark"
-            placeholder="Type your new address…"
+            placeholder={tr('snap.address_placeholder')}
           />
           <p className="mt-3 text-[0.75rem] leading-snug text-white/75">
-            Your address is only used to look things up — it never appears in the page link, and shared links carry a neighborhood-level location only.
+            {tr('snap.address_note')}
           </p>
         </div>
       </div>
+      </NearbyI18nProvider>
     )
   }
 
@@ -543,11 +563,19 @@ export default function NearbySnapshot() {
   // Neighborhood is the headline; town rides beneath it (or is the headline
   // when no neighborhood resolved). The full street address is never shown —
   // it stays in-browser for the advisor handoff only.
-  const displayLabel = location.neighborhood || location.city || 'Your location'
+  const displayLabel = location.neighborhood || location.city || tr('snap.your_location')
   const subLabel = location.neighborhood ? location.city : null
-  const partnerLine = community.data?.partners && community.data.partners.count > 0
-    ? `Unlock perks at ${community.data.partners.count} local business${community.data.partners.count === 1 ? '' : 'es'} near you${community.data.partners.names[0] ? ` — like ${community.data.partners.names.slice(0, 2).join(' and ')}` : ''}.`
-    : 'Track your trips, feel the health gains, and unlock perks at partner businesses around town.'
+  const partnerCount = community.data?.partners?.count ?? 0
+  const partnerNames = community.data?.partners?.names ?? []
+  const partnerNamesSuffix = partnerNames[0]
+    ? tr('snap.partner_line_names', { names: partnerNames.slice(0, 2).join(tr('snap.and_join')) })
+    : ''
+  const partnerLine = partnerCount > 0
+    ? tr(partnerCount === 1 ? 'snap.partner_line_one' : 'snap.partner_line_other', {
+        count: partnerCount,
+        names: partnerNamesSuffix,
+      })
+    : tr('snap.partner_line_default')
 
   // Phones and tablets get the app shell (map stage + tabbed bottom sheet);
   // desktop gets the two-pane layout (sticky map + content rail). Both own
@@ -581,5 +609,9 @@ export default function NearbySnapshot() {
     onRetry: retry,
   }
 
-  return isDesktop ? <NearbyDesktop {...surfaceProps} /> : <NearbyShell {...surfaceProps} />
+  return (
+    <NearbyI18nProvider locale={locale}>
+      {isDesktop ? <NearbyDesktop {...surfaceProps} /> : <NearbyShell {...surfaceProps} />}
+    </NearbyI18nProvider>
+  )
 }

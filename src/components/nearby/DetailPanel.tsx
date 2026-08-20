@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import posthog from 'posthog-js'
-import { BORROW_RENT_BLURB, type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
+import { type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import { CORRIDOR_UNSPLASH } from '@/lib/nearby/config'
-import { protectionLabel, LANE_TIER_COPY, LANE_SOURCE_LABEL } from '@/lib/nearby/bike-labels'
+import { protectionLabel, laneTierCopy, LANE_SOURCE_LABEL } from '@/lib/nearby/bike-labels'
 import { bearingDegrees } from '@/lib/geo/polyline'
 import type { TransitCorridor, BikeCorridor, FrequencyInfo } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
+import { useNearbyT } from './NearbyI18n'
 import {
   type Selection, type StationGroup, routeEndpoints,
 } from './useNearbyModel'
@@ -22,7 +23,6 @@ import {
  * bottom sheet on mobile — same content, different frame.
  */
 
-const TIER_COPY = LANE_TIER_COPY
 const SOURCE_LABEL = LANE_SOURCE_LABEL
 
 /* ── Panel photos. Priority: curated Unsplash override → the server's
@@ -173,6 +173,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
   borrowRent: (BorrowRentPoint & { distMiles: number })[]
   onSelectCorridor: (id: string) => void
 }) {
+  const tr = useNearbyT()
   if (selection.type === 'station') {
     const st = stationByKey.get(selection.key)
     if (!st) return null
@@ -180,11 +181,11 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
       <div>
         <div className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
           {st.isRail ? <TrainIcon size={12} /> : <BusIcon size={12} />}
-          {st.isRail ? 'Station' : 'Bus stop'}
+          {st.isRail ? tr('detail.station') : tr('detail.bus_stop')}
         </div>
         <div className="text-[0.95rem] font-bold text-white">{st.name}</div>
         <div className="text-[0.78rem] text-white/75">
-          {walkTimeMinutes(st.dist)} min walk · {formatDistance(st.dist)}
+          {tr('detail.walk_distance', { minutes: walkTimeMinutes(st.dist), distance: formatDistance(st.dist) })}
         </div>
         <div className="mt-1.5 space-y-0.5">
           {st.routes.map(r => {
@@ -200,7 +201,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                   className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
                   style={{ backgroundColor: corridor?.color ?? '#666', color: corridor?.textColor ?? '#fff' }}
                 >
-                  {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
+                  {/^\d/.test(r.name) ? tr('detail.route_name', { name: r.name }) : r.name}
                 </span>
                 {/* One line per direction — which WAY is the next one going? */}
                 {dirs.length > 0 ? (
@@ -210,7 +211,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                         <span className="min-w-0 truncate text-[0.78rem] text-white/80">→ {a.direction}</span>
                         {a.nextMin !== null && (
                           <strong className="shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
-                            {a.nextMin === 0 ? 'now' : `in ${a.nextMin} min`}
+                            {a.nextMin === 0 ? tr('detail.now') : tr('detail.in_min', { minutes: a.nextMin })}
                           </strong>
                         )}
                       </span>
@@ -223,7 +224,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
             )
           })}
         </div>
-        <div className="mt-1 text-[0.72rem] text-white/70">Tap a route to see the whole line on the map</div>
+        <div className="mt-1 text-[0.72rem] text-white/70">{tr('detail.tap_route_hint')}</div>
         <PanelPhoto
           spec={st.isRail
             ? { kind: 'resolve', name: st.name, photoKind: 'station', lat: st.lat, lng: st.lng, sv: { lat: st.lat, lng: st.lng } }
@@ -240,19 +241,19 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
     if (c.kind === 'bike') {
       return (
         <div>
-          <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">Bike route — shown on the map</div>
+          <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">{tr('detail.bike_route_eyebrow')}</div>
           <div className="text-[0.95rem] font-bold text-white">{c.name}</div>
           <div className="mt-0.5 text-[0.8rem]">
             {(() => {
-              const p = protectionLabel(c.protection, c.onewayOnly)
+              const p = protectionLabel(c.protection, c.onewayOnly, tr)
               return <span className={p.emphasis ? 'font-bold text-[#BAF14D]' : 'text-white/80'}>{p.text}</span>
             })()}
           </div>
           <div className="mt-0.5 text-[0.78rem] text-white/80">
-            {c.lengthMiles} mi through this area · nearest point {bikeTimeMinutes(c.accessDistanceMeters)} min ride
+            {tr('detail.bike_length', { miles: c.lengthMiles, minutes: bikeTimeMinutes(c.accessDistanceMeters) })}
           </div>
           {SOURCE_LABEL[c.source] && (
-            <div className="mt-1 text-[0.72rem] text-white/70">Data: {SOURCE_LABEL[c.source]}</div>
+            <div className="mt-1 text-[0.72rem] text-white/70">{tr('detail.data_source', { source: SOURCE_LABEL[c.source] })}</div>
           )}
           <PanelPhoto spec={corridorPhotoSpec(c)} alt={c.name} />
         </div>
@@ -263,11 +264,11 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
       <div>
         <div className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
           {c.kind === 'bus' ? <BusIcon size={12} /> : <TrainIcon size={12} />}
-          {c.kind === 'bus' ? 'Bus route — shown on the map' : 'Line — shown on the map'}
+          {c.kind === 'bus' ? tr('detail.bus_route_eyebrow') : tr('detail.line_eyebrow')}
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-2">
           <span className="rounded px-2 py-0.5 text-[0.72rem] font-bold" style={{ backgroundColor: c.color, color: c.textColor }}>
-            {/^\d/.test(c.name) ? `Route ${c.name}` : c.name}
+            {/^\d/.test(c.name) ? tr('detail.route_name', { name: c.name }) : c.name}
           </span>
           {(c.endpoints[0] || c.endpoints[1]) && (
             <span className="text-[0.85rem] font-semibold text-white">
@@ -277,14 +278,14 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
         </div>
         <div className="mt-1 text-[0.85rem] text-white">
           {freq === null && <span className="inline-block h-4 w-44 animate-pulse rounded bg-white/[0.08]" aria-hidden="true" />}
-          {freq === 'unavailable' && <span className="text-white/75">Schedule unavailable right now</span>}
+          {freq === 'unavailable' && <span className="text-white/75">{tr('detail.schedule_unavailable')}</span>}
           {freq !== null && freq !== 'unavailable' && (freq as FrequencyInfo).label}
         </div>
         <div className="mt-0.5 text-[0.78rem] text-white/80">
-          Board at <span className="font-semibold text-white">{c.access.stopName}</span> · {c.access.walkMin} min walk
+          {tr('detail.board_at', { stop: c.access.stopName, minutes: c.access.walkMin })}
         </div>
         <AllStops corridor={c} />
-        <PanelPhoto spec={corridorPhotoSpec(c)} alt={`${c.name} at ${c.access.stopName}`} />
+        <PanelPhoto spec={corridorPhotoSpec(c)} alt={tr('detail.photo_alt_at', { name: c.name, stop: c.access.stopName })} />
       </div>
     )
   }
@@ -294,14 +295,14 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
     if (!d) return null
     return (
       <div>
-        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">Bluebikes dock</div>
+        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">{tr('detail.bluebikes_dock')}</div>
         <div className="text-[0.95rem] font-bold text-white">{d.name}</div>
         <div className="text-[0.78rem] text-white/75">
-          {walkTimeMinutes(d.distance_meters)} min walk · {formatDistance(d.distance_meters)}
+          {tr('detail.walk_distance', { minutes: walkTimeMinutes(d.distance_meters), distance: formatDistance(d.distance_meters) })}
         </div>
         <div className="mt-1 text-[0.8rem] text-white/80">
-          <strong className="font-bold text-[#BAF14D]">{dockStatsText(d.num_bikes_available, d.num_ebikes_available)}</strong>
-          {' · '}{d.num_docks_available} open docks
+          <strong className="font-bold text-[#BAF14D]">{dockStatsText(d.num_bikes_available, d.num_ebikes_available, tr)}</strong>
+          {' · '}{tr('detail.open_docks', { count: d.num_docks_available })}
         </div>
         <a
           href={directionsUrl(d.lat, d.lng)}
@@ -310,7 +311,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
           onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'bluebike' })}
           className="mt-1 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
         >
-          Walk there →
+          {tr('detail.walk_there')}
         </a>
       </div>
     )
@@ -322,11 +323,11 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
     if (!p) return null
     return (
       <div>
-        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#EDB93C]">Borrow &amp; rent</div>
+        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#EDB93C]">{tr('detail.borrow_rent_eyebrow')}</div>
         <div className="text-[0.95rem] font-bold text-white">{p.name}</div>
         <div className="mt-1 text-[0.82rem] text-white/80">
-          {BORROW_RENT_BLURB[p.org]}
-          {p.approximate ? ' · exact address shared when you book' : ''}
+          {tr(p.org === 'cargob' ? 'borrow.cargob' : 'borrow.pedal_power')}
+          {p.approximate ? tr('detail.exact_address_note') : ''}
         </div>
         <a
           href={p.url}
@@ -335,7 +336,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
           onClick={() => posthog.capture('snapshot_borrow_clicked', { org: p.org })}
           className="mt-2 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
         >
-          Open site ↗
+          {tr('detail.open_site')}
         </a>
       </div>
     )
@@ -343,10 +344,10 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
 
   // Background lane segment — named when the data knows the street
   if (selection.type === 'lane') {
-    const copy = TIER_COPY[selection.info.quality] ?? TIER_COPY.painted
+    const copy = laneTierCopy(selection.info.quality, tr)
     return (
       <div>
-        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">Bike infrastructure</div>
+        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">{tr('detail.bike_infra_eyebrow')}</div>
         <div className="text-[0.95rem] font-bold text-white">{selection.info.name ?? copy.title}</div>
         <div className="mt-0.5 text-[0.8rem] leading-relaxed text-white/80">
           {selection.info.name && <span className="font-semibold text-white">{copy.title} — </span>}
@@ -354,8 +355,8 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
         </div>
         {selection.info.source && SOURCE_LABEL[selection.info.source] && (
           <div className="mt-1 text-[0.72rem] text-white/70">
-            Data: {SOURCE_LABEL[selection.info.source]}
-            {selection.info.nameInferred && ' · street name from nearby map data'}
+            {tr('detail.data_source', { source: SOURCE_LABEL[selection.info.source] })}
+            {selection.info.nameInferred && tr('detail.name_inferred_note')}
           </div>
         )}
       </div>
@@ -371,6 +372,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
       new rider can orient the loop; their boarding stop is highlighted. ── */
 
 function AllStops({ corridor: c }: { corridor: TransitCorridor }) {
+  const tr = useNearbyT()
   const [open, setOpen] = useState(false)
   const [dirIdx, setDirIdx] = useState(0)
   const dirs = c.directions ?? []
@@ -393,14 +395,14 @@ function AllStops({ corridor: c }: { corridor: TransitCorridor }) {
         aria-expanded={open}
         className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
       >
-        {open ? 'Hide the stops ▴' : `See all ${active.stops.length} stops ▾`}
+        {open ? tr('detail.hide_stops') : tr('detail.see_all_stops', { count: active.stops.length })}
       </button>
       {open && (
         <div className="mt-2 rounded-lg border border-white/[0.08] bg-white/[0.03] p-3">
           {dirs.length > 1 && (
             <div className="mb-2.5 flex flex-wrap gap-1.5">
               {dirs.map((d, i) => {
-                const dest = c.endpoints[d.directionId] || `Direction ${d.directionId + 1}`
+                const dest = c.endpoints[d.directionId] || tr('detail.direction_n', { number: d.directionId + 1 })
                 const activeChip = i === Math.min(dirIdx, dirs.length - 1)
                 return (
                   <button
@@ -413,7 +415,7 @@ function AllStops({ corridor: c }: { corridor: TransitCorridor }) {
                         : 'border-white/[0.15] text-white/75 hover:border-white/[0.3]'
                     }`}
                   >
-                    toward {dest}
+                    {tr('detail.toward', { dest })}
                   </button>
                 )
               })}
@@ -427,7 +429,7 @@ function AllStops({ corridor: c }: { corridor: TransitCorridor }) {
                   <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${here ? 'bg-[#BAF14D]' : 'bg-white/60'}`} aria-hidden="true" />
                   <span className={`text-[0.8rem] ${here ? 'font-bold text-white' : 'text-white/80'}`}>
                     {s.name}
-                    {here && <span className="ml-1.5 text-[0.72rem] font-semibold text-[#BAF14D]">your stop</span>}
+                    {here && <span className="ml-1.5 text-[0.72rem] font-semibold text-[#BAF14D]">{tr('detail.your_stop')}</span>}
                   </span>
                 </li>
               )

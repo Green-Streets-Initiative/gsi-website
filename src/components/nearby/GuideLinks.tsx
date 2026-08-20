@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import { guidesFor, type GuideContext } from '@/lib/nearby/guide-context'
+import { useNearbyT } from './NearbyI18n'
 import type { ModeFilter } from './useNearbyModel'
 import type { GuideItem } from './types'
 
@@ -15,6 +16,7 @@ export default function GuideLinks({ context, guides, modeFilter }: {
   guides: GuideItem[]
   modeFilter: ModeFilter
 }) {
+  const tr = useNearbyT()
   const items = guidesFor(context, guides, modeFilter)
   if (items.length === 0) return null
   return (
@@ -29,7 +31,7 @@ export default function GuideLinks({ context, guides, modeFilter }: {
           <span className="text-[0.7rem] text-[#BAF14D]">▸</span>
           <span className="min-w-0 truncate font-semibold text-white/90 group-hover:text-white">{g.title}</span>
           <span className="ml-auto shrink-0 text-[0.75rem] font-semibold text-[#BAF14D] opacity-80 group-hover:opacity-100">
-            Guide →
+            {tr('guides.guide_link')}
           </span>
         </Link>
       ))}

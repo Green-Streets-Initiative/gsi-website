@@ -2,6 +2,7 @@
 
 import posthog from 'posthog-js'
 import { TrainIcon, BusIcon, BicycleIcon } from '@/components/wayfinding/WayfindingIcons'
+import { useNearbyT } from './NearbyI18n'
 import type { ModeFilter } from './useNearbyModel'
 
 /**
@@ -11,11 +12,11 @@ import type { ModeFilter } from './useNearbyModel'
  * sub-toggle (they're a bike-view refinement, not a mode).
  */
 
-const CHIPS: { id: ModeFilter; label: string; Icon?: React.ComponentType<{ size?: number }> }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'train', label: 'Trains', Icon: TrainIcon },
-  { id: 'bus', label: 'Buses', Icon: BusIcon },
-  { id: 'bike', label: 'Bike', Icon: BicycleIcon },
+const CHIPS: { id: ModeFilter; Icon?: React.ComponentType<{ size?: number }> }[] = [
+  { id: 'all' },
+  { id: 'train', Icon: TrainIcon },
+  { id: 'bus', Icon: BusIcon },
+  { id: 'bike', Icon: BicycleIcon },
 ]
 
 export default function ModeFilterChips({ mode, onMode, painted, onPaintedToggle }: {
@@ -24,10 +25,11 @@ export default function ModeFilterChips({ mode, onMode, painted, onPaintedToggle
   painted: boolean
   onPaintedToggle: () => void
 }) {
+  const tr = useNearbyT()
   return (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
       <div className="flex rounded-full border border-white/[0.12] bg-white/[0.04] p-1">
-        {CHIPS.map(({ id, label, Icon }) => (
+        {CHIPS.map(({ id, Icon }) => (
           <button
             key={id}
             onClick={() => {
@@ -40,7 +42,7 @@ export default function ModeFilterChips({ mode, onMode, painted, onPaintedToggle
             }`}
           >
             {Icon && <Icon size={14} />}
-            {label}
+            {tr(`chips.${id}`)}
           </button>
         ))}
       </div>
@@ -58,7 +60,7 @@ export default function ModeFilterChips({ mode, onMode, painted, onPaintedToggle
           }`}
         >
           <span className="inline-block h-[3px] w-6 rounded [background-image:repeating-linear-gradient(90deg,#7FB5FF_0_5px,transparent_5px_9px)]" />
-          {painted ? 'Painted lanes shown' : 'Show painted lanes too'}
+          {painted ? tr('chips.painted_shown') : tr('chips.show_painted')}
         </button>
       )}
     </div>

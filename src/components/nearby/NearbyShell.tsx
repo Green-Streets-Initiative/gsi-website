@@ -27,6 +27,8 @@ import PartnerCobrand from './PartnerCobrand'
 import type { NearbyPartner } from '@/lib/nearby/partner'
 import GuideLinks from './GuideLinks'
 import { SkeletonRows, ErrorCard } from './SectionShell'
+import { useNearbyT } from './NearbyI18n'
+import NearbyLanguagePill from './NearbyLanguagePill'
 
 /**
  * The phone experience: one screen, no page scroll. The map is the stage;
@@ -38,11 +40,17 @@ import { SkeletonRows, ErrorCard } from './SectionShell'
 
 type Tab = 'transit' | 'destinations' | 'explore'
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'transit', label: 'Transit & bike' },
-  { id: 'destinations', label: 'Destinations' },
-  { id: 'explore', label: 'Explore nearby' },
+const TABS: { id: Tab }[] = [
+  { id: 'transit' },
+  { id: 'destinations' },
+  { id: 'explore' },
 ]
+
+const TAB_LABEL_KEYS: Record<Tab, string> = {
+  transit: 'shell.tab_transit',
+  destinations: 'shell.tab_destinations',
+  explore: 'shell.tab_explore',
+}
 
 interface Props {
   center: { lat: number; lng: number }
@@ -82,6 +90,7 @@ export default function NearbyShell({
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
 }: Props) {
+  const tr = useNearbyT()
   const [tab, setTab] = useState<Tab>('transit')
   const [snap, setSnap] = useState<SheetSnap>('half')
   const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
@@ -204,7 +213,7 @@ export default function NearbyShell({
               tab === t.id ? 'bg-[#BAF14D] text-[#191A2E]' : 'text-white/75 hover:text-white'
             }`}
           >
-            {t.label}
+            {tr(TAB_LABEL_KEYS[t.id])}
           </button>
         ))}
       </div>
@@ -225,10 +234,11 @@ export default function NearbyShell({
     <div className="fixed inset-x-0 bottom-0 top-[60px] z-30 flex flex-col overflow-hidden bg-[#191A2E]">
       {/* Thin orientation strip — tells you what page you're on without
           spending real screen space */}
-      <div className="flex h-7 shrink-0 items-center border-b border-white/[0.08] px-4">
+      <div className="flex h-8 shrink-0 items-center justify-between border-b border-white/[0.08] px-4">
         <span className="truncate text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#BAF14D]">
-          Your neighborhood snapshot
+          {tr('shell.eyebrow_snapshot')}
         </span>
+        <NearbyLanguagePill className="shrink-0" />
       </div>
       {/* Partner co-brand row — only exists on partner deep links; the stage
           below flexes to the remaining height, so sheet snaps stay correct */}
@@ -279,19 +289,19 @@ export default function NearbyShell({
           onClick={onCopyLink}
           className="shrink-0 rounded-full px-2.5 py-1 text-[0.72rem] font-semibold text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white"
         >
-          {copied ? 'Copied ✓' : 'Copy link'}
+          {copied ? tr('shell.copied') : tr('shell.copy_link')}
         </button>
         <button
           onClick={onPrint}
           className="shrink-0 rounded-full px-2.5 py-1 text-[0.72rem] font-semibold text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white"
         >
-          Print
+          {tr('shell.print')}
         </button>
         <button
           onClick={onChangeLocation}
           className="shrink-0 rounded-full bg-white/[0.08] px-2.5 py-1 text-[0.72rem] font-semibold text-white transition-colors hover:bg-white/[0.14]"
         >
-          Change
+          {tr('shell.change')}
         </button>
       </div>
 
@@ -304,7 +314,7 @@ export default function NearbyShell({
               onClick={() => select(null, 'sheet-back')}
               className="mb-2 flex items-center gap-1.5 rounded-lg py-1 text-[0.8rem] font-semibold text-[#BAF14D] transition-opacity hover:opacity-80"
             >
-              ← Back
+              {tr('shell.back')}
             </button>
             {selection.type === 'reach' ? (
               reachRow ? (
@@ -334,7 +344,7 @@ export default function NearbyShell({
         <div className={selection || tab !== 'transit' ? 'hidden' : ''}>
           {outside && (
             <p className="mb-2 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-4 py-3 text-[0.82rem] leading-relaxed text-white">
-              This spot looks like it&apos;s outside Greater Boston, where our transit and Bluebikes data lives. Bike-path data covers all of Massachusetts, so parts of the picture may still fill in.
+              {tr('shell.outside_banner')}
             </p>
           )}
           {(showRail || showBus) && (() => {
@@ -376,24 +386,24 @@ export default function NearbyShell({
           {/* Planning a specific trip leads — most people arrive wanting
               their own destination, not our curated set. */}
           <div className="mt-2 rounded-xl border border-[rgba(186,241,77,0.25)] bg-[linear-gradient(135deg,rgba(41,102,229,0.18),rgba(186,241,77,0.1))] px-4 py-4">
-            <div className="text-[0.95rem] font-bold text-white">Have a specific place to get to?</div>
+            <div className="text-[0.95rem] font-bold text-white">{tr('shell.advisor_title')}</div>
             <p className="mt-1 text-[0.82rem] leading-snug text-white/80">
-              Plan any trip with the Commute Advisor — it compares every way to get there by time, cost, and health, with your home already filled in.
+              {tr('shell.advisor_body')}
             </p>
             <Link
               href={partnerSlug ? `/commute-advisor?partner=${partnerSlug}` : '/commute-advisor'}
               onClick={onAdvisorCta}
               className="mt-2.5 inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
             >
-              Plan your trip →
+              {tr('shell.plan_trip')}
             </Link>
           </div>
           <p className="mt-6 text-[0.8rem] leading-snug text-white/75">
-            Or explore popular destinations nearby — tap one to see the route.
+            {tr('shell.destinations_intro')}
           </p>
           <div className="mt-3">
             {reach.status === 'loading' && <SkeletonRows count={4} />}
-            {reach.status === 'error' && <ErrorCard label="Couldn't compute travel times right now." onRetry={onRetry} />}
+            {reach.status === 'error' && <ErrorCard label={tr('shell.reach_error')} onRetry={onRetry} />}
             {reach.status === 'ready' && reach.data.length > 0 && (
               <ReachList
                 center={center}
@@ -404,7 +414,7 @@ export default function NearbyShell({
             )}
             {reach.status === 'ready' && reach.data.length === 0 && (
               <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
-                No destination times for this spot yet.
+                {tr('shell.no_destinations')}
               </p>
             )}
           </div>
@@ -416,14 +426,14 @@ export default function NearbyShell({
           </div>
           <div className="mt-5 space-y-3">
             <div className="rounded-xl border border-white/[0.1] bg-[#242538] px-4 py-3.5">
-              <div className="text-[0.9rem] font-bold text-white">Get the Shift app</div>
+              <div className="text-[0.9rem] font-bold text-white">{tr('shell.get_app_title')}</div>
               <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
               <a
                 href={partnerSlug ? `/shift?partner=${partnerSlug}` : '/shift'}
                 onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
                 className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
               >
-                Download the app →
+                {tr('shell.download_app')}
               </a>
             </div>
           </div>
@@ -445,6 +455,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, onPlanCommute, partne
   onPlanCommute?: (row: ReachRow) => void
   partnerSlug?: string | null
 }) {
+  const tr = useNearbyT()
   const hasTransit = (row.transit_segments?.length ?? 0) > 0
   const hasBike = !!row.bike_polyline
   const steps = mode === 'transit' ? row.steps : (row.bike_steps ?? [])
@@ -459,19 +470,19 @@ function ReachDetail({ row, mode, center, onMode, legInfo, onPlanCommute, partne
   return (
     <div>
       <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
-        Route — shown on the map · tap any stretch to see what it is
+        {tr('shell.reach_route_eyebrow')}
       </div>
       <div className="text-[0.95rem] font-bold text-white">{row.name}</div>
-      <div className="text-[0.78rem] text-white/75">{row.distance_miles} mi away</div>
+      <div className="text-[0.78rem] text-white/75">{tr('shell.reach_distance', { miles: row.distance_miles })}</div>
       {legInfo && <div className="mt-2"><RouteLegNote info={legInfo} /></div>}
 
       {hasTransit && hasBike && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <button onClick={() => onMode('transit')} aria-pressed={mode === 'transit'} className={chip(mode === 'transit')}>
-            <ModeIcon mode="transit" size={13} /> T &amp; bus · {row.transit_minutes} min
+            <ModeIcon mode="transit" size={13} /> {tr('shell.mode_transit', { minutes: row.transit_minutes ?? '' })}
           </button>
           <button onClick={() => onMode('bike')} aria-pressed={mode === 'bike'} className={chip(mode === 'bike')}>
-            <ModeIcon mode="bike" size={13} /> Bike · {row.bike_is_estimate ? '~' : ''}{row.bike_minutes} min
+            <ModeIcon mode="bike" size={13} /> {tr('shell.mode_bike', { minutes: `${row.bike_is_estimate ? '~' : ''}${row.bike_minutes}` })}
           </button>
         </div>
       )}
@@ -494,14 +505,14 @@ function ReachDetail({ row, mode, center, onMode, legInfo, onPlanCommute, partne
 
       {mode === 'transit' && (
         <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
-          Colored stretches are the ride; lighter gray stretches are the walks between.
+          {tr('shell.transit_legend')}
         </p>
       )}
 
       {mode === 'bike' && row.bike_comfort && (
         <>
           <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
-            Lime stretches are multi-use path, teal are protected lanes, dashed blue are painted lanes, and gray share the road.
+            {tr('shell.bike_legend')}
           </p>
           <BikeComfortBlock comfort={row.bike_comfort} />
         </>
@@ -518,7 +529,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, onPlanCommute, partne
         onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'reach', mode })}
         className="mt-2 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
       >
-        Open in Maps ↗
+        {tr('shell.open_in_maps')}
       </a>
       {/* The natural next step: this exact trip, compared across every way
           to make it — home + destination prefilled */}
@@ -528,7 +539,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, onPlanCommute, partne
           onClick={() => onPlanCommute(row)}
           className="mt-3 block rounded-lg bg-[#BAF14D] px-4 py-2 text-center text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
         >
-          Plan this commute — compare time, cost &amp; health →
+          {tr('shell.plan_commute')}
         </Link>
       )}
     </div>

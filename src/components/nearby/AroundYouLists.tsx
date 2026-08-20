@@ -7,15 +7,15 @@ import posthog from 'posthog-js'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl, lineColor, lineTextColor } from '@/lib/nearby/transit-ui'
-import { BLUEBIKES_NOTE } from '@/lib/nearby/config'
 import { protectionLabel } from '@/lib/nearby/bike-labels'
-import { BORROW_RENT_BLURB, type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
+import { type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
 import type { SectionStatus } from './types'
 import { SkeletonRows, ErrorCard } from './SectionShell'
+import { useNearbyT } from './NearbyI18n'
 import {
   type StationGroup, routeEndpoints, soonestAtStation, freqShort,
 } from './useNearbyModel'
@@ -49,6 +49,7 @@ const activateOnKey = (fn: () => void) => (e: KeyboardEvent) => {
 // comfortably-sized target that says what it does. Stops propagation so it
 // toggles the alert, not the card/row it sits inside.
 function AlertPill({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const tr = useNearbyT()
   return (
     <button
       type="button"
@@ -57,7 +58,7 @@ function AlertPill({ open, onToggle }: { open: boolean; onToggle: () => void }) 
       className="inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-[#EDB93C] transition-colors hover:bg-[#EDB93C]/10"
     >
       <Warning size={12} weight="fill" aria-hidden="true" />
-      Service alert
+      {tr('lists.service_alert')}
       <span className="text-[0.6rem]" aria-hidden="true">{open ? '▴' : '▾'}</span>
     </button>
   )
@@ -67,6 +68,7 @@ function AlertPill({ open, onToggle }: { open: boolean; onToggle: () => void }) 
 // block per alert on this route. Expanded in place under its route row; stops
 // propagation so taps inside don't toggle the enclosing card/row.
 function AlertDetailBlock({ alerts }: { alerts: SurfacedAlert[] }) {
+  const tr = useNearbyT()
   return (
     <span
       className="mt-1 flex w-full flex-col gap-1.5"
@@ -85,7 +87,7 @@ function AlertDetailBlock({ alerts }: { alerts: SurfacedAlert[] }) {
             onClick={() => posthog.capture('snapshot_alert_link', { effect: a.effect })}
             className="mt-1.5 inline-block text-[0.75rem] font-bold text-[#BAF14D]"
           >
-            Full details at mbta.com &rarr;
+            {tr('lists.full_details')}
           </a>
         </span>
       ))}
@@ -100,6 +102,7 @@ function RouteSummaryLine({ r, corridorById, alerts }: {
   corridorById: Map<string, TransitCorridor | BikeCorridor>
   alerts: SurfacedAlert[]
 }) {
+  const tr = useNearbyT()
   const [open, setOpen] = useState(false)
   const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
   const next = soonestAtStation(r)
@@ -112,7 +115,7 @@ function RouteSummaryLine({ r, corridorById, alerts }: {
           className="shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
           style={{ backgroundColor: lineColor(r.id), color: lineTextColor(r.id) }}
         >
-          {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
+          {/^\d/.test(r.name) ? tr('lists.route_prefix', { name: r.name }) : r.name}
         </span>
         {routeAlerts.length > 0 && (
           <AlertPill
@@ -128,7 +131,7 @@ function RouteSummaryLine({ r, corridorById, alerts }: {
         )}
         {next !== null && (
           <strong className="ml-auto shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
-            {next === 0 ? 'now' : `in ${next} min`}
+            {next === 0 ? tr('lists.now') : tr('lists.in_min', { min: next })}
           </strong>
         )}
       </span>
@@ -146,6 +149,7 @@ function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRout
   onSelectRoute: (corridorId: string) => void
   alerts: SurfacedAlert[]
 }) {
+  const tr = useNearbyT()
   const [open, setOpen] = useState(false)
   const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
   const active = highlightedCorridorId === `transit:${r.id}`
@@ -159,7 +163,7 @@ function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRout
         className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
         style={{ backgroundColor: lineColor(r.id), color: lineTextColor(r.id) }}
       >
-        {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
+        {/^\d/.test(r.name) ? tr('lists.route_prefix', { name: r.name }) : r.name}
       </span>
       {routeAlerts.length > 0 && (
         <AlertPill
@@ -172,7 +176,7 @@ function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRout
       )}
       <span className="ml-auto text-[0.75rem] text-white/75">
         {corridor?.frequency === null && <span className="inline-block h-3 w-20 animate-pulse rounded bg-white/[0.08] align-middle" aria-hidden="true" />}
-        {corridor?.frequency === 'unavailable' && 'schedule unavailable'}
+        {corridor?.frequency === 'unavailable' && tr('lists.schedule_unavailable')}
         {fs}
       </span>
       {/* One line per direction — a new rider needs to know which WAY the next one is going */}
@@ -183,7 +187,7 @@ function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRout
               <span className="min-w-0 truncate text-[0.8rem] text-white/80">&rarr; {a.direction}</span>
               {a.nextMin !== null && (
                 <strong className="shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
-                  {a.nextMin === 0 ? 'now' : `in ${a.nextMin} min`}
+                  {a.nextMin === 0 ? tr('lists.now') : tr('lists.in_min', { min: a.nextMin })}
                 </strong>
               )}
             </span>
@@ -208,6 +212,7 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
    *  tappable "Service alert" disclosure that expands its detail in place. */
   alerts: SurfacedAlert[]
 }) {
+  const tr = useNearbyT()
   // Collapsed by default — the summary line answers "what's here, how soon";
   // the per-direction detail expands in place for whoever wants it
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -226,13 +231,13 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
   return (
     <div className="mt-5">
       <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
-        Trains &amp; buses — stations near you
+        {tr('lists.stations_heading')}
       </div>
       {status === 'loading' && <SkeletonRows count={3} />}
-      {status === 'error' && <ErrorCard label="Couldn't reach the MBTA right now." onRetry={onRetry} />}
+      {status === 'error' && <ErrorCard label={tr('lists.error_mbta')} onRetry={onRetry} />}
       {status === 'ready' && stations.length === 0 && (
         <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
-          No MBTA stations or stops close to this spot — the map shows what&apos;s in the wider area.
+          {tr('lists.no_stations')}
         </p>
       )}
       <div className="space-y-2.5">
@@ -257,7 +262,7 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                     {st.name}
                   </span>
                   <span className="text-[0.78rem] text-white/75">
-                    {walkTimeMinutes(st.dist)} min walk · {formatDistance(st.dist)}
+                    {tr('lists.walk_time', { minutes: walkTimeMinutes(st.dist), dist: formatDistance(st.dist) })}
                     <span className="ml-1.5 font-semibold text-[#BAF14D]">{open ? '▴' : '▾'}</span>
                   </span>
                 </span>
@@ -305,6 +310,7 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
   highlightedCorridorId: string | null
   onSelect: (corridorId: string) => void
 }) {
+  const tr = useNearbyT()
   if (bikeCorridors.length === 0) return null
 
   // Two shelves teach the taxonomy: car-free paths, then the on-street
@@ -312,17 +318,17 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
   // novices ride past without realizing they're built for them.
   const shelves = [
     {
-      label: 'Multi-use paths',
+      label: tr('lists.bike_shelf_paths'),
       hint: null as string | null,
       items: bikeCorridors.filter(c => c.protection === 'path'),
     },
     {
-      label: 'Protected lanes on the street',
-      hint: 'A curb, posts, or parking sits between you and traffic — the newest kind of on-street lane, and a comfortable step beyond the paths.',
+      label: tr('lists.bike_shelf_protected'),
+      hint: tr('lists.bike_shelf_protected_hint'),
       items: bikeCorridors.filter(c => c.protection === 'protected' || c.protection === 'mostly-protected'),
     },
     {
-      label: 'Painted lanes',
+      label: tr('lists.bike_shelf_painted'),
       hint: null as string | null,
       items: bikeCorridors.filter(c => c.protection === 'painted'),
     },
@@ -353,18 +359,18 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
                   <span className="text-[0.9rem] font-semibold text-white">{c.name}</span>
                   {popularStreetKeys.has(canonicalStreetKey(c.name)) && (
                     <span className="rounded-full bg-[#BAF14D]/15 px-2 py-0.5 text-[0.68rem] font-semibold text-[#BAF14D]">
-                      Popular with Shift riders
+                      {tr('lists.popular_with_riders')}
                     </span>
                   )}
                 </div>
                 <div className="mt-0.5 text-[0.8rem]">
                   {(() => {
-                    const p = protectionLabel(c.protection, c.onewayOnly)
+                    const p = protectionLabel(c.protection, c.onewayOnly, tr)
                     return <span className={p.emphasis ? 'font-bold text-[#BAF14D]' : 'text-white/80'}>{p.text}</span>
                   })()}
                 </div>
                 <div className="mt-1 text-[0.8rem] text-white/80">
-                  {c.lengthMiles} mi through this area · nearest point {bikeTimeMinutes(c.accessDistanceMeters)} min ride ({formatDistance(c.accessDistanceMeters)})
+                  {tr('lists.bike_length', { miles: c.lengthMiles, rideMin: bikeTimeMinutes(c.accessDistanceMeters), dist: formatDistance(c.accessDistanceMeters) })}
                 </div>
               </button>
             ))}
@@ -382,14 +388,15 @@ export function DockList({ docks, onSelect, selectedId }: {
   onSelect?: (id: string) => void
   selectedId?: string | null
 }) {
+  const tr = useNearbyT()
   return (
     <div className="mt-5">
       <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
-        Bluebikes docks
+        {tr('lists.bluebikes_docks_heading')}
       </div>
       {docks.length === 0 ? (
         <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
-          No Bluebikes docks within about a mile of this spot. The network grows every year — and your own bike works everywhere.
+          {tr('lists.no_docks')}
         </p>
       ) : (
         <div className="space-y-2.5">
@@ -405,17 +412,17 @@ export function DockList({ docks, onSelect, selectedId }: {
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">Bluebikes dock</div>
+                  <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">{tr('lists.bluebikes_dock')}</div>
                   <span className="block truncate text-[0.9rem] font-semibold text-white">{d.name}</span>
                 </div>
                 <span className="text-[0.8rem] text-white/75">
-                  {walkTimeMinutes(d.distance_meters)} min walk · {formatDistance(d.distance_meters)}
+                  {tr('lists.walk_time', { minutes: walkTimeMinutes(d.distance_meters), dist: formatDistance(d.distance_meters) })}
                 </span>
               </div>
               <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[0.8rem] text-white/80">
-                  <strong className="font-bold text-[#BAF14D]">{dockStatsText(d.num_bikes_available, d.num_ebikes_available)}</strong>
-                  {' · '}{d.num_docks_available} open docks
+                  <strong className="font-bold text-[#BAF14D]">{dockStatsText(d.num_bikes_available, d.num_ebikes_available, tr)}</strong>
+                  {' · '}{tr('lists.open_docks', { count: d.num_docks_available })}
                 </span>
                 <a
                   href={directionsUrl(d.lat, d.lng)}
@@ -424,12 +431,12 @@ export function DockList({ docks, onSelect, selectedId }: {
                   onClick={(e) => { e.stopPropagation(); posthog.capture('snapshot_directions_clicked', { type: 'bluebike' }) }}
                   className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
                 >
-                  Walk there →
+                  {tr('lists.walk_there')}
                 </a>
               </div>
             </button>
           ))}
-          <p className="px-1 text-[0.8rem] leading-relaxed text-white/75">{BLUEBIKES_NOTE}</p>
+          <p className="px-1 text-[0.8rem] leading-relaxed text-white/75">{tr('misc.bluebikes_note')}</p>
         </div>
       )}
     </div>
@@ -442,11 +449,12 @@ export function DockList({ docks, onSelect, selectedId }: {
 export function BorrowRentList({ points }: {
   points: (BorrowRentPoint & { distMiles: number })[]
 }) {
+  const tr = useNearbyT()
   if (points.length === 0) return null
   return (
     <div className="mt-5">
       <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
-        Borrow &amp; rent
+        {tr('lists.borrow_rent_heading')}
       </div>
       <div className="space-y-2.5">
         {points.map(p => (
@@ -465,9 +473,9 @@ export function BorrowRentList({ points }: {
               </span>
             </div>
             <div className="mt-1 text-[0.82rem] text-white/80">
-              {BORROW_RENT_BLURB[p.org]}
-              {p.approximate ? ' · exact address shared when you book' : ''}
-              <span className="ml-1.5 font-semibold text-[#BAF14D]">Open site ↗</span>
+              {tr(p.org === 'cargob' ? 'borrow.cargob' : 'borrow.pedal_power')}
+              {p.approximate ? tr('lists.exact_address_note') : ''}
+              <span className="ml-1.5 font-semibold text-[#BAF14D]">{tr('lists.open_site')}</span>
             </div>
           </a>
         ))}
@@ -513,6 +521,7 @@ function AlertLineBadges({ routeIds, routeNames, size = 'sm' }: {
 // L2 → L3: one disruption. Header (minimal detail) always shown; tap reveals
 // the full MBTA description and the official outlink.
 function AlertRow({ alert, routeNames }: { alert: SurfacedAlert; routeNames: Map<string, string> }) {
+  const tr = useNearbyT()
   const [open, setOpen] = useState(false)
   return (
     <button
@@ -540,10 +549,10 @@ function AlertRow({ alert, routeNames }: { alert: SurfacedAlert; routeNames: Map
             onClick={e => { e.stopPropagation(); posthog.capture('snapshot_alert_link', { effect: alert.effect }) }}
             className="mt-2 inline-block text-[0.78rem] font-bold text-[#BAF14D]"
           >
-            Full details at mbta.com &rarr;
+            {tr('lists.full_details')}
           </a>
         ) : (
-          <span className="mt-1 block text-[0.7rem] text-white/60">Tap for details</span>
+          <span className="mt-1 block text-[0.7rem] text-white/60">{tr('lists.tap_for_details')}</span>
         )}
       </span>
       <span className="shrink-0 text-[0.72rem] font-semibold text-[#BAF14D]" aria-hidden="true">{open ? '▴' : '▾'}</span>
@@ -557,6 +566,7 @@ export function ServiceDisruptionsCard({ alerts, routeNames }: {
   /** route id → display name, from the visible stations, for the line badges. */
   routeNames: Map<string, string>
 }) {
+  const tr = useNearbyT()
   const [open, setOpen] = useState(false)
   if (alerts.length === 0) return null
   const shown = alerts.slice(0, DISRUPTIONS_DISPLAY_CAP)
@@ -576,7 +586,7 @@ export function ServiceDisruptionsCard({ alerts, routeNames }: {
         <Warning size={18} weight="fill" className="shrink-0 text-[#EDB93C]" aria-hidden="true" />
         <span className="min-w-0 flex-1">
           <span className="block text-[0.82rem] font-bold text-white">
-            {alerts.length === 1 ? '1 service disruption nearby' : `${alerts.length} service disruptions nearby`}
+            {alerts.length === 1 ? tr('lists.disruptions_one') : tr('lists.disruptions_other', { count: alerts.length })}
           </span>
           {!open && (
             <span className="mt-1 block">
@@ -598,7 +608,7 @@ export function ServiceDisruptionsCard({ alerts, routeNames }: {
               rel="noopener noreferrer"
               className="block px-1 text-[0.78rem] font-semibold text-[#BAF14D]"
             >
-              +{overflow} more at mbta.com &rarr;
+              {tr('lists.more_at_mbta', { count: overflow })}
             </a>
           )}
         </div>

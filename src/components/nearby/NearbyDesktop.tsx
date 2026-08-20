@@ -22,6 +22,8 @@ import PartnerCobrand from './PartnerCobrand'
 import type { NearbyPartner } from '@/lib/nearby/partner'
 import GuideLinks from './GuideLinks'
 import { SkeletonRows, ErrorCard } from './SectionShell'
+import { useNearbyT } from './NearbyI18n'
+import NearbyLanguagePill from './NearbyLanguagePill'
 
 /**
  * The desktop (≥ lg) experience: a two-pane app layout. The map is a sticky
@@ -66,11 +68,17 @@ interface Props {
 }
 
 const RAIL_TABS = [
-  { id: 'transit' as const, label: 'Transit & bike' },
-  { id: 'destinations' as const, label: 'Destinations' },
-  { id: 'explore' as const, label: 'Explore nearby' },
+  { id: 'transit' as const },
+  { id: 'destinations' as const },
+  { id: 'explore' as const },
 ]
 type RailTab = (typeof RAIL_TABS)[number]['id']
+
+const RAIL_TAB_LABEL_KEYS: Record<RailTab, string> = {
+  transit: 'desktop.tab_transit',
+  destinations: 'desktop.tab_destinations',
+  explore: 'desktop.tab_explore',
+}
 
 export default function NearbyDesktop({
   center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
@@ -78,6 +86,7 @@ export default function NearbyDesktop({
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
 }: Props) {
+  const tr = useNearbyT()
   const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
   const [paintedOn, setPaintedOn] = useState(PAINTED_DEFAULT)
   // Selecting Bike turns painted lanes on — in the bike view they're part of
@@ -154,7 +163,7 @@ export default function NearbyDesktop({
         <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
           <div className="min-w-0">
             <div className="text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#BAF14D]">
-              Your neighborhood snapshot
+              {tr('desktop.eyebrow_snapshot')}
             </div>
             <h1 className="mt-1 truncate font-display text-[1.35rem] font-extrabold tracking-tight text-white">
               {displayLabel}
@@ -169,7 +178,7 @@ export default function NearbyDesktop({
         </div>
         {outside && (
           <p className="mt-3 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-5 py-3.5 text-[0.875rem] leading-relaxed text-white">
-            This spot looks like it&apos;s outside Greater Boston, where our transit and Bluebikes data lives. Bike-path data covers all of Massachusetts, so parts of the picture may still fill in.
+            {tr('desktop.outside_banner')}
           </p>
         )}
       </div>
@@ -187,20 +196,21 @@ export default function NearbyDesktop({
               onClick={onCopyLink}
               className="shrink-0 rounded-lg border border-white/[0.15] px-3 py-1.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-white/[0.06]"
             >
-              {copied ? 'Copied ✓' : 'Copy link'}
+              {copied ? tr('desktop.copied') : tr('desktop.copy_link')}
             </button>
             <button
               onClick={onChangeLocation}
               className="shrink-0 rounded-lg border border-white/[0.15] px-3 py-1.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-white/[0.06]"
             >
-              Change location
+              {tr('desktop.change_location')}
             </button>
             <button
               onClick={onPrint}
               className="shrink-0 rounded-lg border border-white/[0.15] px-3 py-1.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-white/[0.06]"
             >
-              Print version
+              {tr('desktop.print_version')}
             </button>
+            <NearbyLanguagePill className="shrink-0" />
           </div>
           <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#191A2E] to-transparent" />
         </div>
@@ -254,7 +264,7 @@ export default function NearbyDesktop({
                   </div>
                   <button
                     onClick={() => select(null, 'panel-close')}
-                    aria-label="Close details"
+                    aria-label={tr('desktop.close_details')}
                     className="shrink-0 rounded-lg border border-white/[0.15] px-2.5 py-1 text-[0.9rem] font-bold text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white"
                   >
                     ✕
@@ -280,7 +290,7 @@ export default function NearbyDesktop({
                       railTab === t.id ? 'bg-[#BAF14D] text-[#191A2E]' : 'text-white/75 hover:text-white'
                     }`}
                   >
-                    {t.label}
+                    {tr(RAIL_TAB_LABEL_KEYS[t.id])}
                   </button>
                 ))}
               </div>
@@ -334,24 +344,24 @@ export default function NearbyDesktop({
               {/* Planning a specific trip leads — most people arrive wanting
                   their own destination, not our curated set. */}
               <div className="rounded-xl border border-[rgba(186,241,77,0.25)] bg-[linear-gradient(135deg,rgba(41,102,229,0.18),rgba(186,241,77,0.1))] px-4 py-4">
-                <div className="text-[0.95rem] font-bold text-white">Have a specific place to get to?</div>
+                <div className="text-[0.95rem] font-bold text-white">{tr('desktop.advisor_title')}</div>
                 <p className="mt-1 text-[0.82rem] leading-snug text-white/80">
-                  Plan any trip with the Commute Advisor — it compares every way to get there by time, cost, and health, with your home already filled in.
+                  {tr('desktop.advisor_body')}
                 </p>
                 <Link
                   href={partnerSlug ? `/commute-advisor?partner=${partnerSlug}` : '/commute-advisor'}
                   onClick={onAdvisorCta}
                   className="mt-2.5 inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
                 >
-                  Plan your trip →
+                  {tr('desktop.plan_trip')}
                 </Link>
               </div>
 
               <p className="mb-3 mt-6 text-[0.8rem] leading-snug text-white/75">
-                Or explore popular destinations nearby — tap a place to see the route on the map.
+                {tr('desktop.destinations_intro')}
               </p>
               {reach.status === 'loading' && <SkeletonRows count={4} />}
-              {reach.status === 'error' && <ErrorCard label="Couldn't compute travel times right now." onRetry={onRetry} />}
+              {reach.status === 'error' && <ErrorCard label={tr('desktop.reach_error')} onRetry={onRetry} />}
               {reach.status === 'ready' && reach.data.length > 0 && (
                 <ReachList
                   center={center}
@@ -366,7 +376,7 @@ export default function NearbyDesktop({
               )}
               {reach.status === 'ready' && reach.data.length === 0 && (
                 <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
-                  No destination times for this spot yet.
+                  {tr('desktop.no_destinations')}
                 </p>
               )}
             </div>
@@ -374,14 +384,14 @@ export default function NearbyDesktop({
             <div className={railTab === 'explore' ? '' : 'hidden'}>
               <ExploreBody community={community} compact />
               <div className="mt-4 rounded-xl border border-white/[0.1] bg-[#242538] px-4 py-3.5">
-                <div className="text-[0.9rem] font-bold text-white">Get the Shift app</div>
+                <div className="text-[0.9rem] font-bold text-white">{tr('desktop.get_app_title')}</div>
                 <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
                 <a
                   href={partnerSlug ? `/shift?partner=${partnerSlug}` : '/shift'}
                   onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
                   className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
                 >
-                  Download the app →
+                  {tr('desktop.download_app')}
                 </a>
               </div>
             </div>

@@ -8,6 +8,7 @@ import { getTypeMeta, parseEventDate, formatDistance } from '@/lib/events'
 import { EVENT_TYPE_ICONS } from '@/components/events/event-type-icons'
 import type { SectionData, CommunityData } from './types'
 import { SkeletonRows } from './SectionShell'
+import { useNearbyT } from './NearbyI18n'
 
 /** Community events + Roams — the mobile Explore nearby tab body and the
  *  desktop rail. `compact` narrows the roams grid to fit a ~440px column. */
@@ -15,6 +16,7 @@ export function ExploreBody({ community, compact }: {
   community: SectionData<CommunityData | null>
   compact?: boolean
 }) {
+  const tr = useNearbyT()
   const events = community.data?.events ?? []
   const roams = community.data?.roams ?? []
 
@@ -27,7 +29,7 @@ export function ExploreBody({ community, compact }: {
         <div>
           <div className="mb-2.5 flex items-center gap-1.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
             <CalendarBlank size={14} weight="bold" />
-            Happening near you
+            {tr('explore.happening_near_you')}
           </div>
           <div className="space-y-2.5">
             {events.slice(0, 3).map(e => {
@@ -53,7 +55,7 @@ export function ExploreBody({ community, compact }: {
                     <p className="text-[0.9rem] font-semibold leading-snug text-white">{e.title}</p>
                     <p className="mt-0.5 text-[0.8rem] text-white/75">
                       {parseEventDate(e.event_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                      {e.location_name ? ` · ${e.location_name}` : ''} · {formatDistance(e.distance_miles)} away
+                      {e.location_name ? ` · ${e.location_name}` : ''} · {tr('explore.distance_away', { distance: formatDistance(e.distance_miles) })}
                     </p>
                   </span>
                 </Link>
@@ -62,7 +64,7 @@ export function ExploreBody({ community, compact }: {
           </div>
           {events.length > 3 && (
             <Link href="/events" className="mt-2.5 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80">
-              See all events →
+              {tr('explore.see_all_events')}
             </Link>
           )}
         </div>
@@ -72,7 +74,7 @@ export function ExploreBody({ community, compact }: {
       {roams.length > 0 && (
         <div className="mt-5">
           <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
-            Explore your new neighborhood
+            {tr('explore.explore_neighborhood')}
           </div>
           <div className={`grid gap-3 ${compact ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
             {roams.slice(0, 3).map(r => (
@@ -83,7 +85,7 @@ export function ExploreBody({ community, compact }: {
           </div>
           {roams.length > 3 && (
             <Link href="/shift/roams" className="mt-2.5 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80">
-              More roams →
+              {tr('explore.more_roams')}
             </Link>
           )}
         </div>
