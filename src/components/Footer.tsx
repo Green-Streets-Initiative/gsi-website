@@ -54,13 +54,23 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/shift/cities" className="text-sm text-white transition-colors hover:text-white">
-                  For cities
+                <Link href="/shift/rewards-partners" className="text-sm text-white transition-colors hover:text-white">
+                  Rewards partners
                 </Link>
               </li>
               <li>
-                <Link href="/shift/rewards-partners" className="text-sm text-white transition-colors hover:text-white">
-                  Rewards partners
+                <Link href="/nearby" className="text-sm text-white transition-colors hover:text-white">
+                  What&rsquo;s near you
+                </Link>
+              </li>
+              <li>
+                <Link href="/commute-advisor" className="text-sm text-white transition-colors hover:text-white">
+                  Commute Advisor
+                </Link>
+              </li>
+              <li>
+                <Link href="/guides" className="text-sm text-white transition-colors hover:text-white">
+                  Guides
                 </Link>
               </li>
               <li>

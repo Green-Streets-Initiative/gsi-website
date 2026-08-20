@@ -40,7 +40,7 @@ export default function GetInvolved() {
               something together.
             </p>
             <Link
-              href="/get-involved/partner"
+              href="/contact?inquiry=partner"
               className="inline-block rounded-full border-[1.5px] border-navy px-5 py-2.5 text-sm font-semibold text-navy transition-colors hover:bg-navy hover:text-white"
             >
               Contact us
