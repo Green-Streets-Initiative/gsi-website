@@ -102,6 +102,31 @@ export async function fetchNearbyAlerts(routeIds: string[]): Promise<SurfacedAle
   }
 }
 
+/**
+ * Every nearby major disruption for the "Service disruptions" summary card,
+ * ordered fresh-first then aged closures that still touch a visible route.
+ * Uncapped — the card shows the true count and caps the detail rows. Same
+ * inclusion rule as pickBannerAlert, just not narrowed to one. KEEP IN SYNC
+ * with the Shift app (TransitBikePane `nearbyAlerts`).
+ */
+export function nearbyAlerts(
+  alerts: SurfacedAlert[],
+  visibleRouteIds: Set<string>,
+): SurfacedAlert[] {
+  const fresh = alerts.filter(isFreshAlert)
+  const aged = alerts.filter(
+    a => !isFreshAlert(a) && a.routeIds.some(id => visibleRouteIds.has(id)),
+  )
+  return [...fresh, ...aged]
+}
+
+/** Surfaced alerts naming this route — drives the inline "Service alert"
+ *  expand-in-place on a route row. KEEP IN SYNC with the Shift app
+ *  (TransitBikePane `alertsForRoute`). */
+export function alertsForRoute(alerts: SurfacedAlert[], routeId: string): SurfacedAlert[] {
+  return alerts.filter(a => a.routeIds.includes(routeId))
+}
+
 /** The at-most-one banner-worthy alert (app: majorAlerts .slice(0,1)). */
 export function topAlert(alerts: SurfacedAlert[]): SurfacedAlert | null {
   return alerts[0] ?? null

@@ -19,8 +19,8 @@ import {
 } from './useNearbyModel'
 import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
-import { StationList, BikeRouteList, DockList, BorrowRentList, AlertBanner } from './AroundYouLists'
-import { pickBannerAlert, alertedRouteIds, type SurfacedAlert } from '@/lib/nearby/alerts'
+import { StationList, BikeRouteList, DockList, BorrowRentList, ServiceDisruptionsCard } from './AroundYouLists'
+import { nearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
 import { ReachList, RouteLegNote } from './ReachSection'
 import { ExploreBody } from './ExploreBody'
 import PartnerCobrand from './PartnerCobrand'
@@ -339,8 +339,8 @@ export default function NearbyShell({
           )}
           {(showRail || showBus) && (() => {
             const visibleRouteIds = new Set(stations.flatMap(st => st.routes.map(r => r.id)))
-            const banner = pickBannerAlert(alerts, visibleRouteIds)
-            return banner ? <AlertBanner alert={banner.alert} compact={banner.compact} /> : null
+            const routeNames = new Map(stations.flatMap(st => st.routes.map(r => [r.id, r.name] as const)))
+            return <ServiceDisruptionsCard alerts={nearbyAlerts(alerts, visibleRouteIds)} routeNames={routeNames} />
           })()}
           {(showRail || showBus) && (
             <>
@@ -351,7 +351,7 @@ export default function NearbyShell({
                 status={transitStatus}
                 onRetry={onRetry}
                 onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
-                alertRouteIds={alertedRouteIds(alerts)}
+                alerts={alerts}
               />
               <GuideLinks context="stations" guides={guides.data} modeFilter={modeFilter} />
             </>

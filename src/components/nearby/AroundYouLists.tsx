@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 import { Warning } from '@phosphor-icons/react'
-import type { SurfacedAlert } from '@/lib/nearby/alerts'
+import { alertsForRoute, type SurfacedAlert } from '@/lib/nearby/alerts'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
@@ -33,15 +33,180 @@ const rowClass = (active: boolean) =>
     active ? 'bg-[rgba(186,241,77,0.08)]' : 'hover:bg-white/[0.05]'
   }`
 
-export function StationList({ stations, corridorById, highlightedCorridorId, status, onRetry, onSelectRoute, alertRouteIds }: {
+// A div carrying a button role needs its own keyboard activation — used where
+// a card/row is the toggle but must also hold a nested alert button (nesting a
+// real <button> inside a <button> is invalid HTML).
+const activateOnKey = (fn: () => void) => (e: KeyboardEvent) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    fn()
+  }
+}
+
+/* ── Inline "Service alert" affordance on a disrupted route row ── */
+
+// The tappable pill that replaced the bare warning triangle: a real,
+// comfortably-sized target that says what it does. Stops propagation so it
+// toggles the alert, not the card/row it sits inside.
+function AlertPill({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={e => { e.stopPropagation(); onToggle() }}
+      aria-expanded={open}
+      className="inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-[#EDB93C] transition-colors hover:bg-[#EDB93C]/10"
+    >
+      <Warning size={12} weight="fill" aria-hidden="true" />
+      Service alert
+      <span className="text-[0.6rem]" aria-hidden="true">{open ? '▴' : '▾'}</span>
+    </button>
+  )
+}
+
+// The disruption detail itself — header → description → mbta.com outlink, one
+// block per alert on this route. Expanded in place under its route row; stops
+// propagation so taps inside don't toggle the enclosing card/row.
+function AlertDetailBlock({ alerts }: { alerts: SurfacedAlert[] }) {
+  return (
+    <span
+      className="mt-1 flex w-full flex-col gap-1.5"
+      onClick={e => e.stopPropagation()}
+    >
+      {alerts.map(a => (
+        <span key={a.id} className="block rounded-lg border border-[#EDB93C]/25 bg-[#EDB93C]/[0.06] px-3 py-2">
+          <span className="block text-[0.78rem] leading-relaxed text-white">{a.header}</span>
+          {a.description && (
+            <span className="mt-1 block text-[0.75rem] leading-relaxed text-white/80">{a.description}</span>
+          )}
+          <a
+            href={a.url ?? 'https://www.mbta.com/alerts'}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => posthog.capture('snapshot_alert_link', { effect: a.effect })}
+            className="mt-1.5 inline-block text-[0.75rem] font-bold text-[#BAF14D]"
+          >
+            Full details at mbta.com &rarr;
+          </a>
+        </span>
+      ))}
+    </span>
+  )
+}
+
+// One route line in the COLLAPSED station summary. Owns its own alert-open
+// state so the detail drops in place right under the line.
+function RouteSummaryLine({ r, corridorById, alerts }: {
+  r: StationGroup['routes'][number]
+  corridorById: Map<string, TransitCorridor | BikeCorridor>
+  alerts: SurfacedAlert[]
+}) {
+  const [open, setOpen] = useState(false)
+  const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
+  const next = soonestAtStation(r)
+  const ends = routeEndpoints(corridor, r)
+  const routeAlerts = alertsForRoute(alerts, r.id)
+  return (
+    <span className="flex flex-col gap-1">
+      <span className="flex items-baseline gap-1.5">
+        <span
+          className="shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+          style={{ backgroundColor: lineColor(r.id), color: lineTextColor(r.id) }}
+        >
+          {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
+        </span>
+        {routeAlerts.length > 0 && (
+          <AlertPill
+            open={open}
+            onToggle={() => {
+              if (!open) posthog.capture('snapshot_alert_expanded', { effect: routeAlerts[0].effect })
+              setOpen(o => !o)
+            }}
+          />
+        )}
+        {ends && (
+          <span className="min-w-0 flex-1 truncate text-[0.78rem] text-white/80">{ends}</span>
+        )}
+        {next !== null && (
+          <strong className="ml-auto shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
+            {next === 0 ? 'now' : `in ${next} min`}
+          </strong>
+        )}
+      </span>
+      {open && routeAlerts.length > 0 && <AlertDetailBlock alerts={routeAlerts} />}
+    </span>
+  )
+}
+
+// One route line in the EXPANDED station card — a selector that lights the
+// corridor on the map, now also holding the inline alert disclosure.
+function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRoute, alerts }: {
+  r: StationGroup['routes'][number]
+  corridorById: Map<string, TransitCorridor | BikeCorridor>
+  highlightedCorridorId: string | null
+  onSelectRoute: (corridorId: string) => void
+  alerts: SurfacedAlert[]
+}) {
+  const [open, setOpen] = useState(false)
+  const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
+  const active = highlightedCorridorId === `transit:${r.id}`
+  const fs = corridor ? freqShort(corridor.frequency) : null
+  const dirs = r.arrivals.filter(a => a.direction)
+  const routeAlerts = alertsForRoute(alerts, r.id)
+  const select = () => onSelectRoute(`transit:${r.id}`)
+  return (
+    <div role="button" tabIndex={0} onClick={select} onKeyDown={activateOnKey(select)} className={rowClass(active)}>
+      <span
+        className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+        style={{ backgroundColor: lineColor(r.id), color: lineTextColor(r.id) }}
+      >
+        {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
+      </span>
+      {routeAlerts.length > 0 && (
+        <AlertPill
+          open={open}
+          onToggle={() => {
+            if (!open) posthog.capture('snapshot_alert_expanded', { effect: routeAlerts[0].effect })
+            setOpen(o => !o)
+          }}
+        />
+      )}
+      <span className="ml-auto text-[0.75rem] text-white/75">
+        {corridor?.frequency === null && <span className="inline-block h-3 w-20 animate-pulse rounded bg-white/[0.08] align-middle" aria-hidden="true" />}
+        {corridor?.frequency === 'unavailable' && 'schedule unavailable'}
+        {fs}
+      </span>
+      {/* One line per direction — a new rider needs to know which WAY the next one is going */}
+      {dirs.length > 0 ? (
+        <span className="w-full space-y-0.5">
+          {dirs.map(a => (
+            <span key={a.direction} className="flex items-baseline justify-between gap-2">
+              <span className="min-w-0 truncate text-[0.8rem] text-white/80">&rarr; {a.direction}</span>
+              {a.nextMin !== null && (
+                <strong className="shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
+                  {a.nextMin === 0 ? 'now' : `in ${a.nextMin} min`}
+                </strong>
+              )}
+            </span>
+          ))}
+        </span>
+      ) : (
+        <span className="min-w-0 flex-1 truncate text-[0.8rem] text-white/80">{routeEndpoints(corridor, r)}</span>
+      )}
+      {open && routeAlerts.length > 0 && <AlertDetailBlock alerts={routeAlerts} />}
+    </div>
+  )
+}
+
+export function StationList({ stations, corridorById, highlightedCorridorId, status, onRetry, onSelectRoute, alerts }: {
   stations: StationGroup[]
   corridorById: Map<string, TransitCorridor | BikeCorridor>
   highlightedCorridorId: string | null
   status: SectionStatus
   onRetry: () => void
   onSelectRoute: (corridorId: string) => void
-  /** Route ids named by an active service alert — get a warning glyph. */
-  alertRouteIds: Set<string>
+  /** All surfaced service alerts — a route row named by one gets an inline,
+   *  tappable "Service alert" disclosure that expands its detail in place. */
+  alerts: SurfacedAlert[]
 }) {
   // Collapsed by default — the summary line answers "what's here, how soon";
   // the per-direction detail expands in place for whoever wants it
@@ -78,10 +243,13 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
             <div key={cardKey} className="rounded-xl border border-white/[0.08] bg-[#242538] px-3 py-3">
               {/* Header + compact summary toggle the card open; the full
                   per-direction detail only takes space when asked for */}
-              <button
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => toggleCard(cardKey)}
+                onKeyDown={activateOnKey(() => toggleCard(cardKey))}
                 aria-expanded={open}
-                className="w-full px-1.5 text-left"
+                className="w-full cursor-pointer px-1.5 text-left"
               >
                 <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
                   <span className="flex items-center gap-1.5 text-[0.95rem] font-bold text-white">
@@ -98,83 +266,25 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                   // alone doesn't tell a newcomer whether this bus is any use
                   // to them, and that's the question the closed card must answer
                   <span className="mt-1.5 flex flex-col gap-y-1">
-                    {st.routes.map(r => {
-                      const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
-                      const next = soonestAtStation(r)
-                      const ends = routeEndpoints(corridor, r)
-                      return (
-                        <span key={r.id} className="flex items-baseline gap-1.5">
-                          <span
-                            className="shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-                            style={{ backgroundColor: lineColor(r.id), color: lineTextColor(r.id) }}
-                          >
-                            {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
-                          </span>
-                          {alertRouteIds.has(r.id) && (
-                            <Warning size={13} weight="fill" className="shrink-0 text-[#EDB93C]" aria-label="Service alert" />
-                          )}
-                          {ends && (
-                            <span className="min-w-0 flex-1 truncate text-[0.78rem] text-white/80">{ends}</span>
-                          )}
-                          {next !== null && (
-                            <strong className="ml-auto shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
-                              {next === 0 ? 'now' : `in ${next} min`}
-                            </strong>
-                          )}
-                        </span>
-                      )
-                    })}
+                    {st.routes.map(r => (
+                      <RouteSummaryLine key={r.id} r={r} corridorById={corridorById} alerts={alerts} />
+                    ))}
                   </span>
                 )}
-              </button>
+              </div>
               {/* Lines serving it — tap one to light it up on the map */}
               {open && (
                 <div className="mt-1.5 space-y-0.5">
-                  {st.routes.map(r => {
-                    const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
-                    const active = highlightedCorridorId === `transit:${r.id}`
-                    const fs = corridor ? freqShort(corridor.frequency) : null
-                    const dirs = r.arrivals.filter(a => a.direction)
-                    return (
-                      <button
-                        key={r.id}
-                        onClick={() => onSelectRoute(`transit:${r.id}`)}
-                        className={rowClass(active)}
-                      >
-                        <span
-                          className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-                          style={{ backgroundColor: lineColor(r.id), color: lineTextColor(r.id) }}
-                        >
-                          {/^\d/.test(r.name) ? `Route ${r.name}` : r.name}
-                        </span>
-                        {alertRouteIds.has(r.id) && (
-                          <Warning size={13} weight="fill" className="text-[#EDB93C]" aria-label="Service alert" />
-                        )}
-                        <span className="ml-auto text-[0.75rem] text-white/75">
-                          {corridor?.frequency === null && <span className="inline-block h-3 w-20 animate-pulse rounded bg-white/[0.08] align-middle" aria-hidden="true" />}
-                          {corridor?.frequency === 'unavailable' && 'schedule unavailable'}
-                          {fs}
-                        </span>
-                        {/* One line per direction — a new rider needs to know which WAY the next one is going */}
-                        {dirs.length > 0 ? (
-                          <span className="w-full space-y-0.5">
-                            {dirs.map(a => (
-                              <span key={a.direction} className="flex items-baseline justify-between gap-2">
-                                <span className="min-w-0 truncate text-[0.8rem] text-white/80">→ {a.direction}</span>
-                                {a.nextMin !== null && (
-                                  <strong className="shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
-                                    {a.nextMin === 0 ? 'now' : `in ${a.nextMin} min`}
-                                  </strong>
-                                )}
-                              </span>
-                            ))}
-                          </span>
-                        ) : (
-                          <span className="min-w-0 flex-1 truncate text-[0.8rem] text-white/80">{routeEndpoints(corridor, r)}</span>
-                        )}
-                      </button>
-                    )
-                  })}
+                  {st.routes.map(r => (
+                    <ExpandedRouteRow
+                      key={r.id}
+                      r={r}
+                      corridorById={corridorById}
+                      highlightedCorridorId={highlightedCorridorId}
+                      onSelectRoute={onSelectRoute}
+                      alerts={alerts}
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -367,39 +477,132 @@ export function BorrowRentList({ points }: {
 }
 
 
-/* ── Service-disruption banner: the at-most-one major alert, in-context
-      above the stations list. Mirrors the Shift app's expandable banner. ── */
+/* ── Service disruptions: a compact, progressively-disclosed summary card
+      above the stations list. L1 = count + affected-line badges;
+      L2 = the list of disruptions; L3 = each one's full MBTA detail + outlink.
+      Mirrors the Shift app's ServiceDisruptionsCard. ── */
 
-export function AlertBanner({ alert, compact = false }: { alert: SurfacedAlert; compact?: boolean }) {
+// How many disruptions get a detail row; the rest fold into a "+N more" outlink.
+const DISRUPTIONS_DISPLAY_CAP = 3
+
+// Small colored line badges for the route ids we can name (from visible
+// stations). Ids we can't name are carried by the header text instead.
+function AlertLineBadges({ routeIds, routeNames, size = 'sm' }: {
+  routeIds: string[]
+  routeNames: Map<string, string>
+  size?: 'sm' | 'xs'
+}) {
+  const named = [...new Set(routeIds)].filter(id => routeNames.has(id))
+  if (named.length === 0) return null
+  const cls = size === 'xs' ? 'text-[0.62rem]' : 'text-[0.65rem]'
+  return (
+    <span className="flex flex-wrap items-center gap-1">
+      {named.map(id => (
+        <span
+          key={id}
+          className={`rounded px-1.5 py-0.5 font-bold ${cls}`}
+          style={{ backgroundColor: lineColor(id), color: lineTextColor(id) }}
+        >
+          {routeNames.get(id)}
+        </span>
+      ))}
+    </span>
+  )
+}
+
+// L2 → L3: one disruption. Header (minimal detail) always shown; tap reveals
+// the full MBTA description and the official outlink.
+function AlertRow({ alert, routeNames }: { alert: SurfacedAlert; routeNames: Map<string, string> }) {
   const [open, setOpen] = useState(false)
   return (
     <button
       type="button"
-      onClick={() => setOpen(o => !o)}
-      className="mb-2.5 flex w-full items-start gap-2 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-4 py-3 text-left"
+      onClick={() => {
+        if (!open) posthog.capture('snapshot_alert_expanded', { effect: alert.effect })
+        setOpen(o => !o)
+      }}
+      aria-expanded={open}
+      className="flex w-full items-start gap-2 rounded-lg bg-white/[0.04] px-3 py-2.5 text-left"
     >
-      <Warning size={18} weight="fill" className="mt-0.5 shrink-0 text-[#EDB93C]" aria-hidden="true" />
       <span className="min-w-0 flex-1">
-        <span className={`block text-[0.82rem] leading-relaxed text-white ${open ? '' : compact ? 'truncate' : 'line-clamp-3'}`}>
+        <AlertLineBadges routeIds={alert.routeIds} routeNames={routeNames} size="xs" />
+        <span className={`mt-1 block text-[0.8rem] leading-relaxed text-white ${open ? '' : 'line-clamp-2'}`}>
           {alert.header}
         </span>
         {open && alert.description && (
-          <span className="mt-1.5 block text-[0.8rem] leading-relaxed text-white/80">{alert.description}</span>
+          <span className="mt-1.5 block text-[0.78rem] leading-relaxed text-white/80">{alert.description}</span>
         )}
         {open ? (
           <a
             href={alert.url ?? 'https://www.mbta.com/alerts'}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            className="mt-2 inline-block text-[0.8rem] font-bold text-[#BAF14D]"
+            onClick={e => { e.stopPropagation(); posthog.capture('snapshot_alert_link', { effect: alert.effect }) }}
+            className="mt-2 inline-block text-[0.78rem] font-bold text-[#BAF14D]"
           >
             Full details at mbta.com &rarr;
           </a>
         ) : (
-          <span className="mt-1 block text-[0.72rem] text-white/60">Tap for details</span>
+          <span className="mt-1 block text-[0.7rem] text-white/60">Tap for details</span>
         )}
       </span>
+      <span className="shrink-0 text-[0.72rem] font-semibold text-[#BAF14D]" aria-hidden="true">{open ? '▴' : '▾'}</span>
     </button>
+  )
+}
+
+export function ServiceDisruptionsCard({ alerts, routeNames }: {
+  /** Nearby major disruptions, ordered fresh-first (see nearbyAlerts). */
+  alerts: SurfacedAlert[]
+  /** route id → display name, from the visible stations, for the line badges. */
+  routeNames: Map<string, string>
+}) {
+  const [open, setOpen] = useState(false)
+  if (alerts.length === 0) return null
+  const shown = alerts.slice(0, DISRUPTIONS_DISPLAY_CAP)
+  const overflow = alerts.length - shown.length
+  const affectedIds = alerts.flatMap(a => a.routeIds)
+  return (
+    <div className="mb-2.5 overflow-hidden rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10">
+      <button
+        type="button"
+        onClick={() => {
+          if (!open) posthog.capture('snapshot_disruptions_expanded', { count: alerts.length })
+          setOpen(o => !o)
+        }}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 px-4 py-3 text-left"
+      >
+        <Warning size={18} weight="fill" className="shrink-0 text-[#EDB93C]" aria-hidden="true" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-[0.82rem] font-bold text-white">
+            {alerts.length === 1 ? '1 service disruption nearby' : `${alerts.length} service disruptions nearby`}
+          </span>
+          {!open && (
+            <span className="mt-1 block">
+              <AlertLineBadges routeIds={affectedIds} routeNames={routeNames} />
+            </span>
+          )}
+        </span>
+        <span className="shrink-0 text-[0.8rem] font-semibold text-[#BAF14D]" aria-hidden="true">{open ? '▴' : '▾'}</span>
+      </button>
+      {open && (
+        <div className="space-y-2 px-3 pb-3">
+          {shown.map(a => (
+            <AlertRow key={a.id} alert={a} routeNames={routeNames} />
+          ))}
+          {overflow > 0 && (
+            <a
+              href="https://www.mbta.com/alerts"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-1 text-[0.78rem] font-semibold text-[#BAF14D]"
+            >
+              +{overflow} more at mbta.com &rarr;
+            </a>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
