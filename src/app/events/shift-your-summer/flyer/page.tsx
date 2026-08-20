@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-const CHALLENGE_BASE_URL = 'https://gogreenstreets.org/events/shift-your-summer'
+const CHALLENGE_BASE_URL = 'https://www.gogreenstreets.org/events/shift-your-summer'
 
 interface SponsorRow {
   id: string

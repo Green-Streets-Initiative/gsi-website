@@ -21,10 +21,11 @@ const IS_LIVE = !!(IOS_URL && ANDROID_URL)
 export const metadata: Metadata = {
   title: 'Shift — Move better. Every trip. | Green Streets Initiative',
   description: 'Turn everyday trips into local perks, status, and friendly competition.',
+  alternates: { canonical: 'https://www.gogreenstreets.org/shift' },
   openGraph: {
     title: 'Shift — Move better. Every trip.',
     description: 'Turn everyday trips into local perks, status, and friendly competition.',
-    url: 'https://gogreenstreets.org/shift',
+    url: 'https://www.gogreenstreets.org/shift',
     siteName: 'Green Streets Initiative',
     images: [{ url: '/og/shift-og.png', width: 1200, height: 630, alt: 'Shift by Green Streets Initiative — Move better. Every trip.' }],
     locale: 'en_US',

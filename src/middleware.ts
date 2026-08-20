@@ -69,7 +69,7 @@ function handleEmployerDomain(req: NextRequest) {
   }
 
   // Any other path on this domain → redirect to main site
-  const mainUrl = new URL(`https://gogreenstreets.org${pathname}`)
+  const mainUrl = new URL(`https://www.gogreenstreets.org${pathname}`)
   mainUrl.search = req.nextUrl.search
   return NextResponse.redirect(mainUrl, 308)
 }

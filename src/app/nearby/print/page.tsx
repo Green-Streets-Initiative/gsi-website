@@ -30,7 +30,7 @@ import SheetViewport from './SheetViewport'
  * the only client JS is the print button.
  */
 
-const SITE_URL = 'https://gogreenstreets.org'
+const SITE_URL = 'https://www.gogreenstreets.org'
 // The real GSI wordmark (brand-assets bucket, same file the employer PDFs
 // use) — printed pieces must carry the actual mark, not styled text
 const GSI_WORDMARK = 'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/gsi-wordmark.png'

@@ -1,8 +1,11 @@
+import type { Metadata } from 'next'
+import { cache } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { notFound, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import { pageMetadata } from '@/lib/seo'
 
 interface GuideRow {
   id: string
@@ -15,6 +18,39 @@ interface GuideRow {
   read_time_minutes: number | null
   related_guides: string[] | null
   created_at: string
+  last_reviewed_at: string | null
+}
+
+// Fetch the guide once per request. React's cache() dedupes the call so
+// generateMetadata and the page component share a single database round-trip.
+const getGuideBySlug = cache(async (slug: string): Promise<GuideRow | null> => {
+  const supabase = createServerSupabaseClient()
+  const { data } = await supabase
+    .from('content_items')
+    .select(
+      'id, slug, title, summary, body, primary_mode, primary_barrier, read_time_minutes, related_guides, created_at, last_reviewed_at',
+    )
+    .eq('slug', slug)
+    .eq('status', 'approved')
+    .maybeSingle()
+  return (data as GuideRow | null) ?? null
+})
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const guide = await getGuideBySlug(slug)
+  // Legacy id-based URLs (handled by the page's redirect) and unknown slugs
+  // fall back to a generic title rather than the inherited root title.
+  if (!guide) return { title: 'Guides — Green Streets Initiative' }
+  return pageMetadata({
+    title: `${guide.title} — Green Streets Initiative`,
+    description: guide.summary,
+    path: `/guides/${guide.slug ?? slug}`,
+  })
 }
 
 interface RelatedGuide {
@@ -33,17 +69,11 @@ const modeLabel: Record<string, string> = {
 
 export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const supabase = createServerSupabaseClient()
 
-  // Try slug first.
-  let { data: guide } = await supabase
-    .from('content_items')
-    .select(
-      'id, slug, title, summary, body, primary_mode, primary_barrier, read_time_minutes, related_guides, created_at',
-    )
-    .eq('slug', slug)
-    .eq('status', 'approved')
-    .maybeSingle()
+  // Try slug first (cached — generateMetadata already ran this exact call).
+  const guide = await getGuideBySlug(slug)
+
+  const supabase = createServerSupabaseClient()
 
   // Fall back to legacy id-based URL — redirect to canonical slug.
   if (!guide) {
@@ -57,7 +87,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     notFound()
   }
 
-  const g = guide as GuideRow
+  const g = guide
 
   // Fetch related guides (if any), filter to approved.
   let related: RelatedGuide[] = []

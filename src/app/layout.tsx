@@ -44,6 +44,14 @@ export const metadata: Metadata = {
     locale: 'en_US',
     type: 'website',
   },
+  // Site-wide Twitter-card default. Pages with their own `twitter` block
+  // override this; pages without one now still get a large-image card
+  // instead of a bare link.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Green Streets Initiative',
+    description: 'Shift how you move. Walk it. Bike it. Take the bus.',
+  },
 }
 
 export default function RootLayout({

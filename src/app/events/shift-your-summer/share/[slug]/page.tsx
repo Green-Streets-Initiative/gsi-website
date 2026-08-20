@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = `Join ${group.name} for Shift Your Summer`
   const description = `${group.name} is participating in Shift Your Summer. Download the Shift app and join the team to walk, bike, and ride transit for prizes.`
-  const pageUrl = `https://gogreenstreets.org/events/shift-your-summer/share/${clean}`
+  const pageUrl = `https://www.gogreenstreets.org/events/shift-your-summer/share/${clean}`
 
   return {
     title,
@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: pageUrl,
       siteName: 'Green Streets Initiative',
       images: [{
-        url: `https://gogreenstreets.org/api/og/share/employer/${clean}`,
+        url: `https://www.gogreenstreets.org/api/og/share/employer/${clean}`,
         width: 1200,
         height: 630,
         alt: title,
@@ -90,7 +90,7 @@ export default async function CorporateSharePage({ params }: Props) {
   if (!group) notFound()
 
   const joinUrl = `https://shift.gogreenstreets.org/join/${group.invite_code}`
-  const sharePageUrl = `https://gogreenstreets.org/events/shift-your-summer/share/${clean}`
+  const sharePageUrl = `https://www.gogreenstreets.org/events/shift-your-summer/share/${clean}`
 
   const blurb = `Join ${group.name} for Shift Your Summer — an 8-week challenge (June 15 – Aug 15) where every walk, bike ride, and transit trip is an entry to win prizes from Segway, Quad Lock, Kryptonite, and more. Tap the link to join: ${joinUrl}`
 
