@@ -7,9 +7,18 @@ import { modeOptions, hasTransitRoute, hasBikeRoute, defaultRouteMode, reachMode
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import type { ModeFilter } from './useNearbyModel'
 import type { RouteLegTapInfo } from './NearbyMap'
-import BikeComfortBlock, { NEARBY_COMFORT_COLORS, NEARBY_COMFORT_LABELS } from './BikeComfortBlock'
+import BikeComfortBlock, { NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
 import type { ReachRow, BikeComfortTier } from './types'
 import { useNearbyT } from './NearbyI18n'
+
+/** Comfort-tier → i18n key, so a tapped bike leg's tier reads in the page
+ *  language (matches BikeComfortBlock's localized labels). */
+const LEG_TIER_KEY: Record<BikeComfortTier, string> = {
+  path: 'bike.path',
+  protected: 'bike.protected',
+  bike_lane: 'bike.bike_lane',
+  shared_road: 'bike.shared_road',
+}
 
 /** What a tapped stretch of the drawn route is — rendered inside the
  *  expanded row (desktop) and the sheet detail (mobile). */
@@ -19,7 +28,7 @@ export function RouteLegNote({ info }: { info: RouteLegTapInfo }) {
   // Name the road first when we know it — "what street is this?" is the
   // question a tap is asking; the comfort tier is the follow-up
   const bikeText = () => {
-    const tierText = tier ? NEARBY_COMFORT_LABELS[tier] : tr('reach.tier_bike')
+    const tierText = tier ? tr(LEG_TIER_KEY[tier]) : tr('reach.tier_bike')
     const miles = info.legMiles ? tr('reach.leg_miles', { miles: info.legMiles }) : ''
     return info.legStreet
       ? tr('reach.leg_street', { street: info.legStreet, tier: tierText.toLowerCase(), miles })
