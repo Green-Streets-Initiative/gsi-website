@@ -32,9 +32,11 @@ import { t, resolveNearbyLocale, type NearbyLocale } from '@/lib/nearby/i18n'
  */
 
 const SITE_URL = 'https://www.gogreenstreets.org'
-// The real GSI wordmark (brand-assets bucket, same file the employer PDFs
-// use) — printed pieces must carry the actual mark, not styled text
-const GSI_WORDMARK = 'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/gsi-wordmark.png'
+// The real GSI wordmark — printed pieces must carry the actual mark, not
+// styled text. Served from /public (same file as the brand-assets bucket
+// copy): the printing browser fetches it, and content blockers strip
+// supabase.co requests (the partner-logo lesson, 2026-08-21).
+const GSI_WORDMARK = '/images/gsi-wordmark.png'
 // Sized so header + map + legend + columns + destinations + QR footer land
 // on ONE letter page (10.2in printable ≈ 980 CSS px) — check the PDF after
 // growing anything here

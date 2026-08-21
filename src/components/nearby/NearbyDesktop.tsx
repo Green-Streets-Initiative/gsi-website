@@ -176,7 +176,7 @@ export default function NearbyDesktop({
           </div>
           {/* Partner co-brand — secondary to the GSI headline, hugging the
               right edge of the header (never the load-bearing sticky bar) */}
-          {partner && <PartnerCobrand partner={partner} logoClass="max-h-9" />}
+          {partner && <PartnerCobrand partner={partner} logoClass="max-h-9" gsiClass="max-h-6" />}
         </div>
         {outside && (
           <p className="mt-3 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-5 py-3.5 text-[0.875rem] leading-relaxed text-white">

@@ -246,7 +246,7 @@ export default function NearbyShell({
           below flexes to the remaining height, so sheet snaps stay correct */}
       {partner && (
         <div className="flex h-10 shrink-0 items-center border-b border-white/[0.08] px-4">
-          <PartnerCobrand partner={partner} logoClass="max-h-6" textClass="text-[0.7rem]" />
+          <PartnerCobrand partner={partner} logoClass="max-h-6" gsiClass="max-h-4" textClass="text-[0.7rem]" />
         </div>
       )}
 
