@@ -9,7 +9,7 @@ import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBluebikes, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
 import { fetchNearbyAlerts, type SurfacedAlert, type NearbyPromo } from '@/lib/nearby/alerts'
 import { round3, parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
-import { parsePartnerSlug, fetchPartner, type NearbyPartner } from '@/lib/nearby/partner'
+import { parsePartnerSlug, fetchPartnerClient, type NearbyPartner } from '@/lib/nearby/partner'
 import { resolvePlaceLabel, combinePlaceLabel, splitPlaceLabel } from '@/lib/nearby/neighborhood'
 import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
 import { NEARBY_PATH } from '@/lib/nearby/config'
@@ -104,17 +104,23 @@ export default function NearbySnapshot() {
   // Partner co-brand (outreach deep links): the slug is read once at mount,
   // independently of the coord params — every combination of partner/coords
   // must work. Malformed or unknown slugs resolve to null silently.
+  // Read from window.location, NOT useSearchParams: the first render can see
+  // EMPTY search params (they stream in a re-render later), and a []-deps
+  // memo freezes that empty snapshot — the co-brand silently never loaded
+  // for some visitors. The browser URL is always correct at client render.
   const partnerSlug = useMemo(
-    () => parsePartnerSlug(new URLSearchParams(searchParams.toString())),
+    () => (typeof window === 'undefined'
+      ? null
+      : parsePartnerSlug(new URLSearchParams(window.location.search))),
     // Mount only — the slug never changes without a full navigation
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
   const [partner, setPartner] = useState<NearbyPartner | null>(null)
   useEffect(() => {
     if (!partnerSlug) return
     let cancelled = false
-    fetchPartner(partnerSlug).then(p => { if (!cancelled) setPartner(p) })
+    // Same-origin lookup — content blockers strip direct supabase.co calls
+    fetchPartnerClient(partnerSlug).then(p => { if (!cancelled) setPartner(p) })
     return () => { cancelled = true }
   }, [partnerSlug])
 

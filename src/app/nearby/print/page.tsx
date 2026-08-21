@@ -3,7 +3,7 @@ import QRCode from 'qrcode'
 import { parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
 import { splitPlaceLabel } from '@/lib/nearby/neighborhood'
 import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
-import { parsePartnerSlug, fetchPartner } from '@/lib/nearby/partner'
+import { parsePartnerSlug, fetchPartner, partnerLogoPath } from '@/lib/nearby/partner'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import { getStopTopology } from '@/lib/server/mbta-topology'
 import { getCorridorMeta, type CorridorMetaResult } from '@/lib/server/corridor-meta'
@@ -95,8 +95,11 @@ export default async function NearbyPrintPage({ searchParams }: {
     // "Popular with Shift riders" markers — the label param carries
     // "Neighborhood, Town", and the lookup fails soft to an empty set
     fetchPopularBikeStreets(splitPlaceLabel(loc.label ?? '').town),
-    // Partner co-brand for outreach prints; null (default header) on any miss
-    fetchPartner(parsePartnerSlug(params)),
+    // Partner co-brand for outreach prints; null (default header) on any
+    // miss. The logo renders via the same-origin proxy path — the browser
+    // fetching this server-rendered page may block supabase.co directly.
+    fetchPartner(parsePartnerSlug(params)).then(p =>
+      p?.logoUrl ? { ...p, logoUrl: partnerLogoPath(p.slug) } : p),
   ])
 
   // Shapes + weekday frequency per transit corridor; failures degrade to
