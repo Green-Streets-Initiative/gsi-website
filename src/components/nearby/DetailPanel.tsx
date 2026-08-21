@@ -260,6 +260,15 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
       )
     }
     const freq = c.frequency
+    // Both directions' next departures at the boarding stop — station groups
+    // are keyed by lowercased name, and the corridor carries its access stop
+    // name + routeId, so we read the same live arrivals the station detail
+    // uses. Matches the app's route detail (both ways, not just one).
+    const liveDirs =
+      stationByKey
+        .get(c.access.stopName.toLowerCase())
+        ?.routes.find(r => r.id === c.routeId)
+        ?.arrivals.filter(a => a.direction) ?? []
     return (
       <div>
         <div className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
@@ -284,6 +293,20 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
         <div className="mt-0.5 text-[0.78rem] text-white/80">
           {tr('detail.board_at', { stop: c.access.stopName, minutes: c.access.walkMin })}
         </div>
+        {liveDirs.length > 0 && (
+          <div className="mt-2 space-y-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-2">
+            {liveDirs.map(a => (
+              <div key={a.direction} className="flex items-baseline justify-between gap-2">
+                <span className="min-w-0 truncate text-[0.8rem] text-white/80">→ {a.direction}</span>
+                {a.nextMin !== null && (
+                  <strong className="shrink-0 text-[0.8rem] font-bold text-[#BAF14D]">
+                    {a.nextMin === 0 ? tr('detail.now') : tr('detail.in_min', { minutes: a.nextMin })}
+                  </strong>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
         <AllStops corridor={c} />
         <PanelPhoto spec={corridorPhotoSpec(c)} alt={tr('detail.photo_alt_at', { name: c.name, stop: c.access.stopName })} />
       </div>
