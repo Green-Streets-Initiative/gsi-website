@@ -189,7 +189,7 @@ export default function NearbyDesktop({
           <div className="mt-3 max-w-2xl">
             <NewRoutesOffer
               href={appHref}
-              variant="splash"
+              variant="compact"
               onCta={() => posthog.capture('snapshot_app_cta_clicked', { campaign: 'newroutes', ...(partnerSlug ? { partner: partnerSlug } : {}) })}
             />
           </div>

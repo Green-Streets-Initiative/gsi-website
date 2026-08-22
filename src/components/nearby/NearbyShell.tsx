@@ -355,7 +355,7 @@ export default function NearbyShell({
           <div className="mb-3">
             <NewRoutesOffer
               href={appHref}
-              variant="splash"
+              variant="compact"
               onCta={() => posthog.capture('snapshot_app_cta_clicked', { campaign: 'newroutes', ...(partnerSlug ? { partner: partnerSlug } : {}) })}
             />
           </div>
