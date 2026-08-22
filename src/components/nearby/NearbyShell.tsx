@@ -24,6 +24,7 @@ import { nearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
 import { ReachList, RouteLegNote } from './ReachSection'
 import { ExploreBody } from './ExploreBody'
 import PartnerCobrand from './PartnerCobrand'
+import NewRoutesOffer from './NewRoutesOffer'
 import type { NearbyPartner } from '@/lib/nearby/partner'
 import GuideLinks from './GuideLinks'
 import { SkeletonRows, ErrorCard } from './SectionShell'
@@ -69,6 +70,10 @@ interface Props {
    *  and rides the Download-Shift / advisor links */
   partner: NearbyPartner | null
   partnerSlug: string | null
+  /** Attributed /shift hand-off href (carries partner + utm) */
+  appHref: string
+  /** In a New Routes campaign context — show the reward offer + code */
+  newRoutes: boolean
   transitCorridors: TransitCorridor[]
   bikeCorridors: BikeCorridor[]
   popularBikeStreetKeys: Set<string>
@@ -87,7 +92,7 @@ interface Props {
 
 export default function NearbyShell({
   center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
-  onAdvisorCta, onPlanCommute, partnerLine, partner, partnerSlug,
+  onAdvisorCta, onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
   onRequestCorridorShape,
@@ -431,15 +436,25 @@ export default function NearbyShell({
           </div>
           <div className="mt-5 space-y-3">
             <div className="rounded-xl border border-white/[0.1] bg-[#242538] px-4 py-3.5">
-              <div className="text-[0.9rem] font-bold text-white">{tr('shell.get_app_title')}</div>
-              <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
-              <a
-                href={partnerSlug ? `/shift?partner=${partnerSlug}` : '/shift'}
-                onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
-                className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
-              >
-                {tr('shell.download_app')}
-              </a>
+              {newRoutes ? (
+                <NewRoutesOffer
+                  href={appHref}
+                  variant="inline"
+                  onCta={() => posthog.capture('snapshot_app_cta_clicked', { campaign: 'newroutes', ...(partnerSlug ? { partner: partnerSlug } : {}) })}
+                />
+              ) : (
+                <>
+                  <div className="text-[0.9rem] font-bold text-white">{tr('shell.get_app_title')}</div>
+                  <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
+                  <a
+                    href={appHref}
+                    onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
+                    className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
+                  >
+                    {tr('shell.download_app')}
+                  </a>
+                </>
+              )}
             </div>
           </div>
         </div>

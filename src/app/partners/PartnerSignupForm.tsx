@@ -190,8 +190,10 @@ function SuccessPanel({ slug, logoPreview, name }: {
   logoPreview: string | null
   name: string
 }) {
-  const liveUrl = `${SITE_URL}/nearby?partner=${slug}`
-  const printUrl = `${SITE_URL}/nearby/print?partner=${slug}`
+  // Carry the campaign tag so self-serve partner traffic is attributable by
+  // campaign (not just partner slug), matching the documented link template.
+  const liveUrl = `${SITE_URL}/nearby?partner=${slug}&utm_campaign=newroutes`
+  const printUrl = `${SITE_URL}/nearby/print?partner=${slug}&utm_campaign=newroutes`
 
   return (
     <div className="bg-[#242538] rounded-xl border border-white/[0.08] p-8 md:p-10 space-y-8">

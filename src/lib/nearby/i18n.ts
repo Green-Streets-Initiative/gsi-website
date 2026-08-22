@@ -278,6 +278,15 @@ const en: Dict = {
   'promo.copied': 'Copied ✓',
   'promo.get_app': 'Get the Bluebikes app',
   'promo.sponsored_by': 'Sponsored by {sponsor}',
+
+  // ── newroutes (New Routes campaign offer block + print strip) ──
+  'newroutes.offer_eyebrow': 'New Routes reward',
+  'newroutes.offer_title': 'Just moved? Earn $10 for getting around.',
+  'newroutes.offer_body': 'Take 10 walking, biking, or transit trips in your first 30 days on Shift and unlock a $10 gift card at a local shop.',
+  'newroutes.offer_code_note': 'Enter it in the app after you install so your reward is linked.',
+  'newroutes.offer_cta': 'Get Shift →',
+  'print.newroutes_offer': 'New here? Get Shift, make 10 trips in 30 days, and earn a $10 local gift card.',
+  'print.newroutes_code': 'After installing, enter code {code}.',
 }
 
 const es: Dict = {
@@ -501,6 +510,13 @@ const es: Dict = {
   "promo.copied": "Copiado ✓",
   "promo.get_app": "Descarga la app Bluebikes",
   "promo.sponsored_by": "Patrocinado por {sponsor}",
+  "newroutes.offer_eyebrow": "Recompensa New Routes",
+  "newroutes.offer_title": "¿Te acabas de mudar? Gana $10 por moverte.",
+  "newroutes.offer_body": "Haz 10 viajes a pie, en bici o en transporte en tus primeros 30 días con Shift y desbloquea una tarjeta de regalo de $10 en un comercio local.",
+  "newroutes.offer_code_note": "Ingrésalo en la app después de instalarla para vincular tu recompensa.",
+  "newroutes.offer_cta": "Descarga Shift →",
+  "print.newroutes_offer": "¿Nuevo aquí? Descarga Shift, haz 10 viajes en 30 días y gana una tarjeta de regalo local de $10.",
+  "print.newroutes_code": "Después de instalar, ingresa el código {code}.",
 }
 
 const ptBR: Dict = {
@@ -724,6 +740,13 @@ const ptBR: Dict = {
   "promo.copied": "Copiado ✓",
   "promo.get_app": "Baixe o app Bluebikes",
   "promo.sponsored_by": "Patrocinado por {sponsor}",
+  "newroutes.offer_eyebrow": "Recompensa New Routes",
+  "newroutes.offer_title": "Acabou de se mudar? Ganhe $10 para se locomover.",
+  "newroutes.offer_body": "Faça 10 viagens a pé, de bike ou de transporte nos seus primeiros 30 dias no Shift e desbloqueie um vale-presente de $10 em um comércio local.",
+  "newroutes.offer_code_note": "Digite-o no app após instalar para vincular sua recompensa.",
+  "newroutes.offer_cta": "Baixe o Shift →",
+  "print.newroutes_offer": "Novo por aqui? Baixe o Shift, faça 10 viagens em 30 dias e ganhe um vale-presente local de $10.",
+  "print.newroutes_code": "Após instalar, digite o código {code}.",
 }
 
 const zhHans: Dict = {
@@ -947,6 +970,13 @@ const zhHans: Dict = {
   "promo.copied": "已复制 ✓",
   "promo.get_app": "下载 Bluebikes 应用",
   "promo.sponsored_by": "由 {sponsor} 赞助",
+  "newroutes.offer_eyebrow": "New Routes 奖励",
+  "newroutes.offer_title": "刚搬来？出行就能赚 $10。",
+  "newroutes.offer_body": "在 Shift 上于搬入后的前 30 天内完成 10 次步行、骑行或公交出行，即可解锁本地商家的 $10 礼品卡。",
+  "newroutes.offer_code_note": "安装后在应用中输入该码，即可关联您的奖励。",
+  "newroutes.offer_cta": "获取 Shift →",
+  "print.newroutes_offer": "刚搬来？下载 Shift，30 天内完成 10 次出行，即可获得 $10 本地礼品卡。",
+  "print.newroutes_code": "安装后，输入代码 {code}。",
 }
 
 const strings: Record<NearbyLocale, Dict> = {

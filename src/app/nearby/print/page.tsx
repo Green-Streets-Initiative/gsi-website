@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import QRCode from 'qrcode'
 import { parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
+import { isNewRoutesContext, NEWROUTES_CODE } from '@/lib/nearby/campaign'
 import { splitPlaceLabel } from '@/lib/nearby/neighborhood'
 import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
 import { parsePartnerSlug, fetchPartner, partnerLogoPath } from '@/lib/nearby/partner'
@@ -82,6 +83,10 @@ export default async function NearbyPrintPage({ searchParams }: {
 
   const outside = isOutsideArea(loc.lat, loc.lng)
   const label = loc.label || tr('print.your_neighborhood')
+  // New Routes prints (partner co-brand or utm_campaign=newroutes) carry the
+  // reward + the code a mover enters in the app — the printed code is the
+  // attribution floor once a store install wipes the link.
+  const newRoutes = isNewRoutesContext(params.toString())
   // The QR keeps the partner/utm params, so a scanned print lands on the
   // co-branded interactive page and the visit still attributes
   const shareUrl = `${SITE_URL}${buildShareUrl(loc.lat, loc.lng, loc.label, stickyParams(params.toString()))}`
@@ -404,6 +409,19 @@ export default async function NearbyPrintPage({ searchParams }: {
             </div>
             <p className="mt-1 text-[0.62rem] text-[#191A2E]/60">
               {tr('print.destinations_note')}
+            </p>
+          </section>
+        )}
+
+        {/* New Routes reward strip — only on campaign prints. The code is
+            load-bearing: it's how a mover links their reward after a store
+            install wipes the co-brand link. */}
+        {newRoutes && (
+          <section className="print-card mt-2 rounded-lg border border-[#4A7729]/40 bg-[#F2F8EC] px-3 py-2">
+            <p className="text-[0.72rem] leading-snug text-[#191A2E]">
+              <span className="font-bold text-[#4A7729]">{tr('newroutes.offer_eyebrow')}: </span>
+              {tr('print.newroutes_offer')}{' '}
+              <span className="font-bold">{tr('print.newroutes_code', { code: NEWROUTES_CODE })}</span>
             </p>
           </section>
         )}

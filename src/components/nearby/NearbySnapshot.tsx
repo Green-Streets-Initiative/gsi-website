@@ -9,6 +9,7 @@ import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBluebikes, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
 import { fetchNearbyAlerts, type SurfacedAlert, type NearbyPromo } from '@/lib/nearby/alerts'
 import { round3, parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
+import { buildAppHref, isNewRoutesContext } from '@/lib/nearby/campaign'
 import { parsePartnerSlug, fetchPartnerClient, type NearbyPartner } from '@/lib/nearby/partner'
 import { resolvePlaceLabel, combinePlaceLabel, splitPlaceLabel } from '@/lib/nearby/neighborhood'
 import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
@@ -23,6 +24,7 @@ import { captureReachLoaded } from './ReachSection'
 import NearbyShell from './NearbyShell'
 import NearbyDesktop from './NearbyDesktop'
 import PartnerCobrand from './PartnerCobrand'
+import NewRoutesOffer from './NewRoutesOffer'
 import { useIsDesktop } from './useIsDesktop'
 import { t, resolveNearbyLocale } from '@/lib/nearby/i18n'
 import { NearbyI18nProvider } from './NearbyI18n'
@@ -123,6 +125,18 @@ export default function NearbySnapshot() {
     fetchPartnerClient(partnerSlug).then(p => { if (!cancelled) setPartner(p) })
     return () => { cancelled = true }
   }, [partnerSlug])
+
+  // New Routes campaign context (partner co-brand or utm_campaign=newroutes)
+  // and the attributed /shift hand-off href. Read from window.location at mount
+  // for the same reason as partnerSlug — useSearchParams can be empty on the
+  // first render. Resolved post-mount, so SSR renders the plain page and the
+  // offer/attribution enhance in on the client.
+  const [newRoutes, setNewRoutes] = useState(false)
+  const [appHref, setAppHref] = useState('/shift')
+  useEffect(() => {
+    setNewRoutes(isNewRoutesContext(window.location.search))
+    setAppHref(buildAppHref(window.location.search))
+  }, [])
 
   /** Single entry point for a chosen location — rounds coords, updates the
    *  URL (refresh keeps state, link is shareable; partner/utm params ride
@@ -555,6 +569,16 @@ export default function NearbySnapshot() {
           )}
         </div>
 
+        {newRoutes && (
+          <div className="mx-auto mt-6 max-w-[440px]">
+            <NewRoutesOffer
+              href={appHref}
+              variant="splash"
+              onCta={() => posthog.capture('snapshot_app_cta_clicked', { campaign: 'newroutes', ...(partnerSlug ? { partner: partnerSlug } : {}) })}
+            />
+          </div>
+        )}
+
         <div className="mx-auto mt-8 max-w-[440px] rounded-[20px] border border-white/[0.12] bg-[#242538] p-7">
           <button
             onClick={handleUseMyLocation}
@@ -652,6 +676,8 @@ export default function NearbySnapshot() {
     partnerLine,
     partner,
     partnerSlug,
+    appHref,
+    newRoutes,
     transitCorridors: transitCorridors.data,
     bikeCorridors,
     popularBikeStreetKeys,

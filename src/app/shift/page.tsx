@@ -9,6 +9,7 @@ import StoreButtons from '@/components/StoreButtons'
 import PhoneFrame from './_components/PhoneFrame'
 import FeatureRow, { Bullet } from './_components/FeatureRow'
 import TierLadder from './_components/TierLadder'
+import NewRoutesShiftBanner from './_components/NewRoutesShiftBanner'
 import JsonLd from '@/components/JsonLd'
 import { shiftAppSchema } from '@/lib/structured-data'
 
@@ -50,6 +51,11 @@ export default function ShiftPage() {
       <Nav />
       <JsonLd data={shiftAppSchema()} />
       <main style={{ paddingTop: '60px' }}>
+
+        {/* New Routes campaign hand-off — only renders for campaign traffic
+            (partner co-brand or utm_campaign=newroutes); states the reward,
+            shows the code to enter in the app, and gives attributed store CTAs */}
+        <NewRoutesShiftBanner iosUrl={IOS_URL} androidUrl={ANDROID_URL} />
 
         {/* ═══════════════════════════════════════════════════════
             1 · HERO
