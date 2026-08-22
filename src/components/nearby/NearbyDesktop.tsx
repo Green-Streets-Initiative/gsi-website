@@ -183,6 +183,17 @@ export default function NearbyDesktop({
               right edge of the header (never the load-bearing sticky bar) */}
           {partner && <PartnerCobrand partner={partner} logoClass="max-h-9" gsiClass="max-h-6" />}
         </div>
+        {/* New Routes offer under the headline — visible on every tab, not
+            buried in the Explore rail. */}
+        {newRoutes && (
+          <div className="mt-3 max-w-2xl">
+            <NewRoutesOffer
+              href={appHref}
+              variant="splash"
+              onCta={() => posthog.capture('snapshot_app_cta_clicked', { campaign: 'newroutes', ...(partnerSlug ? { partner: partnerSlug } : {}) })}
+            />
+          </div>
+        )}
         {outside && (
           <p className="mt-3 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-5 py-3.5 text-[0.875rem] leading-relaxed text-white">
             {tr('desktop.outside_banner')}
@@ -393,28 +404,24 @@ export default function NearbyDesktop({
 
             <div className={railTab === 'explore' ? '' : 'hidden'}>
               <ExploreBody community={community} compact />
-              <div className="mt-4 rounded-xl border border-white/[0.1] bg-[#242538] px-4 py-3.5">
-                {newRoutes ? (
-                  <NewRoutesOffer
-                    href={appHref}
-                    variant="inline"
-                    onCta={() => posthog.capture('snapshot_app_cta_clicked', { campaign: 'newroutes', ...(partnerSlug ? { partner: partnerSlug } : {}) })}
-                  />
-                ) : (
-                  <>
-                    <div className="text-[0.9rem] font-bold text-white">{tr('desktop.get_app_title')}</div>
-                    <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
-                    <a
-                      href={appHref}
-                      onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
-                      className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
-                    >
-                      {tr('desktop.download_app')}
-                    </a>
-                  </>
-                )}
-              </div>
             </div>
+
+            {/* Get-Shift hook — persistent at the bottom of the rail on EVERY
+                tab (was gated to Explore). In New Routes context the reward
+                offer sits under the headline instead. */}
+            {!newRoutes && (
+              <div className="mt-4 rounded-xl border border-white/[0.1] bg-[#242538] px-4 py-3.5">
+                <div className="text-[0.9rem] font-bold text-white">{tr('desktop.get_app_title')}</div>
+                <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
+                <a
+                  href={appHref}
+                  onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
+                  className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
+                >
+                  {tr('desktop.download_app')}
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </div>

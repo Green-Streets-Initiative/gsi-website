@@ -417,12 +417,23 @@ export default async function NearbyPrintPage({ searchParams }: {
             load-bearing: it's how a mover links their reward after a store
             install wipes the co-brand link. */}
         {newRoutes && (
-          <section className="print-card mt-2 rounded-lg border border-[#4A7729]/40 bg-[#F2F8EC] px-3 py-2">
-            <p className="text-[0.72rem] leading-snug text-[#191A2E]">
-              <span className="font-bold text-[#4A7729]">{tr('newroutes.offer_eyebrow')}: </span>
-              {tr('print.newroutes_offer')}{' '}
-              <span className="font-bold">{tr('print.newroutes_code', { code: NEWROUTES_CODE })}</span>
-            </p>
+          <section className="print-card mt-2 flex items-center justify-between gap-3 rounded-lg border border-[#4A7729]/50 bg-[#F2F8EC] px-3.5 py-2.5">
+            <div className="min-w-0 flex-1">
+              <div className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[#4A7729]">
+                {tr('newroutes.offer_eyebrow')}
+              </div>
+              <p className="mt-0.5 text-[0.78rem] font-semibold leading-snug text-[#191A2E]">
+                {tr('print.newroutes_offer')}
+              </p>
+            </div>
+            <div className="shrink-0 text-center">
+              <div className="text-[0.55rem] font-semibold uppercase tracking-wide text-[#191A2E]/60">
+                {tr('print.newroutes_code_label')}
+              </div>
+              <div className="mt-0.5 rounded-md border border-[#4A7729]/60 bg-white px-3 py-1 font-mono text-[0.95rem] font-extrabold tracking-[0.12em] text-[#4A7729]">
+                {NEWROUTES_CODE}
+              </div>
+            </div>
           </section>
         )}
 

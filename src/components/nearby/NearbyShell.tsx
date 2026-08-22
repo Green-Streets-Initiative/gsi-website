@@ -348,6 +348,19 @@ export default function NearbyShell({
           </div>
         )}
 
+        {/* New Routes offer — top of the sheet on EVERY tab (was gated to the
+            Explore tab), so a mover sees the reward the moment they land, not
+            two taps away. */}
+        {!selection && newRoutes && (
+          <div className="mb-3">
+            <NewRoutesOffer
+              href={appHref}
+              variant="splash"
+              onCta={() => posthog.capture('snapshot_app_cta_clicked', { campaign: 'newroutes', ...(partnerSlug ? { partner: partnerSlug } : {}) })}
+            />
+          </div>
+        )}
+
         <div className={selection || tab !== 'transit' ? 'hidden' : ''}>
           {outside && (
             <p className="mb-2 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-4 py-3 text-[0.82rem] leading-relaxed text-white">
@@ -434,30 +447,24 @@ export default function NearbyShell({
           <div className="mt-2">
             <ExploreBody community={community} />
           </div>
-          <div className="mt-5 space-y-3">
-            <div className="rounded-xl border border-white/[0.1] bg-[#242538] px-4 py-3.5">
-              {newRoutes ? (
-                <NewRoutesOffer
-                  href={appHref}
-                  variant="inline"
-                  onCta={() => posthog.capture('snapshot_app_cta_clicked', { campaign: 'newroutes', ...(partnerSlug ? { partner: partnerSlug } : {}) })}
-                />
-              ) : (
-                <>
-                  <div className="text-[0.9rem] font-bold text-white">{tr('shell.get_app_title')}</div>
-                  <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
-                  <a
-                    href={appHref}
-                    onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
-                    className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
-                  >
-                    {tr('shell.download_app')}
-                  </a>
-                </>
-              )}
-            </div>
-          </div>
         </div>
+
+        {/* Get-Shift hook — persistent at the bottom of the sheet on EVERY tab
+            (was gated to Explore). In New Routes context the reward offer sits
+            up top instead, so this stays the general "get the app" hook. */}
+        {!selection && !newRoutes && (
+          <div className="mt-5 rounded-xl border border-white/[0.1] bg-[#242538] px-4 py-3.5">
+            <div className="text-[0.9rem] font-bold text-white">{tr('shell.get_app_title')}</div>
+            <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
+            <a
+              href={appHref}
+              onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
+              className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
+            >
+              {tr('shell.download_app')}
+            </a>
+          </div>
+        )}
       </NearbySheet>
       </div>
     </div>

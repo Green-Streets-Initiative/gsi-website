@@ -287,6 +287,7 @@ const en: Dict = {
   'newroutes.offer_cta': 'Get Shift →',
   'print.newroutes_offer': 'New here? Get Shift, make 10 trips in 30 days, and earn a $10 local gift card.',
   'print.newroutes_code': 'After installing, enter code {code}.',
+  'print.newroutes_code_label': 'Enter in the app',
 }
 
 const es: Dict = {
@@ -517,6 +518,7 @@ const es: Dict = {
   "newroutes.offer_cta": "Descarga Shift →",
   "print.newroutes_offer": "¿Nuevo aquí? Descarga Shift, haz 10 viajes en 30 días y gana una tarjeta de regalo local de $10.",
   "print.newroutes_code": "Después de instalar, ingresa el código {code}.",
+  "print.newroutes_code_label": "Ingrésalo en la app",
 }
 
 const ptBR: Dict = {
@@ -747,6 +749,7 @@ const ptBR: Dict = {
   "newroutes.offer_cta": "Baixe o Shift →",
   "print.newroutes_offer": "Novo por aqui? Baixe o Shift, faça 10 viagens em 30 dias e ganhe um vale-presente local de $10.",
   "print.newroutes_code": "Após instalar, digite o código {code}.",
+  "print.newroutes_code_label": "Digite no app",
 }
 
 const zhHans: Dict = {
@@ -977,6 +980,7 @@ const zhHans: Dict = {
   "newroutes.offer_cta": "获取 Shift →",
   "print.newroutes_offer": "刚搬来？下载 Shift，30 天内完成 10 次出行，即可获得 $10 本地礼品卡。",
   "print.newroutes_code": "安装后，输入代码 {code}。",
+  "print.newroutes_code_label": "在应用中输入",
 }
 
 const strings: Record<NearbyLocale, Dict> = {
