@@ -70,6 +70,8 @@ export interface RoamLeg {
   estimated_minutes: number | null
   distance_miles: number | null
   narrative_snippet: string | null
+  from_checkpoint_id: string | null
+  to_checkpoint_id: string | null
   from_label: string | null
   to_label: string | null
   transit: RoamLegTransit | null
@@ -213,6 +215,8 @@ export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
       estimated_minutes: (l.estimated_minutes as number) ?? null,
       distance_miles: (l.distance_miles as number) ?? null,
       narrative_snippet: (l.narrative_snippet as string) ?? null,
+      from_checkpoint_id: (l.from_checkpoint_id as string) ?? null,
+      to_checkpoint_id: (l.to_checkpoint_id as string) ?? null,
       from_label: labelById.get(l.from_checkpoint_id as string) ?? null,
       to_label: labelById.get(l.to_checkpoint_id as string) ?? null,
       transit: hasContent(t) ? {

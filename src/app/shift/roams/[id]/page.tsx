@@ -1,14 +1,14 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Award, Bike, Bus, Footprints, Shuffle, MapPin, ArrowRight, Train, Info } from 'lucide-react'
+import { Award, Bike, Bus, Footprints, Shuffle, MapPin, ArrowRight, Train, Info, Navigation, MapPinned, BadgeCheck } from 'lucide-react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import StoreButtons from '@/components/StoreButtons'
 import RoamMap from '@/components/roams/RoamMap'
 import { roamMetaLine } from '@/components/roams/RoamCard'
 import { withUtm } from '@/lib/utm'
-import { getRoamDetail, type RoamLeg } from '@/lib/roams/queries'
+import { getRoamDetail, type RoamLeg, type RoamCheckpoint } from '@/lib/roams/queries'
 
 export const revalidate = 3600
 
@@ -24,12 +24,7 @@ const MODE_ICON: Record<string, React.ComponentType<{ size?: number; style?: Rea
   multi: Shuffle,
 }
 
-const VIBE_LABELS: Record<string, string> = {
-  chill: 'Chill',
-  active: 'Active',
-  social: 'Social',
-  exploring: 'Exploring',
-}
+const MIN_COMPLETIONS_TO_SHOW = 10
 
 const COMFORT_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   protected: { bg: 'bg-[#BAF14D]/15', text: 'text-[#BAF14D]', label: 'Protected path' },
@@ -73,6 +68,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     twitter: { card: 'summary_large_image', title, description },
   }
 }
+
+/* ── Mode-specific detail sub-components ── */
 
 function TransitDetail({ transit }: { transit: NonNullable<RoamLeg['transit']> }) {
   return (
@@ -147,7 +144,100 @@ function WalkDetail({ walk }: { walk: NonNullable<RoamLeg['walk']> }) {
   )
 }
 
-function LegRow({ leg, index }: { leg: RoamLeg; index: number }) {
+/* ── Timeline building ── */
+
+type TimelineEntry =
+  | { type: 'stop'; stop: RoamCheckpoint; stopNumber: number; isStart: boolean; isFinal: boolean }
+  | { type: 'leg'; leg: RoamLeg }
+
+function buildTimeline(stops: RoamCheckpoint[], legs: RoamLeg[]): TimelineEntry[] {
+  if (legs.length === 0) {
+    return stops.map((s, i) => ({
+      type: 'stop' as const,
+      stop: s,
+      stopNumber: i + 1,
+      isStart: i === 0,
+      isFinal: i === stops.length - 1,
+    }))
+  }
+
+  const entries: TimelineEntry[] = []
+  const renderedStopIds = new Set<string>()
+
+  const firstLeg = legs[0]
+  const startStop = firstLeg.from_checkpoint_id
+    ? stops.find((s) => s.id === firstLeg.from_checkpoint_id)
+    : stops[0]
+
+  let stopCounter = 0
+  if (startStop) {
+    stopCounter++
+    entries.push({ type: 'stop', stop: startStop, stopNumber: stopCounter, isStart: true, isFinal: false })
+    renderedStopIds.add(startStop.id)
+  }
+
+  for (const leg of legs) {
+    entries.push({ type: 'leg', leg })
+
+    if (leg.to_checkpoint_id) {
+      const destStop = stops.find((s) => s.id === leg.to_checkpoint_id)
+      if (destStop && !renderedStopIds.has(destStop.id)) {
+        stopCounter++
+        renderedStopIds.add(destStop.id)
+        entries.push({ type: 'stop', stop: destStop, stopNumber: stopCounter, isStart: false, isFinal: false })
+      }
+    }
+  }
+
+  for (const s of stops) {
+    if (!renderedStopIds.has(s.id)) {
+      stopCounter++
+      entries.push({ type: 'stop', stop: s, stopNumber: stopCounter, isStart: false, isFinal: false })
+    }
+  }
+
+  const lastStopIdx = entries.findLastIndex((e) => e.type === 'stop')
+  if (lastStopIdx >= 0) {
+    (entries[lastStopIdx] as { type: 'stop'; isFinal: boolean }).isFinal = true
+  }
+
+  return entries
+}
+
+function StopRow({ stop, stopNumber, isStart, isFinal }: { stop: RoamCheckpoint; stopNumber: number; isStart: boolean; isFinal: boolean }) {
+  return (
+    <div className="flex gap-4">
+      <div className="flex w-8 flex-col items-center">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-xs font-extrabold text-[#BAF14D]">
+          {stopNumber}
+        </span>
+        {!isFinal && <div className="mt-1 w-px flex-1 bg-white/[0.08]" />}
+      </div>
+      <div className="min-w-0 flex-1 pb-5">
+        <p className="text-sm font-semibold text-white">{stop.label}</p>
+        {(isStart || isFinal) && (
+          <p className="text-xs text-white/50">{isStart ? 'Starting point' : 'Final stop'}</p>
+        )}
+        {stop.description && (
+          <p className="mt-1 text-[0.8125rem] leading-relaxed text-white/75">{stop.description}</p>
+        )}
+        {stop.external_url && (
+          <a
+            href={stop.external_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-[#BAF14D]"
+          >
+            <Info size={11} />
+            Learn more &rarr;
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function LegRow({ leg }: { leg: RoamLeg }) {
   const Icon = MODE_ICON[leg.leg_type] ?? Footprints
   const meta = [
     leg.distance_miles != null ? `${leg.distance_miles} mi` : null,
@@ -155,28 +245,22 @@ function LegRow({ leg, index }: { leg: RoamLeg; index: number }) {
   ]
     .filter(Boolean)
     .join(' · ')
+  const hasDetail = !!(leg.narrative_snippet || leg.transit || leg.bike || leg.walk)
+
   return (
-    <div className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
-      <div className="flex gap-4">
-        <div className="flex flex-col items-center">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-xs font-extrabold text-[#BAF14D]">
-            {index + 1}
-          </span>
-        </div>
-        <div className="min-w-0 flex-1">
+    <div className="flex gap-4">
+      <div className="flex w-8 flex-col items-center">
+        <div className="w-px flex-1 bg-white/[0.08]" />
+      </div>
+      <div className="min-w-0 flex-1 py-2">
+        <div className={`rounded-[10px] border border-white/[0.06] bg-white/[0.03] px-3.5 py-3${hasDetail ? '' : ' py-2.5'}`}>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <Icon size={14} style={{ color: '#BAF14D' }} />
-            {leg.from_label && leg.to_label ? (
-              <p className="text-sm font-semibold text-white">
-                {leg.from_label} <span className="text-white/60">&rarr;</span> {leg.to_label}
-              </p>
-            ) : (
-              <p className="text-sm font-semibold capitalize text-white">{leg.leg_type} leg</p>
-            )}
-            {meta && <span className="text-xs text-white/75">{meta}</span>}
+            <Icon size={13} style={{ color: 'rgba(255,255,255,0.5)' }} />
+            <span className="text-xs font-semibold capitalize text-white/75">{leg.leg_type}</span>
+            {meta && <span className="text-xs text-white/50">{meta}</span>}
           </div>
           {leg.narrative_snippet && (
-            <p className="mt-1 text-[0.8125rem] leading-relaxed text-white/75">{leg.narrative_snippet}</p>
+            <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-white/75">{leg.narrative_snippet}</p>
           )}
           {leg.transit && <TransitDetail transit={leg.transit} />}
           {leg.bike && <BikeDetail bike={leg.bike} />}
@@ -187,9 +271,7 @@ function LegRow({ leg, index }: { leg: RoamLeg; index: number }) {
   )
 }
 
-function hasLegContent(leg: RoamLeg): boolean {
-  return !!(leg.narrative_snippet || leg.transit || leg.bike || leg.walk)
-}
+/* ── Page component ── */
 
 export default async function RoamDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -211,6 +293,9 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
     : requiredCount > 0
       ? `Visit all ${requiredCount} stops to complete this roam`
       : null
+
+  const timeline = buildTimeline(requiredStops, roam.legs)
+  const hasRouteContent = timeline.length > 0
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -253,7 +338,6 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
           <div className="mx-auto max-w-[860px]">
             <p className="mb-2 font-display text-xs font-bold uppercase tracking-[0.15em] text-[#BAF14D]">
               <Link href="/shift/roams" className="hover:text-white">Shift Roams</Link>
-              {roam.region ? <> &middot; {roam.region}</> : null}
             </p>
             <h1 className="mb-3 font-display text-[clamp(2rem,4.5vw,3.2rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
               {roam.name}
@@ -275,20 +359,13 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               )}
             </div>
 
-            {/* Vibe tags + social proof + collection */}
-            <div className="mb-5 flex flex-wrap items-center gap-2.5">
-              {roam.vibe_tags.length > 0 && roam.vibe_tags.map((tag) => (
-                <span key={tag} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-white/70">
-                  {VIBE_LABELS[tag] ?? tag}
-                </span>
-              ))}
-              {roam.completion_count > 0 && (
-                <span className="flex items-center gap-1 text-xs text-white/60">
-                  <MapPin size={11} />
-                  {roam.completion_count} {roam.completion_count === 1 ? 'person has' : 'people have'} completed this route
-                </span>
-              )}
-            </div>
+            {/* Social proof + collection */}
+            {roam.completion_count >= MIN_COMPLETIONS_TO_SHOW && (
+              <p className="mb-4 flex items-center gap-1.5 text-sm text-white/60">
+                <MapPin size={13} />
+                {roam.completion_count} people have completed this route
+              </p>
+            )}
 
             {roam.collection && (
               <div className="mb-5 rounded-[10px] border border-[#BAF14D]/20 bg-[#BAF14D]/[0.06] px-4 py-3">
@@ -343,57 +420,30 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
           </section>
         )}
 
-        {/* Stops */}
-        {requiredStops.length > 0 && (
+        {/* The route — unified timeline of stops + legs */}
+        {hasRouteContent && (
           <section className="px-8 pt-12">
             <div className="mx-auto max-w-[860px]">
               <h2 className="mb-1 font-display text-2xl font-bold tracking-tight text-white">
-                The stops
+                The route
               </h2>
               {completionHint && (
-                <p className="mb-4 text-sm text-white/60">{completionHint}</p>
+                <p className="mb-5 text-sm text-white/60">{completionHint}</p>
               )}
-              <div className="space-y-3">
-                {requiredStops.map((c, i) => (
-                  <div key={c.id} className="flex gap-4 rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-xs font-extrabold text-[#BAF14D]">
-                      {i + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-white">{c.label}</p>
-                      {c.description && (
-                        <p className="mt-1 text-[0.8125rem] leading-relaxed text-white/75">{c.description}</p>
-                      )}
-                      {c.external_url && (
-                        <a
-                          href={c.external_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-[#BAF14D]"
-                        >
-                          <Info size={11} />
-                          Learn more &rarr;
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Leg-by-leg routing — show whenever any leg carries content */}
-        {roam.legs.some(hasLegContent) && (
-          <section className="px-8 pt-12">
-            <div className="mx-auto max-w-[860px]">
-              <h2 className="mb-4 font-display text-2xl font-bold tracking-tight text-white">
-                The route, leg by leg
-              </h2>
-              <div className="space-y-3">
-                {roam.legs.map((leg, i) => (
-                  <LegRow key={leg.id} leg={leg} index={i} />
-                ))}
+              <div>
+                {timeline.map((entry, i) =>
+                  entry.type === 'stop' ? (
+                    <StopRow
+                      key={`stop-${entry.stop.id}`}
+                      stop={entry.stop}
+                      stopNumber={entry.stopNumber}
+                      isStart={entry.isStart}
+                      isFinal={entry.isFinal}
+                    />
+                  ) : (
+                    <LegRow key={`leg-${entry.leg.id}`} leg={entry.leg} />
+                  ),
+                )}
               </div>
             </div>
           </section>
@@ -434,18 +484,53 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
           </section>
         )}
 
-        {/* CTA */}
+        {/* How it works + CTA */}
         <section className="px-8 py-20">
-          <div className="mx-auto max-w-[560px] text-center">
-            <h2 className="mb-4 font-display text-[clamp(1.8rem,3.5vw,2.5rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              Roam it for real
+          <div className="mx-auto max-w-[860px]">
+            <h2 className="mb-3 text-center font-display text-[clamp(1.8rem,3.5vw,2.5rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+              How it works
             </h2>
-            <p className="mb-8 text-lg leading-relaxed text-white/90">
-              Open this roam in the free Shift app to follow the route, check in at each stop
-              {roam.badge_name ? `, and earn the ${roam.badge_name} badge` : ''}.
-              {roam.collection ? ` Complete all ${roam.collection.item_count} routes in the ${roam.collection.name} for a bonus badge.` : ''}
+            <p className="mx-auto mb-10 max-w-[520px] text-center text-[0.9375rem] leading-relaxed text-white/75">
+              A roam is a guided, self-paced adventure you follow in the free Shift app.
             </p>
-            <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} className="justify-center" />
+            <div className="mb-12 grid gap-6 md:grid-cols-3">
+              <div className="rounded-[14px] border border-white/[0.06] bg-white/[0.03] px-5 py-6 text-center">
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15">
+                  <Navigation size={18} style={{ color: '#BAF14D' }} />
+                </div>
+                <p className="mb-1.5 text-sm font-semibold text-white">Follow the route</p>
+                <p className="text-[0.8125rem] leading-relaxed text-white/75">
+                  Open this roam in the Shift app and follow the turn-by-turn route at your own pace.
+                </p>
+              </div>
+              <div className="rounded-[14px] border border-white/[0.06] bg-white/[0.03] px-5 py-6 text-center">
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15">
+                  <MapPinned size={18} style={{ color: '#BAF14D' }} />
+                </div>
+                <p className="mb-1.5 text-sm font-semibold text-white">Check in at each stop</p>
+                <p className="text-[0.8125rem] leading-relaxed text-white/75">
+                  The app detects when you arrive and checks you in automatically. No scanning, no codes.
+                </p>
+              </div>
+              <div className="rounded-[14px] border border-white/[0.06] bg-white/[0.03] px-5 py-6 text-center">
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#EDB93C]/15">
+                  <BadgeCheck size={18} style={{ color: '#EDB93C' }} />
+                </div>
+                <p className="mb-1.5 text-sm font-semibold text-white">
+                  {roam.badge_name ? `Earn the ${roam.badge_name} badge` : 'Earn a badge'}
+                </p>
+                <p className="text-[0.8125rem] leading-relaxed text-white/75">
+                  Complete the roam to earn {roam.badge_name ? `the ${roam.badge_name} badge` : 'a badge'}
+                  {roam.xp_bonus ? ` and ${roam.xp_bonus} XP` : ''}.
+                  {roam.collection
+                    ? ` Finish all ${roam.collection.item_count} routes in the ${roam.collection.name} for a bonus badge.`
+                    : ''}
+                </p>
+              </div>
+            </div>
+            <div className="text-center">
+              <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} className="justify-center" />
+            </div>
           </div>
         </section>
       </main>
