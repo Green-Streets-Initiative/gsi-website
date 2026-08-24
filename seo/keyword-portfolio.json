@@ -47,7 +47,7 @@
       "gsc_patterns": [
         "(moving|move|new).*(boston|cambridge|somerville)",
         "(need|without|no).*car.*(boston|cambridge|somerville)",
-        "get around.*(boston|cambridge|somerville)",
+        "get(ting)? around.*(boston|cambridge|somerville)",
         "charliecard",
         "walkable.*(boston|cambridge|somerville)"
       ],
@@ -128,17 +128,48 @@
         "Medford to Boston bike route"
       ],
       "gsc_patterns": [
-        "(bike|biking|cycling|walk|transit|commut).*(somerville|cambridge|medford|arlington|boston|brookline|watertown|everett|newton)",
-        "(somerville|cambridge|medford|arlington|brookline|watertown|everett|newton).*(bike|biking|commut|transit|car.?free)",
+        "(bike|biking|cycling|walk|walkway|transit|commut).*(arlington|bedford|belmont|beverly|boston|brookline|burlington|cambridge|chelsea|concord|danvers|dedham|everett|foxborough|framingham|gloucester|lexington|lynn|lynnfield|malden|medford|melrose|milton|newburyport|newton|peabody|quincy|randolph|revere|salem|saugus|somerville|stoneham|walpole|waltham|watertown|wellesley|weymouth|wilmington|winchester|woburn)",
+        "(arlington|bedford|belmont|beverly|boston|brookline|burlington|cambridge|chelsea|concord|danvers|dedham|everett|foxborough|framingham|gloucester|lexington|lynn|lynnfield|malden|medford|melrose|milton|newburyport|newton|peabody|quincy|randolph|revere|salem|saugus|somerville|stoneham|walpole|waltham|watertown|wellesley|weymouth|wilmington|winchester|woburn).*(bike|biking|commut|transit|walkway|car.?free)",
+        "(bike|walking|shared.?use|multi.?use)\\s*(path|trail|lane)",
+        "(greenway|rail trail|community path|minuteman|esplanade|harborwalk)",
         "bluebikes"
       ],
-      "target_urls": ["/shift/towns", "/nearby", "/commute-advisor", "/guides"],
+      "target_urls": ["/shift/towns", "/shift/roams", "/nearby", "/commute-advisor", "/guides"],
       "proposed_assets": ["Extend town pages as new towns pass the publication gate; consider neighborhood-level pages for the biggest towns"],
       "aeo_questions": [
         "How do people bike commute in Somerville?",
         "How does Bluebikes work?"
       ],
       "messaging_notes": "Town pages already lead with the question people search (per recent Search Console-driven rewrites). Keep titles answer-shaped; keep live local stats front and center."
+    },
+    {
+      "id": "drive-time-conversion",
+      "audience": "People who think about trips in drive-minutes and want to know what those minutes are on foot or by bike. Discovered in the 2026-08-24 pulse: /commute-advisor and /guides/when-walking-is-faster were the site's two largest impression sources and neither had a cluster.",
+      "intent": "informational",
+      "priority": 1,
+      "queries": [
+        "how far is a 10 minute drive walking",
+        "what is a 5 minute drive in walking",
+        "15 min drive to walk",
+        "10 minute drive to walk",
+        "how long does a 2 mile walk take",
+        "commute times",
+        "drive time vs walking time"
+      ],
+      "gsc_patterns": [
+        "\\d+ ?(min|mins|minute|minutes).*(drive|driving|walk|walking|bike|biking)",
+        "(drive|driving).*(in|to|vs|versus).*(walk|walking|bike|biking)",
+        "(walk|walking|bike|biking).*(in|to|vs|versus).*(drive|driving)",
+        "^commute times?$",
+        "how (far|long).*(walk|walking|bike|biking).*(mile|minute|min)"
+      ],
+      "target_urls": ["/commute-advisor", "/guides/when-walking-is-faster"],
+      "proposed_assets": ["/guides/how-far-is-a-ten-minute-drive-on-foot (drafted 2026-08-24, awaiting approval)"],
+      "aeo_questions": [
+        "How far is a 10-minute drive on foot?",
+        "How long does a 5-minute drive take to walk?"
+      ],
+      "messaging_notes": "Answer the number first, plainly, before offering the tool — the query is a request for a figure. Lead with what walking and biking give: the trip is usually shorter than people assume and there is no parking to find at the end. Present driving honestly as a legitimate option; this is a conversion table, not a comparison that scores points."
     },
     {
       "id": "ebike-curious",
@@ -241,6 +272,35 @@
         "How can a local business reach people who walk and bike nearby?"
       ],
       "messaging_notes": "Free to join, no fees, no contracts, no POS integration. Frame as reaching engaged local neighbors. This is the weakest-vs-intent page; prioritize its rewrite."
+    },
+    {
+      "id": "brand-navigational",
+      "audience": "People already looking for us, the Shift app, or one of our programs and events by name. Not an acquisition target — bucketed so the ledger can tell branded demand apart from demand we have yet to capture.",
+      "intent": "navigational",
+      "priority": 3,
+      "queries": [
+        "green streets initiative",
+        "greenstreets",
+        "shift app",
+        "go-shift.app",
+        "green line velo",
+        "recreation sundays memorial drive",
+        "frisoli youth center"
+      ],
+      "gsc_patterns": [
+        "green ?stre?ets?",
+        "gogreenstreets",
+        "go-?shift(\\.app)?",
+        "shift (app|town|towns|ride|rides|roam|roams)",
+        "green ?line velo",
+        "recreation sundays?",
+        "frisoli",
+        "what moves us"
+      ],
+      "target_urls": ["/", "/shift", "/about"],
+      "proposed_assets": [],
+      "aeo_questions": [],
+      "messaging_notes": "Measured, not optimized. Watch the ratio of branded to non-branded impressions over time: growth that is only branded means awareness work is landing but the discovery content is not. Program brands (Green Line Velo, Recreation Sundays, Frisoli) sit here too because the searcher already knows the name."
     },
     {
       "id": "aeo-sentinels",
