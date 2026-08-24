@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import Link from 'next/link'
 import posthog from 'posthog-js'
 import { useNearbyT } from './NearbyI18n'
 import { NEWROUTES_CODE } from '@/lib/nearby/campaign'
@@ -56,13 +55,15 @@ export default function NewRoutesOffer({
   )
 
   const cta = (
-    <Link
+    // Cross-origin app-open link (shift.gogreenstreets.org/go/newroutes) → a
+    // plain anchor, not next/link (which is for in-app routes).
+    <a
       href={href}
       onClick={onCta}
       className="inline-flex shrink-0 items-center rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
     >
       {tr('newroutes.offer_cta')}
-    </Link>
+    </a>
   )
 
   if (variant === 'compact') {

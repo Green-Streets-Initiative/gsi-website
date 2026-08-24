@@ -27,17 +27,31 @@ export function isNewRoutesContext(search: string): boolean {
   return !!p.get('partner')
 }
 
+// The app-open link on shift.gogreenstreets.org. A New Routes tap goes here so
+// an already-installed user lands IN the app and auto-joins the campaign
+// (the worker opens shift://campaign/newroutes, which the app records at
+// signup). Everyone else hits the worker's no-app fallback.
+//
+// IMPORTANT: this assumes the worker's /go/newroutes fallback points at /shift
+// (offer + visible NEWROUTES code + store buttons), NOT the raw store — a
+// store-only fallback would drop the code a mover needs after installing. See
+// docs/cloudflare-worker-refer.js in the Shift repo (GO_LINKS.newroutes.fallback).
+const GO_NEWROUTES = 'https://shift.gogreenstreets.org/go/newroutes'
+
 /**
- * The /shift hand-off href. Carries partner + any utm_* through (stickyParams),
- * and — when we're in a New Routes context — guarantees the campaign tag so the
- * download page can show the offer + code and the click attributes. Fixes the
- * old CTA that forwarded only ?partner= and dropped utm_campaign.
+ * The hand-off href for a /nearby "Get Shift" tap. Carries partner + any utm_*
+ * through (stickyParams). In a New Routes context it returns the app-open link
+ * (GO_NEWROUTES) with the campaign tag guaranteed, so installed users auto-join;
+ * otherwise it returns the /shift download page. (The general get-app card only
+ * renders when NOT in a New Routes context, so it always gets /shift.)
  */
 export function buildAppHref(search: string): string {
   const params = stickyParams(search) // partner + utm_*
   if (isNewRoutesContext(search)) {
     params.set('utm_campaign', NEWROUTES_CAMPAIGN) // set() collapses any dupes
     if (!params.has('utm_source')) params.set('utm_source', 'nearby')
+    const qs = params.toString()
+    return qs ? `${GO_NEWROUTES}?${qs}` : GO_NEWROUTES
   }
   const qs = params.toString()
   return qs ? `/shift?${qs}` : '/shift'
