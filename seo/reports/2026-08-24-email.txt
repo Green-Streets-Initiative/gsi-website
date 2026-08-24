@@ -1,0 +1,194 @@
+Subject: [GSI] SEO weekly — 23 organic clicks (up from 9), and the ledger was understating traffic 4x
+
+SEO / AEO weekly pulse — Mon 24 Aug 2026
+Search Console week: 15–21 Aug (prior week: 8–14 Aug)
+
+First real reporting run. Sixteen weeks of history were backfilled last week, so
+there are proper baselines from day one.
+
+
+================================================================
+THE LEDGER
+================================================================
+
+                                  This week   Prior week   vs 4-wk   vs 12-wk
+Organic clicks (Search Console)      23            9        +119%      +73%
+Organic impressions                1,555        1,204        +86%      +76%
+Average position                    11.8         10.4          –         –
+Click-through rate                  1.48%        0.75%         –         –
+PostHog organic sessions              35           25         +27%       n/a
+AEO sentinel citations             0 of 6          –        0 of 6    0 of 6
+
+A good week, and two independent sources agree on it — Search Console clicks and
+PostHog sessions both rose against the prior week and against their baselines.
+The absolute numbers are small, so this is one good week, not yet a trend.
+
+The 4-week and 12-week comparisons are upper bounds this week; see finding 1.
+They will be exact from next week if you ship item 1.
+
+Where the impressions actually come from (new this week):
+
+  People already looking for us .................. 63%
+  Town / commuter queries ........................ 11%
+  Drive-time-to-walk-time queries ................. 8%
+  New-to-Boston queries ........................... 6%
+  Noise ........................................... 12%
+
+That first line is the honest headline. Awareness is landing — people search
+"green streets", "shift town", "green line velo", "recreation sundays" by name,
+and we win those. Discovery demand, the thing this routine exists to grow, is
+about 48 impressions a week. That is the number to move, and every future
+percentage in these emails will be measured against it.
+
+
+================================================================
+EXPERIMENT VERDICTS
+================================================================
+
+None due — the experiment ledger is empty. The first entries land with the
+September deep-dive, which means the first verdicts arrive around mid-October.
+
+
+================================================================
+THREE THINGS TO SHIP
+================================================================
+
+All three are written, verified and pushed. Nothing is merged, nothing is live.
+
+---
+
+ITEM 1 — The ledger has been understating our traffic by about 4x
+
+The puller was adding up Search Console's per-query rows. Google withholds rare
+queries, so that sum is always a fraction of the real number. Asking Search
+Console for the plain site total instead, for the exact same week: 23 clicks and
+1,555 impressions, against the 6 and 249 the old code reported.
+
+So the site is roughly four times busier than the last sixteen weeks of data
+suggested. The trend was still readable, but the level was wrong.
+
+Fix is written and confirmed against the live property. Merging it also restates
+the sixteen weeks of history so the baselines above become exact.
+
+Effort: small. Impact: high — this is the accuracy of every future report.
+
+to ship: open Claude Code and say "ship SEO item 1"
+
+---
+
+ITEM 2 — Only 6% of our search queries were being counted into any audience
+
+The per-cluster table has been near-empty, and it turns out that was mostly a
+bookkeeping fault rather than a demand fault. Three real examples:
+
+  · "getting around cambridge" (11 impressions, position 18.6) missed the
+    new-to-Boston bucket because the pattern looked for "get around" and the
+    searcher typed the -ing form.
+  · The town list in the config named 9 towns. We publish 41 town pages. Malden
+    ranks and earns impressions; Malden was not on the list.
+  · Path, trail and greenway queries — "somerville community path", "watertown
+    cambridge greenway" — matched nothing at all, even though the Roams pages
+    rank for them.
+
+Repaired and replayed against this week's data: coverage goes from 6% to 88%,
+and what stays unmatched afterwards really is noise. It also adds the two new
+buckets behind the split shown above.
+
+Effort: small. Impact: high — it makes the per-audience ledger mean something.
+
+to ship: open Claude Code and say "ship SEO item 2"
+
+---
+
+ITEM 3 — Our biggest page answers a question we never claimed
+
+/commute-advisor pulled 316 impressions at average position 9 this week — more
+than any other page on the site — and converted one click. /guides/when-walking-
+is-faster pulled 244 and also converted one.
+
+The queries behind them are all the same shape: "10 minute drive to walk",
+"15 min drive to walk", "what is a 5 minute drive in walking", "commute times".
+People are asking for a number. We rank on page one and then ask them to fill in
+a form before we say anything.
+
+Drafted: a short guide that gives the number first — what a 5, 10, 15 and
+20-minute drive comes to on foot and by bike, each line a plain sentence an
+answer engine can quote, then a section putting the parking minutes back into
+the math, then a link through to the Commute Advisor. It is also the most
+citeable thing we could hand ChatGPT and friends, and right now they cite us
+nowhere.
+
+Messaging checked against strategy.md: leads with what walking and biking give
+you, treats driving as a perfectly reasonable choice throughout, no
+"sustainable", nothing framed by negation.
+
+The draft file publishes nothing on its own — the live site only renders
+approved rows.
+
+Effort: medium. Impact: medium-high.
+
+to ship: open Claude Code and say "ship SEO item 3"
+
+("decline SEO item N" retires any of them.)
+
+
+================================================================
+ANSWER ENGINES — WHERE WE ACTUALLY STAND
+================================================================
+
+Sentinel citations: 0 of 6. None of the six fixed questions returned
+gogreenstreets.org in live search. Who wins them instead:
+
+  "how much money do you save biking to work" — GOBankingRates, AARP
+  "cheapest way to get around Boston" — tourist guides
+  "can you commute by bike with kids" — national cycling blogs
+  "how do people bike in winter in Boston" — Boston.gov, Streetsblog, Landry's
+  "do you need a car in Boston" — Quora, Boston.com, Boston Pads
+  "how does Bluebikes work" — Bluebikes themselves, which is as it should be
+
+Three rotated portfolio queries this week (e-bike vs used car cost, moving to
+Boston, cargo bike for kids): also 0 of 3, all won by national retailer blogs.
+
+The pattern is consistent and useful: for our four wedge audiences the incumbents
+are national blogs and tourist guides. Questions 2 and 5 are the softest targets
+— everything ranking is written for visitors, not for someone who just moved to
+Somerville. That gap goes into the September deep-dive.
+
+One genuinely new datapoint: six sessions arrived from chatgpt.com in the last
+nine days. All six landed on the Shift Your Summer rules page, so that is
+participants asking an assistant about the contest, not new people finding us.
+Real, worth tracking, not yet a win.
+
+Also worth knowing: DuckDuckGo sent 17 sessions this week against Google's 18,
+and DuckDuckGo is invisible in Search Console. Our real organic total is always
+somewhat higher than Search Console shows.
+
+What these numbers mean, precisely. We can measure Search Console data, whether
+we appear in live web search for question-shaped queries, referral traffic from
+answer-engine domains, and the health of our structured data and llms.txt. We
+cannot see rankings inside ChatGPT, Perplexity or Claude, and we cannot see
+whether Google puts us in an AI Overview. No tool in this stack sees those. This
+routine will never invent an "AI visibility" score.
+
+
+================================================================
+HEALTH
+================================================================
+
+All green. sitemap.xml 200 with 118 entries; robots.txt and llms.txt both 200;
+titles, canonicals, descriptions and structured data correct on /commute-advisor
+and /guides/when-walking-is-faster. Fingerprints recorded this run, so drift
+detection starts next week.
+
+Traffic is not stagnant — trailing four weeks are up 27% on the four before them,
+well clear of the flat-line trigger.
+
+
+================================================================
+
+Full report, with the numbers behind all of the above:
+https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-08-24.md
+
+Next run: weekly pulse, Monday 31 August. The September monthly deep-dive is due
+the first week of the month — that one adds a competitor teardown and the first
+experiment proposals.

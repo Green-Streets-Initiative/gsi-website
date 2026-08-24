@@ -23,6 +23,12 @@
     "llms_txt_hash": "0047a5cca52d77d224b3359befeff6b909b7b65e0cb0b68d6831f0beb8aac8cc",
     "robots_hash": "5d77c451bbc6548e44d9ae8b5d5fc58ab56b6bba5d9fccb23df794281ca016fc"
   },
+  "blockers": [
+    {
+      "since": "2026-08-24",
+      "what": "sentry-triage-email returns 401 to both X-Cron-Secret (CRON_SECRET from .env.local, 64 chars) and the service-role Bearer fallback (SUPABASE_SERVICE_ROLE_KEY from .env.local). The function is reached — the 401 body is its own shape — so the local secrets are out of sync with what is deployed on project xyqcpgwbqrhykpgpqbdi. Every weekly email fails until one is re-synced. The 2026-08-24 email body is saved at seo/reports/2026-08-24-email.txt."
+    }
+  ],
   "pending": [
     {
       "report_date": "2026-08-24",
