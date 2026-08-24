@@ -41,6 +41,11 @@ export function isRecruitment(item: TownCivicEvent): boolean {
   return /\bmember(ship)? application\b|\bseeking (new )?members\b|\brecruiting members\b/.test(text)
 }
 
+export function isVolunteerDrive(item: TownCivicEvent): boolean {
+  const text = `${item.title} ${item.description ?? ''}`.toLowerCase()
+  return /\bvolunteer(s|ing)?\b/.test(text)
+}
+
 /** Wall-clock "19:00[:00]" → "7:00 PM" — pipeline times are already local. */
 export function wallTime(hhmm: string | null): string | null {
   const m = hhmm?.match(/^(\d{2}):(\d{2})/)

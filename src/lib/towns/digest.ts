@@ -4,6 +4,7 @@ import {
   buildFeaturedCandidates,
   dateOnlyChip,
   isRecruitment,
+  isVolunteerDrive,
   TOWN_TZ,
   wallTime,
   type FeaturedItem,
@@ -145,6 +146,7 @@ export function meetingNoun(item: TownCivicEvent): string {
   if (/\bworkshop\b/.test(text)) return 'workshop'
   if (/information session/.test(text)) return 'information session'
   if (/\bwebinar\b/.test(text)) return 'webinar'
+  if (/\bvolunteer\b/.test(text)) return 'volunteer event'
   return 'public meeting'
 }
 
@@ -204,6 +206,7 @@ export function buildTownDigest(opts: {
   // Undated recruitment items (committee applications) get "apply" copy, not
   // meeting/feedback copy. Dated ones (e.g. an info session) keep meeting copy.
   const recruit = isRecruitment(item) && !item.hearing_date
+  const volunteer = isVolunteerDrive(item)
   const townNames = [...(item.affected_towns ?? []), item.municipality, townName]
   const headline = headlineFor(item, townNames)
   const todayIso = new Date(now).toLocaleDateString('en-CA', { timeZone: TOWN_TZ })
@@ -214,7 +217,9 @@ export function buildTownDigest(opts: {
   const chip = item.hearing_date
     ? `${dateOnlyChip(item.hearing_date)}${time ? ` · ${time} ET` : ''} · ${typeWord}${noun}`
     : item.comment_deadline
-      ? `Comments open through ${dateOnlyChip(item.comment_deadline)}`
+      ? volunteer
+        ? `Sign up by ${dateOnlyChip(item.comment_deadline)}`
+        : `Comments open through ${dateOnlyChip(item.comment_deadline)}`
       : recruit
         ? 'Applications open now'
         : 'Open for feedback now'
@@ -222,9 +227,13 @@ export function buildTownDigest(opts: {
   // Subject + lede state the thing — via the generated headline, never a
   // truncated scrape title.
   const subjectTail = item.hearing_date
-    ? ` — weigh in ${whenPhrase(item.hearing_date, todayIso)}`
+    ? volunteer
+      ? ` — starts ${whenPhrase(item.hearing_date, todayIso)}`
+      : ` — weigh in ${whenPhrase(item.hearing_date, todayIso)}`
     : item.comment_deadline
-      ? ` — comments due ${whenPhrase(item.comment_deadline, todayIso)}`
+      ? volunteer
+        ? ` — sign up by ${whenPhrase(item.comment_deadline, todayIso)}`
+        : ` — comments due ${whenPhrase(item.comment_deadline, todayIso)}`
       : ''
   const subject = `${townName}: ${truncate(headline, 60)}${subjectTail}`
   // The headline stands alone — no editorial tail (Keith 07-15: "gets a say"
@@ -240,7 +249,7 @@ export function buildTownDigest(opts: {
         : `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">Join the ${item.hearing_type === 'virtual' ? 'virtual ' : ''}${noun} online</a> — registration takes a minute`,
     )
   }
-  if (item.hearing_date && item.hearing_type !== 'virtual') {
+  if (item.hearing_date && item.hearing_type !== 'virtual' && !volunteer) {
     const where = item.hearing_location_name ? ` at ${escapeHtml(item.hearing_location_name)}` : ''
     weighIn.push(`${item.virtual_link ? 'Or show' : 'Show'} up in person${where}${time ? ` — ${weekdayName(item.hearing_date)} at ${time}` : ''}`)
   }
@@ -249,9 +258,11 @@ export function buildTownDigest(opts: {
   }
   if (item.comment_deadline) {
     weighIn.push(
-      item.comment_email
-        ? `Can’t make it? Email comments to <a href="mailto:${escapeHtml(item.comment_email)}" style="color:#191A2E;">${escapeHtml(item.comment_email)}</a> by ${dateOnlyChip(item.comment_deadline)}`
-        : `Written comments are accepted through ${dateOnlyChip(item.comment_deadline)}`,
+      volunteer && item.comment_email
+        ? `Email <a href="mailto:${escapeHtml(item.comment_email)}" style="color:#191A2E;">${escapeHtml(item.comment_email)}</a> to sign up`
+        : item.comment_email
+          ? `Can’t make it? Email comments to <a href="mailto:${escapeHtml(item.comment_email)}" style="color:#191A2E;">${escapeHtml(item.comment_email)}</a> by ${dateOnlyChip(item.comment_deadline)}`
+          : `Written comments are accepted through ${dateOnlyChip(item.comment_deadline)}`,
     )
   }
   const noticeHost = hostLabel(item.source_url)
@@ -444,7 +455,7 @@ export function buildTownDigest(opts: {
   <!-- Lede -->
   <tr>
     <td style="padding:28px 32px 8px;">
-      <p style="margin:0 0 6px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.12em;color:#2966E5;">SHARE YOUR VIEWS</p>
+      <p style="margin:0 0 6px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.12em;color:#2966E5;">${volunteer ? 'GET INVOLVED' : 'SHARE YOUR VIEWS'}</p>
       <h1 style="margin:0;font-family:${FONT_DISPLAY};font-size:25px;font-weight:800;letter-spacing:-0.02em;line-height:1.18;color:#191A2E;">${escapeHtml(h1)}</h1>
     </td>
   </tr>
@@ -455,7 +466,7 @@ export function buildTownDigest(opts: {
         <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#8a6612;">${escapeHtml(chip)}</p>${PROXIMITY_PLACEHOLDER}
         ${item.description ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#3A3C4E;">${escapeHtml(truncate(item.description, 420))}</p>` : ''}
         ${decidedBlock}
-        ${weighIn.length ? `<p style="margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:0.08em;color:#8a6612;font-family:${FONT_DISPLAY};">HOW TO WEIGH IN</p>
+        ${weighIn.length ? `<p style="margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:0.08em;color:#8a6612;font-family:${FONT_DISPLAY};">${volunteer ? 'HOW TO GET INVOLVED' : 'HOW TO WEIGH IN'}</p>
         ${weighIn.map((w) => `<p style="margin:0 0 3px;font-size:14px;line-height:1.5;color:#3A3C4E;">&bull;&nbsp; ${w}</p>`).join('\n')}` : ''}
         <table cellpadding="0" cellspacing="0" style="margin:14px 0 0;"><tr><td style="background:#191A2E;border-radius:999px;">
           <a href="${ctaHref}" style="display:inline-block;padding:11px 26px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;font-family:${FONT_BODY};">${escapeHtml(ctaLabel)} &rarr;</a>
