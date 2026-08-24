@@ -132,6 +132,8 @@ export interface TownRoam {
   hook: string | null
   hero_image_url: string | null
   region: string | null
+  completion_count: number
+  vibe_tags: string[]
 }
 
 export interface NamedCorridor {
@@ -418,7 +420,7 @@ export async function getTownRoams(
   const [roamsRes, cpsRes] = await Promise.all([
     supabase
       .from('roams')
-      .select('id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region')
+      .select('id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, completion_count, vibe_tags')
       .eq('active', true)
       // Hide event-bound roams once their window ends (matches roams/queries.ts).
       .or(`event_end.is.null,event_end.gte.${today}`),
@@ -437,7 +439,12 @@ export async function getTownRoams(
     }
   }
 
-  return ((roamsRes.data ?? []) as TownRoam[])
+  return ((roamsRes.data ?? []) as Array<Record<string, unknown>>)
+    .map((raw) => ({
+      ...raw,
+      completion_count: (raw.completion_count as number) ?? 0,
+      vibe_tags: (raw.vibe_tags as string[]) ?? [],
+    } as TownRoam))
     .map((r) => {
       const start = startByRoam.get(r.id)
       const dist = start

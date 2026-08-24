@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Award, Bike, Bus, Footprints, Shuffle } from 'lucide-react'
+import { Award, Bike, Bus, Footprints, Shuffle, MapPin, ArrowRight, Train, Info } from 'lucide-react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import StoreButtons from '@/components/StoreButtons'
@@ -10,7 +10,6 @@ import { roamMetaLine } from '@/components/roams/RoamCard'
 import { withUtm } from '@/lib/utm'
 import { getRoamDetail, type RoamLeg } from '@/lib/roams/queries'
 
-// Evergreen, crawlable roam pages — curated routes change rarely.
 export const revalidate = 3600
 
 const SITE_URL = 'https://www.gogreenstreets.org'
@@ -25,6 +24,31 @@ const MODE_ICON: Record<string, React.ComponentType<{ size?: number; style?: Rea
   multi: Shuffle,
 }
 
+const VIBE_LABELS: Record<string, string> = {
+  chill: 'Chill',
+  active: 'Active',
+  social: 'Social',
+  exploring: 'Exploring',
+}
+
+const COMFORT_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+  protected: { bg: 'bg-[#BAF14D]/15', text: 'text-[#BAF14D]', label: 'Protected path' },
+  bike_lane: { bg: 'bg-[#60A5FA]/15', text: 'text-[#60A5FA]', label: 'Bike lane' },
+  shared_road: { bg: 'bg-[#F59E0B]/15', text: 'text-[#F59E0B]', label: 'Shared road' },
+  mixed: { bg: 'bg-white/10', text: 'text-white/75', label: 'Mixed' },
+}
+
+function truncateAtSentence(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text
+  const truncated = text.slice(0, maxLen)
+  const lastPeriod = truncated.lastIndexOf('.')
+  const lastExcl = truncated.lastIndexOf('!')
+  const lastQ = truncated.lastIndexOf('?')
+  const best = Math.max(lastPeriod, lastExcl, lastQ)
+  if (best > maxLen * 0.4) return text.slice(0, best + 1)
+  return truncated.trimEnd() + '…'
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
   const roam = await getRoamDetail(decodeURIComponent(id))
@@ -32,7 +56,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const title = `${roam.name} — a guided ${roam.mode === 'multi' ? '' : `${roam.mode} `}route${roam.region ? ` in ${roam.region}` : ''} | Shift Roams`
   const description =
     roam.hook ??
-    roam.description?.slice(0, 160) ??
+    (roam.description ? truncateAtSentence(roam.description, 160) : null) ??
     `A guided ${roam.distance_miles ?? ''} mile route with ${roam.checkpoints.filter((c) => c.required).length} stops.`
   return {
     title,
@@ -50,6 +74,79 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
 }
 
+function TransitDetail({ transit }: { transit: NonNullable<RoamLeg['transit']> }) {
+  return (
+    <div className="mt-2.5 space-y-1.5 border-t border-white/[0.06] pt-2.5">
+      {(transit.board_stop_name || transit.alight_stop_name) && (
+        <div className="flex flex-wrap items-center gap-1.5 text-[0.8125rem]">
+          <Train size={13} style={{ color: '#BAF14D' }} />
+          {transit.route_name && (
+            <span className="rounded bg-[#BAF14D]/15 px-1.5 py-0.5 text-xs font-semibold text-[#BAF14D]">
+              {transit.route_name}
+            </span>
+          )}
+          {transit.board_stop_name && (
+            <span className="text-white/90">Board at <span className="font-semibold text-white">{transit.board_stop_name}</span></span>
+          )}
+          {transit.alight_stop_name && (
+            <>
+              <ArrowRight size={12} style={{ color: 'rgba(255,255,255,0.5)' }} />
+              <span className="text-white/90">{transit.alight_stop_name}</span>
+            </>
+          )}
+          {transit.num_stops != null && transit.num_stops > 0 && (
+            <span className="text-white/60">({transit.num_stops} {transit.num_stops === 1 ? 'stop' : 'stops'}{transit.direction ? `, ${transit.direction}` : ''})</span>
+          )}
+        </div>
+      )}
+      {transit.fare_note && (
+        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Fare:</span> {transit.fare_note}</p>
+      )}
+      {transit.transfer_note && (
+        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Transfers:</span> {transit.transfer_note}</p>
+      )}
+      {transit.boarding_tip && (
+        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Tip:</span> {transit.boarding_tip}</p>
+      )}
+    </div>
+  )
+}
+
+function BikeDetail({ bike }: { bike: NonNullable<RoamLeg['bike']> }) {
+  const comfort = bike.comfort_rating ? COMFORT_COLORS[bike.comfort_rating] ?? COMFORT_COLORS.mixed : null
+  return (
+    <div className="mt-2.5 space-y-1.5 border-t border-white/[0.06] pt-2.5">
+      {comfort && (
+        <span className={`inline-block rounded-full ${comfort.bg} px-2.5 py-1 text-xs font-semibold ${comfort.text}`}>
+          {comfort.label}
+        </span>
+      )}
+      {bike.comfort_summary && (
+        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Route:</span> {bike.comfort_summary}</p>
+      )}
+      {bike.elevation_summary && (
+        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Elevation:</span> {bike.elevation_summary}</p>
+      )}
+      {bike.bike_parking_note && (
+        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Parking:</span> {bike.bike_parking_note}</p>
+      )}
+    </div>
+  )
+}
+
+function WalkDetail({ walk }: { walk: NonNullable<RoamLeg['walk']> }) {
+  return (
+    <div className="mt-2.5 space-y-1.5 border-t border-white/[0.06] pt-2.5">
+      {walk.terrain_note && (
+        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Terrain:</span> {walk.terrain_note}</p>
+      )}
+      {walk.waypoint_note && (
+        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Along the way:</span> {walk.waypoint_note}</p>
+      )}
+    </div>
+  )
+}
+
 function LegRow({ leg, index }: { leg: RoamLeg; index: number }) {
   const Icon = MODE_ICON[leg.leg_type] ?? Footprints
   const meta = [
@@ -59,30 +156,39 @@ function LegRow({ leg, index }: { leg: RoamLeg; index: number }) {
     .filter(Boolean)
     .join(' · ')
   return (
-    <div className="flex gap-4 rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
-      <div className="flex flex-col items-center">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-xs font-extrabold text-[#BAF14D]">
-          {index + 1}
-        </span>
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <Icon size={14} style={{ color: '#BAF14D' }} />
-          {leg.from_label && leg.to_label ? (
-            <p className="text-sm font-semibold text-white">
-              {leg.from_label} <span className="text-white/60">&rarr;</span> {leg.to_label}
-            </p>
-          ) : (
-            <p className="text-sm font-semibold capitalize text-white">{leg.leg_type} leg</p>
-          )}
-          {meta && <span className="text-xs text-white/75">{meta}</span>}
+    <div className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
+      <div className="flex gap-4">
+        <div className="flex flex-col items-center">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-xs font-extrabold text-[#BAF14D]">
+            {index + 1}
+          </span>
         </div>
-        {leg.narrative_snippet && (
-          <p className="mt-1 text-[0.8125rem] leading-relaxed text-white/75">{leg.narrative_snippet}</p>
-        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <Icon size={14} style={{ color: '#BAF14D' }} />
+            {leg.from_label && leg.to_label ? (
+              <p className="text-sm font-semibold text-white">
+                {leg.from_label} <span className="text-white/60">&rarr;</span> {leg.to_label}
+              </p>
+            ) : (
+              <p className="text-sm font-semibold capitalize text-white">{leg.leg_type} leg</p>
+            )}
+            {meta && <span className="text-xs text-white/75">{meta}</span>}
+          </div>
+          {leg.narrative_snippet && (
+            <p className="mt-1 text-[0.8125rem] leading-relaxed text-white/75">{leg.narrative_snippet}</p>
+          )}
+          {leg.transit && <TransitDetail transit={leg.transit} />}
+          {leg.bike && <BikeDetail bike={leg.bike} />}
+          {leg.walk && <WalkDetail walk={leg.walk} />}
+        </div>
       </div>
     </div>
   )
+}
+
+function hasLegContent(leg: RoamLeg): boolean {
+  return !!(leg.narrative_snippet || leg.transit || leg.bike || leg.walk)
 }
 
 export default async function RoamDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -96,12 +202,23 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
   const iosUrl = withUtm(IOS_URL, utm) ?? IOS_URL
   const androidUrl = withUtm(ANDROID_URL, utm) ?? ANDROID_URL
 
+  const requiredCount = requiredStops.length
+  const thresholdStops = roam.completion_threshold < 1.0
+    ? Math.ceil(requiredCount * roam.completion_threshold)
+    : requiredCount
+  const completionHint = roam.completion_threshold < 1.0
+    ? `Visit ${thresholdStops} of ${requiredCount} stops to complete this roam`
+    : requiredCount > 0
+      ? `Visit all ${requiredCount} stops to complete this roam`
+      : null
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
     name: roam.name,
     url: `${SITE_URL}/shift/roams/${roam.id}`,
     description: roam.hook ?? roam.description ?? undefined,
+    ...(roam.hero_image_url ? { image: roam.hero_image_url } : {}),
     isPartOf: { '@type': 'WebSite', name: 'Green Streets Initiative', url: SITE_URL },
   }
 
@@ -141,8 +258,11 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
             <h1 className="mb-3 font-display text-[clamp(2rem,4.5vw,3.2rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
               {roam.name}
             </h1>
+            {roam.tagline && (
+              <p className="mb-3 text-lg font-medium leading-[1.5] text-white/80">{roam.tagline}</p>
+            )}
             {roam.hook && <p className="mb-4 text-lg leading-[1.6] text-white/90">{roam.hook}</p>}
-            <div className="mb-5 flex flex-wrap items-center gap-3 text-sm">
+            <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
               <span className="rounded-full border border-white/[0.1] bg-white/[0.05] px-3.5 py-1.5 font-semibold text-white">
                 {roamMetaLine(roam)}
               </span>
@@ -154,6 +274,33 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
                 </span>
               )}
             </div>
+
+            {/* Vibe tags + social proof + collection */}
+            <div className="mb-5 flex flex-wrap items-center gap-2.5">
+              {roam.vibe_tags.length > 0 && roam.vibe_tags.map((tag) => (
+                <span key={tag} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-white/70">
+                  {VIBE_LABELS[tag] ?? tag}
+                </span>
+              ))}
+              {roam.completion_count > 0 && (
+                <span className="flex items-center gap-1 text-xs text-white/60">
+                  <MapPin size={11} />
+                  {roam.completion_count} {roam.completion_count === 1 ? 'person has' : 'people have'} completed this route
+                </span>
+              )}
+            </div>
+
+            {roam.collection && (
+              <div className="mb-5 rounded-[10px] border border-[#BAF14D]/20 bg-[#BAF14D]/[0.06] px-4 py-3">
+                <p className="text-sm font-semibold text-[#BAF14D]">
+                  Part of the {roam.collection.name}
+                </p>
+                <p className="mt-0.5 text-[0.8125rem] text-white/75">
+                  {roam.collection.description} Complete all {roam.collection.item_count} routes to earn the {roam.collection.badge_name} badge.
+                </p>
+              </div>
+            )}
+
             {roam.description && (
               <p className="max-w-[720px] text-[0.9875rem] leading-[1.7] text-white/85">{roam.description}</p>
             )}
@@ -196,25 +343,37 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
           </section>
         )}
 
-        {/* Stops — always show the named required checkpoints with their
-            descriptions. (Previously this was hidden whenever a roam had
-            route legs, which buried the richest per-stop detail.) */}
+        {/* Stops */}
         {requiredStops.length > 0 && (
           <section className="px-8 pt-12">
             <div className="mx-auto max-w-[860px]">
-              <h2 className="mb-4 font-display text-2xl font-bold tracking-tight text-white">
+              <h2 className="mb-1 font-display text-2xl font-bold tracking-tight text-white">
                 The stops
               </h2>
+              {completionHint && (
+                <p className="mb-4 text-sm text-white/60">{completionHint}</p>
+              )}
               <div className="space-y-3">
                 {requiredStops.map((c, i) => (
                   <div key={c.id} className="flex gap-4 rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-xs font-extrabold text-[#BAF14D]">
                       {i + 1}
                     </span>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-white">{c.label}</p>
                       {c.description && (
                         <p className="mt-1 text-[0.8125rem] leading-relaxed text-white/75">{c.description}</p>
+                      )}
+                      {c.external_url && (
+                        <a
+                          href={c.external_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-[#BAF14D]"
+                        >
+                          <Info size={11} />
+                          Learn more &rarr;
+                        </a>
                       )}
                     </div>
                   </div>
@@ -224,9 +383,8 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
           </section>
         )}
 
-        {/* Leg-by-leg routing — only worth showing when at least one leg
-            carries a narrative; bare A→B rows add little over the stop list. */}
-        {roam.legs.some((leg) => leg.narrative_snippet) && (
+        {/* Leg-by-leg routing — show whenever any leg carries content */}
+        {roam.legs.some(hasLegContent) && (
           <section className="px-8 pt-12">
             <div className="mx-auto max-w-[860px]">
               <h2 className="mb-4 font-display text-2xl font-bold tracking-tight text-white">
@@ -258,6 +416,17 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
                     {c.description && (
                       <p className="mt-1 text-[0.8125rem] leading-relaxed text-white/75">{c.description}</p>
                     )}
+                    {c.external_url && (
+                      <a
+                        href={c.external_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-[#BAF14D]"
+                      >
+                        <Info size={11} />
+                        Learn more &rarr;
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>
@@ -274,6 +443,7 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
             <p className="mb-8 text-lg leading-relaxed text-white/90">
               Open this roam in the free Shift app to follow the route, check in at each stop
               {roam.badge_name ? `, and earn the ${roam.badge_name} badge` : ''}.
+              {roam.collection ? ` Complete all ${roam.collection.item_count} routes in the ${roam.collection.name} for a bonus badge.` : ''}
             </p>
             <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} className="justify-center" />
           </div>
