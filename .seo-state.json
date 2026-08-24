@@ -1,17 +1,52 @@
 {
   "_comment": "Run state for the SEO/AEO routine. Updated each run. Baselines are a cache; the authoritative time series is the committed seo/data/gsc/ files.",
-  "last_run": null,
+  "last_run": "2026-08-24",
   "last_deep_dive": null,
-  "serp_rotation_index": 0,
+  "serp_rotation_index": 3,
+  "_serp_rotation_note": "Index selects clusters (excluding aeo-sentinels) in portfolio order: for k in 0..2, cluster[(index+k) % 9], query[floor(index/9) % len]. Index 0 covered used-car-to-ebike / new-to-boston / family-logistics. Index 3 covers year-round-weather / town-commuters / ebike-curious.",
   "stagnant_weeks": 0,
   "baselines": {
-    "clicks_4wk": null,
-    "clicks_12wk": null
+    "clicks_4wk": 10.5,
+    "clicks_12wk": 13.3,
+    "impressions_4wk": 836,
+    "impressions_12wk": 882,
+    "_basis": "GSC page dimension, top-25 rows per weekly file (a floor). Query-dimension equivalents kept below for continuity with the 16-week backfill; see seo/reports/2026-08-24.md finding 1.",
+    "clicks_4wk_querydim": 3.5,
+    "clicks_12wk_querydim": 4.58,
+    "impressions_4wk_querydim": 229.8,
+    "impressions_12wk_querydim": 217.3,
+    "posthog_organic_sessions_4wk": 27.5,
+    "aeo_sentinel_citations": 0
   },
   "health": {
-    "sitemap_loc_count": null,
-    "llms_txt_hash": null,
-    "robots_hash": null
+    "sitemap_loc_count": 118,
+    "llms_txt_hash": "0047a5cca52d77d224b3359befeff6b909b7b65e0cb0b68d6831f0beb8aac8cc",
+    "robots_hash": "5d77c451bbc6548e44d9ae8b5d5fc58ab56b6bba5d9fccb23df794281ca016fc"
   },
-  "pending": []
+  "pending": [
+    {
+      "report_date": "2026-08-24",
+      "item_n": 1,
+      "type": "script-edit",
+      "ref": "seo/2026-08-gsc-true-totals",
+      "title": "Record true Search Console totals (no-dimension call + higher page rowLimit + re-backfill)",
+      "ship_steps": "Merge branch seo/2026-08-gsc-true-totals into main, push, then run node scripts/seo/pull-gsc.mjs --mode backfill and commit the restated seo/data/gsc/ files."
+    },
+    {
+      "report_date": "2026-08-24",
+      "item_n": 2,
+      "type": "portfolio-edit",
+      "ref": "seo/2026-08-portfolio-patterns",
+      "title": "Repair keyword-portfolio.json gsc_patterns (gerund fix, missing towns, paths, drive-time cluster)",
+      "ship_steps": "Merge branch seo/2026-08-portfolio-patterns into main, push. Bucketing applies from the next weekly pull."
+    },
+    {
+      "report_date": "2026-08-24",
+      "item_n": 3,
+      "type": "guide-draft",
+      "ref": "seo/drafts/guides/how-far-is-a-ten-minute-drive-on-foot.md",
+      "title": "Micro-guide: how far a 5/10/15/20-minute drive is on foot and by bike",
+      "ship_steps": "Append the draft's YAML+body to content/micro-guides-library.md, run node scripts/build-micro-guides-migration.mjs, commit both by filename, push, apply the generated migration."
+    }
+  ]
 }
