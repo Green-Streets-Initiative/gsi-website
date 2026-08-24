@@ -144,7 +144,8 @@ function writeOut(name, data) {
   fs.mkdirSync(DATA_DIR, { recursive: true })
   const p = path.join(DATA_DIR, name)
   fs.writeFileSync(p, JSON.stringify(data, null, 2) + '\n')
-  console.log(`wrote ${path.relative(REPO_ROOT, p)}  (clicks ${data.totals?.clicks ?? '?'}, impressions ${data.totals?.impressions ?? '?'})`)
+  const t = data.site_totals ?? data.totals
+  console.log(`wrote ${path.relative(REPO_ROOT, p)}  (clicks ${t?.clicks ?? '?'}, impressions ${t?.impressions ?? '?'})`)
 }
 
 // ---- one weekly snapshot for a given end-lag ----
@@ -153,7 +154,13 @@ async function weeklySnapshot(client, siteUrl, clusters, endLag) {
   const prior = window(endLag + 7, 7)
   const qCur = await query(client, siteUrl, { ...cur, dimensions: ['query'], rowLimit: 250 })
   const qPrior = await query(client, siteUrl, { ...prior, dimensions: ['query'], rowLimit: 250 })
-  const pages = await query(client, siteUrl, { ...cur, dimensions: ['page'], rowLimit: 100 })
+  const pages = await query(client, siteUrl, { ...cur, dimensions: ['page'], rowLimit: 500 })
+  // Unbucketed site totals. Search Console anonymizes rare queries, so summing
+  // query-dimension rows understates real traffic by ~4x. These no-dimension
+  // rows are the authoritative number; `totals` below stays query-dimension for
+  // continuity with the clusters and with the backfilled history.
+  const siteCur = await query(client, siteUrl, { ...cur, dimensions: [], rowLimit: 1 })
+  const sitePrior = await query(client, siteUrl, { ...prior, dimensions: [], rowLimit: 1 })
   const { clusterOut, unmatched } = bucket(qCur, clusters)
   const priorBucket = bucket(qPrior, clusters).clusterOut
   const priorById = new Map(priorBucket.map((c) => [c.id, c]))
@@ -166,14 +173,16 @@ async function weeklySnapshot(client, siteUrl, clusters, endLag) {
     mode: 'weekly',
     range: cur,
     priorRange: prior,
+    site_totals: totals(siteCur),
+    prior_site_totals: totals(sitePrior),
     totals: totals(qCur),
     priorTotals: totals(qPrior),
     clusters: clusterOut,
     unmatched_top_queries: unmatched.slice(0, 30),
     top_pages: pages
       .map((r) => ({ page: r.keys?.[0], clicks: r.clicks, impressions: r.impressions, position: +r.position.toFixed(1) }))
-      .sort((a, b) => b.clicks - a.clicks)
-      .slice(0, 25),
+      .sort((a, b) => b.impressions - a.impressions)
+      .slice(0, 40),
   }
 }
 
@@ -211,7 +220,9 @@ async function main() {
     const prior = window(31, 28)
     const qCur = await query(client, siteUrl, { ...cur, dimensions: ['query'], rowLimit: 500 })
     const qPrior = await query(client, siteUrl, { ...prior, dimensions: ['query'], rowLimit: 500 })
-    const pages = await query(client, siteUrl, { ...cur, dimensions: ['page'], rowLimit: 200 })
+    const pages = await query(client, siteUrl, { ...cur, dimensions: ['page'], rowLimit: 500 })
+    const siteCur = await query(client, siteUrl, { ...cur, dimensions: [], rowLimit: 1 })
+    const sitePrior = await query(client, siteUrl, { ...prior, dimensions: [], rowLimit: 1 })
     const byDate = await query(client, siteUrl, { startDate: isoDaysAgo(368), endDate: isoDaysAgo(3), dimensions: ['date'], rowLimit: 400 })
     const byDevice = await query(client, siteUrl, { ...cur, dimensions: ['device'], rowLimit: 10 })
     const { clusterOut, unmatched } = bucket(qCur, clusters)
@@ -227,14 +238,16 @@ async function main() {
       mode: 'monthly',
       range: cur,
       priorRange: prior,
+      site_totals: totals(siteCur),
+      prior_site_totals: totals(sitePrior),
       totals: totals(qCur),
       priorTotals: totals(qPrior),
       clusters: clusterOut,
       unmatched_top_queries: unmatched.slice(0, 50),
       top_pages: pages
         .map((r) => ({ page: r.keys?.[0], clicks: r.clicks, impressions: r.impressions, position: +r.position.toFixed(1) }))
-        .sort((a, b) => b.clicks - a.clicks)
-        .slice(0, 40),
+        .sort((a, b) => b.impressions - a.impressions)
+        .slice(0, 60),
       device_split: byDevice.map((r) => ({ device: r.keys?.[0], clicks: r.clicks, impressions: r.impressions })),
       daily_trend: byDate
         .map((r) => ({ date: r.keys?.[0], clicks: r.clicks, impressions: r.impressions }))
