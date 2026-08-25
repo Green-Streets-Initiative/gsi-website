@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { gaEvent } from '@/lib/ga'
 
 export default function WaitlistEmailForm({ source = 'app_page' }: { source?: string }) {
   const [email, setEmail] = useState('')
@@ -33,6 +34,7 @@ export default function WaitlistEmailForm({ source = 'app_page' }: { source?: st
       }
 
       setStatus('success')
+      gaEvent('shift_waitlist_signup', { source })
     } catch (err: unknown) {
       setStatus('error')
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Please try again.')

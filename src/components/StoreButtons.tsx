@@ -1,3 +1,7 @@
+'use client'
+
+import { gaEvent } from '@/lib/ga'
+
 export default function StoreButtons({
   iosUrl,
   androidUrl,
@@ -14,6 +18,7 @@ export default function StoreButtons({
         href={iosUrl}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => gaEvent('shift_store_click', { store: 'ios' })}
         className="inline-flex items-center gap-3 rounded-[14px] border-[1.5px] border-[#2E3252] bg-[#0E0F1A] px-5 py-[11px] pl-4 transition-all hover:-translate-y-0.5 hover:border-[#BAF14D]"
       >
         <svg viewBox="0 0 24 24" width="22" height="22" fill="#fff" className="shrink-0">
@@ -30,6 +35,7 @@ export default function StoreButtons({
         href={androidUrl}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => gaEvent('shift_store_click', { store: 'android' })}
         className="inline-flex items-center gap-3 rounded-[14px] border-[1.5px] border-[#2E3252] bg-[#0E0F1A] px-5 py-[11px] pl-4 transition-all hover:-translate-y-0.5 hover:border-[#BAF14D]"
       >
         <svg viewBox="0 0 24 24" width="22" height="22" className="shrink-0">

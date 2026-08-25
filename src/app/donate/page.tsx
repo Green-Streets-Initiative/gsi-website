@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Script from 'next/script'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import DonatePageEvent from './DonatePageEvent'
 
 export const metadata = {
   title: 'Donate — Green Streets Initiative',
@@ -28,6 +29,7 @@ export default function DonatePage() {
   return (
     <>
       <Nav />
+      <DonatePageEvent />
       <main style={{ paddingTop: '60px' }}>
 
         {/* Donorbox widget script — loaded once per page */}

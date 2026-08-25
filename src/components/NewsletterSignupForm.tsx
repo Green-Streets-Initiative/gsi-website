@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { gaEvent } from '@/lib/ga'
 
 export default function NewsletterSignupForm() {
   const [firstName, setFirstName] = useState('')
@@ -34,6 +35,7 @@ export default function NewsletterSignupForm() {
       }
 
       setStatus('success')
+      gaEvent('newsletter_signup')
     } catch (err: unknown) {
       setStatus('error')
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
