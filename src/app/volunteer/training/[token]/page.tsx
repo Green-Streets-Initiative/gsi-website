@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
 import { Check } from '@phosphor-icons/react/dist/ssr'
-import TrainingPortalClient from './client'
+import TrainingPortalClient, { BoosterClient } from './client'
 
 interface TrackData {
   id: string
@@ -52,6 +52,66 @@ export interface TrainingPortalProps {
   prerequisiteMet: boolean
   backgroundCheckStatus: string
   coriRequired: boolean
+}
+
+// Booster refresher (?booster=<result_id>) — must resolve BEFORE the
+// already-certified short-circuit below, since boosters go to certified
+// volunteers by definition.
+async function getBoosterData(token: string, resultId: string) {
+  const supabase = createServerSupabaseClient()
+
+  const { data: assignment } = await supabase
+    .from('training_assignments')
+    .select('id, volunteer_id, token_expires_at, training_tracks!inner(title)')
+    .eq('token', token)
+    .single()
+  if (!assignment) return null
+  if (new Date(assignment.token_expires_at) < new Date()) return null
+
+  const { data: result } = await supabase
+    .from('training_booster_results')
+    .select('id, assignment_id, questions, completed_at, score')
+    .eq('id', resultId)
+    .eq('assignment_id', assignment.id)
+    .single()
+  if (!result) return null
+
+  const questionIds = ((result.questions ?? []) as { question_id: string }[])
+    .map((q) => q.question_id)
+  const { data: questions } = await supabase
+    .from('training_questions')
+    .select('id, question_text, options, correct_option_id, explanation, sequence_order')
+    .in('id', questionIds.length > 0 ? questionIds : ['__none__'])
+  // Preserve the snapshot order
+  const byId = new Map((questions ?? []).map((q: any) => [q.id, q]))
+  const ordered = questionIds
+    .map((id) => byId.get(id))
+    .filter(Boolean)
+    .map((q: any) => ({
+      id: q.id,
+      questionText: q.question_text,
+      options: q.options,
+      correctOptionId: q.correct_option_id,
+      explanation: q.explanation,
+      sequenceOrder: q.sequence_order,
+    }))
+  if (ordered.length === 0) return null
+
+  const { data: volunteer } = await supabase
+    .from('volunteer_profiles')
+    .select('display_name')
+    .eq('id', assignment.volunteer_id)
+    .single()
+
+  return {
+    token,
+    resultId: result.id as string,
+    volunteerName: (volunteer as any)?.display_name ?? 'there',
+    trackTitle: (assignment.training_tracks as any)?.title ?? 'volunteer training',
+    questions: ordered,
+    alreadyCompleted: !!result.completed_at,
+    priorScore: (result.score as number | null) ?? null,
+  }
 }
 
 async function getTrainingData(token: string) {
@@ -219,10 +279,20 @@ async function getTrainingData(token: string) {
 
 export default async function TrainingPortalPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>
+  searchParams: Promise<{ booster?: string }>
 }) {
   const { token } = await params
+  const { booster } = await searchParams
+
+  if (booster) {
+    const boosterData = await getBoosterData(token, booster)
+    if (boosterData) return <BoosterClient {...boosterData} />
+    // Invalid/expired booster id — fall through to the normal portal
+  }
+
   const data = await getTrainingData(token)
 
   if (!data) return notFound()

@@ -8,6 +8,122 @@ import type { TrainingPortalProps } from './page'
 type ModuleWithState = TrainingPortalProps['modules'][number]
 type QuestionData = ModuleWithState['questions'][number]
 
+// ── Booster (spaced-retention refresher) ───────────────────────
+// Reached via ?booster=<result_id> from the training-reminders email.
+// Non-gating: no pass threshold, every explanation shown, score recorded
+// via the token-scoped complete_training_booster RPC.
+
+export function BoosterClient({
+  token,
+  resultId,
+  volunteerName,
+  trackTitle,
+  questions,
+  alreadyCompleted,
+  priorScore,
+}: {
+  token: string
+  resultId: string
+  volunteerName: string
+  trackTitle: string
+  questions: QuestionData[]
+  alreadyCompleted: boolean
+  priorScore: number | null
+}) {
+  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [showResult, setShowResult] = useState(false)
+  const [score, setScore] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const allAnswered = questions.every((q) => answers[q.id])
+
+  async function handleSubmit() {
+    const correct = questions.filter((q) => answers[q.id] === q.correctOptionId).length
+    const pct = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0
+    setScore(pct)
+    setShowResult(true)
+    setSaving(true)
+    await supabase.rpc('complete_training_booster', {
+      p_token: token,
+      p_result_id: resultId,
+      p_score: pct,
+    })
+    setSaving(false)
+  }
+
+  return (
+    <main className="min-h-screen bg-[#F4F8EE]">
+      <div className="bg-[#191A2E] px-6 py-6 text-center">
+        <span className="font-display text-xl font-extrabold text-white">Shift</span>
+        <span className="ml-2 text-sm text-white/50">for Schools</span>
+        <p className="mt-1 text-sm text-white/70">
+          {trackTitle} — 2-minute refresher
+        </p>
+      </div>
+      <div className="h-[3px] bg-[#52B788]" />
+
+      <div className="mx-auto max-w-[640px] space-y-4 px-6 py-8">
+        {alreadyCompleted ? (
+          <div className="rounded-xl bg-white p-8 text-center shadow-sm">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+              <Check size={22} weight="bold" />
+            </div>
+            <h1 className="text-lg font-bold text-[#191A2E]">Refresher already done</h1>
+            <p className="mt-2 text-sm text-[#6B7280]">
+              You scored {priorScore ?? 0}% — thanks for keeping it fresh,{' '}
+              {volunteerName}. Nothing else to do here.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-xl bg-white p-5 shadow-sm">
+              <p className="text-sm text-[#374151] leading-relaxed">
+                Hi {volunteerName} — five quick questions from your{' '}
+                <strong>{trackTitle}</strong>. There&apos;s no pass or fail;
+                every answer shows its explanation so the key points stay fresh.
+              </p>
+            </div>
+
+            {questions.map((q, i) => (
+              <QuestionCard
+                key={q.id}
+                question={q}
+                questionNumber={i + 1}
+                selectedAnswer={answers[q.id] ?? null}
+                onSelect={(optionId) =>
+                  !showResult && setAnswers((a) => ({ ...a, [q.id]: optionId }))
+                }
+                showResult={showResult}
+              />
+            ))}
+
+            {!showResult ? (
+              <button
+                onClick={handleSubmit}
+                disabled={!allAnswered || saving}
+                className="w-full rounded-lg bg-[#2966E5] py-3 text-sm font-semibold text-white transition hover:bg-[#2966E5]/90 disabled:opacity-50"
+              >
+                See How You Did
+              </button>
+            ) : (
+              <div className="rounded-xl bg-white p-6 text-center shadow-sm">
+                <p className="font-display text-3xl font-extrabold text-[#191A2E]">
+                  {score}%
+                </p>
+                <p className="mt-2 text-sm text-[#6B7280]">
+                  {score !== null && score >= 80
+                    ? 'Still sharp — thanks for taking two minutes.'
+                    : 'The explanations above cover anything that slipped — that recall is exactly what makes it stick.'}
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </main>
+  )
+}
+
 // ── Main Component ─────────────────────────────────────────────
 
 export default function TrainingPortalClient(props: TrainingPortalProps) {
@@ -637,6 +753,8 @@ function MarkdownContent({ text }: { text: string }) {
   const lines = text.split('\n')
   const elements: React.ReactNode[] = []
   let listItems: string[] = []
+  let orderedItems: string[] = []
+  let quoteLines: string[] = []
   let key = 0
 
   function flushList() {
@@ -652,40 +770,107 @@ function MarkdownContent({ text }: { text: string }) {
     }
   }
 
+  function flushOrdered() {
+    if (orderedItems.length > 0) {
+      elements.push(
+        <ol key={key++} className="list-decimal pl-5 space-y-1 text-sm text-[#374151] leading-relaxed">
+          {orderedItems.map((item, i) => (
+            <li key={i}>{renderInline(item)}</li>
+          ))}
+        </ol>
+      )
+      orderedItems = []
+    }
+  }
+
+  function flushQuote() {
+    if (quoteLines.length > 0) {
+      elements.push(
+        <div
+          key={key++}
+          className="rounded-r-lg border-l-4 border-[#52B788] bg-[#F4F8EE] px-4 py-3 space-y-1"
+        >
+          {quoteLines.map((q, i) => (
+            <p key={i} className="text-sm text-[#374151] leading-relaxed">
+              {renderInline(q)}
+            </p>
+          ))}
+        </div>
+      )
+      quoteLines = []
+    }
+  }
+
+  function flushAll() {
+    flushList()
+    flushOrdered()
+    flushQuote()
+  }
+
   for (const line of lines) {
     const trimmed = line.trim()
+    const imageMatch = trimmed.match(/^!\[([^\]]*)\]\((https:\/\/[^\s)]+)\)$/)
 
     // Heading
     if (trimmed.startsWith('## ')) {
-      flushList()
+      flushAll()
       elements.push(
         <h3 key={key++} className="text-base font-bold text-[#191A2E] mt-4 first:mt-0">
           {renderInline(trimmed.slice(3))}
         </h3>
       )
     } else if (trimmed.startsWith('### ')) {
-      flushList()
+      flushAll()
       elements.push(
         <h4 key={key++} className="text-sm font-bold text-[#191A2E] mt-3">
           {renderInline(trimmed.slice(4))}
         </h4>
       )
     }
+    // Inline image on its own line: ![caption](https://…)
+    else if (imageMatch) {
+      flushAll()
+      elements.push(
+        <figure key={key++} className="my-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageMatch[2]}
+            alt={imageMatch[1]}
+            className="w-full rounded-lg ring-1 ring-[#E5E7EB]"
+          />
+          {imageMatch[1] && (
+            <figcaption className="mt-1 text-xs text-[#6B7280]">
+              {imageMatch[1]}
+            </figcaption>
+          )}
+        </figure>
+      )
+    }
+    // Callout / blockquote
+    else if (trimmed.startsWith('> ') || trimmed === '>') {
+      flushList()
+      flushOrdered()
+      quoteLines.push(trimmed.replace(/^>\s?/, ''))
+    }
     // List item
     else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      flushOrdered()
+      flushQuote()
       listItems.push(trimmed.slice(2))
     }
     // Numbered list
     else if (/^\d+\.\s/.test(trimmed)) {
-      listItems.push(trimmed.replace(/^\d+\.\s/, ''))
+      flushList()
+      flushQuote()
+      orderedItems.push(trimmed.replace(/^\d+\.\s/, ''))
     }
     // Empty line
     else if (trimmed === '') {
-      flushList()
+      flushAll()
     }
     // Paragraph
     else {
-      flushList()
+      flushAll()
       elements.push(
         <p key={key++} className="text-sm text-[#374151] leading-relaxed">
           {renderInline(trimmed)}
@@ -693,7 +878,7 @@ function MarkdownContent({ text }: { text: string }) {
       )
     }
   }
-  flushList()
+  flushAll()
 
   return <div className="space-y-3">{elements}</div>
 }
@@ -1031,9 +1216,16 @@ function QuestionCard({
         })}
       </div>
 
-      {/* Explanation on wrong answer */}
-      {showResult && !isCorrect && question.explanation && (
-        <div className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      {/* Explanation on every answered question — reinforcement matters even
+          (especially) when the learner got it right */}
+      {showResult && question.explanation && (
+        <div
+          className={`mt-3 rounded-lg px-4 py-3 text-sm ${
+            isCorrect
+              ? 'bg-green-50 text-green-800'
+              : 'bg-amber-50 text-amber-800'
+          }`}
+        >
           {question.explanation}
         </div>
       )}
