@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Bricolage_Grotesque, DM_Sans, DM_Mono, Instrument_Serif } from 'next/font/google'
 import './globals.css'
+import { GoogleAnalytics } from '@next/third-parties/google'
 import PostHogProvider from '@/components/PostHogProvider'
 import JsonLd from '@/components/JsonLd'
 import { organizationSchema } from '@/lib/structured-data'
@@ -67,6 +68,8 @@ export default function RootLayout({
         <JsonLd data={organizationSchema()} />
         <PostHogProvider />
         {children}
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID ?? 'G-6HQWGDZ6RH'} />
+
       </body>
     </html>
   )
