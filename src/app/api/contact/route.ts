@@ -191,6 +191,29 @@ export async function POST(req: Request) {
         })
       }
     }
+
+    // If school inquiry, add to the school pipeline
+    if (body.inquiryType === 'School program' && contactId) {
+      const { data: stages } = await supabase
+        .from('pipeline_stages')
+        .select('id')
+        .eq('relationship_type_id', 'school')
+        .order('sort_order')
+        .limit(1)
+
+      if (stages?.[0]) {
+        await supabase.from('contact_relationships').insert({
+          contact_id: contactId,
+          organization_id: orgId,
+          relationship_type_id: 'school',
+          stage_id: stages[0].id,
+          status: 'active',
+          started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          notes: 'Inbound from website contact form',
+        })
+      }
+    }
   } catch (crmError) {
     // Don't fail the form submission if CRM sync fails
     console.error('CRM sync error:', crmError)
