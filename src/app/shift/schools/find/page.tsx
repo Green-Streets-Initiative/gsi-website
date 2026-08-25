@@ -1,8 +1,16 @@
+import type { Metadata } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import Link from 'next/link'
 import { CodeEntryRedirect } from './code-entry'
 
 export const revalidate = 300 // revalidate every 5 minutes
+
+export const metadata: Metadata = {
+  title: 'Find Your School — Shift for Schools | Green Streets Initiative',
+  description:
+    'Find your school to see classroom standings and safe walking and biking routes from Shift for Schools.',
+  alternates: { canonical: 'https://www.gogreenstreets.org/shift/schools/find' },
+}
 
 async function getActiveSchools() {
   const supabase = createServerSupabaseClient()

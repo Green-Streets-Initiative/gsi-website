@@ -9,7 +9,9 @@ interface Props {
   city: string
   gradeSpan: string
   classroomCount: number
-  enteredCode: string
+  // Set when the URL carried a classroom code; null for school-code URLs
+  // (app Safe Routes link, printed route-map PDFs), which keep the code gate.
+  enteredCode: string | null
 }
 
 interface ClassroomStanding {
@@ -111,13 +113,23 @@ export default function SchoolPortalClient({
     loadRoutes()
   }, [schoolId])
 
-  async function handleVerify() {
+  // The URL already carried a valid classroom code — don't ask the parent to
+  // retype what's in their address bar.
+  useEffect(() => {
+    if (enteredCode) verify(enteredCode)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enteredCode])
+
+  function handleVerify() {
     const trimmed = codeInput.trim().toUpperCase()
     if (!trimmed) {
       setCodeError('Enter your classroom code')
       return
     }
+    verify(trimmed)
+  }
 
+  async function verify(trimmed: string) {
     setLoading(true)
     setCodeError('')
 
@@ -222,7 +234,12 @@ export default function SchoolPortalClient({
       <div className="h-[3px] bg-[#52B788]" />
 
       <div className="mx-auto max-w-[800px] space-y-8 px-6 py-10">
-        {!verified ? (
+        {!verified && enteredCode && !codeError ? (
+          /* ── Auto-verifying the code from the URL ── */
+          <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+            <p className="text-sm text-[#6B7280]">Loading standings…</p>
+          </div>
+        ) : !verified ? (
           /* ── Code Entry ── */
           <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
             <h2 className="font-display text-lg font-bold text-[#191A2E]">
@@ -439,7 +456,7 @@ export default function SchoolPortalClient({
           </p>
           <div className="mt-6">
             <a
-              href="https://shiftyourtrip.org/download"
+              href="/shift"
               className="inline-block rounded-lg bg-[#2966E5] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2966E5]/90"
             >
               Download Shift
