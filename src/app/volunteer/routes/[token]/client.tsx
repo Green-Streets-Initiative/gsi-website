@@ -203,20 +203,25 @@ export default function VolunteerAssessmentClient(props: Props) {
         }
       }
 
-      // Update assignment
-      const { error: updateErr } = await supabase
-        .from('corridor_assignments')
-        .update({
-          form_data: form,
-          walk_score: form.walk_score,
-          bike_score: form.bike_score,
-          photos: uploadedPhotos,
-          notes: form.additional_notes,
-          submitted_at: new Date().toISOString(),
-        })
-        .eq('id', props.assignmentId)
+      // Submit via token-scoped RPC — anon clients have no direct write
+      // access to corridor_assignments.
+      const { data: accepted, error: updateErr } = await supabase.rpc(
+        'submit_corridor_assessment',
+        {
+          p_token: props.token,
+          p_form_data: form,
+          p_walk_score: form.walk_score,
+          p_bike_score: form.bike_score,
+          p_photos: uploadedPhotos,
+          p_notes: form.additional_notes,
+        }
+      )
 
       if (updateErr) throw updateErr
+      if (!accepted) {
+        alert('This link has expired or this assessment was already submitted. If that seems wrong, reply to your assignment email and we’ll send a fresh link.')
+        return
+      }
 
       setSubmitted(true)
     } catch (err: any) {
