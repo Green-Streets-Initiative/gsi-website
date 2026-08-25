@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
@@ -5,10 +6,32 @@ import FAQ from '@/components/FAQ'
 import JsonLd from '@/components/JsonLd'
 import { faqPageSchema } from '@/lib/structured-data'
 
-export const metadata = {
+// The high-school contest callout is date-gated; hourly ISR lets the static
+// page drop it once the deadline passes.
+export const revalidate = 3600
+
+export const metadata: Metadata = {
   title: 'Shift for Schools — Green Streets Initiative',
   description:
     'The simplest school wellness program. No student apps, no accounts, no data on kids. Wall chart, a show of hands, one Friday photo. Free for schools in Massachusetts.',
+  alternates: { canonical: 'https://www.gogreenstreets.org/shift/schools' },
+  openGraph: {
+    title: 'Shift for Schools',
+    description:
+      'The simplest school wellness program. No student apps, no accounts, no data on kids. Free for schools in Massachusetts.',
+    url: 'https://www.gogreenstreets.org/shift/schools',
+    siteName: 'Green Streets Initiative',
+    images: [{ url: '/og/shift-og.png', width: 1200, height: 630, alt: 'Shift for Schools by Green Streets Initiative' }],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Shift for Schools',
+    description:
+      'The simplest school wellness program. No student apps, no accounts, no data on kids. Free for schools in Massachusetts.',
+    images: ['/og/shift-og.png'],
+  },
 }
 
 const schoolFaqItems = [
@@ -64,7 +87,44 @@ const schoolFaqItems = [
   },
 ]
 
+const ASSET_BASE =
+  'https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/static-assets'
+
+const curriculumGroups: { subject: string; note?: string; items: { grades: string; file: string }[] }[] = [
+  {
+    subject: 'Math',
+    items: [
+      { grades: 'K–2', file: 'shift-math-k2.pdf' },
+      { grades: '3–5', file: 'shift-math-3-5.pdf' },
+      { grades: '6–8', file: 'shift-math-6-8.pdf' },
+    ],
+  },
+  {
+    subject: 'Science',
+    items: [
+      { grades: 'K–2', file: 'shift-science-k2.pdf' },
+      { grades: '3–5', file: 'shift-science-3-5.pdf' },
+      { grades: '6–8', file: 'shift-science-6-8.pdf' },
+    ],
+  },
+  {
+    subject: 'Health & PE alignment',
+    items: [
+      { grades: 'K–2', file: 'shift-health-pe-k2.pdf' },
+      { grades: '3–5', file: 'shift-health-pe-3-5.pdf' },
+      { grades: '6–8', file: 'shift-health-pe-6-8.pdf' },
+    ],
+  },
+  {
+    subject: 'Social studies',
+    note: 'optional extension',
+    items: [{ grades: '3–8', file: 'shift-civics-3-8.pdf' }],
+  },
+]
+
 export default function ShiftSchoolsPage() {
+  // Contest entries close Sun Oct 4, 2026 (ET); drop the callout after that.
+  const showContest = Date.now() < Date.parse('2026-10-05T04:00:00Z')
   return (
     <>
       <Nav />
@@ -163,8 +223,9 @@ export default function ShiftSchoolsPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
-            2b · HIGH SCHOOL VIDEO CONTEST CALLOUT
+            2b · HIGH SCHOOL VIDEO CONTEST CALLOUT (date-gated)
         ══════════════════════════════════════════════════════════ */}
+        {showContest && (
         <section className="bg-white px-8 pb-24">
           <div className="mx-auto max-w-[1120px]">
             <div className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-[#F7F5FF] p-8 md:p-10">
@@ -189,6 +250,7 @@ export default function ShiftSchoolsPage() {
             </div>
           </div>
         </section>
+        )}
 
         {/* ══════════════════════════════════════════════════════════
             3 · WHAT SCHOOLS GET
@@ -301,6 +363,93 @@ export default function ShiftSchoolsPage() {
               Common questions
             </h2>
             <FAQ items={schoolFaqItems} />
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════
+            6 · PROGRAM MATERIALS
+        ══════════════════════════════════════════════════════════ */}
+        <section className="bg-white px-8 py-24">
+          <div className="mx-auto max-w-[1120px]">
+            <h2 className="mb-3 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
+              See the actual materials
+            </h2>
+            <p className="mb-10 max-w-[680px] text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
+              Nothing behind a signup wall. These are the same PDFs participating
+              teachers and coordinators use — download them, print them, share them
+              with your PTO.
+            </p>
+
+            <div className="mb-8 grid gap-5 md:grid-cols-2">
+              <a
+                href={`${ASSET_BASE}/program/shift-program-overview.pdf`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-[#F4F8EE] p-7 transition-opacity hover:opacity-85"
+              >
+                <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#52B788]">
+                  For principals & PTOs
+                </div>
+                <div className="font-display text-lg font-extrabold text-[#191A2E]">
+                  Program overview (PDF)
+                </div>
+                <p className="mt-1 text-sm leading-[1.6] text-[#4A4D68]">
+                  What the program is, what it asks of your school, and what your
+                  school gets — on one page.
+                </p>
+              </a>
+              <a
+                href={`${ASSET_BASE}/program/shift-captain-quickstart.pdf`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-[#F4F8EE] p-7 transition-opacity hover:opacity-85"
+              >
+                <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#52B788]">
+                  For teachers
+                </div>
+                <div className="font-display text-lg font-extrabold text-[#191A2E]">
+                  Classroom quick-start card (PDF)
+                </div>
+                <p className="mt-1 text-sm leading-[1.6] text-[#4A4D68]">
+                  The Monday-to-Friday routine on a single card — under 5 minutes a
+                  week.
+                </p>
+              </a>
+            </div>
+
+            <div className="rounded-[18px] border border-[rgba(25,26,46,0.09)] p-7 md:p-8">
+              <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#7C5CE0]">
+                Curriculum connections
+              </div>
+              <p className="mb-5 text-sm leading-[1.6] text-[#4A4D68]">
+                Standards-aligned activities that connect active transportation to
+                what classrooms already teach.
+              </p>
+              <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                {curriculumGroups.map((group) => (
+                  <div key={group.subject} className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <span className="text-sm font-bold text-[#191A2E]">
+                      {group.subject}
+                      {group.note && (
+                        <span className="ml-1 font-normal text-[#6B7280]">({group.note})</span>
+                      )}
+                      :
+                    </span>
+                    {group.items.map((item) => (
+                      <a
+                        key={item.file}
+                        href={`${ASSET_BASE}/curriculum/${item.file}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-[#2966E5] underline-offset-2 hover:underline"
+                      >
+                        Grades {item.grades}
+                      </a>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 

@@ -100,7 +100,7 @@ const programs = [
   {
     num: '02',
     name: 'Shift for Schools',
-    desc: 'K–12 classroom challenges, volunteer-led walk and bike buses, route planning assistance, and safe route maps. Includes SRTS pipeline integration. Free to every participating school.',
+    desc: 'K–8 classroom challenges (high school programming in development), volunteer-led walk and bike buses, route planning assistance, and safe route maps. Includes SRTS pipeline integration. Free to every participating school.',
   },
   {
     num: '03',
