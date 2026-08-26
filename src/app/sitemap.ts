@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getQualifyingTowns } from '@/lib/towns/queries'
 import { getActiveRoams } from '@/lib/roams/queries'
+import { SCHOOLS } from '@/lib/semester/schools'
 import { SITE_URL } from '@/lib/seo'
 
 export const revalidate = 3600 // re-fetch dynamic guide list at most hourly
@@ -41,6 +42,9 @@ const STATIC_PAGES: { path: string; changeFrequency: ChangeFreq; priority: numbe
   // Events
   { path: '/events', changeFrequency: 'daily', priority: 0.7 },
   { path: '/events/shift-your-summer', changeFrequency: 'weekly', priority: 0.7 },
+  // Campaigns
+  { path: '/shift-your-semester', changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/newsletter', changeFrequency: 'monthly', priority: 0.5 },
   // Org / trust pages
   { path: '/about', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/get-involved', changeFrequency: 'monthly', priority: 0.6 },
@@ -111,5 +115,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // rather than failing the whole sitemap.
   }
 
-  return [...staticEntries, ...townEntries, ...roamEntries, ...guideEntries]
+  const schoolEntries: MetadataRoute.Sitemap = SCHOOLS.map((s) => ({
+    url: `${SITE_URL}/shift-your-semester/${s.slug}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }))
+
+  return [...staticEntries, ...townEntries, ...roamEntries, ...guideEntries, ...schoolEntries]
 }

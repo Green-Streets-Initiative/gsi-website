@@ -301,9 +301,16 @@ export async function getTownCentroid(groupId: string): Promise<{ lat: number; l
 
 const EVENT_RADIUS_MILES = 8
 
-/** Upcoming approved community events within EVENT_RADIUS_MILES of the town centroid. */
-export async function getTownEvents(centroid: { lat: number; lng: number } | null, limit = 8): Promise<TownEvent[]> {
-  if (!centroid) return []
+/**
+ * Shared pool builder for "events near a point" surfaces (town pages, campus
+ * pages): upcoming approved events within the radius, weekly series collapsed
+ * to their next occurrence. Callers apply their own selection/ranking on top —
+ * getTownEvents keeps the town tiering, the semester pages rank for campuses.
+ */
+export async function fetchEventPool(
+  centroid: { lat: number; lng: number },
+  radiusMiles = EVENT_RADIUS_MILES,
+): Promise<TownEvent[]> {
   const supabase = createServerSupabaseClient()
   const today = new Date()
   const todayStr = today.toISOString().slice(0, 10)
@@ -335,7 +342,7 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
     const lng = row.location_lng != null ? Number(row.location_lng) : null
     if (lat == null || lng == null) continue
     const distance = haversineMiles(centroid.lat, centroid.lng, lat, lng)
-    if (distance > EVENT_RADIUS_MILES) continue
+    if (distance > radiusMiles) continue
     const ci = row.content_items as Record<string, unknown>
     pool.push({
       id: ci.id as string,
@@ -383,6 +390,14 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
     }
     deduped.push(next)
   }
+
+  return deduped
+}
+
+/** Upcoming approved community events within EVENT_RADIUS_MILES of the town centroid. */
+export async function getTownEvents(centroid: { lat: number; lng: number } | null, limit = 8): Promise<TownEvent[]> {
+  if (!centroid) return []
+  const deduped = await fetchEventPool(centroid)
 
   // Priority selection (Keith, 2026-07-09):
   //   1. Open Streets within ~3 miles — the marquee car-free events.
