@@ -1,14 +1,21 @@
-// GA4 event helper. Unlike sendGAEvent from @next/third-parties, this
-// bootstraps the dataLayer queue if the gtag script hasn't loaded yet —
-// gtag.js replays queued entries on load, so events fired early still count.
+// GA4 event helper. An event pushed before the gtag config command is
+// dropped (no destination registered yet), which happens for events fired
+// on mount during a first page load — so wait for window.gtag, which the
+// GA snippet defines in the same script that queues the config command.
 export function gaEvent(name: string, params: Record<string, unknown> = {}) {
   if (typeof window === 'undefined') return
-  const w = window as unknown as { dataLayer?: unknown[] }
-  w.dataLayer = w.dataLayer ?? []
-  function gtag(..._args: unknown[]) {
-    // gtag.js requires the Arguments object itself, not a plain array
-    // eslint-disable-next-line prefer-rest-params
-    w.dataLayer!.push(arguments)
+  const w = window as unknown as { gtag?: (...args: unknown[]) => void }
+  if (typeof w.gtag === 'function') {
+    w.gtag('event', name, params)
+    return
   }
-  gtag('event', name, params)
+  let tries = 0
+  const timer = setInterval(() => {
+    if (typeof w.gtag === 'function') {
+      clearInterval(timer)
+      w.gtag('event', name, params)
+    } else if (++tries >= 50) {
+      clearInterval(timer)
+    }
+  }, 200)
 }
