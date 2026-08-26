@@ -202,7 +202,7 @@ function renderEmail(reports: SourceReport[], stale: StaleGuide[]): string {
 
   sections.push(
     `<hr style="border:none;border-top:1px solid #eee;margin:32px 0 16px 0"/>`,
-    `<div style="color:#888;font-size:11px">Automated monthly check from /api/cron/freshness-check. Update bumps to last_reviewed_at by hand or via a follow-up migration after content edits.</div>`,
+    `<div style="color:#888;font-size:11px">Automated monthly check from /api/cron/freshness-check. To propagate a price change everywhere: edit <code>src/lib/facts/prices.json</code> (feeds the commute advisors, /api/pricing, and the nearby Bluebikes note on deploy), then run <code>node scripts/build-micro-guides-migration.mjs</code> and apply the regenerated reseed migration to update guide bodies. Update bumps to last_reviewed_at by hand or via a follow-up migration after content edits.</div>`,
   )
 
   return `<div style="font-family:-apple-system,system-ui,sans-serif;max-width:680px;margin:0 auto;padding:24px;color:#222">${sections.join('\n')}</div>`

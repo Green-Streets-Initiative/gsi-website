@@ -282,7 +282,7 @@ Borrow one from Community Pedal Power for a weekend. Use it for one school picku
 
 ### Getting started
 
-1. Download the **Bluebikes app** (iOS/Android), create an account, add a payment method.
+1. [Download the **Bluebikes app**](https://bluebikes.com/how-it-works/get-the-app) (iOS/Android), create an account, add a payment method.
 2. Open the app to see nearby stations and live availability. Green means bikes are available.
 3. Tap "Unlock," scan the QR code on any available bike at the station. The lock releases.
 
@@ -290,7 +290,7 @@ Borrow one from Community Pedal Power for a weekend. Use it for one school picku
 
 - **Single trip:** $3.00 for 30 minutes (e-bikes +$0.33/min on top).
 - **Day Pass:** $11.99 for unlimited 2-hour rides that day.
-- **Membership:** $30.50/month or $133.50/year (or $13/month on the annual plan). Unlimited 45-minute rides, e-bikes at $0.10/min.
+- **Membership:** $30.50/month or $133.50/year (or $11.13/month on the annual plan). Unlimited 45-minute rides, e-bikes at $0.10/min.
 - **Income Eligible:** Available based on residence — 60-minute rides and the cheapest e-bike rate ($0.07/min). Worth checking if you qualify.
 - Helmet not provided. Bring your own or check if your workplace has loaners.
 

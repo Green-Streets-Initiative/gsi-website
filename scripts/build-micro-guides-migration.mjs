@@ -252,7 +252,29 @@ COMMIT;
 
 /* ────────── Main ────────── */
 
-const markdown = readFileSync(sourcePath, 'utf8')
+// Interpolate canonical price facts: {{price:mbta.subwaySingle}} → "$2.40".
+// Values live in src/lib/facts/prices.json — the one file to edit when the
+// monthly freshness-check email flags a change; rerun this script after.
+// Default format: integers bare ($90), cents kept otherwise ($2.40).
+// `|cents` forces two decimals ($3.00).
+const priceFacts = JSON.parse(
+  readFileSync(resolve(repoRoot, 'src/lib/facts/prices.json'), 'utf8'),
+)
+function formatPrice(value, forceCents) {
+  if (!forceCents && Number.isInteger(value)) return `$${value}`
+  return `$${value.toFixed(2)}`
+}
+function interpolatePrices(text) {
+  return text.replace(/\{\{price:([a-zA-Z.]+)(\|cents)?\}\}/g, (_, path, cents) => {
+    const value = path.split('.').reduce((o, k) => o?.[k], priceFacts)
+    if (typeof value !== 'number') {
+      throw new Error(`Unknown price fact "${path}" in micro-guides source`)
+    }
+    return formatPrice(value, !!cents)
+  })
+}
+
+const markdown = interpolatePrices(readFileSync(sourcePath, 'utf8'))
 const guides = extractGuides(markdown)
 
 // Sanity checks

@@ -255,7 +255,7 @@ Worrying about arriving sweaty stops a lot of people from biking to work. There 
 
 ### 1. The simplest fix: sweat less to begin with.
 
-An e-bike does most of the work for you — you'll arrive at a 5-mile destination feeling about the same as after a 1-mile walk. Bluebikes has a growing fleet of e-bikes, and with a Monthly or Annual membership the rate drops to $0.10/min on top of the membership — affordable for daily commute use.
+An e-bike does most of the work for you — you'll arrive at a 5-mile destination feeling about the same as after a 1-mile walk. Bluebikes has a growing fleet of e-bikes, and with a Monthly or Annual membership the rate drops to {{price:bluebikes.ebikePerMinMember}}/min on top of the membership — affordable for daily commute use.
 
 ### 2. Pace yourself on a regular bike.
 
@@ -359,10 +359,10 @@ Bluebikes is Greater Boston's bike-share system, with 400+ stations across Bosto
 
 ### Pricing options
 
-- **Single trip:** $3.00 for 30 minutes (e-bikes +$0.33/min on top).
-- **Day Pass:** $11.99 for unlimited 2-hour rides that day.
-- **Membership:** $30.50/month or $133.50/year (or $13/month on the annual plan). Unlimited 45-minute rides, e-bikes at $0.10/min.
-- **Income Eligible:** Available based on residence — 60-minute rides and the cheapest e-bike rate ($0.07/min). Worth checking if you qualify.
+- **Single trip:** {{price:bluebikes.singleRide|cents}} for 30 minutes (e-bikes +{{price:bluebikes.ebikePerMinNonMember}}/min on top).
+- **Day Pass:** {{price:bluebikes.dayPass}} for unlimited 2-hour rides that day.
+- **Membership:** {{price:bluebikes.monthly}}/month or {{price:bluebikes.annual}}/year (or {{price:bluebikes.annualPerMonth}}/month on the annual plan). Unlimited 45-minute rides, e-bikes at {{price:bluebikes.ebikePerMinMember}}/min.
+- **Income Eligible:** Available based on residence — 60-minute rides and the cheapest e-bike rate ({{price:bluebikes.ebikePerMinIncomeEligible}}/min). Worth checking if you qualify.
 - Helmet not provided. Bring your own or check if your workplace has loaners.
 
 ### Returning
@@ -610,18 +610,18 @@ The MBTA accepts both contactless payments and the older CharlieCard system. Whi
 
 ### For occasional riders: tap to pay.
 
-Hold your phone (Apple Pay, Google Pay) or a contactless card on the reader at any fare gate or bus farebox. You pay per ride — $2.40 subway, $1.70 local bus, $2.40-$13.25 commuter rail by zone.
+Hold your phone (Apple Pay, Google Pay) or a contactless card on the reader at any fare gate or bus farebox. You pay per ride — {{price:mbta.subwaySingle}} subway, {{price:mbta.busSingle}} local bus, {{price:mbta.commuterRailMin}}-{{price:mbta.commuterRailMax}} commuter rail by zone.
 
 ### For regular riders: a CharlieCard with a pass saves money.
 
-Pay-per-tap adds up fast. A monthly LinkPass on a CharlieCard is $90 for unlimited subway + local bus rides — cheaper than per-ride pricing for most daily commutes, and notably cheaper for bus-only commuters ($55/month with the Local Bus Pass).
+Pay-per-tap adds up fast. A monthly LinkPass on a CharlieCard is {{price:mbta.linkPassMonthly}} for unlimited subway + local bus rides — cheaper than per-ride pricing for most daily commutes, and notably cheaper for bus-only commuters ({{price:mbta.busPassMonthly}}/month with the Local Bus Pass).
 
 ### Pass options on a CharlieCard
 
-- **1-Day Pass:** $11 — unlimited subway and bus for 24 hours.
-- **7-Day Pass:** $22.50 — unlimited for 7 days.
-- **Monthly LinkPass:** $90 — unlimited subway and bus for the calendar month.
-- **Monthly Local Bus Pass:** $55 — bus only.
+- **1-Day Pass:** {{price:mbta.dayPass}} — unlimited subway and bus for 24 hours.
+- **7-Day Pass:** {{price:mbta.weekPass}} — unlimited for 7 days.
+- **Monthly LinkPass:** {{price:mbta.linkPassMonthly}} — unlimited subway and bus for the calendar month.
+- **Monthly Local Bus Pass:** {{price:mbta.busPassMonthly}} — bus only.
 
 Get a CharlieCard from any subway station's vending machine; load it with cash or a card.
 
@@ -725,7 +725,7 @@ Somerville to the Seaport is a 6-mile trip. Multimodal version:
 - Ride Red Line to South Station (15 min)
 - Walk 10 min to the Seaport
 
-Total: 33 minutes, $2.40, and 18 minutes of walking built into the day.
+Total: 33 minutes, {{price:mbta.subwaySingle}}, and 18 minutes of walking built into the day.
 
 ### A few practical things
 
