@@ -4,6 +4,7 @@ export const config = {
   matcher: [
     '/whatmovesus/dashboard/:path*',
     '/admin/:path*',
+    '/volunteer/guide/:path*',
     '/portal/:path*',
     '/login',
     '/flyer',
@@ -29,6 +30,11 @@ export async function middleware(req: NextRequest) {
   // ── WMU Funder Dashboard ──
   if (pathname.startsWith('/whatmovesus/dashboard')) {
     return handleWmu(req)
+  }
+
+  // ── Volunteer Field Guide ──
+  if (pathname.startsWith('/volunteer/guide')) {
+    return handleGuide(req)
   }
 
   return NextResponse.next()
@@ -141,6 +147,82 @@ async function verifyAdminJwt(token: string, secret: string): Promise<boolean> {
 
 function redirectToAdminLogin(req: NextRequest) {
   const url = new URL('/admin/login', req.url)
+  return NextResponse.redirect(url)
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Volunteer Field Guide auth — shared-password JWT cookie
+// (same pattern as admin; independent credential so rotating one never
+// touches the other)
+// ════════════════════════════════════════════════════════════════════
+
+const GUIDE_COOKIE = 'gsi_volunteer_guide_token'
+
+async function handleGuide(req: NextRequest) {
+  const { pathname } = req.nextUrl
+
+  if (pathname === '/volunteer/guide/login') {
+    return NextResponse.next()
+  }
+
+  const secret = process.env.VOLUNTEER_GUIDE_PASSWORD
+  if (!secret) {
+    return redirectToGuideLogin(req)
+  }
+
+  const token = req.cookies.get(GUIDE_COOKIE)?.value
+  if (!token) {
+    return redirectToGuideLogin(req)
+  }
+
+  const valid = await verifyScopedJwt(token, secret, 'gsi_volunteer_guide')
+  if (!valid) {
+    const res = redirectToGuideLogin(req)
+    res.cookies.delete(GUIDE_COOKIE)
+    return res
+  }
+
+  return NextResponse.next()
+}
+
+async function verifyScopedJwt(
+  token: string,
+  secret: string,
+  scope: string,
+): Promise<boolean> {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return false
+
+    const [header, body, sig] = parts
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify'],
+    )
+
+    const valid = await crypto.subtle.verify(
+      'HMAC',
+      key,
+      base64UrlDecode(sig),
+      new TextEncoder().encode(`${header}.${body}`),
+    )
+    if (!valid) return false
+
+    const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(body)))
+    if (payload.scope !== scope) return false
+    if (payload.exp < Math.floor(Date.now() / 1000)) return false
+
+    return true
+  } catch {
+    return false
+  }
+}
+
+function redirectToGuideLogin(req: NextRequest) {
+  const url = new URL('/volunteer/guide/login', req.url)
   return NextResponse.redirect(url)
 }
 

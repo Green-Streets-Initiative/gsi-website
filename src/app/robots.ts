@@ -18,6 +18,7 @@ export default function robots(): MetadataRoute.Robots {
           '/shift/employers/login',
           '/shift/rewards-partners/dashboard',
           '/whatmovesus/dashboard',
+          '/volunteer',
           '/prize',
           '/record',
         ],
