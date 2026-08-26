@@ -60,8 +60,14 @@ export async function fetchNearbyAlerts(routeIds: string[]): Promise<SurfacedAle
   const ids = [...new Set(routeIds)].filter(Boolean)
   if (ids.length === 0) return []
   try {
+    // page[limit] must comfortably exceed the ambient alert noise: the API
+    // returns rows in feed order and the major-effects filter runs client-
+    // side, so at limit=10 a pile of STOP_MOVE/DELAY/NOTICE rows evicted the
+    // Orange Line SUSPENSION before we ever saw it (Keith, 2026-08-26 — the
+    // same bug class as the app server's severity-blind slice, fixed there
+    // the same day).
     const res = await fetch(
-      `https://api-v3.mbta.com/alerts?filter[route]=${ids.join(',')}&filter[datetime]=NOW&page[limit]=10`,
+      `https://api-v3.mbta.com/alerts?filter[route]=${ids.join(',')}&filter[datetime]=NOW&page[limit]=50`,
     )
     if (!res.ok) return []
     const json = await res.json()

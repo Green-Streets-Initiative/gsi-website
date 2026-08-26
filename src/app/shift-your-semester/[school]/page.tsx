@@ -10,6 +10,8 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getCampusEvents } from '@/lib/semester/events'
 import { getTownRoams } from '@/lib/towns/queries'
 import { EventsRoamsPanels } from '@/components/towns/TownSections'
+import TownToc from '@/components/towns/TownToc'
+import { TramFront, Bike, Footprints } from 'lucide-react'
 import { getSchool, SCHOOLS, type SchoolFact } from '@/lib/semester/schools'
 import { withUtm } from '@/lib/utm'
 import CorporateShareKit from '@/app/events/shift-your-summer/share/[slug]/CorporateShareKit'
@@ -69,28 +71,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-function FactList({ facts }: { facts: SchoolFact[] }) {
+function FactCards({ facts }: { facts: SchoolFact[] }) {
   return (
-    <ul className="space-y-3">
+    <div className="grid gap-3 sm:grid-cols-2">
       {facts.map((f) => (
-        <li key={f.sourceUrl + f.text.slice(0, 24)} className="flex gap-3 text-[0.9375rem] leading-relaxed text-white/85">
-          <span aria-hidden className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#BAF14D]" />
-          <span>
-            {f.text}{' '}
-            <a
-              href={f.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="whitespace-nowrap text-xs font-semibold text-white/70 underline underline-offset-2 hover:text-white"
-            >
-              source
-            </a>
-          </span>
-        </li>
+        <div
+          key={f.sourceUrl + f.text.slice(0, 24)}
+          className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-white/85"
+        >
+          {f.text}{' '}
+          <a
+            href={f.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="whitespace-nowrap text-xs font-semibold text-white/70 underline underline-offset-2 hover:text-white"
+          >
+            source
+          </a>
+        </div>
       ))}
-    </ul>
+    </div>
   )
 }
+
+const BENEFIT_GROUPS = [
+  { key: 'transit', label: 'Transit', Icon: TramFront, color: '#5BD6C0' },
+  { key: 'bike', label: 'Bike', Icon: Bike, color: '#BAF14D' },
+  { key: 'moving', label: 'Around campus', Icon: Footprints, color: '#EDB93C' },
+] as const
 
 export default async function SchoolPage({ params }: Props) {
   const { school: slug } = await params
@@ -148,8 +156,18 @@ export default async function SchoolPage({ params }: Props) {
           </div>
         </section>
 
+        <TownToc
+          sections={[
+            ['#join', group ? 'Join' : 'Get the app'],
+            ['#around', 'Around campus'],
+            ['#benefits', 'Campus perks'],
+            ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events'] as [string, string]] : []),
+            ...(group ? [['#share', 'Share'] as [string, string]] : []),
+          ]}
+        />
+
         {/* Join */}
-        <section className="px-8 pb-14 pt-4" id="join">
+        <section className="scroll-mt-28 px-8 pb-14 pt-10" id="join">
           <div className="mx-auto max-w-[860px]">
             {group && joinUrl ? (
               <>
@@ -186,11 +204,18 @@ export default async function SchoolPage({ params }: Props) {
                       {group.invite_code}
                     </p>
                     <p className="text-sm leading-[1.6] text-white/85">
-                      In Shift, open the Community tab, tap Join, and enter the code. Your
-                      trips count for {school.shortName} from that moment on.
+                      In Shift, open the Community tab, tap the <strong className="text-white">+</strong> button,
+                      and enter the code. Your trips count for {school.shortName} from that
+                      moment on.
                     </p>
                   </div>
                 </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/shift-app/shift-join-sequence.png"
+                  alt="How to enter your school code in the Shift app: tap the + button on the Community tab, then enter your invite code and tap Join."
+                  className="mx-auto mt-6 max-w-[340px] rounded-xl"
+                />
               </>
             ) : (
               <div className="rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-6">
@@ -215,29 +240,61 @@ export default async function SchoolPage({ params }: Props) {
           </div>
         </section>
 
-        {/* Getting around */}
-        <section className="px-8 pb-14" id="benefits">
+        {/* Around campus — anchored neighborhood snapshot */}
+        <section className="scroll-mt-28 px-8 pb-14" id="around">
+          <div className="mx-auto max-w-[860px]">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="mb-1 font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold tracking-tight text-white">
+                  What&rsquo;s around campus
+                </h2>
+                <p className="max-w-[560px] text-[0.9375rem] leading-relaxed text-white/80">
+                  Live map of T stops, bus arrivals, Bluebikes docks, and bike routes
+                  around {school.shortName} — poke around.
+                </p>
+              </div>
+              <a
+                href={`/nearby?lat=${school.lat}&lng=${school.lng}&label=${encodeURIComponent(school.name)}&utm_source=school_page&utm_campaign=${school.slug}`}
+                className="shrink-0 text-sm font-semibold text-[#BAF14D]"
+              >
+                Open the full map &rarr;
+              </a>
+            </div>
+            <iframe
+              src={`/nearby/embed?lat=${school.lat}&lng=${school.lng}&label=${encodeURIComponent(school.name)}`}
+              title={`Neighborhood snapshot around ${school.name}`}
+              loading="lazy"
+              className="h-[620px] w-full rounded-[18px] border border-white/[0.12] bg-[#191A2E]"
+            />
+          </div>
+        </section>
+
+        {/* Campus perks */}
+        <section className="scroll-mt-28 px-8 pb-14" id="benefits">
           <div className="mx-auto max-w-[860px]">
             <h2 className="mb-2 font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold tracking-tight text-white">
-              Getting around {school.shortName}
+              {school.shortName} campus perks
             </h2>
             <p className="mb-6 max-w-[620px] text-[0.9375rem] leading-relaxed text-white/80">
-              Your school already gives you a head start — these are the transit, bike, and
-              campus-mobility benefits {school.shortName} students can use today.
+              Your school already gives you a head start.
             </p>
-            <div className="space-y-5">
-              <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] p-6">
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#5BD6C0]">Transit</h3>
-                <FactList facts={school.transit} />
-              </div>
-              <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] p-6">
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#BAF14D]">Bike</h3>
-                <FactList facts={school.bike} />
-              </div>
-              <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] p-6">
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#EDB93C]">Around campus</h3>
-                <FactList facts={school.moving} />
-              </div>
+            <div className="space-y-6">
+              {BENEFIT_GROUPS.map(({ key, label, Icon, color }) => (
+                <div key={key}>
+                  <div className="mb-2.5 flex items-center gap-2.5">
+                    <span
+                      className="flex h-7 w-7 items-center justify-center rounded-[8px]"
+                      style={{ backgroundColor: `${color}29` }}
+                    >
+                      <Icon size={16} style={{ color }} />
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-widest" style={{ color }}>
+                      {label}
+                    </span>
+                  </div>
+                  <FactCards facts={school[key]} />
+                </div>
+              ))}
             </div>
             <p className="mt-4 text-xs text-white/70">
               Programs and prices change each term — check the linked school pages for current details.
@@ -247,7 +304,7 @@ export default async function SchoolPage({ params }: Props) {
 
         {/* Events + roams near campus */}
         {(events.length > 0 || roams.length > 0) && (
-          <section className="px-8 pb-14" id="events">
+          <section className="scroll-mt-28 px-8 pb-14" id="events">
             <div className="mx-auto max-w-[860px]">
               <EventsRoamsPanels events={events} roams={roams} townName={school.shortName} />
             </div>
@@ -256,7 +313,7 @@ export default async function SchoolPage({ params }: Props) {
 
         {/* Share kit */}
         {group && joinUrl && (
-          <section className="px-8 pb-14" id="share">
+          <section className="scroll-mt-28 px-8 pb-14" id="share">
             <div className="mx-auto max-w-[860px]">
               <div className="rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-6">
                 <p className="mb-1 text-xs font-bold uppercase tracking-widest text-white/75">
