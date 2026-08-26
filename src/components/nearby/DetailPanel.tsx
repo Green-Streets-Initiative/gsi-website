@@ -6,6 +6,7 @@ import { type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
+import { BIKE_SHARE_SYSTEM_LINKS, cargobVendorLink } from '@/lib/nearby/bike-share-links'
 import { CORRIDOR_UNSPLASH } from '@/lib/nearby/config'
 import { protectionLabel, laneTierCopy, LANE_SOURCE_LABEL } from '@/lib/nearby/bike-labels'
 import { bearingDegrees } from '@/lib/geo/polyline'
@@ -327,15 +328,40 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
           <strong className="font-bold text-[#BAF14D]">{dockStatsText(d.num_bikes_available, d.num_ebikes_available, tr)}</strong>
           {' · '}{tr('detail.open_docks', { count: d.num_docks_available })}
         </div>
-        <a
-          href={directionsUrl(d.lat, d.lng)}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => posthog.capture('snapshot_directions_clicked', { type: d.system_id ?? 'bluebike' })}
-          className="mt-1 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
-        >
-          {tr('detail.walk_there')}
-        </a>
+        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <a
+            href={directionsUrl(d.lat, d.lng)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => posthog.capture('snapshot_directions_clicked', { type: d.system_id ?? 'bluebike' })}
+            className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+          >
+            {tr('detail.walk_there')}
+          </a>
+          {(() => {
+            // Vendor action: the system's official smart link opens the
+            // vendor app when installed (falls back to their site); systems
+            // without one get a plain site link.
+            const links = BIKE_SHARE_SYSTEM_LINKS[d.system_id ?? 'bluebikes']
+            if (!links) return null
+            return (
+              <a
+                href={links.appUrl ?? links.siteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => posthog.capture('snapshot_vendor_app_clicked', {
+                  system: d.system_id ?? 'bluebikes',
+                  target: links.appUrl ? 'app' : 'site',
+                })}
+                className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+              >
+                {links.appUrl
+                  ? tr('detail.open_vendor_app', { system: d.system_name ?? 'Bluebikes' })
+                  : tr('detail.open_site')}
+              </a>
+            )
+          })()}
+        </div>
       </div>
     )
   }
@@ -344,23 +370,50 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
   if (selection.type === 'borrow') {
     const p = borrowRent.find(x => x.id === selection.id)
     if (!p) return null
+    // CargoB rents through its app: phones get the store link (an installed
+    // app shows "Open" there), desktop keeps the site. Pedal Power has no
+    // app — site everywhere.
+    const vendor = p.org === 'cargob'
+      ? cargobVendorLink(p.url)
+      : { url: p.url, target: 'site' as const }
     return (
       <div>
         <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#EDB93C]">{tr('detail.borrow_rent_eyebrow')}</div>
         <div className="text-[0.95rem] font-bold text-white">{p.name}</div>
+        <div className="text-[0.78rem] text-white/75">
+          {tr('detail.walk_distance', { minutes: walkTimeMinutes(p.distMiles * 1609.34), distance: formatDistance(p.distMiles * 1609.34) })}
+        </div>
         <div className="mt-1 text-[0.82rem] text-white/80">
           {tr(p.org === 'cargob' ? 'borrow.cargob' : 'borrow.pedal_power')}
           {p.approximate ? tr('detail.exact_address_note') : ''}
         </div>
-        <a
-          href={p.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => posthog.capture('snapshot_borrow_clicked', { org: p.org })}
-          className="mt-2 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
-        >
-          {tr('detail.open_site')}
-        </a>
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+          {/* Approximate pickup areas (Pedal Power centroids) get no
+              directions link — a confident walk to a wrong address is
+              worse than none. */}
+          {!p.approximate && (
+            <a
+              href={directionsUrl(p.lat, p.lng)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'borrow', org: p.org })}
+              className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+            >
+              {tr('detail.walk_there')}
+            </a>
+          )}
+          <a
+            href={vendor.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => posthog.capture('snapshot_borrow_clicked', { org: p.org, target: vendor.target })}
+            className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+          >
+            {vendor.target === 'app_store'
+              ? tr('detail.get_vendor_app', { name: 'CargoB' })
+              : tr('detail.open_site')}
+          </a>
+        </div>
       </div>
     )
   }
