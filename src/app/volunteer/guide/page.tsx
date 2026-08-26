@@ -366,7 +366,7 @@ const PROJECT_2: Step[] = [
     body: (
       <ul className="m-0">
         <li>First ask: is this actually how families would walk to this school? Is there an obvious better route missing?</li>
-        <li>Score each corridor 1–10 for walking and for biking from Street View — <strong>before</strong> looking at the system&rsquo;s scores. Note every case where you and the system disagree by more than 2 points.</li>
+        <li>Score each corridor 1–10 for walking and for biking from Street View —<strong> before </strong>looking at the system&rsquo;s scores. Note every case where you and the system disagree by more than 2 points.</li>
         <li>Each corridor also carries a recommendation — Walk &amp; Bike, Walk Only, Bike with Caution, or Bike Not Recommended. Flag any you&rsquo;d change.</li>
         <li>Watch especially for routes rated too kindly on busy multi-lane roads — that&rsquo;s the weakness we most suspect.</li>
       </ul>
@@ -498,7 +498,7 @@ export default function VolunteerGuidePage() {
 
           <div className="border-l-4 border-[#F59E0B] bg-[#FEF3C7] rounded-r-xl px-5 py-3.5 mt-4">
             <p className="m-0 text-[14.5px] leading-relaxed text-[#92400E]">
-              <strong>The dashboard is our live system.</strong> Look at anything;
+              <strong>The dashboard is our live system. </strong>Look at anything;
               change things only for Maple Street Elementary (Test), our sandbox
               school; and don&rsquo;t touch the &ldquo;Program Active&rdquo; toggle —
               it sends real emails to real people. When something confuses you,
