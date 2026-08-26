@@ -270,7 +270,7 @@ const en: Dict = {
   // ── borrow (borrow-rent.ts blurbs) + misc shared notes ──
   'borrow.cargob': 'Rent an e-cargo bike by the minute',
   'borrow.pedal_power': 'Borrow an e-bike free for a week',
-  'misc.bluebikes_note': 'Bluebikes membership is $119/year for unlimited 45-minute rides — with a reduced-price option if you qualify for select public assistance programs.',
+  'misc.bluebikes_note': 'Bluebikes membership is {price}/year for unlimited 45-minute rides — with a reduced-price option if you qualify for select public assistance programs.',
 
   // ── promo (contextual "bike instead" card chrome; the offer text is data) ──
   'promo.eyebrow': 'Bike instead',
@@ -505,7 +505,7 @@ const es: Dict = {
   "dock.no_classic_other": "no hay bicis clásicas ahora — {ebikes} bicis eléctricas",
   "borrow.cargob": "Renta una bici de carga eléctrica por minuto",
   "borrow.pedal_power": "Pide prestada una bici eléctrica gratis por una semana",
-  "misc.bluebikes_note": "La membresía de Bluebikes cuesta $119/año con viajes ilimitados de 45 minutos — con precio reducido si calificas para ciertos programas de asistencia pública.",
+  "misc.bluebikes_note": "La membresía de Bluebikes cuesta {price}/año con viajes ilimitados de 45 minutos — con precio reducido si calificas para ciertos programas de asistencia pública.",
   "promo.eyebrow": "Ve en bici",
   "promo.copy_hint": "Toca para copiar",
   "promo.copied": "Copiado ✓",
@@ -736,7 +736,7 @@ const ptBR: Dict = {
   "dock.no_classic_other": "sem bikes clássicas agora — {ebikes} bikes elétricas",
   "borrow.cargob": "Alugue uma cargo bike elétrica por minuto",
   "borrow.pedal_power": "Empreste uma bike elétrica grátis por uma semana",
-  "misc.bluebikes_note": "A assinatura da Bluebikes custa US$ 119/ano com corridas ilimitadas de 45 minutos — com desconto para quem se qualifica em certos programas de assistência pública.",
+  "misc.bluebikes_note": "A assinatura da Bluebikes custa US{price}/ano com corridas ilimitadas de 45 minutos — com desconto para quem se qualifica em certos programas de assistência pública.",
   "promo.eyebrow": "Vá de bike",
   "promo.copy_hint": "Toque para copiar",
   "promo.copied": "Copiado ✓",
@@ -967,7 +967,7 @@ const zhHans: Dict = {
   "dock.no_classic_other": "暂无普通车 — {ebikes} 辆电动车",
   "borrow.cargob": "按分钟租用电动载货自行车",
   "borrow.pedal_power": "免费借用电动自行车一周",
-  "misc.bluebikes_note": "Bluebikes 会员每年 $119，可无限次骑行（每次 45 分钟）— 符合特定公共援助计划条件者可享优惠价。",
+  "misc.bluebikes_note": "Bluebikes 会员每年 {price}，可无限次骑行（每次 45 分钟）— 符合特定公共援助计划条件者可享优惠价。",
   "promo.eyebrow": "改骑单车",
   "promo.copy_hint": "点按复制",
   "promo.copied": "已复制 ✓",

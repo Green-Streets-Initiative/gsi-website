@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { PRICES } from '@/lib/facts/prices'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,12 +45,12 @@ export async function GET() {
 
 function getDefaults(): Record<string, number> {
   return {
-    gas_price_ma: 3.59,
-    mbta_subway_single: 2.40,
-    mbta_subway_monthly: 90,
-    mbta_bus_single: 1.70,
-    mbta_bus_monthly: 55,
-    parking_daily_boston: 18,
-    maint_per_mile: 0.109,
+    gas_price_ma: PRICES.driving.gasPerGallonMa,
+    mbta_subway_single: PRICES.mbta.subwaySingle,
+    mbta_subway_monthly: PRICES.mbta.linkPassMonthly,
+    mbta_bus_single: PRICES.mbta.busSingle,
+    mbta_bus_monthly: PRICES.mbta.busPassMonthly,
+    parking_daily_boston: PRICES.driving.parkingDailyBoston,
+    maint_per_mile: PRICES.driving.maintPerMile,
   }
 }

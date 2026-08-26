@@ -16,6 +16,7 @@ import { dockStatsText } from './markers'
 import type { SectionStatus } from './types'
 import { SkeletonRows, ErrorCard } from './SectionShell'
 import { useNearbyT } from './NearbyI18n'
+import { PRICES, usd } from '@/lib/facts/prices'
 import { useNearbyPromos } from './NearbyPromos'
 import NearbyPromoCard from './NearbyPromoCard'
 import {
@@ -443,7 +444,7 @@ export function DockList({ docks, onSelect, selectedId }: {
               </div>
             </button>
           ))}
-          <p className="px-1 text-[0.8rem] leading-relaxed text-white/75">{tr('misc.bluebikes_note')}</p>
+          <p className="px-1 text-[0.8rem] leading-relaxed text-white/75">{tr('misc.bluebikes_note', { price: usd(PRICES.bluebikes.annual) })}</p>
         </div>
       )}
     </div>

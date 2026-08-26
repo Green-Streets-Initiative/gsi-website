@@ -18,6 +18,7 @@ import { co2Equivalency } from '@/lib/co2-equivalency'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import type { EmployerGroup, EmployerBenefits as EmployerBenefitsConfig, RecommendationResponse, BarrierCode, CurrentCommuteMode, Mode } from '@/lib/types/commute'
+import { PRICES } from '@/lib/facts/prices'
 
 type PlaceData = { placeId: string; lat: number; lng: number }
 type TransitStep = { lineName: string; lineShortName: string; vehicleType: string; numStops: number; departureStop: string; arrivalStop: string }
@@ -44,9 +45,9 @@ const MODES: Record<string, { met: number; mph: number | null; label: string; he
 }
 
 const DRIVE_MPH = 14
-const MBTA_SUBWAY_SINGLE = 2.40
-const MBTA_SUBWAY_MONTHLY = 90
-const BLUEBIKES_ANNUAL = 119
+const MBTA_SUBWAY_SINGLE = PRICES.mbta.subwaySingle
+const MBTA_SUBWAY_MONTHLY = PRICES.mbta.linkPassMonthly
+const BLUEBIKES_ANNUAL = PRICES.bluebikes.annual
 const WEEKS = 52
 const CO2_PER_MILE = 0.404
 const BODY_WEIGHT_LBS = 165
@@ -578,7 +579,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo }: Props) {
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-bold text-[#2D6A4F]">$</span>
                     <NumInput value={transitMonthly} onChange={setTransitMonthly} min={0} max={300} step={1} width="88px" />
-                    <span className="text-[0.8rem] text-[#191A2E]">per month (LinkPass $90)</span>
+                    <span className="text-[0.8rem] text-[#191A2E]">{`per month (LinkPass $${PRICES.mbta.linkPassMonthly})`}</span>
                   </div>
                 </Field>
               )}

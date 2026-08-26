@@ -15,6 +15,7 @@ import ModeIcon from '@/components/commute/ModeIcon'
 import LoadingMessages from '@/components/commute/LoadingMessages'
 import { co2Equivalency } from '@/lib/co2-equivalency'
 import type { RecommendationResponse, CurrentCommuteMode, Mode } from '@/lib/types/commute'
+import { PRICES } from '@/lib/facts/prices'
 
 type PlaceData = { placeId: string; lat: number; lng: number }
 type TransitStep = { lineName: string; lineShortName: string; vehicleType: string; numStops: number; departureStop: string; arrivalStop: string }
@@ -46,11 +47,11 @@ const MODES: Record<string, { met: number; mph: number | null; label: string; he
 
 const DRIVE_MPH = 14
 
-// Default pricing — overridden by /api/pricing on mount
-let MBTA_SUBWAY_SINGLE = 2.40
-let MBTA_SUBWAY_MONTHLY = 90
-let MBTA_BUS_SINGLE = 1.70
-let MBTA_BUS_MONTHLY = 55
+// Default pricing — canonical facts, overridden by /api/pricing on mount
+let MBTA_SUBWAY_SINGLE = PRICES.mbta.subwaySingle
+let MBTA_SUBWAY_MONTHLY = PRICES.mbta.linkPassMonthly
+let MBTA_BUS_SINGLE = PRICES.mbta.busSingle
+let MBTA_BUS_MONTHLY = PRICES.mbta.busPassMonthly
 const WEEKS = 52
 const CO2_PER_MILE = 0.404
 const BODY_WEIGHT_LBS = 165
@@ -81,7 +82,7 @@ const FAQ = [
   },
   {
     q: 'Is the MBTA a reliable alternative to driving for Boston-area commuters?',
-    a: 'It depends heavily on your route. The Red, Orange, and Green lines serve dense corridors well and are genuinely competitive with driving for many downtown-bound commutes. Bus routes vary significantly in reliability, though key routes — particularly the 86, 1, 39, and Silver Line — have improved with dedicated bus lanes. The monthly LinkPass at $90 covers unlimited trips on all subway, bus, and Silver Line routes. For a commuter making 40+ trips a month, <strong>the pass pays for itself in under three weeks</strong> of use.',
+    a: 'It depends heavily on your route. The Red, Orange, and Green lines serve dense corridors well and are genuinely competitive with driving for many downtown-bound commutes. Bus routes vary significantly in reliability, though key routes — particularly the 86, 1, 39, and Silver Line — have improved with dedicated bus lanes. The monthly LinkPass at $' + PRICES.mbta.linkPassMonthly + ' covers unlimited trips on all subway, bus, and Silver Line routes. For a commuter making 40+ trips a month, <strong>the pass pays for itself in under three weeks</strong> of use.',
   },
   {
     q: 'What\'s the best way to start commuting by bike if you\'re new to riding in traffic?',
@@ -777,7 +778,7 @@ export default function CommuteCalculator() {
                   <div className="flex items-center gap-2">
                     <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
                     <NumInput value={transitMonthly} onChange={setTransitMonthly} min={0} max={300} step={1} width="88px" fontSize="1rem" />
-                    <span className="text-[0.8rem] text-white">per month (LinkPass $90)</span>
+                    <span className="text-[0.8rem] text-white">{`per month (LinkPass $${PRICES.mbta.linkPassMonthly})`}</span>
                   </div>
                 </Field>
               )}

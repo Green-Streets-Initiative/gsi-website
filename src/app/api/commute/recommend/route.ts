@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { PRICES } from '@/lib/facts/prices'
 import type {
   Mode,
   BikeInfraQuality,
@@ -130,7 +131,7 @@ function generatePros(mode: string, bikeInfraQuality: BikeInfraQuality, hasBlueb
     case 'transit': {
       const tPros: string[] = []
       if (detail) tPros.push(detail)
-      tPros.push('$90/month unlimited — predictable cost')
+      tPros.push(`$${PRICES.mbta.linkPassMonthly}/month unlimited — predictable cost`)
       tPros.push('Read, relax, or work during your commute')
       return tPros.slice(0, 3)
     }

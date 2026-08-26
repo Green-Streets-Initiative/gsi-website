@@ -1,0 +1,31 @@
+{
+  "_comment": "Canonical transportation price facts. THE one place to update when the monthly freshness-check email flags a change. Consumed by src/lib/facts/prices.ts (site code) and scripts/build-micro-guides-migration.mjs (guide bodies — regenerate + apply the reseed migration after editing). Verified against the freshness_snapshots scrape.",
+  "asOf": "2026-08-04",
+  "mbta": {
+    "sourceUrl": "https://www.mbta.com/fares",
+    "subwaySingle": 2.4,
+    "busSingle": 1.7,
+    "linkPassMonthly": 90,
+    "busPassMonthly": 55,
+    "dayPass": 11,
+    "weekPass": 22.5,
+    "commuterRailMin": 2.4,
+    "commuterRailMax": 13.25
+  },
+  "bluebikes": {
+    "sourceUrl": "https://bluebikes.com/pricing",
+    "singleRide": 3.0,
+    "dayPass": 11.99,
+    "monthly": 30.5,
+    "annual": 133.5,
+    "annualPerMonth": 11.13,
+    "ebikePerMinMember": 0.1,
+    "ebikePerMinNonMember": 0.33,
+    "ebikePerMinIncomeEligible": 0.07
+  },
+  "driving": {
+    "gasPerGallonMa": 3.59,
+    "maintPerMile": 0.109,
+    "parkingDailyBoston": 18
+  }
+}
