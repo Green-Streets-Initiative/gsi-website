@@ -280,6 +280,8 @@ export async function fetchBluebikes(lat: number, lng: number, radiusMeters = 15
           num_ebikes_available: st?.num_ebikes_available ?? 0,
           num_docks_available: st?.num_docks_available ?? 0,
           distance_meters: dist,
+          system_id: 'bluebikes',
+          system_name: 'Bluebikes',
         })
       }
     }
@@ -287,6 +289,65 @@ export async function fetchBluebikes(lat: number, lng: number, radiusMeters = 15
   } catch {
     return []
   }
+}
+
+const VALLEYBIKE_BBOX: [number, number, number, number] = [42.0, -72.9, 42.5, -72.4]
+
+export async function fetchValleyBike(lat: number, lng: number, radiusMeters = 1500): Promise<BluebikeStationLive[]> {
+  if (lat < VALLEYBIKE_BBOX[0] || lat > VALLEYBIKE_BBOX[2] || lng < VALLEYBIKE_BBOX[1] || lng > VALLEYBIKE_BBOX[3]) {
+    return []
+  }
+  const proxyBase = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!proxyBase || !anonKey) return []
+
+  try {
+    const headers = { apikey: anonKey, Authorization: `Bearer ${anonKey}` }
+    const [infoRes, statusRes] = await Promise.all([
+      fetch(`${proxyBase}/functions/v1/nearby-gbfs?system=valleybike&feed=station_information`, { headers }),
+      fetch(`${proxyBase}/functions/v1/nearby-gbfs?system=valleybike&feed=station_status`, { headers }),
+    ])
+    if (!infoRes.ok || !statusRes.ok) return []
+    const info = await infoRes.json()
+    const status = await statusRes.json()
+
+    const statusMap = new Map<string, { num_bikes_available: number; num_ebikes_available: number; num_docks_available: number }>()
+    for (const s of status.data?.stations ?? []) {
+      statusMap.set(s.station_id, { num_bikes_available: s.num_bikes_available ?? 0, num_ebikes_available: s.num_ebikes_available ?? 0, num_docks_available: s.num_docks_available ?? 0 })
+    }
+
+    const nearby: BluebikeStationLive[] = []
+    for (const station of info.data?.stations ?? []) {
+      const dist = haversineDist(lat, lng, station.lat, station.lon)
+      if (dist < radiusMeters) {
+        const st = statusMap.get(station.station_id)
+        nearby.push({
+          station_id: station.station_id,
+          name: station.name,
+          lat: station.lat,
+          lng: station.lon,
+          capacity: station.capacity ?? 0,
+          num_bikes_available: st?.num_bikes_available ?? 0,
+          num_ebikes_available: st?.num_ebikes_available ?? 0,
+          num_docks_available: st?.num_docks_available ?? 0,
+          distance_meters: dist,
+          system_id: 'valleybike',
+          system_name: 'ValleyBike',
+        })
+      }
+    }
+    return nearby.sort((a, b) => a.distance_meters - b.distance_meters)
+  } catch {
+    return []
+  }
+}
+
+export async function fetchBikeShareDocks(lat: number, lng: number, radiusMeters = 1500): Promise<BluebikeStationLive[]> {
+  const [bb, vb] = await Promise.all([
+    fetchBluebikes(lat, lng, radiusMeters),
+    fetchValleyBike(lat, lng, radiusMeters),
+  ])
+  return [...bb, ...vb].sort((a, b) => a.distance_meters - b.distance_meters)
 }
 
 export async function fetchBikeParking(lat: number, lng: number, radiusMeters = 1000): Promise<BikeParkingSpot[]> {

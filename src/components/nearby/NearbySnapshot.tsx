@@ -6,7 +6,7 @@ import posthog from 'posthog-js'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
-import { fetchBluebikes, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
+import { fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
 import { fetchNearbyAlerts, type SurfacedAlert, type NearbyPromo } from '@/lib/nearby/alerts'
 import { round3, parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
 import { buildAppHref, isNewRoutesContext } from '@/lib/nearby/campaign'
@@ -299,9 +299,9 @@ export default function NearbySnapshot() {
     Promise.all([railP, busP]).then(([railRows, busRows]) =>
       fetchNearbyAlerts([...railRows, ...busRows].map(r => r.route_id)).then(setAlerts),
     )
-    fetchBluebikes(lat, lng).then(rows => {
+    fetchBikeShareDocks(lat, lng).then(rows => {
       setBluebikes({ status: 'ready', data: rows })
-      posthog.capture('snapshot_section_loaded', { section: 'bluebikes', count: rows.length })
+      posthog.capture('snapshot_section_loaded', { section: 'bike_share', count: rows.length })
     })
 
     // Bike network, progressively: the close-in network paints immediately,
@@ -392,7 +392,7 @@ export default function NearbySnapshot() {
         const [railRows, busRows, bbRows] = await Promise.all([
           fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_MAX_STATIONS),
           fetchMBTAStops(lat, lng, SNAPSHOT_BUS_OPTS),
-          fetchBluebikes(lat, lng),
+          fetchBikeShareDocks(lat, lng),
         ])
         setRail({ status: 'ready', data: railRows })
         setBus({ status: 'ready', data: busRows })

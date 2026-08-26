@@ -60,6 +60,8 @@ export interface BluebikeStationLive {
   num_ebikes_available: number
   num_docks_available: number
   distance_meters: number
+  system_id?: string
+  system_name?: string
 }
 
 export interface MBTAStopLive {

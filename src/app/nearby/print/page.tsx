@@ -366,13 +366,19 @@ export default async function NearbyPrintPage({ searchParams }: {
                   {tr('print.docks_heading')}
                 </h2>
                 <p className="text-[0.75rem] leading-snug text-[#191A2E]/85">
-                  {printDocks.map((d, i) => (
-                    <span key={d.station_id}>
-                      {i > 0 && ' · '}
-                      <span className="font-semibold text-[#191A2E]">{d.name}</span>
-                      {tr('print.min_walk_paren', { minutes: Math.round(d.distance_meters / 80) })}
-                    </span>
-                  ))}
+                  {(() => {
+                    const systemCount = new Set(printDocks.map(d => d.system_id ?? 'bluebikes')).size
+                    return printDocks.map((d, i) => (
+                      <span key={d.station_id}>
+                        {i > 0 && ' · '}
+                        <span className="font-semibold text-[#191A2E]">{d.name}</span>
+                        {systemCount > 1 && d.system_name && (
+                          <span className="text-[#191A2E]/60"> ({d.system_name})</span>
+                        )}
+                        {tr('print.min_walk_paren', { minutes: Math.round(d.distance_meters / 80) })}
+                      </span>
+                    ))
+                  })()}
                 </p>
               </>
             )}

@@ -318,7 +318,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
     if (!d) return null
     return (
       <div>
-        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">{tr('detail.bluebikes_dock')}</div>
+        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">{tr('detail.bike_share_dock', { system: d.system_name ?? 'Bluebikes' })}</div>
         <div className="text-[0.95rem] font-bold text-white">{d.name}</div>
         <div className="text-[0.78rem] text-white/75">
           {tr('detail.walk_distance', { minutes: walkTimeMinutes(d.distance_meters), distance: formatDistance(d.distance_meters) })}
@@ -331,7 +331,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
           href={directionsUrl(d.lat, d.lng)}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'bluebike' })}
+          onClick={() => posthog.capture('snapshot_directions_clicked', { type: d.system_id ?? 'bluebike' })}
           className="mt-1 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
         >
           {tr('detail.walk_there')}

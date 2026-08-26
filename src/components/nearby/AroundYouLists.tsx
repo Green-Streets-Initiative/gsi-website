@@ -389,7 +389,7 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
   )
 }
 
-/* ── Bluebikes docks ── */
+/* ── Bike share docks ── */
 
 export function DockList({ docks, onSelect, selectedId }: {
   docks: BluebikeStationLive[]
@@ -397,10 +397,11 @@ export function DockList({ docks, onSelect, selectedId }: {
   selectedId?: string | null
 }) {
   const tr = useNearbyT()
+  const systemIds = new Set(docks.map(d => d.system_id ?? 'bluebikes'))
   return (
     <div className="mt-5">
       <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
-        {tr('lists.bluebikes_docks_heading')}
+        {tr('lists.bike_share_docks_heading')}
       </div>
       {docks.length === 0 ? (
         <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
@@ -420,7 +421,7 @@ export function DockList({ docks, onSelect, selectedId }: {
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">{tr('lists.bluebikes_dock')}</div>
+                  <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">{tr('lists.bike_share_dock', { system: d.system_name ?? 'Bluebikes' })}</div>
                   <span className="block truncate text-[0.9rem] font-semibold text-white">{d.name}</span>
                 </div>
                 <span className="text-[0.8rem] text-white/75">
@@ -436,7 +437,7 @@ export function DockList({ docks, onSelect, selectedId }: {
                   href={directionsUrl(d.lat, d.lng)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={(e) => { e.stopPropagation(); posthog.capture('snapshot_directions_clicked', { type: 'bluebike' }) }}
+                  onClick={(e) => { e.stopPropagation(); posthog.capture('snapshot_directions_clicked', { type: d.system_id ?? 'bluebike' }) }}
                   className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
                 >
                   {tr('lists.walk_there')}
@@ -444,7 +445,12 @@ export function DockList({ docks, onSelect, selectedId }: {
               </div>
             </button>
           ))}
-          <p className="px-1 text-[0.8rem] leading-relaxed text-white/75">{tr('misc.bluebikes_note', { price: usd(PRICES.bluebikes.annual) })}</p>
+          {systemIds.has('bluebikes') && (
+            <p className="px-1 text-[0.8rem] leading-relaxed text-white/75">{tr('misc.bluebikes_note', { price: usd(PRICES.bluebikes.annual) })}</p>
+          )}
+          {systemIds.has('valleybike') && (
+            <p className="px-1 text-[0.8rem] leading-relaxed text-white/75">{tr('misc.valleybike_note')}</p>
+          )}
         </div>
       )}
     </div>
