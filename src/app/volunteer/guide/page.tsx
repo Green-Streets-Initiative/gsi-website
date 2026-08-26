@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react'
  */
 const LINKS = {
   workbook:
-    'https://docs.google.com/spreadsheets/d/1UFNJorgN1BH_S7RP5ahyCyCtO2A9WV3Uu-YVlCx-5qo/edit',
+    'https://docs.google.com/spreadsheets/d/1S1nWlxSebNAn-9Gog4D68uDYfGoV0zJnCbpKWrhktI0/edit',
   dashboard: 'https://shift-school.vercel.app',
   program: 'https://www.gogreenstreets.org/shift/schools',
   streetview: 'https://www.google.com/maps',
@@ -204,12 +204,6 @@ function Project({
 
 /* ── Step content ── */
 
-const RUBRIC: [string, string, string, string][] = [
-  ['Sidewalks', 'Sparse or broken', 'Most approach streets', 'Comprehensive'],
-  ['Walkshed', 'Spread out / big barriers', 'Mixed', 'Dense grid, no highway or rail barrier'],
-  ['PTO activity', 'No trace online', 'Exists but quiet', 'Visibly active'],
-]
-
 const PROJECT_1: Step[] = [
   {
     key: 'p1-read',
@@ -242,51 +236,28 @@ const PROJECT_1: Step[] = [
     done: 'No “?” left in the data columns.',
   },
   {
-    key: 'p1-streets',
-    title: 'Score sidewalks and walksheds',
+    key: 'p1-routes',
+    title: 'Review each school’s route analysis',
     need: [
       { label: 'Shortlist sheet', href: LINKS.workbook },
-      { label: 'Google Maps / Street View', href: LINKS.streetview },
+      { label: 'Dashboard → school → Routes tab', href: LINKS.dashboard },
     ],
     body: (
       <div>
         <p className="mt-0">
-          For each school, look at 3–4 approach streets in Street View and fill the
-          two blank score columns (0–2):
+          We ran our route analyzer on every school: it maps ~5 walking routes per
+          school, checks them against state crash data, and scores each one 1–10
+          from Street View imagery. The sheet&rsquo;s sidewalk and walkshed scores
+          are pre-filled from those results.
         </p>
-        <div className="overflow-x-auto my-2 rounded-lg border border-[#E4E2D9]">
-          <table className="w-full text-[13.5px] border-collapse">
-            <thead>
-              <tr>
-                {['', '0', '1', '2'].map(h => (
-                  <th
-                    key={h}
-                    className="text-left px-3 py-2 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-wide text-[#6B7280] border-b border-[#E4E2D9]"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {RUBRIC.map(([name, a, b, c]) => (
-                <tr key={name} className="odd:bg-[#FAF9F4]">
-                  <td className="px-3 py-2 font-semibold text-[#191A2E]">{name}</td>
-                  <td className="px-3 py-2">{a}</td>
-                  <td className="px-3 py-2">{b}</td>
-                  <td className="px-3 py-2">{c}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="mb-0">
-          The Total column adds itself. Anything a score can&rsquo;t capture goes in
-          the notes columns.
-        </p>
+        <ul>
+          <li>Open each school in the dashboard and look at its Routes tab — the map, the per-route scores, and the flagged safety concerns.</li>
+          <li>Where the analysis looks wrong, change the sheet&rsquo;s score and say why in the notes — your correction outranks the tool.</li>
+          <li>Be most skeptical of generous scores on busy multi-lane roads — that&rsquo;s the tool&rsquo;s suspected weak spot. Spot-check those in <a href={LINKS.streetview} target="_blank" rel="noopener" className="text-[#2966E5] underline underline-offset-2">Street View</a> yourself.</li>
+        </ul>
       </div>
     ),
-    done: 'Every school has sidewalk and walkshed scores.',
+    done: 'You’ve looked at every school’s routes and adjusted any score you disagree with.',
   },
   {
     key: 'p1-pto',
@@ -295,7 +266,7 @@ const PROJECT_1: Step[] = [
     body: (
       <ul className="m-0">
         <li>Look for each school&rsquo;s PTO/PTA online: a website, Facebook page, recent event posts or fundraisers.</li>
-        <li>Score it 0–2 using the same rubric row above, and note what you found.</li>
+        <li>Score it 0–2 — no trace online = 0, exists but quiet = 1, visibly active = 2 — and note what you found.</li>
       </ul>
     ),
     done: 'Every school has a PTO score, and the totals give you a first ranking.',
@@ -348,10 +319,10 @@ const PROJECT_2: Step[] = [
     need: [{ label: 'Corridor links (arrive by email)' }],
     body: (
       <p className="m-0">
-        Keith runs the route generator for the top schools from your shortlist. For
-        each school it proposes about 5 walking/biking routes (&ldquo;corridors&rdquo;)
-        to and from the school. You&rsquo;ll get an email per school with a personal
-        link for each corridor — that link is where you&rsquo;ll record everything.
+        Once the shortlist settles, Keith assigns you the routes for the 2–3
+        finalist schools. You&rsquo;ll get an email per school with a personal link
+        for each route (&ldquo;corridor&rdquo;) — that link is where you&rsquo;ll
+        record everything.
       </p>
     ),
     done: 'You have corridor links for 2–3 schools.',
@@ -365,13 +336,13 @@ const PROJECT_2: Step[] = [
     ],
     body: (
       <ul className="m-0">
+        <li>You judged these schools at a glance in Project 1 — now go route by route for the finalists.</li>
         <li>First ask: is this actually how families would walk to this school? Is there an obvious better route missing?</li>
         <li>Score each corridor 1–10 for walking and for biking from Street View —<strong> before </strong>looking at the system&rsquo;s scores. Note every case where you and the system disagree by more than 2 points.</li>
         <li>Each corridor also carries a recommendation — Walk &amp; Bike, Walk Only, Bike with Caution, or Bike Not Recommended. Flag any you&rsquo;d change.</li>
-        <li>Watch especially for routes rated too kindly on busy multi-lane roads — that&rsquo;s the weakness we most suspect.</li>
       </ul>
     ),
-    done: 'Every corridor has your own scores noted next to the system’s.',
+    done: 'Every finalist corridor has your own scores noted next to the system’s.',
   },
   {
     key: 'p2-walk',
