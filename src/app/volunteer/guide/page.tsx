@@ -1,553 +1,551 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 
 /**
  * Volunteer Field Guide — unlisted, password-gated (see middleware.ts).
- * The volunteer's canonical onboarding + project reference for the Fall
- * founding-school pilot. Content source of truth for internal editing:
- * Shift repo docs/schools-fall-pilot/.
+ * Structured as the volunteer's actual workflow: Setup, then each project
+ * as steps shown one at a time. Every step carries the links it needs.
+ * Update links here:
  */
+const LINKS = {
+  workbook:
+    'https://docs.google.com/spreadsheets/d/1UFNJorgN1BH_S7RP5ahyCyCtO2A9WV3Uu-YVlCx-5qo/edit',
+  dashboard: 'https://shift-school.vercel.app',
+  program: 'https://www.gogreenstreets.org/shift/schools',
+  streetview: 'https://www.google.com/maps',
+  contact: 'info@gogreenstreets.org',
+}
 
 const NAVY = '#191A2E'
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-block font-[family-name:var(--font-dm-mono)] text-[11.5px] font-medium uppercase tracking-[0.09em] bg-[#191A2E] text-[#BAF14D] px-2.5 py-1 rounded">
-      {children}
-    </span>
-  )
+/* ── Types ── */
+interface Chip {
+  label: string
+  href?: string
+}
+interface Step {
+  key: string
+  title: string
+  need: Chip[]
+  body: React.ReactNode
+  done: string
 }
 
-function H2({ children }: { children: React.ReactNode }) {
+/* ── Small pieces ── */
+function NeedChips({ need }: { need: Chip[] }) {
+  if (need.length === 0) return null
   return (
-    <h2 className="font-[family-name:var(--font-bricolage)] text-[clamp(24px,4vw,30px)] font-extrabold tracking-tight text-[#191A2E] mt-3 mb-1.5 text-balance">
-      {children}
-    </h2>
-  )
-}
-
-function H3({ children }: { children: React.ReactNode }) {
-  return <h3 className="text-[18.5px] font-bold text-[#191A2E] mt-7 mb-2">{children}</h3>
-}
-
-function Card({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-white border border-[#E4E2D9] rounded-xl p-5">
-      <h4 className="m-0 mb-1.5 text-[12px] font-medium uppercase tracking-[0.07em] text-[#6B7280] font-[family-name:var(--font-dm-mono)]">
-        {label}
-      </h4>
-      <div className="text-[15px] leading-relaxed text-[#374151]">{children}</div>
+    <div className="flex flex-wrap items-center gap-2 mb-3">
+      <span className="font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.07em] text-[#6B7280]">
+        You need
+      </span>
+      {need.map(c =>
+        c.href ? (
+          <a
+            key={c.label}
+            href={c.href}
+            target="_blank"
+            rel="noopener"
+            className="rounded-full bg-[#DEE9FC] text-[#1D4FB0] px-3 py-1 text-[13px] font-semibold no-underline hover:bg-[#cfdffb]"
+          >
+            {c.label} ↗
+          </a>
+        ) : (
+          <span
+            key={c.label}
+            className="rounded-full bg-[#EDEBE2] text-[#4A4D68] px-3 py-1 text-[13px] font-medium"
+          >
+            {c.label}
+          </span>
+        ),
+      )}
     </div>
   )
 }
 
-function Callout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="border-l-4 border-[#52B788] bg-[#EEF4E5] rounded-r-xl px-5 py-3.5 my-4">
-      <div className="text-[15.5px] leading-relaxed text-[#374151]">{children}</div>
-    </div>
-  )
+function readDone(key: string): boolean {
+  try {
+    return localStorage.getItem('sfs-step-' + key) === '1'
+  } catch {
+    return false
+  }
+}
+function writeDone(key: string, v: boolean) {
+  try {
+    if (v) localStorage.setItem('sfs-step-' + key, '1')
+    else localStorage.removeItem('sfs-step-' + key)
+  } catch {}
 }
 
-function Warn({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="border-l-4 border-[#F59E0B] bg-[#FEF3C7] rounded-r-xl px-5 py-3.5 my-4">
-      <div className="text-[15.5px] leading-relaxed text-[#92400E] [&_strong]:text-[#92400E]">
-        {children}
-      </div>
-    </div>
-  )
-}
-
-const CHECKLIST = [
-  { key: 'read-guide', label: <>Read this guide end to end (you&rsquo;re doing it)</> },
-  {
-    key: 'walk-funnel',
-    label: (
-      <>
-        Walk the public funnel a principal would see: the{' '}
-        <a href="/shift/schools" target="_blank" rel="noopener" className="text-[#2966E5] underline underline-offset-2">program page</a>,
-        the materials on it, and{' '}
-        <a href="/shift/schools/find" target="_blank" rel="noopener" className="text-[#2966E5] underline underline-offset-2">Find Your School</a>{' '}
-        through to a school&rsquo;s parent portal
-      </>
-    ),
-  },
-  {
-    key: 'review-shortlist',
-    label: <>Open the shortlist workbook Keith shares and read Claude&rsquo;s first-pass rows and the Scoring Guide tab</>,
-  },
-  {
-    key: 'dashboard-login',
-    label: <>Once your login exists: tour the dashboard&rsquo;s Schools section using Maple Street Elementary (Test)</>,
-  },
-  {
-    key: 'training',
-    label: <>Complete the Route Planning training track from your emailed link &mdash; and note anything unclear or out of date in it</>,
-  },
-  { key: 'notes-doc', label: <>Start your running notes doc for bugs, confusion, and ideas</> },
-]
-
-export default function VolunteerGuidePage() {
-  const listRef = useRef<HTMLDivElement>(null)
+function Project({
+  id,
+  eyebrow,
+  title,
+  intro,
+  steps,
+}: {
+  id: string
+  eyebrow: string
+  title: string
+  intro: React.ReactNode
+  steps: Step[]
+}) {
+  const [done, setDone] = useState<Record<string, boolean>>({})
+  const [open, setOpen] = useState<string | null>(null)
 
   useEffect(() => {
-    const root = listRef.current
-    if (!root) return
-    const boxes = root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
-    boxes.forEach(box => {
-      const key = 'sfs-guide-' + box.dataset.key
-      try {
-        if (localStorage.getItem(key) === '1') {
-          box.checked = true
-          box.closest('label')?.classList.add('opacity-55', 'line-through')
-        }
-      } catch {}
-      box.addEventListener('change', () => {
-        box.closest('label')?.classList.toggle('opacity-55', box.checked)
-        box.closest('label')?.classList.toggle('line-through', box.checked)
-        try {
-          if (box.checked) localStorage.setItem(key, '1')
-          else localStorage.removeItem(key)
-        } catch {}
-      })
-    })
+    const d: Record<string, boolean> = {}
+    for (const s of steps) d[s.key] = readDone(s.key)
+    setDone(d)
+    // Open the first not-done step
+    const first = steps.find(s => !d[s.key])
+    setOpen(first ? first.key : null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  function toggleDone(key: string) {
+    const v = !done[key]
+    writeDone(key, v)
+    const next = { ...done, [key]: v }
+    setDone(next)
+    if (v) {
+      const idx = steps.findIndex(s => s.key === key)
+      const nextStep = steps.slice(idx + 1).find(s => !next[s.key])
+      setOpen(nextStep ? nextStep.key : null)
+    }
+  }
+
+  const doneCount = steps.filter(s => done[s.key]).length
+
   return (
-    <main className="min-h-screen bg-[#F4F8EE] text-[#374151] text-[16.5px] leading-[1.65]">
-      {/* ── Masthead ── */}
-      <header className="px-6 pt-11 pb-10" style={{ background: NAVY }}>
-        <div className="max-w-[760px] mx-auto">
-          <div className="font-[family-name:var(--font-bricolage)] font-extrabold text-[28px] tracking-tight text-white">
+    <section id={id} className="pt-12">
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <div>
+          <span className="inline-block font-[family-name:var(--font-dm-mono)] text-[11.5px] font-medium uppercase tracking-[0.09em] bg-[#191A2E] text-[#BAF14D] px-2.5 py-1 rounded">
+            {eyebrow}
+          </span>
+          <h2 className="font-[family-name:var(--font-bricolage)] text-[clamp(23px,4vw,28px)] font-extrabold tracking-tight text-[#191A2E] mt-3 mb-1">
+            {title}
+          </h2>
+        </div>
+        <span className="font-[family-name:var(--font-dm-mono)] text-[13px] text-[#6B7280]">
+          {doneCount} / {steps.length} done
+        </span>
+      </div>
+      <div className="text-[15.5px] text-[#374151] mb-4 max-w-[68ch]">{intro}</div>
+
+      <div className="grid gap-2">
+        {steps.map((s, i) => {
+          const isOpen = open === s.key
+          const isDone = !!done[s.key]
+          return (
+            <div
+              key={s.key}
+              className={`rounded-xl border bg-white overflow-hidden ${
+                isOpen ? 'border-[#2966E5]' : 'border-[#E4E2D9]'
+              }`}
+            >
+              <button
+                onClick={() => setOpen(isOpen ? null : s.key)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer"
+                aria-expanded={isOpen}
+              >
+                <span
+                  className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center font-[family-name:var(--font-dm-mono)] text-[13px] font-bold"
+                  style={
+                    isDone
+                      ? { background: '#DCF3E6', color: '#1F6B45' }
+                      : { background: NAVY, color: '#BAF14D' }
+                  }
+                >
+                  {isDone ? '✓' : i + 1}
+                </span>
+                <span
+                  className={`flex-1 text-[15.5px] font-semibold ${
+                    isDone ? 'text-[#6B7280] line-through' : 'text-[#191A2E]'
+                  }`}
+                >
+                  {s.title}
+                </span>
+                <span className="text-[#9CA3AF] text-sm">{isOpen ? '−' : '+'}</span>
+              </button>
+              {isOpen && (
+                <div className="px-4 pb-4 pl-[3.75rem]">
+                  <NeedChips need={s.need} />
+                  <div className="text-[15px] text-[#374151] leading-relaxed [&_ul]:pl-5 [&_ul]:list-disc [&_li]:mt-1">
+                    {s.body}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+                    <p className="m-0 text-[13.5px] text-[#6B7280]">
+                      <span className="font-semibold text-[#4A4D68]">Done when: </span>
+                      {s.done}
+                    </p>
+                    <button
+                      onClick={() => toggleDone(s.key)}
+                      className={`rounded-lg px-4 py-1.5 text-[13px] font-semibold transition-colors ${
+                        isDone
+                          ? 'bg-[#EDEBE2] text-[#4A4D68]'
+                          : 'bg-[#2966E5] text-white hover:bg-[#2159c7]'
+                      }`}
+                    >
+                      {isDone ? 'Undo' : 'Mark done'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+/* ── Step content ── */
+
+const RUBRIC: [string, string, string, string][] = [
+  ['Sidewalks', 'Sparse or broken', 'Most approach streets', 'Comprehensive'],
+  ['Walkshed', 'Spread out / big barriers', 'Mixed', 'Dense grid, no highway or rail barrier'],
+  ['PTO activity', 'No trace online', 'Exists but quiet', 'Visibly active'],
+]
+
+const PROJECT_1: Step[] = [
+  {
+    key: 'p1-read',
+    title: 'Read the shortlist',
+    need: [{ label: 'Shortlist sheet', href: LINKS.workbook }],
+    body: (
+      <p className="m-0">
+        The sheet has 20 candidate schools with the public data already filled in:
+        enrollment, Title I status, low-income percentage, and Safe Routes to School
+        status, with the source for each row in its Comments cell. Read it through
+        once so you know what&rsquo;s there.
+      </p>
+    ),
+    done: 'You can say which 3–4 towns look strongest and why.',
+  },
+  {
+    key: 'p1-verify',
+    title: 'Verify the facts',
+    need: [
+      { label: 'Shortlist sheet', href: LINKS.workbook },
+      { label: 'DESE profiles', href: 'https://profiles.doe.mass.edu' },
+    ],
+    body: (
+      <ul className="m-0">
+        <li>Spot-check the filled-in numbers against each school&rsquo;s DESE profile — the Comments cell names the source.</li>
+        <li>Fix anything wrong, and resolve anything marked &ldquo;?&rdquo;.</li>
+        <li>One known issue: Winter Hill (Somerville) is in temporary space after its building closed — confirm where students actually report before trusting its address.</li>
+      </ul>
+    ),
+    done: 'No “?” left in the data columns.',
+  },
+  {
+    key: 'p1-streets',
+    title: 'Score sidewalks and walksheds',
+    need: [
+      { label: 'Shortlist sheet', href: LINKS.workbook },
+      { label: 'Google Maps / Street View', href: LINKS.streetview },
+    ],
+    body: (
+      <div>
+        <p className="mt-0">
+          For each school, look at 3–4 approach streets in Street View and fill the
+          two blank score columns (0–2):
+        </p>
+        <div className="overflow-x-auto my-2 rounded-lg border border-[#E4E2D9]">
+          <table className="w-full text-[13.5px] border-collapse">
+            <thead>
+              <tr>
+                {['', '0', '1', '2'].map(h => (
+                  <th
+                    key={h}
+                    className="text-left px-3 py-2 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-wide text-[#6B7280] border-b border-[#E4E2D9]"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {RUBRIC.map(([name, a, b, c]) => (
+                <tr key={name} className="odd:bg-[#FAF9F4]">
+                  <td className="px-3 py-2 font-semibold text-[#191A2E]">{name}</td>
+                  <td className="px-3 py-2">{a}</td>
+                  <td className="px-3 py-2">{b}</td>
+                  <td className="px-3 py-2">{c}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mb-0">
+          The Total column adds itself. Anything a score can&rsquo;t capture goes in
+          the notes columns.
+        </p>
+      </div>
+    ),
+    done: 'Every school has sidewalk and walkshed scores.',
+  },
+  {
+    key: 'p1-pto',
+    title: 'Check PTO activity',
+    need: [{ label: 'Shortlist sheet', href: LINKS.workbook }],
+    body: (
+      <ul className="m-0">
+        <li>Look for each school&rsquo;s PTO/PTA online: a website, Facebook page, recent event posts or fundraisers.</li>
+        <li>Score it 0–2 using the same rubric row above, and note what you found.</li>
+      </ul>
+    ),
+    done: 'Every school has a PTO score, and the totals give you a first ranking.',
+  },
+  {
+    key: 'p1-contacts',
+    title: 'Find contacts for the top 8',
+    need: [{ label: 'Shortlist sheet', href: LINKS.workbook }],
+    body: (
+      <ul className="m-0">
+        <li>For the 8 highest-scoring schools, find the principal&rsquo;s name and email (school website staff pages).</li>
+        <li>Where you can, also find the PE or wellness teacher and a PTO contact.</li>
+      </ul>
+    ),
+    done: 'The top 8 rows have at least a named principal with an email.',
+  },
+  {
+    key: 'p1-rank',
+    title: 'Finalize the ranking and write the top 5',
+    need: [{ label: 'Shortlist sheet', href: LINKS.workbook }],
+    body: (
+      <ul className="m-0">
+        <li>Adjust the ranking with your own judgment — the scores are a starting point, not a verdict.</li>
+        <li>For the top 5, write one short paragraph each in the &ldquo;Why this school&rdquo; column.</li>
+        <li>Email Keith that it&rsquo;s ready.</li>
+      </ul>
+    ),
+    done: 'Keith has a ranked list he can start outreach from.',
+  },
+]
+
+const PROJECT_2: Step[] = [
+  {
+    key: 'p2-training',
+    title: 'Complete the Route Planning training',
+    need: [{ label: 'Training link (arrives by email)' }],
+    body: (
+      <p className="m-0">
+        Your training arrives by email as a personal link — no account needed.
+        It&rsquo;s self-paced reading with short quizzes, and it&rsquo;s required
+        before route fieldwork. If anything in it is unclear or looks out of date,
+        tell Keith — you&rsquo;re its first real reader.
+      </p>
+    ),
+    done: 'The portal shows your certification complete.',
+  },
+  {
+    key: 'p2-assign',
+    title: 'Get your route assignments',
+    need: [{ label: 'Corridor links (arrive by email)' }],
+    body: (
+      <p className="m-0">
+        Keith runs the route generator for the top schools from your shortlist. For
+        each school it proposes about 5 walking/biking routes (&ldquo;corridors&rdquo;)
+        to and from the school. You&rsquo;ll get an email per school with a personal
+        link for each corridor — that link is where you&rsquo;ll record everything.
+      </p>
+    ),
+    done: 'You have corridor links for 2–3 schools.',
+  },
+  {
+    key: 'p2-desk',
+    title: 'Review each route from your desk',
+    need: [
+      { label: 'Corridor links (email)' },
+      { label: 'Google Maps / Street View', href: LINKS.streetview },
+    ],
+    body: (
+      <ul className="m-0">
+        <li>First ask: is this actually how families would walk to this school? Is there an obvious better route missing?</li>
+        <li>Score each corridor 1–10 for walking and for biking from Street View — <strong>before</strong> looking at the system&rsquo;s scores. Note every case where you and the system disagree by more than 2 points.</li>
+        <li>Each corridor also carries a recommendation — Walk &amp; Bike, Walk Only, Bike with Caution, or Bike Not Recommended. Flag any you&rsquo;d change.</li>
+        <li>Watch especially for routes rated too kindly on busy multi-lane roads — that&rsquo;s the weakness we most suspect.</li>
+      </ul>
+    ),
+    done: 'Every corridor has your own scores noted next to the system’s.',
+  },
+  {
+    key: 'p2-walk',
+    title: 'Walk one set of routes',
+    need: [{ label: 'Corridor links (email, on your phone)' }],
+    body: (
+      <ul className="m-0">
+        <li>Pick one school and walk its corridors at school-arrival time if you can (7:30–8:30am) — traffic then is the truth.</li>
+        <li>Fill in the checklist through your corridor link as you go: sidewalks, crossings, traffic, bike conditions, photos.</li>
+        <li>You&rsquo;re also testing the tool itself — if the form is awkward on a phone or anything fails, write it down.</li>
+      </ul>
+    ),
+    done: 'One school’s corridors are submitted through the links.',
+  },
+  {
+    key: 'p2-verdict',
+    title: 'Send Keith your verdict',
+    need: [],
+    body: (
+      <div>
+        <p className="mt-0">One short email per school, four parts:</p>
+        <ul>
+          <li>Each route: keep, adjust, or reject — and why.</li>
+          <li>Your scores vs the system&rsquo;s, and where they split.</li>
+          <li>Anything broken or awkward in the tool.</li>
+          <li>The bottom line: would you hand this map to a parent?</li>
+        </ul>
+      </div>
+    ),
+    done: 'Keith has a verdict for each school you reviewed.',
+  },
+]
+
+/* ── Page ── */
+
+export default function VolunteerGuidePage() {
+  return (
+    <main className="min-h-screen bg-[#F4F8EE] text-[#374151] text-[16px] leading-[1.6]">
+      {/* Header */}
+      <header className="px-6 pt-9 pb-8" style={{ background: NAVY }}>
+        <div className="max-w-[720px] mx-auto">
+          <div className="font-[family-name:var(--font-bricolage)] font-extrabold text-[24px] tracking-tight text-white">
             Shift<span className="text-[#BAF14D] tracking-[-0.12em]">&#8250;&#8250;</span>
-            <span className="ml-2.5 text-[15px] font-medium text-white/75 tracking-normal">for Schools</span>
+            <span className="ml-2.5 text-[14px] font-medium text-white/75 tracking-normal">
+              for Schools
+            </span>
           </div>
-          <h1 className="font-[family-name:var(--font-bricolage)] text-[clamp(30px,5.5vw,44px)] font-extrabold leading-[1.08] tracking-tight text-white mt-5 mb-3 text-balance">
-            Volunteer Field Guide
+          <h1 className="font-[family-name:var(--font-bricolage)] text-[clamp(26px,4.5vw,36px)] font-extrabold leading-[1.1] tracking-tight text-white mt-4 mb-2.5 text-balance">
+            Volunteer Guide
           </h1>
-          <p className="max-w-[56ch] text-[17px] text-white/80 m-0">
-            Your home base for the fall pilot: what you&rsquo;re here to do, how the
-            program works, and your two projects.
+          <p className="max-w-[58ch] text-[16px] text-white/85 m-0 leading-relaxed">
+            We&rsquo;re signing our first school this fall. Your work decides which
+            schools we approach, and whether our walking-route maps are good enough
+            to hand to families. Research and data pulls are handled by Claude, our
+            AI — your part is checking facts, local judgment, and finding the right
+            people.
           </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <span className="font-[family-name:var(--font-dm-mono)] text-[11.5px] tracking-[0.04em] px-3 py-1.5 rounded-full bg-[#BAF14D] text-[#191A2E] font-semibold">
-              GOAL: SIGN OUR FOUNDING SCHOOL
-            </span>
-            <span className="font-[family-name:var(--font-dm-mono)] text-[11.5px] tracking-[0.04em] px-3 py-1.5 rounded-full bg-white/10 text-white/90">
-              INNER-METRO BOSTON
-            </span>
-            <span className="font-[family-name:var(--font-dm-mono)] text-[11.5px] tracking-[0.04em] px-3 py-1.5 rounded-full bg-white/10 text-white/90">
-              UPDATED AUG 2026
-            </span>
-          </div>
+          <p className="max-w-[58ch] text-[13.5px] text-white/60 mt-3 mb-0">
+            New to the program? Read the{' '}
+            <a href={LINKS.program} target="_blank" rel="noopener" className="text-[#BAF14D] underline underline-offset-2">
+              public program page
+            </a>{' '}
+            first — it&rsquo;s the same page principals see.
+          </p>
         </div>
       </header>
       <div className="h-[3px] bg-[#52B788]" />
 
-      {/* ── Section nav ── */}
-      <nav className="sticky top-0 z-10 bg-[#F4F8EE] border-b border-[#E4E2D9]" aria-label="Sections">
-        <div className="max-w-[760px] mx-auto flex gap-1 overflow-x-auto px-4">
-          {[
-            ['#role', 'Your Role'],
-            ['#program', 'The Program'],
-            ['#rules', 'Ground Rules'],
-            ['#week-one', 'Week One'],
-            ['#shortlist', 'Project 1 · Shortlist'],
-            ['#routes', 'Project 2 · Routes'],
-            ['#reference', 'Reference'],
-          ].map(([href, label]) => (
-            <a
-              key={href}
-              href={href}
-              className="font-[family-name:var(--font-dm-mono)] text-[12px] tracking-[0.03em] whitespace-nowrap text-[#6B7280] no-underline px-2.5 py-3 hover:text-[#2966E5]"
-            >
-              {label}
-            </a>
-          ))}
-        </div>
-      </nav>
-
-      <div className="max-w-[760px] mx-auto px-6 pb-24">
-
-        {/* ═══════ YOUR ROLE ═══════ */}
-        <section id="role" className="pt-11">
-          <Eyebrow>Your Role</Eyebrow>
-          <H2>What you&rsquo;re here to do</H2>
-          <p className="text-[18px]">
-            Green Streets Initiative is signing its <strong className="text-[#191A2E] font-semibold">founding
-            school</strong> this fall — the first school to run Shift for Schools, our free classroom
-            program that celebrates kids walking, biking, and rolling to school. The platform is
-            built. What stands between here and a signed school is focused human work, and that
-            work is yours.
-          </p>
-          <p>
-            <strong className="text-[#191A2E] font-semibold">You own two things:</strong> deciding{' '}
-            <em>which schools we approach</em>, and proving{' '}
-            <em>our safe-routes maps are good enough to hand to families</em>. Both feed directly
-            into the pitch — Keith works his contacts and sends outreach against your shortlist,
-            and the top pitch schools get a finished route map before we ever walk in the door.
-          </p>
-
-          <div className="grid sm:grid-cols-2 gap-3.5 my-4">
-            <Card label="Project 1 · Weeks 1–2">
-              <strong className="text-[#191A2E]">The school shortlist.</strong> Turn Claude&rsquo;s
-              first-pass research into a ranked list of ~15 schools, with the top 5
-              pitch-ready: verified data, named contacts, and a &ldquo;why this school&rdquo;
-              paragraph.
-            </Card>
-            <Card label="Project 2 · Weeks 2–4">
-              <strong className="text-[#191A2E]">The route-tool review.</strong> Judge our
-              AI-assisted route maps against your own assessment, on screen and on foot, and
-              answer one question: would you hand this map to a parent?
-            </Card>
-          </div>
-
-          <Callout>
-            <strong className="text-[#191A2E]">How the work is shaped:</strong> you work with
-            Keith — and with Claude, our AI, which handles research and analysis grunt work in
-            minutes. Data pulls, school deep-dives, re-scores, drafts: ask, don&rsquo;t grind.
-            Your time goes where AI can&rsquo;t: verifying facts, local knowledge, judgment
-            calls from Street View and sidewalks, and finding the humans — principals, PE
-            leads, PTO presidents.
-          </Callout>
-        </section>
-
-        {/* ═══════ THE PROGRAM ═══════ */}
-        <section id="program" className="pt-11">
-          <Eyebrow>The Program</Eyebrow>
-          <H2>Shift for Schools in 60 seconds</H2>
-          <p>
-            Each morning the teacher asks for a show of hands — who walked, biked, rolled, took
-            the bus, carpooled, got driven — and writes the counts on a paper wall chart. On
-            Friday the teacher photographs the chart. Our system reads the photo, updates
-            classroom, grade, and school standings, and emails families a weekly update.
-          </p>
-
-          <div className="grid sm:grid-cols-2 gap-3.5 my-4">
-            <Card label="Free">
-              Free for every participating school. Provided by Green Streets Initiative, a
-              Massachusetts nonprofit.
-            </Card>
-            <Card label="K–8">
-              Built for elementary and middle grades. High school programming is in
-              development.
-            </Card>
-            <Card label="Under 5 minutes a week">
-              A show of hands and one Friday photo. The teacher&rsquo;s time is the
-              program&rsquo;s most protected resource — every promise we make guards it.
-            </Card>
-            <Card label="Private by design">
-              No student accounts, no student devices, no data on kids — students never touch
-              a screen. Fully COPPA-compliant.
-            </Card>
-            <Card label="Always positive">
-              We celebrate walking, biking, and rolling. We never position against driving —
-              the message is what kids gain, not what anyone gives up.
-            </Card>
-            <Card label="Grounded in research">
-              Our Everett study surveyed 7,300 students: 51% already walk to school. The
-              program turns that daily trip into school spirit.
-            </Card>
-          </div>
-
-          <H3>The people, in plain names</H3>
-          <div className="grid sm:grid-cols-2 gap-3.5 my-4">
-            <Card label="School Coordinator">
-              The school&rsquo;s point person — a teacher, PE lead, or engaged parent. Our main
-              relationship at the school.
-            </Card>
-            <Card label="Route Volunteer">
-              Maps and field-checks safe walking and biking routes. This is the certification
-              you&rsquo;ll earn.
-            </Card>
-            <Card label="Parent Volunteer">
-              Helps with Walk/Bike Buses and family engagement.
-            </Card>
-            <Card label="Student Ambassador">
-              Older students earning service hours — always screen-free, like everything
-              student-facing.
-            </Card>
-          </div>
-        </section>
-
-        {/* ═══════ GROUND RULES ═══════ */}
-        <section id="rules" className="pt-11">
-          <Eyebrow>Ground Rules</Eyebrow>
-          <H2>The dashboard is live. Treat it that way.</H2>
-          <p>
-            Keith will set up your admin login. The dashboard talks directly to the{' '}
-            <strong className="text-[#191A2E] font-semibold">production database</strong> — the
-            same one the public website and the mobile app read from.
-          </p>
-          <Warn>
-            <strong>Three rules, no exceptions:</strong>
-            <ul className="pl-5 my-1.5 list-disc space-y-1">
-              <li>
-                Look at anything, freely. Create or edit things only for{' '}
-                <strong>Maple Street Elementary (Test)</strong> — our designated sandbox school
-                — unless Keith says otherwise.
-              </li>
-              <li>
-                Don&rsquo;t flip switches you didn&rsquo;t create. The &ldquo;Program
-                Active&rdquo; toggle and admin-only controls trigger real automated emails to
-                real people.
-              </li>
-              <li>
-                When something looks broken, confusing, or embarrassing —{' '}
-                <strong>write it down</strong>. &ldquo;This confused me&rdquo; is exactly the
-                feedback a first-time School Coordinator experience needs.
-              </li>
-            </ul>
-          </Warn>
-          <p>
-            Your training arrives by email as a personal link — no account needed for that part.
-            It&rsquo;s self-paced reading with short quizzes. Complete the Route Planning track
-            before corridor fieldwork (it&rsquo;s required), and note anything unclear as you go.
-          </p>
-        </section>
-
-        {/* ═══════ WEEK ONE ═══════ */}
-        <section id="week-one" className="pt-11">
-          <Eyebrow>Week One</Eyebrow>
-          <H2>Your first week</H2>
-          <p>Check things off as you go — this list remembers your progress on this device.</p>
-          <div ref={listRef} className="grid gap-2 my-4">
-            {CHECKLIST.map(item => (
-              <label
-                key={item.key}
-                className="flex gap-3 items-start bg-white border border-[#E4E2D9] rounded-xl px-4 py-3 cursor-pointer transition-opacity focus-within:outline-2 focus-within:outline-[#2966E5]"
+      <div className="max-w-[720px] mx-auto px-6 pb-24">
+        {/* ── Setup ── */}
+        <section id="setup" className="pt-10">
+          <span className="inline-block font-[family-name:var(--font-dm-mono)] text-[11.5px] font-medium uppercase tracking-[0.09em] bg-[#191A2E] text-[#BAF14D] px-2.5 py-1 rounded">
+            Setup
+          </span>
+          <h2 className="font-[family-name:var(--font-bricolage)] text-[clamp(23px,4vw,28px)] font-extrabold tracking-tight text-[#191A2E] mt-3 mb-3">
+            Your four things
+          </h2>
+          <div className="grid gap-2">
+            {[
+              {
+                label: 'Shortlist sheet',
+                desc: 'The working spreadsheet for Project 1. Keith grants you access.',
+                href: LINKS.workbook,
+                cta: 'Open sheet',
+              },
+              {
+                label: 'Admin dashboard',
+                desc: 'Where schools, volunteers, and routes are managed. Keith creates your login.',
+                href: LINKS.dashboard,
+                cta: 'Open dashboard',
+              },
+              {
+                label: 'Training',
+                desc: 'Arrives by email as a personal link. Needed before route fieldwork (Project 2).',
+              },
+              {
+                label: 'Questions',
+                desc: 'Keith Anderson — ask early, ask often.',
+                href: `mailto:${LINKS.contact}`,
+                cta: LINKS.contact,
+              },
+            ].map(row => (
+              <div
+                key={row.label}
+                className="flex items-center justify-between gap-4 bg-white border border-[#E4E2D9] rounded-xl px-4 py-3"
               >
-                <input
-                  type="checkbox"
-                  data-key={item.key}
-                  className="w-[18px] h-[18px] mt-[3px] accent-[#2966E5] shrink-0 cursor-pointer"
-                />
-                <span className="text-[15.5px]">{item.label}</span>
-              </label>
-            ))}
-          </div>
-        </section>
-
-        {/* ═══════ PROJECT 1 ═══════ */}
-        <section id="shortlist" className="pt-11">
-          <Eyebrow>Project 1 · Weeks 1–2</Eyebrow>
-          <H2>The school shortlist</H2>
-          <p className="text-[18px]">
-            <strong className="text-[#191A2E] font-semibold">Deliverable:</strong> a ranked list
-            of ~15 K–8 schools in inner-metro communities, top 5 pitch-ready with named contacts
-            and a &ldquo;why this school&rdquo; paragraph. The shared workbook is the artifact —
-            and it arrives with Claude&rsquo;s first-pass research already in it.
-          </p>
-
-          <H3>The division of labor</H3>
-          <div className="grid sm:grid-cols-2 gap-3.5 my-4">
-            <Card label="Already done (Claude)">
-              Candidate schools across Somerville, Cambridge, Everett, Chelsea, Revere, Malden,
-              Medford, and Boston neighborhoods — with enrollment, Title I status,
-              economically-disadvantaged percentages, Environmental Justice flags, and Safe
-              Routes to School partner status pulled from public sources, plus preliminary
-              scores where the data supports one.
-            </Card>
-            <Card label="Yours (judgment & people)">
-              Verify anything marked &ldquo;?&rdquo; · make the Street View calls on sidewalks
-              and walksheds · gauge PTO activity · add what only local knowledge knows · find
-              the named contacts (principal, PE/wellness lead, PTO president) · finalize the
-              ranking and write the top-5 paragraphs.
-            </Card>
-          </div>
-
-          <Callout>
-            <strong className="text-[#191A2E]">When you need more:</strong> a deeper dive on one
-            school, fresher data, a re-scored list, ten more candidates in a town we
-            under-covered — that&rsquo;s minutes of Claude time, not hours of yours. Route
-            requests through Keith and treat research as on tap.
-          </Callout>
-
-          <H3>What makes a good target — two axes, both required</H3>
-          <div className="grid sm:grid-cols-2 gap-3.5 my-4">
-            <Card label="Under-served signal">
-              <ul className="pl-5 m-0 list-disc space-y-1">
-                <li>Title I school</li>
-                <li>High &ldquo;economically disadvantaged&rdquo; percentage</li>
-                <li>In a Massachusetts Environmental Justice area</li>
-              </ul>
-            </Card>
-            <Card label="Infrastructure viability">
-              <ul className="pl-5 m-0 list-disc space-y-1">
-                <li>Neighborhood school with a walkable enrollment zone</li>
-                <li>Sidewalks on most approach streets</li>
-                <li>No highway or rail yard cutting off the catchment</li>
-                <li>Bonus: bike lanes nearby</li>
-              </ul>
-            </Card>
-          </div>
-
-          <H3>Scoring</H3>
-          <p>
-            Six criteria, each 0–2, defined on the workbook&rsquo;s Scoring Guide tab along with
-            where to check each one. The total computes itself; the comments column is for what
-            numbers can&rsquo;t capture.
-          </p>
-
-          <Callout>
-            <strong className="text-[#191A2E]">What happens with your list:</strong> Keith works
-            warm contacts against it; the top 5 get direct outreach; and the top 2–3 get a real
-            safe-routes map generated <em>before</em> the pitch — which is where your second
-            project comes in.
-          </Callout>
-        </section>
-
-        {/* ═══════ PROJECT 2 ═══════ */}
-        <section id="routes" className="pt-11">
-          <Eyebrow>Project 2 · Weeks 2–4</Eyebrow>
-          <H2>The route-tool review</H2>
-          <p className="text-[18px]">
-            <strong className="text-[#191A2E] font-semibold">The question you&rsquo;re
-            answering:</strong> would we confidently hand these routes to families? You&rsquo;ve
-            done this kind of assessment work before — that judgment is exactly what we need
-            pointed at our pipeline. Side benefit: your review produces real route maps for the
-            top pitch schools.
-          </p>
-
-          <H3>How the pipeline works</H3>
-          <div className="my-4">
-            {[
-              ['1', 'System', 'Keith initiates an assessment → the system pulls state crash data, road inventory, and OpenStreetMap, and generates ~5 candidate corridors in the school’s walkshed.', false],
-              ['2', 'AI', 'Street View images along each corridor are scored 1–10 for walking and biking, with a recommended mode per corridor.', false],
-              ['3', 'Keith', 'Reviews corridors on the map (the Routes tab of a school’s page).', false],
-              ['4', 'You', 'Walk assigned corridors with the SRTS-aligned checklist — sidewalks, crosswalks, traffic, bike infrastructure, surroundings — and submit scores and photos through your personal link.', true],
-              ['5', 'Keith', 'Approves and publishes.', false],
-              ['6', 'Families', 'See the routes on their school’s portal page, with Google Maps links and a printable PDF.', false],
-            ].map(([n, who, text, isYou]) => (
-              <div key={n as string} className="grid grid-cols-[44px_1fr] gap-3.5 py-3.5 border-b border-dashed border-[#E4E2D9] last:border-0">
-                <div
-                  className="w-[34px] h-[34px] rounded-full flex items-center justify-center font-[family-name:var(--font-dm-mono)] font-bold text-[15px]"
-                  style={isYou ? { background: '#BAF14D', color: NAVY } : { background: NAVY, color: '#BAF14D' }}
-                >
-                  {n as string}
-                </div>
                 <div>
-                  <span className="font-[family-name:var(--font-dm-mono)] text-[11px] tracking-[0.06em] uppercase text-[#2966E5]">
-                    {who as string}
-                  </span>
-                  <p className="m-0 mt-0.5 text-[15.5px]">{text as string}</p>
+                  <div className="text-[15px] font-semibold text-[#191A2E]">{row.label}</div>
+                  <div className="text-[13.5px] text-[#6B7280]">{row.desc}</div>
                 </div>
+                {row.href && (
+                  <a
+                    href={row.href}
+                    target={row.href.startsWith('mailto') ? undefined : '_blank'}
+                    rel="noopener"
+                    className="shrink-0 rounded-lg bg-[#DEE9FC] text-[#1D4FB0] px-3.5 py-2 text-[13px] font-semibold no-underline hover:bg-[#cfdffb]"
+                  >
+                    {row.cta}
+                  </a>
+                )}
               </div>
             ))}
           </div>
 
-          <H3>The mode categories you&rsquo;ll be judging</H3>
-          <div className="grid gap-2 my-3.5">
-            {[
-              ['Walk & Bike', 'good for both, most ages', 'bg-[#DCF3E6] text-[#1F6B45]'],
-              ['Walk Only', 'fine on foot; biking not advised', 'bg-[#DEE9FC] text-[#1D4FB0]'],
-              ['Bike with Caution', 'confident riders / with an adult', 'bg-[#FBEDCB] text-[#8A5A0B]'],
-              ['Bike Not Recommended', 'walking route only', 'bg-[#F9DCDA] text-[#A3322B]'],
-            ].map(([label, desc, cls]) => (
-              <div key={label as string} className="flex gap-2.5 items-baseline text-[15px]">
-                <b className={`font-[family-name:var(--font-dm-mono)] text-[12px] px-2.5 py-0.5 rounded-full whitespace-nowrap font-bold ${cls}`}>
-                  {label as string}
-                </b>
-                {desc as string}
-              </div>
-            ))}
+          <div className="border-l-4 border-[#F59E0B] bg-[#FEF3C7] rounded-r-xl px-5 py-3.5 mt-4">
+            <p className="m-0 text-[14.5px] leading-relaxed text-[#92400E]">
+              <strong>The dashboard is our live system.</strong> Look at anything;
+              change things only for Maple Street Elementary (Test), our sandbox
+              school; and don&rsquo;t touch the &ldquo;Program Active&rdquo; toggle —
+              it sends real emails to real people. When something confuses you,
+              write it down and tell Keith. That feedback is part of the job.
+            </p>
           </div>
-
-          <H3>Desk pass — before walking anything</H3>
-          <ul className="pl-5 list-disc space-y-1.5">
-            <li>
-              For each generated corridor: is this how families would <em>actually</em> walk to
-              this school? Is there an obvious better corridor the generator missed?
-            </li>
-            <li>
-              Score every corridor yourself from Street View <strong className="text-[#191A2E]">before</strong>{' '}
-              looking at the AI&rsquo;s scores — same 1–10 scale, same mode categories. Record
-              both. Flag every disagreement over 2 points and any mode-category difference.
-            </li>
-            <li>
-              Probe the AI&rsquo;s blind spots deliberately: school-arrival traffic (Street View
-              is usually shot midday), crossing guards, construction newer than the imagery, and
-              winter conditions — snow storage narrows sidewalks.
-            </li>
-          </ul>
-
-          <H3>Field pass — walk at least one full corridor set</H3>
-          <ul className="pl-5 list-disc space-y-1.5">
-            <li>Walk at school-arrival time if you can (7:30–8:30am).</li>
-            <li>
-              Fill the official checklist through your personal link — you&rsquo;re
-              simultaneously testing the volunteer experience end to end: the link, the form on
-              a phone, photo upload, submission confirmation.
-            </li>
-            <li>
-              Note every place your on-the-ground judgment differs from both the AI score and
-              your own desk score.
-            </li>
-          </ul>
-
-          <Warn>
-            <strong>The #1 thing we suspect is miscalibrated:</strong> the AI&rsquo;s scoring
-            currently assumes dense, Somerville-style streets — sidewalks everywhere, 20 mph.
-            For schools in Revere or outer Boston neighborhoods, watch for over-optimistic walk
-            scores on big arterial roads.
-          </Warn>
-
-          <H3>Deliverable</H3>
-          <p>
-            A short memo per school (do 2–3 from the shortlist top 5): corridor-by-corridor
-            verdicts — agree, adjust, or reject, with why — your score-vs-AI table, any
-            volunteer-experience bugs, and the bottom line:{' '}
-            <strong className="text-[#191A2E] font-semibold">&ldquo;would I hand this map to a
-            parent?&rdquo;</strong> Plus your completed in-tool submissions themselves.
-          </p>
         </section>
 
-        {/* ═══════ REFERENCE ═══════ */}
-        <section id="reference" className="pt-11">
-          <Eyebrow>Reference</Eyebrow>
-          <H2>Links &amp; contacts</H2>
-          <div className="grid sm:grid-cols-2 gap-3.5 my-4">
-            <Card label="Public pages">
-              <ul className="pl-5 m-0 list-disc space-y-1">
-                <li>
-                  <a href="/shift/schools" target="_blank" rel="noopener" className="text-[#2966E5] underline underline-offset-2">
-                    Program page + materials
-                  </a>
-                </li>
-                <li>
-                  <a href="/shift/schools/find" target="_blank" rel="noopener" className="text-[#2966E5] underline underline-offset-2">
-                    Find Your School
-                  </a>
-                </li>
-                <li>
-                  <a href="/get-involved" target="_blank" rel="noopener" className="text-[#2966E5] underline underline-offset-2">
-                    Volunteer roles
-                  </a>
-                </li>
-              </ul>
-            </Card>
-            <Card label="Working docs">
-              <ul className="pl-5 m-0 list-disc space-y-1">
-                <li>Shortlist workbook — Keith shares it, pre-filled</li>
-                <li>Your running notes doc — you create it</li>
-                <li>Training — arrives as an email link</li>
-              </ul>
-            </Card>
-          </div>
-          <Card label="Questions">
-            Keith Anderson ·{' '}
-            <a href="mailto:info@gogreenstreets.org" className="text-[#2966E5] underline underline-offset-2">
-              info@gogreenstreets.org
-            </a>{' '}
-            — when in doubt, ask early. Nothing here is precious except the production data.
-          </Card>
-        </section>
+        {/* ── Project 1 ── */}
+        <Project
+          id="project-1"
+          eyebrow="Project 1 · Weeks 1–2"
+          title="Build the school shortlist"
+          intro={
+            <p className="m-0">
+              Goal: a ranked list of schools, with the top 5 ready for Keith to
+              approach — verified facts, named contacts, and a short case for each.
+              Need more research at any point (a deeper look at one school, more
+              candidates, fresher data)? Ask Keith — Claude turns that around in
+              minutes.
+            </p>
+          }
+          steps={PROJECT_1}
+        />
+
+        {/* ── Project 2 ── */}
+        <Project
+          id="project-2"
+          eyebrow="Project 2 · Weeks 2–4"
+          title="Check our route maps"
+          intro={
+            <p className="m-0">
+              Goal: answer one question — would you hand our walking-route maps to a
+              parent? You review the system&rsquo;s proposed routes on screen and on
+              foot; your review also produces the finished maps we bring to the top
+              schools.
+            </p>
+          }
+          steps={PROJECT_2}
+        />
       </div>
 
-      <footer className="border-t border-[#E4E2D9] px-6 py-7 pb-16 text-center text-[13px] text-[#6B7280]">
-        Shift for Schools · Green Streets Initiative · gogreenstreets.org
+      <footer className="border-t border-[#E4E2D9] px-6 py-6 pb-14 text-center text-[13px] text-[#6B7280]">
+        Shift for Schools · Green Streets Initiative ·{' '}
+        <a href={`mailto:${LINKS.contact}`} className="text-[#2966E5]">
+          {LINKS.contact}
+        </a>
       </footer>
     </main>
   )
