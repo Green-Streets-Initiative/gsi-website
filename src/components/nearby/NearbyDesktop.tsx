@@ -1,12 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
-import NearbyMap, { type RouteLegTapInfo } from './NearbyMap'
+import NearbyMap, { type FitPadding, type RouteLegTapInfo } from './NearbyMap'
 import {
   useNearbyModel, MODE_FILTER_DEFAULT, PAINTED_DEFAULT,
   type ModeFilter, type Selection,
@@ -29,8 +29,9 @@ import NearbyLanguagePill from './NearbyLanguagePill'
 /**
  * The desktop (≥ lg) experience: a two-pane app layout. The map is a sticky
  * left pane that never scrolls away — everything tapped (map or lists) shows
- * its detail pinned right under the map — and the content rail on the right
- * scrolls past it: stations, bike routes, docks, destinations, events.
+ * its detail in a card floating over the map's bottom edge — and the content
+ * rail on the right scrolls past it: stations, bike routes, docks,
+ * destinations, events.
  * Destination rows expand in place and draw their route on the SAME map
  * (no nested mini-maps). Below lg, NearbyShell renders the app shell
  * instead; both consume the same model + overlay hooks.
@@ -71,6 +72,16 @@ interface Props {
   alerts: SurfacedAlert[]
   onRetry: () => void
   onRequestCorridorShape: (routeId: string, stopId: string) => void
+}
+
+/** Identity of a selection — keys the floating card so switching between two
+ *  markers replays the entrance animation and resets the card's scroll. */
+function selectionKey(sel: NonNullable<Selection>): string {
+  switch (sel.type) {
+    case 'corridor': case 'dock': case 'borrow': case 'reach': return `${sel.type}-${sel.id}`
+    case 'station': return `station-${sel.key}`
+    case 'lane': return `lane-${sel.info.lngLat?.lng ?? 0}-${sel.info.lngLat?.lat ?? 0}`
+  }
 }
 
 const RAIL_TABS = [
@@ -152,6 +163,39 @@ export default function NearbyDesktop({
     if (selection) select(null, 'tab-change')
     posthog.capture('nearby_tab_changed', { tab: next, surface: 'desktop' })
   }, [selection, select])
+
+  // The floating detail card covers the bottom of the map — measure the map
+  // box so the point-focus ease can land the tapped marker in the uncovered
+  // area above the card (same pattern as the mobile shell's fitPadding).
+  const mapBoxRef = useRef<HTMLDivElement>(null)
+  const [mapH, setMapH] = useState(0)
+  useEffect(() => {
+    const el = mapBoxRef.current
+    if (!el) return
+    const measure = () => setMapH(el.clientHeight)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const focusPadding = useMemo<FitPadding | undefined>(
+    () => (mapH ? { top: 48, bottom: Math.round(mapH * 0.45) + 24, left: 48, right: 48 } : undefined),
+    [mapH]
+  )
+
+  // At page-top scroll the sticky map column overhangs the fold, clipping the
+  // floating card's lower edge — nudge the page the few dozen px it takes to
+  // bring the map's bottom (and the card riding on it) fully into view.
+  useEffect(() => {
+    if (!selection || selection.type === 'reach') return
+    const el = mapBoxRef.current
+    if (!el) return
+    const delta = el.getBoundingClientRect().bottom - window.innerHeight
+    if (delta > 0) {
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      window.scrollBy({ top: delta, behavior: reduce ? 'auto' : 'smooth' })
+    }
+  }, [selection])
 
   // A tapped stretch of the drawn route; cleared whenever the selection moves
   const [legInfo, setLegInfo] = useState<RouteLegTapInfo | null>(null)
@@ -239,10 +283,11 @@ export default function NearbyDesktop({
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,1fr)_480px]">
 
           {/* LEFT: the map pane. Viewport-derived height, so a short rail
-              can't collapse it; detail pinned under the map stays fully
-              visible without any page scroll. */}
+              can't collapse it; detail floats OVER the map's bottom edge, so
+              the response to a tap is always where the user is looking —
+              never below the fold, and the map never resizes. */}
           <div className="lg:sticky lg:top-[128px] lg:flex lg:h-[calc(100vh-144px)] lg:min-h-[420px] lg:flex-col lg:self-start">
-            <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/[0.08]">
+            <div ref={mapBoxRef} className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/[0.08]">
               <NearbyMap
                 center={center}
                 markers={overlay.markers}
@@ -260,36 +305,42 @@ export default function NearbyDesktop({
                 onReachLegTap={handleLegTap}
                 fitCount={7}
                 extraFitPoints={accessPoints}
+                focusPoint={model.selectionPoint}
+                focusPadding={focusPadding}
+                controls={{ attribution: 'top-left' }}
                 heightClass="h-full"
               />
-            </div>
 
-            {/* Detail panel — everything tapped lands HERE, pinned under the
-                map, never down the page. (Reach selections render in their
-                own row expansion in the rail instead.) */}
-            {selection && selection.type !== 'reach' && (
-              <div className="mt-2.5 max-h-[40%] shrink-0 overflow-y-auto rounded-xl border border-[rgba(186,241,77,0.25)] bg-[#242538] px-4 py-3.5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <DetailContent
-                      selection={selection}
-                      stationByKey={stationByKey}
-                      corridorById={corridorById}
-                      docks={docks}
-                      borrowRent={model.borrowRent}
-                      onSelectCorridor={(id) => selectShowing({ type: 'corridor', id }, 'panel')}
-                    />
+              {/* Detail card — everything tapped lands HERE, floating over the
+                  map bottom, always in view. (Reach selections render in their
+                  own row expansion in the rail instead.) */}
+              {selection && selection.type !== 'reach' && (
+                <div
+                  key={selectionKey(selection)}
+                  className="animate-detail-card-in absolute inset-x-3 bottom-3 z-10 max-h-[45%] overflow-y-auto rounded-xl border border-[rgba(186,241,77,0.25)] bg-[#242538] px-4 py-3.5 shadow-[0_8px_28px_rgba(0,0,0,0.45)]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <DetailContent
+                        selection={selection}
+                        stationByKey={stationByKey}
+                        corridorById={corridorById}
+                        docks={docks}
+                        borrowRent={model.borrowRent}
+                        onSelectCorridor={(id) => selectShowing({ type: 'corridor', id }, 'panel')}
+                      />
+                    </div>
+                    <button
+                      onClick={() => select(null, 'panel-close')}
+                      aria-label={tr('desktop.close_details')}
+                      className="shrink-0 rounded-lg border border-white/[0.15] px-2.5 py-1 text-[0.9rem] font-bold text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white"
+                    >
+                      ✕
+                    </button>
                   </div>
-                  <button
-                    onClick={() => select(null, 'panel-close')}
-                    aria-label={tr('desktop.close_details')}
-                    className="shrink-0 rounded-lg border border-white/[0.15] px-2.5 py-1 text-[0.9rem] font-bold text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white"
-                  >
-                    ✕
-                  </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* RIGHT: the content rail, split into the mobile sheet's three
@@ -351,7 +402,11 @@ export default function NearbyDesktop({
                     onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
                   />
                   <GuideLinks context="bike" guides={guides.data} modeFilter={modeFilter} />
-                  <BorrowRentList points={model.borrowRent} />
+                  <BorrowRentList
+                    points={model.borrowRent}
+                    onSelect={(id) => selectShowing({ type: 'borrow', id }, 'list')}
+                    selectedId={selection?.type === 'borrow' ? selection.id : null}
+                  />
                   {model.borrowRent.length > 0 && (
                     <GuideLinks context="borrow" guides={guides.data} modeFilter={modeFilter} />
                   )}

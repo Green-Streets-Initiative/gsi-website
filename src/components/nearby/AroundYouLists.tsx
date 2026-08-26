@@ -460,11 +460,15 @@ export function DockList({ docks, onSelect, selectedId }: {
 
 /* ── Borrow & rent: bikes you don't have to own (CargoB, Pedal Power) ── */
 
-export function BorrowRentList({ points }: {
+export function BorrowRentList({ points, onSelect, selectedId }: {
   points: (BorrowRentPoint & { distMiles: number })[]
+  onSelect?: (id: string) => void
+  selectedId?: string | null
 }) {
   const tr = useNearbyT()
   if (points.length === 0) return null
+  // Rows select (matching the map marker) — the vendor link lives in the
+  // detail card, where snapshot_borrow_clicked fires on true outbound clicks
   return (
     <div className="mt-5">
       <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
@@ -472,13 +476,14 @@ export function BorrowRentList({ points }: {
       </div>
       <div className="space-y-2.5">
         {points.map(p => (
-          <a
+          <button
             key={p.id}
-            href={p.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => posthog.capture('snapshot_borrow_clicked', { org: p.org })}
-            className="block rounded-xl border border-white/[0.08] bg-[#242538] px-4 py-3.5 transition-colors hover:border-white/[0.2]"
+            onClick={() => onSelect?.(p.id)}
+            className={`block w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
+              selectedId === p.id
+                ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.06)]'
+                : 'border-white/[0.08] bg-[#242538] hover:border-white/[0.2]'
+            }`}
           >
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
               <span className="text-[0.9rem] font-semibold text-white">{p.name}</span>
@@ -489,9 +494,8 @@ export function BorrowRentList({ points }: {
             <div className="mt-1 text-[0.82rem] text-white/80">
               {tr(p.org === 'cargob' ? 'borrow.cargob' : 'borrow.pedal_power')}
               {p.approximate ? tr('lists.exact_address_note') : ''}
-              <span className="ml-1.5 font-semibold text-[#BAF14D]">{tr('lists.open_site')}</span>
             </div>
-          </a>
+          </button>
         ))}
       </div>
     </div>

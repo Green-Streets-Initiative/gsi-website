@@ -48,25 +48,31 @@ export function bluebikeHtml(bikesAvailable: number, ebikes: number, name: strin
     ">${bikesAvailable}</div>`
 }
 
-export function busStopHtml(title: string): string {
+export function busStopHtml(title: string, selected = false): string {
+  const ring = selected ? '#BAF14D' : '#fff'
+  const glow = selected ? ',0 0 12px rgba(186,241,77,0.6)' : ''
   return `
     <div title="${escapeAttr(title)}" style="
       display:flex;align-items:center;justify-content:center;
-      width:22px;height:22px;border-radius:50%;
-      background:#FFC72C;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,0.35);cursor:default;
+      width:${selected ? 26 : 22}px;height:${selected ? 26 : 22}px;border-radius:50%;
+      background:#FFC72C;border:${selected ? 3 : 2}px solid ${ring};box-shadow:0 2px 5px rgba(0,0,0,0.35)${glow};cursor:pointer;
     ">${BUS_SVG}</div>`
 }
 
-export function trainStopHtml(color: string, title: string): string {
+export function trainStopHtml(color: string, title: string, selected = false): string {
   // Station name rides along under the icon — stations are landmarks, and
   // people need to see at a glance which one is which. The train glyph
   // pairs with the bus marker's bus glyph so the two read as one language.
+  // The circle keeps the line's brand color when selected; only the ring
+  // goes lime, matching the dock/borrow selected treatment.
+  const ring = selected ? '#BAF14D' : '#fff'
+  const glow = selected ? ',0 0 12px rgba(186,241,77,0.6)' : ''
   return `
-    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
       <div title="${escapeAttr(title)}" style="
         display:flex;align-items:center;justify-content:center;
         width:28px;height:28px;border-radius:50%;
-        background:${color};border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);
+        background:${color};border:${selected ? 3 : 2.5}px solid ${ring};box-shadow:0 2px 6px rgba(0,0,0,0.4)${glow};
       ">${TRAIN_SVG}</div>
       <div style="
         max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;

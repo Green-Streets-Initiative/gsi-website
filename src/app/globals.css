@@ -92,6 +92,18 @@
   animation: slide-up 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
+/* /nearby floating detail card — slides up over the map's bottom edge */
+@keyframes detail-card-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-detail-card-in {
+  animation: detail-card-in 0.24s cubic-bezier(0.2, 0, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-detail-card-in { animation: none; }
+}
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;

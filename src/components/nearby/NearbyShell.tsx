@@ -280,6 +280,7 @@ export default function NearbyShell({
           cooperative={false}
           controls={{ showZoom: false }}
           fitPadding={fitPadding}
+          focusPoint={model.selectionPoint}
           heightClass="h-full"
         />
       </div>
@@ -395,7 +396,11 @@ export default function NearbyShell({
                 onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
               />
               <GuideLinks context="bike" guides={guides.data} modeFilter={modeFilter} />
-              <BorrowRentList points={model.borrowRent} />
+              <BorrowRentList
+                points={model.borrowRent}
+                onSelect={(id) => selectShowing({ type: 'borrow', id }, 'list')}
+                selectedId={selection?.type === 'borrow' ? selection.id : null}
+              />
               {model.borrowRent.length > 0 && (
                 <GuideLinks context="borrow" guides={guides.data} modeFilter={modeFilter} />
               )}

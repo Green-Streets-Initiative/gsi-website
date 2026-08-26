@@ -83,11 +83,19 @@ interface Props {
    *  (false — the app shell, where the map is the stage) */
   cooperative?: boolean
   /** Control placement — the shell moves attribution up so the sheet
-   *  can't bury it, and drops the zoom buttons (pinch is the idiom) */
-  controls?: { attribution?: 'top-right' | 'bottom-right'; showZoom?: boolean }
+   *  can't bury it, and drops the zoom buttons (pinch is the idiom);
+   *  desktop moves it top-left so the floating detail card can't cover it */
+  controls?: { attribution?: 'top-right' | 'bottom-right' | 'top-left'; showZoom?: boolean }
   /** Camera padding for every fit (initial/home/select) — the shell passes
    *  asymmetric padding so fits land in the window above the sheet */
   fitPadding?: FitPadding
+  /** Ease the camera to keep this tapped point visible (station/dock/borrow
+   *  selections) — null leaves the camera alone */
+  focusPoint?: { lat: number; lng: number } | null
+  /** Padding for the point-focus ease only — desktop passes the floating
+   *  card's footprint here without skewing the home/initial fits.
+   *  Falls back to fitPadding. */
+  focusPadding?: FitPadding
   heightClass?: string
 }
 
@@ -108,7 +116,7 @@ export default function NearbyMap({
   corridorLines, selectedCorridorId = null, onCorridorSelect,
   onMarkerTap, onLaneTap, onReachLegTap,
   fitCount, extraFitPoints, fitToLines = false, lineEmphasis = false,
-  cooperative = true, controls, fitPadding,
+  cooperative = true, controls, fitPadding, focusPoint, focusPadding,
   heightClass = 'h-[320px] sm:h-[380px]',
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -142,6 +150,8 @@ export default function NearbyMap({
   extraFitPointsRef.current = extraFitPoints
   const fitPaddingRef = useRef(fitPadding)
   fitPaddingRef.current = fitPadding
+  const focusPaddingRef = useRef(focusPadding)
+  focusPaddingRef.current = focusPadding
   const lineEmphasisRef = useRef(lineEmphasis)
   lineEmphasisRef.current = lineEmphasis
 
@@ -384,6 +394,25 @@ export default function NearbyMap({
       }
     })()
   }, [selectedCorridorId])
+
+  // Point focus: ease so a tapped station/dock/borrow marker lands in the
+  // window above the detail card (desktop) / sheet (mobile). Pure pan via a
+  // per-call offset — easeTo's padding option would persist on the camera
+  // and skew every later fitBounds. Not `essential`, so MapLibre makes it
+  // instant under prefers-reduced-motion. Deselect (null) leaves the camera
+  // alone — minimal motion.
+  useEffect(() => {
+    const map = mapRef.current
+    // No loadedRef guard: camera moves don't need the style loaded, and the
+    // 'load' event can lag the first tap on slow connections
+    if (!map || !focusPoint) return
+    const p = clampedPadding(map, focusPaddingRef.current ?? fitPaddingRef.current, 52)
+    const offset: [number, number] = typeof p === 'number'
+      ? [0, 0]
+      : [(p.left - p.right) / 2, (p.top - p.bottom) / 2]
+    map.easeTo({ center: [focusPoint.lng, focusPoint.lat], offset, duration: 500 })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusPoint?.lat, focusPoint?.lng])
 
   return <div ref={containerRef} className={`${heightClass} w-full`} />
 }

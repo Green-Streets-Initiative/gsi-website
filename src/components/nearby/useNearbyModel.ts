@@ -269,19 +269,26 @@ export function useNearbyModel({
       // Color by the line itself, not the corridor list — a farther line
       // (Orange at Sullivan) that didn't make the top-8 corridors still gets
       // its brand color, not the gray fallback.
-      html: trainStopHtml(g.routes[0] ? lineColor(g.routes[0].id) : '#666', g.name),
+      html: trainStopHtml(
+        g.routes[0] ? lineColor(g.routes[0].id) : '#666',
+        g.name,
+        selection?.type === 'station' && selection.key === g.key,
+      ),
       tappable: true,
       analyticsType: 'train',
-      zIndex: 3,
+      zIndex: selection?.type === 'station' && selection.key === g.key ? 6 : 3,
     })) : []),
     ...(showBus ? groupStops(bus, false).slice(0, 5).map(g => ({
       id: `bus-${g.key}`,
       lat: g.lat,
       lng: g.lng,
-      html: busStopHtml(`${g.name} — routes ${g.routes.map(r => r.name).join(', ')}`),
+      html: busStopHtml(
+        `${g.name} — routes ${g.routes.map(r => r.name).join(', ')}`,
+        selection?.type === 'station' && selection.key === g.key,
+      ),
       tappable: true,
       analyticsType: 'bus',
-      zIndex: 2,
+      zIndex: selection?.type === 'station' && selection.key === g.key ? 6 : 2,
     })) : []),
     ...(showBike ? docks.slice(0, 8).map(d => ({
       id: `dock-${d.station_id}`,
@@ -299,6 +306,27 @@ export function useNearbyModel({
     })) : []),
   ], [center, rail, bus, docks, borrowRent, corridorById, showRail, showBus, showBike, selection])
 
+  // Where the camera should ease when a point-like thing is tapped, so the
+  // tapped marker stays visible above the detail card / sheet. Corridor-driven
+  // selections (including single-route stations) return null — the corridor
+  // fitBounds already owns the camera there.
+  const selectionPoint = useMemo<{ lat: number; lng: number } | null>(() => {
+    if (highlightedCorridorId) return null
+    if (selection?.type === 'station') {
+      const st = stationByKey.get(selection.key)
+      return st ? { lat: st.lat, lng: st.lng } : null
+    }
+    if (selection?.type === 'dock') {
+      const d = docks.find(x => x.station_id === selection.id)
+      return d ? { lat: d.lat, lng: d.lng } : null
+    }
+    if (selection?.type === 'borrow') {
+      const p = borrowRent.find(x => x.id === selection.id)
+      return p ? { lat: p.lat, lng: p.lng } : null
+    }
+    return null
+  }, [selection, highlightedCorridorId, stationByKey, docks, borrowRent])
+
   // Boarding locations belong in the first frame even when their stations
   // didn't make the marker cut
   const accessPoints = useMemo(
@@ -312,7 +340,7 @@ export function useNearbyModel({
   return {
     selection, select, handleMarkerTap,
     corridorById, stations, stationByKey, borrowRent,
-    corridorLines, highlightedCorridorId,
+    corridorLines, highlightedCorridorId, selectionPoint,
     markers, accessPoints,
     showRail, showBus, showBike,
   }
