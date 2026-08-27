@@ -746,12 +746,12 @@ function WinnersSection({ winners, eventCampaign }: { winners: ClaimedWinner[]; 
                   </div>
                   <div className="flex flex-col gap-5 p-5 sm:flex-row sm:gap-6 sm:p-6">
                     {w.prizeImageUrl && (
-                      <div className="flex shrink-0 items-center justify-center rounded-[12px] bg-[#1A2240] sm:h-[180px] sm:w-[180px]">
+                      <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-[12px] bg-[#1A2240] sm:h-[220px] sm:w-[260px]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={w.prizeImageUrl}
                           alt={w.prizeDescription}
-                          className="h-[140px] w-auto object-contain sm:h-[160px]"
+                          className="h-[160px] w-auto object-contain sm:h-[200px]"
                         />
                       </div>
                     )}
