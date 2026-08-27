@@ -627,7 +627,7 @@ function EndedEvent({
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#191A2E] px-8 py-16 md:py-24">
+      <section className="relative overflow-hidden bg-[#191A2E] px-8 py-12 md:py-16">
         <GradientBg />
         <div className="relative mx-auto max-w-[1120px]">
           <div className="max-w-[640px]">
@@ -641,7 +641,9 @@ function EndedEvent({
               Challenge complete
             </div>
             <p className="mb-5 text-lg leading-[1.7] text-white">
-              {competition.description}
+              Shift Your Summer 2026 challenged people across Massachusetts to walk, bike, and ride transit
+              from June 15 through August 15. Participants earned sweepstakes entries with every active trip,
+              competed on town and workplace leaderboards, and shared in more than $5,000 in prizes from 17 brands.
             </p>
             <p className="mb-3 text-sm font-semibold text-white">
               {formatDateRange(competition.starts_at, competition.ends_at)}
@@ -651,15 +653,12 @@ function EndedEvent({
             </p>
             <div className="mt-8 space-y-3">
               <JoinChallengeCta phase="ended" />
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                <ShareChallengeLink />
-                <Link
-                  href="/shift/employers"
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/75 transition-colors hover:text-white"
-                >
-                  Running a team? <span className="text-[#BAF14D]">Employer platform &rarr;</span>
-                </Link>
-              </div>
+              <Link
+                href="/shift/employers"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/75 transition-colors hover:text-white"
+              >
+                Running a team? <span className="text-[#BAF14D]">Employer platform &rarr;</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -674,14 +673,14 @@ function EndedEvent({
       )}
 
       {/* Final standings */}
-      <section className="bg-[#191A2E] px-8 pb-16 pt-4 border-t border-white/[0.08]">
+      <section className="bg-[#191A2E] px-8 pb-10 pt-4 border-t border-white/[0.08]">
         <div className="mx-auto max-w-[900px]">
           <div className="mb-4">
             <h2 className="font-display text-2xl font-bold tracking-tight text-white">
               Final standings
             </h2>
             <p className="mt-1 text-sm text-white/75">
-              {participantCount.toLocaleString()} people participated. Shift Your September is up next.
+              {participantCount.toLocaleString()} people participated.
             </p>
           </div>
 
@@ -720,7 +719,7 @@ function WinnersSection({ winners, eventCampaign }: { winners: ClaimedWinner[]; 
   const standard = winners.filter(w => w.prizeTier === 'standard')
 
   return (
-    <section className="bg-[#191A2E] px-8 pt-12 pb-16 border-t border-white/[0.08]">
+    <section className="bg-[#191A2E] px-8 pt-8 pb-10 border-t border-white/[0.08]">
       <div className="mx-auto max-w-[900px]">
         <h2 className="mb-2 font-display text-2xl font-bold tracking-tight text-white">
           Prize winners
@@ -1071,16 +1070,16 @@ function computeAggregateLabel(prizes: Prize[]): string | null {
 // Source: docs/reports/campaigns/sys-2026/postmortem.md (pulled 2026-08-25)
 const SYS_2026_HIGHLIGHTS = [
   { value: '11,747', label: 'active trips', detail: 'by 157 participants' },
-  { value: '36,706', label: 'miles walked, biked & rode', detail: 'across Massachusetts' },
+  { value: '36,706', label: 'miles walked, biked, and ridden', detail: 'across Massachusetts' },
   { value: '13.9', label: 'metric tons CO₂ avoided', detail: 'equal to 634 trees’ annual absorption' },
   { value: '$25,694', label: 'saved on transportation', detail: 'money kept in participants’ pockets' },
   { value: '2,299', label: 'hours of active travel', detail: 'walking, biking, and riding transit' },
-  { value: '38', label: 'prizes awarded', detail: 'across 17 local brands' },
+  { value: '38', label: 'prizes awarded', detail: 'across 17 brands' },
 ]
 
 function CampaignHighlightsSection({ highlights }: { highlights: typeof SYS_2026_HIGHLIGHTS }) {
   return (
-    <section className="bg-[#191A2E] px-8 pt-10 pb-14 border-t border-white/[0.08]">
+    <section className="bg-[#191A2E] px-8 pt-6 pb-8 border-t border-white/[0.08]">
       <div className="mx-auto max-w-[900px]">
         <h2 className="mb-2 font-display text-2xl font-bold tracking-tight text-white">
           Summer 2026 impact
@@ -1533,7 +1532,7 @@ function CtaSection({ phase }: { phase: PageState }) {
     phase === 'active'
       ? 'Download Shift, join the challenge, and start earning your spot on the board.'
       : phase === 'ended'
-        ? "Shift Your September is up next. Download Shift and be ready when it launches."
+        ? "Stay active with Shift. Track your trips, build streaks, and be first to know about the next challenge."
         : "Download Shift so you’re ready when the challenge goes live."
   return (
     <section className="bg-[#191A2E] px-8 py-24">
