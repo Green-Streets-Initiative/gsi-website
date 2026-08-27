@@ -12,6 +12,12 @@ export interface WalkAuditMeta {
   area_label: string | null
   city: string | null
   scheduled_for: string | null
+  enabled_modules: string[]
+  hazards: {
+    crash_clusters?: { lat: number; lng: number; crashCount?: number; type?: string }[]
+    summary?: { cluster_count: number; total_crashes: number }
+  } | null
+  observations: unknown[]
 }
 
 export default async function WalkAuditPage({

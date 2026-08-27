@@ -8,13 +8,15 @@ import type { ProblemPin } from './formModel'
 interface Props {
   /** GeoJSON-order [lng, lat] coordinates for the route line */
   routeCoordinates: [number, number][]
-  /** Flagged problem spots to draw (amber pins). */
-  pins?: ProblemPin[]
+  /** Flagged spots to draw (amber by default; per-pin color override). */
+  pins?: (ProblemPin & { color?: string })[]
   /** When set, tapping the map reports a location (pin-placing mode). */
   onMapClick?: (lat: number, lng: number) => void
   /** Optional center override, e.g. the walker's current position. */
   center?: { lat: number; lng: number } | null
   heightClass?: string
+  /** Popup label for the route's end marker (default 'End'). */
+  endLabel?: string
 }
 
 // The volunteer's map of the route they're walking. Same presentation
@@ -26,6 +28,7 @@ export default function VolunteerRouteMap({
   onMapClick,
   center,
   heightClass = 'h-56',
+  endLabel = 'End',
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -105,7 +108,7 @@ export default function VolunteerRouteMap({
 
       const endpoints: { label: string; popup: string; bg: string; coord: [number, number] }[] = hasRoute ? [
         { label: 'A', popup: 'Start', bg: '#BAF14D', coord: routeCoordinates[0] },
-        { label: 'B', popup: 'School', bg: '#2966E5', coord: routeCoordinates[routeCoordinates.length - 1] },
+        { label: 'B', popup: endLabel, bg: '#2966E5', coord: routeCoordinates[routeCoordinates.length - 1] },
       ] : []
       for (const p of endpoints) {
         const el = document.createElement('div')
@@ -147,7 +150,7 @@ export default function VolunteerRouteMap({
     pinMarkersRef.current = (pins ?? []).map((pin, i) => {
       const el = document.createElement('div')
       el.style.cssText =
-        'width:24px;height:24px;border-radius:50%;background:#D97706;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font:700 11px system-ui;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.5)'
+        `width:24px;height:24px;border-radius:50%;background:${pin.color ?? '#D97706'};border:2px solid #fff;display:flex;align-items:center;justify-content:center;font:700 11px system-ui;color:${pin.color === '#BAF14D' ? '#191A2E' : '#fff'};box-shadow:0 1px 4px rgba(0,0,0,0.5)`
       el.textContent = String(i + 1)
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([pin.lng, pin.lat])

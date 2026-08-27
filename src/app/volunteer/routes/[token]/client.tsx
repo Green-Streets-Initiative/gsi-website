@@ -375,7 +375,7 @@ export default function VolunteerAssessmentClient(props: Props) {
 
           {props.routeCoordinates.length >= 2 && (
             <div className="rounded-xl bg-white p-2 shadow-sm mb-4">
-              <VolunteerRouteMap routeCoordinates={props.routeCoordinates} pins={form.problem_pins} />
+              <VolunteerRouteMap routeCoordinates={props.routeCoordinates} pins={form.problem_pins} endLabel="School" />
               <p className="mt-1.5 px-2 pb-1 text-[11px] text-[#6B7280] inline-flex items-center gap-1">
                 <MapTrifold size={13} weight="regular" /> The route you&apos;re assessing — A is the start, B is the school.
               </p>
