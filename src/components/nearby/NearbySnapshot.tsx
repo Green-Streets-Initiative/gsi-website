@@ -6,7 +6,7 @@ import posthog from 'posthog-js'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
-import { fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
+import { fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops, fetchShuttleStops } from '@/lib/nearby/live-data'
 import { fetchNearbyAlerts, type SurfacedAlert, type NearbyPromo } from '@/lib/nearby/alerts'
 import { round3, parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
 import { buildAppHref, isNewRoutesContext } from '@/lib/nearby/campaign'
@@ -74,6 +74,7 @@ export default function NearbySnapshot() {
   // Per-section data
   const [rail, setRail] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
   const [bus, setBus] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
+  const [shuttles, setShuttles] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
   const [alerts, setAlerts] = useState<SurfacedAlert[]>([])
   // Contextual promos (Bluebikes closure credit, etc.) — global config, matched
   // to alerts in the detail blocks. Fetched once; fails soft to none.
@@ -294,6 +295,10 @@ export default function NearbySnapshot() {
     busP.then(rows => {
       setBus({ status: 'ready', data: rows })
       posthog.capture('snapshot_section_loaded', { section: 'bus', count: rows.length })
+    })
+    fetchShuttleStops(lat, lng).then(rows => {
+      setShuttles({ status: 'ready', data: rows })
+      if (rows.length) posthog.capture('snapshot_section_loaded', { section: 'shuttle', count: rows.length })
     })
     // Service alerts for the routes we're about to show (major effects only).
     Promise.all([railP, busP]).then(([railRows, busRows]) =>
@@ -683,6 +688,7 @@ export default function NearbySnapshot() {
     popularBikeStreetKeys,
     rail: rail.data,
     bus: bus.data,
+    shuttles: shuttles.data,
     docks: bluebikes.data,
     backgroundLines,
     transitStatus: transitCorridors.status,

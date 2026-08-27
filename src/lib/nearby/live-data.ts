@@ -350,6 +350,52 @@ export async function fetchBikeShareDocks(lat: number, lng: number, radiusMeters
   return [...bb, ...vb].sort((a, b) => a.distance_meters - b.distance_meters)
 }
 
+/** Shuttle stops from non-MBTA operators (TMAs, employer shuttles). Fetched
+ *  from our server topology endpoint which caches parsed GTFS feeds for 24 h.
+ *  Returns MBTAStopLive[] (with null predictions) so they flow through the
+ *  existing station-group pipeline. */
+export async function fetchShuttleStops(lat: number, lng: number): Promise<MBTAStopLive[]> {
+  const cacheKey = `shuttle-stops-v1-${lat.toFixed(4)},${lng.toFixed(4)}`
+  try {
+    const raw = sessionStorage.getItem(cacheKey)
+    if (raw) {
+      const cached = JSON.parse(raw)
+      if (Date.now() - cached.ts < MBTA_CACHE_TTL) return cached.data
+    }
+  } catch {}
+
+  try {
+    const res = await fetch(`/api/nearby/topology?lat=${lat}&lng=${lng}`)
+    if (!res.ok) return []
+    const data = await res.json()
+    const shuttles: StopTopology[] = data.shuttles ?? []
+    if (shuttles.length === 0) return []
+
+    const stops: MBTAStopLive[] = []
+    for (const s of shuttles) {
+      for (const route of s.routes) {
+        stops.push({
+          stop_id: s.id,
+          name: s.name,
+          lat: s.lat,
+          lng: s.lng,
+          route_id: route.id,
+          route_name: route.name,
+          direction: '',
+          next_arrival_minutes: null,
+          distance_meters: s.dist,
+        })
+      }
+    }
+
+    const sorted = stops.sort((a, b) => a.distance_meters - b.distance_meters)
+    try { sessionStorage.setItem(cacheKey, JSON.stringify({ data: sorted, ts: Date.now() })) } catch {}
+    return sorted
+  } catch {
+    return []
+  }
+}
+
 export async function fetchBikeParking(lat: number, lng: number, radiusMeters = 1000): Promise<BikeParkingSpot[]> {
   try {
     const query = `

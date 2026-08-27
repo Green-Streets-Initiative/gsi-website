@@ -11,12 +11,12 @@ import { CORRIDOR_UNSPLASH } from '@/lib/nearby/config'
 import { protectionLabel, laneTierCopy, LANE_SOURCE_LABEL } from '@/lib/nearby/bike-labels'
 import { bearingDegrees } from '@/lib/geo/polyline'
 import type { TransitCorridor, BikeCorridor, FrequencyInfo } from '@/lib/nearby/corridors'
-import { TrainIcon, BusIcon, FerryIcon } from '@/components/wayfinding/WayfindingIcons'
+import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
 import { useNearbyT } from './NearbyI18n'
 import { bikeshareLogoUrl, borrowLogoUrl } from '@/lib/nearby/provider-logos'
 import {
-  type Selection, type StationGroup, routeEndpoints,
+  type Selection, type StationGroup, routeEndpoints, isShuttleStation,
 } from './useNearbyModel'
 
 /**
@@ -182,8 +182,8 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
     return (
       <div>
         <div className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
-          {st.routes.every(r => r.id.startsWith('Boat-')) ? <FerryIcon size={12} /> : st.isRail ? <TrainIcon size={12} /> : <BusIcon size={12} />}
-          {st.routes.every(r => r.id.startsWith('Boat-')) ? tr('detail.ferry_terminal') : st.isRail ? tr('detail.station') : tr('detail.bus_stop')}
+          {isShuttleStation(st) ? <ShuttleIcon size={12} /> : st.routes.every(r => r.id.startsWith('Boat-')) ? <FerryIcon size={12} /> : st.isRail ? <TrainIcon size={12} /> : <BusIcon size={12} />}
+          {isShuttleStation(st) ? tr('detail.shuttle_stop') : st.routes.every(r => r.id.startsWith('Boat-')) ? tr('detail.ferry_terminal') : st.isRail ? tr('detail.station') : tr('detail.bus_stop')}
         </div>
         <div className="text-[0.95rem] font-bold text-white">{st.name}</div>
         <div className="text-[0.78rem] text-white/75">

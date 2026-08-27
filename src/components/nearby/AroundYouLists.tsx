@@ -11,7 +11,7 @@ import { protectionLabel } from '@/lib/nearby/bike-labels'
 import { type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
-import { TrainIcon, BusIcon, FerryIcon } from '@/components/wayfinding/WayfindingIcons'
+import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
 import type { SectionStatus } from './types'
 import { SkeletonRows, ErrorCard } from './SectionShell'
@@ -21,7 +21,7 @@ import { useNearbyPromos } from './NearbyPromos'
 import { bikeshareLogoUrl, borrowLogoUrl } from '@/lib/nearby/provider-logos'
 import NearbyPromoCard from './NearbyPromoCard'
 import {
-  type StationGroup, routeEndpoints, soonestAtStation, freqShort,
+  type StationGroup, routeEndpoints, soonestAtStation, freqShort, isShuttleStation, isShuttleRoute,
 } from './useNearbyModel'
 
 /**
@@ -267,7 +267,7 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
               >
                 <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
                   <span className="flex items-center gap-1.5 text-[0.95rem] font-bold text-white">
-                    <span className="text-white/80">{st.routes.every(r => r.id.startsWith('Boat-')) ? <FerryIcon size={15} /> : st.isRail ? <TrainIcon size={15} /> : <BusIcon size={15} />}</span>
+                    <span className="text-white/80">{isShuttleStation(st) ? <ShuttleIcon size={15} /> : st.routes.every(r => r.id.startsWith('Boat-')) ? <FerryIcon size={15} /> : st.isRail ? <TrainIcon size={15} /> : <BusIcon size={15} />}</span>
                     {st.name}
                   </span>
                   <span className="text-[0.78rem] text-white/75">

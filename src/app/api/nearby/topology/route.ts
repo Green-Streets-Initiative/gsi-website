@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStopTopology } from '@/lib/server/mbta-topology'
+import { nearbyShuttleStops } from '@/lib/server/shuttle-gtfs'
 import {
   SNAPSHOT_MAX_STOPS,
   SNAPSHOT_RAIL_MAX_STATIONS,
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'valid lat and lng required' }, { status: 400 })
   }
 
-  const [rail, bus] = await Promise.all([
+  const [rail, bus, shuttles] = await Promise.all([
     getStopTopology(lat, lng, {
       routeTypes: SNAPSHOT_RAIL_TYPES,
       radiusDeg: 0.02,
@@ -40,11 +41,11 @@ export async function GET(req: NextRequest) {
       nameStyle: 'short',
       maxStops: SNAPSHOT_MAX_STOPS,
     }),
+    nearbyShuttleStops(lat, lng).catch(() => []),
   ])
 
-  // Topology is near-static; the lib already caches 6 h cross-visitor.
   return NextResponse.json(
-    { rail, bus },
+    { rail, bus, shuttles },
     { headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=3600' } },
   )
 }
