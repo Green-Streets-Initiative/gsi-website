@@ -23,7 +23,7 @@ export default function MghIhpPage() {
       <main style={{ paddingTop: '60px' }}>
 
         {/* Hero */}
-        <section className="bg-[#191A2E] px-8 py-24 md:py-32">
+        <section className="bg-[#191A2E] px-8 py-14 md:py-20">
           <div className="mx-auto max-w-[1120px]">
             <div className="mb-4 flex flex-wrap items-center gap-3">
               <span className="rounded-full bg-[#BAF14D]/10 px-3 py-1 text-xs font-semibold text-[#BAF14D]">
@@ -41,7 +41,7 @@ export default function MghIhpPage() {
         </section>
 
         {/* Intro */}
-        <section className="bg-[#191A2E] px-8 pb-24">
+        <section className="bg-[#191A2E] px-8 pb-14">
           <div className="mx-auto max-w-[800px]">
             <p className="mb-6 text-[1.0625rem] leading-[1.65] text-white">
               During the summer of 2022, Mass General Brigham University of Health Professions invited Green Streets Initiative to its Charlestown campus to interview students, staff, and faculty who commute by &ldquo;green&rdquo; ways — to show others how and why they choose to commute that way.
@@ -53,7 +53,7 @@ export default function MghIhpPage() {
         </section>
 
         {/* Stats */}
-        <section className="bg-[#242538] px-8 py-24">
+        <section className="bg-[#242538] px-8 py-14">
           <div className="mx-auto grid max-w-[1120px] gap-6 sm:grid-cols-3">
             <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8 text-center">
               <div className="mb-2 font-display text-3xl font-extrabold tracking-tight text-[#BAF14D]">13</div>
@@ -71,7 +71,7 @@ export default function MghIhpPage() {
         </section>
 
         {/* Videos */}
-        <section className="bg-[#191A2E] px-8 py-24">
+        <section className="bg-[#191A2E] px-8 py-14">
           <div className="mx-auto max-w-[1120px]">
             <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
               Video conversations
@@ -100,7 +100,7 @@ export default function MghIhpPage() {
         </section>
 
         {/* Context note */}
-        <section className="bg-[#191A2E] px-8 pb-24">
+        <section className="bg-[#191A2E] px-8 pb-10">
           <div className="mx-auto max-w-[800px]">
             <div className="rounded-[18px] border border-[rgba(186,241,77,0.12)] bg-[rgba(186,241,77,0.04)] p-8">
               <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">
@@ -114,7 +114,7 @@ export default function MghIhpPage() {
         </section>
 
         {/* CTA */}
-        <section className="bg-[#191A2E] px-8 pb-24">
+        <section className="bg-[#191A2E] px-8 pb-16">
           <div className="mx-auto max-w-[640px] text-center">
             <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
               Commission your own campaign.
