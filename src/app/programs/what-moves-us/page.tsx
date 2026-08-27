@@ -38,11 +38,11 @@ const campaigns = [
   },
   {
     slug: 'mgh-ihp',
-    name: 'What Moves MGH IHP',
+    name: 'What Moves Mass General Brigham University',
     location: 'Charlestown, MA',
     year: '2022',
     description:
-      'Students, staff, and faculty at Massachusetts General Hospital\'s Institute of Health Professions share how and why they commute green.',
+      'Students, staff, and faculty at Mass General Brigham University of Health Professions share how and why they commute green.',
     tag: 'Workplace',
   },
   {

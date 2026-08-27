@@ -4,9 +4,9 @@ import Footer from '@/components/Footer'
 import { MEDIA_BASE } from '@/lib/media'
 
 export const metadata = {
-  title: 'What Moves MGH IHP — Green Streets Initiative',
+  title: 'What Moves Mass General Brigham University — Green Streets Initiative',
   description:
-    'Students, staff, and faculty at Massachusetts General Hospital\'s Institute of Health Professions share how and why they commute green.',
+    'Students, staff, and faculty at Mass General Brigham University of Health Professions share how and why they commute green.',
 }
 
 const videos = [
@@ -29,13 +29,13 @@ export default function MghIhpPage() {
               <span className="rounded-full bg-[#BAF14D]/10 px-3 py-1 text-xs font-semibold text-[#BAF14D]">
                 Archived campaign
               </span>
-              <span className="text-xs text-white/40">Summer 2022</span>
+              <span className="text-xs text-white/70">Summer 2022</span>
             </div>
             <h1 className="mb-4 max-w-[720px] font-display text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              What Moves MGH IHP
+              What Moves Mass General Brigham University
             </h1>
-            <p className="mb-2 text-sm font-medium text-white/50">
-              Charlestown, MA &middot; Massachusetts General Hospital Institute of Health Professions
+            <p className="mb-2 text-sm font-medium text-white/75">
+              Charlestown, MA &middot; Mass General Brigham University of Health Professions
             </p>
           </div>
         </section>
@@ -44,7 +44,7 @@ export default function MghIhpPage() {
         <section className="bg-[#191A2E] px-8 pb-24">
           <div className="mx-auto max-w-[800px]">
             <p className="mb-6 text-[1.0625rem] leading-[1.65] text-white">
-              During the summer of 2022, Massachusetts General Hospital&apos;s Institute of Health Professions invited Green Streets Initiative to its Charlestown campus to interview students, staff, and faculty who commute by &ldquo;green&rdquo; ways — to show others how and why they choose to commute that way.
+              During the summer of 2022, Mass General Brigham University of Health Professions invited Green Streets Initiative to its Charlestown campus to interview students, staff, and faculty who commute by &ldquo;green&rdquo; ways — to show others how and why they choose to commute that way.
             </p>
             <p className="text-[1.0625rem] leading-[1.65] text-white">
               Green commutes help reduce your environmental impact and include taking public transit, biking, walking, or carpooling. Enjoy the snippets of these 13 conversations about commuting below.
@@ -93,7 +93,7 @@ export default function MghIhpPage() {
                 </div>
               ))}
             </div>
-            <p className="mt-6 text-sm text-white/40">
+            <p className="mt-6 text-sm text-white/70">
               Showing 4 of 13 video conversations. The original collection includes interviews spanning the greater Boston area — Brighton, Brookline, Jamaica Plain, South Boston, Dorchester, and more.
             </p>
           </div>
@@ -107,7 +107,7 @@ export default function MghIhpPage() {
                 Want to learn more?
               </h3>
               <p className="text-[0.9375rem] leading-[1.65] text-white">
-                Contact MGH IHP&apos;s Sustainability Coordinator for sustainable commuting information, ideas, incentives, logistics questions, or to be connected with a community member for mentoring toward a greener commute.
+                Contact Mass General Brigham University&apos;s Sustainability Coordinator for sustainable commuting information, ideas, incentives, logistics questions, or to be connected with a community member for mentoring toward a greener commute.
               </p>
             </div>
           </div>
