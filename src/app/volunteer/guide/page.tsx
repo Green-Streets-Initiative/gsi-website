@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react'
 const LINKS = {
   workbook:
     'https://docs.google.com/spreadsheets/d/1S1nWlxSebNAn-9Gog4D68uDYfGoV0zJnCbpKWrhktI0/edit',
-  dashboard: 'https://shift-school.vercel.app',
+  dashboard: 'https://admin.gogreenstreets.org',
   program: 'https://www.gogreenstreets.org/shift/schools',
   streetview: 'https://www.google.com/maps',
   contact: 'info@gogreenstreets.org',
@@ -481,15 +481,15 @@ export default function VolunteerGuidePage() {
         {/* ── Project 1 ── */}
         <Project
           id="project-1"
-          eyebrow="Project 1 · Weeks 1–2"
+          eyebrow="Project 1 · A few days"
           title="Build the school shortlist"
           intro={
             <p className="m-0">
               Goal: a ranked list of schools, with the top 5 ready for Keith to
               approach — verified facts, named contacts, and a short case for each.
-              Need more research at any point (a deeper look at one school, more
-              candidates, fresher data)? Ask Keith — Claude turns that around in
-              minutes.
+              The analysis is already done, so this is a few focused days of
+              checking and people-finding, not weeks. Need more research at any
+              point? Ask Keith — Claude turns that around in minutes.
             </p>
           }
           steps={PROJECT_1}
@@ -498,7 +498,7 @@ export default function VolunteerGuidePage() {
         {/* ── Project 2 ── */}
         <Project
           id="project-2"
-          eyebrow="Project 2 · Weeks 2–4"
+          eyebrow="Project 2 · The following week"
           title="Check our route maps"
           intro={
             <p className="m-0">
