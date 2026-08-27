@@ -7,6 +7,7 @@ import RefreshButton from '@/components/RefreshButton'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { withUtm, slugify } from '@/lib/utm'
 import LeaderboardTabs, { type GroupStanding } from './LeaderboardTabs'
+import CampaignDataViz from './CampaignDataViz'
 import {
   brandLabel,
   EntryTypePill,
@@ -651,14 +652,8 @@ function EndedEvent({
             <p className="mt-2 text-xs font-medium text-white/60">
               Green Streets Initiative &middot; moving Massachusetts since 2006
             </p>
-            <div className="mt-8 space-y-3">
+            <div className="mt-8">
               <JoinChallengeCta phase="ended" />
-              <Link
-                href="/shift/employers"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/75 transition-colors hover:text-white"
-              >
-                Running a team? <span className="text-[#BAF14D]">Employer platform &rarr;</span>
-              </Link>
             </div>
           </div>
         </div>
@@ -666,6 +661,9 @@ function EndedEvent({
 
       {/* Campaign impact */}
       <CampaignHighlightsSection highlights={SYS_2026_HIGHLIGHTS} />
+
+      {/* Mode split + weekly momentum */}
+      <CampaignDataViz />
 
       {/* Prize winners */}
       {claimedWinners.length > 0 && (
@@ -734,7 +732,51 @@ function WinnersSection({ winners, eventCampaign }: { winners: ClaimedWinner[]; 
           <div className="mb-8 space-y-4">
             {grand.map((w, i) => {
               const taggedUrl = withUtm(w.productUrl, { medium: 'event_page', campaign: eventCampaign, content: 'winner_grand_card' })
-              const card = (
+              const isSegway = w.brandName === 'Segway'
+              const card = isSegway ? (
+                <div className={`overflow-hidden rounded-[18px] border border-[#BAF14D]/20 bg-[#BAF14D]/[0.04] ${taggedUrl ? 'transition-colors hover:bg-[#BAF14D]/[0.07]' : ''}`}>
+                  <div className="flex items-center justify-between px-5 pt-5 sm:px-6 sm:pt-6">
+                    <span className="inline-block rounded-md bg-[#BAF14D] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#191A2E]">
+                      Grand prize
+                    </span>
+                    <span className="flex h-8 items-center rounded-[8px] bg-white px-2.5">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={SEGWAY_GRAND_PRIZE.donorLogoUrl} alt="Segway" className="h-5 w-auto object-contain" />
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-5 p-5 sm:flex-row sm:gap-6 sm:p-6">
+                    {w.prizeImageUrl && (
+                      <div className="flex shrink-0 items-center justify-center rounded-[12px] bg-[#1A2240] sm:h-[180px] sm:w-[180px]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={w.prizeImageUrl}
+                          alt={w.prizeDescription}
+                          className="h-[140px] w-auto object-contain sm:h-[160px]"
+                        />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="mb-3 font-display text-xl font-bold leading-tight tracking-tight text-white sm:text-2xl">
+                        {w.winnerFirstName} {wonArticle(w.prizeDescription)} {w.prizeDescription}
+                      </p>
+                      <div className="mb-4 grid grid-cols-2 gap-2">
+                        {SEGWAY_GRAND_PRIZE.features.map((f) => (
+                          <div key={f.icon} className="flex items-start gap-2 rounded-[10px] bg-white/[0.04] px-3 py-2.5">
+                            <span className="mt-0.5 text-[#BAF14D]"><FeatureIcon name={f.icon} /></span>
+                            <span className="min-w-0">
+                              <span className="block text-xs font-semibold text-white">{f.label}</span>
+                              <span className="block text-[11px] text-white/60">{f.sub}</span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {taggedUrl && (
+                        <p className="text-sm font-semibold text-[#2966E5]">View product details &rarr;</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
                 <div className={`overflow-hidden rounded-[16px] border border-[#BAF14D]/20 bg-[#BAF14D]/[0.04] ${taggedUrl ? 'transition-colors hover:bg-[#BAF14D]/[0.07]' : ''}`}>
                   <div className="flex items-center gap-5 p-5 sm:p-6">
                     {w.prizeImageUrl && (
@@ -742,7 +784,7 @@ function WinnersSection({ winners, eventCampaign }: { winners: ClaimedWinner[]; 
                       <img
                         src={w.prizeImageUrl}
                         alt={w.prizeDescription}
-                        className="hidden h-20 w-20 shrink-0 rounded-[10px] bg-[#1A2240] object-cover sm:block"
+                        className="h-24 w-24 shrink-0 rounded-[10px] bg-[#1A2240] object-cover"
                       />
                     )}
                     <div className="min-w-0 flex-1">
