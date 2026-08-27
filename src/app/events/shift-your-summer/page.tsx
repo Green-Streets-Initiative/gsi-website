@@ -1070,11 +1070,11 @@ function computeAggregateLabel(prizes: Prize[]): string | null {
 // ─── Finalized campaign impact stats (SYS 2026) ────────────────────
 // Source: docs/reports/campaigns/sys-2026/postmortem.md (pulled 2026-08-25)
 const SYS_2026_HIGHLIGHTS = [
-  { value: '11,747', label: 'car-free trips', detail: 'by 157 active participants' },
-  { value: '36,706', label: 'car-free miles', detail: 'walked, biked, and rode transit' },
+  { value: '11,747', label: 'active trips', detail: 'by 157 participants' },
+  { value: '36,706', label: 'miles walked, biked & rode', detail: 'across Massachusetts' },
   { value: '13.9', label: 'metric tons CO₂ avoided', detail: 'equal to 634 trees’ annual absorption' },
   { value: '$25,694', label: 'saved on transportation', detail: 'money kept in participants’ pockets' },
-  { value: '1.13M', label: 'calories burned', detail: '2,299 hours of active travel' },
+  { value: '2,299', label: 'hours of active travel', detail: 'walking, biking, and riding transit' },
   { value: '38', label: 'prizes awarded', detail: 'across 17 local brands' },
 ]
 
@@ -1086,7 +1086,7 @@ function CampaignHighlightsSection({ highlights }: { highlights: typeof SYS_2026
           Summer 2026 impact
         </h2>
         <p className="mb-8 text-sm text-white/75">
-          Two months of car-free commuting across Massachusetts.
+          Two months of walking, biking, and riding transit across Massachusetts.
         </p>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           {highlights.map(h => (
