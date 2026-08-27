@@ -57,5 +57,21 @@ export async function GET(req: Request) {
     if (only) break
   }
 
+  const agencyCount = Object.keys(results).filter((k) => k !== '_stopped').length
+  const errorCount = Object.values(results).filter(
+    (r) => r && typeof r === 'object' && 'error' in (r as Record<string, unknown>),
+  ).length
+  await supabase.rpc('record_cron_heartbeat', {
+    p_function_name: 'rta-gtfs-ingest',
+    p_started_at: new Date(started).toISOString(),
+    p_finished_at: new Date().toISOString(),
+    p_status: agencyCount === 0 ? 'no-op' : errorCount === 0 ? 'success' : 'partial',
+    p_sent: agencyCount - errorCount,
+    p_errors: errorCount,
+    p_message: results._stopped ? String(results._stopped) : null,
+  }).then(({ error: hbErr }) => {
+    if (hbErr) console.error('rta-gtfs-ingest heartbeat failed:', hbErr.message)
+  })
+
   return Response.json({ elapsed_ms: Date.now() - started, results })
 }
