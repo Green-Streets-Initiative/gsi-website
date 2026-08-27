@@ -188,8 +188,8 @@ export default async function WalkRideDayRulesPage() {
                   such persons, are not eligible to win.
                 </li>
                 <li>
-                  <strong>Eligibility is confirmed when a prize is claimed, not when an entry is
-                  earned.</strong> Entries accrue automatically from qualifying trips, so a person
+                  <strong>Eligibility is confirmed when a prize is claimed, not at the time of
+                  entry.</strong> Entries accrue automatically from qualifying trips, so a person
                   who does not meet the eligibility requirements may nonetheless be selected. Any
                   selected entrant who does not confirm that they are 18 or older and a Massachusetts
                   resident forfeits the prize, and the prize is awarded to a replacement entrant
@@ -197,7 +197,7 @@ export default async function WalkRideDayRulesPage() {
                 </li>
                 <li>
                   GSI does not require entrants to have a date of birth or state of residence on
-                  file in order to earn entries. An entrant whose records do not establish
+                  file in order to receive entries. An entrant whose records do not establish
                   eligibility remains in the drawing and is asked to confirm eligibility if selected.
                 </li>
                 <li>
@@ -220,7 +220,7 @@ export default async function WalkRideDayRulesPage() {
                   </li>
                 )}
                 <li>
-                  Only trips recorded within the Promotion Period earn entries. Trips recorded
+                  Only trips recorded within the Promotion Period count toward entries. Trips recorded
                   before or after it do not, regardless of when they are confirmed in the app.
                 </li>
               </Ul>
@@ -241,22 +241,22 @@ export default async function WalkRideDayRulesPage() {
                   </li>
                   <li>
                     The trip must be recorded and location-verified by the Shift app. Trips that
-                    are manually entered, or that the app cannot verify, do not earn entries.
+                    are manually entered, or that the app cannot verify, do not count as entries.
                   </li>
-                  <li>Trips taken by car, including as a passenger, do not earn entries.</li>
+                  <li>Trips taken by car, including as a passenger, do not count as entries.</li>
                 </Ul>
               </SubSection>
 
               <SubSection title="How many entries">
                 <Ul>
-                  <li>Each qualifying trip earns one (1) entry.</li>
+                  <li>Each qualifying trip counts as one (1) entry.</li>
                   <li>
                     A maximum of {maxEntries} {maxEntries === 1 ? 'entry' : 'entries'} may be
-                    earned per person during the Promotion Period. Additional qualifying trips are
+                    received per person during the Promotion Period. Additional qualifying trips are
                     welcome but do not increase the number of entries.
                   </li>
                   <li>
-                    Entries are per person, not per device or per account. Attempting to earn
+                    Entries are per person, not per device or per account. Attempting to gain
                     additional entries through multiple accounts is grounds for disqualification.
                   </li>
                 </Ul>
@@ -317,9 +317,9 @@ export default async function WalkRideDayRulesPage() {
             <Section id="winner-selection" title="6. Winner Selection and Notification">
               <Ul>
                 <li>
-                  Winners are selected at random from all entries earned during the Promotion
+                  Winners are selected at random from all entries received during the Promotion
                   Period. An entrant&rsquo;s chance of winning is proportional to the number of
-                  entries they earned, up to the maximum in Section 4.
+                  entries they received, up to the maximum in Section 4.
                 </li>
                 <li>
                   {drawLabel
@@ -393,7 +393,7 @@ export default async function WalkRideDayRulesPage() {
                 <li>
                   GSI reserves the right to modify, suspend, or cancel this drawing if it cannot be
                   conducted as planned, including because of a technical failure. If the drawing is
-                  cancelled, GSI may award prizes from among eligible entries earned up to the point
+                  cancelled, GSI may award prizes from among eligible entries received up to the point
                   of cancellation.
                 </li>
                 <li>
