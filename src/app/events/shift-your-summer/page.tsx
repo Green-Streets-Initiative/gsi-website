@@ -91,6 +91,8 @@ interface ClaimedWinner {
   prizeTier: PrizeTier
   prizeImageUrl: string | null
   winnerFirstName: string
+  productUrl: string | null
+  brandName: string | null
 }
 
 type PageState = 'upcoming' | 'active' | 'ended' | 'coming-soon'
@@ -269,7 +271,15 @@ export default async function ShiftYourSummerPage() {
   if (competition && state === 'ended') {
     const { data: winnerRows } = await supabase
       .from('competition_prize_units')
-      .select('winner_user_id, claimed_at, competition_prizes!inner(description, tier, image_url, display_order, competition_id), users:winner_user_id(display_name)')
+      .select(`
+        winner_user_id, claimed_at,
+        competition_prizes!inner(
+          description, tier, image_url, display_order, competition_id,
+          product_url, brand_name_override,
+          funder:funded_by_sponsorship_id(id, sponsors(id, name))
+        ),
+        users:winner_user_id(display_name)
+      `)
       .eq('competition_prizes.competition_id', competition.id)
       .not('winner_user_id', 'is', null)
       .not('claimed_at', 'is', null)
@@ -278,11 +288,17 @@ export default async function ShiftYourSummerPage() {
       const prize = row.competition_prizes
       const displayName: string | null = row.users?.display_name ?? null
       const firstName = displayName ? displayName.split(/\s+/)[0] : 'A Shift rider'
+      const funderRaw = prize.funder
+      const funder = Array.isArray(funderRaw) ? (funderRaw[0] ?? null) : (funderRaw ?? null)
+      const sponsorRaw = funder?.sponsors
+      const sponsor = Array.isArray(sponsorRaw) ? (sponsorRaw[0] ?? null) : (sponsorRaw ?? null)
       return {
         prizeDescription: prize.description,
         prizeTier: (prize.tier ?? 'standard') as PrizeTier,
         prizeImageUrl: prize.image_url ?? null,
         winnerFirstName: firstName,
+        productUrl: prize.product_url ?? null,
+        brandName: prize.brand_name_override ?? sponsor?.name ?? null,
       }
     })
 
@@ -329,9 +345,7 @@ export default async function ShiftYourSummerPage() {
             geoStandings={geoStandings}
             corpStandings={corpStandings}
             participantCount={participantCount}
-            prizes={prizes}
             sponsors={sponsors}
-            aggregateLabel={aggregateLabel}
             claimedWinners={claimedWinners}
           />
         )}
@@ -599,9 +613,7 @@ function EndedEvent({
   geoStandings,
   corpStandings,
   participantCount,
-  prizes,
   sponsors,
-  aggregateLabel,
   claimedWinners,
 }: {
   competition: Competition
@@ -609,12 +621,9 @@ function EndedEvent({
   geoStandings: GroupStanding[]
   corpStandings: GroupStanding[]
   participantCount: number
-  prizes: Prize[]
   sponsors: Sponsorship[]
-  aggregateLabel: string | null
   claimedWinners: ClaimedWinner[]
 }) {
-  const leader = standings[0]
   return (
     <>
       {/* Hero */}
@@ -637,11 +646,6 @@ function EndedEvent({
             <p className="mb-3 text-sm font-semibold text-white">
               {formatDateRange(competition.starts_at, competition.ends_at)}
             </p>
-            {aggregateLabel && (
-              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#BAF14D]/30 bg-[#BAF14D]/10 px-3.5 py-1.5">
-                <span className="text-sm font-bold text-[#BAF14D]">{aggregateLabel}</span>
-              </div>
-            )}
             <p className="mt-2 text-xs font-medium text-white/60">
               Green Streets Initiative &middot; moving Massachusetts since 2006
             </p>
@@ -661,36 +665,24 @@ function EndedEvent({
         </div>
       </section>
 
+      {/* Campaign impact */}
+      <CampaignHighlightsSection highlights={SYS_2026_HIGHLIGHTS} />
+
+      {/* Prize winners */}
+      {claimedWinners.length > 0 && (
+        <WinnersSection winners={claimedWinners} eventCampaign={slugify(competition.name)} />
+      )}
+
       {/* Final standings */}
-      <section className="bg-[#191A2E] px-8 pb-16 pt-4">
+      <section className="bg-[#191A2E] px-8 pb-16 pt-4 border-t border-white/[0.08]">
         <div className="mx-auto max-w-[900px]">
           <div className="mb-4">
             <h2 className="font-display text-2xl font-bold tracking-tight text-white">
               Final standings
             </h2>
             <p className="mt-1 text-sm text-white/75">
-              Challenge complete. Shift Your September is up next.
+              {participantCount.toLocaleString()} people participated. Shift Your September is up next.
             </p>
-          </div>
-
-          <div className="mb-4 flex flex-wrap gap-3">
-            <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-4 py-2.5">
-              <span className="font-display text-lg font-extrabold text-white">
-                {participantCount.toLocaleString()}
-              </span>
-              <span className="ml-1.5 text-sm text-white/75">people participated</span>
-            </div>
-            {leader && (
-              <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-4 py-2.5">
-                <span className="text-sm text-white/75">Winner: </span>
-                <span className="font-display text-sm font-bold text-white">
-                  {leader.display_name || 'Shift user'}
-                </span>
-                <span className="ml-1.5 text-sm text-[#EDB93C]">
-                  {Math.round(leader.pct_non_car)}% Shift Rate
-                </span>
-              </div>
-            )}
           </div>
 
           <LeaderboardTabs
@@ -698,12 +690,11 @@ function EndedEvent({
             corpStandings={corpStandings}
             individualStandings={standings}
             participantCount={participantCount}
+            initialRowLimit={5}
           />
         </div>
       </section>
 
-      {claimedWinners.length > 0 && <WinnersSection winners={claimedWinners} />}
-      {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} aggregateLabel={aggregateLabel} />}
       <SponsorSection sponsors={sponsors} eventCampaign={slugify(competition.name)} />
       <RulesLink />
       <PartnerCrossLink />
@@ -723,7 +714,7 @@ function wonArticle(desc: string): string {
   return /^[aeiou$]/i.test(desc) ? 'won an' : 'won a'
 }
 
-function WinnersSection({ winners }: { winners: ClaimedWinner[] }) {
+function WinnersSection({ winners, eventCampaign }: { winners: ClaimedWinner[]; eventCampaign: string }) {
   const grand = winners.filter(w => w.prizeTier === 'grand')
   const featured = winners.filter(w => w.prizeTier === 'featured')
   const standard = winners.filter(w => w.prizeTier === 'standard')
@@ -742,65 +733,100 @@ function WinnersSection({ winners }: { winners: ClaimedWinner[] }) {
         {/* Grand prizes — hero treatment */}
         {grand.length > 0 && (
           <div className="mb-8 space-y-4">
-            {grand.map((w, i) => (
-              <div key={`grand-${i}`} className="overflow-hidden rounded-[16px] border border-[#BAF14D]/20 bg-[#BAF14D]/[0.04]">
-                <div className="flex items-center gap-5 p-5 sm:p-6">
-                  {w.prizeImageUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={w.prizeImageUrl}
-                      alt={w.prizeDescription}
-                      className="hidden h-20 w-20 shrink-0 rounded-[10px] bg-[#1A2240] object-cover sm:block"
-                    />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <span className="mb-2 inline-block rounded-md bg-[#BAF14D] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#191A2E]">
-                      Grand prize
-                    </span>
-                    <p className="text-lg font-bold leading-tight text-white">
-                      {w.winnerFirstName} {wonArticle(w.prizeDescription)} {w.prizeDescription}
-                    </p>
+            {grand.map((w, i) => {
+              const taggedUrl = withUtm(w.productUrl, { medium: 'event_page', campaign: eventCampaign, content: 'winner_grand_card' })
+              const card = (
+                <div className={`overflow-hidden rounded-[16px] border border-[#BAF14D]/20 bg-[#BAF14D]/[0.04] ${taggedUrl ? 'transition-colors hover:bg-[#BAF14D]/[0.07]' : ''}`}>
+                  <div className="flex items-center gap-5 p-5 sm:p-6">
+                    {w.prizeImageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={w.prizeImageUrl}
+                        alt={w.prizeDescription}
+                        className="hidden h-20 w-20 shrink-0 rounded-[10px] bg-[#1A2240] object-cover sm:block"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <span className="mb-2 inline-block rounded-md bg-[#BAF14D] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#191A2E]">
+                        Grand prize
+                      </span>
+                      <p className="text-lg font-bold leading-tight text-white">
+                        {w.winnerFirstName} {wonArticle(w.prizeDescription)} {w.prizeDescription}
+                      </p>
+                      {w.brandName && (
+                        <p className="mt-1 text-sm text-white/75">
+                          From <span className="font-semibold text-white">{w.brandName}</span>
+                        </p>
+                      )}
+                      {taggedUrl && (
+                        <p className="mt-1.5 text-sm font-semibold text-[#2966E5]">View product details &rarr;</p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+              return taggedUrl ? (
+                <a key={`grand-${i}`} href={taggedUrl} target="_blank" rel="noopener noreferrer" className="block">{card}</a>
+              ) : (
+                <div key={`grand-${i}`}>{card}</div>
+              )
+            })}
           </div>
         )}
 
         {/* Featured prizes — medium cards */}
         {featured.length > 0 && (
           <div className="mb-6 grid gap-3 sm:grid-cols-2">
-            {featured.map((w, i) => (
-              <div key={`featured-${i}`} className="flex items-center gap-3.5 rounded-[12px] border border-white/[0.08] bg-white/[0.04] p-4">
-                {w.prizeImageUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={w.prizeImageUrl}
-                    alt={w.prizeDescription}
-                    className="hidden h-12 w-12 shrink-0 rounded-lg bg-[#1A2240] object-cover sm:block"
-                  />
-                )}
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold leading-snug text-white">
-                    {w.winnerFirstName} {wonArticle(w.prizeDescription)} {w.prizeDescription}
-                  </p>
+            {featured.map((w, i) => {
+              const taggedUrl = withUtm(w.productUrl, { medium: 'event_page', campaign: eventCampaign, content: 'winner_featured_card' })
+              const card = (
+                <div className={`flex items-center gap-3.5 rounded-[12px] border border-white/[0.08] bg-white/[0.04] p-4 ${taggedUrl ? 'transition-colors hover:bg-white/[0.06]' : ''}`}>
+                  {w.prizeImageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={w.prizeImageUrl}
+                      alt={w.prizeDescription}
+                      className="hidden h-12 w-12 shrink-0 rounded-lg bg-[#1A2240] object-cover sm:block"
+                    />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold leading-snug text-white">
+                      {w.winnerFirstName} {wonArticle(w.prizeDescription)} {w.prizeDescription}
+                    </p>
+                    {taggedUrl && (
+                      <p className="mt-0.5 text-xs font-semibold text-[#2966E5]">View product &rarr;</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+              return taggedUrl ? (
+                <a key={`featured-${i}`} href={taggedUrl} target="_blank" rel="noopener noreferrer" className="block">{card}</a>
+              ) : (
+                <div key={`featured-${i}`}>{card}</div>
+              )
+            })}
           </div>
         )}
 
         {/* Standard prizes — compact rows */}
         {standard.length > 0 && (
           <div className="space-y-2">
-            {standard.map((w, i) => (
-              <div key={`standard-${i}`} className="flex items-center gap-3 rounded-[10px] border border-white/[0.06] bg-white/[0.02] px-4 py-2.5">
-                <p className="text-sm text-white">
-                  <span className="font-semibold">{w.winnerFirstName}</span>
-                  {' '}{wonArticle(w.prizeDescription)} {w.prizeDescription}
-                </p>
-              </div>
-            ))}
+            {standard.map((w, i) => {
+              const taggedUrl = withUtm(w.productUrl, { medium: 'event_page', campaign: eventCampaign, content: 'winner_standard_row' })
+              const row = (
+                <div className={`flex items-center gap-3 rounded-[10px] border border-white/[0.06] bg-white/[0.02] px-4 py-2.5 ${taggedUrl ? 'transition-colors hover:bg-white/[0.04]' : ''}`}>
+                  <p className="text-sm text-white">
+                    <span className="font-semibold">{w.winnerFirstName}</span>
+                    {' '}{wonArticle(w.prizeDescription)} {w.prizeDescription}
+                  </p>
+                </div>
+              )
+              return taggedUrl ? (
+                <a key={`standard-${i}`} href={taggedUrl} target="_blank" rel="noopener noreferrer" className="block">{row}</a>
+              ) : (
+                <div key={`standard-${i}`}>{row}</div>
+              )
+            })}
           </div>
         )}
 
@@ -1039,6 +1065,43 @@ function computeAggregateLabel(prizes: Prize[]): string | null {
   }, 0)
   const roundedValue = Math.floor(totalValue / 100) * 100
   return totalValue > 0 ? `${formatDollars(roundedValue)}+ in prizes` : null
+}
+
+// ─── Finalized campaign impact stats (SYS 2026) ────────────────────
+// Source: docs/reports/campaigns/sys-2026/postmortem.md (pulled 2026-08-25)
+const SYS_2026_HIGHLIGHTS = [
+  { value: '11,747', label: 'car-free trips', detail: 'by 157 active participants' },
+  { value: '36,706', label: 'car-free miles', detail: 'walked, biked, and rode transit' },
+  { value: '13.9', label: 'metric tons CO₂ avoided', detail: 'equal to 634 trees’ annual absorption' },
+  { value: '$25,694', label: 'saved on transportation', detail: 'money kept in participants’ pockets' },
+  { value: '1.13M', label: 'calories burned', detail: '2,299 hours of active travel' },
+  { value: '38', label: 'prizes awarded', detail: 'across 17 local brands' },
+]
+
+function CampaignHighlightsSection({ highlights }: { highlights: typeof SYS_2026_HIGHLIGHTS }) {
+  return (
+    <section className="bg-[#191A2E] px-8 pt-10 pb-14 border-t border-white/[0.08]">
+      <div className="mx-auto max-w-[900px]">
+        <h2 className="mb-2 font-display text-2xl font-bold tracking-tight text-white">
+          Summer 2026 impact
+        </h2>
+        <p className="mb-8 text-sm text-white/75">
+          Two months of car-free commuting across Massachusetts.
+        </p>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          {highlights.map(h => (
+            <div key={h.label} className="rounded-[14px] border border-white/[0.08] bg-white/[0.04] px-4 py-4">
+              <div className="font-display text-2xl font-extrabold tracking-tight text-[#BAF14D]">
+                {h.value}
+              </div>
+              <div className="mt-1 text-sm font-semibold text-white">{h.label}</div>
+              {h.detail && <div className="mt-0.5 text-xs text-white/75">{h.detail}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
 }
 
 // ─── Enriched grand-prize content for the Segway MUXI ───────────────

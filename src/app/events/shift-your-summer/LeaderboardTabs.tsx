@@ -26,6 +26,7 @@ interface Props {
   corpStandings: GroupStanding[]
   individualStandings: IndividualStanding[]
   participantCount: number
+  initialRowLimit?: number
 }
 
 function shiftRateColor(pct: number) {
@@ -39,10 +40,12 @@ function GroupStandingsTable({
   standings,
   showLogo = false,
   sortBy,
+  rowLimit,
 }: {
   standings: GroupStanding[]
   showLogo?: boolean
   sortBy: SortBy
+  rowLimit?: number
 }) {
   if (standings.length === 0) {
     return (
@@ -56,6 +59,7 @@ function GroupStandingsTable({
       ? b.activeTrips - a.activeTrips || b.shiftRate - a.shiftRate
       : b.shiftRate - a.shiftRate || b.activeTrips - a.activeTrips,
   )
+  const display = rowLimit ? sorted.slice(0, rowLimit) : sorted
   const rateActive = sortBy === 'shift_rate'
   const tripsActive = sortBy === 'active_trips'
   return (
@@ -70,7 +74,7 @@ function GroupStandingsTable({
           </tr>
         </thead>
         <tbody>
-          {sorted.map((s, i) => (
+          {display.map((s, i) => (
             <tr
               key={s.groupId}
               className={`border-b border-white/[0.05] last:border-b-0 ${i % 2 === 1 ? 'bg-white/[0.02]' : ''}`}
@@ -124,16 +128,19 @@ function IndividualStandingsTable({
   standings,
   participantCount,
   sortBy,
+  rowLimit,
 }: {
   standings: IndividualStanding[]
   participantCount: number
   sortBy: SortBy
+  rowLimit?: number
 }) {
   const sorted = [...standings].sort((a, b) =>
     sortBy === 'active_trips'
       ? b.non_car_trips - a.non_car_trips || b.pct_non_car - a.pct_non_car
       : b.pct_non_car - a.pct_non_car || b.non_car_trips - a.non_car_trips,
   )
+  const display = rowLimit ? sorted.slice(0, rowLimit) : sorted
   const rateActive = sortBy === 'shift_rate'
   const tripsActive = sortBy === 'active_trips'
   return (
@@ -148,7 +155,7 @@ function IndividualStandingsTable({
           </tr>
         </thead>
         <tbody>
-          {sorted.map((entry, i) => {
+          {display.map((entry, i) => {
             const rank = i + 1
             return (
               <tr
@@ -170,7 +177,7 @@ function IndividualStandingsTable({
               </tr>
             )
           })}
-          {standings.length < 10 &&
+          {!rowLimit && standings.length < 10 &&
             Array.from({ length: Math.max(0, 10 - standings.length) }).map((_, i) => (
               <tr
                 key={`filler-${i}`}
@@ -184,7 +191,7 @@ function IndividualStandingsTable({
             ))}
         </tbody>
       </table>
-      {standings.length < 10 && (
+      {!rowLimit && standings.length < 10 && (
         <p className="border-t border-white/[0.06] px-6 py-4 text-center text-sm text-white/60">
           The board is just getting started. Be one of the first.
         </p>
@@ -196,10 +203,12 @@ function IndividualStandingsTable({
 type Tab = 'towns' | 'corporate' | 'individual'
 type SortBy = 'shift_rate' | 'active_trips'
 
-export default function LeaderboardTabs({ geoStandings, corpStandings, individualStandings, participantCount }: Props) {
+export default function LeaderboardTabs({ geoStandings, corpStandings, individualStandings, participantCount, initialRowLimit }: Props) {
   const showCorporate = corpStandings.length > 0
   const [activeTab, setActiveTab] = useState<Tab>('towns')
   const [sortBy, setSortBy] = useState<SortBy>('shift_rate')
+  const [expanded, setExpanded] = useState(false)
+  const rowLimit = (!initialRowLimit || expanded) ? undefined : initialRowLimit
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'towns', label: 'Towns' },
@@ -250,12 +259,28 @@ export default function LeaderboardTabs({ geoStandings, corpStandings, individua
 
       {/* Content */}
       <div className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#242538]">
-        {activeTab === 'towns' && <GroupStandingsTable standings={geoStandings} sortBy={sortBy} />}
-        {activeTab === 'corporate' && <GroupStandingsTable standings={corpStandings} showLogo sortBy={sortBy} />}
+        {activeTab === 'towns' && <GroupStandingsTable standings={geoStandings} sortBy={sortBy} rowLimit={rowLimit} />}
+        {activeTab === 'corporate' && <GroupStandingsTable standings={corpStandings} showLogo sortBy={sortBy} rowLimit={rowLimit} />}
         {activeTab === 'individual' && (
-          <IndividualStandingsTable standings={individualStandings} participantCount={participantCount} sortBy={sortBy} />
+          <IndividualStandingsTable standings={individualStandings} participantCount={participantCount} sortBy={sortBy} rowLimit={rowLimit} />
         )}
       </div>
+
+      {initialRowLimit && !expanded && (() => {
+        const totalForTab =
+          activeTab === 'towns' ? geoStandings.length :
+          activeTab === 'corporate' ? corpStandings.length :
+          individualStandings.length
+        return totalForTab > initialRowLimit ? (
+          <button
+            onClick={() => setExpanded(true)}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] py-2.5 text-sm font-semibold text-[#BAF14D] transition-colors hover:bg-white/[0.06]"
+          >
+            Show all {totalForTab} entries
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+          </button>
+        ) : null
+      })()}
     </div>
   )
 }
