@@ -323,9 +323,10 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
         <div className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">
           {(() => {
             const logo = bikeshareLogoUrl(d.system_id ?? 'bluebikes')
-            return logo ? <img src={logo} alt="" className="h-4 w-auto" /> : null
+            return logo
+              ? <><img src={logo} alt="" className="h-4 w-auto" />{tr('detail.dock_label')}</>
+              : tr('detail.bike_share_dock', { system: d.system_name ?? 'Bluebikes' })
           })()}
-          {tr('detail.bike_share_dock', { system: d.system_name ?? 'Bluebikes' })}
         </div>
         <div className="text-[0.95rem] font-bold text-white">{d.name}</div>
         <div className="text-[0.78rem] text-white/75">

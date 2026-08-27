@@ -425,9 +425,10 @@ export function DockList({ docks, onSelect, selectedId }: {
                   <div className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">
                     {(() => {
                       const logo = bikeshareLogoUrl(d.system_id ?? 'bluebikes')
-                      return logo ? <img src={logo} alt="" className="h-3.5 w-auto" /> : null
+                      return logo
+                        ? <><img src={logo} alt="" className="h-3.5 w-auto" />{tr('lists.dock_label')}</>
+                        : tr('lists.bike_share_dock', { system: d.system_name ?? 'Bluebikes' })
                     })()}
-                    {tr('lists.bike_share_dock', { system: d.system_name ?? 'Bluebikes' })}
                   </div>
                   <span className="block truncate text-[0.9rem] font-semibold text-white">{d.name}</span>
                 </div>
