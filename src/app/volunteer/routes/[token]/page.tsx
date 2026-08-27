@@ -118,6 +118,11 @@ async function getAssignmentData(token: string) {
     description: typeof f === 'string' ? f : f.description ?? 'Area of interest',
   }))
 
+  // GeoJSON-order [lng, lat] for the in-page route map
+  const routeCoordinates = waypoints
+    .filter((p) => typeof p?.lat === 'number' && typeof p?.lng === 'number')
+    .map((p) => [p.lng, p.lat] as [number, number])
+
   return {
     assignmentId: assignment.id,
     token: assignment.token,
@@ -130,6 +135,7 @@ async function getAssignmentData(token: string) {
     schoolCity: school?.city ?? '',
     walkUrl,
     bikeUrl,
+    routeCoordinates,
     pointsOfInterest,
     siblingCorridors: siblingAssignments.map((a: any) => ({
       assignmentId: a.id,
