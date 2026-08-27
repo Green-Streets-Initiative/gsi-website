@@ -17,14 +17,17 @@ export interface DraftPhoto {
 }
 
 interface DraftState {
-  v: 1
+  v: number
   savedAt: string
   step: number
   form: FormData
   photos: DraftPhoto[]
 }
 
-const DRAFT_VERSION = 1
+// v2 adds the walk-audit borrowings (problem pins, measured seconds, new
+// questions). v1 drafts still load — the DEFAULT_FORM merge fills new fields.
+const DRAFT_VERSION = 2
+const ACCEPTED_VERSIONS = [1, 2]
 
 function draftKey(token: string) {
   return `shift-route-draft:${token}`
@@ -35,7 +38,7 @@ export function loadDraft(token: string): DraftState | null {
     const raw = localStorage.getItem(draftKey(token))
     if (!raw) return null
     const parsed = JSON.parse(raw) as DraftState
-    if (parsed.v !== DRAFT_VERSION || !parsed.form) return null
+    if (!ACCEPTED_VERSIONS.includes(parsed.v) || !parsed.form) return null
     // Merge over defaults so a form field added later doesn't come back undefined.
     return {
       ...parsed,

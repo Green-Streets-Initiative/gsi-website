@@ -1,19 +1,39 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
+import type { ProblemPin } from './formModel'
 
 interface Props {
   /** GeoJSON-order [lng, lat] coordinates for the route line */
   routeCoordinates: [number, number][]
+  /** Flagged problem spots to draw (amber pins). */
+  pins?: ProblemPin[]
+  /** When set, tapping the map reports a location (pin-placing mode). */
+  onMapClick?: (lat: number, lng: number) => void
+  /** Optional center override, e.g. the walker's current position. */
+  center?: { lat: number; lng: number } | null
+  heightClass?: string
 }
 
 // The volunteer's map of the route they're walking. Same presentation
 // grammar as RoamMap: casing + crisp brand-blue line, A/B endpoint pins.
-export default function VolunteerRouteMap({ routeCoordinates }: Props) {
+// Optionally interactive for flagging problem spots.
+export default function VolunteerRouteMap({
+  routeCoordinates,
+  pins,
+  onMapClick,
+  center,
+  heightClass = 'h-56',
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
+  const maplibreRef = useRef<typeof import('maplibre-gl') | null>(null)
+  const pinMarkersRef = useRef<maplibregl.Marker[]>([])
+  const [mapReady, setMapReady] = useState(false)
+  const onMapClickRef = useRef(onMapClick)
+  onMapClickRef.current = onMapClick
 
   useEffect(() => {
     if (!containerRef.current || routeCoordinates.length < 2) return
@@ -22,6 +42,7 @@ export default function VolunteerRouteMap({ routeCoordinates }: Props) {
     async function init() {
       const maplibregl = await loadMaplibre()
       if (cancelled || !containerRef.current) return
+      maplibreRef.current = maplibregl
 
       let minLng = routeCoordinates[0][0], maxLng = routeCoordinates[0][0]
       let minLat = routeCoordinates[0][1], maxLat = routeCoordinates[0][1]
@@ -38,7 +59,7 @@ export default function VolunteerRouteMap({ routeCoordinates }: Props) {
         bounds: [[minLng, minLat], [maxLng, maxLat]],
         fitBoundsOptions: { padding: 40 },
         attributionControl: false,
-        cooperativeGestures: true,
+        cooperativeGestures: !onMapClick,
       })
       map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
@@ -70,6 +91,10 @@ export default function VolunteerRouteMap({ routeCoordinates }: Props) {
         })
       })
 
+      map.on('click', (e) => {
+        onMapClickRef.current?.(e.lngLat.lat, e.lngLat.lng)
+      })
+
       const endpoints: { label: string; popup: string; bg: string; coord: [number, number] }[] = [
         { label: 'A', popup: 'Start', bg: '#BAF14D', coord: routeCoordinates[0] },
         { label: 'B', popup: 'School', bg: '#2966E5', coord: routeCoordinates[routeCoordinates.length - 1] },
@@ -88,6 +113,11 @@ export default function VolunteerRouteMap({ routeCoordinates }: Props) {
           )
           .addTo(map)
       }
+
+      if (center) {
+        map.jumpTo({ center: [center.lng, center.lat], zoom: 16 })
+      }
+      setMapReady(true)
     }
 
     init()
@@ -100,6 +130,31 @@ export default function VolunteerRouteMap({ routeCoordinates }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Problem-pin markers — rebuilt whenever the pin list changes.
+  useEffect(() => {
+    const map = mapRef.current
+    const maplibregl = maplibreRef.current
+    if (!map || !maplibregl) return
+    for (const m of pinMarkersRef.current) m.remove()
+    pinMarkersRef.current = (pins ?? []).map((pin, i) => {
+      const el = document.createElement('div')
+      el.style.cssText =
+        'width:24px;height:24px;border-radius:50%;background:#D97706;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font:700 11px system-ui;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.5)'
+      el.textContent = String(i + 1)
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([pin.lng, pin.lat])
+      if (pin.note) {
+        marker.setPopup(
+          new maplibregl.Popup({ offset: 16, closeButton: false }).setHTML(
+            `<div style="font-size:12px;color:#191A2E;padding:2px 4px;max-width:180px">${pin.note.replace(/</g, '&lt;')}</div>`,
+          ),
+        )
+      }
+      marker.addTo(map)
+      return marker
+    })
+  }, [pins, mapReady])
+
   if (routeCoordinates.length < 2) return null
-  return <div ref={containerRef} className="h-56 w-full rounded-xl overflow-hidden" />
+  return <div ref={containerRef} className={`${heightClass} w-full rounded-xl overflow-hidden`} />
 }

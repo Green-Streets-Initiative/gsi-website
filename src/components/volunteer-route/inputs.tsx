@@ -71,6 +71,32 @@ export function ScoreSlider({ label, value, onChange }: {
   )
 }
 
+export function NumberField({ label, value, onChange, placeholder, unit }: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  unit?: string
+}) {
+  return (
+    <div className="mb-4">
+      <p className="text-sm font-medium text-[#191A2E] mb-1">{label}</p>
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-28 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#2966E5] focus:outline-none"
+        />
+        {unit && <span className="text-xs text-[#6B7280]">{unit}</span>}
+      </div>
+    </div>
+  )
+}
+
 export function FreeTextField({ label, value, onChange, placeholder, rows = 2 }: {
   label: string
   value: string

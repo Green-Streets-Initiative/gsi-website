@@ -2,15 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { CheckCircle, Camera, ArrowLeft, ArrowRight, MapTrifold, PencilSimple } from '@phosphor-icons/react'
+import { CheckCircle, Camera, ArrowLeft, ArrowRight, MapPin, MapTrifold, PencilSimple } from '@phosphor-icons/react'
 import {
   DEFAULT_FORM, SECTIONS, unansweredIn, answerableCount,
   type FormData, type RadioValue, type BikeInfra, type BikeSuitability, type BikeRating,
   type TrafficVolume, type FeltSafe, type Lighting, type WalkAge, type BikeAge, type Recommendation,
 } from '@/components/volunteer-route/formModel'
-import { RadioGroup, ConditionalNote, ScoreSlider, FreeTextField } from '@/components/volunteer-route/inputs'
+import { RadioGroup, ConditionalNote, ScoreSlider, FreeTextField, NumberField } from '@/components/volunteer-route/inputs'
 import PhotoField from '@/components/volunteer-route/PhotoField'
 import VolunteerRouteMap from '@/components/volunteer-route/VolunteerRouteMap'
+import ProblemPinSheet from '@/components/volunteer-route/ProblemPinSheet'
 import { loadDraft, clearDraft, useDraftSaver, type DraftPhoto } from '@/components/volunteer-route/useDraft'
 
 interface Props {
@@ -54,6 +55,7 @@ export default function VolunteerAssessmentClient(props: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [pinSheetOpen, setPinSheetOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const { save, savedAt } = useDraftSaver(props.token)
@@ -188,6 +190,8 @@ export default function VolunteerAssessmentClient(props: Props) {
             <RadioGroup label="On-street parking buffering pedestrians?" value={form.sidewalk_parking} options={YNN} onChange={(v) => set('sidewalk_parking', v as RadioValue)} />
             <RadioGroup label="Sidewalks in good condition?" value={form.sidewalk_condition} options={YN} onChange={(v) => set('sidewalk_condition', v as RadioValue)} />
             <ConditionalNote show={form.sidewalk_condition === 'no'} value={form.sidewalk_condition_note} onChange={(v) => set('sidewalk_condition_note', v)} />
+            <RadioGroup label="Curb ramps where the sidewalk meets a crossing (for strollers, wheelchairs, carts)?" value={form.curb_ramps} options={YNS} onChange={(v) => set('curb_ramps', v as RadioValue)} />
+            <RadioGroup label="Bumpy yellow warning strips at curb ramps (so someone with low vision knows the street is starting)?" value={form.tactile_strips} options={YNS} onChange={(v) => set('tactile_strips', v as RadioValue)} />
           </>
         )
       case 'crosswalks':
@@ -196,6 +200,16 @@ export default function VolunteerAssessmentClient(props: Props) {
             <RadioGroup label="Clearly marked crosswalks at major intersections?" value={form.crosswalk_marked} options={YNS} onChange={(v) => set('crosswalk_marked', v as RadioValue)} />
             <RadioGroup label="Crossing signals present where needed?" value={form.crosswalk_signals} options={YNS} onChange={(v) => set('crosswalk_signals', v as RadioValue)} />
             <RadioGroup label="Crossing signals give enough time?" value={form.crosswalk_time} options={[...YN, { value: 'na', label: 'No signals' }]} onChange={(v) => set('crosswalk_time', v as RadioValue)} />
+            {(form.crosswalk_signals === 'yes' || form.crosswalk_signals === 'some') && (
+              <div className="mb-2 rounded-xl bg-white p-3">
+                <p className="mb-2 text-xs text-[#6B7280]">
+                  If you can, time one signal — these two numbers are what traffic engineers act on.
+                </p>
+                <NumberField label="About how many seconds does the walk signal give to cross?" value={form.signal_crossing_seconds} onChange={(v) => set('signal_crossing_seconds', v)} unit="seconds" />
+                <NumberField label="About how many seconds did you wait for the walk signal?" value={form.signal_wait_seconds} onChange={(v) => set('signal_wait_seconds', v)} unit="seconds" />
+              </div>
+            )}
+            <RadioGroup label="Do people have to walk too far out of their way to find a safe place to cross?" value={form.crossing_too_far} options={YN} onChange={(v) => set('crossing_too_far', v as RadioValue)} />
             <RadioGroup label="Can you see oncoming traffic clearly before crossing?" value={form.crosswalk_visibility} options={YN} onChange={(v) => set('crosswalk_visibility', v as RadioValue)} />
             <ConditionalNote show={form.crosswalk_visibility === 'no'} value={form.crosswalk_visibility_note} onChange={(v) => set('crosswalk_visibility_note', v)} placeholder="Describe obstruction..." />
             <RadioGroup label="Are crossing guards present along this route?" value={form.crossing_guards_present} options={YN} onChange={(v) => set('crossing_guards_present', v as RadioValue)} />
@@ -213,6 +227,24 @@ export default function VolunteerAssessmentClient(props: Props) {
               { value: 'moderate', label: 'Moderate' },
               { value: 'high', label: 'High — heavy traffic' },
             ]} onChange={(v) => set('traffic_volume', v as TrafficVolume)} />
+            <div className="mb-4">
+              <p className="text-sm font-medium text-[#191A2E] mb-2">Risky driver behaviors you saw (check all that apply):</p>
+              {['Rolling through stop signs', 'Not yielding when turning', 'Stopping in the crosswalk', 'Backing out of driveways without looking', 'Looking at phones', 'Sudden or unexpected maneuvers', 'None observed'].map((h) => (
+                <label key={h} className="flex items-center gap-2 py-1">
+                  <input
+                    type="checkbox"
+                    checked={form.driver_behaviors.includes(h)}
+                    onChange={(e) => {
+                      set('driver_behaviors', e.target.checked
+                        ? [...form.driver_behaviors, h]
+                        : form.driver_behaviors.filter((x) => x !== h))
+                    }}
+                    className="rounded border-gray-300 text-[#2966E5]"
+                  />
+                  <span className="text-sm text-[#374151]">{h}</span>
+                </label>
+              ))}
+            </div>
           </>
         )
       case 'biking':
@@ -263,6 +295,17 @@ export default function VolunteerAssessmentClient(props: Props) {
               { value: 'concerns', label: 'Yes, with concerns' },
               { value: 'no', label: 'No' },
             ]} onChange={(v) => set('felt_safe', v as FeltSafe)} />
+            <RadioGroup label="Any spots with crime or harassment concerns (separate from traffic)?" value={form.safe_from_crime} options={[
+              { value: 'yes', label: 'No concerns' },
+              { value: 'concerns', label: 'Some concerns' },
+              { value: 'no', label: 'Serious concerns' },
+            ]} onChange={(v) => set('safe_from_crime', v as FeltSafe)} />
+            <RadioGroup label="Would this route feel safe at dusk? (Winter dismissals happen in low light.)" value={form.safe_at_dusk} options={YN} onChange={(v) => set('safe_at_dusk', v as RadioValue)} />
+            <RadioGroup label="Does the route feel welcoming for families of all ages, abilities, and backgrounds?" value={form.welcoming_all} options={[
+              { value: 'yes', label: 'Yes' },
+              { value: 'concerns', label: 'Mostly' },
+              { value: 'no', label: 'No' },
+            ]} onChange={(v) => set('welcoming_all', v as FeltSafe)} />
             <RadioGroup label="Adequate street lighting?" value={form.lighting} options={[
               { value: 'yes', label: 'Yes' },
               { value: 'partial', label: 'Partially' },
@@ -293,7 +336,7 @@ export default function VolunteerAssessmentClient(props: Props) {
               { value: '6_independent', label: 'Grade 6+ independently' },
             ]} onChange={(v) => set('bike_age', v as BikeAge)} />
             <FreeTextField label="Seasonal notes" value={form.seasonal_notes} onChange={(v) => set('seasonal_notes', v)}
-              placeholder="e.g., flooding risk, poor lighting in winter, icy sections..." />
+              placeholder="e.g., flooding risk, icy stretches, spots where plowed snow blocks the sidewalk, who shovels here (city vs. homeowners), dark corners in winter..." />
             <FreeTextField label="Specific hazards not covered above" value={form.specific_hazards} onChange={(v) => set('specific_hazards', v)} />
             <RadioGroup label="Would you recommend this route to families?" value={form.recommendation} options={[
               { value: 'yes', label: 'Yes — as-is' },
@@ -332,7 +375,7 @@ export default function VolunteerAssessmentClient(props: Props) {
 
           {props.routeCoordinates.length >= 2 && (
             <div className="rounded-xl bg-white p-2 shadow-sm mb-4">
-              <VolunteerRouteMap routeCoordinates={props.routeCoordinates} />
+              <VolunteerRouteMap routeCoordinates={props.routeCoordinates} pins={form.problem_pins} />
               <p className="mt-1.5 px-2 pb-1 text-[11px] text-[#6B7280] inline-flex items-center gap-1">
                 <MapTrifold size={13} weight="regular" /> The route you&apos;re assessing — A is the start, B is the school.
               </p>
@@ -416,7 +459,7 @@ export default function VolunteerAssessmentClient(props: Props) {
               </button>
             </div>
           ))}
-          <div className="flex items-center justify-between py-2.5">
+          <div className="flex items-center justify-between border-b border-gray-100 py-2.5">
             <div>
               <p className="text-sm font-medium text-[#191A2E]">Photos</p>
               <p className="text-xs text-[#6B7280]">
@@ -427,6 +470,23 @@ export default function VolunteerAssessmentClient(props: Props) {
             <button
               type="button"
               onClick={() => goTo(PHOTOS_STEP)}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-[#2966E5]"
+            >
+              <PencilSimple size={13} weight="regular" /> Edit
+            </button>
+          </div>
+          <div className="flex items-center justify-between py-2.5">
+            <div>
+              <p className="text-sm font-medium text-[#191A2E]">Flagged spots</p>
+              <p className="text-xs text-[#6B7280]">
+                {form.problem_pins.length === 0
+                  ? 'None flagged — that’s fine if nothing stood out'
+                  : `${form.problem_pins.length} pinned on the map`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPinSheetOpen(true)}
               className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-[#2966E5]"
             >
               <PencilSimple size={13} weight="regular" /> Edit
@@ -513,6 +573,27 @@ export default function VolunteerAssessmentClient(props: Props) {
 
         {hydrated ? renderStep() : null}
       </div>
+
+      {/* Flag-a-spot floating button */}
+      {hydrated && (
+        <button
+          type="button"
+          onClick={() => setPinSheetOpen(true)}
+          className="fixed bottom-20 right-4 z-20 inline-flex items-center gap-1.5 rounded-full bg-[#D97706] px-4 py-2.5 text-sm font-bold text-white shadow-lg"
+        >
+          <MapPin size={16} weight="fill" />
+          Flag spot{form.problem_pins.length > 0 ? ` (${form.problem_pins.length})` : ''}
+        </button>
+      )}
+
+      {pinSheetOpen && (
+        <ProblemPinSheet
+          routeCoordinates={props.routeCoordinates}
+          pins={form.problem_pins}
+          onChange={(pins) => set('problem_pins', pins)}
+          onClose={() => setPinSheetOpen(false)}
+        />
+      )}
 
       {/* Sticky footer nav */}
       <div className="fixed inset-x-0 bottom-0 border-t border-gray-200 bg-white px-4 py-3">
