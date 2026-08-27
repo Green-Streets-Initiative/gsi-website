@@ -66,7 +66,7 @@ function setCachedTopology(cachePrefix: string, lat: number, lng: number, data: 
 }
 
 interface TopologyOptions {
-  /** MBTA route_type filter csv: 3 = bus, 0,1 = subway/light rail, 2 = commuter rail */
+  /** MBTA route_type filter csv: 3 = bus, 0,1 = subway/light rail, 2 = commuter rail, 4 = ferry */
   routeTypes: string
   /** filter[radius] in DEGREES (MBTA's unit): 0.01 ≈ 0.7 mi, 0.02 ≈ 1.4 mi */
   radiusDeg: number

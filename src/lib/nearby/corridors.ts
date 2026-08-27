@@ -82,8 +82,8 @@ function routeKind(routeId: string): TransitCorridor['kind'] {
  *  under the anonymous MBTA rate limit (each stop costs one /routes call). */
 export const SNAPSHOT_BUS_OPTS = { cachePrefix: 'mbta-bus-nearby-v1', maxStops: 5 }
 /** v2: rail caps by STATION (perStation), so the cache mustn't mix with v1 */
-export const SNAPSHOT_RAIL_PREFIX = 'mbta-rail012-nearby-v2'
-export const SNAPSHOT_RAIL_TYPES = '0,1,2'
+export const SNAPSHOT_RAIL_PREFIX = 'mbta-rail0124-nearby-v1'
+export const SNAPSHOT_RAIL_TYPES = '0,1,2,4'
 export const SNAPSHOT_MAX_STOPS = 5
 /** Rail: unique stations, not platforms — 6 reaches Sullivan (0.8mi) and
  *  Assembly (1.1mi) from central Somerville, which a 5-platform cap missed. */

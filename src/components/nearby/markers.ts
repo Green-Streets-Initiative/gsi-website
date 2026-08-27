@@ -83,6 +83,28 @@ export function trainStopHtml(color: string, title: string, selected = false): s
     </div>`
 }
 
+// Phosphor Boat (regular) — white so it reads on the MBTA ferry teal
+const FERRY_SVG = '<svg width="15" height="15" viewBox="0 0 256 256" fill="#fff"><path d="M221.06,110.59,208,106.23V56a16,16,0,0,0-16-16H136V24a8,8,0,0,0-16,0V40H64A16,16,0,0,0,48,56v50.23l-13.06,4.36A16,16,0,0,0,24,125.77V152c0,61.54,97.89,86.72,102.06,87.76a8,8,0,0,0,3.88,0C134.11,238.72,232,213.54,232,152V125.77A16,16,0,0,0,221.06,110.59ZM64,56H192v44.9L130.53,80.41a8,8,0,0,0-5.06,0L64,100.9Zm152,96c0,24.91-23.68,43-43.55,53.83A228.13,228.13,0,0,1,128,223.72,226.85,226.85,0,0,1,83.81,206C47.6,186.35,40,165.79,40,152V125.77L120,99.1V168a8,8,0,0,0,16,0V99.1l80,26.67Z"/></svg>'
+
+export function ferryStopHtml(title: string, selected = false): string {
+  const ring = selected ? '#BAF14D' : '#fff'
+  const glow = selected ? ',0 0 12px rgba(186,241,77,0.6)' : ''
+  return `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+      <div title="${escapeAttr(title)}" style="
+        display:flex;align-items:center;justify-content:center;
+        width:28px;height:28px;border-radius:50%;
+        background:#008EAA;border:${selected ? 3 : 2.5}px solid ${ring};box-shadow:0 2px 6px rgba(0,0,0,0.4)${glow};
+      ">${FERRY_SVG}</div>
+      <div style="
+        max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        background:rgba(25,26,46,0.92);border:1px solid rgba(255,255,255,0.18);
+        border-radius:99px;padding:2px 8px;
+        color:#fff;font:700 10.5px/1.3 -apple-system,sans-serif;
+      ">${escapeHtml(title)}</div>
+    </div>`
+}
+
 // Phosphor Bicycle — dark so it reads on the gold borrow/rent pin
 const BICYCLE_SVG = '<svg width="14" height="14" viewBox="0 0 256 256" fill="#191A2E"><path d="M208,112a47.81,47.81,0,0,0-16.93,3.09L165.93,72H192a8,8,0,0,1,8,8,8,8,0,0,0,16,0,24,24,0,0,0-24-24H152a8,8,0,0,0-6.91,12l11.65,20H99.26L82.91,60A8,8,0,0,0,76,56H48a8,8,0,0,0,0,16H71.41L85.12,95.51,69.41,119.1a48,48,0,1,0,13.32,8.89l11.81-17.72L125.6,164a8,8,0,0,0,13.84-8l-30.07-51.57h47.11l11.78,20.2A48,48,0,1,0,208,112ZM80,160a32,32,0,1,1-20.21-29.74l-16.45,24.67a8,8,0,0,0,13.32,8.88l16.44-24.66A31.87,31.87,0,0,1,80,160Zm128,32a32,32,0,0,1-15.62-59.91l11.71,20.08a8,8,0,1,0,13.82-8.06l-11.72-20.09A32,32,0,1,1,208,192Z"/></svg>'
 

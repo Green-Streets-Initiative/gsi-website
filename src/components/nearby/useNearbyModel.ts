@@ -6,7 +6,7 @@ import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { lineColor } from '@/lib/nearby/transit-ui'
 import type { NearbyMarker, LaneTapInfo } from './NearbyMap'
-import { userDotHtml, busStopHtml, trainStopHtml, bluebikeHtml, borrowRentHtml } from './markers'
+import { userDotHtml, busStopHtml, trainStopHtml, ferryStopHtml, bluebikeHtml, borrowRentHtml } from './markers'
 import { nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
 
 /**
@@ -269,11 +269,13 @@ export function useNearbyModel({
       // Color by the line itself, not the corridor list — a farther line
       // (Orange at Sullivan) that didn't make the top-8 corridors still gets
       // its brand color, not the gray fallback.
-      html: trainStopHtml(
-        g.routes[0] ? lineColor(g.routes[0].id) : '#666',
-        g.name,
-        selection?.type === 'station' && selection.key === g.key,
-      ),
+      html: g.routes.every(r => r.id.startsWith('Boat-'))
+        ? ferryStopHtml(g.name, selection?.type === 'station' && selection.key === g.key)
+        : trainStopHtml(
+            g.routes[0] ? lineColor(g.routes[0].id) : '#666',
+            g.name,
+            selection?.type === 'station' && selection.key === g.key,
+          ),
       tappable: true,
       analyticsType: 'train',
       zIndex: selection?.type === 'station' && selection.key === g.key ? 6 : 3,
