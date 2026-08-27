@@ -132,7 +132,7 @@ function MomentumSection() {
           Momentum
         </h2>
         <p className="mb-5 text-sm text-white/75">
-          Active trips by week — most campaigns fade after launch. This one grew.
+          Active trips by week, June 15 – August 16
         </p>
         <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] px-6 pb-4 pt-6">
           <svg viewBox={`0 0 ${w} ${h}`} className="h-auto w-full" role="img" aria-label={`Weekly active trips: ${weeks.map((d) => d.active_trips).join(', ')}`}>
