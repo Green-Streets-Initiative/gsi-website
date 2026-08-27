@@ -69,11 +69,15 @@ export interface LaneFeature {
 }
 
 /** ArcGIS returns empty strings (not null) for unpopulated text fields, and
- *  `??` doesn't catch those — they'd render a BLANK card title downstream. */
+ *  `??` doesn't catch those — they'd render a BLANK card title downstream.
+ *  MAPC also has junk placeholders: "0", "<Null>" — reject those too. */
 function cleanName(raw: unknown): string | null {
   if (typeof raw !== 'string') return null
   const trimmed = raw.trim()
-  return trimmed.length > 0 ? trimmed : null
+  if (trimmed.length === 0) return null
+  if (/^\d+$/.test(trimmed)) return null
+  if (/^<.+>$/.test(trimmed)) return null
+  return trimmed
 }
 
 /** Sources record sidepaths — separated on-street lanes drawn as their own
