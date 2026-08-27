@@ -251,8 +251,8 @@ const PROJECT_1: Step[] = [
           are pre-filled from those results.
         </p>
         <ul>
-          <li>Open each school in the dashboard and look at its Routes tab — the map, the per-route scores, and the flagged safety concerns.</li>
-          <li>Where the analysis looks wrong, change the sheet&rsquo;s score and say why in the notes — your correction outranks the tool.</li>
+          <li>Open each school in the dashboard, go to its Routes tab, and open <strong>Safe Routes</strong> — every candidate route on one map, and a detail page per route with the full Street View gallery, scores, and flagged safety concerns.</li>
+          <li>Where the analysis looks wrong, change the sheet&rsquo;s score and say why in the notes — your correction outranks the tool. (On a route&rsquo;s detail page, &ldquo;Adjust the scores&rdquo; records the correction in the tool itself.)</li>
           <li>Be most skeptical of generous scores on busy multi-lane roads — that&rsquo;s the tool&rsquo;s suspected weak spot. Spot-check those in <a href={LINKS.streetview} target="_blank" rel="noopener" className="text-[#2966E5] underline underline-offset-2">Street View</a> yourself.</li>
         </ul>
       </div>
