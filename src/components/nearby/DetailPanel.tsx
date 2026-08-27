@@ -14,6 +14,7 @@ import type { TransitCorridor, BikeCorridor, FrequencyInfo } from '@/lib/nearby/
 import { TrainIcon, BusIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
 import { useNearbyT } from './NearbyI18n'
+import { bikeshareLogoUrl, borrowLogoUrl } from '@/lib/nearby/provider-logos'
 import {
   type Selection, type StationGroup, routeEndpoints,
 } from './useNearbyModel'
@@ -319,7 +320,13 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
     if (!d) return null
     return (
       <div>
-        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">{tr('detail.bike_share_dock', { system: d.system_name ?? 'Bluebikes' })}</div>
+        <div className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">
+          {(() => {
+            const logo = bikeshareLogoUrl(d.system_id ?? 'bluebikes')
+            return logo ? <img src={logo} alt="" className="h-4 w-auto" /> : null
+          })()}
+          {tr('detail.bike_share_dock', { system: d.system_name ?? 'Bluebikes' })}
+        </div>
         <div className="text-[0.95rem] font-bold text-white">{d.name}</div>
         <div className="text-[0.78rem] text-white/75">
           {tr('detail.walk_distance', { minutes: walkTimeMinutes(d.distance_meters), distance: formatDistance(d.distance_meters) })}
@@ -378,7 +385,13 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
       : { url: p.url, target: 'site' as const }
     return (
       <div>
-        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#EDB93C]">{tr('detail.borrow_rent_eyebrow')}</div>
+        <div className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#EDB93C]">
+          {(() => {
+            const logo = borrowLogoUrl(p.org)
+            return logo ? <img src={logo} alt="" className="h-5 w-auto" /> : null
+          })()}
+          {tr('detail.borrow_rent_eyebrow')}
+        </div>
         <div className="text-[0.95rem] font-bold text-white">{p.name}</div>
         <div className="text-[0.78rem] text-white/75">
           {tr('detail.walk_distance', { minutes: walkTimeMinutes(p.distMiles * 1609.34), distance: formatDistance(p.distMiles * 1609.34) })}

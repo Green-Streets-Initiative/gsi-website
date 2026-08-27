@@ -18,6 +18,7 @@ import { SkeletonRows, ErrorCard } from './SectionShell'
 import { useNearbyT } from './NearbyI18n'
 import { PRICES, usd } from '@/lib/facts/prices'
 import { useNearbyPromos } from './NearbyPromos'
+import { bikeshareLogoUrl, borrowLogoUrl } from '@/lib/nearby/provider-logos'
 import NearbyPromoCard from './NearbyPromoCard'
 import {
   type StationGroup, routeEndpoints, soonestAtStation, freqShort,
@@ -421,7 +422,13 @@ export function DockList({ docks, onSelect, selectedId }: {
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">{tr('lists.bike_share_dock', { system: d.system_name ?? 'Bluebikes' })}</div>
+                  <div className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">
+                    {(() => {
+                      const logo = bikeshareLogoUrl(d.system_id ?? 'bluebikes')
+                      return logo ? <img src={logo} alt="" className="h-3.5 w-auto" /> : null
+                    })()}
+                    {tr('lists.bike_share_dock', { system: d.system_name ?? 'Bluebikes' })}
+                  </div>
                   <span className="block truncate text-[0.9rem] font-semibold text-white">{d.name}</span>
                 </div>
                 <span className="text-[0.8rem] text-white/75">
@@ -485,6 +492,10 @@ export function BorrowRentList({ points, onSelect, selectedId }: {
                 : 'border-white/[0.08] bg-[#242538] hover:border-white/[0.2]'
             }`}
           >
+            {(() => {
+              const logo = borrowLogoUrl(p.org)
+              return logo ? <img src={logo} alt="" className="mb-1 h-4.5 w-auto" /> : null
+            })()}
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
               <span className="text-[0.9rem] font-semibold text-white">{p.name}</span>
               <span className="text-[0.78rem] text-white/75">
