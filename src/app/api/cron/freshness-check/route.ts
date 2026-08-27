@@ -2,6 +2,13 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { Resend } from 'resend'
 import { SOURCES, STALE_AFTER_DAYS, type FreshnessSource } from '@/lib/freshness/sources'
 import { fetchPriceSnapshot, diffPrices, type PriceDiff } from '@/lib/freshness/extract'
+import {
+  matchPriceChanges,
+  applyPriceChanges,
+  type PriceChange,
+  type AutoUpdateReport,
+} from '@/lib/freshness/auto-update'
+import prices from '@/lib/facts/prices.json'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -12,9 +19,12 @@ const FROM = 'GSI Freshness Bot <noreply@gogreenstreets.org>'
 interface SourceReport {
   source: FreshnessSource
   fetched: string[]
-  diff: PriceDiff | null // null if first-ever snapshot
+  diff: PriceDiff | null
   status: number
   error?: string
+  autoChanges: PriceChange[]
+  autoUnmatched: string[]
+  autoReport: AutoUpdateReport | null
 }
 
 interface StaleGuide {
@@ -30,11 +40,11 @@ interface StaleGuide {
  *
  *  1. For each canonical price source: fetch, extract dollar amounts, diff
  *     against the stored snapshot, then write the new snapshot back.
- *  2. Sweep micro-guides whose `last_reviewed_at` is older than the stale
- *     threshold and surface them for routine review.
- *  3. Email Keith a summary — always, even when nothing changed.
- *
- * Auth: Authorization: Bearer ${CRON_SECRET}, the standard Vercel pattern.
+ *  2. When prices changed: auto-match to prices.json keys, update the
+ *     pricing_data DB table, and re-resolve guide body templates.
+ *  3. Sweep stale guides.
+ *  4. Email Keith a summary of what was auto-updated (and anything that
+ *     needs manual review).
  */
 export async function GET(req: Request) {
   const auth = req.headers.get('authorization') ?? ''
@@ -47,11 +57,14 @@ export async function GET(req: Request) {
 
   const sb = createServerSupabaseClient()
 
-  // 1. Source diffs.
+  // 1. Source diffs + auto-update.
   const sourceReports: SourceReport[] = []
   for (const source of SOURCES) {
     const result = await fetchPriceSnapshot(source.url)
     let diff: PriceDiff | null = null
+    let autoChanges: PriceChange[] = []
+    let autoUnmatched: string[] = []
+    let autoReport: AutoUpdateReport | null = null
 
     if (!result.error) {
       const { data: prev } = await sb
@@ -62,9 +75,28 @@ export async function GET(req: Request) {
 
       if (prev) {
         diff = diffPrices(prev.prices ?? [], result.prices)
+
+        // 2. Auto-update: match changed prices to keys and apply.
+        if (diff.added.length > 0 || diff.removed.length > 0) {
+          const match = matchPriceChanges(
+            source,
+            prices as unknown as Record<string, unknown>,
+            diff,
+          )
+          autoChanges = match.changes
+          autoUnmatched = match.unmatched
+
+          if (match.changes.length > 0) {
+            autoReport = await applyPriceChanges(
+              sb,
+              match.changes,
+              prices as unknown as Record<string, unknown>,
+              source.affectedGuideIds,
+            )
+          }
+        }
       }
 
-      // Write the new snapshot regardless — first run seeds it.
       await sb.from('freshness_snapshots').upsert(
         { url: source.url, prices: result.prices, fetched_at: new Date().toISOString() },
         { onConflict: 'url' },
@@ -77,10 +109,13 @@ export async function GET(req: Request) {
       diff,
       status: result.status,
       error: result.error,
+      autoChanges,
+      autoUnmatched,
+      autoReport,
     })
   }
 
-  // 2. Stale-by-age sweep.
+  // 3. Stale-by-age sweep.
   const cutoff = new Date(Date.now() - STALE_AFTER_DAYS * 24 * 60 * 60 * 1000).toISOString()
   const { data: staleRows } = await sb
     .from('content_items')
@@ -100,7 +135,7 @@ export async function GET(req: Request) {
       : -1,
   }))
 
-  // 3. Compose + send email.
+  // 4. Compose + send email.
   const summary = summarize(sourceReports, staleGuides)
   const html = renderEmail(sourceReports, staleGuides)
 
@@ -124,15 +159,21 @@ function summarize(reports: SourceReport[], stale: StaleGuide[]) {
   const changedSources = reports.filter(
     (r) => r.diff && (r.diff.added.length > 0 || r.diff.removed.length > 0),
   ).length
+  const autoUpdated = reports.filter((r) => r.autoChanges.length > 0).length
+  const needsReview = reports.filter((r) => r.autoUnmatched.length > 0).length
   const erroredSources = reports.filter((r) => r.error).length
 
   const flags: string[] = []
-  if (changedSources > 0) flags.push(`${changedSources} source${changedSources === 1 ? '' : 's'} changed`)
+  if (autoUpdated > 0) flags.push(`${autoUpdated} auto-updated`)
+  if (needsReview > 0) flags.push(`${needsReview} need${needsReview === 1 ? 's' : ''} review`)
+  if (changedSources > 0 && autoUpdated === 0 && needsReview === 0) {
+    flags.push(`${changedSources} source${changedSources === 1 ? '' : 's'} changed`)
+  }
   if (stale.length > 0) flags.push(`${stale.length} guide${stale.length === 1 ? '' : 's'} stale`)
   if (erroredSources > 0) flags.push(`${erroredSources} fetch error${erroredSources === 1 ? '' : 's'}`)
 
   const subjectSuffix = flags.length === 0 ? 'all clear' : flags.join(' · ')
-  return { changedSources, erroredSources, staleCount: stale.length, subjectSuffix }
+  return { changedSources, autoUpdated, needsReview, erroredSources, staleCount: stale.length, subjectSuffix }
 }
 
 function renderEmail(reports: SourceReport[], stale: StaleGuide[]): string {
@@ -146,16 +187,15 @@ function renderEmail(reports: SourceReport[], stale: StaleGuide[]): string {
   sections.push(`<h2 style="margin:0 0 4px 0;font-size:18px">GSI freshness check</h2>`)
   sections.push(`<div style="color:#666;font-size:13px;margin-bottom:24px">${date}</div>`)
 
-  // Source diff section
   for (const r of reports) {
     const lines: string[] = []
-    lines.push(`<h3 style="margin:24px 0 8px 0;font-size:15px">${escapeHtml(r.source.label)}</h3>`)
+    lines.push(`<h3 style="margin:24px 0 8px 0;font-size:15px">${esc(r.source.label)}</h3>`)
     lines.push(`<div style="color:#666;font-size:12px;margin-bottom:8px">`)
-    lines.push(`<a href="${escapeHtml(r.source.url)}" style="color:#666">${escapeHtml(r.source.url)}</a>`)
+    lines.push(`<a href="${esc(r.source.url)}" style="color:#666">${esc(r.source.url)}</a>`)
     lines.push(`</div>`)
 
     if (r.error) {
-      lines.push(`<div style="color:#b00;font-size:13px">&#9888; Fetch error: ${escapeHtml(r.error)} (HTTP ${r.status})</div>`)
+      lines.push(`<div style="color:#b00;font-size:13px">&#9888; Fetch error: ${esc(r.error)} (HTTP ${r.status})</div>`)
     } else if (!r.diff) {
       lines.push(
         `<div style="color:#888;font-size:13px">Snapshot seeded (${r.fetched.length} prices). Future runs will diff against this.</div>`,
@@ -163,24 +203,57 @@ function renderEmail(reports: SourceReport[], stale: StaleGuide[]): string {
     } else if (r.diff.added.length === 0 && r.diff.removed.length === 0) {
       lines.push(`<div style="color:#0a8;font-size:13px">No change (${r.fetched.length} prices on page).</div>`)
     } else {
+      // Show the raw diff
       lines.push(`<div style="font-size:13px">`)
       if (r.diff.removed.length > 0) {
-        lines.push(`<div><strong>Removed:</strong> ${r.diff.removed.map((p) => `<code>${escapeHtml(p)}</code>`).join(', ')}</div>`)
+        lines.push(`<div><strong>Removed:</strong> ${r.diff.removed.map((p) => `<code>${esc(p)}</code>`).join(', ')}</div>`)
       }
       if (r.diff.added.length > 0) {
-        lines.push(`<div><strong>Added:</strong> ${r.diff.added.map((p) => `<code>${escapeHtml(p)}</code>`).join(', ')}</div>`)
+        lines.push(`<div><strong>Added:</strong> ${r.diff.added.map((p) => `<code>${esc(p)}</code>`).join(', ')}</div>`)
       }
-      lines.push(`<div style="margin-top:8px">Possibly affected guides:</div>`)
-      lines.push(`<ul style="margin:4px 0 0 0;padding-left:20px">`)
-      for (const id of r.source.affectedGuideIds) lines.push(`<li><code>${escapeHtml(id)}</code></li>`)
-      lines.push(`</ul>`)
       lines.push(`</div>`)
+
+      // Auto-update results
+      if (r.autoChanges.length > 0) {
+        lines.push(`<div style="margin-top:12px;padding:12px;background:#efffef;border-radius:8px;font-size:13px">`)
+        lines.push(`<strong style="color:#0a8">Auto-updated:</strong>`)
+        lines.push(`<ul style="margin:4px 0 0 0;padding-left:20px">`)
+        for (const c of r.autoChanges) {
+          const label = c.derived ? `${c.key} (derived)` : c.key
+          lines.push(`<li><code>${esc(label)}</code>: $${c.oldValue} &rarr; $${c.newValue}</li>`)
+        }
+        lines.push(`</ul>`)
+        if (r.autoReport) {
+          if (r.autoReport.pricingDataUpdated.length > 0) {
+            lines.push(`<div style="margin-top:4px;color:#666">pricing_data: ${r.autoReport.pricingDataUpdated.join(', ')}</div>`)
+          }
+          if (r.autoReport.guideBodiesUpdated.length > 0) {
+            lines.push(`<div style="color:#666">Guide bodies re-resolved: ${r.autoReport.guideBodiesUpdated.join(', ')}</div>`)
+          }
+          if (r.autoReport.errors.length > 0) {
+            lines.push(`<div style="color:#b00;margin-top:4px">Errors: ${r.autoReport.errors.map(esc).join('; ')}</div>`)
+          }
+        }
+        lines.push(`</div>`)
+      }
+
+      // Items needing manual review
+      if (r.autoUnmatched.length > 0) {
+        lines.push(`<div style="margin-top:12px;padding:12px;background:#fff8e0;border-radius:8px;font-size:13px">`)
+        lines.push(`<strong style="color:#b80">Needs manual review:</strong>`)
+        lines.push(`<ul style="margin:4px 0 0 0;padding-left:20px">`)
+        for (const msg of r.autoUnmatched) {
+          lines.push(`<li>${esc(msg)}</li>`)
+        }
+        lines.push(`</ul>`)
+        lines.push(`</div>`)
+      }
     }
     sections.push(lines.join('\n'))
   }
 
   // Stale section
-  sections.push(`<h3 style="margin:32px 0 8px 0;font-size:15px">Routine review (≥ ${STALE_AFTER_DAYS} days since last review)</h3>`)
+  sections.push(`<h3 style="margin:32px 0 8px 0;font-size:15px">Routine review (&#8805; ${STALE_AFTER_DAYS} days since last review)</h3>`)
   if (stale.length === 0) {
     sections.push(`<div style="color:#0a8;font-size:13px">All guides reviewed within the last ${STALE_AFTER_DAYS} days.</div>`)
   } else {
@@ -191,8 +264,8 @@ function renderEmail(reports: SourceReport[], stale: StaleGuide[]): string {
     for (const g of stale) {
       const url = g.slug ? `https://www.gogreenstreets.org/guides/${g.slug}` : null
       const titleCell = url
-        ? `<a href="${url}">${escapeHtml(g.title)}</a> <code style="color:#888;font-size:11px">${escapeHtml(g.id)}</code>`
-        : `${escapeHtml(g.title)} <code style="color:#888;font-size:11px">${escapeHtml(g.id)}</code>`
+        ? `<a href="${url}">${esc(g.title)}</a> <code style="color:#888;font-size:11px">${esc(g.id)}</code>`
+        : `${esc(g.title)} <code style="color:#888;font-size:11px">${esc(g.id)}</code>`
       sections.push(
         `<tr><td style="padding:6px;border-bottom:1px solid #f0f0f0">${titleCell}</td><td style="padding:6px;border-bottom:1px solid #f0f0f0">${g.days_since}</td></tr>`,
       )
@@ -202,13 +275,18 @@ function renderEmail(reports: SourceReport[], stale: StaleGuide[]): string {
 
   sections.push(
     `<hr style="border:none;border-top:1px solid #eee;margin:32px 0 16px 0"/>`,
-    `<div style="color:#888;font-size:11px">Automated monthly check from /api/cron/freshness-check. To propagate a price change everywhere: edit <code>src/lib/facts/prices.json</code> (feeds the commute advisors, /api/pricing, and the nearby Bluebikes note on deploy), then run <code>node scripts/build-micro-guides-migration.mjs</code> and apply the regenerated reseed migration to update guide bodies. Update bumps to last_reviewed_at by hand or via a follow-up migration after content edits.</div>`,
+    `<div style="color:#888;font-size:11px">` +
+      `Automated monthly check from /api/cron/freshness-check. ` +
+      `When a scraped price changes and can be matched to a known key, it is auto-applied to the pricing_data table and guide bodies. ` +
+      `The static <code>prices.json</code> file (used by the commute advisor page and /nearby Bluebikes note) still needs a code deploy to pick up the new values &mdash; that happens on your next push. ` +
+      `Anything the system cannot auto-match is flagged above for manual review.` +
+    `</div>`,
   )
 
   return `<div style="font-family:-apple-system,system-ui,sans-serif;max-width:680px;margin:0 auto;padding:24px;color:#222">${sections.join('\n')}</div>`
 }
 
-function escapeHtml(s: string): string {
+function esc(s: string): string {
   return s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

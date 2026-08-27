@@ -187,6 +187,7 @@ function rowSql(guide) {
     ${sqlString(y.slug)},
     ${sqlString(summary)},
     ${sqlBody(guide.body)},
+    ${sqlBody(guide.bodyTemplate)},
     ${sqlString(y.mode)},
     ${sqlNullable(barrier)},
     ${sqlString(y.status || 'approved')},
@@ -209,6 +210,9 @@ function buildMigration(guides) {
 
 BEGIN;
 
+-- 0. Ensure the body_template column exists (added for auto-price-update).
+ALTER TABLE content_items ADD COLUMN IF NOT EXISTS body_template text;
+
 -- 1. Mode cleanup: any pre-existing 'bike' rows fold into 'cycling'.
 UPDATE content_items SET primary_mode = 'cycling' WHERE primary_mode = 'bike';
 
@@ -222,7 +226,7 @@ UPDATE content_items SET status = 'archived'
   const insert = `
 -- 3. Upsert the ${guides.length}-guide library.
 INSERT INTO content_items (
-  id, title, slug, summary, body, primary_mode, primary_barrier, status,
+  id, title, slug, summary, body, body_template, primary_mode, primary_barrier, status,
   content_type, surfaces, topics, related_guides, is_starter,
   read_time_minutes, last_reviewed_at
 ) VALUES
@@ -232,6 +236,7 @@ ON CONFLICT (id) DO UPDATE SET
   slug = EXCLUDED.slug,
   summary = EXCLUDED.summary,
   body = EXCLUDED.body,
+  body_template = EXCLUDED.body_template,
   primary_mode = EXCLUDED.primary_mode,
   primary_barrier = EXCLUDED.primary_barrier,
   status = EXCLUDED.status,
@@ -274,8 +279,17 @@ function interpolatePrices(text) {
   })
 }
 
-const markdown = interpolatePrices(readFileSync(sourcePath, 'utf8'))
-const guides = extractGuides(markdown)
+const rawMarkdown = readFileSync(sourcePath, 'utf8')
+const rawGuides = extractGuides(rawMarkdown)
+
+// Each guide gets both the raw template (with {{price:...}} tokens) and the
+// resolved body.  The template is stored in body_template so the freshness
+// cron can re-resolve prices at runtime without needing the source file.
+const guides = rawGuides.map((g) => ({
+  ...g,
+  bodyTemplate: g.body,
+  body: interpolatePrices(g.body),
+}))
 
 // Sanity checks
 if (guides.length !== 20) {
