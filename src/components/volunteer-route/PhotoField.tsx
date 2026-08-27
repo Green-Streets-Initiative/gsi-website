@@ -22,7 +22,10 @@ interface PhotoEntry {
 }
 
 interface Props {
+  /** Storage path prefix for uploads (e.g. a corridor or audit id). */
   corridorId: string
+  /** Storage bucket to upload into (defaults to the school-route bucket). */
+  bucket?: string
   /** Photos restored from a saved draft (already uploaded). */
   initialPhotos: DraftPhoto[]
   /** Fires with the current list of successfully uploaded photos. */
@@ -46,7 +49,7 @@ function toDraft(e: PhotoEntry): DraftPhoto {
 // Photos upload the moment they're picked (with retry on failure), so a
 // page refresh mid-walk never loses them — the draft stores the uploaded
 // paths. Location is captured per photo when permission allows.
-export default function PhotoField({ corridorId, initialPhotos, onPhotosChange, onBusyChange }: Props) {
+export default function PhotoField({ corridorId, bucket = 'route-assessment-photos', initialPhotos, onPhotosChange, onBusyChange }: Props) {
   const [entries, setEntries] = useState<PhotoEntry[]>(() =>
     initialPhotos.map((p, i) => ({
       localId: `restored-${i}`,
@@ -97,7 +100,7 @@ export default function PhotoField({ corridorId, initialPhotos, onPhotosChange, 
     const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
     const path = `${corridorId}/${Date.now()}-${cleanName}`
     const { error } = await supabase.storage
-      .from('route-assessment-photos')
+      .from(bucket)
       .upload(path, file, { contentType: file.type })
     if (error) {
       setEntries((prev) =>
@@ -105,7 +108,7 @@ export default function PhotoField({ corridorId, initialPhotos, onPhotosChange, 
       )
       return
     }
-    const { data } = supabase.storage.from('route-assessment-photos').getPublicUrl(path)
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path)
     setEntries((prev) =>
       prev.map((e) =>
         e.localId === localId
@@ -146,7 +149,7 @@ export default function PhotoField({ corridorId, initialPhotos, onPhotosChange, 
     if (entry?.previewUrl) URL.revokeObjectURL(entry.previewUrl)
     if (entry?.path) {
       // Best effort — the photo entry is dropped from the submission either way.
-      void supabase.storage.from('route-assessment-photos').remove([entry.path])
+      void supabase.storage.from(bucket).remove([entry.path])
     }
     setEntries((prev) => prev.filter((e) => e.localId !== localId))
   }

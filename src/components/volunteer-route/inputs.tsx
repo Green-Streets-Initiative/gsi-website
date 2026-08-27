@@ -71,6 +71,40 @@ export function ScoreSlider({ label, value, onChange }: {
   )
 }
 
+export function Scale5({ label, low, high, value, onChange }: {
+  label: string
+  low: string
+  high: string
+  value: number | null
+  onChange: (v: number) => void
+}) {
+  return (
+    <div className="mb-4">
+      <p className="text-sm font-medium text-[#191A2E] mb-2">{label}</p>
+      <div className="flex gap-1.5">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            className={`h-9 flex-1 rounded-lg border text-sm font-semibold transition ${
+              value === n
+                ? 'border-[#2966E5] bg-[#2966E5] text-white'
+                : 'border-gray-200 bg-white text-[#6B7280] hover:border-gray-300'
+            }`}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+      <div className="mt-1 flex justify-between text-[10px] text-[#6B7280]">
+        <span>1 — {low}</span>
+        <span>5 — {high}</span>
+      </div>
+    </div>
+  )
+}
+
 export function NumberField({ label, value, onChange, placeholder, unit }: {
   label: string
   value: string

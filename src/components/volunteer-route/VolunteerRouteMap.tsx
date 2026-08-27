@@ -35,8 +35,10 @@ export default function VolunteerRouteMap({
   const onMapClickRef = useRef(onMapClick)
   onMapClickRef.current = onMapClick
 
+  const hasRoute = routeCoordinates.length >= 2
+
   useEffect(() => {
-    if (!containerRef.current || routeCoordinates.length < 2) return
+    if (!containerRef.current || (!hasRoute && !center)) return
     let cancelled = false
 
     async function init() {
@@ -44,22 +46,27 @@ export default function VolunteerRouteMap({
       if (cancelled || !containerRef.current) return
       maplibreRef.current = maplibregl
 
-      let minLng = routeCoordinates[0][0], maxLng = routeCoordinates[0][0]
-      let minLat = routeCoordinates[0][1], maxLat = routeCoordinates[0][1]
-      for (const [lng, lat] of routeCoordinates) {
-        if (lng < minLng) minLng = lng
-        if (lng > maxLng) maxLng = lng
-        if (lat < minLat) minLat = lat
-        if (lat > maxLat) maxLat = lat
-      }
-
       const map = new maplibregl.Map({
         container: containerRef.current,
         style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-        bounds: [[minLng, minLat], [maxLng, maxLat]],
-        fitBoundsOptions: { padding: 40 },
         attributionControl: false,
         cooperativeGestures: !onMapClick,
+        ...(hasRoute
+          ? (() => {
+              let minLng = routeCoordinates[0][0], maxLng = routeCoordinates[0][0]
+              let minLat = routeCoordinates[0][1], maxLat = routeCoordinates[0][1]
+              for (const [lng, lat] of routeCoordinates) {
+                if (lng < minLng) minLng = lng
+                if (lng > maxLng) maxLng = lng
+                if (lat < minLat) minLat = lat
+                if (lat > maxLat) maxLat = lat
+              }
+              return {
+                bounds: [[minLng, minLat], [maxLng, maxLat]] as [[number, number], [number, number]],
+                fitBoundsOptions: { padding: 40 },
+              }
+            })()
+          : { center: [center!.lng, center!.lat] as [number, number], zoom: 16 }),
       })
       map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
@@ -67,6 +74,7 @@ export default function VolunteerRouteMap({
       requestAnimationFrame(() => map.resize())
 
       map.on('load', () => {
+        if (!hasRoute) return
         map.addSource('walk-route', {
           type: 'geojson',
           data: {
@@ -95,10 +103,10 @@ export default function VolunteerRouteMap({
         onMapClickRef.current?.(e.lngLat.lat, e.lngLat.lng)
       })
 
-      const endpoints: { label: string; popup: string; bg: string; coord: [number, number] }[] = [
+      const endpoints: { label: string; popup: string; bg: string; coord: [number, number] }[] = hasRoute ? [
         { label: 'A', popup: 'Start', bg: '#BAF14D', coord: routeCoordinates[0] },
         { label: 'B', popup: 'School', bg: '#2966E5', coord: routeCoordinates[routeCoordinates.length - 1] },
-      ]
+      ] : []
       for (const p of endpoints) {
         const el = document.createElement('div')
         el.style.cssText =
@@ -114,7 +122,7 @@ export default function VolunteerRouteMap({
           .addTo(map)
       }
 
-      if (center) {
+      if (center && hasRoute) {
         map.jumpTo({ center: [center.lng, center.lat], zoom: 16 })
       }
       setMapReady(true)
@@ -155,6 +163,6 @@ export default function VolunteerRouteMap({
     })
   }, [pins, mapReady])
 
-  if (routeCoordinates.length < 2) return null
+  if (!hasRoute && !center) return null
   return <div ref={containerRef} className={`${heightClass} w-full rounded-xl overflow-hidden`} />
 }

@@ -18,12 +18,14 @@ interface Props {
   pins: ProblemPin[]
   onChange: (pins: ProblemPin[]) => void
   onClose: () => void
+  /** Where to center when there's no route and no GPS (e.g. a single-location audit). */
+  fallbackCenter?: { lat: number; lng: number } | null
 }
 
 // Flag a problem at the exact spot it exists — the walk-audit principle that
 // every finding should carry a location. Tapping the map drops a pin; if the
 // walker allows location, the map opens centered where they're standing.
-export default function ProblemPinSheet({ routeCoordinates, pins, onChange, onClose }: Props) {
+export default function ProblemPinSheet({ routeCoordinates, pins, onChange, onClose, fallbackCenter }: Props) {
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null)
   const [located, setLocated] = useState(false)
 
@@ -79,7 +81,7 @@ export default function ProblemPinSheet({ routeCoordinates, pins, onChange, onCl
             routeCoordinates={routeCoordinates}
             pins={pins}
             onMapClick={addPin}
-            center={here}
+            center={here ?? fallbackCenter ?? null}
             heightClass="h-64"
           />
         )}
