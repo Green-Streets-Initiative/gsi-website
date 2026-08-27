@@ -86,6 +86,13 @@ interface Competition {
   event_sponsorships: Sponsorship[]
 }
 
+interface ClaimedWinner {
+  prizeDescription: string
+  prizeTier: PrizeTier
+  prizeImageUrl: string | null
+  winnerFirstName: string
+}
+
 type PageState = 'upcoming' | 'active' | 'ended' | 'coming-soon'
 
 /* ── helpers ───────────────────────────────────────────────── */
@@ -258,6 +265,31 @@ export default async function ShiftYourSummerPage() {
     })
   }
 
+  let claimedWinners: ClaimedWinner[] = []
+  if (competition && state === 'ended') {
+    const { data: winnerRows } = await supabase
+      .from('competition_prize_units')
+      .select('winner_user_id, claimed_at, competition_prizes!inner(description, tier, image_url, display_order, competition_id), users:winner_user_id(display_name)')
+      .eq('competition_prizes.competition_id', competition.id)
+      .not('winner_user_id', 'is', null)
+      .not('claimed_at', 'is', null)
+
+    claimedWinners = (winnerRows ?? []).map((row: any) => {
+      const prize = row.competition_prizes
+      const displayName: string | null = row.users?.display_name ?? null
+      const firstName = displayName ? displayName.split(/\s+/)[0] : 'A Shift rider'
+      return {
+        prizeDescription: prize.description,
+        prizeTier: (prize.tier ?? 'standard') as PrizeTier,
+        prizeImageUrl: prize.image_url ?? null,
+        winnerFirstName: firstName,
+      }
+    })
+
+    const tierOrder: Record<PrizeTier, number> = { grand: 0, featured: 1, standard: 2 }
+    claimedWinners.sort((a, b) => tierOrder[a.prizeTier] - tierOrder[b.prizeTier])
+  }
+
   const sponsors: Sponsorship[] = competition?.event_sponsorships ?? []
   const geoStandings = groupStandings.filter(s => s.groupType === 'town' || s.groupType === 'neighborhood')
   const corpStandings = groupStandings.filter(s => s.groupType === 'workplace' || s.groupType === 'school')
@@ -300,6 +332,7 @@ export default async function ShiftYourSummerPage() {
             prizes={prizes}
             sponsors={sponsors}
             aggregateLabel={aggregateLabel}
+            claimedWinners={claimedWinners}
           />
         )}
       </main>
@@ -569,6 +602,7 @@ function EndedEvent({
   prizes,
   sponsors,
   aggregateLabel,
+  claimedWinners,
 }: {
   competition: Competition
   standings: Standing[]
@@ -578,6 +612,7 @@ function EndedEvent({
   prizes: Prize[]
   sponsors: Sponsorship[]
   aggregateLabel: string | null
+  claimedWinners: ClaimedWinner[]
 }) {
   const leader = standings[0]
   return (
@@ -667,6 +702,7 @@ function EndedEvent({
         </div>
       </section>
 
+      {claimedWinners.length > 0 && <WinnersSection winners={claimedWinners} />}
       {prizes.length > 0 && <PrizeSection prizes={prizes} eventCampaign={slugify(competition.name)} aggregateLabel={aggregateLabel} />}
       <SponsorSection sponsors={sponsors} eventCampaign={slugify(competition.name)} />
       <RulesLink />
@@ -677,6 +713,110 @@ function EndedEvent({
 }
 
 /* ── Shared Sections ──────────────────────────────────────── */
+
+/* ── WinnersSection ─────────────────────────────────────────
+ * Displayed only on the ended page. Groups claimed prize winners
+ * by tier (Grand → Featured → Standard). Shows first name only
+ * for privacy.
+ */
+function wonArticle(desc: string): string {
+  return /^[aeiou$]/i.test(desc) ? 'won an' : 'won a'
+}
+
+function WinnersSection({ winners }: { winners: ClaimedWinner[] }) {
+  const grand = winners.filter(w => w.prizeTier === 'grand')
+  const featured = winners.filter(w => w.prizeTier === 'featured')
+  const standard = winners.filter(w => w.prizeTier === 'standard')
+
+  return (
+    <section className="bg-[#191A2E] px-8 pt-12 pb-16 border-t border-white/[0.08]">
+      <div className="mx-auto max-w-[900px]">
+        <h2 className="mb-2 font-display text-2xl font-bold tracking-tight text-white">
+          Prize winners
+        </h2>
+        <p className="mb-10 text-sm text-white/75">
+          {winners.length} {winners.length === 1 ? 'prize' : 'prizes'} claimed.
+          Winners selected via weighted lottery drawing.
+        </p>
+
+        {/* Grand prizes — hero treatment */}
+        {grand.length > 0 && (
+          <div className="mb-8 space-y-4">
+            {grand.map((w, i) => (
+              <div key={`grand-${i}`} className="overflow-hidden rounded-[16px] border border-[#BAF14D]/20 bg-[#BAF14D]/[0.04]">
+                <div className="flex items-center gap-5 p-5 sm:p-6">
+                  {w.prizeImageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={w.prizeImageUrl}
+                      alt={w.prizeDescription}
+                      className="hidden h-20 w-20 shrink-0 rounded-[10px] bg-[#1A2240] object-cover sm:block"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <span className="mb-2 inline-block rounded-md bg-[#BAF14D] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#191A2E]">
+                      Grand prize
+                    </span>
+                    <p className="text-lg font-bold leading-tight text-white">
+                      {w.winnerFirstName} {wonArticle(w.prizeDescription)} {w.prizeDescription}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Featured prizes — medium cards */}
+        {featured.length > 0 && (
+          <div className="mb-6 grid gap-3 sm:grid-cols-2">
+            {featured.map((w, i) => (
+              <div key={`featured-${i}`} className="flex items-center gap-3.5 rounded-[12px] border border-white/[0.08] bg-white/[0.04] p-4">
+                {w.prizeImageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={w.prizeImageUrl}
+                    alt={w.prizeDescription}
+                    className="hidden h-12 w-12 shrink-0 rounded-lg bg-[#1A2240] object-cover sm:block"
+                  />
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold leading-snug text-white">
+                    {w.winnerFirstName} {wonArticle(w.prizeDescription)} {w.prizeDescription}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Standard prizes — compact rows */}
+        {standard.length > 0 && (
+          <div className="space-y-2">
+            {standard.map((w, i) => (
+              <div key={`standard-${i}`} className="flex items-center gap-3 rounded-[10px] border border-white/[0.06] bg-white/[0.02] px-4 py-2.5">
+                <p className="text-sm text-white">
+                  <span className="font-semibold">{w.winnerFirstName}</span>
+                  {' '}{wonArticle(w.prizeDescription)} {w.prizeDescription}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {RULES_PUBLISHED && (
+          <p className="mt-6 text-xs text-white/75">
+            See the{' '}
+            <Link href="/events/shift-your-summer/rules" className="text-[#BAF14D]">
+              Official Rules
+            </Link>{' '}
+            for drawing details and eligibility.
+          </p>
+        )}
+      </div>
+    </section>
+  )
+}
 
 /* ── SponsorSection ─────────────────────────────────────────
  * Three-tier display: Presenting (full-width hero card) → Champion
