@@ -4,14 +4,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
   ArrowLeft, ArrowRight, Binoculars, CheckCircle, Clock, Eye, Flag,
-  HandHeart, MapPin, PersonSimpleWalk,
+  HandHeart, MapPin, Microphone, PersonSimpleWalk, X,
 } from '@phosphor-icons/react'
-import { AUDIT_MODULES, ROLLUP_OPTIONS, moduleById } from '@/components/walk-audit/moduleModel'
+import { ROLLUP_OPTIONS, moduleById } from '@/components/walk-audit/moduleModel'
 import ModuleForm, { type Answers } from '@/components/walk-audit/ModuleForm'
 import { RadioGroup, FreeTextField } from '@/components/volunteer-route/inputs'
 import ObservationCapture, { type AuditObservation } from '@/components/walk-audit/ObservationCapture'
 import VolunteerRouteMap from '@/components/volunteer-route/VolunteerRouteMap'
-import type { WalkAuditMeta } from './page'
+import BlockStrip from '@/components/walk-audit/BlockStrip'
+import { useDictation } from '@/components/walk-audit/useDictation'
+import type { WalkAuditMeta, BlockDef, BlockCheck } from './page'
 
 const PURPOSE_LABELS: Record<string, string> = {
   engage: 'Community walk audit',
@@ -38,8 +40,6 @@ interface Props {
   audit: WalkAuditMeta
 }
 
-// ── Route chunking for progress (~150 m blocks) ─────────────────────
-
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371000
   const dLat = ((b.lat - a.lat) * Math.PI) / 180
@@ -50,16 +50,24 @@ function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng:
   return 2 * R * Math.asin(Math.sqrt(s))
 }
 
-function buildBlocks(points: { lat: number; lng: number }[]): { lat: number; lng: number }[] {
-  // Midpoints of ~150 m chunks along the traced line.
-  const blocks: { lat: number; lng: number }[] = []
+function buildClientBlocks(points: { lat: number; lng: number }[]): BlockDef[] {
+  const blocks: BlockDef[] = []
+  let idx = 0
   for (let i = 0; i < points.length - 1; i++) {
     const a = points[i], b = points[i + 1]
     const dist = haversineMeters(a, b)
     const n = Math.max(1, Math.round(dist / 150))
     for (let k = 0; k < n; k++) {
-      const t = (k + 0.5) / n
-      blocks.push({ lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t })
+      const tStart = k / n
+      const tEnd = (k + 1) / n
+      const tMid = (k + 0.5) / n
+      blocks.push({
+        i: idx++,
+        name: null,
+        mid: { lat: a.lat + (b.lat - a.lat) * tMid, lng: a.lng + (b.lng - a.lng) * tMid },
+        start: { lat: a.lat + (b.lat - a.lat) * tStart, lng: a.lng + (b.lng - a.lng) * tStart },
+        end: { lat: a.lat + (b.lat - a.lat) * tEnd, lng: a.lng + (b.lng - a.lng) * tEnd },
+      })
     }
   }
   return blocks
@@ -73,8 +81,13 @@ export default function WalkAuditClient({ token, audit }: Props) {
   const [observations, setObservations] = useState<AuditObservation[]>(
     (audit.observations ?? []) as AuditObservation[],
   )
+  const [blockChecks, setBlockChecks] = useState<BlockCheck[]>(audit.block_checks ?? [])
   const [visitedBlocks, setVisitedBlocks] = useState<Set<number>>(new Set())
   const [wrapDone, setWrapDone] = useState(false)
+
+  // Block check-in prompt
+  const [checkInBlock, setCheckInBlock] = useState<number | null>(null)
+  const promptedBlocks = useRef<Set<number>>(new Set())
 
   // Wrap-up state
   const [verdicts, setVerdicts] = useState<Record<string, string | null>>({})
@@ -84,7 +97,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  // Extras (organizer-enabled modules)
+  // Extras
   const [moduleId, setModuleId] = useState<string | null>(null)
   const [moduleAnswers, setModuleAnswers] = useState<Answers>({})
   const [moduleNotes, setModuleNotes] = useState('')
@@ -92,6 +105,10 @@ export default function WalkAuditClient({ token, audit }: Props) {
   const [doneModules, setDoneModules] = useState<string[]>([])
 
   const watchIdRef = useRef<number | null>(null)
+
+  const connectedDictation = useDictation((transcript) => {
+    setConnectedWith((prev) => (prev ? `${prev} ${transcript}` : transcript))
+  })
 
   const routePoints: { lat: number; lng: number }[] =
     audit.area_type === 'route' && Array.isArray(audit.area)
@@ -101,14 +118,17 @@ export default function WalkAuditClient({ token, audit }: Props) {
   const locationCenter =
     audit.area_type === 'location' && !Array.isArray(audit.area) ? audit.area : null
 
-  const blocks = useMemo(() => buildBlocks(routePoints), [audit.area])
+  const blocks = useMemo<BlockDef[]>(
+    () => (audit.blocks && audit.blocks.length > 0 ? audit.blocks : buildClientBlocks(routePoints)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [audit.blocks, audit.area],
+  )
   const routeMiles = useMemo(() => {
     let m = 0
     for (let i = 0; i < routePoints.length - 1; i++) m += haversineMeters(routePoints[i], routePoints[i + 1])
     return m / 1609.34
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audit.area])
-  // Field norm: auditing runs about 30 minutes per half mile.
   const estMinutes = Math.max(15, Math.round(routeMiles * 60))
 
   const enabledExtras = (audit.enabled_modules ?? [])
@@ -154,7 +174,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── GPS: mark blocks visited while walking ──
+  // ── GPS: mark blocks visited while walking, prompt check-in ──
   useEffect(() => {
     if (view !== 'walk' || blocks.length === 0 || !('geolocation' in navigator)) return
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -163,10 +183,12 @@ export default function WalkAuditClient({ token, audit }: Props) {
         setVisitedBlocks((prev) => {
           let changed = false
           const next = new Set(prev)
+          let newlyVisited: number | null = null
           blocks.forEach((b, i) => {
-            if (!next.has(i) && haversineMeters(here, b) < 75) {
+            if (!next.has(i) && haversineMeters(here, b.mid) < 75) {
               next.add(i)
               changed = true
+              newlyVisited = i
             }
           })
           if (changed) {
@@ -174,10 +196,14 @@ export default function WalkAuditClient({ token, audit }: Props) {
               localStorage.setItem(`shift-walk-audit-blocks:${token}`, JSON.stringify([...next]))
             } catch { /* ignore */ }
           }
+          if (newlyVisited !== null && !promptedBlocks.current.has(newlyVisited)) {
+            promptedBlocks.current.add(newlyVisited)
+            setCheckInBlock(newlyVisited)
+          }
           return changed ? next : prev
         })
       },
-      () => { /* no location permission — progress just stays manual */ },
+      () => { /* no location — progress stays manual */ },
       { enableHighAccuracy: true, maximumAge: 10000 },
     )
     return () => {
@@ -185,12 +211,13 @@ export default function WalkAuditClient({ token, audit }: Props) {
     }
   }, [view, blocks, token])
 
-  // ── Shared map: refresh everyone's observations while walking ──
+  // ── Shared map: refresh observations + block checks while walking ──
   useEffect(() => {
     if (view !== 'walk') return
     const interval = setInterval(async () => {
       const { data } = await supabase.rpc('get_walk_audit', { p_token: token })
       if (data?.observations) setObservations(data.observations as AuditObservation[])
+      if (data?.block_checks) setBlockChecks(data.block_checks as BlockCheck[])
     }, 45000)
     return () => clearInterval(interval)
   }, [view, token])
@@ -207,6 +234,25 @@ export default function WalkAuditClient({ token, audit }: Props) {
     try {
       if (name.trim()) localStorage.setItem('shift-walk-audit-observer', name.trim())
     } catch { /* ignore */ }
+  }
+
+  async function submitBlockCheck(blockIndex: number, verdict: 'fine' | 'soso' | 'rough') {
+    const block = blocks[blockIndex]
+    setBlockChecks((prev) => [...prev, {
+      block_index: blockIndex,
+      block_name: block?.name ?? null,
+      observer_name: observer.trim() || null,
+      verdict,
+      created_at: new Date().toISOString(),
+    }])
+    setCheckInBlock(null)
+    await supabase.rpc('submit_walk_audit_block_check', {
+      p_token: token,
+      p_block_index: blockIndex,
+      p_block_name: block?.name ?? null,
+      p_observer: observer,
+      p_verdict: verdict,
+    })
   }
 
   async function submitWrapUp() {
@@ -280,10 +326,11 @@ export default function WalkAuditClient({ token, audit }: Props) {
   const problemCount = observations.filter((o) => o.valence === 'problem').length
   const goodCount = observations.length - problemCount
   const progressPct = blocks.length > 0 ? Math.round((visitedBlocks.size / blocks.length) * 100) : 0
+  const myChecks = new Set(blockChecks.filter((c) => c.observer_name === observer.trim() || (!c.observer_name && !observer.trim())).map((c) => c.block_index))
 
   const activeModule = moduleId ? moduleById(moduleId) : undefined
+  const checkInBlockDef = checkInBlock !== null ? blocks[checkInBlock] : null
 
-  // ── Briefing cards ──
   const briefingCards = [
     {
       icon: <PersonSimpleWalk size={30} weight="regular" className="text-[#2966E5]" />,
@@ -421,7 +468,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
           </div>
         )}
 
-        {/* ── Walk view (home) ── */}
+        {/* ── Walk view ── */}
         {view === 'walk' && (
           <>
             <div className="rounded-xl bg-white p-2 shadow-sm">
@@ -435,38 +482,51 @@ export default function WalkAuditClient({ token, audit }: Props) {
                 <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#BAF14D] border border-[#3D5407]/30"></span> works well</span>
                 <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#D97706]"></span> problem</span>
                 {hazardPins.length > 0 && (
-                  <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#DC2626]"></span> reported crashes — look closely</span>
+                  <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#DC2626]"></span> reported crashes</span>
                 )}
               </div>
             </div>
 
-            {/* Progress + collective stats */}
+            {/* Block strip */}
+            {blocks.length > 0 && (
+              <div className="mt-3 rounded-xl bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-semibold text-[#191A2E]">
+                    {visitedBlocks.size} of {blocks.length} block{blocks.length === 1 ? '' : 's'} walked
+                  </span>
+                  <span className="text-xs text-[#6B7280]">{progressPct}%</span>
+                </div>
+                <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                  <div className="h-full rounded-full bg-[#52B788] transition-all" style={{ width: `${progressPct}%` }} />
+                </div>
+                <BlockStrip
+                  blocks={blocks}
+                  visitedBlocks={visitedBlocks}
+                  blockChecks={blockChecks}
+                  onTap={(i) => {
+                    if (!myChecks.has(i)) {
+                      promptedBlocks.current.add(i)
+                      setCheckInBlock(i)
+                    }
+                  }}
+                />
+                {blocks.length > 0 && progressPct >= 100 && (
+                  <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-[#3D5407]">
+                    <CheckCircle size={16} weight="fill" className="text-[#52B788]" /> Whole route covered!
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Collective stats */}
             <div className="mt-3 rounded-xl bg-white p-4 shadow-sm">
-              {blocks.length > 0 && (
-                <>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-[#191A2E]">
-                      {visitedBlocks.size} of {blocks.length} blocks walked
-                    </span>
-                    <span className="text-xs text-[#6B7280]">{progressPct}%</span>
-                  </div>
-                  <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                    <div className="h-full rounded-full bg-[#52B788] transition-all" style={{ width: `${progressPct}%` }} />
-                  </div>
-                </>
-              )}
-              <p className="mt-2 text-sm text-[#374151]">
+              <p className="text-sm text-[#374151]">
                 Together: <strong>{observations.length}</strong> observation{observations.length === 1 ? '' : 's'}
                 {observations.length > 0 && (
                   <span className="text-[#6B7280]"> — {problemCount} problem{problemCount === 1 ? '' : 's'}, {goodCount} working well</span>
                 )}
                 {myCount > 0 && <span className="text-[#6B7280]"> · {myCount} yours</span>}
               </p>
-              {blocks.length > 0 && progressPct >= 100 && (
-                <p className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#3D5407]">
-                  <CheckCircle size={16} weight="fill" className="text-[#52B788]" /> Whole route covered — nice walk!
-                </p>
-              )}
             </div>
 
             {/* Wrap up + extras */}
@@ -482,7 +542,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
                     {wrapDone ? 'Wrap-up submitted — thank you!' : 'Done walking? Wrap up'}
                   </span>
                   <span className={`block text-xs ${wrapDone ? 'text-[#6B7280]' : 'text-white/75'}`}>
-                    {wrapDone ? 'You can still flag more spots.' : 'Four quick verdicts and you’re done — about 2 minutes.'}
+                    {wrapDone ? 'You can still flag more spots.' : 'Four quick verdicts and a top fix — about 2 minutes.'}
                   </span>
                 </span>
                 {wrapDone ? (
@@ -495,7 +555,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
               {enabledExtras.length > 0 && (
                 <div className="rounded-xl bg-white p-4 shadow-sm">
                   <p className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-                    <Binoculars size={14} weight="regular" /> The organizer also asked for
+                    <Binoculars size={14} weight="regular" /> Extra forms from the organizer
                   </p>
                   <div className="space-y-1.5">
                     {enabledExtras.map((m) => (
@@ -537,7 +597,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
               <ArrowLeft size={14} weight="bold" /> Back to the walk
             </button>
             <h2 className="text-lg font-bold text-[#191A2E]">Your overall take</h2>
-            <p className="mb-4 mt-1 text-xs text-[#6B7280]">About two minutes. Your flags are already saved — this is the summary.</p>
+            <p className="mb-4 mt-1 text-xs text-[#6B7280]">About two minutes. Your flags are already saved — this is the big picture.</p>
 
             {LENSES.map((l) => (
               <RadioGroup
@@ -559,16 +619,31 @@ export default function WalkAuditClient({ token, audit }: Props) {
               <FreeTextField label="What would it be?" value={topFixNote} onChange={setTopFixNote} />
             )}
 
-            <div className="mb-4">
+            <div className="relative mb-4">
               <p className="mb-1 flex items-center gap-1.5 text-sm font-medium text-[#191A2E]">
                 <HandHeart size={15} weight="regular" className="text-[#52B788]" /> Who did you connect with on this walk?
               </p>
-              <input
-                value={connectedWith}
-                onChange={(e) => setConnectedWith(e.target.value)}
-                placeholder="Neighbors, a shop owner, a councilor… (optional)"
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#2966E5] focus:outline-none"
-              />
+              <div className="relative">
+                <input
+                  value={connectedWith}
+                  onChange={(e) => setConnectedWith(e.target.value)}
+                  placeholder="Neighbors, a shop owner, a councilor… (optional)"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 pr-10 text-sm focus:border-[#2966E5] focus:outline-none"
+                />
+                {connectedDictation.supported && (
+                  <button
+                    onClick={connectedDictation.toggle}
+                    aria-label={connectedDictation.listening ? 'Stop dictating' : 'Dictate'}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 transition ${
+                      connectedDictation.listening
+                        ? 'animate-pulse bg-red-500 text-white'
+                        : 'bg-gray-100 text-[#6B7280] hover:bg-[#2966E5]/10 hover:text-[#2966E5]'
+                    }`}
+                  >
+                    <Microphone size={16} weight={connectedDictation.listening ? 'fill' : 'regular'} />
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="mb-4">
@@ -654,7 +729,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
         )}
       </div>
 
-      {/* Flag-a-spot — the primary action, everywhere but the briefing */}
+      {/* Flag-a-spot button */}
       {view !== 'briefing' && view !== 'capture' && (
         <button
           onClick={() => setView('capture')}
@@ -676,8 +751,56 @@ export default function WalkAuditClient({ token, audit }: Props) {
         />
       )}
 
-      {/* Legend hint for first-time flaggers */}
-      {view === 'walk' && observations.length === 0 && (
+      {/* Block check-in card */}
+      {checkInBlock !== null && checkInBlockDef && view === 'walk' && (
+        <div className="fixed bottom-24 left-1/2 z-10 w-[340px] -translate-x-1/2 rounded-2xl bg-white p-4 shadow-xl">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-sm font-semibold text-[#191A2E]">
+              {checkInBlockDef.name ?? `Block ${checkInBlock + 1}`}
+            </p>
+            <button
+              onClick={() => setCheckInBlock(null)}
+              aria-label="Dismiss"
+              className="rounded-md p-1 text-[#9CA3AF] hover:text-[#191A2E]"
+            >
+              <X size={14} weight="bold" />
+            </button>
+          </div>
+          <p className="mb-2.5 text-xs text-[#6B7280]">How was this block?</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => submitBlockCheck(checkInBlock, 'fine')}
+              className="flex-1 rounded-lg bg-[#52B788] py-2.5 text-sm font-bold text-white"
+            >
+              Fine
+            </button>
+            <button
+              onClick={() => submitBlockCheck(checkInBlock, 'soso')}
+              className="flex-1 rounded-lg bg-[#D97706] py-2.5 text-sm font-bold text-white"
+            >
+              So-so
+            </button>
+            <button
+              onClick={() => submitBlockCheck(checkInBlock, 'rough')}
+              className="flex-1 rounded-lg bg-[#DC2626] py-2.5 text-sm font-bold text-white"
+            >
+              Rough
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              setCheckInBlock(null)
+              setView('capture')
+            }}
+            className="mt-2 w-full rounded-lg border border-gray-200 py-2 text-xs font-semibold text-[#D97706]"
+          >
+            <Flag size={12} weight="fill" className="mr-1 inline" /> Flag something here instead
+          </button>
+        </div>
+      )}
+
+      {/* Hint for first-time flaggers */}
+      {view === 'walk' && observations.length === 0 && checkInBlock === null && (
         <p className="fixed bottom-20 left-1/2 z-10 w-64 -translate-x-1/2 text-center text-[11px] text-[#6B7280]">
           <MapPin size={12} weight="fill" className="inline text-[#D97706]" /> See something — good or bad? Flag it and it appears on everyone&apos;s map.
         </p>

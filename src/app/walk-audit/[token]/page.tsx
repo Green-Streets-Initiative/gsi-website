@@ -2,6 +2,22 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
 import WalkAuditClient from './client'
 
+export interface BlockDef {
+  i: number
+  name: string | null
+  mid: { lat: number; lng: number }
+  start: { lat: number; lng: number }
+  end: { lat: number; lng: number }
+}
+
+export interface BlockCheck {
+  block_index: number
+  block_name: string | null
+  observer_name: string | null
+  verdict: 'fine' | 'soso' | 'rough'
+  created_at: string
+}
+
 export interface WalkAuditMeta {
   id: string
   title: string
@@ -13,11 +29,13 @@ export interface WalkAuditMeta {
   city: string | null
   scheduled_for: string | null
   enabled_modules: string[]
+  blocks: BlockDef[] | null
   hazards: {
     crash_clusters?: { lat: number; lng: number; crashCount?: number; type?: string }[]
     summary?: { cluster_count: number; total_crashes: number }
   } | null
   observations: unknown[]
+  block_checks: BlockCheck[]
 }
 
 export default async function WalkAuditPage({

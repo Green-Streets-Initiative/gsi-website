@@ -4,6 +4,19 @@ import { useMemo, useState } from 'react'
 import { CopySimple, DownloadSimple, Flag, ThumbsUp, Warning } from '@phosphor-icons/react'
 import { moduleById } from '@/components/walk-audit/moduleModel'
 import VolunteerRouteMap from '@/components/volunteer-route/VolunteerRouteMap'
+import PhotoLightbox from '@/components/walk-audit/PhotoLightbox'
+
+interface BlockDef {
+  i: number
+  name: string | null
+}
+
+interface BlockCheck {
+  block_index: number
+  block_name: string | null
+  observer_name: string | null
+  verdict: 'fine' | 'soso' | 'rough'
+}
 
 interface Observation {
   id: string
@@ -39,6 +52,7 @@ interface ResultsData {
     scheduled_for: string | null
     participant_token: string
     enabled_modules: string[]
+    blocks: BlockDef[] | null
     hazard_context: {
       crash_clusters?: { lat: number; lng: number; crashCount?: number }[]
       summary?: { cluster_count: number; total_crashes: number }
@@ -47,6 +61,7 @@ interface ResultsData {
   }
   observations: Observation[]
   submissions: Submission[]
+  block_checks: BlockCheck[]
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -72,14 +87,32 @@ const VERDICT_LABELS: Record<string, string> = {
   poor: 'Poor',
 }
 
+const BLOCK_VERDICT_COLORS: Record<string, string> = {
+  fine: 'bg-[#52B788] text-white',
+  soso: 'bg-[#D97706] text-white',
+  rough: 'bg-[#DC2626] text-white',
+}
+
+function n(count: number, singular: string, plural?: string): string {
+  if (count === 1) return `1 ${singular}`
+  return `${count} ${plural ?? singular + 's'}`
+}
+
+function walkerPhrase(count: number): string {
+  if (count === 1) return 'the walker'
+  if (count === 2) return 'both walkers'
+  return `all ${count} walkers`
+}
+
 function csvEscape(v: unknown): string {
   const s = v == null ? '' : Array.isArray(v) ? v.join('; ') : typeof v === 'object' ? JSON.stringify(v) : String(v)
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
 export default function WalkAuditResultsClient({ data }: { data: ResultsData }) {
-  const { audit, observations, submissions } = data
+  const { audit, observations, submissions, block_checks: blockChecks } = data
   const [copied, setCopied] = useState(false)
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
 
   const routeCoordinates: [number, number][] =
     audit.area_type === 'route' && Array.isArray(audit.area)
@@ -118,20 +151,19 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
     return sorted[0] ? { label: CATEGORY_LABELS[sorted[0][0]] ?? sorted[0][0], count: sorted[0][1] } : null
   }, [problems])
 
-  // "N of M walkers rated <lens> Mixed or Poor" — the humane verdict summary.
   const verdictSentences = useMemo(() => {
     if (wrapUps.length === 0) return []
+    const wp = walkerPhrase(wrapUps.length)
     return Object.keys(LENS_LABELS).flatMap((lens) => {
       const votes = wrapUps
         .map((s) => (s.answers?.verdicts as Record<string, string> | undefined)?.[lens])
         .filter(Boolean) as string[]
       if (votes.length === 0) return []
       const concerned = votes.filter((v) => v === 'mixed' || v === 'poor').length
-      const positive = votes.length - concerned
       if (concerned > 0) {
         return [`${concerned} of ${votes.length} rated ${LENS_LABELS[lens].toLowerCase()} Mixed or Poor`]
       }
-      return [`all ${positive} rated ${LENS_LABELS[lens].toLowerCase()} ${votes.every((v) => v === 'great') ? 'Great' : 'Great or Acceptable'}`]
+      return [`${wp} rated ${LENS_LABELS[lens].toLowerCase()} ${votes.every((v) => v === 'great') ? 'Great' : 'Great or Acceptable'}`]
     })
   }, [wrapUps])
 
@@ -147,6 +179,40 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
   const connections = wrapUps
     .map((s) => s.answers?.connected_with as string | undefined)
     .filter((c): c is string => !!c && c.trim().length > 0)
+
+  // Block verdict aggregation
+  const roughestBlock = useMemo(() => {
+    if (!blockChecks || blockChecks.length === 0) return null
+    const byBlock = new Map<number, { name: string | null; rough: number; total: number }>()
+    for (const c of blockChecks) {
+      const entry = byBlock.get(c.block_index) ?? { name: c.block_name, rough: 0, total: 0 }
+      entry.total++
+      if (c.verdict === 'rough') entry.rough++
+      byBlock.set(c.block_index, entry)
+    }
+    let worst: { index: number; name: string | null; rough: number; total: number } | null = null
+    for (const [index, entry] of byBlock) {
+      if (entry.rough > 0 && (!worst || entry.rough > worst.rough)) {
+        worst = { index, ...entry }
+      }
+    }
+    return worst
+  }, [blockChecks])
+
+  const blockStripData = useMemo(() => {
+    const blocks = audit.blocks ?? []
+    if (blocks.length === 0 || !blockChecks || blockChecks.length === 0) return null
+    const verdictByBlock = new Map<number, string>()
+    for (const c of blockChecks) {
+      const counts: Record<string, number> = {}
+      blockChecks
+        .filter((bc) => bc.block_index === c.block_index)
+        .forEach((bc) => { counts[bc.verdict] = (counts[bc.verdict] ?? 0) + 1 })
+      const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]
+      if (dominant) verdictByBlock.set(c.block_index, dominant[0])
+    }
+    return { blocks, verdictByBlock }
+  }, [audit.blocks, blockChecks])
 
   const mapPins = useMemo(
     () => [
@@ -194,10 +260,10 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
     return (
       <div className="flex items-start gap-3 border-b border-gray-100 py-3 last:border-0">
         {o.photo?.url ? (
-          <a href={o.photo.url} target="_blank" rel="noopener noreferrer" className="shrink-0">
+          <button onClick={() => setLightboxSrc(o.photo!.url)} className="shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={o.photo.url} alt="" className="h-16 w-20 rounded-lg object-cover" />
-          </a>
+            <img src={o.photo.url} alt="" className="h-16 w-20 cursor-pointer rounded-lg object-cover" />
+          </button>
         ) : (
           <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${o.valence === 'good' ? 'bg-[#BAF14D]/40 text-[#3D5407]' : 'bg-[#D97706]/15 text-[#B45309]'}`}>
             {o.valence === 'good' ? <ThumbsUp size={15} weight="fill" /> : <Warning size={15} weight="fill" />}
@@ -208,7 +274,7 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
           <p className="mt-0.5 text-[11px] text-[#6B7280]">
             {[
               o.category ? (CATEGORY_LABELS[o.category] ?? o.category) : null,
-              o.severity ? `severity ${o.severity} of 5` : null,
+              o.severity ? `severity ${o.severity}/5` : null,
               o.observer_name,
             ].filter(Boolean).join(' · ')}
           </p>
@@ -231,7 +297,7 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
       <div className="h-[3px] bg-[#52B788]" />
 
       <div className="mx-auto max-w-[800px] space-y-5 px-4 py-6">
-        {/* The story, in one card */}
+        {/* The story */}
         <div className="rounded-xl bg-white p-5 shadow-sm">
           {observations.length === 0 && wrapUps.length === 0 ? (
             <p className="text-sm text-[#374151]">
@@ -241,17 +307,23 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
           ) : (
             <>
               <p className="text-[17px] leading-snug text-[#191A2E]">
-                <strong>{walkerCount} walker{walkerCount === 1 ? '' : 's'}</strong> flagged{' '}
-                <strong>{observations.length} spot{observations.length === 1 ? '' : 's'}</strong>
+                <strong>{n(walkerCount, 'walker')}</strong> flagged{' '}
+                <strong>{n(observations.length, 'spot')}</strong>
                 {observations.length > 0 && (
-                  <> — <strong className="text-[#B45309]">{problems.length} problem{problems.length === 1 ? '' : 's'}</strong> and{' '}
+                  <> — <strong className="text-[#B45309]">{n(problems.length, 'problem')}</strong> and{' '}
                   <strong className="text-[#3D5407]">{goods.length} that work{goods.length === 1 ? 's' : ''} well</strong></>
                 )}
                 {topCategory && topCategory.count > 1 && (
-                  <>. The most-flagged issue: <strong>{topCategory.label.toLowerCase()}</strong> ({topCategory.count} flags)</>
+                  <>. The most-flagged issue: <strong>{topCategory.label.toLowerCase()}</strong> ({n(topCategory.count, 'flag')})</>
                 )}
                 .
               </p>
+              {roughestBlock && (
+                <p className="mt-2 text-sm text-[#374151]">
+                  The roughest stretch: <strong>{roughestBlock.name ?? `Block ${roughestBlock.index + 1}`}</strong>{' '}
+                  ({roughestBlock.rough} of {roughestBlock.total} called it rough).
+                </p>
+              )}
               {verdictSentences.length > 0 && (
                 <p className="mt-2 text-sm text-[#374151]">
                   In the wrap-ups, {verdictSentences.join('; ')}.
@@ -260,16 +332,15 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
               {topFixes.length > 0 && (
                 <p className="mt-2 text-sm text-[#374151]">
                   Asked what to fix first, the group said: <strong>{topFixes[0][0]}</strong>
-                  {topFixes[0][1] > 1 ? ` (${topFixes[0][1]} votes)` : ''}
+                  {topFixes[0][1] > 1 ? ` (${n(topFixes[0][1], 'vote')})` : ''}
                   {topFixes[1] ? `, then ${topFixes[1][0]}` : ''}.
                 </p>
               )}
               {audit.hazard_context?.summary && audit.hazard_context.summary.cluster_count > 0 && (
                 <p className="mt-2 text-xs text-[#6B7280]">
                   Context: MassDOT records {audit.hazard_context.summary.total_crashes} pedestrian/cyclist
-                  crashes in {audit.hazard_context.summary.cluster_count} cluster
-                  {audit.hazard_context.summary.cluster_count === 1 ? '' : 's'} around this area — the red
-                  dots on the map.
+                  crash{audit.hazard_context.summary.total_crashes === 1 ? '' : 'es'} in {n(audit.hazard_context.summary.cluster_count, 'cluster')}{' '}
+                  around this area — the red dots on the map.
                 </p>
               )}
             </>
@@ -292,6 +363,32 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
           </div>
         </div>
 
+        {/* Block strip */}
+        {blockStripData && (
+          <div className="rounded-xl bg-white p-5 shadow-sm">
+            <h2 className="mb-2 text-base font-bold text-[#191A2E]">Block by block</h2>
+            <div className="flex gap-1 overflow-x-auto pb-1">
+              {blockStripData.blocks.map((b) => {
+                const verdict = blockStripData.verdictByBlock.get(b.i)
+                const className = verdict
+                  ? `flex h-9 shrink-0 items-center justify-center rounded-lg px-2.5 text-xs font-bold ${BLOCK_VERDICT_COLORS[verdict]}`
+                  : 'flex h-9 shrink-0 items-center justify-center rounded-lg px-2.5 text-xs font-bold bg-gray-100 text-[#9CA3AF]'
+                return (
+                  <div key={b.i} className={className} title={b.name ?? `Block ${b.i + 1}`}>
+                    {b.name ? (b.name.length > 18 ? b.name.slice(0, 16) + '…' : b.name) : b.i + 1}
+                  </div>
+                )
+              })}
+            </div>
+            <div className="mt-2 flex items-center gap-3 text-[10px] text-[#6B7280]">
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-[#52B788]"></span> Fine</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-[#D97706]"></span> So-so</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-[#DC2626]"></span> Rough</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-gray-200"></span> Not checked</span>
+            </div>
+          </div>
+        )}
+
         {/* Map */}
         <div className="rounded-xl bg-white p-2 shadow-sm">
           <VolunteerRouteMap
@@ -310,11 +407,11 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
           </div>
         </div>
 
-        {/* Problems, then what works */}
+        {/* Problems */}
         {problems.length > 0 && (
           <div className="rounded-xl bg-white p-5 shadow-sm">
             <h2 className="mb-1 flex items-center gap-2 text-base font-bold text-[#191A2E]">
-              <Warning size={18} weight="fill" className="text-[#D97706]" /> The problems ({problems.length})
+              <Warning size={18} weight="fill" className="text-[#D97706]" /> {n(problems.length, 'problem')} flagged
             </h2>
             {problems
               .slice()
@@ -323,16 +420,17 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
           </div>
         )}
 
+        {/* What works */}
         {goods.length > 0 && (
           <div className="rounded-xl bg-white p-5 shadow-sm">
             <h2 className="mb-1 flex items-center gap-2 text-base font-bold text-[#191A2E]">
-              <ThumbsUp size={18} weight="fill" className="text-[#52B788]" /> What&apos;s working ({goods.length})
+              <ThumbsUp size={18} weight="fill" className="text-[#52B788]" /> {n(goods.length, 'spot')} working well
             </h2>
             {goods.map((o) => <ObservationRow key={o.id} o={o} />)}
           </div>
         )}
 
-        {/* Who we connected with — the social outcome */}
+        {/* Who the walk connected */}
         {connections.length > 0 && (
           <div className="rounded-xl bg-white p-5 shadow-sm">
             <h2 className="mb-2 text-base font-bold text-[#191A2E]">Who the walk connected</h2>
@@ -344,10 +442,10 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
           </div>
         )}
 
-        {/* Extra assignments, only if the organizer enabled them */}
+        {/* Extra forms */}
         {extraSubs.length > 0 && (
           <div className="rounded-xl bg-white p-5 shadow-sm">
-            <h2 className="mb-2 text-base font-bold text-[#191A2E]">Extra assignments</h2>
+            <h2 className="mb-2 text-base font-bold text-[#191A2E]">Extra forms the organizer requested</h2>
             {extraSubs.map((s) => {
               const m = moduleById(s.module)
               const answered = Object.entries(s.answers ?? {}).filter(
@@ -364,7 +462,7 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
                       </span>
                     )}
                   </p>
-                  <p className="mt-0.5 text-xs text-[#6B7280]">{answered.length} answer{answered.length === 1 ? '' : 's'} recorded{typeof s.answers?.notes === 'string' && s.answers.notes ? ` · “${s.answers.notes}”` : ''}</p>
+                  <p className="mt-0.5 text-xs text-[#6B7280]">{n(answered.length, 'answer')} recorded{typeof s.answers?.notes === 'string' && s.answers.notes ? ` · "${s.answers.notes}"` : ''}</p>
                 </div>
               )
             })}
@@ -401,6 +499,10 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
           </p>
         )}
       </div>
+
+      {lightboxSrc && (
+        <PhotoLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+      )}
     </main>
   )
 }

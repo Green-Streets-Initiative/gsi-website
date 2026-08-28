@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
-  ArrowClockwise, Camera, CheckCircle, Smiley, SmileyMeh, SmileyNervous,
-  SmileySad, SmileyXEyes, ThumbsUp, Warning, X,
+  ArrowClockwise, Camera, CheckCircle, Microphone, Smiley, SmileyMeh,
+  SmileyNervous, SmileySad, SmileyXEyes, ThumbsUp, Warning, X,
 } from '@phosphor-icons/react'
 import VolunteerRouteMap from '@/components/volunteer-route/VolunteerRouteMap'
+import PhotoLightbox from '@/components/walk-audit/PhotoLightbox'
+import { useDictation } from '@/components/walk-audit/useDictation'
 
 export interface AuditObservation {
   id: string
@@ -42,9 +44,6 @@ interface Props {
   onClose: () => void
 }
 
-// The whole instrument: photo → works-well/problem → done (severity,
-// category, and a note are optional). Location comes from GPS, adjustable
-// by tapping the mini-map.
 export default function ObservationCapture({
   token, auditId, observer, routeCoordinates, fallbackCenter, onSaved, onClose,
 }: Props) {
@@ -57,6 +56,7 @@ export default function ObservationCapture({
     path?: string
     url?: string
   }>({ status: 'none' })
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const [valence, setValence] = useState<'good' | 'problem' | null>(null)
   const [severity, setSeverity] = useState<number | null>(null)
   const [category, setCategory] = useState<string | null>(null)
@@ -64,6 +64,10 @@ export default function ObservationCapture({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const dictation = useDictation((transcript) => {
+    setNote((prev) => (prev ? `${prev} ${transcript}` : transcript))
+  })
 
   useEffect(() => {
     if (!('geolocation' in navigator)) {
@@ -157,7 +161,7 @@ export default function ObservationCapture({
           </button>
         </div>
 
-        {/* Photo — the lead gesture */}
+        {/* Photo */}
         <input
           ref={fileInputRef}
           type="file"
@@ -185,13 +189,17 @@ export default function ObservationCapture({
             <img
               src={photo.url ?? photo.previewUrl}
               alt=""
-              className={`h-20 w-24 rounded-lg object-cover ${photo.status !== 'done' ? 'opacity-50' : ''}`}
+              onClick={() => {
+                const src = photo.url ?? photo.previewUrl
+                if (src) setLightboxSrc(src)
+              }}
+              className={`h-20 w-24 cursor-pointer rounded-lg object-cover ${photo.status !== 'done' ? 'opacity-50' : ''}`}
             />
             <div className="min-w-0 flex-1 text-xs text-[#6B7280]">
               {photo.status === 'uploading' && 'Uploading…'}
               {photo.status === 'done' && (
                 <span className="inline-flex items-center gap-1 text-green-700">
-                  <CheckCircle size={13} weight="bold" /> Photo saved
+                  <CheckCircle size={13} weight="bold" /> Photo saved — tap to expand
                 </span>
               )}
               {photo.status === 'failed' && (
@@ -213,7 +221,7 @@ export default function ObservationCapture({
           </div>
         )}
 
-        {/* Valence — the one required tap */}
+        {/* Valence */}
         <div className="mb-3 grid grid-cols-2 gap-2">
           <button
             onClick={() => setValence('good')}
@@ -237,7 +245,7 @@ export default function ObservationCapture({
           </button>
         </div>
 
-        {/* Optional detail — severity only for problems */}
+        {/* Severity (problems only) */}
         {valence === 'problem' && (
           <div className="mb-3">
             <p className="mb-1.5 text-xs font-medium text-[#191A2E]">How bad? (optional)</p>
@@ -266,6 +274,7 @@ export default function ObservationCapture({
           </div>
         )}
 
+        {/* Category */}
         <div className="mb-3">
           <p className="mb-1.5 text-xs font-medium text-[#191A2E]">What kind of spot? (optional)</p>
           <div className="flex flex-wrap gap-1.5">
@@ -285,15 +294,31 @@ export default function ObservationCapture({
           </div>
         </div>
 
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Say it in a sentence (optional) — the mic button on your keyboard works great here"
-          rows={2}
-          className="mb-3 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#2966E5] focus:outline-none"
-        />
+        {/* Note with mic button */}
+        <div className="relative mb-3">
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="What do you see? (optional)"
+            rows={2}
+            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 pr-12 text-sm focus:border-[#2966E5] focus:outline-none"
+          />
+          {dictation.supported && (
+            <button
+              onClick={dictation.toggle}
+              aria-label={dictation.listening ? 'Stop dictating' : 'Dictate your observation'}
+              className={`absolute bottom-3 right-2 rounded-full p-1.5 transition ${
+                dictation.listening
+                  ? 'animate-pulse bg-red-500 text-white'
+                  : 'bg-gray-100 text-[#6B7280] hover:bg-[#2966E5]/10 hover:text-[#2966E5]'
+              }`}
+            >
+              <Microphone size={18} weight={dictation.listening ? 'fill' : 'regular'} />
+            </button>
+          )}
+        </div>
 
-        {/* Location — GPS by default, tap map to adjust */}
+        {/* Location */}
         {located && (pos || routeCoordinates.length >= 2) && (
           <div className="mb-3">
             <p className="mb-1.5 text-xs font-medium text-[#191A2E]">
@@ -323,6 +348,10 @@ export default function ObservationCapture({
           {saving ? 'Saving…' : 'Save & keep walking'}
         </button>
       </div>
+
+      {lightboxSrc && (
+        <PhotoLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+      )}
     </div>
   )
 }
