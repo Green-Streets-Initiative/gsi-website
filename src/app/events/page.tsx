@@ -37,6 +37,7 @@ export default async function EventsListingPage() {
       source_id,
       tags,
       featured,
+      ride_series_id,
       content_items!inner (
         id,
         title,
@@ -73,6 +74,7 @@ export default async function EventsListingPage() {
       source_id: row.source_id as string | null,
       tags: (row.tags as string[] | null) ?? [],
       featured: (row.featured as boolean | null) ?? false,
+      ride_series_id: (row.ride_series_id as string | null) ?? null,
     }
   })
 

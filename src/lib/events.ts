@@ -25,6 +25,8 @@ export interface CommunityEvent {
   source_id: string | null
   tags: string[]
   featured: boolean
+  /** Set when this event came from a ride planned in the Shift app (00817). */
+  ride_series_id: string | null
 }
 
 export interface EventOrganizer {

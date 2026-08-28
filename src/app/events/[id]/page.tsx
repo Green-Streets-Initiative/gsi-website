@@ -51,6 +51,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       source_id,
       tags,
       featured,
+      ride_series_id,
       content_items!inner (
         id,
         title,
@@ -87,6 +88,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     source_id: data.source_id as string | null,
     tags: (data.tags as string[] | null) ?? [],
     featured: (data.featured as boolean | null) ?? false,
+    ride_series_id: (data.ride_series_id as string | null) ?? null,
   }
 
   return (

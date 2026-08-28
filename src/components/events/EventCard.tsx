@@ -60,11 +60,18 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
         <h3 className="mt-0.5 truncate font-display text-[18px] font-bold leading-snug text-white">
           {event.title}
         </h3>
-        <p className="mt-1 truncate text-[13px] text-white/55">
+        <p className="mt-1 truncate text-[13px] text-white/75">
           {metaParts.join(' · ')}
         </p>
-        {event.tags.length > 0 && (
+        {(event.ride_series_id || event.tags.length > 0) && (
           <div className="mt-1.5 flex flex-wrap gap-1">
+            {/* Planned in the Shift app — riders can RSVP there rather than
+                following a link to somebody else's site. */}
+            {event.ride_series_id && (
+              <span className="inline-block rounded-full bg-lime/15 px-2 py-0.5 text-[10px] font-semibold leading-tight text-lime">
+                Join with Shift
+              </span>
+            )}
             {event.tags.slice(0, 3).map(tag => {
               const tm = getTagMeta(tag)
               return (
