@@ -4,7 +4,12 @@ import { getQualifyingTowns } from '@/lib/towns/queries'
 /**
  * Cross-link modules pointing at the town pages (paths Phase 1). Both read the
  * live directory now — each was hardcoded to the original nine towns and went
- * stale within months. utm_content identifies the entry point.
+ * stale within months.
+ *
+ * These hrefs stay clean: internal links carried a `utm_content` entry-point
+ * tag, and Search Console showed Google indexing the tagged URL instead of the
+ * canonical one for six of our biggest town pages. Entry point is still
+ * readable in PostHog from the referring pathname.
  */
 
 /** Chips shown before "All towns" takes over. The rest of the list is a click away. */
@@ -17,7 +22,7 @@ const CHIP_LIMIT = 12
  * script runs. The ~350ms the directory RPC adds to an already-dynamic page is
  * the cheaper side of that trade.
  */
-export async function TownChipsStrip({ utmContent }: { utmContent: string }) {
+export async function TownChipsStrip() {
   const towns = await topTowns()
 
   return (
@@ -33,14 +38,14 @@ export async function TownChipsStrip({ utmContent }: { utmContent: string }) {
           {towns.map((t) => (
             <Link
               key={t.slug}
-              href={`/shift/towns/${t.slug}?utm_content=${utmContent}`}
+              href={`/shift/towns/${t.slug}`}
               className="rounded-full bg-white/[0.06] px-3.5 py-1.5 text-sm font-semibold text-white/85 transition-colors hover:bg-white/[0.12] hover:text-white"
             >
               {t.town_name}
             </Link>
           ))}
           <Link
-            href={`/shift/towns?utm_content=${utmContent}`}
+            href="/shift/towns"
             className="rounded-full bg-[#BAF14D]/15 px-3.5 py-1.5 text-sm font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D]/25"
           >
             All towns &rarr;
@@ -87,7 +92,7 @@ export async function TownsTeaserBand() {
           </p>
         </div>
         <Link
-          href="/shift/towns?utm_content=shift_page_teaser"
+          href="/shift/towns"
           className="shrink-0 rounded-full bg-[#BAF14D] px-6 py-3 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
         >
           Is your town on the board? &rarr;

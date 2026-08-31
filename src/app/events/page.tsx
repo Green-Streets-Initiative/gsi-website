@@ -83,7 +83,7 @@ export default async function EventsListingPage() {
       <Nav />
       <main style={{ paddingTop: '60px' }}>
         <EventsPage events={events} />
-        <TownChipsStrip utmContent="events_page_xlink" />
+        <TownChipsStrip />
       </main>
       <Footer />
     </>
