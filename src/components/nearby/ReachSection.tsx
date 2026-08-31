@@ -89,6 +89,53 @@ export function TransitChain({ steps, transfers = true }: {
 }
 
 /**
+ * What you actually do on each ride: get on here, going that way, ride this
+ * many stops, get off there. The chip chain answers "which lines"; without
+ * this it never answered "and then what" — a badge reading "85" tells a
+ * newcomer nothing about where to stand or when to pull the cord.
+ *
+ * Every field here already rode in on the same Google call the chain uses.
+ * Fragments are assembled rather than one big sentence so a missing headsign
+ * or stop count drops out cleanly instead of leaving a gap in the copy.
+ */
+export function TransitLegs({ steps }: { steps: ReachStep[] }) {
+  const tr = useNearbyT()
+  const legs = steps.filter(s => s.boardStop || s.alightStop || s.headsign)
+  if (legs.length === 0) return null
+  return (
+    <ol className="mt-2.5 space-y-2">
+      {legs.map((s, i) => {
+        const ride = [
+          s.headsign ? tr('reach.leg_toward', { headsign: s.headsign }) : null,
+          s.numStops
+            ? tr(s.numStops === 1 ? 'reach.leg_stops_one' : 'reach.leg_stops', { count: s.numStops })
+            : null,
+          s.alightStop ? tr('reach.leg_off', { stop: s.alightStop }) : null,
+        ].filter(Boolean).join(' · ')
+        return (
+          <li key={`${s.label}-${i}`} className="flex items-start gap-2">
+            <span
+              className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+              style={{ backgroundColor: s.color, color: s.textColor }}
+            >
+              {s.label}
+            </span>
+            <span className="min-w-0">
+              {s.boardStop && (
+                <span className="block text-[0.78rem] font-semibold text-white">
+                  {tr('reach.leg_board', { stop: s.boardStop })}
+                </span>
+              )}
+              {ride && <span className="block text-[0.75rem] leading-snug text-white/80">{ride}</span>}
+            </span>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+/**
  * The everyday-routes picture: for a newcomer, bus numbers and line names
  * mean nothing until they're attached to places. Each destination shows the
  * ways to get there ranked fastest-first, plus the corridor — the line or
@@ -251,9 +298,12 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                     </div>
                     {legInfo && <RouteLegNote info={legInfo} />}
                     {expanded.mode === 'transit' && (
-                      <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
-                        {tr('reach.transit_leg_hint')}
-                      </p>
+                      <>
+                        <TransitLegs steps={row.steps} />
+                        <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
+                          {tr('reach.transit_leg_hint')}
+                        </p>
+                      </>
                     )}
                     {expanded.mode === 'bike' && row.bike_comfort && (
                       <>
