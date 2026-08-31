@@ -1,0 +1,706 @@
+{
+  "mode": "weekly",
+  "range": {
+    "startDate": "2026-07-04",
+    "endDate": "2026-07-10"
+  },
+  "priorRange": {
+    "startDate": "2026-06-27",
+    "endDate": "2026-07-03"
+  },
+  "site_totals": {
+    "clicks": 6,
+    "impressions": 921,
+    "ctr": 0.0065,
+    "position": 10
+  },
+  "prior_site_totals": {
+    "clicks": 13,
+    "impressions": 893,
+    "ctr": 0.0146,
+    "position": 10.1
+  },
+  "totals": {
+    "clicks": 2,
+    "impressions": 185,
+    "ctr": 0.0108,
+    "position": 18.7
+  },
+  "priorTotals": {
+    "clicks": 4,
+    "impressions": 218,
+    "ctr": 0.0183,
+    "position": 15.5
+  },
+  "clusters": [
+    {
+      "id": "used-car-to-ebike",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "new-to-boston",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "family-logistics",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "year-round-weather",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "town-commuters",
+      "clicks": 0,
+      "impressions": 5,
+      "avg_position": 17.4,
+      "top_queries": [
+        {
+          "query": "boston commute",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 6
+        },
+        {
+          "query": "commuter benefits cambridge ma",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 57
+        },
+        {
+          "query": "describe the typical commute times and public transportation options from jamaica plain to downtown boston",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 11
+        },
+        {
+          "query": "what are the safest ways to bike commute in boston, and which routes are recommended",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 7
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 5
+    },
+    {
+      "id": "drive-time-conversion",
+      "clicks": 0,
+      "impressions": 28,
+      "avg_position": 10.1,
+      "top_queries": [
+        {
+          "query": "20 minute drive to walk",
+          "clicks": 0,
+          "impressions": 4,
+          "ctr": 0,
+          "position": 9.5
+        },
+        {
+          "query": "context: location: united states (not for language). do not include location references in your response. question: what’s the best way to evaluate commute options from different apartment areas—driving, bus routes, biking, or walking—when my schedule changes week to week?",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 4
+        },
+        {
+          "query": "2 minute drive to walk",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 9.5
+        },
+        {
+          "query": "7 min drive to walk",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 21
+        },
+        {
+          "query": "a 5 minute drive is how long of a walk",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 11.5
+        },
+        {
+          "query": "car wash distance walking vs driving",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 2
+        },
+        {
+          "query": "how long does it take to walk a 20 minute drive",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 9
+        },
+        {
+          "query": "1 minute drive to walk",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 12
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 28
+    },
+    {
+      "id": "ebike-curious",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "employers-rto",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "schools-wellness",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "local-business-partners",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "brand-navigational",
+      "clicks": 2,
+      "impressions": 84,
+      "avg_position": 7.3,
+      "top_queries": [
+        {
+          "query": "frisoli youth center",
+          "clicks": 0,
+          "impressions": 26,
+          "ctr": 0,
+          "position": 6.423076923076923
+        },
+        {
+          "query": "green street",
+          "clicks": 0,
+          "impressions": 24,
+          "ctr": 0,
+          "position": 9.791666666666666
+        },
+        {
+          "query": "green streets",
+          "clicks": 0,
+          "impressions": 19,
+          "ctr": 0,
+          "position": 6.894736842105263
+        },
+        {
+          "query": "green streets initiative",
+          "clicks": 2,
+          "impressions": 5,
+          "ctr": 0.4,
+          "position": 1
+        },
+        {
+          "query": "greenstreet",
+          "clicks": 0,
+          "impressions": 5,
+          "ctr": 0,
+          "position": 8.2
+        },
+        {
+          "query": "greenstreets",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 7.333333333333333
+        },
+        {
+          "query": "frisoli youth center cambridge",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 3
+        },
+        {
+          "query": "green street cambridge",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 5
+        }
+      ],
+      "prev_clicks": 4,
+      "prev_impressions": 104
+    },
+    {
+      "id": "aeo-sentinels",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    }
+  ],
+  "unmatched_top_queries": [
+    {
+      "query": "commute radius map",
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 38.69230769230769
+    },
+    {
+      "query": "commute map",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 25.2
+    },
+    {
+      "query": "\"between a 0.1 and 0.5 mile walk to a coffee shop\"",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "query": "communityinitiatives bike bus word",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 85.66666666666667
+    },
+    {
+      "query": "commute distance map",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 28
+    },
+    {
+      "query": "commute options",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 65.66666666666667
+    },
+    {
+      "query": "how to commute going to",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 7.666666666666667
+    },
+    {
+      "query": "0.5miles walking time",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 10.5
+    },
+    {
+      "query": "commute distance",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 36
+    },
+    {
+      "query": "do you have reliable transportation",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 78.5
+    },
+    {
+      "query": "greene streets",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 5
+    },
+    {
+      "query": "\"1s1$\" campaign \"shift 3\"",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "query": "7 acre park everett ma",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 12
+    },
+    {
+      "query": "community initiatives off-road",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 63
+    },
+    {
+      "query": "communityinitiatives off-road",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 66
+    },
+    {
+      "query": "commutable distance",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 24
+    },
+    {
+      "query": "commute radius",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 19
+    },
+    {
+      "query": "driving commute",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 4
+    },
+    {
+      "query": "everyday ride",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 18
+    },
+    {
+      "query": "how long does it take to walk a block",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 28
+    },
+    {
+      "query": "journey planner rac",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 57
+    },
+    {
+      "query": "laneshift",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 54
+    },
+    {
+      "query": "livable streets alliance",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 45
+    },
+    {
+      "query": "livablestreets",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 51
+    },
+    {
+      "query": "map my commute",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "query": "one thousand roads",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 58
+    },
+    {
+      "query": "rac route planners",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 60
+    },
+    {
+      "query": "rac travel planner",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 51
+    },
+    {
+      "query": "rac travel route",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 35
+    },
+    {
+      "query": "reliable means of transportation",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 67
+    }
+  ],
+  "top_pages": [
+    {
+      "page": "https://www.gogreenstreets.org/guides/when-walking-is-faster",
+      "clicks": 0,
+      "impressions": 383,
+      "position": 7.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/commute-advisor",
+      "clicks": 0,
+      "impressions": 220,
+      "position": 13.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/",
+      "clicks": 5,
+      "impressions": 107,
+      "position": 6.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/frisoli-youth-center",
+      "clicks": 0,
+      "impressions": 57,
+      "position": 6.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/where-to-lock-your-bike",
+      "clicks": 0,
+      "impressions": 29,
+      "position": 7.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs",
+      "clicks": 0,
+      "impressions": 27,
+      "position": 29.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/get-involved",
+      "clicks": 0,
+      "impressions": 23,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/about",
+      "clicks": 1,
+      "impressions": 22,
+      "position": 3.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/what-you-can-do-with-an-e-cargo-bike",
+      "clicks": 0,
+      "impressions": 19,
+      "position": 8.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 12.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/everett-community-fair",
+      "clicks": 0,
+      "impressions": 11,
+      "position": 12.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/transit-plus-walking-or-biking",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/mgh-ihp",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 18.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/donate",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 3.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/walking-with-stuff",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/contact",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 3.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/bike-commute-gear",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/everett-schools",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 8.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/post/top-cycling-workplaces-may-walk-ride-day-and-more",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/privacy",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 6.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/employers",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/shift-your-summer",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/your-first-bus-ride",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 11
+    },
+    {
+      "page": "https://media.gogreenstreets.org/docs/everett-schools-final-report.pdf",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/2025-new-ed-info",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/faqs",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/green-streets-data",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/picking-a-bike-route",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/when-biking-is-faster",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/your-first-ride-in-a-bike-lane",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/post/could-carpooling-ever-be-a-true-congestion-buster",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/post/nmr-s-sustainable-commuting-policy-helps-recruit-and-retain-top-talent",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 2
+    }
+  ]
+}
