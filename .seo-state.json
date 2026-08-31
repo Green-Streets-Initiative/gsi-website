@@ -54,6 +54,11 @@
       "since": "2026-08-31",
       "what": "The stagnation trigger reads total organic clicks, which brand searches dominate. Non-brand discovery impressions were flat (48 -> 49) while the headline rose 51% over four weeks. The trigger would not fire on a flat discovery trend.",
       "action": "Reconsider the trigger's basis at the September deep-dive."
+    },
+    {
+      "since": "2026-08-31",
+      "what": "Drive-time guide shipped. Its two sibling pages (/commute-advisor, /guides/when-walking-is-faster) took 472 impressions and 0 clicks in the week of 2026-08-22. Also watch for cannibalisation between the new guide and when-walking-is-faster.",
+      "action": "Report the three pages together in the ledger each week until ~2026-10-12, then call it."
     }
   ],
   "resolved_notes": [
@@ -74,20 +79,15 @@
       "what": "Shipping item 1 re-backfilled 16 weekly files on Saturday-to-Friday windows, but the 16 original Monday-ending files from the 2026-08-20 backfill stayed on disk. The two series overlap, so a naive glob over weekly-*.json would double-count.",
       "fix": "Deleting the superseded files was blocked by the auto-mode permission classifier, so the fix is a selection rule instead: the current series is defined as files containing site_totals, written into seo/methodology.md under the accountability ledger. Verified that selection is contiguous and reproduces the 2026-08-31 baselines exactly.",
       "do_not": "Do not glob seo/data/gsc/weekly-*.json without filtering on site_totals. Do not read the level from `totals` — that field is query-dimension and runs ~4x under."
-    }
-  ],
-  "pending": [
+    },
     {
-      "report_date": "2026-08-24",
-      "item_n": 3,
-      "type": "guide-draft",
-      "ref": "seo/drafts/guides/how-far-is-a-ten-minute-drive-on-foot.md",
-      "title": "Micro-guide: how far a 5/10/15/20-minute drive is on foot and by bike",
-      "ship_steps": "Remaining step only: apply supabase/migrations/20260508_reseed_micro_guides_library.sql to production via the Supabase management API (or paste it into the dashboard SQL editor). Then verify the slug returns 200 and record the ship in seo/experiments.md.",
-      "note": "As of 2026-08-31 everything is committed and pushed on main (commit 9064b16): the guide is in content/micro-guides-library.md with status approved, the builder count is bumped to 21, and the reseed migration is regenerated. ONLY the production migration has not been applied — the auto-mode permission classifier blocked both the Supabase management API call and the payload write. /guides/how-far-is-a-ten-minute-drive-on-foot returns 404 until Keith runs it. Nothing is live yet.",
-      "status": "code-shipped-awaiting-migration"
+      "date": "2026-08-31",
+      "what": "After the migration published the guide, /guides did not list it and llms.txt/sitemap did not include it. sitemap.ts and llms.txt/route.ts both set revalidate = 3600 and self-heal within the hour, but src/app/guides/page.tsx had no revalidate, so the library index was statically baked at build time and would only update on the next deploy.",
+      "fix": "Added `export const revalidate = 3600` to src/app/guides/page.tsx to match the sibling files.",
+      "do_not": "Do not assume a guide is discoverable just because its own /guides/<slug> URL returns 200. After shipping a guide, check the /guides index, sitemap.xml and llms.txt too — the slug route is dynamic and will 200 well before the index catches up."
     }
   ],
+  "pending": [],
   "shipped": [
     {
       "report_date": "2026-08-24",
@@ -112,6 +112,15 @@
       "title": "Drop utm_content from same-site internal links (Footer, Nav, TownsCrossLink)",
       "shipped_on": "2026-08-31",
       "note": "Merged to main. WATCH: over the next few weeks the GSC page table should show clean /shift/towns/<slug> rows replacing the ?utm_content= ones for cambridge, everett, somerville, newton, watertown, boston; arlington should consolidate from two rows to one. Report on it each weekly pulse until it resolves. Shift app and campaign utm tags were deliberately left in place."
+    },
+    {
+      "report_date": "2026-08-24",
+      "item_n": 3,
+      "ref": "seo/drafts/guides/how-far-is-a-ten-minute-drive-on-foot.md",
+      "title": "Micro-guide: how far a 5/10/15/20-minute drive is on foot and by bike",
+      "shipped_on": "2026-08-31",
+      "live_url": "https://www.gogreenstreets.org/guides/how-far-is-a-ten-minute-drive-on-foot",
+      "note": "Live and verified: 200, correct title and canonical, all five price tokens resolved ($18 parking, $2.40 subway, $1.70 bus, $3 / $11.13 Bluebikes), no unresolved {{price:}} left. Revised on Keith 2026-08-31 to cover per-mode door-to-door factors. WATCH: does /commute-advisor + /guides/when-walking-is-faster CTR recover, and does this guide take its own impressions? Give it ~6 weeks."
     }
   ]
 }

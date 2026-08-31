@@ -4,6 +4,10 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import GuideLibrary, { type GuideCard } from '@/components/guides/GuideLibrary'
 
+// Guides are published by migration, not by deploy, so the library must not be
+// baked in at build time. Matches sitemap.ts and llms.txt/route.ts.
+export const revalidate = 3600
+
 export const metadata = {
   title: 'Guides — Green Streets Initiative',
   description:
