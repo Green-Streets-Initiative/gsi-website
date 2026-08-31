@@ -43,7 +43,9 @@ const SILVER_IDS = new Set(['741', '742', '743', '746', '749', '751', 'Silver'])
 /** Color for any MBTA route id — subway lines by table, CR-* purple, SL gray, numeric bus yellow. */
 export function lineColor(routeId: string): string {
   if (ROUTE_COLORS[routeId]) return ROUTE_COLORS[routeId]
-  if (routeId.startsWith('CR-')) return COMMUTER_RAIL_COLOR
+  // 'CR' is the family id the connections payload uses when several
+  // commuter rail lines meet you at one station.
+  if (routeId === 'CR' || routeId.startsWith('CR-')) return COMMUTER_RAIL_COLOR
   // Ferries: reachable as connections ("Charlestown Ferry at Long Wharf"),
   // where they'd otherwise fall through to the unknown-route gray.
   if (routeId.startsWith('Boat-')) return FERRY_COLOR

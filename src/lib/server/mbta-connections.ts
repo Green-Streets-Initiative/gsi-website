@@ -115,6 +115,13 @@ const SPINE_RANK = new Map(SPINE.map((r, i) => [r.id, i]))
  * Blue transfers (the ones that actually teach the network) off the end of
  * the block. Same for the Silver Line's six GTFS route ids.
  */
+/** Commuter rail lines that meet you at the SAME station are one fact, not
+ *  four. Route 85 spent three of its six connection slots on Franklin,
+ *  Needham and Providence/Stoughton, all "at Ruggles" — true, and useless
+ *  three times over. They collapse into one "Commuter rail" row; the
+ *  station name is what the rider needs. */
+const COMMUTER_RAIL_FAMILY = { id: 'CR', name: 'Commuter rail' }
+
 const FAMILY: Record<string, { id: string; name: string }> = {
   'Green-B': { id: 'Green', name: 'Green Line' },
   'Green-C': { id: 'Green', name: 'Green Line' },
@@ -129,6 +136,7 @@ const FAMILY: Record<string, { id: string; name: string }> = {
 }
 
 function familyOf(routeId: string): { id: string; name: string } | null {
+  if (routeId.startsWith('CR-')) return COMMUTER_RAIL_FAMILY
   return FAMILY[routeId] ?? null
 }
 
@@ -248,13 +256,13 @@ export async function getConnections(
   // Travel order, de-duplicated: the stop names in a connection come out in
   // the order you'd pass them, and direction 1 only adds what direction 0
   // didn't already cover.
-  const ownStops: { id: string; lat: number; lng: number }[] = []
+  const ownStops: { id: string; name: string; lat: number; lng: number }[] = []
   const seenOwn = new Set<string>()
   for (const d of directions) {
     for (const s of d.stops) {
       if (seenOwn.has(s.id)) continue
       seenOwn.add(s.id)
-      ownStops.push({ id: s.id, lat: s.lat, lng: s.lng })
+      ownStops.push({ id: s.id, name: s.name, lat: s.lat, lng: s.lng })
     }
   }
   // No stop list means the route side never loaded — not "no connections".
@@ -270,7 +278,13 @@ export async function getConnections(
 
   // Merge each branch family into one entry, keyed by the family id (or the
   // route's own id when it has no family), so a line is named once.
-  const merged = new Map<string, { name: string; rank: number; stops: { id: string; name: string }[] }>()
+  const merged = new Map<string, {
+    name: string
+    rank: number
+    stops: { id: string; name: string }[]
+    /** Station-level names on OUR route where the match happened. */
+    ownStations: string[]
+  }>()
   for (const line of spine) {
     const fam = familyOf(line.id)
     const key = fam?.id ?? line.id
@@ -286,9 +300,13 @@ export async function getConnections(
           name: fam?.name ?? line.name,
           rank: SPINE_RANK.get(line.id) ?? 99,
           stops: [],
+          ownStations: [],
         }
         if (!entry.stops.some(x => x.name === target.name)) {
           entry.stops.push({ id: target.id, name: target.name })
+        }
+        if (own.id.startsWith('place-') && own.name && !entry.ownStations.includes(own.name)) {
+          entry.ownStations.push(own.name)
         }
         merged.set(key, entry)
       }
@@ -304,7 +322,14 @@ export async function getConnections(
     // extras a rider would recognise. Where a station-level stop matched,
     // it's the only name worth showing.
     const stations = entry.stops.filter(x => x.id.startsWith('place-'))
-    const named = (stations.length > 0 ? stations : entry.stops).map(x => x.name)
+    // Failing a station on THEIR side, name the place from OURS: the Green
+    // Line meets the Silver Line beside Boylston, and "Silver Line at
+    // Boylston" is a place a rider can picture — "at Washington St @ Essex
+    // St" is a corner nobody navigates by. ownNames are the matching stops
+    // on the route currently open, station-level first.
+    const named = stations.length > 0
+      ? stations.map(x => x.name)
+      : (entry.ownStations.length > 0 ? entry.ownStations : entry.stops.map(x => x.name))
     out.push({
       routeId: key,
       name: entry.name,
@@ -327,7 +352,7 @@ export async function getConnections(
 }
 
 function tier(routeId: string): number {
-  if (routeId.startsWith('CR-')) return 2
+  if (routeId === 'CR' || routeId.startsWith('CR-')) return 2
   if (routeId.startsWith('Boat-')) return 3
   if (routeId === 'Silver') return 1
   return 0 // rapid transit
