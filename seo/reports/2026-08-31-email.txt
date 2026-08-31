@@ -1,0 +1,198 @@
+SEO / AEO weekly pulse — Sun 31 Aug 2026
+Search Console window: Sat 22 Aug – Fri 28 Aug.
+
+=====================================================================
+THE LEDGER
+=====================================================================
+
+                                 This week    vs 4-wk avg   vs 12-wk avg
+Organic clicks (GSC)                    11    12.8   -14%   12.0    -8%
+Organic impressions (GSC)            1,366   1,263    +8%   1,036   +32%
+Avg position / CTR              13.6 / 0.81%   (prior week 11.8 / 1.48%)
+PostHog organic sessions                25    29.3   -15%   n/a
+AEO sentinel citations              0 of 6     0 of 6        0 of 6
+Rotated SERP checks           0 of 2 checked
+
+A down week against a rising month. Clicks fell 23 -> 11 and PostHog organic
+sessions fell 35 -> 25; both sources agree, so it is real and not a
+measurement artefact. But the four-week window still sits well above the four
+before it:
+
+                    Trailing 4 wks    Prior 4 wks    Change
+  Clicks               12.8 / wk        8.5 / wk      +51%
+  Impressions         1,263 / wk        858 / wk      +47%
+
+Impressions this week were still the third-highest of the last thirteen. What
+moved was conversion: click-through halved and average position slipped nearly
+two places. At these volumes one week is noise; the direction of the month is
+not.
+
+Two things about the numbers themselves. First, the 4-week and 12-week
+baselines are now exact — I recomputed them from thirteen no-dimension Search
+Console windows rather than the top-25 page rows, so last week's "at least"
+hedges are gone. The click baseline is 12.8, not the 10.5 carried in state.
+Second, nine of last week's apparent "bing.com" sessions turned out to be a
+mail-security link scanner following links, not people searching. The PostHog
+row above excludes them, and that filter is now recorded in state.
+
+THE NUMBER UNDER THE NUMBER: non-brand discovery impressions were 49 this week
+against 48 last week. Flat. The headline impression growth is real, but it is
+carried by brand searches and by two pages that convert nothing — not yet by
+the wedge audiences the strategy exists to win. Brand itself fell 123 -> 71,
+which is what pulled the weekly total down.
+
+=====================================================================
+EXPERIMENT VERDICTS
+=====================================================================
+
+None due. Nothing has shipped yet, so no verdict clock has started. The
+experiment ledger gets its first entries at next week's deep-dive.
+
+=====================================================================
+WHAT I FOUND
+=====================================================================
+
+1. Google is indexing the tagged copy of our best town pages, not the real one.
+
+   Our own links caused this. The footer's Shift Towns column and the nav
+   dropdown appear on every page, and every one of those links carried a
+   "?utm_content=" tracking tag. That made the tagged URL the most-linked
+   version of the page by a wide margin, and Google followed the link graph
+   instead of the canonical tag.
+
+   Over twelve weeks: the tagged Cambridge town page took 337 impressions and
+   the clean /shift/towns/cambridge-ma does not appear in Search Console at
+   all. Same for Everett, Somerville, Newton, Watertown and Boston — six of our
+   nine biggest town pages, 809 impressions sitting on parameterized copies.
+   Arlington shows both versions competing, splitting one page's signals in
+   two.
+
+   The canonical tags are correct; I verified them live. They are simply losing
+   to our own internal linking. Town pages are the strongest organic asset we
+   have, which is exactly why this is worth fixing — nothing looks broken.
+   That is item 4 below.
+
+2. Our two biggest pages took 472 impressions and converted none of them.
+
+   /guides/when-walking-is-faster (261 impressions, position 8.4) and
+   /commute-advisor (211 impressions, position 11.7) both took zero clicks.
+   They are the top two pages on the site, both on page one, and between them
+   they are the entire click-through story of the week.
+
+   New queries this week: "commute miles", "commute distance", "commute
+   radius" — joining last week's "10 minute drive to walk" and "what is a 5
+   minute drive in walking". People are asking for a distance-and-time
+   conversion and finding a tool that says nothing until they type into it.
+   Second consecutive week, same gap, same result. Item 3 from last week is
+   the direct answer and is still sitting unshipped.
+
+3. Someone pricing a used cargo e-bike found us — the first sign of the
+   used-car wedge.
+
+   Two variants of a search for a used Tern GSD at $3,000 took 10 impressions
+   at position 10, and our e-cargo-bike guide jumped from 10 to 38
+   impressions. That is precisely the audience we built the used-car-to-e-bike
+   cluster for, arriving through a door we did not build. One week is too thin
+   to act on, but it is the first organic life from a wedge audience that has
+   shown zero impressions since this routine began. Watching it, and feeding
+   it into next week's portfolio review.
+
+=====================================================================
+ANSWER ENGINES
+=====================================================================
+
+Sentinels: 0 of 6, unchanged. Two weeks of identical incumbents — national
+money blogs, tourist guides, and bike manufacturers.
+
+The softest targets remain "what is the cheapest way to get around Boston" and
+"do you need a car in Boston": every page ranking for those is written for a
+visitor deciding whether to rent a car, not for someone who just signed a lease
+in Somerville. "How do people bike in winter in Boston" is the third — it maps
+to a cluster with zero impressions to date and a seasonal window that opens in
+about eight weeks.
+
+What this measures: Search Console, our presence in live web search for
+question-shaped queries, referral traffic from answer-engine domains, and
+structured-data health. It does not measure rankings inside ChatGPT,
+Perplexity or Claude, or Google AI Overview inclusion — no tool in this stack
+sees those, and I will never put an invented "AI visibility" score in front of
+you.
+
+ChatGPT referrals went 6 -> 2, both landing on Shift Your Summer rules pages
+again — participants asking an assistant about contest rules, not new-audience
+discovery.
+
+=====================================================================
+WAITING ON YOU
+=====================================================================
+
+Housekeeping first: both code branches from last week had been cut before a
+week of unrelated work landed, so merging them as they stood would have
+reverted the walk-audit and events-calendar commits. I rebased both this
+morning. Each is now a clean single-file change.
+
+Item 1 — Record true Search Console totals.
+  One file. This week's ledger came from a throwaway probe; merging this makes
+  it automatic.
+  to ship: open Claude Code and say "ship SEO item 1"
+
+Item 2 — Repair the portfolio's query-bucketing patterns.
+  One file. The per-cluster numbers in the report are a manual replay of this
+  branch; merging it makes them real.
+  to ship: open Claude Code and say "ship SEO item 2"
+
+Item 3 — The drive-time micro-guide draft.
+  Finding 2 says the gap this fills cost us 472 impressions and zero clicks
+  this week alone.
+  to ship: open Claude Code and say "ship SEO item 3"
+
+Item 4 (new) — Stop pointing our own links at tagged town URLs.
+  Removes the "?utm_content=" tag from same-site links only: the footer's ten
+  town links, the nav dropdown, and the town chip strips. External campaign
+  links are untouched, and nothing on the receiving pages reads the tag — it
+  is analytics-only. The cost is losing which module on a page a click came
+  from; the referring page is still recorded. Typecheck clean.
+  Effort: small. Impact: medium-high — this consolidates our best organic
+  asset back onto its real URLs.
+  to ship: open Claude Code and say "ship SEO item 4"
+
+To decline any of these, say "decline SEO item N" and I will not re-propose it
+without new evidence.
+
+=====================================================================
+HEALTH
+=====================================================================
+
+All green. Three fingerprints moved and all three are accounted for: the
+sitemap grew 118 -> 131 entries (the Shift Your Semester revamp plus new
+events), robots.txt changed because /volunteer was added to the disallow list
+for the gated Field Guide, and llms.txt changed because it is generated from
+the live guides and towns tables — its hash will drift every time content is
+published, so from now on I fingerprint its link and section counts instead,
+which is what would actually reveal a section quietly disappearing.
+
+Titles, canonicals and structured data on both key pages check out.
+
+One note for next week: /commute-advisor carries only Organization and
+AdministrativeArea markup — no FAQ or How-To — despite being the
+highest-impression page on the site and ranking on question-shaped searches.
+That is the thinnest possible structured-data footprint for our most-seen
+page. I have not proposed it this week because three items are already
+waiting; it goes in next week's answer-engine pass.
+
+=====================================================================
+NEXT WEEK
+=====================================================================
+
+Sunday 7 September is the first monthly deep-dive: competitor teardown on the
+top three clusters, a portfolio re-evaluation (the cargo-bike price query goes
+in here), an answer-engine health pass, the first experiment proposals, and up
+to two new guide drafts.
+
+I also want to revisit the stagnation trigger there. It watches total organic
+clicks, which brand searches dominate — so it would happily stay quiet through
+a month of flat discovery traffic, which is the thing this routine is actually
+accountable for.
+
+Full report:
+https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-08-31.md
