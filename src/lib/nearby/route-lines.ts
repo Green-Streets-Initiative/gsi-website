@@ -20,7 +20,15 @@ const BIKE_TIER_STYLE: Record<string, { color: string; dash: boolean }> = {
 interface RouteGeometry {
   transit_segments?: { polyline: string; color: string; mode?: 'walk' | 'transit'; label?: string | null }[]
   bike_polyline?: string | null
-  bike_comfort?: { segments: { rating: string; polyline: string; distance_mi?: number; street?: string | null }[] } | null
+  bike_comfort?: {
+    segments: {
+      rating: string
+      polyline: string
+      distance_mi?: number
+      street?: string | null
+      street_keys?: string[]
+    }[]
+  } | null
 }
 
 export function reachRouteFeatures(
@@ -55,6 +63,10 @@ export function reachRouteFeatures(
         legRating: seg.rating,
         ...(seg.distance_mi !== undefined ? { legMiles: seg.distance_mi } : {}),
         ...(seg.street ? { legStreet: seg.street } : {}),
+        // Delimited rather than an array: the map highlight matches with a
+        // substring test, which works identically for a stretch that spans
+        // two streets. Matching on the display string would miss those.
+        ...(seg.street_keys?.length ? { legStreetKeys: `|${seg.street_keys.join('|')}|` } : {}),
       })
     }
   } else if (row.bike_polyline) {

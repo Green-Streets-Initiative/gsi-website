@@ -61,6 +61,10 @@ interface Props {
   /** Corridor shapes — features carry properties.corridorId/color/kind */
   corridorLines?: GeoJSON.FeatureCollection | null
   selectedCorridorId?: string | null
+  /** A street bullet the reader is pointing at — its stretches of the drawn
+   *  route light up and the rest of the route dims, so the list and the map
+   *  are provably the same thing. */
+  highlightedStreetKey?: string | null
   onCorridorSelect?: (id: string | null, source: CorridorSelectSource) => void
   /** Marker tapped — the page shows details in its panel (no popups: they
    *  clip and trap scroll on mobile) */
@@ -113,7 +117,7 @@ const BIKE_BG_OPACITY = { separated: 0.9, glow: 0.15, painted: 0.65 }
  */
 export default function NearbyMap({
   center, markers, lines, paintedVisible = true, separatedVisible = true,
-  corridorLines, selectedCorridorId = null, onCorridorSelect,
+  corridorLines, selectedCorridorId = null, highlightedStreetKey = null, onCorridorSelect,
   onMarkerTap, onLaneTap, onReachLegTap,
   fitCount, extraFitPoints, fitToLines = false, lineEmphasis = false,
   cooperative = true, controls, fitPadding, focusPoint, focusPadding,
@@ -356,12 +360,25 @@ export default function NearbyMap({
     if (!map || !loadedRef.current || !map.getLayer('corridor-lines')) return
     const sel = selectedCorridorId
 
+    // A pointed-at street narrows the emphasis one step further: inside the
+    // selected route, only its stretches stay bright.
+    const streetNeedle = highlightedStreetKey ? `|${highlightedStreetKey}|` : null
+    const onSelected = ['==', ['get', 'corridorId'], sel]
+    const onStreet = ['in', streetNeedle ?? '', ['coalesce', ['get', 'legStreetKeys'], '']]
     for (const layerId of ['corridor-lines', 'corridor-lines-dashed']) {
       if (!map.getLayer(layerId)) continue
       map.setPaintProperty(layerId, 'line-opacity',
-        sel ? ['case', ['==', ['get', 'corridorId'], sel], 0.95, 0.12] : CORRIDOR_OPACITY_DEFAULT)
+        sel
+          ? streetNeedle
+            ? ['case', ['all', onSelected, onStreet], 1, onSelected, 0.22, 0.08]
+            : ['case', onSelected, 0.95, 0.12]
+          : CORRIDOR_OPACITY_DEFAULT)
       map.setPaintProperty(layerId, 'line-width',
-        sel ? ['case', ['==', ['get', 'corridorId'], sel], 4, 2] : CORRIDOR_WIDTH_DEFAULT)
+        sel
+          ? streetNeedle
+            ? ['case', ['all', onSelected, onStreet], 6, onSelected, 3, 2]
+            : ['case', onSelected, 4, 2]
+          : CORRIDOR_WIDTH_DEFAULT)
     }
     map.setPaintProperty('corridor-casing', 'line-opacity', sel ? 0.25 : 0.6)
 
@@ -378,9 +395,17 @@ export default function NearbyMap({
     ;(async () => {
       const maplibregl = await loadMaplibre()
       if (sel && corridorLinesRef.current) {
-        const features = corridorLinesRef.current.features.filter(
+        // Pointing at a street frames THAT street — "where is JFK Surface
+        // Road?" is the question a bullet tap is asking, and refitting the
+        // whole route would answer a different one.
+        const all = corridorLinesRef.current.features.filter(
           f => (f.properties as { corridorId?: string })?.corridorId === sel
         )
+        const onStreet = streetNeedle
+          ? all.filter(f =>
+              ((f.properties as { legStreetKeys?: string })?.legStreetKeys ?? '').includes(streetNeedle))
+          : []
+        const features = onStreet.length > 0 ? onStreet : all
         if (features.length === 0) return
         const bounds = new maplibregl.LngLatBounds()
         for (const f of features) {
@@ -388,12 +413,16 @@ export default function NearbyMap({
           if (geom.type !== 'LineString') continue
           for (const c of geom.coordinates) bounds.extend(c as [number, number])
         }
-        map.fitBounds(bounds, { padding: clampedPadding(map, fitPaddingRef.current, 48), maxZoom: 14, duration: 700 })
+        map.fitBounds(bounds, {
+          padding: clampedPadding(map, fitPaddingRef.current, 48),
+          maxZoom: streetNeedle ? 16 : 14,
+          duration: 700,
+        })
       } else if (!sel && homeBoundsRef.current) {
         map.fitBounds(homeBoundsRef.current, { padding: clampedPadding(map, fitPaddingRef.current, 52), maxZoom: 14, duration: 700 })
       }
     })()
-  }, [selectedCorridorId])
+  }, [selectedCorridorId, highlightedStreetKey])
 
   // Point focus: ease so a tapped station/dock/borrow marker lands in the
   // window above the detail card (desktop) / sheet (mobile). Pure pan via a

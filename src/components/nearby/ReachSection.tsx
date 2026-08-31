@@ -152,7 +152,7 @@ export function TransitLegs({ steps }: { steps: ReachStep[] }) {
  *  - `routeSelection`/`onRouteSelect` (desktop two-pane): rows expand in
  *    place, following the PAGE selection — the parent owns the state and
  *    fires the reach_route_viewed analytics. */
-export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, onPlanCommute, partnerSlug }: {
+export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, highlightedStreetKey, onHighlightStreet, onPlanCommute, partnerSlug }: {
   center: { lat: number; lng: number }
   rows: ReachRow[]
   onRowTap?: (row: ReachRow) => void
@@ -161,6 +161,9 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
   onRouteSelect?: (sel: { id: string; mode: 'transit' | 'bike' } | null) => void
   /** A tapped stretch of the drawn route, shown inside the expanded row */
   legInfo?: RouteLegTapInfo | null
+  /** Street bullet currently lit on the map, and how to point at one. */
+  highlightedStreetKey?: string | null
+  onHighlightStreet?: (key: string | null) => void
   /** Renders the "Plan this commute" advisor handoff in expanded rows */
   onPlanCommute?: (row: ReachRow) => void
   /** Co-brand slug — rides the advisor handoff link when present */
@@ -318,7 +321,11 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                         <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
                           {tr('reach.bike_leg_hint')}
                         </p>
-                        <BikeComfortBlock comfort={row.bike_comfort} />
+                        <BikeComfortBlock
+                          comfort={row.bike_comfort}
+                          highlightedStreetKey={highlightedStreetKey}
+                          onHighlightStreet={onHighlightStreet}
+                        />
                       </>
                     )}
                     {/* Hand off to their maps app for the actual trip — turn-by-turn is its job */}

@@ -25,7 +25,13 @@ export const NEARBY_COMFORT_LABELS: Record<BikeComfortTier, string> = {
   shared_road: 'Shared road',
 }
 
-export default function BikeComfortBlock({ comfort }: { comfort: BikeComfortData }) {
+export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHighlightStreet }: {
+  comfort: BikeComfortData
+  /** The street currently lit on the map, if any. */
+  highlightedStreetKey?: string | null
+  /** Point at a street (or null to clear). Undefined leaves rows inert. */
+  onHighlightStreet?: (key: string | null) => void
+}) {
   const tr = useNearbyT()
   if (!comfort.segments || comfort.segments.length === 0) return null
   const labels: Record<BikeComfortTier, string> = {
@@ -51,21 +57,46 @@ export default function BikeComfortBlock({ comfort }: { comfort: BikeComfortData
         const otherMi = Math.round((totalMi - listedMi) * 10) / 10
         return (
           <div className="space-y-0.5 px-0.5">
-            {comfort.streets.map(s => (
-              <div key={s.label} className="flex items-baseline justify-between gap-2 text-[0.78rem]">
-                <span className="flex min-w-0 items-center gap-1.5 text-white/80">
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: NEARBY_COMFORT_COLORS[s.rating] }}
-                    aria-hidden="true"
-                  />
-                  <span className="truncate">{s.label}</span>
-                </span>
-                <span className="shrink-0 tabular-nums text-white/75">
-                  {s.distance_mi} {tr('bike.unit_mi')} {labels[s.rating].toLowerCase()}
-                </span>
-              </div>
-            ))}
+            {comfort.streets.map(s => {
+              // A street with a key can be pointed at; the map lights that
+              // stretch and frames it. Without a key (an older payload) the
+              // row stays exactly as it was.
+              const on = !!s.key && s.key === highlightedStreetKey
+              const body = (
+                <>
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: NEARBY_COMFORT_COLORS[s.rating] }}
+                      aria-hidden="true"
+                    />
+                    <span className="truncate">{s.label}</span>
+                  </span>
+                  <span className="shrink-0 tabular-nums text-white/75">
+                    {s.distance_mi} {tr('bike.unit_mi')}{' '}
+                    {s.mixed
+                      ? tr('bike.mostly_tier', { tier: labels[s.rating].toLowerCase() })
+                      : labels[s.rating].toLowerCase()}
+                  </span>
+                </>
+              )
+              return s.key && onHighlightStreet ? (
+                <button
+                  key={s.key}
+                  onClick={() => onHighlightStreet(on ? null : s.key!)}
+                  aria-pressed={on}
+                  className={`flex w-full items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left text-[0.78rem] transition-colors ${
+                    on ? 'bg-white/[0.09] text-white' : 'text-white/80 hover:bg-white/[0.05]'
+                  }`}
+                >
+                  {body}
+                </button>
+              ) : (
+                <div key={s.label} className="flex items-baseline justify-between gap-2 px-1 text-[0.78rem] text-white/80">
+                  {body}
+                </div>
+              )
+            })}
             {otherMi >= 0.2 && (
               <div className="flex items-baseline justify-between gap-2 text-[0.78rem]">
                 <span className="flex min-w-0 items-center gap-1.5 text-white/75">

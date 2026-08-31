@@ -68,9 +68,24 @@ interface ComfortSegment {
    *  Null on shared-road runs: those samples match no lane, and classifySample
    *  deliberately refuses to let them claim a street. */
   street: string | null
+  /** Canonical keys of the streets named above. The bullet list joins on
+   *  THESE, not on the display string — a stretch can span two streets
+   *  ("Commercial Street → Atlantic Avenue") while a bullet names one, so
+   *  matching on text would silently miss. */
+  street_keys: string[]
 }
 
-interface StreetComfort { label: string; rating: ComfortRating; distance_mi: number }
+interface StreetComfort {
+  label: string
+  rating: ComfortRating
+  distance_mi: number
+  /** Canonical key — what the map highlight matches segments against. */
+  key: string
+  /** The stated rating covers less than most of this street, so the label
+   *  has to hedge: a street that is half painted and half protected was
+   *  being announced as simply protected. */
+  mixed: boolean
+}
 
 interface BikeComfort {
   rating: ComfortRating | 'mixed' | null
@@ -475,14 +490,18 @@ function scoreBikeComfort(
    *  travel order. A quarter of the run is the bar — below that a street is
    *  a passing block, not what you'd say you rode. */
   const RUN_NAME_MIN_SHARE = 0.25
-  const runStreetName = (from: number, to: number, runMeters: number): string | null => {
-    if (runMeters <= 0) return null
-    const byKey = new Map<string, { variants: Map<string, number>; meters: number; firstAt: number }>()
+  const runStreetName = (
+    from: number,
+    to: number,
+    runMeters: number,
+  ): { name: string | null; keys: string[] } => {
+    if (runMeters <= 0) return { name: null, keys: [] }
+    const byKey = new Map<string, { key: string; variants: Map<string, number>; meters: number; firstAt: number }>()
     for (let s = from; s < to; s++) {
       const key = samples[s].streetKey
       const display = samples[s].streetDisplay
       if (!key || !display) continue
-      const st = byKey.get(key) ?? { variants: new Map<string, number>(), meters: 0, firstAt: s }
+      const st = byKey.get(key) ?? { key, variants: new Map<string, number>(), meters: 0, firstAt: s }
       st.variants.set(display, (st.variants.get(display) ?? 0) + 1)
       st.meters += sampleMeters(s)
       byKey.set(key, st)
@@ -492,8 +511,11 @@ function scoreBikeComfort(
       .sort((a, b) => b.meters - a.meters)
       .slice(0, 2)
       .sort((a, b) => a.firstAt - b.firstAt)
-    if (named.length === 0) return null
-    return named.map(st => displayStreetName(st.variants)).join(' → ')
+    if (named.length === 0) return { name: null, keys: [] }
+    return {
+      name: named.map(st => displayStreetName(st.variants)).join(' → '),
+      keys: named.map(st => st.key),
+    }
   }
 
   // Same-tier runs become drawable segments (geometry sliced from the path)
@@ -509,7 +531,10 @@ function scoreBikeComfort(
         rating: samples[runStart].rating,
         distance_mi: Math.round((meters / 1609.34) * 100) / 100,
         polyline: encodePolyline(path.slice(startIdx, endIdx + 1)),
-        street: runStreetName(runStart, s, meters),
+        ...(() => {
+          const named = runStreetName(runStart, s, meters)
+          return { street: named.name, street_keys: named.keys }
+        })(),
       })
     }
     runStart = s
@@ -534,8 +559,11 @@ function scoreBikeComfort(
 
   // Longest streets make the list, but they're presented in TRAVEL ORDER —
   // the list reads start-of-ride first, matching the map
+  /** Below this share, the dominant tier isn't the whole story and the label
+   *  says "mostly". Half-painted, half-protected was reading as protected. */
+  const DOMINANT_SHARE = 0.8
   const streets: StreetComfort[] = [...byStreet.entries()]
-    .map(([, st]) => {
+    .map(([key, st]) => {
       const entries = Object.entries(st.meters) as [ComfortRating, number][]
       entries.sort((a, b) => b[1] - a[1])
       const totalStreetM = entries.reduce((a, [, m]) => a + m, 0)
@@ -543,6 +571,8 @@ function scoreBikeComfort(
         label: displayStreetName(st.variants),
         rating: entries[0][0],
         distance_mi: Math.round((totalStreetM / 1609.34) * 10) / 10,
+        key,
+        mixed: totalStreetM > 0 && entries[0][1] / totalStreetM < DOMINANT_SHARE,
         firstIdx: st.firstIdx,
       }
     })
@@ -550,7 +580,7 @@ function scoreBikeComfort(
     .sort((a, b) => b.distance_mi - a.distance_mi)
     .slice(0, 6)
     .sort((a, b) => a.firstIdx - b.firstIdx)
-    .map(({ label, rating, distance_mi }) => ({ label, rating, distance_mi }))
+    .map(({ label, rating, distance_mi, key, mixed }) => ({ label, rating, distance_mi, key, mixed }))
 
   const rating: BikeComfort['rating'] =
     meterByRating.path / totalM >= 0.8 ? 'path'

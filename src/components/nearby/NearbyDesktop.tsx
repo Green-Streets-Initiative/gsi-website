@@ -213,6 +213,9 @@ export default function NearbyDesktop({
 
   // A tapped stretch of the drawn route; cleared whenever the selection moves
   const [legInfo, setLegInfo] = useState<RouteLegTapInfo | null>(null)
+  // Which street bullet the reader is pointing at. Lives here so the list and
+  // the map share one answer; cleared whenever the selection moves.
+  const [highlightedStreetKey, setHighlightedStreetKey] = useState<string | null>(null)
 
   // Section-collapse state for the bike-side shelves, owned here so it
   // survives the sheet's snap changes and tab hops (the app hoists it into
@@ -243,7 +246,7 @@ export default function NearbyDesktop({
     })
   }, [defaultOpenShelf])
 
-  useEffect(() => { setLegInfo(null) }, [selection])
+  useEffect(() => { setLegInfo(null); setHighlightedStreetKey(null) }, [selection])
   const handleLegTap = useCallback((info: RouteLegTapInfo) => {
     setLegInfo(info)
     posthog.capture('reach_leg_tapped', { leg: info.leg, surface: 'desktop' })
@@ -340,6 +343,7 @@ export default function NearbyDesktop({
                 separatedVisible={showBike}
                 corridorLines={overlay.lines}
                 selectedCorridorId={overlay.highlight}
+                highlightedStreetKey={highlightedStreetKey}
                 onCorridorSelect={(id, source) => {
                   if (id) select({ type: 'corridor', id }, source)
                   else select(null, source)
@@ -485,6 +489,8 @@ export default function NearbyDesktop({
                   routeSelection={routeSelection}
                   onRouteSelect={onRouteSelect}
                   legInfo={legInfo}
+                  highlightedStreetKey={highlightedStreetKey}
+                  onHighlightStreet={setHighlightedStreetKey}
                   onPlanCommute={onPlanCommute}
                   partnerSlug={partnerSlug}
                 />

@@ -201,6 +201,9 @@ export default function NearbyShell({
 
   // A tapped stretch of the drawn route; cleared whenever the selection moves
   const [legInfo, setLegInfo] = useState<RouteLegTapInfo | null>(null)
+  // Which street bullet the reader is pointing at. Lives here so the list and
+  // the map share one answer; cleared whenever the selection moves.
+  const [highlightedStreetKey, setHighlightedStreetKey] = useState<string | null>(null)
 
   // Section-collapse state for the bike-side shelves, owned here so it
   // survives the sheet's snap changes and tab hops (the app hoists it into
@@ -231,7 +234,7 @@ export default function NearbyShell({
     })
   }, [defaultOpenShelf])
 
-  useEffect(() => { setLegInfo(null) }, [selection])
+  useEffect(() => { setLegInfo(null); setHighlightedStreetKey(null) }, [selection])
   const handleLegTap = useCallback((info: RouteLegTapInfo) => {
     setLegInfo(info)
     setSnap('half')
@@ -313,6 +316,7 @@ export default function NearbyShell({
           separatedVisible={showBike}
           corridorLines={shellCorridorLines}
           selectedCorridorId={effectiveHighlight}
+            highlightedStreetKey={highlightedStreetKey}
           onCorridorSelect={(id, source) => {
             if (id) selectReveal({ type: 'corridor', id }, source)
             else select(null, source)
@@ -377,6 +381,8 @@ export default function NearbyShell({
                   center={center}
                   onMode={(m) => selectReach(reachRow, m, 'panel')}
                   legInfo={legInfo}
+                  highlightedStreetKey={highlightedStreetKey}
+                  onHighlightStreet={setHighlightedStreetKey}
                   onPlanCommute={onPlanCommute}
                   partnerSlug={partnerSlug}
                 />
@@ -518,12 +524,14 @@ export default function NearbyShell({
 
 /* ── Destination route detail: the route is on the MAIN map above ── */
 
-function ReachDetail({ row, mode, center, onMode, legInfo, onPlanCommute, partnerSlug }: {
+function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey, onHighlightStreet, onPlanCommute, partnerSlug }: {
   row: ReachRow
   mode: 'transit' | 'bike'
   center: { lat: number; lng: number }
   onMode: (mode: 'transit' | 'bike') => void
   legInfo?: RouteLegTapInfo | null
+  highlightedStreetKey?: string | null
+  onHighlightStreet?: (key: string | null) => void
   onPlanCommute?: (row: ReachRow) => void
   partnerSlug?: string | null
 }) {
@@ -579,7 +587,11 @@ function ReachDetail({ row, mode, center, onMode, legInfo, onPlanCommute, partne
           <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
             {tr('shell.bike_legend')}
           </p>
-          <BikeComfortBlock comfort={row.bike_comfort} />
+          <BikeComfortBlock
+                          comfort={row.bike_comfort}
+                          highlightedStreetKey={highlightedStreetKey}
+                          onHighlightStreet={onHighlightStreet}
+                        />
         </>
       )}
 

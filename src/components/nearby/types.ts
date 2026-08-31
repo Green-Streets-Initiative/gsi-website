@@ -65,12 +65,21 @@ export interface BikeComfortSegmentData {
   distance_mi: number
   /** This stretch of the route, encoded — drawn in tier colors on the map */
   polyline: string
+  street?: string | null
+  /** Canonical street keys — what a tapped bullet matches against. A stretch
+   *  can span two streets, which is why this is a list and why the match is
+   *  on keys rather than on the display string. */
+  street_keys?: string[]
 }
 
 export interface BikeStreetComfort {
   label: string
   rating: BikeComfortTier
   distance_mi: number
+  /** Canonical key — joins this bullet to its stretches on the map. */
+  key?: string
+  /** The stated tier covers less than most of the street, so say "mostly". */
+  mixed?: boolean
 }
 
 export interface BikeComfortData {
