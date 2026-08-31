@@ -51,6 +51,7 @@ export function CollapsibleSection({ title, count, teaser, swatch, open, onToggl
   onToggle: () => void
   children: ReactNode
 }) {
+  const tr = useNearbyT()
   return (
     <div className="mt-5">
       <button
@@ -62,8 +63,11 @@ export function CollapsibleSection({ title, count, teaser, swatch, open, onToggl
         <span className="min-w-0 flex-1 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
           {title} · {count}
         </span>
-        <span aria-hidden="true" className="shrink-0 text-[0.8rem] font-bold leading-none text-[#BAF14D]">
-          {open ? '▴' : '▾'}
+        {/* A bare chevron read as decoration once every section defaulted
+            closed — the list looked flat and finished. Naming the action
+            makes it unmistakably a control at a glance. */}
+        <span className="shrink-0 text-[0.72rem] font-bold leading-none text-[#BAF14D]">
+          {open ? tr('lists.section_hide') : tr('lists.section_show')} {open ? '▴' : '▾'}
         </span>
       </button>
       {!open && teaser && (

@@ -19,7 +19,7 @@ import {
 } from './useNearbyModel'
 import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
-import { StationList, BikeRouteList, DockList, BorrowRentList, ServiceDisruptionsCard } from './AroundYouLists'
+import { StationList, BikeRouteList, DockList, BorrowRentList, ServiceDisruptionsCard, firstBikeShelfKey } from './AroundYouLists'
 import { nearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
 import { ReachList, RouteLegNote, TransitChain, TransitLegs } from './ReachSection'
 import TripPlanner from './TripPlanner'
@@ -204,12 +204,24 @@ export default function NearbyShell({
 
   // Section-collapse state for the bike-side shelves, owned here so it
   // survives the sheet's snap changes and tab hops (the app hoists it into
-  // TransitBikePane for the same reason). Default all closed — the bike stack
-  // is too tall to scan otherwise.
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set())
+  // TransitBikePane for the same reason).
+  //
+  // null means "untouched", which renders the FIRST bike shelf open. Closing
+  // everything by default made the stack read as a flat list of headings; one
+  // open shelf shows the pattern, and the rest still collapse away. The
+  // sentinel (rather than seeding a Set) is what lets the default follow
+  // whichever shelf actually has corridors, without a setState-in-effect.
+  const [openSections, setOpenSections] = useState<Set<string> | null>(null)
+  const defaultOpenShelf = useMemo(() => firstBikeShelfKey(bikeCorridors), [bikeCorridors])
+  const isSectionOpen = useCallback(
+    (key: string) => (openSections ? openSections.has(key) : key === defaultOpenShelf),
+    [openSections, defaultOpenShelf],
+  )
   const toggleSection = useCallback((key: string) => {
     setOpenSections(prev => {
-      const next = new Set(prev)
+      // Seed from what's on screen, so opening Borrow doesn't silently close
+      // the shelf the user could see was open.
+      const next = new Set(prev ?? (defaultOpenShelf ? [defaultOpenShelf] : []))
       if (next.has(key)) next.delete(key)
       else {
         next.add(key)
@@ -217,7 +229,7 @@ export default function NearbyShell({
       }
       return next
     })
-  }, [])
+  }, [defaultOpenShelf])
 
   useEffect(() => { setLegInfo(null) }, [selection])
   const handleLegTap = useCallback((info: RouteLegTapInfo) => {
@@ -427,7 +439,7 @@ export default function NearbyShell({
                 popularStreetKeys={popularBikeStreetKeys}
                 highlightedCorridorId={highlightedCorridorId}
                 onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
-                openSections={openSections}
+                isSectionOpen={isSectionOpen}
                 onToggleSection={toggleSection}
               />
               <GuideLinks context="bike" guides={guides.data} modeFilter={modeFilter} />
@@ -435,13 +447,13 @@ export default function NearbyShell({
                 points={model.borrowRent}
                 onSelect={(id) => selectShowing({ type: 'borrow', id }, 'list')}
                 selectedId={selection?.type === 'borrow' ? selection.id : null}
-                openSections={openSections}
+                isSectionOpen={isSectionOpen}
                 onToggleSection={toggleSection}
               />
               {model.borrowRent.length > 0 && (
                 <GuideLinks context="borrow" guides={guides.data} modeFilter={modeFilter} />
               )}
-              <DockList docks={docks} onSelect={(id) => selectShowing({ type: 'dock', id }, 'list')} selectedId={selection?.type === 'dock' ? selection.id : null} openSections={openSections} onToggleSection={toggleSection} />
+              <DockList docks={docks} onSelect={(id) => selectShowing({ type: 'dock', id }, 'list')} selectedId={selection?.type === 'dock' ? selection.id : null} isSectionOpen={isSectionOpen} onToggleSection={toggleSection} />
               <GuideLinks context="docks" guides={guides.data} modeFilter={modeFilter} />
             </>
           )}

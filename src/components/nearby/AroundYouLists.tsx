@@ -319,7 +319,25 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
 
 /* ── Bike routes ── */
 
-export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCorridorId, onSelect, openSections, onToggleSection }: {
+/** The three shelves, in display order, with only the non-empty ones kept.
+ *  Exported so the shells can name the first shelf (which opens by default)
+ *  without re-deriving the split. */
+export function bikeShelfSplit(bikeCorridors: BikeCorridor[]) {
+  return [
+    { key: 'paths', items: bikeCorridors.filter(c => c.protection === 'path') },
+    { key: 'protected', items: bikeCorridors.filter(c => c.protection === 'protected' || c.protection === 'mostly-protected') },
+    { key: 'painted', items: bikeCorridors.filter(c => c.protection === 'painted') },
+  ].filter(s => s.items.length > 0)
+}
+
+/** The shelf that starts open. Every section defaulting closed made the
+ *  whole stack read as a flat list of headings — one open shelf shows the
+ *  pattern, and the rest still collapse away. */
+export function firstBikeShelfKey(bikeCorridors: BikeCorridor[]): string | null {
+  return bikeShelfSplit(bikeCorridors)[0]?.key ?? null
+}
+
+export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCorridorId, onSelect, isSectionOpen, onToggleSection }: {
   bikeCorridors: BikeCorridor[]
   /** Canonical keys of streets Shift riders actually ride (town heatmap).
    *  Badge only — never feeds the ordering. Empty set = no badges. */
@@ -327,7 +345,7 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
   highlightedCorridorId: string | null
   onSelect: (corridorId: string) => void
   /** Section-collapse state, owned by the shell so it survives sheet snaps. */
-  openSections: Set<string>
+  isSectionOpen: (key: string) => boolean
   onToggleSection: (key: string) => void
 }) {
   const tr = useNearbyT()
@@ -336,29 +354,12 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
   // Two shelves teach the taxonomy: car-free paths, then the on-street
   // protected tier that sits between paint and full separation — the lanes
   // novices ride past without realizing they're built for them.
-  const shelves = [
-    {
-      key: 'paths',
-      color: NEARBY_COMFORT_COLORS.path,
-      label: tr('lists.bike_shelf_paths'),
-      hint: null as string | null,
-      items: bikeCorridors.filter(c => c.protection === 'path'),
-    },
-    {
-      key: 'protected',
-      color: NEARBY_COMFORT_COLORS.protected,
-      label: tr('lists.bike_shelf_protected'),
-      hint: tr('lists.bike_shelf_protected_hint'),
-      items: bikeCorridors.filter(c => c.protection === 'protected' || c.protection === 'mostly-protected'),
-    },
-    {
-      key: 'painted',
-      color: NEARBY_COMFORT_COLORS.bike_lane,
-      label: tr('lists.bike_shelf_painted'),
-      hint: null as string | null,
-      items: bikeCorridors.filter(c => c.protection === 'painted'),
-    },
-  ].filter(s => s.items.length > 0)
+  const CHROME: Record<string, { color: string; label: string; hint: string | null }> = {
+    paths: { color: NEARBY_COMFORT_COLORS.path, label: tr('lists.bike_shelf_paths'), hint: null },
+    protected: { color: NEARBY_COMFORT_COLORS.protected, label: tr('lists.bike_shelf_protected'), hint: tr('lists.bike_shelf_protected_hint') },
+    painted: { color: NEARBY_COMFORT_COLORS.bike_lane, label: tr('lists.bike_shelf_painted'), hint: null },
+  }
+  const shelves = bikeShelfSplit(bikeCorridors).map(s => ({ ...s, ...CHROME[s.key] }))
 
   return (
     <>
@@ -377,7 +378,7 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
             name: nearest.name,
             detail: tr('lists.section_miles_away', { miles: (nearest.accessDistanceMeters / 1609.34).toFixed(1) }),
           })}
-          open={openSections.has(shelf.key)}
+          open={isSectionOpen(shelf.key)}
           onToggle={() => onToggleSection(shelf.key)}
         >
           {shelf.hint && (
@@ -424,11 +425,11 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
 
 /* ── Bike share docks ── */
 
-export function DockList({ docks, onSelect, selectedId, openSections, onToggleSection }: {
+export function DockList({ docks, onSelect, selectedId, isSectionOpen, onToggleSection }: {
   docks: BluebikeStationLive[]
   onSelect?: (id: string) => void
   selectedId?: string | null
-  openSections: Set<string>
+  isSectionOpen: (key: string) => boolean
   onToggleSection: (key: string) => void
 }) {
   const tr = useNearbyT()
@@ -457,7 +458,7 @@ export function DockList({ docks, onSelect, selectedId, openSections, onToggleSe
           dist: formatDistance(docks[0].distance_meters),
         }),
       })}
-      open={openSections.has('docks')}
+      open={isSectionOpen('docks')}
       onToggle={() => onToggleSection('docks')}
     >
         <div className="space-y-2.5">
@@ -519,11 +520,11 @@ export function DockList({ docks, onSelect, selectedId, openSections, onToggleSe
 
 /* ── Borrow & rent: bikes you don't have to own (CargoB, Pedal Power) ── */
 
-export function BorrowRentList({ points, onSelect, selectedId, openSections, onToggleSection }: {
+export function BorrowRentList({ points, onSelect, selectedId, isSectionOpen, onToggleSection }: {
   points: (BorrowRentPoint & { distMiles: number })[]
   onSelect?: (id: string) => void
   selectedId?: string | null
-  openSections: Set<string>
+  isSectionOpen: (key: string) => boolean
   onToggleSection: (key: string) => void
 }) {
   const tr = useNearbyT()
@@ -535,7 +536,7 @@ export function BorrowRentList({ points, onSelect, selectedId, openSections, onT
       title={tr('lists.borrow_rent_heading')}
       count={points.length}
       teaser={tr('lists.section_nearest_plain', { name: points[0].name })}
-      open={openSections.has('borrow')}
+      open={isSectionOpen('borrow')}
       onToggle={() => onToggleSection('borrow')}
     >
       <div className="space-y-2.5">
