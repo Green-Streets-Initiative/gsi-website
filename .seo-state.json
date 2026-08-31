@@ -24,12 +24,13 @@
     "aeo_sentinel_citations": 0
   },
   "health": {
-    "sitemap_loc_count": 131,
-    "llms_txt_hash": "3eae8f759744a8dbc5fe70134c6a1b72b741fa83347f2ec2e690c03ad4b54244",
-    "llms_txt_link_count": 72,
+    "sitemap_loc_count": 132,
+    "llms_txt_hash": "5c64d9aab1879ca6fea251ee95f14ca6315cbb3a045d2c1111860b933ad3ffc8",
+    "llms_txt_link_count": 73,
     "llms_txt_section_count": 5,
     "_llms_note": "/llms.txt is generated per request from approved guides + qualifying towns (src/app/llms.txt/route.ts), so its hash changes whenever content is published. Treat hash drift as expected; the link and section counts are the meaningful drift signals.",
-    "robots_hash": "aaca6542a392cf9ef172b0e8013e57df36ad279c16aef19a37065eae0bae0cc7"
+    "robots_hash": "aaca6542a392cf9ef172b0e8013e57df36ad279c16aef19a37065eae0bae0cc7",
+    "_last_fingerprint_update": "2026-08-31 (after shipping item 3 — the new guide adds one entry to each surface)"
   },
   "blockers": [],
   "carryover_serp_checks": [
