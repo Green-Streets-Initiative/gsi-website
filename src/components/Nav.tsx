@@ -15,10 +15,10 @@ const linkCls =
   'whitespace-nowrap text-[0.8125rem] font-medium text-white transition-opacity hover:opacity-80'
 
 const SHIFT_APP_ITEMS: Array<[href: string, label: string]> = [
-  ['/shift?utm_content=nav_shift_app', 'About Shift'],
-  ['/shift/schools?utm_content=nav_shift_app', 'Shift for Schools'],
-  ['/shift/roams?utm_content=nav_shift_app', 'Roams'],
-  ['/commute-advisor?utm_content=nav_shift_app', 'Commute Advisor'],
+  ['/shift', 'About Shift'],
+  ['/shift/schools', 'Shift for Schools'],
+  ['/shift/roams', 'Roams'],
+  ['/commute-advisor', 'Commute Advisor'],
   ['/shift/employers/login', 'Employer login'],
 ]
 
@@ -64,7 +64,7 @@ export default function Nav() {
           <Link href="/programs" className={linkCls}>
             Programs
           </Link>
-          <Link href="/shift/towns?utm_content=nav_towns" className={linkCls}>
+          <Link href="/shift/towns" className={linkCls}>
             Towns
           </Link>
           <Link href="/guides" className={linkCls}>
@@ -146,7 +146,7 @@ export default function Nav() {
           <div className="flex flex-col gap-4">
             <Link href="/events/shift-your-summer" className="text-sm font-medium text-lime" onClick={() => setMenuOpen(false)}>Shift Your Summer</Link>
             <Link href="/programs" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Programs</Link>
-            <Link href="/shift/towns?utm_content=nav_towns" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Towns</Link>
+            <Link href="/shift/towns" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Towns</Link>
             <Link href="/guides" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Guides</Link>
             <Link href="/events" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>Events</Link>
             <Link href="/about" className="text-sm font-medium text-white" onClick={() => setMenuOpen(false)}>About</Link>
