@@ -1,19 +1,36 @@
 # DRAFT — proposed micro-guide (SEO item 3, report 2026-08-24)
 
 Not live. The public site only renders Supabase rows with `status='approved'`;
-this file renders nothing. To ship, append the YAML+body block below to
-`content/micro-guides-library.md`, run
-`node scripts/build-micro-guides-migration.mjs`, and apply the migration.
+this file renders nothing.
 
-**Why this guide:** `/commute-advisor` earned 316 Search Console impressions at
-average position 9.2 in the week of 2026-08-15 and converted one click — our
-largest impression source. The queries behind it ("10 minute drive to walk",
-"15 min drive to walk", "what is a 5 minute drive in walking", "commute times")
-ask for a number, and our answer currently lives behind a form field. This guide
-states the number first, then hands people the tool.
+**Why this guide:** `/commute-advisor` and `/guides/when-walking-is-faster` took
+472 Search Console impressions between them in the week of 2026-08-22 — the two
+largest impression sources on the site, both on page one — and converted zero
+clicks. The queries behind them ("10 minute drive to walk", "15 min drive to
+walk", "what is a 5 minute drive in walking", "commute times", "commute
+distance", "commute radius") ask for a number, and our answer currently lives
+behind a form field. This guide states the number first, then hands people the
+tool.
 
-**Note on `status`:** set to `draft` below on purpose. Change it to `approved`
-at ship time.
+**Revision 2026-08-31 (Keith):** added a door-to-door section covering the
+factors that change each mode's real travel time — finding and paying for
+parking especially, plus locking up, waiting, and walking to the stop. Treated
+per-mode rather than parking-only: it is what makes the guide genuinely useful,
+and it keeps the piece additive rather than a case against driving.
+
+**Prices use `{{price:…}}` tokens**, resolved at build time from
+`src/lib/facts/prices.json` and re-resolved by the freshness cron, so the
+figures cannot go stale in the guide body.
+
+## Ship checklist
+
+1. Append the YAML+body block below to `content/micro-guides-library.md`.
+2. **Change `status: draft` to `status: approved`** (it is `draft` on purpose here).
+3. Bump the guide-count check in `scripts/build-micro-guides-migration.mjs`
+   from `!== 20` to `!== 21` — it is a `console.warn`, so it will not block, but
+   it should stay meaningful.
+4. `node scripts/build-micro-guides-migration.mjs`
+5. Commit both files by filename, push, apply the generated migration.
 
 ---
 
@@ -22,7 +39,7 @@ at ship time.
 ```yaml
 id: mg_drive_time_on_foot
 title: "How far is a 10-minute drive on foot or by bike?"
-summary: "A 10-minute drive across Greater Boston is roughly two and a half miles — about 12 minutes on a bike. Here's the whole conversion, with the parking minutes counted."
+summary: "A 10-minute drive across Greater Boston is roughly two and a half miles — about 12 minutes on a bike. Here's the whole conversion, plus the door-to-door minutes each way of getting around adds on top."
 slug: how-far-is-a-ten-minute-drive-on-foot
 mode: walking
 barrier: time
@@ -51,21 +68,20 @@ An hour or so of walking, and about 20 minutes on a bike. On an e-bike it's clos
 
 Roughly 25 to 30 minutes riding, or 20 on an e-bike. Five miles is also comfortable territory for a bike-plus-T trip if the weather turns.
 
-### Count the parking minutes.
+### Door to door is the comparison that counts.
 
-Drive-time estimates usually stop at the destination address. The real trip includes finding a space and walking from it — in Cambridge, Somerville, the Seaport, or anywhere near a hospital or a campus, that's regularly another 5 to 15 minutes. Add it back and the gaps above close considerably, especially at the short end.
+Each of those estimates measures a different slice of the trip. Here's what to add back for a real one.
+
+**Parking, if you drive.** The estimate stops at the destination address. The trip you actually take includes finding a space and walking in from it — around a hospital, a campus, the Seaport, or downtown, that's regularly another 5 to 15 minutes at the destination and a few more back at the start. Paying is its own step: a day in a Boston garage runs about {{price:driving.parkingDailyBoston}}, and metered spots want a minute at the kiosk or in the app. On a short errand that overhead can be most of the trip.
+
+**Locking up, if you bike.** Add a minute or two at each end. On Bluebikes, add the walk to a dock, and at rush hour the occasional extra block to reach one with a free spot — a single ride is {{price:bluebikes.singleRide}}, or {{price:bluebikes.annualPerMonth}} a month on an annual pass.
+
+**Walking and waiting, if you take the T.** Add the walk to the stop, the wait, and the walk at the far end. The ride itself is {{price:mbta.subwaySingle}} on the subway, {{price:mbta.busSingle}} on the bus, and it's usually those two walks — not the ride — that decide whether transit beats driving on a given trip.
+
+**Nothing extra, if you walk.** The estimate is already door to door. What you see is what it takes, which is a large part of why walking wins more short trips than people expect.
+
+Add all of that back and the gaps at the short end close considerably. Under about a mile, the modes are usually much closer than the drive-time estimate makes them look.
 
 ### Try this first
 
 Put your own trip into the [Commute Advisor](https://www.gogreenstreets.org/commute-advisor). It gives you real walking, biking, and transit times for the actual route, plus what each option costs per day and per year.
-
----
-
-## Ship checklist
-
-- [ ] Change `status: draft` → `status: approved` in the YAML.
-- [ ] Append the `### \`mg_drive_time_on_foot\`` block (YAML + body, through the trailing `---`) to `content/micro-guides-library.md`.
-- [ ] Add `mg_drive_time_on_foot` to the `related` list on `mg_walking_vs_driving` and `mg_bike_time` so the cross-links run both ways.
-- [ ] `node scripts/build-micro-guides-migration.mjs`, commit both files by filename, push, apply the migration.
-- [ ] Ship item 2 (portfolio patterns) alongside, so the new `drive-time-conversion` cluster starts measuring this page.
-- [ ] Record the ship date in `seo/experiments.md` to start the verdict clock (suggested verdict-by: +6 weeks).
