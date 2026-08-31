@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { unstable_cache } from 'next/cache'
+import { getConnections, type RouteConnection } from './mbta-connections'
 
 /**
  * Shape + weekday frequency + per-direction stops for one MBTA route,
@@ -38,6 +39,11 @@ export interface CorridorMetaResult {
   polylines: string[]
   frequency: FrequencyInfo | null
   directions: DirectionStops[]
+  /** Spine lines this route meets, and where — see mbta-connections.ts. */
+  connections: RouteConnection[]
+  /** False when the spine network couldn't be read. Empty + false is a
+   *  failure; empty + true genuinely means this route meets nothing. */
+  connectionsOk: boolean
 }
 
 const shapeCache = new Map<string, { polylines: string[]; expires: number }>()
@@ -279,5 +285,9 @@ export async function getCorridorMeta(routeId: string, stopId: string): Promise<
     getFrequency(routeId, stopId).catch(() => null),
     getRouteStops(routeId).catch(() => [] as DirectionStops[]),
   ])
-  return { polylines, frequency, directions }
+  // Connections read the route's own stop list, so they wait on it rather
+  // than joining the fan-out. Failure degrades to no block, never a wrong one.
+  const conn = await getConnections(routeId, directions)
+    .catch(() => ({ ok: false, connections: [] as RouteConnection[] }))
+  return { polylines, frequency, directions, connections: conn.connections, connectionsOk: conn.ok }
 }

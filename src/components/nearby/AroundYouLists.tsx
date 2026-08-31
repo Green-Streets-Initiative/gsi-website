@@ -286,6 +286,13 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                     ))}
                   </span>
                 )}
+                {/* A stop several lines share IS an interchange — say so.
+                    Costs nothing: the routes are already in hand. */}
+                {st.routes.length > 1 && (
+                  <span className="mt-1.5 block text-[0.75rem] text-white/75">
+                    {tr('lists.lines_meet_here', { count: st.routes.length })}
+                  </span>
+                )}
               </div>
               {/* Lines serving it — tap one to light it up on the map */}
               {open && (

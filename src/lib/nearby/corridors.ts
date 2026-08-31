@@ -11,7 +11,7 @@ import { decodePolyline, bearingDegrees } from '@/lib/geo/polyline'
 import { haversineMeters, walkTimeMinutes } from '@/lib/geo/measure'
 import { fetchStopTopology, type StopTopology } from './live-data'
 import { canonicalStreetKey, displayStreetName } from './street-names'
-import { lineColor, lineTextColor, ROUTE_COLORS } from './transit-ui'
+import { lineColor, lineTextColor, ROUTE_COLORS, type RouteConnection } from './transit-ui'
 
 export type CorridorKind = 'subway' | 'commuter-rail' | 'bus' | 'bike'
 
@@ -40,6 +40,8 @@ export interface TransitCorridor {
   frequency: FrequencyInfo | null | 'unavailable'
   /** Filled by corridor-meta alongside shape/frequency */
   directions?: DirectionStops[]
+  /** Spine lines this route meets, and where — the "Connects to" block. */
+  connections?: RouteConnection[]
 }
 
 export interface BikeCorridor {
@@ -179,14 +181,19 @@ export interface CorridorMeta {
   shape: GeoJSON.FeatureCollection
   frequency: FrequencyInfo | null
   directions: DirectionStops[]
+  connections: RouteConnection[]
 }
 
 export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<CorridorMeta> {
-  // v2: responses carry per-direction stop lists
-  const cacheKey = `nearby-meta-v2-${corridor.routeId}-${corridor.access.stopId}`
+  // v3: responses carry per-direction stop lists AND spine connections. The
+  // prefix bump matters — a v2 entry inside its TTL has no connections and
+  // would render the block empty for the rest of the session.
+  const cacheKey = `nearby-meta-v3-${corridor.routeId}-${corridor.access.stopId}`
   let polylines: string[] | null = null
   let frequency: FrequencyInfo | null = null
   let directions: DirectionStops[] = []
+  let connections: RouteConnection[] = []
+  let connectionsOk = true
   let haveCache = false
 
   try {
@@ -197,25 +204,36 @@ export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<Corr
         polylines = cached.polylines
         frequency = cached.frequency
         directions = cached.directions ?? []
+        connections = cached.connections ?? []
         haveCache = true
       }
     }
   } catch {}
 
   if (!haveCache) {
+    // &v= busts the browser's own HTTP cache of this route (max-age=3600):
+    // without it a returning visitor keeps the pre-connections payload for an
+    // hour and the "Connects to" block silently never appears. Same idiom as
+    // /api/nearby/reach?v= and /api/bike-network&v=. Bump on payload changes.
     const res = await fetch(
-      `/api/nearby/corridor-meta?route=${encodeURIComponent(corridor.routeId)}&stop=${encodeURIComponent(corridor.access.stopId)}`
+      `/api/nearby/corridor-meta?route=${encodeURIComponent(corridor.routeId)}&stop=${encodeURIComponent(corridor.access.stopId)}&v=2`
     )
     if (!res.ok) throw new Error(`corridor-meta ${res.status}`)
     const data = await res.json()
     polylines = data.polylines ?? []
     frequency = data.frequency ?? null
     directions = data.directions ?? []
+    connections = data.connections ?? []
+    connectionsOk = data.connectionsOk !== false
     // Only cache complete answers — a null frequency, empty shape, or empty
     // stop list may be a transient upstream failure the next visit should retry
-    if (frequency !== null && (polylines?.length ?? 0) > 0 && directions.length > 0) {
+    // connectionsOk joins the guard for the same reason the others are here:
+    // a cold or rate-limited spine read returns an empty list that looks
+    // exactly like "this route meets nothing", and caching it would hide the
+    // block for the rest of the session.
+    if (frequency !== null && (polylines?.length ?? 0) > 0 && directions.length > 0 && connectionsOk) {
       try {
-        sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), polylines, frequency, directions }))
+        sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), polylines, frequency, directions, connections }))
       } catch {}
     }
   }
@@ -234,6 +252,7 @@ export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<Corr
     },
     frequency,
     directions,
+    connections,
   }
 }
 

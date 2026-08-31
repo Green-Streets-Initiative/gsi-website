@@ -5,7 +5,7 @@ import posthog from 'posthog-js'
 import { type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
-import { directionsUrl } from '@/lib/nearby/transit-ui'
+import { directionsUrl, lineColor, lineTextColor, type RouteConnection } from '@/lib/nearby/transit-ui'
 import { BIKE_SHARE_SYSTEM_LINKS, cargobVendorLink } from '@/lib/nearby/bike-share-links'
 import { CORRIDOR_UNSPLASH } from '@/lib/nearby/config'
 import { protectionLabel, laneTierCopy, LANE_SOURCE_LABEL } from '@/lib/nearby/bike-labels'
@@ -309,6 +309,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
             ))}
           </div>
         )}
+        <ConnectsTo connections={c.connections} corridorById={corridorById} onSelectCorridor={onSelectCorridor} />
         <AllStops corridor={c} />
         <PanelPhoto spec={corridorPhotoSpec(c)} alt={tr('detail.photo_alt_at', { name: c.name, stop: c.access.stopName })} />
       </div>
@@ -455,6 +456,66 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
 
   // 'reach' renders via the shell's own ReachDetail — nothing to show here
   return null
+}
+
+/* ── Where this route meets the spine. Transferring is how you get around
+      without a car, and a stop list alone never says which OTHER lines touch
+      it. Named lines that are themselves on the page are tappable, so
+      "Red Line at Davis" is one tap from the Red Line's own detail. ── */
+
+function ConnectsTo({ connections, corridorById, onSelectCorridor }: {
+  connections: RouteConnection[] | undefined
+  corridorById: Map<string, TransitCorridor | BikeCorridor>
+  onSelectCorridor: (id: string) => void
+}) {
+  const tr = useNearbyT()
+  if (!connections || connections.length === 0) return null
+  return (
+    <div className="mt-3">
+      <div className="mb-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
+        {tr('detail.connects_to')}
+      </div>
+      <div className="space-y-1">
+        {connections.map(conn => {
+          const where = conn.moreStops > 0
+            ? tr('detail.connects_at_more', { stops: conn.stops.join(tr('detail.stop_join')), count: conn.moreStops })
+            : tr('detail.connects_at', { stops: conn.stops.join(tr('detail.stop_join')) })
+          const body = (
+            <>
+              <span
+                className="shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                style={{ backgroundColor: lineColor(conn.routeId), color: lineTextColor(conn.routeId) }}
+              >
+                {conn.name}
+              </span>
+              <span className="min-w-0 text-[0.78rem] text-white/80">{where}</span>
+            </>
+          )
+          // Only the lines actually on this page can be opened; the rest are
+          // still worth naming, they just aren't a destination here.
+          const onPage = [...corridorById.values()].find(
+            x => x.kind !== 'bike' && (x as TransitCorridor).routeId === conn.routeId
+          ) as TransitCorridor | undefined
+          return onPage ? (
+            <button
+              key={conn.routeId}
+              onClick={() => {
+                posthog.capture('snapshot_connection_tapped', { route: conn.routeId })
+                onSelectCorridor(onPage.id)
+              }}
+              className="flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-white/[0.05]"
+            >
+              {body}
+            </button>
+          ) : (
+            <div key={conn.routeId} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-1.5 py-1">
+              {body}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 /* ── Every stop along the selected route, expanding IN PLACE under the card.
