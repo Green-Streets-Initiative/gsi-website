@@ -14,12 +14,13 @@ import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
 import type { SectionStatus } from './types'
-import { SkeletonRows, ErrorCard } from './SectionShell'
+import { SkeletonRows, ErrorCard, CollapsibleSection } from './SectionShell'
 import { useNearbyT } from './NearbyI18n'
 import { PRICES, usd } from '@/lib/facts/prices'
 import { useNearbyPromos } from './NearbyPromos'
 import { bikeshareLogoUrl, borrowLogoUrl } from '@/lib/nearby/provider-logos'
 import NearbyPromoCard from './NearbyPromoCard'
+import { NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
 import {
   type StationGroup, routeEndpoints, soonestAtStation, freqShort, isShuttleStation, isShuttleRoute,
 } from './useNearbyModel'
@@ -311,13 +312,16 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
 
 /* ── Bike routes ── */
 
-export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCorridorId, onSelect }: {
+export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCorridorId, onSelect, openSections, onToggleSection }: {
   bikeCorridors: BikeCorridor[]
   /** Canonical keys of streets Shift riders actually ride (town heatmap).
    *  Badge only — never feeds the ordering. Empty set = no badges. */
   popularStreetKeys: Set<string>
   highlightedCorridorId: string | null
   onSelect: (corridorId: string) => void
+  /** Section-collapse state, owned by the shell so it survives sheet snaps. */
+  openSections: Set<string>
+  onToggleSection: (key: string) => void
 }) {
   const tr = useNearbyT()
   if (bikeCorridors.length === 0) return null
@@ -327,16 +331,22 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
   // novices ride past without realizing they're built for them.
   const shelves = [
     {
+      key: 'paths',
+      color: NEARBY_COMFORT_COLORS.path,
       label: tr('lists.bike_shelf_paths'),
       hint: null as string | null,
       items: bikeCorridors.filter(c => c.protection === 'path'),
     },
     {
+      key: 'protected',
+      color: NEARBY_COMFORT_COLORS.protected,
       label: tr('lists.bike_shelf_protected'),
       hint: tr('lists.bike_shelf_protected_hint'),
       items: bikeCorridors.filter(c => c.protection === 'protected' || c.protection === 'mostly-protected'),
     },
     {
+      key: 'painted',
+      color: NEARBY_COMFORT_COLORS.bike_lane,
       label: tr('lists.bike_shelf_painted'),
       hint: null as string | null,
       items: bikeCorridors.filter(c => c.protection === 'painted'),
@@ -344,12 +354,25 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
   ].filter(s => s.items.length > 0)
 
   return (
-    <div className="mt-5">
-      {shelves.map(shelf => (
-        <div key={shelf.label} className="mb-4">
-          <div className="mb-1 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
-            {shelf.label}
-          </div>
+    <>
+      {shelves.map(shelf => {
+        // Teaser: nearest corridor by access distance — enough scent to know
+        // whether the closed shelf is worth opening.
+        const nearest = shelf.items.reduce((a, b) =>
+          a.accessDistanceMeters <= b.accessDistanceMeters ? a : b)
+        return (
+        <CollapsibleSection
+          key={shelf.key}
+          title={shelf.label}
+          count={shelf.items.length}
+          swatch={<span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: shelf.color }} />}
+          teaser={tr('lists.section_nearest', {
+            name: nearest.name,
+            detail: tr('lists.section_miles_away', { miles: (nearest.accessDistanceMeters / 1609.34).toFixed(1) }),
+          })}
+          open={openSections.has(shelf.key)}
+          onToggle={() => onToggleSection(shelf.key)}
+        >
           {shelf.hint && (
             <p className="mb-2 text-[0.78rem] leading-snug text-white/75">{shelf.hint}</p>
           )}
@@ -358,6 +381,7 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
               <button
                 key={c.id}
                 onClick={() => onSelect(c.id)}
+                aria-expanded={highlightedCorridorId === c.id}
                 className={`w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
                   highlightedCorridorId === c.id
                     ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.06)]'
@@ -384,36 +408,57 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
               </button>
             ))}
           </div>
-        </div>
-      ))}
-    </div>
+        </CollapsibleSection>
+        )
+      })}
+    </>
   )
 }
 
 /* ── Bike share docks ── */
 
-export function DockList({ docks, onSelect, selectedId }: {
+export function DockList({ docks, onSelect, selectedId, openSections, onToggleSection }: {
   docks: BluebikeStationLive[]
   onSelect?: (id: string) => void
   selectedId?: string | null
+  openSections: Set<string>
+  onToggleSection: (key: string) => void
 }) {
   const tr = useNearbyT()
   const systemIds = new Set(docks.map(d => d.system_id ?? 'bluebikes'))
-  return (
-    <div className="mt-5">
-      <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
-        {tr('lists.bike_share_docks_heading')}
-      </div>
-      {docks.length === 0 ? (
+  // Nothing to open: keep the plain heading + empty line (matches the app).
+  if (docks.length === 0) {
+    return (
+      <div className="mt-5">
+        <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
+          {tr('lists.bike_share_docks_heading')}
+        </div>
         <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
           {tr('lists.no_docks')}
         </p>
-      ) : (
+      </div>
+    )
+  }
+  return (
+    <CollapsibleSection
+      title={tr('lists.bike_share_docks_heading')}
+      count={docks.length}
+      teaser={tr('lists.section_nearest', {
+        name: docks[0].name,
+        detail: tr('lists.walk_time', {
+          minutes: walkTimeMinutes(docks[0].distance_meters),
+          dist: formatDistance(docks[0].distance_meters),
+        }),
+      })}
+      open={openSections.has('docks')}
+      onToggle={() => onToggleSection('docks')}
+    >
         <div className="space-y-2.5">
           {docks.slice(0, 3).map(d => (
             <button
               key={d.station_id}
               onClick={() => onSelect?.(d.station_id)}
+              aria-expanded={selectedId === d.station_id}
               className={`w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
                 selectedId === d.station_id
                   ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.06)]'
@@ -460,33 +505,38 @@ export function DockList({ docks, onSelect, selectedId }: {
             <p className="px-1 text-[0.8rem] leading-relaxed text-white/75">{tr('misc.valleybike_note')}</p>
           )}
         </div>
-      )}
-    </div>
+    </CollapsibleSection>
   )
 }
 
 
 /* ── Borrow & rent: bikes you don't have to own (CargoB, Pedal Power) ── */
 
-export function BorrowRentList({ points, onSelect, selectedId }: {
+export function BorrowRentList({ points, onSelect, selectedId, openSections, onToggleSection }: {
   points: (BorrowRentPoint & { distMiles: number })[]
   onSelect?: (id: string) => void
   selectedId?: string | null
+  openSections: Set<string>
+  onToggleSection: (key: string) => void
 }) {
   const tr = useNearbyT()
   if (points.length === 0) return null
   // Rows select (matching the map marker) — the vendor link lives in the
   // detail card, where snapshot_borrow_clicked fires on true outbound clicks
   return (
-    <div className="mt-5">
-      <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
-        {tr('lists.borrow_rent_heading')}
-      </div>
+    <CollapsibleSection
+      title={tr('lists.borrow_rent_heading')}
+      count={points.length}
+      teaser={tr('lists.section_nearest_plain', { name: points[0].name })}
+      open={openSections.has('borrow')}
+      onToggle={() => onToggleSection('borrow')}
+    >
       <div className="space-y-2.5">
         {points.map(p => (
           <button
             key={p.id}
             onClick={() => onSelect?.(p.id)}
+            aria-expanded={selectedId === p.id}
             className={`block w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
               selectedId === p.id
                 ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.06)]'
@@ -510,7 +560,7 @@ export function BorrowRentList({ points, onSelect, selectedId }: {
           </button>
         ))}
       </div>
-    </div>
+    </CollapsibleSection>
   )
 }
 

@@ -25,6 +25,19 @@ export type Selection =
   | { type: 'reach'; id: string; mode: 'transit' | 'bike' }
   | null
 
+/** Two selections point at the same thing. `null` never matches anything —
+ *  that's what keeps the explicit close paths (`select(null, …)`) working. */
+function sameSelection(a: Selection, b: Selection): boolean {
+  if (!a || !b || a.type !== b.type) return false
+  switch (a.type) {
+    case 'station': return a.key === (b as { key: string }).key
+    case 'lane': return a.info === (b as { info: LaneTapInfo }).info
+    // A reach row re-tapped in the SAME mode closes; switching mode re-selects
+    case 'reach': return a.id === (b as { id: string }).id && a.mode === (b as { mode: string }).mode
+    default: return a.id === (b as { id: string }).id
+  }
+}
+
 /** Page-wide mode filter — one selector drives the map layers AND the lists
  *  below it, so the page shows only what the rider cares about right now. */
 export type ModeFilter = 'all' | 'train' | 'bus' | 'bike'
@@ -223,12 +236,29 @@ export function useNearbyModel({
     }
   }, [selection, stationByKey, corridorById, rail, bus, onRequestCorridorShape])
 
-  const select = useCallback((next: Selection, source: string) => {
-    setSelection(next)
+  /** Returns true when this call left something SELECTED — callers that
+   *  reveal chrome (the mobile sheet's half snap) must not fire on a
+   *  toggle-off. */
+  const select = useCallback((next: Selection, source: string): boolean => {
+    // Re-selecting what's already open CLOSES it. Without this, an opened row
+    // could only be dismissed via Back / the desktop ✕ / a map-background tap
+    // / a tab change — and a mobile destination row could not be closed at
+    // all. The explicit close paths all pass null, which never matches a
+    // non-null selection, so they are unaffected.
+    let toggledOff = false
+    setSelection(prev => {
+      if (sameSelection(prev, next)) {
+        toggledOff = true
+        return null
+      }
+      return next
+    })
+    if (toggledOff) return false
     if (next) posthog.capture('snapshot_detail_viewed', { type: next.type, source })
     if (next?.type === 'corridor') {
       posthog.capture('corridor_selected', { corridor: next.id, source })
     }
+    return !!next
   }, [])
 
   // Filtering away the mode a selection lives in would leave an orphaned

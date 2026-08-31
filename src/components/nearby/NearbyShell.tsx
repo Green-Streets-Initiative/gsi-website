@@ -156,8 +156,9 @@ export default function NearbyShell({
   // Any new selection reveals the sheet at half — detail under the thumb,
   // map highlight in view above
   const selectReveal = useCallback((next: Selection, source: string) => {
-    select(next, source)
-    if (next) setSnap('half')
+    // Only raise the sheet when something is actually open — re-tapping an
+    // open row closes it, and yanking the sheet up on a close reads as a bug.
+    if (select(next, source)) setSnap('half')
   }, [select])
 
   const markerTapReveal = useCallback((id: string) => {
@@ -187,6 +188,24 @@ export default function NearbyShell({
 
   // A tapped stretch of the drawn route; cleared whenever the selection moves
   const [legInfo, setLegInfo] = useState<RouteLegTapInfo | null>(null)
+
+  // Section-collapse state for the bike-side shelves, owned here so it
+  // survives the sheet's snap changes and tab hops (the app hoists it into
+  // TransitBikePane for the same reason). Default all closed — the bike stack
+  // is too tall to scan otherwise.
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set())
+  const toggleSection = useCallback((key: string) => {
+    setOpenSections(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else {
+        next.add(key)
+        posthog.capture('snapshot_section_expanded', { section: key })
+      }
+      return next
+    })
+  }, [])
+
   useEffect(() => { setLegInfo(null) }, [selection])
   const handleLegTap = useCallback((info: RouteLegTapInfo) => {
     setLegInfo(info)
@@ -395,17 +414,21 @@ export default function NearbyShell({
                 popularStreetKeys={popularBikeStreetKeys}
                 highlightedCorridorId={highlightedCorridorId}
                 onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+                openSections={openSections}
+                onToggleSection={toggleSection}
               />
               <GuideLinks context="bike" guides={guides.data} modeFilter={modeFilter} />
               <BorrowRentList
                 points={model.borrowRent}
                 onSelect={(id) => selectShowing({ type: 'borrow', id }, 'list')}
                 selectedId={selection?.type === 'borrow' ? selection.id : null}
+                openSections={openSections}
+                onToggleSection={toggleSection}
               />
               {model.borrowRent.length > 0 && (
                 <GuideLinks context="borrow" guides={guides.data} modeFilter={modeFilter} />
               )}
-              <DockList docks={docks} onSelect={(id) => selectShowing({ type: 'dock', id }, 'list')} selectedId={selection?.type === 'dock' ? selection.id : null} />
+              <DockList docks={docks} onSelect={(id) => selectShowing({ type: 'dock', id }, 'list')} selectedId={selection?.type === 'dock' ? selection.id : null} openSections={openSections} onToggleSection={toggleSection} />
               <GuideLinks context="docks" guides={guides.data} modeFilter={modeFilter} />
             </>
           )}
