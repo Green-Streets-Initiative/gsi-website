@@ -83,8 +83,9 @@
       "type": "guide-draft",
       "ref": "seo/drafts/guides/how-far-is-a-ten-minute-drive-on-foot.md",
       "title": "Micro-guide: how far a 5/10/15/20-minute drive is on foot and by bike",
-      "ship_steps": "Append the draft's YAML+body to content/micro-guides-library.md, run node scripts/build-micro-guides-migration.mjs, commit both by filename, push, apply the generated migration.",
-      "note": "Reinforced 2026-08-31: the two pages this addresses took 472 impressions and 0 clicks."
+      "ship_steps": "Remaining step only: apply supabase/migrations/20260508_reseed_micro_guides_library.sql to production via the Supabase management API (or paste it into the dashboard SQL editor). Then verify the slug returns 200 and record the ship in seo/experiments.md.",
+      "note": "As of 2026-08-31 everything is committed and pushed on main (commit 9064b16): the guide is in content/micro-guides-library.md with status approved, the builder count is bumped to 21, and the reseed migration is regenerated. ONLY the production migration has not been applied — the auto-mode permission classifier blocked both the Supabase management API call and the payload write. /guides/how-far-is-a-ten-minute-drive-on-foot returns 404 until Keith runs it. Nothing is live yet.",
+      "status": "code-shipped-awaiting-migration"
     }
   ],
   "shipped": [
