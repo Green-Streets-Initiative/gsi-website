@@ -43,7 +43,10 @@ export function RouteLegNote({ info }: { info: RouteLegTapInfo }) {
   return (
     <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-white/[0.14] bg-white/[0.05] px-3 py-1.5 text-[0.78rem] text-white">
       <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: dotColor }} aria-hidden="true" />
-      <span className="min-w-0">{tr('reach.you_tapped')} <span className="font-semibold">{text}</span></span>
+      {/* No "You tapped:" scaffolding — the block only ever appears in
+          response to a tap, and the section header above already says so.
+          The colored dot plus the phrase is the whole answer. */}
+      <span className="min-w-0 font-semibold">{text}</span>
     </div>
   )
 }
