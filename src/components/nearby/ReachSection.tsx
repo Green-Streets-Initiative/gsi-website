@@ -225,23 +225,28 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
               </div>
             )
 
-            const chipsBlock = (
+            // The chain follows the SELECTED mode. Showing the bus-and-Red-Line
+            // chain while Bike is the chosen mode reads as a non sequitur —
+            // the app has always done it this way and the web hadn't.
+            const chipsBlock = (mode: 'transit' | 'bike') => (
               <div className="mb-2.5">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {row.steps.length > 0 ? (
-                    <TransitChain steps={row.steps} />
-                  ) : (
-                    <span className="text-[0.75rem] text-white/75">
-                      {row.transit_minutes !== null ? tr('reach.close_enough') : tr('reach.no_direct_transit')}
-                    </span>
-                  )}
-                </div>
-                {/* The bike corridors the ride actually follows */}
-                {(row.bike_steps?.length ?? 0) > 0 && (
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <span className="text-white/75"><ModeIcon mode="bike" size={13} /></span>
-                    <TransitChain steps={row.bike_steps!} transfers={false} />
+                {mode === 'transit' ? (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {row.steps.length > 0 ? (
+                      <TransitChain steps={row.steps} />
+                    ) : (
+                      <span className="text-[0.75rem] text-white/75">
+                        {row.transit_minutes !== null ? tr('reach.close_enough') : tr('reach.no_direct_transit')}
+                      </span>
+                    )}
                   </div>
+                ) : (
+                  (row.bike_steps?.length ?? 0) > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-white/75"><ModeIcon mode="bike" size={13} /></span>
+                      <TransitChain steps={row.bike_steps!} transfers={false} />
+                    </div>
+                  )
                 )}
               </div>
             )
@@ -269,7 +274,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                     page never scrolls anywhere as a side effect */}
                 {isOpen && expanded && (
                   <div className="border-t border-white/[0.07] bg-[#1F2030] px-4 pb-4 pt-3">
-                    {chipsBlock}
+                    {chipsBlock(expanded.mode)}
                     {hasTransitRoute(row) && hasBikeRoute(row) && (
                       <div className="mb-2.5 flex flex-wrap items-center gap-2">
                         <button

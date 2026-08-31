@@ -389,22 +389,45 @@ function classifySample(
   slng: number,
   index: LaneVertex[],
 ): { rating: ComfortRating; streetKey: string | null; streetDisplay: string | null } {
-  let bestQ = 0
   let streetKey: string | null = null
   let streetDisplay: string | null = null
   let streetD = MATCH_RADIUS_METERS
   let farKey: string | null = null
   let farDisplay: string | null = null
   let farD = NAME_FALLBACK_RADIUS_METERS
+  // Collect every nearby vertex first: the rating has to be decided AFTER we
+  // know which street we're on, not while we're still finding out.
+  const nearby: LaneVertex[] = []
   for (const v of index) {
     if (Math.abs(v.lat - slat) > 0.001 || Math.abs(v.lng - slng) > 0.0012) continue
     const d = haversineMeters(slat, slng, v.lat, v.lng)
     if (v.key && d < farD) { farD = d; farKey = v.key; farDisplay = v.display }
     if (d >= MATCH_RADIUS_METERS) continue
-    // Overlapping sources may disagree — take the BEST infrastructure present
+    nearby.push(v)
+    if (v.key && d < streetD) { streetD = d; streetKey = v.key; streetDisplay = v.display }
+  }
+
+  /**
+   * Best infrastructure ON THE STREET WE MATCHED — not the best of anything
+   * within 40 m.
+   *
+   * "Take the best present" was there to reconcile the SAME facility being
+   * mapped twice with different qualities (MAPC vs MassDOT vs OSM). But
+   * unscoped it borrowed a neighbour's protection: John F. Fitzgerald Surface
+   * Road is mapped painted and only painted, yet Commercial St and North
+   * Market St run protected within 40 m of it, so the route came back
+   * claiming 0.4 mi of protected lane on a road that has none. Telling a
+   * nervous rider that paint is a barrier is the one direction this must
+   * never round.
+   *
+   * Unnamed vertices still count: a shared-use path often carries no street
+   * name, and it's the same facility we're riding.
+   */
+  let bestQ = 0
+  for (const v of nearby) {
+    if (streetKey && v.key && v.key !== streetKey) continue
     const q = QUALITY_RANK[v.quality]
     if (q > bestQ) bestQ = q
-    if (v.key && d < streetD) { streetD = d; streetKey = v.key; streetDisplay = v.display }
   }
   const rating: ComfortRating =
     bestQ >= 3 ? 'path' : bestQ === 2 ? 'protected' : bestQ === 1 ? 'bike_lane' : 'shared_road'
@@ -577,7 +600,9 @@ export async function getReach(
   // v7: unnamed lanes inherit names from overlapping segments
   // v9: comfort segments carry the street they ride (tapped-leg naming)
   // v10: regional destination lists (Around You M6) + region metadata
-  const cacheKey = `v10:${lat3},${lng3}`
+  // v11: comfort ratings are scoped to the matched street (a neighbouring
+  // protected lane no longer upgrades the road you're actually on)
+  const cacheKey = `v11:${lat3},${lng3}`
 
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) return cached.data

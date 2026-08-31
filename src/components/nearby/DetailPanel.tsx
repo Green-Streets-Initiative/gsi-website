@@ -490,6 +490,16 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
             {selection.info.nameInferred && tr('detail.name_inferred_note')}
           </div>
         )}
+        {/* Look at the actual street. Tapping a stretch answered "what is
+            this?" in words but gave no way to check it by eye — and this is
+            exactly where a rider wants to sense-check us, because a street
+            name and a comfort tier are abstractions until you see the road. */}
+        {selection.info.lngLat && (
+          <PanelPhoto
+            spec={{ kind: 'sv', lat: selection.info.lngLat.lat, lng: selection.info.lngLat.lng }}
+            alt={selection.info.name ?? copy.title}
+          />
+        )}
       </div>
     )
   }
