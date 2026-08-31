@@ -21,6 +21,19 @@ import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
  * cross-visitor cache, no HTTP-to-own-origin.
  */
 
+/**
+ * Version of the ReachRow SHAPE — bump on any change to what a row contains
+ * or how its fields are computed.
+ *
+ * Every cache that stores a row keys off this: getReach's in-memory map, its
+ * durable twin, and both of getTrip's (src/lib/server/trip.ts). They were
+ * versioned separately and drifted — the classifier fix bumped one of four,
+ * so typed destinations kept serving pre-fix ratings and keyless bullets
+ * while local testing (which deletes .next and varies coordinates) missed
+ * both stale layers entirely. One constant, four call sites, no drift.
+ */
+export const REACH_ROW_VERSION = 'v12'
+
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
@@ -630,9 +643,7 @@ export async function getReach(
   // v7: unnamed lanes inherit names from overlapping segments
   // v9: comfort segments carry the street they ride (tapped-leg naming)
   // v10: regional destination lists (Around You M6) + region metadata
-  // v11: comfort ratings are scoped to the matched street (a neighbouring
-  // protected lane no longer upgrades the road you're actually on)
-  const cacheKey = `v11:${lat3},${lng3}`
+  const cacheKey = `${REACH_ROW_VERSION}:${lat3},${lng3}`
 
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) return cached.data
@@ -668,7 +679,7 @@ const durableReach = unstable_cache(async (lat3: number, lng3: number) => {
   const anyReal = data.destinations.some(r => r.transit_minutes !== null || !r.bike_is_estimate)
   if (data.destinations.length > 0 && !anyReal) throw new DegradedResultError()
   return data
-}, ['nearby-reach-v10'], { revalidate: CACHE_TTL_MS / 1000 })
+}, [`nearby-reach-${REACH_ROW_VERSION}`], { revalidate: CACHE_TTL_MS / 1000 })
 
 async function computeReach(
   lat3: number,

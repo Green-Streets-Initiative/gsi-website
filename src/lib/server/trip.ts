@@ -1,7 +1,14 @@
 import 'server-only'
 
 import { unstable_cache } from 'next/cache'
-import { buildReachRow, laneIndexFor, haversineMiles, nextMonday830, type ReachRow } from './reach'
+import {
+  buildReachRow,
+  laneIndexFor,
+  haversineMiles,
+  nextMonday830,
+  REACH_ROW_VERSION,
+  type ReachRow,
+} from './reach'
 
 /**
  * "Where do you want to go?" — one destination the visitor picked, answered
@@ -46,7 +53,9 @@ export async function getTrip(
   // matching the reach cache's convention.
   const f = { lat: round3(from.lat), lng: round3(from.lng) }
   const t = { lat: round3(to.lat), lng: round3(to.lng) }
-  const key = `${f.lat},${f.lng}|${t.lat},${t.lng}`
+  // Versioned with the row shape — see REACH_ROW_VERSION. Unversioned,
+  // this cache kept serving pre-fix rows after the classifier changed.
+  const key = `${REACH_ROW_VERSION}:${f.lat},${f.lng}|${t.lat},${t.lng}`
 
   const cached = cache.get(key)
   if (cached && cached.expires > Date.now()) return { ...cached.row, name }
@@ -63,7 +72,7 @@ export async function getTrip(
   return { ...row, name }
 }
 
-const durableTrip = unstable_cache(computeTrip, ['nearby-trip-v1'], {
+const durableTrip = unstable_cache(computeTrip, [`nearby-trip-${REACH_ROW_VERSION}`], {
   revalidate: CACHE_TTL_MS / 1000,
 })
 
