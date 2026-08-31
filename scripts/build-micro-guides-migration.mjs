@@ -202,7 +202,7 @@ function rowSql(guide) {
 }
 
 function buildMigration(guides) {
-  const header = `-- Seed migration for the micro-guide library (20 guides).
+  const header = `-- Seed migration for the micro-guide library (${guides.length} guides).
 -- Generated from content/micro-guides-library.md by
 -- scripts/build-micro-guides-migration.mjs — do not edit by hand.
 --
@@ -292,8 +292,8 @@ const guides = rawGuides.map((g) => ({
 }))
 
 // Sanity checks
-if (guides.length !== 20) {
-  console.warn(`WARNING: expected 20 guides, found ${guides.length}`)
+if (guides.length !== 21) {
+  console.warn(`WARNING: expected 21 guides, found ${guides.length}`)
 }
 const ids = guides.map((g) => g.yaml.id)
 const dupeIds = ids.filter((id, i) => ids.indexOf(id) !== i)

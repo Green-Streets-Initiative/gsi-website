@@ -1,4 +1,4 @@
--- Seed migration for the micro-guide library (20 guides).
+-- Seed migration for the micro-guide library (21 guides).
 -- Generated from content/micro-guides-library.md by
 -- scripts/build-micro-guides-migration.mjs — do not edit by hand.
 --
@@ -18,7 +18,7 @@ UPDATE content_items SET primary_mode = 'cycling' WHERE primary_mode = 'bike';
 UPDATE content_items SET status = 'archived'
   WHERE id IN ('mg_blue_bikes', 'mg_return_bluebike');
 
--- 3. Upsert the 20-guide library.
+-- 3. Upsert the 21-guide library.
 INSERT INTO content_items (
   id, title, slug, summary, body, body_template, primary_mode, primary_barrier, status,
   content_type, surfaces, topics, related_guides, is_starter,
@@ -1350,6 +1350,92 @@ Most "the weather is bad" conclusions are made by people standing inside dressed
     ARRAY['mg_biking_in_rain', 'mg_cold_weather']::text[],
     true,
     2,
+    now()
+  ),
+  (
+    'mg_drive_time_on_foot',
+    'How far is a 10-minute drive on foot or by bike?',
+    'how-far-is-a-ten-minute-drive-on-foot',
+    'A 10-minute drive across Greater Boston is roughly two and a half miles — about 12 minutes on a bike. Here''s the whole conversion, plus the door-to-door minutes each way of getting around adds on top.',
+    $guidebody$People measure trips in drive-minutes. Here's what those minutes look like on foot and on a bike, using typical Greater Boston traffic speeds of roughly 12–15 mph on local streets and arterials.
+
+### A 5-minute drive is about a mile.
+
+That's a 20-minute walk, or a 6-minute ride. At this distance the bike is usually the fastest thing you own, and the walk is short enough that plenty of people do it without thinking of it as a walk.
+
+### A 10-minute drive is about 2 to 2.5 miles.
+
+Call it 45 minutes on foot and 12 minutes on a bike. This is the sweet spot for biking around here — far enough that walking takes real time, close enough that you arrive before you'd have found parking.
+
+### A 15-minute drive is about 3 to 4 miles.
+
+An hour or so of walking, and about 20 minutes on a bike. On an e-bike it's closer to 15, at a pace that doesn't ask much of you.
+
+### A 20-minute drive is about 5 miles.
+
+Roughly 25 to 30 minutes riding, or 20 on an e-bike. Five miles is also comfortable territory for a bike-plus-T trip if the weather turns.
+
+### Door to door is the comparison that counts.
+
+Each of those estimates measures a different slice of the trip. Here's what to add back for a real one.
+
+**Parking, if you drive.** The estimate stops at the destination address. The trip you actually take includes finding a space and walking in from it — around a hospital, a campus, the Seaport, or downtown, that's regularly another 5 to 15 minutes at the destination and a few more back at the start. Paying is its own step: a day in a Boston garage runs about $18, and metered spots want a minute at the kiosk or in the app. On a short errand that overhead can be most of the trip.
+
+**Locking up, if you bike.** Add a minute or two at each end. On Bluebikes, add the walk to a dock, and at rush hour the occasional extra block to reach one with a free spot — a single ride is $3, or $11.13 a month on an annual pass.
+
+**Walking and waiting, if you take the T.** Add the walk to the stop, the wait, and the walk at the far end. The ride itself is $2.40 on the subway, $1.70 on the bus, and it's usually those two walks — not the ride — that decide whether transit beats driving on a given trip.
+
+**Nothing extra, if you walk.** The estimate is already door to door. What you see is what it takes, which is a large part of why walking wins more short trips than people expect.
+
+Add all of that back and the gaps at the short end close considerably. Under about a mile, the modes are usually much closer than the drive-time estimate makes them look.
+
+### Try this first
+
+Put your own trip into the [Commute Advisor](https://www.gogreenstreets.org/commute-advisor). It gives you real walking, biking, and transit times for the actual route, plus what each option costs per day and per year.$guidebody$,
+    $guidebody$People measure trips in drive-minutes. Here's what those minutes look like on foot and on a bike, using typical Greater Boston traffic speeds of roughly 12–15 mph on local streets and arterials.
+
+### A 5-minute drive is about a mile.
+
+That's a 20-minute walk, or a 6-minute ride. At this distance the bike is usually the fastest thing you own, and the walk is short enough that plenty of people do it without thinking of it as a walk.
+
+### A 10-minute drive is about 2 to 2.5 miles.
+
+Call it 45 minutes on foot and 12 minutes on a bike. This is the sweet spot for biking around here — far enough that walking takes real time, close enough that you arrive before you'd have found parking.
+
+### A 15-minute drive is about 3 to 4 miles.
+
+An hour or so of walking, and about 20 minutes on a bike. On an e-bike it's closer to 15, at a pace that doesn't ask much of you.
+
+### A 20-minute drive is about 5 miles.
+
+Roughly 25 to 30 minutes riding, or 20 on an e-bike. Five miles is also comfortable territory for a bike-plus-T trip if the weather turns.
+
+### Door to door is the comparison that counts.
+
+Each of those estimates measures a different slice of the trip. Here's what to add back for a real one.
+
+**Parking, if you drive.** The estimate stops at the destination address. The trip you actually take includes finding a space and walking in from it — around a hospital, a campus, the Seaport, or downtown, that's regularly another 5 to 15 minutes at the destination and a few more back at the start. Paying is its own step: a day in a Boston garage runs about {{price:driving.parkingDailyBoston}}, and metered spots want a minute at the kiosk or in the app. On a short errand that overhead can be most of the trip.
+
+**Locking up, if you bike.** Add a minute or two at each end. On Bluebikes, add the walk to a dock, and at rush hour the occasional extra block to reach one with a free spot — a single ride is {{price:bluebikes.singleRide}}, or {{price:bluebikes.annualPerMonth}} a month on an annual pass.
+
+**Walking and waiting, if you take the T.** Add the walk to the stop, the wait, and the walk at the far end. The ride itself is {{price:mbta.subwaySingle}} on the subway, {{price:mbta.busSingle}} on the bus, and it's usually those two walks — not the ride — that decide whether transit beats driving on a given trip.
+
+**Nothing extra, if you walk.** The estimate is already door to door. What you see is what it takes, which is a large part of why walking wins more short trips than people expect.
+
+Add all of that back and the gaps at the short end close considerably. Under about a mile, the modes are usually much closer than the drive-time estimate makes them look.
+
+### Try this first
+
+Put your own trip into the [Commute Advisor](https://www.gogreenstreets.org/commute-advisor). It gives you real walking, biking, and transit times for the actual route, plus what each option costs per day and per year.$guidebody$,
+    'walking',
+    'time',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['planning', 'short-trips', 'motivation', 'routes']::text[],
+    ARRAY['mg_walking_vs_driving', 'mg_bike_time', 'mg_transit_time']::text[],
+    false,
+    3,
     now()
   )
 ON CONFLICT (id) DO UPDATE SET
