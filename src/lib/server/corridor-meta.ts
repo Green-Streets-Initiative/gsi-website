@@ -30,18 +30,24 @@ export interface FrequencyInfo {
   tripsPerDay?: number
 }
 
+/**
+ * Every stop along one direction of a route, in travel order, WITH
+ * coordinates.
+ *
+ * The coordinates used to be stripped before the response — they were only
+ * needed server-side, for matching connections by proximity. They now ride
+ * the wire because the client has to answer "which stop do I stand at to go
+ * THAT way": a bus stop serves one direction, and the opposite direction is
+ * usually a different street. Route 85's two directions from Union Square
+ * are 447 m apart. See the boarding-stop resolver on each surface.
+ */
 export interface DirectionStops {
-  directionId: number
-  stops: { id: string; name: string }[]
-}
-
-/** Server-side twin carrying coordinates. Connections need them (a bus stop
- *  ACROSS THE STREET from a station is a real transfer but shares no id), and
- *  they're stripped before the response — no client draws from this list. */
-export interface DirectionStopsWithPos {
   directionId: number
   stops: { id: string; name: string; lat: number; lng: number }[]
 }
+
+/** Alias kept for the connections code, which was written against it. */
+export type DirectionStopsWithPos = DirectionStops
 
 export interface CorridorMetaResult {
   polylines: string[]
@@ -300,11 +306,7 @@ export async function getCorridorMeta(routeId: string, stopId: string): Promise<
     getFrequency(routeId, stopId).catch(() => null),
     getRouteStops(routeId).catch(() => [] as DirectionStopsWithPos[]),
   ])
-  // Coordinates stay server-side — the all-stops list only ever shows names.
-  const directions: DirectionStops[] = withPos.map(d => ({
-    directionId: d.directionId,
-    stops: d.stops.map(s => ({ id: s.id, name: s.name })),
-  }))
+  const directions: DirectionStops[] = withPos
   // Connections read the route's own stop list, so they wait on it rather
   // than joining the fan-out. Failure degrades to no block, never a wrong one.
   const conn = await getConnections(routeId, withPos)

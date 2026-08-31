@@ -10,7 +10,7 @@ import { BIKE_SHARE_SYSTEM_LINKS, cargobVendorLink } from '@/lib/nearby/bike-sha
 import { CORRIDOR_UNSPLASH } from '@/lib/nearby/config'
 import { protectionLabel, laneTierCopy, LANE_SOURCE_LABEL } from '@/lib/nearby/bike-labels'
 import { bearingDegrees } from '@/lib/geo/polyline'
-import type { TransitCorridor, BikeCorridor, FrequencyInfo } from '@/lib/nearby/corridors'
+import { boardingByDirection, boardingIsShared, type TransitCorridor, type BikeCorridor, type FrequencyInfo } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
 import { useNearbyT } from './NearbyI18n'
@@ -167,12 +167,14 @@ export function PanelPhoto({ spec, alt }: { spec: PhotoSpec; alt: string }) {
 
 /* ── Detail content per selection type ── */
 
-export function DetailContent({ selection, stationByKey, corridorById, docks, borrowRent, onSelectCorridor }: {
+export function DetailContent({ selection, stationByKey, corridorById, docks, borrowRent, center, onSelectCorridor }: {
   selection: NonNullable<Selection>
   stationByKey: Map<string, StationGroup>
   corridorById: Map<string, TransitCorridor | BikeCorridor>
   docks: BluebikeStationLive[]
   borrowRent: (BorrowRentPoint & { distMiles: number })[]
+  /** Where the visitor is — the boarding resolver measures from here. */
+  center: { lat: number; lng: number }
   onSelectCorridor: (id: string) => void
 }) {
   const tr = useNearbyT()
@@ -271,6 +273,11 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
         .get(c.access.stopName.toLowerCase())
         ?.routes.find(r => r.id === c.routeId)
         ?.arrivals.filter(a => a.direction) ?? []
+    // Per-direction boarding stops, from the route's own stop lists. Empty
+    // until corridor-meta lands; both directions on the same stop (rail)
+    // means we keep the single line we've always shown.
+    const boarding = boardingByDirection(c.directions, center)
+    const perDirection = boarding.length > 1 && !boardingIsShared(boarding)
     return (
       <div>
         <div className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
@@ -292,22 +299,55 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
           {freq === 'unavailable' && <span className="text-white/75">{tr('detail.schedule_unavailable')}</span>}
           {freq !== null && freq !== 'unavailable' && (freq as FrequencyInfo).label}
         </div>
-        <div className="mt-0.5 text-[0.78rem] text-white/80">
-          {tr('detail.board_at', { stop: c.access.stopName, minutes: c.access.walkMin })}
-        </div>
-        {liveDirs.length > 0 && (
-          <div className="mt-2 space-y-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-2">
-            {liveDirs.map(a => (
-              <div key={a.direction} className="flex items-baseline justify-between gap-2">
-                <span className="min-w-0 truncate text-[0.8rem] text-white/80">→ {a.direction}</span>
-                {a.nextMin !== null && (
-                  <strong className="shrink-0 text-[0.8rem] font-bold text-[#BAF14D]">
-                    {a.nextMin === 0 ? tr('detail.now') : tr('detail.in_min', { minutes: a.nextMin })}
-                  </strong>
-                )}
-              </div>
-            ))}
+        {/* Where to stand. A bus stop serves ONE direction — the other way
+            is usually a different street — so the boarding stop belongs
+            INSIDE each direction row, not once above both. Rail resolves to
+            the same station both ways and collapses back to a single line. */}
+        {perDirection ? (
+          <div className="mt-2 space-y-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-2">
+            {boarding.map(b => {
+              const dest = c.endpoints[b.directionId] || ''
+              const live = liveDirs.find(a => a.direction === dest)
+              return (
+                <div key={b.directionId}>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="min-w-0 truncate text-[0.8rem] text-white/80">→ {dest}</span>
+                    {live?.nextMin != null && (
+                      <strong className="shrink-0 text-[0.8rem] font-bold text-[#BAF14D]">
+                        {live.nextMin === 0 ? tr('detail.now') : tr('detail.in_min', { minutes: live.nextMin })}
+                      </strong>
+                    )}
+                  </div>
+                  <div className="text-[0.75rem] leading-snug text-white/75">
+                    {tr('detail.board_at', { stop: b.stopName, minutes: b.walkMin })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
+        ) : (
+          <>
+            <div className="mt-0.5 text-[0.78rem] text-white/80">
+              {tr('detail.board_at', {
+                stop: boarding[0]?.stopName ?? c.access.stopName,
+                minutes: boarding[0]?.walkMin ?? c.access.walkMin,
+              })}
+            </div>
+            {liveDirs.length > 0 && (
+              <div className="mt-2 space-y-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-2">
+                {liveDirs.map(a => (
+                  <div key={a.direction} className="flex items-baseline justify-between gap-2">
+                    <span className="min-w-0 truncate text-[0.8rem] text-white/80">→ {a.direction}</span>
+                    {a.nextMin !== null && (
+                      <strong className="shrink-0 text-[0.8rem] font-bold text-[#BAF14D]">
+                        {a.nextMin === 0 ? tr('detail.now') : tr('detail.in_min', { minutes: a.nextMin })}
+                      </strong>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
         <ConnectsTo connections={c.connections} corridorById={corridorById} onSelectCorridor={onSelectCorridor} />
         <AllStops corridor={c} />

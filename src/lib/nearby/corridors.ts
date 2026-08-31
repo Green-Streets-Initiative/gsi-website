@@ -21,10 +21,73 @@ export interface FrequencyInfo {
   tripsPerDay?: number
 }
 
-/** Every stop along a route in one direction, in travel order. */
+/** Every stop along a route in one direction, in travel order. Coordinates
+ *  ride along so we can answer "which stop for THAT direction" — see
+ *  boardingByDirection below. */
 export interface DirectionStops {
   directionId: number
-  stops: { id: string; name: string }[]
+  stops: { id: string; name: string; lat: number; lng: number }[]
+}
+
+/** Where to stand to travel one particular way. */
+export interface BoardingStop {
+  directionId: number
+  stopName: string
+  lat: number
+  lng: number
+  walkMin: number
+}
+
+/**
+ * The nearest stop on each direction of a route.
+ *
+ * A bus stop serves ONE direction; the other way is usually a different
+ * street. The detail used to print a single "Board at X" line above both
+ * directions, which was simply wrong for one of them — stop 2763 (Washington
+ * St @ Boston St) serves route 85 toward Ruggles only, so a rider heading to
+ * Assembly Row was pointed at a stop that never goes there. Its two
+ * directions from Union Square are 447 m apart.
+ *
+ * Rail collapses on its own: both directions of a line resolve to the same
+ * station, so callers render one line exactly as before. Compare by NAME,
+ * not id — a station's two directions carry different platform ids.
+ *
+ * KEEP IN SYNC with the app's resolveBoarding (Shift lib/nearby/transit-shapes.ts).
+ */
+export function boardingByDirection(
+  directions: DirectionStops[] | undefined,
+  from: { lat: number; lng: number },
+): BoardingStop[] {
+  if (!directions || directions.length === 0) return []
+  const out: BoardingStop[] = []
+  for (const dir of directions) {
+    let best: { s: DirectionStops['stops'][number]; m: number } | null = null
+    for (const s of dir.stops) {
+      // A payload without coordinates (an older server, a stale cache) must
+      // yield NOTHING, not a confident guess — otherwise the first stop in
+      // the list gets named as if we knew, with a NaN walk time.
+      if (!Number.isFinite(s.lat) || !Number.isFinite(s.lng)) continue
+      const m = haversineMeters(from.lat, from.lng, s.lat, s.lng)
+      if (!Number.isFinite(m)) continue
+      if (!best || m < best.m) best = { s, m }
+    }
+    if (best) {
+      out.push({
+        directionId: dir.directionId,
+        stopName: best.s.name,
+        lat: best.s.lat,
+        lng: best.s.lng,
+        walkMin: walkTimeMinutes(best.m),
+      })
+    }
+  }
+  return out
+}
+
+/** True when every direction lands on the same stop — rail. Callers then
+ *  print one boarding line instead of one per direction. */
+export function boardingIsShared(boarding: BoardingStop[]): boolean {
+  return boarding.length > 1 && boarding.every(b => b.stopName === boarding[0].stopName)
 }
 
 export interface TransitCorridor {
@@ -185,10 +248,10 @@ export interface CorridorMeta {
 }
 
 export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<CorridorMeta> {
-  // v4: connections now also match by proximity, so a v3 entry holds a real
-  // but INCOMPLETE list (route 91 had one connection where it has four).
-  // Prefix bumps here are cheap and the alternative is a wrong answer.
-  const cacheKey = `nearby-meta-v4-${corridor.routeId}-${corridor.access.stopId}`
+  // v5: direction stop lists carry coordinates, which is what lets us name
+  // the boarding stop PER DIRECTION. A v4 entry has names only, so the
+  // detail would fall back to the old single (and for buses, wrong) line.
+  const cacheKey = `nearby-meta-v5-${corridor.routeId}-${corridor.access.stopId}`
   let polylines: string[] | null = null
   let frequency: FrequencyInfo | null = null
   let directions: DirectionStops[] = []
@@ -216,7 +279,7 @@ export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<Corr
     // hour and the "Connects to" block silently never appears. Same idiom as
     // /api/nearby/reach?v= and /api/bike-network&v=. Bump on payload changes.
     const res = await fetch(
-      `/api/nearby/corridor-meta?route=${encodeURIComponent(corridor.routeId)}&stop=${encodeURIComponent(corridor.access.stopId)}&v=3`
+      `/api/nearby/corridor-meta?route=${encodeURIComponent(corridor.routeId)}&stop=${encodeURIComponent(corridor.access.stopId)}&v=4`
     )
     if (!res.ok) throw new Error(`corridor-meta ${res.status}`)
     const data = await res.json()

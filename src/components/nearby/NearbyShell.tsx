@@ -388,6 +388,7 @@ export default function NearbyShell({
                 corridorById={corridorById}
                 docks={docks}
                 borrowRent={model.borrowRent}
+                center={center}
                 onSelectCorridor={(id) => selectShowing({ type: 'corridor', id }, 'panel')}
               />
             )}
