@@ -185,10 +185,10 @@ export interface CorridorMeta {
 }
 
 export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<CorridorMeta> {
-  // v3: responses carry per-direction stop lists AND spine connections. The
-  // prefix bump matters — a v2 entry inside its TTL has no connections and
-  // would render the block empty for the rest of the session.
-  const cacheKey = `nearby-meta-v3-${corridor.routeId}-${corridor.access.stopId}`
+  // v4: connections now also match by proximity, so a v3 entry holds a real
+  // but INCOMPLETE list (route 91 had one connection where it has four).
+  // Prefix bumps here are cheap and the alternative is a wrong answer.
+  const cacheKey = `nearby-meta-v4-${corridor.routeId}-${corridor.access.stopId}`
   let polylines: string[] | null = null
   let frequency: FrequencyInfo | null = null
   let directions: DirectionStops[] = []
@@ -216,7 +216,7 @@ export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<Corr
     // hour and the "Connects to" block silently never appears. Same idiom as
     // /api/nearby/reach?v= and /api/bike-network&v=. Bump on payload changes.
     const res = await fetch(
-      `/api/nearby/corridor-meta?route=${encodeURIComponent(corridor.routeId)}&stop=${encodeURIComponent(corridor.access.stopId)}&v=2`
+      `/api/nearby/corridor-meta?route=${encodeURIComponent(corridor.routeId)}&stop=${encodeURIComponent(corridor.access.stopId)}&v=3`
     )
     if (!res.ok) throw new Error(`corridor-meta ${res.status}`)
     const data = await res.json()

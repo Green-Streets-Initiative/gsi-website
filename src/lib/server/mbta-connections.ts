@@ -16,6 +16,15 @@ export type { RouteConnection }
  * intersection is free. All that's new is one cached snapshot of the spine's
  * stop sets, shared across every visitor of both surfaces.
  *
+ * Two ways a route counts as meeting a line. An exact stop-id match catches
+ * the clean case — a bus stop that IS the station comes back as the parent id
+ * ("place-sull"), the same id the Orange Line carries. But most bus stops
+ * near a station are ordinary street stops with no parent: route 91 ends in
+ * Central Square at "Prospect St @ Bishop Allen Dr", 119 m from the Red Line
+ * headhouse and sharing no id with it. Ids alone reported one connection for
+ * the 91 when it really has four. So a stop within CONNECT_RADIUS_M of a
+ * spine stop counts too — if the bus stops that close, you can transfer.
+ *
  * Spine only, deliberately: rapid transit, the Silver Line, commuter rail,
  * and ferries. Bus-to-bus would list a dozen connections on a busy corridor
  * and drown the teaching moment; RTA agencies can't be done at all yet
@@ -38,6 +47,18 @@ const MAX_CONNECTIONS = 6
 
 /** Stop names shown per connection; the rest collapse into "+N more". */
 const MAX_STOPS_PER_CONNECTION = 3
+
+/**
+ * How close a stop has to be to a spine stop to count as meeting it.
+ *
+ * 200 m is a street crossing plus a short walk — the distance at which a
+ * rider genuinely steps off one and onto the other. Checked against real
+ * routes before settling: it finds Red at Central for the 91 (119 m), Red at
+ * Central and Harvard for the 1, Orange at Roxbury Crossing for the 66, and
+ * produced no connection on those routes that isn't real. Widening it starts
+ * catching lines a route merely passes near.
+ */
+const CONNECT_RADIUS_M = 200
 
 /**
  * The spine, in the order a rider ranks it. CR-Foxboro is left out on
@@ -111,7 +132,19 @@ function familyOf(routeId: string): { id: string; name: string } | null {
   return FAMILY[routeId] ?? null
 }
 
-interface SpineRoute { id: string; name: string; stopIds: Set<string>; stopNames: Map<string, string> }
+interface SpineStop { id: string; name: string; lat: number; lng: number }
+interface SpineRoute { id: string; name: string; stopIds: Set<string>; stops: SpineStop[] }
+
+/** Metres between two points. */
+function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371000
+  const rad = (d: number) => (d * Math.PI) / 180
+  const dLat = rad(bLat - aLat)
+  const dLng = rad(bLng - aLng)
+  const h = Math.sin(dLat / 2) ** 2
+    + Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
 
 function mbtaUrl(path: string, params: URLSearchParams): string {
   if (MBTA_API_KEY) params.set('api_key', MBTA_API_KEY)
@@ -142,7 +175,7 @@ async function fetchSpineRoute(route: { id: string; name: string }): Promise<Spi
     const res = await fetch(
       mbtaUrl('/stops', new URLSearchParams({
         'filter[route]': route.id,
-        'fields[stop]': 'name',
+        'fields[stop]': 'name,latitude,longitude',
         'page[limit]': '300',
       })),
       { signal: AbortSignal.timeout(8000) }
@@ -150,12 +183,18 @@ async function fetchSpineRoute(route: { id: string; name: string }): Promise<Spi
     const data = await res.json()
     if (!res.ok || data.errors) return null
     const stopIds = new Set<string>()
-    const stopNames = new Map<string, string>()
-    for (const s of (data.data ?? []) as { id: string; attributes?: { name?: string } }[]) {
+    const stops: SpineStop[] = []
+    for (const s of (data.data ?? []) as
+      { id: string; attributes?: { name?: string; latitude?: number; longitude?: number } }[]) {
       stopIds.add(s.id)
-      if (s.attributes?.name) stopNames.set(s.id, s.attributes.name)
+      const name = s.attributes?.name
+      const lat = s.attributes?.latitude
+      const lng = s.attributes?.longitude
+      if (name && typeof lat === 'number' && typeof lng === 'number') {
+        stops.push({ id: s.id, name, lat, lng })
+      }
     }
-    return stopIds.size > 0 ? { ...route, stopIds, stopNames } : null
+    return stopIds.size > 0 ? { ...route, stopIds, stops } : null
   } catch {
     return null
   }
@@ -165,7 +204,7 @@ const inMemory: { index: SpineRoute[] | null; expires: number } = { index: null,
 
 /** Serialisable twin of SpineRoute — Sets and Maps don't survive the
  *  durable cache, so store arrays and rehydrate on read. */
-type WireSpineRoute = { id: string; name: string; stops: [string, string][] }
+type WireSpineRoute = { id: string; name: string; stops: SpineStop[] }
 
 const durableSpine = unstable_cache(async (): Promise<WireSpineRoute[]> => {
   const routes = (await pooled(SPINE.map(r => () => fetchSpineRoute(r)), 8))
@@ -174,8 +213,9 @@ const durableSpine = unstable_cache(async (): Promise<WireSpineRoute[]> => {
   // week. Throw instead — the caller degrades to "no connections", which
   // renders as nothing rather than as something false.
   if (routes.length < SPINE.length / 2) throw new Error('spine topology incomplete')
-  return routes.map(r => ({ id: r.id, name: r.name, stops: [...r.stopNames.entries()] }))
-}, ['nearby-spine-topology-v1'], { revalidate: SPINE_TTL_MS / 1000 })
+  return routes.map(r => ({ id: r.id, name: r.name, stops: r.stops }))
+  // v2: stops carry coordinates (proximity matching)
+}, ['nearby-spine-topology-v2'], { revalidate: SPINE_TTL_MS / 1000 })
 
 async function getSpineIndex(): Promise<SpineRoute[]> {
   if (inMemory.index && inMemory.expires > Date.now()) return inMemory.index
@@ -183,8 +223,8 @@ async function getSpineIndex(): Promise<SpineRoute[]> {
   const index = wire.map(r => ({
     id: r.id,
     name: r.name,
-    stopIds: new Set(r.stops.map(([id]) => id)),
-    stopNames: new Map(r.stops),
+    stopIds: new Set(r.stops.map(s => s.id)),
+    stops: r.stops,
   }))
   inMemory.index = index
   inMemory.expires = Date.now() + SPINE_TTL_MS
@@ -203,12 +243,22 @@ async function getSpineIndex(): Promise<SpineRoute[]> {
  */
 export async function getConnections(
   routeId: string,
-  directions: { stops: { id: string; name: string }[] }[],
+  directions: { stops: { id: string; name: string; lat: number; lng: number }[] }[],
 ): Promise<{ ok: boolean; connections: RouteConnection[] }> {
-  const ownStops = new Set<string>()
-  for (const d of directions) for (const s of d.stops) ownStops.add(s.id)
+  // Travel order, de-duplicated: the stop names in a connection come out in
+  // the order you'd pass them, and direction 1 only adds what direction 0
+  // didn't already cover.
+  const ownStops: { id: string; lat: number; lng: number }[] = []
+  const seenOwn = new Set<string>()
+  for (const d of directions) {
+    for (const s of d.stops) {
+      if (seenOwn.has(s.id)) continue
+      seenOwn.add(s.id)
+      ownStops.push({ id: s.id, lat: s.lat, lng: s.lng })
+    }
+  }
   // No stop list means the route side never loaded — not "no connections".
-  if (ownStops.size === 0) return { ok: false, connections: [] }
+  if (ownStops.length === 0) return { ok: false, connections: [] }
 
   let spine: SpineRoute[]
   try {
@@ -220,33 +270,46 @@ export async function getConnections(
 
   // Merge each branch family into one entry, keyed by the family id (or the
   // route's own id when it has no family), so a line is named once.
-  const merged = new Map<string, { name: string; rank: number; stops: string[] }>()
+  const merged = new Map<string, { name: string; rank: number; stops: { id: string; name: string }[] }>()
   for (const line of spine) {
     const fam = familyOf(line.id)
     const key = fam?.id ?? line.id
     // Never report the route itself, or a sibling branch of it.
     if (key === ownFamily) continue
-    for (const id of ownStops) {
-      if (!line.stopIds.has(id)) continue
-      const name = line.stopNames.get(id)
-      if (!name) continue
-      const entry = merged.get(key) ?? {
-        name: fam?.name ?? line.name,
-        rank: SPINE_RANK.get(line.id) ?? 99,
-        stops: [],
+    // Outer loop is the ROUTE's stops so the names come out in travel order.
+    for (const own of ownStops) {
+      for (const target of line.stops) {
+        const meets = own.id === target.id
+          || haversineMeters(own.lat, own.lng, target.lat, target.lng) <= CONNECT_RADIUS_M
+        if (!meets) continue
+        const entry = merged.get(key) ?? {
+          name: fam?.name ?? line.name,
+          rank: SPINE_RANK.get(line.id) ?? 99,
+          stops: [],
+        }
+        if (!entry.stops.some(x => x.name === target.name)) {
+          entry.stops.push({ id: target.id, name: target.name })
+        }
+        merged.set(key, entry)
       }
-      if (!entry.stops.includes(name)) entry.stops.push(name)
-      merged.set(key, entry)
     }
   }
 
   const out: RouteConnection[] = []
   for (const [key, entry] of merged) {
+    // Name the STATION, not the corner. Proximity matching also hits the
+    // ordinary street stops of bus-like spine routes, which turned "Silver
+    // Line at South Station" into "…at South Station, Summer St @ Atlantic
+    // Ave, Essex St @ Atlantic Ave" — three names for one place, none of the
+    // extras a rider would recognise. Where a station-level stop matched,
+    // it's the only name worth showing.
+    const stations = entry.stops.filter(x => x.id.startsWith('place-'))
+    const named = (stations.length > 0 ? stations : entry.stops).map(x => x.name)
     out.push({
       routeId: key,
       name: entry.name,
-      stops: entry.stops.slice(0, MAX_STOPS_PER_CONNECTION),
-      moreStops: Math.max(0, entry.stops.length - MAX_STOPS_PER_CONNECTION),
+      stops: named.slice(0, MAX_STOPS_PER_CONNECTION),
+      moreStops: Math.max(0, named.length - MAX_STOPS_PER_CONNECTION),
     })
   }
 

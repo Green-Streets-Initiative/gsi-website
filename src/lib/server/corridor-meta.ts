@@ -35,6 +35,14 @@ export interface DirectionStops {
   stops: { id: string; name: string }[]
 }
 
+/** Server-side twin carrying coordinates. Connections need them (a bus stop
+ *  ACROSS THE STREET from a station is a real transfer but shares no id), and
+ *  they're stripped before the response — no client draws from this list. */
+export interface DirectionStopsWithPos {
+  directionId: number
+  stops: { id: string; name: string; lat: number; lng: number }[]
+}
+
 export interface CorridorMetaResult {
   polylines: string[]
   frequency: FrequencyInfo | null
@@ -48,7 +56,7 @@ export interface CorridorMetaResult {
 
 const shapeCache = new Map<string, { polylines: string[]; expires: number }>()
 const freqCache = new Map<string, { freq: FrequencyInfo | null; expires: number }>()
-const stopsCache = new Map<string, { directions: DirectionStops[]; expires: number }>()
+const stopsCache = new Map<string, { directions: DirectionStopsWithPos[]; expires: number }>()
 
 function mbtaUrl(path: string, params: URLSearchParams): string {
   if (MBTA_API_KEY) params.set('api_key', MBTA_API_KEY)
@@ -108,11 +116,11 @@ async function fetchShapes(routeId: string): Promise<string[]> {
 /** Every stop along the route, per direction, in travel order — the MBTA
  *  returns stop-sequence order when both route and direction_id are set.
  *  As static as the shape, so it shares the 7-day cache convention. */
-async function getRouteStops(routeId: string): Promise<DirectionStops[]> {
+async function getRouteStops(routeId: string): Promise<DirectionStopsWithPos[]> {
   const cached = stopsCache.get(routeId)
   if (cached && cached.expires > Date.now()) return cached.directions
 
-  let directions: DirectionStops[]
+  let directions: DirectionStopsWithPos[]
   try {
     directions = await durableRouteStops(routeId)
   } catch (e) {
@@ -130,24 +138,31 @@ const durableRouteStops = unstable_cache(async (routeId: string) => {
   const directions = await fetchRouteStops(routeId)
   if (directions.length === 0) throw new EmptyResultError()
   return directions
-}, ['nearby-route-stops-v1'], { revalidate: SHAPE_TTL_MS / 1000 })
+  // v2: rows carry coordinates (connections match by proximity too)
+}, ['nearby-route-stops-v2'], { revalidate: SHAPE_TTL_MS / 1000 })
 
-async function fetchRouteStops(routeId: string): Promise<DirectionStops[]> {
-  const directions: DirectionStops[] = []
+async function fetchRouteStops(routeId: string): Promise<DirectionStopsWithPos[]> {
+  const directions: DirectionStopsWithPos[] = []
   for (const dir of [0, 1]) {
     const res = await fetch(
       mbtaUrl('/stops', new URLSearchParams({
         'filter[route]': routeId,
         'filter[direction_id]': String(dir),
-        'fields[stop]': 'name',
+        'fields[stop]': 'name,latitude,longitude',
         'page[limit]': '200',
       })),
       { signal: AbortSignal.timeout(8000) }
     )
     const data = await res.json()
     if (!res.ok || data.errors) throw new Error(`stops ${res.status}`)
-    const stops = ((data.data ?? []) as { id: string; attributes?: { name?: string } }[])
-      .map(s => ({ id: s.id, name: s.attributes?.name ?? '' }))
+    const stops = ((data.data ?? []) as
+      { id: string; attributes?: { name?: string; latitude?: number; longitude?: number } }[])
+      .map(s => ({
+        id: s.id,
+        name: s.attributes?.name ?? '',
+        lat: s.attributes?.latitude ?? 0,
+        lng: s.attributes?.longitude ?? 0,
+      }))
       .filter(s => s.name)
     if (stops.length > 0) directions.push({ directionId: dir, stops })
   }
@@ -280,14 +295,19 @@ async function computeFrequency(routeId: string, stopId: string, date: string): 
  *  Each part degrades independently — a schedules hiccup still returns the
  *  shape, matching the old API route's behavior exactly. */
 export async function getCorridorMeta(routeId: string, stopId: string): Promise<CorridorMetaResult> {
-  const [polylines, frequency, directions] = await Promise.all([
+  const [polylines, frequency, withPos] = await Promise.all([
     getShapes(routeId).catch(() => [] as string[]),
     getFrequency(routeId, stopId).catch(() => null),
-    getRouteStops(routeId).catch(() => [] as DirectionStops[]),
+    getRouteStops(routeId).catch(() => [] as DirectionStopsWithPos[]),
   ])
+  // Coordinates stay server-side — the all-stops list only ever shows names.
+  const directions: DirectionStops[] = withPos.map(d => ({
+    directionId: d.directionId,
+    stops: d.stops.map(s => ({ id: s.id, name: s.name })),
+  }))
   // Connections read the route's own stop list, so they wait on it rather
   // than joining the fan-out. Failure degrades to no block, never a wrong one.
-  const conn = await getConnections(routeId, directions)
+  const conn = await getConnections(routeId, withPos)
     .catch(() => ({ ok: false, connections: [] as RouteConnection[] }))
   return { polylines, frequency, directions, connections: conn.connections, connectionsOk: conn.ok }
 }
