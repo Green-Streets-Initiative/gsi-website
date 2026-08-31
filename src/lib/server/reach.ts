@@ -631,31 +631,63 @@ async function computeReach(
   ))
 
   const rows: ReachRow[] = await Promise.all(
-    candidates.map(async d => {
-      const [transit, bikeRoutes] = await Promise.all([
-        queryTransit({ lat: lat3, lng: lng3 }, d, departureTime),
-        queryBikeRoutes({ lat: lat3, lng: lng3 }, d),
-      ])
-      const bike = chooseBikeRoute(bikeRoutes, laneIndex)
-      return {
-        id: d.id,
-        name: d.name,
-        lat: d.lat,
-        lng: d.lng,
-        distance_miles: Math.round(d.distance_miles * 10) / 10,
-        transit_minutes: transit?.minutes ?? null,
-        steps: transit?.steps ?? [],
-        transit_segments: transit?.segments ?? [],
-        bike_minutes: bike?.minutes ?? Math.max(5, Math.round((d.distance_miles * BIKE_ROUTE_FACTOR / BIKE_MPH) * 60)),
-        bike_is_estimate: bike === null,
-        bike_steps: bike ? matchBikeCorridors(bike.encodedPolyline, laneIndex) : [],
-        bike_polyline: bike?.encodedPolyline ?? null,
-        bike_comfort: bike?.scored?.comfort ?? null,
-      }
-    })
+    candidates.map(d => buildReachRow({ lat: lat3, lng: lng3 }, d, laneIndex, departureTime))
   )
 
   rows.sort((a, b) => (a.transit_minutes ?? 999) - (b.transit_minutes ?? 999))
 
   return { destinations: rows, region: region ? { id: region.id, label: region.label } : null }
 }
+
+/**
+ * One destination's row: the transit itinerary (with its line chain and
+ * drawable segments), the cycling route chosen for comfort, the corridors it
+ * follows, and the comfort breakdown. Two Google Routes calls.
+ *
+ * Extracted from computeReach's loop so a destination the USER picks can be
+ * answered by exactly the same pipeline — see lib/server/trip.ts. A planned
+ * trip is just a ReachRow for a destination that isn't on the curated list,
+ * which is why the trip planner needs no new engine and no new UI grammar.
+ */
+export async function buildReachRow(
+  origin: { lat: number; lng: number },
+  dest: { id: string; name: string; lat: number; lng: number; distance_miles: number },
+  laneIndex: LaneVertex[],
+  departureTime: string,
+): Promise<ReachRow> {
+  const [transit, bikeRoutes] = await Promise.all([
+    queryTransit(origin, dest, departureTime),
+    queryBikeRoutes(origin, dest),
+  ])
+  const bike = chooseBikeRoute(bikeRoutes, laneIndex)
+  return {
+    id: dest.id,
+    name: dest.name,
+    lat: dest.lat,
+    lng: dest.lng,
+    distance_miles: Math.round(dest.distance_miles * 10) / 10,
+    transit_minutes: transit?.minutes ?? null,
+    steps: transit?.steps ?? [],
+    transit_segments: transit?.segments ?? [],
+    bike_minutes: bike?.minutes ?? Math.max(5, Math.round((dest.distance_miles * BIKE_ROUTE_FACTOR / BIKE_MPH) * 60)),
+    bike_is_estimate: bike === null,
+    bike_steps: bike ? matchBikeCorridors(bike.encodedPolyline, laneIndex) : [],
+    bike_polyline: bike?.encodedPolyline ?? null,
+    bike_comfort: bike?.scored?.comfort ?? null,
+  }
+}
+
+/** The lane index a reach row is scored against — shared 24 h bike-network
+ *  cache, so the trip planner pays nothing extra for it. */
+export async function laneIndexFor(lat: number, lng: number): Promise<LaneVertex[]> {
+  return buildLaneIndex(await getBikeNetwork(lat, lng, 3).catch(
+    () => ({ geojson: { type: 'FeatureCollection' as const, features: [] }, nearest_protected: null, counts: { path: 0, protected: 0, painted: 0 } })
+  ))
+}
+
+/** Straight-line miles between two points — exported for the trip planner,
+ *  which has to compute its own destination distance. */
+export { haversineMiles }
+
+/** Next Monday 8:30 AM ET — the departure anchor every reach row uses. */
+export { nextMonday830 }

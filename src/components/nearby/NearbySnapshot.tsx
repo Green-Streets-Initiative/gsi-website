@@ -478,18 +478,6 @@ export default function NearbySnapshot() {
     window.history.replaceState(null, '', sticky ? `${NEARBY_PATH}?${sticky}` : NEARBY_PATH)
   }
 
-  function handleAdvisorCta() {
-    posthog.capture('snapshot_advisor_cta_clicked')
-    if (!location) return
-    try {
-      sessionStorage.setItem('commute-advisor-state', JSON.stringify({
-        homeAddress: location.fullAddress ?? location.label,
-        homePlaceData: { placeId: '', lat: location.lat, lng: location.lng },
-        step: 1,
-      }))
-    } catch {}
-  }
-
   /** Hand a specific destination to the Commute Advisor — home AND
    *  destination prefilled, so the user lands one tap from a comparison. */
   const handlePlanCommute = useCallback((row: { id: string; name: string; lat: number; lng: number }) => {
@@ -691,7 +679,6 @@ export default function NearbySnapshot() {
     onCopyLink: handleCopyLink,
     onChangeLocation: handleChangeLocation,
     onPrint: handlePrint,
-    onAdvisorCta: handleAdvisorCta,
     onPlanCommute: handlePlanCommute,
     partnerLine,
     partner,

@@ -22,6 +22,7 @@ import ModeFilterChips from './ModeFilterChips'
 import { StationList, BikeRouteList, DockList, BorrowRentList, ServiceDisruptionsCard } from './AroundYouLists'
 import { nearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
 import { ReachList, RouteLegNote, TransitChain } from './ReachSection'
+import TripPlanner from './TripPlanner'
 import { ExploreBody } from './ExploreBody'
 import PartnerCobrand from './PartnerCobrand'
 import NewRoutesOffer from './NewRoutesOffer'
@@ -63,7 +64,6 @@ interface Props {
   onCopyLink: () => void
   onChangeLocation: () => void
   onPrint: () => void
-  onAdvisorCta: () => void
   onPlanCommute: (row: ReachRow) => void
   partnerLine: string
   /** Outreach co-brand (null = default branding); slug also tags analytics
@@ -93,7 +93,7 @@ interface Props {
 
 export default function NearbyShell({
   center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
-  onAdvisorCta, onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
+  onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, shuttles, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
   onRequestCorridorShape,
@@ -177,14 +177,27 @@ export default function NearbyShell({
   }, [corridorById, paintedOn, selectReveal])
 
   // ── Reach routes draw on the MAIN map (no nested mini-map in the sheet) ──
+  // A trip the visitor planned themselves. It joins the destination rows so
+  // it renders, draws and selects exactly like a curated one — the planner
+  // needed no new detail UI because a planned trip IS a reach row.
+  const [plannedRows, setPlannedRows] = useState<ReachRow[]>([])
+  const reachRows = useMemo(() => [...plannedRows, ...reach.data], [plannedRows, reach.data])
+
   const { reachRow, lines: shellCorridorLines, markers: shellMarkers, highlight: effectiveHighlight } = useReachOverlay({
-    selection, reachRows: reach.data, corridorLines, markers, highlightedCorridorId,
+    selection, reachRows, corridorLines, markers, highlightedCorridorId,
   })
 
   const selectReach = useCallback((row: ReachRow, mode: 'transit' | 'bike', source: string) => {
     selectReveal({ type: 'reach', id: row.id, mode }, source)
     posthog.capture('reach_route_viewed', { destination: row.id, mode })
   }, [selectReveal])
+
+  /** A planned trip lands in the list and opens immediately — the answer is
+   *  the point of the search, not a row you then have to find and tap. */
+  const onPlanned = useCallback((row: ReachRow) => {
+    setPlannedRows(prev => [row, ...prev.filter(r => r.id !== row.id)])
+    selectReach(row, defaultRouteMode(row, reachModeFor(modeFilter) ?? undefined), 'trip')
+  }, [selectReach, modeFilter])
 
   // A tapped stretch of the drawn route; cleared whenever the selection moves
   const [legInfo, setLegInfo] = useState<RouteLegTapInfo | null>(null)
@@ -436,35 +449,25 @@ export default function NearbyShell({
 
         <div className={selection || tab !== 'destinations' ? 'hidden' : ''}>
           {/* Planning a specific trip leads — most people arrive wanting
-              their own destination, not our curated set. */}
-          <div className="mt-2 rounded-xl border border-[rgba(186,241,77,0.25)] bg-[linear-gradient(135deg,rgba(41,102,229,0.18),rgba(186,241,77,0.1))] px-4 py-4">
-            <div className="text-[0.95rem] font-bold text-white">{tr('shell.advisor_title')}</div>
-            <p className="mt-1 text-[0.82rem] leading-snug text-white/80">
-              {tr('shell.advisor_body')}
-            </p>
-            <Link
-              href={partnerSlug ? `/commute-advisor?partner=${partnerSlug}` : '/commute-advisor'}
-              onClick={onAdvisorCta}
-              className="mt-2.5 inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-            >
-              {tr('shell.plan_trip')}
-            </Link>
-          </div>
+              their own destination, not our curated set. It answers here,
+              in a row like any other; the Advisor's full cost comparison
+              lives inside that answer, for the trips you actually repeat. */}
+          <TripPlanner center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} />
           <p className="mt-6 text-[0.8rem] leading-snug text-white/75">
             {tr('shell.destinations_intro')}
           </p>
           <div className="mt-3">
             {reach.status === 'loading' && <SkeletonRows count={4} />}
             {reach.status === 'error' && <ErrorCard label={tr('shell.reach_error')} onRetry={onRetry} />}
-            {reach.status === 'ready' && reach.data.length > 0 && (
+            {reach.status === 'ready' && reachRows.length > 0 && (
               <ReachList
                 center={center}
-                rows={reach.data}
+                rows={reachRows}
                 modeFilter={modeFilter}
                 onRowTap={(row) => selectReach(row, defaultRouteMode(row, reachModeFor(modeFilter) ?? undefined), 'list')}
               />
             )}
-            {reach.status === 'ready' && reach.data.length === 0 && (
+            {reach.status === 'ready' && reachRows.length === 0 && (
               <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
                 {tr('shell.no_destinations')}
               </p>

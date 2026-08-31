@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
@@ -17,6 +16,8 @@ import ModeFilterChips from './ModeFilterChips'
 import { StationList, BikeRouteList, DockList, BorrowRentList, ServiceDisruptionsCard } from './AroundYouLists'
 import { nearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
 import { ReachList } from './ReachSection'
+import TripPlanner from './TripPlanner'
+import { defaultRouteMode, reachModeFor } from '@/lib/nearby/reach-ui'
 import { ExploreBody } from './ExploreBody'
 import PartnerCobrand from './PartnerCobrand'
 import NewRoutesOffer from './NewRoutesOffer'
@@ -55,7 +56,6 @@ interface Props {
   onCopyLink: () => void
   onChangeLocation: () => void
   onPrint: () => void
-  onAdvisorCta: () => void
   onPlanCommute: (row: ReachRow) => void
   partnerLine: string
   transitCorridors: TransitCorridor[]
@@ -100,7 +100,7 @@ const RAIL_TAB_LABEL_KEYS: Record<RailTab, string> = {
 
 export default function NearbyDesktop({
   center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
-  onAdvisorCta, onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
+  onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, shuttles, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
   onRequestCorridorShape,
@@ -127,8 +127,14 @@ export default function NearbyDesktop({
   } = model
 
   // Reach routes draw on the main map, same as the mobile shell
+  // A trip the visitor planned themselves. It joins the destination rows so
+  // it renders, draws and selects exactly like a curated one — the planner
+  // needed no new detail UI because a planned trip IS a reach row.
+  const [plannedRows, setPlannedRows] = useState<ReachRow[]>([])
+  const reachRows = useMemo(() => [...plannedRows, ...reach.data], [plannedRows, reach.data])
+
   const overlay = useReachOverlay({
-    selection, reachRows: reach.data, corridorLines, markers, highlightedCorridorId,
+    selection, reachRows, corridorLines, markers, highlightedCorridorId,
   })
 
   // A list tap can target a painted corridor while painted lanes are hidden —
@@ -146,6 +152,13 @@ export default function NearbyDesktop({
   const routeSelection = selection?.type === 'reach'
     ? { id: selection.id, mode: selection.mode }
     : null
+  /** A planned trip lands in the list and opens immediately — the answer is
+   *  the point of the search, not a row you then have to find and tap. */
+  const onPlanned = useCallback((row: ReachRow) => {
+    setPlannedRows(prev => [row, ...prev.filter(r => r.id !== row.id)])
+    select({ type: 'reach', id: row.id, mode: defaultRouteMode(row, reachModeFor(modeFilter) ?? undefined) }, 'trip')
+  }, [select, modeFilter])
+
   const onRouteSelect = useCallback((sel: { id: string; mode: 'transit' | 'bike' } | null) => {
     if (!sel) {
       select(null, 'row-collapse')
@@ -441,30 +454,20 @@ export default function NearbyDesktop({
 
             <div className={railTab === 'destinations' ? '' : 'hidden'}>
               {/* Planning a specific trip leads — most people arrive wanting
-                  their own destination, not our curated set. */}
-              <div className="rounded-xl border border-[rgba(186,241,77,0.25)] bg-[linear-gradient(135deg,rgba(41,102,229,0.18),rgba(186,241,77,0.1))] px-4 py-4">
-                <div className="text-[0.95rem] font-bold text-white">{tr('desktop.advisor_title')}</div>
-                <p className="mt-1 text-[0.82rem] leading-snug text-white/80">
-                  {tr('desktop.advisor_body')}
-                </p>
-                <Link
-                  href={partnerSlug ? `/commute-advisor?partner=${partnerSlug}` : '/commute-advisor'}
-                  onClick={onAdvisorCta}
-                  className="mt-2.5 inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
-                >
-                  {tr('desktop.plan_trip')}
-                </Link>
-              </div>
+                  their own destination, not our curated set. It answers here,
+                  in a row like any other; the Advisor's full cost comparison
+                  lives inside that answer, for the trips you actually repeat. */}
+              <TripPlanner center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} />
 
               <p className="mb-3 mt-6 text-[0.8rem] leading-snug text-white/75">
                 {tr('desktop.destinations_intro')}
               </p>
               {reach.status === 'loading' && <SkeletonRows count={4} />}
               {reach.status === 'error' && <ErrorCard label={tr('desktop.reach_error')} onRetry={onRetry} />}
-              {reach.status === 'ready' && reach.data.length > 0 && (
+              {reach.status === 'ready' && reachRows.length > 0 && (
                 <ReachList
                   center={center}
-                  rows={reach.data}
+                  rows={reachRows}
                   modeFilter={modeFilter}
                   routeSelection={routeSelection}
                   onRouteSelect={onRouteSelect}
@@ -473,7 +476,7 @@ export default function NearbyDesktop({
                   partnerSlug={partnerSlug}
                 />
               )}
-              {reach.status === 'ready' && reach.data.length === 0 && (
+              {reach.status === 'ready' && reachRows.length === 0 && (
                 <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
                   {tr('desktop.no_destinations')}
                 </p>
