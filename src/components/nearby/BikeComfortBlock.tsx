@@ -2,6 +2,8 @@
 
 import ComfortBar from '@/components/commute/ComfortBar'
 import { useNearbyT } from './NearbyI18n'
+import { PanelPhoto } from './DetailPanel'
+import { decodePolyline, bearingDegrees } from '@/lib/geo/polyline'
 import type { BikeComfortData, BikeComfortTier } from './types'
 
 /**
@@ -23,6 +25,29 @@ export const NEARBY_COMFORT_LABELS: Record<BikeComfortTier, string> = {
   protected: 'Protected lane',
   bike_lane: 'Painted lane',
   shared_road: 'Shared road',
+}
+
+/**
+ * Where to stand the Street View camera for a highlighted street: the middle
+ * of its longest stretch, facing along the road. The midpoint beats an
+ * endpoint (which lands you in the intersection), and the bearing keeps the
+ * camera looking down the street rather than at a wall.
+ */
+function streetPhotoSpec(
+  segments: BikeComfortData['segments'],
+  key: string,
+): { lat: number; lng: number; heading?: number } | null {
+  const mine = segments.filter(s => (s.street_keys ?? []).includes(key))
+  if (mine.length === 0) return null
+  const longest = mine.reduce((a, b) => (a.distance_mi >= b.distance_mi ? a : b))
+  const pts = decodePolyline(longest.polyline)
+  if (pts.length === 0) return null
+  const mid = Math.floor(pts.length / 2)
+  const [lat, lng] = pts[mid]
+  const before = pts[Math.max(0, mid - 1)]
+  const after = pts[Math.min(pts.length - 1, mid + 1)]
+  const heading = pts.length > 1 ? bearingDegrees(before[0], before[1], after[0], after[1]) : undefined
+  return { lat, lng, heading }
 }
 
 export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHighlightStreet }: {
@@ -80,17 +105,27 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                   </span>
                 </>
               )
+              const photo = on && s.key ? streetPhotoSpec(comfort.segments, s.key) : null
               return s.key && onHighlightStreet ? (
-                <button
-                  key={s.key}
-                  onClick={() => onHighlightStreet(on ? null : s.key!)}
-                  aria-pressed={on}
-                  className={`flex w-full items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left text-[0.78rem] transition-colors ${
-                    on ? 'bg-white/[0.09] text-white' : 'text-white/80 hover:bg-white/[0.05]'
-                  }`}
-                >
-                  {body}
-                </button>
+                <div key={s.key}>
+                  <button
+                    onClick={() => onHighlightStreet(on ? null : s.key!)}
+                    aria-pressed={on}
+                    className={`flex w-full items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left text-[0.78rem] transition-colors ${
+                      on ? 'bg-white/[0.09] text-white' : 'text-white/80 hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    {body}
+                  </button>
+                  {/* Seeing the road is what turns "0.6 mi protected lane"
+                      from a claim into something you can judge. Street View
+                      looks along the street from the middle of its longest
+                      stretch; the block collapses to nothing when there's no
+                      imagery. */}
+                  {photo && (
+                    <PanelPhoto spec={{ kind: 'sv', ...photo }} alt={s.label} />
+                  )}
+                </div>
               ) : (
                 <div key={s.label} className="flex items-baseline justify-between gap-2 px-1 text-[0.78rem] text-white/80">
                   {body}
