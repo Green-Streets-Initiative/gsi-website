@@ -358,7 +358,9 @@ export default function NearbySnapshot() {
         // v= busts browser HTTP caches (max-age=86400) when the response
         // shape or lane classification changes — bump it alongside the
         // server's cache-key version (v9: comfort segments name their street)
-        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=9`)
+        // v10: steps now carry the transfer stop names — without the bump the
+        // route's own max-age=86400 keeps serving arrow-only chains for a day
+        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=10`)
         if (!res.ok) throw new Error(`reach ${res.status}`)
         const data = await res.json()
         setReach({ status: 'ready', data: data.destinations ?? [] })

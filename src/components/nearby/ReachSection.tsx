@@ -8,7 +8,7 @@ import { directionsUrl } from '@/lib/nearby/transit-ui'
 import type { ModeFilter } from './useNearbyModel'
 import type { RouteLegTapInfo } from './NearbyMap'
 import BikeComfortBlock, { NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
-import type { ReachRow, BikeComfortTier } from './types'
+import type { ReachRow, ReachStep, BikeComfortTier } from './types'
 import { useNearbyT } from './NearbyI18n'
 
 /** Comfort-tier → i18n key, so a tapped bike leg's tier reads in the page
@@ -45,6 +45,46 @@ export function RouteLegNote({ info }: { info: RouteLegTapInfo }) {
       <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: dotColor }} aria-hidden="true" />
       <span className="min-w-0">{tr('reach.you_tapped')} <span className="font-semibold">{text}</span></span>
     </div>
+  )
+}
+
+/**
+ * The line chain for one trip, with the transfer NAMED. A bare "→" between
+ * two chips silently was the transfer — the single most important thing to
+ * teach someone who doesn't drive, and the one thing the chain never said.
+ * Now: Green → change at Park Street → Red.
+ *
+ * Bike corridor chains reuse this with `transfers={false}` — those steps are
+ * streets you follow, not vehicles you change between.
+ */
+export function TransitChain({ steps, transfers = true }: {
+  steps: ReachStep[]
+  transfers?: boolean
+}) {
+  const tr = useNearbyT()
+  return (
+    <>
+      {steps.map((s, j) => {
+        // The transfer stop is where the PREVIOUS leg drops you; fall back to
+        // where this one picks you up when Google names only one side.
+        const at = transfers ? (steps[j - 1]?.alightStop ?? s.boardStop) : null
+        return (
+          <span key={`${s.label}-${j}`} className="flex items-center gap-1.5">
+            {j > 0 && (
+              at
+                ? <span className="text-[0.7rem] text-white/75">{tr('reach.change_at', { stop: at })}</span>
+                : <span className="text-[0.7rem] text-white/70">→</span>
+            )}
+            <span
+              className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+              style={{ backgroundColor: s.color, color: s.textColor }}
+            >
+              {s.label}
+            </span>
+          </span>
+        )
+      })}
+    </>
   )
 }
 
@@ -139,17 +179,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
               <div className="mb-2.5">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {row.steps.length > 0 ? (
-                    row.steps.map((s, j) => (
-                      <span key={`${s.label}-${j}`} className="flex items-center gap-1.5">
-                        {j > 0 && <span className="text-[0.7rem] text-white/70">→</span>}
-                        <span
-                          className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-                          style={{ backgroundColor: s.color, color: s.textColor }}
-                        >
-                          {s.label}
-                        </span>
-                      </span>
-                    ))
+                    <TransitChain steps={row.steps} />
                   ) : (
                     <span className="text-[0.75rem] text-white/75">
                       {row.transit_minutes !== null ? tr('reach.close_enough') : tr('reach.no_direct_transit')}
@@ -160,17 +190,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                 {(row.bike_steps?.length ?? 0) > 0 && (
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                     <span className="text-white/75"><ModeIcon mode="bike" size={13} /></span>
-                    {row.bike_steps!.map((s, j) => (
-                      <span key={`${s.label}-${j}`} className="flex items-center gap-1.5">
-                        {j > 0 && <span className="text-[0.7rem] text-white/70">→</span>}
-                        <span
-                          className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-                          style={{ backgroundColor: s.color, color: s.textColor }}
-                        >
-                          {s.label}
-                        </span>
-                      </span>
-                    ))}
+                    <TransitChain steps={row.bike_steps!} transfers={false} />
                   </div>
                 )}
               </div>

@@ -21,7 +21,7 @@ import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
 import { StationList, BikeRouteList, DockList, BorrowRentList, ServiceDisruptionsCard } from './AroundYouLists'
 import { nearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
-import { ReachList, RouteLegNote } from './ReachSection'
+import { ReachList, RouteLegNote, TransitChain } from './ReachSection'
 import { ExploreBody } from './ExploreBody'
 import PartnerCobrand from './PartnerCobrand'
 import NewRoutesOffer from './NewRoutesOffer'
@@ -545,17 +545,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, onPlanCommute, partne
 
       {steps.length > 0 && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          {steps.map((s, j) => (
-            <span key={`${s.label}-${j}`} className="flex items-center gap-1.5">
-              {j > 0 && <span className="text-[0.7rem] text-white/70">→</span>}
-              <span
-                className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-                style={{ backgroundColor: s.color, color: s.textColor }}
-              >
-                {s.label}
-              </span>
-            </span>
-          ))}
+          <TransitChain steps={steps} transfers={mode === 'transit'} />
         </div>
       )}
 

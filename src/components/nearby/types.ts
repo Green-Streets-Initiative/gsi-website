@@ -37,6 +37,12 @@ export interface ReachStep {
   label: string
   color: string
   textColor: string
+  /** Where you board and get off this leg — the chain names the transfer
+   *  stop between chips instead of a bare arrow. Absent on bike_steps. */
+  boardStop?: string
+  alightStop?: string
+  headsign?: string
+  numStops?: number
 }
 
 /** Drawable piece of a door-to-door transit trip (from /api/nearby/reach) */

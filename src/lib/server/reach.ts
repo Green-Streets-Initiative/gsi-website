@@ -30,7 +30,19 @@ const CACHE_MAX_ENTRIES = 500
 const BIKE_ROUTE_FACTOR = 1.3
 const BIKE_MPH = 10.5
 
-interface ReachStep { label: string; color: string; textColor: string }
+interface ReachStep {
+  label: string
+  color: string
+  textColor: string
+  /** Where you get on and off this leg. The chip chain drew a bare "→"
+   *  between lines — the arrow silently WAS the transfer, and nothing said
+   *  where it happens. Naming the stop is the whole point of the chain. */
+  boardStop?: string
+  alightStop?: string
+  /** Which way the vehicle is going, and how far you ride. */
+  headsign?: string
+  numStops?: number
+}
 
 /** One drawable piece of the door-to-door transit trip: a transit leg in its
  *  line's color, or the merged walking legs around it. */
@@ -133,7 +145,12 @@ function toStep(line: { name?: string; nameShort?: string }): ReachStep {
 
 interface GoogleStep {
   polyline?: { encodedPolyline?: string }
-  transitDetails?: { transitLine?: { name?: string; nameShort?: string } }
+  transitDetails?: {
+    transitLine?: { name?: string; nameShort?: string }
+    stopDetails?: { departureStop?: { name?: string }; arrivalStop?: { name?: string } }
+    headsign?: string
+    stopCount?: number
+  }
 }
 
 async function queryTransit(
@@ -148,7 +165,18 @@ async function queryTransit(
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_ROUTES_KEY,
-        'X-Goog-FieldMask': 'routes.duration,routes.legs.steps.transitDetails.transitLine,routes.legs.steps.polyline.encodedPolyline',
+        // stopDetails/headsign/stopCount ride the SAME call and the same SKU —
+        // route-compare already requests exactly these fields. They're what
+        // lets the chain say "change at Park Street" instead of just "→".
+        'X-Goog-FieldMask': [
+          'routes.duration',
+          'routes.legs.steps.transitDetails.transitLine',
+          'routes.legs.steps.transitDetails.stopDetails.departureStop',
+          'routes.legs.steps.transitDetails.stopDetails.arrivalStop',
+          'routes.legs.steps.transitDetails.headsign',
+          'routes.legs.steps.transitDetails.stopCount',
+          'routes.legs.steps.polyline.encodedPolyline',
+        ].join(','),
       },
       body: JSON.stringify({
         origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
@@ -181,9 +209,20 @@ async function queryTransit(
     }
     for (const s of allSteps) {
       if (s.transitDetails) {
-        const chip = toStep(s.transitDetails.transitLine ?? {})
-        // Collapse repeats in the chip chain (a transfer within the same line)
-        if (steps[steps.length - 1]?.label !== chip.label) steps.push(chip)
+        const td = s.transitDetails
+        const chip: ReachStep = {
+          ...toStep(td.transitLine ?? {}),
+          boardStop: td.stopDetails?.departureStop?.name,
+          alightStop: td.stopDetails?.arrivalStop?.name,
+          headsign: td.headsign,
+          numStops: td.stopCount,
+        }
+        const prev = steps[steps.length - 1]
+        // Collapse repeats in the chip chain (a transfer within the same
+        // line) — but carry the later leg's alight stop forward, so the
+        // chain still ends where the rider actually gets off.
+        if (prev?.label !== chip.label) steps.push(chip)
+        else prev.alightStop = chip.alightStop ?? prev.alightStop
         flushWalk()
         if (s.polyline?.encodedPolyline) {
           segments.push({ mode: 'transit', polyline: s.polyline.encodedPolyline, color: chip.color, label: chip.label })
