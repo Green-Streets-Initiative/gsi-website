@@ -85,15 +85,6 @@
       "title": "Micro-guide: how far a 5/10/15/20-minute drive is on foot and by bike",
       "ship_steps": "Append the draft's YAML+body to content/micro-guides-library.md, run node scripts/build-micro-guides-migration.mjs, commit both by filename, push, apply the generated migration.",
       "note": "Reinforced 2026-08-31: the two pages this addresses took 472 impressions and 0 clicks."
-    },
-    {
-      "report_date": "2026-08-31",
-      "item_n": 4,
-      "type": "page-edit",
-      "ref": "seo/2026-08-internal-utm-links",
-      "title": "Drop utm_content from same-site internal links (Footer, Nav, TownsCrossLink)",
-      "ship_steps": "Merge branch seo/2026-08-internal-utm-links into main, push, confirm the Vercel deploy succeeds, delete the branch. Then watch the town-page rows in the GSC page table for the clean URLs replacing the parameterized ones over the following few weeks.",
-      "note": "Typecheck clean. Google has indexed the utm-tagged variant instead of the canonical URL for six of the nine biggest town pages; 809 impressions over 12 weeks sit on parameterized URLs."
     }
   ],
   "shipped": [
@@ -112,6 +103,14 @@
       "title": "Repair keyword-portfolio.json gsc_patterns (gerund fix, missing towns, paths, drive-time cluster)",
       "shipped_on": "2026-08-31",
       "note": "Merged to main. Bucketing is live from the 2026-08-31 re-backfill onward, so the per-cluster ledger is readable from next run without a manual replay."
+    },
+    {
+      "report_date": "2026-08-31",
+      "item_n": 4,
+      "ref": "seo/2026-08-internal-utm-links",
+      "title": "Drop utm_content from same-site internal links (Footer, Nav, TownsCrossLink)",
+      "shipped_on": "2026-08-31",
+      "note": "Merged to main. WATCH: over the next few weeks the GSC page table should show clean /shift/towns/<slug> rows replacing the ?utm_content= ones for cambridge, everett, somerville, newton, watertown, boston; arlington should consolidate from two rows to one. Report on it each weekly pulse until it resolves. Shift app and campaign utm tags were deliberately left in place."
     }
   ]
 }
