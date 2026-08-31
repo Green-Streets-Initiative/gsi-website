@@ -158,16 +158,29 @@ export default function NearbySnapshot() {
   // URL hydration — a valid ?lat&lng skips the gate entirely. The label
   // param already carries "Neighborhood, Town" from whoever shared it, so
   // split it for instant display instead of re-resolving over the network.
+  //
+  // Read from window.location, NOT useSearchParams, for exactly the reason
+  // spelled out on partnerSlug above: the first render can see EMPTY search
+  // params, and this effect runs once on mount, so it froze that empty
+  // snapshot and dropped the visitor on the location gate. A shared
+  // /nearby?lat&lng link — Copy link, the Shift app, a mailer — would then
+  // land on "See how your neighborhood moves" instead of their neighborhood.
   useEffect(() => {
-    const parsed = parseSnapshotParams(new URLSearchParams(searchParams.toString()))
-    posthog.capture('snapshot_viewed', {
-      has_url_coords: !!parsed,
-      ...(partnerSlug ? { partner: partnerSlug } : {}),
-    })
+    const parsed = parseSnapshotParams(new URLSearchParams(window.location.search))
     if (parsed) {
       const { neighborhood, town } = splitPlaceLabel(parsed.label)
       setLocation({ ...parsed, city: town ?? '', neighborhood, fullAddress: null, source: 'url' })
     }
+    // Analytics AFTER the state it describes, and never able to break it —
+    // this ran first, so anything posthog threw (not yet initialised, a
+    // content blocker) aborted the effect and left a visitor with valid
+    // coords staring at the location gate.
+    try {
+      posthog.capture('snapshot_viewed', {
+        has_url_coords: !!parsed,
+        ...(partnerSlug ? { partner: partnerSlug } : {}),
+      })
+    } catch { /* analytics is never a reason to not render the page */ }
   // Mount only — later URL changes come from our own replaceState
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -245,7 +258,7 @@ export default function NearbySnapshot() {
               setTransitCorridors(prev => ({
                 ...prev,
                 data: prev.data.map(c => (c.id === corridor.id
-                  ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable', directions: meta.directions }
+                  ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable', directions: meta.directions, connections: meta.connections }
                   : c)),
               }))
             })
@@ -276,7 +289,7 @@ export default function NearbySnapshot() {
               setTransitCorridors(p => ({
                 ...p,
                 data: p.data.map(c => (c.id === corridor.id
-                  ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable', directions: meta.directions }
+                  ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable', directions: meta.directions, connections: meta.connections }
                   : c)),
               }))
             })
@@ -515,7 +528,7 @@ export default function NearbySnapshot() {
         setTransitCorridors(prev => ({
           ...prev,
           data: prev.data.map(c => (c.id === seed.id
-            ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable', directions: meta.directions }
+            ? { ...c, shape: meta.shape, frequency: meta.frequency ?? 'unavailable', directions: meta.directions, connections: meta.connections }
             : c)),
         }))
       })
