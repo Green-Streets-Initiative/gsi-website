@@ -7,10 +7,10 @@
   "stagnant_weeks": 0,
   "baselines": {
     "clicks_4wk": 12.8,
-    "clicks_12wk": 12.0,
+    "clicks_12wk": 12,
     "impressions_4wk": 1263.3,
     "impressions_12wk": 1035.6,
-    "_basis": "EXACT. Recomputed 2026-08-31 from thirteen no-dimension (site-total) Search Console weekly windows. Supersedes the 2026-08-24 page-dimension floors, which understated the level; see seo/reports/2026-08-31.md ledger note.",
+    "_basis": "EXACT. Recomputed 2026-08-31 from the sixteen weekly files containing site_totals (2026-05-09 -> 2026-08-28), verified contiguous with no overlapping ranges. Files WITHOUT site_totals are the superseded 2026-08-20 backfill and must be excluded — mixing the series double-counts.",
     "clicks_prior_4wk": 8.5,
     "impressions_prior_4wk": 857.8,
     "clicks_4wk_querydim": 3.5,
@@ -68,27 +68,15 @@
       "what": "Branches seo/2026-08-gsc-true-totals and seo/2026-08-portfolio-patterns were cut before a week of unrelated work landed on main, so their diffs against main showed ~125 files and would have reverted the walk-audit and events-calendar commits if merged.",
       "fix": "Rebased both onto main and force-pushed with --force-with-lease. Each is now a clean single-file diff.",
       "do_not": "Do not let a proposed branch sit unrebased across a week of main activity — rebase pending seo/ branches at the start of each run before quoting their diffs."
+    },
+    {
+      "date": "2026-08-31",
+      "what": "Shipping item 1 re-backfilled 16 weekly files on Saturday-to-Friday windows, but the 16 original Monday-ending files from the 2026-08-20 backfill stayed on disk. The two series overlap, so a naive glob over weekly-*.json would double-count.",
+      "fix": "Deleting the superseded files was blocked by the auto-mode permission classifier, so the fix is a selection rule instead: the current series is defined as files containing site_totals, written into seo/methodology.md under the accountability ledger. Verified that selection is contiguous and reproduces the 2026-08-31 baselines exactly.",
+      "do_not": "Do not glob seo/data/gsc/weekly-*.json without filtering on site_totals. Do not read the level from `totals` — that field is query-dimension and runs ~4x under."
     }
   ],
   "pending": [
-    {
-      "report_date": "2026-08-24",
-      "item_n": 1,
-      "type": "script-edit",
-      "ref": "seo/2026-08-gsc-true-totals",
-      "title": "Record true Search Console totals (no-dimension call + higher page rowLimit + re-backfill)",
-      "ship_steps": "Merge branch seo/2026-08-gsc-true-totals into main, push, then run node scripts/seo/pull-gsc.mjs --mode backfill and commit the restated seo/data/gsc/ files.",
-      "note": "Rebased onto main 2026-08-31; diff is now scripts/seo/pull-gsc.mjs only (+20 -7)."
-    },
-    {
-      "report_date": "2026-08-24",
-      "item_n": 2,
-      "type": "portfolio-edit",
-      "ref": "seo/2026-08-portfolio-patterns",
-      "title": "Repair keyword-portfolio.json gsc_patterns (gerund fix, missing towns, paths, drive-time cluster)",
-      "ship_steps": "Merge branch seo/2026-08-portfolio-patterns into main, push. Bucketing applies from the next weekly pull.",
-      "note": "Rebased onto main 2026-08-31; diff is now seo/keyword-portfolio.json only (+64 -4)."
-    },
     {
       "report_date": "2026-08-24",
       "item_n": 3,
@@ -106,6 +94,24 @@
       "title": "Drop utm_content from same-site internal links (Footer, Nav, TownsCrossLink)",
       "ship_steps": "Merge branch seo/2026-08-internal-utm-links into main, push, confirm the Vercel deploy succeeds, delete the branch. Then watch the town-page rows in the GSC page table for the clean URLs replacing the parameterized ones over the following few weeks.",
       "note": "Typecheck clean. Google has indexed the utm-tagged variant instead of the canonical URL for six of the nine biggest town pages; 809 impressions over 12 weeks sit on parameterized URLs."
+    }
+  ],
+  "shipped": [
+    {
+      "report_date": "2026-08-24",
+      "item_n": 1,
+      "ref": "seo/2026-08-gsc-true-totals",
+      "title": "Record true Search Console totals (no-dimension call + higher page rowLimit + re-backfill)",
+      "shipped_on": "2026-08-31",
+      "note": "Merged to main and re-backfilled the same day. seo/data/gsc/ now holds TWO overlapping series; recompute baselines only from files containing site_totals. See seo/methodology.md, \"Which files count\"."
+    },
+    {
+      "report_date": "2026-08-24",
+      "item_n": 2,
+      "ref": "seo/2026-08-portfolio-patterns",
+      "title": "Repair keyword-portfolio.json gsc_patterns (gerund fix, missing towns, paths, drive-time cluster)",
+      "shipped_on": "2026-08-31",
+      "note": "Merged to main. Bucketing is live from the 2026-08-31 re-backfill onward, so the per-cluster ledger is readable from next run without a manual replay."
     }
   ]
 }

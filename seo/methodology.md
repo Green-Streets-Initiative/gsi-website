@@ -38,29 +38,32 @@ is not in the current month → run the **monthly deep-dive**. Otherwise run the
 
 1. `git pull`. Read `seo/strategy.md`, `seo/keyword-portfolio.json`,
    `.seo-state.json`, and last week's report in `seo/reports/`.
-2. `node scripts/seo/pull-gsc.mjs --mode weekly`.
-3. PostHog: organic sessions this week vs the trailing 4-week mean; top organic
+2. **Rebase every pending `seo/…` branch onto `main` before quoting its diff**
+   (see "Keeping pending branches shippable" below). Do this even when nothing
+   new is being proposed.
+3. `node scripts/seo/pull-gsc.mjs --mode weekly`.
+4. PostHog: organic sessions this week vs the trailing 4-week mean; top organic
    landing pages. (Organic = referring domain in google/bing/duckduckgo/
    ecosia/yahoo/… — confirm `$referring_domain` exists on `$pageview`; if not,
    note it and use GSC only.)
-4. **SERP spot-checks (6 queries):** the 3 fixed sentinels from the
+5. **SERP spot-checks (6 queries):** the 3 fixed sentinels from the
    `aeo-sentinels` cluster + 3 rotated through the portfolio using
    `.seo-state.json.serp_rotation_index`. For each: does gogreenstreets.org
    appear, roughly what position, and which domains rank above us. Advance and
    save the rotation index.
-5. **Health checks (curl only):** sitemap.xml returns 200 and its `<loc>` count
+6. **Health checks (curl only):** sitemap.xml returns 200 and its `<loc>` count
    vs the state fingerprint (a drop = a DB blip dropped a section — flag it);
    robots.txt and llms.txt return 200 and hash vs fingerprint; 2 key pages
    still emit their expected `<title>` and canonical.
-6. **Diff:** per cluster, clicks / impressions / avg-position vs the 4-week and
+7. **Diff:** per cluster, clicks / impressions / avg-position vs the 4-week and
    12-week baselines (recomputed from `seo/data/gsc/weekly-*.json`). Flag movers
    (±20% clicks or ≥3 positions). Check `experiments.md` for entries whose
    `verdict-by` date has passed → write a verdict (won / lost / inconclusive—
    extend) from that cluster's data.
-7. Write `seo/reports/YYYY-MM-DD.md`. Update `.seo-state.json` (baselines cache,
+8. Write `seo/reports/YYYY-MM-DD.md`. Update `.seo-state.json` (baselines cache,
    rotation index, `stagnant_weeks`, pending-item registry, health
    fingerprints). Commit + push those files.
-8. **Email:** ledger scoreboard first (below), then experiment verdicts, then
+9. **Email:** ledger scoreboard first (below), then experiment verdicts, then
    **at most 3 proposed actions** each ending with a ship phrase, then a
    one-line health status and a link to the report on GitHub.
 
@@ -106,6 +109,24 @@ Baselines are trailing means recomputed each run from the committed
 `seo/data/gsc/weekly-*.json` files — git history is the time series; state only
 caches the latest values.
 
+**Which files count (do not skip this filter).** `seo/data/gsc/` holds two
+series with overlapping date ranges:
+
+- The **current series** — every file containing a `site_totals` key. These are
+  true no-dimension Search Console totals on Saturday-to-Friday windows,
+  written by the puller from 2026-08-31 onward.
+- A **superseded series** — the sixteen files from the 2026-08-20 backfill,
+  which have no `site_totals`, use Monday-ending windows, and understate real
+  traffic roughly 4× on clicks and 6× on impressions. Kept on disk for
+  reference only.
+
+Recompute baselines from **files containing `site_totals`, and only those**.
+Mixing the two double-counts overlapping weeks. Read the level from
+`site_totals`; `totals` remains query-dimension and is what the clusters are
+bucketed from, so the two are not interchangeable. A correct selection is
+contiguous with no overlapping `range` values — assert that before trusting the
+numbers.
+
 ## Stagnation trigger (mechanical — do not skip)
 
 Increment `.seo-state.json.stagnant_weeks` when trailing-4-week total organic
@@ -139,6 +160,33 @@ fabricate an "AI visibility" score.
   `ship_steps`). End each emailed item with:
   _"to ship: open Claude Code and say 'ship SEO item N'"_ (and "decline SEO
   item N"). Age unshipped items out after 8 weeks with a one-line note.
+
+## Keeping pending branches shippable (step 2 of every run)
+
+A proposed branch is cut from `main` and then waits for approval while ordinary
+work keeps landing on `main`. The longer it waits, the further it drifts — and
+a drifted branch does not merely conflict, it silently *reverts* whatever
+landed after it was cut. On 2026-08-31 both pending branches had drifted to
+~125-file diffs that would have undone a week of walk-audit and events-calendar
+work. Nothing about the branch looked wrong; only the diff stat gave it away.
+
+So, at the start of **every** run, before reading or quoting any branch:
+
+1. List pending branches: `git branch --list 'seo/*'`.
+2. For each: `git checkout <branch>` then `git rebase main`.
+3. Confirm the diff is what the item claims — `git diff main..HEAD --stat`
+   should touch only the files that item is about. **If it touches anything
+   else, the rebase is wrong or the branch is stale beyond repair — do not
+   quote it as shippable.**
+4. `git push --force-with-lease origin <branch>` (never a bare `--force`).
+5. `git checkout main` before continuing.
+
+Then quote the *rebased* diff stat in the report and email, so the size Keith
+sees is the size he would actually be approving. If a rebase conflicts, say so
+in the email as a blocker on that item rather than quietly leaving it stale.
+
+The real fix is a fast decision — an approve or a decline both end the drift —
+so keep the pending list short and age items out on schedule.
 
 ## Shipping items (for an interactive session, when Keith says "ship SEO item N")
 
