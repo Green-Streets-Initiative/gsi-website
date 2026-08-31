@@ -26,7 +26,12 @@ function rollup(segments: BikeComfortSegment[]) {
   }
   const totalKnown = Object.values(totals).reduce((a, b) => a + b, 0)
   const totalFlex = Object.values(flexTotals).reduce((a, b) => a + b, 0)
-  return ['protected', 'bike_lane', 'shared_road']
+  // 'path' belongs here: shared-use-path segments DRAW in the bar but were
+  // missing from the numbers under it, so the "N mi total" header stopped
+  // adding up on any route with a path in it (the Charles River corridor,
+  // the Somerville Community Path). Affects the Commute Advisor too, not
+  // just /nearby.
+  return ['path', 'protected', 'bike_lane', 'shared_road']
     .map((r) => {
       const raw = totals[r] ?? 0
       const flex = flexTotals[r] ?? 0
