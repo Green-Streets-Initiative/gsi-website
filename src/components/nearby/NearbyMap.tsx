@@ -651,7 +651,7 @@ function applyBikeBackground(
     },
     layout: { 'line-cap': 'round', 'line-join': 'round', visibility: paintedVisible ? 'visible' : 'none' },
   })
-  // Multi-use paths draw lime, protected lanes teal — they're not the same
+  // Shared use paths draw lime, protected lanes teal — they're not the same
   // thing, and the comfort bar / route legs use the same two colors
   map.addLayer({
     id: 'bike-separated-glow',

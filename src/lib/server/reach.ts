@@ -39,7 +39,7 @@ interface ReachSegment { mode: 'walk' | 'transit'; polyline: string; color: stri
 // Walking connectors on the dark route map — light slate, clearly not a line color
 const WALK_SEGMENT_COLOR = '#9BA3BF'
 
-/** Comfort tiers for the ride, ComfortBar vocabulary: 'path' is a multi-use
+/** Comfort tiers for the ride, ComfortBar vocabulary: 'path' is a shared use
  *  path with its own right-of-way, 'protected' is a physically separated
  *  on-street lane (not the same thing), 'bike_lane' is paint, 'shared_road'
  *  means no mapped bike infrastructure there. */

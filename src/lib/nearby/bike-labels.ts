@@ -21,7 +21,7 @@ export const LANE_SOURCE_LABEL: Record<string, string> = {
 /** Copy for a single tapped lane segment (background lanes). */
 export const LANE_TIER_COPY: Record<string, { title: string; detail: string }> = {
   path: {
-    title: 'Multi-use path',
+    title: 'Shared use path',
     detail: 'A path with its own right-of-way — walk, ride, or roll. The most comfortable riding there is.',
   },
   protected: {
@@ -66,7 +66,7 @@ export function protectionLabel(
   const oneDir = onewayOnly ? ' · one direction' : ''
   switch (protection) {
     case 'path':
-      return { text: 'Multi-use path', emphasis: true }
+      return { text: 'Shared use path', emphasis: true }
     case 'protected':
       return { text: `Separated bike lane — barrier between you and traffic${oneDir}`, emphasis: true }
     case 'mostly-protected':
