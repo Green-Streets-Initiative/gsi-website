@@ -14,7 +14,11 @@ const BIKE_TIER_STYLE: Record<string, { color: string; dash: boolean }> = {
   path: { color: '#BAF14D', dash: false },
   protected: { color: '#2DD4BF', dash: false },
   bike_lane: { color: '#7FB5FF', dash: true },
-  shared_road: { color: '#6B6E85', dash: false },
+  // Light, not dark. #6B6E85 was within a shade of the basemap's own street
+  // color, so on a route that is half shared road — most of them — half the
+  // line was invisible and the ride looked shorter than it is. A neutral that
+  // reads as "just the road" still has to read as a LINE first.
+  shared_road: { color: '#B4BAD2', dash: false },
 }
 
 /** The owner of a stretch no named street claimed — what the "Connecting
