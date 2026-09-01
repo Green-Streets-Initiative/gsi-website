@@ -14,12 +14,14 @@ import type { ReachRow } from './types'
  * reach feature id. Shared by the mobile shell and the desktop two-pane so
  * both surfaces draw destination routes identically.
  */
-export function useReachOverlay({ selection, reachRows, corridorLines, markers, highlightedCorridorId }: {
+export function useReachOverlay({ selection, reachRows, corridorLines, markers, highlightedCorridorId, bikeAlt = false }: {
   selection: Selection
   reachRows: ReachRow[]
   corridorLines: GeoJSON.FeatureCollection
   markers: NearbyMarker[]
   highlightedCorridorId: string | null
+  /** The visitor picked the quicker route over the calm one. */
+  bikeAlt?: boolean
 }) {
   const reachRow = selection?.type === 'reach'
     ? reachRows.find(r => r.id === selection.id)
@@ -27,14 +29,21 @@ export function useReachOverlay({ selection, reachRows, corridorLines, markers, 
 
   const lines = useMemo<GeoJSON.FeatureCollection>(() => {
     if (!reachRow || selection?.type !== 'reach') return corridorLines
+    // Both bike routes draw. The one not chosen goes under a sibling corridor
+    // id, which the map already renders faint — so the road not taken is
+    // visible as a shape without competing with the one being described.
+    const showsAlt = selection.mode === 'bike' && !!reachRow.bike_alt
     return {
       type: 'FeatureCollection',
       features: [
         ...corridorLines.features,
-        ...reachRouteFeatures(reachRow, selection.mode, `reach:${reachRow.id}`),
+        ...(showsAlt
+          ? reachRouteFeatures(reachRow, selection.mode, `reach:${reachRow.id}:other`, !bikeAlt)
+          : []),
+        ...reachRouteFeatures(reachRow, selection.mode, `reach:${reachRow.id}`, bikeAlt),
       ],
     }
-  }, [corridorLines, reachRow, selection])
+  }, [corridorLines, reachRow, selection, bikeAlt])
 
   const overlayMarkers = useMemo<NearbyMarker[]>(() => (
     reachRow

@@ -361,7 +361,8 @@ export default function NearbySnapshot() {
         // v10: steps now carry the transfer stop names — without the bump the
         // route's own max-age=86400 keeps serving arrow-only chains for a day
         // v14: comfort rows own their segments, so the remainder is real
-        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=14`)
+        // v15: rows carry the quicker alternate route
+        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=15`)
         if (!res.ok) throw new Error(`reach ${res.status}`)
         const data = await res.json()
         setReach({ status: 'ready', data: data.destinations ?? [] })

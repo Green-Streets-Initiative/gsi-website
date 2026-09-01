@@ -133,8 +133,13 @@ export default function NearbyDesktop({
   const [plannedRows, setPlannedRows] = useState<ReachRow[]>([])
   const reachRows = useMemo(() => [...plannedRows, ...reach.data], [plannedRows, reach.data])
 
+  // Which of the two bike routes is being described. Cleared with the
+  // selection — a choice made about one destination means nothing about the
+  // next one.
+  const [bikeAlt, setBikeAlt] = useState(false)
+
   const overlay = useReachOverlay({
-    selection, reachRows, corridorLines, markers, highlightedCorridorId,
+    selection, reachRows, corridorLines, markers, highlightedCorridorId, bikeAlt,
   })
 
   // A list tap can target a painted corridor while painted lanes are hidden —
@@ -246,7 +251,7 @@ export default function NearbyDesktop({
     })
   }, [defaultOpenShelf])
 
-  useEffect(() => { setLegInfo(null); setHighlightedStreetKey(null) }, [selection])
+  useEffect(() => { setLegInfo(null); setHighlightedStreetKey(null); setBikeAlt(false) }, [selection])
   const handleLegTap = useCallback((info: RouteLegTapInfo) => {
     setLegInfo(info)
     posthog.capture('reach_leg_tapped', { leg: info.leg, surface: 'desktop' })
@@ -493,6 +498,8 @@ export default function NearbyDesktop({
                   legInfo={legInfo}
                   highlightedStreetKey={highlightedStreetKey}
                   onHighlightStreet={setHighlightedStreetKey}
+                  bikeAlt={bikeAlt}
+                  onPickRoute={setBikeAlt}
                   onPlanCommute={onPlanCommute}
                   partnerSlug={partnerSlug}
                 />

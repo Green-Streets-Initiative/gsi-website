@@ -6,6 +6,7 @@ import { resolveRegion } from '@/lib/nearby/regions'
 import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
 import { canonicalStreetKey, displayStreetName } from '@/lib/nearby/street-names'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
+import { getCrashClusters, type CrashCluster } from './crash-clusters'
 
 /**
  * "Everyday routes" for the /nearby snapshot: real transit times and route
@@ -32,7 +33,7 @@ import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
  * while local testing (which deletes .next and varies coordinates) missed
  * both stale layers entirely. One constant, four call sites, no drift.
  */
-export const REACH_ROW_VERSION = 'v14'
+export const REACH_ROW_VERSION = 'v15'
 
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
 
@@ -150,6 +151,13 @@ export interface ReachRow {
   bike_polyline: string | null
   /** Comfort breakdown of the chosen route (null when no route/lane data) */
   bike_comfort: BikeComfort | null
+  /** The quicker route the calm one beat, when they're genuinely different.
+   *  Null when the calmest IS the quickest — no trade-off, nothing to choose. */
+  bike_alt: {
+    minutes: number
+    polyline: string
+    comfort: BikeComfort | null
+  } | null
 }
 
 const cache = new Map<
@@ -352,6 +360,8 @@ async function queryTransit(
 async function queryBikeRoutes(
   origin: { lat: number; lng: number },
   dest: { lat: number; lng: number },
+  /** Force the route through this point without stopping there. */
+  via?: { lat: number; lng: number },
 ): Promise<{ minutes: number; encodedPolyline: string | null }[]> {
   if (!GOOGLE_ROUTES_KEY) return []
   try {
@@ -367,6 +377,11 @@ async function queryBikeRoutes(
         destination: { location: { latLng: { latitude: dest.lat, longitude: dest.lng } } },
         travelMode: 'BICYCLE',
         computeAlternativeRoutes: true,
+        // `via` is a pass-through, not a stop — Routes v2's equivalent of the
+        // legacy API's via: waypoint the ride planner uses for the same job.
+        ...(via
+          ? { intermediates: [{ location: { latLng: { latitude: via.lat, longitude: via.lng } }, via: true }] }
+          : {}),
       }),
       signal: AbortSignal.timeout(10000),
     })
@@ -379,6 +394,74 @@ async function queryBikeRoutes(
   } catch {
     return []
   }
+}
+
+/**
+ * Manufacture a genuinely different, calmer alternate.
+ *
+ * Google's three alternates usually share a corridor — they differ by a block
+ * here and there, so "choosing the calmest" can mean choosing between three
+ * versions of the same unprotected road while a path runs half a mile away.
+ * The ride planner solved this by forcing a route through a bike facility no
+ * candidate touched; this is the same trick against the lane index we already
+ * have in memory, so it needs no new data source, only the extra call.
+ *
+ * Reserved for destinations someone actually typed. The curated list builds a
+ * row per destination per region, and paying two more Google calls each for
+ * places nobody asked about is not worth it.
+ */
+const INJECT_MAX_CALLS = 2
+/** How far off the direct line a facility can sit and still be worth a detour. */
+const INJECT_CORRIDOR_MILES = 0.7
+/** A facility this close to an existing route is already being ridden. */
+const INJECT_COVERED_METERS = 60
+
+async function injectCorridorRoutes(
+  origin: { lat: number; lng: number },
+  dest: { lat: number; lng: number },
+  laneIndex: LaneVertex[],
+  existing: { minutes: number; encodedPolyline: string | null }[],
+): Promise<{ minutes: number; encodedPolyline: string | null }[]> {
+  const drawn = existing.map(r => r.encodedPolyline).filter((p): p is string => !!p).map(decodePolyline)
+  if (drawn.length === 0) return []
+
+  const near = (lat: number, lng: number, meters: number) =>
+    drawn.some(path =>
+      path.some(p =>
+        Math.abs(p[0] - lat) <= 0.001 &&
+        Math.abs(p[1] - lng) <= 0.0013 &&
+        haversineMeters(p[0], p[1], lat, lng) <= meters))
+
+  // Facilities worth a detour: separated ones, roughly between the endpoints,
+  // and not already on a candidate route.
+  const spanLat = [Math.min(origin.lat, dest.lat), Math.max(origin.lat, dest.lat)]
+  const spanLng = [Math.min(origin.lng, dest.lng), Math.max(origin.lng, dest.lng)]
+  const pad = INJECT_CORRIDOR_MILES / 69
+  const candidates = laneIndex.filter(v =>
+    (v.quality === 'path' || v.quality === 'protected') &&
+    v.lat >= spanLat[0] - pad && v.lat <= spanLat[1] + pad &&
+    v.lng >= spanLng[0] - pad * 1.35 && v.lng <= spanLng[1] + pad * 1.35 &&
+    !near(v.lat, v.lng, INJECT_COVERED_METERS))
+  if (candidates.length === 0) return []
+
+  // Cluster coarsely and prefer the biggest — a long uncovered facility beats
+  // an isolated fragment. The via point is a REAL vertex, never a cluster
+  // average: averaging a curved corridor lands off the path, and Google's via
+  // then snaps back to the road we already had.
+  const buckets = new Map<string, LaneVertex[]>()
+  for (const v of candidates) {
+    const key = `${Math.round(v.lat * 200)},${Math.round(v.lng * 200)}`
+    const b = buckets.get(key)
+    if (b) b.push(v)
+    else buckets.set(key, [v])
+  }
+  const picks = [...buckets.values()]
+    .sort((a, b) => b.length - a.length)
+    .slice(0, INJECT_MAX_CALLS)
+    .map(b => b[Math.floor(b.length / 2)])
+
+  const results = await Promise.all(picks.map(v => queryBikeRoutes(origin, dest, { lat: v.lat, lng: v.lng })))
+  return results.flat()
 }
 
 /* ── Match a bike route against the lane network ── */
@@ -791,18 +874,135 @@ function scoreBikeComfort(
 
 /** The route beginners should see: the most comfortable one within the time
  *  envelope (fastest + 5 min, or fastest × 1.25, whichever is looser). */
+/** Two routes down the same streets are not a choice. Sample one and ask how
+ *  much of it lands on the other — the ride planner's selectDiverseRoutes
+ *  makes the same call with the same two numbers, and for the same reason:
+ *  80 ft is tight enough that a genuinely different parallel street still
+ *  reads as different. */
+const SAME_PLACE_METERS = 24
+const MAX_OVERLAP = 0.75
+
+function routesOverlap(a: string, b: string): boolean {
+  const pa = decodePolyline(a)
+  const pb = decodePolyline(b)
+  if (pa.length === 0 || pb.length === 0) return true
+  const step = Math.max(1, Math.floor(pa.length / 40))
+  let sampled = 0
+  let near = 0
+  for (let i = 0; i < pa.length; i += step) {
+    sampled++
+    for (const q of pb) {
+      if (Math.abs(q[0] - pa[i][0]) > 0.0005 || Math.abs(q[1] - pa[i][1]) > 0.0006) continue
+      if (haversineMeters(pa[i][0], pa[i][1], q[0], q[1]) <= SAME_PLACE_METERS) { near++; break }
+    }
+  }
+  return sampled === 0 || near / sampled > MAX_OVERLAP
+}
+
+/** How close a route passes a crash cluster to count as passing through it —
+ *  the ride planner's 0.0284 mi, in meters. */
+const CRASH_NEAR_METERS = 46
+/**
+ * Two routes whose protected share is within this of each other are, for
+ * ranking purposes, the same ride — and then the crash clusters decide.
+ *
+ * Subtracting a penalty from the comfort score doesn't work, and measuring
+ * showed why: tuned low enough to be a tie-breaker it changed nothing at all,
+ * and tuned high enough to matter it started recommending routes that were
+ * both slower AND less protected than the one it passed over. Six minutes
+ * longer on less protection, under a card labelled "Calmest", is just a lie.
+ *
+ * Banding keeps the promise instead of balancing against it: clusters can
+ * only ever separate routes that comfort couldn't. In seven of nine sets I
+ * measured, the calmest route already passed fewer clusters than the runner-
+ * up — separated infrastructure tends to get built where people were getting
+ * hurt — so this decides the minority of cases where the two disagree.
+ */
+const COMFORT_TIE_BAND = 0.05
+
+/** How many mapped crash clusters this route passes. */
+function crashCount(encodedPolyline: string, clusters: CrashCluster[]): number {
+  if (clusters.length === 0) return 0
+  const path = decodePolyline(encodedPolyline)
+  if (path.length === 0) return 0
+  // Every ~5th vertex is plenty at a 46 m test radius, and keeps this linear
+  // in clusters rather than in polyline detail.
+  const step = Math.max(1, Math.floor(path.length / 200))
+  let hits = 0
+  for (const c of clusters) {
+    for (let i = 0; i < path.length; i += step) {
+      if (Math.abs(path[i][0] - c.lat) > 0.0008 || Math.abs(path[i][1] - c.lng) > 0.001) continue
+      if (haversineMeters(path[i][0], path[i][1], c.lat, c.lng) <= CRASH_NEAR_METERS) { hits++; break }
+    }
+  }
+  return hits
+}
+
+type ScoredRoute = {
+  minutes: number
+  encodedPolyline: string
+  scored: { comfort: BikeComfort; score: number } | null
+  /** Mapped crash clusters this route passes — the tie-breaker. */
+  crashes: number
+}
+
+/**
+ * The calmest route within the time envelope — and, when it cost the rider
+ * something, the fast one it beat.
+ *
+ * We have always fetched Google's alternates and scored all of them, then
+ * served exactly one and said nothing. That silently makes a trade-off on
+ * someone's behalf: a nervous rider gets a detour they didn't ask for, and a
+ * rider in a hurry never learns a quicker line exists. Returning both lets
+ * the surface show the choice instead of hiding it. Still one API call.
+ */
 function chooseBikeRoute(
   routes: { minutes: number; encodedPolyline: string | null }[],
   index: LaneVertex[],
-): { minutes: number; encodedPolyline: string; scored: { comfort: BikeComfort; score: number } | null } | null {
+  clusters: CrashCluster[] = [],
+): { primary: ScoredRoute; alt: ScoredRoute | null } | null {
   const drawable = routes.filter((r): r is { minutes: number; encodedPolyline: string } => !!r.encodedPolyline)
   if (drawable.length === 0) return null
-  const scored = drawable.map(r => ({ ...r, scored: scoreBikeComfort(r.encodedPolyline, index) }))
+  // Ranked on comfort minus the crash clusters the route passes. Protection
+  // is what a lane HAS; a cluster is what has already happened there, and two
+  // routes with the same paint aren't the same ride if one of them threads a
+  // junction people keep getting hit at.
+  const scored: ScoredRoute[] = drawable.map(r => ({
+    ...r,
+    scored: scoreBikeComfort(r.encodedPolyline, index),
+    crashes: crashCount(r.encodedPolyline, clusters),
+  }))
+  /** Comfort, coarsened — routes inside one band are treated as equal so the
+   *  cluster count can speak. */
+  const band = (r: ScoredRoute) => Math.floor((r.scored?.score ?? 0) / COMFORT_TIE_BAND)
   const fastest = Math.min(...scored.map(r => r.minutes))
   const limit = Math.max(fastest + COMFORT_EXTRA_MIN, fastest * COMFORT_EXTRA_RATIO)
-  return scored
+  if (process.env.NEARBY_DEBUG_CRASH) {
+    console.log('[crash]', scored.map(r =>
+      `${r.minutes}min comfort=${(r.scored?.score ?? 0).toFixed(3)} band=${band(r)} clusters=${r.crashes}`).join(' | '))
+  }
+  const primary = scored
     .filter(r => r.minutes <= limit)
-    .sort((a, b) => (b.scored?.score ?? 0) - (a.scored?.score ?? 0) || a.minutes - b.minutes)[0]
+    .sort((a, b) => band(b) - band(a) || a.crashes - b.crashes || a.minutes - b.minutes)[0]
+  if (!primary) return null
+  // The contrast worth showing is calmest against quickest — but only when
+  // it's a real one. Same route, same streets, or a comfort gap too small to
+  // state honestly, and the "choice" is noise: we'd be asking someone to
+  // decide between two things we can't tell apart. Kendall/MIT from Union
+  // Square is the case that set this bar — the two routes came back at the
+  // same 14 minutes and within a point of each other on protection.
+  const MIN_COMFORT_GAP = 0.08
+  const quickest = [...scored].sort((a, b) => a.minutes - b.minutes)[0]
+  const gap = (primary.scored?.score ?? 0) - (quickest?.scored?.score ?? 0)
+  const alt =
+    quickest &&
+    quickest !== primary &&
+    quickest.minutes < primary.minutes &&
+    gap >= MIN_COMFORT_GAP &&
+    !routesOverlap(primary.encodedPolyline, quickest.encodedPolyline)
+      ? quickest
+      : null
+  return { primary, alt }
 }
 
 /** Takes already-validated coordinates; rounds to 3 decimals internally so
@@ -872,13 +1072,19 @@ async function computeReach(
     .map(d => ({ ...d, distance_miles: haversineMiles(lat3, lng3, d.lat, d.lng) }))
     .filter(d => d.distance_miles >= REACH_SKIP_WITHIN_MILES)
 
-  // Lane-vertex index for bike-route matching + comfort scoring (shared 24h cache)
-  const laneIndex = buildLaneIndex(await getBikeNetwork(lat3, lng3, 3).catch(
-    () => ({ geojson: { type: 'FeatureCollection' as const, features: [] }, nearest_protected: null, counts: { path: 0, protected: 0, painted: 0 } })
-  ))
+  // Lane-vertex index for bike-route matching + comfort scoring, and the
+  // crash clusters routes are ranked against — both on shared 24 h caches, so
+  // every destination in the region pays for them once between them.
+  const [network, crashes] = await Promise.all([
+    getBikeNetwork(lat3, lng3, 3).catch(
+      () => ({ geojson: { type: 'FeatureCollection' as const, features: [] }, nearest_protected: null, counts: { path: 0, protected: 0, painted: 0 } })
+    ),
+    getCrashClusters(lat3, lng3, 6),
+  ])
+  const laneIndex = buildLaneIndex(network)
 
   const rows: ReachRow[] = await Promise.all(
-    candidates.map(d => buildReachRow({ lat: lat3, lng: lng3 }, d, laneIndex, departureTime))
+    candidates.map(d => buildReachRow({ lat: lat3, lng: lng3 }, d, laneIndex, departureTime, crashes))
   )
 
   rows.sort((a, b) => (a.transit_minutes ?? 999) - (b.transit_minutes ?? 999))
@@ -901,12 +1107,20 @@ export async function buildReachRow(
   dest: { id: string; name: string; lat: number; lng: number; distance_miles: number },
   laneIndex: LaneVertex[],
   departureTime: string,
+  crashes: CrashCluster[] = [],
+  /** Spend up to two extra Google calls manufacturing a calmer alternate.
+   *  Trips someone typed, never the curated list. */
+  injectCorridors = false,
 ): Promise<ReachRow> {
-  const [transit, bikeRoutes] = await Promise.all([
+  const [transit, googleRoutes] = await Promise.all([
     queryTransit(origin, dest, departureTime),
     queryBikeRoutes(origin, dest),
   ])
-  const bike = chooseBikeRoute(bikeRoutes, laneIndex)
+  const bikeRoutes = injectCorridors
+    ? [...googleRoutes, ...await injectCorridorRoutes(origin, dest, laneIndex, googleRoutes)]
+    : googleRoutes
+  const chosen = chooseBikeRoute(bikeRoutes, laneIndex, crashes)
+  const bike = chosen?.primary ?? null
   return {
     id: dest.id,
     name: dest.name,
@@ -923,7 +1137,20 @@ export async function buildReachRow(
     bike_steps: bike ? matchBikeCorridors(bike.encodedPolyline, laneIndex) : [],
     bike_polyline: bike?.encodedPolyline ?? null,
     bike_comfort: bike?.scored?.comfort ?? null,
+    bike_alt: chosen?.alt
+      ? {
+          minutes: chosen.alt.minutes,
+          polyline: chosen.alt.encodedPolyline,
+          comfort: chosen.alt.scored?.comfort ?? null,
+        }
+      : null,
   }
+}
+
+/** Crash clusters a reach row is ranked against — shared 24 h cache, so the
+ *  trip planner pays nothing extra for them either. */
+export async function crashesFor(lat: number, lng: number): Promise<CrashCluster[]> {
+  return getCrashClusters(lat, lng, 6)
 }
 
 /** The lane index a reach row is scored against — shared 24 h bike-network

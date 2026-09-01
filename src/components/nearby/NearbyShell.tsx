@@ -21,7 +21,7 @@ import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
 import { StationList, BikeRouteList, DockList, BorrowRentList, ServiceDisruptionsCard, firstBikeShelfKey } from './AroundYouLists'
 import { nearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
-import { ReachList, RouteLegNote, TransitChain, TransitLegs, TripFacts } from './ReachSection'
+import { ReachList, RouteChoice, RouteLegNote, TransitChain, TransitLegs, TripFacts } from './ReachSection'
 import TripPlanner from './TripPlanner'
 import { ExploreBody } from './ExploreBody'
 import PartnerCobrand from './PartnerCobrand'
@@ -190,8 +190,13 @@ export default function NearbyShell({
   const [plannedRows, setPlannedRows] = useState<ReachRow[]>([])
   const reachRows = useMemo(() => [...plannedRows, ...reach.data], [plannedRows, reach.data])
 
+  // Which of the two bike routes is being described. Cleared with the
+  // selection — a choice made about one destination means nothing about the
+  // next one.
+  const [bikeAlt, setBikeAlt] = useState(false)
+
   const { reachRow, lines: shellCorridorLines, markers: shellMarkers, highlight: effectiveHighlight } = useReachOverlay({
-    selection, reachRows, corridorLines, markers, highlightedCorridorId,
+    selection, reachRows, corridorLines, markers, highlightedCorridorId, bikeAlt,
   })
 
   const selectReach = useCallback((row: ReachRow, mode: 'transit' | 'bike', source: string) => {
@@ -241,7 +246,7 @@ export default function NearbyShell({
     })
   }, [defaultOpenShelf])
 
-  useEffect(() => { setLegInfo(null); setHighlightedStreetKey(null) }, [selection])
+  useEffect(() => { setLegInfo(null); setHighlightedStreetKey(null); setBikeAlt(false) }, [selection])
   const handleLegTap = useCallback((info: RouteLegTapInfo) => {
     setLegInfo(info)
     setSnap('half')
@@ -390,6 +395,8 @@ export default function NearbyShell({
                   legInfo={legInfo}
                   highlightedStreetKey={highlightedStreetKey}
                   onHighlightStreet={setHighlightedStreetKey}
+                  bikeAlt={bikeAlt}
+                  onPickRoute={setBikeAlt}
                   onPlanCommute={onPlanCommute}
                   partnerSlug={partnerSlug}
                 />
@@ -533,7 +540,7 @@ export default function NearbyShell({
 
 /* ── Destination route detail: the route is on the MAIN map above ── */
 
-function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey, onHighlightStreet, onPlanCommute, partnerSlug }: {
+function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt, onPickRoute, onPlanCommute, partnerSlug }: {
   row: ReachRow
   mode: 'transit' | 'bike'
   center: { lat: number; lng: number }
@@ -541,6 +548,8 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
   legInfo?: RouteLegTapInfo | null
   highlightedStreetKey?: string | null
   onHighlightStreet?: (key: string | null) => void
+  bikeAlt: boolean
+  onPickRoute: (alt: boolean) => void
   onPlanCommute?: (row: ReachRow) => void
   partnerSlug?: string | null
 }) {
@@ -594,14 +603,15 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
 
       {mode === 'bike' && row.bike_comfort && (
         <>
+          <RouteChoice row={row} alt={bikeAlt} onPick={onPickRoute} />
           <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
             {tr('shell.bike_legend')}
           </p>
           <BikeComfortBlock
-                          comfort={row.bike_comfort}
-                          highlightedStreetKey={highlightedStreetKey}
-                          onHighlightStreet={onHighlightStreet}
-                        />
+            comfort={(bikeAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort}
+            highlightedStreetKey={highlightedStreetKey}
+            onHighlightStreet={onHighlightStreet}
+          />
         </>
       )}
 

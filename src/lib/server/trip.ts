@@ -4,6 +4,7 @@ import { unstable_cache } from 'next/cache'
 import {
   buildReachRow,
   laneIndexFor,
+  crashesFor,
   haversineMiles,
   nextMonday830,
   REACH_ROW_VERSION,
@@ -80,7 +81,10 @@ async function computeTrip(
   from: { lat: number; lng: number },
   to: { lat: number; lng: number },
 ): Promise<ReachRow> {
-  const laneIndex = await laneIndexFor(from.lat, from.lng)
+  const [laneIndex, crashes] = await Promise.all([
+    laneIndexFor(from.lat, from.lng),
+    crashesFor(from.lat, from.lng),
+  ])
   return buildReachRow(
     from,
     {
@@ -94,6 +98,10 @@ async function computeTrip(
     },
     laneIndex,
     nextMonday830(),
+    crashes,
+    // Someone typed this destination — worth the extra calls to see whether a
+    // calmer line exists that Google's own alternates all missed.
+    true,
   )
 }
 

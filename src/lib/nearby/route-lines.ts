@@ -22,25 +22,30 @@ const BIKE_TIER_STYLE: Record<string, { color: string; dash: boolean }> = {
  *  canonical street key. */
 export const OTHER_OWNER = '~other'
 
+interface ComfortGeometry {
+  segments: {
+    rating: string
+    polyline: string
+    distance_mi?: number
+    street?: string | null
+    street_keys?: string[]
+    street_key?: string | null
+  }[]
+}
+
 interface RouteGeometry {
   transit_segments?: { polyline: string; color: string; mode?: 'walk' | 'transit'; label?: string | null }[]
   bike_polyline?: string | null
-  bike_comfort?: {
-    segments: {
-      rating: string
-      polyline: string
-      distance_mi?: number
-      street?: string | null
-      street_keys?: string[]
-      street_key?: string | null
-    }[]
-  } | null
+  bike_comfort?: ComfortGeometry | null
+  bike_alt?: { polyline: string; comfort?: ComfortGeometry | null } | null
 }
 
 export function reachRouteFeatures(
   row: RouteGeometry,
   mode: 'transit' | 'bike',
   corridorId: string,
+  /** Draw the quicker alternate as the main route instead of the calm one. */
+  useAlt = false,
 ): GeoJSON.Feature[] {
   const features: GeoJSON.Feature[] = []
   // legProps make each drawn stretch tappable — "what is this leg?"
@@ -61,8 +66,8 @@ export function reachRouteFeatures(
         ...(seg.label ? { legLabel: seg.label } : {}),
       })
     }
-  } else if ((row.bike_comfort?.segments?.length ?? 0) > 0) {
-    for (const seg of row.bike_comfort!.segments) {
+  } else if (bikeComfort(row, useAlt)) {
+    for (const seg of bikeComfort(row, useAlt)!.segments) {
       const style = BIKE_TIER_STYLE[seg.rating] ?? BIKE_TIER_STYLE.shared_road
       push(seg.polyline, style.color, style.dash, {
         leg: 'bike',
@@ -76,8 +81,17 @@ export function reachRouteFeatures(
         legOwner: seg.street_key ?? OTHER_OWNER,
       })
     }
+  } else if (useAlt && row.bike_alt?.polyline) {
+    push(row.bike_alt.polyline, '#BAF14D', false, { leg: 'bike' })
   } else if (row.bike_polyline) {
     push(row.bike_polyline, '#BAF14D', false, { leg: 'bike' })
   }
   return features
+}
+
+/** Which comfort picture is being drawn — the calm route's, or the quicker
+ *  alternate's. Both are scored the same way, so both draw the same way. */
+function bikeComfort(row: RouteGeometry, useAlt: boolean): ComfortGeometry | null {
+  const c = useAlt ? row.bike_alt?.comfort : row.bike_comfort
+  return (c?.segments?.length ?? 0) > 0 ? c! : null
 }

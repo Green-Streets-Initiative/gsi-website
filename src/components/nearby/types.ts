@@ -116,6 +116,13 @@ export interface ReachRow {
   bike_steps?: ReachStep[]
   bike_polyline?: string | null
   bike_comfort?: BikeComfortData | null
+  /** The quicker route the calm one beat, when the two are genuinely a
+   *  choice. Null when the calmest IS the quickest. */
+  bike_alt?: {
+    minutes: number
+    polyline: string
+    comfort: BikeComfortData | null
+  } | null
 }
 
 export interface GuideItem {

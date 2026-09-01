@@ -8,7 +8,7 @@ import { directionsUrl } from '@/lib/nearby/transit-ui'
 import type { ModeFilter } from './useNearbyModel'
 import type { RouteLegTapInfo } from './NearbyMap'
 import BikeComfortBlock, { NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
-import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier } from './types'
+import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier, BikeComfortData } from './types'
 import { useNearbyT, useNearbyLocale } from './NearbyI18n'
 
 /** Comfort-tier → i18n key, so a tapped bike leg's tier reads in the page
@@ -115,6 +115,77 @@ export function TripFacts({ row }: { row: ReachRow }) {
   return <div className="mt-2 text-[0.78rem] text-white/80">{bits.join(' · ')}</div>
 }
 
+/** Share of a route that's a path or a separated lane — what "protected"
+ *  means to a rider, and the number the choice below is stated in. */
+function protectedShare(comfort: BikeComfortData | null | undefined): number | null {
+  const segs = comfort?.segments ?? []
+  const total = segs.reduce((a, s) => a + s.distance_mi, 0)
+  if (total <= 0) return null
+  const good = segs
+    .filter(s => s.rating === 'path' || s.rating === 'protected')
+    .reduce((a, s) => a + s.distance_mi, 0)
+  return good / total
+}
+
+/**
+ * The two bike routes, as a choice.
+ *
+ * We have always fetched Google's alternates, scored them for comfort, served
+ * the calmest one and said nothing — quietly deciding for the rider that a
+ * few extra minutes were worth it. Some riders would take that trade and some
+ * wouldn't, and neither could tell it had been made. The server now keeps the
+ * quicker route when it's genuinely different, and this states the trade in
+ * the terms it was made in: minutes against protection.
+ */
+export function RouteChoice({ row, alt, onPick }: {
+  row: ReachRow
+  alt: boolean
+  onPick: (alt: boolean) => void
+}) {
+  const tr = useNearbyT()
+  if (!row.bike_alt) return null
+  const calmMin = row.bike_minutes
+  const fastMin = row.bike_alt.minutes
+  const calmProt = protectedShare(row.bike_comfort)
+  const fastProt = protectedShare(row.bike_alt.comfort)
+  const savedMin = calmMin - fastMin
+  const lessProt =
+    calmProt !== null && fastProt !== null ? Math.round((calmProt - fastProt) * 100) : null
+  const delta = [
+    savedMin > 0 ? tr('reach.alt_faster', { minutes: savedMin }) : null,
+    lessProt !== null && lessProt > 0 ? tr('reach.alt_less_protected', { pct: lessProt }) : null,
+  ].filter(Boolean).join(' · ')
+
+  const chip = (isAlt: boolean, label: string, minutes: number) => (
+    <button
+      onClick={() => onPick(isAlt)}
+      aria-pressed={alt === isAlt}
+      className={`flex-1 rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
+        alt === isAlt
+          ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.08)] text-white'
+          : 'border-white/[0.12] text-white/75 hover:bg-white/[0.05]'
+      }`}
+    >
+      <span className="block text-[0.72rem] font-bold uppercase tracking-wider">{label}</span>
+      <span className="block text-[0.8rem] tabular-nums">{tr('reach.minutes', { minutes })}</span>
+    </button>
+  )
+
+  return (
+    <div className="mt-2.5">
+      <div className="flex gap-2">
+        {chip(false, tr('reach.alt_calmest'), calmMin)}
+        {chip(true, tr('reach.alt_fastest'), fastMin)}
+      </div>
+      {delta && (
+        <p className="mt-1 text-[0.75rem] leading-snug text-white/75">
+          {tr('reach.alt_delta', { label: tr('reach.alt_fastest'), delta })}
+        </p>
+      )}
+    </div>
+  )
+}
+
 /**
  * What you actually do on each ride: get on here, going that way, ride this
  * many stops, get off there. The chip chain answers "which lines"; without
@@ -217,7 +288,7 @@ export function TransitLegs({ steps, segments }: { steps: ReachStep[]; segments?
  *  - `routeSelection`/`onRouteSelect` (desktop two-pane): rows expand in
  *    place, following the PAGE selection — the parent owns the state and
  *    fires the reach_route_viewed analytics. */
-export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, highlightedStreetKey, onHighlightStreet, onPlanCommute, partnerSlug }: {
+export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt = false, onPickRoute = () => {}, onPlanCommute, partnerSlug }: {
   center: { lat: number; lng: number }
   rows: ReachRow[]
   onRowTap?: (row: ReachRow) => void
@@ -229,6 +300,9 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
   /** Street bullet currently lit on the map, and how to point at one. */
   highlightedStreetKey?: string | null
   onHighlightStreet?: (key: string | null) => void
+  /** Which of the two bike routes is being described, and how to switch. */
+  bikeAlt?: boolean
+  onPickRoute?: (alt: boolean) => void
   /** Renders the "Plan this commute" advisor handoff in expanded rows */
   onPlanCommute?: (row: ReachRow) => void
   /** Co-brand slug — rides the advisor handoff link when present */
@@ -384,11 +458,12 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                     )}
                     {expanded.mode === 'bike' && row.bike_comfort && (
                       <>
+                        <RouteChoice row={row} alt={bikeAlt} onPick={onPickRoute} />
                         <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
                           {tr('reach.bike_leg_hint')}
                         </p>
                         <BikeComfortBlock
-                          comfort={row.bike_comfort}
+                          comfort={(bikeAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort}
                           highlightedStreetKey={highlightedStreetKey}
                           onHighlightStreet={onHighlightStreet}
                         />
