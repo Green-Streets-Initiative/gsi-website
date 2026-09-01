@@ -32,7 +32,7 @@ import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
  * while local testing (which deletes .next and varies coordinates) missed
  * both stale layers entirely. One constant, four call sites, no drift.
  */
-export const REACH_ROW_VERSION = 'v12'
+export const REACH_ROW_VERSION = 'v13'
 
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
 
@@ -59,7 +59,14 @@ interface ReachStep {
 
 /** One drawable piece of the door-to-door transit trip: a transit leg in its
  *  line's color, or the merged walking legs around it. */
-interface ReachSegment { mode: 'walk' | 'transit'; polyline: string; color: string; label: string | null }
+interface ReachSegment {
+  mode: 'walk' | 'transit'
+  polyline: string
+  color: string
+  label: string | null
+  /** Minutes on this leg — walking legs are the ones people underestimate. */
+  minutes?: number
+}
 
 // Walking connectors on the dark route map — light slate, clearly not a line color
 const WALK_SEGMENT_COLOR = '#9BA3BF'
@@ -114,6 +121,11 @@ export interface ReachRow {
   lng: number
   distance_miles: number
   transit_minutes: number | null
+  /** Total minutes on foot across the transit trip — the number people most
+   *  underestimate, and the one Google leads with. */
+  transit_walk_minutes: number | null
+  /** Transit fare for the trip, when the agency publishes one. */
+  transit_fare: { currency: string; amount: number } | null
   steps: ReachStep[]
   /** The transit trip as drawable colored polyline segments */
   transit_segments: ReachSegment[]
@@ -173,6 +185,8 @@ function toStep(line: { name?: string; nameShort?: string }): ReachStep {
 
 interface GoogleStep {
   polyline?: { encodedPolyline?: string }
+  staticDuration?: string
+  travelMode?: string
   transitDetails?: {
     transitLine?: { name?: string; nameShort?: string }
     stopDetails?: { departureStop?: { name?: string }; arrivalStop?: { name?: string } }
@@ -185,7 +199,14 @@ async function queryTransit(
   origin: { lat: number; lng: number },
   dest: { lat: number; lng: number },
   departureTime: string,
-): Promise<{ minutes: number; steps: ReachStep[]; segments: ReachSegment[] } | null> {
+): Promise<{
+  minutes: number
+  steps: ReachStep[]
+  segments: ReachSegment[]
+  /** Total minutes on foot across the whole trip. */
+  walkMinutes: number | null
+  fare: { currency: string; amount: number } | null
+} | null> {
   if (!GOOGLE_ROUTES_KEY) return null
   try {
     const resp = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
@@ -198,6 +219,13 @@ async function queryTransit(
         // lets the chain say "change at Park Street" instead of just "→".
         'X-Goog-FieldMask': [
           'routes.duration',
+          // Fare and per-step durations ride the SAME call and SKU —
+          // route-compare has requested both from this API for months. They
+          // are what let us say "$4.10" and "9 min walking", the two numbers
+          // Google leads with and we were silent on.
+          'routes.travelAdvisory.transitFare',
+          'routes.legs.steps.staticDuration',
+          'routes.legs.steps.travelMode',
           'routes.legs.steps.transitDetails.transitLine',
           'routes.legs.steps.transitDetails.stopDetails.departureStop',
           'routes.legs.steps.transitDetails.stopDetails.arrivalStop',
@@ -229,11 +257,21 @@ async function queryTransit(
     const steps: ReachStep[] = []
     const segments: ReachSegment[] = []
     let walkBuf: [number, number][] = []
+    let walkSecs = 0
+    let totalWalkSecs = 0
+    const secs = (d?: string) => parseInt(d?.replace('s', '') ?? '0') || 0
     const flushWalk = () => {
       if (walkBuf.length >= 2) {
-        segments.push({ mode: 'walk', polyline: encodePolyline(walkBuf), color: WALK_SEGMENT_COLOR, label: null })
+        segments.push({
+          mode: 'walk',
+          polyline: encodePolyline(walkBuf),
+          color: WALK_SEGMENT_COLOR,
+          label: null,
+          minutes: Math.max(1, Math.round(walkSecs / 60)),
+        })
       }
       walkBuf = []
+      walkSecs = 0
     }
     for (const s of allSteps) {
       if (s.transitDetails) {
@@ -253,19 +291,44 @@ async function queryTransit(
         else prev.alightStop = chip.alightStop ?? prev.alightStop
         flushWalk()
         if (s.polyline?.encodedPolyline) {
-          segments.push({ mode: 'transit', polyline: s.polyline.encodedPolyline, color: chip.color, label: chip.label })
+          segments.push({
+            mode: 'transit',
+            polyline: s.polyline.encodedPolyline,
+            color: chip.color,
+            label: chip.label,
+            minutes: Math.max(1, Math.round(secs(s.staticDuration) / 60)),
+          })
         }
-      } else if (s.polyline?.encodedPolyline) {
-        const pts = decodePolyline(s.polyline.encodedPolyline)
-        // Steps share their junction point — drop the duplicate
-        const last = walkBuf[walkBuf.length - 1]
-        if (last && pts.length && last[0] === pts[0][0] && last[1] === pts[0][1]) pts.shift()
-        walkBuf.push(...pts)
+      } else {
+        // Every walking turn is its own step; sum their durations across the
+        // run so the merged segment carries the walk a rider actually feels.
+        walkSecs += secs(s.staticDuration)
+        totalWalkSecs += secs(s.staticDuration)
+        if (s.polyline?.encodedPolyline) {
+          const pts = decodePolyline(s.polyline.encodedPolyline)
+          // Steps share their junction point — drop the duplicate
+          const last = walkBuf[walkBuf.length - 1]
+          if (last && pts.length && last[0] === pts[0][0] && last[1] === pts[0][1]) pts.shift()
+          walkBuf.push(...pts)
+        }
       }
     }
     flushWalk()
 
-    return { minutes, steps: steps.slice(0, 4), segments }
+    // "$4.10" is one number and it's our whole argument — we were silent on
+    // the cheapest thing about not driving.
+    const f = route.travelAdvisory?.transitFare
+    const fare = f && f.units !== undefined
+      ? { currency: f.currencyCode ?? 'USD', amount: Number(f.units) + (f.nanos ?? 0) / 1e9 }
+      : null
+
+    return {
+      minutes,
+      steps: steps.slice(0, 4),
+      segments,
+      walkMinutes: totalWalkSecs > 0 ? Math.max(1, Math.round(totalWalkSecs / 60)) : null,
+      fare,
+    }
   } catch {
     return null
   }
@@ -733,6 +796,8 @@ export async function buildReachRow(
     lng: dest.lng,
     distance_miles: Math.round(dest.distance_miles * 10) / 10,
     transit_minutes: transit?.minutes ?? null,
+    transit_walk_minutes: transit?.walkMinutes ?? null,
+    transit_fare: transit?.fare ?? null,
     steps: transit?.steps ?? [],
     transit_segments: transit?.segments ?? [],
     bike_minutes: bike?.minutes ?? Math.max(5, Math.round((dest.distance_miles * BIKE_ROUTE_FACTOR / BIKE_MPH) * 60)),

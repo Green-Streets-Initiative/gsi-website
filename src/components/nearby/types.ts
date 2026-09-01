@@ -48,6 +48,8 @@ export interface ReachStep {
 /** Drawable piece of a door-to-door transit trip (from /api/nearby/reach) */
 export interface ReachSegment {
   mode: 'walk' | 'transit'
+  /** Minutes on this leg. */
+  minutes?: number
   /** Google-encoded polyline — decode with decodePolyline */
   polyline: string
   color: string
@@ -96,6 +98,9 @@ export interface ReachRow {
   lng: number
   distance_miles: number
   transit_minutes: number | null
+  /** Total minutes on foot across the transit trip. */
+  transit_walk_minutes?: number | null
+  transit_fare?: { currency: string; amount: number } | null
   steps: ReachStep[]
   transit_segments?: ReachSegment[]
   bike_minutes: number

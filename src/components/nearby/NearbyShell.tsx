@@ -21,7 +21,7 @@ import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
 import { StationList, BikeRouteList, DockList, BorrowRentList, ServiceDisruptionsCard, firstBikeShelfKey } from './AroundYouLists'
 import { nearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
-import { ReachList, RouteLegNote, TransitChain, TransitLegs } from './ReachSection'
+import { ReachList, RouteLegNote, TransitChain, TransitLegs, TripFacts } from './ReachSection'
 import TripPlanner from './TripPlanner'
 import { ExploreBody } from './ExploreBody'
 import PartnerCobrand from './PartnerCobrand'
@@ -575,7 +575,8 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
 
       {mode === 'transit' && (
         <>
-          <TransitLegs steps={row.steps} />
+          <TripFacts row={row} />
+          <TransitLegs steps={row.steps} segments={row.transit_segments} />
           <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
             {tr('shell.transit_legend')}
           </p>

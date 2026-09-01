@@ -8,8 +8,8 @@ import { directionsUrl } from '@/lib/nearby/transit-ui'
 import type { ModeFilter } from './useNearbyModel'
 import type { RouteLegTapInfo } from './NearbyMap'
 import BikeComfortBlock, { NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
-import type { ReachRow, ReachStep, BikeComfortTier } from './types'
-import { useNearbyT } from './NearbyI18n'
+import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier } from './types'
+import { useNearbyT, useNearbyLocale } from './NearbyI18n'
 
 /** Comfort-tier → i18n key, so a tapped bike leg's tier reads in the page
  *  language (matches BikeComfortBlock's localized labels). */
@@ -92,6 +92,30 @@ export function TransitChain({ steps, transfers = true }: {
 }
 
 /**
+ * The two numbers Google leads with and we were silent on: the fare, and how
+ * much of the trip is on foot. Both come from the same call that draws the
+ * route — we were already paying for them.
+ */
+export function TripFacts({ row }: { row: ReachRow }) {
+  const tr = useNearbyT()
+  const locale = useNearbyLocale()
+  const bits: string[] = []
+  if (row.transit_fare) {
+    try {
+      bits.push(new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: row.transit_fare.currency,
+      }).format(row.transit_fare.amount))
+    } catch { /* an unknown currency code is not worth a crash */ }
+  }
+  if (row.transit_walk_minutes) {
+    bits.push(tr('reach.walking_total', { minutes: row.transit_walk_minutes }))
+  }
+  if (bits.length === 0) return null
+  return <div className="mt-2 text-[0.78rem] text-white/80">{bits.join(' · ')}</div>
+}
+
+/**
  * What you actually do on each ride: get on here, going that way, ride this
  * many stops, get off there. The chip chain answers "which lines"; without
  * this it never answered "and then what" — a badge reading "85" tells a
@@ -101,13 +125,56 @@ export function TransitChain({ steps, transfers = true }: {
  * Fragments are assembled rather than one big sentence so a missing headsign
  * or stop count drops out cleanly instead of leaving a gap in the copy.
  */
-export function TransitLegs({ steps }: { steps: ReachStep[] }) {
+export function TransitLegs({ steps, segments }: { steps: ReachStep[]; segments?: ReachSegment[] }) {
   const tr = useNearbyT()
   const legs = steps.filter(s => s.boardStop || s.alightStop || s.headsign)
   if (legs.length === 0) return null
+
+  // Interleave the walks. The chain and this list were vehicle-only, so the
+  // walking — the part people most underestimate, and the usual reason a
+  // transit plan gets abandoned — was invisible until you noticed the
+  // boarding stop wasn't where you're standing.
+  const ordered: Array<{ walk: number } | { step: ReachStep }> = []
+  if (segments && segments.length > 0) {
+    let li = 0
+    let lastLabel: string | null = null
+    for (const seg of segments) {
+      if (seg.mode === 'walk') {
+        if (seg.minutes) ordered.push({ walk: seg.minutes })
+      } else if (seg.label !== lastLabel) {
+        lastLabel = seg.label
+        if (legs[li]) ordered.push({ step: legs[li++] })
+      }
+    }
+  }
+  if (ordered.length === 0) legs.forEach(step => ordered.push({ step }))
+
   return (
     <ol className="mt-2.5 space-y-2">
-      {legs.map((s, i) => {
+      {ordered.map((item, idx) => {
+        if ('walk' in item) {
+          return (
+            <li key={`w-${idx}`} className="flex items-start gap-2">
+              <span
+                className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                style={{ backgroundColor: 'rgba(255,255,255,0.12)', color: '#fff' }}
+              >
+                {tr('reach.leg_walk_badge')}
+              </span>
+              <span className="min-w-0 text-[0.78rem] leading-snug text-white/80">
+                {tr('reach.leg_walk', { minutes: item.walk })}
+              </span>
+            </li>
+          )
+        }
+        const s = item.step
+        const i = legs.indexOf(s)
+        return renderRideLeg(s, i)
+      })}
+    </ol>
+  )
+
+  function renderRideLeg(s: ReachStep, i: number) {
         const ride = [
           s.headsign ? tr('reach.leg_toward', { headsign: s.headsign }) : null,
           s.numStops
@@ -115,27 +182,25 @@ export function TransitLegs({ steps }: { steps: ReachStep[] }) {
             : null,
           s.alightStop ? tr('reach.leg_off', { stop: s.alightStop }) : null,
         ].filter(Boolean).join(' · ')
-        return (
-          <li key={`${s.label}-${i}`} className="flex items-start gap-2">
-            <span
-              className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-              style={{ backgroundColor: s.color, color: s.textColor }}
-            >
-              {s.label}
+    return (
+      <li key={`${s.label}-${i}`} className="flex items-start gap-2">
+        <span
+          className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+          style={{ backgroundColor: s.color, color: s.textColor }}
+        >
+          {s.label}
+        </span>
+        <span className="min-w-0">
+          {s.boardStop && (
+            <span className="block text-[0.78rem] font-semibold text-white">
+              {tr('reach.leg_board', { stop: s.boardStop })}
             </span>
-            <span className="min-w-0">
-              {s.boardStop && (
-                <span className="block text-[0.78rem] font-semibold text-white">
-                  {tr('reach.leg_board', { stop: s.boardStop })}
-                </span>
-              )}
-              {ride && <span className="block text-[0.75rem] leading-snug text-white/80">{ride}</span>}
-            </span>
-          </li>
-        )
-      })}
-    </ol>
-  )
+          )}
+          {ride && <span className="block text-[0.75rem] leading-snug text-white/80">{ride}</span>}
+        </span>
+      </li>
+    )
+  }
 }
 
 /**
@@ -310,7 +375,8 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                     {legInfo && <RouteLegNote info={legInfo} />}
                     {expanded.mode === 'transit' && (
                       <>
-                        <TransitLegs steps={row.steps} />
+                        <TripFacts row={row} />
+                        <TransitLegs steps={row.steps} segments={row.transit_segments} />
                         <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
                           {tr('reach.transit_leg_hint')}
                         </p>
