@@ -17,6 +17,11 @@ const BIKE_TIER_STYLE: Record<string, { color: string; dash: boolean }> = {
   shared_road: { color: '#6B6E85', dash: false },
 }
 
+/** The owner of a stretch no named street claimed — what the "Connecting
+ *  stretches" row highlights. Tilde-prefixed so it can never collide with a
+ *  canonical street key. */
+export const OTHER_OWNER = '~other'
+
 interface RouteGeometry {
   transit_segments?: { polyline: string; color: string; mode?: 'walk' | 'transit'; label?: string | null }[]
   bike_polyline?: string | null
@@ -27,6 +32,7 @@ interface RouteGeometry {
       distance_mi?: number
       street?: string | null
       street_keys?: string[]
+      street_key?: string | null
     }[]
   } | null
 }
@@ -63,10 +69,11 @@ export function reachRouteFeatures(
         legRating: seg.rating,
         ...(seg.distance_mi !== undefined ? { legMiles: seg.distance_mi } : {}),
         ...(seg.street ? { legStreet: seg.street } : {}),
-        // Delimited rather than an array: the map highlight matches with a
-        // substring test, which works identically for a stretch that spans
-        // two streets. Matching on the display string would miss those.
-        ...(seg.street_keys?.length ? { legStreetKeys: `|${seg.street_keys.join('|')}|` } : {}),
+        // Which comfort ROW counts this stretch's mileage — a street key, or
+        // the leftover bucket. Every stretch has exactly one owner, so the
+        // highlight is an equality test and "Connecting stretches" is just
+        // another value rather than a special case with no geometry.
+        legOwner: seg.street_key ?? OTHER_OWNER,
       })
     }
   } else if (row.bike_polyline) {

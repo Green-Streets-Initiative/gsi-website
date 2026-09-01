@@ -68,10 +68,13 @@ export interface BikeComfortSegmentData {
   /** This stretch of the route, encoded — drawn in tier colors on the map */
   polyline: string
   street?: string | null
-  /** Canonical street keys — what a tapped bullet matches against. A stretch
-   *  can span two streets, which is why this is a list and why the match is
-   *  on keys rather than on the display string. */
+  /** Canonical street keys — what this stretch RIDES. A stretch can span two
+   *  streets, which is why this is a list and why the match is on keys rather
+   *  than on the display string. */
   street_keys?: string[]
+  /** Which comfort ROW counts this stretch's mileage — null when no named
+   *  street claimed it, which is what "Connecting stretches" is made of. */
+  street_key?: string | null
 }
 
 export interface BikeStreetComfort {
@@ -87,8 +90,13 @@ export interface BikeStreetComfort {
 export interface BikeComfortData {
   rating: BikeComfortTier | 'mixed' | null
   segments: BikeComfortSegmentData[]
-  /** Per-street rollup, longest first */
+  /** Per-street rollup, in travel order */
   streets: BikeStreetComfort[]
+  /** Mileage no named street claimed — the rows plus this equal the total the
+   *  bar prints. Absent on payloads written before the server derived it. */
+  other_mi?: number
+  /** What that leftover is made of, largest tier first. */
+  other_tiers?: { rating: BikeComfortTier; distance_mi: number }[]
 }
 
 export interface ReachRow {

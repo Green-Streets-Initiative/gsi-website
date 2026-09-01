@@ -32,7 +32,7 @@ import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
  * while local testing (which deletes .next and varies coordinates) missed
  * both stale layers entirely. One constant, four call sites, no drift.
  */
-export const REACH_ROW_VERSION = 'v13'
+export const REACH_ROW_VERSION = 'v14'
 
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
 
@@ -93,6 +93,13 @@ interface ComfortSegment {
    *  ("Commercial Street → Atlantic Avenue") while a bullet names one, so
    *  matching on text would silently miss. */
   street_keys: string[]
+  /** The ONE street row that claims this stretch's mileage, or null when no
+   *  listed street covers enough of it. This is what the map highlight now
+   *  matches on: every drawn stretch belongs to exactly one row (or to
+   *  "Connecting stretches"), so tapping any row lights precisely the miles
+   *  that row is counting. `street_keys` above still describes what the
+   *  stretch RIDES, which is a different question and can name two roads. */
+  street_key: string | null
 }
 
 interface StreetComfort {
@@ -110,8 +117,13 @@ interface StreetComfort {
 interface BikeComfort {
   rating: ComfortRating | 'mixed' | null
   segments: ComfortSegment[]
-  /** Per-street rollup, longest first — "what is Cambridge St like to ride?" */
+  /** Per-street rollup, in travel order — "what is Cambridge St like to ride?" */
   streets: StreetComfort[]
+  /** Mileage no named street claimed. Derived so the rows plus this equal the
+   *  total the bar prints; 0 when every stretch found an owner. */
+  other_mi: number
+  /** What that leftover is made of, largest tier first. */
+  other_tiers: { rating: ComfortRating; distance_mi: number }[]
 }
 
 export interface ReachRow {
@@ -562,6 +574,34 @@ function scoreBikeComfort(
     return Math.max(0, cum[endIdx] - cum[startIdx])
   }
 
+  /**
+   * Carry a street name across a hole in the lane data.
+   *
+   * The classifier only names a sample it can tie to a mapped facility. Real
+   * streets have gaps — a block with no lane drawn on it, mid-street — and
+   * every one of those blocks used to fall out of the per-street list into an
+   * anonymous "Connecting stretches" bucket, which on many routes grew to
+   * half the ride. When the named samples either side of a gap are the SAME
+   * street, the gap is that street.
+   *
+   * Only the NAME carries. The tier is untouched: a block with no lane still
+   * reads shared road, it just stops being anonymous. Bounded so a long
+   * excursion that happens to leave and rejoin one street can't be swallowed.
+   */
+  const MAX_NAME_GAP_SAMPLES = 3
+  for (let s = 0; s < samples.length; s++) {
+    if (samples[s].streetKey) continue
+    let prev = s - 1
+    while (prev >= 0 && !samples[prev].streetKey) prev--
+    let next = s + 1
+    while (next < samples.length && !samples[next].streetKey) next++
+    if (prev < 0 || next >= samples.length) continue
+    if (next - prev - 1 > MAX_NAME_GAP_SAMPLES) continue
+    if (samples[prev].streetKey !== samples[next].streetKey) continue
+    samples[s].streetKey = samples[prev].streetKey
+    samples[s].streetDisplay = samples[prev].streetDisplay
+  }
+
   /** Name a run of samples: the streets carrying a real share of it, in
    *  travel order. A quarter of the run is the bar — below that a street is
    *  a passing block, not what you'd say you rode. */
@@ -594,8 +634,12 @@ function scoreBikeComfort(
     }
   }
 
-  // Same-tier runs become drawable segments (geometry sliced from the path)
+  // Same-tier runs become drawable segments (geometry sliced from the path).
+  // Each one remembers the samples it came from: the rollup below hands every
+  // segment to a street, and it can only do that if it can look back at what
+  // the segment was riding on.
   const segments: ComfortSegment[] = []
+  const segRuns: { from: number; to: number; meters: number }[] = []
   let runStart = 0
   for (let s = 1; s <= samples.length; s++) {
     if (s < samples.length && samples[s].rating === samples[runStart].rating) continue
@@ -607,56 +651,124 @@ function scoreBikeComfort(
         rating: samples[runStart].rating,
         distance_mi: Math.round((meters / 1609.34) * 100) / 100,
         polyline: encodePolyline(path.slice(startIdx, endIdx + 1)),
+        street_key: null,
         ...(() => {
           const named = runStreetName(runStart, s, meters)
           return { street: named.name, street_keys: named.keys }
         })(),
       })
+      segRuns.push({ from: runStart, to: s, meters })
     }
     runStart = s
   }
 
-  // Per-street rollup: dominant tier + mileage per named street
-  const byStreet = new Map<string, { variants: Map<string, number>; meters: Record<ComfortRating, number>; firstIdx: number }>()
+  // Per-street rollup, in two passes.
+  //
+  // Pass one decides WHICH streets are worth naming, by the meters their
+  // samples cover. Pass two hands every DRAWN SEGMENT to one of them, or to
+  // nobody. That second pass is the point: a row's mileage is now the mileage
+  // of the stretches it lights on the map, and "Connecting stretches" is the
+  // set of segments no row claimed — not a subtraction with no geometry
+  // behind it, which is why it could never be highlighted or explained.
+  const byStreet = new Map<string, { variants: Map<string, number>; meters: number }>()
   const meterByRating: Record<ComfortRating, number> = { path: 0, protected: 0, bike_lane: 0, shared_road: 0 }
   for (let s = 0; s < samples.length; s++) {
-    const startIdx = samples[s].idx
-    const endIdx = s + 1 < samples.length ? samples[s + 1].idx : path.length - 1
-    const meters = cum[endIdx] - cum[startIdx]
+    const meters = sampleMeters(s)
     if (meters <= 0) continue
     meterByRating[samples[s].rating] += meters
     const key = samples[s].streetKey
-    if (!key || !samples[s].streetDisplay) continue
-    const st = byStreet.get(key) ?? { variants: new Map(), meters: { path: 0, protected: 0, bike_lane: 0, shared_road: 0 }, firstIdx: s }
-    st.variants.set(samples[s].streetDisplay!, (st.variants.get(samples[s].streetDisplay!) ?? 0) + 1)
-    st.meters[samples[s].rating] += meters
+    const display = samples[s].streetDisplay
+    if (!key || !display) continue
+    const st = byStreet.get(key) ?? { variants: new Map<string, number>(), meters: 0 }
+    st.variants.set(display, (st.variants.get(display) ?? 0) + 1)
+    st.meters += meters
     byStreet.set(key, st)
   }
 
-  // Longest streets make the list, but they're presented in TRAVEL ORDER —
-  // the list reads start-of-ride first, matching the map
+  /** Ten, not six. The seventh street of a real ride isn't noise, and every
+   *  mile it held used to vanish into the remainder with no explanation. */
+  const MAX_STREETS = 10
+  /** And a block IS worth naming — at 0.1 mi the bar was dropping whole
+   *  cross-streets into the anonymous bucket. */
+  const MIN_STREET_MI = 0.05
+  const candidates = new Map(
+    [...byStreet.entries()]
+      .filter(([, st]) => st.meters / 1609.34 >= MIN_STREET_MI)
+      .sort((a, b) => b[1].meters - a[1].meters)
+      .slice(0, MAX_STREETS),
+  )
+
+  /** A segment belongs to the listed street covering most of it. Below this
+   *  share it belongs to nobody — the same bar runStreetName uses, for the
+   *  same reason: a passing block isn't what you'd say you rode. */
+  const OWNER_MIN_SHARE = 0.25
+  const zeroMeters = (): Record<ComfortRating, number> =>
+    ({ path: 0, protected: 0, bike_lane: 0, shared_road: 0 })
+  const owned = new Map<string, { meters: Record<ComfortRating, number>; firstIdx: number }>()
+  const otherByRating = zeroMeters()
+  let otherMeters = 0
+  for (let i = 0; i < segments.length; i++) {
+    const run = segRuns[i]
+    const tally = new Map<string, number>()
+    for (let s = run.from; s < run.to; s++) {
+      const key = samples[s].streetKey
+      if (key && candidates.has(key)) tally.set(key, (tally.get(key) ?? 0) + sampleMeters(s))
+    }
+    const best = [...tally.entries()].sort((a, b) => b[1] - a[1])[0]
+    const owner = best && run.meters > 0 && best[1] / run.meters >= OWNER_MIN_SHARE ? best[0] : null
+    segments[i].street_key = owner
+    if (owner) {
+      const o = owned.get(owner) ?? { meters: zeroMeters(), firstIdx: run.from }
+      o.meters[segments[i].rating] += run.meters
+      owned.set(owner, o)
+    } else {
+      otherByRating[segments[i].rating] += run.meters
+      otherMeters += run.meters
+    }
+  }
+
   /** Below this share, the dominant tier isn't the whole story and the label
    *  says "mostly". Half-painted, half-protected was reading as protected. */
   const DOMINANT_SHARE = 0.8
-  const streets: StreetComfort[] = [...byStreet.entries()]
-    .map(([key, st]) => {
-      const entries = Object.entries(st.meters) as [ComfortRating, number][]
-      entries.sort((a, b) => b[1] - a[1])
-      const totalStreetM = entries.reduce((a, [, m]) => a + m, 0)
+  const mi1 = (meters: number) => Math.round((meters / 1609.34) * 10) / 10
+  const streets: StreetComfort[] = [...owned.entries()]
+    .map(([key, o]) => {
+      const entries = (Object.entries(o.meters) as [ComfortRating, number][]).sort((a, b) => b[1] - a[1])
+      const streetM = entries.reduce((a, [, m]) => a + m, 0)
       return {
-        label: displayStreetName(st.variants),
+        label: displayStreetName(byStreet.get(key)!.variants),
         rating: entries[0][0],
-        distance_mi: Math.round((totalStreetM / 1609.34) * 10) / 10,
+        distance_mi: mi1(streetM),
         key,
-        mixed: totalStreetM > 0 && entries[0][1] / totalStreetM < DOMINANT_SHARE,
-        firstIdx: st.firstIdx,
+        mixed: streetM > 0 && entries[0][1] / streetM < DOMINANT_SHARE,
+        firstIdx: o.firstIdx,
       }
     })
-    .filter(st => st.distance_mi >= 0.1)
-    .sort((a, b) => b.distance_mi - a.distance_mi)
-    .slice(0, 6)
+    .filter(st => st.distance_mi > 0)
+    // Presented in TRAVEL ORDER — the list reads start-of-ride first, matching
+    // the map
     .sort((a, b) => a.firstIdx - b.firstIdx)
     .map(({ label, rating, distance_mi, key, mixed }) => ({ label, rating, distance_mi, key, mixed }))
+
+  // The remainder is derived from the total the BAR shows (its own sum of the
+  // rounded segment miles), so the rows and the header agree on screen — the
+  // rounding drift that used to hide in this number now has nowhere to go.
+  const barTotalMi = Math.round(segments.reduce((a, seg) => a + seg.distance_mi, 0) * 10) / 10
+  const listedMi = Math.round(streets.reduce((a, st) => a + st.distance_mi, 0) * 10) / 10
+  const otherMi = otherMeters > 0 ? Math.max(0, Math.round((barTotalMi - listedMi) * 10) / 10) : 0
+
+  // What the unclaimed stretches actually are — "0.8 mi shared road · 0.4 mi
+  // painted" says more than a bare number, before anyone taps anything. The
+  // largest tier absorbs the rounding so the parts sum to the whole.
+  const otherTiers = (Object.entries(otherByRating) as [ComfortRating, number][])
+    .filter(([, m]) => m > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([r, m]) => ({ rating: r, distance_mi: mi1(m) }))
+    .filter(t => t.distance_mi > 0)
+  if (otherTiers.length > 0) {
+    const drift = Math.round((otherMi - otherTiers.reduce((a, t) => a + t.distance_mi, 0)) * 10) / 10
+    otherTiers[0].distance_mi = Math.round((otherTiers[0].distance_mi + drift) * 10) / 10
+  }
 
   const rating: BikeComfort['rating'] =
     meterByRating.path / totalM >= 0.8 ? 'path'
@@ -666,7 +778,13 @@ function scoreBikeComfort(
       : 'mixed'
 
   return {
-    comfort: { rating, segments, streets },
+    comfort: {
+      rating,
+      segments,
+      streets,
+      other_mi: otherMi,
+      other_tiers: otherMi > 0 ? otherTiers.filter(t => t.distance_mi > 0) : [],
+    },
     score: (meterByRating.path + meterByRating.protected + 0.5 * meterByRating.bike_lane) / totalM,
   }
 }

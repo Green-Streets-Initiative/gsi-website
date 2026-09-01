@@ -313,6 +313,15 @@ export function useNearbyModel({
   // 2 mi radius, nearest first (same data as the Shift app's layer)
   const borrowRent = useMemo(() => nearbyBorrowRent(center.lat, center.lng), [center])
 
+  // Something point-like is picked, so everything else steps back. Several
+  // bus stops within a block of each other are identical yellow dots; a ring
+  // and a label on the chosen one only read once the neighbours recede.
+  const dockActive = (id: string) => selection?.type === 'dock' && selection.id === id
+  const borrowActive = (id: string) => selection?.type === 'borrow' && selection.id === id
+  const anyPointActive =
+    !!focusedStationKey || selection?.type === 'station' ||
+    selection?.type === 'dock' || selection?.type === 'borrow'
+
   const markers = useMemo<NearbyMarker[]>(() => [
     { id: 'user', lat: center.lat, lng: center.lng, html: userDotHtml(), zIndex: 10 },
     ...(showBike ? borrowRent.map(p => ({
@@ -322,11 +331,12 @@ export function useNearbyModel({
       html: borrowRentHtml(
         p.name,
         p.org === 'cargob' ? 'CargoB' : 'Pedal Power',
-        selection?.type === 'borrow' && selection.id === p.id,
+        borrowActive(p.id),
       ),
       tappable: true,
       analyticsType: 'borrow',
-      zIndex: selection?.type === 'borrow' && selection.id === p.id ? 6 : 1,
+      dimmed: anyPointActive && !borrowActive(p.id),
+      zIndex: borrowActive(p.id) ? 6 : 1,
     })) : []),
     ...(showRail ? groupStops(rail, true).slice(0, 4).map(g => ({
       id: `rail-${g.key}`,
@@ -344,6 +354,7 @@ export function useNearbyModel({
           ),
       tappable: true,
       analyticsType: 'train',
+      dimmed: anyPointActive && !stationActive(g.key),
       zIndex: stationActive(g.key) ? 6 : 3,
     })) : []),
     ...(showBus ? groupStops(bus, false).slice(0, 5).map(g => ({
@@ -359,6 +370,7 @@ export function useNearbyModel({
       ),
       tappable: true,
       analyticsType: 'bus',
+      dimmed: anyPointActive && !stationActive(g.key),
       zIndex: stationActive(g.key) ? 6 : 2,
     })) : []),
     ...(showBus ? groupStops(shuttleRows, false).slice(0, 4).map(g => ({
@@ -372,6 +384,7 @@ export function useNearbyModel({
       ),
       tappable: true,
       analyticsType: 'shuttle',
+      dimmed: anyPointActive && !stationActive(g.key),
       zIndex: stationActive(g.key) ? 6 : 2,
     })) : []),
     ...(showBike ? docks.slice(0, 8).map(d => ({
@@ -382,13 +395,15 @@ export function useNearbyModel({
         d.num_bikes_available,
         d.num_ebikes_available,
         d.name,
-        selection?.type === 'dock' && selection.id === d.station_id,
+        dockActive(d.station_id),
       ),
       tappable: true,
       analyticsType: 'bluebike',
-      zIndex: selection?.type === 'dock' && selection.id === d.station_id ? 6 : 1,
+      dimmed: anyPointActive && !dockActive(d.station_id),
+      zIndex: dockActive(d.station_id) ? 6 : 1,
     })) : []),
-  ], [center, rail, bus, shuttleRows, docks, borrowRent, corridorById, showRail, showBus, showBike, selection, stationActive])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [center, rail, bus, shuttleRows, docks, borrowRent, showRail, showBus, showBike, selection, stationActive, anyPointActive, focusedStationKey])
 
   // Where the camera should ease when a point-like thing is tapped, so the
   // tapped marker stays visible above the detail card / sheet. Corridor-driven

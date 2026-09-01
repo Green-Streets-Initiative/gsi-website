@@ -19,6 +19,10 @@ export interface NearbyMarker {
   analyticsType?: string
   /** Larger sorts above smaller when pins overlap */
   zIndex?: number
+  /** Pushed back while something else is picked. Several bus stops can sit
+   *  within a block of each other and they are identical yellow dots — a ring
+   *  on the chosen one isn't enough to find it until the rest recede. */
+  dimmed?: boolean
 }
 
 export type CorridorSelectSource = 'map-line' | 'map-stop' | 'map-stop-chip' | 'background'
@@ -261,6 +265,10 @@ export default function NearbyMap({
       for (const spec of sorted) {
         const el = document.createElement('div')
         el.innerHTML = spec.html
+        // Dimmed, never removed: the pin next door is usually the SAME routes
+        // going the other way, which is exactly what someone hunting for their
+        // stop needs to see.
+        if (spec.dimmed) el.style.opacity = '0.28'
         const marker = new maplibregl.Marker({ element: el }).setLngLat([spec.lng, spec.lat]).addTo(map!)
 
         if (spec.tappable) {
@@ -360,22 +368,25 @@ export default function NearbyMap({
     if (!map || !loadedRef.current || !map.getLayer('corridor-lines')) return
     const sel = selectedCorridorId
 
-    // A pointed-at street narrows the emphasis one step further: inside the
-    // selected route, only its stretches stay bright.
-    const streetNeedle = highlightedStreetKey ? `|${highlightedStreetKey}|` : null
+    // A pointed-at row narrows the emphasis one step further: inside the
+    // selected route, only the stretches that row counts stay bright. Every
+    // drawn stretch carries exactly one owner — a street key, or the
+    // "everything else" bucket — so this is an equality test, and the
+    // remainder row is addressable by the same machinery as a named street.
+    const owner = highlightedStreetKey
     const onSelected = ['==', ['get', 'corridorId'], sel]
-    const onStreet = ['in', streetNeedle ?? '', ['coalesce', ['get', 'legStreetKeys'], '']]
+    const onStreet = ['==', ['coalesce', ['get', 'legOwner'], ''], owner ?? '']
     for (const layerId of ['corridor-lines', 'corridor-lines-dashed']) {
       if (!map.getLayer(layerId)) continue
       map.setPaintProperty(layerId, 'line-opacity',
         sel
-          ? streetNeedle
+          ? owner
             ? ['case', ['all', onSelected, onStreet], 1, onSelected, 0.22, 0.08]
             : ['case', onSelected, 0.95, 0.12]
           : CORRIDOR_OPACITY_DEFAULT)
       map.setPaintProperty(layerId, 'line-width',
         sel
-          ? streetNeedle
+          ? owner
             ? ['case', ['all', onSelected, onStreet], 6, onSelected, 3, 2]
             : ['case', onSelected, 4, 2]
           : CORRIDOR_WIDTH_DEFAULT)
@@ -401,9 +412,8 @@ export default function NearbyMap({
         const all = corridorLinesRef.current.features.filter(
           f => (f.properties as { corridorId?: string })?.corridorId === sel
         )
-        const onStreet = streetNeedle
-          ? all.filter(f =>
-              ((f.properties as { legStreetKeys?: string })?.legStreetKeys ?? '').includes(streetNeedle))
+        const onStreet = owner
+          ? all.filter(f => (f.properties as { legOwner?: string })?.legOwner === owner)
           : []
         const features = onStreet.length > 0 ? onStreet : all
         if (features.length === 0) return
@@ -415,7 +425,7 @@ export default function NearbyMap({
         }
         map.fitBounds(bounds, {
           padding: clampedPadding(map, fitPaddingRef.current, 48),
-          maxZoom: streetNeedle ? 16 : 14,
+          maxZoom: owner ? 16 : 14,
           duration: 700,
         })
       } else if (!sel && homeBoundsRef.current) {

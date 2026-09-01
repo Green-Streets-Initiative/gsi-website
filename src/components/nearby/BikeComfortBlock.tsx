@@ -4,6 +4,7 @@ import ComfortBar from '@/components/commute/ComfortBar'
 import { useNearbyT } from './NearbyI18n'
 import { PanelPhoto } from './DetailPanel'
 import { decodePolyline, bearingDegrees } from '@/lib/geo/polyline'
+import { OTHER_OWNER } from '@/lib/nearby/route-lines'
 import type { BikeComfortData, BikeComfortTier } from './types'
 
 /**
@@ -35,9 +36,12 @@ export const NEARBY_COMFORT_LABELS: Record<BikeComfortTier, string> = {
  */
 function streetPhotoSpec(
   segments: BikeComfortData['segments'],
-  key: string,
+  owner: string,
 ): { lat: number; lng: number; heading?: number } | null {
-  const mine = segments.filter(s => (s.street_keys ?? []).includes(key))
+  // By owner, not by "streets this stretch rides": that's the set the row is
+  // counting and lighting, so the photo shows the same thing the map does —
+  // and it gives the leftover row a picture too.
+  const mine = segments.filter(s => (s.street_key ?? OTHER_OWNER) === owner)
   if (mine.length === 0) return null
   const longest = mine.reduce((a, b) => (a.distance_mi >= b.distance_mi ? a : b))
   const pts = decodePolyline(longest.polyline)
@@ -74,18 +78,19 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
         labels={labels}
       />
       {comfort.streets.length > 0 && (() => {
-        // The server sends up to 6 streets; show them all, and account for
-        // whatever the named list doesn't cover (unnamed lanes, connectors,
-        // short blocks) so the list always adds up to the route
-        const totalMi = comfort.segments.reduce((a, s) => a + s.distance_mi, 0)
-        const listedMi = comfort.streets.reduce((a, s) => a + s.distance_mi, 0)
-        const otherMi = Math.round((totalMi - listedMi) * 10) / 10
+        // The server hands us the leftover already derived, so the rows plus
+        // "Connecting stretches" equal the bar's total by construction. The
+        // old client-side subtraction quietly absorbed rounding drift on top
+        // of genuinely unnamed mileage, which is part of why the bucket grew
+        // so large and so unexplainable.
+        const otherMi = comfort.other_mi ?? 0
+        const otherTiers = comfort.other_tiers ?? []
         return (
           <div className="space-y-0.5 px-0.5">
             {comfort.streets.map(s => {
-              // A street with a key can be pointed at; the map lights that
-              // stretch and frames it. Without a key (an older payload) the
-              // row stays exactly as it was.
+              // A street row can be pointed at; the map lights the stretches
+              // it counts and frames them. Without a key (an older payload)
+              // the row stays exactly as it was.
               const on = !!s.key && s.key === highlightedStreetKey
               const body = (
                 <>
@@ -132,15 +137,56 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                 </div>
               )
             })}
-            {otherMi >= 0.2 && (
-              <div className="flex items-baseline justify-between gap-2 text-[0.78rem]">
-                <span className="flex min-w-0 items-center gap-1.5 text-white/75">
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-white/[0.25]" aria-hidden="true" />
-                  <span className="truncate">{tr('bike.connecting_stretches')}</span>
-                </span>
-                <span className="shrink-0 tabular-nums text-white/75">{otherMi} {tr('bike.unit_mi')}</span>
-              </div>
-            )}
+            {otherMi > 0 && (() => {
+              const on = highlightedStreetKey === OTHER_OWNER
+              // Say what it's made of before anyone taps: "0.8 mi shared road
+              // · 0.4 mi painted" is an answer; a bare number is a shrug.
+              const made = otherTiers
+                .map(t => `${t.distance_mi} ${tr('bike.unit_mi')} ${labels[t.rating].toLowerCase()}`)
+                .join(' · ')
+              const body = (
+                <>
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="flex shrink-0 gap-[2px]" aria-hidden="true">
+                      {(otherTiers.length > 0
+                        ? otherTiers
+                        : [{ rating: 'shared_road' as BikeComfortTier, distance_mi: 0 }]
+                      ).map(t => (
+                        <span
+                          key={t.rating}
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: NEARBY_COMFORT_COLORS[t.rating] }}
+                        />
+                      ))}
+                    </span>
+                    <span className="truncate">{tr('bike.connecting_stretches')}</span>
+                  </span>
+                  <span className="shrink-0 tabular-nums text-white/75">
+                    {made || `${otherMi} ${tr('bike.unit_mi')}`}
+                  </span>
+                </>
+              )
+              const photo = on ? streetPhotoSpec(comfort.segments, OTHER_OWNER) : null
+              return onHighlightStreet ? (
+                <div key="other">
+                  <button
+                    onClick={() => onHighlightStreet(on ? null : OTHER_OWNER)}
+                    aria-pressed={on}
+                    aria-label={tr('bike.connecting_stretches_a11y', { miles: otherMi })}
+                    className={`flex w-full items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left text-[0.78rem] transition-colors ${
+                      on ? 'bg-white/[0.09] text-white' : 'text-white/80 hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    {body}
+                  </button>
+                  {photo && <PanelPhoto spec={{ kind: 'sv', ...photo }} alt={tr('bike.connecting_stretches')} />}
+                </div>
+              ) : (
+                <div key="other" className="flex items-baseline justify-between gap-2 px-1 text-[0.78rem] text-white/80">
+                  {body}
+                </div>
+              )
+            })()}
           </div>
         )
       })()}
