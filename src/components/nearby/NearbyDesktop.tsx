@@ -437,6 +437,8 @@ export default function NearbyDesktop({
                     status={transitStatus}
                     onRetry={onRetry}
                     onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+                    onFocusStation={model.focusStation}
+                    focusedStationKey={model.focusedStationKey}
                     alerts={alerts}
                   />
                   <GuideLinks context="stations" guides={guides.data} modeFilter={modeFilter} />

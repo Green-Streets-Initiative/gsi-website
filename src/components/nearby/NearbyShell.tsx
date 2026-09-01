@@ -161,6 +161,13 @@ export default function NearbyShell({
     if (select(next, source)) setSnap('half')
   }, [select])
 
+  // Lighting a pin under a full-height sheet shows the user nothing — drop to
+  // half so the map they just asked about is actually on screen.
+  const focusStationReveal = useCallback((key: string | null) => {
+    model.focusStation(key)
+    if (key) setSnap('half')
+  }, [model])
+
   const markerTapReveal = useCallback((id: string) => {
     handleMarkerTap(id)
     setSnap('half')
@@ -434,6 +441,8 @@ export default function NearbyShell({
                 status={transitStatus}
                 onRetry={onRetry}
                 onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+                onFocusStation={focusStationReveal}
+                focusedStationKey={model.focusedStationKey}
                 alerts={alerts}
               />
               <GuideLinks context="stations" guides={guides.data} modeFilter={modeFilter} />

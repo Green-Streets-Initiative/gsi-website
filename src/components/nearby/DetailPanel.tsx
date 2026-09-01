@@ -191,6 +191,15 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
         <div className="text-[0.78rem] text-white/75">
           {tr('detail.walk_distance', { minutes: walkTimeMinutes(st.dist), distance: formatDistance(st.dist) })}
         </div>
+        <a
+          href={directionsUrl(st.lat, st.lng)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => posthog.capture('snapshot_directions_clicked', { type: st.isRail ? 'station' : 'bus_stop' })}
+          className="mt-0.5 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+        >
+          {tr('detail.walk_there')}
+        </a>
         <div className="mt-1.5 space-y-0.5">
           {st.routes.map(r => {
             const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
@@ -321,6 +330,18 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                   <div className="text-[0.75rem] leading-snug text-white/75">
                     {tr('detail.board_at', { stop: b.stopName, minutes: b.walkMin })}
                   </div>
+                  {/* Each direction boards on a different street — the link
+                      has to point at THIS direction's stop, which is the whole
+                      reason the boarding line moved inside the row. */}
+                  <a
+                    href={directionsUrl(b.lat, b.lng)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'boarding_stop' })}
+                    className="text-[0.75rem] font-semibold text-[#BAF14D] hover:opacity-80"
+                  >
+                    {tr('detail.walk_there')}
+                  </a>
                 </div>
               )
             })}
@@ -333,6 +354,15 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                 minutes: boarding[0]?.walkMin ?? c.access.walkMin,
               })}
             </div>
+            <a
+              href={directionsUrl(boarding[0]?.lat ?? c.access.lat, boarding[0]?.lng ?? c.access.lng)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'boarding_stop' })}
+              className="mt-0.5 inline-block text-[0.78rem] font-semibold text-[#BAF14D] hover:opacity-80"
+            >
+              {tr('detail.walk_there')}
+            </a>
             {liveDirs.length > 0 && (
               <div className="mt-2 space-y-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-2">
                 {liveDirs.map(a => (

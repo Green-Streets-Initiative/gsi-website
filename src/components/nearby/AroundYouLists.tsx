@@ -211,13 +211,17 @@ function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRout
   )
 }
 
-export function StationList({ stations, corridorById, highlightedCorridorId, status, onRetry, onSelectRoute, alerts }: {
+export function StationList({ stations, corridorById, highlightedCorridorId, status, onRetry, onSelectRoute, onFocusStation, focusedStationKey, alerts }: {
   stations: StationGroup[]
   corridorById: Map<string, TransitCorridor | BikeCorridor>
   highlightedCorridorId: string | null
   status: SectionStatus
   onRetry: () => void
   onSelectRoute: (corridorId: string) => void
+  /** Light this station's pin and move the camera to it. Opening a card
+   *  answers "what's here"; without this the map never answers "where". */
+  onFocusStation: (key: string | null) => void
+  focusedStationKey: string | null
   /** All surfaced service alerts — a route row named by one gets an inline,
    *  tappable "Service alert" disclosure that expands its detail in place. */
   alerts: SurfacedAlert[]
@@ -226,16 +230,22 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
   // Collapsed by default — the summary line answers "what's here, how soon";
   // the per-direction detail expands in place for whoever wants it
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const toggleCard = (key: string) => {
+  const toggleCard = (key: string, stationKey: string) => {
+    const wasOpen = expanded.has(key)
     setExpanded(prev => {
       const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else {
-        next.add(key)
-        posthog.capture('snapshot_station_expanded', { station: key })
-      }
+      if (wasOpen) next.delete(key)
+      else next.add(key)
       return next
     })
+    if (wasOpen) {
+      // Only the card that owns the pin turns it off — closing a different
+      // one shouldn't drop the highlight you're looking at.
+      if (focusedStationKey === stationKey) onFocusStation(null)
+    } else {
+      onFocusStation(stationKey)
+      posthog.capture('snapshot_station_expanded', { station: key })
+    }
   }
 
   return (
@@ -254,15 +264,21 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
         {stations.map(st => {
           const cardKey = `${st.isRail ? 'r' : 'b'}-${st.key}`
           const open = expanded.has(cardKey)
+          const lit = focusedStationKey === st.key
           return (
-            <div key={cardKey} className="rounded-xl border border-white/[0.08] bg-[#242538] px-3 py-3">
+            <div
+              key={cardKey}
+              className={`rounded-xl border bg-[#242538] px-3 py-3 transition-colors ${
+                lit ? 'border-[#BAF14D]/60' : 'border-white/[0.08]'
+              }`}
+            >
               {/* Header + compact summary toggle the card open; the full
                   per-direction detail only takes space when asked for */}
               <div
                 role="button"
                 tabIndex={0}
-                onClick={() => toggleCard(cardKey)}
-                onKeyDown={activateOnKey(() => toggleCard(cardKey))}
+                onClick={() => toggleCard(cardKey, st.key)}
+                onKeyDown={activateOnKey(() => toggleCard(cardKey, st.key))}
                 aria-expanded={open}
                 className="w-full cursor-pointer px-1.5 text-left"
               >
@@ -294,6 +310,26 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                   </span>
                 )}
               </div>
+              {/* Getting to the stop itself. Docks have had this since the
+                  first version; the stations people are actually trying to
+                  reach did not. */}
+              {open && (
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-1.5">
+                  <a
+                    href={directionsUrl(st.lat, st.lng)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => {
+                      e.stopPropagation()
+                      posthog.capture('snapshot_directions_clicked', { type: st.isRail ? 'station' : 'bus_stop' })
+                    }}
+                    className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+                  >
+                    {tr('lists.walk_there')}
+                  </a>
+                  {lit && <span className="text-[0.75rem] text-white/75">{tr('lists.shown_on_map')}</span>}
+                </div>
+              )}
               {/* Lines serving it — tap one to light it up on the map */}
               {open && (
                 <div className="mt-1.5 space-y-0.5">

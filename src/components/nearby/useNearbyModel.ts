@@ -157,6 +157,13 @@ export function useNearbyModel({
   const showBus = mode === 'all' || mode === 'bus'
   const showBike = mode === 'all' || mode === 'bike'
   const [selection, setSelection] = useState<Selection>(null)
+  // A station the LIST has opened. Separate from `selection` on purpose: the
+  // list card already shows the detail inline, so opening one must light its
+  // marker and move the camera WITHOUT also opening the floating detail card
+  // over the map with the same content in it. Expanding a card answers
+  // "what's here"; the map has to answer "and where is that" at the same
+  // time — a bus stop name in a column is unlocatable otherwise.
+  const [focusedStationKey, setFocusedStationKey] = useState<string | null>(null)
 
   const corridorById = useMemo(() => {
     const m = new Map<string, TransitCorridor | BikeCorridor>()
@@ -196,6 +203,16 @@ export function useNearbyModel({
   }, [rail, bus, shuttleRows, transitCorridors, showRail, showBus])
 
   const stationByKey = useMemo(() => new Map(stations.map(s => [s.key, s])), [stations])
+
+  /** Lit on the map — tapped on the map, or opened in the list. A key whose
+   *  station the mode filter has hidden simply stops matching anything (every
+   *  reader goes through `stationByKey`), so this needs no cleanup effect the
+   *  way `selection` does. */
+  const stationActive = useCallback(
+    (key: string) =>
+      (selection?.type === 'station' && selection.key === key) || focusedStationKey === key,
+    [selection, focusedStationKey],
+  )
 
   const corridorLines = useMemo<GeoJSON.FeatureCollection>(() => ({
     type: 'FeatureCollection',
@@ -281,6 +298,7 @@ export function useNearbyModel({
     if (hidden) setSelection(null)
   }, [selection, stationByKey, corridorById, showRail, showBus, showBike, painted])
 
+
   const handleMarkerTap = useCallback((id: string) => {
     if (id.startsWith('rail-') || id.startsWith('bus-')) {
       select({ type: 'station', key: id.replace(/^(rail|bus)-/, '') }, 'map')
@@ -318,15 +336,15 @@ export function useNearbyModel({
       // (Orange at Sullivan) that didn't make the top-8 corridors still gets
       // its brand color, not the gray fallback.
       html: g.routes.every(r => r.id.startsWith('Boat-'))
-        ? ferryStopHtml(g.name, selection?.type === 'station' && selection.key === g.key)
+        ? ferryStopHtml(g.name, stationActive(g.key))
         : trainStopHtml(
             g.routes[0] ? lineColor(g.routes[0].id) : '#666',
             g.name,
-            selection?.type === 'station' && selection.key === g.key,
+            stationActive(g.key),
           ),
       tappable: true,
       analyticsType: 'train',
-      zIndex: selection?.type === 'station' && selection.key === g.key ? 6 : 3,
+      zIndex: stationActive(g.key) ? 6 : 3,
     })) : []),
     ...(showBus ? groupStops(bus, false).slice(0, 5).map(g => ({
       id: `bus-${g.key}`,
@@ -334,11 +352,14 @@ export function useNearbyModel({
       lng: g.lng,
       html: busStopHtml(
         `${g.name} — routes ${g.routes.map(r => r.name).join(', ')}`,
-        selection?.type === 'station' && selection.key === g.key,
+        stationActive(g.key),
+        // Rail carries its name always; a bus stop is a bare dot until you
+        // pick it, and then it has to say which one it is.
+        g.name,
       ),
       tappable: true,
       analyticsType: 'bus',
-      zIndex: selection?.type === 'station' && selection.key === g.key ? 6 : 2,
+      zIndex: stationActive(g.key) ? 6 : 2,
     })) : []),
     ...(showBus ? groupStops(shuttleRows, false).slice(0, 4).map(g => ({
       id: `bus-${g.key}`,
@@ -347,11 +368,11 @@ export function useNearbyModel({
       html: shuttleStopHtml(
         g.name,
         shuttleAgencyLabel(g.routes[0]?.id ?? ''),
-        selection?.type === 'station' && selection.key === g.key,
+        stationActive(g.key),
       ),
       tappable: true,
       analyticsType: 'shuttle',
-      zIndex: selection?.type === 'station' && selection.key === g.key ? 6 : 2,
+      zIndex: stationActive(g.key) ? 6 : 2,
     })) : []),
     ...(showBike ? docks.slice(0, 8).map(d => ({
       id: `dock-${d.station_id}`,
@@ -367,13 +388,20 @@ export function useNearbyModel({
       analyticsType: 'bluebike',
       zIndex: selection?.type === 'dock' && selection.id === d.station_id ? 6 : 1,
     })) : []),
-  ], [center, rail, bus, shuttleRows, docks, borrowRent, corridorById, showRail, showBus, showBike, selection])
+  ], [center, rail, bus, shuttleRows, docks, borrowRent, corridorById, showRail, showBus, showBike, selection, stationActive])
 
   // Where the camera should ease when a point-like thing is tapped, so the
   // tapped marker stays visible above the detail card / sheet. Corridor-driven
   // selections (including single-route stations) return null — the corridor
   // fitBounds already owns the camera there.
   const selectionPoint = useMemo<{ lat: number; lng: number } | null>(() => {
+    // A station just opened in the list owns the camera — the user asked
+    // "where is this", and a corridor highlight from a previous tap must not
+    // swallow the answer.
+    if (focusedStationKey) {
+      const st = stationByKey.get(focusedStationKey)
+      if (st) return { lat: st.lat, lng: st.lng }
+    }
     if (highlightedCorridorId) return null
     if (selection?.type === 'station') {
       const st = stationByKey.get(selection.key)
@@ -388,7 +416,7 @@ export function useNearbyModel({
       return p ? { lat: p.lat, lng: p.lng } : null
     }
     return null
-  }, [selection, highlightedCorridorId, stationByKey, docks, borrowRent])
+  }, [selection, highlightedCorridorId, focusedStationKey, stationByKey, docks, borrowRent])
 
   // Boarding locations belong in the first frame even when their stations
   // didn't make the marker cut
@@ -402,6 +430,7 @@ export function useNearbyModel({
 
   return {
     selection, select, handleMarkerTap,
+    focusedStationKey, focusStation: setFocusedStationKey,
     corridorById, stations, stationByKey, borrowRent,
     corridorLines, highlightedCorridorId, selectionPoint,
     markers, accessPoints,

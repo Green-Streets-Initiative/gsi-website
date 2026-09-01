@@ -48,15 +48,30 @@ export function bluebikeHtml(bikesAvailable: number, ebikes: number, name: strin
     ">${bikesAvailable}</div>`
 }
 
-export function busStopHtml(title: string, selected = false): string {
+/** `name` labels the pin while it's selected. Rail stations carry their names
+ *  permanently — they're landmarks — but labeling every bus dot would bury the
+ *  map, and leaving them all bare makes a stop tapped in the list impossible
+ *  to find among identical yellow dots. Labeling the picked one does both. */
+export function busStopHtml(title: string, selected = false, name?: string): string {
   const ring = selected ? '#BAF14D' : '#fff'
   const glow = selected ? ',0 0 12px rgba(186,241,77,0.6)' : ''
-  return `
+  const dot = `
     <div title="${escapeAttr(title)}" style="
       display:flex;align-items:center;justify-content:center;
       width:${selected ? 26 : 22}px;height:${selected ? 26 : 22}px;border-radius:50%;
       background:#FFC72C;border:${selected ? 3 : 2}px solid ${ring};box-shadow:0 2px 5px rgba(0,0,0,0.35)${glow};cursor:pointer;
     ">${BUS_SVG}</div>`
+  if (!selected || !name) return dot
+  return `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+      ${dot}
+      <div style="
+        max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        background:rgba(25,26,46,0.92);border:1px solid rgba(186,241,77,0.45);
+        border-radius:99px;padding:2px 8px;
+        color:#fff;font:700 10.5px/1.3 -apple-system,sans-serif;
+      ">${escapeHtml(name)}</div>
+    </div>`
 }
 
 export function trainStopHtml(color: string, title: string, selected = false): string {
