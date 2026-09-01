@@ -108,6 +108,9 @@ interface Props {
 }
 
 // Default / selected / dimmed paints for the corridor layers
+/** Close enough that stops a block apart stop overlapping. */
+const FOCUS_ZOOM = 17
+
 const CORRIDOR_OPACITY_DEFAULT = 0.45
 const CORRIDOR_WIDTH_DEFAULT = 2.5
 const BIKE_BG_OPACITY = { separated: 0.9, glow: 0.15, painted: 0.65 }
@@ -268,7 +271,14 @@ export default function NearbyMap({
         // Dimmed, never removed: the pin next door is usually the SAME routes
         // going the other way, which is exactly what someone hunting for their
         // stop needs to see.
-        if (spec.dimmed) el.style.opacity = '0.28'
+        // Grayscale as well as faint: a yellow bus dot at low opacity is
+        // still a yellow bus dot on a near-black map. Draining the color is
+        // what actually reads as "not this one".
+        //
+        // All of it goes through `filter`, including the fade — MapLibre owns
+        // `style.opacity` on marker elements (it fades them for terrain
+        // occlusion) and silently puts ours back to 1.
+        if (spec.dimmed) el.style.filter = 'grayscale(1) brightness(0.75) opacity(0.45)'
         const marker = new maplibregl.Marker({ element: el }).setLngLat([spec.lng, spec.lat]).addTo(map!)
 
         if (spec.tappable) {
@@ -449,7 +459,17 @@ export default function NearbyMap({
     const offset: [number, number] = typeof p === 'number'
       ? [0, 0]
       : [(p.left - p.right) / 2, (p.top - p.bottom) / 2]
-    map.easeTo({ center: [focusPoint.lng, focusPoint.lat], offset, duration: 500 })
+    // Zoom IN as well as pan. Panning alone left the picked stop exactly as
+    // crowded as it was — three bus stops inside a block stay three
+    // overlapping dots wherever you centre them, which is the whole
+    // complaint. Never zooms out: someone already at street level asked to
+    // be there.
+    map.easeTo({
+      center: [focusPoint.lng, focusPoint.lat],
+      offset,
+      zoom: Math.max(map.getZoom(), FOCUS_ZOOM),
+      duration: 500,
+    })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusPoint?.lat, focusPoint?.lng])
 

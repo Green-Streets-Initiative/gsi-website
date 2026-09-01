@@ -13,6 +13,7 @@ import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
+import { PanelPhoto } from './DetailPanel'
 import type { SectionStatus } from './types'
 import { SkeletonRows, ErrorCard, CollapsibleSection } from './SectionShell'
 import { useNearbyT } from './NearbyI18n'
@@ -313,6 +314,21 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
               {/* Getting to the stop itself. Docks have had this since the
                   first version; the stations people are actually trying to
                   reach did not. */}
+              {/* A picture of the corner. Three bus stops within a block are
+                  three identical dots on any map, however they're styled —
+                  what tells you which one is yours is seeing it. Rail resolves
+                  through the station-photo pipeline first and falls back to
+                  Street View; a bus stop only ever has Street View. */}
+              {open && (
+                <div className="px-1.5">
+                  <PanelPhoto
+                    spec={st.isRail
+                      ? { kind: 'resolve', name: st.name, photoKind: 'station', lat: st.lat, lng: st.lng, sv: { lat: st.lat, lng: st.lng } }
+                      : { kind: 'sv', lat: st.lat, lng: st.lng }}
+                    alt={st.name}
+                  />
+                </div>
+              )}
               {open && (
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-1.5">
                   <a
