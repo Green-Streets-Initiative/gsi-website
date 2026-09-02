@@ -24,6 +24,23 @@ export interface SurfacedAlert {
   /** active_period start (ISO) — long-running closures age out of the banner. */
   startedAt: string | null
   routeIds: string[]
+  /** The specific stops a closure names (empty for line-wide alerts). */
+  stopIds: string[]
+}
+
+/** Effects meaning "you cannot board here". Same set as the app's
+ *  STOP_CLOSED_EFFECTS (components/nearby/panes/TransitBikePane.tsx). */
+const CLOSURE_EFFECTS = new Set(['STOP_CLOSURE', 'STATION_CLOSURE'])
+
+/** A stop closed longer than this is no longer a stop — it is clutter
+ *  (Keith, 2026-09-02). Same constant in the Shift app (TransitBikePane
+ *  CLOSED_STOP_RETIRE_DAYS) and its nearby-transit edge fn — keep in sync. */
+export const CLOSED_STOP_RETIRE_DAYS = 90
+
+export function isRetiredClosure(startedAt: string | null): boolean {
+  if (!startedAt) return false
+  const days = (Date.now() - new Date(startedAt).getTime()) / 86_400_000
+  return !Number.isNaN(days) && days > CLOSED_STOP_RETIRE_DAYS
 }
 
 /** A disruption older than this reads as baseline, not news — a multi-year
@@ -57,8 +74,21 @@ export function pickBannerAlert(
  * major effects and cleaned. Fails soft to [] on any error.
  */
 export async function fetchNearbyAlerts(routeIds: string[]): Promise<SurfacedAlert[]> {
+  return (await fetchNearbyAlertsAndClosures(routeIds)).alerts
+}
+
+/**
+ * The surfaced (major) alerts PLUS the ids of stops whose closure is old
+ * enough to retire from the station list. One MBTA call: STOP_CLOSURE rows
+ * are read for the retirement set only and never surface in the banner or
+ * the disruptions card, matching the web's existing major-effects rule.
+ */
+export async function fetchNearbyAlertsAndClosures(
+  routeIds: string[],
+): Promise<{ alerts: SurfacedAlert[]; retiredStopIds: Set<string> }> {
   const ids = [...new Set(routeIds)].filter(Boolean)
-  if (ids.length === 0) return []
+  const retiredStopIds = new Set<string>()
+  if (ids.length === 0) return { alerts: [], retiredStopIds }
   try {
     // page[limit] must comfortably exceed the ambient alert noise: the API
     // returns rows in feed order and the major-effects filter runs client-
@@ -69,11 +99,26 @@ export async function fetchNearbyAlerts(routeIds: string[]): Promise<SurfacedAle
     const res = await fetch(
       `https://api-v3.mbta.com/alerts?filter[route]=${ids.join(',')}&filter[datetime]=NOW&page[limit]=50`,
     )
-    if (!res.ok) return []
+    if (!res.ok) return { alerts: [], retiredStopIds }
     const json = await res.json()
     const out: SurfacedAlert[] = []
     for (const a of json?.data ?? []) {
       const effect = a?.attributes?.effect
+      const startedAt: string | null =
+        typeof a?.attributes?.active_period?.[0]?.start === 'string'
+          ? a.attributes.active_period[0].start
+          : null
+      const stopIdsForAlert: string[] = [
+        ...new Set(
+          ((a?.attributes?.informed_entity ?? []) as Array<{ stop?: string }>)
+            .map((e) => e.stop)
+            .filter((r): r is string => typeof r === 'string'),
+        ),
+      ]
+      if (CLOSURE_EFFECTS.has(effect) && isRetiredClosure(startedAt)) {
+        for (const id of stopIdsForAlert) retiredStopIds.add(id)
+        continue // retired: neither a stop nor news any more
+      }
       if (!MAJOR_EFFECTS.has(effect)) continue
       const header = String(a?.attributes?.header ?? '').replace(GLYPH_STRIP, '').trim()
       if (!header) continue
@@ -95,16 +140,14 @@ export async function fetchNearbyAlerts(routeIds: string[]): Promise<SurfacedAle
         header,
         description,
         url: typeof a?.attributes?.url === 'string' && a.attributes.url ? a.attributes.url : null,
-        startedAt:
-          typeof a?.attributes?.active_period?.[0]?.start === 'string'
-            ? a.attributes.active_period[0].start
-            : null,
+        startedAt,
         routeIds: routeIdsForAlert,
+        stopIds: stopIdsForAlert,
       })
     }
-    return out
+    return { alerts: out, retiredStopIds }
   } catch {
-    return []
+    return { alerts: [], retiredStopIds }
   }
 }
 

@@ -7,7 +7,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops, fetchShuttleStops } from '@/lib/nearby/live-data'
-import { fetchNearbyAlerts, type SurfacedAlert, type NearbyPromo } from '@/lib/nearby/alerts'
+import { fetchNearbyAlertsAndClosures, type SurfacedAlert, type NearbyPromo } from '@/lib/nearby/alerts'
 import { round3, parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
 import { buildAppHref, isNewRoutesContext } from '@/lib/nearby/campaign'
 import { parsePartnerSlug, fetchPartnerClient, type NearbyPartner } from '@/lib/nearby/partner'
@@ -313,9 +313,18 @@ export default function NearbySnapshot() {
       setShuttles({ status: 'ready', data: rows })
       if (rows.length) posthog.capture('snapshot_section_loaded', { section: 'shuttle', count: rows.length })
     })
-    // Service alerts for the routes we're about to show (major effects only).
+    // Service alerts for the routes we're about to show (major effects only),
+    // plus the stops whose closure is old enough to retire from the lists.
     Promise.all([railP, busP]).then(([railRows, busRows]) =>
-      fetchNearbyAlerts([...railRows, ...busRows].map(r => r.route_id)).then(setAlerts),
+      fetchNearbyAlertsAndClosures([...railRows, ...busRows].map(r => r.route_id)).then(
+        ({ alerts, retiredStopIds }) => {
+          setAlerts(alerts)
+          if (retiredStopIds.size > 0) {
+            setRail(prev => (prev.status === 'ready' ? { ...prev, data: prev.data.filter(r => !retiredStopIds.has(r.stop_id)) } : prev))
+            setBus(prev => (prev.status === 'ready' ? { ...prev, data: prev.data.filter(r => !retiredStopIds.has(r.stop_id)) } : prev))
+          }
+        },
+      ),
     )
     fetchBikeShareDocks(lat, lng).then(rows => {
       setBluebikes({ status: 'ready', data: rows })
@@ -416,10 +425,13 @@ export default function NearbySnapshot() {
           fetchMBTAStops(lat, lng, SNAPSHOT_BUS_OPTS),
           fetchBikeShareDocks(lat, lng),
         ])
-        setRail({ status: 'ready', data: railRows })
-        setBus({ status: 'ready', data: busRows })
+        const { alerts, retiredStopIds } = await fetchNearbyAlertsAndClosures(
+          [...railRows, ...busRows].map(r => r.route_id),
+        )
+        setRail({ status: 'ready', data: railRows.filter(r => !retiredStopIds.has(r.stop_id)) })
+        setBus({ status: 'ready', data: busRows.filter(r => !retiredStopIds.has(r.stop_id)) })
         setBluebikes({ status: 'ready', data: bbRows })
-        fetchNearbyAlerts([...railRows, ...busRows].map(r => r.route_id)).then(setAlerts)
+        setAlerts(alerts)
       } finally {
         refreshBusyRef.current = false
       }
