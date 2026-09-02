@@ -372,6 +372,8 @@ export const shiftYourSummer2026: CampaignReports = {
         { label: 'U-Locks donated', value: '8' },
         { label: 'Winners drawn and notified', value: '8' },
         { label: 'Prizes claimed', value: '7' },
+        { label: 'Locks shipped to winners', value: '7' },
+        { label: 'Confirmed received by winners', value: '6' },
         { label: 'Entries in the largest drawing for your prize', value: '10,148' },
         { label: 'Bike trips logged campaign-wide', value: '3,483' },
         { label: 'Bike miles logged campaign-wide', value: '11,978' },
@@ -388,9 +390,14 @@ export const shiftYourSummer2026: CampaignReports = {
             { label: 'Units drawn', value: '8' },
             { label: 'Winners notified', value: '8' },
             { label: 'Prizes claimed', value: '7' },
+            { label: 'Shipped', value: '7' },
+            { label: 'Confirmed received by the winner', value: '6' },
             { label: 'Median time from notification to claim', value: '1.5 hours' },
           ] },
-          { kind: 'prose', paragraphs: ['You shipped directly to winners through a private link rather than passing addresses back and forth by email. That flow worked exactly as intended, and it is now our template for other product donors.'] },
+          { kind: 'prose', paragraphs: [
+            'You shipped directly to winners through a private link rather than passing addresses back and forth by email. That flow worked exactly as intended, and it is now our template for other product donors.',
+            'Two winners did not complete their claim \u2014 one declined, one let the claim window lapse \u2014 and in both cases the system drew a replacement winner automatically, so no lock went unawarded.',
+          ] },
         ] },
         { id: 'audience', title: 'The audience your locks reached', blocks: [
           { kind: 'prose', paragraphs: ['Participants logged 3,483 bike trips covering 11,978 miles over the campaign \u2014 the largest share of active mileage of any mode. Every one of those riders is someone who needs a lock they trust.'] },
@@ -408,15 +415,18 @@ export const shiftYourSummer2026: CampaignReports = {
       intro: 'Noxgear donated three Tracer 2 LED safety vests and ran a member offer alongside them. This report covers what both delivered.',
       summary: [
         { label: 'Safety vests donated', value: '3' },
-        { label: 'Winners drawn and notified', value: '3' },
-        { label: 'Entries in the drawings for your prizes', value: '10,632 \u2013 10,810' },
+        { label: 'Winners drawn, notified and claimed', value: '3' },
+        { label: 'Entries in the drawing for your first vest', value: '10,810' },
         { label: 'Times your offer was shown', value: '8,442' },
         { label: 'People who saw your offer', value: '328' },
         { label: 'Active miles logged campaign-wide', value: '36,706' },
       ],
       sections: [
         { id: 'prize', title: 'Your prizes', blocks: [
-          { kind: 'prose', paragraphs: ['All three vests were drawn in the August 22 final drawing, from pools of 10,810, 10,701 and 10,632 entries. All three winners were notified; two have claimed so far.'] },
+          { kind: 'prose', paragraphs: ['All three vests were drawn in the final drawing on August 22. All three winners have claimed their prize.'] },
+          { kind: 'table', head: ['Vest', 'Entries in the pool'],
+            rows: [['First', '10,810'], ['Second', '10,701'], ['Third', '10,632']],
+            note: 'Prizes are drawn one at a time and anyone who has already won is removed from the pool before the next draw, so each successive drawing runs from a slightly smaller set of entries.' },
         ] },
         { id: 'offer', title: 'Your member offer', blocks: [
           { kind: 'prose', paragraphs: ['Your 10% off offer ran in the app for the full campaign.'] },
@@ -449,7 +459,7 @@ export const shiftYourSummer2026: CampaignReports = {
       ],
       sections: [
         { id: 'prize', title: 'Your prize', blocks: [
-          { kind: 'prose', paragraphs: ['The Chapter MIPS helmet was drawn in the August 22 final drawing from a pool of 10,810 entries. The winner claimed it and has submitted shipping details.'] },
+          { kind: 'prose', paragraphs: ['The Chapter MIPS helmet was drawn in the August 22 final drawing from a pool of 10,810 entries. The winner claimed it, it has shipped, and they have confirmed receiving it.'] },
         ] },
         { id: 'offer', title: 'Your member offer', blocks: [
           { kind: 'prose', paragraphs: ['Your 20% off orders over $60 offer ran in the app from mid-June.'] },
