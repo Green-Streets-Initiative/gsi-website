@@ -21,6 +21,7 @@ export const maxDuration = 300
  */
 const DEFAULT_LIMIT = 60
 const REFRESH_DAYS = 7
+const RETRY_MINUTES = 60
 const BUDGET_MS = 240_000 // leave headroom under maxDuration
 /** Pause between tiles — Overpass throttles bursts from one IP. */
 const PACE_MS = 1_500
@@ -63,18 +64,23 @@ export async function GET(req: Request) {
     seeded = coverage.length - (existing ?? 0)
   }
 
-  // Select: never-fetched first (retries last), then the stalest.
+  // Select: never-fetched first, core outward; a tile that failed waits an
+  // hour before its retry so one bad tile can't hog every run, but a
+  // transient failure in Boston doesn't wait behind the whole Cape either.
+  // Then the stalest.
   let batch: TileRow[] = []
   if (only) {
     const { data } = await supabase.from('osm_bike_tiles').select('tile, priority').eq('tile', only)
     batch = (data ?? []) as TileRow[]
   } else {
+    const retryAfter = new Date(Date.now() - RETRY_MINUTES * 60_000).toISOString()
     const { data: fresh, error } = await supabase
       .from('osm_bike_tiles')
       .select('tile, priority')
       .is('fetched_at', null)
-      .order('attempted_at', { ascending: true, nullsFirst: true })
+      .or(`attempted_at.is.null,attempted_at.lt.${retryAfter}`)
       .order('priority', { ascending: true })
+      .order('attempted_at', { ascending: true, nullsFirst: true })
       .limit(limit)
     if (error) return Response.json({ error: error.message }, { status: 500 })
     batch = (fresh ?? []) as TileRow[]
