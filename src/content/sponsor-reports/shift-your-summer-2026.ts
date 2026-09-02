@@ -417,8 +417,8 @@ export const shiftYourSummer2026: CampaignReports = {
         { label: 'Safety vests donated', value: '3' },
         { label: 'Winners drawn, notified and claimed', value: '3' },
         { label: 'Entries in the drawing for your first vest', value: '10,810' },
-        { label: 'Times your offer was shown', value: '8,442' },
-        { label: 'People who saw your offer', value: '328' },
+        { label: 'Times your offer was shown', value: '6,789' },
+        { label: 'People who saw your offer', value: '297' },
         { label: 'Active miles logged campaign-wide', value: '36,706' },
       ],
       sections: [
@@ -431,12 +431,12 @@ export const shiftYourSummer2026: CampaignReports = {
         { id: 'offer', title: 'Your member offer', blocks: [
           { kind: 'prose', paragraphs: ['Your 10% off offer ran in the app for the full campaign.'] },
           { kind: 'stats', rows: [
-            { label: 'Times shown', value: '8,442' },
-            { label: 'People who saw it', value: '328' },
-            { label: 'Taps through to your site', value: '23' },
+            { label: 'Times shown', value: '6,789' },
+            { label: 'People who saw it', value: '297' },
+            { label: 'Taps through to your site', value: '15' },
             { label: 'Leads captured', value: '1' },
-          ] },
-          { kind: 'prose', paragraphs: ['Honest read: reach was strong and sustained \u2014 328 people saw your brand an average of 26 times each. The weak step is the tap-through, and that is our placement and creative rather than your offer. We would like to redesign that surface with you for next year rather than repeat it as-is.'] },
+          ], note: 'These are campaign-period figures (June 15 \u2013 August 15). Your offer has continued running since the campaign closed and has now been shown 8,977 times to 337 people in total.' },
+          { kind: 'prose', paragraphs: ['Honest read: reach was strong and sustained \u2014 297 people saw your brand an average of 23 times each. The weak step is the tap-through, and that is our placement and creative rather than your offer. We would like to redesign that surface with you for next year rather than repeat it as-is.'] },
         ] },
         campaignResults,
         widerCampaign,
@@ -452,9 +452,9 @@ export const shiftYourSummer2026: CampaignReports = {
       summary: [
         { label: 'Helmet donated', value: '1' },
         { label: 'Entries in the drawing for your prize', value: '10,810' },
-        { label: 'Times your offer was shown', value: '3,212' },
-        { label: 'People who saw your offer', value: '225' },
-        { label: 'Leads captured', value: '3' },
+        { label: 'Times your offer was shown', value: '3,169' },
+        { label: 'People who saw your offer', value: '223' },
+        { label: 'Leads captured to date', value: '3' },
         { label: 'Bike miles logged campaign-wide', value: '11,978' },
       ],
       sections: [
@@ -464,11 +464,12 @@ export const shiftYourSummer2026: CampaignReports = {
         { id: 'offer', title: 'Your member offer', blocks: [
           { kind: 'prose', paragraphs: ['Your 20% off orders over $60 offer ran in the app from mid-June.'] },
           { kind: 'stats', rows: [
-            { label: 'Times shown', value: '3,212' },
-            { label: 'People who saw it', value: '225' },
+            { label: 'Times shown', value: '3,169' },
+            { label: 'People who saw it', value: '223' },
             { label: 'Taps through to your site', value: '8' },
-            { label: 'Leads captured', value: '3' },
-          ], note: 'This offer expired July 14, halfway through the campaign, so it was not running during the weeks when participation peaked. Running it through the finale would have roughly doubled its exposure \u2014 that one is ours to fix.' },
+            { label: 'Leads captured during the campaign', value: '1' },
+            { label: 'Leads captured to date', value: '3' },
+          ], note: 'Figures cover the campaign period (June 15 \u2013 August 15); two further leads have come in since. This offer expired July 14, halfway through the campaign, so it was not running during the weeks when participation peaked. Running it through the finale would have roughly doubled its exposure \u2014 that one is ours to fix.' },
         ] },
         campaignResults,
         widerCampaign,
