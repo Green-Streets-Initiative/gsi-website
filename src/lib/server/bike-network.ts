@@ -3,6 +3,9 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { looksLikeStreetName } from '@/lib/nearby/street-names'
 import { bearingDegrees } from '@/lib/geo/polyline'
+import { tilesCoveringBbox } from '@/lib/nearby/osm-tiles'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { fetchOverpassBikeWays, type OsmWay } from './overpass'
 
 /**
  * Bike-lane network geometry around a point, merged from three sources —
@@ -12,6 +15,9 @@ import { bearingDegrees } from '@/lib/geo/polyline'
  * of a serverless function HTTP-calling its own origin.
  *
  * Sources are queried in parallel; any failure degrades to an empty list.
+ * OSM comes from our own osm_bike_tiles table (filled by the osm-bike-lanes
+ * cron) — the live Overpass call is only a fallback for tiles not yet
+ * ingested, because at request time it cost 4–17 s and often timed out.
  * Overlapping duplicates between sources draw on top of each other in
  * identical styles, so no geometric dedupe is needed.
  *
@@ -33,12 +39,6 @@ const MASSDOT_URL = 'https://gis.massdot.state.ma.us/arcgis/rest/services/Multim
 const MASSDOT_PROTECTED = new Set([2]) // separated bike lane
 const MASSDOT_PATH = new Set([5])      // shared-use path (car-free)
 const MASSDOT_PAINTED = new Set([1, 4]) // bike lane, paved shoulder
-
-const OVERPASS_ENDPOINTS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
-]
-const OVERPASS_UA = 'GreenStreetsInitiative-Website/1.0 (info@gogreenstreets.org)'
 
 const CACHE_TTL_MS = (parseInt(process.env.BIKE_NETWORK_CACHE_SECONDS || '') || 86400) * 1000
 const CACHE_MAX_ENTRIES = 500
@@ -226,62 +226,83 @@ async function fetchMassDot(lat: number, lng: number, radiusMiles: number): Prom
   return out
 }
 
-async function fetchOsm(lat: number, lng: number, radiusMiles: number): Promise<LaneFeature[]> {
-  const radiusM = Math.round(radiusMiles * 1609.34)
-  const query = `
-    [out:json][timeout:8];
-    (
-      way["highway"="cycleway"](around:${radiusM},${lat},${lng});
-      way["highway"~"^(path|track)$"]["bicycle"="designated"](around:${radiusM},${lat},${lng});
-      way["cycleway"~"^(track|lane)$"](around:${radiusM},${lat},${lng});
-      way["cycleway:left"~"^(track|lane)$"](around:${radiusM},${lat},${lng});
-      way["cycleway:right"~"^(track|lane)$"](around:${radiusM},${lat},${lng});
-    );
-    out tags geom;
-  `
+/* ── OpenStreetMap ──
+ * Ways live in osm_bike_tiles (0.05° tiles, refreshed weekly by the
+ * osm-bike-lanes cron) as raw whitelisted tags + coordinates, and are
+ * classified HERE so a rule change never needs a re-ingest. A request uses
+ * the table only when every tile it touches has been fetched; otherwise it
+ * falls back to a live Overpass call — today's behavior, for areas the cron
+ * hasn't reached yet. */
 
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        body: `data=${encodeURIComponent(query)}`,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': OVERPASS_UA },
-        signal: AbortSignal.timeout(8000),
-      })
-      const text = await res.text()
-      // Overpass signals overload with an HTML error page, not a JSON error
-      if (!res.ok || !text.trimStart().startsWith('{')) continue
-      const json = JSON.parse(text)
-
-      const out: LaneFeature[] = []
-      for (const el of json.elements ?? []) {
-        if (el.type !== 'way' || !Array.isArray(el.geometry) || el.geometry.length < 2) continue
-        const tags: Record<string, string> = el.tags ?? {}
-        // A way drawn as its own cycleway/path geometry is car-free — UNLESS
-        // it's a sidepath (is_sidepath=yes, or named after the street it runs
-        // along): that's a separated lane. A "track" tagged on the road way =
-        // protected; a "lane" = paint.
-        const name = cleanName(tags.name)
-        const ownGeometry = tags.highway === 'cycleway'
-          || ((tags.highway === 'path' || tags.highway === 'track') && tags.bicycle === 'designated')
-        const isTrack = tags.cycleway === 'track' || tags['cycleway:left'] === 'track' || tags['cycleway:right'] === 'track'
-        const sidepath = tags.is_sidepath === 'yes' || looksLikeStreetName(name)
-        const quality: Quality = ownGeometry ? (sidepath ? 'protected' : 'path') : isTrack ? 'protected' : 'painted'
-        // Direction is only trustworthy on own-geometry ways — oneway on a
-        // road way describes the cars, not the bike lane
-        const oneway = ownGeometry && tags.oneway === 'yes' && tags['oneway:bicycle'] !== 'no'
-        out.push({
-          type: 'Feature',
-          geometry: { type: 'LineString', coordinates: el.geometry.map((p: { lat: number; lon: number }) => [p.lon, p.lat] as [number, number]) },
-          properties: { quality, name, source: 'osm', ...(oneway ? { oneway: true } : {}) },
-        })
-      }
-      return out
-    } catch (err) {
-      console.warn(`[bike-network] Overpass ${endpoint} failed:`, err)
-    }
+/** One raw OSM way → lane feature. The classification rules:
+ *  a way drawn as its own cycleway/path geometry is car-free — UNLESS it's
+ *  a sidepath (is_sidepath=yes, or named after the street it runs along):
+ *  that's a separated lane. A "track" tagged on the road way = protected;
+ *  a "lane" = paint. */
+function classifyOsmWay(way: OsmWay): LaneFeature {
+  const tags = way.tags
+  const name = cleanName(tags.name)
+  const ownGeometry = tags.highway === 'cycleway'
+    || ((tags.highway === 'path' || tags.highway === 'track') && tags.bicycle === 'designated')
+  const isTrack = tags.cycleway === 'track' || tags['cycleway:left'] === 'track' || tags['cycleway:right'] === 'track'
+  const sidepath = tags.is_sidepath === 'yes' || looksLikeStreetName(name)
+  const quality: Quality = ownGeometry ? (sidepath ? 'protected' : 'path') : isTrack ? 'protected' : 'painted'
+  // Direction is only trustworthy on own-geometry ways — oneway on a
+  // road way describes the cars, not the bike lane
+  const oneway = ownGeometry && tags.oneway === 'yes' && tags['oneway:bicycle'] !== 'no'
+  return {
+    type: 'Feature',
+    // Fresh arrays: withinRadius / inheritNames mutate features in place.
+    geometry: { type: 'LineString', coordinates: way.coords.map(([x, y]) => [x, y] as [number, number]) },
+    properties: { quality, name, source: 'osm', ...(oneway ? { oneway: true } : {}) },
   }
-  return []
+}
+
+/** The pre-ingest path: one live Overpass query around the point. */
+async function fetchOsmLive(lat: number, lng: number, radiusMiles: number): Promise<LaneFeature[]> {
+  const radiusM = Math.round(radiusMiles * 1609.34)
+  const ways = await fetchOverpassBikeWays(`around:${radiusM},${lat},${lng}`, { timeoutS: 8, abortMs: 8000 })
+  return (ways ?? []).map(classifyOsmWay)
+}
+
+interface OsmTileRow {
+  tile: string
+  ways: OsmWay[] | null
+  fetched_at: string | null
+}
+
+async function fetchOsm(
+  lat: number, lng: number, radiusMiles: number,
+): Promise<{ features: LaneFeature[]; usedLive: boolean }> {
+  const b = bboxAround(lat, lng, radiusMiles)
+  const keys = tilesCoveringBbox(b.minLat, b.minLng, b.maxLat, b.maxLng)
+  let reason: string
+  try {
+    const { data, error } = await createServerSupabaseClient()
+      .from('osm_bike_tiles')
+      .select('tile, ways, fetched_at')
+      .in('tile', keys)
+    if (error) {
+      reason = error.message
+    } else {
+      const rows = new Map((data as OsmTileRow[]).map(r => [r.tile, r]))
+      const missing = keys.filter(k => !rows.get(k)?.fetched_at)
+      if (missing.length === 0) {
+        // Border-crossing ways appear in every adjacent tile with their full
+        // geometry — dedupe by id. Sort so feature order (and the corridor
+        // featureIndices built on it) is identical across instances.
+        const byId = new Map<number, OsmWay>()
+        for (const k of keys) for (const w of rows.get(k)!.ways ?? []) byId.set(w.id, w)
+        const features = [...byId.values()].sort((a, c) => a.id - c.id).map(classifyOsmWay)
+        return { features, usedLive: false }
+      }
+      reason = `${missing.length}/${keys.length} tiles not ingested yet`
+    }
+  } catch (err) {
+    reason = err instanceof Error ? err.message : String(err)
+  }
+  console.warn(`[bike-network] OSM tiles unavailable (${reason}); falling back to live Overpass`)
+  return { features: await fetchOsmLive(lat, lng, radiusMiles), usedLive: true }
 }
 
 /* ── Name inheritance ──
@@ -448,11 +469,12 @@ const durableBikeNetwork = unstable_cache(computeBikeNetwork, ['nearby-bike-netw
 async function computeBikeNetwork(
   lat3: number, lng3: number, radius: number,
 ): Promise<{ data: BikeNetworkResponse; osmEmpty: boolean }> {
-  const [mapc, massdot, osm] = await Promise.all([
+  const [mapc, massdot, osmResult] = await Promise.all([
     fetchMapc(lat3, lng3, radius),
     fetchMassDot(lat3, lng3, radius),
     fetchOsm(lat3, lng3, radius),
   ])
+  const osm = osmResult.features
 
   const features = withinRadius([...mapc, ...massdot, ...osm], lat3, lng3, radius)
   inheritNames(features)
@@ -466,5 +488,7 @@ async function computeBikeNetwork(
       painted: features.filter(f => f.properties.quality === 'painted').length,
     },
   }
-  return { data, osmEmpty: osm.length === 0 }
+  // Only a failed LIVE fetch is "empty": a rural tile that genuinely holds
+  // no lanes must not shorten the cache to an hour.
+  return { data, osmEmpty: osmResult.usedLive && osm.length === 0 }
 }
