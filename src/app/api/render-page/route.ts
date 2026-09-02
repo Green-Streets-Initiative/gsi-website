@@ -54,6 +54,40 @@ function isPublicHttpUrl(raw: string): URL | null {
   return u;
 }
 
+type Browser = Awaited<ReturnType<typeof chromium.launch>>;
+type Ctx = Awaited<ReturnType<Browser['newContext']>>;
+let cachedBrowser: Browser | null = null;
+
+async function getBrowser(fresh = false): Promise<Browser> {
+  if (cachedBrowser && (fresh || !cachedBrowser.isConnected())) {
+    await cachedBrowser.close().catch(() => undefined);
+    cachedBrowser = null;
+  }
+  if (cachedBrowser) return cachedBrowser;
+  const isVercel = !!process.env.VERCEL;
+  const localChromiumPath = process.env.PLAYWRIGHT_LOCAL_CHROMIUM_PATH;
+  cachedBrowser = await chromium.launch({
+    args: isVercel ? sparticuzChromium.args : ['--no-sandbox', '--disable-setuid-sandbox'],
+    executablePath: isVercel
+      ? await sparticuzChromium.executablePath()
+      : localChromiumPath || (await sparticuzChromium.executablePath()),
+    headless: true,
+  });
+  cachedBrowser.on('disconnected', () => {
+    cachedBrowser = null;
+  });
+  return cachedBrowser;
+}
+
+// Images, media and fonts are dead weight for text extraction. Match by
+// extension so only those requests take the interception detour.
+async function installAssetBlock(page: Awaited<ReturnType<Browser['newPage']>>): Promise<void> {
+  await page.route(
+    /\.(png|jpe?g|gif|webp|avif|svg|ico|mp4|webm|mp3|woff2?|ttf|otf)(\?|$)/i,
+    (route) => route.abort(),
+  );
+}
+
 interface PageCapture {
   title: string;
   text: string;
@@ -87,35 +121,46 @@ export async function POST(req: NextRequest) {
   );
 
   const startedAt = Date.now();
-  const isVercel = !!process.env.VERCEL;
-  const localChromiumPath = process.env.PLAYWRIGHT_LOCAL_CHROMIUM_PATH;
 
-  const browser = await chromium.launch({
-    args: isVercel ? sparticuzChromium.args : ['--no-sandbox', '--disable-setuid-sandbox'],
-    executablePath: isVercel
-      ? await sparticuzChromium.executablePath()
-      : localChromiumPath || (await sparticuzChromium.executablePath()),
-    headless: true,
-  });
-
-  try {
-    const context = await browser.newContext({
+  // One Chromium per warm function instance, a fresh context per request.
+  // Launching a browser per request leaked resources on a warm instance —
+  // the second and later renders died with net::ERR_INSUFFICIENT_RESOURCES.
+  let browser = await getBrowser();
+  // Holder object: closures reassign the context and TS must not narrow it.
+  const live: { context: Ctx | null } = { context: null };
+  const openPage = async () => {
+    live.context = await browser.newContext({
       userAgent: DESKTOP_UA,
       viewport: { width: 1280, height: 900 },
       locale: 'en-US',
     });
-    const page = await context.newPage();
-    // Images and media are dead weight for text extraction.
-    await page.route('**/*', (route) => {
-      const type = route.request().resourceType();
-      if (type === 'image' || type === 'media' || type === 'font') return route.abort();
-      return route.continue();
-    });
+    return live.context.newPage();
+  };
 
-    const response = await page.goto(target.toString(), {
-      waitUntil: 'domcontentloaded',
-      timeout: NAV_TIMEOUT_MS,
-    });
+  try {
+    let page = await openPage();
+    // Images, media and fonts are dead weight for text extraction. Match
+    // by extension so only those requests take the interception detour —
+    // routing every request through Node starved Chromium on the first
+    // production run (net::ERR_INSUFFICIENT_RESOURCES).
+    await installAssetBlock(page);
+
+    const navigate = () =>
+      page.goto(target.toString(), { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS });
+    let response;
+    try {
+      response = await navigate();
+    } catch (err) {
+      // A resource-exhausted Chromium does not recover: throw it away,
+      // launch a fresh one, and try the navigation once more.
+      if (!/ERR_INSUFFICIENT_RESOURCES|ERR_NETWORK_CHANGED|ERR_CONNECTION_RESET/.test((err as Error).message)) throw err;
+      await live.context?.close().catch(() => undefined);
+      live.context = null;
+      browser = await getBrowser(true);
+      page = await openPage();
+      await installAssetBlock(page);
+      response = await navigate();
+    }
     let status = response?.status() ?? 0;
     await page.waitForTimeout(settleMs);
 
@@ -187,6 +232,6 @@ export async function POST(req: NextRequest) {
       { status: 502 },
     );
   } finally {
-    await browser.close().catch(() => undefined);
+    await live.context?.close().catch(() => undefined);
   }
 }
