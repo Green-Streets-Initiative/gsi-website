@@ -10,8 +10,13 @@ import 'server-only'
  * Overpass was overloaded.
  */
 
+// Tried in this order (an endpoint on cooldown drops to the back). The
+// main instance blocks an IP after a burst; openstreetmap.fr answers small
+// tile queries in ~2 s with same-day data; kumi queues for 20-40 s under
+// load, so it's the last resort.
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
+  'https://overpass.openstreetmap.fr/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
 ]
 const OVERPASS_UA = 'GreenStreetsInitiative-Website/1.0 (info@gogreenstreets.org)'
