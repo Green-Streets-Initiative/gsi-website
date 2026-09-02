@@ -60,6 +60,14 @@ export interface ReportSection {
 export interface SponsorReport {
   /** URL segment, e.g. "segway" */
   slug: string
+  /**
+   * Unguessable final URL segment. Sponsor reports are shared by link, not
+   * logged into; the token stops one sponsor enumerating another's report by
+   * swapping the slug. Not a secret worth protecting with a password — the
+   * pages hold no PII or financials — just enough entropy that the URL has to
+   * be given to you.
+   */
+  token: string
   /** Display name, e.g. "Segway" */
   sponsor: string
   /** Page <h1> */

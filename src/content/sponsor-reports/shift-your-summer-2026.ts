@@ -21,6 +21,7 @@ export const shiftYourSummer2026: CampaignReports = {
   reports: [
     {
       slug: 'segway',
+      token: '9ttyjeb0n4nu',
       sponsor: 'Segway',
       heading: 'Segway at Shift Your Summer',
       intro:
@@ -162,9 +163,10 @@ export const shiftYourSummer2026: CampaignReports = {
                 ['Instagram & Facebook — campaign ad', '96,204', '1,648 clicks'],
                 ['Meta — boosted posts', '74,342', '1,326 visits'],
                 ['Instagram — @onlyinbos partnership, 2 stories', '28,346', '135 link clicks'],
+                ['Universal Hub — local news site', 'Awaiting figures', 'Awaiting figures'],
               ],
-              foot: ['Total impressions', '353,287', '—'],
-              note: 'Click figures are not totaled because the platforms count them differently: link clicks, ad clicks and website visits are not the same measure.',
+              foot: ['Total, excluding Universal Hub', '353,287', '—'],
+              note: 'We also ran a placement on Universal Hub, a Boston news site, whose performance figures we have requested and not yet received. The total above therefore understates the campaign\u2019s reach, and we will update this page once those numbers arrive. Click figures are not totaled because the platforms count them differently: link clicks, ad clicks and website visits are not the same measure.',
             },
             {
               kind: 'prose',

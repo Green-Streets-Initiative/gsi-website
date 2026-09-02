@@ -11,16 +11,21 @@ export function findCampaign(slug: string): CampaignReports | undefined {
 export function findReport(
   campaignSlug: string,
   sponsorSlug: string,
+  token: string,
 ): { campaign: CampaignReports; report: SponsorReport } | undefined {
   const campaign = findCampaign(campaignSlug)
   const report = campaign?.reports.find((r) => r.slug === sponsorSlug)
-  if (!campaign || !report) return undefined
+  // The token must match: without it the slug alone would let one sponsor
+  // guess their way into another's report.
+  if (!campaign || !report || report.token !== token) return undefined
   return { campaign, report }
 }
 
-/** All (campaign, sponsor) pairs — used to prerender every report at build. */
-export function allReportParams(): { campaign: string; sponsor: string }[] {
-  return campaigns.flatMap((c) => c.reports.map((r) => ({ campaign: c.slug, sponsor: r.slug })))
+/** Every (campaign, sponsor, token) triple — used to prerender each report. */
+export function allReportParams(): { campaign: string; sponsor: string; token: string }[] {
+  return campaigns.flatMap((c) =>
+    c.reports.map((r) => ({ campaign: c.slug, sponsor: r.slug, token: r.token })),
+  )
 }
 
 export * from './types'

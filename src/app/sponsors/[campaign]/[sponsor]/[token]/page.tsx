@@ -7,7 +7,8 @@ import type { Block } from '@/content/sponsor-reports'
 import ReportTracking from './ReportTracking'
 
 /**
- * Permanent, branded sponsor reports: /sponsors/<campaign>/<sponsor>.
+ * Permanent, branded sponsor reports:
+ * /sponsors/<campaign>/<sponsor>/<token>.
  *
  * Content is static (see src/content/sponsor-reports), so the URL keeps
  * showing the sponsor exactly the figures we sent them. Pages are prerendered
@@ -22,10 +23,10 @@ export async function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ campaign: string; sponsor: string }>
+  params: Promise<{ campaign: string; sponsor: string; token: string }>
 }): Promise<Metadata> {
-  const { campaign, sponsor } = await params
-  const found = findReport(campaign, sponsor)
+  const { campaign, sponsor, token } = await params
+  const found = findReport(campaign, sponsor, token)
   if (!found) return { title: 'Sponsor report' }
   return {
     title: `${found.report.sponsor} — ${found.campaign.name} | Green Streets Initiative`,
@@ -195,10 +196,10 @@ function BlockView({ block }: { block: Block }) {
 export default async function SponsorReportPage({
   params,
 }: {
-  params: Promise<{ campaign: string; sponsor: string }>
+  params: Promise<{ campaign: string; sponsor: string; token: string }>
 }) {
-  const { campaign: campaignSlug, sponsor: sponsorSlug } = await params
-  const found = findReport(campaignSlug, sponsorSlug)
+  const { campaign: campaignSlug, sponsor: sponsorSlug, token } = await params
+  const found = findReport(campaignSlug, sponsorSlug, token)
   if (!found) notFound()
   const { campaign, report } = found
 
