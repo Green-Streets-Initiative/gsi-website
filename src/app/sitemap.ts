@@ -15,6 +15,8 @@ type ChangeFreq = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>
 // disallowed in robots.ts.
 const STATIC_PAGES: { path: string; changeFrequency: ChangeFreq; priority: number }[] = [
   { path: '/', changeFrequency: 'weekly', priority: 1.0 },
+  // Public campaign wrap — donor-facing, safe to index.
+  { path: '/sponsors/shift-your-summer-2026', changeFrequency: 'monthly', priority: 0.7 },
   // Shift app + audience landing pages
   { path: '/shift', changeFrequency: 'weekly', priority: 0.9 },
   { path: '/shift/towns', changeFrequency: 'daily', priority: 0.9 },

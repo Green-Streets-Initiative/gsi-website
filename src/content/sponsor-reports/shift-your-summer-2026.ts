@@ -69,6 +69,58 @@ export const shiftYourSummer2026: CampaignReports = {
   name: 'Shift Your Summer',
   period: 'June 15 – August 15, 2026',
   asOf: 'September 2, 2026',
+  wrap: {
+    heading: 'Shift Your Summer 2026',
+    intro:
+      'Shift Your Summer was our first statewide campaign: eight weeks, June 15 to August 15, encouraging people across Massachusetts to walk, bike and take transit for everyday trips \u2014 with more than $5,000 in prizes donated by local and national partners. Here is what happened, and what we learned.',
+    summary: [
+      { label: 'People who joined the campaign', value: '189' },
+      { label: 'Active trips logged and verified', value: '11,747' },
+      { label: 'Active miles', value: '36,706' },
+      { label: 'CO\u2082 avoided', value: '13.9 metric tons' },
+      { label: 'Prizes awarded', value: '38' },
+      { label: 'Businesses and organizations who donated', value: '19' },
+    ],
+    sections: [
+      campaignResults,
+      {
+        id: 'drawings',
+        title: 'How the prizes were awarded',
+        blocks: [
+          {
+            kind: 'prose',
+            paragraphs: [
+              'Participants received sweepstakes entries for each verified active trip they logged, so the entry pool grew all summer. Smaller prizes were drawn most weeks; the rest were drawn in a final drawing on August 22 at noon.',
+              'Every drawing was an automated random selection with the entry pool and the result recorded for audit. Where a winner declined or let their claim window lapse, the system drew a replacement automatically, so no prize went unawarded.',
+            ],
+          },
+          {
+            kind: 'stats',
+            rows: [
+              { label: 'Prizes drawn', value: '38' },
+              { label: 'Winners notified', value: '38' },
+              { label: 'Entries in the final drawing', value: '10,810' },
+              { label: 'Median time from notification to claim', value: '1.5 hours' },
+            ],
+          },
+        ],
+      },
+      widerCampaign,
+      lessons(),
+    ],
+    donors: [
+      { group: 'Champion sponsors', names: ['Segway', 'Robinson + Cole'] },
+      {
+        group: 'Community sponsors and prize donors',
+        names: [
+          'Athletic Brewing', 'Guardian Angel', 'Harvard Federal Credit Union', 'Kryptonite',
+          "Landry's Bicycles", 'Level99', 'MBTAgifts', 'Metro Board', 'Noxgear', 'Quad Lock',
+          'Roche Bros. Supermarkets', 'Rock Spot Climbing', 'Showers Pass', 'Swan Boats',
+          'The Salem Witch Museum', 'Thousand', 'TreeTop Adventures',
+        ],
+      },
+    ],
+  },
   reports: [
     {
       slug: 'segway',

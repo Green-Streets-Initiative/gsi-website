@@ -79,6 +79,17 @@ export interface SponsorReport {
   sections: ReportSection[]
 }
 
+/** The public campaign wrap page — one shared story, no per-sponsor analytics. */
+export interface CampaignWrap {
+  /** Page <h1> */
+  heading: string
+  intro: string
+  summary: StatRow[]
+  sections: ReportSection[]
+  /** Donor roll, grouped for display. */
+  donors: { group: string; names: string[] }[]
+}
+
 export interface CampaignReports {
   /** URL segment, e.g. "shift-your-summer-2026" */
   slug: string
@@ -89,4 +100,6 @@ export interface CampaignReports {
   /** Date the figures were pulled, e.g. "September 2, 2026" */
   asOf: string
   reports: SponsorReport[]
+  /** Optional public wrap page at /sponsors/<campaign>. */
+  wrap?: CampaignWrap
 }
