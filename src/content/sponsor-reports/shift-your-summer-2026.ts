@@ -232,7 +232,7 @@ export const shiftYourSummer2026: CampaignReports = {
             {
               kind: 'list',
               intro:
-                "This was the first Shift Your Summer, so we're treating this year as our baseline. Five things we took from it, and what we intend to do differently:",
+                "This was the first Shift Your Summer, so we're treating this year as our baseline. Six things we took from it, and what we intend to do differently:",
               items: [
                 {
                   title: 'The prize outperformed our general messaging.',
@@ -249,6 +249,10 @@ export const shiftYourSummer2026: CampaignReports = {
                 {
                   title: 'The campaign was visible to more people than entered it.',
                   body: '189 people entered the sweepstakes, but 245 logged trips during the campaign and 418 had the app by the time it closed. The campaign screen carrying your prize was open to all of them, and we can only evidence the portion measured from July 1. Next year we plan to measure prize visibility from day one and report the full audience.',
+                },
+                {
+                  title: 'Earned media needs a different approach.',
+                  body: 'We included the grand prize and our sponsors in press outreach to more than 20 outlets, and it did not convert into coverage. Next year we plan to change how we approach press, including the option of agency support.',
                 },
                 {
                   title: 'We began measuring in-app views on July 1.',
