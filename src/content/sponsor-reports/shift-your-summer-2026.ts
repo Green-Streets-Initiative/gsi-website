@@ -256,6 +256,7 @@ export const shiftYourSummer2026: CampaignReports = {
                 },
               ],
               outro: [
+                "One change is already in hand: we've qualified for a Google Ad Grant that provides $10,000 per month in search advertising, and we plan to put it behind next year's campaign season. Search was the one channel we had almost no presence in this year, so it should add meaningfully to the reach reported here.",
                 "We'd like your feedback on this report. If your team tracks figures we haven't covered, or a different format would be more useful, tell us and we'll build it into next year's report.",
                 'Thank you for supporting the first year of this campaign.',
               ],
