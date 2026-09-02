@@ -56,28 +56,25 @@ function isPublicHttpUrl(raw: string): URL | null {
 
 type Browser = Awaited<ReturnType<typeof chromium.launch>>;
 type Ctx = Awaited<ReturnType<Browser['newContext']>>;
-let cachedBrowser: Browser | null = null;
 
-async function getBrowser(fresh = false): Promise<Browser> {
-  if (cachedBrowser && (fresh || !cachedBrowser.isConnected())) {
-    await cachedBrowser.close().catch(() => undefined);
-    cachedBrowser = null;
-  }
-  if (cachedBrowser) return cachedBrowser;
+// A fresh Chromium per request. Caching one across warm invocations does
+// not survive Vercel freezing the instance (the process is gone but the
+// handle still reports connected: "Target page, context or browser has
+// been closed"), so launch, use, close — and relaunch once if Chromium
+// dies mid-request.
+async function launchBrowser(): Promise<Browser> {
   const isVercel = !!process.env.VERCEL;
   const localChromiumPath = process.env.PLAYWRIGHT_LOCAL_CHROMIUM_PATH;
-  cachedBrowser = await chromium.launch({
+  return chromium.launch({
     args: isVercel ? sparticuzChromium.args : ['--no-sandbox', '--disable-setuid-sandbox'],
     executablePath: isVercel
       ? await sparticuzChromium.executablePath()
       : localChromiumPath || (await sparticuzChromium.executablePath()),
     headless: true,
   });
-  cachedBrowser.on('disconnected', () => {
-    cachedBrowser = null;
-  });
-  return cachedBrowser;
 }
+
+const TRANSIENT_RE = /ERR_INSUFFICIENT_RESOURCES|ERR_NETWORK_CHANGED|ERR_CONNECTION_RESET|has been closed|Target closed|browser has disconnected/i;
 
 // Images, media and fonts are dead weight for text extraction. Match by
 // extension so only those requests take the interception detour.
@@ -122,28 +119,28 @@ export async function POST(req: NextRequest) {
 
   const startedAt = Date.now();
 
-  // One Chromium per warm function instance, a fresh context per request.
-  // Launching a browser per request leaked resources on a warm instance —
-  // the second and later renders died with net::ERR_INSUFFICIENT_RESOURCES.
-  let browser = await getBrowser();
-  // Holder object: closures reassign the context and TS must not narrow it.
+  let browser: Browser | null = null;
   const live: { context: Ctx | null } = { context: null };
   const openPage = async () => {
+    browser = await launchBrowser();
     live.context = await browser.newContext({
       userAgent: DESKTOP_UA,
       viewport: { width: 1280, height: 900 },
       locale: 'en-US',
     });
-    return live.context.newPage();
+    const p = await live.context.newPage();
+    await installAssetBlock(p);
+    return p;
+  };
+  const teardown = async () => {
+    await live.context?.close().catch(() => undefined);
+    live.context = null;
+    await (browser as Browser | null)?.close().catch(() => undefined);
+    browser = null;
   };
 
   try {
     let page = await openPage();
-    // Images, media and fonts are dead weight for text extraction. Match
-    // by extension so only those requests take the interception detour —
-    // routing every request through Node starved Chromium on the first
-    // production run (net::ERR_INSUFFICIENT_RESOURCES).
-    await installAssetBlock(page);
 
     const navigate = () =>
       page.goto(target.toString(), { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS });
@@ -151,14 +148,11 @@ export async function POST(req: NextRequest) {
     try {
       response = await navigate();
     } catch (err) {
-      // A resource-exhausted Chromium does not recover: throw it away,
-      // launch a fresh one, and try the navigation once more.
-      if (!/ERR_INSUFFICIENT_RESOURCES|ERR_NETWORK_CHANGED|ERR_CONNECTION_RESET/.test((err as Error).message)) throw err;
-      await live.context?.close().catch(() => undefined);
-      live.context = null;
-      browser = await getBrowser(true);
+      // A dead or resource-exhausted Chromium does not recover: throw it
+      // away, launch a fresh one, and try the navigation once more.
+      if (!TRANSIENT_RE.test((err as Error).message)) throw err;
+      await teardown();
       page = await openPage();
-      await installAssetBlock(page);
       response = await navigate();
     }
     let status = response?.status() ?? 0;
@@ -232,6 +226,6 @@ export async function POST(req: NextRequest) {
       { status: 502 },
     );
   } finally {
-    await live.context?.close().catch(() => undefined);
+    await teardown();
   }
 }
