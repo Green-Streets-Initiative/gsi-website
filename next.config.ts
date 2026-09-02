@@ -77,6 +77,14 @@ const nextConfig: NextConfig = {
         destination: '/events/shift-your-summer/partners',
         permanent: false,
       },
+      // Self-serve partner signup superseded by the rewards-partners page,
+      // whose apply form posts to the sponsor-intake function. The old page
+      // wrote to a `partners` table nobody reads, so send visitors to the live one.
+      {
+        source: '/partners',
+        destination: '/shift/rewards-partners',
+        permanent: true,
+      },
       {
         source: '/volunteer',
         destination: '/get-involved',
