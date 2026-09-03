@@ -58,7 +58,7 @@ const lessons = (extra: { title: string; body: string }[] = []): ReportSection =
       ],
       outro: [
         "One change is already in hand: we've qualified for a Google Ad Grant that provides $10,000 per month in search advertising, and we plan to put it behind next year's campaign season.",
-        "We'd like your feedback on this report. If your team tracks figures we haven't covered, or a different format would be more useful, tell us and we'll build it into next year's report.",
+        "We're planning next summer now. If you have ideas for making the challenge work harder \u2014 for the people taking part or for the businesses backing it \u2014 we'd like to hear them.",
         'Thank you for supporting the first year of this campaign.',
       ] },
   ],
@@ -366,7 +366,7 @@ export const shiftYourSummer2026: CampaignReports = {
               ],
               outro: [
                 "One change is already in hand: we've qualified for a Google Ad Grant that provides $10,000 per month in search advertising, and we plan to put it behind next year's campaign season. Search was the one channel we had almost no presence in this year, so it should add meaningfully to the reach reported here.",
-                "We'd like your feedback on this report. If your team tracks figures we haven't covered, or a different format would be more useful, tell us and we'll build it into next year's report.",
+                "We're planning next summer now. If you have ideas for making the challenge work harder \u2014 for the people taking part or for the businesses backing it \u2014 we'd like to hear them.",
                 'Thank you for supporting the first year of this campaign.',
               ],
             },
@@ -380,14 +380,12 @@ export const shiftYourSummer2026: CampaignReports = {
       sponsor: 'Harvard Federal Credit Union',
       heading: 'Harvard FCU at Shift Your Summer',
       intro:
-        'Harvard FCU underwrote Shift Your Summer as a community sponsor and fielded an employee team, one of only four workplaces to do so. This report covers where the sponsorship appeared, what your team did, and what the campaign achieved.',
+        'Harvard FCU underwrote Shift Your Summer as a community sponsor and put an employee team on the board. This report covers where the sponsorship appeared, what your team did, and what the campaign achieved.',
       summary: [
-        { label: 'Employees enrolled on the Harvard FCU team', value: '16' },
-        { label: 'Team members who logged trips', value: '12' },
-        { label: 'Active trips by the team', value: '826' },
-        { label: 'Active miles by the team', value: '2,074' },
-        { label: 'Campaign participants overall', value: '189' },
+        { label: 'Campaign participants', value: '189' },
+        { label: 'Active trips logged campaign-wide', value: '11,747' },
         { label: 'Active miles logged campaign-wide', value: '36,706' },
+        { label: 'CO\u2082 avoided', value: '13.9 metric tons' },
       ],
       sections: [
         { id: 'recognition', title: 'Where your sponsorship appeared', blocks: [
@@ -398,7 +396,7 @@ export const shiftYourSummer2026: CampaignReports = {
           ] },
           { kind: 'stats', rows: [], note: 'In-app measurement began July 1, so the 977 figure covers July 1 \u2013 August 15 and excludes the campaign\u2019s first two weeks.' },
         ] },
-        { id: 'team', title: 'Your team\u2019s summer', blocks: [
+        { id: 'team', title: 'Your team\u2019s results', blocks: [
           { kind: 'stats', rows: [
             { label: 'Employees enrolled', value: '16' },
             { label: 'Members who logged trips', value: '12' },
@@ -410,7 +408,7 @@ export const shiftYourSummer2026: CampaignReports = {
         ] },
         campaignResults,
         widerCampaign,
-        lessons([{ title: 'Workplace teams are the format we most want to grow.', body: 'Four employers fielded teams this year. Your 16-person team is a working proof of the model, and expanding it is the clearest way to grow participation next year.' }]),
+        lessons([{ title: 'Workplace teams are the format we most want to grow.', body: 'Your 16-person team is a working proof of the model, and growing the number of workplaces fielding teams is the clearest way to grow participation next year.' }]),
       ],
     },
     {
