@@ -380,7 +380,7 @@ export const shiftYourSummer2026: CampaignReports = {
       sponsor: 'Harvard Federal Credit Union',
       heading: 'Harvard FCU at Shift Your Summer',
       intro:
-        'Harvard FCU underwrote Shift Your Summer as a community sponsor and put an employee team on the board. This report covers where the sponsorship appeared, what your team did, and what the campaign achieved.',
+        'Harvard FCU underwrote Shift Your Summer and put an employee team on the board. This report covers where the sponsorship appeared, what your team did, and what the campaign achieved.',
       summary: [
         { label: 'Campaign participants', value: '189' },
         { label: 'Active trips logged campaign-wide', value: '11,747' },
@@ -390,9 +390,10 @@ export const shiftYourSummer2026: CampaignReports = {
       sections: [
         { id: 'recognition', title: 'Where your sponsorship appeared', blocks: [
           { kind: 'list', intro: 'Your support was visible on every public surface the campaign had, for its full run:', items: [
-            { title: 'In the app.', body: 'Your logo, name and a tappable link appeared in the sponsor section of the campaign screen \u2014 first position among community sponsors \u2014 for the whole campaign. That screen was viewed 977 times by 163 people in July and August alone.' },
+            { title: 'In the app.', body: 'Your logo, name and a tappable link appeared in the sponsor section of the campaign screen \u2014 in first position \u2014 for the whole campaign. That screen was viewed 977 times by 163 people in July and August alone.' },
             { title: 'On the campaign page.', body: 'gogreenstreets.org/events/shift-your-summer carried your logo and link continuously, alongside the live leaderboard and prize roster.' },
-            { title: 'On social.', body: 'Two dedicated posts named Harvard FCU as a community sponsor and called out your team on the leaderboard \u2014 Instagram on July 30 and Facebook on July 31.' },
+            { title: 'In our campaign email.', body: 'The launch email carried a sponsor block with your logo, naming Harvard FCU alongside Robinson + Cole. It went to 1,563 subscribers and was opened by 50% of them.' },
+            { title: 'On social.', body: 'Two dedicated posts named Harvard FCU as a sponsor and called out your team on the leaderboard \u2014 Instagram on July 30 and Facebook on July 31.' },
           ] },
           { kind: 'stats', rows: [], note: 'In-app measurement began July 1, so the 977 figure covers July 1 \u2013 August 15 and excludes the campaign\u2019s first two weeks.' },
         ] },

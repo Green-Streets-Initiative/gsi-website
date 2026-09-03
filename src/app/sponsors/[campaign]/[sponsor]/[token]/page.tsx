@@ -5,6 +5,7 @@ import Footer from '@/components/Footer'
 import { allReportParams, findReport } from '@/content/sponsor-reports'
 import ReportTracking from './ReportTracking'
 import BlockView, { StatPanel } from '@/components/sponsor-report/BlockView'
+import SectionNav from '@/components/sponsor-report/SectionNav'
 
 /**
  * Permanent, branded sponsor reports:
@@ -59,17 +60,7 @@ export default async function SponsorReportPage({
         </h1>
         <p className="mt-4 max-w-[64ch] text-white/90">{report.intro}</p>
 
-        <nav aria-label="Contents" className="mt-6 flex flex-wrap gap-2">
-          {report.sections.map((s) => (
-            <a
-              key={s.id}
-              href={`#${s.id}`}
-              className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 font-display text-[12.5px] font-semibold text-white/90 transition-colors hover:border-[#BAF14D] hover:text-[#BAF14D] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BAF14D]"
-            >
-              {s.title}
-            </a>
-          ))}
-        </nav>
+        <SectionNav sections={report.sections.map((s) => ({ id: s.id, title: s.title }))} />
 
         <StatPanel rows={report.summary} />
 
@@ -77,7 +68,7 @@ export default async function SponsorReportPage({
           <section
             key={section.id}
             id={section.id}
-            className="mt-9 scroll-mt-6 border-t border-white/10 pt-8"
+            className="mt-9 scroll-mt-[140px] border-t border-white/10 pt-8"
           >
             <h2 className="font-display text-[21px] font-bold tracking-tight text-white text-balance">
               {section.title}

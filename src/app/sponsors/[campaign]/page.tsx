@@ -4,6 +4,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { campaigns, findCampaign } from '@/content/sponsor-reports'
 import BlockView, { StatPanel } from '@/components/sponsor-report/BlockView'
+import SectionNav from '@/components/sponsor-report/SectionNav'
 
 /**
  * Public campaign wrap: /sponsors/<campaign>.
@@ -55,13 +56,20 @@ export default async function CampaignWrapPage({
         </h1>
         <p className="mt-4 max-w-[64ch] text-white/90">{wrap.intro}</p>
 
+        <SectionNav
+          sections={[
+            ...wrap.sections.map((s) => ({ id: s.id, title: s.title })),
+            { id: 'donors', title: 'Thank you to our donors' },
+          ]}
+        />
+
         <StatPanel rows={wrap.summary} />
 
         {wrap.sections.map((section) => (
           <section
             key={section.id}
             id={section.id}
-            className="mt-9 scroll-mt-6 border-t border-white/10 pt-8"
+            className="mt-9 scroll-mt-[140px] border-t border-white/10 pt-8"
           >
             <h2 className="font-display text-[21px] font-bold tracking-tight text-white text-balance">
               {section.title}
@@ -72,7 +80,7 @@ export default async function CampaignWrapPage({
           </section>
         ))}
 
-        <section className="mt-9 border-t border-white/10 pt-8">
+        <section id="donors" className="mt-9 scroll-mt-[140px] border-t border-white/10 pt-8">
           <h2 className="font-display text-[21px] font-bold tracking-tight text-white">
             Thank you to our donors
           </h2>
