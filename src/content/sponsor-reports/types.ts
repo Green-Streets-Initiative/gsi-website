@@ -54,6 +54,12 @@ export type Block = TableBlock | StatsBlock | ProseBlock | ChartBlock | ListBloc
 export interface ReportSection {
   id: string
   title: string
+  /**
+   * Short label for the sticky section nav. Section headings are written to be
+   * read in place ("How we promoted the campaign"), which is too long for a
+   * pill — without this the last pills get clipped off the row.
+   */
+  navLabel?: string
   blocks: Block[]
 }
 

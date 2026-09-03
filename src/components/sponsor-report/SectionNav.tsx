@@ -7,13 +7,17 @@ import { useEffect, useState } from 'react'
  *
  * Sits directly under the site's fixed 60px nav and stays there while you
  * scroll, so jumping between sections never means scrolling back to the top.
+ * Sticky only from `sm` up: on a phone the pills wrap to three lines, and
+ * freezing 128px of navigation to the top of a 390px screen costs more than it
+ * gives. There it scrolls away with the rest of the header.
  * The pills read as controls rather than text links, and the one for the
  * section you're currently in is filled — which doubles as a position
  * indicator on a page that is mostly tables.
  *
- * Single scrollable row rather than a wrapping block: a wrapped set becomes two
- * or three lines on a phone and eats the screen it is meant to help you move
- * around.
+ * The pills wrap rather than scroll sideways: a scrolling row silently clips
+ * the last section off the edge, and a nav you cannot see all of is worse than
+ * one that costs an extra line. Labels are short (`navLabel`) to keep that to
+ * one or two lines.
  */
 export default function SectionNav({
   sections,
@@ -66,10 +70,10 @@ export default function SectionNav({
   return (
     <nav
       aria-label="Contents"
-      className="sticky top-[68px] z-40 -mx-2 mt-6 rounded-xl border border-white/[0.12] px-2 py-2 backdrop-blur-xl"
+      className="relative z-40 -mx-2 mt-6 rounded-xl border border-white/[0.12] px-2 py-2 backdrop-blur-xl sm:sticky sm:top-[68px]"
       style={{ background: 'rgba(25,26,46,0.94)' }}
     >
-      <ul className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <ul className="flex flex-wrap gap-1.5">
         {sections.map((s) => {
           const isActive = active === s.id
           return (
@@ -77,7 +81,7 @@ export default function SectionNav({
               <a
                 href={`#${s.id}`}
                 aria-current={isActive ? 'true' : undefined}
-                className={`block whitespace-nowrap rounded-lg border px-3.5 py-2 font-display text-[13px] font-semibold no-underline transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BAF14D] ${
+                className={`block whitespace-nowrap rounded-lg border px-3 py-1.5 font-display text-[12.5px] font-semibold no-underline transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BAF14D] ${
                   isActive
                     ? 'border-[#BAF14D] bg-[#BAF14D] text-[#191A2E]'
                     : 'border-white/[0.18] bg-white/[0.08] text-white/90 hover:border-[#BAF14D]/70 hover:bg-white/[0.14] hover:text-white'

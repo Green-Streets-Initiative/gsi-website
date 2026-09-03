@@ -60,7 +60,7 @@ export default async function SponsorReportPage({
         </h1>
         <p className="mt-4 max-w-[64ch] text-white/90">{report.intro}</p>
 
-        <SectionNav sections={report.sections.map((s) => ({ id: s.id, title: s.title }))} />
+        <SectionNav sections={report.sections.map((s) => ({ id: s.id, title: s.navLabel ?? s.title }))} />
 
         <StatPanel rows={report.summary} />
 

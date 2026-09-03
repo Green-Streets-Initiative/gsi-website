@@ -16,7 +16,7 @@ import type { CampaignReports, ReportSection } from './types'
 /** Campaign-wide sections, identical for every sponsor — defined once. */
 const campaignResults: ReportSection = {
   id: 'results',
-  title: 'Campaign results',
+  title: 'Campaign results', navLabel: 'Results',
   blocks: [
     { kind: 'prose', paragraphs: ['189 Massachusetts residents opted in and logged the following over the campaign period, verified automatically by the app.'] },
     { kind: 'table', head: ['Mode', 'Trips', 'Miles'],
@@ -32,7 +32,7 @@ const campaignResults: ReportSection = {
 
 const widerCampaign: ReportSection = {
   id: 'wider',
-  title: 'How we promoted the campaign',
+  title: 'How we promoted the campaign', navLabel: 'Promotion',
   blocks: [
     { kind: 'prose', paragraphs: ['Shift Your Summer ran on paid social, boosted posts, a partnership with a Boston Instagram account, and email to our full subscriber list.'] },
     { kind: 'table', head: ['Channel', 'Impressions', 'Clicks / visits'],
@@ -45,7 +45,7 @@ const widerCampaign: ReportSection = {
 
 const lessons = (extra: { title: string; body: string }[] = []): ReportSection => ({
   id: 'learned',
-  title: 'What we learned',
+  title: 'What we learned', navLabel: 'Lessons',
   blocks: [
     { kind: 'list',
       intro: "This was the first Shift Your Summer, so we're treating this year as our baseline. What we took from it, and what we intend to do differently:",
@@ -85,7 +85,7 @@ export const shiftYourSummer2026: CampaignReports = {
       campaignResults,
       {
         id: 'drawings',
-        title: 'How the prizes were awarded',
+        title: 'How the prizes were awarded', navLabel: 'Drawings',
         blocks: [
           {
             kind: 'prose',
@@ -141,7 +141,7 @@ export const shiftYourSummer2026: CampaignReports = {
       sections: [
         {
           id: 'ads',
-          title: 'Paid advertising featuring the prize',
+          title: 'Paid advertising featuring the prize', navLabel: 'Advertising',
           blocks: [
             {
               kind: 'prose',
@@ -174,7 +174,7 @@ export const shiftYourSummer2026: CampaignReports = {
         },
         {
           id: 'email',
-          title: 'Email',
+          title: 'Email', navLabel: 'Email',
           blocks: [
             {
               kind: 'prose',
@@ -194,7 +194,7 @@ export const shiftYourSummer2026: CampaignReports = {
         },
         {
           id: 'app',
-          title: 'Placement in the app',
+          title: 'Placement in the app', navLabel: 'In the app',
           blocks: [
             {
               kind: 'prose',
@@ -214,7 +214,7 @@ export const shiftYourSummer2026: CampaignReports = {
         },
         {
           id: 'traffic',
-          title: 'Traffic we sent to your product page',
+          title: 'Traffic we sent to your product page', navLabel: 'Traffic to you',
           blocks: [
             {
               kind: 'prose',
@@ -237,7 +237,7 @@ export const shiftYourSummer2026: CampaignReports = {
         },
         {
           id: 'drawing',
-          title: 'The drawing',
+          title: 'The drawing', navLabel: 'The drawing',
           blocks: [
             {
               kind: 'prose',
@@ -250,7 +250,7 @@ export const shiftYourSummer2026: CampaignReports = {
         },
         {
           id: 'wider',
-          title: 'The wider campaign',
+          title: 'The wider campaign', navLabel: 'Promotion',
           blocks: [
             {
               kind: 'prose',
@@ -279,7 +279,7 @@ export const shiftYourSummer2026: CampaignReports = {
         },
         {
           id: 'results',
-          title: 'Campaign results',
+          title: 'Campaign results', navLabel: 'Results',
           blocks: [
             {
               kind: 'prose',
@@ -332,7 +332,7 @@ export const shiftYourSummer2026: CampaignReports = {
         },
         {
           id: 'learned',
-          title: 'What we learned',
+          title: 'What we learned', navLabel: 'Lessons',
           blocks: [
             {
               kind: 'list',
@@ -388,7 +388,7 @@ export const shiftYourSummer2026: CampaignReports = {
         { label: 'CO\u2082 avoided', value: '13.9 metric tons' },
       ],
       sections: [
-        { id: 'recognition', title: 'Where your sponsorship appeared', blocks: [
+        { id: 'recognition', title: 'Where your sponsorship appeared', navLabel: 'Your sponsorship', blocks: [
           { kind: 'list', intro: 'Your support was visible on every public surface the campaign had, for its full run:', items: [
             { title: 'In the app.', body: 'Your logo, name and a tappable link appeared in the sponsor section of the campaign screen \u2014 in first position \u2014 for the whole campaign. That screen was viewed 977 times by 163 people in July and August alone.' },
             { title: 'On the campaign page.', body: 'gogreenstreets.org/events/shift-your-summer carried your logo and link continuously, alongside the live leaderboard and prize roster.' },
@@ -397,7 +397,7 @@ export const shiftYourSummer2026: CampaignReports = {
           ] },
           { kind: 'stats', rows: [], note: 'In-app measurement began July 1, so the 977 figure covers July 1 \u2013 August 15 and excludes the campaign\u2019s first two weeks.' },
         ] },
-        { id: 'team', title: 'Your team\u2019s results', blocks: [
+        { id: 'team', title: 'Your team\u2019s results', navLabel: 'Your team', blocks: [
           { kind: 'stats', rows: [
             { label: 'Employees enrolled', value: '16' },
             { label: 'Members who logged trips', value: '12' },
@@ -430,13 +430,13 @@ export const shiftYourSummer2026: CampaignReports = {
         { label: 'Bike miles logged campaign-wide', value: '11,978' },
       ],
       sections: [
-        { id: 'drawings', title: 'Weekly drawings', blocks: [
+        { id: 'drawings', title: 'Weekly drawings', navLabel: 'Drawings', blocks: [
           { kind: 'prose', paragraphs: ['A KryptoLok was drawn most weeks of the campaign. Because participants received entries for each verified active trip, the pool behind each drawing grew as the summer went on:'] },
           { kind: 'table', head: ['Drawing', 'Entries in the pool'],
             rows: [['June 22','817'],['June 29','1,647'],['July 6','108'],['July 13','3,678'],['July 27','6,004'],['August 18 \u2014 three locks','10,148 / 9,995 / 9,863']],
             note: 'Every drawing was seeded and recorded for audit. Where several locks were drawn on the same day, each winner was removed from the pool before the next draw, which is why those figures step down. The July 6 pool is smaller because it ran while we were correcting an entry-weighting issue.' },
         ] },
-        { id: 'fulfillment', title: 'Fulfillment', blocks: [
+        { id: 'fulfillment', title: 'Fulfillment', navLabel: 'Fulfillment', blocks: [
           { kind: 'stats', rows: [
             { label: 'Units drawn', value: '8' },
             { label: 'Winners notified', value: '8' },
@@ -450,7 +450,7 @@ export const shiftYourSummer2026: CampaignReports = {
             'Two winners did not complete their claim \u2014 one declined, one let the claim window lapse \u2014 and in both cases the system drew a replacement winner automatically, so no lock went unawarded.',
           ] },
         ] },
-        { id: 'audience', title: 'The audience your locks reached', blocks: [
+        { id: 'audience', title: 'The audience your locks reached', navLabel: 'Audience', blocks: [
           { kind: 'prose', paragraphs: ['Participants logged 3,483 bike trips covering 11,978 miles over the campaign \u2014 the largest share of active mileage of any mode. Every one of those riders is someone who needs a lock they trust.'] },
         ] },
         campaignResults,
@@ -473,13 +473,13 @@ export const shiftYourSummer2026: CampaignReports = {
         { label: 'Active miles logged campaign-wide', value: '36,706' },
       ],
       sections: [
-        { id: 'prize', title: 'Your prizes', blocks: [
+        { id: 'prize', title: 'Your prizes', navLabel: 'Your prize', blocks: [
           { kind: 'prose', paragraphs: ['All three vests were drawn in the final drawing on August 22. All three winners have claimed their prize.'] },
           { kind: 'table', head: ['Vest', 'Entries in the pool'],
             rows: [['First', '10,810'], ['Second', '10,701'], ['Third', '10,632']],
             note: 'Prizes are drawn one at a time and anyone who has already won is removed from the pool before the next draw, so each successive drawing runs from a slightly smaller set of entries.' },
         ] },
-        { id: 'offer', title: 'Your member offer', blocks: [
+        { id: 'offer', title: 'Your member offer', navLabel: 'Your offer', blocks: [
           { kind: 'prose', paragraphs: ['Your 10% off offer ran in the app for the full campaign.'] },
           { kind: 'stats', rows: [
             { label: 'Times shown', value: '6,789' },
@@ -512,10 +512,10 @@ export const shiftYourSummer2026: CampaignReports = {
         { label: 'Bike miles logged campaign-wide', value: '11,978' },
       ],
       sections: [
-        { id: 'prize', title: 'Your prize', blocks: [
+        { id: 'prize', title: 'Your prize', navLabel: 'Your prize', blocks: [
           { kind: 'prose', paragraphs: ['The Chapter MIPS helmet was drawn in the August 22 final drawing from a pool of 10,810 entries. The winner claimed it, it has shipped, and they have confirmed receiving it.'] },
         ] },
-        { id: 'offer', title: 'Your member offer', blocks: [
+        { id: 'offer', title: 'Your member offer', navLabel: 'Your offer', blocks: [
           { kind: 'prose', paragraphs: ['Your 20% off orders over $60 offer ran in the app from mid-June.'] },
           { kind: 'stats', rows: [
             { label: 'Times shown', value: '3,169' },

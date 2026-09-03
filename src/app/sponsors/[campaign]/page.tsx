@@ -58,8 +58,8 @@ export default async function CampaignWrapPage({
 
         <SectionNav
           sections={[
-            ...wrap.sections.map((s) => ({ id: s.id, title: s.title })),
-            { id: 'donors', title: 'Thank you to our donors' },
+            ...wrap.sections.map((s) => ({ id: s.id, title: s.navLabel ?? s.title })),
+            { id: 'donors', title: 'Donors' },
           ]}
         />
 
