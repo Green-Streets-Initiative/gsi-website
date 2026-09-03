@@ -407,7 +407,7 @@ export default function EventsPage({ events }: EventsPageProps) {
             walk, or roll.
           </h1>
           <p className="mt-4 max-w-[560px] text-base leading-relaxed text-white/75">
-            Group rides, e-bike demos, walking tours, transit meetups, civic actions, festivals — real events across Massachusetts, all in one place.
+            Group rides, e-bike demos, walking tours, transit meetups, talks, civic actions, festivals — real events across Massachusetts, all in one place.
           </p>
           <Link
             href="/events/submit"

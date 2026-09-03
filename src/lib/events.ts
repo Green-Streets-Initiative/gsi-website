@@ -57,6 +57,7 @@ export const EVENT_TYPES: Record<string, TypeMeta> = {
   walking_tour:   { label: 'Walking Tour',   icon: 'Footprints',  color: '#5BD6C0' },
   transit_buddy:  { label: 'Transit Buddy',  icon: 'Bus',         color: '#4A82F0' },
   civic_action:   { label: 'Civic Action',   icon: 'Megaphone',   color: '#F5C04A' },
+  talk:           { label: 'Talk / Panel',   icon: 'Mic',         color: '#E879F9' },
   festival:       { label: 'Festival',       icon: 'PartyPopper', color: '#FF8A65' },
   open_streets:   { label: 'Open Streets',   icon: 'MapPin',      color: '#FF8A65' },
   contest:        { label: 'Contest',        icon: 'Trophy',      color: '#A78BFA' },
@@ -76,7 +77,7 @@ export function getTypeMeta(eventType: string): TypeMeta {
 export const TYPE_FILTER_ORDER = [
   'guided_ride', 'group_ride', 'class', 'ebike_demo', 'cargo_bike_demo',
   'bike_repair', 'bike_rodeo', 'bike_bus',
-  'walking_tour', 'transit_buddy', 'civic_action',
+  'walking_tour', 'transit_buddy', 'civic_action', 'talk',
   'festival', 'open_streets', 'contest', 'other',
 ] as const
 

@@ -22,6 +22,7 @@ const CATEGORY_BUCKETS: Record<string, string> = {
   bike_repair: 'learning',
   class: 'learning',
   bike_rodeo: 'learning',
+  talk: 'learning',
   festival: 'festivals',
   open_streets: 'festivals',
 }
