@@ -206,58 +206,17 @@ function Project({
 
 const PROJECT_1: Step[] = [
   {
-    key: 'p1-read',
-    title: 'Read the shortlist',
+    key: 'p1-skim',
+    title: 'Skim the shortlist',
     need: [{ label: 'Shortlist sheet', href: LINKS.workbook }],
     body: (
-      <p className="m-0">
-        The sheet has 20 candidate schools with the public data already filled in:
-        enrollment, Title I status, low-income percentage, and Safe Routes to School
-        status, with the source for each row in its Comments cell. Read it through
-        once so you know what&rsquo;s there.
-      </p>
-    ),
-    done: 'You can say which 3–4 towns look strongest and why.',
-  },
-  {
-    key: 'p1-verify',
-    title: 'Verify the facts',
-    need: [
-      { label: 'Shortlist sheet', href: LINKS.workbook },
-      { label: 'DESE profiles', href: 'https://profiles.doe.mass.edu' },
-    ],
-    body: (
       <ul className="m-0">
-        <li>Spot-check the filled-in numbers against each school&rsquo;s DESE profile — the Comments cell names the source.</li>
-        <li>Fix anything wrong, and resolve anything marked &ldquo;?&rdquo;.</li>
-        <li>One known issue: Winter Hill (Somerville) is in temporary space after its building closed — confirm where students actually report before trusting its address.</li>
+        <li>The sheet has 20 candidate schools with the public data already filled in — enrollment, Title I status, low-income percentage, Safe Routes to School status — and the source for each row in its Comments cell. Read it through once.</li>
+        <li>Fix anything that looks wrong and resolve anything marked &ldquo;?&rdquo;. Don&rsquo;t re-verify every number; the sources are cited so you can spot-check when something smells off.</li>
+        <li>One known wrinkle: Winter Hill (Somerville) is in temporary space after its building closed — confirm where students actually report before trusting its address.</li>
       </ul>
     ),
-    done: 'No “?” left in the data columns.',
-  },
-  {
-    key: 'p1-routes',
-    title: 'Review each school’s route analysis',
-    need: [
-      { label: 'Shortlist sheet', href: LINKS.workbook },
-      { label: 'Dashboard → school → Routes tab', href: LINKS.dashboard },
-    ],
-    body: (
-      <div>
-        <p className="mt-0">
-          We ran our route analyzer on every school: it maps ~5 walking routes per
-          school, checks them against state crash data, and scores each one 1–10
-          from Street View imagery. The sheet&rsquo;s sidewalk and walkshed scores
-          are pre-filled from those results.
-        </p>
-        <ul>
-          <li>Open each school in the dashboard, go to its Routes tab, and open <strong>Safe Routes</strong> — every candidate route on one map, and a detail page per route with the full Street View gallery, scores, and flagged safety concerns.</li>
-          <li>Where the analysis looks wrong, change the sheet&rsquo;s score and say why in the notes — your correction outranks the tool. (On a route&rsquo;s detail page, &ldquo;Adjust the scores&rdquo; records the correction in the tool itself.)</li>
-          <li>Be most skeptical of generous scores on busy multi-lane roads — that&rsquo;s the tool&rsquo;s suspected weak spot. Spot-check those in <a href={LINKS.streetview} target="_blank" rel="noopener" className="text-[#2966E5] underline underline-offset-2">Street View</a> yourself.</li>
-        </ul>
-      </div>
-    ),
-    done: 'You’ve looked at every school’s routes and adjusted any score you disagree with.',
+    done: 'You know what’s in the sheet, and no “?” is left in the data columns.',
   },
   {
     key: 'p1-pto',
@@ -284,6 +243,31 @@ const PROJECT_1: Step[] = [
     done: 'The top 8 rows have at least a named principal with an email.',
   },
   {
+    key: 'p1-routes',
+    title: 'Review each school’s route analysis',
+    need: [
+      { label: 'Shortlist sheet', href: LINKS.workbook },
+      { label: 'Dashboard → school → Routes tab', href: LINKS.dashboard },
+    ],
+    body: (
+      <div>
+        <p className="mt-0">
+          This is the one step that needs the dashboard — Keith will tell you when
+          your sign-in is ready. We ran our route analyzer on every school: it maps
+          ~5 walking routes per school, checks them against state crash data, and
+          scores each one 1–10 from Street View imagery. The sheet&rsquo;s sidewalk
+          and walkshed scores are pre-filled from those results.
+        </p>
+        <ul className="m-0">
+          <li>Open each school in the dashboard, go to its Routes tab, and open <strong>Safe Routes</strong> — every candidate route on one map, and a detail page per route with the full Street View gallery, scores, and flagged safety concerns.</li>
+          <li>Where the analysis looks wrong, change the sheet&rsquo;s score and say why in the notes — your correction outranks the tool. (On a route&rsquo;s detail page, &ldquo;Adjust the scores&rdquo; records the correction in the tool itself.)</li>
+          <li>Be most skeptical of generous scores on busy multi-lane roads — that&rsquo;s the tool&rsquo;s suspected weak spot. Spot-check those in <a href={LINKS.streetview} target="_blank" rel="noopener" className="text-[#2966E5] underline underline-offset-2">Street View</a> yourself.</li>
+        </ul>
+      </div>
+    ),
+    done: 'You’ve looked at every school’s routes and adjusted any score you disagree with.',
+  },
+  {
     key: 'p1-rank',
     title: 'Finalize the ranking and write the top 5',
     need: [{ label: 'Shortlist sheet', href: LINKS.workbook }],
@@ -306,9 +290,9 @@ const PROJECT_2: Step[] = [
     body: (
       <p className="m-0">
         Your training arrives by email as a personal link — no account needed.
-        It&rsquo;s self-paced reading with short quizzes, and it&rsquo;s required
-        before route fieldwork. If anything in it is unclear or looks out of date,
-        tell Keith — you&rsquo;re its first real reader.
+        It&rsquo;s four short reading modules, each with a quick quiz, and it&rsquo;s
+        required before route fieldwork. If anything in it is unclear or looks out
+        of date, tell Keith — you&rsquo;re its first real reader.
       </p>
     ),
     done: 'The portal shows your certification complete.',
@@ -424,19 +408,19 @@ export default function VolunteerGuidePage() {
             {[
               {
                 label: 'Shortlist sheet',
-                desc: 'The working spreadsheet for Project 1. Keith grants you access.',
+                desc: 'Shared to your email. Everything in Project 1 lives here — it’s all you need to start.',
                 href: LINKS.workbook,
                 cta: 'Open sheet',
               },
               {
                 label: 'Admin dashboard',
-                desc: 'Where schools, volunteers, and routes are managed. Keith creates your login.',
+                desc: 'Needed from Project 1, step 4. Sign in with your email — Keith will tell you when it’s ready.',
                 href: LINKS.dashboard,
                 cta: 'Open dashboard',
               },
               {
                 label: 'Training',
-                desc: 'Arrives by email as a personal link. Needed before route fieldwork (Project 2).',
+                desc: 'Arrives by email when Project 2 starts. Four short modules, no account needed.',
               },
               {
                 label: 'Questions',
@@ -486,10 +470,11 @@ export default function VolunteerGuidePage() {
           intro={
             <p className="m-0">
               Goal: a ranked list of schools, with the top 5 ready for Keith to
-              approach — verified facts, named contacts, and a short case for each.
-              The analysis is already done, so this is a few focused days of
-              checking and people-finding, not weeks. Need more research at any
-              point? Ask Keith — Claude turns that around in minutes.
+              approach — named contacts and a short case for each. The data pulls
+              are done, so this is a few focused days of people-finding and
+              judgment, not weeks. The first three steps need only the sheet. Need
+              more research at any point? Ask Keith — Claude turns that around in
+              minutes.
             </p>
           }
           steps={PROJECT_1}
@@ -498,7 +483,7 @@ export default function VolunteerGuidePage() {
         {/* ── Project 2 ── */}
         <Project
           id="project-2"
-          eyebrow="Project 2 · The following week"
+          eyebrow="Project 2 · After the shortlist"
           title="Check our route maps"
           intro={
             <p className="m-0">
