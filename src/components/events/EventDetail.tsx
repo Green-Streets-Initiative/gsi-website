@@ -44,6 +44,7 @@ export default function EventDetail({ event }: EventDetailProps) {
 
   const [saved, setSaved] = useState(false)
   const [calMenuOpen, setCalMenuOpen] = useState(false)
+  const [barMenuOpen, setBarMenuOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -83,15 +84,15 @@ export default function EventDetail({ event }: EventDetailProps) {
   const location = [event.location_name, event.location_address].filter(Boolean).join(', ')
 
   return (
-    <div className="min-h-screen bg-navy px-8 pb-24 pt-8">
+    <div className="min-h-screen bg-navy px-4 pb-32 pt-6 sm:px-8 sm:pt-8 lg:pb-24">
       <div className="mx-auto max-w-[1040px]">
         {/* Back button */}
-        <Link href="/events" className="mb-8 inline-flex items-center gap-1 text-[13px] font-medium text-white/60 transition-colors hover:text-white">
+        <Link href="/events" className="mb-6 inline-flex items-center gap-1 text-[13px] font-medium text-white/75 transition-colors hover:text-white sm:mb-8">
           <ChevronLeft size={16} />
           All events
         </Link>
 
-        <div className={`grid gap-10 ${hasLeftColumn ? 'lg:grid-cols-2' : ''}`}>
+        <div className={`grid gap-6 sm:gap-10 ${hasLeftColumn ? 'lg:grid-cols-2' : ''}`}>
           {/* ---- LEFT COLUMN ---- */}
           {hasLeftColumn && (
             <div>
@@ -109,7 +110,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                   <div className="p-4">
                     <p className="text-[14px] font-semibold text-white">{event.location_name}</p>
                     {event.location_address && (
-                      <p className="mt-0.5 text-[13px] text-white/55">{event.location_address}</p>
+                      <p className="mt-0.5 text-[13px] text-white/75">{event.location_address}</p>
                     )}
                     <a
                       href={directionsUrl(event)}
@@ -140,7 +141,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: meta.color }}>
                   {meta.label}
                 </p>
-                <p className="text-[13px] text-white/60">
+                <p className="text-[13px] text-white/75">
                   {deadline && 'Entry deadline: '}
                   {dateLong(evDate)}
                   {timeStr && ` · ${timeStr}`}
@@ -181,8 +182,8 @@ export default function EventDetail({ event }: EventDetailProps) {
               </div>
             )}
 
-            {/* Action row */}
-            <div className="mb-8 flex flex-wrap gap-2">
+            {/* Action row (desktop; phones get the bottom bar) */}
+            <div className="mb-8 hidden flex-wrap gap-2 lg:flex">
               {(event.location_lat && event.location_lng) && !deadline && (
                 <a
                   href={directionsUrl(event)}
@@ -237,7 +238,7 @@ export default function EventDetail({ event }: EventDetailProps) {
               {/* Share */}
               <button
                 onClick={handleShare}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/[0.18] text-white/60 transition-colors hover:bg-white/[0.06]"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/[0.18] text-white/75 transition-colors hover:bg-white/[0.06]"
                 aria-label="Share"
               >
                 <Share2 size={16} />
@@ -324,6 +325,83 @@ export default function EventDetail({ event }: EventDetailProps) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Phone action bar: the primary link, save to calendar, share */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t border-white/[0.1] bg-[#1F2034]/95 px-4 pt-3 backdrop-blur lg:hidden"
+        style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
+      >
+        {event.registration_url ? (
+          <a
+            href={withUtm(event.registration_url)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-blue px-4 text-[14px] font-bold text-white"
+          >
+            <Ticket size={16} />
+            Register
+          </a>
+        ) : event.event_url ? (
+          <a
+            href={withUtm(event.event_url)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-lime px-4 text-[14px] font-bold text-navy"
+          >
+            <Globe size={16} />
+            Event info
+          </a>
+        ) : hasMap ? (
+          <a
+            href={directionsUrl(event)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-lime px-4 text-[14px] font-bold text-navy"
+          >
+            <MapPin size={16} />
+            Getting there
+          </a>
+        ) : null}
+        <div className="relative">
+          <button
+            onClick={() => setBarMenuOpen(!barMenuOpen)}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-white/[0.18] px-4 text-[13px] font-semibold text-white"
+            aria-haspopup="menu"
+            aria-expanded={barMenuOpen}
+          >
+            <Calendar size={16} />
+            Save
+          </button>
+          {barMenuOpen && (
+            <div className="absolute bottom-full right-0 z-50 mb-2 w-56 overflow-hidden rounded-xl border border-white/[0.14] bg-[#2E2F45] py-1 shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
+              <a
+                href={gcalUrl(event)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-white/80 transition-colors hover:bg-white/[0.06]"
+                onClick={() => setBarMenuOpen(false)}
+              >
+                <Globe size={14} />
+                Google Calendar
+              </a>
+              <button
+                onClick={() => { handleDownloadIcs(); setBarMenuOpen(false) }}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-white/80 transition-colors hover:bg-white/[0.06]"
+              >
+                <Calendar size={14} />
+                Apple Calendar (.ics)
+              </button>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={handleShare}
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-white/[0.18] text-white/80"
+          aria-label="Share"
+        >
+          <Share2 size={17} />
+        </button>
       </div>
 
       {/* Toast */}

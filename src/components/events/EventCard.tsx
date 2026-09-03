@@ -41,26 +41,35 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
   if (distance !== null) metaParts.push(formatDistance(distance))
 
   return (
-    <div className="group relative flex items-start gap-4 rounded-[14px] border border-white/[0.07] bg-card p-4 transition-all duration-200 hover:border-white/[0.14] hover:bg-[#2E2F45]">
+    <div className="group relative flex min-h-[72px] items-start gap-3 rounded-[14px] border border-white/[0.07] bg-card p-3.5 transition-all duration-200 hover:border-white/[0.14] hover:bg-[#2E2F45] sm:gap-4 sm:p-4">
       <Link href={`/events/${encodeURIComponent(event.id)}`} className="absolute inset-0 z-10 rounded-[14px]" />
 
-      {/* Type tile */}
-      <div
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[13px]"
-        style={{ backgroundColor: meta.color + '29' }}
-      >
-        <Icon size={24} style={{ color: meta.color }} />
-      </div>
+      {/* Flyer thumbnail when the event has one; the type tile otherwise */}
+      {event.image_url ? (
+        <div
+          className="h-16 w-16 shrink-0 overflow-hidden rounded-[13px] border sm:h-14 sm:w-14"
+          style={{ borderColor: meta.color + '55', backgroundColor: meta.color + '14' }}
+        >
+          <img src={event.image_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+        </div>
+      ) : (
+        <div
+          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[13px] sm:h-14 sm:w-14"
+          style={{ backgroundColor: meta.color + '29' }}
+        >
+          <Icon size={24} style={{ color: meta.color }} />
+        </div>
+      )}
 
       {/* Body */}
       <div className="min-w-0 flex-1">
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: meta.color }}>
           {meta.label}
         </p>
-        <h3 className="mt-0.5 truncate font-display text-[18px] font-bold leading-snug text-white">
+        <h3 className="mt-0.5 line-clamp-2 font-display text-[17px] font-bold leading-snug text-white sm:text-[18px]">
           {event.title}
         </h3>
-        <p className="mt-1 truncate text-[13px] text-white/75">
+        <p className="mt-1 text-[13px] leading-snug text-white/75">
           {metaParts.join(' · ')}
         </p>
         {(event.ride_series_id || event.tags.length > 0) && (
@@ -95,7 +104,7 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
           className="relative z-20 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.14] transition-colors hover:border-white/[0.25]"
           aria-label={saved ? 'Remove bookmark' : 'Save event'}
         >
-          <Bookmark size={18} className={saved ? 'fill-lime text-lime' : 'text-white/60'} />
+          <Bookmark size={18} className={saved ? 'fill-lime text-lime' : 'text-white/70'} />
         </button>
       )}
     </div>

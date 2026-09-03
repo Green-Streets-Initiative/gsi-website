@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useRef, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, Calendar as CalendarIcon, List, Search, Navigation } from 'lucide-react'
+import { ArrowRight, Calendar as CalendarIcon, List, Search, Navigation, SlidersHorizontal } from 'lucide-react'
 import {
   type CommunityEvent, getTypeMeta, haversine, parseEventDate,
   dateKey, dateLong, formatTime, groupLabel, isDeadline, todayKey, DEFAULT_LOCATION,
@@ -13,6 +13,8 @@ import { EVENT_TYPE_ICONS } from './event-type-icons'
 import CalendarGrid from './CalendarGrid'
 import EventCard from './EventCard'
 import CityAutocomplete from './CityAutocomplete'
+import WeekStrip from './WeekStrip'
+import FiltersSheet from './FiltersSheet'
 
 // ---------------------------------------------------------------------------
 // Distance pills
@@ -37,6 +39,21 @@ const DATE_RANGE_OPTIONS = [
 ] as const
 
 // ---------------------------------------------------------------------------
+// Viewport: phones land on the list, desktop on the calendar. Read through
+// useSyncExternalStore so the server render (list) hydrates cleanly and the
+// desktop upgrade happens in the same commit as the media query result.
+// ---------------------------------------------------------------------------
+
+const DESKTOP_QUERY = '(min-width: 1024px)'
+function subscribeDesktop(cb: () => void) {
+  const mq = window.matchMedia(DESKTOP_QUERY)
+  mq.addEventListener('change', cb)
+  return () => mq.removeEventListener('change', cb)
+}
+const getDesktopSnapshot = () => window.matchMedia(DESKTOP_QUERY).matches
+const getDesktopServerSnapshot = () => false
+
+// ---------------------------------------------------------------------------
 // Spotlight — featured events pinned above the calendar, unaffected by the
 // distance/type filters (a statewide contest shouldn't vanish under "5 mi").
 // ---------------------------------------------------------------------------
@@ -55,7 +72,7 @@ function SpotlightCard({ event }: { event: CommunityEvent }) {
   return (
     <Link
       href={`/events/${encodeURIComponent(event.id)}`}
-      className="group flex items-start gap-5 rounded-2xl border p-6 transition-all duration-200 hover:brightness-110 sm:p-7"
+      className="group flex min-w-[86%] snap-start items-start gap-4 rounded-2xl border p-5 transition-all duration-200 hover:brightness-110 sm:min-w-0 sm:gap-5 sm:p-7"
       style={{ borderColor: meta.color + '55', backgroundColor: meta.color + '12' }}
     >
       <div
@@ -98,8 +115,15 @@ interface EventsPageProps {
 export default function EventsPage({ events }: EventsPageProps) {
   const router = useRouter()
 
-  // View state
-  const [view, setView] = useState<'calendar' | 'list'>('calendar')
+    // View state: the visitor's explicit choice wins; otherwise width decides.
+  const isDesktop = useSyncExternalStore(subscribeDesktop, getDesktopSnapshot, getDesktopServerSnapshot)
+  const [viewChoice, setViewChoice] = useState<'calendar' | 'list' | null>(null)
+  const view: 'calendar' | 'list' = viewChoice ?? (isDesktop ? 'calendar' : 'list')
+  const pickView = (v: 'calendar' | 'list') => setViewChoice(v)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  // Long lists render in pages of 40 so a phone never lays out 180 cards.
+  const LIST_PAGE = 40
+  const [listLimit, setListLimit] = useState(LIST_PAGE)
 
   // Filter state
   const [query, setQuery] = useState('')
@@ -192,6 +216,15 @@ export default function EventsPage({ events }: EventsPageProps) {
     }).sort((a, b) => a.event_date.localeCompare(b.event_date) || (a.event_time ?? '').localeCompare(b.event_time ?? ''))
   }, [events, today, typeFilter, query, distance, userLoc, view, dateRange])
 
+    // Any filter change starts paging over (state adjusted during render, the
+  // React-sanctioned way to derive a reset from props/state).
+  const pageKey = [typeFilter, query, distance, dateRange, view, selectedDay].join('|')
+  const [prevPageKey, setPrevPageKey] = useState(pageKey)
+  if (prevPageKey !== pageKey) {
+    setPrevPageKey(pageKey)
+    setListLimit(LIST_PAGE)
+  }
+
   // Type facet counts (respecting distance + search filters, not type filter)
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = { All: 0 }
@@ -237,7 +270,7 @@ export default function EventsPage({ events }: EventsPageProps) {
   const listGroups = useMemo(() => {
     const groups: { key: string; label: string; events: CommunityEvent[] }[] = []
     let currentKey = ''
-    for (const ev of filtered) {
+        for (const ev of filtered.slice(0, listLimit)) {
       if (ev.event_date !== currentKey) {
         currentKey = ev.event_date
         const d = parseEventDate(ev.event_date)
@@ -245,8 +278,8 @@ export default function EventsPage({ events }: EventsPageProps) {
       }
       groups[groups.length - 1].events.push(ev)
     }
-    return groups
-  }, [filtered])
+        return groups
+  }, [filtered, listLimit])
 
   // --- Handlers ---
 
@@ -310,6 +343,16 @@ export default function EventsPage({ events }: EventsPageProps) {
     setSelectedDay(null)
   }
 
+    const activeFilterCount =
+    (typeFilter !== 'All' ? 1 : 0) +
+    (distance !== 'all' ? 1 : 0) +
+    (view === 'list' && dateRange !== 'upcoming' ? 1 : 0)
+  const clearFilters = () => {
+    setTypeFilter('All')
+    setDistance('all')
+    setDateRange('upcoming')
+  }
+
   // --- Location control (shared between views) ---
 
   const locationControl = (
@@ -341,7 +384,7 @@ export default function EventsPage({ events }: EventsPageProps) {
         <button
           key={opt.value}
           onClick={() => setDistance(opt.value)}
-          className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
+          className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
             distance === opt.value
               ? 'border-lime/50 text-lime'
               : 'border-white/[0.14] text-white/[0.78] hover:bg-white/[0.06]'
@@ -359,7 +402,7 @@ export default function EventsPage({ events }: EventsPageProps) {
     <div className="flex flex-wrap gap-1.5">
       <button
         onClick={() => setTypeFilter('All')}
-        className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
+        className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
           typeFilter === 'All'
             ? 'border-lime/50 text-lime'
             : 'border-white/[0.14] text-white/[0.78] hover:bg-white/[0.06]'
@@ -376,7 +419,7 @@ export default function EventsPage({ events }: EventsPageProps) {
           <button
             key={t}
             onClick={() => setTypeFilter(t === typeFilter ? 'All' : t)}
-            className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
+            className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
               typeFilter === t
                 ? 'border-lime/50 text-lime'
                 : 'border-white/[0.14] text-white/[0.78] hover:bg-white/[0.06]'
@@ -389,6 +432,26 @@ export default function EventsPage({ events }: EventsPageProps) {
     </div>
   )
 
+    // --- When pills (list view) ---
+
+  const whenPills = (
+    <div className="flex flex-wrap gap-1.5">
+      {DATE_RANGE_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => setDateRange(opt.value)}
+          className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
+            dateRange === opt.value
+              ? 'border-lime/50 text-lime'
+              : 'border-white/[0.14] text-white/[0.78] hover:bg-white/[0.06]'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  )
+
   // =========================================================================
   // Render
   // =========================================================================
@@ -396,22 +459,22 @@ export default function EventsPage({ events }: EventsPageProps) {
   return (
     <div className="min-h-screen bg-navy">
       {/* Hero */}
-      <section className="px-8 pb-8 pt-16">
+            <section className="px-4 pb-6 pt-8 sm:px-8 sm:pb-8 sm:pt-16">
         <div className="mx-auto max-w-[1200px]">
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-lime">
             Community Events · Massachusetts
           </p>
-          <h1 className="mt-3 font-display text-[clamp(40px,5.4vw,64px)] font-extrabold leading-[1.06] tracking-tighter text-white">
+          <h1 className="mt-3 font-display text-[clamp(32px,5.4vw,64px)] font-extrabold leading-[1.06] tracking-tighter text-white">
             Find your next ride,{' '}
             <br className="hidden sm:block" />
             walk, or roll.
           </h1>
-          <p className="mt-4 max-w-[560px] text-base leading-relaxed text-white/75">
+          <p className="mt-4 hidden max-w-[560px] text-base leading-relaxed text-white/75 sm:block">
             Group rides, e-bike demos, walking tours, transit meetups, talks, civic actions, festivals — real events across Massachusetts, all in one place.
           </p>
           <Link
             href="/events/submit"
-            className="mt-6 inline-block rounded-[10px] bg-lime px-6 py-3 text-[14px] font-bold text-navy transition-opacity hover:opacity-85"
+            className="mt-4 inline-block rounded-[10px] bg-lime px-6 py-3 text-[14px] font-bold text-navy transition-opacity hover:opacity-85 sm:mt-6"
           >
             Submit an event
           </Link>
@@ -420,8 +483,8 @@ export default function EventsPage({ events }: EventsPageProps) {
 
       {/* Spotlight */}
       {spotlightEvents.length > 0 && (
-        <section className="px-8 pb-6">
-          <div className="mx-auto flex max-w-[1200px] flex-col gap-4">
+                <section className="px-4 pb-5 sm:px-8 sm:pb-6">
+          <div className="mx-auto flex max-w-[1200px] snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-col sm:gap-4 sm:overflow-visible sm:pb-0">
             {spotlightEvents.map((ev) => (
               <SpotlightCard key={ev.id} event={ev} />
             ))}
@@ -429,13 +492,60 @@ export default function EventsPage({ events }: EventsPageProps) {
         </section>
       )}
 
-      {/* View switcher */}
-      <section className="px-8 pb-6">
+            {/* Phone toolbar: sticky under the fixed 60px site nav */}
+      <section className="sticky top-[60px] z-30 border-b border-white/[0.07] bg-navy/95 px-4 py-2.5 backdrop-blur lg:hidden">
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search events"
+              aria-label="Search events"
+              className="h-10 w-full rounded-lg border border-white/[0.14] bg-[#1F2034] pl-9 pr-3 text-[14px] text-white placeholder:text-white/60 focus:border-lime focus:outline-none"
+            />
+          </div>
+          <button
+            onClick={() => setFiltersOpen(true)}
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-white/[0.14] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-white/[0.06]"
+          >
+            <SlidersHorizontal size={15} />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-lime px-1.5 text-[11px] font-bold text-navy">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+          <div className="inline-flex h-10 shrink-0 rounded-lg bg-card p-1">
+            <button
+              onClick={() => pickView('list')}
+              aria-pressed={view === 'list'}
+              aria-label="List view"
+              className={`flex h-8 w-9 items-center justify-center rounded-[7px] transition-colors ${view === 'list' ? 'bg-lime text-navy' : 'text-white/75'}`}
+            >
+              <List size={16} />
+            </button>
+            <button
+              onClick={() => pickView('calendar')}
+              aria-pressed={view === 'calendar'}
+              aria-label="Calendar view"
+              className={`flex h-8 w-9 items-center justify-center rounded-[7px] transition-colors ${view === 'calendar' ? 'bg-lime text-navy' : 'text-white/75'}`}
+            >
+              <CalendarIcon size={16} />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* View switcher (desktop) */}
+      <section className="hidden px-8 pb-6 lg:block">
         <div className="mx-auto max-w-[1200px]">
           <div className="flex items-center gap-4">
             <div className="inline-flex rounded-xl bg-card p-1">
               <button
-                onClick={() => setView('calendar')}
+                onClick={() => pickView('calendar')}
                 className={`flex items-center gap-2 rounded-[10px] px-4 py-2 text-[13px] font-semibold transition-colors ${
                   view === 'calendar' ? 'bg-lime text-navy' : 'text-white/70 hover:text-white'
                 }`}
@@ -443,8 +553,8 @@ export default function EventsPage({ events }: EventsPageProps) {
                 <CalendarIcon size={16} />
                 Calendar
               </button>
-              <button
-                onClick={() => setView('list')}
+                            <button
+                onClick={() => pickView('list')}
                 className={`flex items-center gap-2 rounded-[10px] px-4 py-2 text-[13px] font-semibold transition-colors ${
                   view === 'list' ? 'bg-lime text-navy' : 'text-white/70 hover:text-white'
                 }`}
@@ -457,8 +567,8 @@ export default function EventsPage({ events }: EventsPageProps) {
         </div>
       </section>
 
-      {/* Main content */}
-      <section className="px-8 pb-24">
+            {/* Main content */}
+      <section className="px-4 pb-24 sm:px-8">
         <div className="mx-auto max-w-[1200px]">
 
           {/* ============== CALENDAR VIEW ============== */}
@@ -533,27 +643,32 @@ export default function EventsPage({ events }: EventsPageProps) {
 
               {/* Calendar + panel */}
               <div className="min-w-0">
-                <CalendarGrid
-                  events={filtered}
-                  year={calYear}
-                  monthIndex={calMonth}
-                  selectedDay={selectedDay}
-                  onPrevMonth={prevMonth}
-                  onNextMonth={nextMonth}
-                  onSelectDay={setSelectedDay}
-                  onSelectEvent={(id) => router.push(`/events/${encodeURIComponent(id)}`)}
-                />
+                                <div className="hidden lg:block">
+                  <CalendarGrid
+                    events={filtered}
+                    year={calYear}
+                    monthIndex={calMonth}
+                    selectedDay={selectedDay}
+                    onPrevMonth={prevMonth}
+                    onNextMonth={nextMonth}
+                    onSelectDay={setSelectedDay}
+                    onSelectEvent={(id) => router.push(`/events/${encodeURIComponent(id)}`)}
+                  />
+                </div>
+                <div className="lg:hidden">
+                  <WeekStrip events={filtered} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+                </div>
 
                 {/* Day panel */}
                 <div className="mt-6">
                   <div className="mb-4 flex items-center justify-between">
                     <h3 className="font-display text-lg font-bold text-white">{dayPanelTitle}</h3>
-                    <span className="font-mono text-[13px] text-white/50">{dayPanelEvents.length} events</span>
+                    <span className="font-mono text-[13px] text-white/70">{dayPanelEvents.length} events</span>
                   </div>
 
                   {dayPanelEvents.length === 0 ? (
                     <div className="rounded-2xl border border-white/[0.07] bg-card px-8 py-12 text-center">
-                      <p className="text-[15px] text-white/60">
+                      <p className="text-[15px] text-white/75">
                         {selectedDay
                           ? 'No events on this day. Pick another date above — or host your own.'
                           : 'No upcoming events match your filters.'}
@@ -564,7 +679,7 @@ export default function EventsPage({ events }: EventsPageProps) {
                     </div>
                   ) : (
                     <div className="flex flex-col gap-3">
-                      {dayPanelEvents.map((ev) => (
+                                            {(selectedDay ? dayPanelEvents : dayPanelEvents.slice(0, listLimit)).map((ev) => (
                         <EventCard
                           key={ev.id}
                           event={ev}
@@ -578,32 +693,14 @@ export default function EventsPage({ events }: EventsPageProps) {
                     </div>
                   )}
                 </div>
-
-                {/* Mobile filters (shown below calendar on small screens) */}
-                <div className="mt-8 rounded-2xl border border-white/[0.07] bg-card p-5 lg:hidden">
-                  <div className="mb-4">
-                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60">Search</label>
-                    <div className="relative">
-                      <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-                      <input
-                        type="text"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Title or town"
-                        className="w-full rounded-lg border border-white/[0.14] bg-[#1F2034] py-2 pl-9 pr-3 text-[13px] text-white placeholder:text-white/50 focus:border-lime focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="mb-4">
-                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60">Distance</label>
-                    {locationControl}
-                    <div className="mt-2">{distancePills}</div>
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60">Type</label>
-                    {typePills}
-                  </div>
-                </div>
+                {!selectedDay && dayPanelEvents.length > listLimit && (
+                  <button
+                    onClick={() => setListLimit((n) => n + LIST_PAGE)}
+                    className="mx-auto mt-5 block rounded-[10px] border border-white/[0.18] px-6 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-white/[0.06]"
+                  >
+                    Show more · {dayPanelEvents.length - listLimit} remaining
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -611,8 +708,8 @@ export default function EventsPage({ events }: EventsPageProps) {
           {/* ============== LIST VIEW ============== */}
           {view === 'list' && (
             <div>
-              {/* Toolbar */}
-              <div className="mb-6 border-b border-white/[0.07] pb-6">
+                            {/* Toolbar (desktop; phones use the sticky toolbar + filters sheet) */}
+              <div className="mb-6 hidden border-b border-white/[0.07] pb-6 lg:block">
                 <div className="mb-4 flex flex-wrap items-center gap-3">
                   <div className="relative max-w-[440px] flex-1">
                     <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
@@ -647,34 +744,20 @@ export default function EventsPage({ events }: EventsPageProps) {
                   </div>
                   <div>
                     <span className="mr-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60">When</span>
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {DATE_RANGE_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          onClick={() => setDateRange(opt.value)}
-                          className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
-                            dateRange === opt.value
-                              ? 'border-lime/50 text-lime'
-                              : 'border-white/[0.14] text-white/[0.78] hover:bg-white/[0.06]'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
+                                        <div className="mt-1.5">{whenPills}</div>
                   </div>
                 </div>
               </div>
 
               {/* Result count */}
-              <p className="mb-4 text-[13px] text-white/55">
+                            <p className="mb-4 text-[13px] text-white/70">
                 {filtered.length} event{filtered.length !== 1 ? 's' : ''}
               </p>
 
               {/* Grouped by day */}
               {listGroups.length === 0 ? (
                 <div className="rounded-2xl border border-white/[0.07] bg-card px-8 py-16 text-center">
-                  <p className="text-[15px] text-white/60">No events match your filters.</p>
+                  <p className="text-[15px] text-white/75">No events match your filters.</p>
                   <Link href="/events/submit" className="mt-3 inline-block text-[13px] font-semibold text-lime hover:underline">
                     Submit an event
                   </Link>
@@ -683,10 +766,10 @@ export default function EventsPage({ events }: EventsPageProps) {
                 <div className="flex flex-col gap-8">
                   {listGroups.map((group) => (
                     <div key={group.key}>
-                      <div className="mb-3 flex items-center gap-3">
-                        <h3 className="whitespace-nowrap text-[14px] font-semibold text-white/75">{group.label}</h3>
+                                            <div className="sticky top-[116px] z-20 mb-3 flex items-center gap-3 bg-navy py-2 lg:top-[60px]">
+                        <h3 className="whitespace-nowrap text-[14px] font-semibold text-white/80">{group.label}</h3>
                         <div className="h-px flex-1 bg-white/[0.07]" />
-                        <span className="font-mono text-[12px] text-white/50">{group.events.length}</span>
+                        <span className="font-mono text-[12px] text-white/70">{group.events.length}</span>
                       </div>
                       <div className="flex flex-col gap-3">
                         {group.events.map((ev) => (
@@ -701,13 +784,48 @@ export default function EventsPage({ events }: EventsPageProps) {
                         ))}
                       </div>
                     </div>
-                  ))}
+                                    ))}
                 </div>
+              )}
+              {filtered.length > listLimit && (
+                <button
+                  onClick={() => setListLimit((n) => n + LIST_PAGE)}
+                  className="mx-auto mt-6 block rounded-[10px] border border-white/[0.18] px-6 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-white/[0.06]"
+                >
+                  Show more · {filtered.length - listLimit} remaining
+                </button>
               )}
             </div>
           )}
         </div>
       </section>
+
+      {/* Phone filters sheet */}
+      <FiltersSheet
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        onClear={clearFilters}
+        activeCount={activeFilterCount}
+        resultCount={filtered.length}
+      >
+        <div className="flex flex-col gap-5">
+          <div>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/75">Event type</p>
+            {typePills}
+          </div>
+          <div>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/75">Distance from you</p>
+            {locationControl}
+            <div className="mt-2">{distancePills}</div>
+          </div>
+          {view === 'list' && (
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/75">When</p>
+              {whenPills}
+            </div>
+          )}
+        </div>
+      </FiltersSheet>
 
       {/* Toast */}
       {toast && (
