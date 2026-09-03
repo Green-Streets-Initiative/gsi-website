@@ -8,6 +8,7 @@ import Sidebar from './_components/Sidebar'
 import Topbar from './_components/Topbar'
 import AgreementGate from './_components/AgreementGate'
 import SetupProgressBanner from './_components/SetupProgressBanner'
+import AccessLapsedNotice from './_components/AccessLapsedNotice'
 import './portal.css'
 
 const sourceSans = Source_Sans_3({
@@ -38,6 +39,7 @@ function PortalShell({ children }: { children: React.ReactNode }) {
             <SetupProgressBanner />
             <main className="flex-1 overflow-y-auto">
               <div className="mx-auto max-w-[1200px] px-6 py-6">
+                <AccessLapsedNotice />
                 <AgreementGate>{children}</AgreementGate>
               </div>
             </main>

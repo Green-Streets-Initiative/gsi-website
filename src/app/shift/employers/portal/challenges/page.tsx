@@ -61,6 +61,7 @@ export default function ChallengesPage() {
     setPrizeWinnersMap,
     rewardPool,
     tierAtLeast,
+    accessActive,
     isAdmin,
     isGsiAdmin,
     refreshPool,
@@ -145,7 +146,11 @@ export default function ChallengesPage() {
     form.starts_at && form.ends_at && form.ends_at <= form.starts_at
       ? 'End date must be after the start date'
       : null
-  const canSave = !!(form.name.trim() && form.starts_at && form.ends_at && !dateError)
+  // Access window closed → every write is refused by RLS, so don't present a
+  // form that will fail. Reads stay available; the banner below offers renewal.
+  const canSave = !!(
+    accessActive && form.name.trim() && form.starts_at && form.ends_at && !dateError
+  )
 
   const openEditor = (c?: Challenge) => {
     if (c) {
@@ -360,6 +365,7 @@ export default function ChallengesPage() {
     challenges,
     challengePrizes,
     tierAtLeast,
+    accessActive,
     setChallenges,
     setChallengePrizes,
   ])

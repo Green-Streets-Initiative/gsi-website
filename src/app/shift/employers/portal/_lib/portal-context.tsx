@@ -48,6 +48,13 @@ interface PortalContextValue {
   isGsiAdmin: boolean
 
   tierAtLeast: (tier: 'starter' | 'basic' | 'standard' | 'premium') => boolean
+  /**
+   * Whether the org's platform access window is currently open. Reads still
+   * work when this is false — the server allows a lapsed team to sign in and
+   * see their history — but every create/edit is refused by RLS, so the UI
+   * should offer renewal rather than a form that will fail.
+   */
+  accessActive: boolean
 
   setGroup: (g: Group) => void
   setChallenges: (c: Challenge[]) => void
@@ -104,6 +111,10 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     (tier: 'starter' | 'basic' | 'standard' | 'premium') => isTierAtLeast(group, tier),
     [group],
   )
+
+  // hasAccess() has existed since the platform shipped and was never called,
+  // so a lapsed org kept a fully working portal. GSI admins bypass it.
+  const accessActive = isGsiAdmin || (group ? hasAccess(group) : false)
 
   const fetchData = useCallback(
     async (email: string, userId: string) => {
@@ -401,6 +412,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     isAdmin,
     isGsiAdmin,
     tierAtLeast,
+    accessActive,
     setGroup,
     setChallenges,
     setMemberCount,
