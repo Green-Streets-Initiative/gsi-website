@@ -89,8 +89,9 @@ interface PageCapture {
   title: string;
   text: string;
   html: string;
-  links: Array<{ href: string; text: string }>;
+    links: Array<{ href: string; text: string }>;
   challenge: boolean;
+  og_image: string | null;
 }
 
 export async function POST(req: NextRequest) {
@@ -177,7 +178,19 @@ export async function POST(req: NextRequest) {
             if (links.length >= maxLinks) break;
           }
           return {
-            title: document.title,
+                        title: document.title,
+            og_image: (() => {
+              const meta = document.querySelector(
+                'meta[property="og:image:secure_url"], meta[property="og:image"], meta[name="twitter:image"], meta[name="twitter:image:src"]',
+              ) as HTMLMetaElement | null;
+              const raw = meta?.content?.trim();
+              if (!raw) return null;
+              try {
+                return new URL(raw, document.baseURI).toString();
+              } catch {
+                return null;
+              }
+            })(),
             text: text.slice(0, maxText),
             html: (root?.outerHTML ?? '').slice(0, maxHtml),
             links,
@@ -216,7 +229,8 @@ export async function POST(req: NextRequest) {
       title: result.title,
       text: result.text,
       html: result.html,
-      links: result.links,
+            links: result.links,
+      og_image: result.og_image,
       challenge_unresolved: result.challenge,
       elapsed_ms: Date.now() - startedAt,
     });
