@@ -36,9 +36,9 @@ const widerCampaign: ReportSection = {
   blocks: [
     { kind: 'prose', paragraphs: ['Shift Your Summer ran on paid social, boosted posts, a partnership with a Boston Instagram account, and email to our full subscriber list.'] },
     { kind: 'table', head: ['Channel', 'Impressions', 'Clicks / visits'],
-      rows: [['Reddit \u2014 all campaign creative','154,395','1,122 clicks'],['Instagram & Facebook \u2014 campaign ad','96,204','1,648 clicks'],['Meta \u2014 boosted posts','74,342','1,326 visits'],['Instagram \u2014 @onlyinbos partnership, 2 stories','28,346','135 link clicks'],['Universal Hub \u2014 local news site','Awaiting figures','Awaiting figures']],
-      foot: ['Total, excluding Universal Hub','353,287','\u2014'],
-      note: 'We also ran a placement on Universal Hub, a Boston news site, whose performance figures we have requested and not yet received. The total above therefore understates the campaign\u2019s reach, and we will update this page once those numbers arrive. Click figures are not totaled because the platforms count them differently: link clicks, ad clicks and website visits are not the same measure.' },
+      rows: [['Reddit \u2014 all campaign creative','154,395','1,122 clicks'],['Instagram & Facebook \u2014 campaign ad','96,204','1,648 clicks'],['Meta \u2014 boosted posts','74,342','1,326 visits'],['Instagram \u2014 @onlyinbos partnership, 2 stories','28,346','135 link clicks'],['Universal Hub \u2014 local news site','516,419','201 clicks']],
+      foot: ['Total','869,706','\u2014'],
+      note: 'Click figures are not totaled because the platforms count them differently: link clicks, ad clicks and website visits are not the same measure. Universal Hub ran June 15 \u2013 August 12.' },
     { kind: 'prose', paragraphs: ['The campaign launch email went to 1,563 subscribers on June 12 and was opened by 50% of them.'] },
   ],
 }
@@ -266,10 +266,10 @@ export const shiftYourSummer2026: CampaignReports = {
                 ['Instagram & Facebook — campaign ad', '96,204', '1,648 clicks'],
                 ['Meta — boosted posts', '74,342', '1,326 visits'],
                 ['Instagram — @onlyinbos partnership, 2 stories', '28,346', '135 link clicks'],
-                ['Universal Hub — local news site', 'Awaiting figures', 'Awaiting figures'],
+                ['Universal Hub — local news site', '516,419', '201 clicks'],
               ],
-              foot: ['Total, excluding Universal Hub', '353,287', '—'],
-              note: 'We also ran a placement on Universal Hub, a Boston news site, whose performance figures we have requested and not yet received. The total above therefore understates the campaign\u2019s reach, and we will update this page once those numbers arrive. Click figures are not totaled because the platforms count them differently: link clicks, ad clicks and website visits are not the same measure.',
+              foot: ['Total', '869,706', '—'],
+              note: 'Click figures are not totaled because the platforms count them differently: link clicks, ad clicks and website visits are not the same measure. Universal Hub ran June 15 \u2013 August 12.',
             },
             {
               kind: 'prose',
