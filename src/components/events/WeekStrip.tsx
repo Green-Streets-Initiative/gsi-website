@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { type CommunityEvent, getTypeMeta, parseEventDate, dateKey, todayKey } from '@/lib/events'
+import { type CommunityEvent, parseEventDate, dateKey, todayKey, eventDotsByDay, eventCountByDay } from '@/lib/events'
 
 /**
  * Phone-sized replacement for the month grid: one week of day buttons with
@@ -47,23 +47,8 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart])
 
-  // Up to three distinct type colors per day, in listing order.
-  const dotsByDay = useMemo(() => {
-    const map = new Map<string, string[]>()
-    for (const ev of events) {
-      const colors = map.get(ev.event_date) ?? []
-      const c = getTypeMeta(ev.event_type).color
-      if (!colors.includes(c) && colors.length < 3) colors.push(c)
-      map.set(ev.event_date, colors)
-    }
-    return map
-  }, [events])
-
-  const countByDay = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const ev of events) map.set(ev.event_date, (map.get(ev.event_date) ?? 0) + 1)
-    return map
-  }, [events])
+  const dotsByDay = useMemo(() => eventDotsByDay(events), [events])
+  const countByDay = useMemo(() => eventCountByDay(events), [events])
 
   const first = days[0]
   const last = days[6]

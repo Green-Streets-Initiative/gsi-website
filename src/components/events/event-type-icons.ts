@@ -10,7 +10,7 @@ import {
  * event detail, town pages, the nearby snapshot) resolves it here so they
  * can't drift apart. Unknown names should fall back to Calendar.
  */
-export const EVENT_TYPE_ICONS: Record<string, ComponentType<{ size?: number; style?: CSSProperties }>> = {
+export const EVENT_TYPE_ICONS: Record<string, ComponentType<{ size?: number; style?: CSSProperties; className?: string }>> = {
   Bike,
   Bus,
   Calendar,

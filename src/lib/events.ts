@@ -229,3 +229,32 @@ export function directionsUrl(ev: CommunityEvent): string {
 
 // Default reference location
 export const DEFAULT_LOCATION = { lat: 42.3736, lng: -71.1097, label: 'Cambridge, MA' }
+
+// ---------------------------------------------------------------------------
+// Calendar helpers shared by the phone week strip and the desktop mini month
+// ---------------------------------------------------------------------------
+
+const WEEKDAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+/** "Tue, Sep 8" */
+export function dateMedium(d: Date): string {
+  return `${WEEKDAYS_SHORT[d.getDay()]}, ${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`
+}
+
+/** Up to `max` distinct type colors per day, in listing order. */
+export function eventDotsByDay(events: CommunityEvent[], max = 3): Map<string, string[]> {
+  const map = new Map<string, string[]>()
+  for (const ev of events) {
+    const colors = map.get(ev.event_date) ?? []
+    const c = getTypeMeta(ev.event_type).color
+    if (!colors.includes(c) && colors.length < max) colors.push(c)
+    map.set(ev.event_date, colors)
+  }
+  return map
+}
+
+export function eventCountByDay(events: CommunityEvent[]): Map<string, number> {
+  const map = new Map<string, number>()
+  for (const ev of events) map.set(ev.event_date, (map.get(ev.event_date) ?? 0) + 1)
+  return map
+}

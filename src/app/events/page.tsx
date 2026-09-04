@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
@@ -82,7 +83,9 @@ export default async function EventsListingPage() {
     <>
       <Nav />
       <main style={{ paddingTop: '60px' }}>
-        <EventsPage events={events} />
+        <Suspense fallback={null}>
+          <EventsPage events={events} />
+        </Suspense>
         <TownChipsStrip />
       </main>
       <Footer />

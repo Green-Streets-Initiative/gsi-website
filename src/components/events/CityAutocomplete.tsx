@@ -7,10 +7,12 @@ type Prediction = { placeId: string; text: string }
 interface CityAutocompleteProps {
   onSelect: (loc: { lat: number; lng: number; label: string }) => void
   placeholder?: string
+  /** Prefill (e.g. a town restored from the URL). Only read on mount. */
+  initialValue?: string
 }
 
-export default function CityAutocomplete({ onSelect, placeholder = 'Town or city' }: CityAutocompleteProps) {
-  const [value, setValue] = useState('')
+export default function CityAutocomplete({ onSelect, placeholder = 'Town or city', initialValue = '' }: CityAutocompleteProps) {
+  const [value, setValue] = useState(initialValue)
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [open, setOpen] = useState(false)
   const [focused, setFocused] = useState(false)
@@ -96,7 +98,7 @@ export default function CityAutocomplete({ onSelect, placeholder = 'Town or city
         }}
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-white/[0.14] bg-[#1F2034] px-3 py-1.5 text-[13px] text-white placeholder:text-white/50 focus:border-lime focus:outline-none"
+        className="w-full rounded-lg border border-white/[0.14] bg-[#1F2034] px-3 py-1.5 text-[13px] text-white placeholder:text-white/60 focus:border-lime focus:outline-none"
       />
       {open && focused && predictions.length > 0 && (
         <ul className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-white/[0.12] bg-[#242538] shadow-lg">
