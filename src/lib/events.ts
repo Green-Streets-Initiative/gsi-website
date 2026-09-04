@@ -18,7 +18,9 @@ export interface CommunityEvent {
   location_lng: number | null
   event_type: string
   organizer_name: string | null
-  organizer_url: string | null
+    organizer_url: string | null
+  /** Co-hosts and sponsors credited beyond organizer_name (00849). */
+  sponsors: string[] | null
   event_url: string | null
   registration_url: string | null
   image_url: string | null

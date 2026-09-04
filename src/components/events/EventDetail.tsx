@@ -290,9 +290,20 @@ export default function EventDetail({ event }: EventDetailProps) {
                       <a href={withUtm(event.organizer_url)} target="_blank" rel="noopener noreferrer" className="text-[14px] text-lime hover:underline">
                         {event.organizer_name} <ExternalLink size={12} className="inline" />
                       </a>
-                    ) : (
+                                        ) : (
                       <p className="text-[14px] text-white/80">{event.organizer_name}</p>
                     )}
+                  </div>
+                </div>
+              )}
+              {event.sponsors && event.sponsors.length > 0 && (
+                <div className="flex gap-3">
+                  <Users size={16} className="mt-0.5 shrink-0 text-white/40" />
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">
+                      {event.organizer_name ? 'Presented with' : 'Presented by'}
+                    </p>
+                    <p className="text-[14px] text-white/80">{event.sponsors.join(' · ')}</p>
                   </div>
                 </div>
               )}
