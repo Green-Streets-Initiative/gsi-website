@@ -466,6 +466,8 @@ export default function NearbyShell({
                 onToggleSection={toggleSection}
               />
               <GuideLinks context="bike" guides={guides.data} modeFilter={modeFilter} />
+              <DockList docks={docks} onSelect={(id) => selectShowing({ type: 'dock', id }, 'list')} selectedId={selection?.type === 'dock' ? selection.id : null} isSectionOpen={isSectionOpen} onToggleSection={toggleSection} />
+              <GuideLinks context="docks" guides={guides.data} modeFilter={modeFilter} />
               <BorrowRentList
                 points={model.borrowRent}
                 onSelect={(id) => selectShowing({ type: 'borrow', id }, 'list')}
@@ -476,8 +478,6 @@ export default function NearbyShell({
               {model.borrowRent.length > 0 && (
                 <GuideLinks context="borrow" guides={guides.data} modeFilter={modeFilter} />
               )}
-              <DockList docks={docks} onSelect={(id) => selectShowing({ type: 'dock', id }, 'list')} selectedId={selection?.type === 'dock' ? selection.id : null} isSectionOpen={isSectionOpen} onToggleSection={toggleSection} />
-              <GuideLinks context="docks" guides={guides.data} modeFilter={modeFilter} />
             </>
           )}
         </div>
