@@ -114,6 +114,7 @@ export const TAG_META: Record<string, { label: string; color: string; bg: string
   spanish:               { label: 'En español',           color: '#FCD34D', bg: '#FCD34D20' },
   bilingual:             { label: 'Bilingual',            color: '#FCD34D', bg: '#FCD34D20' },
   students:              { label: 'Students',             color: '#2DD4BF', bg: '#2DD4BF20' },
+  advocacy:              { label: 'Advocacy',             color: '#FB923C', bg: '#FB923C20' },
 }
 
 export function getTagMeta(tag: string) {

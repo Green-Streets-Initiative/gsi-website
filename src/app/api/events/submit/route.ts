@@ -8,7 +8,7 @@ const REQUIRED = ['title', 'eventType', 'description', 'date', 'startTime', 'ven
 const VALID_TAGS = [
   'free', 'paid', 'beginner_friendly', 'registration_required',
   'family_friendly', 'seniors', 'lgbtq', 'women',
-  'spanish', 'bilingual', 'students',
+  'spanish', 'bilingual', 'students', 'advocacy',
 ]
 
 // Mirrors FEED_TYPE_OPTIONS in SubmitEventForm. Stored as submitted rather than
