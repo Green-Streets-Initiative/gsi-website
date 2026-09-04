@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
-import { Lock, ClipboardText } from '@phosphor-icons/react/dist/ssr'
+import { ClipboardText } from '@phosphor-icons/react/dist/ssr'
 import VolunteerAssessmentClient from './client'
 
 async function getAssignmentData(token: string) {
@@ -68,16 +68,9 @@ async function getAssignmentData(token: string) {
     }
   }
 
-  // Check CORI clearance
-  const { data: volProfile } = await supabase
-    .from('volunteer_profiles')
-    .select('background_check_status')
-    .eq('id', assignment.volunteer_id)
-    .single()
-
-  if (volProfile?.background_check_status !== 'approved') {
-    return { needsCori: true }
-  }
+  // No CORI gate here: a route review is walked without children present.
+  // CORI applies to roles that work around kids (Walk/Bike Bus leaders,
+  // School Coordinators), not to assessing a corridor.
 
   const corridor = assignment.route_corridors as any
   const school = corridor.route_assessments?.schools
@@ -196,24 +189,6 @@ export default async function VolunteerAssessmentPage({
               Please contact your Green Streets coordinator to get your training link.
             </p>
           )}
-        </div>
-      </main>
-    )
-  }
-
-  if ('needsCori' in data) {
-    return (
-      <main className="min-h-screen bg-[#F4F8EE] flex items-center justify-center p-6">
-        <div className="max-w-md text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-            <Lock size={28} weight="regular" />
-          </div>
-          <h1 className="text-xl font-bold text-[#191A2E]">Background Check Required</h1>
-          <p className="mt-2 text-sm text-[#6B7280]">
-            Your CORI background check must be approved before you can submit corridor
-            assessments. If you&apos;ve already uploaded your clearance, it&apos;s pending review.
-            Contact your School Coordinator for questions.
-          </p>
         </div>
       </main>
     )

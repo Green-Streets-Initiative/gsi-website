@@ -14,6 +14,7 @@ import VolunteerRouteMap from '@/components/volunteer-route/VolunteerRouteMap'
 import BlockStrip from '@/components/walk-audit/BlockStrip'
 import { useDictation } from '@/components/walk-audit/useDictation'
 import type { WalkAuditMeta, BlockDef, BlockCheck } from './page'
+import { haversineMeters, buildClientBlocks } from '@/components/walk-audit/blocks'
 
 const PURPOSE_LABELS: Record<string, string> = {
   engage: 'Community walk audit',
@@ -38,39 +39,6 @@ const TOP_FIX_OPTIONS = [
 interface Props {
   token: string
   audit: WalkAuditMeta
-}
-
-function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const R = 6371000
-  const dLat = ((b.lat - a.lat) * Math.PI) / 180
-  const dLng = ((b.lng - a.lng) * Math.PI) / 180
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(s))
-}
-
-function buildClientBlocks(points: { lat: number; lng: number }[]): BlockDef[] {
-  const blocks: BlockDef[] = []
-  let idx = 0
-  for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i], b = points[i + 1]
-    const dist = haversineMeters(a, b)
-    const n = Math.max(1, Math.round(dist / 150))
-    for (let k = 0; k < n; k++) {
-      const tStart = k / n
-      const tEnd = (k + 1) / n
-      const tMid = (k + 0.5) / n
-      blocks.push({
-        i: idx++,
-        name: null,
-        mid: { lat: a.lat + (b.lat - a.lat) * tMid, lng: a.lng + (b.lng - a.lng) * tMid },
-        start: { lat: a.lat + (b.lat - a.lat) * tStart, lng: a.lng + (b.lng - a.lng) * tStart },
-        end: { lat: a.lat + (b.lat - a.lat) * tEnd, lng: a.lng + (b.lng - a.lng) * tEnd },
-      })
-    }
-  }
-  return blocks
 }
 
 export default function WalkAuditClient({ token, audit }: Props) {

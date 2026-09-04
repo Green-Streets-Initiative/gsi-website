@@ -20,6 +20,21 @@ export interface ProblemPin {
   lng: number
   note: string
   category: string | null
+  /** Observation-first capture (v3): a spot can be something that works well,
+   *  not only a problem. Older pins have no valence and read as problems. */
+  valence?: 'good' | 'problem'
+  /** 1 (minor) … 5 (impassable); problems only. */
+  severity?: number | null
+  /** Photo taken at this spot (uploaded to route-assessment-photos). */
+  photo?: { url: string; path?: string } | null
+  created_at?: string
+}
+
+/** A quick "how was this block?" check-in while walking (v3). */
+export interface BlockCheck {
+  block_index: number
+  verdict: 'fine' | 'soso' | 'rough'
+  created_at: string
 }
 
 export interface FormData {
@@ -76,6 +91,13 @@ export interface FormData {
   additional_notes: string
   // Location-pinned findings (any step)
   problem_pins: ProblemPin[]
+  // Observation-first walk (v3)
+  block_checks: BlockCheck[]
+  /** Which capture flow produced this submission ('observation_v3' = the
+   *  walk → flag spots → wrap-up flow; absent = the original checklist). */
+  capture_mode: string | null
+  /** Set when the volunteer also filled in the optional detailed checklist. */
+  detailed_checklist_completed: boolean
 }
 
 export const DEFAULT_FORM: FormData = {
@@ -95,6 +117,9 @@ export const DEFAULT_FORM: FormData = {
   walk_score: 5, bike_score: 5, walk_age: null, bike_age: null,
   seasonal_notes: '', specific_hazards: '', recommendation: null, additional_notes: '',
   problem_pins: [],
+  block_checks: [],
+  capture_mode: null,
+  detailed_checklist_completed: false,
 }
 
 // Which answerable questions belong to each walk-form step, for progress

@@ -334,9 +334,9 @@ const PROJECT_2: Step[] = [
     need: [{ label: 'Corridor links (email, on your phone)' }],
     body: (
       <ul className="m-0">
-        <li>Pick one school and walk its corridors at school-arrival time if you can (7:30–8:30am) — traffic then is the truth.</li>
-        <li>Fill in the checklist through your corridor link as you go: sidewalks, crossings, traffic, bike conditions, photos.</li>
-        <li>You&rsquo;re also testing the tool itself — if the form is awkward on a phone or anything fails, write it down.</li>
+        <li>Pick one school and walk its corridors at school-arrival time if you can (7:30–8:30am) — traffic then is the truth. Start at the far end and walk toward the school.</li>
+        <li>Open your corridor link on your phone. As things catch your eye, tap <strong>Flag this spot</strong>: a photo, works-well or problem, and a word or two. Good things count. Then a two-minute wrap-up at the end.</li>
+        <li>You&rsquo;re also testing the tool itself — if anything is awkward on a phone or fails, say so in the wrap-up notes.</li>
       </ul>
     ),
     done: 'One school’s corridors are submitted through the links.',

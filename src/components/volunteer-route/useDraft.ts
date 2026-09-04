@@ -24,10 +24,12 @@ interface DraftState {
   photos: DraftPhoto[]
 }
 
-// v2 adds the walk-audit borrowings (problem pins, measured seconds, new
-// questions). v1 drafts still load — the DEFAULT_FORM merge fills new fields.
-const DRAFT_VERSION = 2
-const ACCEPTED_VERSIONS = [1, 2]
+// v2 added the walk-audit borrowings (problem pins, measured seconds, new
+// questions); v3 is the observation-first flow (pins carry valence/photo,
+// block check-ins, `step` is now a view index). Older drafts still load —
+// the DEFAULT_FORM merge fills new fields.
+const DRAFT_VERSION = 3
+const ACCEPTED_VERSIONS = [1, 2, 3]
 
 function draftKey(token: string) {
   return `shift-route-draft:${token}`
