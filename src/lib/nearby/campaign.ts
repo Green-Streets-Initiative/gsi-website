@@ -4,8 +4,8 @@ import { stickyParams } from './share'
  * New Routes campaign glue for the web surfaces.
  *
  * The campaign drives recent movers to a co-branded /nearby page and asks them
- * to install Shift and take 10 qualifying trips in 30 days for a $10 local gift
- * card. There is no deferred-deep-link SDK (a deliberate product decision), so
+ * to install Shift and take 10 qualifying trips in 30 days for a $15 reward
+ * (a local-shop gift card or a digital gift card of their choice). There is no deferred-deep-link SDK (a deliberate product decision), so
  * the reliable attribution floor is the VISIBLE code the mover enters in the
  * app after installing. These helpers (a) detect when a page is in a New Routes
  * context, (b) build the /shift hand-off href without dropping partner/utm, and

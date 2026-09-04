@@ -50,11 +50,11 @@ export default function NewRoutesShiftBanner({
             New Routes reward
           </div>
           <h2 className="mt-2 font-display text-[clamp(22px,3vw,30px)] font-extrabold leading-tight text-white">
-            Just moved? Earn $10 for getting around.
+            Just moved? Unlock $15 for getting around.
           </h2>
           <p className="mt-2 text-[15px] leading-relaxed text-white/80">
-            Take 10 walking, biking, or transit trips in your first 30 days on Shift and unlock a $10
-            gift card at a local shop.
+            Take 10 walking, biking, or transit trips in your first 30 days on Shift and unlock a $15
+            reward — a gift card at a local shop, or a digital gift card you choose.
           </p>
           <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
             <span className="rounded-md border border-[#BAF14D]/40 bg-[#BAF14D]/10 px-2.5 py-1 font-mono text-[15px] font-bold tracking-wider text-[#BAF14D]">
