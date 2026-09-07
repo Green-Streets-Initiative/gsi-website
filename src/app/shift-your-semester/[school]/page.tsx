@@ -60,8 +60,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { school: slug } = await params
   const school = getSchool(slug)
   if (!school) return { title: 'Shift Your Semester | Green Streets Initiative' }
-  const title = `Shift Your Semester at ${school.name} | Green Streets Initiative`
-  const description = `Walk, bike, and ride the T at ${school.name}. Join your school on Shift, take 10 active trips in 30 days, and pick a $25 reward.`
+  // Prefer the per-school search title. These pages already rank on page one
+  // for what students actually search ("bu cycle kitchen", "mit t pass"), and
+  // a title naming the campaign rather than the answer is why they earned 978
+  // impressions for 1 click in the four weeks to 2026-09-04. Falls back to the
+  // campaign template for any school without one.
+  const title =
+    school.seoTitle ??
+    `Shift Your Semester at ${school.name} | Green Streets Initiative`
+  const description =
+    school.seoDescription ??
+    `Walk, bike, and ride the T at ${school.name}. Join your school on Shift, take 10 active trips in 30 days, and pick a $25 reward.`
   const url = `https://www.gogreenstreets.org/shift-your-semester/${school.slug}`
   return {
     title,
