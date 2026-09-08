@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Suspense } from 'react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import JsonLd from '@/components/JsonLd'
 import NearbySnapshot from '@/components/nearby/NearbySnapshot'
 
 const TITLE = 'Your neighborhood snapshot — T stops, buses & Bluebikes near you'
@@ -25,6 +26,23 @@ export const metadata: Metadata = {
   },
 }
 
+// Like /commute-advisor, this page carried only the site-wide Organization
+// markup despite being a tool that answers a question people type. There is no
+// visible FAQ here, so no FAQPage — just an honest description of the tool.
+const appSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: "What's near you",
+  url: 'https://www.gogreenstreets.org/nearby',
+  applicationCategory: 'TravelApplication',
+  browserRequirements: 'Requires JavaScript.',
+  operatingSystem: 'Any',
+  description: DESCRIPTION,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  areaServed: { '@type': 'AdministrativeArea', name: 'Greater Boston, Massachusetts' },
+  publisher: { '@id': 'https://www.gogreenstreets.org/#organization' },
+}
+
 // viewport-fit=cover lets the app shell's bottom sheet clear the iPhone
 // home indicator via env(safe-area-inset-bottom)
 export const viewport: Viewport = {
@@ -45,6 +63,7 @@ export default function NearbyPage() {
         </Suspense>
       </main>
       <Footer />
+      <JsonLd data={appSchema} />
     </>
   )
 }
