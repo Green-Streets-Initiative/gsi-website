@@ -11,8 +11,8 @@ import { getCampusEvents } from '@/lib/semester/events'
 import { getTownRoams } from '@/lib/towns/queries'
 import { EventsRoamsPanels } from '@/components/towns/TownSections'
 import TownToc from '@/components/towns/TownToc'
-import { TramFront, Bike, Footprints } from 'lucide-react'
-import { getSchool, SCHOOLS, type SchoolFact } from '@/lib/semester/schools'
+import { TramFront, Bike, Footprints, ArrowUpRight } from 'lucide-react'
+import { getSchool, SCHOOLS, sourceName, type SchoolFact } from '@/lib/semester/schools'
 import { withUtm } from '@/lib/utm'
 import CorporateShareKit from '@/app/events/shift-your-summer/share/[slug]/CorporateShareKit'
 
@@ -86,16 +86,22 @@ function FactCards({ facts }: { facts: SchoolFact[] }) {
       {facts.map((f) => (
         <div
           key={f.sourceUrl + f.text.slice(0, 24)}
-          className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-white/85"
+          className="flex flex-col rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-white/85"
         >
-          {f.text}{' '}
+          <span>{f.text}</span>
+          {/* Named citation on its own line. It read as a lowercase "source"
+              dangling after the final period, which looked like a typo rather
+              than an attribution — and told you nothing about who was being
+              cited before you clicked. */}
           <a
             href={f.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="whitespace-nowrap text-xs font-semibold text-white/70 underline underline-offset-2 hover:text-white"
+            className="mt-2 inline-flex items-center gap-1 self-start text-xs font-semibold text-white/75 no-underline transition-colors hover:text-[#BAF14D]"
           >
-            source
+            {sourceName(f.sourceUrl)}
+            <ArrowUpRight size={13} strokeWidth={2.5} aria-hidden="true" />
+            <span className="sr-only">(opens in a new tab)</span>
           </a>
         </div>
       ))}

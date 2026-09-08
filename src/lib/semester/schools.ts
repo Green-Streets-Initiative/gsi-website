@@ -335,6 +335,52 @@ export const SCHOOLS: School[] = [
   },
 ]
 
+/**
+ * Human name for a citation host, so a fact credits "Boston University" rather
+ * than a bare lowercase "source".
+ *
+ * Keyed on hostname rather than the full URL so a school reorganising its site
+ * doesn't silently drop the label. Most entries are just the institution: the
+ * ones that aren't are the cases where the publisher genuinely differs from the
+ * school — a student newspaper, a student-run shop, a campus police department
+ * — and saying so is the honest citation.
+ */
+const SOURCE_NAMES: Record<string, string> = {
+  'www.bu.edu': 'Boston University',
+  'www.bc.edu': 'Boston College',
+  'emerson.edu': 'Emerson College',
+  'www.umb.edu': 'UMass Boston',
+  'www.suffolk.edu': 'Suffolk University',
+  'www.simmons.edu': 'Simmons University',
+  'lesley.edu': 'Lesley University',
+  'support.lesley.edu': 'Lesley University',
+  'web.mit.edu': 'MIT',
+  'police.mit.edu': 'MIT Police',
+  'pref.northeastern.edu': 'Northeastern University',
+  'nupd.northeastern.edu': 'Northeastern University Police',
+  'berklee.helpscoutdocs.com': 'Berklee College of Music',
+  'access.tufts.edu': 'Tufts University',
+  'tuftsbikes.com': 'Tufts Bikes',
+  'transportation.harvard.edu': 'Harvard Transportation',
+  'www.transportation.harvard.edu': 'Harvard Transportation',
+  'www.hupd.harvard.edu': 'Harvard University Police',
+  'www.thecrimson.com': 'The Harvard Crimson',
+}
+
+/**
+ * Display name for a fact's citation. Falls back to the bare domain (minus
+ * `www.`) for any host not in the map, so a new source still reads like a
+ * citation instead of breaking the layout or going unlabelled.
+ */
+export function sourceName(url: string): string {
+  try {
+    const host = new URL(url).hostname
+    return SOURCE_NAMES[host] ?? host.replace(/^www\./, '')
+  } catch {
+    return 'Source'
+  }
+}
+
 export function getSchool(slug: string): School | null {
   return SCHOOLS.find((s) => s.slug === slug) ?? null
 }
