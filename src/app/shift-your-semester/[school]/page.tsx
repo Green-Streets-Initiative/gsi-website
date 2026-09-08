@@ -249,32 +249,42 @@ export default async function SchoolPage({ params }: Props) {
           </div>
         </section>
 
-        {/* Around campus — anchored neighborhood snapshot */}
+        {/* Around campus — hands off to the real /nearby, campus pre-filled.
+            This was an <iframe src="/nearby/embed"> until 2026-09-08 and it
+            rendered badly for everyone. Two reasons, both structural rather
+            than fixable in the frame: the snapshot picks its layout from
+            `window.innerWidth >= 1024`, and inside an iframe that is the
+            IFRAME's width (capped at 860px here), so every visitor on every
+            device got the phone shell; and that shell is
+            `fixed inset-x-0 bottom-0 top-[60px]`, deliberately anchored under
+            the site's fixed Nav, which the chrome-free embed page doesn't
+            have — so it left a 60px dead band and computed its bottom-sheet
+            snap points against a 620px box instead of a real screen.
+            /nearby already hydrates from ?lat&lng (skipping the location gate)
+            and stickyParams carries the utm_* through its own URL rewrites, so
+            the destination needs nothing built. */}
         <section className="scroll-mt-28 px-8 pb-14" id="around">
           <div className="mx-auto max-w-[860px]">
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h2 className="mb-1 font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold tracking-tight text-white">
-                  What&rsquo;s around campus
-                </h2>
-                <p className="max-w-[560px] text-[0.9375rem] leading-relaxed text-white/80">
-                  Live map of T stops, bus arrivals, Bluebikes docks, and bike routes
-                  around {school.shortName} — poke around.
-                </p>
-              </div>
-              <a
-                href={`/nearby?lat=${school.lat}&lng=${school.lng}&label=${encodeURIComponent(school.name)}&utm_source=school_page&utm_campaign=${school.slug}`}
-                className="shrink-0 text-sm font-semibold text-[#BAF14D]"
-              >
-                Open the full map &rarr;
-              </a>
-            </div>
-            <iframe
-              src={`/nearby/embed?lat=${school.lat}&lng=${school.lng}&label=${encodeURIComponent(school.name)}`}
-              title={`Neighborhood snapshot around ${school.name}`}
-              loading="lazy"
-              className="h-[620px] w-full rounded-[18px] border border-white/[0.12] bg-[#191A2E]"
-            />
+            <h2 className="mb-1 font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold tracking-tight text-white">
+              What&rsquo;s around campus
+            </h2>
+            <p className="mb-5 max-w-[560px] text-[0.9375rem] leading-relaxed text-white/80">
+              A live map of everywhere you can walk, bike, or ride to from{' '}
+              {school.shortName} — opens centered on campus.
+            </p>
+            <a
+              href={`/nearby?lat=${school.lat}&lng=${school.lng}&label=${encodeURIComponent(school.name)}&utm_source=school_page&utm_campaign=${school.slug}`}
+              className="block rounded-[18px] border border-white/[0.12] bg-white/[0.03] p-6 no-underline transition-colors hover:border-[#BAF14D]/40 hover:bg-white/[0.05]"
+            >
+              <span className="mb-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/85">
+                <span>T stops &amp; live bus arrivals</span>
+                <span>Bluebikes docks</span>
+                <span>Protected bike paths</span>
+              </span>
+              <span className="text-[0.9375rem] font-semibold text-[#BAF14D]">
+                Open the {school.shortName} map &rarr;
+              </span>
+            </a>
           </div>
         </section>
 
