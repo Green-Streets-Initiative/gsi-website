@@ -535,6 +535,13 @@ export interface TownCivicEvent {
   comment_deadline: string | null
   comment_email: string | null
   action_label: string | null
+  /**
+   * false = the item may ride along as an "also" row in a digest that
+   * something else triggered, but is never the featured trigger and never
+   * gets a reminder send (Keith 2026-09-08: third-party volunteer calls like
+   * Girls in Gear get no email of their own). Missing/true = today's behavior.
+   */
+  digest_can_trigger?: boolean
   municipality: string
   affected_towns: string[] | null
   /** Extra attendance channels beyond venue + virtual_link (dial-in, meeting ID). */
@@ -563,7 +570,7 @@ export async function getTownCivicEvents(townName: string): Promise<TownCivicEve
   const todayStr = new Date().toISOString().slice(0, 10)
   const { data } = await supabase
     .from('infrastructure_hearings')
-    .select('id, title, description, hearing_date, hearing_time, hearing_end_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline, community_name, whats_deciding, community_links, lat, lng')
+    .select('id, title, description, hearing_date, hearing_time, hearing_end_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline, community_name, whats_deciding, community_links, digest_can_trigger, lat, lng')
     .eq('status', 'published')
     .or(`municipality.eq.${townName},affected_towns.cs.{${townName}}`)
     .order('hearing_date', { ascending: true, nullsFirst: false })

@@ -146,7 +146,7 @@ export function meetingNoun(item: TownCivicEvent): string {
   if (/\bworkshop\b/.test(text)) return 'workshop'
   if (/information session/.test(text)) return 'information session'
   if (/\bwebinar\b/.test(text)) return 'webinar'
-  if (/\bvolunteer\b/.test(text)) return 'volunteer event'
+  if (/\bvolunteer\b/.test(text)) return 'volunteer opportunity'
   return 'public meeting'
 }
 
@@ -196,7 +196,9 @@ export function buildTownDigest(opts: {
   // The digest trigger is a new pipeline item — the featured card must be
   // civic. Dated town_resources rows may ride along as "also" rows.
   const { candidates } = buildFeaturedCandidates(civic, resources, linkFor('featured'), now, horizonDays)
-  const featured = candidates.find((c) => c.civic)
+  // Ride-along-only items (digest_can_trigger=false) never head an email;
+  // they fill an "also" slot when something else is the reason to send.
+  const featured = candidates.find((c) => c.civic && c.civic.digest_can_trigger !== false)
   if (!featured?.civic) return null
   const also = candidates.filter((c) => c !== featured).slice(0, 2)
   const item = featured.civic
@@ -244,7 +246,9 @@ export function buildTownDigest(opts: {
   const weighIn: string[] = []
   if (item.virtual_link) {
     weighIn.push(
-      recruit
+      volunteer
+        ? `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">${escapeHtml(item.action_label ?? 'Sign up online')}</a> — the application takes a few minutes`
+        : recruit
         ? `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">Apply online</a> — the application takes a few minutes`
         : `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">Join the ${item.hearing_type === 'virtual' ? 'virtual ' : ''}${noun} online</a> — registration takes a minute`,
     )

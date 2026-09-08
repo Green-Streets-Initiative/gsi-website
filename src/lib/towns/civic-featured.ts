@@ -105,7 +105,9 @@ export function buildFeaturedCandidates(
       const chip = ce.hearing_date
         ? dateOnlyChip(ce.hearing_date) + (t ? ` · ${t}` : '') + (ce.hearing_type === 'virtual' ? ' · virtual' : '')
         : ce.comment_deadline
-        ? `Comment by ${dateOnlyChip(ce.comment_deadline)}`
+        ? isVolunteerDrive(ce)
+          ? `Sign up by ${dateOnlyChip(ce.comment_deadline)}`
+          : `Comment by ${dateOnlyChip(ce.comment_deadline)}`
         : isRecruitment(ce)
         ? 'Applications open'
         : 'Open for feedback'

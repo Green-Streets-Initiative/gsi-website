@@ -153,6 +153,7 @@ export async function GET(req: Request) {
       const inWindow = (d: string | null) => !!d && d > todayEt && d <= reminderTarget
       const reminders = allCivic.filter((c) =>
         sentItemIds.has(c.id) &&
+        c.digest_can_trigger !== false &&
         !remindedIds.has(c.id) &&
         !recentIds.has(c.id) &&
         (inWindow(c.hearing_date) || (!c.hearing_date && inWindow(c.comment_deadline))),
@@ -332,7 +333,7 @@ async function recentlyPublishedCivic(
 ): Promise<TownCivicEvent[]> {
   const { data } = await sb
     .from('infrastructure_hearings')
-    .select('id, title, description, hearing_date, hearing_time, hearing_end_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline, community_name, whats_deciding, community_links, lat, lng')
+    .select('id, title, description, hearing_date, hearing_time, hearing_end_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline, community_name, whats_deciding, community_links, digest_can_trigger, lat, lng')
     .eq('status', 'published')
     .or(`municipality.eq.${townName},affected_towns.cs.{${townName}}`)
     .gte('published_at', cutoffIso)
