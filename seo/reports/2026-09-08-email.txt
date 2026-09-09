@@ -1,0 +1,154 @@
+Subject: [GSI] SEO monthly deep-dive — best week yet, and the campus pages are why
+
+MONTHLY DEEP-DIVE — 2026-09-08
+GSC week: Aug 29 - Sep 4 · 28-day: Aug 8 - Sep 4
+
+
+=== THE LEDGER ===
+
+                                 This week    vs 4-wk    vs 12-wk
+Organic clicks (GSC)                    30      +135%       +150%
+Organic impressions (GSC)            2,550      +102%       +146%
+Avg position / CTR              11.3 / 1.18%   (was 13.6 / 0.81%)
+PostHog organic sessions                35       +16%        +17%
+Answer-engine referrals                  0       -100%          --
+AEO sentinel citations              0 of 6      0 of 6      0 of 6
+Rotated SERP presence               0 of 3          --          --
+
+Best week in the seventeen-week series, by a distance. Previous highs
+were 26 clicks and 1,555 impressions. The 28-day window doubled against
+the 28 before it: 73 clicks / 6,675 impressions vs 36 / 3,438.
+
+Trailing 4 weeks vs prior 4 weeks:  clicks 18.3/wk vs 9.0  (+103%)
+                                    impr 1,669/wk vs 860   (+94%)
+
+Per cluster this week (impressions / clicks / avg position):
+  students-campus         189 / 0 / 9.1      <- new cluster
+  brand-navigational      104 / 0 / 8.7
+  town-commuters           35 / 1 / 23.0
+  drive-time-conversion    20 / 0 / 12.3
+  new-to-boston             9 / 0 / 14.9
+  used-car-to-ebike         5 / 0 / 10.4
+  everything else           0
+  coverage 93% (was 69%)
+
+Non-brand discovery impressions -- the number the strategy is actually
+accountable for -- went 49 to 258. First real movement since the routine
+began.
+
+
+=== WHAT HAPPENED ===
+
+The campus pages are the whole story. Eleven /shift-your-semester pages
+took 917 impressions this week -- 36% of everything the site earned --
+at an average position around 9, for 1 click.
+
+  /shift-your-semester/mit                 239 impr, pos 9.8
+  /shift-your-semester/boston-university   172 impr, pos 7.4
+  /shift-your-semester/tufts               132 impr, pos 11.3
+  /shift-your-semester/emerson              88 impr, pos 6.5
+  ...eleven pages in total
+
+And the queries behind them -- 'bu cycle kitchen' (68 impressions at
+position 5.9), 'mit t pass', 'tufts safe ride', 'quad bikes harvard',
+'suffolk mbta pass', 'northeastern blue bike discount' -- were every one
+of them filed as unmatched noise, because the portfolio had no cluster
+for students. Two previous reports read the biggest surface on the site
+as clutter. That is the measurement lesson of the month, and it is fixed:
+students-campus is now a priority-1 cluster.
+
+You got there first. Your three commits mid-run (e0635fb, 14cba22,
+a2c34a2) gave all twelve schools titles written for the campus question
+instead of the campaign. That is now exp-2026-09-1 in the ledger --
+shipped 2026-09-08, base 917 impressions / 0 clicks, verdict due
+2026-10-20. It is the first experiment on the clock with a real
+hypothesis, and the most important number of the autumn.
+
+Also worth knowing:
+
+- The UTM fix is working. Clean rows now appear for Cambridge (36),
+  Somerville (33) and Boston (20) -- all three were absent from Search
+  Console entirely a week ago -- and Arlington has consolidated onto one
+  URL. Parameterized rows will fade as Google re-crawls.
+
+- Answer-engine referrals went to zero. Those were always contest
+  participants asking an assistant about Shift Your Summer rules; the
+  contest ended. We have never had answer-engine referrals that meant
+  discovery. Items 1 and 2 are the first deliberate attempts to earn any.
+
+- I nearly drafted a winter-biking guide. The library already has three
+  weather guides and that cluster still has zero impressions -- so it is
+  a visibility problem, not a content problem, and a fourth guide would
+  not have helped. Briefed for October as a structural fix instead.
+
+
+=== THREE THINGS TO DECIDE ===
+
+1. INDEX THE CAMPUS PAGES IN LLMS.TXT
+   13 campus URLs are in sitemap.xml and zero are in llms.txt. The page
+   class that took 36% of our impressions is entirely absent from the
+   file answer engines read. Adds a Campus pages section from the
+   existing SCHOOLS data -- no DB call, one file, +15 lines.
+   Typecheck clean. Effort: small. Impact: medium.
+   https://github.com/Green-Streets-Initiative/gsi-website/compare/main...seo/2026-09-llms-campus
+   to ship: open Claude Code and say 'ship SEO item 1'
+
+2. DESCRIBE THE TWO TOOL PAGES TO ANSWER ENGINES
+   /commute-advisor is our largest impression source -- 1,052
+   impressions for 2 clicks over 28 days -- ranks on question-shaped
+   queries, and already renders six visible answers under 'Common
+   questions about active commuting in Massachusetts' with nothing
+   describing them. Adds FAQPage + WebApplication there and
+   WebApplication on /nearby, both derived from the constants the pages
+   already render so the markup cannot drift from the visible copy.
+   No new content -- markup for content that has been sitting there.
+   Typecheck clean; the six questions serialize as valid JSON with the
+   $90 LinkPass token resolving. I could NOT check the rendered page --
+   dev servers cannot start from an unattended run -- so give the Vercel
+   preview an eyeball before merging. Effort: small. Impact: medium.
+   https://github.com/Green-Streets-Initiative/gsi-website/compare/main...seo/2026-09-answer-schema
+   to ship: open Claude Code and say 'ship SEO item 2'
+
+3. MICRO-GUIDE: WHAT A CARGO E-BIKE COSTS
+   The used-car-to-ebike wedge has shown almost nothing since we started,
+   and this is its first repeatable signal: variants of '"tern gsd" used
+   "$3000"' took 34 impressions at position 9.1 over 28 days, across two
+   consecutive pulls. Our cargo-bike guide answers what one does; nothing
+   answers what one costs. Uses ranges and price drivers rather than
+   model-by-model figures, since bike prices have no freshness cron. The
+   MassCEC voucher -- which would have dated fastest -- is a pointer, not
+   a promise: I verified it ran Apr-Sep 2025 and is closed.
+   Draft: seo/drafts/guides/what-a-cargo-ebike-costs.md (renders nothing
+   until approved). Effort: small. Impact: medium.
+   to ship: open Claude Code and say 'ship SEO item 3'
+
+(Or 'decline SEO item N' and it will not come back without new evidence.)
+
+
+=== HOUSEKEEPING ===
+
+Health: all green. sitemap 133 locs (+1), robots unchanged, llms.txt 75
+links / 5 sections, all 200s.
+
+Stagnation trigger: stagnant_weeks = 0, nowhere near firing. I also
+changed what it reads -- it used to count total organic clicks, which
+brand dominates, so last month it would have reported healthy growth
+while non-brand discovery was flat at 48-49. It now reads non-brand
+discovery impressions.
+
+The honest caveat on this whole report: 258 non-brand impressions is one
+week and one page class, and September is exactly when students decide
+how they will get around. If the campus surge is seasonal it falls back
+in October. That is why the exp-2026-09-1 verdict matters more than this
+week's headline.
+
+On AEO: we measure Search Console data, presence in live web search for
+question-shaped queries, referrals from answer-engine domains, and
+structured-data / llms.txt health. We cannot see rankings inside ChatGPT,
+Perplexity or Claude, or Google AI Overview inclusion. No invented
+visibility score, ever.
+
+Full report:
+https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-09-08.md
+
+Next run: weekly pulse, 2026-09-14.
