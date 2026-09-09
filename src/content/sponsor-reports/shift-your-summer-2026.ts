@@ -422,10 +422,6 @@ export const shiftYourSummer2026: CampaignReports = {
         'Kryptonite donated eight KryptoLok Standard U-Locks. Rather than holding them for the final drawing, we awarded them weekly through the summer, which gave participants a recurring reason to stay active and put the Kryptonite name in front of them repeatedly.',
       summary: [
         { label: 'U-Locks donated', value: '8' },
-        { label: 'Winners drawn and notified', value: '8', live: { brand: 'Kryptonite', field: 'notified' } },
-        { label: 'Prizes claimed', value: '8', live: { brand: 'Kryptonite', field: 'claimed' } },
-        { label: 'Locks shipped to winners', value: '8', live: { brand: 'Kryptonite', field: 'shipped' } },
-        { label: 'Confirmed received by winners', value: '6', live: { brand: 'Kryptonite', field: 'received' } },
         { label: 'Entries in the largest drawing for your prize', value: '10,148' },
         { label: 'Bike trips logged campaign-wide', value: '3,483' },
         { label: 'Bike miles logged campaign-wide', value: '11,978' },
@@ -467,11 +463,8 @@ export const shiftYourSummer2026: CampaignReports = {
       intro: 'Noxgear donated three Tracer 2 LED safety vests and ran a member offer alongside them. This report covers what both delivered.',
       summary: [
         { label: 'Safety vests donated', value: '3' },
-        { label: 'Winners drawn and notified', value: '3', live: { brand: 'Noxgear', field: 'notified' } },
-        { label: 'Prizes claimed', value: '3', live: { brand: 'Noxgear', field: 'claimed' } },
         { label: 'Entries in the drawing for your first vest', value: '10,810' },
-        { label: 'Times your offer was shown', value: '6,789' },
-        { label: 'People who saw your offer', value: '297' },
+        { label: 'Campaign participants', value: '189' },
         { label: 'Active miles logged campaign-wide', value: '36,706' },
       ],
       sections: [
@@ -508,9 +501,7 @@ export const shiftYourSummer2026: CampaignReports = {
       summary: [
         { label: 'Helmet donated', value: '1' },
         { label: 'Entries in the drawing for your prize', value: '10,810' },
-        { label: 'Times your offer was shown', value: '3,169' },
-        { label: 'People who saw your offer', value: '223' },
-        { label: 'Taps through to your site', value: '8' },
+        { label: 'Campaign participants', value: '189' },
         { label: 'Bike miles logged campaign-wide', value: '11,978' },
       ],
       sections: [
