@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import ShortlistProgress from '@/components/shortlist/ShortlistProgress'
 
 /**
  * Volunteer Field Guide — unlisted, password-gated (see middleware.ts).
@@ -9,9 +10,7 @@ import { useEffect, useState } from 'react'
  * Update links here:
  */
 const LINKS = {
-  workbook:
-    'https://docs.google.com/spreadsheets/d/1S1nWlxSebNAn-9Gog4D68uDYfGoV0zJnCbpKWrhktI0/edit',
-  dashboard: 'https://admin.gogreenstreets.org',
+  shortlist: '/volunteer/guide/shortlist',
   program: 'https://www.gogreenstreets.org/shift/schools',
   streetview: 'https://www.google.com/maps',
   contact: 'info@gogreenstreets.org',
@@ -45,11 +44,11 @@ function NeedChips({ need }: { need: Chip[] }) {
           <a
             key={c.label}
             href={c.href}
-            target="_blank"
+            target={c.href.startsWith('http') ? '_blank' : undefined}
             rel="noopener"
             className="rounded-full bg-[#DEE9FC] text-[#1D4FB0] px-3 py-1 text-[13px] font-semibold no-underline hover:bg-[#cfdffb]"
           >
-            {c.label} ↗
+            {c.label} {c.href.startsWith('http') ? '↗' : '→'}
           </a>
         ) : (
           <span
@@ -208,24 +207,24 @@ const PROJECT_1: Step[] = [
   {
     key: 'p1-skim',
     title: 'Skim the shortlist',
-    need: [{ label: 'Shortlist sheet', href: LINKS.workbook }],
+    need: [{ label: 'Shortlist workspace', href: LINKS.shortlist }],
     body: (
       <ul className="m-0">
-        <li>The sheet has 20 candidate schools with the public data already filled in — enrollment, Title I status, low-income percentage, Safe Routes to School status — and the source for each row in its Comments cell. Read it through once.</li>
-        <li>Fix anything that looks wrong and resolve anything marked &ldquo;?&rdquo;. Don&rsquo;t re-verify every number; the sources are cited so you can spot-check when something smells off.</li>
-        <li>One known wrinkle: Winter Hill (Somerville) is in temporary space after its building closed — confirm where students actually report before trusting its address.</li>
+        <li>The workspace lists 20 candidate schools with the public data already filled in — enrollment, Title I status, low-income percentage, Safe Routes to School status — and the sources under &ldquo;Desk research&rdquo; on each school&rsquo;s page. Open a few and read them through.</li>
+        <li>Don&rsquo;t re-verify every number; spot-check when something smells off, and tell Keith about anything that looks wrong.</li>
+        <li>One known wrinkle: Winter Hill (Somerville) is in temporary space after its building closed and has no route analysis — confirm where students actually report before trusting its address.</li>
       </ul>
     ),
-    done: 'You know what’s in the sheet, and no “?” is left in the data columns.',
+    done: 'You know what’s in the workspace and how the six criteria add up.',
   },
   {
     key: 'p1-pto',
     title: 'Check PTO activity',
-    need: [{ label: 'Shortlist sheet', href: LINKS.workbook }],
+    need: [{ label: 'Shortlist workspace', href: LINKS.shortlist }],
     body: (
       <ul className="m-0">
         <li>Look for each school&rsquo;s PTO/PTA online: a website, Facebook page, recent event posts or fundraisers.</li>
-        <li>Score it 0–2 — no trace online = 0, exists but quiet = 1, visibly active = 2 — and note what you found.</li>
+        <li>On the school&rsquo;s page, score it 0–2 in the PTO row — no trace online = 0, exists but quiet = 1, visibly active = 2 — and note what you found under &ldquo;PTO activity&rdquo;. Everything saves as you type.</li>
       </ul>
     ),
     done: 'Every school has a PTO score, and the totals give you a first ranking.',
@@ -233,52 +232,51 @@ const PROJECT_1: Step[] = [
   {
     key: 'p1-contacts',
     title: 'Find contacts for the top 8',
-    need: [{ label: 'Shortlist sheet', href: LINKS.workbook }],
+    need: [{ label: 'Shortlist workspace', href: LINKS.shortlist }],
     body: (
       <ul className="m-0">
-        <li>For the 8 highest-scoring schools, find the principal&rsquo;s name and email (school website staff pages).</li>
+        <li>For the 8 highest-scoring schools, find the principal&rsquo;s name and email (school website staff pages) and enter them in the school&rsquo;s Contacts card.</li>
         <li>Where you can, also find the PE or wellness teacher and a PTO contact.</li>
       </ul>
     ),
-    done: 'The top 8 rows have at least a named principal with an email.',
+    done: 'The top 8 schools have at least a named principal with an email.',
   },
   {
     key: 'p1-routes',
     title: 'Review each school’s route analysis',
     need: [
-      { label: 'Shortlist sheet', href: LINKS.workbook },
-      { label: 'Dashboard → school → Routes tab', href: LINKS.dashboard },
+      { label: 'Workspace → school → Route analysis', href: LINKS.shortlist },
+      { label: 'Google Maps / Street View', href: LINKS.streetview },
     ],
     body: (
       <div>
         <p className="mt-0">
-          This is the one step that needs the dashboard — Keith will tell you when
-          your sign-in is ready. We ran our route analyzer on every school: it maps
-          ~5 walking routes per school, checks them against state crash data, and
-          scores each one 1–10 from Street View imagery. The sheet&rsquo;s sidewalk
-          and walkshed scores are pre-filled from those results.
+          We ran our route analyzer on every school: it maps ~5 walking routes per
+          school, checks them against state crash data, and scores each one 1–10
+          from Street View imagery. The Sidewalks and Walkshed criteria come
+          straight from those scores, so correcting a route corrects the school.
         </p>
         <ul className="m-0">
-          <li>Open each school in the dashboard, go to its Routes tab, and open <strong>Safe Routes</strong> — every candidate route on one map, and a detail page per route with the full Street View gallery, scores, and flagged safety concerns.</li>
-          <li>Where the analysis looks wrong, change the sheet&rsquo;s score and say why in the notes — your correction outranks the tool. (On a route&rsquo;s detail page, &ldquo;Adjust the scores&rdquo; records the correction in the tool itself.)</li>
+          <li>On each school&rsquo;s page, the <strong>Route analysis</strong> card shows every candidate route on one map. Open each route for its Street View gallery, scores, and flagged concerns.</li>
+          <li>If the scores look right, say so. If not, suggest a corrected score and say why — Keith reviews every suggestion, and when he applies one the school&rsquo;s Sidewalks and Walkshed scores update on their own.</li>
           <li>Be most skeptical of generous scores on busy multi-lane roads — that&rsquo;s the tool&rsquo;s suspected weak spot. Spot-check those in <a href={LINKS.streetview} target="_blank" rel="noopener" className="text-[#2966E5] underline underline-offset-2">Street View</a> yourself.</li>
         </ul>
       </div>
     ),
-    done: 'You’ve looked at every school’s routes and adjusted any score you disagree with.',
+    done: 'Every route on every analyzed school has your verdict: agreed, or a suggestion with a reason.',
   },
   {
     key: 'p1-rank',
-    title: 'Finalize the ranking and write the top 5',
-    need: [{ label: 'Shortlist sheet', href: LINKS.workbook }],
+    title: 'Finalize the ranking and submit',
+    need: [{ label: 'Shortlist workspace', href: LINKS.shortlist }],
     body: (
       <ul className="m-0">
-        <li>Adjust the ranking with your own judgment — the scores are a starting point, not a verdict.</li>
-        <li>For the top 5, write one short paragraph each in the &ldquo;Why this school&rdquo; column.</li>
-        <li>Email Keith that it&rsquo;s ready.</li>
+        <li>On the workspace home, use <strong>Set the ranking</strong> to put the schools in your order — the totals are a starting point, not a verdict.</li>
+        <li>For the top 5, write one short paragraph each in &ldquo;Why this school&rdquo; on the school&rsquo;s page.</li>
+        <li>Press <strong>Submit to Keith</strong> on each school as you finish it. That&rsquo;s the hand-off; no email needed.</li>
       </ul>
     ),
-    done: 'Keith has a ranked list he can start outreach from.',
+    done: 'Every school is submitted and Keith has a ranked list he can start outreach from.',
   },
 ]
 
@@ -391,6 +389,15 @@ export default function VolunteerGuidePage() {
             </a>{' '}
             first — it&rsquo;s the same page principals see.
           </p>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <a
+              href={LINKS.shortlist}
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#BAF14D] px-4 py-2 text-[14px] font-semibold text-[#191A2E] no-underline hover:bg-[#c9f56b]"
+            >
+              Open the Shortlist workspace →
+            </a>
+            <ShortlistProgress className="font-[family-name:var(--font-dm-mono)] text-[12.5px] text-white/75" />
+          </div>
         </div>
       </header>
       <div className="h-[3px] bg-[#52B788]" />
@@ -402,21 +409,15 @@ export default function VolunteerGuidePage() {
             Setup
           </span>
           <h2 className="font-[family-name:var(--font-bricolage)] text-[clamp(23px,4vw,28px)] font-extrabold tracking-tight text-[#191A2E] mt-3 mb-3">
-            Your four things
+            Your three things
           </h2>
           <div className="grid gap-2">
             {[
               {
-                label: 'Shortlist sheet',
-                desc: 'Shared to your email. Everything in Project 1 lives here — it’s all you need to start.',
-                href: LINKS.workbook,
-                cta: 'Open sheet',
-              },
-              {
-                label: 'Admin dashboard',
-                desc: 'Needed from Project 1, step 4. Sign in with your email — Keith will tell you when it’s ready.',
-                href: LINKS.dashboard,
-                cta: 'Open dashboard',
+                label: 'Shortlist workspace',
+                desc: 'Everything in Project 1 lives here — scores, contacts, ranking, and every school’s route analysis. Same password as this guide.',
+                href: LINKS.shortlist,
+                cta: 'Open workspace',
               },
               {
                 label: 'Training',
@@ -440,7 +441,7 @@ export default function VolunteerGuidePage() {
                 {row.href && (
                   <a
                     href={row.href}
-                    target={row.href.startsWith('mailto') ? undefined : '_blank'}
+                    target={row.href.startsWith('http') ? '_blank' : undefined}
                     rel="noopener"
                     className="shrink-0 rounded-lg bg-[#DEE9FC] text-[#1D4FB0] px-3.5 py-2 text-[13px] font-semibold no-underline hover:bg-[#cfdffb]"
                   >
@@ -451,13 +452,12 @@ export default function VolunteerGuidePage() {
             ))}
           </div>
 
-          <div className="border-l-4 border-[#F59E0B] bg-[#FEF3C7] rounded-r-xl px-5 py-3.5 mt-4">
-            <p className="m-0 text-[14.5px] leading-relaxed text-[#92400E]">
-              <strong>The dashboard is our live system. </strong>Look at anything;
-              change things only for Maple Street Elementary (Test), our sandbox
-              school; and don&rsquo;t touch the &ldquo;Program Active&rdquo; toggle —
-              it sends real emails to real people. When something confuses you,
-              write it down and tell Keith. That feedback is part of the job.
+          <div className="border-l-4 border-[#2966E5] bg-[#DEE9FC] rounded-r-xl px-5 py-3.5 mt-4">
+            <p className="m-0 text-[14.5px] leading-relaxed text-[#1D4FB0]">
+              <strong>Everything you enter reaches Keith. </strong>The workspace saves as
+              you type, and &ldquo;Submit to Keith&rdquo; on a school puts it on his
+              review list. When something confuses you, write it down and tell Keith.
+              That feedback is part of the job.
             </p>
           </div>
         </section>
@@ -472,9 +472,9 @@ export default function VolunteerGuidePage() {
               Goal: a ranked list of schools, with the top 5 ready for Keith to
               approach — named contacts and a short case for each. The data pulls
               are done, so this is a few focused days of people-finding and
-              judgment, not weeks. The first three steps need only the sheet. Need
-              more research at any point? Ask Keith — Claude turns that around in
-              minutes.
+              judgment, not weeks. All of it happens in the Shortlist workspace,
+              school by school. Need more research at any point? Ask Keith — Claude
+              turns that around in minutes.
             </p>
           }
           steps={PROJECT_1}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { GUIDE_COOKIE, GUIDE_SCOPE, base64UrlDecode, verifyScopedJwt } from '@/lib/volunteer-guide-auth'
 
 export const config = {
   matcher: [
@@ -156,8 +157,6 @@ function redirectToAdminLogin(req: NextRequest) {
 // touches the other)
 // ════════════════════════════════════════════════════════════════════
 
-const GUIDE_COOKIE = 'gsi_volunteer_guide_token'
-
 async function handleGuide(req: NextRequest) {
   const { pathname } = req.nextUrl
 
@@ -175,7 +174,7 @@ async function handleGuide(req: NextRequest) {
     return redirectToGuideLogin(req)
   }
 
-  const valid = await verifyScopedJwt(token, secret, 'gsi_volunteer_guide')
+  const valid = await verifyScopedJwt(token, secret, GUIDE_SCOPE)
   if (!valid) {
     const res = redirectToGuideLogin(req)
     res.cookies.delete(GUIDE_COOKIE)
@@ -183,42 +182,6 @@ async function handleGuide(req: NextRequest) {
   }
 
   return NextResponse.next()
-}
-
-async function verifyScopedJwt(
-  token: string,
-  secret: string,
-  scope: string,
-): Promise<boolean> {
-  try {
-    const parts = token.split('.')
-    if (parts.length !== 3) return false
-
-    const [header, body, sig] = parts
-    const key = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(secret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['verify'],
-    )
-
-    const valid = await crypto.subtle.verify(
-      'HMAC',
-      key,
-      base64UrlDecode(sig),
-      new TextEncoder().encode(`${header}.${body}`),
-    )
-    if (!valid) return false
-
-    const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(body)))
-    if (payload.scope !== scope) return false
-    if (payload.exp < Math.floor(Date.now() / 1000)) return false
-
-    return true
-  } catch {
-    return false
-  }
 }
 
 function redirectToGuideLogin(req: NextRequest) {
@@ -334,16 +297,6 @@ async function verifyWmuJwt(token: string, secret: string): Promise<WmuVerifyRes
   } catch {
     return { ok: false }
   }
-}
-
-function base64UrlDecode(str: string): ArrayBuffer {
-  const padded = str.replace(/-/g, '+').replace(/_/g, '/')
-  const binary = atob(padded)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  return bytes.buffer as ArrayBuffer
 }
 
 function redirectToExpired(req: NextRequest) {

@@ -41,7 +41,8 @@ export async function POST(req: NextRequest) {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    path: '/volunteer/guide',
+    // '/' so /api/volunteer-guide/* route handlers see the cookie too
+    path: '/',
     maxAge: 60 * 60 * 24 * 30,
   })
   return res

@@ -9,9 +9,17 @@ import {
   type PublishedRouteCard,
 } from '@/lib/shift/routeDisplay'
 
+/** The subset of a route card the map needs — also satisfied by unpublished
+ *  corridors (the volunteer shortlist workspace). */
+export type MapRoute = Pick<PublishedRouteCard, 'id' | 'name' | 'waypoints'> & {
+  recommended_modes?: string | null
+}
+
 interface Props {
-  routes: PublishedRouteCard[]
+  routes: MapRoute[]
   schoolName: string
+  /** Line/marker color per route; defaults to the recommended-mode palette. */
+  colorFor?: (route: MapRoute, index: number) => string
   /** id of the route to highlight; the rest dim (Roams grammar). */
   selectedId: string | null
   onSelect: (id: string | null) => void
@@ -19,7 +27,9 @@ interface Props {
 
 // All published routes on one map, color-coded by recommendation, with
 // lettered start markers matching the cards below.
-export default function SchoolRoutesMap({ routes, schoolName, selectedId, onSelect }: Props) {
+export default function SchoolRoutesMap({ routes, schoolName, selectedId, onSelect, colorFor }: Props) {
+  const lineColor = (r: MapRoute, i: number) =>
+    colorFor ? colorFor(r, i) : modeLineColor(r.recommended_modes ?? null)
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const loadedRef = useRef(false)
@@ -61,9 +71,9 @@ export default function SchoolRoutesMap({ routes, schoolName, selectedId, onSele
       requestAnimationFrame(() => map.resize())
 
       map.on('load', () => {
-        for (const r of routes) {
+        routes.forEach((r, i) => {
           const coords = (r.waypoints ?? []).map((w) => [w.lng, w.lat] as [number, number])
-          if (coords.length < 2) continue
+          if (coords.length < 2) return
           map.addSource(`route-${r.id}`, {
             type: 'geojson',
             data: {
@@ -77,14 +87,14 @@ export default function SchoolRoutesMap({ routes, schoolName, selectedId, onSele
             type: 'line',
             source: `route-${r.id}`,
             layout: { 'line-join': 'round', 'line-cap': 'round' },
-            paint: { 'line-color': modeLineColor(r.recommended_modes), 'line-width': 8, 'line-opacity': 0.15 },
+            paint: { 'line-color': lineColor(r, i), 'line-width': 8, 'line-opacity': 0.15 },
           })
           map.addLayer({
             id: `route-line-${r.id}`,
             type: 'line',
             source: `route-${r.id}`,
             layout: { 'line-join': 'round', 'line-cap': 'round' },
-            paint: { 'line-color': modeLineColor(r.recommended_modes), 'line-width': 3.5 },
+            paint: { 'line-color': lineColor(r, i), 'line-width': 3.5 },
           })
           map.on('click', `route-line-${r.id}`, () => onSelectRef.current(r.id))
           map.on('mouseenter', `route-line-${r.id}`, () => {
@@ -93,7 +103,7 @@ export default function SchoolRoutesMap({ routes, schoolName, selectedId, onSele
           map.on('mouseleave', `route-line-${r.id}`, () => {
             map.getCanvas().style.cursor = ''
           })
-        }
+        })
         loadedRef.current = true
       })
 
@@ -111,7 +121,7 @@ export default function SchoolRoutesMap({ routes, schoolName, selectedId, onSele
         const wp = r.waypoints ?? []
         if (wp.length === 0) return
         const el = document.createElement('div')
-        el.style.cssText = `width:26px;height:26px;border-radius:50%;background:${modeLineColor(r.recommended_modes)};border:2px solid #fff;display:flex;align-items:center;justify-content:center;font:700 12px system-ui;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);cursor:pointer`
+        el.style.cssText = `width:26px;height:26px;border-radius:50%;background:${lineColor(r, i)};border:2px solid #fff;display:flex;align-items:center;justify-content:center;font:700 12px system-ui;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);cursor:pointer`
         el.textContent = routeLetter(i)
         el.addEventListener('click', (ev) => {
           ev.stopPropagation()
