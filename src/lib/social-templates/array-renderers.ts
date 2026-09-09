@@ -239,6 +239,7 @@ const CE_TYPE_META: Record<string, { icon: string; color: string }> = {
   open_streets:   { icon: 'megaphone',  color: '#F5C04A' },
   festival:       { icon: 'party',      color: '#FF8A65' },
   contest:        { icon: 'trophy',     color: '#A78BFA' },
+  challenge:      { icon: 'trophy',     color: '#FF8C35' },
 };
 
 function ceTypeMeta(eventType: string): { icon: string; color: string } {

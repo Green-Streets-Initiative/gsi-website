@@ -63,6 +63,7 @@ export const EVENT_TYPES: Record<string, TypeMeta> = {
   festival:       { label: 'Festival',       icon: 'PartyPopper', color: '#FF8A65' },
   open_streets:   { label: 'Open Streets',   icon: 'MapPin',      color: '#FF8A65' },
   contest:        { label: 'Contest',        icon: 'Trophy',      color: '#A78BFA' },
+  challenge:      { label: 'Community Challenge', icon: 'Trophy', color: '#FF8C35' },
   other:          { label: 'Other',          icon: 'Calendar',    color: 'rgba(255,255,255,0.6)' },
 }
 
@@ -80,7 +81,7 @@ export const TYPE_FILTER_ORDER = [
   'guided_ride', 'group_ride', 'class', 'ebike_demo', 'cargo_bike_demo',
   'bike_repair', 'bike_rodeo', 'bike_bus',
   'walking_tour', 'transit_buddy', 'civic_action', 'talk',
-  'festival', 'open_streets', 'contest', 'other',
+  'festival', 'open_streets', 'contest', 'challenge', 'other',
 ] as const
 
 // ---------------------------------------------------------------------------
