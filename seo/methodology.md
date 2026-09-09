@@ -129,9 +129,21 @@ numbers.
 
 ## Stagnation trigger (mechanical — do not skip)
 
-Increment `.seo-state.json.stagnant_weeks` when trailing-4-week total organic
-clicks are within ±2% of the prior 4-week window **and** no experiment is
-mid-flight. Reset to 0 on any >5% 4-week-over-4-week gain.
+Read the trigger on **non-brand discovery impressions**: bucketed
+query-dimension impressions from every cluster except `brand-navigational`,
+plus unmatched. Increment `.seo-state.json.stagnant_weeks` when the
+trailing-4-week mean is within ±2% of the prior 4-week window **and** no
+experiment is mid-flight. Reset to 0 on any >5% 4-week-over-4-week gain.
+
+**Why not total clicks** (changed 2026-09-08, resolving a watch-list item from
+2026-08-31). The trigger used to read total organic clicks, which brand searches
+dominate. In the four weeks to 2026-08-28 the headline rose 51% while non-brand
+discovery impressions were flat, 48 → 49: the trigger would have reported
+healthy growth while the thing the strategy is accountable for had not moved at
+all. Clicks are also too sparse at these volumes to read weekly — non-brand
+clicks run 0–2 a week — so impressions are the signal and clicks are the
+confirmation. Keep reporting total clicks in the ledger; just do not trigger on
+them. First baseline on the new basis: 258/wk for the week ending 2026-09-04.
 
 At **`stagnant_weeks` ≥ 6**, the next run (even a weekly) must run a
 **re-strategize block**: re-score every cluster, kill or restructure at least

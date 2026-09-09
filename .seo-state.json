@@ -1,68 +1,100 @@
 {
   "_comment": "Run state for the SEO/AEO routine. Updated each run. Baselines are a cache; the authoritative time series is the committed seo/data/gsc/ files.",
-  "last_run": "2026-08-31",
-  "last_deep_dive": null,
-  "serp_rotation_index": 6,
-  "_serp_rotation_note": "Index selects clusters (excluding aeo-sentinels) in portfolio order: for k in 0..2, cluster[(index+k) % 9], query[floor(index/9) % len]. Index 0 covered used-car-to-ebike / new-to-boston / family-logistics. Index 3 covered year-round-weather / town-commuters / ebike-curious. Index 6 covers employers-rto / schools-wellness / local-business-partners.",
+  "last_run": "2026-09-08",
+  "last_deep_dive": "2026-09",
+  "serp_rotation_index": 9,
+  "_serp_rotation_note": "Index selects clusters (excluding aeo-sentinels) in portfolio order: for k in 0..2, cluster[(index+k) % n], query[floor(index/n) % len]. Index 0 covered used-car-to-ebike / new-to-boston / family-logistics. Index 3 covered year-round-weather / town-commuters / ebike-curious. Index 6 covered employers-rto / schools-wellness / local-business-partners. Index 9 covers local-business-partners / brand-navigational / used-car-to-ebike. NOTE: students-campus was inserted at position 4 this run, so the modulus changed from 9 to 12 non-sentinel clusters; the sequence is not comparable to earlier runs and that is fine — the point is coverage over time, not a fixed cycle.",
   "stagnant_weeks": 0,
   "baselines": {
-    "clicks_4wk": 12.8,
-    "clicks_12wk": 12,
-    "impressions_4wk": 1263.3,
-    "impressions_12wk": 1035.6,
-    "_basis": "EXACT. Recomputed 2026-08-31 from the sixteen weekly files containing site_totals (2026-05-09 -> 2026-08-28), verified contiguous with no overlapping ranges. Files WITHOUT site_totals are the superseded 2026-08-20 backfill and must be excluded — mixing the series double-counts.",
-    "clicks_prior_4wk": 8.5,
-    "impressions_prior_4wk": 857.8,
-    "clicks_4wk_querydim": 3.5,
-    "clicks_12wk_querydim": 4.58,
-    "impressions_4wk_querydim": 229.8,
-    "impressions_12wk_querydim": 217.3,
-    "nonbrand_discovery_impressions_wk": 49,
-    "_nonbrand_note": "Bucketed non-brand query-dimension impressions, replaying the item-2 branch patterns. 48 on 2026-08-24, 49 on 2026-08-31. This is the number the strategy is actually accountable for; the headline total is carried by brand.",
-    "posthog_organic_sessions_4wk": 29.3,
-    "_posthog_note": "Excludes mail-security link-scanner sessions (paths matching '%/1/0100%' or '/preferences/%'), which added 9 phantom 'bing.com' sessions in the week of 2026-08-24. Always apply that filter; see seo/reports/2026-08-31.md finding 4.",
-    "aeo_sentinel_citations": 0
+    "clicks_4wk": 18.25,
+    "clicks_12wk": 12.58,
+    "impressions_4wk": 1668.8,
+    "impressions_12wk": 1168.1,
+    "_basis": "EXACT. Recomputed 2026-09-08 from the seventeen weekly files containing site_totals (2026-05-09 -> 2026-09-04), asserted contiguous with no overlapping ranges. These INCLUDE the week ending 2026-09-04. Files WITHOUT site_totals are the superseded 2026-08-20 backfill and must be excluded — mixing the series double-counts.",
+    "_comparison_baselines_note": "The report's 'vs 4-wk / vs 12-wk' columns compare this week AGAINST the trailing means EXCLUDING it: clicks 12.75 / 12.00, impressions 1263.3 / 1035.6. Those are the prior run's cached values, which is why they match seo/reports/2026-08-31.md.",
+    "clicks_prior_4wk": 9.0,
+    "impressions_prior_4wk": 859.5,
+    "clicks_4wk_querydim": 3.25,
+    "clicks_12wk_querydim": 3.42,
+    "impressions_4wk_querydim": 318.0,
+    "impressions_12wk_querydim": 242.8,
+    "nonbrand_discovery_impressions_wk": 258,
+    "_nonbrand_note": "Bucketed non-brand query-dimension impressions (all clusters except brand-navigational, plus unmatched). 48 on 2026-08-24, 49 on 2026-08-31, 258 on 2026-09-08. The jump is the students-campus cluster, which did not exist before this run. THIS IS NOW THE STAGNATION TRIGGER'S BASIS — see seo/methodology.md. Caveat: 258 is one week and one page class; if the campus surge is seasonal it falls back in October.",
+    "posthog_organic_sessions_wk": 35,
+    "posthog_organic_sessions_4wk": 30.25,
+    "_posthog_note": "Weekly organic sessions, Monday-start weeks, counted as count(DISTINCT properties.$session_id) on $pageview where $referring_domain matches google/bing/duckduckgo/ecosia/yahoo/brave. Excludes mail-security link-scanner sessions (paths matching '%/1/0100%' or '/preferences/%'), which added 9 phantom 'bing.com' sessions in the week of 2026-08-24. Series to 2026-09-08: 35, 29, 35, 25, 32, 24, 29, 35 (most recent first). Small differences from the 2026-08-31 report's numbers come from that report's slightly narrower referrer list; this definition is the one to reuse.",
+    "aeo_sentinel_citations": 0,
+    "answer_engine_referral_sessions_9d": 0,
+    "_aeo_referral_note": "Zero ChatGPT/Perplexity/Claude/Copilot/Gemini sessions this run, against 2 (ChatGPT) last week and 6 the week before. Those were contest participants asking about /events/shift-your-summer rules; the contest ended. We have never had answer-engine referrals representing discovery."
   },
   "health": {
-    "sitemap_loc_count": 132,
-    "llms_txt_hash": "5c64d9aab1879ca6fea251ee95f14ca6315cbb3a045d2c1111860b933ad3ffc8",
-    "llms_txt_link_count": 73,
+    "sitemap_loc_count": 133,
+    "llms_txt_hash": "c5b55b2842b3078fbe7e04245c2c9f105b14c238e8a2c1c2d0ea67b3b15cee9d",
+    "llms_txt_link_count": 75,
     "llms_txt_section_count": 5,
-    "_llms_note": "/llms.txt is generated per request from approved guides + qualifying towns (src/app/llms.txt/route.ts), so its hash changes whenever content is published. Treat hash drift as expected; the link and section counts are the meaningful drift signals.",
+    "_llms_note": "/llms.txt is generated per request from approved guides + qualifying towns (src/app/llms.txt/route.ts), so its hash changes whenever content is published. Treat hash drift as expected; the link and section counts are the meaningful drift signals. If SEO item 1 ships, expect sections 5 -> 6 and links 75 -> 88.",
     "robots_hash": "aaca6542a392cf9ef172b0e8013e57df36ad279c16aef19a37065eae0bae0cc7",
-    "_last_fingerprint_update": "2026-08-31 (after shipping item 3 — the new guide adds one entry to each surface)"
+    "_last_fingerprint_update": "2026-09-08"
   },
   "blockers": [],
-  "carryover_serp_checks": [
-    {
-      "query": "bike commute Somerville to Boston",
-      "cluster": "town-commuters",
-      "why": "WebSearch returned 'unavailable' on two attempts during the 2026-08-31 run; not checked, not an absence."
-    }
-  ],
+  "carryover_serp_checks": [],
   "watch_list": [
     {
-      "since": "2026-08-31",
-      "what": "Used cargo e-bike price demand: two variants of '\"tern gsd\" used \"$3000\"' took 10 impressions at position 10, and /guides/what-you-can-do-with-an-e-cargo-bike went 10 -> 38 impressions. First organic sign of the used-car-to-ebike wedge. Feed into the September deep-dive's portfolio re-evaluation.",
-      "action": "Watch for recurrence; do not act on one week."
+      "since": "2026-09-08",
+      "what": "Is the campus surge seasonal? /shift-your-semester pages took 917 impressions (36% of all site impressions) in the week to 2026-09-04, which is exactly when students decide how they will get around. October will show whether students-campus holds or falls away with the start of term.",
+      "action": "Report students-campus impressions every weekly pulse. Do not restate the non-brand discovery baseline as a trend until there are four weeks of it."
+    },
+    {
+      "since": "2026-09-08",
+      "what": "year-round-weather has THREE published guides (mg_biking_in_rain, mg_cold_weather, mg_walking_weather) and zero impressions across every pull. Streetsblog's single 2022 article wins the sentinel query with ~2,000 words, named local riders, and no structured data. Three short scattered guides do not compete with one page like that.",
+      "action": "October: brief a structural fix — one comprehensive local page, or a hub tying the three existing guides together — before the seasonal window opens in November. NOT a fourth guide."
+    },
+    {
+      "since": "2026-09-08",
+      "what": "Drive-time siblings. howlongtowalk.org captures the 10/15/20/30-minute variants with one page each and an on-page conversion table; we capture one query with a prose-only guide.",
+      "action": "October candidate: add a table to the drive-time guide, and consider sibling pages. Wait for the 2026-10-12 read on the guide first."
+    },
+    {
+      "since": "2026-09-08",
+      "what": "The Tufts grad-student guide to getting around Boston without a car now ranks on the 'do you need a car in Boston' sentinel. A university page beating us on our own sentinel, in the week we discovered the campus audience, points at where new-to-boston's opening is.",
+      "action": "Feed into the October look at new-to-boston (33 impressions / 0 clicks over 28 days, avg pos 16.6)."
     },
     {
       "since": "2026-08-31",
-      "what": "/commute-advisor carries only Organization + AdministrativeArea JSON-LD — no FAQPage, HowTo or WebApplication — despite being the highest-impression page on the site and ranking on question-shaped queries.",
-      "action": "Cover in the September deep-dive AEO health pass."
-    },
-    {
-      "since": "2026-08-31",
-      "what": "The stagnation trigger reads total organic clicks, which brand searches dominate. Non-brand discovery impressions were flat (48 -> 49) while the headline rose 51% over four weeks. The trigger would not fire on a flat discovery trend.",
-      "action": "Reconsider the trigger's basis at the September deep-dive."
-    },
-    {
-      "since": "2026-08-31",
-      "what": "Drive-time guide shipped. Its two sibling pages (/commute-advisor, /guides/when-walking-is-faster) took 472 impressions and 0 clicks in the week of 2026-08-22. Also watch for cannibalisation between the new guide and when-walking-is-faster.",
+      "what": "Drive-time guide shipped 2026-08-31. As of 2026-09-04 it has NOT yet appeared in the page table (four days of data); /commute-advisor (1,052 impr, 2 clicks) and /guides/when-walking-is-faster (955 impr, 1 click) held their volume. No cannibalisation visible yet.",
       "action": "Report the three pages together in the ledger each week until ~2026-10-12, then call it."
+    },
+    {
+      "since": "2026-08-31",
+      "what": "UTM consolidation is working. Clean rows now appear for cambridge-ma (36), somerville-ma (33), boston-ma (20) — all three were absent from the report last week — and arlington-ma has consolidated onto one URL. Parameterized rows persist (245 impressions this week) and should fade as Google re-crawls.",
+      "action": "Keep watching weekly. If parameterized rows persist past ~2026-10-12, escalate."
     }
   ],
   "resolved_notes": [
+    {
+      "date": "2026-09-08",
+      "what": "The portfolio had no cluster for campus/student transportation queries, so 'bu cycle kitchen', 'mit t pass', 'tufts safe ride' and their siblings bucketed as unmatched noise across two reports — while /shift-your-semester grew into the largest impression surface on the site (917 impressions, 36% of the week).",
+      "fix": "Added the students-campus cluster to seo/keyword-portfolio.json, placed BEFORE town-commuters because bucketing takes the first matching cluster and 'boston university bike' would otherwise fall to the town patterns. Tested against 34 real queries: 21 campus queries matched, and somerville/cambridge/bluebikes/brand queries correctly did not. Coverage 69% -> 93%.",
+      "do_not": "Do not read a zero-impression cluster as an absence of demand without checking the unmatched list against the page table. A page class can become the biggest surface on the site and stay invisible to a ledger that only counts what it has patterns for."
+    },
+    {
+      "date": "2026-09-08",
+      "what": "The stagnation trigger read total organic clicks, which brand dominates — the 2026-08-31 run showed the headline up 51% while non-brand discovery impressions were flat (48 -> 49). The trigger would not have fired on a flat discovery trend.",
+      "fix": "Changed the trigger's basis to non-brand discovery impressions in seo/methodology.md. Total clicks stay in the ledger; they just do not drive the trigger.",
+      "do_not": "Do not trigger on total clicks, and do not read non-brand clicks weekly — they run 0-2 and are pure noise at that volume."
+    },
+    {
+      "date": "2026-09-08",
+      "what": "Nearly drafted a fourth winter-biking guide for year-round-weather (zero impressions, seasonal window opening). The library already has three weather guides.",
+      "fix": "Checked content/micro-guides-library.md before drafting. Redirected the draft to the used-car-to-ebike gap, which had recurring query evidence and no page at all.",
+      "do_not": "Do not propose a guide for a cluster without first listing what the library already publishes for it. A zero-impression cluster with existing content is a visibility problem, not a content problem."
+    },
+    {
+      "date": "2026-09-08",
+      "what": "Dev servers cannot be started from an unattended scheduled run, so the JSON-LD added in SEO item 2 could not be checked in a browser.",
+      "fix": "Extracted the FAQ constant and serialized the schema in isolation instead: six questions, valid JSON round-trip, no HTML tags surviving into acceptedAnswer.text, price token resolving to $90. Flagged in the report and email that the rendered page is unverified and worth an eyeball on the Vercel preview.",
+      "do_not": "Do not claim a rendered-page verification that an unattended run cannot perform. Say what was checked and what was not."
+    },
     {
       "date": "2026-08-24",
       "what": "Email 401 on the first attempts. Two different secrets share the name CRON_SECRET: gsi-website/.env.local holds the Vercel cron secret guarding this repo's /api/cron/* routes, while the Supabase edge functions use a separate deployed CRON_SECRET. The Shift project injects the Supabase-side value via an env block in its .claude/settings.local.json, which is why sentry-triage and plg-review (both run from the Shift directory) always worked. gsi-website had no env block, so $CRON_SECRET was empty here.",
@@ -88,8 +120,47 @@
       "do_not": "Do not assume a guide is discoverable just because its own /guides/<slug> URL returns 200. After shipping a guide, check the /guides index, sitemap.xml and llms.txt too — the slug route is dynamic and will 200 well before the index catches up."
     }
   ],
-  "pending": [],
+  "pending": [
+    {
+      "report_date": "2026-09-08",
+      "item_n": 1,
+      "type": "page-edit-branch",
+      "ref": "seo/2026-09-llms-campus",
+      "experiment_id": "exp-2026-09-2",
+      "title": "Index the 13 campus pages in llms.txt",
+      "diff_stat": "src/app/llms.txt/route.ts, +15",
+      "ship_steps": "Merge seo/2026-09-llms-campus into main, push, confirm the Vercel deploy, delete the branch. Then check /llms.txt: sections should go 5 -> 6 and links 75 -> 88. Record the ship date in seo/experiments.md against exp-2026-09-2."
+    },
+    {
+      "report_date": "2026-09-08",
+      "item_n": 2,
+      "type": "page-edit-branch",
+      "ref": "seo/2026-09-answer-schema",
+      "experiment_id": "exp-2026-09-3",
+      "title": "FAQPage + WebApplication on /commute-advisor, WebApplication on /nearby",
+      "diff_stat": "src/app/commute-advisor/page.tsx +43, src/app/nearby/page.tsx +19",
+      "ship_steps": "Eyeball the Vercel preview first — the rendered page could not be checked from an unattended run. Then merge, push, confirm the deploy, delete the branch. Verify with Google's Rich Results Test on /commute-advisor. Record the ship date against exp-2026-09-3."
+    },
+    {
+      "report_date": "2026-09-08",
+      "item_n": 3,
+      "type": "guide-draft",
+      "ref": "seo/drafts/guides/what-a-cargo-ebike-costs.md",
+      "experiment_id": "exp-2026-09-4",
+      "title": "Micro-guide: what a cargo e-bike costs — new, used, and what drives the price",
+      "ship_steps": "Follow the ship checklist in the draft file: append the YAML+body to content/micro-guides-library.md, flip status draft -> approved, bump the guide-count check in scripts/build-micro-guides-migration.mjs from 21 to 22, run the migration builder, commit both by filename, apply the migration. Then check the /guides index, sitemap.xml and llms.txt — not just the slug URL. Record the ship date against exp-2026-09-4."
+    }
+  ],
   "shipped": [
+    {
+      "report_date": "2026-09-08",
+      "item_n": 0,
+      "ref": "e0635fb, 14cba22, a2c34a2",
+      "experiment_id": "exp-2026-09-1",
+      "title": "Shift Your Semester: per-school search titles, sourced campus-perk citations, /nearby handoff replacing the iframe",
+      "shipped_on": "2026-09-08",
+      "note": "Shipped by Keith directly to main DURING this run, acting on the same finding. Not a routine proposal — recorded here so the ship date and the verdict clock live in one place. This is the first real traffic experiment: base 917 impressions / 0 clicks / avg pos 9.1 in the week to 2026-09-04. Verdict due 2026-10-20."
+    },
     {
       "report_date": "2026-08-24",
       "item_n": 1,
@@ -104,7 +175,7 @@
       "ref": "seo/2026-08-portfolio-patterns",
       "title": "Repair keyword-portfolio.json gsc_patterns (gerund fix, missing towns, paths, drive-time cluster)",
       "shipped_on": "2026-08-31",
-      "note": "Merged to main. Bucketing is live from the 2026-08-31 re-backfill onward, so the per-cluster ledger is readable from next run without a manual replay."
+      "note": "Merged to main. Bucketing went live with the 2026-08-31 re-backfill; the 2026-09-08 run confirmed it, and extended it with the students-campus cluster (69% -> 93% coverage)."
     },
     {
       "report_date": "2026-08-31",
@@ -112,7 +183,7 @@
       "ref": "seo/2026-08-internal-utm-links",
       "title": "Drop utm_content from same-site internal links (Footer, Nav, TownsCrossLink)",
       "shipped_on": "2026-08-31",
-      "note": "Merged to main. WATCH: over the next few weeks the GSC page table should show clean /shift/towns/<slug> rows replacing the ?utm_content= ones for cambridge, everett, somerville, newton, watertown, boston; arlington should consolidate from two rows to one. Report on it each weekly pulse until it resolves. Shift app and campaign utm tags were deliberately left in place."
+      "note": "WORKING as of 2026-09-08: clean rows now appear for cambridge-ma (36), somerville-ma (33) and boston-ma (20) — all absent a week earlier — and arlington-ma consolidated onto one URL. Parameterized rows persist (245 impressions this week) and should fade as Google re-crawls. Keep watching until ~2026-10-12."
     },
     {
       "report_date": "2026-08-24",
@@ -121,7 +192,7 @@
       "title": "Micro-guide: how far a 5/10/15/20-minute drive is on foot and by bike",
       "shipped_on": "2026-08-31",
       "live_url": "https://www.gogreenstreets.org/guides/how-far-is-a-ten-minute-drive-on-foot",
-      "note": "Live and verified: 200, correct title and canonical, all five price tokens resolved ($18 parking, $2.40 subway, $1.70 bus, $3 / $11.13 Bluebikes), no unresolved {{price:}} left. Revised on Keith 2026-08-31 to cover per-mode door-to-door factors. WATCH: does /commute-advisor + /guides/when-walking-is-faster CTR recover, and does this guide take its own impressions? Give it ~6 weeks."
+      "note": "Live and verified. As of 2026-09-04 (four days of data) it has NOT yet appeared in the page table; /commute-advisor and /guides/when-walking-is-faster held their volume, so no cannibalisation is visible. Call it around 2026-10-12."
     }
   ]
 }

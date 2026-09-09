@@ -20,10 +20,15 @@
         "e-?bike.*(cost|worth|vs|versus|save|price|money)",
         "(used )?car.*(vs|versus|instead).*(bike|e-?bike)",
         "(cheap|cost|price).*commut",
-        "commut.*(cost|cheap|save|expensive)"
+        "commut.*(cost|cheap|save|expensive)",
+        "(tern|yuba|xtracycle|urban arrow|rad ?power|radwagon|benno|bullitt|gsd)\\b.*(used|price|cost|\\$)",
+        "(used|second.?hand).*(cargo|e-?bike|ebike).*(price|cost|\\$|worth)"
       ],
       "target_urls": ["/commute-advisor"],
-      "proposed_assets": ["/guides/ebike-vs-used-car-costs (new micro-guide)"],
+      "proposed_assets": [
+        "/guides/ebike-vs-used-car-costs (new micro-guide)",
+        "A used cargo e-bike price page — see the 2026-09-08 deep-dive: variants of '\"tern gsd\" used \"$3000\"' took 34 impressions over the 28 days to 2026-09-04 at position ~10, recurring across two pulls, with no page of ours answering what a used cargo e-bike costs around here."
+      ],
       "aeo_questions": [
         "How much money can you save commuting by e-bike instead of a car?",
         "Is an e-bike cheaper than a used car?"
@@ -112,6 +117,38 @@
         "What gear do you need to bike commute in the cold?"
       ],
       "messaging_notes": "Normalize and equip: 'plenty of Bostonians ride all winter — here's the gear and the know-how.' No toughness-shaming, no 'excuses' framing. Practical, encouraging, specific to New England conditions."
+    },
+    {
+      "id": "students-campus",
+      "audience": "Greater-Boston college students working out how to get around their campus and the city — T pass subsidies, campus bike shops and repair co-ops, Bluebikes student discounts, shuttles and late-night rides. Discovered in the 2026-09-08 deep-dive: the twelve /shift-your-semester pages took 917 impressions in the week to 2026-09-04 (36% of all site impressions) and every one of those queries bucketed as noise.",
+      "intent": "informational",
+      "priority": 1,
+      "queries": [
+        "bu cycle kitchen",
+        "mit t pass",
+        "tufts safe ride",
+        "quad bikes harvard",
+        "northeastern bluebikes discount",
+        "suffolk mbta pass",
+        "college student semester T pass Boston",
+        "campus bike repair Boston"
+      ],
+      "gsc_patterns": [
+        "\\b(bu|mit|tufts|harvard|northeastern|neu|suffolk|simmons|berklee|lesley|emerson|umass|bc|boston college|boston university)\\b.*(bike|bikes|bicycle|blue ?bike|bluebike|t.?pass|tpass|mbta|charlie|shuttle|safe ?ride|red ?eye|parking|transit|commut|cycle kitchen|bike kitchen|car rental|rental car|zipcar)",
+        "(bike|bikes|blue ?bike|bluebike|t.?pass|tpass|mbta|charlie|shuttle|safe ?ride|cycle kitchen|bike kitchen|quad bikes|parking).*\\b(bu|mit|tufts|harvard|northeastern|neu|suffolk|simmons|berklee|lesley|emerson|umass|bc)\\b",
+        "(student|campus|semester|dorm|grad school).*(pass|bike|transit|shuttle|parking|commut|mbta|blue ?bike)",
+        "(cycle kitchen|bike kitchen|quad bikes|safe ?ride|red ?eye shuttle)",
+        "(college|university).*(mbta|t.?pass|blue ?bike|bike|shuttle|commut|semester pass)"
+      ],
+      "target_urls": ["/shift-your-semester", "/nearby", "/commute-advisor"],
+      "proposed_assets": [
+        "The twelve /shift-your-semester/<school> pages already exist and rank on page one for these queries; the 2026-09-08 title rewrite (commit e0635fb) is the live experiment. Next lever if titles are not enough: give each page a FAQPage block answering the pass/discount/shuttle questions verbatim."
+      ],
+      "aeo_questions": [
+        "How do college students in Boston get a discounted MBTA pass?",
+        "Where can a student get their bike fixed on campus in Boston?"
+      ],
+      "messaging_notes": "These pages must earn the click by answering the campus question first — the pass subsidy, the bike co-op, the shuttle — and only then invite students into Shift. Cite the source for every campus perk so the facts stay checkable. Students arrive without a car in the picture at all, so there is nothing to compare against: lead with what is already free or subsidized for them. This cluster sits ahead of town-commuters in this file on purpose — bucketing takes the first matching cluster, and 'boston university bike' would otherwise fall to the town patterns."
     },
     {
       "id": "town-commuters",
