@@ -429,7 +429,7 @@ export const shiftYourSummer2026: CampaignReports = {
       sections: [
         { id: 'drawings', title: 'Weekly drawings', navLabel: 'Drawings', blocks: [
           { kind: 'prose', paragraphs: [
-            'A KryptoLok was drawn most weeks of the campaign rather than all eight at the end. Because participants received entries for each verified active trip, the pool behind each drawing grew all summer \u2014 from 817 entries at the first drawing on June 22 to 10,148 when the last three locks were drawn on August 18.',
+            'KryptoLoks were drawn through the summer rather than held back for a single drawing at the end. Because participants received entries for each verified active trip they logged, the pool behind each drawing kept growing \u2014 from 817 entries in mid-June to 10,148 by the campaign\u2019s closing weeks.',
             'Every drawing was seeded and recorded for audit.',
           ] },
         ] },
