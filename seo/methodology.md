@@ -29,10 +29,42 @@ is not in the current month → run the **monthly deep-dive**. Otherwise run the
   with header `X-Cron-Secret: $CRON_SECRET` (delivers to keith@gogreenstreets.org).
   Subject prefix: `[GSI] SEO weekly —` or `[GSI] SEO monthly deep-dive —`.
   **Always send an email, even on a quiet week**, so Keith knows it ran.
+- **Analysis**: `node scripts/seo/analyze.mjs` — baselines, the weekly table,
+  cluster replay against the *current* portfolio, the page-class rollup, and the
+  unmatched-query list. `--section baselines|weeks|clusters|pages|queries` to
+  narrow it.
+- **Health + AEO surfaces**: `node scripts/seo/health-check.mjs` — sitemap,
+  robots, llms.txt, and the five key pages' title/canonical/JSON-LD, plus a
+  sitemap-vs-llms.txt page-class gap check. `--json` for machine output.
 - **Git**: `git pull` at the start. Commit reports/state/data/drafts **by
   filename** (never `git add -A`) and push to `main`. Page-code changes only
   ever go on `seo/…` branches — never committed to main by the routine.
 - Never use `$(...)` command substitution. Single-line `curl` commands only.
+
+### Command shape (this is a real constraint, not style)
+
+Run **one simple command per call**, and prefer the `Read` tool over `cat`.
+
+A transcript scan on 2026-09-09 across 50 sessions found ~7,400 tool calls whose
+most frequent "commands" included fragments like `for (const`, `} }`, `import {`
+and `} catch` — i.e. large amounts of `node -e '…'` and compound
+`a && b | c` chains. Two consequences, both bad:
+
+- **Inline interpreter code can never be allowlisted.** `node -e` is arbitrary
+  code execution; granting it is granting everything. So it prompts forever, and
+  an unattended run either stalls or leans on a blanket grant that should not
+  exist.
+- **Compound commands defeat prefix matching.** `Bash(node -e *)` does not match
+  `for f in …; do node -e "…"; done`. Wrapping an allowed command in a loop or a
+  pipeline turns it back into a prompt.
+
+So: put analysis in `scripts/seo/analyze.mjs` (or a new committed script) rather
+than inlining it. A committed script is reviewable in git, reproducible run to
+run, and matchable as a fixed prefix. The two scripts above exist precisely
+because the routine kept re-deriving the same numbers in throwaway one-liners.
+
+The allowlist for these lives in `.claude/settings.json`. `.claude/` is
+gitignored, so it is machine-local; a new machine needs it recreated.
 
 ## Weekly pulse
 
