@@ -66,6 +66,7 @@ const lessons = (extra: { title: string; body: string }[] = []): ReportSection =
 
 export const shiftYourSummer2026: CampaignReports = {
   slug: 'shift-your-summer-2026',
+  competitionId: 'b6cea2c4-9780-47bc-945e-a2eda044a3d0',
   name: 'Shift Your Summer',
   period: 'June 15 – August 15, 2026',
   asOf: 'September 2, 2026',
@@ -421,10 +422,10 @@ export const shiftYourSummer2026: CampaignReports = {
         'Kryptonite donated eight KryptoLok Standard U-Locks. Rather than holding them for the final drawing, we awarded them weekly through the summer, which gave participants a recurring reason to stay active and put the Kryptonite name in front of them repeatedly.',
       summary: [
         { label: 'U-Locks donated', value: '8' },
-        { label: 'Winners drawn and notified', value: '8' },
-        { label: 'Prizes claimed', value: '7' },
-        { label: 'Locks shipped to winners', value: '7' },
-        { label: 'Confirmed received by winners', value: '6' },
+        { label: 'Winners drawn and notified', value: '8', live: { brand: 'Kryptonite', field: 'notified' } },
+        { label: 'Prizes claimed', value: '8', live: { brand: 'Kryptonite', field: 'claimed' } },
+        { label: 'Locks shipped to winners', value: '8', live: { brand: 'Kryptonite', field: 'shipped' } },
+        { label: 'Confirmed received by winners', value: '6', live: { brand: 'Kryptonite', field: 'received' } },
         { label: 'Entries in the largest drawing for your prize', value: '10,148' },
         { label: 'Bike trips logged campaign-wide', value: '3,483' },
         { label: 'Bike miles logged campaign-wide', value: '11,978' },
@@ -438,11 +439,11 @@ export const shiftYourSummer2026: CampaignReports = {
         ] },
         { id: 'fulfillment', title: 'Fulfillment', navLabel: 'Fulfillment', blocks: [
           { kind: 'stats', rows: [
-            { label: 'Units drawn', value: '8' },
-            { label: 'Winners notified', value: '8' },
-            { label: 'Prizes claimed', value: '7' },
-            { label: 'Shipped', value: '7' },
-            { label: 'Confirmed received by the winner', value: '6' },
+            { label: 'Units drawn', value: '8', live: { brand: 'Kryptonite', field: 'drawn' } },
+            { label: 'Winners notified', value: '8', live: { brand: 'Kryptonite', field: 'notified' } },
+            { label: 'Prizes claimed', value: '8', live: { brand: 'Kryptonite', field: 'claimed' } },
+            { label: 'Shipped', value: '8', live: { brand: 'Kryptonite', field: 'shipped' } },
+            { label: 'Confirmed received by the winner', value: '6', live: { brand: 'Kryptonite', field: 'received' } },
             { label: 'Median time from notification to claim', value: '1.5 hours' },
           ] },
           { kind: 'prose', paragraphs: [
@@ -466,7 +467,8 @@ export const shiftYourSummer2026: CampaignReports = {
       intro: 'Noxgear donated three Tracer 2 LED safety vests and ran a member offer alongside them. This report covers what both delivered.',
       summary: [
         { label: 'Safety vests donated', value: '3' },
-        { label: 'Winners drawn, notified and claimed', value: '3' },
+        { label: 'Winners drawn and notified', value: '3', live: { brand: 'Noxgear', field: 'notified' } },
+        { label: 'Prizes claimed', value: '3', live: { brand: 'Noxgear', field: 'claimed' } },
         { label: 'Entries in the drawing for your first vest', value: '10,810' },
         { label: 'Times your offer was shown', value: '6,789' },
         { label: 'People who saw your offer', value: '297' },

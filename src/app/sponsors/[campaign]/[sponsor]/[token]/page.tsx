@@ -5,6 +5,8 @@ import Footer from '@/components/Footer'
 import { allReportParams, findReport } from '@/content/sponsor-reports'
 import ReportTracking from './ReportTracking'
 import BlockView, { StatPanel } from '@/components/sponsor-report/BlockView'
+import { fetchFulfillment } from '@/content/sponsor-reports/fulfillment'
+import { resolveLiveStats } from '@/content/sponsor-reports/resolve-live'
 import SectionNav from '@/components/sponsor-report/SectionNav'
 
 /**
@@ -16,6 +18,9 @@ import SectionNav from '@/components/sponsor-report/SectionNav'
  * and marked noindex — shareable by link, but not surfaced in search, since
  * they are addressed to one organization rather than the public.
  */
+
+// Rebuild hourly so live fulfillment figures stay current without a deploy.
+export const revalidate = 3600
 
 export async function generateStaticParams() {
   return allReportParams()
@@ -44,7 +49,13 @@ export default async function SponsorReportPage({
   const { campaign: campaignSlug, sponsor: sponsorSlug, token } = await params
   const found = findReport(campaignSlug, sponsorSlug, token)
   if (!found) notFound()
-  const { campaign, report } = found
+  const { campaign, report: staticReport } = found
+
+  // Fulfillment keeps moving after a campaign closes, so those few figures are
+  // read live. Everything else stays exactly as published. A failed lookup
+  // falls back to the written values rather than blanking the page.
+  const fulfillment = await fetchFulfillment(campaign.competitionId)
+  const report = resolveLiveStats(staticReport, fulfillment)
 
   return (
     <div className="min-h-screen bg-[#191A2E]">

@@ -10,9 +10,24 @@
  * query in appendix-queries.md.
  */
 
+/**
+ * A figure that is still moving. Campaign-period numbers (trips, miles,
+ * entries, drawing pools) are historical and must stay static — a sponsor
+ * should keep seeing the figures we sent them. Fulfillment is different: it
+ * keeps changing for weeks after a campaign closes, and a sponsor opening the
+ * link in October should see today's state, not the day we wrote the page.
+ */
+export interface LiveFulfillmentStat {
+  /** Sponsor name, or the prize's brand_name_override when there is no sponsor row. */
+  brand: string
+  field: 'drawn' | 'notified' | 'claimed' | 'shipped' | 'received'
+}
+
 export interface StatRow {
   label: string
+  /** Static fallback, and what renders if the live lookup fails. */
   value: string
+  live?: LiveFulfillmentStat
 }
 
 export interface TableBlock {
@@ -99,6 +114,8 @@ export interface CampaignWrap {
 export interface CampaignReports {
   /** URL segment, e.g. "shift-your-summer-2026" */
   slug: string
+  /** competitions.id — used to resolve live fulfillment figures. */
+  competitionId: string
   /** Display name, e.g. "Shift Your Summer" */
   name: string
   /** Human-readable campaign period, e.g. "June 15 – August 15, 2026" */
