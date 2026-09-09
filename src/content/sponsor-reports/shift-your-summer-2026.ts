@@ -428,10 +428,10 @@ export const shiftYourSummer2026: CampaignReports = {
       ],
       sections: [
         { id: 'drawings', title: 'Weekly drawings', navLabel: 'Drawings', blocks: [
-          { kind: 'prose', paragraphs: ['A KryptoLok was drawn most weeks of the campaign. Because participants received entries for each verified active trip, the pool behind each drawing grew as the summer went on:'] },
-          { kind: 'table', head: ['Drawing', 'Entries in the pool'],
-            rows: [['June 22','817'],['June 29','1,647'],['July 6','108'],['July 13','3,678'],['July 27','6,004'],['August 18 \u2014 three locks','10,148 / 9,995 / 9,863']],
-            note: 'Every drawing was seeded and recorded for audit. Where several locks were drawn on the same day, each winner was removed from the pool before the next draw, which is why those figures step down. The July 6 pool is smaller because it ran while we were correcting an entry-weighting issue.' },
+          { kind: 'prose', paragraphs: [
+            'A KryptoLok was drawn most weeks of the campaign rather than all eight at the end. Because participants received entries for each verified active trip, the pool behind each drawing grew all summer \u2014 from 817 entries at the first drawing on June 22 to 10,148 when the last three locks were drawn on August 18.',
+            'Every drawing was seeded and recorded for audit.',
+          ] },
         ] },
         { id: 'fulfillment', title: 'Fulfillment', navLabel: 'Fulfillment', blocks: [
           { kind: 'stats', rows: [
