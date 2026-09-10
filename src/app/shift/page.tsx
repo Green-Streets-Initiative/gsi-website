@@ -10,6 +10,7 @@ import PhoneFrame from './_components/PhoneFrame'
 import FeatureRow, { Bullet } from './_components/FeatureRow'
 import TierLadder from './_components/TierLadder'
 import NewRoutesShiftBanner from './_components/NewRoutesShiftBanner'
+import SemesterShiftBanner from './_components/SemesterShiftBanner'
 import JsonLd from '@/components/JsonLd'
 import { shiftAppSchema } from '@/lib/structured-data'
 
@@ -56,6 +57,7 @@ export default function ShiftPage() {
             (partner co-brand or utm_campaign=newroutes); states the reward,
             shows the code to enter in the app, and gives attributed store CTAs */}
         <NewRoutesShiftBanner iosUrl={IOS_URL} androidUrl={ANDROID_URL} />
+        <SemesterShiftBanner iosUrl={IOS_URL} androidUrl={ANDROID_URL} />
 
         {/* ═══════════════════════════════════════════════════════
             1 · HERO

@@ -309,7 +309,8 @@ export default async function ShiftYourSummerPage() {
 
   const sponsors: Sponsorship[] = competition?.event_sponsorships ?? []
   const geoStandings = groupStandings.filter(s => s.groupType === 'town' || s.groupType === 'neighborhood')
-  const corpStandings = groupStandings.filter(s => s.groupType === 'workplace' || s.groupType === 'school')
+  const corpStandings = groupStandings.filter(s => s.groupType === 'workplace')
+  const schoolStandings = groupStandings.filter(s => s.groupType === 'school')
   const aggregateLabel = computeAggregateLabel(prizes)
   const totalActiveTrips = standings.reduce((sum, s) => sum + s.non_car_trips, 0)
 
@@ -332,6 +333,7 @@ export default async function ShiftYourSummerPage() {
             standings={standings}
             geoStandings={geoStandings}
             corpStandings={corpStandings}
+            schoolStandings={schoolStandings}
             participantCount={participantCount}
             prizes={prizes}
             sponsors={sponsors}
@@ -345,6 +347,7 @@ export default async function ShiftYourSummerPage() {
             standings={standings}
             geoStandings={geoStandings}
             corpStandings={corpStandings}
+            schoolStandings={schoolStandings}
             participantCount={participantCount}
             sponsors={sponsors}
             claimedWinners={claimedWinners}
@@ -487,6 +490,7 @@ function ActiveEvent({
   standings,
   geoStandings,
   corpStandings,
+  schoolStandings,
   participantCount,
   prizes,
   sponsors,
@@ -497,6 +501,7 @@ function ActiveEvent({
   standings: Standing[]
   geoStandings: GroupStanding[]
   corpStandings: GroupStanding[]
+  schoolStandings: GroupStanding[]
   participantCount: number
   prizes: Prize[]
   sponsors: Sponsorship[]
@@ -588,6 +593,7 @@ function ActiveEvent({
               <LeaderboardTabs
                 geoStandings={geoStandings}
                 corpStandings={corpStandings}
+                schoolStandings={schoolStandings}
                 individualStandings={standings}
                 participantCount={participantCount}
               />
@@ -613,6 +619,7 @@ function EndedEvent({
   standings,
   geoStandings,
   corpStandings,
+  schoolStandings,
   participantCount,
   sponsors,
   claimedWinners,
@@ -621,6 +628,7 @@ function EndedEvent({
   standings: Standing[]
   geoStandings: GroupStanding[]
   corpStandings: GroupStanding[]
+  schoolStandings: GroupStanding[]
   participantCount: number
   sponsors: Sponsorship[]
   claimedWinners: ClaimedWinner[]
@@ -685,6 +693,7 @@ function EndedEvent({
           <LeaderboardTabs
             geoStandings={geoStandings}
             corpStandings={corpStandings}
+            schoolStandings={schoolStandings}
             individualStandings={standings}
             participantCount={participantCount}
             initialRowLimit={5}

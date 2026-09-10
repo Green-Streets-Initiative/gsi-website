@@ -24,6 +24,7 @@ export interface IndividualStanding {
 interface Props {
   geoStandings: GroupStanding[]
   corpStandings: GroupStanding[]
+  schoolStandings?: GroupStanding[]
   individualStandings: IndividualStanding[]
   participantCount: number
   initialRowLimit?: number
@@ -200,11 +201,12 @@ function IndividualStandingsTable({
   )
 }
 
-type Tab = 'towns' | 'corporate' | 'individual'
+type Tab = 'towns' | 'corporate' | 'schools' | 'individual'
 type SortBy = 'shift_rate' | 'active_trips'
 
-export default function LeaderboardTabs({ geoStandings, corpStandings, individualStandings, participantCount, initialRowLimit }: Props) {
+export default function LeaderboardTabs({ geoStandings, corpStandings, schoolStandings = [], individualStandings, participantCount, initialRowLimit }: Props) {
   const showCorporate = corpStandings.length > 0
+  const showSchools = schoolStandings.length > 0
   const [activeTab, setActiveTab] = useState<Tab>('towns')
   const [sortBy, setSortBy] = useState<SortBy>('shift_rate')
   const [expanded, setExpanded] = useState(false)
@@ -213,6 +215,7 @@ export default function LeaderboardTabs({ geoStandings, corpStandings, individua
   const tabs: { id: Tab; label: string }[] = [
     { id: 'towns', label: 'Towns' },
     ...(showCorporate ? [{ id: 'corporate' as Tab, label: 'Corporate Challenge' }] : []),
+    ...(showSchools ? [{ id: 'schools' as Tab, label: 'Schools' }] : []),
     { id: 'individual', label: 'Individual' },
   ]
 
@@ -261,6 +264,7 @@ export default function LeaderboardTabs({ geoStandings, corpStandings, individua
       <div className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#242538]">
         {activeTab === 'towns' && <GroupStandingsTable standings={geoStandings} sortBy={sortBy} rowLimit={rowLimit} />}
         {activeTab === 'corporate' && <GroupStandingsTable standings={corpStandings} showLogo sortBy={sortBy} rowLimit={rowLimit} />}
+        {activeTab === 'schools' && <GroupStandingsTable standings={schoolStandings} showLogo sortBy={sortBy} rowLimit={rowLimit} />}
         {activeTab === 'individual' && (
           <IndividualStandingsTable standings={individualStandings} participantCount={participantCount} sortBy={sortBy} rowLimit={rowLimit} />
         )}
@@ -270,6 +274,7 @@ export default function LeaderboardTabs({ geoStandings, corpStandings, individua
         const totalForTab =
           activeTab === 'towns' ? geoStandings.length :
           activeTab === 'corporate' ? corpStandings.length :
+          activeTab === 'schools' ? schoolStandings.length :
           individualStandings.length
         return totalForTab > initialRowLimit ? (
           <button

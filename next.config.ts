@@ -36,6 +36,18 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
 
+      // Shift Your Semester print-friendly short URLs (posters carry these)
+      {
+        source: '/semester',
+        destination: '/shift-your-semester',
+        permanent: false,
+      },
+      {
+        source: '/semester/:school',
+        destination: '/shift-your-semester/:school',
+        permanent: false,
+      },
+
       // Shift leaderboard shortcut
       {
         source: '/shift/leaderboard',

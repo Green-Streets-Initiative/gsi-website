@@ -39,7 +39,7 @@ export default function TownToc({ sections }: { sections: Array<[href: string, l
     >
       <div className="relative mx-auto max-w-[960px]">
         <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap px-4 py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <span className="hidden shrink-0 pr-1 text-[10px] font-bold uppercase tracking-widest text-white/60 sm:inline">
+          <span className="hidden shrink-0 pr-1 text-[10px] font-bold uppercase tracking-widest text-white/70 sm:inline">
             On this page
           </span>
           {sections.map(([href, label]) => {

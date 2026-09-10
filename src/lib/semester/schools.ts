@@ -3,8 +3,9 @@
  *
  * Static data for the campaign hub and per-school pages. `groupSlug` is the
  * school's row in the Shift `groups` table (looked up live for the join
- * section); null means the group hasn't been created yet and the page renders
- * its "coming" state. Campus lat/lng feeds the nearby-events selector.
+ * section). All twelve groups exist (Shift migration 00880); the same list,
+ * with each school's email domains, lives server-side in `campaign_schools`.
+ * Campus lat/lng feeds the nearby-events selector.
  *
  * Benefit facts are sourced from each school's own pages (researched
  * 2026-08-26). Content rules: no dollar prices or order deadlines that go
@@ -76,7 +77,7 @@ export const SCHOOLS: School[] = [
     name: 'Boston College',
     shortName: 'BC',
     logo: '/images/schools/boston-college.png',
-    groupSlug: null,
+    groupSlug: 'boston-college',
     lat: 42.3355,
     lng: -71.1685,
     highlight: 'The Green Line B ends at the foot of campus — BC is literally the end of the line.',
@@ -100,7 +101,7 @@ export const SCHOOLS: School[] = [
     name: 'Boston University',
     shortName: 'BU',
     logo: '/images/schools/boston-university.png',
-    groupSlug: null,
+    groupSlug: 'boston-university',
     lat: 42.3505,
     lng: -71.1054,
     highlight: 'Home of the BU Cycle Kitchen — a free DIY bike shop that teaches you to fix your own ride.',
@@ -125,7 +126,7 @@ export const SCHOOLS: School[] = [
     name: 'Northeastern University',
     shortName: 'Northeastern',
     logo: '/images/schools/northeastern.png',
-    groupSlug: null,
+    groupSlug: 'northeastern-university',
     lat: 42.3398,
     lng: -71.0892,
     highlight: 'Free on-demand night shuttle covers everything within 1.5 miles of Snell Library.',
@@ -149,7 +150,7 @@ export const SCHOOLS: School[] = [
     name: 'Harvard University',
     shortName: 'Harvard',
     logo: '/images/schools/harvard.png',
-    groupSlug: null,
+    groupSlug: 'harvard-university',
     lat: 42.3744,
     lng: -71.1169,
     highlight: 'Quad Bikes: a student-run shop with free repairs and group rides.',
@@ -173,7 +174,7 @@ export const SCHOOLS: School[] = [
     name: 'MIT',
     shortName: 'MIT',
     logo: '/images/schools/mit.png',
-    groupSlug: null,
+    groupSlug: 'mit',
     lat: 42.3601,
     lng: -71.0942,
     highlight: 'MIT covers 50–70% of students’ MBTA pass costs — the deepest transit subsidy in Boston.',
@@ -197,7 +198,7 @@ export const SCHOOLS: School[] = [
     name: 'Tufts University',
     shortName: 'Tufts',
     logo: '/images/schools/tufts.png',
-    groupSlug: null,
+    groupSlug: 'tufts-university',
     lat: 42.4075,
     lng: -71.119,
     highlight: 'Free bike checkout at the library desk, and a free repair shop with student mechanics.',
@@ -222,7 +223,7 @@ export const SCHOOLS: School[] = [
     name: 'UMass Boston',
     shortName: 'UMass Boston',
     logo: '/images/schools/umass-boston.png',
-    groupSlug: null,
+    groupSlug: 'umass-boston',
     lat: 42.3134,
     lng: -71.0386,
     highlight: 'A student-funded 50% T-pass subsidy — it sells out fast every term.',
@@ -246,7 +247,7 @@ export const SCHOOLS: School[] = [
     name: 'Suffolk University',
     shortName: 'Suffolk',
     logo: '/images/schools/suffolk.png',
-    groupSlug: null,
+    groupSlug: 'suffolk-university',
     lat: 42.3588,
     lng: -71.0616,
     highlight: 'A downtown campus deliberately designed around walking and transit.',
@@ -269,7 +270,7 @@ export const SCHOOLS: School[] = [
     name: 'Berklee College of Music',
     shortName: 'Berklee',
     logo: '/images/schools/berklee.png',
-    groupSlug: null,
+    groupSlug: 'berklee-college-of-music',
     lat: 42.3465,
     lng: -71.0878,
     highlight: 'A card-access bike pavilion in the heart of Back Bay.',
@@ -292,7 +293,7 @@ export const SCHOOLS: School[] = [
     name: 'Simmons University',
     shortName: 'Simmons',
     logo: '/images/schools/simmons.png',
-    groupSlug: null,
+    groupSlug: 'simmons-university',
     lat: 42.3391,
     lng: -71.0997,
     highlight: 'Free Longwood-area shuttles every 8–10 minutes.',
@@ -315,7 +316,7 @@ export const SCHOOLS: School[] = [
     name: 'Lesley University',
     shortName: 'Lesley',
     logo: '/images/schools/lesley.png',
-    groupSlug: null,
+    groupSlug: 'lesley-university',
     lat: 42.3888,
     lng: -71.1225,
     highlight: 'Porter Square campus, right on the Red Line and commuter rail.',
