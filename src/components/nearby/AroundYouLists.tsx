@@ -23,7 +23,7 @@ import { bikeshareLogoUrl, borrowLogoUrl } from '@/lib/nearby/provider-logos'
 import NearbyPromoCard from './NearbyPromoCard'
 import { NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
 import {
-  type StationGroup, routeEndpoints, soonestAtStation, freqShort, isShuttleStation, isShuttleRoute,
+  type StationGroup, type ModeFilter, routeEndpoints, soonestAtStation, freqShort, isShuttleStation,
 } from './useNearbyModel'
 
 /**
@@ -212,8 +212,15 @@ function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRout
   )
 }
 
-export function StationList({ stations, corridorById, highlightedCorridorId, status, onRetry, onSelectRoute, onFocusStation, focusedStationKey, alerts }: {
+export function StationList({ stations, corridorById, highlightedCorridorId, status, onRetry, onSelectRoute, onFocusStation, focusedStationKey, alerts, mode, crossModeNearest, onSwitchMode }: {
   stations: StationGroup[]
+  /** The page's mode filter — decides which "nothing in reach" wording applies */
+  mode: ModeFilter
+  /** In Buses mode with no bus in reach, the nearest train station (and
+   *  vice versa) — surfaced as one line with a chip switch, so a rider at
+   *  Boston College learns the Green Line is a 7-minute walk. */
+  crossModeNearest: StationGroup | null
+  onSwitchMode: (m: ModeFilter) => void
   corridorById: Map<string, TransitCorridor | BikeCorridor>
   highlightedCorridorId: string | null
   status: SectionStatus
@@ -249,6 +256,12 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
     }
   }
 
+  // Nothing MBTA inside the radius, only the nearest option beyond it: say
+  // so before the cards, or a 0.8 mi bus stop reads as "the bus stop here"
+  const mbta = stations.filter(s => !isShuttleStation(s))
+  const farOnly = mbta.length > 0 && mbta.every(s => s.farther)
+  const crossRoutes = crossModeNearest?.routes.map(r => r.name).join(', ') ?? ''
+
   return (
     <div className="mt-5">
       <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
@@ -259,6 +272,30 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
       {status === 'ready' && stations.length === 0 && (
         <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
           {tr('lists.no_stations')}
+        </p>
+      )}
+      {status === 'ready' && farOnly && (
+        <p className="mb-2.5 text-[0.875rem] text-white/80">
+          {tr(mode === 'bus' ? 'lists.far_lead_bus' : mode === 'train' ? 'lists.far_lead_train' : 'lists.far_lead_all')}
+        </p>
+      )}
+      {status === 'ready' && crossModeNearest && (
+        <p className="mb-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[0.875rem] text-white/80">
+          {tr(mode === 'bus' ? 'lists.cross_mode_train' : 'lists.cross_mode_bus', {
+            route: crossRoutes,
+            name: crossModeNearest.name,
+            minutes: walkTimeMinutes(crossModeNearest.dist),
+          })}
+          <button
+            type="button"
+            onClick={() => {
+              onSwitchMode(mode === 'bus' ? 'train' : 'bus')
+              posthog.capture('snapshot_cross_mode_switch', { from: mode })
+            }}
+            className="ml-2 font-semibold text-[#BAF14D] hover:opacity-80"
+          >
+            {tr(mode === 'bus' ? 'lists.cross_mode_show_trains' : 'lists.cross_mode_show_buses')}
+          </button>
         </p>
       )}
       <div className="space-y-2.5">
@@ -283,6 +320,11 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                 aria-expanded={open}
                 className="w-full cursor-pointer px-1.5 text-left"
               >
+                {st.farther && (
+                  <span className="mb-1 block text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
+                    {tr(st.isRail ? 'lists.nearest_rail_tag' : 'lists.nearest_bus_tag')}
+                  </span>
+                )}
                 <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
                   <span className="flex items-center gap-1.5 text-[0.95rem] font-bold text-white">
                     <span className="text-white/80">{isShuttleStation(st) ? <ShuttleIcon size={15} /> : st.routes.every(r => r.id.startsWith('Boat-')) ? <FerryIcon size={15} /> : st.isRail ? <TrainIcon size={15} /> : <BusIcon size={15} />}</span>
@@ -305,7 +347,7 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                 )}
                 {/* A stop several lines share IS an interchange — say so.
                     Costs nothing: the routes are already in hand. */}
-                {st.routes.length > 1 && (
+                {st.routes.length > 1 && !isShuttleStation(st) && (
                   <span className="mt-1.5 block text-[0.75rem] text-white/75">
                     {tr('lists.lines_meet_here', { count: st.routes.length })}
                   </span>

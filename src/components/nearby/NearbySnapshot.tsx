@@ -17,9 +17,10 @@ import { NEARBY_PATH } from '@/lib/nearby/config'
 import {
   buildTransitCorridors, buildBikeCorridors, fetchCorridorMeta, seedCorridorFromStop,
   SNAPSHOT_BUS_OPTS, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_MAX_STATIONS,
+  SNAPSHOT_BUS_FAR_OPTS, SNAPSHOT_RAIL_FAR,
   type TransitCorridor,
 } from '@/lib/nearby/corridors'
-import type { SectionData, BikeNetworkData, CommunityData, GuideItem, ReachRow } from './types'
+import type { SectionData, SectionStatus, BikeNetworkData, CommunityData, GuideItem, ReachRow } from './types'
 import { captureReachLoaded } from './ReachSection'
 import NearbyShell from './NearbyShell'
 import NearbyDesktop from './NearbyDesktop'
@@ -32,6 +33,10 @@ import { NearbyPromosProvider } from './NearbyPromos'
 import NearbyLanguagePill from './NearbyLanguagePill'
 
 const REFRESH_MS = 30_000
+
+/** Nearest rail station beyond the normal radius (one station, 0.05°). */
+const fetchRailFar = (lat: number, lng: number) =>
+  fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_FAR.cachePrefix, SNAPSHOT_RAIL_FAR.maxStations, SNAPSHOT_RAIL_FAR.radiusDeg)
 
 interface Located {
   lat: number
@@ -75,6 +80,11 @@ export default function NearbySnapshot() {
   const [rail, setRail] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
   const [bus, setBus] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
   const [shuttles, setShuttles] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
+  // The nearest option beyond the normal radius — filled ONLY when the
+  // primary rail/bus fetch found nothing (Boston College has no MBTA bus
+  // within 0.7 mi; the list must still say where the nearest one is).
+  const [railFar, setRailFar] = useState<MBTAStopLive[]>([])
+  const [busFar, setBusFar] = useState<MBTAStopLive[]>([])
   const [alerts, setAlerts] = useState<SurfacedAlert[]>([])
   // Contextual promos (Bluebikes closure credit, etc.) — global config, matched
   // to alerts in the detail blocks. Fetched once; fails soft to none.
@@ -233,6 +243,8 @@ export default function NearbySnapshot() {
     const { lat, lng } = loc
     setRail({ status: 'loading', data: [] })
     setBus({ status: 'loading', data: [] })
+    setRailFar([])
+    setBusFar([])
     setBluebikes({ status: 'loading', data: [] })
     setBikeNetwork({ status: 'loading', data: null })
     setCommunity({ status: 'loading', data: null })
@@ -299,15 +311,24 @@ export default function NearbySnapshot() {
       })
     }, 75_000)
 
+    // Each family resolves to [inRadius, far]: the far fetch runs only when
+    // the primary came back empty, and "ready" waits for it so the list
+    // never flashes the empty message before the nearest option arrives.
     const railP = fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_MAX_STATIONS)
+      .then(async rows => [rows, rows.length === 0 ? await fetchRailFar(lat, lng) : []] as const)
     const busP = fetchMBTAStops(lat, lng, SNAPSHOT_BUS_OPTS)
-    railP.then(rows => {
+      .then(async rows => [rows, rows.length === 0 ? await fetchMBTAStops(lat, lng, SNAPSHOT_BUS_FAR_OPTS) : []] as const)
+    railP.then(([rows, far]) => {
+      if (loadSeqRef.current !== seq) return
       setRail({ status: 'ready', data: rows })
-      posthog.capture('snapshot_section_loaded', { section: 'rail', count: rows.length })
+      setRailFar(far)
+      posthog.capture('snapshot_section_loaded', { section: 'rail', count: rows.length, far: far.length })
     })
-    busP.then(rows => {
+    busP.then(([rows, far]) => {
+      if (loadSeqRef.current !== seq) return
       setBus({ status: 'ready', data: rows })
-      posthog.capture('snapshot_section_loaded', { section: 'bus', count: rows.length })
+      setBusFar(far)
+      posthog.capture('snapshot_section_loaded', { section: 'bus', count: rows.length, far: far.length })
     })
     fetchShuttleStops(lat, lng).then(rows => {
       setShuttles({ status: 'ready', data: rows })
@@ -315,13 +336,17 @@ export default function NearbySnapshot() {
     })
     // Service alerts for the routes we're about to show (major effects only),
     // plus the stops whose closure is old enough to retire from the lists.
-    Promise.all([railP, busP]).then(([railRows, busRows]) =>
-      fetchNearbyAlertsAndClosures([...railRows, ...busRows].map(r => r.route_id)).then(
+    Promise.all([railP, busP]).then(([[railRows, railFarRows], [busRows, busFarRows]]) =>
+      fetchNearbyAlertsAndClosures([...railRows, ...railFarRows, ...busRows, ...busFarRows].map(r => r.route_id)).then(
         ({ alerts, retiredStopIds }) => {
+          if (loadSeqRef.current !== seq) return
           setAlerts(alerts)
           if (retiredStopIds.size > 0) {
-            setRail(prev => (prev.status === 'ready' ? { ...prev, data: prev.data.filter(r => !retiredStopIds.has(r.stop_id)) } : prev))
-            setBus(prev => (prev.status === 'ready' ? { ...prev, data: prev.data.filter(r => !retiredStopIds.has(r.stop_id)) } : prev))
+            const live = (r: MBTAStopLive) => !retiredStopIds.has(r.stop_id)
+            setRail(prev => (prev.status === 'ready' ? { ...prev, data: prev.data.filter(live) } : prev))
+            setBus(prev => (prev.status === 'ready' ? { ...prev, data: prev.data.filter(live) } : prev))
+            setRailFar(prev => prev.filter(live))
+            setBusFar(prev => prev.filter(live))
           }
         },
       ),
@@ -425,11 +450,20 @@ export default function NearbySnapshot() {
           fetchMBTAStops(lat, lng, SNAPSHOT_BUS_OPTS),
           fetchBikeShareDocks(lat, lng),
         ])
+        // Far topology is session-cached, so a refresh of the nearest
+        // option costs one /predictions call — same as a found stop would
+        const [railFarRows, busFarRows] = await Promise.all([
+          railRows.length === 0 ? fetchRailFar(lat, lng) : [],
+          busRows.length === 0 ? fetchMBTAStops(lat, lng, SNAPSHOT_BUS_FAR_OPTS) : [],
+        ])
         const { alerts, retiredStopIds } = await fetchNearbyAlertsAndClosures(
-          [...railRows, ...busRows].map(r => r.route_id),
+          [...railRows, ...railFarRows, ...busRows, ...busFarRows].map(r => r.route_id),
         )
-        setRail({ status: 'ready', data: railRows.filter(r => !retiredStopIds.has(r.stop_id)) })
-        setBus({ status: 'ready', data: busRows.filter(r => !retiredStopIds.has(r.stop_id)) })
+        const live = (r: MBTAStopLive) => !retiredStopIds.has(r.stop_id)
+        setRail({ status: 'ready', data: railRows.filter(live) })
+        setBus({ status: 'ready', data: busRows.filter(live) })
+        setRailFar(railFarRows.filter(live))
+        setBusFar(busFarRows.filter(live))
         setBluebikes({ status: 'ready', data: bbRows })
         setAlerts(alerts)
       } finally {
@@ -684,6 +718,15 @@ export default function NearbySnapshot() {
   // Phones and tablets get the app shell (map stage + tabbed bottom sheet);
   // desktop gets the two-pane layout (sticky map + content rail). Both own
   // their mode-filter state and consume the same model/overlay hooks.
+  // The station list's status. The stop fetchers swallow errors and return
+  // [], so only the corridor build can report an error; but "ready" must wait
+  // for rail AND bus (the old value was the corridor status alone, which let
+  // the empty message flash while stops were still loading).
+  const transitStatus: SectionStatus =
+    transitCorridors.status === 'error' ? 'error'
+    : rail.status === 'loading' || bus.status === 'loading' ? 'loading'
+    : 'ready'
+
   const surfaceProps = {
     center: location,
     displayLabel,
@@ -704,10 +747,12 @@ export default function NearbySnapshot() {
     popularBikeStreetKeys,
     rail: rail.data,
     bus: bus.data,
+    railFar,
+    busFar,
     shuttles: shuttles.data,
     docks: bluebikes.data,
     backgroundLines,
-    transitStatus: transitCorridors.status,
+    transitStatus,
     reach,
     community,
     guides,

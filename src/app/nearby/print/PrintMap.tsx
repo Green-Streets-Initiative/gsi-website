@@ -1,4 +1,5 @@
 import { TILE, fitViewport, toPixel, downsample, type LatLngBounds } from '@/lib/geo/web-mercator'
+import { SHUTTLE_COLOR } from '@/lib/nearby/shuttle-agencies'
 
 /**
  * Server-rendered static map for the print snapshot: a mosaic of CARTO
@@ -22,7 +23,7 @@ export interface PrintLine {
 export interface PrintMarker {
   lat: number
   lng: number
-  kind: 'home' | 'rail' | 'bus' | 'dock'
+  kind: 'home' | 'rail' | 'bus' | 'shuttle' | 'dock'
   color?: string
   label?: string
 }
@@ -33,21 +34,22 @@ const TRAIN_PATH = 'M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,23
 const BUS_PATH = 'M184,28H72A36,36,0,0,0,36,64V208a20,20,0,0,0,20,20H84a20,20,0,0,0,20-20V192h48v16a20,20,0,0,0,20,20h28a20,20,0,0,0,20-20V64A36,36,0,0,0,184,28ZM60,168V112H196v56ZM72,52H184a12,12,0,0,1,12,12V88H60V64A12,12,0,0,1,72,52Zm8,152H60V192H80Zm96,0V192h20v12Zm-68-64a16,16,0,1,1-16-16A16,16,0,0,1,108,140Zm72,0a16,16,0,1,1-16-16A16,16,0,0,1,180,140Z'
 const BICYCLE_PATH = 'M204,108a51.82,51.82,0,0,0-15.13,2.25L168.89,76H192a4,4,0,0,1,4,4,12,12,0,0,0,24,0,28,28,0,0,0-28-28H148a12,12,0,0,0-10.37,18l8.14,14H109.56L94.37,58A12,12,0,0,0,84,52H52a12,12,0,0,0,0,24H77.11L88.18,95,74,112.89a52.17,52.17,0,1,0,18.8,14.92l8.37-10.57L118,146.05A12,12,0,1,0,138.7,134L123.56,108h36.21l8.39,14.38A52,52,0,1,0,204,108ZM80,160a28,28,0,1,1-21.71-27.28l-15.7,19.83a12,12,0,0,0,18.82,14.9l15.7-19.83A27.84,27.84,0,0,1,80,160Zm124,28a28,28,0,0,1-23.11-43.79l12.74,21.84A12,12,0,0,0,214.37,154l-12.75-21.84c.79-.07,1.58-.11,2.38-.11a28,28,0,0,1,0,56Z'
 
-const MARKER_SIZE = { rail: 17, bus: 15, dock: 13 } as const
+const MARKER_SIZE = { rail: 17, bus: 15, shuttle: 15, dock: 13 } as const
 
 /** Circular station/stop/dock badge with its mode glyph — used for the map
  *  markers AND the legend swatches, so the legend shows exactly what's on
  *  the map. Rail badges take the line's official color; bus stays MBTA
  *  yellow and docks Bluebikes blue, mirroring the interactive markers. */
 export function PrintMarkerIcon({ kind, color, size }: {
-  kind: 'rail' | 'bus' | 'dock'
+  kind: 'rail' | 'bus' | 'shuttle' | 'dock'
   color?: string
   size?: number
 }) {
   const s = size ?? MARKER_SIZE[kind]
-  const bg = kind === 'rail' ? (color ?? '#191A2E') : kind === 'bus' ? '#FFC72C' : '#2966E5'
+  // Shuttles: the interactive map's indigo dot with a white bus glyph
+  const bg = kind === 'rail' ? (color ?? '#191A2E') : kind === 'bus' ? '#FFC72C' : kind === 'shuttle' ? SHUTTLE_COLOR : '#2966E5'
   const glyphFill = kind === 'bus' ? '#191A2E' : '#ffffff'
-  const path = kind === 'rail' ? TRAIN_PATH : kind === 'bus' ? BUS_PATH : BICYCLE_PATH
+  const path = kind === 'rail' ? TRAIN_PATH : kind === 'bus' || kind === 'shuttle' ? BUS_PATH : BICYCLE_PATH
   const glyph = Math.round(s * 0.66)
   return (
     // No box-shadow anywhere in this file: the print pipeline rasterizes

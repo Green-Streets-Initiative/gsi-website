@@ -79,6 +79,8 @@ interface Props {
   popularBikeStreetKeys: Set<string>
   rail: MBTAStopLive[]
   bus: MBTAStopLive[]
+  railFar: MBTAStopLive[]
+  busFar: MBTAStopLive[]
   shuttles: MBTAStopLive[]
   docks: BluebikeStationLive[]
   backgroundLines: GeoJSON.FeatureCollection | null
@@ -94,7 +96,7 @@ interface Props {
 export default function NearbyShell({
   center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
-  transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, shuttles, docks,
+  transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, railFar, busFar, shuttles, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
   onRequestCorridorShape,
 }: Props) {
@@ -111,12 +113,12 @@ export default function NearbyShell({
   }, [])
 
   const model = useNearbyModel({
-    center, transitCorridors, bikeCorridors, rail, bus, shuttles, docks,
+    center, transitCorridors, bikeCorridors, rail, bus, railFar, busFar, shuttles, docks,
     modeFilter, paintedVisible: paintedOn, onRequestCorridorShape,
   })
   const {
     selection, select, handleMarkerTap,
-    corridorById, stations, stationByKey,
+    corridorById, stations, stationByKey, crossModeNearest,
     corridorLines, highlightedCorridorId, markers, accessPoints,
     showRail, showBus, showBike,
   } = model
@@ -451,6 +453,9 @@ export default function NearbyShell({
                 onFocusStation={focusStationReveal}
                 focusedStationKey={model.focusedStationKey}
                 alerts={alerts}
+                mode={modeFilter}
+                crossModeNearest={crossModeNearest}
+                onSwitchMode={handleModeChange}
               />
               <GuideLinks context="stations" guides={guides.data} modeFilter={modeFilter} />
             </>

@@ -1,3 +1,5 @@
+import { SHUTTLE_COLOR } from '@/lib/nearby/shuttle-agencies'
+
 /**
  * Marker HTML factories for the /nearby snapshot maps. Rendered as MapLibre
  * DOM markers so the Bluebikes pins can carry live availability counts.
@@ -134,7 +136,7 @@ export function shuttleStopHtml(title: string, agencyLabel: string, selected = f
     `<div title="${escapeAttr(title)}" style="
         display:flex;align-items:center;justify-content:center;
         width:${selected ? 26 : 24}px;height:${selected ? 26 : 24}px;border-radius:50%;
-        background:#6366F1;border:${selected ? 3 : 2}px solid ${ring};box-shadow:0 2px 5px rgba(0,0,0,0.35)${glow};
+        background:${SHUTTLE_COLOR};border:${selected ? 3 : 2}px solid ${ring};box-shadow:0 2px 5px rgba(0,0,0,0.35)${glow};
       ">${SHUTTLE_BUS_SVG}</div>`,
     // A shuttle's pill names its operator, not the stop — "EZRide" is the
     // thing a newcomer needs to recognize.

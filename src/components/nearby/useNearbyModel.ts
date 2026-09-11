@@ -5,6 +5,7 @@ import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { lineColor } from '@/lib/nearby/transit-ui'
+import { isShuttleRouteId, shuttleAgencyLabel, shuttleAgencyFor } from '@/lib/nearby/shuttle-agencies'
 import type { NearbyMarker, LaneTapInfo } from './NearbyMap'
 import { userDotHtml, busStopHtml, trainStopHtml, ferryStopHtml, shuttleStopHtml, bluebikeHtml, borrowRentHtml } from './markers'
 import { nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
@@ -43,6 +44,8 @@ function sameSelection(a: Selection, b: Selection): boolean {
 export type ModeFilter = 'all' | 'train' | 'bus' | 'bike'
 
 export const MODE_FILTER_DEFAULT: ModeFilter = 'all'
+/** Stable empty default so optional row props don't churn memo deps */
+const EMPTY_ROWS: MBTAStopLive[] = []
 /** Painted lanes stay one tap away — on by default they bury the
  *  comfortable network under blue (Keith: "why is the map so congested?"). */
 export const PAINTED_DEFAULT = false
@@ -56,16 +59,20 @@ export interface StationGroup {
   lng: number
   dist: number
   isRail: boolean
+  /** Beyond the normal search radius — the nearest option, shown because
+   *  nothing closer exists (Boston College's nearest MBTA bus is 0.8 mi). */
+  farther?: boolean
   routes: { id: string; name: string; arrivals: { direction: string; nextMin: number | null }[] }[]
 }
 
-export function groupStops(rows: MBTAStopLive[], isRail: boolean): StationGroup[] {
+export function groupStops(rows: MBTAStopLive[], isRail: boolean, farther = false): StationGroup[] {
   const groups = new Map<string, StationGroup>()
   for (const row of rows) {
     const key = row.name.toLowerCase()
     let g = groups.get(key)
     if (!g) {
       g = { key, name: row.name, lat: row.lat, lng: row.lng, dist: row.distance_meters, isRail, routes: [] }
+      if (farther) g.farther = true
       groups.set(key, g)
     }
     g.dist = Math.min(g.dist, row.distance_meters)
@@ -114,18 +121,36 @@ export function freqShort(freq: TransitCorridor['frequency']): string | null {
   return null
 }
 
-export function isShuttleRoute(routeId: string): boolean {
-  return routeId.startsWith('crtma:') || routeId.startsWith('longwood:')
-}
-
-function shuttleAgencyLabel(routeId: string): string {
-  if (routeId.startsWith('crtma:')) return 'EZRide'
-  if (routeId.startsWith('longwood:')) return 'Longwood'
-  return 'Shuttle'
-}
+export const isShuttleRoute = isShuttleRouteId
 
 export function isShuttleStation(group: StationGroup): boolean {
   return group.routes.length > 0 && group.routes.every(r => isShuttleRoute(r.id))
+}
+
+/** Nearest-first, keeping only stops that serve a route no earlier stop did */
+function addingRoutes(groups: StationGroup[]): StationGroup[] {
+  const seen = new Set<string>()
+  return groups.filter(g => {
+    const fresh = g.routes.some(r => !seen.has(r.id))
+    for (const r of g.routes) seen.add(r.id)
+    return fresh
+  })
+}
+
+/** Nearest-first, at most `perAgency` stops per operator and `total`
+ *  overall — MIT's 145-stop feed must not crowd EZRide out at Kendall. */
+export function capShuttleGroups(groups: StationGroup[], perAgency = 3, total = 6): StationGroup[] {
+  const perOp = new Map<string, number>()
+  const kept: StationGroup[] = []
+  for (const g of groups) {
+    const op = shuttleAgencyFor(g.routes[0]?.id ?? '')?.prefix ?? '?'
+    const n = perOp.get(op) ?? 0
+    if (n >= perAgency) continue
+    perOp.set(op, n + 1)
+    kept.push(g)
+    if (kept.length >= total) break
+  }
+  return kept
 }
 
 /* ── The model hook ── */
@@ -136,6 +161,9 @@ export interface NearbyModelInput {
   bikeCorridors: BikeCorridor[]
   rail: MBTAStopLive[]
   bus: MBTAStopLive[]
+  /** Nearest option beyond the radius; non-empty only when `rail`/`bus` is empty */
+  railFar?: MBTAStopLive[]
+  busFar?: MBTAStopLive[]
   shuttles?: MBTAStopLive[]
   docks: BluebikeStationLive[]
   /** Page-wide mode filter — hidden modes drop out of markers, lines, AND lists */
@@ -148,7 +176,7 @@ export interface NearbyModelInput {
 }
 
 export function useNearbyModel({
-  center, transitCorridors, bikeCorridors, rail, bus, shuttles, docks,
+  center, transitCorridors, bikeCorridors, rail, bus, railFar, busFar, shuttles, docks,
   modeFilter, paintedVisible, onRequestCorridorShape,
 }: NearbyModelInput) {
   const mode = modeFilter ?? MODE_FILTER_DEFAULT
@@ -175,14 +203,26 @@ export function useNearbyModel({
   // Stations, with any corridor whose boarding stop didn't make the nearby
   // cut appended as its own card — every line stays reachable from the list.
   // The mode filter decides which families (rail vs bus) appear at all.
-  const shuttleRows = shuttles ?? []
+  const shuttleRows = shuttles ?? EMPTY_ROWS
+  const railFarRows = railFar ?? EMPTY_ROWS
+  const busFarRows = busFar ?? EMPTY_ROWS
+
+  // The capped station families, computed once for the list AND the map so
+  // a card always has a pin. A family with nothing in reach shows its
+  // nearest option instead (flagged `farther`).
+  const families = useMemo(() => {
+    const railGroups = showRail ? groupStops(rail, true).slice(0, 4) : []
+    const railFarGroups = showRail && railGroups.length === 0 ? groupStops(railFarRows, true, true).slice(0, 1) : []
+    const busGroups = showBus ? groupStops(bus, false).slice(0, 5) : []
+    // A second far stop only earns a card when it adds a route — two
+    // Chestnut Hill Ave poles both serving the 86 is one answer, not two
+    const busFarGroups = showBus && busGroups.length === 0 ? addingRoutes(groupStops(busFarRows, false, true)).slice(0, 2) : []
+    const shuttleGroups = showBus ? capShuttleGroups(groupStops(shuttleRows, false)) : []
+    return { rail: [...railGroups, ...railFarGroups], bus: [...busGroups, ...busFarGroups], shuttle: shuttleGroups }
+  }, [rail, bus, railFarRows, busFarRows, shuttleRows, showRail, showBus])
 
   const stations = useMemo(() => {
-    const groups = [
-      ...(showRail ? groupStops(rail, true).slice(0, 4) : []),
-      ...(showBus ? groupStops(bus, false).slice(0, 5) : []),
-      ...(showBus ? groupStops(shuttleRows, false).slice(0, 4) : []),
-    ]
+    const groups = [...families.rail, ...families.bus, ...families.shuttle]
     const covered = new Set(groups.flatMap(g => g.routes.map(r => r.id)))
     for (const c of transitCorridors) {
       const visible = c.kind === 'bus' ? showBus : showRail
@@ -200,7 +240,16 @@ export function useNearbyModel({
       covered.add(c.routeId)
     }
     return groups
-  }, [rail, bus, shuttleRows, transitCorridors, showRail, showBus])
+  }, [families, transitCorridors, showRail, showBus])
+
+  // Buses mode with no bus in reach still has a train close by (or vice
+  // versa) — the list says so instead of leaving a rider at Boston College
+  // thinking there's no transit at all.
+  const crossModeNearest = useMemo<StationGroup | null>(() => {
+    if (mode === 'bus' && groupStops(bus, false).length === 0) return groupStops(rail, true)[0] ?? null
+    if (mode === 'train' && groupStops(rail, true).length === 0) return groupStops(bus, false)[0] ?? null
+    return null
+  }, [mode, rail, bus])
 
   const stationByKey = useMemo(() => new Map(stations.map(s => [s.key, s])), [stations])
 
@@ -245,13 +294,15 @@ export function useNearbyModel({
     if (selection?.type !== 'station' || !onRequestCorridorShape) return
     const st = stationByKey.get(selection.key)
     if (!st) return
-    const rows = st.isRail ? rail : bus
+    const rows = st.isRail ? [...rail, ...railFarRows] : [...bus, ...busFarRows]
     for (const route of st.routes) {
       if (corridorById.has(`transit:${route.id}`)) continue
+      // Shuttle lines aren't in the MBTA corridor store — nothing to fetch
+      if (isShuttleRoute(route.id)) continue
       const row = rows.find(r => r.name.toLowerCase() === selection.key && r.route_id === route.id)
       if (row) onRequestCorridorShape(route.id, row.stop_id)
     }
-  }, [selection, stationByKey, corridorById, rail, bus, onRequestCorridorShape])
+  }, [selection, stationByKey, corridorById, rail, bus, railFarRows, busFarRows, onRequestCorridorShape])
 
   /** Returns true when this call left something SELECTED — callers that
    *  reveal chrome (the mobile sheet's half snap) must not fire on a
@@ -338,7 +389,7 @@ export function useNearbyModel({
       dimmed: anyPointActive && !borrowActive(p.id),
       zIndex: borrowActive(p.id) ? 6 : 1,
     })) : []),
-    ...(showRail ? groupStops(rail, true).slice(0, 4).map(g => ({
+    ...families.rail.map(g => ({
       id: `rail-${g.key}`,
       lat: g.lat,
       lng: g.lng,
@@ -356,8 +407,8 @@ export function useNearbyModel({
       analyticsType: 'train',
       dimmed: anyPointActive && !stationActive(g.key),
       zIndex: stationActive(g.key) ? 6 : 3,
-    })) : []),
-    ...(showBus ? groupStops(bus, false).slice(0, 5).map(g => ({
+    })),
+    ...families.bus.map(g => ({
       id: `bus-${g.key}`,
       lat: g.lat,
       lng: g.lng,
@@ -372,8 +423,8 @@ export function useNearbyModel({
       analyticsType: 'bus',
       dimmed: anyPointActive && !stationActive(g.key),
       zIndex: stationActive(g.key) ? 6 : 2,
-    })) : []),
-    ...(showBus ? groupStops(shuttleRows, false).slice(0, 4).map(g => ({
+    })),
+    ...families.shuttle.map(g => ({
       id: `bus-${g.key}`,
       lat: g.lat,
       lng: g.lng,
@@ -386,7 +437,7 @@ export function useNearbyModel({
       analyticsType: 'shuttle',
       dimmed: anyPointActive && !stationActive(g.key),
       zIndex: stationActive(g.key) ? 6 : 2,
-    })) : []),
+    })),
     ...(showBike ? docks.slice(0, 8).map(d => ({
       id: `dock-${d.station_id}`,
       lat: d.lat,
@@ -403,7 +454,7 @@ export function useNearbyModel({
       zIndex: dockActive(d.station_id) ? 6 : 1,
     })) : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [center, rail, bus, shuttleRows, docks, borrowRent, showRail, showBus, showBike, selection, stationActive, anyPointActive, focusedStationKey])
+  ], [center, families, docks, borrowRent, showBike, selection, stationActive, anyPointActive, focusedStationKey])
 
   // Where the camera should ease when a point-like thing is tapped, so the
   // tapped marker stays visible above the detail card / sheet. Corridor-driven
@@ -434,19 +485,21 @@ export function useNearbyModel({
   }, [selection, highlightedCorridorId, focusedStationKey, stationByKey, docks, borrowRent])
 
   // Boarding locations belong in the first frame even when their stations
-  // didn't make the marker cut
+  // didn't make the marker cut — and so does a "nearest option" pin beyond
+  // the radius, or the map would open on an empty square mile
   const accessPoints = useMemo(
     () => [
       ...transitCorridors.map(c => ({ lat: c.access.lat, lng: c.access.lng })),
       ...bikeCorridors.map(c => ({ lat: c.accessPoint.lat, lng: c.accessPoint.lng })),
+      ...[...families.rail, ...families.bus].filter(g => g.farther).map(g => ({ lat: g.lat, lng: g.lng })),
     ],
-    [transitCorridors, bikeCorridors]
+    [transitCorridors, bikeCorridors, families]
   )
 
   return {
     selection, select, handleMarkerTap,
     focusedStationKey, focusStation: setFocusedStationKey,
-    corridorById, stations, stationByKey, borrowRent,
+    corridorById, stations, stationByKey, crossModeNearest, borrowRent,
     corridorLines, highlightedCorridorId, selectionPoint,
     markers, accessPoints,
     showRail, showBus, showBike,

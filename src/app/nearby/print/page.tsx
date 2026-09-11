@@ -7,6 +7,7 @@ import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
 import { parsePartnerSlug, fetchPartner, partnerLogoPath } from '@/lib/nearby/partner'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import { getStopTopology } from '@/lib/server/mbta-topology'
+import { nearbyShuttleStops } from '@/lib/server/shuttle-gtfs'
 import { getCorridorMeta, type CorridorMetaResult } from '@/lib/server/corridor-meta'
 import { getReach } from '@/lib/server/reach'
 import { getBluebikesDocks } from '@/lib/server/bluebikes'
@@ -16,7 +17,7 @@ import { protectionLabel } from '@/lib/nearby/bike-labels'
 import { modeOptions } from '@/lib/nearby/reach-ui'
 import { bikeTimeMinutes } from '@/lib/geo/measure'
 import { decodePolyline } from '@/lib/geo/polyline'
-import { buildPrintStations, shortFrequencyLabel } from '@/lib/nearby/print-model'
+import { buildPrintStations, buildPrintShuttles, shortFrequencyLabel } from '@/lib/nearby/print-model'
 import PrintMap, { PrintMarkerIcon, type PrintLine, type PrintMarker } from './PrintMap'
 import PrintButton from './PrintButton'
 import SheetViewport from './SheetViewport'
@@ -92,10 +93,11 @@ export default async function NearbyPrintPage({ searchParams }: {
   const shareUrl = `${SITE_URL}${buildShareUrl(loc.lat, loc.lng, loc.label, stickyParams(params.toString()))}`
   const shortUrl = shareUrl.replace(/^https:\/\//, '')
 
-  const [busTopo, railTopo, reach, docks, network, qrSvg, popularStreetKeys, partner] = await Promise.all([
+  const [busTopo, railTopo, reach, shuttleTopo, docks, network, qrSvg, popularStreetKeys, partner] = await Promise.all([
     getStopTopology(loc.lat, loc.lng, { routeTypes: '3', radiusDeg: 0.01, nameStyle: 'short', maxStops: SNAPSHOT_MAX_STOPS }).catch(() => []),
     getStopTopology(loc.lat, loc.lng, { routeTypes: SNAPSHOT_RAIL_TYPES, radiusDeg: 0.02, nameStyle: 'long', maxStops: SNAPSHOT_RAIL_MAX_STATIONS, perStation: true }).catch(() => []),
     getReach(loc.lat, loc.lng).catch(() => ({ destinations: [] })),
+    nearbyShuttleStops(loc.lat, loc.lng, { maxStops: 6, perAgency: 3 }).catch(() => []),
     getBluebikesDocks(loc.lat, loc.lng),
     getBikeNetwork(loc.lat, loc.lng, 1.5).catch(() => null),
     QRCode.toString(shareUrl, { type: 'svg', margin: 0, color: { dark: '#191A2E', light: '#ffffff' } }),
@@ -114,7 +116,13 @@ export default async function NearbyPrintPage({ searchParams }: {
   // Rail first: the topology sorts by walk distance, and in bus-dense areas
   // every bus route is closer than the T — which silently dropped the T
   // lines' shapes (no rail on the printed map) and their frequencies.
-  const allCorridors = corridorsFromTopology(railTopo, busTopo)
+  // Nothing in reach for a family → its nearest option beyond the radius,
+  // same rule as the interactive page (server key + cache, so cost is moot)
+  const [railFar, busFar] = await Promise.all([
+    railTopo.length > 0 ? [] : getStopTopology(loc.lat, loc.lng, { routeTypes: SNAPSHOT_RAIL_TYPES, radiusDeg: 0.05, nameStyle: 'long', maxStops: 1, perStation: true }).catch(() => []),
+    busTopo.length > 0 ? [] : getStopTopology(loc.lat, loc.lng, { routeTypes: '3', radiusDeg: 0.03, nameStyle: 'short', maxStops: 2 }).catch(() => []),
+  ])
+  const allCorridors = corridorsFromTopology([...railTopo, ...railFar], [...busTopo, ...busFar])
   const corridors = [
     ...allCorridors.filter(c => c.kind !== 'bus'),
     ...allCorridors.filter(c => c.kind === 'bus'),
@@ -127,7 +135,11 @@ export default async function NearbyPrintPage({ searchParams }: {
   const freqByRoute = new Map<string, string | null>()
   for (const [routeId, meta] of metaByRoute) freqByRoute.set(routeId, shortFrequencyLabel(meta.frequency))
 
-  const stations = buildPrintStations(railTopo, busTopo, freqByRoute)
+  const stations = [
+    ...buildPrintStations(railTopo, busTopo, freqByRoute, undefined, { rail: railFar, bus: busFar }),
+    ...buildPrintShuttles(shuttleTopo),
+  ]
+  const anyFar = stations.some(s => s.farther)
 
   const bikeBuild = network ? buildBikeCorridors(network.geojson, loc.lat, loc.lng) : { corridors: [] }
   const bikeCorridors = bikeBuild.corridors.slice(0, MAX_PRINT_BIKE)
@@ -195,7 +207,7 @@ export default async function NearbyPrintPage({ searchParams }: {
   // markers carry the same Phosphor glyphs as the interactive map's pins
   const markers: PrintMarker[] = [
     ...stations.map(s => ({
-      lat: s.lat, lng: s.lng, kind: s.isRail ? ('rail' as const) : ('bus' as const),
+      lat: s.lat, lng: s.lng, kind: s.isShuttle ? ('shuttle' as const) : s.isRail ? ('rail' as const) : ('bus' as const),
       color: s.lines[0]?.color ?? '#191A2E',
       label: s.name,
     })),
@@ -209,7 +221,8 @@ export default async function NearbyPrintPage({ searchParams }: {
   if (drawnTiers.has('protected')) legend.push({ swatch: <LegendLine color="#2DD4BF" />, label: tr('print.legend_protected') })
   if (drawnTiers.has('painted')) legend.push({ swatch: <LegendLine color="#7FB5FF" dashed />, label: tr('print.legend_painted') })
   if (stations.some(s => s.isRail)) legend.push({ swatch: <PrintMarkerIcon kind="rail" color="#DA291C" size={13} />, label: tr('print.legend_t_station') })
-  if (stations.some(s => !s.isRail)) legend.push({ swatch: <PrintMarkerIcon kind="bus" size={13} />, label: tr('print.legend_bus_stop') })
+  if (stations.some(s => !s.isRail && !s.isShuttle)) legend.push({ swatch: <PrintMarkerIcon kind="bus" size={13} />, label: tr('print.legend_bus_stop') })
+  if (stations.some(s => s.isShuttle)) legend.push({ swatch: <PrintMarkerIcon kind="shuttle" size={13} />, label: tr('print.legend_shuttle_stop') })
   if (printDocks.length > 0) legend.push({ swatch: <PrintMarkerIcon kind="dock" size={13} />, label: tr('print.legend_dock') })
 
   return (
@@ -302,6 +315,9 @@ export default async function NearbyPrintPage({ searchParams }: {
             {stations.length === 0 && (
               <p className="text-[0.8rem] text-[#191A2E]/70">{tr('print.no_stations')}</p>
             )}
+            {anyFar && (
+              <p className="mb-1.5 text-[0.75rem] text-[#191A2E]/80">{tr('print.far_note')}</p>
+            )}
             <div className="space-y-1.5">
               {stations.map(s => (
                 <div key={s.name}>
@@ -320,7 +336,7 @@ export default async function NearbyPrintPage({ searchParams }: {
                       <span className="min-w-0 text-[0.68rem] leading-snug text-[#191A2E]/80">
                         {l.endpoints && <span className="font-semibold text-[#191A2E]/90">{l.endpoints}</span>}
                         {l.endpoints && l.frequencyLabel && ' · '}
-                        {l.frequencyLabel ?? (l.endpoints ? '' : tr('print.see_live_schedule'))}
+                        {l.frequencyLabel ?? (l.endpoints ? '' : tr(s.isShuttle ? 'print.shuttle_schedule' : 'print.see_live_schedule'))}
                       </span>
                     </div>
                   ))}

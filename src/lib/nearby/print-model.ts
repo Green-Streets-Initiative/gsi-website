@@ -1,6 +1,7 @@
 import type { StopTopology } from './live-data'
 import type { FrequencyInfo } from '@/lib/server/corridor-meta'
 import { lineColor, lineTextColor } from './transit-ui'
+import { SHUTTLE_COLOR, shuttleAgencyLabel } from './shuttle-agencies'
 import { walkTimeMinutes } from '@/lib/geo/measure'
 
 /**
@@ -28,6 +29,10 @@ export interface PrintStation {
   lng: number
   walkMin: number
   isRail: boolean
+  /** Beyond the normal search radius — listed because nothing closer exists */
+  farther?: boolean
+  /** Non-MBTA campus/TMA shuttle stop — no frequency data, operator in the label */
+  isShuttle?: boolean
   lines: PrintStationLine[]
 }
 
@@ -99,8 +104,14 @@ export function buildPrintStations(
   bus: StopTopology[],
   freqByRoute: Map<string, string | null>,
   caps: { rail: number; bus: number } = { rail: 4, bus: 4 },
+  /** Nearest option beyond the radius per family, used only when that
+   *  family has nothing in reach (mirrors the interactive page) */
+  far: { rail: StopTopology[]; bus: StopTopology[] } = { rail: [], bus: [] },
 ): PrintStation[] {
   const railKept = groupTopology(rail, true, freqByRoute).slice(0, caps.rail)
+  if (railKept.length === 0) {
+    for (const s of groupTopology(far.rail, true, freqByRoute).slice(0, 1)) railKept.push({ ...s, farther: true })
+  }
   let lineRows = railKept.reduce((a, s) => a + s.lines.length, 0)
 
   const seenBusRoutes = new Set<string>()
@@ -120,5 +131,26 @@ export function buildPrintStations(
     busKept.push(s)
     lineRows += s.lines.length
   }
+  if (busKept.length === 0) {
+    for (const s of groupTopology(far.bus, false, freqByRoute).slice(0, 1)) busKept.push({ ...s, farther: true })
+  }
   return [...railKept, ...busKept]
+}
+
+/** Campus / TMA shuttle stops for the print page: nearest first, capped
+ *  hard — a shuttle stop is worth a block only next to a campus, and each
+ *  line row names its operator ("BC · Comm Ave Direct"). */
+export function buildPrintShuttles(shuttles: StopTopology[], cap = 2): PrintStation[] {
+  return groupTopology(shuttles, false, new Map()).slice(0, cap).map(s => ({
+    ...s,
+    isShuttle: true,
+    lines: s.lines.map(l => ({
+      ...l,
+      label: `${shuttleAgencyLabel(l.routeId)} · ${l.label.replace(/^Route /, '')}`,
+      color: SHUTTLE_COLOR,
+      textColor: '#FFFFFF',
+      frequencyLabel: null,
+      endpoints: null,
+    })),
+  }))
 }

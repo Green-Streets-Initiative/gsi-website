@@ -153,6 +153,12 @@ export const SNAPSHOT_MAX_STOPS = 5
 /** Rail: unique stations, not platforms — 6 reaches Sullivan (0.8mi) and
  *  Assembly (1.1mi) from central Somerville, which a 5-platform cap missed. */
 export const SNAPSHOT_RAIL_MAX_STATIONS = 6
+/** Fallbacks, fired ONLY when the primary fetch for that family found nothing
+ *  (Boston College: no MBTA bus within 0.01°). Wider radius, tiny cap, own
+ *  cache keys — so the "nearest option" costs ≤2 extra /routes calls and the
+ *  primary caches never change. 0.03° ≈ 2 mi; 0.05° ≈ 3.5 mi. */
+export const SNAPSHOT_BUS_FAR_OPTS = { cachePrefix: 'mbta-bus-nearby-far-v1', maxStops: 2, radiusDeg: 0.03 }
+export const SNAPSHOT_RAIL_FAR = { cachePrefix: 'mbta-rail0124-nearby-far-v1', maxStations: 1, radiusDeg: 0.05 }
 
 export async function buildTransitCorridors(lat: number, lng: number): Promise<TransitCorridor[]> {
   const [bus, rail] = await Promise.all([

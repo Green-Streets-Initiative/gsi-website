@@ -31,6 +31,10 @@ export interface StopTopology {
   lng: number
   dist: number
   routes: StopRoute[]
+  /** Set on non-MBTA shuttle stops — the operator, for labels and colors
+   *  (read by the Shift app's edge function too, so it needs no copy of
+   *  the operator table). */
+  agency?: { prefix: string; label: string; color: string }
 }
 
 export function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -212,11 +216,11 @@ export function mergePredictions(topology: StopTopology[], predMap: Map<string, 
  *  the original wayfinding version; budget-sensitive pages pass overrides. */
 export async function fetchMBTAStops(
   lat: number, lng: number,
-  overrides?: { cachePrefix?: string; maxStops?: number },
+  overrides?: { cachePrefix?: string; maxStops?: number; radiusDeg?: number },
 ): Promise<MBTAStopLive[]> {
   try {
     const topology = await fetchStopTopology(lat, lng, {
-      routeTypes: '3', radiusDeg: 0.01, nameStyle: 'short',
+      routeTypes: '3', radiusDeg: overrides?.radiusDeg ?? 0.01, nameStyle: 'short',
       cachePrefix: overrides?.cachePrefix ?? 'mbta-stops-v2',
       maxStops: overrides?.maxStops,
     })
@@ -236,13 +240,14 @@ export async function fetchTrainStops(
   routeTypes = '0,1',
   cachePrefix = 'mbta-train-v2',
   maxStops?: number,
+  radiusDeg = 0.02,
 ): Promise<MBTAStopLive[]> {
   try {
     // Rail: cap by station (each has 2 platforms) so both directions'
     // arrivals survive and nearby stations like Sullivan/Assembly aren't
     // pushed off by a closer station's second platform.
     const topology = await fetchStopTopology(lat, lng, {
-      routeTypes, radiusDeg: 0.02, cachePrefix, nameStyle: 'long', maxStops, perStation: true,
+      routeTypes, radiusDeg, cachePrefix, nameStyle: 'long', maxStops, perStation: true,
     })
     if (topology.length === 0) return []
     const predMap = await fetchPredictions(topology.map(s => s.id), routeTypes)
@@ -355,7 +360,7 @@ export async function fetchBikeShareDocks(lat: number, lng: number, radiusMeters
  *  Returns MBTAStopLive[] (with null predictions) so they flow through the
  *  existing station-group pipeline. */
 export async function fetchShuttleStops(lat: number, lng: number): Promise<MBTAStopLive[]> {
-  const cacheKey = `shuttle-stops-v1-${lat.toFixed(4)},${lng.toFixed(4)}`
+  const cacheKey = `shuttle-stops-v2-${lat.toFixed(4)},${lng.toFixed(4)}`
   try {
     const raw = sessionStorage.getItem(cacheKey)
     if (raw) {
