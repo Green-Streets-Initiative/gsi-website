@@ -23,10 +23,12 @@ export function generateStaticParams() {
 type Props = { params: Promise<{ school: string }> }
 
 /**
- * One letter-size poster per school. Code live: the QR points at the school
- * page (the richer no-app landing whose own CTA is the deep link) and the
- * poster prints SEMESTER — never two codes on one sheet. Pre-launch: the
- * group join link and invite code, as before.
+ * One letter-size poster per school. Code live: the QR is the smart link
+ * and the copy says "scan twice" — the first scan (no app) lands on the
+ * campaign page with store buttons, the second (app installed) opens the app
+ * and prompts the school-email check. The poster prints SEMESTER as the
+ * fallback — never two codes on one sheet. Pre-launch: the group join link
+ * and invite code, as before.
  */
 export default async function SchoolPosterPage({ params }: Props) {
   const { school: slug } = await params
@@ -34,7 +36,10 @@ export default async function SchoolPosterPage({ params }: Props) {
   if (!school) notFound()
 
   let code = SEMESTER_CODE
-  let qrTarget = `https://www.gogreenstreets.org/semester/${school.slug}?utm_source=poster&utm_medium=print&utm_campaign=semester&utm_content=${school.slug}`
+  // Code live: the smart link. First scan (no app) → the campaign page with store
+  // buttons; second scan (app installed) → opens the app and prompts the
+  // school-email check. Pre-launch: the group join link.
+  let qrTarget = `https://shift.gogreenstreets.org/go/semester?utm_source=poster&utm_medium=print&utm_campaign=semester&utm_content=${school.slug}`
   let codeCaption = 'Enter in the Shift app after you install'
 
   if (!SEMESTER_CODE_LIVE) {
@@ -54,7 +59,6 @@ export default async function SchoolPosterPage({ params }: Props) {
   }
 
   const qrSvg = await QRCode.toString(qrTarget, { type: 'svg', margin: 0, color: { dark: '#191A2E', light: '#ffffff' } })
-  const domainLine = SEMESTER_CODE_LIVE ? ', and verify your school email in the app' : ''
 
   return (
     <main className="flyer-root min-h-screen bg-white text-[#191A2E]">
@@ -85,20 +89,27 @@ export default async function SchoolPosterPage({ params }: Props) {
             Get {SEMESTER_REWARD} for it.
           </h1>
           <p className="mx-auto mb-8 max-w-[5.5in] text-[17px] leading-relaxed text-white/85">
-            Get the free Shift app{SEMESTER_CODE_LIVE ? `, enter code ${SEMESTER_CODE}` : ''}{domainLine}. Take {SEMESTER_TRIPS} active
-            trips in {SEMESTER_WINDOW_DAYS} days and pick a {SEMESTER_REWARD} reward — a local shop or a gift card of your choice.
+            {school.name} students, faculty, and staff: take {SEMESTER_TRIPS} walking, biking, or transit trips in{' '}
+            {SEMESTER_WINDOW_DAYS} days on Shift and unlock a {SEMESTER_REWARD} reward — a local shop or a gift card, your choice.
           </p>
 
           <div className="mx-auto mb-8 flex items-center justify-center gap-8">
             <div className="flex h-[180px] w-[180px] items-center justify-center rounded-2xl bg-white p-3">
               <div className="h-[156px] w-[156px]" dangerouslySetInnerHTML={{ __html: qrSvg }} />
             </div>
-            <div className="text-left">
-              <p className="mb-1 text-sm font-bold uppercase tracking-widest text-white/75">
-                {SEMESTER_CODE_LIVE ? 'Scan for your school page, or enter code' : 'Scan to join, or enter code'}
-              </p>
-              <p className="font-mono text-[40px] font-extrabold tracking-[0.18em] text-[#BAF14D]">{code}</p>
-              <p className="mt-1 text-sm text-white/75">{codeCaption}</p>
+            <div className="max-w-[3.6in] text-left">
+              {SEMESTER_CODE_LIVE ? (
+                <ol className="mb-3 list-decimal space-y-1 pl-5 text-[15px] leading-snug text-white/85">
+                  <li>Scan once to download Shift and sign up.</li>
+                  <li>Scan again to join Shift Your Semester.</li>
+                  <li>Verify your school email when the app asks.</li>
+                </ol>
+              ) : (
+                <p className="mb-1 text-sm font-bold uppercase tracking-widest text-white/75">Scan to join, or enter code</p>
+              )}
+              {SEMESTER_CODE_LIVE && <p className="text-sm text-white/75">No QR handy? Enter this code in the app:</p>}
+              <p className="font-mono text-[34px] font-extrabold tracking-[0.18em] text-[#BAF14D]">{code}</p>
+              {!SEMESTER_CODE_LIVE && <p className="mt-1 text-sm text-white/75">{codeCaption}</p>}
             </div>
           </div>
 
