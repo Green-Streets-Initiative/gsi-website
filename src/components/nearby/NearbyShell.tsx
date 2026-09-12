@@ -572,11 +572,10 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
 
   return (
     <div>
-      <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
-        {tr('shell.reach_route_eyebrow')}
-      </div>
+      {/* No eyebrow, no straight-line miles (Keith, 2026-09-12): the caption
+          was clutter, and the as-the-crow-flies distance sat above route cards
+          stating the real miles — two numbers for one trip. */}
       <div className="text-[0.95rem] font-bold text-white">{row.name}</div>
-      <div className="text-[0.78rem] text-white/75">{tr('shell.reach_distance', { miles: row.distance_miles })}</div>
       {legInfo && <div className="mt-2"><RouteLegNote info={legInfo} /></div>}
 
       {hasTransit && hasBike && (

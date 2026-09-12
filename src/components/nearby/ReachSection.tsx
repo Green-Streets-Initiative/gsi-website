@@ -115,6 +115,13 @@ export function TripFacts({ row }: { row: ReachRow }) {
   return <div className="mt-2 text-[0.78rem] text-white/80">{bits.join(' · ')}</div>
 }
 
+/** The route's real length — the sum of its comfort stretches. The list row's
+ *  `distance_miles` is as the crow flies, which is not what a rider rides. */
+function totalMiles(comfort: BikeComfortData | null | undefined): number | null {
+  const total = (comfort?.segments ?? []).reduce((a, s) => a + s.distance_mi, 0)
+  return total > 0 ? total : null
+}
+
 /** Share of a route that's a path or a separated lane — what "protected"
  *  means to a rider, and the number the choice below is stated in. */
 function protectedShare(comfort: BikeComfortData | null | undefined): number | null {
@@ -156,26 +163,32 @@ export function RouteChoice({ row, alt, onPick }: {
     lessProt !== null && lessProt > 0 ? tr('reach.alt_less_protected', { pct: lessProt }) : null,
   ].filter(Boolean).join(' · ')
 
-  const chip = (isAlt: boolean, label: string, minutes: number) => (
-    <button
-      onClick={() => onPick(isAlt)}
-      aria-pressed={alt === isAlt}
-      className={`flex-1 rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
-        alt === isAlt
-          ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.08)] text-white'
-          : 'border-white/[0.12] text-white/75 hover:bg-white/[0.05]'
-      }`}
-    >
-      <span className="block text-[0.72rem] font-bold uppercase tracking-wider">{label}</span>
-      <span className="block text-[0.8rem] tabular-nums">{tr('reach.minutes', { minutes })}</span>
-    </button>
-  )
+  const chip = (isAlt: boolean, label: string, minutes: number, comfort: BikeComfortData | null | undefined) => {
+    const miles = totalMiles(comfort)
+    return (
+      <button
+        onClick={() => onPick(isAlt)}
+        aria-pressed={alt === isAlt}
+        className={`flex-1 rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
+          alt === isAlt
+            ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.08)] text-white'
+            : 'border-white/[0.12] text-white/75 hover:bg-white/[0.05]'
+        }`}
+      >
+        <span className="block text-[0.72rem] font-bold uppercase tracking-wider">{label}</span>
+        <span className="block text-[0.8rem] tabular-nums">
+          {tr('reach.minutes', { minutes })}
+          {miles !== null ? ` · ${tr('reach.mi', { miles: miles.toFixed(1) })}` : ''}
+        </span>
+      </button>
+    )
+  }
 
   return (
     <div className="mt-2.5">
       <div className="flex gap-2">
-        {chip(false, tr('reach.alt_calmest'), calmMin)}
-        {chip(true, tr('reach.alt_fastest'), fastMin)}
+        {chip(false, tr('reach.alt_calmest'), calmMin, row.bike_comfort)}
+        {chip(true, tr('reach.alt_fastest'), fastMin, row.bike_alt.comfort)}
       </div>
       {delta && (
         <p className="mt-1 text-[0.75rem] leading-snug text-white/75">
@@ -443,9 +456,6 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                         </button>
                       </div>
                     )}
-                    <div className="mb-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
-                      {tr('reach.route_hint')}
-                    </div>
                     {legInfo && <RouteLegNote info={legInfo} />}
                     {expanded.mode === 'transit' && (
                       <>

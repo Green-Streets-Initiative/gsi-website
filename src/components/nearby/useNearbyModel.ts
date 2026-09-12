@@ -372,10 +372,17 @@ export function useNearbyModel({
   const anyPointActive =
     !!focusedStationKey || selection?.type === 'station' ||
     selection?.type === 'dock' || selection?.type === 'borrow'
+  // A destination route is on the map, so the map is about the route (Keith,
+  // 2026-09-12): transit stops go. Bike-side pins (docks, borrow/rent) still
+  // matter on a bike ride — it often starts at a dock — so they gray out and
+  // stop taking taps rather than vanish; on a transit route they go too.
+  const routeFocused = selection?.type === 'reach'
+  const bikePinsDuringRoute = routeFocused && selection.mode === 'bike'
+  const showBikePins = showBike && (!routeFocused || bikePinsDuringRoute)
 
   const markers = useMemo<NearbyMarker[]>(() => [
     { id: 'user', lat: center.lat, lng: center.lng, html: userDotHtml(), zIndex: 10 },
-    ...(showBike ? borrowRent.map(p => ({
+    ...(showBikePins ? borrowRent.map(p => ({
       id: `borrow-${p.id}`,
       lat: p.lat,
       lng: p.lng,
@@ -384,12 +391,12 @@ export function useNearbyModel({
         p.org === 'cargob' ? 'CargoB' : 'Pedal Power',
         borrowActive(p.id),
       ),
-      tappable: true,
+      tappable: !bikePinsDuringRoute,
       analyticsType: 'borrow',
-      dimmed: anyPointActive && !borrowActive(p.id),
+      dimmed: (anyPointActive && !borrowActive(p.id)) || bikePinsDuringRoute,
       zIndex: borrowActive(p.id) ? 6 : 1,
     })) : []),
-    ...families.rail.map(g => ({
+    ...(routeFocused ? [] : families.rail.map(g => ({
       id: `rail-${g.key}`,
       lat: g.lat,
       lng: g.lng,
@@ -407,8 +414,8 @@ export function useNearbyModel({
       analyticsType: 'train',
       dimmed: anyPointActive && !stationActive(g.key),
       zIndex: stationActive(g.key) ? 6 : 3,
-    })),
-    ...families.bus.map(g => ({
+    }))),
+    ...(routeFocused ? [] : families.bus.map(g => ({
       id: `bus-${g.key}`,
       lat: g.lat,
       lng: g.lng,
@@ -423,8 +430,8 @@ export function useNearbyModel({
       analyticsType: 'bus',
       dimmed: anyPointActive && !stationActive(g.key),
       zIndex: stationActive(g.key) ? 6 : 2,
-    })),
-    ...families.shuttle.map(g => ({
+    }))),
+    ...(routeFocused ? [] : families.shuttle.map(g => ({
       id: `bus-${g.key}`,
       lat: g.lat,
       lng: g.lng,
@@ -437,8 +444,8 @@ export function useNearbyModel({
       analyticsType: 'shuttle',
       dimmed: anyPointActive && !stationActive(g.key),
       zIndex: stationActive(g.key) ? 6 : 2,
-    })),
-    ...(showBike ? docks.slice(0, 8).map(d => ({
+    }))),
+    ...(showBikePins ? docks.slice(0, 8).map(d => ({
       id: `dock-${d.station_id}`,
       lat: d.lat,
       lng: d.lng,
@@ -448,13 +455,13 @@ export function useNearbyModel({
         d.name,
         dockActive(d.station_id),
       ),
-      tappable: true,
+      tappable: !bikePinsDuringRoute,
       analyticsType: 'bluebike',
-      dimmed: anyPointActive && !dockActive(d.station_id),
+      dimmed: (anyPointActive && !dockActive(d.station_id)) || bikePinsDuringRoute,
       zIndex: dockActive(d.station_id) ? 6 : 1,
     })) : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [center, families, docks, borrowRent, showBike, selection, stationActive, anyPointActive, focusedStationKey])
+  ], [center, families, docks, borrowRent, showBike, showBikePins, bikePinsDuringRoute, routeFocused, selection, stationActive, anyPointActive, focusedStationKey])
 
   // Where the camera should ease when a point-like thing is tapped, so the
   // tapped marker stays visible above the detail card / sheet. Corridor-driven
