@@ -132,6 +132,8 @@ export default function NearbyMap({
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
+  const centerRef = useRef(center)
+  centerRef.current = center
   // Bumped once the map instance exists so the marker effect re-runs —
   // without it, markers passed statically at mount would never render
   const [mapReadyTick, setMapReadyTick] = useState(0)
@@ -186,6 +188,10 @@ export default function NearbyMap({
       })
 
       map.addControl(new maplibregl.AttributionControl({ compact: true }), controls?.attribution ?? 'bottom-right')
+      // Recenter — the bullseye every map app has. Eases back to the
+      // person's own location at street zoom; the user dot itself never
+      // leaves the marker list, so this is only ever about the camera.
+      map.addControl(new RecenterControl(() => centerRef.current), 'top-right')
       if (controls?.showZoom !== false) {
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
       }
@@ -474,6 +480,39 @@ export default function NearbyMap({
   }, [focusPoint?.lat, focusPoint?.lng])
 
   return <div ref={containerRef} className={`${heightClass} w-full`} />
+}
+
+/* ── Recenter control ── */
+
+/** One round button with a crosshair; matches MapLibre's own control styling. */
+class RecenterControl {
+  private container: HTMLDivElement | null = null
+  private map: maplibregl.Map | null = null
+  constructor(private getCenter: () => { lat: number; lng: number }) {}
+  onAdd(map: maplibregl.Map) {
+    this.map = map
+    const wrap = document.createElement('div')
+    wrap.className = 'maplibregl-ctrl maplibregl-ctrl-group'
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.title = 'Center the map on me'
+    btn.setAttribute('aria-label', 'Center the map on me')
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 256 256" fill="none" stroke="#BAF14D" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto"><circle cx="128" cy="128" r="88"/><circle cx="128" cy="128" r="28" fill="#BAF14D" stroke="none"/><line x1="128" y1="24" x2="128" y2="64"/><line x1="128" y1="192" x2="128" y2="232"/><line x1="24" y1="128" x2="64" y2="128"/><line x1="192" y1="128" x2="232" y2="128"/></svg>'
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation()
+      const c = this.getCenter()
+      this.map?.easeTo({ center: [c.lng, c.lat], zoom: Math.max(this.map.getZoom(), 15), duration: 500 })
+      posthog.capture('nearby_recenter')
+    })
+    wrap.appendChild(btn)
+    this.container = wrap
+    return wrap
+  }
+  onRemove() {
+    this.container?.remove()
+    this.container = null
+    this.map = null
+  }
 }
 
 /* ── Layer setup ── */
