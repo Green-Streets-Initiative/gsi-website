@@ -105,24 +105,34 @@ export function achievementGatedLabel(c: EligibilityCriteria | null): string {
   return `${parts.join(' + ')} to enter`
 }
 
-export function EntryTypePill({ prize }: { prize: Pick<Prize, 'entry_type' | 'eligibility_criteria'> }) {
-  const config: Record<PrizeEntryType, { label: string; className: string }> = {
+export function EntryTypePill({
+  prize,
+  tone = 'dark',
+}: {
+  prize: Pick<Prize, 'entry_type' | 'eligibility_criteria'>
+  /** `light` is the cream event page; `dark` (default) keeps the rules and flyer pages as they are. */
+  tone?: 'dark' | 'light'
+}) {
+  const config: Record<PrizeEntryType, { label: string; dark: string; light: string }> = {
     weighted_entries: {
       label: '1 entry per active trip',
-      className: 'bg-[#BAF14D] text-[#191A2E]',
+      dark: 'bg-[#BAF14D] text-[#191A2E]',
+      light: 'bg-navy text-white',
     },
     achievement_gated: {
       label: achievementGatedLabel(prize.eligibility_criteria),
-      className: 'bg-[#2966E5]/20 text-[#84B4FF]',
+      dark: 'bg-[#2966E5]/20 text-[#84B4FF]',
+      light: 'border border-navy/25 text-navy',
     },
     event: {
       label: 'Celebration event',
-      className: 'bg-[#52B788]/20 text-[#7AD8A2]',
+      dark: 'bg-[#52B788]/20 text-[#7AD8A2]',
+      light: 'bg-forest/10 text-green-deep',
     },
   }
   const c = config[prize.entry_type]
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${c.className}`}>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${c[tone]}`}>
       {c.label}
     </span>
   )

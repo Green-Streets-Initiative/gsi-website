@@ -12,6 +12,9 @@ export type Placement =
   | 'nav_promo'
   | 'challenges_hub'
   | 'challenges_empty'
+  | 'event_page'
+  | 'semester_hub'
+  | 'semester_school'
 
 export type Audience =
   | 'individual'
