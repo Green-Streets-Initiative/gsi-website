@@ -19,12 +19,12 @@ export default function MissionBlock() {
         <div className="relative max-w-[860px] py-20 lg:py-28">
           <Checkpoint className="absolute -left-[50px] top-[0.15rem]" />
           <Eyebrow>Green Streets Initiative</Eyebrow>
-          <p className="font-serif text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.2] text-navy">
+          <h2 className="font-serif text-[clamp(1.75rem,3.6vw,2.75rem)] font-normal leading-[1.2] text-navy">
             We help people <em className="text-green-deep">shift trips</em>{' '}
             to healthier, more affordable, more fun
             ways of getting around &mdash; and we measure the impact, <em className="text-green-deep">trip by trip</em>,
             community by community.
-          </p>
+          </h2>
           <p className="mt-8 max-w-[620px] text-[1.0625rem] leading-[1.65] text-ink-soft">
             We started in 2006 with a monthly Walk/Ride Day in Cambridge. Twenty years on, the same idea runs
             through everything we do: make the better trip the easy one, then show people what it added up to.

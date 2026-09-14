@@ -23,7 +23,7 @@ export default function HomeHero({ iosUrl, androidUrl }: { iosUrl: string; andro
               Shift notices when you walk, bike, or take the T, and turns those trips into status, streaks, and
               perks from local businesses &mdash; for you and for your town.
             </p>
-            <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="hero" tone="light" className="mt-9" />
+            <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="hero" tone="light" className="mt-9 [&>a]:max-[420px]:basis-full" />
             <p className="mt-4 text-[13px] text-ink-soft">
               Free &middot; iOS and Android &middot; Built in Cambridge, MA &middot;{' '}
               <TrackedLink href="/shift" placement="hero" audience="individual" className="font-semibold text-forest underline-offset-4 hover:underline">
@@ -34,7 +34,9 @@ export default function HomeHero({ iosUrl, androidUrl }: { iosUrl: string; andro
 
           {/* Phone: sits into the ledger rule below on desktop; a cropped glimpse on mobile. */}
           <div className="relative flex justify-center lg:justify-end">
-            <div className="relative max-h-[420px] overflow-hidden [mask-image:linear-gradient(to_bottom,black_72%,transparent)] md:max-h-[560px] lg:max-h-[660px] lg:[mask-image:linear-gradient(to_bottom,black_80%,transparent)]">
+            <div className="relative max-h-[430px] overflow-hidden md:max-h-[566px] lg:max-h-[648px]
+                 [mask-image:linear-gradient(to_bottom,black_calc(100%-36px),transparent)]
+                 lg:[mask-image:linear-gradient(to_bottom,black_calc(100%-14px),transparent)]">
               <ShiftHomeMockup />
             </div>
           </div>

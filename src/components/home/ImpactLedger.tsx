@@ -30,17 +30,12 @@ async function fetchStats(): Promise<ImpactStats | null> {
   }
 }
 
-const FALLBACK: ImpactStats = {
-  total_dollars_saved: 18400,
-  total_co2_metric_tons: 2.6,
-  total_active_trips: 0,
-  total_users: 0,
-  trips_this_month: 4200,
-  neighborhood_count: 12,
-}
-
 export default async function ImpactLedger() {
-  const stats = (await fetchStats()) ?? FALLBACK
+  // No fabricated fallback: a failed read drops the section rather than
+  // printing stale constants. Silence beats wrong numbers.
+  const stats = await fetchStats()
+  if (!stats) return null
+
   const asOf = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
   const rows: { label: string; value: string }[] = [
