@@ -1,10 +1,31 @@
 import 'server-only'
 
+import { inflateRawSync } from 'node:zlib'
 import JSZip from 'jszip'
 import { unstable_cache } from 'next/cache'
 import { haversineMeters } from '@/lib/geo/measure'
 import type { StopTopology, StopRoute } from '@/lib/nearby/live-data'
 import { SHUTTLE_AGENCY_META, SHUTTLE_COLOR, type ShuttleAgencyMeta } from '@/lib/nearby/shuttle-agencies'
+import {
+  aspNetDate,
+  calendarDow,
+  decodeHtmlEntities,
+  frequencyOffsets,
+  gtfsSecs,
+  interpolateTimes,
+  normalizeDeparture,
+  normalizeGridStopName,
+  parseGridSchedules,
+  parseGridServiceDays,
+  parseMoovsSchedule,
+  parseMoovsServiceDays,
+  rotateDow,
+  serviceActive,
+  zonedClock,
+  type ParsedDeparture,
+} from './shuttle-schedule'
+
+export type { ParsedDeparture } from './shuttle-schedule'
 
 /**
  * Server-side stop/route ingest for non-MBTA shuttle operators (TMAs,
@@ -19,10 +40,28 @@ import { SHUTTLE_AGENCY_META, SHUTTLE_COLOR, type ShuttleAgencyMeta } from '@/li
  * times a year), and `nearbyShuttleStops` returns stops in the StopTopology
  * shape the MBTA topology produces, with ids namespaced `${prefix}:${id}`
  * (see lib/nearby/shuttle-agencies.ts — the shared operator table).
+ *
+ * Each adapter also fills ParsedStop.departures — the timetable, as clock
+ * times plus the days they run. The parsing lives in ./shuttle-schedule;
+ * read the header there for why they are timetables and not countdowns.
  */
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
+/** TransLoc publishes no static timetable: GetStopArrivalTimes is a rolling
+ *  window of the next ~10 h, so its feed is re-read often enough that the
+ *  horizon keeps moving instead of ending mid-afternoon. The zip/scrape
+ *  operators are static and stay on the 24 h cache. */
+const LIVE_CACHE_TTL_MS = 10 * 60 * 1000
 const FETCH_TIMEOUT_MS = 15_000
+/** Every operator here runs on local time; the feeds say so in none of the
+ *  formats that carry a zone. */
+const ET = 'America/New_York'
+
+/** Feeds whose times come from a rolling live endpoint rather than a
+ *  published timetable. */
+function isLiveFeed(kind: ShuttleFeedKind): boolean {
+  return kind === 'transloc'
+}
 
 export type ShuttleFeedKind = 'passio-gtfs' | 'gtfs-url' | 'transloc' | 'moovs' | 'wp-128bc'
 
@@ -95,6 +134,12 @@ interface ParsedStop {
   lat: number
   lng: number
   routeIds: string[]
+  /** Scheduled departures from this stop, ascending by clock time. Absent
+   *  when the operator publishes none we can trust — Harvard's whole feed
+   *  expired, UMass Boston publishes live estimates but no schedule, and
+   *  Tufts' zip is truncated before its days-of-service table. An empty
+   *  timetable is the honest answer there; a guessed one is not. */
+  departures?: ParsedDeparture[]
 }
 
 interface ParsedRoute {
@@ -113,6 +158,31 @@ export interface ParsedFeed {
   stops: ParsedStop[]
   routes: ParsedRoute[]
   fetchedAt: number
+}
+
+/** No stop needs more than this many scheduled departures; the cap is a
+ *  guard against a malformed frequencies row, not a real limit (the
+ *  busiest real stop across all eleven operators sits near 150). */
+const MAX_DEPARTURES_PER_STOP = 500
+
+/** Sort, merge and cap one stop's departures.
+ *
+ *  The same run usually appears once per service — a weekday calendar and a
+ *  Saturday calendar both listing a 9:40 departure on the same route are one
+ *  line on a timetable that runs six days, not two lines. Merging their day
+ *  bits keeps the rendered sheet readable. */
+function tidyDepartures(list: ParsedDeparture[] | undefined): ParsedDeparture[] | undefined {
+  if (!list?.length) return undefined
+  const merged = new Map<string, ParsedDeparture>()
+  for (const dep of list) {
+    const key = `${dep.routeId}|${dep.secs}|${dep.headsign ?? ''}`
+    const seen = merged.get(key)
+    if (seen) seen.dow |= dep.dow
+    else merged.set(key, { ...dep })
+  }
+  return [...merged.values()]
+    .sort((a, b) => a.secs - b.secs || a.routeId.localeCompare(b.routeId))
+    .slice(0, MAX_DEPARTURES_PER_STOP)
 }
 
 /* ── CSV (RFC 4180: quoted fields, "" escapes, commas inside quotes) ── */
@@ -151,30 +221,83 @@ export function parseCsv(text: string): Record<string, string>[] {
 
 /* ── Adapters ── */
 
-/** Entity decoding for the two scraped feeds. Server-side, so there is no
- *  DOM to borrow one from — and these payloads only ever carry the handful
- *  WordPress and Rails emit ("Kendall/MIT", "building&#039;s entrance"). */
-export function decodeHtmlEntities(text: string): string {
-  return text
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
+export { decodeHtmlEntities } from './shuttle-schedule'
+
+/**
+ * Read a GTFS zip, tolerating a truncated one.
+ *
+ * Passio serves Tufts' feed cut off at exactly 40,960 bytes — every time,
+ * with no Content-Length, and Range requests are ignored. That kills the
+ * end-of-central-directory record, so JSZip refuses the whole archive,
+ * `getShuttleFeed` catches the throw, and Tufts has simply been missing
+ * from Around You rather than visibly broken.
+ *
+ * Every entry is stored with its own local header, so when the directory is
+ * unreachable we walk those instead and keep whatever arrived intact. For
+ * Tufts that is everything through stop_times.txt — the truncation lands in
+ * shapes.txt, which we don't read. calendar.txt sits behind it and is lost,
+ * which is why Tufts gets stops and routes but no timetable.
+ */
+async function readZipEntries(buf: ArrayBuffer, agencyId: string): Promise<Map<string, string>> {
+  try {
+    const zip = await JSZip.loadAsync(buf)
+    const out = new Map<string, string>()
+    await Promise.all(Object.keys(zip.files).map(async name => {
+      const file = zip.file(name)
+      if (file && !file.dir) out.set(name, await file.async('string'))
+    }))
+    return out
+  } catch (err) {
+    const out = recoverTruncatedZip(Buffer.from(buf))
+    if (out.size === 0) throw err
+    console.warn(`[shuttle] ${agencyId}: zip directory unreadable, recovered ${out.size} entries from local headers`)
+    return out
+  }
 }
 
+/** Walk PK\x03\x04 local file headers until one runs off the end. */
+function recoverTruncatedZip(buf: Buffer): Map<string, string> {
+  const out = new Map<string, string>()
+  let off = 0
+  while (off + 30 <= buf.length && buf.readUInt32LE(off) === 0x04034b50) {
+    const method = buf.readUInt16LE(off + 8)
+    const flags = buf.readUInt16LE(off + 6)
+    const compressed = buf.readUInt32LE(off + 18)
+    const nameLen = buf.readUInt16LE(off + 26)
+    const extraLen = buf.readUInt16LE(off + 28)
+    const name = buf.subarray(off + 30, off + 30 + nameLen).toString('utf8')
+    const start = off + 30 + nameLen + extraLen
+    // Sizes live in a trailing data descriptor rather than the header, so
+    // there is nothing to walk with; stop rather than guess.
+    if (flags & 0x08 || compressed === 0xffffffff) break
+    if (start + compressed > buf.length) break   // this entry is the truncated one
+    const raw = buf.subarray(start, start + compressed)
+    try {
+      out.set(name, method === 8 ? inflateRawSync(raw).toString('utf8') : raw.toString('utf8'))
+    } catch { break }
+    off = start + compressed
+  }
+  return out
+}
+
+/** Today in Eastern time as YYYYMMDD, for expiring dead service windows. */
+function easternYyyymmdd(): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date())
+  const get = (t: string) => parts.find(p => p.type === t)?.value ?? ''
+  return `${get('year')}${get('month')}${get('day')}`
+}
 
 async function parseGtfsZip(agency: ShuttleAgency): Promise<ParsedFeed> {
   const res = await fetch(gtfsUrl(agency), { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`GTFS fetch ${agency.id}: ${res.status}`)
-  const zip = await JSZip.loadAsync(await res.arrayBuffer())
+  const files = await readZipEntries(await res.arrayBuffer(), agency.id)
 
-  const [stopsText, routesText, tripsText, stopTimesText] = await Promise.all(
-    ['stops.txt', 'routes.txt', 'trips.txt', 'stop_times.txt'].map(f => zip.file(f)?.async('string')),
-  )
+  const stopsText = files.get('stops.txt')
+  const routesText = files.get('routes.txt')
+  const tripsText = files.get('trips.txt')
+  const stopTimesText = files.get('stop_times.txt')
   if (!stopsText || !routesText || !tripsText || !stopTimesText) {
     throw new Error(`GTFS ${agency.id}: missing required files`)
   }
@@ -185,19 +308,61 @@ async function parseGtfsZip(agency: ShuttleAgency): Promise<ParsedFeed> {
   const routeIds = new Set(routes.map(r => r.id))
 
   const tripToRoute = new Map<string, string>()
-  for (const t of parseCsv(tripsText)) tripToRoute.set(t.trip_id, t.route_id)
+  const tripToService = new Map<string, string>()
+  const tripHeadsign = new Map<string, string>()
+  for (const t of parseCsv(tripsText)) {
+    tripToRoute.set(t.trip_id, t.route_id)
+    if (t.service_id) tripToService.set(t.trip_id, t.service_id)
+    if (t.trip_headsign?.trim()) tripHeadsign.set(t.trip_id, t.trip_headsign.trim())
+  }
+
+  // service_id → days it runs, with windows that have already closed thrown
+  // away. Harvard is why: every one of their seven services ended by
+  // 2026-08-21 and Passio still serves the times, so a feed taken at face
+  // value would hand a rider a September departure off a schedule that
+  // stopped running in August.
+  const today = easternYyyymmdd()
+  const serviceDow = new Map<string, number>()
+  for (const row of parseCsv(files.get('calendar.txt') ?? '')) {
+    if (!row.service_id || !serviceActive(row, today)) continue
+    const dow = calendarDow(row)
+    if (dow) serviceDow.set(row.service_id, dow)
+  }
+  // calendar.txt is optional; some feeds express everything as exceptions.
+  // Added dates (exception_type 1) extend a service to that weekday.
+  for (const row of parseCsv(files.get('calendar_dates.txt') ?? '')) {
+    if (row.exception_type !== '1' || !/^\d{8}$/.test(row.date ?? '')) continue
+    if (row.date < today) continue
+    const day = new Date(`${row.date.slice(0, 4)}-${row.date.slice(4, 6)}-${row.date.slice(6)}T12:00:00Z`)
+    const bit = 1 << ((day.getUTCDay() + 6) % 7)   // JS Sun=0 → our Mon=bit 0
+    serviceDow.set(row.service_id, (serviceDow.get(row.service_id) ?? 0) | bit)
+  }
+
+  const freqByTrip = new Map<string, Record<string, string>[]>()
+  for (const row of parseCsv(files.get('frequencies.txt') ?? '')) {
+    if (!row.trip_id) continue
+    ;(freqByTrip.get(row.trip_id) ?? freqByTrip.set(row.trip_id, []).get(row.trip_id)!).push(row)
+  }
 
   const stopRoutes = new Map<string, Set<string>>()
   // stop_sequence per trip, so we can pick a representative pattern per route.
-  const tripStops = new Map<string, { seq: number; stopId: string }[]>()
+  const tripStops = new Map<string, { seq: number; stopId: string; secs: number | null; dist: number | null }[]>()
   for (const st of parseCsv(stopTimesText)) {
     const routeId = tripToRoute.get(st.trip_id)
     if (!routeId || !routeIds.has(routeId)) continue
     ;(stopRoutes.get(st.stop_id) ?? stopRoutes.set(st.stop_id, new Set()).get(st.stop_id)!).add(routeId)
     const seq = Number(st.stop_sequence)
     if (!Number.isFinite(seq)) continue
+    const dist = st.shape_dist_traveled === '' ? null : Number(st.shape_dist_traveled)
     ;(tripStops.get(st.trip_id) ?? tripStops.set(st.trip_id, []).get(st.trip_id)!)
-      .push({ seq, stopId: st.stop_id })
+      .push({
+        seq,
+        stopId: st.stop_id,
+        // departure_time is the one a waiting rider acts on; arrival_time is
+        // the fallback for feeds that only fill one column.
+        secs: gtfsSecs(st.departure_time) ?? gtfsSecs(st.arrival_time),
+        dist: dist !== null && Number.isFinite(dist) ? dist : null,
+      })
   }
 
   // A route has many trips and they don't all serve every stop (short
@@ -212,6 +377,38 @@ async function parseGtfsZip(agency: ShuttleAgency): Promise<ParsedFeed> {
     routeStops.set(routeId, rows.sort((a, b) => a.seq - b.seq).map(r => r.stopId))
   }
 
+  // ── The timetable ──
+  // Passio writes times only at timepoints (Longwood: 908 of 6,078 rows), so
+  // every trip is interpolated across its blanks before anything is emitted.
+  const departures = new Map<string, ParsedDeparture[]>()
+  for (const [tripId, rows] of tripStops) {
+    const routeId = tripToRoute.get(tripId)
+    const serviceId = tripToService.get(tripId)
+    if (!routeId || !serviceId) continue
+    const dow = serviceDow.get(serviceId)
+    if (!dow) continue   // service expired, or days unknown — say nothing
+    rows.sort((a, b) => a.seq - b.seq)
+    const filled = interpolateTimes(rows.map(r => r.secs), rows.map(r => r.dist))
+    const first = filled.find(s => s !== null)
+    if (first === undefined || first === null) continue
+    // A frequency-based trip is a template: its stop times describe the
+    // shape of one run, repeated every headway across the window.
+    const offsets = freqByTrip.has(tripId)
+      ? frequencyOffsets(freqByTrip.get(tripId)!, first)
+      : [0]
+    const headsign = tripHeadsign.get(tripId)
+    for (const offset of offsets) {
+      for (let i = 0; i < rows.length; i++) {
+        const secs = filled[i]
+        if (secs === null) continue
+        // The last stop of a trip is where it ends; nobody boards there.
+        if (i === rows.length - 1) continue
+        const list = departures.get(rows[i].stopId) ?? departures.set(rows[i].stopId, []).get(rows[i].stopId)!
+        list.push(normalizeDeparture({ secs: secs + offset, dow, routeId, headsign }))
+      }
+    }
+  }
+
   const stops: ParsedStop[] = parseCsv(stopsText)
     .map(r => ({
       id: r.stop_id,
@@ -219,6 +416,7 @@ async function parseGtfsZip(agency: ShuttleAgency): Promise<ParsedFeed> {
       lat: parseFloat(r.stop_lat),
       lng: parseFloat(r.stop_lon),
       routeIds: [...(stopRoutes.get(r.stop_id) ?? [])],
+      departures: tidyDepartures(departures.get(r.stop_id)),
     }))
     .filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng) && s.routeIds.length > 0 && !CLOSED_STOP.test(s.name))
 
@@ -236,14 +434,73 @@ interface TranslocRoute {
   Description?: string
   IsRunning?: boolean
   IsVisibleOnMap?: boolean
-  Stops?: { Description?: string; Latitude?: number; Longitude?: number }[]
+  Stops?: { Description?: string; Latitude?: number; Longitude?: number; RouteStopID?: number }[]
+}
+
+/** One stop's upcoming times on one route, from GetStopArrivalTimes. */
+interface TranslocArrivalRow {
+  RouteId?: number
+  RouteStopId?: number
+  Times?: {
+    ScheduledDepartureTime?: unknown
+    ScheduledArrivalTime?: unknown
+  }[]
+}
+
+/**
+ * TransLoc's timetable.
+ *
+ * The endpoint we already call is named GetRoutesForMapWithScheduleWith-
+ * EncodedLine and carries no schedule whatsoever — no field on any of the
+ * three systems holds one, and every StopTimesPDFLink is empty. The times
+ * live one method over, at GetStopArrivalTimes, which returns each stop's
+ * next several runs with both the scheduled time and a live estimate.
+ *
+ * It is a rolling window (~10 h at BC, ~14 h at BU), not a published
+ * timetable, which is why these feeds get the short cache: re-reading keeps
+ * the horizon ahead of the rider instead of letting it run out mid-day.
+ *
+ * Returns an empty map rather than throwing — the stop list is worth having
+ * even when the times endpoint is down, and it is down for UMass Boston by
+ * design: they publish live estimates with every scheduled field null.
+ */
+async function translocDepartures(
+  agency: ShuttleAgency & { slug: string },
+): Promise<Map<number, { secs: number; dow: number; routeId: string }[]>> {
+  const byRouteStop = new Map<number, { secs: number; dow: number; routeId: string }[]>()
+  try {
+    const res = await fetch(
+      `https://${agency.slug}.transloc.com/Services/JSONPRelay.svc/GetStopArrivalTimes`,
+      { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
+    )
+    if (!res.ok) throw new Error(`status ${res.status}`)
+    const rows = (await res.json()) as TranslocArrivalRow[]
+    if (!Array.isArray(rows)) throw new Error('unexpected payload')
+    for (const row of rows) {
+      if (typeof row?.RouteStopId !== 'number' || typeof row.RouteId !== 'number') continue
+      for (const t of row.Times ?? []) {
+        const epoch = aspNetDate(t?.ScheduledDepartureTime) ?? aspNetDate(t?.ScheduledArrivalTime)
+        if (epoch === null) continue   // live-estimate-only row (UMass Boston)
+        const { secs, dow } = zonedClock(epoch, ET)
+        if (!dow) continue
+        const list = byRouteStop.get(row.RouteStopId) ?? byRouteStop.set(row.RouteStopId, []).get(row.RouteStopId)!
+        list.push({ secs, dow, routeId: String(row.RouteId) })
+      }
+    }
+  } catch (err) {
+    console.warn('[shuttle] transloc arrivals failed', agency.id, err instanceof Error ? err.message : err)
+  }
+  return byRouteStop
 }
 
 async function parseTransloc(agency: ShuttleAgency & { slug: string }): Promise<ParsedFeed> {
-  const res = await fetch(translocUrl(agency), {
-    headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  })
+  const [res, arrivals] = await Promise.all([
+    fetch(translocUrl(agency), {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    }),
+    translocDepartures(agency),
+  ])
   if (!res.ok) throw new Error(`TransLoc fetch ${agency.id}: ${res.status}`)
   const data = (await res.json()) as TranslocRoute[]
   if (!Array.isArray(data)) throw new Error(`TransLoc ${agency.id}: unexpected payload`)
@@ -273,13 +530,20 @@ async function parseTransloc(agency: ShuttleAgency & { slug: string }): Promise<
         stopsByKey.set(key, stop)
       }
       if (!stop.routeIds.includes(routeId)) stop.routeIds.push(routeId)
+      // RouteStopID is what GetStopArrivalTimes keys its times by, and it is
+      // per route-and-stop: the same physical corner carries a different one
+      // on each route through it, which is exactly right — the times differ.
+      for (const t of arrivals.get(s.RouteStopID ?? -1) ?? []) {
+        ;(stop.departures ??= []).push(normalizeDeparture({ ...t, routeId }))
+      }
       // Array order IS the travel order here. Guard against a stop listed
       // twice in one route (loops repeat their anchor) so the list reads as
       // a sequence of places rather than a trace of the vehicle.
       if (ordered[ordered.length - 1] !== stop.id) ordered.push(stop.id)
     }
   }
-  return { agencyId: agency.id, stops: [...stopsByKey.values()], routes, fetchedAt: Date.now() }
+  const stops = [...stopsByKey.values()].map(s => ({ ...s, departures: tidyDepartures(s.departures) }))
+  return { agencyId: agency.id, stops, routes, fetchedAt: Date.now() }
 }
 
 
@@ -293,6 +557,7 @@ interface MoovsStop {
   stopName?: string
   latitude?: number
   longitude?: number
+  stopIndex?: number
 }
 
 /** "Sullivan Square Station – Outbound to Chelsea" → "Sullivan Square
@@ -308,19 +573,87 @@ function stripLoopDirection(name: string): string {
   return name.replace(/\s+(?:[–—-]\s*)?(inbound|outbound)\b.*$/i, '').trim() || name.trim()
 }
 
+/** One loop position's label and the times it is served, across the week. */
+interface MoovsRow { label: string; departures: ParsedDeparture[] }
+
+/** Departure times per stopIndex, with the days each one runs.
+ *
+ *  Reads the operating-hours table to learn which weekdays run at all, then
+ *  loads the next date for each of them. Days the operator marks closed are
+ *  never fetched and never claimed. A running day whose page comes back with
+ *  no times contributes nothing rather than being recorded as "no service" —
+ *  a holiday should leave a gap in what we know, not a false statement. */
+async function moovsWeek(
+  base: string,
+  rd: string,
+  todayHtml: string,
+): Promise<Map<number, MoovsRow>> {
+  const byIndex = new Map<number, MoovsRow>()
+  if (!todayHtml) return byIndex
+  const runningDays = parseMoovsServiceDays(todayHtml)
+
+  const today = new Date()
+  const todayDowBit = zonedClock(today.getTime(), ET).dow
+
+  const add = (html: string, dowBit: number) => {
+    if (!(runningDays & dowBit)) return
+    for (const row of parseMoovsSchedule(html)) {
+      const entry = byIndex.get(row.index)
+        ?? byIndex.set(row.index, { label: row.label, departures: [] }).get(row.index)!
+      for (const secs of row.secs) entry.departures.push({ secs, dow: dowBit, routeId: 'loop' })
+    }
+  }
+  add(todayHtml, todayDowBit)
+
+  // The other running weekdays, each read from its own next date.
+  const wanted: { bit: number; date: string }[] = []
+  for (let ahead = 1; ahead <= 6; ahead++) {
+    const d = new Date(today.getTime() + ahead * 86_400_000)
+    let bit = todayDowBit
+    for (let n = 0; n < ahead; n++) bit = rotateDow(bit)
+    if (!(runningDays & bit)) continue
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: ET, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(d)
+    const get = (t: string) => parts.find(p => p.type === t)?.value ?? ''
+    wanted.push({ bit, date: `${get('year')}-${get('month')}-${get('day')}` })
+  }
+  const pages = await Promise.all(wanted.map(w =>
+    fetch(`${base}/continuous-loop/map/${rd}?date=${w.date}`, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+      .then(r => (r.ok ? r.text() : ''))
+      .catch(() => ''),
+  ))
+  pages.forEach((html, i) => { if (html) add(html, wanted[i].bit) })
+  return byIndex
+}
+
 async function parseMoovs(
   agency: ShuttleAgency & { company: string; routeDefinition: string; routeName: string },
 ): Promise<ParsedFeed> {
-  const url =
-    `https://api-production-v2.moovs.app/${agency.company}/moovs-shuttle/frames/continuous-loop-map` +
-    `?routeDefinitionId=${encodeURIComponent(agency.routeDefinition)}`
-  const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+  const base = `https://api-production-v2.moovs.app/${agency.company}/moovs-shuttle`
+  const rd = encodeURIComponent(agency.routeDefinition)
+  // Two pages: the Turbo frame carries the coordinates, the rider-facing
+  // page carries the times. The schedule is plain server-rendered HTML in a
+  // response we were already one URL away from — an earlier pass called this
+  // operator "no machine-readable schedule" after trying a single JSON
+  // endpoint and never opening the page a rider sees.
+  const [res, todayRes] = await Promise.all([
+    fetch(`${base}/frames/continuous-loop-map?routeDefinitionId=${rd}`, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }),
+    fetch(`${base}/continuous-loop/map/${rd}`, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }).catch(() => null),
+  ])
   if (!res.ok) throw new Error(`Moovs fetch ${agency.id}: ${res.status}`)
   const html = await res.text()
   const attr = /data-route-map-stops-value="([^"]*)"/.exec(html)
   if (!attr) throw new Error(`Moovs ${agency.id}: stops attribute missing`)
   const raw: unknown = JSON.parse(decodeHtmlEntities(attr[1]))
   if (!Array.isArray(raw)) throw new Error(`Moovs ${agency.id}: unexpected payload`)
+
+  const todayHtml = todayRes?.ok ? await todayRes.text() : ''
+  // The page shows ONE day at a time. Tagging today's times with every day
+  // the operator runs would put the weekday 6:00 AM start on Saturday, when
+  // the Link actually starts at 10:00. `?date=` returns any date's own
+  // schedule, so each running weekday is read once, from its own page.
+  const schedule = await moovsWeek(base, rd, todayHtml)
 
   const routeId = 'loop'
   // Keyed by NAME, not coordinate: a loop lists each place once per leg with
@@ -332,10 +665,13 @@ async function parseMoovs(
   // in this order, then comes back around" — a sequence a rider can read,
   // rather than a trace of the vehicle that names the same place four times.
   const ordered: string[] = []
-  for (const s of raw as MoovsStop[]) {
+  // Place per loop position, so a leg's times can be labelled with where
+  // that leg actually goes next.
+  const places = (raw as MoovsStop[]).map(s => stripLoopDirection((s.stopName ?? '').trim()))
+  for (const [i, s] of (raw as MoovsStop[]).entries()) {
     const lat = Number(s.latitude)
     const lng = Number(s.longitude)
-    const name = stripLoopDirection((s.stopName ?? '').trim())
+    const name = places[i]
     if (!name || CLOSED_STOP.test(name)) continue
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
     const key = name.toLowerCase()
@@ -343,11 +679,45 @@ async function parseMoovs(
       stopsByKey.set(key, { id: `${lat.toFixed(4)},${lng.toFixed(4)}`, name, lat, lng, routeIds: [routeId] })
       ordered.push(stopsByKey.get(key)!.id)
     }
+    const stop = stopsByKey.get(key)!
+    // The loop has 14 positions for 7 places, so each place is reached twice
+    // and the two visits are legs going opposite ways. Their times are NOT
+    // interchangeable: a rider at Sullivan Square at 6:33 is heading for
+    // Charlestown and at 7:00 for Chelsea. The operator labels both visits
+    // "Outbound to Chelsea", so the direction in the feed cannot be trusted
+    // to tell them apart — name the leg by the next different place instead,
+    // which is the thing the rider is actually choosing between.
+    let toward = ''
+    for (let step = 1; step < places.length; step++) {
+      const next = places[(i + step) % places.length]
+      if (next && next !== name) { toward = next; break }
+    }
+    // The map payload numbers loop positions from 0; the schedule page lists
+    // them from 1. Getting this off by one is silent and plausible-looking —
+    // it filed Mason/Maxwell/Jade's 7:21 departure under Chelsea Station —
+    // so the row's own label is checked against the stop before its times
+    // are believed.
+    // A continuous loop lists its first place again at the end: position 14
+    // is the 7:25 arrival that closes a loop, position 1 the 7:26 departure
+    // that starts the next. They are one vehicle dwelling for a minute, and
+    // only the departure is boardable — publishing both puts two times a
+    // minute apart in front of a rider and makes them choose.
+    const closesLoop = i === places.length - 1 && places[i] === places[0]
+    if (closesLoop) continue
+    const pos = (s.stopIndex ?? i) + 1
+    const row = schedule.get(pos)
+    if (row && stripLoopDirection(row.label).toLowerCase() !== key) {
+      console.warn(`[shuttle] ${agency.id}: schedule row ${pos} reads "${row.label}", expected "${name}" — times dropped`)
+      continue
+    }
+    for (const dep of row?.departures ?? []) {
+      ;(stop.departures ??= []).push(normalizeDeparture({ ...dep, headsign: toward || undefined }))
+    }
   }
   if (stopsByKey.size === 0) throw new Error(`Moovs ${agency.id}: no usable stops`)
   return {
     agencyId: agency.id,
-    stops: [...stopsByKey.values()],
+    stops: [...stopsByKey.values()].map(s => ({ ...s, departures: tidyDepartures(s.departures) })),
     routes: [{ id: routeId, name: agency.routeName, stops: ordered }],
     fetchedAt: Date.now(),
   }
@@ -400,10 +770,13 @@ async function parseWp128bc(agency: ShuttleAgency): Promise<ParsedFeed> {
   if (!schedRes.ok) throw new Error(`128BC schedules ${schedRes.status}`)
 
   const scheduleNames = new Map<number, string>()
-  const schedules = (await schedRes.json()) as { id?: number; title?: { rendered?: string } }[]
+  const scheduleLinks = new Map<number, string>()
+  const schedules = (await schedRes.json()) as { id?: number; title?: { rendered?: string }; link?: string }[]
   for (const s of Array.isArray(schedules) ? schedules : []) {
     const title = decodeHtmlEntities((s.title?.rendered ?? '').trim())
-    if (typeof s.id === 'number' && title) scheduleNames.set(s.id, title)
+    if (typeof s.id !== 'number' || !title) continue
+    scheduleNames.set(s.id, title)
+    if (typeof s.link === 'string' && s.link.startsWith('https://128bc.org/')) scheduleLinks.set(s.id, s.link)
   }
 
   const blob = extractWindowObject(await pageRes.text(), 'scheduleMapData')
@@ -413,6 +786,8 @@ async function parseWp128bc(agency: ShuttleAgency): Promise<ParsedFeed> {
   const routes: ParsedRoute[] = []
   const seenRoutes = new Set<string>()
   const stopsByKey = new Map<string, ParsedStop>()
+  /** Stops by normalized name — how the schedule tables refer to them. */
+  const byName = new Map<string, ParsedStop>()
   for (const stops of Object.values(byRoute)) {
     for (const st of Array.isArray(stops) ? stops : []) {
       // MBTA anchor stops are kept on purpose. "A Grid shuttle to south
@@ -437,13 +812,68 @@ async function parseWp128bc(agency: ShuttleAgency): Promise<ParsedFeed> {
         stopsByKey.set(coord, stop)
       }
       if (!stop.routeIds.includes(routeId)) stop.routeIds.push(routeId)
+      byName.set(normalizeGridStopName(name), stop)
       // The blob groups by route and lists each route's stops in order.
       const seq = routes.find(r => r.id === routeId)!.stops
       if (seq[seq.length - 1] !== stop.id) seq.push(stop.id)
     }
   }
   if (stopsByKey.size === 0) throw new Error('128BC: no usable stops')
-  return { agencyId: agency.id, stops: [...stopsByKey.values()], routes, fetchedAt: Date.now() }
+
+  await attachGridSchedules(routes, scheduleLinks, byName)
+
+  return {
+    agencyId: agency.id,
+    stops: [...stopsByKey.values()].map(s => ({ ...s, departures: tidyDepartures(s.departures) })),
+    routes,
+    fetchedAt: Date.now(),
+  }
+}
+
+/**
+ * Hang each 128BC route's published times on its stops.
+ *
+ * Their GTFS died in 2019 and their realtime is behind TripShot auth, which
+ * is how "PDF only" became the working assumption. It was never true: every
+ * route page server-renders its whole timetable as `<table
+ * class="stop-schedule">` — 228 times on the A1 page. Ten pages, fetched
+ * together, cached for a day (161 ms for the set, measured).
+ */
+async function attachGridSchedules(
+  routes: ParsedRoute[],
+  links: Map<number, string>,
+  byName: Map<string, ParsedStop>,
+): Promise<void> {
+  const jobs = routes
+    .map(route => ({ route, url: links.get(Number(route.id)) }))
+    .filter((j): j is { route: ParsedRoute; url: string } => !!j.url)
+
+  const pages = await Promise.all(jobs.map(j =>
+    fetch(j.url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+      .then(r => (r.ok ? r.text() : ''))
+      .catch(() => ''),
+  ))
+
+  pages.forEach((html, i) => {
+    if (!html) return
+    const { route } = jobs[i]
+    const dow = parseGridServiceDays(html)
+    if (!dow) return   // the page makes no claim about days; say nothing
+    for (const table of parseGridSchedules(html)) {
+      // The times in column one are departures from the stop named in that
+      // column's HEADER — which is usually the hub the route starts from,
+      // not the stop the table's data-stop-id identifies. Resolving by
+      // data-stop-id instead would file Alewife's 6:40 AM departures under
+      // 1050 Waltham St, a stop this route does not pick up from until the
+      // afternoon. If the header names a stop we don't hold, the times have
+      // nowhere correct to go and are dropped.
+      const stop = byName.get(normalizeGridStopName(table.header))
+      if (!stop) continue
+      for (const secs of table.secs) {
+        ;(stop.departures ??= []).push(normalizeDeparture({ secs, dow, routeId: route.id }))
+      }
+    }
+  })
 }
 
 /* ── Cache: in-process L1 (per instance) over Next's data cache (durable) ── */
@@ -462,12 +892,31 @@ async function loadFeed(agencyId: string): Promise<ParsedFeed> {
 // The cache key MUST move whenever the parsed shape OR its contents change.
 // v4 added ParsedRoute.stops — a stale v3 entry deserialized into a route with
 // no `stops` field, every read of it threw into a .catch(), and the symptom
-// was not an error but the feature silently absent. v5 is the loop-direction
-// fix below: without a bump, cached stop names keep the old spelling for a
-// day and the Link lists the same place twice.
-const durableFeed = unstable_cache(loadFeed, ['nearby-shuttle-feed-v5'], {
+// was not an error but the feature silently absent. v5 was the loop-direction
+// fix. v6 added ParsedStop.departures. v7 corrected the Moovs loop-position
+// mapping: v6 read the schedule one position out and filed every Lower Mystic
+// time under the wrong stop, which a cached v6 entry would keep serving.
+const FEED_CACHE_KEY = 'nearby-shuttle-feed-v8'
+
+const durableFeed = unstable_cache(loadFeed, [FEED_CACHE_KEY], {
   revalidate: CACHE_TTL_MS / 1000,
 })
+
+/** Same loader, short revalidate — for the operators whose times are a
+ *  rolling live window rather than a published timetable. Separate cache
+ *  entries, so a TransLoc feed never sits on a 24 h-old set of departures. */
+const liveFeed = unstable_cache(loadFeed, [`${FEED_CACHE_KEY}-live`], {
+  revalidate: LIVE_CACHE_TTL_MS / 1000,
+})
+
+function ttlFor(agencyId: string): number {
+  const agency = SHUTTLE_AGENCIES.find(a => a.id === agencyId)
+  return agency && isLiveFeed(agency.kind) ? LIVE_CACHE_TTL_MS : CACHE_TTL_MS
+}
+
+function cachedLoader(agencyId: string): (id: string) => Promise<ParsedFeed> {
+  return ttlFor(agencyId) === CACHE_TTL_MS ? durableFeed : liveFeed
+}
 
 const l1 = new Map<string, { feed: ParsedFeed; expires: number }>()
 
@@ -477,8 +926,8 @@ export async function getShuttleFeed(agencyId: string): Promise<ParsedFeed | nul
   const hit = l1.get(agencyId)
   if (hit && hit.expires > Date.now()) return hit.feed
   try {
-    const feed = await durableFeed(agencyId)
-    l1.set(agencyId, { feed, expires: Date.now() + CACHE_TTL_MS })
+    const feed = await cachedLoader(agencyId)(agencyId)
+    l1.set(agencyId, { feed, expires: Date.now() + ttlFor(agencyId) })
     return feed
   } catch (err) {
     console.warn('[shuttle] feed failed', agencyId, err instanceof Error ? err.message : err)
@@ -511,6 +960,19 @@ export async function nearbyShuttleStops(
         .filter((r): r is ParsedRoute => !!r)
         .map(r => ({ id: `${agency.prefix}:${r.id}`, name: r.name, directions: [] as string[] }))
       if (routes.length === 0) continue
+      // Only the routes that survived the filters above — a departure
+      // pointing at a route this stop no longer lists has nothing to render
+      // against.
+      const keptRoutes = new Set(routes.map(r => r.id))
+      const departures = (stop.departures ?? [])
+        .map(d => ({
+          route: `${agency.prefix}:${d.routeId}`,
+          secs: d.secs,
+          dow: d.dow,
+          ...(d.headsign ? { headsign: d.headsign } : {}),
+        }))
+        .filter(d => keptRoutes.has(d.route))
+
       mine.push({
         id: `${agency.prefix}:${stop.id}`,
         name: stop.name,
@@ -518,6 +980,7 @@ export async function nearbyShuttleStops(
         lng: stop.lng,
         dist,
         routes,
+        ...(departures.length ? { departures } : {}),
         // name/access ride along so the Shift app can say "MIT Shuttles ·
         // MIT ID required" without keeping its own copy of the table.
         agency: {

@@ -35,6 +35,25 @@ export interface StopTopology {
    *  (read by the Shift app's edge function too, so it needs no copy of
    *  the operator table). */
   agency?: { prefix: string; label: string; color: string; name?: string; access?: 'public' | 'public-fare' | 'id' | 'unstated' }
+  /** Shuttle stops only: the operator's published timetable for this stop.
+   *
+   *  A timetable, not a countdown — `secs` is seconds since local midnight
+   *  and `dow` the days it runs (Mon=1 … Sun=64, the bitmask
+   *  `rta_departures` uses). This response is cached for an hour, so
+   *  anything relative to "now" would be wrong long before it expired;
+   *  whoever renders it works out "in 7 min" when they render.
+   *
+   *  Absent where the operator publishes nothing we can stand behind. */
+  departures?: ShuttleDeparture[]
+}
+
+export interface ShuttleDeparture {
+  /** Namespaced route id, matching an entry in the stop's `routes`. */
+  route: string
+  secs: number
+  dow: number
+  /** Where this run goes from here, when the operator says so. */
+  headsign?: string
 }
 
 export function haversineDist(lat1: number, lng1: number, lat2: number, lng2: number): number {
