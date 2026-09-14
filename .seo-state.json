@@ -152,45 +152,6 @@
   ],
   "pending": [
     {
-      "report_date": "2026-09-14",
-      "item_n": 1,
-      "type": "page-edit-branch",
-      "ref": "seo/2026-09-roams-cluster",
-      "experiment_id": "item-2026-09-14-1",
-      "title": "Portfolio: add the roams-trails cluster ahead of town-commuters",
-      "diff_stat": "seo/keyword-portfolio.json, +31",
-      "rebased_onto": "c1338ee",
-      "ship_steps": "Merge seo/2026-09-roams-cluster into main, push, delete the branch. No deploy effect — this file is read by the routine's scripts, not the site. Then re-run `node scripts/seo/analyze.mjs --section clusters` and confirm coverage reads ~88% with roams-trails populated. Record the ship date in seo/experiments.md against item-2026-09-14-1, and note in the next report that town-commuters figures are not comparable across the change."
-    },
-    {
-      "report_date": "2026-09-14",
-      "item_n": 2,
-      "type": "page-edit-branch",
-      "ref": "seo/2026-09-roam-titles",
-      "experiment_id": "exp-2026-09-5",
-      "title": "Roam pages: distance leads the title and snippet; route described in JSON-LD",
-      "diff_stat": "src/app/shift/roams/[id]/page.tsx, +73/-3",
-      "rebased_onto": "c1338ee",
-      "ship_steps": "Eyeball the Vercel preview FIRST — the rendered page could not be checked from an unattended run, and the thing to look at is whether the editorial hook reads well after the '2.3 miles · about 50 min —' prefix. If it does not, drop the description change and keep the title change; they are independent. Then merge, push, confirm the deploy, delete the branch. Verify the live title on /shift/roams/fresh-pond-loop and run Google's Rich Results Test on it. Record the ship date against exp-2026-09-5 — verdict 2026-10-26, base 852 impr / 12 clicks / 1.41% CTR."
-    },
-    {
-      "report_date": "2026-09-14",
-      "item_n": 3,
-      "type": "described-not-branched",
-      "ref": "src/app/llms.txt/route.ts + scripts/seo/health-check.mjs",
-      "title": "Index the Roam pages in llms.txt, and teach the health check to see nested page classes",
-      "why_not_branched": "Another session held uncommitted work in the shared working tree for most of the run. Two branches had been cut before it appeared; cutting a third afterwards would have meant checking out over live edits.",
-      "ship_steps": "(1) Add a 'Routes to walk and ride' section to src/app/llms.txt/route.ts listing the /shift/roams hub and the published Roams with distance + hook — structurally the same as the Campus section on seo/2026-09-llms-campus, so ship both together. (2) In scripts/seo/health-check.mjs, group the sitemap-vs-llms gap check two segments deep for /shift/* so /shift/roams cannot hide inside /shift. Then confirm the gap check reports both classes and llms.txt sections go 5 -> 7."
-    },
-    {
-      "report_date": "2026-09-14",
-      "item_n": 4,
-      "type": "non-code-action",
-      "ref": "https://www.masscec.com/company/green-streets-initiative",
-      "title": "Ask MassCEC to update their directory description of GSI",
-      "ship_steps": "Not a merge — an email. The MassCEC listing outranks gogreenstreets.org on our own brand name and describes GSI as promoting 'sustainable, active transportation', with 'sustainable' and 'greener' again in the mission text. That is what a language model quotes when asked who we are. Send them the wording from /llms.txt's opening paragraph, and check LinkedIn and any other directory listings while there."
-    },
-    {
       "report_date": "2026-09-08",
       "item_n": 1,
       "type": "page-edit-branch",
@@ -222,7 +183,44 @@
       "ship_steps": "Follow the ship checklist in the draft file: append the YAML+body to content/micro-guides-library.md, flip status draft -> approved, bump the guide-count check in scripts/build-micro-guides-migration.mjs from 21 to 22, run the migration builder, commit both by filename, apply the migration. Then check the /guides index, sitemap.xml and llms.txt — not just the slug URL. Record the ship date against exp-2026-09-4."
     }
   ],
+  "declined": [
+    {
+      "report_date": "2026-09-14",
+      "item_n": 4,
+      "title": "Ask MassCEC to update their directory description of GSI",
+      "declined_on": "2026-09-14",
+      "reason": "Keith: \"I don't care about MassCEC listing us as promoting 'sustainable, active transportation' — nothing in that description bothers me particularly.\"",
+      "do_not_repropose": "Do not raise third-party directory wording again as an SEO/AEO action. The 'sustainable' guardrail in seo/strategy.md governs OUR OWN copy — what we write on our pages, in guides, in llms.txt and in structured data. It is not a policy about how other organizations describe us, and the routine should not treat an outside listing's wording as a finding. Only re-raise if a third-party listing becomes factually WRONG (wrong programs, wrong service area, wrong status), which is a different problem."
+    }
+  ],
   "shipped": [
+    {
+      "report_date": "2026-09-14",
+      "item_n": 1,
+      "ref": "seo/2026-09-roams-cluster",
+      "experiment_id": "item-2026-09-14-1",
+      "title": "Portfolio: roams-trails cluster ahead of town-commuters",
+      "shipped_on": "2026-09-14",
+      "note": "Merged to main (06e4936). Rebased first — the branch had drifted behind a day of unrelated work. Cluster coverage 79% -> 88%. town-commuters figures are NOT comparable across this date: 72 impressions/week that were reading as town demand are Roam queries and now bucket correctly (99 -> 27 on the week to 2026-09-11)."
+    },
+    {
+      "report_date": "2026-09-14",
+      "item_n": 2,
+      "ref": "seo/2026-09-roam-titles",
+      "experiment_id": "exp-2026-09-5",
+      "title": "Roam pages: distance leads the title and snippet; route described in JSON-LD",
+      "shipped_on": "2026-09-14",
+      "note": "Merged to main (9abbcab). Typecheck clean on the rebased branch. Keith approved the description prefix ('2.3 miles - about 50 min - <hook>') along with the title change; it is one line to remove if the live snippets read badly. Verdict 2026-10-26, base 852 impr / 12 clicks / 1.41% CTR — but note 26 Roam pages are published, not the 12 in that base, so the denominator should grow."
+    },
+    {
+      "report_date": "2026-09-14",
+      "item_n": 3,
+      "ref": "src/app/llms.txt/route.ts + scripts/seo/health-check.mjs",
+      "experiment_id": "item-2026-09-14-3",
+      "title": "Index the Roams in llms.txt, and fix the health check that could not see the gap",
+      "shipped_on": "2026-09-14",
+      "note": "Committed straight to main (579f4fd) — no branch, since Keith approved it in the same message. The corrected gap check immediately flagged /shift/roams (26 urls) and /shift-your-semester (13 urls). Shipping this CONFLICTED with the pending campus branch, which edits the same file; the branch was rebased and the conflict resolved to keep BOTH sections, so it is still a clean 15-line diff and still shippable."
+    },
     {
       "report_date": "2026-09-08",
       "item_n": 0,
