@@ -1,16 +1,45 @@
 'use client'
 
+import posthog from 'posthog-js'
 import { gaEvent } from '@/lib/ga'
+import { HOME_CTA_EVENT, type Audience, type Placement } from '@/components/home/tracking'
+
+type Store = 'ios' | 'android'
 
 export default function StoreButtons({
   iosUrl,
   androidUrl,
   className = '',
+  placement,
+  audience = 'individual',
+  tone = 'dark',
 }: {
   iosUrl: string
   androidUrl: string
   className?: string
+  /** When set, the click also fires `home_cta_clicked` for the home-page funnel. */
+  placement?: Placement
+  audience?: Audience
+  /** `light` swaps the lime hover border for forest, for badges on cream. */
+  tone?: 'dark' | 'light'
 }) {
+  const track = (store: Store) => {
+    const base = { store, placement }
+    gaEvent('shift_store_click', base)
+    posthog.capture('shift_store_click', base)
+    if (placement) {
+      const props = { placement, destination: store === 'ios' ? 'app_store' : 'google_play', audience }
+      posthog.capture(HOME_CTA_EVENT, props)
+      gaEvent(HOME_CTA_EVENT, props)
+    }
+  }
+
+  const badge =
+    'inline-flex items-center gap-3 rounded-[14px] border-[1.5px] bg-[#0E0F1A] px-5 py-[11px] pl-4 transition-all hover:-translate-y-0.5 ' +
+    (tone === 'light'
+      ? 'border-[#0E0F1A] hover:border-forest'
+      : 'border-[#2E3252] hover:border-[#BAF14D]')
+
   return (
     <div className={`flex flex-wrap gap-3.5 ${className}`}>
       {/* App Store */}
@@ -18,8 +47,8 @@ export default function StoreButtons({
         href={iosUrl}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => gaEvent('shift_store_click', { store: 'ios' })}
-        className="inline-flex items-center gap-3 rounded-[14px] border-[1.5px] border-[#2E3252] bg-[#0E0F1A] px-5 py-[11px] pl-4 transition-all hover:-translate-y-0.5 hover:border-[#BAF14D]"
+        onClick={() => track('ios')}
+        className={badge}
       >
         <svg viewBox="0 0 24 24" width="22" height="22" fill="#fff" className="shrink-0">
           <path d="M16.36 1.43c.06 1-.33 1.96-1 2.66-.68.72-1.78 1.27-2.84 1.18-.08-.96.38-1.95 1-2.6.7-.74 1.9-1.28 2.84-1.24zM19.6 17.2c-.5 1.16-.74 1.68-1.39 2.7-.9 1.42-2.18 3.2-3.76 3.2-1.4.02-1.76-.92-3.66-.9-1.9.01-2.3.92-3.7.9-1.58-.01-2.79-1.6-3.7-3.02C.86 16.1.6 11.4 2.18 8.9c1.12-1.77 2.9-2.8 4.57-2.8 1.7 0 2.77.94 4.18.94 1.36 0 2.19-.94 4.16-.94 1.49 0 3.06.81 4.18 2.2-3.67 2-3.07 7.24-.06 8.9z" />
@@ -35,8 +64,8 @@ export default function StoreButtons({
         href={androidUrl}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => gaEvent('shift_store_click', { store: 'android' })}
-        className="inline-flex items-center gap-3 rounded-[14px] border-[1.5px] border-[#2E3252] bg-[#0E0F1A] px-5 py-[11px] pl-4 transition-all hover:-translate-y-0.5 hover:border-[#BAF14D]"
+        onClick={() => track('android')}
+        className={badge}
       >
         <svg viewBox="0 0 24 24" width="22" height="22" className="shrink-0">
           <path fill="#4285F4" d="M12.545 12.151 3.34 21.8a2.05 2.05 0 0 0 2.728.635l10.41-5.93-3.933-4.354z" />

@@ -32,12 +32,18 @@ function PageviewTracker() {
         capture_pageleave: true,
         persistence: 'localStorage+cookie',
         respect_dnt: true,
+        // Log every capture to the console in dev so CTA events can be
+        // verified without decoding compressed request bodies.
+        debug: process.env.NODE_ENV === 'development',
         // PostHog's loader injects its remote-config <script> before the
         // document's FIRST script tag — the town pages' JSON-LD block —
         // which breaks React's streamed hydration. This flag disables all
         // external script injection (we don't use session recording or
         // surveys; events/autocapture are unaffected).
         disable_external_dependency_loading: true,
+        // We don't run surveys; without this, posthog-js still tries to load
+        // surveys.js and logs an error every page load.
+        disable_surveys: true,
       })
     }
   }, [])
