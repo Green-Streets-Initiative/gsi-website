@@ -1,44 +1,56 @@
 {
   "_comment": "Run state for the SEO/AEO routine. Updated each run. Baselines are a cache; the authoritative time series is the committed seo/data/gsc/ files.",
-  "last_run": "2026-09-08",
+  "last_run": "2026-09-14",
   "last_deep_dive": "2026-09",
-  "serp_rotation_index": 9,
-  "_serp_rotation_note": "Index selects clusters (excluding aeo-sentinels) in portfolio order: for k in 0..2, cluster[(index+k) % n], query[floor(index/n) % len]. Index 0 covered used-car-to-ebike / new-to-boston / family-logistics. Index 3 covered year-round-weather / town-commuters / ebike-curious. Index 6 covered employers-rto / schools-wellness / local-business-partners. Index 9 covers local-business-partners / brand-navigational / used-car-to-ebike. NOTE: students-campus was inserted at position 4 this run, so the modulus changed from 9 to 12 non-sentinel clusters; the sequence is not comparable to earlier runs and that is fine — the point is coverage over time, not a fixed cycle.",
+  "serp_rotation_index": 12,
+  "_serp_rotation_note": "Index selects clusters (excluding aeo-sentinels) in portfolio order: for k in 0..2, cluster[(index+k) % n], query[floor(index/n) % len]. Index 0 covered used-car-to-ebike / new-to-boston / family-logistics. Index 3 covered year-round-weather / town-commuters / ebike-curious. Index 6 covered employers-rto / schools-wellness / local-business-partners. On 2026-09-14 the modulus would have returned schools-wellness and local-business-partners for a second consecutive week, because inserting students-campus took the non-sentinel count from 9 to 12 and desynced the cycle. The rotation was advanced by hand instead to the three clusters never yet checked — students-campus, drive-time-conversion, brand-navigational — and the index set to 12 so the next run restarts a clean cycle at 0 (used-car-to-ebike / new-to-boston / family-logistics) over the current 12-cluster list. The point is coverage over time, not a fixed cycle; if adding roams-trails makes n 13, expect to hand-correct once more and say so.",
   "stagnant_weeks": 0,
   "baselines": {
-    "clicks_4wk": 18.25,
-    "clicks_12wk": 12.58,
-    "impressions_4wk": 1668.8,
-    "impressions_12wk": 1168.1,
-    "_basis": "EXACT. Recomputed 2026-09-08 from the seventeen weekly files containing site_totals (2026-05-09 -> 2026-09-04), asserted contiguous with no overlapping ranges. These INCLUDE the week ending 2026-09-04. Files WITHOUT site_totals are the superseded 2026-08-20 backfill and must be excluded — mixing the series double-counts.",
-    "_comparison_baselines_note": "The report's 'vs 4-wk / vs 12-wk' columns compare this week AGAINST the trailing means EXCLUDING it: clicks 12.75 / 12.00, impressions 1263.3 / 1035.6. Those are the prior run's cached values, which is why they match seo/reports/2026-08-31.md.",
+    "clicks_4wk": 21.25,
+    "clicks_12wk": 13.08,
+    "impressions_4wk": 2359.3,
+    "impressions_12wk": 1402.8,
+    "_basis": "EXACT. Recomputed 2026-09-14 by scripts/seo/analyze.mjs from the eighteen weekly files containing site_totals (2026-05-09 -> 2026-09-11), asserted contiguous with no overlapping ranges. These INCLUDE the week ending 2026-09-11. Files WITHOUT site_totals are the superseded 2026-08-20 backfill and must be excluded — mixing the series double-counts.",
+    "_comparison_baselines_note": "The 2026-09-14 report's 'vs 4-wk / vs 12-wk' columns compare that week AGAINST the trailing means EXCLUDING it: clicks 18.25 / 12.58, impressions 1668.8 / 1168.1 — the prior run's cached values.",
     "clicks_prior_4wk": 9.0,
-    "impressions_prior_4wk": 859.5,
-    "clicks_4wk_querydim": 3.25,
-    "clicks_12wk_querydim": 3.42,
-    "impressions_4wk_querydim": 318.0,
-    "impressions_12wk_querydim": 242.8,
-    "nonbrand_discovery_impressions_wk": 284,
-    "_nonbrand_note": "Bucketed non-brand query-dimension impressions (all clusters except brand-navigational, plus unmatched). 48 on 2026-08-24, 49 on 2026-08-31, 284 on 2026-09-08 (computed by scripts/seo/analyze.mjs --section clusters; an earlier hand-computed 258 omitted the 26 unmatched impressions). The jump is the students-campus cluster, which did not exist before this run. THIS IS NOW THE STAGNATION TRIGGER'S BASIS — see seo/methodology.md. Caveat: 284 is one week and one page class; if the campus surge is seasonal it falls back in October.",
-    "posthog_organic_sessions_wk": 35,
+    "impressions_prior_4wk": 963.0,
+    "clicks_4wk_querydim": 2.75,
+    "clicks_12wk_querydim": 3.0,
+    "impressions_4wk_querydim": 460.8,
+    "impressions_12wk_querydim": 330.0,
+    "_querydim_note": "The 12-week query-dimension figures are carried forward approximations — analyze.mjs prints the 4-week values exactly and the 12-week ones are not yet emitted. Use them for direction, not for a stated percentage; the site_totals series above is the exact one.",
+    "nonbrand_discovery_impressions_wk": 442,
+    "_nonbrand_note": "Bucketed non-brand query-dimension impressions (all clusters except brand-navigational, plus unmatched). Series: 48 (2026-08-24), 49 (2026-08-31), 284 (2026-09-08), 442 (2026-09-14). THIS IS THE STAGNATION TRIGGER'S BASIS — see seo/methodology.md. Two caveats. (1) It is still only two page classes, students-campus and the Roam pages, both weeks old. (2) The trigger is specified as a trailing-4-week comparison and there are not yet four weeks on this basis; the first meaningful trailing read is the week of 2026-09-28. Until then, read it week over week and say so.",
+    "posthog_organic_sessions_wk": null,
     "posthog_organic_sessions_4wk": 30.25,
-    "_posthog_note": "Weekly organic sessions, Monday-start weeks, counted as count(DISTINCT properties.$session_id) on $pageview where $referring_domain matches google/bing/duckduckgo/ecosia/yahoo/brave. Excludes mail-security link-scanner sessions (paths matching '%/1/0100%' or '/preferences/%'), which added 9 phantom 'bing.com' sessions in the week of 2026-08-24. Series to 2026-09-08: 35, 29, 35, 25, 32, 24, 29, 35 (most recent first). Small differences from the 2026-08-31 report's numbers come from that report's slightly narrower referrer list; this definition is the one to reuse.",
+    "_posthog_note": "NOT COLLECTED on 2026-09-14: the PostHog MCP server requires authorization and the scheduled run is non-interactive, so there is no session count, no landing-page list and no answer-engine referral check for that week. Last collected value 35 (week of 2026-08-31). Definition to reuse: weekly organic sessions, Monday-start weeks, count(DISTINCT properties.$session_id) on $pageview where $referring_domain matches google/bing/duckduckgo/ecosia/yahoo/brave, EXCLUDING mail-security link-scanner sessions (paths matching '%/1/0100%' or '/preferences/%'). Series to 2026-09-08: 35, 29, 35, 25, 32, 24, 29, 35 (most recent first). If the MCP is unavailable again on 2026-09-21, promote this from a noted gap to a blocker.",
     "aeo_sentinel_citations": 0,
-    "answer_engine_referral_sessions_9d": 0,
-    "_aeo_referral_note": "Zero ChatGPT/Perplexity/Claude/Copilot/Gemini sessions this run, against 2 (ChatGPT) last week and 6 the week before. Those were contest participants asking about /events/shift-your-summer rules; the contest ended. We have never had answer-engine referrals representing discovery."
+    "answer_engine_referral_sessions_9d": null,
+    "_aeo_referral_note": "Not measurable on 2026-09-14 (PostHog unavailable). Last reading was 0, against 2 (ChatGPT) and 6 in the two weeks before; those were contest participants asking about /events/shift-your-summer rules and stopped when the contest ended. We have never had answer-engine referrals representing discovery."
   },
   "health": {
-    "sitemap_loc_count": 133,
-    "llms_txt_hash": "c5b55b2842b3078fbe7e04245c2c9f105b14c238e8a2c1c2d0ea67b3b15cee9d",
-    "llms_txt_link_count": 75,
+    "sitemap_loc_count": 138,
+    "llms_txt_hash": "f0c9dea7afd470f5a09804fd522f4c1b52fa224e4564364f84bd3a3fe5f664de",
+    "llms_txt_link_count": 79,
     "llms_txt_section_count": 5,
-    "_llms_note": "/llms.txt is generated per request from approved guides + qualifying towns (src/app/llms.txt/route.ts), so its hash changes whenever content is published. Treat hash drift as expected; the link and section counts are the meaningful drift signals. If SEO item 1 ships, expect sections 5 -> 6 and links 75 -> 88.",
+    "_llms_note": "/llms.txt is generated per request from approved guides + qualifying towns (src/app/llms.txt/route.ts), so its hash changes whenever content is published — it changed twice inside the 2026-09-14 run. Treat hash drift as expected; the link and section counts are the meaningful drift signals. If the campus item ships, expect sections 5 -> 6 and links 79 -> 92.",
+    "_llms_gap_2026_09_14": "/llms.txt contains ZERO mentions of Roams, the site's best-converting page class (852 impressions, 57% of clicks, week to 2026-09-11). health-check.mjs cannot see this: its sitemap-vs-llms gap check groups URLs by FIRST path segment, so all twelve /shift/roams pages count as '/shift', which llms.txt covers via its Town pages section. Fixing the check to group two segments deep for /shift/* is half of proposed item 3.",
     "robots_hash": "aaca6542a392cf9ef172b0e8013e57df36ad279c16aef19a37065eae0bae0cc7",
-    "_last_fingerprint_update": "2026-09-08"
+    "_last_fingerprint_update": "2026-09-14"
   },
   "blockers": [],
   "carryover_serp_checks": [],
   "watch_list": [
+    {
+      "since": "2026-09-14",
+      "what": "THE ROAM RAMP. /shift/roams went 1 page / 51 impressions / 1 click (wk to 2026-08-28) -> 3 / 147 / 3 -> 12 / 852 / 12 (wk to 2026-09-11). It is 21% of impressions and 57% of all clicks, at 1.41% CTR against a 0.53% site average; /shift/roams/emerald-necklace hit 6.17%, the best any page has recorded. Some of the ramp is simply new pages being indexed, so the per-page CTR matters more than the class total.",
+      "action": "Report /shift/roams impressions, clicks and CTR every weekly pulse, and separate 'more pages' from 'better pages' — track CTR on the six pages that were already indexed on 2026-09-11 as well as the class total."
+    },
+    {
+      "since": "2026-09-14",
+      "what": "The click picture and the impression picture are diverging. Impressions set a record (3,966) while clicks fell 30 -> 21 and CTR halved to 0.53%, with position IMPROVING to 10.3. The growth is landing on /shift-your-semester (1,129 impressions, 1 click, 0.09%) and the clicks are on /shift/roams. A headline built on impressions alone would read this week as a triumph.",
+      "action": "Lead the ledger with both numbers and the CTR every week. If campus CTR has not moved by the exp-2026-09-1 verdict on 2026-10-20, the conclusion is that those queries are answered in the snippet — not that the title needs another rewrite."
+    },
     {
       "since": "2026-09-08",
       "what": "Is the campus surge seasonal? /shift-your-semester pages took 917 impressions (36% of all site impressions) in the week to 2026-09-04, which is exactly when students decide how they will get around. October will show whether students-campus holds or falls away with the start of term.",
@@ -65,12 +77,30 @@
       "action": "Report the three pages together in the ledger each week until ~2026-10-12, then call it."
     },
     {
-      "since": "2026-08-31",
-      "what": "UTM consolidation is working. Clean rows now appear for cambridge-ma (36), somerville-ma (33), boston-ma (20) — all three were absent from the report last week — and arlington-ma has consolidated onto one URL. Parameterized rows persist (245 impressions this week) and should fade as Google re-crawls.",
-      "action": "Keep watching weekly. If parameterized rows persist past ~2026-10-12, escalate."
+      "since": "2026-09-14",
+      "what": "The drive-time SERP has softened. howlongtowalk.org — the incumbent the 2026-09-08 teardown was written against — was absent from the 'how far is a 10 minute drive walking' result set entirely on 2026-09-14; two of the top results are now forum posts (Quora, Hacker News). Meanwhile /guides/how-far-is-a-ten-minute-drive-on-foot has still not appeared in the page table after two weeks live.",
+      "action": "Raises the value of the drive-time sibling pages already on the October list. Re-check the SERP at the 2026-10-12 call on the guide before deciding how much to invest."
     }
   ],
   "resolved_notes": [
+    {
+      "date": "2026-09-14",
+      "what": "UTM consolidation completed. Parameterized ?utm_content= rows in the page table went 6 (wk to 2026-09-04) -> 0 (wk to 2026-09-11). Every town page now reports on one clean URL: cambridge-ma 113, somerville-ma 113, brookline-ma 82, boston-ma 63, everett-ma 63, newton-ma 62. Two weeks from ship to full resolution; no escalation needed.",
+      "fix": "item-2026-08-31-4 — dropped utm_content from same-site internal links in Footer.tsx, Nav.tsx, TownsCrossLink.tsx and events/page.tsx.",
+      "do_not": "Do not add tracking parameters to internal links. They split a page's Search Console history across URLs and hide the clean row entirely for weeks."
+    },
+    {
+      "date": "2026-09-14",
+      "what": "A second page class became a major surface while bucketed as noise — the same failure the 2026-09-08 deep-dive recorded about students-campus, one month later. The twelve /shift/roams pages took 852 impressions and 57% of the site's clicks with no cluster covering them, and cluster coverage fell 93% -> 79% in a single week as a result. Worse than the campus case, because this class was the one earning the clicks.",
+      "fix": "Proposed the roams-trails cluster on branch seo/2026-09-roams-cluster (coverage back to 88%, unmatched 117 -> 64, town-commuters corrected 99 -> 27 as borrowed Roam traffic is reclassified).",
+      "do_not": "Do not treat a coverage drop as a bucketing detail. A falling coverage percentage is the routine's early warning that a new page class has arrived — check the page-class rollup against the unmatched list the same run, every run, not at the next monthly."
+    },
+    {
+      "date": "2026-09-14",
+      "what": "Main moved twice mid-run (c1338ee, then 25d4151) from another session that also held uncommitted work in the shared working tree. Branch diffs quoted before that looked clean; afterwards the same branches showed 10-11 files and would have reverted the nearby/shuttle work. git checkout refused because of the live edits, so the methodology's rebase step could not be performed in the normal way.",
+      "fix": "Rebased all four seo/ branches in a throwaway `git worktree` under the scratchpad, force-pushed each with --force-with-lease, then removed the worktree. The other session's uncommitted edits were never stashed, checked out, or touched.",
+      "do_not": "Do not stash or check out over another session's uncommitted work to satisfy the rebase step, and do not skip the step and quote a stale diff. Use a scratch worktree. Also: re-check `git log main` LATE in the run, not only at the start — main moving mid-run is normal on active days, and a diff verified at the top of the run may be wrong by the time the email goes out."
+    },
     {
       "date": "2026-09-08",
       "what": "The portfolio had no cluster for campus/student transportation queries, so 'bu cycle kitchen', 'mit t pass', 'tufts safe ride' and their siblings bucketed as unmatched noise across two reports — while /shift-your-semester grew into the largest impression surface on the site (917 impressions, 36% of the week).",
@@ -122,10 +152,50 @@
   ],
   "pending": [
     {
+      "report_date": "2026-09-14",
+      "item_n": 1,
+      "type": "page-edit-branch",
+      "ref": "seo/2026-09-roams-cluster",
+      "experiment_id": "item-2026-09-14-1",
+      "title": "Portfolio: add the roams-trails cluster ahead of town-commuters",
+      "diff_stat": "seo/keyword-portfolio.json, +31",
+      "rebased_onto": "c1338ee",
+      "ship_steps": "Merge seo/2026-09-roams-cluster into main, push, delete the branch. No deploy effect — this file is read by the routine's scripts, not the site. Then re-run `node scripts/seo/analyze.mjs --section clusters` and confirm coverage reads ~88% with roams-trails populated. Record the ship date in seo/experiments.md against item-2026-09-14-1, and note in the next report that town-commuters figures are not comparable across the change."
+    },
+    {
+      "report_date": "2026-09-14",
+      "item_n": 2,
+      "type": "page-edit-branch",
+      "ref": "seo/2026-09-roam-titles",
+      "experiment_id": "exp-2026-09-5",
+      "title": "Roam pages: distance leads the title and snippet; route described in JSON-LD",
+      "diff_stat": "src/app/shift/roams/[id]/page.tsx, +73/-3",
+      "rebased_onto": "c1338ee",
+      "ship_steps": "Eyeball the Vercel preview FIRST — the rendered page could not be checked from an unattended run, and the thing to look at is whether the editorial hook reads well after the '2.3 miles · about 50 min —' prefix. If it does not, drop the description change and keep the title change; they are independent. Then merge, push, confirm the deploy, delete the branch. Verify the live title on /shift/roams/fresh-pond-loop and run Google's Rich Results Test on it. Record the ship date against exp-2026-09-5 — verdict 2026-10-26, base 852 impr / 12 clicks / 1.41% CTR."
+    },
+    {
+      "report_date": "2026-09-14",
+      "item_n": 3,
+      "type": "described-not-branched",
+      "ref": "src/app/llms.txt/route.ts + scripts/seo/health-check.mjs",
+      "title": "Index the Roam pages in llms.txt, and teach the health check to see nested page classes",
+      "why_not_branched": "Another session held uncommitted work in the shared working tree for most of the run. Two branches had been cut before it appeared; cutting a third afterwards would have meant checking out over live edits.",
+      "ship_steps": "(1) Add a 'Routes to walk and ride' section to src/app/llms.txt/route.ts listing the /shift/roams hub and the published Roams with distance + hook — structurally the same as the Campus section on seo/2026-09-llms-campus, so ship both together. (2) In scripts/seo/health-check.mjs, group the sitemap-vs-llms gap check two segments deep for /shift/* so /shift/roams cannot hide inside /shift. Then confirm the gap check reports both classes and llms.txt sections go 5 -> 7."
+    },
+    {
+      "report_date": "2026-09-14",
+      "item_n": 4,
+      "type": "non-code-action",
+      "ref": "https://www.masscec.com/company/green-streets-initiative",
+      "title": "Ask MassCEC to update their directory description of GSI",
+      "ship_steps": "Not a merge — an email. The MassCEC listing outranks gogreenstreets.org on our own brand name and describes GSI as promoting 'sustainable, active transportation', with 'sustainable' and 'greener' again in the mission text. That is what a language model quotes when asked who we are. Send them the wording from /llms.txt's opening paragraph, and check LinkedIn and any other directory listings while there."
+    },
+    {
       "report_date": "2026-09-08",
       "item_n": 1,
       "type": "page-edit-branch",
       "ref": "seo/2026-09-llms-campus",
+      "rebased_onto": "c1338ee",
       "experiment_id": "exp-2026-09-2",
       "title": "Index the 13 campus pages in llms.txt",
       "diff_stat": "src/app/llms.txt/route.ts, +15",
@@ -139,7 +209,8 @@
       "experiment_id": "exp-2026-09-3",
       "title": "FAQPage + WebApplication on /commute-advisor, WebApplication on /nearby",
       "diff_stat": "src/app/commute-advisor/page.tsx +43, src/app/nearby/page.tsx +19",
-      "ship_steps": "Eyeball the Vercel preview first — the rendered page could not be checked from an unattended run. Then merge, push, confirm the deploy, delete the branch. Verify with Google's Rich Results Test on /commute-advisor. Record the ship date against exp-2026-09-3."
+      "rebased_onto": "c1338ee",
+      "ship_steps": "Before merging, change one word at src/app/commute-advisor/page.tsx:81 — that FAQ answer says 'the most sustainable way to build consistent movement'. Used in the durable sense, so it is fine on the page, but this branch publishes the six answers as FAQPage markup and would put the word into our machine-readable self-description. 'the most durable way' reads the same. Then eyeball the Vercel preview (the rendered page could not be checked from an unattended run), merge, push, confirm the deploy, delete the branch. Verify with Google's Rich Results Test on /commute-advisor. Record the ship date against exp-2026-09-3."
     },
     {
       "report_date": "2026-09-08",

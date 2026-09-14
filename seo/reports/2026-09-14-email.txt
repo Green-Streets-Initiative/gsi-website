@@ -1,0 +1,141 @@
+SEO/AEO weekly pulse — week of 2026-09-05 to 2026-09-11
+
+THE LEDGER
+
+  Organic clicks (GSC site totals)     21     vs 4-wk 18.3  +15%   vs 12-wk 12.6  +67%
+  Organic impressions                3,966    vs 4-wk 1,669 +138%  vs 12-wk 1,168 +240%
+  Avg position / CTR              10.3 / 0.53%   (last week 11.3 / 1.18%)
+  Non-brand discovery impressions      442    last week 284  +56%   <- the trigger
+  PostHog organic sessions        not available this run
+  AEO sentinel citations             0 of 6   (fourth run at zero)
+  Rotated SERP presence              1 of 3   (first time we've appeared)
+
+Impressions set another record and clicks fell from 30 to 21. Both are true and
+they belong in the same sentence: the site was shown 55% more often and clicked
+30% less often. Position actually improved, so this is not a ranking problem —
+it is a mix problem, and the mix is the whole story this week.
+
+THE FINDING
+
+Twelve /shift/roams pages took 852 impressions and 12 clicks. That is 21% of the
+site's impressions and 57% of every click it earned. /shift/roams/emerald-necklace
+converted at 6.17% — the best any page on this site has recorded; the site average
+is 0.53%.
+
+It is a three-week ramp, not a spike: 1 page / 51 impressions / 1 click in the
+week to Aug 28, then 3 / 147 / 3, then 12 / 852 / 12.
+
+And every query behind it — "fresh pond loop", "how long is the fresh pond loop",
+"marblehead trail", "emerald necklace trail" — was filed as unmatched noise,
+because the portfolio has no cluster for named local routes. Cluster coverage
+fell 93% -> 79% in one week for that single reason.
+
+This is the same failure the September deep-dive named about the campus pages,
+one month later, with a different page class. The difference is that this time
+the invisible class is also the one earning the clicks.
+
+Meanwhile /shift-your-semester took 1,129 impressions and 1 click (0.09%). Volume
+held into the second week of term, which is mildly against the "September spike"
+theory, but it is not converting. Too early to call either way.
+
+EXPERIMENT VERDICTS
+
+None were due. exp-2026-09-1 (campus titles, shipped Sep 8) is running — verdict
+Oct 20, and the week-one reading is the 0.09% above. The drive-time guide shipped
+Aug 31 has still not appeared in the page table after two weeks; call it Oct 12.
+
+One thing resolved cleanly: the UTM fix is finished. Parameterized rows in the
+page table went 6 -> 0, and every town page now reports on one clean URL
+(Cambridge 113, Somerville 113, Brookline 82, Boston 63, Everett 63, Newton 62).
+Two weeks from ship to done. Off the watch list.
+
+PROPOSED ACTIONS
+
+1. Bucket the Roam pages — add a "roams-trails" cluster to the portfolio.
+   Named local routes plus the distance-question shapes, placed ahead of
+   town-commuters so "community path somerville" stops reading as town demand.
+   Replayed against this week's real queries: coverage 79% -> 88%, unmatched
+   117 -> 64, and town-commuters corrects from 99 to 27 — seventy-two impressions
+   we have been crediting to town pages were actually Roam queries.
+   Small. Measurement, not traffic — but we cannot manage what we are not counting.
+   Branch seo/2026-09-roams-cluster, 1 file, +31.
+   to ship: open Claude Code and say "ship SEO item 1"
+
+2. Put the distance in the Roam title.
+   Four of the top Roam queries are distance questions. The title says
+   "Fresh Pond Loop — a guided route in Cambridge". The distance is in the
+   database, is printed on the page, and is missing from the title, the snippet
+   and the structured data. This change leads with it — "a 2.3-mile guided walk
+   route in Cambridge" — adds "2.3 miles · about 50 min" to the snippet, and
+   describes the route, its stops and its length in JSON-LD (there is currently
+   nothing describing any of it).
+   Exactly the fix you made for the campus pages, on the class that has already
+   proved it converts. Typecheck clean.
+   One judgment call worth your eye: putting numbers ahead of the editorial hook
+   in the snippet. Right for a distance query, wrong if the hooks are doing brand
+   work — and easy to keep the title change without it.
+   Branch seo/2026-09-roam-titles, 1 file, +73/-3. Worth a look at the Vercel
+   preview first; an unattended run cannot render the page.
+   to ship: open Claude Code and say "ship SEO item 2"
+
+3. Index the Roam pages in llms.txt — and fix the check that missed it.
+   /llms.txt has zero mentions of Roams. The health check could not see the gap
+   because it groups sitemap URLs by first path segment, so all twelve pages
+   count as "/shift", which llms.txt does cover. So: add a Roams section (ship it
+   alongside the campus section already waiting on seo/2026-09-llms-campus), and
+   make the gap check look two segments deep for /shift/* so a nested class
+   cannot go missing silently again.
+   Described rather than branched — another session had uncommitted work in the
+   working tree for most of the run and cutting a third branch would have meant
+   checking out over live edits. Ten minutes interactively.
+   to ship: open Claude Code and say "ship SEO item 3"
+
+("decline SEO item N" also works, for any of them.)
+
+ONE THING THAT ISN'T A MERGE
+
+Searching our own name, the top result is not gogreenstreets.org — it is the
+MassCEC directory listing, and that is what the AI summary quoted. It describes
+GSI as promoting "sustainable, active transportation", with "sustainable" and
+"greener" again in the mission text. Our own copy is clean; /llms.txt opens with
+"helps people walk, bike, and ride transit more often — and measures the impact,
+trip by trip, community by community", which is exactly right. But we do not
+control the listings that outrank us on our own name, and those are what a
+language model reads when someone asks it who we are. Worth an email to MassCEC,
+and a look at LinkedIn while you are there.
+
+Also, small: when SEO item 2 from last week (seo/2026-09-answer-schema) ships,
+change one word first. That branch publishes the /commute-advisor answers as
+FAQPage markup, and one of them says "the most sustainable way to build
+consistent movement". Fine on the page, in the durable sense — less fine once it
+is our machine-readable self-description. "the most durable way" reads the same.
+It is noted in the ship steps so it will not be forgotten.
+
+HEALTH
+
+All green. sitemap 138 locs (+5, the new Roam pages), robots unchanged,
+llms.txt 200 with 79 links across 5 sections. The one real gap is the Roams
+omission above, which the checker is structurally blind to.
+
+Stagnation trigger: non-brand discovery impressions 442 vs 284, +56%. No
+re-strategize block. Honest caveat: that number is still only two page classes,
+both weeks old, and the trigger's trailing-4-week comparison does not become
+meaningful until the week of Sep 28.
+
+PostHog was unavailable this run — the MCP server needs authorization and the
+scheduled run is non-interactive, so there are no session numbers, no landing
+pages and no answer-engine referral check for this week. Noting it once. If it is
+still unavailable next Sunday it becomes a blocker worth fixing.
+
+Branch housekeeping: main moved twice while this ran, so all four seo/ branches
+were rebased onto c1338ee and force-pushed. Each diff above is the rebased diff
+and touches only the files its item claims.
+
+Full report:
+https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-09-14.md
+
+What we measure, and what we don't: Search Console data, our presence in live web
+search for question-shaped queries, referral traffic from answer-engine domains,
+and structured-data / llms.txt health. We cannot see rankings inside ChatGPT,
+Perplexity or Claude, or Google AI Overview inclusion. No invented AI visibility
+score, ever.

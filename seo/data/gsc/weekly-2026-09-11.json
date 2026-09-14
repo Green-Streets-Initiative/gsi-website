@@ -1,0 +1,838 @@
+{
+  "mode": "weekly",
+  "range": {
+    "startDate": "2026-09-05",
+    "endDate": "2026-09-11"
+  },
+  "priorRange": {
+    "startDate": "2026-08-29",
+    "endDate": "2026-09-04"
+  },
+  "site_totals": {
+    "clicks": 21,
+    "impressions": 3966,
+    "ctr": 0.0053,
+    "position": 10.3
+  },
+  "prior_site_totals": {
+    "clicks": 30,
+    "impressions": 2550,
+    "ctr": 0.0118,
+    "position": 11.3
+  },
+  "totals": {
+    "clicks": 1,
+    "impressions": 825,
+    "ctr": 0.0012,
+    "position": 13.4
+  },
+  "priorTotals": {
+    "clicks": 2,
+    "impressions": 524,
+    "ctr": 0.0038,
+    "position": 16
+  },
+  "clusters": [
+    {
+      "id": "used-car-to-ebike",
+      "clicks": 0,
+      "impressions": 2,
+      "avg_position": 9,
+      "top_queries": [
+        {
+          "query": "\"tern gsd\" used \"$3,000\"",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 9
+        },
+        {
+          "query": "\"tern gsd\" used \"$3000\"",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 9
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 5
+    },
+    {
+      "id": "new-to-boston",
+      "clicks": 0,
+      "impressions": 7,
+      "avg_position": 16.1,
+      "top_queries": [
+        {
+          "query": "getting around cambridge",
+          "clicks": 0,
+          "impressions": 7,
+          "ctr": 0,
+          "position": 16.142857142857142
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 9
+    },
+    {
+      "id": "family-logistics",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "year-round-weather",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "students-campus",
+      "clicks": 0,
+      "impressions": 347,
+      "avg_position": 10.6,
+      "top_queries": [
+        {
+          "query": "bu cycle kitchen",
+          "clicks": 0,
+          "impressions": 79,
+          "ctr": 0,
+          "position": 6.253164556962025
+        },
+        {
+          "query": "lesley shuttle schedule",
+          "clicks": 0,
+          "impressions": 35,
+          "ctr": 0,
+          "position": 8.228571428571428
+        },
+        {
+          "query": "tufts safe ride",
+          "clicks": 0,
+          "impressions": 22,
+          "ctr": 0,
+          "position": 6.136363636363637
+        },
+        {
+          "query": "bu bike kitchen",
+          "clicks": 0,
+          "impressions": 21,
+          "ctr": 0,
+          "position": 6.809523809523809
+        },
+        {
+          "query": "quad bikes harvard",
+          "clicks": 0,
+          "impressions": 19,
+          "ctr": 0,
+          "position": 11.31578947368421
+        },
+        {
+          "query": "lesley shuttle",
+          "clicks": 0,
+          "impressions": 13,
+          "ctr": 0,
+          "position": 6.3076923076923075
+        },
+        {
+          "query": "tufts grocery shuttle",
+          "clicks": 0,
+          "impressions": 11,
+          "ctr": 0,
+          "position": 8.727272727272727
+        },
+        {
+          "query": "bu bike shop",
+          "clicks": 0,
+          "impressions": 10,
+          "ctr": 0,
+          "position": 5.6
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 215
+    },
+    {
+      "id": "town-commuters",
+      "clicks": 0,
+      "impressions": 147,
+      "avg_position": 16,
+      "top_queries": [
+        {
+          "query": "charles river bike path",
+          "clicks": 0,
+          "impressions": 39,
+          "ctr": 0,
+          "position": 10.974358974358974
+        },
+        {
+          "query": "marblehead rail trail",
+          "clicks": 0,
+          "impressions": 16,
+          "ctr": 0,
+          "position": 10.125
+        },
+        {
+          "query": "somerville community path",
+          "clicks": 0,
+          "impressions": 11,
+          "ctr": 0,
+          "position": 10.909090909090908
+        },
+        {
+          "query": "somerville bike path",
+          "clicks": 0,
+          "impressions": 9,
+          "ctr": 0,
+          "position": 10.444444444444445
+        },
+        {
+          "query": "commuter benefits cambridge ma",
+          "clicks": 0,
+          "impressions": 6,
+          "ctr": 0,
+          "position": 54.166666666666664
+        },
+        {
+          "query": "emerald necklace bike path",
+          "clicks": 0,
+          "impressions": 6,
+          "ctr": 0,
+          "position": 9.833333333333334
+        },
+        {
+          "query": "walkways bedford ma",
+          "clicks": 0,
+          "impressions": 6,
+          "ctr": 0,
+          "position": 19.833333333333332
+        },
+        {
+          "query": "walkways newton ma",
+          "clicks": 0,
+          "impressions": 6,
+          "ctr": 0,
+          "position": 22
+        }
+      ],
+      "prev_clicks": 1,
+      "prev_impressions": 51
+    },
+    {
+      "id": "drive-time-conversion",
+      "clicks": 0,
+      "impressions": 7,
+      "avg_position": 10,
+      "top_queries": [
+        {
+          "query": "commute times",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 6.666666666666667
+        },
+        {
+          "query": "1 minute drive to walk",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 11
+        },
+        {
+          "query": "20 min drive to walk",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 19
+        },
+        {
+          "query": "3 min drive is how many min walk",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 10
+        },
+        {
+          "query": "commute time",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 10
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 22
+    },
+    {
+      "id": "ebike-curious",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "employers-rto",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "schools-wellness",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "local-business-partners",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "brand-navigational",
+      "clicks": 1,
+      "impressions": 113,
+      "avg_position": 8.3,
+      "top_queries": [
+        {
+          "query": "frisoli youth center",
+          "clicks": 0,
+          "impressions": 41,
+          "ctr": 0,
+          "position": 6.975609756097561
+        },
+        {
+          "query": "greenstreets",
+          "clicks": 0,
+          "impressions": 16,
+          "ctr": 0,
+          "position": 9.6875
+        },
+        {
+          "query": "green streets",
+          "clicks": 0,
+          "impressions": 13,
+          "ctr": 0,
+          "position": 9.846153846153847
+        },
+        {
+          "query": "green street",
+          "clicks": 0,
+          "impressions": 11,
+          "ctr": 0,
+          "position": 10.545454545454545
+        },
+        {
+          "query": "gotogreenstreet",
+          "clicks": 0,
+          "impressions": 10,
+          "ctr": 0,
+          "position": 3.9
+        },
+        {
+          "query": "shift ride",
+          "clicks": 0,
+          "impressions": 5,
+          "ctr": 0,
+          "position": 6.6
+        },
+        {
+          "query": "green streets initiative",
+          "clicks": 1,
+          "impressions": 4,
+          "ctr": 0.25,
+          "position": 1
+        },
+        {
+          "query": "green line velo",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 38
+        }
+      ],
+      "prev_clicks": 1,
+      "prev_impressions": 113
+    },
+    {
+      "id": "aeo-sentinels",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    }
+  ],
+  "unmatched_top_queries": [
+    {
+      "query": "fresh pond loop",
+      "clicks": 0,
+      "impressions": 14,
+      "ctr": 0,
+      "position": 7.785714285714286
+    },
+    {
+      "query": "how long is the fresh pond loop",
+      "clicks": 0,
+      "impressions": 11,
+      "ctr": 0,
+      "position": 5.454545454545454
+    },
+    {
+      "query": "shift your trip",
+      "clicks": 0,
+      "impressions": 11,
+      "ctr": 0,
+      "position": 5.545454545454546
+    },
+    {
+      "query": "fair everett",
+      "clicks": 0,
+      "impressions": 10,
+      "ctr": 0,
+      "position": 8.3
+    },
+    {
+      "query": "how long is fresh pond loop",
+      "clicks": 0,
+      "impressions": 8,
+      "ctr": 0,
+      "position": 6.25
+    },
+    {
+      "query": "car donation cambridge ma",
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 41.166666666666664
+    },
+    {
+      "query": "marblehead trail",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 9.75
+    },
+    {
+      "query": "silvio conte trail",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 11.5
+    },
+    {
+      "query": "freedom walk",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "query": "fresh pond loop distance",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 6.666666666666667
+    },
+    {
+      "query": "northeastern crossing",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 25.666666666666668
+    },
+    {
+      "query": "pedal thru youth",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 36.333333333333336
+    },
+    {
+      "query": "wikitravel boston",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 15
+    },
+    {
+      "query": "\"summer camp\" \"museum\" \"pavilion\" \"brookline\"",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "query": "boston wikitravel",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 19
+    },
+    {
+      "query": "cambridge citywide coalition",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 14
+    },
+    {
+      "query": "charles river bike",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 20.5
+    },
+    {
+      "query": "citymapper boston",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 24
+    },
+    {
+      "query": "community initiatives off-road",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 52.5
+    },
+    {
+      "query": "community ride",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 2.5
+    },
+    {
+      "query": "communityinitiatives off-road",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 54
+    },
+    {
+      "query": "commute distance map",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 32.5
+    },
+    {
+      "query": "commute radius",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 16.5
+    },
+    {
+      "query": "davis square shuttle",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "query": "emerald necklace trail",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 8.5
+    },
+    {
+      "query": "fresh pond running loop",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 11.5
+    },
+    {
+      "query": "green rides",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 22
+    },
+    {
+      "query": "healthy schools tracker",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 62.5
+    },
+    {
+      "query": "lynnfield senior center trips",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "query": "reduce picker walking distance",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 61
+    }
+  ],
+  "top_pages": [
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/fresh-pond-loop",
+      "clicks": 1,
+      "impressions": 265,
+      "position": 8.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/tufts",
+      "clicks": 0,
+      "impressions": 248,
+      "position": 11.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/boston-university",
+      "clicks": 1,
+      "impressions": 227,
+      "position": 7.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/commute-advisor",
+      "clicks": 1,
+      "impressions": 187,
+      "position": 10.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/mit",
+      "clicks": 0,
+      "impressions": 177,
+      "position": 11.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/when-walking-is-faster",
+      "clicks": 0,
+      "impressions": 169,
+      "position": 8.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift",
+      "clicks": 0,
+      "impressions": 169,
+      "position": 5.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/lesley",
+      "clicks": 0,
+      "impressions": 140,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/cambridge-ma",
+      "clicks": 0,
+      "impressions": 113,
+      "position": 11.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/somerville-ma",
+      "clicks": 0,
+      "impressions": 113,
+      "position": 10.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/charles-loop",
+      "clicks": 0,
+      "impressions": 88,
+      "position": 10.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/community-path",
+      "clicks": 1,
+      "impressions": 84,
+      "position": 9.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/donate",
+      "clicks": 0,
+      "impressions": 84,
+      "position": 37.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/brookline-ma",
+      "clicks": 0,
+      "impressions": 82,
+      "position": 9.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/emerald-necklace",
+      "clicks": 5,
+      "impressions": 81,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/",
+      "clicks": 1,
+      "impressions": 78,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/mcrt-sudhud",
+      "clicks": 3,
+      "impressions": 72,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/boston-ma",
+      "clicks": 0,
+      "impressions": 63,
+      "position": 13.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/everett-ma",
+      "clicks": 0,
+      "impressions": 63,
+      "position": 10.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/newton-ma",
+      "clicks": 0,
+      "impressions": 62,
+      "position": 11.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/marblehead-rail-trail",
+      "clicks": 0,
+      "impressions": 59,
+      "position": 9.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/everett-community-fair",
+      "clicks": 0,
+      "impressions": 58,
+      "position": 10.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/umass-boston",
+      "clicks": 0,
+      "impressions": 58,
+      "position": 11.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/medford-ma",
+      "clicks": 0,
+      "impressions": 57,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/emerson",
+      "clicks": 0,
+      "impressions": 56,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events",
+      "clicks": 0,
+      "impressions": 54,
+      "position": 21.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/frisoli-youth-center",
+      "clicks": 0,
+      "impressions": 54,
+      "position": 6.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/northeastern",
+      "clicks": 0,
+      "impressions": 54,
+      "position": 9.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/harvard",
+      "clicks": 0,
+      "impressions": 47,
+      "position": 19.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/wwii-veterans-memorial-trail",
+      "clicks": 0,
+      "impressions": 47,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/freedom-stroll",
+      "clicks": 0,
+      "impressions": 46,
+      "position": 7.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/berklee",
+      "clicks": 0,
+      "impressions": 44,
+      "position": 8.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/suffolk",
+      "clicks": 0,
+      "impressions": 43,
+      "position": 8.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/simmons",
+      "clicks": 0,
+      "impressions": 35,
+      "position": 18.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/roam-1776607065055",
+      "clicks": 1,
+      "impressions": 31,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/watertown-ma",
+      "clicks": 0,
+      "impressions": 31,
+      "position": 9.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_cambridge_learn_to_bike_3b70ad5a4220",
+      "clicks": 0,
+      "impressions": 30,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/fort-river-trail",
+      "clicks": 1,
+      "impressions": 28,
+      "position": 8.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/museum-hop",
+      "clicks": 0,
+      "impressions": 26,
+      "position": 7.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/minuteman",
+      "clicks": 0,
+      "impressions": 25,
+      "position": 9.5
+    }
+  ]
+}
