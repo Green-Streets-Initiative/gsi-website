@@ -43,10 +43,20 @@ try {
   const locs = [...body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])
   // Page-class counts are the useful fingerprint: a whole section vanishing on
   // a DB blip shows here, where a total count barely moves.
+  // Group two segments deep under /shift. Grouping on the first segment only
+  // hid /shift/roams inside /shift — and /shift is "covered" by llms.txt via its
+  // town section, so the twelve best-converting pages on the site could be
+  // absent from llms.txt while the gap check below reported all clear
+  // (found by hand 2026-09-14, the same way the campus gap was found).
+  const NESTED_PARENTS = new Set(['shift'])
   const classes = {}
   for (const l of locs) {
     const seg = l.replace(SITE, '').split('?')[0].split('/').filter(Boolean)
-    const k = seg.length ? seg[0] : '(home)'
+    const k = !seg.length
+      ? '(home)'
+      : NESTED_PARENTS.has(seg[0]) && seg.length > 1
+        ? `${seg[0]}/${seg[1]}`
+        : seg[0]
     classes[k] = (classes[k] || 0) + 1
   }
   result.surfaces.sitemap = { status, locCount: locs.length, classes }

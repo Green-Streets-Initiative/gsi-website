@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getQualifyingTowns } from '@/lib/towns/queries'
+import { getActiveRoams } from '@/lib/roams/queries'
 import { SITE_URL } from '@/lib/seo'
 
 // Served at /llms.txt. Generated (not a static file) so the guide and town
@@ -37,6 +38,16 @@ export async function GET() {
     // DB unreachable — skip the towns section.
   }
 
+  // Roams are the same page class the sitemap lists, from the same source. They
+  // were missing here until 2026-09-14, while being the site's best-converting
+  // pages — 852 impressions and 57% of its clicks in the week to 2026-09-11.
+  let roams: Awaited<ReturnType<typeof getActiveRoams>> = []
+  try {
+    roams = await getActiveRoams()
+  } catch {
+    // DB unreachable — skip the roams section.
+  }
+
   const L: string[] = []
   L.push('# Green Streets Initiative')
   L.push('')
@@ -50,6 +61,7 @@ export async function GET() {
   L.push(`- [What's near you](${SITE_URL}/nearby): A live snapshot of the T stops, buses, and Bluebikes docks near any Greater Boston address, with bike-lane comfort and nearby destinations.`)
   L.push(`- [Guides](${SITE_URL}/guides): Practical how-to guides for getting around by bike, on foot, and by transit in the Boston area.`)
   L.push(`- [Town pages](${SITE_URL}/shift/towns): Live community stats on how each town walks, bikes, and rides transit.`)
+  L.push(`- [Roams](${SITE_URL}/shift/roams): Guided walking and biking routes around Greater Boston, each with its distance, time, and stops.`)
   L.push('')
 
   if (guides.length > 0) {
@@ -65,6 +77,30 @@ export async function GET() {
     L.push('## Town pages')
     for (const t of towns) {
       L.push(`- [Walking, biking & transit in ${t.town_name}](${SITE_URL}/shift/towns/${t.slug})`)
+    }
+    L.push('')
+  }
+
+  if (roams.length > 0) {
+    L.push('## Routes to walk and ride')
+    for (const r of roams) {
+      // Lead with the facts someone asking "how long is the Fresh Pond loop"
+      // wants, then the hook — same order as the page title and meta description.
+      const facts = [
+        r.distance_miles != null && r.distance_miles > 0
+          ? `${Math.round(r.distance_miles * 10) / 10} miles`
+          : null,
+        r.estimated_minutes != null && r.estimated_minutes > 0
+          ? `about ${r.estimated_minutes} min`
+          : null,
+        r.region,
+      ]
+        .filter(Boolean)
+        .join(', ')
+      const detail = [facts, r.hook].filter(Boolean).join(' — ')
+      L.push(
+        `- [${r.name}](${SITE_URL}/shift/roams/${encodeURIComponent(r.id)})${detail ? `: ${detail}` : ''}`,
+      )
     }
     L.push('')
   }
