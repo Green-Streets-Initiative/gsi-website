@@ -19,9 +19,15 @@ is not in the current month → run the **monthly deep-dive**. Otherwise run the
   later), **email Keith the one-line blocker and stop** — do not fall back to
   the keychain or `$(...)`; both stall unattended runs on permission prompts.
 - **PostHog** (organic sessions): `node scripts/seo/pull-posthog.mjs --mode weekly`.
-  It writes JSON to `seo/data/posthog/` and needs a personal API key at
-  `~/.config/gsi-seo/posthog.json`. If it exits non-zero, email Keith the
-  one-line blocker and stop — same contract as the GSC puller.
+  It writes JSON to `seo/data/posthog/`. Auth is `$POSTHOG_API_KEY` — the same
+  "Claude PLG" personal key the `plg-review` routine uses, injected from the env
+  block in `.claude/settings.local.json` (gitignored, so the key never enters
+  git). One key to rotate, not two. `$POSTHOG_PROJECT_ID` is 436603, which holds
+  the **website's** traffic as well as the app's — verified 2026-09-14 by the
+  landing-page list coming back as site paths. A key file at
+  `~/.config/gsi-seo/posthog.json` still works as a fallback if the env block is
+  ever missing. If the script exits non-zero, email Keith the one-line blocker
+  and stop — same contract as the GSC puller.
   **Do not use the PostHog MCP server.** It authenticates with OAuth, which an
   unattended run cannot complete, so PostHog silently vanished from the ledger
   whenever its session lapsed — that is exactly what happened on 2026-09-14. A

@@ -13,16 +13,22 @@
  * for exactly that reason. A personal API key in a file has no interactive step
  * and no expiry, so this works the same way at 3am as it does by hand.
  *
- * Auth: a PostHog personal API key, kept OUTSIDE the repo. Path from
- * $POSTHOG_KEY_FILE, default ~/.config/gsi-seo/posthog.json:
+ * Auth, in order of precedence:
  *
- *   { "personal_api_key": "phx_...", "project_id": 12345,
- *     "host": "https://us.posthog.com" }
+ *   1. $POSTHOG_API_KEY (+ optional $POSTHOG_PROJECT_ID, $POSTHOG_HOST).
+ *      This is the "Claude PLG" key the plg-review routine already uses,
+ *      injected from the env block in .claude/settings.local.json (gitignored).
+ *      Reusing it means one key to rotate, not two.
+ *   2. A key file, path from $POSTHOG_KEY_FILE, default
+ *      ~/.config/gsi-seo/posthog.json:
+ *      { "personal_api_key": "phx_...", "project_id": 12345,
+ *        "host": "https://us.posthog.com" }
  *
- * project_id and host are optional — the project is auto-discovered on first
- * run and the host defaults to the US cloud. NOTE this is the APP host
- * (us.posthog.com), not the ingest host (us.i.posthog.com) the apps send to.
- * The key needs the `query:read` scope and nothing else.
+ * project_id and host are optional either way — the project is auto-discovered
+ * and the host defaults to the US cloud. The host must be the APP host
+ * (us.posthog.com); the ingest host the apps send to (us.i.posthog.com) does
+ * not serve the query API, so it is rewritten if it shows up here.
+ * The key needs the `query:read` scope.
  *
  * Output: seo/data/posthog/weekly-YYYY-MM-DD.json (committed — git history is
  * the time series, same contract as the GSC files).
@@ -53,12 +59,30 @@ function arg(name, fallback) {
 }
 
 // ---- credentials ----
+// us.i.posthog.com is the INGEST host — it takes events and does not serve the
+// query API. The apps' config names it, so rewrite rather than fail obscurely.
+function appHost(raw) {
+  const host = (raw || 'https://us.posthog.com').replace(/\/$/, '')
+  return host.replace('://us.i.posthog.com', '://us.posthog.com').replace('://eu.i.posthog.com', '://eu.posthog.com')
+}
+
 function loadKey() {
+  if (process.env.POSTHOG_API_KEY) {
+    const id = process.env.POSTHOG_PROJECT_ID
+    return {
+      key: process.env.POSTHOG_API_KEY,
+      projectId: id ? Number(id) : null,
+      host: appHost(process.env.POSTHOG_HOST),
+      source: '$POSTHOG_API_KEY',
+    }
+  }
   if (!fs.existsSync(KEY_FILE)) {
     die(
-      `no PostHog key at ${KEY_FILE}. Create a personal API key in PostHog ` +
-        `(Settings -> Personal API keys, scope "query:read") and save it as ` +
-        `{"personal_api_key":"phx_..."} at that path.`,
+      `no PostHog credentials. Set $POSTHOG_API_KEY (the env block in ` +
+        `.claude/settings.local.json is where the plg-review routine keeps it), ` +
+        `or create a personal API key in PostHog (Settings -> Personal API keys, ` +
+        `scope "query:read") and save it as {"personal_api_key":"phx_..."} ` +
+        `at ${KEY_FILE}.`,
     )
   }
   let parsed
@@ -71,8 +95,8 @@ function loadKey() {
   return {
     key: parsed.personal_api_key,
     projectId: parsed.project_id ?? null,
-    host: (parsed.host || 'https://us.posthog.com').replace(/\/$/, ''),
-    keyPath: KEY_FILE,
+    host: appHost(parsed.host),
+    source: KEY_FILE,
   }
 }
 
@@ -111,8 +135,8 @@ async function resolveProject(cred) {
   if (projects.length === 0) die('this key can see no projects')
   const id = projects[0].id
   console.error(
-    `note: no project_id in ${cred.keyPath}; using "${projects[0].name}" (${id}). ` +
-      `Add "project_id": ${id} to that file to pin it.`,
+    `note: no project id alongside ${cred.source}; using "${projects[0].name}" (${id}). ` +
+      `Pin it with POSTHOG_PROJECT_ID=${id}.`,
   )
   return id
 }
