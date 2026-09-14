@@ -13,7 +13,7 @@ import {
   type CommunityEvent, type NextUp,
   getTypeMeta, getTagMeta, formatTime, dateLong, isDeadline, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
-  eventRideStyle, isNoDrop, RIDE_STYLE_LABEL, RIDE_STYLE_BLURB, RIDE_STYLE_COLOR,
+  eventRideStyle, isNoDrop, isRideEvent, PACE_BAND_LABEL, RIDE_STYLE_LABEL, RIDE_STYLE_BLURB, RIDE_STYLE_COLOR,
 } from '@/lib/events'
 
 const EventMap = dynamic(() => import('./EventMap'), { ssr: false })
@@ -95,6 +95,12 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
   // Easy / Moderate / Rec, only when the listing supports the call.
   const level = eventRideStyle(event)
   const noDrop = isNoDrop(event)
+  // Pace, distance, and drop policy: shown only where the listing states them.
+  const rideFacts: string[] = []
+  if (isRideEvent(event.event_type)) {
+    if (event.pace && PACE_BAND_LABEL[event.pace]) rideFacts.push(PACE_BAND_LABEL[event.pace])
+    if (event.distance_text) rideFacts.push(event.distance_text)
+  }
   const evDate = parseEventDate(event.event_date)
   // Deadline-style events (contests) are places to enter, not places to go —
   // no map, no directions.
@@ -231,6 +237,13 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
             <h1 className="mb-4 font-display text-[clamp(28px,3.5vw,40px)] font-extrabold leading-[1.1] tracking-tight text-white">
               {event.title}
             </h1>
+
+            {/* Ride facts: the organizer's own numbers */}
+            {rideFacts.length > 0 && (
+              <p className="-mt-2 mb-4 text-[14px] font-medium text-white/80">
+                {rideFacts.join(' · ')}
+              </p>
+            )}
 
             {/* Tags */}
             {(noDrop || event.tags.length > 0) && (

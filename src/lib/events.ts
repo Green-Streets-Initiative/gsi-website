@@ -125,6 +125,27 @@ export function isNoDrop(ev: Pick<CommunityEvent, 'title' | 'body' | 'no_drop' |
   return NO_DROP_WORDS.test(`${ev.title ?? ''} ${ev.body ?? ''}`)
 }
 
+/**
+ * The ride's own distance, spelled out ("20 miles", "30 and 40 miles") so it
+ * never reads like the distance-from-you ("7.9 mi") that shares a card line.
+ */
+export function formatDistanceText(text: string | null | undefined): string | null {
+  if (!text) return null
+  return text.replace(/\s*-\s*/g, '–')
+}
+
+/**
+ * The organizer's stated pace band, with the speeds the ride planner attaches
+ * to it (00873). Only for a band someone set; an inferred level has no mph.
+ */
+export const PACE_BAND_LABEL: Record<string, string> = {
+  kids: "Kids' pace · 5–8 mph",
+  relaxed: 'Relaxed pace · 8–12 mph',
+  moderate: 'Moderate pace · 12–15 mph',
+  brisk: 'Brisk pace · 15–18 mph',
+  fast: 'Fast pace · 18+ mph',
+}
+
 /** The level for one listing, or null when the listing doesn't support a call. */
 export function eventRideStyle(ev: Pick<CommunityEvent, 'title' | 'body' | 'distance_text' | 'tags' | 'pace' | 'event_type'>): RideStyleT | null {
   return classifyRide({
