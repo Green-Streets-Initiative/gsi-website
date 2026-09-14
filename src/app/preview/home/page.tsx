@@ -35,7 +35,7 @@ export default function HomePreview() {
         <MissionBlock />
         <ClosingCta iosUrl={IOS_URL} androidUrl={ANDROID_URL} />
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }
