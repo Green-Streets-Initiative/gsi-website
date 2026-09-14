@@ -9,6 +9,9 @@ export type Placement =
   | 'mission'
   | 'closing'
   | 'nav'
+  | 'nav_promo'
+  | 'challenges_hub'
+  | 'challenges_empty'
 
 export type Audience =
   | 'individual'
