@@ -202,15 +202,14 @@ export default function TownHeatmap({
   return (
     <div>
       {/* Mode toggle */}
-      <div className="mb-4 inline-flex flex-wrap gap-1 rounded-full bg-white/[0.06] p-1">
+      <div className="mb-4 inline-flex flex-wrap rounded-full border border-navy/20 p-0.5" aria-label="Mode">
         {layers.map((l) => (
           <button
             key={l.mode_group}
             onClick={() => setActive(l.mode_group)}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
-              active === l.mode_group
-                ? 'bg-[#BAF14D] text-[#191A2E]'
-                : 'text-white/75 hover:text-white'
+            aria-pressed={active === l.mode_group}
+            className={`rounded-full px-3 py-1 text-[13px] font-semibold transition-colors ${
+              active === l.mode_group ? 'bg-navy text-white' : 'text-navy hover:bg-navy/[0.05]'
             }`}
           >
             {MODE_LABELS[l.mode_group] ?? l.mode_group}
@@ -221,39 +220,40 @@ export default function TownHeatmap({
       <div className="grid gap-5 md:grid-cols-[minmax(240px,340px)_1fr]">
         {/* Ranked corridor list */}
         {corridors.length > 0 && (
-          <ol className="space-y-1.5 self-start rounded-[18px] border border-white/[0.08] bg-[#242538] p-4">
+          <ol className="self-start rounded-[14px] border border-navy/10 bg-white px-2 py-1">
             {corridors.map((c, i) => {
               const cid = c.id ?? c.name
               const selected = selectedId === cid
               return (
-                <li key={cid}>
+                <li key={cid} className="border-b border-navy/10 last:border-b-0">
                   <button
                     onClick={() => setSelectedId(selected ? null : cid)}
-                    className={`w-full rounded-[10px] px-3 py-2 text-left transition-colors ${
-                      selected ? 'bg-[#BAF14D]/[0.12]' : 'hover:bg-white/[0.05]'
+                    aria-pressed={selected}
+                    className={`w-full rounded-[8px] px-2 py-2.5 text-left transition-colors ${
+                      selected ? 'bg-forest/[0.08]' : 'hover:bg-navy/[0.03]'
                     }`}
                   >
                     <span className="flex items-baseline gap-2.5">
-                      <span className={`font-display text-sm font-bold ${i < 3 ? 'text-[#EDB93C]' : 'text-white/60'}`}>
+                      <span className={`font-serif text-[1.0625rem] ${i < 3 ? 'text-forest' : 'text-ink-soft'}`}>
                         {i + 1}
                       </span>
-                      <span className={`min-w-0 flex-1 truncate text-sm font-semibold ${selected ? 'text-[#BAF14D]' : 'text-white'}`}>
+                      <span className={`min-w-0 flex-1 truncate text-[15px] font-semibold ${selected ? 'text-green-deep' : 'text-navy'}`}>
                         {c.name}
                       </span>
                       {c.mode && (
-                        <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/75">
+                        <span className="shrink-0 rounded-full border border-navy/20 px-2 py-0.5 text-[10px] font-semibold text-navy">
                           {c.mode}
                         </span>
                       )}
                       {showNewerChips && c.newer && (
-                        <span className="shrink-0 rounded-full bg-[#5BD6C0]/15 px-2 py-0.5 text-[10px] font-semibold text-[#5BD6C0]">
+                        <span className="shrink-0 rounded-full bg-forest/10 px-2 py-0.5 text-[10px] font-semibold text-green-deep">
                           newer riders
                         </span>
                       )}
                     </span>
-                    <span className="mt-1 block h-1 overflow-hidden rounded bg-white/[0.06]">
+                    <span className="mt-1.5 block h-1 overflow-hidden rounded bg-navy/[0.08]">
                       <span
-                        className="block h-full rounded bg-[#2966E5]"
+                        className={`block h-full rounded ${selected ? 'bg-forest' : 'bg-navy/25'}`}
                         style={{ width: `${Math.max(6, Math.round((c.score / maxScore) * 100))}%` }}
                       />
                     </span>
@@ -266,10 +266,10 @@ export default function TownHeatmap({
 
         {/* Supporting map */}
         <div className={corridors.length > 0 ? '' : 'md:col-span-2'}>
-          <div className="h-[340px] overflow-hidden rounded-[18px] border border-white/[0.08] md:h-[420px]">
+          <div className="h-[340px] overflow-hidden rounded-[14px] border border-navy/10 md:h-[420px]">
             <div ref={containerRef} className="h-full w-full" />
           </div>
-          <div className="mt-2 flex items-center gap-3 text-[11px] text-white/70">
+          <div className="mt-2 flex items-center gap-3 text-[11px] text-ink-soft">
             <span>Fewer neighbors</span>
             <span className="flex items-center gap-1">
               {BAND_COLORS.map(([band, color]) => (
@@ -278,7 +278,7 @@ export default function TownHeatmap({
             </span>
             <span>More neighbors</span>
             {selectedId && (
-              <button onClick={() => setSelectedId(null)} className="ml-auto font-semibold text-[#BAF14D]">
+              <button onClick={() => setSelectedId(null)} className="ml-auto font-semibold text-forest underline-offset-4 hover:underline">
                 Clear highlight
               </button>
             )}

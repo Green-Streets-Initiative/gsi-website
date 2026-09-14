@@ -3,6 +3,8 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import StoreButtons from '@/components/StoreButtons'
+import PageHero from '@/components/org/PageHero'
+import { Section } from '@/components/org/Section'
 import { withUtm } from '@/lib/utm'
 import {
   getTownDirectory,
@@ -80,56 +82,53 @@ export default async function TownsHubPage() {
 
   return (
     <>
-      <Nav />
+      <Nav variant="light" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <main style={{ paddingTop: '60px' }} className="bg-[#191A2E]">
-        {/* Hero */}
-        <section className="relative overflow-hidden px-8 pt-16 pb-10 md:pt-24">
-          <GradientBg />
-          <div className="relative mx-auto max-w-[860px] text-center">
-            <Eyebrow>Shift Towns</Eyebrow>
-            <h1 className="mb-4 font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              Our towns are on the move
-            </h1>
-            <p className="mx-auto mb-6 max-w-[600px] text-lg leading-[1.7] text-white/90">
-              Every walk, bike ride, and transit trip logged on Shift adds to a town&apos;s totals.
-              So far in {new Date().toLocaleDateString('en-US', { month: 'long' })},{' '}
-              {totals.users.toLocaleString()} neighbors have logged{' '}
+      <main className="bg-cream">
+        <PageHero
+          eyebrow="Shift Towns"
+          title={
+            <>
+              Our towns are <em className="text-green-deep">on the move.</em>
+            </>
+          }
+          lede={
+            <>
+              Every walk, bike ride, and transit trip logged on Shift adds to a town&apos;s totals. So far in{' '}
+              {new Date().toLocaleDateString('en-US', { month: 'long' })}, {totals.users.toLocaleString()} neighbors have logged{' '}
               {totals.trips.toLocaleString()} active trips across {published.length} towns.
-            </p>
-            <p className="mx-auto max-w-[560px] text-[12.5px] leading-relaxed text-white/75">
-              Based on trips logged by <b className="text-white">Shift users</b> in each town — a
-              growing sample, meant as an interesting local signal, not an official or census-level
-              count.
-            </p>
-          </div>
-        </section>
+            </>
+          }
+        >
+          <p className="mt-4 max-w-[560px] text-[12px] leading-relaxed text-ink-soft">
+            Based on trips logged by <b className="font-semibold text-navy">Shift users</b> in each town — a growing sample, meant as an
+            interesting local signal, not an official or census-level count.
+          </p>
+        </PageHero>
 
         {/* The race — one board per state. Towns race their own state, the
             same rule the app uses; a national mix put New York above Boston. */}
         {boards.map((state, i) => (
-          <section key={state} className="px-8 pb-14">
+          <Section key={state} shape={i % 2 === 0 ? 'wanderRight' : 'wanderLeft'} tone="white" width="read">
             <TownLeaderboard
               directory={directory}
               state={state}
               title={i === 0 ? 'Friendly competition' : `${stateLabel(state)} towns`}
             />
-          </section>
+          </Section>
         ))}
 
         {/* Published, but not ranked — these have pages and deserve the link;
             they just don't have enough trips this month to claim a standing. */}
         {unranked.length > 0 && (
-          <section className="px-8 pb-14">
-            <div className="mx-auto max-w-[720px] rounded-[18px] border border-white/[0.08] bg-white/[0.04] px-8 py-7 text-center">
-              <h2 className="mb-2 font-display text-lg font-bold tracking-tight text-white">
-                Also on Shift
-              </h2>
-              <p className="text-sm leading-relaxed text-white/75">
+          <Section shape="straight" width="read">
+            <div className="max-w-[720px] border-t border-navy/15 pt-6">
+              <h2 className="font-serif text-[1.375rem] leading-tight text-navy">Also on Shift</h2>
+              <p className="mt-3 text-[1.0625rem] leading-[1.65] text-ink-soft">
                 {unranked.map((t, i) => (
                   <span key={t.group_id}>
                     {i > 0 && ', '}
-                    <Link href={`/shift/towns/${t.slug}`} className="text-white/90 underline decoration-white/30 underline-offset-2 hover:text-[#BAF14D]">
+                    <Link href={`/shift/towns/${t.slug}`} className="font-semibold text-navy underline decoration-navy/30 underline-offset-2 hover:text-forest hover:decoration-forest">
                       {t.town_name}
                       {t.state !== boards[0] && ` (${t.state})`}
                     </Link>
@@ -143,17 +142,15 @@ export default async function TownsHubPage() {
                 competition.
               </p>
             </div>
-          </section>
+          </Section>
         )}
 
         {/* Getting started */}
         {nearlyThere.length > 0 && (
-          <section className="px-8 pb-14">
-            <div className="mx-auto max-w-[720px] rounded-[18px] border border-white/[0.08] bg-white/[0.04] px-8 py-7 text-center">
-              <h2 className="mb-2 font-display text-lg font-bold tracking-tight text-white">
-                Just getting started
-              </h2>
-              <p className="text-sm leading-relaxed text-white/75">
+          <Section shape="wanderLeft" width="read">
+            <div className="max-w-[720px] border-t border-navy/15 pt-6">
+              <h2 className="font-serif text-[1.375rem] leading-tight text-navy">Just getting started</h2>
+              <p className="mt-3 text-[1.0625rem] leading-[1.65] text-ink-soft">
                 {nearlyThere
                   .map((t) => (t.state === boards[0] ? t.town_name : `${t.town_name} (${t.state})`))
                   .join(', ')}
@@ -162,55 +159,22 @@ export default async function TownsHubPage() {
                 gets its own page once {PUBLICATION_GATE}+ neighbors are on Shift — invite yours in.
               </p>
             </div>
-          </section>
+          </Section>
         )}
 
         {/* CTA */}
-        <section className="px-8 pb-24 pt-4">
-          <div className="mx-auto max-w-[560px] text-center">
-            <h2 className="mb-4 font-display text-[clamp(1.9rem,4vw,2.8rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              Put your town on the board
-            </h2>
-            <p className="mb-8 text-lg leading-relaxed text-white/90">
-              Shift counts your walks, rides, and transit trips automatically — free, from Green
-              Streets Initiative.
-            </p>
-            <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} className="justify-center" />
-          </div>
-        </section>
+        <Section shape="terminal" closing>
+          <h2 className="font-serif text-[clamp(2.25rem,5vw,3.75rem)] font-normal leading-[1.02] text-navy">
+            Put your town <em className="text-green-deep">on the board.</em>
+          </h2>
+          <p className="mt-5 max-w-[520px] text-[1.0625rem] leading-[1.65] text-ink-soft">
+            Shift counts your walks, rides, and transit trips automatically — free, from Green
+            Streets Initiative.
+          </p>
+          <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="towns_hub" tone="light" className="mt-8 [&>a]:max-[420px]:basis-full" />
+        </Section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
-  )
-}
-
-function GradientBg() {
-  return (
-    <div className="pointer-events-none absolute inset-0">
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(186,241,77,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(186,241,77,0.03) 1px, transparent 1px)',
-          backgroundSize: '48px 48px',
-        }}
-      />
-      <div className="absolute -right-[10%] top-[10%] h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(186,241,77,0.07)_0%,transparent_70%)]" />
-      <div className="absolute -left-[5%] bottom-0 h-[400px] w-[400px] rounded-full bg-[radial-gradient(circle,rgba(41,102,229,0.06)_0%,transparent_70%)]" />
-    </div>
-  )
-}
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-5 inline-flex items-center gap-2">
-      <svg viewBox="0 0 36 28" width="20" height="13" className="shrink-0">
-        <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
-        <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
-      </svg>
-      <span className="font-display text-xs font-bold uppercase tracking-[0.15em] text-[#BAF14D]">
-        {children}
-      </span>
-    </div>
   )
 }

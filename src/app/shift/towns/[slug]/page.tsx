@@ -6,6 +6,8 @@ import Footer from '@/components/Footer'
 import StoreButtons from '@/components/StoreButtons'
 import TownDigestSignup from '@/components/towns/TownDigestSignup'
 import TownToc from '@/components/towns/TownToc'
+import { Section } from '@/components/org/Section'
+import { Eyebrow, LANE, RouteSegment } from '@/components/home/RouteLine'
 import { withUtm } from '@/lib/utm'
 import {
   getQualifyingTowns,
@@ -22,7 +24,6 @@ import {
   MIN_RANKED_TRIPS,
 } from '@/lib/towns/queries'
 import {
-  DataDisclaimer,
   EventsRoamsPanels,
   GetInvolved,
   HeatmapSection,
@@ -113,7 +114,6 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
   const utm = { source: 'web_town', medium: 'town_page', campaign: slug }
   const iosUrl = withUtm(IOS_URL, utm) ?? IOS_URL
   const androidUrl = withUtm(ANDROID_URL, utm) ?? ANDROID_URL
-  const monthName = new Date().toLocaleDateString('en-US', { month: 'long' })
   // A town can be unranked for two different reasons, and saying the wrong one
   // is worse than saying nothing: it either hasn't logged enough trips, or its
   // state doesn't yet have enough towns to hold a race.
@@ -160,47 +160,39 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
 
   return (
     <>
-      <Nav />
+      <Nav variant="light" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <main style={{ paddingTop: '60px' }} className="bg-[#191A2E]">
+      <main className="bg-cream">
         {/* Hero */}
-        <section className="relative overflow-hidden px-8 pt-16 pb-10 md:pt-24">
-          <GradientBg />
-          <div className="relative mx-auto max-w-[860px] text-center">
-            <Eyebrow>
-              <Link href="/shift/towns" className="hover:text-white">Shift Towns</Link>
-              &nbsp;&middot;&nbsp;{stateLabel(town.state)}
-            </Eyebrow>
-            {/* The h1 names the subject rather than making a claim about it.
-                "{name} is on the move" was a headline for people who already
-                know what Shift is; nobody searches for it. This matches the
-                title tag and the practical, how-do-I-get-around intent behind
-                the queries the site actually receives. */}
-            <h1 className="mb-4 font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              Walking, biking &amp; transit in {name}
-            </h1>
-            <p className="mx-auto mb-3 max-w-[600px] text-lg leading-[1.7] text-white/90">
-              See the routes {name}{' '}neighbors actually walk, ride and take transit on, what&apos;s
-              happening locally, and how the town is trending — built from real trips logged in the
-              Shift app.
-            </p>
-            {/* Rank and Shift Rate demoted from the opening line to supporting
-                proof. Still prominent, no longer the first thing read. */}
-            <p className="mx-auto mb-2 max-w-[560px] text-base leading-[1.7] text-white/75">
-              {town.rank > 0 ? (
-                <>#{town.rank} of {town.rankedInState} {town.stateName} towns by Shift Rate so far in {monthName}: share of active transportation trips (walk, micromobility, transit).</>
-              ) : (
-                <>Shift Rate so far in {monthName}: share of active transportation trips (walk, micromobility, transit).{' '}
-                  {hasStateBoard
-                    ? `${name} joins the ${town.stateName} board once it logs ${MIN_RANKED_TRIPS}+ trips in a month.`
-                    : `A ${town.stateName} board opens once more towns there are on Shift.`}</>
-              )}
-            </p>
+        <section className="relative overflow-x-clip bg-cream" style={{ paddingTop: '60px' }}>
+          <div className={`relative mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
+            <RouteSegment shape="wanderLeft" />
+            <div className="hidden md:block" />
+            <div className="max-w-[780px] pb-10 pt-12 md:pt-16">
+              <Eyebrow>
+                <Link href="/shift/towns" className="underline-offset-4 hover:underline">Shift Towns</Link>
+                {' '}&middot; {stateLabel(town.state)}
+              </Eyebrow>
+              {/* The h1 names the subject rather than making a claim about it.
+                  "{name} is on the move" was a headline for people who already
+                  know what Shift is; nobody searches for it. This matches the
+                  title tag and the practical, how-do-I-get-around intent behind
+                  the queries the site actually receives. */}
+              <h1 className="font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
+                Walking, biking &amp; transit in {name}
+              </h1>
+              <p className="mt-5 max-w-[600px] text-[1.125rem] leading-[1.6] text-ink-soft">
+                See the routes {name}{' '}neighbors actually walk, ride and take transit on, what&apos;s
+                happening locally, and how the town is trending — built from real trips logged in the
+                Shift app.
+              </p>
+            </div>
           </div>
         </section>
 
         {/* Table of contents — scrollspy chips, sticky under the site nav */}
         <TownToc
+          tone="light"
           sections={[
             ['#stats', 'Stats'],
             ...(heatmapLayers.length > 0 ? [['#moves', 'Where we move'] as [string, string]] : []),
@@ -213,120 +205,106 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
           ]}
         />
 
-        {/* Stats + disclaimer */}
-        <section id="stats" className="scroll-mt-28 px-8 pb-14 pt-10">
-          <div className="mx-auto max-w-[860px]">
-            <StatRow stats={stats} />
-            <DataDisclaimer townName={name} />
-          </div>
-        </section>
+        {/* Stats ledger: rank leads when the town has one; the disclaimer is
+            the ledger's footnote so the numbers and their caveat stay together. */}
+        <Section id="stats" shape="straight" className="scroll-mt-28">
+          <StatRow
+            stats={stats}
+            townName={name}
+            rank={town.rank > 0 ? { rank: town.rank, of: town.rankedInState, stateName: town.stateName } : null}
+            unrankedNote={
+              town.rank > 0
+                ? undefined
+                : hasStateBoard
+                  ? `${name} joins the ${town.stateName} board once it logs ${MIN_RANKED_TRIPS}+ trips in a month.`
+                  : `A ${town.stateName} board opens once more towns there are on Shift.`
+            }
+          />
+        </Section>
 
         {/* Corridor heatmap */}
-        <section id="moves" className="scroll-mt-28 px-8 pb-14">
-          <HeatmapSection layers={heatmapLayers} townName={name} centroid={centroid} />
-        </section>
+        {heatmapLayers.length > 0 && (
+          <Section id="moves" shape="wanderRight" tone="white" className="scroll-mt-28">
+            <HeatmapSection layers={heatmapLayers} townName={name} centroid={centroid} />
+          </Section>
+        )}
 
         {/* Momentum */}
-        <section id="momentum" className="scroll-mt-28 px-8 pb-14">
+        <Section id="momentum" shape="wanderLeft" width="read" className="scroll-mt-28">
           <MomentumSparkline stats={stats} townName={name} />
-        </section>
+        </Section>
 
         {/* Leaderboard — only where the town's state actually has a board. */}
         {showCompetition && (
-          <section id="competition" className="scroll-mt-28 px-8 pb-14">
+          <Section id="competition" shape="straight" tone="white" width="read" className="scroll-mt-28">
             <TownLeaderboard directory={directory} state={town.state} highlightGroupId={town.group_id} />
-          </section>
+          </Section>
         )}
 
         {/* Mode split */}
-        <section id="modes" className="scroll-mt-28 px-8 pb-14">
+        <Section id="modes" shape="wanderRight" width="read" className="scroll-mt-28">
           <ModeSplit stats={stats} townName={name} />
-        </section>
+        </Section>
 
         {/* Explainer */}
-        <section className="px-8 pb-14">
+        <Section shape="straight" width="read">
           <WhatIsShift townName={name} />
-        </section>
+        </Section>
 
         {/* Events + roams */}
-        <section id="events" className="scroll-mt-28 px-8 pb-14">
-          <EventsRoamsPanels events={events} roams={roams} townName={name} />
-        </section>
+        {(events.length > 0 || roams.length > 0) && (
+          <Section id="events" shape="wanderLeft" tone="white" className="scroll-mt-28">
+            <EventsRoamsPanels events={events} roams={roams} townName={name} tone="light" />
+          </Section>
+        )}
 
         {/* Get involved — civic & advocacy */}
         {(resources.length > 0 || civicEvents.length > 0) && (
-          <section id="involved" className="scroll-mt-28 px-8 pb-14">
+          <Section id="involved" shape="wanderRight" width="read" className="scroll-mt-28">
             <GetInvolved resources={resources} civicEvents={civicEvents} townName={name} townSlug={slug} />
-          </section>
+          </Section>
         )}
 
         {/* Rewards Partners */}
-        <section id="rewards" className="scroll-mt-28 px-8 pb-14">
-          <RewardsPartners partners={partners} townName={name} />
-        </section>
+        {partners.length > 0 && (
+          <Section id="rewards" shape="straight" tone="white" className="scroll-mt-28">
+            <RewardsPartners partners={partners} townName={name} />
+          </Section>
+        )}
 
         {/* Town digest signup — E19's front door. Anchored: digest emails'
             forward-nudge links land forwarded readers right here. */}
-        <section id="digest" className="scroll-mt-28 px-8 pb-14">
+        <Section id="digest" shape="wanderLeft" width="read" className="scroll-mt-28">
           <TownDigestSignup townName={name} townSlug={slug} />
-        </section>
+        </Section>
 
         {/* CTA */}
-        <section className="px-8 pb-24 pt-4">
-          <div className="mx-auto max-w-[560px] text-center">
-            <h2 className="mb-4 font-display text-[clamp(1.9rem,4vw,2.8rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
-              {town.rank === 1 ? `Keep ${name} on top` : town.rank > 0 ? `Help ${name} climb the board` : `Put ${name} on the board`}
-            </h2>
-            <p className="mb-8 text-lg leading-relaxed text-white/90">
-              Every walk, ride, and transit trip counts automatically. Download Shift free and put
-              your trips on {name}&apos;s board.
-            </p>
-            <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} className="justify-center" />
-            <p className="mt-8 text-xs leading-relaxed text-white/70">
-              Community stats reflect trips by Shift community members that start or end in {name} and refresh
-              hourly. Municipalities and community groups can request aggregate data at{' '}
-              <a href="mailto:info@gogreenstreets.org" className="underline">
-                info@gogreenstreets.org
-              </a>
-              . A project of Green Streets Initiative, a 501(c)(3) nonprofit.
-            </p>
-          </div>
-        </section>
+        <Section shape="terminal" closing>
+          <h2 className="font-serif text-[clamp(2.25rem,5vw,3.75rem)] font-normal leading-[1.02] text-navy">
+            {town.rank === 1 ? (
+              <>Keep {name} <em className="text-green-deep">on top.</em></>
+            ) : town.rank > 0 ? (
+              <>Help {name} <em className="text-green-deep">climb the board.</em></>
+            ) : (
+              <>Put {name} <em className="text-green-deep">on the board.</em></>
+            )}
+          </h2>
+          <p className="mt-5 max-w-[520px] text-[1.0625rem] leading-[1.65] text-ink-soft">
+            Every walk, ride, and transit trip counts automatically. Download Shift free and put
+            your trips on {name}&apos;s board.
+          </p>
+          <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="town_page" tone="light" className="mt-8 [&>a]:max-[420px]:basis-full" />
+          <p className="mt-8 max-w-[620px] text-[12px] leading-relaxed text-ink-soft">
+            Community stats reflect trips by Shift community members that start or end in {name} and refresh
+            hourly. Municipalities and community groups can request aggregate data at{' '}
+            <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline underline-offset-2">
+              info@gogreenstreets.org
+            </a>
+            . A project of Green Streets Initiative, a 501(c)(3) nonprofit.
+          </p>
+        </Section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
-  )
-}
-
-/* ── local shared bits (match the SYS page's house style) ── */
-
-function GradientBg() {
-  return (
-    <div className="pointer-events-none absolute inset-0">
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(186,241,77,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(186,241,77,0.03) 1px, transparent 1px)',
-          backgroundSize: '48px 48px',
-        }}
-      />
-      <div className="absolute -right-[10%] top-[10%] h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(186,241,77,0.07)_0%,transparent_70%)]" />
-      <div className="absolute -left-[5%] bottom-0 h-[400px] w-[400px] rounded-full bg-[radial-gradient(circle,rgba(41,102,229,0.06)_0%,transparent_70%)]" />
-    </div>
-  )
-}
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-5 inline-flex items-center gap-2">
-      <svg viewBox="0 0 36 28" width="20" height="13" className="shrink-0">
-        <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D" />
-        <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5" />
-      </svg>
-      <span className="font-display text-xs font-bold uppercase tracking-[0.15em] text-[#BAF14D]">
-        {children}
-      </span>
-    </div>
   )
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { PILL, SectionHeading } from '@/components/org/Section'
 import { withUtm } from '@/lib/utm'
 import { buildFeaturedCandidates, type FeaturedItem } from '@/lib/towns/civic-featured'
 import type { TownCivicEvent } from '@/lib/towns/queries'
@@ -31,40 +32,56 @@ import type {
 
 /* ── stat row ─────────────────────────────────────────────── */
 
-export function StatRow({ stats }: { stats: TownPageStats }) {
+/**
+ * The month's numbers as a ledger: hairlines, serif numerals. When the town
+ * is ranked, its standing leads; the disclaimer is the ledger's footnote so
+ * the numbers and their caveat never separate.
+ */
+export function StatRow({
+  stats,
+  townName,
+  rank,
+  unrankedNote,
+}: {
+  stats: TownPageStats
+  townName: string
+  /** Null when the town is not on its state board this month. */
+  rank: { rank: number; of: number; stateName: string } | null
+  /** Why the town is unranked, shown first in the footnote when `rank` is null. */
+  unrankedNote?: string
+}) {
   const m = stats.month
   const month = new Date().toLocaleDateString('en-US', { month: 'long' })
   const cells = [
+    ...(rank ? [{ value: `#${rank.rank} of ${rank.of}`, label: `${rank.stateName} towns by shift rate in ${month}` }] : []),
     { value: m.active_trips.toLocaleString(), label: `active trips so far in ${month}` },
     { value: m.active_miles.toLocaleString(), label: 'active miles' },
     { value: m.co2_lbs.toLocaleString(), label: 'lbs CO₂ avoided*' },
     { value: m.active_users.toLocaleString(), label: `neighbors active so far in ${month}` },
   ]
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-      {cells.map((c) => (
-        <div
-          key={c.label}
-          className="rounded-[14px] border border-white/[0.08] bg-white/[0.04] px-5 py-5 text-center"
-        >
-          <div className="font-display text-[clamp(1.6rem,3vw,2.2rem)] font-extrabold tracking-tight text-[#BAF14D]">
-            {c.value}
+    <div className="border-y border-navy/15 py-7">
+      <dl className={`grid grid-cols-2 gap-x-8 gap-y-5 ${cells.length === 5 ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
+        {cells.map((c) => (
+          <div key={c.label}>
+            <dd className="font-serif text-[2rem] leading-none tracking-[-0.01em] text-navy md:text-[2.25rem]">{c.value}</dd>
+            <dt className="mt-1 text-[13px] leading-snug text-ink-soft">{c.label}</dt>
           </div>
-          <div className="mt-1 text-xs font-medium text-white/75">{c.label}</div>
-        </div>
-      ))}
+        ))}
+      </dl>
+      <DataDisclaimer townName={townName} lead={unrankedNote} />
     </div>
   )
 }
 
-export function DataDisclaimer({ townName }: { townName: string }) {
+export function DataDisclaimer({ townName, lead }: { townName: string; lead?: string }) {
   return (
-    <p className="mx-auto mt-4 max-w-[620px] text-center text-[12.5px] leading-relaxed text-white/75">
-      Counts cover {new Date().toLocaleDateString('en-US', { month: 'long' })} 1 through today,
-      based on trips logged by Shift community members that{' '}
-      <b className="text-white">start or end in {townName}</b> — a
-      growing sample, meant as an interesting local signal, not an official or census-level count.
-      *CO&#8322; avoided is estimated from active miles traveled (EPA 404&nbsp;g/mi baseline).
+    <p className="mt-4 max-w-[720px] text-[12px] leading-relaxed text-ink-soft">
+      {lead ? `${lead} ` : ''}
+      Shift Rate is the share of trips taken actively (walk, micromobility, transit). Counts cover{' '}
+      {new Date().toLocaleDateString('en-US', { month: 'long' })} 1 through today, based on trips logged by Shift community members that{' '}
+      <b className="font-semibold text-navy">start or end in {townName}</b> — a growing sample, meant as an interesting local signal, not an
+      official or census-level count. *CO&#8322; avoided is estimated from active miles traveled (EPA 404&nbsp;g/mi baseline).
     </p>
   )
 }
@@ -84,13 +101,11 @@ export function HeatmapSection({
   const all = layers.find((l) => l.mode_group === 'all') ?? layers[0]
   const topNames = (all.named_corridors ?? []).slice(0, 3).map((c) => c.name)
   return (
-    <section className="mx-auto max-w-[960px]">
-      <h2 className="mb-1 text-center font-display text-2xl font-bold tracking-tight text-white">
-        Where {townName} moves
-      </h2>
+    <div>
+      <SectionHeading title={`Where ${townName} moves`} />
       {/* Server-rendered summary — crawlers and screen readers get the story
           (including the top corridor names) even though the map is client-only. */}
-      <p className="mx-auto mb-6 max-w-[640px] text-center text-sm leading-relaxed text-white/75">
+      <p className="-mt-2 mb-6 max-w-[680px] text-[15px] leading-relaxed text-ink-soft">
         New to {townName}? You&apos;re joining a town that moves — neighbors logged{' '}
         {all.trip_count.toLocaleString()} trips on foot, by bike, and on transit in the last 90
         days{topNames.length > 0 ? (
@@ -107,7 +122,7 @@ export function HeatmapSection({
         about six miles of the town center.
       </p>
       <TownHeatmap layers={layers} centroid={centroid} />
-    </section>
+    </div>
   )
 }
 
@@ -119,13 +134,13 @@ export function MomentumSparkline({ stats, townName }: { stats: TownPageStats; t
   if (weeks.length < 3 || total === 0) return null
 
   const w = 560
-  const h = 120
-  const pad = 8
+  const h = 130
+  const pad = 10
   const max = Math.max(...weeks.map((d) => d.active_trips), 1)
   const step = (w - pad * 2) / (weeks.length - 1)
   const points = weeks.map((d, i) => ({
     x: pad + i * step,
-    y: h - pad - (d.active_trips / max) * (h - pad * 2),
+    y: h - pad - (d.active_trips / max) * (h - pad * 2 - 14),
   }))
   const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
   const area = `${path} L${points[points.length - 1].x.toFixed(1)},${h - pad} L${points[0].x.toFixed(1)},${h - pad} Z`
@@ -134,23 +149,20 @@ export function MomentumSparkline({ stats, townName }: { stats: TownPageStats; t
   const rising = last > first
 
   return (
-    <section className="mx-auto max-w-[720px]">
-      <h2 className="mb-1 text-center font-display text-2xl font-bold tracking-tight text-white">
-        Momentum
-      </h2>
-      <p className="mb-5 text-center text-sm text-white/75">
-        Active trips in {townName} by week ending, last {weeks.length} completed weeks
-        {rising ? ' — and climbing' : ''}
-      </p>
-      <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] px-6 pb-4 pt-6">
+    <div>
+      <SectionHeading
+        title="Momentum"
+        lede={`Active trips in ${townName} by week ending, last ${weeks.length} completed weeks${rising ? ', and climbing' : ''}.`}
+      />
+      <div className="border-y border-navy/15 py-6">
         <svg viewBox={`0 0 ${w} ${h}`} className="h-auto w-full" role="img" aria-label={`Weekly active trips: ${weeks.map((d) => d.active_trips).join(', ')}`}>
-          <path d={area} fill="rgba(186,241,77,0.10)" />
-          <path d={path} fill="none" stroke="#BAF14D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d={area} fill="rgba(45,106,79,0.10)" />
+          <path d={path} fill="none" stroke="#2D6A4F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           {points.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r={i === points.length - 1 ? 4 : 2.5} fill={i === points.length - 1 ? '#BAF14D' : 'rgba(186,241,77,0.6)'} />
+            <circle key={i} cx={p.x} cy={p.y} r={i === points.length - 1 ? 4.5 : 3} fill={i === points.length - 1 ? '#1B4332' : '#F4F8EE'} stroke="#2D6A4F" strokeWidth="2" />
           ))}
         </svg>
-        <div className="mt-1 flex justify-between text-[11px] font-medium text-white/70">
+        <div className="mt-2 flex justify-between text-[11px] tabular-nums text-ink-soft">
           {weeks.map((d) => {
             const end = new Date(`${d.week_start}T00:00:00`)
             end.setDate(end.getDate() + 6)
@@ -162,7 +174,7 @@ export function MomentumSparkline({ stats, townName }: { stats: TownPageStats; t
           })}
         </div>
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -183,15 +195,13 @@ export function TownLeaderboard({
   const qualifying = directory.filter((t) => t.rank > 0 && t.state === state)
   if (qualifying.length < 2) return null
   return (
-    <section className="mx-auto max-w-[820px]">
-      <TownLeaderboardBoard
-        directory={directory}
-        state={state}
-        stateName={qualifying[0].stateName}
-        highlightGroupId={highlightGroupId}
-        title={title}
-      />
-    </section>
+    <TownLeaderboardBoard
+      directory={directory}
+      state={state}
+      stateName={qualifying[0].stateName}
+      highlightGroupId={highlightGroupId}
+      title={title}
+    />
   )
 }
 
@@ -205,23 +215,19 @@ export function ModeSplit({ stats, townName }: { stats: TownPageStats; townName:
 
 export function WhatIsShift({ townName }: { townName: string }) {
   return (
-    <section className="mx-auto max-w-[720px]">
-      <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] px-8 py-8 text-center">
-        <h2 className="mb-3 font-display text-xl font-bold tracking-tight text-white">
-          What is this?
-        </h2>
-        <p className="text-[0.9375rem] leading-[1.7] text-white/75">
-          Shift is a free app from{' '}
-          <Link href="/" className="font-semibold text-[#BAF14D]">
-            Green Streets Initiative
-          </Link>
-          , a nonprofit that has celebrated walking, biking, and transit since 2006. Shift
-          automatically counts your walks, rides, and transit trips — every trip adds to{' '}
-          {townName}&apos;s totals on this page, earns you rewards at local businesses, and enters
-          you into seasonal prize drawings.
-        </p>
-      </div>
-    </section>
+    <div className="max-w-[720px] border-t border-navy/15 pt-6">
+      <h2 className="font-serif text-[1.375rem] leading-tight text-navy">What is this?</h2>
+      <p className="mt-3 text-[1.0625rem] leading-[1.65] text-ink-soft">
+        Shift is a free app from{' '}
+        <Link href="/" className="font-semibold text-forest underline-offset-4 hover:underline">
+          Green Streets Initiative
+        </Link>
+        , a nonprofit that has celebrated walking, biking, and transit since 2006. Shift
+        automatically counts your walks, rides, and transit trips — every trip adds to{' '}
+        {townName}&apos;s totals on this page, earns you rewards at local businesses, and enters
+        you into seasonal prize drawings.
+      </p>
+    </div>
   )
 }
 
@@ -352,13 +358,8 @@ export function GetInvolved({
   ]
 
   return (
-    <section className="mx-auto max-w-[720px]">
-      <h2 className="mb-1 text-center font-display text-2xl font-bold tracking-tight text-white">
-        Get involved in {townName}
-      </h2>
-      <p className="mx-auto mb-6 max-w-[560px] text-center text-sm text-white/75">
-        Safer streets are made by neighbors who speak up. Start small:
-      </p>
+    <div className="max-w-[720px]">
+      <SectionHeading title={`Get involved in ${townName}`} lede="Safer streets are made by neighbors who speak up. Start small:" />
 
       {/* 1. Happening now — zero or one */}
       {featured && (
@@ -366,19 +367,19 @@ export function GetInvolved({
           href={featured.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="mb-3 block rounded-[16px] border border-[#EDB93C]/35 bg-[#EDB93C]/[0.07] p-5 transition-colors hover:bg-[#EDB93C]/[0.12]"
+          className="mb-4 block rounded-[16px] border border-gold/60 bg-white p-5 transition-colors hover:border-gold"
         >
-          <div className="mb-1.5 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-[#EDB93C] px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-[#191A2E]">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-gold px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-navy">
               Happening now
             </span>
-            <span className="text-xs font-semibold text-[#EDB93C]">{featured.chip}</span>
+            <span className="text-[13px] font-semibold text-green-deep">{featured.chip}</span>
           </div>
-          <p className="font-display text-lg font-bold leading-snug text-white">{featured.title}</p>
+          <p className="font-serif text-[1.375rem] leading-tight text-navy">{featured.title}</p>
           {featured.desc && (
-            <p className="mt-1 text-sm leading-relaxed text-white/80">{featured.desc}</p>
+            <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{featured.desc}</p>
           )}
-          <span className="mt-3 inline-block rounded-full bg-[#EDB93C] px-4 py-2 text-sm font-bold text-[#191A2E]">
+          <span className={`mt-4 ${PILL} min-h-[44px] px-5 text-[14px]`}>
             {featured.label} &rarr;
           </span>
         </a>
@@ -386,50 +387,45 @@ export function GetInvolved({
 
       {/* Also coming up — at most two slim rows */}
       {upNext.length > 0 && (
-        <div className="mb-4 space-y-1.5">
+        <ul className="mb-4 border-t border-navy/15">
           {upNext.map((c) => (
-            <a
-              key={c.key}
-              href={c.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-baseline gap-2.5 rounded-[10px] border border-[#EDB93C]/[0.15] bg-[#EDB93C]/[0.03] px-4 py-2.5 transition-colors hover:bg-[#EDB93C]/[0.08]"
-            >
-              <span className="shrink-0 text-xs font-semibold text-[#EDB93C]">{c.chip}</span>
-              <span className="min-w-0 truncate text-sm font-semibold text-white">{c.title}</span>
-            </a>
+            <li key={c.key} className="border-b border-navy/15">
+              <a href={c.href} target="_blank" rel="noopener noreferrer" className="flex min-h-[44px] items-baseline gap-2.5 py-2.5 hover:text-forest">
+                <span className="shrink-0 text-[13px] font-semibold text-green-deep">{c.chip}</span>
+                <span className="min-w-0 truncate text-[15px] font-semibold text-navy">{c.title}</span>
+              </a>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {/* 2. Action rows — verbs, not cards */}
       {actions.length > 0 && (
-        <div className="space-y-2">
+        <ul className="border-t border-navy/15">
           {actions.map((r) => (
-            <a
-              key={r.id}
-              href={civicUrl(r.url)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between gap-3 rounded-[12px] border border-white/[0.08] bg-white/[0.04] px-4 py-3.5 transition-colors hover:bg-white/[0.08]"
-            >
-              <span className="min-w-0">
-                <span className="block text-sm font-bold text-white">{r.action_label}</span>
-                <span className="block text-xs text-white/70">{r.name}</span>
-              </span>
-              <span className="shrink-0 text-[#BAF14D]">&rarr;</span>
-            </a>
+            <li key={r.id} className="border-b border-navy/15">
+              <a
+                href={civicUrl(r.url)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center justify-between gap-3 py-3.5"
+              >
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-semibold text-navy group-hover:underline group-hover:underline-offset-4">{r.action_label}</span>
+                  <span className="block text-[13px] text-ink-soft">{r.name}</span>
+                </span>
+                <span className="shrink-0 text-forest transition-transform group-hover:translate-x-0.5">&rarr;</span>
+              </a>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {/* 3. Town-level directory — ALWAYS visible (Keith 07-16: a user on a
           town page sees that town's content first; hidden ≠ ok for local). */}
       {localResources.length > 0 && (
-        <div className="mt-4 space-y-4 rounded-[12px] border border-white/[0.06] bg-white/[0.02] p-4">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-[#BAF14D]">
-            In {townName}
-          </p>
+        <div className="mt-6 space-y-5">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-forest">In {townName}</p>
           {resourceGroups(localResources, civicUrl)}
         </div>
       )}
@@ -437,22 +433,17 @@ export function GetInvolved({
       {/* 4. Shared regional/statewide tail — the one list that's identical on
           every town page stays behind the drawer. */}
       {sharedResources.length > 0 && (
-        <details className="group mt-4">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[12px] border border-white/[0.12] bg-white/[0.04] px-4 py-3.5 transition-colors hover:bg-white/[0.08] [&::-webkit-details-marker]:hidden">
-            <span className="min-w-0">
-              <span className="block text-sm font-bold text-white">Regional &amp; statewide groups</span>
-              <span className="block text-xs text-white/70">
-                {sharedResources.length}{' '}more &mdash; research, campaigns, and coalitions you can join
-              </span>
-            </span>
-            <span className="shrink-0 text-[#BAF14D] transition-transform group-open:rotate-90">&rarr;</span>
+        <details className="group mt-6">
+          <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-2 text-[15px] font-semibold text-forest underline-offset-4 hover:underline [&::-webkit-details-marker]:hidden">
+            Regional &amp; statewide groups, {sharedResources.length} more{' '}
+            <span aria-hidden className="transition-transform group-open:rotate-90">&rsaquo;</span>
           </summary>
-          <div className="mt-3 space-y-4 rounded-[12px] border border-white/[0.06] bg-white/[0.02] p-4">
+          <div className="mt-4 space-y-5 border-t border-navy/15 pt-5">
             {resourceGroups(sharedResources, civicUrl)}
           </div>
         </details>
       )}
-    </section>
+    </div>
   )
 }
 
@@ -464,27 +455,27 @@ function resourceGroups(list: TownResource[], civicUrl: (url: string | null) => 
     if (inCat.length === 0) return null
     return (
       <div key={cat}>
-        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-white/60">
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
           {DRAWER_CATEGORY_META[cat] ?? cat}
         </p>
-        <ul className="space-y-1.5">
+        <ul className="space-y-2">
           {inCat.map((r) => (
-            <li key={r.id} className="text-sm leading-snug">
+            <li key={r.id} className="text-[15px] leading-snug text-ink-soft">
               {r.url ? (
-                <a href={civicUrl(r.url)} target="_blank" rel="noopener noreferrer" className="font-semibold text-white underline decoration-white/30 underline-offset-2 hover:decoration-[#BAF14D]">
+                <a href={civicUrl(r.url)} target="_blank" rel="noopener noreferrer" className="font-semibold text-navy underline decoration-navy/30 underline-offset-2 hover:decoration-forest hover:text-forest">
                   {r.name}
                 </a>
               ) : (
-                <span className="font-semibold text-white">{r.name}</span>
+                <span className="font-semibold text-navy">{r.name}</span>
               )}
               {r.scope !== 'local' && (
-                <span className="ml-1.5 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-white/70">
+                <span className="ml-1.5 rounded-full bg-navy/[0.06] px-1.5 py-0.5 text-[10px] font-semibold text-ink-soft">
                   {r.scope}
                 </span>
               )}
-              {r.description && <span className="text-white/75"> &mdash; {r.description}</span>}
+              {r.description && <span> &mdash; {r.description}</span>}
               {(r.contact_email || r.contact_phone) && (
-                <span className="text-white/60">
+                <span>
                   {' '}({[r.contact_email, r.contact_phone].filter(Boolean).join(' · ')})
                 </span>
               )}
@@ -501,30 +492,25 @@ function resourceGroups(list: TownResource[], civicUrl: (url: string | null) => 
 export function RewardsPartners({ partners, townName }: { partners: TownPartner[]; townName: string }) {
   if (partners.length === 0) return null
   return (
-    <section className="mx-auto max-w-[960px]">
-      <h2 className="mb-1 text-center font-display text-2xl font-bold tracking-tight text-white">
-        Shift Rewards in {townName}
-      </h2>
-      <p className="mb-6 text-center text-sm text-white/75">
-        Local businesses that reward people for moving actively
-      </p>
+    <div>
+      <SectionHeading title={`Shift Rewards in ${townName}`} lede="Local businesses that reward people for moving actively." />
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {partners.map((p) => {
           const card = (
-            <div className="flex h-full flex-col rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-4 transition-colors hover:bg-white/[0.06]">
-              <div className="mb-3 flex h-[64px] items-center justify-center rounded-[10px] bg-white px-3">
+            <div className="flex h-full flex-col rounded-[14px] border border-navy/10 bg-white p-4 transition-colors hover:border-navy/30">
+              <div className="mb-3 flex h-[64px] items-center justify-center rounded-[10px] bg-cream px-3">
                 {p.logo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={p.logo_url} alt={p.name} className="max-h-[44px] max-w-[85%] object-contain" />
                 ) : (
-                  <span className="text-center text-sm font-semibold text-[#191A2E]">{p.name}</span>
+                  <span className="text-center text-sm font-semibold text-navy">{p.name}</span>
                 )}
               </div>
-              <p className="text-sm font-semibold leading-snug text-white">{p.name}</p>
+              <p className="text-[15px] font-semibold leading-snug text-navy">{p.name}</p>
               {p.discount_description && (
-                <p className="mt-1 text-xs leading-snug text-[#BAF14D]">{p.discount_description}</p>
+                <p className="mt-1 text-[13px] leading-snug text-green-deep">{p.discount_description}</p>
               )}
-              {p.address && <p className="mt-1 text-[11px] leading-snug text-white/70">{p.address}</p>}
+              {p.address && <p className="mt-1 text-[12px] leading-snug text-ink-soft">{p.address}</p>}
             </div>
           )
           return p.website_url ? (
@@ -536,6 +522,6 @@ export function RewardsPartners({ partners, townName }: { partners: TownPartner[
           )
         })}
       </div>
-    </section>
+    </div>
   )
 }

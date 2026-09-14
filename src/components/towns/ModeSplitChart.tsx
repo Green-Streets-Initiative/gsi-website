@@ -1,6 +1,7 @@
 'use client'
 
 import { Bicycle, Bus, PersonSimpleWalk, Train } from '@phosphor-icons/react'
+import { SectionHeading } from '@/components/org/Section'
 import type { TownPageStats } from '@/lib/towns/queries'
 
 /**
@@ -8,13 +9,16 @@ import type { TownPageStats } from '@/lib/towns/queries'
  * miles) with Phosphor mode icons, per Keith's July 9 direction: the
  * trips-vs-distance contrast should read directly from the chart, no legend
  * decoding. Percent labels render inside segments wide enough to hold them.
+ *
+ * Palette on cream: forest, teal, navy, gold. Percent labels are white on the
+ * dark fills and navy on teal and gold; teal and gold are only ever fills.
  */
 
-const MODE_META: Record<string, { label: string; color: string; Icon: typeof Bicycle }> = {
-  walk: { label: 'Walking', color: '#BAF14D', Icon: PersonSimpleWalk },
-  bike: { label: 'Biking & scooting', color: '#2966E5', Icon: Bicycle },
-  bus: { label: 'Bus', color: '#EDB93C', Icon: Bus },
-  train: { label: 'Train', color: '#FF8A65', Icon: Train },
+const MODE_META: Record<string, { label: string; color: string; ink: string; Icon: typeof Bicycle }> = {
+  walk: { label: 'Walking', color: '#2D6A4F', ink: '#FFFFFF', Icon: PersonSimpleWalk },
+  bike: { label: 'Biking & scooting', color: '#52B788', ink: '#191A2E', Icon: Bicycle },
+  bus: { label: 'Bus', color: '#EDB93C', ink: '#191A2E', Icon: Bus },
+  train: { label: 'Train', color: '#191A2E', ink: '#FFFFFF', Icon: Train },
 }
 
 function StackedBar({
@@ -30,8 +34,8 @@ function StackedBar({
   if (total === 0) return null
   return (
     <div>
-      <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-white/70">{label}</p>
-      <div className="flex h-9 overflow-hidden rounded-[10px]">
+      <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-forest">{label}</p>
+      <div className="flex h-10 overflow-hidden rounded-[8px]">
         {rows.map((r) => {
           const share = r[field] / total
           if (share === 0) return null
@@ -40,15 +44,14 @@ function StackedBar({
           return (
             <div
               key={r.mode_group}
-              className="flex items-center justify-center gap-1 overflow-hidden"
-              style={{ width: `${share * 100}%`, backgroundColor: meta?.color ?? '#5d6a94' }}
+              className="flex items-center justify-center overflow-hidden"
+              style={{ width: `${share * 100}%`, backgroundColor: meta?.color ?? '#4A4D68' }}
               title={`${meta?.label ?? r.mode_group}: ${pct}% of ${field}`}
             >
               {share >= 0.08 && meta && (
-                <>
-                  <meta.Icon size={15} weight="bold" color="#191A2E" />
-                  <span className="text-xs font-bold text-[#191A2E]">{pct}%</span>
-                </>
+                <span className="text-[13px] font-semibold tabular-nums" style={{ color: meta.ink }}>
+                  {pct}%
+                </span>
               )}
             </div>
           )
@@ -64,39 +67,36 @@ export default function ModeSplitChart({ stats, townName }: { stats: TownPageSta
   if (totalTrips === 0) return null
 
   return (
-    <section className="mx-auto max-w-[720px]">
-      <h2 className="mb-1 text-center font-display text-2xl font-bold tracking-tight text-white">
-        How {townName} moves
-      </h2>
-      <p className="mb-5 text-center text-sm text-white/75">Active trips and miles so far in {new Date().toLocaleDateString('en-US', { month: 'long' })}, by mode</p>
-      <div className="space-y-5 rounded-[18px] border border-white/[0.08] bg-[#242538] p-6">
+    <div>
+      <SectionHeading
+        title={`How ${townName} moves`}
+        lede={`Active trips and miles so far in ${new Date().toLocaleDateString('en-US', { month: 'long' })}, by mode.`}
+      />
+      <div className="space-y-6">
         <StackedBar label="Share of trips" rows={rows} field="trips" />
         <StackedBar label="Share of miles" rows={rows} field="miles" />
 
         {/* Per-mode key with raw numbers — doubles as the color key */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2 pt-1 md:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-t border-navy/15 pt-5 md:grid-cols-4">
           {rows.map((r) => {
             const meta = MODE_META[r.mode_group]
             if (!meta) return null
             return (
-              <div key={r.mode_group} className="flex items-center gap-2">
-                <span
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px]"
-                  style={{ backgroundColor: `${meta.color}29` }}
-                >
-                  <meta.Icon size={16} weight="bold" color={meta.color} />
+              <div key={r.mode_group} className="flex items-start gap-2.5">
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px]" style={{ backgroundColor: meta.color }}>
+                  <meta.Icon size={16} weight="bold" color={meta.ink} aria-hidden />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-xs font-semibold text-white">{meta.label}</span>
-                  <span className="block text-[11px] text-white/75">
+                  <dt className="text-[14px] font-semibold text-navy">{meta.label}</dt>
+                  <dd className="text-[13px] tabular-nums text-ink-soft">
                     {r.trips.toLocaleString()} trips · {r.miles.toLocaleString()} mi
-                  </span>
+                  </dd>
                 </span>
               </div>
             )
           })}
-        </div>
+        </dl>
       </div>
-    </section>
+    </div>
   )
 }
