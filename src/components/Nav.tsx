@@ -10,6 +10,11 @@ import { useEffect, useRef, useState } from 'react'
  * forward: civic/community content can earn top-level slots; app product
  * pages live in the dropdown.
  *
+ * The first item is "Challenges", a stable section rather than the name of
+ * whichever campaign is running. It used to hardcode "Shift Your Summer",
+ * which kept pointing at that campaign for a month after it ended. A section
+ * name cannot go stale; /challenges works out what is actually on.
+ *
  * `variant="light"` is the cream-page treatment (home refresh): the wordmark
  * follows the brand rule for light backgrounds (forest "Green Streets" +
  * navy "Initiative"), links go navy, and the Download button goes solid
@@ -34,7 +39,6 @@ const THEME: Record<Variant, {
   brandA: string
   brandB: string
   link: string
-  seasonal: string
   panelBg: string
   panelHover: string
   donate: string
@@ -49,7 +53,6 @@ const THEME: Record<Variant, {
     brandA: 'text-[#52B788]',
     brandB: 'text-white',
     link: 'text-white',
-    seasonal: 'text-lime',
     panelBg: 'rgba(25,26,46,0.98)',
     panelHover: 'hover:bg-white/[0.06]',
     donate: 'border-white/[0.2] text-white hover:bg-white/[0.05]',
@@ -64,7 +67,6 @@ const THEME: Record<Variant, {
     brandA: 'text-forest',
     brandB: 'text-navy',
     link: 'text-navy',
-    seasonal: 'text-forest',
     panelBg: 'rgba(244,248,238,0.98)',
     panelHover: 'hover:bg-navy/[0.05]',
     donate: 'border-navy/25 text-navy hover:bg-navy/[0.05]',
@@ -113,8 +115,8 @@ export default function Nav({ variant = 'dark' }: { variant?: Variant }) {
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-4 xl:gap-5 lg:flex">
-          <Link href="/events/shift-your-summer" className={`whitespace-nowrap text-[0.8125rem] font-medium ${t.seasonal} transition-opacity hover:opacity-80`}>
-            Shift Your Summer
+          <Link href="/challenges" className={linkCls}>
+            Challenges
           </Link>
           <Link href="/programs" className={linkCls}>
             Programs
@@ -199,7 +201,7 @@ export default function Nav({ variant = 'dark' }: { variant?: Variant }) {
       {menuOpen && (
         <div className={`border-t ${t.border} px-6 py-4 lg:hidden`}>
           <div className="flex flex-col gap-4">
-            <Link href="/events/shift-your-summer" className={`text-sm font-medium ${t.seasonal}`} onClick={() => setMenuOpen(false)}>Shift Your Summer</Link>
+            <Link href="/challenges" className={mobileLink} onClick={() => setMenuOpen(false)}>Challenges</Link>
             <Link href="/programs" className={mobileLink} onClick={() => setMenuOpen(false)}>Programs</Link>
             <Link href="/shift/towns" className={mobileLink} onClick={() => setMenuOpen(false)}>Towns</Link>
             <Link href="/guides" className={mobileLink} onClick={() => setMenuOpen(false)}>Guides</Link>
