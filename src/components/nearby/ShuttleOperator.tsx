@@ -2,6 +2,7 @@
 
 import { type StationGroup, shuttleAgencyForStation, isShuttleStation } from './useNearbyModel'
 import { useNearbyT } from './NearbyI18n'
+import type { ShuttleAccess } from '@/lib/nearby/shuttle-agencies'
 
 /**
  * The two lines every campus / TMA shuttle stop needs and no MBTA stop does:
@@ -12,6 +13,13 @@ import { useNearbyT } from './NearbyI18n'
  * MIT shuttle they may need an MIT ID to use. The policy itself lives in
  * lib/nearby/shuttle-agencies.ts, verified per operator.
  */
+const ACCESS_KEY: Record<ShuttleAccess, string> = {
+  public: 'shuttle.access_public',
+  'public-fare': 'shuttle.access_public_fare',
+  id: 'shuttle.access_id',
+  unstated: 'shuttle.access_unstated',
+}
+
 export function ShuttleOperatorLines({
   station,
   variant = 'compact',
@@ -26,10 +34,7 @@ export function ShuttleOperatorLines({
   const tr = useNearbyT()
   const agency = isShuttleStation(station) ? shuttleAgencyForStation(station) : null
   if (!agency) return null
-  const accessKey =
-    agency.access === 'public' ? 'shuttle.access_public'
-    : agency.access === 'id' ? 'shuttle.access_id'
-    : 'shuttle.access_unstated'
+  const accessKey = ACCESS_KEY[agency.access]
   const access = tr(accessKey, { operator: agency.idName })
   if (variant === 'detail') {
     return (

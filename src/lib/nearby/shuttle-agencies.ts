@@ -16,12 +16,13 @@
  * use is worse than not showing it. Verified against each operator's own
  * page (2026-09-14); re-check when a feed is added or a policy changes.
  *
- *  - 'public'   the operator states it is open to everyone
- *  - 'id'       the operator states an affiliate ID is required to board
- *  - 'unstated' the operator publishes no policy — say ID *may* be needed
- *               rather than guess in either direction
+ *  - 'public'      the operator states it is open to everyone, fare-free
+ *  - 'public-fare' open to everyone, but a fare is charged (128BC's Grid)
+ *  - 'id'          the operator states an affiliate ID is required to board
+ *  - 'unstated'    the operator publishes no policy — say ID *may* be needed
+ *                  rather than guess in either direction
  */
-export type ShuttleAccess = 'public' | 'id' | 'unstated'
+export type ShuttleAccess = 'public' | 'public-fare' | 'id' | 'unstated'
 
 export interface ShuttleAgencyMeta {
   /** Id namespace: `${prefix}:${routeId}` / `${prefix}:${stopId}` */
@@ -55,6 +56,13 @@ export const SHUTTLE_AGENCY_META: readonly ShuttleAgencyMeta[] = [
   { prefix: 'bu', label: 'BU', name: 'Boston University Shuttle', idName: 'Boston University', access: 'id' },
   // UMass Boston publishes schedules and GPS tracking but no boarding policy.
   { prefix: 'umb', label: 'UMass Boston', name: 'UMass Boston Shuttle', idName: 'UMass Boston', access: 'unstated' },
+  // "The Lower Mystic Link is a no-fare service open to the public."
+  { prefix: 'lml', label: 'Lower Mystic', name: 'Lower Mystic Link', idName: 'Lower Mystic Link', access: 'public' },
+  // "All multi-stop Grid routes are also open to the public at the full
+  //  public fare … CharlieCards and other MBTA passes aren't accepted."
+  { prefix: 'grid', label: 'The Grid', name: 'The Grid — 128 Business Council', idName: '128 Business Council', access: 'public-fare' },
+  // M3 names its shuttles and operator (TransAction) but no boarding policy.
+  { prefix: 'm3', label: 'Middlesex 3', name: 'Middlesex 3 TMA Shuttle', idName: 'Middlesex 3', access: 'unstated' },
 ]
 
 /** One color for every shuttle — "indigo dot = a shuttle" is the map's

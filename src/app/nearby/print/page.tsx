@@ -331,9 +331,7 @@ export default async function NearbyPrintPage({ searchParams }: {
                   {s.isShuttle && (() => {
                     const a = shuttleAgencyFor(s.lines[0]?.routeId ?? '')
                     if (!a) return null
-                    const key = a.access === 'public' ? 'shuttle.access_public'
-                      : a.access === 'id' ? 'shuttle.access_id'
-                      : 'shuttle.access_unstated'
+                    const key = `shuttle.access_${a.access.replace('-', '_')}`
                     return (
                       <div className="text-[0.68rem] leading-snug text-[#191A2E]/80">
                         {a.name} · {tr(key, { operator: a.idName })}

@@ -24,23 +24,39 @@ import { SHUTTLE_AGENCY_META, SHUTTLE_COLOR, type ShuttleAgencyMeta } from '@/li
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
 const FETCH_TIMEOUT_MS = 15_000
 
-export type ShuttleFeedKind = 'passio-gtfs' | 'transloc'
+export type ShuttleFeedKind = 'passio-gtfs' | 'gtfs-url' | 'transloc' | 'moovs' | 'wp-128bc'
 
-export interface ShuttleAgency extends ShuttleAgencyMeta {
-  id: string
-  kind: ShuttleFeedKind
-  /** Passio system slug or TransLoc subdomain */
-  slug: string
-}
+/** Where an operator's stops come from. Five shapes because five is what
+ *  the Boston-area operators actually publish — only two of them ship a
+ *  GTFS zip you can just download. */
+export type ShuttleFeedConfig =
+  /** Passio GO static GTFS, addressed by system slug */
+  | { kind: 'passio-gtfs'; slug: string }
+  /** A plain GTFS zip at a fixed URL (Trillium hosts the TMA ones) */
+  | { kind: 'gtfs-url'; url: string }
+  /** TransLoc / Ride Systems JSON relay, addressed by subdomain */
+  | { kind: 'transloc'; slug: string }
+  /** Moovs shuttle map frame — a Turbo page whose container element
+   *  carries the stop list as a JSON data attribute */
+  | { kind: 'moovs'; company: string; routeDefinition: string; routeName: string }
+  /** 128 Business Council: their WordPress routes page embeds the stops and
+   *  the REST API names the routes. Their published GTFS died in 2019. */
+  | { kind: 'wp-128bc' }
+
+export type ShuttleAgency = ShuttleAgencyMeta & { id: string } & ShuttleFeedConfig
 
 /** Routes no rider can board — MIT publishes an "OOS (out of service)" route */
 const EXCLUDED_ROUTES = /out of service|^OOS\b/i
+/** Operators leave decommissioned stops in the feed with the closure in the
+ *  name ("125 Spring St (Takeda – STOP CLOSED)"). Walking someone to one is
+ *  the worst thing this page can do, so they never make the list. */
+const CLOSED_STOP = /\bstop closed\b|\bclosed\b\s*[-–—]?\s*(do not|no longer)/i
 /** TransLoc lists seasonal/event routes year-round. They only make the cut
  *  while actually running (IsRunning) — "Football Shuttle" on every BC stop
  *  in February is noise. */
 const SEASONAL_ROUTES = /football|holiday|snow|thanksgiving|break|commencement|game ?day/i
 
-const FEEDS: Record<string, { kind: ShuttleFeedKind; slug: string }> = {
+const FEEDS: Record<string, ShuttleFeedConfig> = {
   crtma: { kind: 'passio-gtfs', slug: 'charlesriver' },
   longwood: { kind: 'passio-gtfs', slug: 'longwoodcollective' },
   harvard: { kind: 'passio-gtfs', slug: 'harvard' },
@@ -49,16 +65,26 @@ const FEEDS: Record<string, { kind: ShuttleFeedKind; slug: string }> = {
   bc: { kind: 'transloc', slug: 'bc' },
   bu: { kind: 'transloc', slug: 'bu' },
   umb: { kind: 'transloc', slug: 'umb' },
+  m3: { kind: 'gtfs-url', url: 'https://data.trilliumtransit.com/gtfs/middlesex-ma-us/middlesex-ma-us.zip' },
+  lml: {
+    kind: 'moovs',
+    company: 'Q29tcGFueTo5NjY4M2FmZS00M2QyLTExZjEtYjc0NS1iYjMxMjUyODVlNjE=',
+    routeDefinition: 'U2h1dHRsZVJvdXRlRGVmaW5pdGlvbjphMDFhMTdkMi01MDhiLTExZjEtYTA0Mi05NzVlODJlMmQ4NTc=',
+    routeName: 'Lower Mystic Link',
+  },
+  grid: { kind: 'wp-128bc' },
 }
 
 export const SHUTTLE_AGENCIES: ShuttleAgency[] = SHUTTLE_AGENCY_META
   .filter(m => FEEDS[m.prefix])
   .map(m => ({ ...m, id: m.prefix, ...FEEDS[m.prefix] }))
 
-function feedUrl(a: ShuttleAgency): string {
-  return a.kind === 'transloc'
-    ? `https://${a.slug}.transloc.com/Services/JSONPRelay.svc/GetRoutesForMapWithScheduleWithEncodedLine`
-    : `https://passio3.com/${a.slug}/passioTransit/gtfs/google_transit.zip`
+function gtfsUrl(a: ShuttleAgency): string {
+  return a.kind === 'gtfs-url' ? a.url : `https://passio3.com/${(a as { slug: string }).slug}/passioTransit/gtfs/google_transit.zip`
+}
+
+function translocUrl(a: ShuttleAgency & { slug: string }): string {
+  return `https://${a.slug}.transloc.com/Services/JSONPRelay.svc/GetRoutesForMapWithScheduleWithEncodedLine`
 }
 
 /* ── Parsed shape (JSON-serializable: unstable_cache can't hold Map/Set) ── */
@@ -119,8 +145,24 @@ export function parseCsv(text: string): Record<string, string>[] {
 
 /* ── Adapters ── */
 
-async function parsePassioGtfs(agency: ShuttleAgency): Promise<ParsedFeed> {
-  const res = await fetch(feedUrl(agency), { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+/** Entity decoding for the two scraped feeds. Server-side, so there is no
+ *  DOM to borrow one from — and these payloads only ever carry the handful
+ *  WordPress and Rails emit ("Kendall/MIT", "building&#039;s entrance"). */
+export function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+}
+
+
+async function parseGtfsZip(agency: ShuttleAgency): Promise<ParsedFeed> {
+  const res = await fetch(gtfsUrl(agency), { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`GTFS fetch ${agency.id}: ${res.status}`)
   const zip = await JSZip.loadAsync(await res.arrayBuffer())
 
@@ -154,7 +196,7 @@ async function parsePassioGtfs(agency: ShuttleAgency): Promise<ParsedFeed> {
       lng: parseFloat(r.stop_lon),
       routeIds: [...(stopRoutes.get(r.stop_id) ?? [])],
     }))
-    .filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng) && s.routeIds.length > 0)
+    .filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng) && s.routeIds.length > 0 && !CLOSED_STOP.test(s.name))
 
   return { agencyId: agency.id, stops, routes, fetchedAt: Date.now() }
 }
@@ -167,8 +209,8 @@ interface TranslocRoute {
   Stops?: { Description?: string; Latitude?: number; Longitude?: number }[]
 }
 
-async function parseTransloc(agency: ShuttleAgency): Promise<ParsedFeed> {
-  const res = await fetch(feedUrl(agency), {
+async function parseTransloc(agency: ShuttleAgency & { slug: string }): Promise<ParsedFeed> {
+  const res = await fetch(translocUrl(agency), {
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   })
@@ -190,7 +232,8 @@ async function parseTransloc(agency: ShuttleAgency): Promise<ParsedFeed> {
       const lat = Number(s.Latitude)
       const lng = Number(s.Longitude)
       const stopName = (s.Description ?? '').trim()
-      if (!stopName || !Number.isFinite(lat) || !Number.isFinite(lng)) continue
+      if (!stopName || CLOSED_STOP.test(stopName)) continue
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
       const coord = `${lat.toFixed(4)},${lng.toFixed(4)}`
       const key = `${stopName.toLowerCase()}|${coord}`
       let stop = stopsByKey.get(key)
@@ -204,15 +247,169 @@ async function parseTransloc(agency: ShuttleAgency): Promise<ParsedFeed> {
   return { agencyId: agency.id, stops: [...stopsByKey.values()], routes, fetchedAt: Date.now() }
 }
 
+
+/* — Moovs (Lower Mystic Link) —
+ * A Turbo-rendered map frame whose container carries the whole stop list in
+ * a `data-route-map-stops-value` attribute. One continuous loop, so a stop
+ * recurs under several stopIndexes with a direction suffix on its name;
+ * dedupe by coordinate and drop the suffix. */
+
+interface MoovsStop {
+  stopName?: string
+  latitude?: number
+  longitude?: number
+}
+
+/** "Sullivan Square Station – Outbound to Chelsea" → "Sullivan Square
+ *  Station". The loop passes each stop in both directions, and a rider
+ *  reading a map needs the place, not the leg. */
+function stripLoopDirection(name: string): string {
+  return name.replace(/\s*[–—-]\s*(inbound|outbound)\b.*$/i, '').trim() || name.trim()
+}
+
+async function parseMoovs(
+  agency: ShuttleAgency & { company: string; routeDefinition: string; routeName: string },
+): Promise<ParsedFeed> {
+  const url =
+    `https://api-production-v2.moovs.app/${agency.company}/moovs-shuttle/frames/continuous-loop-map` +
+    `?routeDefinitionId=${encodeURIComponent(agency.routeDefinition)}`
+  const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+  if (!res.ok) throw new Error(`Moovs fetch ${agency.id}: ${res.status}`)
+  const html = await res.text()
+  const attr = /data-route-map-stops-value="([^"]*)"/.exec(html)
+  if (!attr) throw new Error(`Moovs ${agency.id}: stops attribute missing`)
+  const raw: unknown = JSON.parse(decodeHtmlEntities(attr[1]))
+  if (!Array.isArray(raw)) throw new Error(`Moovs ${agency.id}: unexpected payload`)
+
+  const routeId = 'loop'
+  // Keyed by NAME, not coordinate: a loop lists each place once per leg with
+  // the inbound and outbound poles a few metres apart, and two identically
+  // labelled pins 50 m apart is clutter, not information.
+  const stopsByKey = new Map<string, ParsedStop>()
+  for (const s of raw as MoovsStop[]) {
+    const lat = Number(s.latitude)
+    const lng = Number(s.longitude)
+    const name = stripLoopDirection((s.stopName ?? '').trim())
+    if (!name || CLOSED_STOP.test(name)) continue
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
+    const key = name.toLowerCase()
+    if (!stopsByKey.has(key)) {
+      stopsByKey.set(key, { id: `${lat.toFixed(4)},${lng.toFixed(4)}`, name, lat, lng, routeIds: [routeId] })
+    }
+  }
+  if (stopsByKey.size === 0) throw new Error(`Moovs ${agency.id}: no usable stops`)
+  return {
+    agencyId: agency.id,
+    stops: [...stopsByKey.values()],
+    routes: [{ id: routeId, name: agency.routeName }],
+    fetchedAt: Date.now(),
+  }
+}
+
+/* — 128 Business Council —
+ * Their Trillium GTFS stopped being maintained in 2019 and live data moved
+ * to TripShot, which needs an account. Two public reads cover it instead:
+ * the routes page embeds `window.scheduleMapData` (route → stops, each stop
+ * tagged with the WordPress schedule id), and the WP REST API turns those
+ * schedule ids into rider-facing names ("A1: Alewife Shuttle"). */
+
+const GRID_ROUTES_PAGE = 'https://128bc.org/routes/'
+const GRID_SCHEDULES_API = 'https://128bc.org/wp-json/wp/v2/schedule?per_page=40'
+
+interface GridStop {
+  gtfs_id?: string
+  stop_name?: string
+  stop_lat?: number
+  stop_lon?: number
+  /** True at Alewife / commuter-rail ends — kept, see the loop below. */
+  is_mbta_stop?: boolean
+  schedule_id?: number
+}
+
+/** Pull `window.<name> = { … };` out of a page by matching braces — the
+ *  blob is minified onto one line and contains nested objects, so a regex
+ *  to the closing brace would stop at the first one. */
+function extractWindowObject(html: string, name: string): string | null {
+  const marker = `window.${name} = `
+  const start = html.indexOf(marker)
+  if (start === -1) return null
+  let depth = 0
+  for (let i = start + marker.length; i < html.length; i++) {
+    if (html[i] === '{') depth++
+    else if (html[i] === '}' && --depth === 0) return html.slice(start + marker.length, i + 1)
+  }
+  return null
+}
+
+async function parseWp128bc(agency: ShuttleAgency): Promise<ParsedFeed> {
+  const [pageRes, schedRes] = await Promise.all([
+    fetch(GRID_ROUTES_PAGE, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }),
+    fetch(GRID_SCHEDULES_API, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    }),
+  ])
+  if (!pageRes.ok) throw new Error(`128BC page ${pageRes.status}`)
+  if (!schedRes.ok) throw new Error(`128BC schedules ${schedRes.status}`)
+
+  const scheduleNames = new Map<number, string>()
+  const schedules = (await schedRes.json()) as { id?: number; title?: { rendered?: string } }[]
+  for (const s of Array.isArray(schedules) ? schedules : []) {
+    const title = decodeHtmlEntities((s.title?.rendered ?? '').trim())
+    if (typeof s.id === 'number' && title) scheduleNames.set(s.id, title)
+  }
+
+  const blob = extractWindowObject(await pageRes.text(), 'scheduleMapData')
+  if (!blob) throw new Error('128BC: scheduleMapData missing')
+  const byRoute = JSON.parse(blob) as Record<string, GridStop[]>
+
+  const routes: ParsedRoute[] = []
+  const seenRoutes = new Set<string>()
+  const stopsByKey = new Map<string, ParsedStop>()
+  for (const stops of Object.values(byRoute)) {
+    for (const st of Array.isArray(stops) ? stops : []) {
+      // MBTA anchor stops are kept on purpose. "A Grid shuttle to south
+      // Lexington boards at Alewife" is the whole point of the network, and
+      // dropping them would hide it from the one place riders start —
+      // exactly how EZRide already shows at Lechmere and North Station.
+      const lat = Number(st.stop_lat)
+      const lng = Number(st.stop_lon)
+      const name = decodeHtmlEntities((st.stop_name ?? '').trim())
+      const routeName = st.schedule_id ? scheduleNames.get(st.schedule_id) : undefined
+      if (!name || !routeName || CLOSED_STOP.test(name)) continue
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
+      const routeId = String(st.schedule_id)
+      if (!seenRoutes.has(routeId)) {
+        seenRoutes.add(routeId)
+        routes.push({ id: routeId, name: routeName })
+      }
+      const coord = `${lat.toFixed(4)},${lng.toFixed(4)}`
+      let stop = stopsByKey.get(coord)
+      if (!stop) {
+        stop = { id: coord, name, lat, lng, routeIds: [] }
+        stopsByKey.set(coord, stop)
+      }
+      if (!stop.routeIds.includes(routeId)) stop.routeIds.push(routeId)
+    }
+  }
+  if (stopsByKey.size === 0) throw new Error('128BC: no usable stops')
+  return { agencyId: agency.id, stops: [...stopsByKey.values()], routes, fetchedAt: Date.now() }
+}
+
 /* ── Cache: in-process L1 (per instance) over Next's data cache (durable) ── */
 
 async function loadFeed(agencyId: string): Promise<ParsedFeed> {
   const agency = SHUTTLE_AGENCIES.find(a => a.id === agencyId)
   if (!agency) throw new Error(`unknown shuttle agency ${agencyId}`)
-  return agency.kind === 'transloc' ? parseTransloc(agency) : parsePassioGtfs(agency)
+  switch (agency.kind) {
+    case 'transloc': return parseTransloc(agency)
+    case 'moovs': return parseMoovs(agency)
+    case 'wp-128bc': return parseWp128bc(agency)
+    default: return parseGtfsZip(agency)
+  }
 }
 
-const durableFeed = unstable_cache(loadFeed, ['nearby-shuttle-feed-v2'], {
+const durableFeed = unstable_cache(loadFeed, ['nearby-shuttle-feed-v3'], {
   revalidate: CACHE_TTL_MS / 1000,
 })
 
