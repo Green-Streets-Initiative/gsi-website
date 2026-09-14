@@ -151,6 +151,37 @@
       "messaging_notes": "These pages must earn the click by answering the campus question first — the pass subsidy, the bike co-op, the shuttle — and only then invite students into Shift. Cite the source for every campus perk so the facts stay checkable. Students arrive without a car in the picture at all, so there is nothing to compare against: lead with what is already free or subsidized for them. This cluster sits ahead of town-commuters in this file on purpose — bucketing takes the first matching cluster, and 'boston university bike' would otherwise fall to the town patterns."
     },
     {
+      "id": "roams-trails",
+      "audience": "People looking up a specific named local route — the Fresh Pond loop, the Emerald Necklace, the Minuteman, the Community Path — usually to find out how long it is, where it starts, and what it is like to walk or ride. Discovered in the 2026-09-14 pulse: twelve /shift/roams pages took 852 impressions and 12 of the site's 21 clicks (57%) in the week to 2026-09-11, and the named-route queries behind them were all filed as unmatched noise.",
+      "intent": "informational",
+      "priority": 1,
+      "queries": [
+        "how long is the fresh pond loop",
+        "fresh pond loop distance",
+        "emerald necklace trail",
+        "minuteman bikeway",
+        "community path somerville",
+        "marblehead rail trail",
+        "charles river loop walk",
+        "mass central rail trail"
+      ],
+      "gsc_patterns": [
+        "(fresh pond|emerald necklace|minuteman|community path|charles river|freedom (stroll|walk|trail)|marblehead|silvio conte|fort river|mass central rail trail|mcrt|watertown branch|wwii veterans memorial)",
+        "(how long|how far|distance|miles|length) .*(loop|trail|path|greenway|bikeway|walk|ride)",
+        "(loop|trail|path|greenway|bikeway) .*(how long|how far|distance|miles|length|map|start|parking)",
+        "(walking|running|biking|bike|cycling) (loop|route|trail|tour) .*(boston|cambridge|somerville|brookline|arlington|medford|newton|watertown)"
+      ],
+      "target_urls": ["/shift/roams", "/shift/towns", "/nearby"],
+      "proposed_assets": [
+        "The twelve /shift/roams/<id> pages already exist and rank around position 8 for these queries. First lever: put the distance in the title, since the query is usually a request for that number (see the 2026-09-14 report, item 2)."
+      ],
+      "aeo_questions": [
+        "How long is the Fresh Pond loop?",
+        "Where does the Minuteman Bikeway start and end?"
+      ],
+      "messaging_notes": "These searchers already intend to walk or ride — there is nothing to persuade. Answer the factual question first (distance, surface, where it starts, how to get there without driving) and let the route itself do the inviting. Like students-campus, this cluster sits ahead of town-commuters on purpose: bucketing takes the first matching cluster, and 'community path somerville' or 'minuteman' would otherwise fall to the town patterns and be read as town-page demand. Note when comparing to earlier runs that town-commuters figures before 2026-09-14 include some of this traffic."
+    },
+    {
       "id": "town-commuters",
       "audience": "Boston-area residents searching for how to walk/bike/ride transit in their specific town — the core organic asset.",
       "intent": "informational",
