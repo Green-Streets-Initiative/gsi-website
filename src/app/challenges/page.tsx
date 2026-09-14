@@ -4,6 +4,7 @@ import Footer from '@/components/Footer'
 import PageHero from '@/components/org/PageHero'
 import ChallengeRow from '@/components/challenges/ChallengeRow'
 import ChallengesEmpty from '@/components/challenges/ChallengesEmpty'
+import ArchiveSection from '@/components/challenges/ArchiveSection'
 import TrackedLink from '@/components/TrackedLink'
 import { LANE, RouteSegment } from '@/components/home/RouteLine'
 import { getPromotables } from '@/lib/campaigns'
@@ -43,11 +44,11 @@ function Section({
       <div className={`relative mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
         <RouteSegment shape={shape} />
         <div className="hidden md:block" />
-        <div className="py-12 lg:py-16">
+        <div className="py-7 lg:py-8">
           <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
             {title}
           </h2>
-          <ul className="mt-8 border-t border-navy/15">
+          <ul className="mt-6 border-t border-navy/15">
             {items.map((p) => (
               // The section owns the phase, so heading and copy always agree.
               <ChallengeRow key={p.id} p={p} phase={phase} />
@@ -90,20 +91,21 @@ export default async function ChallengesPage() {
         <Section title="Happening now" shape="straight" items={active} phase="active" />
         <Section title="Coming up" shape="wanderRight" items={upcoming} phase="upcoming" />
         <Section title="Just wrapped" shape="wanderLeft" items={wrapped} phase="wrapped" />
+        <ArchiveSection />
 
         {/* Always renders, so the page is never bare. */}
         <section className="relative overflow-x-clip bg-white">
           <div className={`relative mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
             <RouteSegment shape="terminal" />
             <div className="hidden md:block" />
-            <div className="py-16 lg:py-20">
+            <div className="pb-20 pt-8 lg:pb-24 lg:pt-10">
               <h2 className="max-w-[620px] font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.15] text-navy">
                 Every challenge runs on the same thing: <em className="text-green-deep">one shifted trip.</em>
               </h2>
               <p className="mt-5 max-w-[560px] text-[1.0625rem] leading-[1.65] text-ink-soft">
                 Shift counts your trips automatically. For most of these, all you have to do is go.
               </p>
-              <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-[15px]">
+              <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 text-[15px]">
                 <TrackedLink
                   href="/shift"
                   placement="challenges_hub"
