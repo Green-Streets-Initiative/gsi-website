@@ -43,6 +43,16 @@
   "watch_list": [
     {
       "since": "2026-09-14",
+      "what": "ROAM DISTANCES ARE NOW THE HEADLINE, so they need to be right. /shift/roams/fresh-pond-loop reports 1.5 miles and its hook says it circles the reservoir on the paved perimeter path — but Cambridge Outdoors puts that perimeter at 2.25 miles and AllTrails at 2.5. Either the route is a partial loop the hook oversells, or the stored distance is short. Times look internally consistent with mode across the other roams (4.1 mi / 27 min reads as biking, 5.7 mi / 90 min as walking), so this does not look systematic.",
+      "action": "Ask Keith to spot-check a handful of distance_miles values against the real routes, starting with fresh-pond-loop. Not a reason to revert exp-2026-09-5 — surfacing the number is what made the discrepancy visible."
+    },
+    {
+      "since": "2026-09-14",
+      "what": "ONLY 12 OF 26 PUBLISHED ROAM PAGES have appeared in Search Console. The corrected health check counts 26 in the sitemap; the week to 2026-09-11 shows twelve. exp-2026-09-5's base of 852 impressions therefore covers under half the inventory, and the class total will grow from indexing alone.",
+      "action": "When calling exp-2026-09-5 on 2026-10-26, separate 'more pages indexed' from 'better CTR per page' — read CTR on the twelve pages that were already indexed on 2026-09-11, not just the class total."
+    },
+    {
+      "since": "2026-09-14",
       "what": "THE ROAM RAMP. /shift/roams went 1 page / 51 impressions / 1 click (wk to 2026-08-28) -> 3 / 147 / 3 -> 12 / 852 / 12 (wk to 2026-09-11). It is 21% of impressions and 57% of all clicks, at 1.41% CTR against a 0.53% site average; /shift/roams/emerald-necklace hit 6.17%, the best any page has recorded. Some of the ramp is simply new pages being indexed, so the per-page CTR matters more than the class total.",
       "action": "Report /shift/roams impressions, clicks and CTR every weekly pulse, and separate 'more pages' from 'better pages' — track CTR on the six pages that were already indexed on 2026-09-11 as well as the class total."
     },
