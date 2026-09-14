@@ -1,7 +1,6 @@
 import PhoneShell, { BEZEL, SCREEN_WIDTH } from './PhoneShell'
 import {
   AroundYouCard,
-  ConfirmTripsCard,
   Greeting,
   NewRoutesStrip,
   RecentTripsCard,
@@ -56,7 +55,6 @@ export default function ShiftHomeMockup({
             <Greeting name={name} />
             <AroundYouCard />
             <UpNextCard />
-            <ConfirmTripsCard />
             <StatusBar />
             <NewRoutesStrip />
             <RecentTripsCard />

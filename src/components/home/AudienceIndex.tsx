@@ -1,7 +1,7 @@
 import { ArrowRight } from '@phosphor-icons/react/dist/ssr'
 import TrackedLink from '@/components/TrackedLink'
 import type { Audience } from './tracking'
-import { Eyebrow, LANE, RouteSegment } from './RouteLine'
+import { LANE, RouteSegment } from './RouteLine'
 
 const ROWS: { label: string; body: string; href: string; audience: Audience }[] = [
   { label: 'For employers', body: 'Run a workplace challenge with real participation data.', href: '/shift/employers', audience: 'employer' },
@@ -18,14 +18,15 @@ export default function AudienceIndex() {
       <div className={`relative mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
         <RouteSegment shape="wanderLeft" />
         <div className="hidden md:block" />
-        <div className="grid gap-10 py-20 lg:grid-cols-[1fr_2fr] lg:gap-16 lg:py-28">
+        <div className="grid gap-8 py-10 lg:grid-cols-[1fr_2fr] lg:gap-16 lg:py-12">
           <div className="relative lg:sticky lg:top-24 lg:self-start">
-            <Eyebrow>Who it&rsquo;s for</Eyebrow>
+            {/* No eyebrow: the heading already says what the section is. */}
             <h2 className="font-serif text-[clamp(2.25rem,4.5vw,3.5rem)] font-normal leading-[1.05] text-navy">
-              Made for the <em className="text-green-deep">whole</em> street.
+              Which one <em className="text-green-deep">are you?</em>
             </h2>
             <p className="mt-5 max-w-[380px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              One app for the person on the sidewalk, and programs for the places that shape where they can go.
+              Walkers, bikers, and riders get the app. Employers, schools, towns, and local businesses get a
+              program. Sponsors and donors keep it all going.
             </p>
           </div>
 

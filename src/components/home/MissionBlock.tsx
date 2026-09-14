@@ -16,7 +16,7 @@ export default function MissionBlock() {
       <div className={`relative mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
         <RouteSegment shape="wanderRight" />
         <div className="hidden md:block" />
-        <div className="relative max-w-[860px] py-20 lg:py-28">
+        <div className="relative max-w-[860px] py-10 lg:py-12">
           <Eyebrow>Green Streets Initiative</Eyebrow>
           <h2 className="font-serif text-[clamp(1.75rem,3.6vw,2.75rem)] font-normal leading-[1.2] text-navy">
             We help people <em className="text-green-deep">shift trips</em>{' '}
@@ -24,12 +24,12 @@ export default function MissionBlock() {
             ways of getting around &mdash; and we measure the impact, <em className="text-green-deep">trip by trip</em>,
             community by community.
           </h2>
-          <p className="mt-8 max-w-[620px] text-[1.0625rem] leading-[1.65] text-ink-soft">
+          <p className="mt-6 max-w-[620px] text-[1.0625rem] leading-[1.65] text-ink-soft">
             We started in 2006 with a monthly Walk/Ride Day in Cambridge. Twenty years on, the same idea runs
             through everything we do: make the better trip the easy one, then show people what it added up to.
           </p>
 
-          <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-4">
+          <ul className="mt-8 flex flex-wrap gap-x-8 gap-y-4">
             {PROGRAMS.map((p) => (
               <li key={p.href}>
                 <TrackedLink

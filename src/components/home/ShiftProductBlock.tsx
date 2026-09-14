@@ -3,7 +3,7 @@ import type { Icon } from '@phosphor-icons/react'
 import StoreButtons from '@/components/StoreButtons'
 import TrackedLink from '@/components/TrackedLink'
 import ShiftWordmark from '@/components/brand/ShiftWordmark'
-import { AroundYouCard, StatusBar, UpNextCard } from '@/components/shift-mockup'
+import { RecentTripsCard, StatusBar } from '@/components/shift-mockup'
 import { LANE, RouteSegment } from './RouteLine'
 
 const STOPS: { icon: Icon; title: string; body: string }[] = [
@@ -30,12 +30,13 @@ export default function ShiftProductBlock({ iosUrl, androidUrl }: { iosUrl: stri
       <div className={`relative mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
         <RouteSegment shape="wanderRight" tone="dark" />
         <div className="hidden md:block" />
-        <div className="grid items-center gap-12 py-20 lg:grid-cols-[5fr_7fr] lg:gap-16 lg:py-28">
-          {/* Cards at native scale, no phone shell */}
+        <div className="grid items-center gap-10 py-10 lg:grid-cols-[5fr_7fr] lg:gap-16 lg:py-12">
+          {/* The lower half of the home screen at native scale, no phone shell:
+              status and streak, then the trips it counted. The hero already
+              shows the live "around you" card, so it is not repeated here. */}
           <div className="order-2 flex w-full max-w-[402px] flex-col gap-3 justify-self-center font-display lg:order-1 lg:justify-self-start">
-            <AroundYouCard />
-            <UpNextCard />
             <StatusBar />
+            <RecentTripsCard />
           </div>
 
           <div className="relative order-1 lg:order-2">
@@ -50,7 +51,7 @@ export default function ShiftProductBlock({ iosUrl, androidUrl }: { iosUrl: stri
               and turns it into money saved and perks worth having.
             </p>
 
-            <ol className="mt-9 flex flex-col gap-6">
+            <ol className="mt-8 flex flex-col gap-5">
               {STOPS.map((s) => (
                 <li key={s.title} className="flex gap-4">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-teal/50 text-teal">
@@ -64,7 +65,7 @@ export default function ShiftProductBlock({ iosUrl, androidUrl }: { iosUrl: stri
               ))}
             </ol>
 
-            <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="product" className="mt-10" />
+            <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="product" className="mt-8" />
             <p className="mt-4 text-[14px] text-white">
               <TrackedLink href="/shift" placement="product" audience="individual" className="font-semibold text-teal underline-offset-4 hover:underline">
                 Everything Shift does &rarr;

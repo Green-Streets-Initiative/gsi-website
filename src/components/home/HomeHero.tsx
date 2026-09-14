@@ -9,9 +9,9 @@ export default function HomeHero({ iosUrl, androidUrl }: { iosUrl: string; andro
       <div className={`relative mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
         <RouteSegment shape="wanderLeft" />
         <div className="hidden md:block" />
-        <div className="grid items-start gap-10 pt-14 md:pt-20 lg:grid-cols-[7fr_5fr] lg:gap-6 lg:pt-24">
+        <div className="grid items-start gap-8 pt-12 md:pt-16 lg:grid-cols-[7fr_5fr] lg:gap-6">
           {/* Copy */}
-          <div className="relative pb-10 lg:pb-24">
+          <div className="relative pb-8 lg:pb-10">
             <Eyebrow>A Massachusetts nonprofit since 2006</Eyebrow>
             <h1 className="font-serif text-[clamp(2.75rem,7vw,5rem)] font-normal leading-[1.0] tracking-[-0.01em] text-navy">
               Every trip counts.
@@ -31,9 +31,11 @@ export default function HomeHero({ iosUrl, androidUrl }: { iosUrl: string; andro
             </p>
           </div>
 
-          {/* Phone: sits into the ledger rule below on desktop; a cropped glimpse on mobile. */}
+          {/* Phone, cropped to the live "around you" card: the hero shows what is
+              moving near you; the product block below shows what the trips add up
+              to. Between them the screen appears once, not twice. */}
           <div className="relative flex justify-center lg:justify-end">
-            <div className="relative max-h-[430px] overflow-hidden md:max-h-[566px] lg:max-h-[648px]
+            <div className="relative max-h-[235px] overflow-hidden md:max-h-[295px] lg:max-h-[320px]
                  [mask-image:linear-gradient(to_bottom,black_calc(100%-36px),transparent)]
                  lg:[mask-image:linear-gradient(to_bottom,black_calc(100%-14px),transparent)]">
               <ShiftHomeMockup />
