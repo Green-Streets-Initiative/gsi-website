@@ -105,10 +105,9 @@ const en: Dict = {
   'detail.bus_stop': 'Bus stop',
   'detail.ferry_terminal': 'Ferry terminal',
   'detail.shuttle_stop': 'Shuttle stop',
-  // Operator + who may board. A shuttle stop looks like any bus stop on
-  // the map, so the page names the operator and says whether a rider
-  // without a campus ID can actually use it.
-  'detail.shuttle_operator': '{operator} — campus & workplace shuttle',
+  // Who may board. A shuttle stop looks like any bus stop on the map, so
+  // the page names the operator and says whether a rider without a campus
+  // ID can actually use it.
   'shuttle.access_public': 'Open to everyone · no fare',
   'shuttle.access_public_fare': 'Open to everyone · fare applies, no CharlieCard',
   'shuttle.access_id': '{operator} ID required to board',
@@ -408,7 +407,6 @@ const es: Dict = {
   "detail.bus_stop": "Parada de bus",
   "detail.ferry_terminal": "Terminal de ferry",
   "detail.shuttle_stop": "Parada de shuttle",
-  "detail.shuttle_operator": "{operator} — shuttle de campus y trabajo",
   "shuttle.access_public": "Abierto a todo el mundo · sin tarifa",
   "shuttle.access_public_fare": "Abierto a todo el mundo · se paga tarifa, no acepta CharlieCard",
   "shuttle.access_id": "Se necesita identificación de {operator} para subir",
@@ -686,7 +684,6 @@ const ptBR: Dict = {
   "detail.bus_stop": "Parada de ônibus",
   "detail.ferry_terminal": "Terminal de balsa",
   "detail.shuttle_stop": "Ponto de shuttle",
-  "detail.shuttle_operator": "{operator} — shuttle de campus e trabalho",
   "shuttle.access_public": "Aberto a todo mundo · sem tarifa",
   "shuttle.access_public_fare": "Aberto a todo mundo · cobra tarifa, não aceita CharlieCard",
   "shuttle.access_id": "É preciso identificação da {operator} para embarcar",
@@ -964,7 +961,6 @@ const zhHans: Dict = {
   "detail.bus_stop": "公交站",
   "detail.ferry_terminal": "渡轮码头",
   "detail.shuttle_stop": "班车站",
-  "detail.shuttle_operator": "{operator} — 校园及园区班车",
   "shuttle.access_public": "向所有人开放 · 免费乘坐",
   "shuttle.access_public_fare": "向所有人开放 · 需付车费，不接受 CharlieCard",
   "shuttle.access_id": "需出示 {operator} 证件才能乘车",

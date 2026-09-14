@@ -39,9 +39,7 @@ export function ShuttleOperatorLines({
   if (variant === 'detail') {
     return (
       <span className={`block text-[0.78rem] leading-snug ${className}`}>
-        <span className="block text-white/80">
-          {tr('detail.shuttle_operator', { operator: agency.name })}
-        </span>
+        <span className="block text-white/80">{agency.name}</span>
         <span className="block text-white/75">{access}</span>
       </span>
     )
