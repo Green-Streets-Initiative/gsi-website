@@ -51,6 +51,13 @@ describe('rideStyle', () => {
     assert.equal(ride('Cycle with MIT Club of Boston'), null)
   })
 
+  it("does not read 'advanced registration' as an advanced ride", () => {
+    assert.equal(ride('Intro-to-Bluebikes Group Ride', {
+      description: 'A short Bluebikes demo followed by a beginner-friendly group ride around the neighborhood. Advanced registration is required.',
+    }), 'easy')
+    assert.equal(ride('Needham Advanced Road Ride'), 'rec')
+  })
+
   it("lets the organizer's own pace band win", () => {
     assert.equal(ride('Needham Intermediate Road Ride', { distanceText: '25 miles', pace: 'relaxed' }), 'easy')
     assert.equal(ride('Slow Social Roll', { pace: 'fast' }), 'rec')

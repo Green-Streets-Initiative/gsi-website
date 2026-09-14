@@ -39,7 +39,7 @@ export interface RideStyleInput {
 
 /** Recreational riding: a sport, not a way of getting somewhere. */
 const REC_WORDS =
-  /\b(road ride|road bike|gravel|mtb|mountain bik\w*|singletrack|intermediate|advanced|paceline|drop ride|training ride|club ride|century|metric century|race|time trial|spirited|fast[- ]paced)\b/i
+  /\b(road ride|road bike|gravel|mtb|mountain bik\w*|singletrack|intermediate|advanced(?!\s+(?:registration|sign[- ]?up|reservation|booking|tickets?))|paceline|drop ride|training ride|club ride|century|metric century|race|time trial|spirited|fast[- ]paced)\b/i
 
 /** Rides that welcome someone on their third ever bike ride. */
 const EASY_WORDS =
