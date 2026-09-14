@@ -43,8 +43,8 @@
   "watch_list": [
     {
       "since": "2026-09-14",
-      "what": "ROAM DISTANCES ARE NOW THE HEADLINE. Audited 2026-09-14 at Keith's request with scripts/seo/audit-roam-distances.mjs (seo/reports/2026-09-14-roam-audit.md). It compares each Roam's distance_miles against ITS OWN stored route_geometry, never against an outside figure for a trail's full length — Keith's framing: a Roam is an achievable experience, not an infrastructure audit, so a Roam covering part of a trail is not wrong. Result: 18/25 clean. (A) fresh-pond-loop stated 1.5 mi, stored loop 2.45 mi — legs were straight lines between four stops on a circle; recommend 2.5 mi / ~50 min. (B) mcrt-sudhud, battle-road-trail, manhan-rail-trail: number right, stored route SHORTER than the straight line through its own stops = geometry truncated; map problem only. (C) wwii-veterans-memorial-trail: stored route 5.67 mi vs Roam 3.4 mi at a correct bike pace — likely the whole trail drawn for a partial Roam, Keith's call. harbor-islands: 18.1 mi is ferry mileage, geometry is stop-to-stop lines; question is whether ferry miles should headline a title. (D) charles-loop: named 'Loop', route does not close. Leg sums match every stated total, so none are typos.",
-      "action": "Fixes go through Roam data in the Shift project (website is read-only on it); the site, snippet, JSON-LD and llms.txt update within the hour once distance_miles changes. Fresh Pond first — 265 impressions/week and its title says 1.5. Re-run the audit script whenever a Roam is added or geometry changes; it is allowlisted under scripts/seo/. Do NOT re-flag slow paces — a museum hop at 1.2 mph is the point of the trip; only a too-fast pace signals a wrong number."
+      "what": "ROAM DISTANCES RESOLVED 2026-09-14. All seven audit flags fixed the same day via Shift migrations 00918-00920, 00922-00924 (one at a time, each verified in prod), report seo/reports/2026-09-14-roam-audit.md \"Resolved\". Re-run of scripts/seo/audit-roam-distances.mjs: 0 of 25 flagged. Live titles refreshed within the hour.",
+      "action": "Re-run the audit script when a Roam is added or geometry changes. Keith still owes the on-device map check after a force-quit for the three rebuilt trails. Retire this item after the 2026-09-21 pulse confirms nothing regressed."
     },
     {
       "since": "2026-09-14",
@@ -93,6 +93,12 @@
     }
   ],
   "resolved_notes": [
+    {
+      "date": "2026-09-14",
+      "what": "Roam corrections: roams.distance_miles is a TRIGGER-COMPUTED sum of roam_legs.distance_miles (Shift 00282/00283) — setting it directly is not durable. Leg distances are measured along route_geometry by polyline_distance_miles(). Three trail maps (mcrt-sudhud, manhan, battle-road) were short because 00434 OSM lines ended before a required stop; legs past the end read 0.00 until the safe-route selector patched them with straight lines on 2026-05-20. Harbor Islands: Spectacle checkpoint had been moved in prod after the seed — repo coordinates were stale.",
+      "fix": "Six Shift migrations (00918, 00919, 00920, 00922, 00923, 00924) applied with `supabase db push --yes` from the Shift repo, each pre-flighted (jsonb_typeof, md5, live checkpoints, dry-run of the leg recompute) and verified after. New Shift tools: scripts/db-query.mjs (read-only SQL file vs prod via the management API) and scripts/build-roam-route.mjs (00616 method as a script). Every migration is re-run safe.",
+      "do_not": "Do not trust repo migrations for CURRENT roam data — read live rows (checkpoints moved in prod). Do not push two migrations at once when working one-at-a-time: `db push` applies every pending file. Check `ls supabase/migrations | tail` right before each push: another session took 00921 mid-run and the CLI recorded their number while my body applied unrecorded. Do not write `%%` in PL/pgSQL RAISE strings (the audit's first 00921 attempt failed on exactly that). Never use /admin/roams for these edits (it nulls route_geometry on save)."
+    },
     {
       "date": "2026-09-14",
       "what": "UTM consolidation completed. Parameterized ?utm_content= rows in the page table went 6 (wk to 2026-09-04) -> 0 (wk to 2026-09-11). Every town page now reports on one clean URL: cambridge-ma 113, somerville-ma 113, brookline-ma 82, boston-ma 63, everett-ma 63, newton-ma 62. Two weeks from ship to full resolution; no escalation needed.",

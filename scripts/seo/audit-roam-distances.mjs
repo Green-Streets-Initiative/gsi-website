@@ -121,8 +121,8 @@ async function main() {
   const ids = roams.map((r) => r.id)
   const inList = `(${ids.map((s) => `"${s}"`).join(',')})`
   const [checkpoints, legs] = await Promise.all([
-    select('roam_checkpoints', `select=roam_id,label,lat,lng,required,sequence_order&roam_id=in.${inList}&order=sequence_order.asc`),
-    select('roam_legs', `select=roam_id,sequence_order,leg_type,estimated_minutes,distance_miles,selected_polyline&roam_id=in.${inList}&order=sequence_order.asc`),
+    select('roam_checkpoints', `select=id,roam_id,label,lat,lng,required,sequence_order&roam_id=in.${inList}&order=sequence_order.asc`),
+    select('roam_legs', `select=roam_id,sequence_order,leg_type,estimated_minutes,distance_miles,selected_polyline,from_checkpoint_id,to_checkpoint_id&roam_id=in.${inList}&order=sequence_order.asc`),
   ])
   const cpBy = new Map()
   for (const c of checkpoints) (cpBy.get(c.roam_id) ?? cpBy.set(c.roam_id, []).get(c.roam_id)).push(c)
@@ -132,7 +132,9 @@ async function main() {
   const rows = roams.map((r) => {
     const geom = toLngLat(r.route_geometry)
     const geomMi = geom ? pathMi(geom) : null
-    const closesLoop = geom ? haversineMi(geom[0], geom[geom.length - 1]) < 0.15 : null
+    // 0.4 mi, not 0.15: a bikeshare loop that ends at a dock a few blocks from the
+    // start (Charles River Bike Path Loop, 0.35 mi) is still a loop to the rider.
+    const closesLoop = geom ? haversineMi(geom[0], geom[geom.length - 1]) < 0.4 : null
 
     const rl = legBy.get(r.id) ?? []
     const legMiVals = rl.map((l) => l.distance_miles).filter((x) => typeof x === 'number')
@@ -147,10 +149,31 @@ async function main() {
     const req = (cpBy.get(r.id) ?? []).filter((c) => c.required && typeof c.lat === 'number' && typeof c.lng === 'number')
     const chainMi = req.length >= 2 ? pathMi(req.map((c) => [c.lng, c.lat])) : null
 
+    // The Roam is the stretch its LEGS cover: from the first leg's start to the
+    // last leg's end. That is what the stated distance is built from (the roam
+    // total is the sum of the legs). A polyline that runs on past the last leg
+    // to an optional bonus stop the legs do not visit (WWII Veterans -> Woodward
+    // Forest) is not a distance error — it is a map showing the trail
+    // continuing — so that remainder is reported as a tail. A bonus stop the
+    // legs DO run to (Charles Loop -> Scull & Keel) is inside the span.
+    let coreMi = null, tailMi = null
+    const allCps = cpBy.get(r.id) ?? []
+    const cpById = new Map(allCps.map((c) => [c.id, c]))
+    const chainStart = rl.length ? cpById.get(rl[0].from_checkpoint_id) : null
+    const chainEnd = rl.length ? cpById.get(rl[rl.length - 1].to_checkpoint_id) : null
+    if (geom && chainStart && chainEnd) {
+      // first stop: earliest nearest vertex; last stop: latest nearest vertex, so a
+      // closed loop (first == last coords, Fresh Pond) spans the whole line
+      const nearestIdx = (c, preferLast) => { let bi = 0, bd = Infinity; geom.forEach((p, i) => { const d = haversineMi(p, [c.lng, c.lat]); if (preferLast ? d <= bd : d < bd) { bd = d; bi = i } }); return bi }
+      const a = nearestIdx(chainStart, false), b = nearestIdx(chainEnd, true)
+      if (b > a + 1) { coreMi = pathMi(geom.slice(a, b + 1)); tailMi = geomMi - coreMi }
+      else { coreMi = geomMi; tailMi = 0 }
+    }
+
     const stated = r.distance_miles
     // Best available measurement of OUR route, in order of trust.
-    const measured = geomMi ?? legPolyMi ?? legMi ?? null
-    const measuredFrom = geomMi != null ? 'route_geometry' : legPolyMi != null ? 'leg polylines' : legMi != null ? 'leg sum' : null
+    const measured = coreMi ?? geomMi ?? legPolyMi ?? legMi ?? null
+    const measuredFrom = coreMi != null ? (tailMi > 0.1 ? `route_geometry, leg span; +${r1(tailMi)} mi tail beyond the last leg` : 'route_geometry') : geomMi != null ? 'route_geometry' : legPolyMi != null ? 'leg polylines' : legMi != null ? 'leg sum' : null
     const diffMi = stated != null && measured != null ? stated - measured : null
     const diffPct = diffMi != null && measured > 0 ? (diffMi / measured) * 100 : null
 
@@ -192,6 +215,8 @@ async function main() {
       stated_minutes: r.estimated_minutes,
       measured_miles: r2(measured),
       measured_from: measuredFrom,
+      full_polyline_miles: r2(geomMi),
+      bonus_tail_miles: r2(tailMi),
       geometry_points: geom?.length ?? 0,
       diff_miles: r2(diffMi),
       diff_pct: r1(diffPct),

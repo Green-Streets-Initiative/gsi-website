@@ -93,23 +93,68 @@ hour; nothing on the website needs editing.
 
 ---
 
-## Full table
+## Resolved — 2026-09-14, same day
+
+Keith approved all four decisions (honest water miles for Harbor Islands; Fresh
+Pond becomes a walk; all three map rebuilds now; Charles Loop left alone) and
+asked that each fix be validated against the Shift data first. Two exploration
+passes over the Shift repo changed the method: `roams.distance_miles` is a
+trigger-computed sum of the legs, so every fix went through the **leg**
+distances, re-measured along the stored route with the database's own
+`polyline_distance_miles()`; and the three "map is short" Roams shared one
+cause — migration 00434's OSM lines ended 0.6–2.5 km before a required stop.
+
+Six migrations in the Shift project, applied one at a time, each verified in
+production before the next:
+
+| # | Roam | Before | After | What changed |
+|---|---|---|---|---|
+| 00918 | WWII Veterans Memorial Trail | region "Agawam · Feeding Hills" | **"Mansfield · Norton"** | The wrong town was in the live title. Distance 3.4 kept — the 5.7-mi line runs on to the optional Woodward Forest stop, which is the framing working as intended. |
+| 00919 | Fresh Pond Loop | 1.5 mi / 34 min / multi | **2.5 mi / 50 min / walk** | Legs were straight chords through four points on a circle; re-measured along the 367-point perimeter path (0.97 / 0.50 / 0.27 / 0.71). Geometry untouched, hash verified. |
+| 00920 | Harbor Islands Hop | 18.1 mi (leg 2 = 9.96) | **13.6 mi** (4.08 / 2.89 / 6.59) | Spectacle Island had been moved in production after the seed; the line reached it but never Georges, so leg 2 was a leftover. Straight-line ferry chain through the four live stops; leg minutes 20 / 14 / 33 (leg 1 now matches the copy's "20 minutes"). |
+| 00922 | Sudbury to Hudson | map ended 2.5 km short | **5.4 mi, 50 pts, ends on the bridge** | Extended to Fort Meadow Brook Bridge on the exact OSM vertex 00414 named. Copy no longer promises the Assabet refuge (its stop was deleted in 00414); hook rewritten. First pushed as 00921 and collided with another session's file — body applied, record re-homed. |
+| 00923 | Manhan Rail Trail | map started 1 km late | **4.4 mi, 68 pts** | Extended north from Coolidge Library to Historic Northampton on footway/cycleway (no Route 9). Copy: Arcadia and Mount Tom are optional side trips; hook no longer leads on them. |
+| 00924 | Battle Road Trail | 4.9 mi (leg 5 = 0.04) | **6.0 mi / 120 min, 156 pts, ends at the bridge** | Extended past The Wayside to the Old North Bridge on park path and footway plus 180 m of Court Lane / Monument Street. Copy says six miles and names the road stretch. |
+| — | Charles River Bike Path Loop | — | **no change** | A bikeshare loop that ends at a dock 0.35 mi from the start. Audit threshold loosened to 0.4 mi. |
+
+Live titles refreshed within the hour without any website change — e.g.
+"Fresh Pond Loop — a 2.5-mile guided walk route in Cambridge",
+"The Harbor Islands Hop — a 13.6-mile guided route in Boston Harbor".
+
+**Tools that now exist for next time** (Shift repo): `scripts/db-query.mjs`
+runs a read-only SQL file against production; `scripts/build-roam-route.mjs`
+is the 00616 method as a script — OSM relation + connector box, shortest path
+through the required stops, spur trimming, validation, and a printed list of
+the OSM ways the route uses so street sections can be checked by name.
+
+**Audit script refinements:** the loop threshold is 0.4 mi, and the stated
+distance is compared against the polyline span the legs actually cover; a
+line that runs on to a bonus stop the legs do not visit is reported as a tail,
+not an error. With that, the re-run reads **0 of 25 flagged**.
+
+**Still Keith's:** open each rebuilt Roam in the app after a force-quit and
+check the map through every stop (the bike comfort strips repopulate on first
+view). Validator notes that are structural, not errors: Desert Natural Area
+(507 m off-trail by design, 600 m radius), Old Trolley Line (249 m, 400 m
+radius), straight rail-bed legs that equal their chords, ferry legs likewise.
+
+## Full table, after
 
 | Roam | Mode | Stated | Measured | Δ | Stops floor | Loop? | Pace | Flags |
 |---|---|---|---|---|---|---|---|---|
 | [A City of Squares](https://www.gogreenstreets.org/shift/roams/roam-1776607065055) | multi | 4 mi / 36 min | 4.09 mi (route_geometry, 651 pts) | -0.09 (-2.3%) | 3.57 mi | open | 6.7 mph | ✓ |
-| [Battle Road Trail](https://www.gogreenstreets.org/shift/roams/battle-road-trail) | walk | 4.9 mi / 99 min | 3.87 mi (route_geometry, 124 pts) | +1.03 (+26.6%) | 4.55 mi | open | 3 mph | ⚠ stated is 1 mi LONGER than route<br>⚠ stored route (3.9 mi) is shorter than the straight line through its own stops (4.5 mi) — geometry incomplete |
-| [Charles River Bike Path Loop](https://www.gogreenstreets.org/shift/roams/charles-loop) | bike | 4.1 mi / 27 min | 4.15 mi (route_geometry, 89 pts) | -0.05 (-1.2%) | 2.6 mi | open (copy: loop) | 9.1 mph | ⚠ copy says loop, route does not return to start |
+| [Battle Road Trail](https://www.gogreenstreets.org/shift/roams/battle-road-trail) | walk | 6 mi / 120 min | 6 mi (route_geometry, 156 pts) | 0 (+0.1%) | 4.55 mi | open | 3 mph | ✓ |
+| [Charles River Bike Path Loop](https://www.gogreenstreets.org/shift/roams/charles-loop) | bike | 4.1 mi / 27 min | 4.15 mi (route_geometry, 89 pts) | -0.05 (-1.2%) | 2.6 mi | closes (copy: loop) | 9.1 mph | ✓ |
 | [Emerald Necklace Bike Route](https://www.gogreenstreets.org/shift/roams/emerald-necklace) | bike | 7.3 mi / 49 min | 7.34 mi (route_geometry, 1369 pts) | -0.04 (-0.5%) | 4.41 mi | open | 8.9 mph | ✓ |
-| [Fort River Trail (Silvio O. Conte Refuge)](https://www.gogreenstreets.org/shift/roams/fort-river-trail) | walk | 0.9 mi / 19 min | 0.98 mi (route_geometry, 69 pts) | -0.08 (-8.1%) | 0.67 mi | closes (copy: loop) | 2.8 mph | ✓ |
-| [Fresh Pond Loop](https://www.gogreenstreets.org/shift/roams/fresh-pond-loop) | multi | 1.5 mi / 34 min | 2.45 mi (route_geometry, 367 pts) | -0.95 (-38.7%) | 1.49 mi | closes (copy: loop) | 2.6 mph | ⚠ stated is 0.9 mi SHORTER than route |
+| [Fort River Trail (Silvio O. Conte Refuge)](https://www.gogreenstreets.org/shift/roams/fort-river-trail) | walk | 0.9 mi / 19 min | 0.91 mi (route_geometry, 69 pts) | -0.01 (-0.6%) | 0.67 mi | closes (copy: loop) | 2.8 mph | ✓ |
+| [Fresh Pond Loop](https://www.gogreenstreets.org/shift/roams/fresh-pond-loop) | walk | 2.5 mi / 50 min | 2.45 mi (route_geometry, 367 pts) | +0.05 (+2.2%) | 1.49 mi | closes (copy: loop) | 3 mph | ✓ |
 | [Harbor Walk to Eastie Eats](https://www.gogreenstreets.org/shift/roams/eastie-eats) | multi | 1.7 mi / 60 min | 1.72 mi (route_geometry, 245 pts) | -0.02 (-1%) | 1.27 mi | open | 1.7 mph | ✓ |
-| [Manhan Rail Trail](https://www.gogreenstreets.org/shift/roams/manhan-rail-trail) | bike | 4.3 mi / 29 min | 3.75 mi (route_geometry, 44 pts) | +0.55 (+14.8%) | 3.99 mi | open | 8.9 mph | ⚠ stored route (3.7 mi) is shorter than the straight line through its own stops (4 mi) — geometry incomplete |
+| [Manhan Rail Trail](https://www.gogreenstreets.org/shift/roams/manhan-rail-trail) | bike | 4.4 mi / 28 min | 4.43 mi (route_geometry, 68 pts) | -0.03 (-0.7%) | 3.99 mi | open | 9.4 mph | ✓ |
 | [Marblehead Rail Trail](https://www.gogreenstreets.org/shift/roams/marblehead-rail-trail) | bike | 5.5 mi / 39 min | 5.6 mi (route_geometry, 108 pts) | -0.1 (-1.7%) | 3.08 mi | open | 8.5 mph | ✓ |
-| [Mass Central Rail Trail: Sudbury to Hudson](https://www.gogreenstreets.org/shift/roams/mcrt-sudhud) | bike | 5.4 mi / 34 min | 3.84 mi (route_geometry, 34 pts) | +1.56 (+40.8%) | 5.52 mi | open | 9.5 mph | ⚠ stated is 1.6 mi LONGER than route<br>⚠ stored route (3.8 mi) is shorter than the straight line through its own stops (5.5 mi) — geometry incomplete |
+| [Mass Central Rail Trail: Sudbury to Hudson](https://www.gogreenstreets.org/shift/roams/mcrt-sudhud) | bike | 5.4 mi / 35 min | 5.39 mi (route_geometry, 50 pts) | +0.01 (+0.2%) | 5.52 mi | open | 9.3 mph | ✓ |
 | [Minuteman Bikeway](https://www.gogreenstreets.org/shift/roams/minuteman) | bike | 6.4 mi / 42 min | 6.39 mi (route_geometry, 88 pts) | +0.01 (+0.2%) | 5.88 mi | open | 9.1 mph | ✓ |
 | [Museum Hop](https://www.gogreenstreets.org/shift/roams/museum-hop) | multi | 3.6 mi / 180 min | 3.64 mi (route_geometry, 615 pts) | -0.04 (-1.2%) | 3.02 mi | open | 1.2 mph | ✓ |
-| [Mystic River Greenway (Alewife to Medford)](https://www.gogreenstreets.org/shift/roams/alewife-mystic-greenway) | bike | 6.7 mi / 41 min | 6.74 mi (route_geometry, 1191 pts) | -0.04 (-0.7%) | 4.87 mi | open | 9.8 mph | ✓ |
+| [Mystic River Greenway (Alewife to Medford)](https://www.gogreenstreets.org/shift/roams/alewife-mystic-greenway) | bike | 6.7 mi / 41 min | 6.74 mi (route_geometry, 1191 pts) | -0.04 (-0.6%) | 4.87 mi | open | 9.8 mph | ✓ |
 | [North Point to City Hall](https://www.gogreenstreets.org/shift/roams/north-point-city-hall) | bike | 1.6 mi / 10 min | 1.69 mi (route_geometry, 317 pts) | -0.09 (-5.1%) | 1.06 mi | open | 9.6 mph | ✓ |
 | [Salem by Rail](https://www.gogreenstreets.org/shift/roams/salem-by-rail) | transit | 16.6 mi / 240 min | 16.58 mi (route_geometry, 407 pts) | +0.02 (+0.1%) | 13.77 mi | open | 4.2 mph | ✓ |
 | [Shining Sea Bikeway](https://www.gogreenstreets.org/shift/roams/shining-sea-bikeway) | bike | 8.8 mi / 57 min | 8.62 mi (route_geometry, 68 pts) | +0.18 (+2.1%) | 7.97 mi | open | 9.3 mph | ✓ |
@@ -117,11 +162,11 @@ hour; nothing on the website needs editing.
 | [The B-Line Crawl](https://www.gogreenstreets.org/shift/roams/b-line-crawl) | transit | 0.9 mi / 90 min | 0.92 mi (route_geometry, 32 pts) | -0.02 (-2.5%) | 0.56 mi | open | 0.6 mph | ✓ |
 | [The Bakery Run](https://www.gogreenstreets.org/shift/roams/bakery-run) | transit | 5.7 mi / 90 min | 5.71 mi (route_geometry, 908 pts) | -0.01 (-0.3%) | 4.37 mi | open | 3.8 mph | ✓ |
 | [The Freedom Trail](https://www.gogreenstreets.org/shift/roams/freedom-stroll) | walk | 3.5 mi / 70 min | 3.53 mi (route_geometry, 151 pts) | -0.03 (-0.9%) | 2.15 mi | open | 3 mph | ✓ |
-| [The Harbor Islands Hop](https://www.gogreenstreets.org/shift/roams/harbor-islands) | multi | 18.1 mi / 420 min | 8.16 mi (route_geometry, 101 pts) | +9.94 (+121.8%) | 8.16 mi | closes | 2.6 mph | ⚠ stated is 9.9 mi LONGER than route |
+| [The Harbor Islands Hop](https://www.gogreenstreets.org/shift/roams/harbor-islands) | multi | 13.6 mi / 420 min | 13.56 mi (route_geometry, 112 pts) | +0.04 (+0.3%) | 8.16 mi | closes | 1.9 mph | ✓ |
 | [The Sunset Pedal](https://www.gogreenstreets.org/shift/roams/sunset-pedal) | bike | 1.6 mi / 10 min | 1.59 mi (route_geometry, 27 pts) | +0.01 (+0.4%) | 1.43 mi | open | 9.6 mph | ✓ |
 | [Twin Cities Rail Trail](https://www.gogreenstreets.org/shift/roams/twin-cities-rail-trail) | bike | 4.3 mi / 28 min | 4.11 mi (route_geometry, 70 pts) | +0.19 (+4.6%) | 4.23 mi | open | 9.2 mph | ✓ |
 | [Wachusett Greenways (Mass Central Rail Trail)](https://www.gogreenstreets.org/shift/roams/wachusett-greenways) | bike | 7.3 mi / 48 min | 7.26 mi (route_geometry, 108 pts) | +0.04 (+0.6%) | 5.7 mi | open | 9.1 mph | ✓ |
-| [WWII Veterans Memorial Trail](https://www.gogreenstreets.org/shift/roams/wwii-veterans-memorial-trail) | bike | 3.4 mi / 22 min | 5.67 mi (route_geometry, 39 pts) | -2.27 (-40.1%) | 3.1 mi | open | 9.3 mph | ⚠ stated is 2.3 mi SHORTER than route |
+| [WWII Veterans Memorial Trail](https://www.gogreenstreets.org/shift/roams/wwii-veterans-memorial-trail) | bike | 3.4 mi / 22 min | 3.37 mi (route_geometry, leg span; +2.3 mi tail beyond the last leg, 39 pts) | +0.03 (+1%) | 3.1 mi | open | 9.3 mph | ✓ |
 
 **How to read it.** *Stated* is what the page title, snippet and llms.txt now lead with. *Measured* is our own stored route, walked point to point. *Stops floor* is the straight-line chain through the required stops — a real route can only be longer than this, so a stated distance below it is wrong on its face. *Loop* is whether the stored route ends within 0.15 mi of where it starts; when the copy says "loop" or "circle" and the route is open, the copy is promising more than the route delivers. *Pace* is stated distance over stated time, sanity-checked against a wide band for the mode.
 
