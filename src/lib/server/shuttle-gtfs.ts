@@ -297,9 +297,15 @@ interface MoovsStop {
 
 /** "Sullivan Square Station – Outbound to Chelsea" → "Sullivan Square
  *  Station". The loop passes each stop in both directions, and a rider
- *  reading a map needs the place, not the leg. */
+ *  reading a map needs the place, not the leg.
+ *
+ *  The dash is optional: the operator types these by hand and some carry no
+ *  separator at all ("Anthem/Greystar Outbound via Chelsea"), which used to
+ *  survive as a second stop and put the same place in the list twice under
+ *  two different names. Requiring whitespace before the keyword keeps a stop
+ *  legitimately called "Outbound Terminal" intact. */
 function stripLoopDirection(name: string): string {
-  return name.replace(/\s*[–—-]\s*(inbound|outbound)\b.*$/i, '').trim() || name.trim()
+  return name.replace(/\s+(?:[–—-]\s*)?(inbound|outbound)\b.*$/i, '').trim() || name.trim()
 }
 
 async function parseMoovs(
@@ -453,11 +459,13 @@ async function loadFeed(agencyId: string): Promise<ParsedFeed> {
   }
 }
 
-// v4: ParsedRoute gained `stops`. The cache key MUST move whenever the
-// parsed shape changes — a stale v3 entry deserializes into a route with no
-// `stops` field, and every read of it throws into a .catch() that quietly
-// returns nothing. Symptom is not an error; it is the feature silently absent.
-const durableFeed = unstable_cache(loadFeed, ['nearby-shuttle-feed-v4'], {
+// The cache key MUST move whenever the parsed shape OR its contents change.
+// v4 added ParsedRoute.stops — a stale v3 entry deserialized into a route with
+// no `stops` field, every read of it threw into a .catch(), and the symptom
+// was not an error but the feature silently absent. v5 is the loop-direction
+// fix below: without a bump, cached stop names keep the old spelling for a
+// day and the Link lists the same place twice.
+const durableFeed = unstable_cache(loadFeed, ['nearby-shuttle-feed-v5'], {
   revalidate: CACHE_TTL_MS / 1000,
 })
 
