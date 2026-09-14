@@ -37,6 +37,24 @@ export interface EventOrganizer {
   url: string | null
 }
 
+/**
+ * The event to point a visitor at when the one they landed on is over.
+ * `series` is a future event with the same title — the ride that repeats.
+ * `organizer` is the next thing from the same host, for one-offs.
+ * Resolved server-side in `events-next.ts`; the type lives here so client
+ * components can hold it without importing a server-only module.
+ */
+export type NextUpKind = 'series' | 'organizer'
+
+export interface NextUp {
+  kind: NextUpKind
+  id: string
+  title: string
+  event_date: string
+  event_time: string | null
+  location_name: string | null
+}
+
 // ---------------------------------------------------------------------------
 // Event type metadata
 // ---------------------------------------------------------------------------

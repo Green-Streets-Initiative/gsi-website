@@ -5,12 +5,13 @@ import Link from 'next/link'
 import {
   MapPin, Calendar, Users,
   ChevronLeft, Bookmark, Share2, Globe, ExternalLink, Ticket,
-  Clock, Mail,
+  Clock, Mail, ArrowRight,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import {
-  type CommunityEvent, getTypeMeta, getTagMeta, formatTime, dateLong, isDeadline, parseEventDate,
+  type CommunityEvent, type NextUp,
+  getTypeMeta, getTagMeta, formatTime, dateLong, isDeadline, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
 } from '@/lib/events'
 
@@ -28,11 +29,66 @@ function withUtm(url: string): string {
   }
 }
 
-interface EventDetailProps {
-  event: CommunityEvent
+/**
+ * Most search traffic to these pages lands on an event that has already
+ * happened — the older a page is, the better it ranks, so the finished ones
+ * out-pull the upcoming ones. Rather than leave that visitor at a dead date,
+ * carry them to the next occurrence of the same ride, or failing that to the
+ * organizer's next event.
+ */
+function NextUpBanner({ nextUp }: { nextUp: NextUp | null }) {
+  const label = nextUp
+    ? `${dateLong(parseEventDate(nextUp.event_date))}${nextUp.event_time ? ` at ${formatTime(nextUp.event_time)}` : ''}`
+    : null
+
+  return (
+    <div className="mb-6 rounded-2xl border border-lime/30 bg-lime/[0.07] p-4 sm:mb-8 sm:p-5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-lime">
+        This one has passed
+      </p>
+
+      {nextUp && label ? (
+        <>
+          <Link
+            href={`/events/${encodeURIComponent(nextUp.id)}`}
+            className="mt-1.5 inline-flex items-center gap-1.5 font-display text-[19px] font-extrabold leading-tight text-white transition-opacity hover:opacity-80 sm:text-[22px]"
+          >
+            Next {nextUp.kind === 'series' ? 'one' : 'event'}: {label}
+            <ArrowRight size={18} className="shrink-0" />
+          </Link>
+          <p className="mt-1 text-[13px] text-white/75">
+            {nextUp.kind === 'series'
+              ? <>This one runs again{nextUp.location_name ? ` at ${nextUp.location_name}` : ''}.</>
+              : <>{nextUp.title}{nextUp.location_name ? ` · ${nextUp.location_name}` : ''}</>}
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="mt-1.5 font-display text-[19px] font-extrabold leading-tight text-white sm:text-[22px]">
+            No repeat scheduled yet
+          </p>
+          <Link
+            href="/events"
+            className="mt-1 inline-flex items-center gap-1.5 text-[13px] font-semibold text-lime transition-opacity hover:opacity-80"
+          >
+            See what&rsquo;s happening this week near you
+            <ArrowRight size={14} className="shrink-0" />
+          </Link>
+        </>
+      )}
+    </div>
+  )
 }
 
-export default function EventDetail({ event }: EventDetailProps) {
+interface EventDetailProps {
+  event: CommunityEvent
+  /** The next occurrence or the organizer's next event; null when neither exists. */
+  nextUp?: NextUp | null
+  /** Resolved server-side against Boston time, not the visitor's clock. */
+  isPast?: boolean
+}
+
+export default function EventDetail({ event, nextUp = null, isPast = false }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
   const evDate = parseEventDate(event.event_date)
@@ -91,6 +147,8 @@ export default function EventDetail({ event }: EventDetailProps) {
           <ChevronLeft size={16} />
           All events
         </Link>
+
+        {isPast && <NextUpBanner nextUp={nextUp} />}
 
         <div className={`grid gap-6 sm:gap-10 ${hasLeftColumn ? 'lg:grid-cols-2' : ''}`}>
           {/* ---- LEFT COLUMN ---- */}
