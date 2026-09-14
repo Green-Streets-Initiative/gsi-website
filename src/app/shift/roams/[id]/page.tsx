@@ -44,15 +44,35 @@ function truncateAtSentence(text: string, maxLen: number): string {
   return truncated.trimEnd() + '…'
 }
 
+/**
+ * "How long is the Fresh Pond loop?" is the query these pages actually rank for,
+ * so the distance leads both the title and the description. Same discipline as the
+ * campus titles: answer the question the searcher typed, then invite them in.
+ * Falls back to the previous wording whenever distance_miles is missing.
+ */
+function distancePhrase(miles: number | null): string | null {
+  if (miles == null || !Number.isFinite(miles) || miles <= 0) return null
+  // 2 -> "2", 2.25 -> "2.3" — one decimal is as precise as a route distance gets.
+  const rounded = Math.round(miles * 10) / 10
+  return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}-mile`
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
   const roam = await getRoamDetail(decodeURIComponent(id))
   if (!roam) return { title: 'Roam not found' }
-  const title = `${roam.name} — a guided ${roam.mode === 'multi' ? '' : `${roam.mode} `}route${roam.region ? ` in ${roam.region}` : ''} | Shift Roams`
-  const description =
+  const dist = distancePhrase(roam.distance_miles)
+  const title = `${roam.name} — a ${dist ? `${dist} ` : ''}guided ${roam.mode === 'multi' ? '' : `${roam.mode} `}route${roam.region ? ` in ${roam.region}` : ''} | Shift Roams`
+  const editorial =
     roam.hook ??
     (roam.description ? truncateAtSentence(roam.description, 160) : null) ??
-    `A guided ${roam.distance_miles ?? ''} mile route with ${roam.checkpoints.filter((c) => c.required).length} stops.`
+    `A guided ${roam.mode === 'multi' ? '' : `${roam.mode} `}route with ${roam.checkpoints.filter((c) => c.required).length} stops.`
+  // Lead the snippet with the facts the query asked for, then the editorial hook.
+  const facts = [
+    dist ? dist.replace('-mile', ' miles') : null,
+    roam.estimated_minutes ? `about ${roam.estimated_minutes} min` : null,
+  ].filter(Boolean).join(' · ')
+  const description = facts ? truncateAtSentence(`${facts} — ${editorial}`, 160) : editorial
   return {
     title,
     description,
@@ -297,6 +317,20 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
   const timeline = buildTimeline(requiredStops, roam.legs)
   const hasRouteContent = timeline.length > 0
 
+  // Answer-engine markup. The visible page already states the distance, the time
+  // and the stops; this says the same things in a form a machine can quote.
+  const routeFacts = [
+    roam.distance_miles != null && roam.distance_miles > 0
+      ? { '@type': 'PropertyValue', name: 'Distance', value: roam.distance_miles, unitCode: 'SMI' }
+      : null,
+    roam.estimated_minutes != null && roam.estimated_minutes > 0
+      ? { '@type': 'PropertyValue', name: 'Estimated time', value: roam.estimated_minutes, unitCode: 'MIN' }
+      : null,
+    requiredCount > 0
+      ? { '@type': 'PropertyValue', name: 'Stops', value: requiredCount }
+      : null,
+  ].filter(Boolean)
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
@@ -305,12 +339,48 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
     description: roam.hook ?? roam.description ?? undefined,
     ...(roam.hero_image_url ? { image: roam.hero_image_url } : {}),
     isPartOf: { '@type': 'WebSite', name: 'Green Streets Initiative', url: SITE_URL },
+    ...(routeFacts.length > 0 ? { additionalProperty: routeFacts } : {}),
+    ...(requiredStops.length > 0
+      ? {
+          mainEntity: {
+            '@type': 'TouristTrip',
+            name: roam.name,
+            description: roam.hook ?? roam.description ?? undefined,
+            ...(routeFacts.length > 0 ? { additionalProperty: routeFacts } : {}),
+            itinerary: {
+              '@type': 'ItemList',
+              numberOfItems: requiredStops.length,
+              itemListElement: requiredStops.map((stop, i) => ({
+                '@type': 'ListItem',
+                position: i + 1,
+                item: {
+                  '@type': 'Place',
+                  name: stop.label,
+                  ...(stop.description ? { description: stop.description } : {}),
+                  geo: { '@type': 'GeoCoordinates', latitude: stop.lat, longitude: stop.lng },
+                },
+              })),
+            },
+          },
+        }
+      : {}),
+  }
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Shift', item: `${SITE_URL}/shift` },
+      { '@type': 'ListItem', position: 2, name: 'Roams', item: `${SITE_URL}/shift/roams` },
+      { '@type': 'ListItem', position: 3, name: roam.name, item: `${SITE_URL}/shift/roams/${roam.id}` },
+    ],
   }
 
   return (
     <>
       <Nav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <main style={{ paddingTop: '60px' }} className="bg-[#191A2E]">
         {/* Hero image */}
         {roam.hero_image_url && (
