@@ -14,7 +14,7 @@ import FilterBar from './FilterBar'
 import AppliedFilters from './AppliedFilters'
 import MiniMonth from './MiniMonth'
 import Agenda, { AGENDA_PAGE } from './Agenda'
-import { TypePills, LocationControl, DistancePills, WhenPills, TagToggles } from './FilterControls'
+import { TypePills, LevelPills, LocationControl, DistancePills, WhenPills, TagToggles } from './FilterControls'
 import { useEventFilters } from './useEventFilters'
 import { useSavedEvents } from './useSavedEvents'
 
@@ -342,6 +342,10 @@ export default function EventsPage({ events }: EventsPageProps) {
           <div>
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/75">Event type</p>
             <TypePills value={f.typeFilter} counts={f.typeCounts} onChange={f.setTypeFilter} />
+          </div>
+          <div>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/75">Rides by level</p>
+            <LevelPills value={f.typeFilter} counts={f.typeCounts} onChange={f.setTypeFilter} />
           </div>
           <div>
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/75">Distance from you</p>

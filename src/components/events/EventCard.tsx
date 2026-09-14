@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Calendar, Bookmark } from 'lucide-react'
-import { type CommunityEvent, getTypeMeta, getTagMeta, formatTime, formatDistance, haversine, isDeadline, parseEventDate, dateShort } from '@/lib/events'
+import { type CommunityEvent, getTypeMeta, getTagMeta, formatTime, formatDistance, haversine, isDeadline, parseEventDate, dateShort, eventRideStyle, isNoDrop, RIDE_STYLE_LABEL, RIDE_STYLE_COLOR } from '@/lib/events'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 
 interface EventCardProps {
@@ -23,6 +23,9 @@ interface EventCardProps {
 export default function EventCard({ event, userLat, userLng, showDate, saved, onToggleSave, onOpen }: EventCardProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
+  // Easy / Moderate / Rec, only when the listing supports the call.
+  const level = eventRideStyle(event)
+  const noDrop = isNoDrop(event)
 
   const distance = event.location_lat && event.location_lng
     ? haversine(userLat, userLng, event.location_lat, event.location_lng)
@@ -87,6 +90,12 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
       <div className="min-w-0 flex-1">
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] lg:hidden" style={{ color: meta.color }}>
           {meta.label}
+          {level && (
+            <>
+              <span className="text-white/75"> · </span>
+              <span style={{ color: RIDE_STYLE_COLOR[level] }}>{RIDE_STYLE_LABEL[level]}</span>
+            </>
+          )}
         </p>
         <h3 className="mt-0.5 line-clamp-2 font-display text-[17px] font-bold leading-snug text-white sm:text-[18px] lg:mt-0 lg:line-clamp-1 lg:text-[16px]">
           {event.title}
@@ -96,10 +105,21 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
         </p>
         <p className="mt-0.5 hidden truncate text-[13px] leading-snug text-white/75 lg:block">
           <span className="font-medium" style={{ color: meta.color }}>{meta.label}</span>
+          {level && (
+            <>
+              {' · '}
+              <span className="font-medium" style={{ color: RIDE_STYLE_COLOR[level] }}>{RIDE_STYLE_LABEL[level]}</span>
+            </>
+          )}
           {metaPartsLg.length > 0 && ` · ${metaPartsLg.join(' · ')}`}
         </p>
-        {(event.ride_series_id || event.tags.length > 0) && (
+        {(event.ride_series_id || noDrop || event.tags.length > 0) && (
           <div className="mt-1.5 flex flex-wrap gap-1 lg:mt-1">
+            {noDrop && (
+              <span className="inline-block rounded-full bg-lime/15 px-2 py-0.5 text-[10px] font-semibold leading-tight text-lime">
+                No-drop
+              </span>
+            )}
             {/* Planned in the Shift app — riders can RSVP there rather than
                 following a link to somebody else's site. */}
             {event.ride_series_id && (

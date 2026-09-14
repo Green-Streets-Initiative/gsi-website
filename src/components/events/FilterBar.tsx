@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import { Bookmark, Search } from 'lucide-react'
-import { getTypeMeta, getTagMeta } from '@/lib/events'
+import { getTagMeta } from '@/lib/events'
 import FilterPill from './FilterPill'
 import { WhenList, LocationControl, DistancePills, TypeList, TagToggles } from './FilterControls'
-import { WHEN_OPTIONS, type EventFilters } from './useEventFilters'
+import { WHEN_OPTIONS, typeFilterLabel, type EventFilters } from './useEventFilters'
 
 /**
  * Desktop filter bar: one sticky row under the site nav. Search, then a pill
@@ -33,7 +33,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
       : f.distance !== 'all'
         ? `Within ${f.distance} mi`
         : 'Near'
-  const typeLabel = f.typeFilter === 'All' ? 'Type' : getTypeMeta(f.typeFilter).label
+  const typeLabel = f.typeFilter === 'All' ? 'Type' : typeFilterLabel(f.typeFilter)
   const tagLabel =
     f.tags.length === 0 ? 'Good for' : f.tags.length === 1 ? getTagMeta(f.tags[0]).label : `Good for · ${f.tags.length}`
 

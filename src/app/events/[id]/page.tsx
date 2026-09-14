@@ -31,6 +31,9 @@ const EVENT_SELECT = `
       tags,
       featured,
       ride_series_id,
+      distance_text,
+      pace,
+      no_drop,
       content_items!inner (
         id,
         title,
@@ -68,6 +71,9 @@ function toCommunityEvent(data: EventRow): CommunityEvent {
     tags: (data.tags as string[] | null) ?? [],
     featured: (data.featured as boolean | null) ?? false,
     ride_series_id: (data.ride_series_id as string | null) ?? null,
+    distance_text: (data.distance_text as string | null) ?? null,
+    pace: (data.pace as string | null) ?? null,
+    no_drop: (data.no_drop as boolean | null) ?? null,
   }
 }
 

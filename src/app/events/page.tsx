@@ -40,6 +40,9 @@ export default async function EventsListingPage() {
       tags,
       featured,
       ride_series_id,
+      distance_text,
+      pace,
+      no_drop,
       content_items!inner (
         id,
         title,
@@ -78,6 +81,9 @@ export default async function EventsListingPage() {
       tags: (row.tags as string[] | null) ?? [],
       featured: (row.featured as boolean | null) ?? false,
       ride_series_id: (row.ride_series_id as string | null) ?? null,
+      distance_text: (row.distance_text as string | null) ?? null,
+      pace: (row.pace as string | null) ?? null,
+      no_drop: (row.no_drop as boolean | null) ?? null,
     }
   })
 

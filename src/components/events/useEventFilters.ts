@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
-  type CommunityEvent, EVENT_TYPES, TAG_META, TYPE_FILTER_ORDER, DEFAULT_LOCATION,
+  type CommunityEvent, type RideStyle, EVENT_TYPES, TAG_META, TYPE_FILTER_ORDER, DEFAULT_LOCATION,
+  RIDE_STYLE_ORDER, RIDE_STYLE_LABEL, RIDE_STYLE_FILTER_LABEL,
   haversine, parseEventDate, todayKey, getTypeMeta, getTagMeta, dateMedium,
+  eventRideStyle, isNoDrop, styleFilterValue, parseStyleFilter,
 } from '@/lib/events'
 import { trackEvents } from './events-analytics'
 
@@ -38,7 +40,25 @@ export interface ActiveFilter { key: string; label: string; clear: () => void }
 
 const DISTANCE_VALUES: readonly string[] = DISTANCE_OPTIONS.map((o) => o.value)
 const WHEN_VALUES: readonly string[] = WHEN_OPTIONS.map((o) => o.value)
-const URL_KEYS = ['q', 'when', 'type', 'day', 'near', 'dist', 'tags', 'saved']
+const URL_KEYS = ['q', 'when', 'type', 'level', 'day', 'near', 'dist', 'tags', 'saved']
+
+/**
+ * The "type" filter is one radio group holding either an event type or a
+ * ride level (`style:easy`), the way the Shift app does it. A level already
+ * narrows to rides, so the two never need to combine. In the URL a level is
+ * written as `level=easy`, which is the link to paste when someone asks
+ * where the beginner rides are.
+ */
+function isRideLevel(v: string): v is RideStyle {
+  return (RIDE_STYLE_ORDER as string[]).includes(v)
+}
+
+/** What a type-filter value is called on the pill and the applied chip. */
+export function typeFilterLabel(value: string): string {
+  const level = parseStyleFilter(value)
+  if (level) return RIDE_STYLE_FILTER_LABEL[level]
+  return getTypeMeta(value).label
+}
 
 function parseNear(v: string | null): UserLoc | null {
   if (!v) return null
@@ -90,6 +110,8 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
     return DISTANCE_VALUES.includes(v) ? (v as DistanceValue) : 'all'
   })
   const [typeFilter, setTypeState] = useState(() => {
+    const level = params.get('level')
+    if (level && isRideLevel(level)) return styleFilterValue(level)
     const v = params.get('type')
     return v && EVENT_TYPES[v] ? v : 'All'
   })
@@ -189,11 +211,15 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
 
   const matches = useCallback((ev: CommunityEvent, ignore?: Ignore): boolean => {
     if (ev.event_date < today) return false
-    if (ignore !== 'type' && typeFilter !== 'All' && ev.event_type !== typeFilter) return false
+    if (ignore !== 'type' && typeFilter !== 'All') {
+      const level = parseStyleFilter(typeFilter)
+      if (level ? eventRideStyle(ev) !== level : ev.event_type !== typeFilter) return false
+    }
     if (ignore !== 'tags' && tags.length > 0 && !tags.every((t) => ev.tags.includes(t))) return false
     if (savedOnly && !saved[ev.id]) return false
     if (q) {
-      const haystack = [ev.title, ev.location_name, ev.event_type, getTypeMeta(ev.event_type).label, ev.organizer_name]
+      const level = eventRideStyle(ev)
+      const haystack = [ev.title, ev.location_name, ev.event_type, getTypeMeta(ev.event_type).label, ev.organizer_name, level && RIDE_STYLE_LABEL[level], isNoDrop(ev) && 'no-drop']
         .filter(Boolean).join(' ').toLowerCase()
       if (!haystack.includes(q)) return false
     }
@@ -223,6 +249,8 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
       if (!matches(ev, 'type')) continue
       counts.All += 1
       counts[ev.event_type] = (counts[ev.event_type] ?? 0) + 1
+      const level = eventRideStyle(ev)
+      if (level) counts[styleFilterValue(level)] = (counts[styleFilterValue(level)] ?? 0) + 1
     }
     return counts
   }, [events, matches])
@@ -255,7 +283,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
       list.push({ key: 'when', label: WHEN_OPTIONS.find((o) => o.value === dateRange)?.label ?? dateRange, clear: () => setDateRange('upcoming') })
     }
     if (distance !== 'all') list.push({ key: 'distance', label: `Within ${distance} mi of ${userLoc.label}`, clear: () => setDistance('all') })
-    if (typeFilter !== 'All') list.push({ key: 'type', label: getTypeMeta(typeFilter).label, clear: () => setTypeFilter('All') })
+    if (typeFilter !== 'All') list.push({ key: 'type', label: typeFilterLabel(typeFilter), clear: () => setTypeFilter('All') })
     for (const t of tags) list.push({ key: `tag:${t}`, label: getTagMeta(t).label, clear: () => toggleTag(t) })
     if (savedOnly) list.push({ key: 'saved', label: 'Saved', clear: () => setSavedOnly(false) })
     return list
@@ -285,7 +313,9 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
       for (const k of URL_KEYS) next.delete(k)
       if (query.trim()) next.set('q', query.trim())
       if (dateRange !== 'upcoming') next.set('when', dateRange)
-      if (typeFilter !== 'All') next.set('type', typeFilter)
+      const level = parseStyleFilter(typeFilter)
+      if (level) next.set('level', level)
+      else if (typeFilter !== 'All') next.set('type', typeFilter)
       if (selectedDay) next.set('day', selectedDay)
       if (geoStatus === 'active') next.set('near', `${userLoc.lat.toFixed(4)},${userLoc.lng.toFixed(4)},${userLoc.label}`)
       if (distance !== 'all') next.set('dist', distance)

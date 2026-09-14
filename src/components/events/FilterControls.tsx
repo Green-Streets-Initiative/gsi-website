@@ -1,7 +1,10 @@
 'use client'
 
 import { Navigation } from 'lucide-react'
-import { EVENT_TYPES, TYPE_FILTER_ORDER, getTagMeta } from '@/lib/events'
+import {
+  EVENT_TYPES, TYPE_FILTER_ORDER, getTagMeta,
+  RIDE_STYLE_ORDER, RIDE_STYLE_FILTER_LABEL, RIDE_STYLE_BLURB, RIDE_STYLE_COLOR, styleFilterValue,
+} from '@/lib/events'
 import CityAutocomplete from './CityAutocomplete'
 import {
   DISTANCE_OPTIONS, WHEN_OPTIONS, GOOD_FOR_TAGS,
@@ -153,6 +156,68 @@ export function TypeList({ value, counts, types, expanded, onToggleExpanded, onC
           {expanded ? 'Show fewer' : `Show ${hidden} more type${hidden === 1 ? '' : 's'}`}
         </button>
       )}
+      <LevelRows value={value} counts={counts} onChange={onChange} />
+    </div>
+  )
+}
+
+// --- Rides by level ---
+
+/**
+ * Levels sit in the same radio group as the types (a level already means
+ * "rides"). Empty levels stay hidden: production has no moderate rides today
+ * and a zero-count row would only invite the question.
+ */
+function visibleLevels(value: string, counts: Record<string, number>) {
+  return RIDE_STYLE_ORDER.filter((s) => (counts[styleFilterValue(s)] ?? 0) > 0 || value === styleFilterValue(s))
+}
+
+function LevelRows({ value, counts, onChange }: TypeProps) {
+  const levels = visibleLevels(value, counts)
+  if (levels.length === 0) return null
+  return (
+    <>
+      <p className="mb-1 mt-3 border-t border-white/[0.07] px-3 pt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/75">
+        Rides by level
+      </p>
+      {levels.map((s) => {
+        const v = styleFilterValue(s)
+        const active = value === v
+        return (
+          <button key={v} onClick={() => onChange(active ? 'All' : v)} className={rowClass(active)}>
+            <span className="flex min-w-0 items-start gap-2">
+              <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: RIDE_STYLE_COLOR[s] }} />
+              <span className="min-w-0">
+                <span className="block">{RIDE_STYLE_FILTER_LABEL[s]}</span>
+                <span className={`block text-[11px] font-normal leading-snug ${active ? 'text-lime/90' : 'text-white/75'}`}>
+                  {RIDE_STYLE_BLURB[s]}
+                </span>
+              </span>
+            </span>
+            <span className="ml-2 shrink-0 font-mono text-[12px] text-white/70">{counts[v] ?? 0}</span>
+          </button>
+        )
+      })}
+    </>
+  )
+}
+
+/** Phone sheet: one pill per level that has rides. */
+export function LevelPills({ value, counts, onChange }: TypeProps) {
+  const levels = visibleLevels(value, counts)
+  if (levels.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {levels.map((s) => {
+        const v = styleFilterValue(s)
+        const active = value === v
+        return (
+          <button key={v} onClick={() => onChange(active ? 'All' : v)} aria-pressed={active} className={pillClass(active)}>
+            {RIDE_STYLE_FILTER_LABEL[s]}
+            <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-lime/90' : 'text-white/70'}`}>{counts[v] ?? 0}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }

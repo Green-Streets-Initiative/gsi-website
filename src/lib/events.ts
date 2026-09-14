@@ -29,6 +29,12 @@ export interface CommunityEvent {
   featured: boolean
   /** Set when this event came from a ride planned in the Shift app (00817). */
   ride_series_id: string | null
+  /** Free text as listed: "21 miles", "20-25 miles", "90 minutes". */
+  distance_text: string | null
+  /** Organizer's stated pace band (kids | relaxed | moderate | brisk | fast); null on scraped listings. */
+  pace: string | null
+  /** True when the organizer promises nobody gets dropped; set on Shift-planned rides or by hand. */
+  no_drop: boolean | null
 }
 
 export interface EventOrganizer {
@@ -92,6 +98,43 @@ export function isDeadline(eventType: string): boolean {
 
 export function getTypeMeta(eventType: string): TypeMeta {
   return EVENT_TYPES[eventType] ?? EVENT_TYPES.other
+}
+
+// ---------------------------------------------------------------------------
+// Ride level (easy / moderate / rec), shared with the Shift app
+// ---------------------------------------------------------------------------
+
+export {
+  type RideStyle, rideStyle, isRideEvent, parseMiles,
+  RIDE_STYLE_ORDER, RIDE_STYLE_LABEL, RIDE_STYLE_FILTER_LABEL, RIDE_STYLE_BLURB, RIDE_STYLE_COLOR,
+  STYLE_FILTER_PREFIX, styleFilterValue, parseStyleFilter,
+} from './ride-style'
+import { rideStyle as classifyRide, isRideEvent as isRideEventT, type RideStyle as RideStyleT } from './ride-style'
+
+/**
+ * "No-drop" is the promise a new rider actually wants: the group waits, or a
+ * sweep rides at the back. We show it only where we know it: the organizer
+ * set it (no_drop, on rides planned in Shift or recorded by hand), or the
+ * listing itself says so in as many words. Never inferred from a level.
+ */
+const NO_DROP_WORDS = /\bno[- ]?drop\b/i
+
+export function isNoDrop(ev: Pick<CommunityEvent, 'title' | 'body' | 'no_drop' | 'event_type'>): boolean {
+  if (ev.no_drop === true) return true
+  if (!isRideEventT(ev.event_type)) return false
+  return NO_DROP_WORDS.test(`${ev.title ?? ''} ${ev.body ?? ''}`)
+}
+
+/** The level for one listing, or null when the listing doesn't support a call. */
+export function eventRideStyle(ev: Pick<CommunityEvent, 'title' | 'body' | 'distance_text' | 'tags' | 'pace' | 'event_type'>): RideStyleT | null {
+  return classifyRide({
+    title: ev.title,
+    description: ev.body,
+    distanceText: ev.distance_text,
+    tags: ev.tags,
+    pace: ev.pace,
+    eventType: ev.event_type,
+  })
 }
 
 // Filter-list order (for sidebar / pills)

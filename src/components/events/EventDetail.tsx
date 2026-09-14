@@ -13,6 +13,7 @@ import {
   type CommunityEvent, type NextUp,
   getTypeMeta, getTagMeta, formatTime, dateLong, isDeadline, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
+  eventRideStyle, isNoDrop, RIDE_STYLE_LABEL, RIDE_STYLE_BLURB, RIDE_STYLE_COLOR,
 } from '@/lib/events'
 
 const EventMap = dynamic(() => import('./EventMap'), { ssr: false })
@@ -91,6 +92,9 @@ interface EventDetailProps {
 export default function EventDetail({ event, nextUp = null, isPast = false }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
+  // Easy / Moderate / Rec, only when the listing supports the call.
+  const level = eventRideStyle(event)
+  const noDrop = isNoDrop(event)
   const evDate = parseEventDate(event.event_date)
   // Deadline-style events (contests) are places to enter, not places to go —
   // no map, no directions.
@@ -198,6 +202,12 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: meta.color }}>
                   {meta.label}
+                  {level && (
+                    <>
+                      <span className="text-white/75"> · </span>
+                      <span style={{ color: RIDE_STYLE_COLOR[level] }} title={RIDE_STYLE_BLURB[level]}>{RIDE_STYLE_LABEL[level]}</span>
+                    </>
+                  )}
                 </p>
                 <p className="text-[13px] text-white/75">
                   {deadline && 'Entry deadline: '}
@@ -223,8 +233,16 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
             </h1>
 
             {/* Tags */}
-            {event.tags.length > 0 && (
+            {(noDrop || event.tags.length > 0) && (
               <div className="mb-6 flex flex-wrap gap-1.5">
+                {noDrop && (
+                  <span
+                    className="inline-block rounded-full bg-lime/15 px-3 py-1 text-[12px] font-semibold text-lime"
+                    title="The organizer says nobody gets left behind: the group waits, or a sweep rides at the back."
+                  >
+                    No-drop
+                  </span>
+                )}
                 {event.tags.map(tag => {
                   const tm = getTagMeta(tag)
                   return (
