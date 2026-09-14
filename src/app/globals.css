@@ -14,6 +14,19 @@
   --color-fire: #FF8C35;
   --color-gray-shift: #8A8DA8;
 
+  /* GSI brand (gsi-brand-rules.md) — the org's own palette, distinct from Shift's lime/blue.
+     teal is text-safe on navy only (~2.5:1 on cream); use forest/green-deep as text on light. */
+  --color-cream: #F4F8EE;
+  --color-forest: #2D6A4F;
+  --color-teal: #52B788;
+  --color-green-deep: #1B4332;
+  --color-ink-soft: #4A4D68;
+
+  /* System UI stack: stands in for the app's row/body text inside the Shift home mockup. */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+
+  --animate-live-pulse: live-pulse 2s ease-in-out infinite;
+
   /* Employer portal — light enterprise theme */
   --color-accent: #2D6A4F;
   --color-accent-dark: #1F4D3A;
@@ -110,6 +123,11 @@
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
 }
 
 @keyframes float {
