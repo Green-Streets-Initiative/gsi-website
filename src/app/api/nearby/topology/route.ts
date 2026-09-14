@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStopTopology } from '@/lib/server/mbta-topology'
-import { nearbyShuttleStops } from '@/lib/server/shuttle-gtfs'
+import { nearbyShuttleStops, shuttleRouteStops } from '@/lib/server/shuttle-gtfs'
 import {
   SNAPSHOT_MAX_STOPS,
   SNAPSHOT_RAIL_MAX_STATIONS,
@@ -44,8 +44,12 @@ export async function GET(req: NextRequest) {
     nearbyShuttleStops(lat, lng).catch(() => []),
   ])
 
+  // Ordered stop list per shuttle route on screen. Reads the same cached
+  // feeds the stops came from, so it costs no extra network.
+  const shuttleRoutes = await shuttleRouteStops(shuttles).catch(() => [])
+
   return NextResponse.json(
-    { rail, bus, shuttles },
+    { rail, bus, shuttles, shuttleRoutes },
     { headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=3600' } },
   )
 }

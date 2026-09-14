@@ -100,6 +100,12 @@ interface ParsedStop {
 interface ParsedRoute {
   id: string
   name: string
+  /** Stop ids in travel order, for "where does this go?". Every operator
+   *  publishes the order and we used to drop all of it on the floor: GTFS in
+   *  stop_times.stop_sequence, TransLoc and 128BC in array order, Moovs in
+   *  stopIndex. A shuttle stop with no route behind it is a tease — it tells
+   *  a rider a van stops here and gives them no way to act on it. */
+  stops: string[]
 }
 
 export interface ParsedFeed {
@@ -174,7 +180,7 @@ async function parseGtfsZip(agency: ShuttleAgency): Promise<ParsedFeed> {
   }
 
   const routes: ParsedRoute[] = parseCsv(routesText)
-    .map(r => ({ id: r.route_id, name: r.route_short_name || r.route_long_name || r.route_id }))
+    .map(r => ({ id: r.route_id, name: r.route_short_name || r.route_long_name || r.route_id, stops: [] as string[] }))
     .filter(r => r.id && !EXCLUDED_ROUTES.test(r.name))
   const routeIds = new Set(routes.map(r => r.id))
 
@@ -182,10 +188,28 @@ async function parseGtfsZip(agency: ShuttleAgency): Promise<ParsedFeed> {
   for (const t of parseCsv(tripsText)) tripToRoute.set(t.trip_id, t.route_id)
 
   const stopRoutes = new Map<string, Set<string>>()
+  // stop_sequence per trip, so we can pick a representative pattern per route.
+  const tripStops = new Map<string, { seq: number; stopId: string }[]>()
   for (const st of parseCsv(stopTimesText)) {
     const routeId = tripToRoute.get(st.trip_id)
     if (!routeId || !routeIds.has(routeId)) continue
     ;(stopRoutes.get(st.stop_id) ?? stopRoutes.set(st.stop_id, new Set()).get(st.stop_id)!).add(routeId)
+    const seq = Number(st.stop_sequence)
+    if (!Number.isFinite(seq)) continue
+    ;(tripStops.get(st.trip_id) ?? tripStops.set(st.trip_id, []).get(st.trip_id)!)
+      .push({ seq, stopId: st.stop_id })
+  }
+
+  // A route has many trips and they don't all serve every stop (short
+  // turns, express runs, the last trip that skips the loop). The longest
+  // pattern is the one that answers "where does this go" — a rider wants
+  // the full picture, not whichever trip happened to be first in the file.
+  const routeStops = new Map<string, string[]>()
+  for (const [tripId, rows] of tripStops) {
+    const routeId = tripToRoute.get(tripId)
+    if (!routeId) continue
+    if ((routeStops.get(routeId)?.length ?? 0) >= rows.length) continue
+    routeStops.set(routeId, rows.sort((a, b) => a.seq - b.seq).map(r => r.stopId))
   }
 
   const stops: ParsedStop[] = parseCsv(stopsText)
@@ -197,6 +221,12 @@ async function parseGtfsZip(agency: ShuttleAgency): Promise<ParsedFeed> {
       routeIds: [...(stopRoutes.get(r.stop_id) ?? [])],
     }))
     .filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng) && s.routeIds.length > 0 && !CLOSED_STOP.test(s.name))
+
+  // Drop sequence entries for stops that didn't survive the filters above
+  // (closed stops, bad coordinates) so the order never names a stop we
+  // won't hand back.
+  const keptStops = new Set(stops.map(s => s.id))
+  for (const r of routes) r.stops = (routeStops.get(r.id) ?? []).filter(id => keptStops.has(id))
 
   return { agencyId: agency.id, stops, routes, fetchedAt: Date.now() }
 }
@@ -227,7 +257,8 @@ async function parseTransloc(agency: ShuttleAgency & { slug: string }): Promise<
     const include = r.IsRunning === true || (r.IsVisibleOnMap !== false && !SEASONAL_ROUTES.test(name))
     if (!include) continue
     const routeId = String(r.RouteID)
-    routes.push({ id: routeId, name })
+    const ordered: string[] = []
+    routes.push({ id: routeId, name, stops: ordered })
     for (const s of r.Stops ?? []) {
       const lat = Number(s.Latitude)
       const lng = Number(s.Longitude)
@@ -242,6 +273,10 @@ async function parseTransloc(agency: ShuttleAgency & { slug: string }): Promise<
         stopsByKey.set(key, stop)
       }
       if (!stop.routeIds.includes(routeId)) stop.routeIds.push(routeId)
+      // Array order IS the travel order here. Guard against a stop listed
+      // twice in one route (loops repeat their anchor) so the list reads as
+      // a sequence of places rather than a trace of the vehicle.
+      if (ordered[ordered.length - 1] !== stop.id) ordered.push(stop.id)
     }
   }
   return { agencyId: agency.id, stops: [...stopsByKey.values()], routes, fetchedAt: Date.now() }
@@ -286,6 +321,11 @@ async function parseMoovs(
   // the inbound and outbound poles a few metres apart, and two identically
   // labelled pins 50 m apart is clutter, not information.
   const stopsByKey = new Map<string, ParsedStop>()
+  // The payload arrives in stopIndex order, which is the loop. Each place is
+  // listed once per leg, so first-visit order gives "it serves these places,
+  // in this order, then comes back around" — a sequence a rider can read,
+  // rather than a trace of the vehicle that names the same place four times.
+  const ordered: string[] = []
   for (const s of raw as MoovsStop[]) {
     const lat = Number(s.latitude)
     const lng = Number(s.longitude)
@@ -295,13 +335,14 @@ async function parseMoovs(
     const key = name.toLowerCase()
     if (!stopsByKey.has(key)) {
       stopsByKey.set(key, { id: `${lat.toFixed(4)},${lng.toFixed(4)}`, name, lat, lng, routeIds: [routeId] })
+      ordered.push(stopsByKey.get(key)!.id)
     }
   }
   if (stopsByKey.size === 0) throw new Error(`Moovs ${agency.id}: no usable stops`)
   return {
     agencyId: agency.id,
     stops: [...stopsByKey.values()],
-    routes: [{ id: routeId, name: agency.routeName }],
+    routes: [{ id: routeId, name: agency.routeName, stops: ordered }],
     fetchedAt: Date.now(),
   }
 }
@@ -381,7 +422,7 @@ async function parseWp128bc(agency: ShuttleAgency): Promise<ParsedFeed> {
       const routeId = String(st.schedule_id)
       if (!seenRoutes.has(routeId)) {
         seenRoutes.add(routeId)
-        routes.push({ id: routeId, name: routeName })
+        routes.push({ id: routeId, name: routeName, stops: [] })
       }
       const coord = `${lat.toFixed(4)},${lng.toFixed(4)}`
       let stop = stopsByKey.get(coord)
@@ -390,6 +431,9 @@ async function parseWp128bc(agency: ShuttleAgency): Promise<ParsedFeed> {
         stopsByKey.set(coord, stop)
       }
       if (!stop.routeIds.includes(routeId)) stop.routeIds.push(routeId)
+      // The blob groups by route and lists each route's stops in order.
+      const seq = routes.find(r => r.id === routeId)!.stops
+      if (seq[seq.length - 1] !== stop.id) seq.push(stop.id)
     }
   }
   if (stopsByKey.size === 0) throw new Error('128BC: no usable stops')
@@ -409,7 +453,11 @@ async function loadFeed(agencyId: string): Promise<ParsedFeed> {
   }
 }
 
-const durableFeed = unstable_cache(loadFeed, ['nearby-shuttle-feed-v3'], {
+// v4: ParsedRoute gained `stops`. The cache key MUST move whenever the
+// parsed shape changes — a stale v3 entry deserializes into a route with no
+// `stops` field, and every read of it throws into a .catch() that quietly
+// returns nothing. Symptom is not an error; it is the feature silently absent.
+const durableFeed = unstable_cache(loadFeed, ['nearby-shuttle-feed-v4'], {
   revalidate: CACHE_TTL_MS / 1000,
 })
 
@@ -480,6 +528,50 @@ export async function nearbyShuttleStops(
 
   all.sort((a, b) => a.dist - b.dist)
   return all.slice(0, maxStops)
+}
+
+/** Ordered stop lists for the shuttle routes that appear in `stops`.
+ *
+ *  Returned alongside the stops rather than embedded in them: every stop on a
+ *  route would otherwise carry a copy of the whole route, and a dense campus
+ *  feed like MIT would repeat a 30-stop list 20 times in one response.
+ *
+ *  Stops outside the search radius are included — the question this answers
+ *  is "where does this go", and a route that stops listing places at the edge
+ *  of a 1.5 km circle answers it badly. */
+export async function shuttleRouteStops(
+  stops: StopTopology[],
+): Promise<{ id: string; name: string; agency: string; stops: { id: string; name: string; lat: number; lng: number }[] }[]> {
+  // Which routes are actually on screen, by agency.
+  const wanted = new Map<string, Set<string>>()
+  for (const stop of stops) {
+    const prefix = stop.agency?.prefix
+    if (!prefix) continue
+    for (const r of stop.routes) {
+      const bare = r.id.startsWith(`${prefix}:`) ? r.id.slice(prefix.length + 1) : r.id
+      ;(wanted.get(prefix) ?? wanted.set(prefix, new Set()).get(prefix)!).add(bare)
+    }
+  }
+  if (wanted.size === 0) return []
+
+  const out: { id: string; name: string; agency: string; stops: { id: string; name: string; lat: number; lng: number }[] }[] = []
+  for (const [prefix, routeIds] of wanted) {
+    const agency = SHUTTLE_AGENCIES.find(a => a.prefix === prefix)
+    if (!agency) continue
+    const feed = await getShuttleFeed(agency.id)   // already cached; no new fetch
+    if (!feed) continue
+    const stopById = new Map(feed.stops.map(st => [st.id, st]))
+    for (const route of feed.routes) {
+      if (!routeIds.has(route.id) || !route.stops?.length) continue
+      const seq = route.stops
+        .map(id => stopById.get(id))
+        .filter((st): st is ParsedStop => !!st)
+        .map(st => ({ id: `${prefix}:${st.id}`, name: st.name, lat: st.lat, lng: st.lng }))
+      if (seq.length < 2) continue   // a one-stop "route" tells a rider nothing
+      out.push({ id: `${prefix}:${route.id}`, name: route.name, agency: prefix, stops: seq })
+    }
+  }
+  return out
 }
 
 /** Health of every configured feed — for the status endpoint / ops checks. */
