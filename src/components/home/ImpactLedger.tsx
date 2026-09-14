@@ -38,9 +38,15 @@ export default async function ImpactLedger() {
 
   const asOf = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
+  // A fourth slot is open here. It held `neighborhood_count`, labelled
+  // "Massachusetts neighborhoods" — but that RPC field counts micro
+  // neighborhoods (1,796 of them), so the label read as a claim to operate in
+  // all of them. Pulled pending Keith's copy pass. Candidates already
+  // available from the same RPC, no new query needed:
+  //   total_active_trips  25,296  ("Active trips since launch")
+  //   total_users            271
   const rows: { label: string; value: string }[] = [
     { label: 'Active trips this month', value: approx(stats.trips_this_month) },
-    { label: 'Massachusetts neighborhoods', value: stats.neighborhood_count.toLocaleString('en-US') },
     { label: 'Saved by commuters', value: '$' + Math.round(stats.total_dollars_saved).toLocaleString('en-US') },
     { label: 'Metric tons of CO₂ avoided', value: stats.total_co2_metric_tons.toFixed(1) },
   ]
@@ -51,7 +57,7 @@ export default async function ImpactLedger() {
         <RouteSegment shape="straight" />
         <div className="hidden md:block" />
         <div className="border-y border-navy/15 py-7">
-          <dl className="grid gap-x-10 gap-y-4 md:grid-cols-4">
+          <dl className="grid gap-x-10 gap-y-4 md:grid-cols-3">
             {rows.map((r) => (
               <div key={r.label} className="flex items-baseline gap-3 md:block">
                 <dt className="order-2 text-[13px] leading-snug text-ink-soft md:order-none md:mt-1">{r.label}</dt>
