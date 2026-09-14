@@ -14,6 +14,31 @@
 
 export type SchoolFact = { text: string; sourceUrl: string }
 
+/**
+ * A challenge the school runs itself, alongside ours. Shown on the school
+ * page only while `startsAt` ≤ today < `endsAt`, with the prize for the
+ * current month picked at render time, so nothing on the page goes stale as
+ * the term moves on. Facts come from the school's own page (`sourceUrl`).
+ */
+export type CampusChallenge = {
+  name: string
+  /** Short label for the section nav, e.g. "Jumbo Footprint". */
+  navLabel: string
+  /** Human period, e.g. "August 28 – December 1, 2026". */
+  period: string
+  /** ISO dates; the block hides outside [startsAt, endsAt). */
+  startsAt: string
+  endsAt: string
+  /** How trips are logged there, e.g. "GoMassCommute". */
+  logsWith: string
+  /** One or two sentences on the mechanic, in the school's terms. */
+  summary: string
+  /** Prize by calendar month (1–12); the current month's line renders. */
+  monthly: { month: number; prize: string }[]
+  url: string
+  sourceUrl: string
+}
+
 export type School = {
   slug: string
   name: string
@@ -45,6 +70,8 @@ export type School = {
   transit: SchoolFact[]
   bike: SchoolFact[]
   moving: SchoolFact[]
+  /** A challenge the school runs itself, when one is on. */
+  campusChallenge?: CampusChallenge
 }
 
 export const SCHOOLS: School[] = [
@@ -217,6 +244,25 @@ export const SCHOOLS: School[] = [
     moving: [
       { text: 'GoMassCommute tracks car-free commutes for prizes, with Emergency Ride Home as a backstop.', sourceUrl: 'https://access.tufts.edu/commuter-benefits-discounts' },
     ],
+    // Tufts' own fall challenge (read 2026-09-14 from access.tufts.edu).
+    campusChallenge: {
+      name: 'Jumbo Footprint Challenge',
+      navLabel: 'Jumbo Footprint',
+      period: 'August 28 – December 1, 2026',
+      startsAt: '2026-08-28',
+      endsAt: '2026-12-02',
+      logsWith: 'GoMassCommute',
+      summary:
+        'Tufts students and employees log walks, bike rides, transit, and carpools in GoMassCommute. Every 10 trips is an entry, and 30 trips gets you into the December grand prize drawing.',
+      monthly: [
+        { month: 9, prize: 'bike service, up to $100, for earning the Pedal Prodigy badge' },
+        { month: 10, prize: 'Bluetooth headphones for riding the MBTA as a Transit Trooper' },
+        { month: 11, prize: 'a commuter goodies basket for carpooling as a Carpool Cruiser' },
+        { month: 12, prize: 'the grand prize drawing, for everyone with 30 or more trips' },
+      ],
+      url: 'https://go.tufts.edu/jumbofootprint',
+      sourceUrl: 'https://access.tufts.edu/jumbo-footprint-challenge',
+    },
   },
   {
     slug: 'umass-boston',

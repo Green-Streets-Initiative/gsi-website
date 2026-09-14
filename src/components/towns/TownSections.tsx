@@ -227,36 +227,56 @@ export function WhatIsShift({ townName }: { townName: string }) {
 
 /* ── events & roams ───────────────────────────────────────── */
 
+// `light` is the cream campaign pages; `dark` (default) keeps the town pages
+// byte-identical.
+const PANEL_THEME = {
+  dark: {
+    panel: 'rounded-[18px] border border-white/[0.08] bg-[#242538] p-6',
+    h3: 'mb-1 font-display text-lg font-bold tracking-tight text-white',
+    sub: 'mb-4 text-xs text-white/75',
+    all: 'mt-4 inline-block text-sm font-semibold text-[#BAF14D]',
+  },
+  light: {
+    panel: 'rounded-[18px] border border-navy/10 bg-white p-6',
+    h3: 'mb-1 font-serif text-[1.375rem] leading-tight text-navy',
+    sub: 'mb-4 text-[13px] text-ink-soft',
+    all: 'mt-4 inline-block text-[15px] font-semibold text-forest underline-offset-4 hover:underline',
+  },
+} as const
+
 export function EventsRoamsPanels({
   events,
   roams,
   townName,
+  tone = 'dark',
 }: {
   events: TownEvent[]
   roams: TownRoam[]
   townName: string
+  tone?: 'dark' | 'light'
 }) {
   if (events.length === 0 && roams.length === 0) return null
   const both = events.length > 0 && roams.length > 0
+  const t = PANEL_THEME[tone]
   return (
     <section className="mx-auto max-w-[960px]">
       <div className={`grid gap-5 ${both ? 'md:grid-cols-2' : ''}`}>
-        {events.length > 0 && <TownEventsPanel events={events} townName={townName} />}
+        {events.length > 0 && <TownEventsPanel events={events} townName={townName} tone={tone} />}
         {roams.length > 0 && (
-          <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] p-6">
-            <h3 className="mb-1 font-display text-lg font-bold tracking-tight text-white">
+          <div className={t.panel}>
+            <h3 className={t.h3}>
               Roams to try
             </h3>
-            <p className="mb-4 text-xs text-white/75">
+            <p className={t.sub}>
               Guided routes — preview the full route here, then check in at each stop in the Shift
               app to earn the badge.
             </p>
             <div className="space-y-3">
               {roams.map((r) => (
-                <RoamCard key={r.id} roam={r} />
+                <RoamCard key={r.id} roam={r} tone={tone} />
               ))}
             </div>
-            <Link href="/shift/roams" className="mt-4 inline-block text-sm font-semibold text-[#BAF14D]">
+            <Link href="/shift/roams" className={t.all}>
               All roams &rarr;
             </Link>
           </div>

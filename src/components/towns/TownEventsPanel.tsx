@@ -16,8 +16,38 @@ function eventDateLabel(e: TownEvent): string {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-export default function TownEventsPanel({ events, townName }: { events: TownEvent[]; townName: string }) {
+type Tone = 'dark' | 'light'
+
+// `light` is the cream campaign pages; `dark` (default) keeps the town pages
+// byte-identical.
+const THEME: Record<Tone, { panel: string; h3: string; sub: string; row: string; title: string; meta: string; all: string; groupInk: boolean }> = {
+  dark: {
+    panel: 'rounded-[18px] border border-white/[0.08] bg-[#242538] p-6',
+    h3: 'mb-1 font-display text-lg font-bold tracking-tight text-white',
+    sub: 'mb-4 text-xs text-white/75',
+    row: 'block rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3 transition-colors hover:bg-white/[0.06]',
+    title: 'text-sm font-semibold leading-snug text-white',
+    meta: 'mt-0.5 text-xs text-white/75',
+    all: 'mt-5 inline-block text-sm font-semibold text-[#BAF14D]',
+    groupInk: false,
+  },
+  light: {
+    panel: 'rounded-[18px] border border-navy/10 bg-white p-6',
+    h3: 'mb-1 font-serif text-[1.375rem] leading-tight text-navy',
+    sub: 'mb-4 text-[13px] text-ink-soft',
+    row: 'block rounded-[12px] border border-navy/10 bg-cream px-4 py-3 transition-colors hover:border-navy/30',
+    title: 'text-[15px] font-semibold leading-snug text-navy',
+    meta: 'mt-0.5 text-[13px] text-ink-soft',
+    all: 'mt-5 inline-block text-[15px] font-semibold text-forest underline-offset-4 hover:underline',
+    // On white the type colors were tuned for navy, so the group label goes
+    // navy and only the icon keeps its tint.
+    groupInk: true,
+  },
+}
+
+export default function TownEventsPanel({ events, townName, tone = 'dark' }: { events: TownEvent[]; townName: string; tone?: Tone }) {
   if (events.length === 0) return null
+  const t = THEME[tone]
 
   // Group by type in the canonical order — but Open Streets hoists to the top
   // when present (the marquee car-free events lead the panel).
@@ -29,11 +59,11 @@ export default function TownEventsPanel({ events, townName }: { events: TownEven
   }
 
   return (
-    <div className="rounded-[18px] border border-white/[0.08] bg-[#242538] p-6">
-      <h3 className="mb-1 font-display text-lg font-bold tracking-tight text-white">
+    <div className={t.panel}>
+      <h3 className={t.h3}>
         Events near {townName}
       </h3>
-      <p className="mb-4 text-xs text-white/75">
+      <p className={t.sub}>
         A few picks over the next 30 days — the full calendar has everything.
       </p>
       <div className="space-y-5">
@@ -50,8 +80,8 @@ export default function TownEventsPanel({ events, townName }: { events: TownEven
                   <Icon size={16} style={{ color: meta.color }} />
                 </span>
                 <span
-                  className="text-xs font-bold uppercase tracking-widest"
-                  style={{ color: meta.color }}
+                  className={t.groupInk ? 'text-xs font-bold uppercase tracking-widest text-navy' : 'text-xs font-bold uppercase tracking-widest'}
+                  style={t.groupInk ? undefined : { color: meta.color }}
                 >
                   {meta.label}
                   {items.length > 1 ? ` · ${items.length}` : ''}
@@ -62,10 +92,10 @@ export default function TownEventsPanel({ events, townName }: { events: TownEven
                   <Link
                     key={e.id}
                     href={`/events/${encodeURIComponent(e.id)}`}
-                    className="block rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-3 transition-colors hover:bg-white/[0.06]"
+                    className={t.row}
                   >
-                    <p className="text-sm font-semibold leading-snug text-white">{e.title}</p>
-                    <p className="mt-0.5 text-xs text-white/75">
+                    <p className={t.title}>{e.title}</p>
+                    <p className={t.meta}>
                       {e.recurring_weekday ? `${e.recurring_weekday}s · next ` : ''}
                       {eventDateLabel(e)}
                       {e.location_name ? ` · ${e.location_name}` : ''}
@@ -94,7 +124,7 @@ export default function TownEventsPanel({ events, townName }: { events: TownEven
           )
         })}
       </div>
-      <Link href="/events" className="mt-5 inline-block text-sm font-semibold text-[#BAF14D]">
+      <Link href="/events" className={t.all}>
         All community events &rarr;
       </Link>
     </div>

@@ -8,8 +8,30 @@ import { useEffect, useState } from 'react'
  * view — signals interactivity and gives "you are here". Section list comes
  * from the server page so conditional sections keep working.
  */
-export default function TownToc({ sections }: { sections: Array<[href: string, label: string]> }) {
+type Tone = 'dark' | 'light'
+
+// `light` is the cream campaign pages; `dark` (default) keeps the town pages
+// byte-identical.
+const THEME: Record<Tone, { nav: string; label: string; active: string; idle: string; fade: string }> = {
+  dark: {
+    nav: 'sticky top-[60px] z-20 border-b border-white/[0.12] bg-[#191A2E]/95 backdrop-blur',
+    label: 'hidden shrink-0 pr-1 text-[10px] font-bold uppercase tracking-widest text-white/70 sm:inline',
+    active: 'rounded-full bg-[#BAF14D]/15 px-3.5 py-2 text-sm font-bold text-[#BAF14D]',
+    idle: 'rounded-full bg-white/[0.06] px-3.5 py-2 text-sm font-semibold text-white/75 transition-colors hover:bg-white/[0.12] hover:text-white',
+    fade: 'pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#191A2E] to-transparent',
+  },
+  light: {
+    nav: 'sticky top-[60px] z-20 border-b border-navy/10 bg-cream/95 backdrop-blur',
+    label: 'hidden shrink-0 pr-1 text-[10px] font-bold uppercase tracking-widest text-forest sm:inline',
+    active: 'rounded-full bg-navy px-3.5 py-2 text-sm font-bold text-white',
+    idle: 'rounded-full bg-navy/[0.06] px-3.5 py-2 text-sm font-semibold text-navy transition-colors hover:bg-navy/[0.12]',
+    fade: 'pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-cream to-transparent',
+  },
+}
+
+export default function TownToc({ sections, tone = 'dark' }: { sections: Array<[href: string, label: string]>; tone?: Tone }) {
   const [activeId, setActiveId] = useState<string | null>(null)
+  const t = THEME[tone]
 
   useEffect(() => {
     const ids = sections.map(([href]) => href.slice(1))
@@ -35,11 +57,11 @@ export default function TownToc({ sections }: { sections: Array<[href: string, l
   return (
     <nav
       aria-label="Page sections"
-      className="sticky top-[60px] z-20 border-b border-white/[0.12] bg-[#191A2E]/95 backdrop-blur"
+      className={t.nav}
     >
       <div className="relative mx-auto max-w-[960px]">
         <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap px-4 py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <span className="hidden shrink-0 pr-1 text-[10px] font-bold uppercase tracking-widest text-white/70 sm:inline">
+          <span className={t.label}>
             On this page
           </span>
           {sections.map(([href, label]) => {
@@ -48,11 +70,7 @@ export default function TownToc({ sections }: { sections: Array<[href: string, l
               <a
                 key={href}
                 href={href}
-                className={
-                  isActive
-                    ? 'rounded-full bg-[#BAF14D]/15 px-3.5 py-2 text-sm font-bold text-[#BAF14D]'
-                    : 'rounded-full bg-white/[0.06] px-3.5 py-2 text-sm font-semibold text-white/75 transition-colors hover:bg-white/[0.12] hover:text-white'
-                }
+                className={isActive ? t.active : t.idle}
               >
                 {label}
               </a>
@@ -60,7 +78,7 @@ export default function TownToc({ sections }: { sections: Array<[href: string, l
           })}
         </div>
         {/* Right-edge fade — scroll affordance on narrow screens */}
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#191A2E] to-transparent" />
+        <div className={t.fade} />
       </div>
     </nav>
   )
