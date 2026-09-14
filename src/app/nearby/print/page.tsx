@@ -8,6 +8,7 @@ import { parsePartnerSlug, fetchPartner, partnerLogoPath } from '@/lib/nearby/pa
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import { getStopTopology } from '@/lib/server/mbta-topology'
 import { nearbyShuttleStops } from '@/lib/server/shuttle-gtfs'
+import { shuttleAgencyFor } from '@/lib/nearby/shuttle-agencies'
 import { getCorridorMeta, type CorridorMetaResult } from '@/lib/server/corridor-meta'
 import { getReach } from '@/lib/server/reach'
 import { getBluebikesDocks } from '@/lib/server/bluebikes'
@@ -325,6 +326,20 @@ export default async function NearbyPrintPage({ searchParams }: {
                     <span className="text-[0.85rem] font-bold">{s.name}</span>
                     <span className="shrink-0 text-[0.72rem] text-[#191A2E]/70">{tr('print.min_walk', { minutes: s.walkMin })}</span>
                   </div>
+                  {/* A shuttle stop prints like a bus stop — say who runs
+                      it and whether a rider without a campus ID can board. */}
+                  {s.isShuttle && (() => {
+                    const a = shuttleAgencyFor(s.lines[0]?.routeId ?? '')
+                    if (!a) return null
+                    const key = a.access === 'public' ? 'shuttle.access_public'
+                      : a.access === 'id' ? 'shuttle.access_id'
+                      : 'shuttle.access_unstated'
+                    return (
+                      <div className="text-[0.68rem] leading-snug text-[#191A2E]/80">
+                        {a.name} · {tr(key, { operator: a.idName })}
+                      </div>
+                    )
+                  })()}
                   {s.lines.map(l => (
                     <div key={l.routeId} className="mt-0.5 flex items-baseline gap-1.5">
                       <span

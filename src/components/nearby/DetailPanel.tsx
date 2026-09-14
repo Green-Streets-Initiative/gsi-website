@@ -13,6 +13,7 @@ import { bearingDegrees } from '@/lib/geo/polyline'
 import { boardingByDirection, boardingIsShared, type TransitCorridor, type BikeCorridor, type FrequencyInfo } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
+import { ShuttleOperatorLines } from './ShuttleOperator'
 import { useNearbyT } from './NearbyI18n'
 import { bikeshareLogoUrl, borrowLogoUrl } from '@/lib/nearby/provider-logos'
 import {
@@ -188,6 +189,10 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
           {isShuttleStation(st) ? tr('detail.shuttle_stop') : st.routes.every(r => r.id.startsWith('Boat-')) ? tr('detail.ferry_terminal') : st.isRail ? tr('detail.station') : tr('detail.bus_stop')}
         </div>
         <div className="text-[0.95rem] font-bold text-white">{st.name}</div>
+        {/* "Market Basket Somerville" alone reads like a public bus stop.
+            Name the operator, then say who can board — the two things a
+            rider has to know before walking there. */}
+        <ShuttleOperatorLines station={st} variant="detail" />
         <div className="text-[0.78rem] text-white/75">
           {tr('detail.walk_distance', { minutes: walkTimeMinutes(st.dist), distance: formatDistance(st.dist) })}
         </div>

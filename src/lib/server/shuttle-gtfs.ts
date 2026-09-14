@@ -265,7 +265,15 @@ export async function nearbyShuttleStops(
         lng: stop.lng,
         dist,
         routes,
-        agency: { prefix: agency.prefix, label: agency.label, color: SHUTTLE_COLOR },
+        // name/access ride along so the Shift app can say "MIT Shuttles ·
+        // MIT ID required" without keeping its own copy of the table.
+        agency: {
+          prefix: agency.prefix,
+          label: agency.label,
+          color: SHUTTLE_COLOR,
+          name: agency.name,
+          access: agency.access,
+        },
       })
     }
     // Per-operator cap so a dense campus feed can't crowd out a TMA

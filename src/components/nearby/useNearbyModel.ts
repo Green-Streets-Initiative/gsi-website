@@ -5,7 +5,7 @@ import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { lineColor } from '@/lib/nearby/transit-ui'
-import { isShuttleRouteId, shuttleAgencyLabel, shuttleAgencyFor } from '@/lib/nearby/shuttle-agencies'
+import { isShuttleRouteId, shuttleAgencyLabel, shuttleAgencyFor, type ShuttleAgencyMeta } from '@/lib/nearby/shuttle-agencies'
 import type { NearbyMarker, LaneTapInfo } from './NearbyMap'
 import { userDotHtml, busStopHtml, trainStopHtml, ferryStopHtml, shuttleStopHtml, bluebikeHtml, borrowRentHtml } from './markers'
 import { nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
@@ -125,6 +125,16 @@ export const isShuttleRoute = isShuttleRouteId
 
 export function isShuttleStation(group: StationGroup): boolean {
   return group.routes.length > 0 && group.routes.every(r => isShuttleRoute(r.id))
+}
+
+/** The operator behind a shuttle stop — the source of the "MIT Shuttles ·
+ *  MIT ID required" lines. Null for MBTA stops. */
+export function shuttleAgencyForStation(group: StationGroup): ShuttleAgencyMeta | null {
+  for (const r of group.routes) {
+    const a = shuttleAgencyFor(r.id)
+    if (a) return a
+  }
+  return null
 }
 
 /** Nearest-first, keeping only stops that serve a route no earlier stop did */

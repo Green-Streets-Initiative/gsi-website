@@ -12,6 +12,7 @@ import { type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
+import { ShuttleOperatorLines } from './ShuttleOperator'
 import { dockStatsText } from './markers'
 import { PanelPhoto } from './DetailPanel'
 import type { SectionStatus } from './types'
@@ -335,6 +336,10 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                     <span className="ml-1.5 font-semibold text-[#BAF14D]">{open ? '▴' : '▾'}</span>
                   </span>
                 </span>
+                {/* Operator + who may board. Without it "Market Basket
+                    Somerville" with a "Market Basket / Star Market" badge
+                    reads as a public bus stop, not an MIT shuttle. */}
+                <ShuttleOperatorLines station={st} className="mt-1" />
                 {!open && (
                   // One line per route, each naming where it runs — a badge
                   // alone doesn't tell a newcomer whether this bus is any use
