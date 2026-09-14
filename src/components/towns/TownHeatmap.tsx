@@ -64,6 +64,41 @@ function townBounds(
 
 const FIT_OPTS = { padding: 8, maxZoom: 13.75 }
 
+/**
+ * The nightly job publishes two kinds of feature in one collection: named
+ * corridors redrawn along real street or rail geometry (smooth, many
+ * vertices), and the remainder as chains of ~35m grid cells. Drawn as one
+ * layer at one weight they read as one grainy mesh, and the single-cell
+ * leftovers show as ticks across the streets. Split them: the street-true
+ * corridors carry the banding on top; the grid remainder sits underneath,
+ * thin and faint, so nothing published disappears; single-cell stubs are
+ * dropped, since a 35m dash from GPS jitter says nothing a reader can use.
+ */
+const STUB_MAX_M = 60
+function splitLayer(fc: GeoJSON.FeatureCollection): { streets: GeoJSON.FeatureCollection; grid: GeoJSON.FeatureCollection } {
+  const streets: GeoJSON.Feature[] = []
+  const grid: GeoJSON.Feature[] = []
+  for (const f of fc.features) {
+    if (f.geometry.type !== 'LineString') continue
+    const c = f.geometry.coordinates
+    const props = (f.properties ?? {}) as { name?: string; corridor?: string }
+    if (props.name && props.corridor && c.length > 2) {
+      streets.push(f)
+      continue
+    }
+    if (c.length === 2) {
+      const [a, b] = c
+      const m = Math.hypot((b[1] - a[1]) * 111320, (b[0] - a[0]) * 111320 * Math.cos((a[1] * Math.PI) / 180))
+      if (m < STUB_MAX_M) continue
+    }
+    grid.push(f)
+  }
+  return {
+    streets: { type: 'FeatureCollection', features: streets },
+    grid: { type: 'FeatureCollection', features: grid },
+  }
+}
+
 export default function TownHeatmap({
   layers,
   centroid,
@@ -113,7 +148,26 @@ export default function TownHeatmap({
       map.on('load', () => {
         for (const layer of layers) {
           const first = layers[0]?.mode_group ?? 'all'
-          map.addSource(`hm-${layer.mode_group}`, { type: 'geojson', data: layer.geojson })
+          const { streets, grid } = splitLayer(layer.geojson)
+          // Two sources per layer: the grid remainder underneath, faint and
+          // thin, and the street-true corridors on top carrying the banding.
+          map.addSource(`hm-${layer.mode_group}-grid`, { type: 'geojson', data: grid })
+          map.addSource(`hm-${layer.mode_group}`, { type: 'geojson', data: streets })
+          map.addLayer({
+            id: `hm-${layer.mode_group}-grid`,
+            type: 'line',
+            source: `hm-${layer.mode_group}-grid`,
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+              visibility: layer.mode_group === first ? 'visible' : 'none',
+            },
+            paint: {
+              'line-color': '#9DB1E4',
+              'line-width': 1.2,
+              'line-opacity': 0.45,
+            },
+          })
           map.addLayer({
             id: `hm-${layer.mode_group}`,
             type: 'line',
@@ -128,8 +182,8 @@ export default function TownHeatmap({
                 ...BAND_COLORS.flatMap(([band, color]) => [band, color]),
                 '#9DB1E4',
               ] as unknown as string,
-              'line-width': ['match', ['get', 'band'], 1, 1.4, 2, 2.2, 3, 3.2, 4, 4.2, 1.4] as unknown as number,
-              'line-opacity': ['match', ['get', 'band'], 1, 0.8, 2, 0.9, 3, 0.95, 4, 1, 0.8] as unknown as number,
+              'line-width': ['match', ['get', 'band'], 1, 2, 2, 3, 3, 4.2, 4, 5.4, 2] as unknown as number,
+              'line-opacity': ['match', ['get', 'band'], 1, 0.75, 2, 0.88, 3, 0.95, 4, 1, 0.75] as unknown as number,
             },
           })
           // Highlight overlay for the selected named corridor.
@@ -170,6 +224,7 @@ export default function TownHeatmap({
     for (const layer of layers) {
       const vis = layer.mode_group === active ? 'visible' : 'none'
       if (map.getLayer(`hm-${layer.mode_group}`)) {
+        map.setLayoutProperty(`hm-${layer.mode_group}-grid`, 'visibility', vis)
         map.setLayoutProperty(`hm-${layer.mode_group}`, 'visibility', vis)
         map.setLayoutProperty(`hm-${layer.mode_group}-hl`, 'visibility', vis)
       }
