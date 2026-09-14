@@ -18,17 +18,27 @@ is not in the current month → run the **monthly deep-dive**. Otherwise run the
   `~/.config/gsi-seo/gsc-service-account.json`, or a missing `$CRON_SECRET`
   later), **email Keith the one-line blocker and stop** — do not fall back to
   the keychain or `$(...)`; both stall unattended runs on permission prompts.
-- **PostHog** (organic sessions): use the PostHog MCP `exec` tool (HogQL). If it
-  is unavailable in this run, skip the PostHog rows and note the gap once — GSC
-  clicks are then the traffic metric.
+- **PostHog** (organic sessions): `node scripts/seo/pull-posthog.mjs --mode weekly`.
+  It writes JSON to `seo/data/posthog/` and needs a personal API key at
+  `~/.config/gsi-seo/posthog.json`. If it exits non-zero, email Keith the
+  one-line blocker and stop — same contract as the GSC puller.
+  **Do not use the PostHog MCP server.** It authenticates with OAuth, which an
+  unattended run cannot complete, so PostHog silently vanished from the ledger
+  whenever its session lapsed — that is exactly what happened on 2026-09-14. A
+  key in a file behaves the same at 3am as it does by hand.
 - **Live search / AEO checks**: the `WebSearch` tool. Competitor teardown pages:
   `WebFetch`.
-- **Email**: write a `{ "subject": ..., "text": ... }` JSON payload file with
-  the Write tool, then a single-line `curl` POST to
-  `https://xyqcpgwbqrhykpgpqbdi.supabase.co/functions/v1/sentry-triage-email`
-  with header `X-Cron-Secret: $CRON_SECRET` (delivers to keith@gogreenstreets.org).
-  Subject prefix: `[GSI] SEO weekly —` or `[GSI] SEO monthly deep-dive —`.
+- **Email**: `node scripts/seo/send-report-email.mjs --subject "…" --body
+  seo/reports/YYYY-MM-DD-email.txt` (delivers to keith@gogreenstreets.org via
+  the `sentry-triage-email` function; reads `$CRON_SECRET` itself). Write the
+  email as a plain `.txt` file — the script does the JSON escaping. Subject
+  prefix: `[GSI] SEO weekly —` or `[GSI] SEO monthly deep-dive —`. `--dry-run`
+  prints what would be sent without sending.
   **Always send an email, even on a quiet week**, so Keith knows it ran.
+  Do not hand-escape a JSON payload and do not build a `curl` line: a 7,000
+  character email escaped by hand is a silent-corruption risk, and a bespoke
+  curl cannot be allowlisted, so it stops an unattended run at the last step
+  with the whole report already written.
 - **Analysis**: `node scripts/seo/analyze.mjs` — baselines, the weekly table,
   cluster replay against the *current* portfolio, the page-class rollup, and the
   unmatched-query list. `--section baselines|weeks|clusters|pages|queries` to
@@ -60,11 +70,27 @@ and `} catch` — i.e. large amounts of `node -e '…'` and compound
 
 So: put analysis in `scripts/seo/analyze.mjs` (or a new committed script) rather
 than inlining it. A committed script is reviewable in git, reproducible run to
-run, and matchable as a fixed prefix. The two scripts above exist precisely
-because the routine kept re-deriving the same numbers in throwaway one-liners.
+run, and matchable as a fixed prefix. The four scripts in `scripts/seo/` exist
+precisely because the routine kept re-deriving the same work in throwaway
+one-liners — and `Bash(node scripts/seo/:*)` covers all four and every future
+one with a single rule.
 
-The allowlist for these lives in `.claude/settings.json`. `.claude/` is
-gitignored, so it is machine-local; a new machine needs it recreated.
+Two habits to drop, both of which cost the 2026-09-14 run a prompt each time:
+
+- **Do not validate JSON with `python3 -c`.** Running
+  `node scripts/seo/analyze.mjs --section baselines` parses both
+  `.seo-state.json` and `keyword-portfolio.json` and fails loudly if either is
+  malformed. That is the check.
+- **Do not hand-build the email payload or the curl.** Use
+  `scripts/seo/send-report-email.mjs`.
+
+The allowlist lives in `.claude/settings.json`. `.claude/` is gitignored, so it
+is machine-local; a new machine needs it recreated. Keep its rules **general** —
+one rule per tool, never one per invocation. A rule containing a specific
+filename, SHA or search term will match exactly once and then never again; a
+file full of those looks like a configured allowlist while behaving like none at
+all, which is how the 2026-09-14 run ended up prompting 15+ times against a
+200-entry list.
 
 ## Weekly pulse
 
@@ -74,10 +100,10 @@ gitignored, so it is machine-local; a new machine needs it recreated.
    (see "Keeping pending branches shippable" below). Do this even when nothing
    new is being proposed.
 3. `node scripts/seo/pull-gsc.mjs --mode weekly`.
-4. PostHog: organic sessions this week vs the trailing 4-week mean; top organic
-   landing pages. (Organic = referring domain in google/bing/duckduckgo/
-   ecosia/yahoo/… — confirm `$referring_domain` exists on `$pageview`; if not,
-   note it and use GSC only.)
+4. `node scripts/seo/pull-posthog.mjs --mode weekly` — organic sessions this week
+   vs the trailing 4-week mean, top organic landing pages, and answer-engine
+   referral sessions. The organic definition lives in the script, not in prose,
+   so it cannot drift between runs.
 5. **SERP spot-checks (6 queries):** the 3 fixed sentinels from the
    `aeo-sentinels` cluster + 3 rotated through the portfolio using
    `.seo-state.json.serp_rotation_index`. For each: does gogreenstreets.org
