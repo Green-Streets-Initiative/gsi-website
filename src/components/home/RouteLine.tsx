@@ -14,8 +14,9 @@ const PATHS = {
   straight: 'M28 0 V100',
   wanderLeft: 'M28 0 C 28 30, 14 45, 20 60 S 28 90, 28 100',
   wanderRight: 'M28 0 C 28 25, 40 40, 34 55 S 28 85, 28 100',
-  // Ends at a dot: stops at 62 so the terminal checkpoint sits on it.
-  terminal: 'M28 0 C 28 20, 20 34, 24 46 S 28 56, 28 62',
+  // Fades out before the section ends, so the line finishes rather than
+  // running into the footer.
+  terminal: 'M28 0 C 28 20, 20 34, 24 46 S 28 60, 28 72',
 } as const
 
 export function RouteSegment({ shape = 'straight', tone = 'light' }: { shape?: keyof typeof PATHS; tone?: Tone }) {
@@ -36,21 +37,6 @@ export function RouteSegment({ shape = 'straight', tone = 'light' }: { shape?: k
         className={tone === 'dark' ? 'stroke-teal' : 'stroke-forest/60'}
       />
     </svg>
-  )
-}
-
-/**
- * A checkpoint dot. Place it inside the lane column of a heading row so it
- * pins to the heading's line box. `terminal` = filled, "You are here".
- */
-export function Checkpoint({ tone = 'light', terminal = false, className = '' }: { tone?: Tone; terminal?: boolean; className?: string }) {
-  const ring = tone === 'dark' ? 'border-teal' : 'border-forest'
-  const fill = terminal ? (tone === 'dark' ? 'bg-teal' : 'bg-forest') : tone === 'dark' ? 'bg-navy' : 'bg-cream'
-  return (
-    <span
-      aria-hidden="true"
-      className={`relative z-10 hidden h-3 w-3 rounded-full border-2 md:block ${ring} ${fill} ${className}`}
-    />
   )
 }
 

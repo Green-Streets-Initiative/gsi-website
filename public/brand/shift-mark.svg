@@ -1,0 +1,6 @@
+<svg viewBox="0 0 36 28" xmlns="http://www.w3.org/2000/svg">
+  <!-- Chevron 1: Shift green -->
+  <path d="M0,1 L16,14 L0,27 L0,20 L10,14 L0,8Z" fill="#BAF14D"/>
+  <!-- Chevron 2: Shift blue -->
+  <path d="M19,1 L35,14 L19,27 L19,20 L29,14 L19,8Z" fill="#2966E5"/>
+</svg>

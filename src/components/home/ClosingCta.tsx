@@ -1,6 +1,6 @@
 import StoreButtons from '@/components/StoreButtons'
 import TrackedLink from '@/components/TrackedLink'
-import { Checkpoint, InlineDot, LANE, RouteSegment } from './RouteLine'
+import { LANE, RouteSegment } from './RouteLine'
 
 export default function ClosingCta({ iosUrl, androidUrl }: { iosUrl: string; androidUrl: string }) {
   return (
@@ -9,16 +9,12 @@ export default function ClosingCta({ iosUrl, androidUrl }: { iosUrl: string; and
         <RouteSegment shape="terminal" />
         <div className="hidden md:block" />
         <div className="relative py-20 lg:py-28">
-          <Checkpoint terminal className="absolute -left-[50px] top-[0.15rem]" />
-          <p className="mb-4 font-serif text-[1.125rem] italic text-green-deep">
-            <InlineDot />
-            You are here.
-          </p>
           <h2 className="font-serif text-[clamp(2.5rem,6vw,4.5rem)] font-normal leading-[1.0] text-navy">
             Start with <em className="text-green-deep">one trip.</em>
           </h2>
           <p className="mt-6 max-w-[520px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-            Download Shift, take the walk you were going to take anyway, and watch it count.
+            Pick one trip this week &mdash; the school run, the coffee, the commute &mdash; and take it on foot,
+            on two wheels, or on the bus.
           </p>
           <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="closing" tone="light" className="mt-9" />
 

@@ -2,24 +2,25 @@ import { Broadcast, Compass, Trophy } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import StoreButtons from '@/components/StoreButtons'
 import TrackedLink from '@/components/TrackedLink'
-import { AroundYouCard, Chevrons, StatusBar, UpNextCard } from '@/components/shift-mockup'
-import { Checkpoint, Eyebrow, LANE, RouteSegment } from './RouteLine'
+import ShiftWordmark from '@/components/brand/ShiftWordmark'
+import { AroundYouCard, StatusBar, UpNextCard } from '@/components/shift-mockup'
+import { LANE, RouteSegment } from './RouteLine'
 
 const STOPS: { icon: Icon; title: string; body: string }[] = [
   {
-    icon: Compass,
-    title: 'It notices your trips',
-    body: 'No logging. Shift detects walks, rides, and transit trips on its own and asks only when it is unsure.',
+    icon: Broadcast,
+    title: 'See what\u2019s moving near you',
+    body: 'The next train, the nearest bus, how many Bluebikes are at the dock, and whether you\u2019ll make it.',
   },
   {
-    icon: Broadcast,
-    title: 'It shows what’s around you, live',
-    body: 'The next train, the nearest bus, how many Bluebikes are at the dock, and whether you’ll make it.',
+    icon: Compass,
+    title: 'Nothing to log',
+    body: 'Shift records the trip on its own and only asks you when it can\u2019t tell walking from the bus.',
   },
   {
     icon: Trophy,
-    title: 'It turns trips into status, streaks, and local perks',
-    body: 'Climb from Starter to Trailblazer, keep a streak going, and unlock rewards from businesses near you.',
+    title: 'Every trip is worth something',
+    body: 'Money back in your pocket, a streak worth keeping, and perks from businesses down the street.',
   },
 ]
 
@@ -38,34 +39,25 @@ export default function ShiftProductBlock({ iosUrl, androidUrl }: { iosUrl: stri
           </div>
 
           <div className="relative order-1 lg:order-2">
-            <Checkpoint tone="dark" className="absolute -left-[50px] top-[0.15rem]" />
-            <Eyebrow tone="dark">
-              <span className="inline-flex items-center gap-2 align-middle">
-                The Shift app
-                <span className="inline-flex items-center gap-[5px] font-display text-[15px] font-extrabold normal-case tracking-tight text-white">
-                  Shift <Chevrons size={16} />
-                </span>
-              </span>
-            </Eyebrow>
+            <div className="mb-5">
+              <ShiftWordmark tone="white" height={26} />
+            </div>
             <h2 className="font-serif text-[clamp(2.25rem,4.5vw,3.5rem)] font-normal leading-[1.05] text-white">
-              An app that notices how you <em className="text-teal">already</em> move.
+              The better trip, <em className="text-teal">made easy.</em>
             </h2>
             <p className="mt-6 max-w-[540px] text-[1.0625rem] leading-[1.65] text-white">
-              No logging. Shift detects walks, rides, and transit trips on its own, then shows you the next train,
-              the nearest bikes, and what your week added up to.
+              Shift shows you what&rsquo;s moving near you right now, counts the trip without you touching anything,
+              and turns it into money saved and perks worth having.
             </p>
 
             <ol className="mt-9 flex flex-col gap-6">
-              {STOPS.map((s, i) => (
+              {STOPS.map((s) => (
                 <li key={s.title} className="flex gap-4">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-teal/50 text-teal">
                     <s.icon size={20} weight="regular" />
                   </span>
                   <div>
-                    <p className="font-semibold text-white">
-                      <span className="mr-2 font-serif text-teal">{i + 1}.</span>
-                      {s.title}
-                    </p>
+                    <p className="font-semibold text-white">{s.title}</p>
                     <p className="mt-1 text-[15px] leading-relaxed text-white/80">{s.body}</p>
                   </div>
                 </li>

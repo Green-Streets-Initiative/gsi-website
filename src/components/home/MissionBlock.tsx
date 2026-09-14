@@ -2,7 +2,7 @@ import { ArrowRight, CalendarCheck, GraduationCap, Microphone } from '@phosphor-
 import type { Icon } from '@phosphor-icons/react'
 import TrackedLink from '@/components/TrackedLink'
 import type { Audience } from './tracking'
-import { Checkpoint, Eyebrow, LANE, RouteSegment } from './RouteLine'
+import { Eyebrow, LANE, RouteSegment } from './RouteLine'
 
 const PROGRAMS: { icon: Icon; label: string; href: string; audience: Audience }[] = [
   { icon: CalendarCheck, label: 'Walk/Ride Days', href: '/programs/walk-ride-days', audience: 'general' },
@@ -17,7 +17,6 @@ export default function MissionBlock() {
         <RouteSegment shape="wanderRight" />
         <div className="hidden md:block" />
         <div className="relative max-w-[860px] py-20 lg:py-28">
-          <Checkpoint className="absolute -left-[50px] top-[0.15rem]" />
           <Eyebrow>Green Streets Initiative</Eyebrow>
           <h2 className="font-serif text-[clamp(1.75rem,3.6vw,2.75rem)] font-normal leading-[1.2] text-navy">
             We help people <em className="text-green-deep">shift trips</em>{' '}

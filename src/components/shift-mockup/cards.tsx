@@ -1,3 +1,4 @@
+import ShiftWordmark, { PacesetterIcon } from '@/components/brand/ShiftWordmark'
 import {
   Bell,
   Bicycle,
@@ -23,25 +24,15 @@ import {
 
 const LIME = '#BAF14D'
 const BLUE = '#2966E5'
-const GOLD = '#EDB93C'
 const AMBER = '#F5A524'
 
 const card = 'rounded-2xl border border-white/[0.07] bg-[#242538]'
 const slab = 'font-ui text-[12px] font-semibold uppercase tracking-[1px] text-white/75'
 
-export function Chevrons({ color = LIME, size = 20 }: { color?: string; size?: number }) {
-  return (
-    <svg width={size} height={(size * 14) / 20} viewBox="0 0 20 14" fill="none" aria-hidden="true">
-      <path d="M2 1l6 6-6 6M10 1l6 6-6 6" stroke={color} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 export function ShiftHeader() {
   return (
     <div className="flex h-[44px] items-center justify-center gap-[7px] border-b border-white/[0.07]">
-      <span className="font-display text-[17px] font-extrabold text-[#F4F8EE]">Shift</span>
-      <Chevrons />
+      <ShiftWordmark tone="white" height={19} />
       <span
         className="text-[11px] text-white"
         style={{ fontFamily: "'Trebuchet MS', 'Lucida Grande', Verdana, sans-serif" }}
@@ -172,7 +163,7 @@ export function StatusBar() {
     <div className={`${card} flex h-[88px] flex-col justify-between px-[14px] py-3`}>
       <div className="flex items-center gap-[10px]">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(237,185,60,0.18)]">
-          <Chevrons color={GOLD} size={14} />
+          <PacesetterIcon size={16} />
         </div>
         <div className="flex-1">
           <div className="font-ui text-[15px] font-bold leading-[1.1] text-white">Pacesetter</div>

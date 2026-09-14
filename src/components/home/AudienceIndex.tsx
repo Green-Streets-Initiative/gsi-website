@@ -1,7 +1,7 @@
 import { ArrowRight } from '@phosphor-icons/react/dist/ssr'
 import TrackedLink from '@/components/TrackedLink'
 import type { Audience } from './tracking'
-import { Checkpoint, Eyebrow, LANE, RouteSegment } from './RouteLine'
+import { Eyebrow, LANE, RouteSegment } from './RouteLine'
 
 const ROWS: { label: string; body: string; href: string; audience: Audience }[] = [
   { label: 'For employers', body: 'Run a workplace challenge with real participation data.', href: '/shift/employers', audience: 'employer' },
@@ -20,7 +20,6 @@ export default function AudienceIndex() {
         <div className="hidden md:block" />
         <div className="grid gap-10 py-20 lg:grid-cols-[1fr_2fr] lg:gap-16 lg:py-28">
           <div className="relative lg:sticky lg:top-24 lg:self-start">
-            <Checkpoint className="absolute -left-[50px] top-[0.15rem]" />
             <Eyebrow>Who it&rsquo;s for</Eyebrow>
             <h2 className="font-serif text-[clamp(2.25rem,4.5vw,3.5rem)] font-normal leading-[1.05] text-navy">
               Made for the <em className="text-green-deep">whole</em> street.

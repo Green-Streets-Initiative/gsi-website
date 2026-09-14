@@ -1,0 +1,7 @@
+<svg viewBox="0 0 125 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- Wordmark: "Shift" -->
+  <text x="0" y="30" font-family="'Bricolage Grotesque', 'Arial Black', sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#191A2E">Shift</text>
+  <!-- Chevron mark (3pt gap between chevrons, matching shift-mark.svg) -->
+  <path d="M85,7 L101,20 L85,33 L85,26 L95,20 L85,14Z" fill="#BAF14D"/>
+  <path d="M104,7 L120,20 L104,33 L104,26 L114,20 L104,14Z" fill="#2966E5"/>
+</svg>
