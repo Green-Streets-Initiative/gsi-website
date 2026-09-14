@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Calendar, Bookmark } from 'lucide-react'
-import { type CommunityEvent, getTypeMeta, getTagMeta, formatTime, formatDistance, haversine, isDeadline, parseEventDate, dateShort, eventRideStyle, isNoDrop, RIDE_STYLE_LABEL, RIDE_STYLE_COLOR } from '@/lib/events'
+import { type CommunityEvent, getTypeMeta, getTagMeta, formatTime, formatDistance, haversine, isDeadline, parseEventDate, dateShort, eventRideStyle, isNoDrop, formatDistanceText, RIDE_STYLE_LABEL, RIDE_STYLE_COLOR } from '@/lib/events'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 
 interface EventCardProps {
@@ -26,6 +26,9 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
   // Easy / Moderate / Rec, only when the listing supports the call.
   const level = eventRideStyle(event)
   const noDrop = isNoDrop(event)
+  // Pace, distance, and drop policy are the three things a rider needs (Keith).
+  // The level carries the pace; the distance rides beside it when the listing states one.
+  const rideDistance = level ? formatDistanceText(event.distance_text) : null
 
   const distance = event.location_lat && event.location_lng
     ? haversine(userLat, userLng, event.location_lat, event.location_lng)
@@ -94,6 +97,7 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
             <>
               <span className="text-white/75"> · </span>
               <span style={{ color: RIDE_STYLE_COLOR[level] }}>{RIDE_STYLE_LABEL[level]}</span>
+              {rideDistance && <span className="text-white/75"> · {rideDistance}</span>}
             </>
           )}
         </p>
@@ -109,6 +113,7 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
             <>
               {' · '}
               <span className="font-medium" style={{ color: RIDE_STYLE_COLOR[level] }}>{RIDE_STYLE_LABEL[level]}</span>
+              {rideDistance && ` · ${rideDistance}`}
             </>
           )}
           {metaPartsLg.length > 0 && ` · ${metaPartsLg.join(' · ')}`}
