@@ -70,8 +70,8 @@ export default function SectionNav({
   return (
     <nav
       aria-label="Contents"
-      className="relative z-40 -mx-2 mt-6 rounded-xl border border-white/[0.12] px-2 py-2 backdrop-blur-xl sm:sticky sm:top-[68px]"
-      style={{ background: 'rgba(25,26,46,0.94)' }}
+      className="relative z-40 -mx-2 mt-6 rounded-xl border border-navy/15 px-2 py-2 backdrop-blur-xl sm:sticky sm:top-[68px]"
+      style={{ background: 'rgba(244,248,238,0.94)' }}
     >
       <ul className="flex flex-wrap gap-1.5">
         {sections.map((s) => {
@@ -81,10 +81,10 @@ export default function SectionNav({
               <a
                 href={`#${s.id}`}
                 aria-current={isActive ? 'true' : undefined}
-                className={`block whitespace-nowrap rounded-lg border px-3 py-1.5 font-display text-[12.5px] font-semibold no-underline transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BAF14D] ${
+                className={`block whitespace-nowrap rounded-lg border px-3 py-1.5 text-[13px] font-semibold no-underline transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest ${
                   isActive
-                    ? 'border-[#BAF14D] bg-[#BAF14D] text-[#191A2E]'
-                    : 'border-white/[0.18] bg-white/[0.08] text-white/90 hover:border-[#BAF14D]/70 hover:bg-white/[0.14] hover:text-white'
+                    ? 'border-navy bg-navy text-white'
+                    : 'border-navy/20 bg-white text-navy hover:border-navy/50'
                 }`}
               >
                 {s.title}

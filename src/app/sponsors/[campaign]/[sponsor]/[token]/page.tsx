@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import PageHero from '@/components/org/PageHero'
+import { LANE } from '@/components/home/RouteLine'
 import { allReportParams, findReport } from '@/content/sponsor-reports'
 import ReportTracking from './ReportTracking'
 import BlockView, { StatPanel } from '@/components/sponsor-report/BlockView'
@@ -58,50 +60,38 @@ export default async function SponsorReportPage({
   const report = resolveLiveStats(staticReport, fulfillment)
 
   return (
-    <div className="min-h-screen bg-[#191A2E]">
-      <Nav />
+    <>
+      <Nav variant="light" />
       <ReportTracking campaign={campaign.slug} sponsor={report.slug} />
+      <main className="bg-cream">
+        <PageHero eyebrow={`Sponsor report · ${campaign.period}`} title={report.heading} lede={report.intro} />
 
-      <main className="mx-auto max-w-[820px] px-6 py-12 sm:py-16">
-        <p className="font-display text-xs font-semibold uppercase tracking-[0.16em] text-[#BAF14D]">
-          Sponsor report · Campaign period {campaign.period}
-        </p>
-        <h1 className="mt-3 font-display text-[clamp(1.9rem,4.6vw,2.6rem)] font-extrabold leading-[1.08] tracking-tighter text-white text-balance">
-          {report.heading}
-        </h1>
-        <p className="mt-4 max-w-[64ch] text-white/90">{report.intro}</p>
+        <div className={`mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
+          <div className="hidden md:block" />
+          <article className="max-w-[820px] pb-14 lg:pb-16">
+            <SectionNav sections={report.sections.map((s) => ({ id: s.id, title: s.navLabel ?? s.title }))} />
 
-        <SectionNav sections={report.sections.map((s) => ({ id: s.id, title: s.navLabel ?? s.title }))} />
+            <StatPanel rows={report.summary} />
 
-        <StatPanel rows={report.summary} />
-
-        {report.sections.map((section) => (
-          <section
-            key={section.id}
-            id={section.id}
-            className="mt-9 scroll-mt-[140px] border-t border-white/10 pt-8"
-          >
-            <h2 className="font-display text-[21px] font-bold tracking-tight text-white text-balance">
-              {section.title}
-            </h2>
-            {section.blocks.map((block, i) => (
-              <BlockView key={i} block={block} />
+            {report.sections.map((section) => (
+              <section key={section.id} id={section.id} className="mt-9 scroll-mt-[140px] border-t border-navy/15 pt-8">
+                <h2 className="font-serif text-[clamp(1.5rem,3vw,2rem)] leading-[1.15] text-navy text-balance">{section.title}</h2>
+                {section.blocks.map((block, i) => (
+                  <BlockView key={i} block={block} />
+                ))}
+              </section>
             ))}
-          </section>
-        ))}
 
-        <p className="mt-10 border-t border-white/10 pt-6 text-sm text-white/75">
-          Figures as of {campaign.asOf}. Questions about this report:{' '}
-          <a
-            href="mailto:info@gogreenstreets.org"
-            className="text-[#BAF14D] underline underline-offset-2"
-          >
-            info@gogreenstreets.org
-          </a>
-        </p>
+            <p className="mt-10 border-t border-navy/15 pt-6 text-[14px] text-ink-soft">
+              Figures as of {campaign.asOf}. Questions about this report:{' '}
+              <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline underline-offset-2">
+                info@gogreenstreets.org
+              </a>
+            </p>
+          </article>
+        </div>
       </main>
-
-      <Footer />
-    </div>
+      <Footer variant="light" />
+    </>
   )
 }

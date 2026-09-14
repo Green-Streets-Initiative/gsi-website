@@ -2,9 +2,13 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import PageHero from '@/components/org/PageHero'
+import { LANE } from '@/components/home/RouteLine'
 import { campaigns, findCampaign } from '@/content/sponsor-reports'
 import BlockView, { StatPanel } from '@/components/sponsor-report/BlockView'
 import SectionNav from '@/components/sponsor-report/SectionNav'
+import SponsorLogos from '@/components/SponsorLogos'
+import { fetchPublicSponsorships } from '@/lib/sponsors/roll'
 
 /**
  * Public campaign wrap: /sponsors/<campaign>.
@@ -15,6 +19,9 @@ import SectionNav from '@/components/sponsor-report/SectionNav'
  * per-sponsor analytics: every donor can be sent this link without exposing
  * what any other donor's support returned.
  */
+
+// Rebuild hourly so a sponsor's updated logo shows without a deploy.
+export const revalidate = 3600
 
 export async function generateStaticParams() {
   return campaigns.filter((c) => c.wrap).map((c) => ({ campaign: c.slug }))
@@ -44,80 +51,72 @@ export default async function CampaignWrapPage({
   if (!campaign?.wrap) notFound()
   const wrap = campaign.wrap
 
+  // Logos come from the same sponsorship rows the event page shows. The
+  // written donor roll is the fallback if that read fails.
+  const sponsorships = await fetchPublicSponsorships(campaign.competitionId)
+
   return (
-    <div className="min-h-screen bg-[#191A2E]">
-      <Nav />
-      <main className="mx-auto max-w-[820px] px-6 py-12 sm:py-16">
-        <p className="font-display text-xs font-semibold uppercase tracking-[0.16em] text-[#BAF14D]">
-          Campaign report · {campaign.period}
-        </p>
-        <h1 className="mt-3 font-display text-[clamp(1.9rem,4.6vw,2.6rem)] font-extrabold leading-[1.08] tracking-tighter text-white text-balance">
-          {wrap.heading}
-        </h1>
-        <p className="mt-4 max-w-[64ch] text-white/90">{wrap.intro}</p>
+    <>
+      <Nav variant="light" />
+      <main className="bg-cream">
+        <PageHero eyebrow={`Campaign report · ${campaign.period}`} title={wrap.heading} lede={wrap.intro} />
 
-        <SectionNav
-          sections={[
-            ...wrap.sections.map((s) => ({ id: s.id, title: s.navLabel ?? s.title })),
-            { id: 'donors', title: 'Donors' },
-          ]}
-        />
+        <div className={`mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
+          <div className="hidden md:block" />
+          <article className="max-w-[820px] pb-14 lg:pb-16">
+            <SectionNav
+              sections={[
+                ...wrap.sections.map((s) => ({ id: s.id, title: s.navLabel ?? s.title })),
+                { id: 'donors', title: 'Donors' },
+              ]}
+            />
 
-        <StatPanel rows={wrap.summary} />
+            <StatPanel rows={wrap.summary} />
 
-        {wrap.sections.map((section) => (
-          <section
-            key={section.id}
-            id={section.id}
-            className="mt-9 scroll-mt-[140px] border-t border-white/10 pt-8"
-          >
-            <h2 className="font-display text-[21px] font-bold tracking-tight text-white text-balance">
-              {section.title}
-            </h2>
-            {section.blocks.map((block, i) => (
-              <BlockView key={i} block={block} />
-            ))}
-          </section>
-        ))}
-
-        <section id="donors" className="mt-9 scroll-mt-[140px] border-t border-white/10 pt-8">
-          <h2 className="font-display text-[21px] font-bold tracking-tight text-white">
-            Thank you to our donors
-          </h2>
-          <p className="mt-3 max-w-[64ch] text-white/90">
-            Every prize in this campaign was donated. These businesses and organizations made
-            Shift Your Summer possible:
-          </p>
-          {wrap.donors.map((g) => (
-            <div key={g.group} className="mt-6">
-              <h3 className="font-display text-[13px] font-semibold uppercase tracking-[0.12em] text-[#BAF14D]">
-                {g.group}
-              </h3>
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {g.names.map((n) => (
-                  <li
-                    key={n}
-                    className="rounded-full border border-white/10 bg-white/[0.06] px-3.5 py-1.5 text-[14px] text-white/90"
-                  >
-                    {n}
-                  </li>
+            {wrap.sections.map((section) => (
+              <section key={section.id} id={section.id} className="mt-9 scroll-mt-[140px] border-t border-navy/15 pt-8">
+                <h2 className="font-serif text-[clamp(1.5rem,3vw,2rem)] leading-[1.15] text-navy text-balance">{section.title}</h2>
+                {section.blocks.map((block, i) => (
+                  <BlockView key={i} block={block} />
                 ))}
-              </ul>
-            </div>
-          ))}
-        </section>
+              </section>
+            ))}
 
-        <p className="mt-10 border-t border-white/10 pt-6 text-sm text-white/75">
-          Figures as of {campaign.asOf}. Questions:{' '}
-          <a
-            href="mailto:info@gogreenstreets.org"
-            className="text-[#BAF14D] underline underline-offset-2"
-          >
-            info@gogreenstreets.org
-          </a>
-        </p>
+            <section id="donors" className="mt-9 scroll-mt-[140px] border-t border-navy/15 pt-8">
+              <h2 className="font-serif text-[clamp(1.5rem,3vw,2rem)] leading-[1.15] text-navy">Thank you to our donors</h2>
+              <p className="mt-3 max-w-[64ch] text-[1.0625rem] leading-[1.65] text-navy">
+                Every prize in this campaign was donated. These businesses and organizations made {campaign.name} possible:
+              </p>
+              {sponsorships.length > 0 ? (
+                <div className="mt-8">
+                  <SponsorLogos sponsorships={sponsorships} utm={{ medium: 'campaign_report', campaign: campaign.slug }} />
+                </div>
+              ) : (
+                wrap.donors.map((g) => (
+                  <div key={g.group} className="mt-6">
+                    <h3 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-forest">{g.group}</h3>
+                    <ul className="mt-3 flex flex-wrap gap-2">
+                      {g.names.map((n) => (
+                        <li key={n} className="rounded-full border border-navy/15 bg-white px-3.5 py-1.5 text-[14px] text-navy">
+                          {n}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))
+              )}
+            </section>
+
+            <p className="mt-10 border-t border-navy/15 pt-6 text-[14px] text-ink-soft">
+              Figures as of {campaign.asOf}. Questions:{' '}
+              <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline underline-offset-2">
+                info@gogreenstreets.org
+              </a>
+            </p>
+          </article>
+        </div>
       </main>
-      <Footer />
-    </div>
+      <Footer variant="light" />
+    </>
   )
 }

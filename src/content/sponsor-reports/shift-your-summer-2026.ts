@@ -64,6 +64,48 @@ const lessons = (extra: { title: string; body: string }[] = []): ReportSection =
   ],
 })
 
+/*
+ * Public wrap sections. The per-sponsor reports carry operational detail a
+ * donor is owed (notification counts, claim times, channel-by-channel
+ * promotion numbers, candid lessons). The public page is a general-audience
+ * story, so it uses these trimmed versions instead; `campaignResults` is
+ * shared as-is.
+ */
+const publicDrawings: ReportSection = {
+  id: 'drawings',
+  title: 'How the prizes were awarded', navLabel: 'Drawings',
+  blocks: [
+    {
+      kind: 'prose',
+      paragraphs: [
+        'Participants received sweepstakes entries for each verified active trip they logged, so the entry pool grew all summer. Smaller prizes were drawn most weeks; the rest were drawn in a final drawing on August 22.',
+        'Every drawing was an automated random selection. Where a winner declined or let their claim window lapse, a replacement was drawn, so no prize went unawarded.',
+      ],
+    },
+    {
+      kind: 'stats',
+      rows: [
+        { label: 'Prizes awarded', value: '38' },
+        { label: 'Entries in the final drawing', value: '10,810' },
+      ],
+    },
+  ],
+}
+
+const publicLessons: ReportSection = {
+  id: 'learned',
+  title: 'What we learned', navLabel: 'Lessons',
+  blocks: [
+    {
+      kind: 'prose',
+      paragraphs: [
+        'This was the first Shift Your Summer, so this year is our baseline. The clearest lesson: small, frequent drawings kept people moving. Rather than hold everything for a final drawing, we drew smaller prizes through the summer, and activity climbed all the way to August instead of tapering after launch week.',
+        'We are planning next summer now. If you took part, thank you: every one of those trips is yours.',
+      ],
+    },
+  ],
+}
+
 export const shiftYourSummer2026: CampaignReports = {
   slug: 'shift-your-summer-2026',
   competitionId: 'b6cea2c4-9780-47bc-945e-a2eda044a3d0',
@@ -84,30 +126,8 @@ export const shiftYourSummer2026: CampaignReports = {
     ],
     sections: [
       campaignResults,
-      {
-        id: 'drawings',
-        title: 'How the prizes were awarded', navLabel: 'Drawings',
-        blocks: [
-          {
-            kind: 'prose',
-            paragraphs: [
-              'Participants received sweepstakes entries for each verified active trip they logged, so the entry pool grew all summer. Smaller prizes were drawn most weeks; the rest were drawn in a final drawing on August 22 at noon.',
-              'Every drawing was an automated random selection with the entry pool and the result recorded for audit. Where a winner declined or let their claim window lapse, the system drew a replacement automatically, so no prize went unawarded.',
-            ],
-          },
-          {
-            kind: 'stats',
-            rows: [
-              { label: 'Prizes drawn', value: '38' },
-              { label: 'Winners notified', value: '38' },
-              { label: 'Entries in the final drawing', value: '10,810' },
-              { label: 'Median time from notification to claim', value: '1.5 hours' },
-            ],
-          },
-        ],
-      },
-      widerCampaign,
-      lessons(),
+      publicDrawings,
+      publicLessons,
     ],
     donors: [
       { group: 'Champion sponsors', names: ['Segway', 'Robinson + Cole'] },
