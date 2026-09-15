@@ -194,20 +194,29 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         <TownToc
           tone="light"
           sections={[
+            ...(resources.length > 0 || civicEvents.length > 0 ? [['#involved', 'Get Involved'] as [string, string]] : []),
             ['#stats', 'Stats'],
             ...(heatmapLayers.length > 0 ? [['#moves', 'Where we move'] as [string, string]] : []),
             ['#momentum', 'Momentum'],
             ...(showCompetition ? [['#competition', 'Competition'] as [string, string]] : []),
             ['#modes', 'Modes'],
             ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events & Roams'] as [string, string]] : []),
-            ...(resources.length > 0 || civicEvents.length > 0 ? [['#involved', 'Get Involved'] as [string, string]] : []),
             ...(partners.length > 0 ? [['#rewards', 'Rewards'] as [string, string]] : []),
           ]}
         />
 
+        {/* Get involved leads (Keith, 2026-09-15): meetings, petitions, and
+            the town's own committees matter to more readers than trip data,
+            so they come before anything derived from Shift. */}
+        {(resources.length > 0 || civicEvents.length > 0) && (
+          <Section id="involved" shape="straight" tone="white" width="read" className="scroll-mt-28">
+            <GetInvolved resources={resources} civicEvents={civicEvents} townName={name} townSlug={slug} />
+          </Section>
+        )}
+
         {/* Stats ledger: rank leads when the town has one; the disclaimer is
             the ledger's footnote so the numbers and their caveat stay together. */}
-        <Section id="stats" shape="straight" className="scroll-mt-28">
+        <Section id="stats" shape="wanderRight" className="scroll-mt-28">
           <StatRow
             stats={stats}
             townName={name}
@@ -255,13 +264,6 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         {(events.length > 0 || roams.length > 0) && (
           <Section id="events" shape="wanderLeft" tone="white" className="scroll-mt-28">
             <EventsRoamsPanels events={events} roams={roams} townName={name} tone="light" />
-          </Section>
-        )}
-
-        {/* Get involved — civic & advocacy */}
-        {(resources.length > 0 || civicEvents.length > 0) && (
-          <Section id="involved" shape="wanderRight" width="read" className="scroll-mt-28">
-            <GetInvolved resources={resources} civicEvents={civicEvents} townName={name} townSlug={slug} />
           </Section>
         )}
 
