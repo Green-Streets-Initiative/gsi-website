@@ -39,3 +39,20 @@ export async function loadTrebuchet(
     throw new Error(`Failed to load Trebuchet ${weight}: ${res.status}`)
   return res.arrayBuffer()
 }
+
+/**
+ * The three Bricolage weights every cream social card uses, in the shape
+ * ImageResponse wants. One place so a new card is a layout, not a font chore.
+ */
+export async function bricolageFonts() {
+  const [regular, bold, extra] = await Promise.all([
+    loadBricolage(400),
+    loadBricolage(700),
+    loadBricolage(800),
+  ])
+  return [
+    { name: 'Bricolage Grotesque', data: regular, weight: 400 as const, style: 'normal' as const },
+    { name: 'Bricolage Grotesque', data: bold, weight: 700 as const, style: 'normal' as const },
+    { name: 'Bricolage Grotesque', data: extra, weight: 800 as const, style: 'normal' as const },
+  ]
+}

@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import type { CommunityEvent, NextUp } from '@/lib/events'
 import { findNextUp } from '@/lib/events-next'
 import { buildEventTitle, buildEventDescription } from '@/lib/events-seo'
+import { SITE_URL } from '@/lib/seo'
 
 /**
  * Data for the events calendar and the event detail page, shared by the
@@ -96,6 +97,29 @@ export async function loadEventsListing(): Promise<CommunityEvent[]> {
   return ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent)
 }
 
+/**
+ * How many approved events are still ahead of us — the one live number on the
+ * /events social card. Never throws: an OG route that 500s renders no card at
+ * all, and a card without the count still reads fine.
+ */
+export async function countUpcomingEvents(): Promise<number | null> {
+  try {
+    const supabase = createServerSupabaseClient()
+    const today = new Date().toISOString().slice(0, 10)
+
+    const { count } = await supabase
+      .from('event_details')
+      .select('content_id, content_items!inner(id)', { count: 'exact', head: true })
+      .eq('content_items.status', 'approved')
+      .eq('content_items.content_type', 'community_event')
+      .gte('event_date', today)
+
+    return count ?? null
+  } catch {
+    return null
+  }
+}
+
 export interface LoadedEvent {
   event: CommunityEvent
   nextUp: NextUp | null
@@ -137,7 +161,7 @@ export function buildEventPageMetadata(loaded: LoadedEvent | null): Metadata {
 
   const title = buildEventTitle(event, recurring)
   const description = buildEventDescription(event, recurring)
-  const url = `https://www.gogreenstreets.org/events/${encodeURIComponent(event.id)}`
+  const url = `${SITE_URL}/events/${encodeURIComponent(event.id)}`
 
   return {
     title,
@@ -148,7 +172,20 @@ export function buildEventPageMetadata(loaded: LoadedEvent | null): Metadata {
       description,
       url,
       siteName: 'Green Streets Initiative',
-      ...(event.image_url ? { images: [event.image_url] } : {}),
+      // An event with no photo of its own would otherwise share as a bare
+      // link: the calendar's card is a better fallback than nothing. The
+      // file-convention image at /events covers that route only — it is not
+      // inherited by /events/[id].
+      images: [
+        event.image_url ?? { url: `${SITE_URL}/events/opengraph-image`, width: 1200, height: 630 },
+      ],
+    },
+    // Without this the root layout's generic card wins on X, and a shared
+    // event reads "Green Streets Initiative / Shift how you move."
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
     },
   }
 }

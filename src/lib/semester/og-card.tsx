@@ -2,21 +2,14 @@
  * The Shift Your Semester social card, shared by the hub and school
  * opengraph-image routes. Cream ground, navy headline, forest eyebrow.
  */
-import { loadBricolage } from '@/lib/og-fonts'
+import { bricolageFonts } from '@/lib/og-fonts'
 
 export const CREAM = '#F4F8EE'
 export const NAVY = '#191A2E'
 export const FOREST = '#2D6A4F'
 export const INK_SOFT = '#4A4D68'
 
-export async function semesterFonts() {
-  const [regular, bold, extra] = await Promise.all([loadBricolage(400), loadBricolage(700), loadBricolage(800)])
-  return [
-    { name: 'Bricolage Grotesque', data: regular, weight: 400 as const, style: 'normal' as const },
-    { name: 'Bricolage Grotesque', data: bold, weight: 700 as const, style: 'normal' as const },
-    { name: 'Bricolage Grotesque', data: extra, weight: 800 as const, style: 'normal' as const },
-  ]
-}
+export const semesterFonts = bricolageFonts
 
 export function SemesterCard({ eyebrow, headline, sub }: { eyebrow: string; headline: string; sub: string }) {
   return (
