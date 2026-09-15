@@ -34,11 +34,13 @@ type Dict = Record<string, string>
 
 const en: Dict = {
   // ── snap (NearbySnapshot: the pre-location splash + shared fallbacks) ──
-  'snap.eyebrow': 'New to the area?',
+  'snap.eyebrow': 'Your neighborhood, live',
+  'snap.eyebrow_newroutes': 'New to the area?',
   'snap.headline_lead': 'See how your neighborhood ',
   'snap.headline_em': 'moves',
   'snap.headline_tail': '',
-  'snap.subtitle': 'The T stations, bus routes, Bluebikes docks, and bike paths around your new home — live, on a map, in seconds.',
+  'snap.subtitle': 'The T stations, bus routes, Bluebikes docks, and bike paths around you — live, on a map, in seconds.',
+  'snap.subtitle_newroutes': 'The T stations, bus routes, Bluebikes docks, and bike paths around your new home — live, on a map, in seconds.',
   'snap.finding_you': 'Finding you…',
   'snap.use_my_location': 'Use my location',
   'snap.or': 'or',
@@ -341,11 +343,13 @@ const en: Dict = {
 }
 
 const es: Dict = {
-  "snap.eyebrow": "¿Nuevo en la zona?",
+  "snap.eyebrow": "Tu vecindario, en vivo",
+  "snap.eyebrow_newroutes": "¿Nuevo en la zona?",
   "snap.headline_lead": "Descubre cómo ",
   "snap.headline_em": "se mueve",
   "snap.headline_tail": " tu vecindario",
-  "snap.subtitle": "Las estaciones del T, rutas de bus, estaciones Bluebikes y ciclovías alrededor de tu nuevo hogar — en vivo, en un mapa, en segundos.",
+  "snap.subtitle": "Las estaciones del T, rutas de bus, estaciones Bluebikes y ciclovías a tu alrededor — en vivo, en un mapa, en segundos.",
+  "snap.subtitle_newroutes": "Las estaciones del T, rutas de bus, estaciones Bluebikes y ciclovías alrededor de tu nuevo hogar — en vivo, en un mapa, en segundos.",
   "snap.finding_you": "Ubicándote…",
   "snap.use_my_location": "Usar mi ubicación",
   "snap.or": "o",
@@ -619,11 +623,13 @@ const es: Dict = {
 }
 
 const ptBR: Dict = {
-  "snap.eyebrow": "Novo na região?",
+  "snap.eyebrow": "Seu bairro, ao vivo",
+  "snap.eyebrow_newroutes": "Novo na região?",
   "snap.headline_lead": "Veja como seu bairro se ",
   "snap.headline_em": "movimenta",
   "snap.headline_tail": "",
-  "snap.subtitle": "As estações do T, linhas de ônibus, estações Bluebikes e ciclovias ao redor da sua nova casa — ao vivo, no mapa, em segundos.",
+  "snap.subtitle": "As estações do T, linhas de ônibus, estações Bluebikes e ciclovias ao seu redor — ao vivo, no mapa, em segundos.",
+  "snap.subtitle_newroutes": "As estações do T, linhas de ônibus, estações Bluebikes e ciclovias ao redor da sua nova casa — ao vivo, no mapa, em segundos.",
   "snap.finding_you": "Localizando você…",
   "snap.use_my_location": "Usar minha localização",
   "snap.or": "ou",
@@ -897,11 +903,13 @@ const ptBR: Dict = {
 }
 
 const zhHans: Dict = {
-  "snap.eyebrow": "刚搬到这一带？",
+  "snap.eyebrow": "您的街区，实时呈现",
+  "snap.eyebrow_newroutes": "刚搬到这一带？",
   "snap.headline_lead": "看看您的社区如何",
   "snap.headline_em": "出行",
   "snap.headline_tail": "",
-  "snap.subtitle": "您新家周边的地铁站、公交线路、Bluebikes 站点和自行车道 — 实时呈现在地图上，几秒即可查看。",
+  "snap.subtitle": "您周边的地铁站、公交线路、Bluebikes 站点和自行车道 — 实时呈现在地图上，几秒即可查看。",
+  "snap.subtitle_newroutes": "您新家周边的地铁站、公交线路、Bluebikes 站点和自行车道 — 实时呈现在地图上，几秒即可查看。",
   "snap.finding_you": "正在定位…",
   "snap.use_my_location": "使用我的位置",
   "snap.or": "或",
