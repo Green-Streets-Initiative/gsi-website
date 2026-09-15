@@ -3,8 +3,10 @@
 import { Navigation } from 'lucide-react'
 import {
   EVENT_TYPES, TYPE_FILTER_ORDER, getTagMeta,
-  RIDE_STYLE_ORDER, RIDE_STYLE_FILTER_LABEL, RIDE_STYLE_BLURB, RIDE_STYLE_COLOR, styleFilterValue,
+  RIDE_STYLE_ORDER, RIDE_STYLE_FILTER_LABEL, RIDE_STYLE_BLURB, styleFilterValue,
 } from '@/lib/events'
+import { typeInk, rideStyleInk } from '@/lib/events-tone'
+import { useEventsTone } from './EventsTone'
 import CityAutocomplete from './CityAutocomplete'
 import {
   DISTANCE_OPTIONS, WHEN_OPTIONS, GOOD_FOR_TAGS,
@@ -18,12 +20,12 @@ import {
 
 export const pillClass = (active: boolean) =>
   `rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
-    active ? 'border-lime/50 text-lime' : 'border-white/[0.14] text-white/[0.78] hover:bg-white/[0.06]'
+    active ? 'border-(--ev-accent-line) text-(--ev-accent)' : 'border-(--ev-line-mid) text-(--ev-ink-78) hover:bg-(--ev-panel)'
   }`
 
 const rowClass = (active: boolean) =>
   `flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-colors ${
-    active ? 'border border-lime/30 bg-lime/[0.1] text-lime' : 'text-white/85 hover:bg-white/[0.06]'
+    active ? 'border border-(--ev-accent-line-30) bg-(--ev-accent-tint) text-(--ev-accent)' : 'text-(--ev-ink-85) hover:bg-(--ev-panel)'
   }`
 
 // --- When ---
@@ -81,14 +83,14 @@ export function LocationControl({ geoStatus, userLoc, initialCity, onUseMyLocati
         <button
           onClick={onUseMyLocation}
           disabled={geoStatus === 'locating'}
-          className="flex items-center gap-1.5 rounded-lg border border-white/[0.14] px-3 py-1.5 text-[12px] font-medium text-white/80 transition-colors hover:bg-white/[0.06] disabled:opacity-60"
+          className="flex items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-3 py-1.5 text-[12px] font-medium text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel) disabled:opacity-60"
         >
           <Navigation size={13} />
           {geoStatus === 'locating' ? 'Locating…' : 'Use my location'}
         </button>
       </div>
       <CityAutocomplete onSelect={onCitySelect} initialValue={initialCity} />
-      <p className="mt-1.5 text-[11px] text-white/75">
+      <p className="mt-1.5 text-[11px] text-(--ev-ink-75)">
         {geoStatus === 'active' ? `Near ${userLoc.label}` : `Distances measured from ${userLoc.label} until you pick a town.`}
       </p>
     </div>
@@ -127,6 +129,7 @@ export function TypeList({ value, counts, types, expanded, onToggleExpanded, onC
   expanded: boolean
   onToggleExpanded: () => void
 }) {
+  const { tone } = useEventsTone()
   const TOP = 6
   const visible = expanded ? types : types.slice(0, TOP)
   const hidden = types.length - visible.length
@@ -134,24 +137,24 @@ export function TypeList({ value, counts, types, expanded, onToggleExpanded, onC
     <div className="flex flex-col gap-0.5">
       <button onClick={() => onChange('All')} className={rowClass(value === 'All')}>
         <span>All types</span>
-        <span className="font-mono text-[12px] text-white/70">{counts.All ?? 0}</span>
+        <span className="font-mono text-[12px] text-(--ev-ink-70)">{counts.All ?? 0}</span>
       </button>
       {visible.map((t) => {
         const meta = EVENT_TYPES[t]
         return (
           <button key={t} onClick={() => onChange(t === value ? 'All' : t)} className={rowClass(value === t)}>
             <span className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: meta.color }} />
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: typeInk(meta, tone) }} />
               {meta.label}
             </span>
-            <span className="font-mono text-[12px] text-white/70">{counts[t] ?? 0}</span>
+            <span className="font-mono text-[12px] text-(--ev-ink-70)">{counts[t] ?? 0}</span>
           </button>
         )
       })}
       {(hidden > 0 || expanded) && (
         <button
           onClick={onToggleExpanded}
-          className="mt-1 rounded-lg px-3 py-1.5 text-left text-[12px] font-semibold text-lime transition-colors hover:bg-white/[0.04]"
+          className="mt-1 rounded-lg px-3 py-1.5 text-left text-[12px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-panel-faint)"
         >
           {expanded ? 'Show fewer' : `Show ${hidden} more type${hidden === 1 ? '' : 's'}`}
         </button>
@@ -173,11 +176,12 @@ function visibleLevels(value: string, counts: Record<string, number>) {
 }
 
 function LevelRows({ value, counts, onChange }: TypeProps) {
+  const { tone } = useEventsTone()
   const levels = visibleLevels(value, counts)
   if (levels.length === 0) return null
   return (
     <>
-      <p className="mb-1 mt-3 border-t border-white/[0.07] px-3 pt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/75">
+      <p className="mb-1 mt-3 border-t border-(--ev-line) px-3 pt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">
         Rides by level
       </p>
       {levels.map((s) => {
@@ -186,15 +190,15 @@ function LevelRows({ value, counts, onChange }: TypeProps) {
         return (
           <button key={v} onClick={() => onChange(active ? 'All' : v)} className={rowClass(active)}>
             <span className="flex min-w-0 items-start gap-2">
-              <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: RIDE_STYLE_COLOR[s] }} />
+              <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: rideStyleInk(s, tone) }} />
               <span className="min-w-0">
                 <span className="block">{RIDE_STYLE_FILTER_LABEL[s]}</span>
-                <span className={`block text-[11px] font-normal leading-snug ${active ? 'text-lime/90' : 'text-white/75'}`}>
+                <span className={`block text-[11px] font-normal leading-snug ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-75)'}`}>
                   {RIDE_STYLE_BLURB[s]}
                 </span>
               </span>
             </span>
-            <span className="ml-2 shrink-0 font-mono text-[12px] text-white/70">{counts[v] ?? 0}</span>
+            <span className="ml-2 shrink-0 font-mono text-[12px] text-(--ev-ink-70)">{counts[v] ?? 0}</span>
           </button>
         )
       })}
@@ -214,7 +218,7 @@ export function LevelPills({ value, counts, onChange }: TypeProps) {
         return (
           <button key={v} onClick={() => onChange(active ? 'All' : v)} aria-pressed={active} className={pillClass(active)}>
             {RIDE_STYLE_FILTER_LABEL[s]}
-            <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-lime/90' : 'text-white/70'}`}>{counts[v] ?? 0}</span>
+            <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{counts[v] ?? 0}</span>
           </button>
         )
       })}
@@ -245,7 +249,7 @@ export function TagToggles({ selected, counts, onToggle }: TagProps) {
             className={`${pillClass(active)} disabled:opacity-60`}
           >
             {getTagMeta(t).label}
-            <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-lime/90' : 'text-white/70'}`}>{n}</span>
+            <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{n}</span>
           </button>
         )
       })}

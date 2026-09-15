@@ -52,10 +52,10 @@ export default function FilterPill({ label, active, open, onOpen, onClose, panel
         aria-haspopup="dialog"
         className={`inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-[13px] font-semibold transition-colors ${
           active
-            ? 'border-lime/50 bg-lime/[0.08] text-lime'
+            ? 'border-(--ev-accent-line) bg-(--ev-accent-tint-8) text-(--ev-accent)'
             : open
-              ? 'border-white/[0.25] bg-white/[0.06] text-white'
-              : 'border-white/[0.14] text-white/85 hover:bg-white/[0.06]'
+              ? 'border-(--ev-line-stronger) bg-(--ev-panel) text-(--ev-ink)'
+              : 'border-(--ev-line-mid) text-(--ev-ink-85) hover:bg-(--ev-panel)'
         }`}
       >
         {label}
@@ -65,7 +65,7 @@ export default function FilterPill({ label, active, open, onOpen, onClose, panel
         <div
           role="dialog"
           aria-label={label}
-          className={`absolute left-0 top-full z-40 mt-2 overflow-visible rounded-xl border border-white/[0.12] bg-[#242538] p-3 shadow-[0_16px_40px_rgba(0,0,0,0.45)] ${panelClassName}`}
+          className={`absolute left-0 top-full z-40 mt-2 overflow-visible rounded-xl border border-(--ev-line-12) bg-(--ev-menu) p-3 shadow-(--ev-shadow) ${panelClassName}`}
           style={{ animation: 'animate-in 0.16s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
         >
           {children}

@@ -2,6 +2,7 @@
 
 import { useRef, useEffect } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { PIN, useEventsTone } from './EventsTone'
 
 let maplibrePromise: Promise<typeof import('maplibre-gl')> | null = null
 function loadMaplibre() {
@@ -16,6 +17,8 @@ interface Props {
 }
 
 export default function EventMap({ lat, lng, label }: Props) {
+  const { tone } = useEventsTone()
+  const pin = PIN[tone]
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
 
@@ -43,8 +46,8 @@ export default function EventMap({ lat, lng, label }: Props) {
 
       const el = document.createElement('div')
       el.innerHTML = `<svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16 0C7.163 0 0 7.163 0 16c0 12 16 24 16 24s16-12 16-24C32 7.163 24.837 0 16 0z" fill="#BAF14D"/>
-        <circle cx="16" cy="15" r="6" fill="#191A2E"/>
+        <path d="M16 0C7.163 0 0 7.163 0 16c0 12 16 24 16 24s16-12 16-24C32 7.163 24.837 0 16 0z" fill="${pin.fill}"/>
+        <circle cx="16" cy="15" r="6" fill="${pin.dot}"/>
       </svg>`
       el.style.cursor = 'pointer'
 
@@ -64,7 +67,7 @@ export default function EventMap({ lat, lng, label }: Props) {
       mapRef.current?.remove()
       mapRef.current = null
     }
-  }, [lat, lng, label])
+  }, [lat, lng, label, pin])
 
   return <div ref={containerRef} className="h-full w-full" />
 }

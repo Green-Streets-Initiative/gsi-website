@@ -14,6 +14,9 @@ const VALID_TAGS = [
 // Mirrors FEED_TYPE_OPTIONS in SubmitEventForm. Stored as submitted rather than
 // mapped onto event_sources.source_type: 'social' has no equivalent there, and
 // an admin decides what kind of source a feed request becomes.
+// The five-band pace scale shared with ride_series.pace (see lib/ride-style.ts).
+const VALID_PACES = ['kids', 'relaxed', 'moderate', 'brisk', 'fast']
+
 const VALID_FEED_TYPES = [
   'not_applicable', 'ical', 'google_calendar', 'website', 'social', 'other',
 ]
@@ -179,6 +182,24 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Failed to save event. Please try again.' }, { status: 500 })
   }
 
+  // Ride facts the organizer stated. Unchecked no-drop stays null (unknown),
+  // not false: the calendar only shows the promise where someone made it.
+  const pace = VALID_PACES.includes(body.pace) ? body.pace : null
+  const noDrop = body.noDrop === true ? true : null
+
+  // A suggestion the submitter picked; verified so a forged id can't link a
+  // stranger's events to an organizer.
+  let organizerId: string | null = null
+  if (typeof body.organizerId === 'string' && body.organizerId) {
+    const { data: org } = await supabase
+      .from('event_organizers')
+      .select('id')
+      .eq('id', body.organizerId)
+      .eq('status', 'active')
+      .maybeSingle()
+    organizerId = org?.id ?? null
+  }
+
   const lat = body.lat ? parseFloat(body.lat) : null
   const lng = body.lng ? parseFloat(body.lng) : null
   const tags = Array.isArray(body.tags) ? body.tags.filter((t: string) => VALID_TAGS.includes(t)) : []
@@ -193,8 +214,11 @@ export async function POST(request: Request) {
     location_lat: lat,
     location_lng: lng,
     event_type: body.eventType,
+    organizer_id: organizerId,
     organizer_name: body.organizerName?.trim() || null,
     organizer_url: body.organizerUrl?.trim() || null,
+    pace,
+    no_drop: noDrop,
     event_url: body.eventUrl?.trim() || null,
     registration_url: body.registrationUrl?.trim() || null,
     distance_text: body.length?.trim() || null,

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { type CommunityEvent, parseEventDate, dateKey, todayKey, eventDotsByDay, eventCountByDay } from '@/lib/events'
+import { useEventsTone } from './EventsTone'
 
 /**
  * Phone-sized replacement for the month grid: one week of day buttons with
@@ -33,6 +34,7 @@ function addDays(d: Date, n: number): Date {
 }
 
 export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStripProps) {
+  const { tone } = useEventsTone()
   const today = todayKey()
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(selectedDay ? parseEventDate(selectedDay) : new Date()))
 
@@ -47,7 +49,9 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart])
 
-  const dotsByDay = useMemo(() => eventDotsByDay(events), [events])
+  const dotsByDay = useMemo(() => eventDotsByDay(events, 3, tone), [events, tone])
+  // Dots on the selected day sit on the accent fill: navy on lime, cream on navy.
+  const onFill = tone === 'light' ? '#F4F8EE' : '#191A2E'
   const countByDay = useMemo(() => eventCountByDay(events), [events])
 
   const first = days[0]
@@ -62,27 +66,27 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-card p-3">
+    <div className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-3">
       <div className="mb-2 flex items-center justify-between">
         <button
           onClick={() => setWeekStart(addDays(weekStart, -7))}
-          className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/[0.14] text-white/80 transition-colors hover:bg-white/[0.06]"
+          className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-(--ev-line-mid) text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
           aria-label="Previous week"
         >
           <ChevronLeft size={16} />
         </button>
         <div className="flex items-center gap-2">
-          <span className="font-display text-[15px] font-bold text-white">{rangeLabel}</span>
+          <span className="font-display text-[15px] font-bold text-(--ev-ink)">{rangeLabel}</span>
           <button
             onClick={goToday}
-            className="rounded-full border border-white/[0.14] px-2.5 py-0.5 text-[11px] font-semibold text-white/80 transition-colors hover:bg-white/[0.06]"
+            className="rounded-full border border-(--ev-line-mid) px-2.5 py-0.5 text-[11px] font-semibold text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
           >
             Today
           </button>
         </div>
         <button
           onClick={() => setWeekStart(addDays(weekStart, 7))}
-          className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/[0.14] text-white/80 transition-colors hover:bg-white/[0.06]"
+          className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-(--ev-line-mid) text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
           aria-label="Next week"
         >
           <ChevronRight size={16} />
@@ -105,13 +109,13 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
               aria-label={`${DAY_ABBR[d.getDay()]} ${d.getDate()}, ${count} event${count === 1 ? '' : 's'}`}
               className={`flex min-h-[64px] flex-col items-center justify-start rounded-xl px-1 pb-1.5 pt-2 transition-colors ${
                 isSelected
-                  ? 'bg-lime text-navy'
+                  ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)'
                   : isPast
-                    ? 'text-white/60'
-                    : 'text-white hover:bg-white/[0.06]'
-              } ${isToday && !isSelected ? 'ring-1 ring-lime/60' : ''}`}
+                    ? 'text-(--ev-ink-60)'
+                    : 'text-(--ev-ink) hover:bg-(--ev-panel)'
+              } ${isToday && !isSelected ? 'ring-1 ring-(--ev-accent-line-60)' : ''}`}
             >
-              <span className={`text-[10px] font-semibold uppercase tracking-[0.08em] ${isSelected ? 'text-navy/80' : isPast ? 'text-white/60' : 'text-white/75'}`}>
+              <span className={`text-[10px] font-semibold uppercase tracking-[0.08em] ${isSelected ? 'text-(--ev-on-accent-fill-soft)' : isPast ? 'text-(--ev-ink-60)' : 'text-(--ev-ink-75)'}`}>
                 {DAY_ABBR[d.getDay()]}
               </span>
               <span className="mt-0.5 text-[16px] font-bold leading-none">{d.getDate()}</span>
@@ -120,7 +124,7 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
                   <span
                     key={i}
                     className="h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: isSelected ? '#191A2E' : c }}
+                    style={{ backgroundColor: isSelected ? onFill : c }}
                   />
                 ))}
               </span>
@@ -132,7 +136,7 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
       {selectedDay && (
         <button
           onClick={() => onSelectDay(null)}
-          className="mt-2 w-full rounded-lg py-1.5 text-center text-[12px] font-semibold text-lime transition-colors hover:bg-white/[0.04]"
+          className="mt-2 w-full rounded-lg py-1.5 text-center text-[12px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-panel-faint)"
         >
           Show all upcoming
         </button>

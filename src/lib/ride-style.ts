@@ -141,6 +141,13 @@ export const RIDE_STYLE_COLOR: Record<RideStyle, string> = {
   rec: 'rgba(255,255,255,0.75)',
 }
 
+/** The same three on white or cream: forest leads, teal-deep for moderate, rec steps back to soft ink. */
+export const RIDE_STYLE_INK: Record<RideStyle, string> = {
+  easy: '#2D6A4F',
+  moderate: '#0B6B75',
+  rec: '#4A4D68',
+}
+
 /** Filter values are namespaced so a level can't collide with an event type. */
 export const STYLE_FILTER_PREFIX = 'style:'
 export function styleFilterValue(style: RideStyle): string {

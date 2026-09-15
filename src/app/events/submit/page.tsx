@@ -10,11 +10,11 @@ export const metadata = {
 export default function SubmitEventPage() {
   return (
     <>
-      <Nav />
-      <main style={{ paddingTop: '60px' }}>
-        <SubmitEventForm />
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
+        <SubmitEventForm tone="light" />
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

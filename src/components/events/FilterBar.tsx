@@ -38,17 +38,17 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
     f.tags.length === 0 ? 'Good for' : f.tags.length === 1 ? getTagMeta(f.tags[0]).label : `Good for · ${f.tags.length}`
 
   return (
-    <section className="sticky top-[60px] z-30 hidden border-b border-white/[0.07] bg-navy/95 px-8 backdrop-blur lg:block">
+    <section className="sticky top-[60px] z-30 hidden border-b border-(--ev-line) bg-(--ev-bar) px-8 backdrop-blur lg:block">
       <div className="mx-auto flex h-[56px] max-w-[1200px] items-center gap-2.5">
         <div className="relative w-[240px] shrink-0 xl:w-[300px]">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-(--ev-ink-60)" />
           <input
             type="search"
             value={f.query}
             onChange={(e) => f.setQuery(e.target.value)}
             placeholder="Search events"
             aria-label="Search events"
-            className="h-9 w-full rounded-full border border-white/[0.14] bg-[#1F2034] pl-9 pr-3 text-[13px] text-white placeholder:text-white/60 focus:border-lime focus:outline-none"
+            className="h-9 w-full rounded-full border border-(--ev-line-mid) bg-(--ev-input) pl-9 pr-3 text-[13px] text-(--ev-ink) placeholder:text-(--ev-ink-60) focus:border-(--ev-accent) focus:outline-none"
           />
         </div>
 
@@ -57,7 +57,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
         </FilterPill>
 
         <FilterPill label={nearLabel} active={f.geoStatus === 'active' || f.distance !== 'all'} open={open === 'near'} onOpen={() => setOpen('near')} onClose={close} panelClassName="w-[300px]">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/75">Where are you?</p>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Where are you?</p>
           <LocationControl
             geoStatus={f.geoStatus}
             userLoc={f.userLoc}
@@ -65,7 +65,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
             onUseMyLocation={f.useMyLocation}
             onCitySelect={f.selectCity}
           />
-          <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/75">How far</p>
+          <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">How far</p>
           <DistancePills value={f.distance} onChange={f.setDistance} />
         </FilterPill>
 
@@ -89,15 +89,15 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
             onClick={() => f.setSavedOnly(!f.savedOnly)}
             aria-pressed={f.savedOnly}
             className={`inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-[13px] font-semibold transition-colors ${
-              f.savedOnly ? 'border-lime/50 bg-lime/[0.08] text-lime' : 'border-white/[0.14] text-white/85 hover:bg-white/[0.06]'
+              f.savedOnly ? 'border-(--ev-accent-line) bg-(--ev-accent-tint-8) text-(--ev-accent)' : 'border-(--ev-line-mid) text-(--ev-ink-85) hover:bg-(--ev-panel)'
             }`}
           >
-            <Bookmark size={14} className={f.savedOnly ? 'fill-lime' : ''} />
+            <Bookmark size={14} className={f.savedOnly ? 'fill-(--ev-accent)' : ''} />
             Saved · {savedCount}
           </button>
         )}
 
-        <span className="ml-auto shrink-0 font-mono text-[13px] text-white/75">
+        <span className="ml-auto shrink-0 font-mono text-[13px] text-(--ev-ink-75)">
           {resultCount} event{resultCount === 1 ? '' : 's'}
         </span>
       </div>

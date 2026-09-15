@@ -3,7 +3,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { Check, Info } from 'lucide-react'
-import { EVENT_TYPES, TYPE_FILTER_ORDER, TAG_META } from '@/lib/events'
+import { EVENT_TYPES, TYPE_FILTER_ORDER, TAG_META, PACE_BAND_LABEL, isRideEvent } from '@/lib/events'
+import { tagInk } from '@/lib/events-tone'
+import { PILL } from '@/components/org/Section'
+import { toneClass, type EventsTone } from './EventsTone'
+import './events-tone.css'
 
 interface FormData {
   title: string
@@ -18,6 +22,7 @@ interface FormData {
   address: string
   lat: string
   lng: string
+  pace: string
   organizerName: string
   organizerUrl: string
   eventUrl: string
@@ -33,10 +38,14 @@ const EMPTY_FORM: FormData = {
   title: '', eventType: '', length: '', description: '',
   date: '', startTime: '', endTime: '',
   venueName: '', city: '', address: '', lat: '', lng: '',
-  organizerName: '', organizerUrl: '', eventUrl: '', registrationUrl: '',
+  pace: '', organizerName: '', organizerUrl: '', eventUrl: '', registrationUrl: '',
   contactName: '', contactEmail: '', contactPhone: '',
   feedType: 'not_applicable', feedUrl: '',
 }
+
+const PACE_OPTIONS = ['kids', 'relaxed', 'moderate', 'brisk', 'fast'] as const
+
+type OrganizerSuggestion = { id: string; name: string; url: string | null }
 
 const FEED_TYPE_OPTIONS = [
   { value: 'not_applicable', label: 'Not applicable' },
@@ -67,9 +76,47 @@ function isValidEmail(email: string) {
 // Mirrors the window the API accepts, so typos get caught before submitting.
 const MAX_DAYS_AHEAD = 730
 
-export default function SubmitEventForm() {
+// Everything else paints from the `--ev-*` variables; these are the slots
+// where cream changes the typography or the button shape, not just the color.
+const FORM: Record<EventsTone, { eyebrow: string; h1: string; lede: string; legend: string; thanks: string; primary: string; secondary: string }> = {
+  dark: {
+    eyebrow: 'text-[11px] font-bold uppercase tracking-[0.14em] text-(--ev-accent)',
+    h1: 'mt-3 font-display text-[clamp(28px,4vw,44px)] font-extrabold leading-[1.1] tracking-tight text-(--ev-ink)',
+    lede: 'mt-4 max-w-[600px] text-[15px] leading-relaxed text-(--ev-ink-70)',
+    legend: 'float-left w-full font-display text-lg font-bold text-(--ev-ink)',
+    thanks: 'font-display text-2xl font-bold text-(--ev-ink)',
+    primary: 'rounded-[10px] bg-(--ev-accent-fill) px-6 py-2.5 text-[13px] font-bold text-(--ev-on-accent-fill) transition-opacity hover:opacity-85 disabled:opacity-50',
+    secondary: 'rounded-[10px] border border-(--ev-line-strong) px-5 py-2.5 text-[13px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)',
+  },
+  light: {
+    eyebrow: 'text-[11px] font-semibold uppercase tracking-[0.14em] text-forest',
+    h1: 'mt-3 font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.04] tracking-[-0.01em] text-navy',
+    lede: 'mt-4 max-w-[600px] text-[1.0625rem] leading-[1.6] text-ink-soft',
+    legend: 'float-left w-full font-serif text-[1.375rem] leading-tight text-navy',
+    thanks: 'font-serif text-[1.75rem] leading-tight text-navy',
+    primary: `${PILL} disabled:opacity-50`,
+    secondary: 'inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]',
+  },
+}
+
+interface SubmitEventFormProps {
+  /** `light` is the cream site; `dark` (default) is the app-dark original. */
+  tone?: EventsTone
+  /** Where "Back to events" and "Cancel" point. */
+  hrefBase?: string
+}
+
+export default function SubmitEventForm({ tone = 'dark', hrefBase = '/events' }: SubmitEventFormProps = {}) {
+  const t = FORM[tone]
   const [form, setForm] = useState<FormData>(EMPTY_FORM)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [noDrop, setNoDrop] = useState(false)
+  // The organizer picked from the suggestions, if any; cleared when the name is edited by hand.
+  const [organizerId, setOrganizerId] = useState<string | null>(null)
+  const [organizerSuggestions, setOrganizerSuggestions] = useState<OrganizerSuggestion[]>([])
+  const [organizerOpen, setOrganizerOpen] = useState(false)
+  const organizerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const organizerBox = useRef<HTMLDivElement>(null)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -84,6 +131,37 @@ export default function SubmitEventForm() {
   useEffect(() => {
     loadedAt.current = Date.now()
   }, [])
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (organizerBox.current && !organizerBox.current.contains(e.target as Node)) setOrganizerOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [])
+
+  const searchOrganizers = (q: string) => {
+    if (organizerTimer.current) clearTimeout(organizerTimer.current)
+    if (q.trim().length < 2) { setOrganizerSuggestions([]); setOrganizerOpen(false); return }
+    organizerTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/events/organizers?q=${encodeURIComponent(q.trim())}`)
+        const data = await res.json()
+        const items: OrganizerSuggestion[] = data.organizers ?? []
+        setOrganizerSuggestions(items)
+        setOrganizerOpen(items.length > 0)
+      } catch {
+        setOrganizerSuggestions([])
+      }
+    }, 250)
+  }
+
+  const pickOrganizer = (o: OrganizerSuggestion) => {
+    setOrganizerId(o.id)
+    setForm((f) => ({ ...f, organizerName: o.name, organizerUrl: f.organizerUrl.trim() || o.url || '' }))
+    setOrganizerSuggestions([])
+    setOrganizerOpen(false)
+  }
 
   const showToast = useCallback((msg: string) => {
     setToast(msg)
@@ -137,6 +215,8 @@ export default function SubmitEventForm() {
         body: JSON.stringify({
           ...form,
           tags: selectedTags,
+          noDrop: isRideEvent(form.eventType) ? noDrop : false,
+          organizerId,
           website: honeypot,
           formLoadedAt: loadedAt.current,
         }),
@@ -156,34 +236,34 @@ export default function SubmitEventForm() {
   }
 
   const inputClass = (field: keyof FormData) =>
-    `w-full rounded-lg border bg-[#1F2034] px-3 py-2.5 text-[14px] text-white placeholder:text-white/50 focus:outline-none transition-colors ${
-      errors[field] ? 'border-[#FF6B6B] focus:border-[#FF6B6B]' : 'border-white/[0.14] focus:border-lime'
+    `w-full rounded-lg border bg-(--ev-input) px-3 py-2.5 text-[14px] text-(--ev-ink) placeholder:text-(--ev-ink-60) focus:outline-none transition-colors ${
+      errors[field] ? 'border-(--ev-danger) focus:border-(--ev-danger)' : 'border-(--ev-line-mid) focus:border-(--ev-accent)'
     }`
 
-  const labelClass = 'block mb-1.5 text-[13px] font-semibold text-white/80'
+  const labelClass = 'block mb-1.5 text-[13px] font-semibold text-(--ev-ink-80)'
 
   // --- Success state ---
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-navy px-8 pb-24 pt-12">
+      <div className={`min-h-screen bg-(--ev-bg) px-8 pb-24 pt-12 ${toneClass(tone)}`}>
         <div className="mx-auto max-w-[600px]">
-          <div className="rounded-2xl border border-white/[0.07] bg-card p-10 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-lime">
-              <Check size={28} className="text-navy" />
+          <div className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-10 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-(--ev-accent-fill)">
+              <Check size={28} className="text-(--ev-on-accent-fill)" />
             </div>
-            <h2 className="font-display text-2xl font-bold text-white">Thanks — your event is in.</h2>
-            <p className="mt-3 text-[14px] leading-relaxed text-white/70">
+            <h2 className={t.thanks}>Thanks — your event is in.</h2>
+            <p className="mt-3 text-[14px] leading-relaxed text-(--ev-ink-70)">
               We&apos;ll review it for completeness and relevance and let you know at{' '}
-              <span className="font-semibold text-white">{submittedEmail}</span> when it&apos;s live.
+              <span className="font-semibold text-(--ev-ink)">{submittedEmail}</span> when it&apos;s live.
             </p>
             <div className="mt-8 flex justify-center gap-3">
-              <Link href="/events" className="rounded-[10px] border border-white/[0.18] px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/[0.06]">
+              <Link href={hrefBase} className={t.secondary}>
                 Back to events
               </Link>
               <button
-                onClick={() => { setForm(EMPTY_FORM); setSelectedTags([]); setErrors({}); setSubmitted(false) }}
-                className="rounded-[10px] bg-lime px-5 py-2.5 text-[13px] font-bold text-navy transition-opacity hover:opacity-85"
+                onClick={() => { setForm(EMPTY_FORM); setSelectedTags([]); setNoDrop(false); setOrganizerId(null); setErrors({}); setSubmitted(false) }}
+                className={t.primary}
               >
                 Submit another
               </button>
@@ -197,13 +277,13 @@ export default function SubmitEventForm() {
   // --- Form ---
 
   return (
-    <div className="min-h-screen bg-navy px-8 pb-24 pt-12">
+    <div className={`min-h-screen bg-(--ev-bg) px-8 pb-24 pt-12 ${toneClass(tone)}`}>
       <div className="mx-auto max-w-[760px]">
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-lime">Submit to the calendar</p>
-        <h1 className="mt-3 font-display text-[clamp(28px,4vw,44px)] font-extrabold leading-[1.1] tracking-tight text-white">
+        <p className={t.eyebrow}>Submit to the calendar</p>
+        <h1 className={t.h1}>
           Submit your event for review.
         </h1>
-        <p className="mt-4 max-w-[600px] text-[15px] leading-relaxed text-white/70">
+        <p className={t.lede}>
           Group ride, walking tour, e-bike demo, civic action — if it gets people moving by active transportation, we want it on the calendar. Fill in what you can; we&apos;ll review your event for completeness and relevance and notify you when it&apos;s been added.
         </p>
 
@@ -220,43 +300,71 @@ export default function SubmitEventForm() {
           />
 
           {/* Section 1: The basics */}
-          <fieldset className="rounded-2xl border border-white/[0.07] bg-card p-6">
-            <legend className="mb-4 font-display text-lg font-bold text-white">The basics</legend>
-            <div className="flex flex-col gap-5">
+          <fieldset className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-6">
+            <legend className={`mb-4 ${t.legend}`}>The basics</legend>
+            <div className="clear-both flex flex-col gap-5">
               <div>
-                <label className={labelClass}>Event title <span className="text-lime">*</span></label>
+                <label className={labelClass}>Event title <span className="text-(--ev-accent)">*</span></label>
                 <input type="text" value={form.title} onChange={set('title')} className={inputClass('title')} placeholder="e.g. Critical Mass Boston" />
-                {errors.title && <p className="mt-1 text-[12px] text-[#FF6B6B]">{errors.title}</p>}
+                {errors.title && <p className="mt-1 text-[12px] text-(--ev-danger)">{errors.title}</p>}
               </div>
               <div>
-                <label className={labelClass}>Event type <span className="text-lime">*</span></label>
-                <select value={form.eventType} onChange={set('eventType')} className={inputClass('eventType')} style={{ colorScheme: 'dark' }}>
+                <label className={labelClass}>Event type <span className="text-(--ev-accent)">*</span></label>
+                <select value={form.eventType} onChange={set('eventType')} className={inputClass('eventType')} style={{ colorScheme: tone }}>
                   <option value="">Select a type</option>
                   {TYPE_FILTER_ORDER.map((t) => (
                     <option key={t} value={t}>{EVENT_TYPES[t]?.label ?? t}</option>
                   ))}
                 </select>
-                {errors.eventType && <p className="mt-1 text-[12px] text-[#FF6B6B]">{errors.eventType}</p>}
+                {errors.eventType && <p className="mt-1 text-[12px] text-(--ev-danger)">{errors.eventType}</p>}
               </div>
               <div>
                 <label className={labelClass}>Distance / length</label>
                 <input type="text" value={form.length} onChange={set('length')} className={inputClass('length')} placeholder="e.g. 12 miles, 2 km loop" />
               </div>
+              {isRideEvent(form.eventType) && (
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Pace</label>
+                    <select value={form.pace} onChange={set('pace')} className={inputClass('pace')} style={{ colorScheme: tone }}>
+                      <option value="">Not sure / varies</option>
+                      {PACE_OPTIONS.map((p) => (
+                        <option key={p} value={p}>{PACE_BAND_LABEL[p]}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <span className={labelClass}>Drop policy</span>
+                    <label className="flex min-h-[44px] cursor-pointer items-start gap-2.5 rounded-lg border border-(--ev-line-mid) px-3 py-2.5">
+                      <input
+                        type="checkbox"
+                        checked={noDrop}
+                        onChange={(e) => setNoDrop(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-(--ev-accent)"
+                      />
+                      <span className="text-[13px] leading-snug text-(--ev-ink-80)">
+                        <span className="font-semibold text-(--ev-ink)">No-drop ride.</span> The group waits, or a sweep rides at the back.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
               <div>
-                <label className={labelClass}>Description <span className="text-lime">*</span></label>
+                <label className={labelClass}>Description <span className="text-(--ev-accent)">*</span></label>
                 <textarea value={form.description} onChange={set('description')} rows={4} className={inputClass('description')} placeholder="What happens, who it's for, what to bring…" />
-                {errors.description && <p className="mt-1 text-[12px] text-[#FF6B6B]">{errors.description}</p>}
+                {errors.description && <p className="mt-1 text-[12px] text-(--ev-danger)">{errors.description}</p>}
               </div>
             </div>
           </fieldset>
 
           {/* Tags */}
-          <fieldset className="rounded-2xl border border-white/[0.07] bg-card p-6">
-            <legend className="mb-1 font-display text-lg font-bold text-white">Who is it for?</legend>
-            <p className="mb-4 text-[13px] text-white/60">Select all that apply. Helps people find the right events.</p>
+          <fieldset className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-6">
+            <legend className={`mb-1 ${t.legend}`}>Who is it for?</legend>
+            <p className="clear-both mb-4 text-[13px] text-(--ev-ink-60)">Select all that apply. Helps people find the right events.</p>
             <div className="flex flex-wrap gap-2">
               {(['free', 'beginner_friendly', 'family_friendly', 'students', 'seniors', 'lgbtq', 'women', 'registration_required', 'spanish', 'bilingual', 'advocacy'] as const).map(tag => {
                 const tm = TAG_META[tag]
+                const ti = tagInk(tm, tone)
                 const active = selectedTags.includes(tag)
                 return (
                   <button
@@ -265,9 +373,9 @@ export default function SubmitEventForm() {
                     onClick={() => setSelectedTags(prev => active ? prev.filter(t => t !== tag) : [...prev, tag])}
                     className="rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-all"
                     style={{
-                      borderColor: active ? tm.color : 'rgba(255,255,255,0.14)',
-                      backgroundColor: active ? tm.bg : 'transparent',
-                      color: active ? tm.color : 'rgba(255,255,255,0.6)',
+                      borderColor: active ? ti.color : 'var(--ev-line-mid)',
+                      backgroundColor: active ? ti.bg : 'transparent',
+                      color: active ? ti.color : 'var(--ev-ink-60)',
                     }}
                   >
                     {tm.label}
@@ -278,32 +386,32 @@ export default function SubmitEventForm() {
           </fieldset>
 
           {/* Section 2: When & where */}
-          <fieldset className="rounded-2xl border border-white/[0.07] bg-card p-6">
-            <legend className="mb-4 font-display text-lg font-bold text-white">When &amp; where</legend>
-            <div className="grid gap-5 sm:grid-cols-2">
+          <fieldset className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-6">
+            <legend className={`mb-4 ${t.legend}`}>When &amp; where</legend>
+            <div className="clear-both grid gap-5 sm:grid-cols-2">
               <div>
-                <label className={labelClass}>Date <span className="text-lime">*</span></label>
-                <input type="date" value={form.date} onChange={set('date')} className={inputClass('date')} style={{ colorScheme: 'dark' }} />
-                {errors.date && <p className="mt-1 text-[12px] text-[#FF6B6B]">{errors.date}</p>}
+                <label className={labelClass}>Date <span className="text-(--ev-accent)">*</span></label>
+                <input type="date" value={form.date} onChange={set('date')} className={inputClass('date')} style={{ colorScheme: tone }} />
+                {errors.date && <p className="mt-1 text-[12px] text-(--ev-danger)">{errors.date}</p>}
               </div>
               <div>
-                <label className={labelClass}>Start time <span className="text-lime">*</span></label>
-                <input type="time" value={form.startTime} onChange={set('startTime')} className={inputClass('startTime')} style={{ colorScheme: 'dark' }} />
-                {errors.startTime && <p className="mt-1 text-[12px] text-[#FF6B6B]">{errors.startTime}</p>}
+                <label className={labelClass}>Start time <span className="text-(--ev-accent)">*</span></label>
+                <input type="time" value={form.startTime} onChange={set('startTime')} className={inputClass('startTime')} style={{ colorScheme: tone }} />
+                {errors.startTime && <p className="mt-1 text-[12px] text-(--ev-danger)">{errors.startTime}</p>}
               </div>
               <div>
                 <label className={labelClass}>End time</label>
-                <input type="time" value={form.endTime} onChange={set('endTime')} className={inputClass('endTime')} style={{ colorScheme: 'dark' }} />
+                <input type="time" value={form.endTime} onChange={set('endTime')} className={inputClass('endTime')} style={{ colorScheme: tone }} />
               </div>
               <div className="sm:col-span-2">
-                <label className={labelClass}>Venue / meeting point <span className="text-lime">*</span></label>
+                <label className={labelClass}>Venue / meeting point <span className="text-(--ev-accent)">*</span></label>
                 <input type="text" value={form.venueName} onChange={set('venueName')} className={inputClass('venueName')} placeholder="e.g. Davis Square Plaza" />
-                {errors.venueName && <p className="mt-1 text-[12px] text-[#FF6B6B]">{errors.venueName}</p>}
+                {errors.venueName && <p className="mt-1 text-[12px] text-(--ev-danger)">{errors.venueName}</p>}
               </div>
               <div>
-                <label className={labelClass}>Town / city <span className="text-lime">*</span></label>
+                <label className={labelClass}>Town / city <span className="text-(--ev-accent)">*</span></label>
                 <input type="text" value={form.city} onChange={set('city')} className={inputClass('city')} placeholder="e.g. Somerville" />
-                {errors.city && <p className="mt-1 text-[12px] text-[#FF6B6B]">{errors.city}</p>}
+                {errors.city && <p className="mt-1 text-[12px] text-(--ev-danger)">{errors.city}</p>}
               </div>
               <div>
                 <label className={labelClass}>Street address</label>
@@ -318,22 +426,53 @@ export default function SubmitEventForm() {
                 <input type="text" value={form.lng} onChange={set('lng')} className={inputClass('lng')} placeholder="e.g. -71.1225" />
               </div>
             </div>
-            <div className="mt-3 flex items-start gap-2 text-[12px] text-white/50">
+            <div className="mt-3 flex items-start gap-2 text-[12px] text-(--ev-ink-60)">
               <Info size={14} className="mt-0.5 shrink-0" />
               <span>Coordinates power the map pin and directions link. You can find them on Google Maps by right-clicking a location.</span>
             </div>
           </fieldset>
 
           {/* Section 3: Links & contact */}
-          <fieldset className="rounded-2xl border border-white/[0.07] bg-card p-6">
-            <legend className="mb-1 font-display text-lg font-bold text-white">Links &amp; contact</legend>
-            <p className="mb-4 text-[13px] text-white/60">
-              Organized something with us before? Start typing your organization — we&apos;ll fill in the rest from your last submission.
+          <fieldset className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-6">
+            <legend className={`mb-1 ${t.legend}`}>Links &amp; contact</legend>
+            <p className="clear-both mb-4 text-[13px] text-(--ev-ink-60)">
+              Organized with us before? Start typing your organization and pick it from the list: we&apos;ll fill in the website and file this event with your others.
             </p>
             <div className="flex flex-col gap-5">
-              <div>
+              <div ref={organizerBox} className="relative">
                 <label className={labelClass}>Organizer name</label>
-                <input type="text" value={form.organizerName} onChange={set('organizerName')} className={inputClass('organizerName')} placeholder="e.g. Somerville Bike Co-op" />
+                <input
+                  type="text"
+                  value={form.organizerName}
+                  onChange={(e) => { set('organizerName')(e); setOrganizerId(null); searchOrganizers(e.target.value) }}
+                  onFocus={() => { if (organizerSuggestions.length > 0) setOrganizerOpen(true) }}
+                  className={inputClass('organizerName')}
+                  placeholder="e.g. Somerville Bike Co-op"
+                  autoComplete="off"
+                  role="combobox"
+                  aria-expanded={organizerOpen}
+                  aria-autocomplete="list"
+                />
+                {organizerOpen && (
+                  <ul className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-(--ev-line-12) bg-(--ev-menu) shadow-(--ev-shadow)" role="listbox">
+                    {organizerSuggestions.map((o) => (
+                      <li key={o.id} role="option" aria-selected={false}>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => pickOrganizer(o)}
+                          className="flex w-full items-baseline justify-between gap-3 px-3 py-2 text-left text-[13px] text-(--ev-ink) hover:bg-(--ev-panel)"
+                        >
+                          <span className="truncate">{o.name}</span>
+                          {o.url && <span className="shrink-0 truncate text-[11px] text-(--ev-ink-60)">{o.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</span>}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {organizerId && (
+                  <p className="mt-1 text-[12px] text-(--ev-accent)">Matched to an organizer we know. Its events will be listed together.</p>
+                )}
               </div>
               <div>
                 <label className={labelClass}>Organizer website</label>
@@ -355,9 +494,9 @@ export default function SubmitEventForm() {
                   <input type="text" value={form.contactName} onChange={set('contactName')} className={inputClass('contactName')} />
                 </div>
                 <div>
-                  <label className={labelClass}>Contact email <span className="text-lime">*</span></label>
+                  <label className={labelClass}>Contact email <span className="text-(--ev-accent)">*</span></label>
                   <input type="email" value={form.contactEmail} onChange={set('contactEmail')} className={inputClass('contactEmail')} placeholder="you@example.com" />
-                  {errors.contactEmail && <p className="mt-1 text-[12px] text-[#FF6B6B]">{errors.contactEmail}</p>}
+                  {errors.contactEmail && <p className="mt-1 text-[12px] text-(--ev-danger)">{errors.contactEmail}</p>}
                 </div>
                 <div>
                   <label className={labelClass}>Contact phone</label>
@@ -368,15 +507,15 @@ export default function SubmitEventForm() {
           </fieldset>
 
           {/* Section 4: Recurring source */}
-          <fieldset className="rounded-2xl border border-white/[0.07] bg-card p-6">
-            <legend className="mb-1 font-display text-lg font-bold text-white">Post events regularly?</legend>
-            <p className="mb-4 text-[13px] text-white/60">
+          <fieldset className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-6">
+            <legend className={`mb-1 ${t.legend}`}>Post events regularly?</legend>
+            <p className="clear-both mb-4 text-[13px] text-(--ev-ink-60)">
               If you have an iCal feed or Google Calendar, we can sync your events automatically. Websites and social feeds are reviewed before events go live.
             </p>
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <label className={labelClass}>Source type</label>
-                <select value={form.feedType} onChange={set('feedType')} className={inputClass('feedType')} style={{ colorScheme: 'dark' }}>
+                <select value={form.feedType} onChange={set('feedType')} className={inputClass('feedType')} style={{ colorScheme: tone }}>
                   {FEED_TYPE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
@@ -393,15 +532,15 @@ export default function SubmitEventForm() {
 
           {/* Footer */}
           <div className="flex items-center justify-between">
-            <p className="text-[12px] text-white/50"><span className="text-lime">*</span> Required fields</p>
+            <p className="text-[12px] text-(--ev-ink-60)"><span className="text-(--ev-accent)">*</span> Required fields</p>
             <div className="flex gap-3">
-              <Link href="/events" className="rounded-[10px] border border-white/[0.18] px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/[0.06]">
+              <Link href={hrefBase} className={t.secondary}>
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-[10px] bg-lime px-6 py-2.5 text-[13px] font-bold text-navy transition-opacity hover:opacity-85 disabled:opacity-50"
+                className={t.primary}
               >
                 {submitting ? 'Submitting…' : 'Submit for review'}
               </button>
@@ -413,7 +552,7 @@ export default function SubmitEventForm() {
       {/* Toast */}
       {toast && (
         <div
-          className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-white/[0.14] bg-[#2E2F45] px-5 py-3 text-[13px] font-medium text-white shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
+          className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-(--ev-line-mid) bg-(--ev-toast) px-5 py-3 text-[13px] font-medium text-(--ev-ink-on-toast) shadow-(--ev-shadow)"
           style={{ animation: 'animate-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
         >
           {toast}

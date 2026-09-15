@@ -6,6 +6,7 @@ import { type CommunityEvent, groupLabel, parseEventDate } from '@/lib/events'
 import EventCard from './EventCard'
 import type { UserLoc } from './useEventFilters'
 import { trackEvents } from './events-analytics'
+import { useEventsTone } from './EventsTone'
 
 /**
  * The day-grouped list used by the phone list view and the desktop agenda:
@@ -31,6 +32,7 @@ interface AgendaProps {
 export default function Agenda({
   events, limit, onShowMore, paged, userLoc, saved, onToggleSave, emptyMessage, emptyAction, showCount,
 }: AgendaProps) {
+  const { hrefBase } = useEventsTone()
   const shown = paged ? events.slice(0, limit) : events
 
   const groups = useMemo(() => {
@@ -48,10 +50,10 @@ export default function Agenda({
 
   if (events.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/[0.07] bg-card px-8 py-14 text-center">
-        <p className="text-[15px] text-white/75">{emptyMessage}</p>
+      <div className="rounded-2xl border border-(--ev-line) bg-(--ev-card) px-8 py-14 text-center">
+        <p className="text-[15px] text-(--ev-ink-75)">{emptyMessage}</p>
         {emptyAction ?? (
-          <Link href="/events/submit" className="mt-3 inline-block text-[13px] font-semibold text-lime hover:underline">
+          <Link href={`${hrefBase}/submit`} className="mt-3 inline-block text-[13px] font-semibold text-(--ev-accent) hover:underline">
             Submit an event
           </Link>
         )}
@@ -65,17 +67,17 @@ export default function Agenda({
   return (
     <div>
       {showCount && (
-        <p className="mb-4 text-[13px] text-white/75 lg:hidden">
+        <p className="mb-4 text-[13px] text-(--ev-ink-75) lg:hidden">
           {events.length} event{events.length !== 1 ? 's' : ''}
         </p>
       )}
       <div className="flex flex-col gap-7">
         {groups.map((group) => (
           <div key={group.key}>
-            <div className="sticky top-[116px] z-20 mb-3 flex items-center gap-3 bg-navy py-2 lg:top-[116px]">
-              <h3 className="whitespace-nowrap text-[14px] font-semibold text-white/85">{group.label}</h3>
-              <div className="h-px flex-1 bg-white/[0.07]" />
-              <span className="font-mono text-[12px] text-white/75">{group.events.length}</span>
+            <div className="sticky top-[116px] z-20 mb-3 flex items-center gap-3 bg-(--ev-bg) py-2 lg:top-[116px]">
+              <h3 className="whitespace-nowrap text-[14px] font-semibold text-(--ev-ink-85)">{group.label}</h3>
+              <div className="h-px flex-1 bg-(--ev-line)" />
+              <span className="font-mono text-[12px] text-(--ev-ink-75)">{group.events.length}</span>
             </div>
             <div className="flex flex-col gap-2.5">
               {group.events.map((ev) => {
@@ -99,7 +101,7 @@ export default function Agenda({
       {remaining > 0 && (
         <button
           onClick={() => { onShowMore(); trackEvents('events_show_more', { shown: shown.length + AGENDA_PAGE }) }}
-          className="mx-auto mt-6 block rounded-[10px] border border-white/[0.18] px-6 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-white/[0.06]"
+          className="mx-auto mt-6 block rounded-[10px] border border-(--ev-line-strong) px-6 py-3 text-[14px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
         >
           Show more · {remaining} remaining
         </button>

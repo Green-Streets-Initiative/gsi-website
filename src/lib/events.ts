@@ -68,27 +68,28 @@ export interface NextUp {
 export interface TypeMeta {
   label: string
   icon: string      // Lucide icon name
-  color: string     // hex color
+  color: string     // hex color, tuned for the navy surface
+  ink: string       // 6-digit hex that reads on white and cream (see lib/events-tone.ts)
 }
 
 export const EVENT_TYPES: Record<string, TypeMeta> = {
-  guided_ride:    { label: 'Guided Ride',    icon: 'Bike',        color: '#BAF14D' },
-  group_ride:     { label: 'Group Ride',     icon: 'Bike',        color: '#BAF14D' },
-  class:          { label: 'Class',          icon: 'GraduationCap', color: '#BAF14D' },
-  ebike_demo:     { label: 'E-Bike Demo',    icon: 'Zap',         color: '#9BE06B' },
-  cargo_bike_demo:{ label: 'Cargo Bike Demo',icon: 'Package',     color: '#4A82F0' },
-  bike_repair:    { label: 'Bike Repair',    icon: 'Wrench',      color: '#9BE06B' },
-  bike_rodeo:     { label: 'Bike Rodeo',     icon: 'Flag',        color: '#BAF14D' },
-  bike_bus:       { label: 'Bike Bus',       icon: 'Users',       color: '#BAF14D' },
-  walking_tour:   { label: 'Walking Tour',   icon: 'Footprints',  color: '#5BD6C0' },
-  transit_buddy:  { label: 'Transit Buddy',  icon: 'Bus',         color: '#4A82F0' },
-  civic_action:   { label: 'Civic Action',   icon: 'Megaphone',   color: '#F5C04A' },
-  talk:           { label: 'Talk / Panel',   icon: 'Mic',         color: '#E879F9' },
-  festival:       { label: 'Festival',       icon: 'PartyPopper', color: '#FF8A65' },
-  open_streets:   { label: 'Open Streets',   icon: 'MapPin',      color: '#FF8A65' },
-  contest:        { label: 'Contest',        icon: 'Trophy',      color: '#A78BFA' },
-  challenge:      { label: 'Community Challenge', icon: 'Trophy', color: '#FF8C35' },
-  other:          { label: 'Other',          icon: 'Calendar',    color: 'rgba(255,255,255,0.6)' },
+  guided_ride:    { label: 'Guided Ride',    icon: 'Bike',        color: '#BAF14D', ink: '#2D6A4F' },
+  group_ride:     { label: 'Group Ride',     icon: 'Bike',        color: '#BAF14D', ink: '#2D6A4F' },
+  class:          { label: 'Class',          icon: 'GraduationCap', color: '#BAF14D', ink: '#2D6A4F' },
+  ebike_demo:     { label: 'E-Bike Demo',    icon: 'Zap',         color: '#9BE06B', ink: '#367326' },
+  cargo_bike_demo:{ label: 'Cargo Bike Demo',icon: 'Package',     color: '#4A82F0', ink: '#2456C4' },
+  bike_repair:    { label: 'Bike Repair',    icon: 'Wrench',      color: '#9BE06B', ink: '#367326' },
+  bike_rodeo:     { label: 'Bike Rodeo',     icon: 'Flag',        color: '#BAF14D', ink: '#2D6A4F' },
+  bike_bus:       { label: 'Bike Bus',       icon: 'Users',       color: '#BAF14D', ink: '#2D6A4F' },
+  walking_tour:   { label: 'Walking Tour',   icon: 'Footprints',  color: '#5BD6C0', ink: '#0B6B75' },
+  transit_buddy:  { label: 'Transit Buddy',  icon: 'Bus',         color: '#4A82F0', ink: '#2456C4' },
+  civic_action:   { label: 'Civic Action',   icon: 'Megaphone',   color: '#F5C04A', ink: '#8A5A00' },
+  talk:           { label: 'Talk / Panel',   icon: 'Mic',         color: '#E879F9', ink: '#9D2BB0' },
+  festival:       { label: 'Festival',       icon: 'PartyPopper', color: '#FF8A65', ink: '#B7410E' },
+  open_streets:   { label: 'Open Streets',   icon: 'MapPin',      color: '#FF8A65', ink: '#B7410E' },
+  contest:        { label: 'Contest',        icon: 'Trophy',      color: '#A78BFA', ink: '#5B3FC4' },
+  challenge:      { label: 'Community Challenge', icon: 'Trophy', color: '#FF8C35', ink: '#9A4B00' },
+  other:          { label: 'Other',          icon: 'Calendar',    color: 'rgba(255,255,255,0.6)', ink: '#4A4D68' },
 }
 
 // Deadline-style types: `event_date` is an entry deadline, not a start time.
@@ -106,7 +107,7 @@ export function getTypeMeta(eventType: string): TypeMeta {
 
 export {
   type RideStyle, rideStyle, isRideEvent, parseMiles,
-  RIDE_STYLE_ORDER, RIDE_STYLE_LABEL, RIDE_STYLE_FILTER_LABEL, RIDE_STYLE_BLURB, RIDE_STYLE_COLOR,
+  RIDE_STYLE_ORDER, RIDE_STYLE_LABEL, RIDE_STYLE_FILTER_LABEL, RIDE_STYLE_BLURB, RIDE_STYLE_COLOR, RIDE_STYLE_INK,
   STYLE_FILTER_PREFIX, styleFilterValue, parseStyleFilter,
 } from './ride-style'
 import { rideStyle as classifyRide, isRideEvent as isRideEventT, type RideStyle as RideStyleT } from './ride-style'
@@ -185,23 +186,23 @@ export function haversine(lat1: number, lng1: number, lat2: number, lng2: number
 // Tag metadata — display labels and pill colors
 // ---------------------------------------------------------------------------
 
-export const TAG_META: Record<string, { label: string; color: string; bg: string }> = {
-  free:                  { label: 'Free',                 color: '#4ADE80', bg: '#4ADE8020' },
-  paid:                  { label: 'Paid',                 color: '#FBBF24', bg: '#FBBF2420' },
-  beginner_friendly:     { label: 'Beginner-friendly',    color: '#60A5FA', bg: '#60A5FA20' },
-  registration_required: { label: 'Registration req’d', color: '#F97316', bg: '#F9731620' },
-  family_friendly:       { label: 'Family-friendly',      color: '#F472B6', bg: '#F472B620' },
-  seniors:               { label: 'Seniors',              color: '#A78BFA', bg: '#A78BFA20' },
-  lgbtq:                 { label: 'LGBTQ+',               color: '#E879F9', bg: '#E879F920' },
-  women:                 { label: 'Women',                color: '#FB7185', bg: '#FB718520' },
-  spanish:               { label: 'En español',           color: '#FCD34D', bg: '#FCD34D20' },
-  bilingual:             { label: 'Bilingual',            color: '#FCD34D', bg: '#FCD34D20' },
-  students:              { label: 'Students',             color: '#2DD4BF', bg: '#2DD4BF20' },
-  advocacy:              { label: 'Advocacy',             color: '#FB923C', bg: '#FB923C20' },
+export const TAG_META: Record<string, { label: string; color: string; bg: string; ink: string; inkBg: string }> = {
+  free:                  { label: 'Free',                 color: '#4ADE80', bg: '#4ADE8020', ink: '#2D6A4F', inkBg: '#2D6A4F1F' },
+  paid:                  { label: 'Paid',                 color: '#FBBF24', bg: '#FBBF2420', ink: '#8A5A00', inkBg: '#8A5A001F' },
+  beginner_friendly:     { label: 'Beginner-friendly',    color: '#60A5FA', bg: '#60A5FA20', ink: '#2456C4', inkBg: '#2456C41F' },
+  registration_required: { label: 'Registration req’d', color: '#F97316', bg: '#F9731620', ink: '#9A4B00', inkBg: '#9A4B001F' },
+  family_friendly:       { label: 'Family-friendly',      color: '#F472B6', bg: '#F472B620', ink: '#B0246E', inkBg: '#B0246E1F' },
+  seniors:               { label: 'Seniors',              color: '#A78BFA', bg: '#A78BFA20', ink: '#5B3FC4', inkBg: '#5B3FC41F' },
+  lgbtq:                 { label: 'LGBTQ+',               color: '#E879F9', bg: '#E879F920', ink: '#9D2BB0', inkBg: '#9D2BB01F' },
+  women:                 { label: 'Women',                color: '#FB7185', bg: '#FB718520', ink: '#B3263F', inkBg: '#B3263F1F' },
+  spanish:               { label: 'En español',           color: '#FCD34D', bg: '#FCD34D20', ink: '#7A5200', inkBg: '#7A52001F' },
+  bilingual:             { label: 'Bilingual',            color: '#FCD34D', bg: '#FCD34D20', ink: '#7A5200', inkBg: '#7A52001F' },
+  students:              { label: 'Students',             color: '#2DD4BF', bg: '#2DD4BF20', ink: '#0B6B75', inkBg: '#0B6B751F' },
+  advocacy:              { label: 'Advocacy',             color: '#FB923C', bg: '#FB923C20', ink: '#B7410E', inkBg: '#B7410E1F' },
 }
 
 export function getTagMeta(tag: string) {
-  return TAG_META[tag] ?? { label: tag, color: '#94A3B8', bg: '#94A3B820' }
+  return TAG_META[tag] ?? { label: tag, color: '#94A3B8', bg: '#94A3B820', ink: '#4A4D68', inkBg: '#4A4D681F' }
 }
 
 export function formatDistance(miles: number): string {
@@ -327,12 +328,13 @@ export function dateMedium(d: Date): string {
   return `${WEEKDAYS_SHORT[d.getDay()]}, ${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`
 }
 
-/** Up to `max` distinct type colors per day, in listing order. */
-export function eventDotsByDay(events: CommunityEvent[], max = 3): Map<string, string[]> {
+/** Up to `max` distinct type colors per day, in listing order; `light` picks the inks that read on cream. */
+export function eventDotsByDay(events: CommunityEvent[], max = 3, tone: 'dark' | 'light' = 'dark'): Map<string, string[]> {
   const map = new Map<string, string[]>()
   for (const ev of events) {
     const colors = map.get(ev.event_date) ?? []
-    const c = getTypeMeta(ev.event_type).color
+    const meta = getTypeMeta(ev.event_type)
+    const c = tone === 'light' ? meta.ink : meta.color
     if (!colors.includes(c) && colors.length < max) colors.push(c)
     map.set(ev.event_date, colors)
   }

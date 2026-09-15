@@ -15,6 +15,27 @@ import { getQualifyingTowns } from '@/lib/towns/queries'
 /** Chips shown before "All towns" takes over. The rest of the list is a click away. */
 const CHIP_LIMIT = 12
 
+type Tone = 'dark' | 'light'
+
+// `light` is the cream events calendar; `dark` (default) keeps the strip
+// byte-identical under its navy hosts.
+const STRIP_THEME: Record<Tone, { section: string; h2: string; sub: string; chip: string; all: string }> = {
+  dark: {
+    section: 'border-t border-white/[0.06] bg-[#191A2E] px-6 py-10',
+    h2: 'mb-1 font-display text-xl font-bold tracking-tight text-white',
+    sub: 'mb-5 text-sm text-white/75',
+    chip: 'rounded-full bg-white/[0.06] px-3.5 py-1.5 text-sm font-semibold text-white/85 transition-colors hover:bg-white/[0.12] hover:text-white',
+    all: 'rounded-full bg-[#BAF14D]/15 px-3.5 py-1.5 text-sm font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D]/25',
+  },
+  light: {
+    section: 'border-t border-navy/10 bg-cream px-6 py-10',
+    h2: 'mb-1 font-serif text-[1.375rem] leading-tight text-navy',
+    sub: 'mb-5 text-sm text-ink-soft',
+    chip: 'rounded-full bg-navy/[0.06] px-3.5 py-1.5 text-sm font-semibold text-navy transition-colors hover:bg-navy/[0.12]',
+    all: 'rounded-full bg-navy px-3.5 py-1.5 text-sm font-bold text-white transition-opacity hover:opacity-90',
+  },
+}
+
 /**
  * Compact chip strip — events page. Renders inline, NOT behind Suspense: these
  * chips are internal links first and UI second, and a Suspense boundary ships
@@ -22,31 +43,32 @@ const CHIP_LIMIT = 12
  * script runs. The ~350ms the directory RPC adds to an already-dynamic page is
  * the cheaper side of that trade.
  */
-export async function TownChipsStrip() {
+export async function TownChipsStrip({ tone = 'dark' }: { tone?: Tone } = {}) {
   const towns = await topTowns()
+  const t = STRIP_THEME[tone]
 
   return (
-    <section className="border-t border-white/[0.06] bg-[#191A2E] px-6 py-10">
+    <section className={t.section}>
       <div className="mx-auto max-w-[960px] text-center">
-        <h2 className="mb-1 font-display text-xl font-bold tracking-tight text-white">
+        <h2 className={t.h2}>
           See what&apos;s happening in your town
         </h2>
-        <p className="mb-5 text-sm text-white/75">
+        <p className={t.sub}>
           Live community stats, popular routes, and ways to get involved — town by town.
         </p>
         <div className="flex flex-wrap justify-center gap-2">
-          {towns.map((t) => (
+          {towns.map((town) => (
             <Link
-              key={t.slug}
-              href={`/shift/towns/${t.slug}`}
-              className="rounded-full bg-white/[0.06] px-3.5 py-1.5 text-sm font-semibold text-white/85 transition-colors hover:bg-white/[0.12] hover:text-white"
+              key={town.slug}
+              href={`/shift/towns/${town.slug}`}
+              className={t.chip}
             >
-              {t.town_name}
+              {town.town_name}
             </Link>
           ))}
           <Link
             href="/shift/towns"
-            className="rounded-full bg-[#BAF14D]/15 px-3.5 py-1.5 text-sm font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D]/25"
+            className={t.all}
           >
             All towns &rarr;
           </Link>
@@ -79,13 +101,13 @@ export async function TownsTeaserBand() {
   const lead = published.length >= 2 ? `${published.length.toLocaleString()} towns.` : 'Your town.'
 
   return (
-    <section className="bg-[#121320] px-8 py-14">
+    <section className="border-t border-navy/10 bg-white px-8 py-12">
       <div className="mx-auto flex max-w-[960px] flex-col items-center gap-5 text-center md:flex-row md:justify-between md:text-left">
         <div>
-          <h2 className="mb-2 font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold leading-tight tracking-tight text-white">
+          <h2 className="mb-2 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
             {lead} One friendly competition.
           </h2>
-          <p className="max-w-[480px] text-[15px] leading-relaxed text-white/80">
+          <p className="max-w-[480px] text-[15px] leading-relaxed text-ink-soft">
             Every trip on Shift counts toward your town&apos;s standing — see the
             live leaderboard, where your neighbors walk and ride, and what&apos;s
             happening on your streets.
@@ -93,7 +115,7 @@ export async function TownsTeaserBand() {
         </div>
         <Link
           href="/shift/towns"
-          className="shrink-0 rounded-full bg-[#BAF14D] px-6 py-3 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+          className="shrink-0 rounded-full bg-navy px-6 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
         >
           Is your town on the board? &rarr;
         </Link>

@@ -13,8 +13,11 @@ import {
   type CommunityEvent, type NextUp,
   getTypeMeta, getTagMeta, formatTime, dateLong, isDeadline, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
-  eventRideStyle, isNoDrop, isRideEvent, PACE_BAND_LABEL, RIDE_STYLE_LABEL, RIDE_STYLE_BLURB, RIDE_STYLE_COLOR,
+  eventRideStyle, isNoDrop, isRideEvent, PACE_BAND_LABEL, RIDE_STYLE_LABEL, RIDE_STYLE_BLURB,
 } from '@/lib/events'
+import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
+import { EventsToneProvider, toneClass, useEventsTone, type EventsTone } from './EventsTone'
+import './events-tone.css'
 
 const EventMap = dynamic(() => import('./EventMap'), { ssr: false })
 
@@ -38,26 +41,27 @@ function withUtm(url: string): string {
  * organizer's next event.
  */
 function NextUpBanner({ nextUp }: { nextUp: NextUp | null }) {
+  const { hrefBase } = useEventsTone()
   const label = nextUp
     ? `${dateLong(parseEventDate(nextUp.event_date))}${nextUp.event_time ? ` at ${formatTime(nextUp.event_time)}` : ''}`
     : null
 
   return (
-    <div className="mb-6 rounded-2xl border border-lime/30 bg-lime/[0.07] p-4 sm:mb-8 sm:p-5">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-lime">
+    <div className="mb-6 rounded-2xl border border-(--ev-accent-line-30) bg-(--ev-accent-tint-7) p-4 sm:mb-8 sm:p-5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-accent)">
         This one has passed
       </p>
 
       {nextUp && label ? (
         <>
           <Link
-            href={`/events/${encodeURIComponent(nextUp.id)}`}
-            className="mt-1.5 inline-flex items-center gap-1.5 font-display text-[19px] font-extrabold leading-tight text-white transition-opacity hover:opacity-80 sm:text-[22px]"
+            href={`${hrefBase}/${encodeURIComponent(nextUp.id)}`}
+            className="mt-1.5 inline-flex items-center gap-1.5 font-display text-[19px] font-extrabold leading-tight text-(--ev-ink) transition-opacity hover:opacity-80 sm:text-[22px]"
           >
             Next {nextUp.kind === 'series' ? 'one' : 'event'}: {label}
             <ArrowRight size={18} className="shrink-0" />
           </Link>
-          <p className="mt-1 text-[13px] text-white/75">
+          <p className="mt-1 text-[13px] text-(--ev-ink-75)">
             {nextUp.kind === 'series'
               ? <>This one runs again{nextUp.location_name ? ` at ${nextUp.location_name}` : ''}.</>
               : <>{nextUp.title}{nextUp.location_name ? ` · ${nextUp.location_name}` : ''}</>}
@@ -65,12 +69,12 @@ function NextUpBanner({ nextUp }: { nextUp: NextUp | null }) {
         </>
       ) : (
         <>
-          <p className="mt-1.5 font-display text-[19px] font-extrabold leading-tight text-white sm:text-[22px]">
+          <p className="mt-1.5 font-display text-[19px] font-extrabold leading-tight text-(--ev-ink) sm:text-[22px]">
             No repeat scheduled yet
           </p>
           <Link
-            href="/events"
-            className="mt-1 inline-flex items-center gap-1.5 text-[13px] font-semibold text-lime transition-opacity hover:opacity-80"
+            href={hrefBase}
+            className="mt-1 inline-flex items-center gap-1.5 text-[13px] font-semibold text-(--ev-accent) transition-opacity hover:opacity-80"
           >
             See what&rsquo;s happening this week near you
             <ArrowRight size={14} className="shrink-0" />
@@ -87,11 +91,17 @@ interface EventDetailProps {
   nextUp?: NextUp | null
   /** Resolved server-side against Boston time, not the visitor's clock. */
   isPast?: boolean
+  /** `light` is the cream site; `dark` (default) is the app-dark original. */
+  tone?: EventsTone
+  /** Where the back link and next-occurrence links point. */
+  hrefBase?: string
 }
 
-export default function EventDetail({ event, nextUp = null, isPast = false }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events' }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
+  // The type's color for this surface: the navy-tuned one, or its ink on cream.
+  const ink = typeInk(meta, tone)
   // Easy / Moderate / Rec, only when the listing supports the call.
   const level = eventRideStyle(event)
   const noDrop = isNoDrop(event)
@@ -150,10 +160,11 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
   const location = [event.location_name, event.location_address].filter(Boolean).join(', ')
 
   return (
-    <div className="min-h-screen bg-navy px-4 pb-32 pt-6 sm:px-8 sm:pt-8 lg:pb-24">
+    <EventsToneProvider tone={tone} hrefBase={hrefBase}>
+    <div className={`min-h-screen bg-(--ev-bg) px-4 pb-32 pt-6 sm:px-8 sm:pt-8 lg:pb-24 ${toneClass(tone)}`}>
       <div className="mx-auto max-w-[1040px]">
         {/* Back button */}
-        <Link href="/events" className="mb-6 inline-flex items-center gap-1 text-[13px] font-medium text-white/75 transition-colors hover:text-white sm:mb-8">
+        <Link href={hrefBase} className="mb-6 inline-flex items-center gap-1 text-[13px] font-medium text-(--ev-ink-75) transition-colors hover:text-(--ev-ink) sm:mb-8">
           <ChevronLeft size={16} />
           All events
         </Link>
@@ -165,26 +176,26 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
           {hasLeftColumn && (
             <div>
               {event.image_url && (
-                <div className="mb-6 overflow-hidden rounded-2xl border border-white/[0.07]">
+                <div className="mb-6 overflow-hidden rounded-2xl border border-(--ev-line)">
                   <img src={event.image_url} alt={event.title} className="w-full object-contain" />
                 </div>
               )}
 
               {hasMap && (
-                <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-card">
+                <div className="overflow-hidden rounded-2xl border border-(--ev-line) bg-(--ev-card)">
                   <div className={event.image_url ? 'h-48' : 'h-72'}>
                     <EventMap lat={event.location_lat!} lng={event.location_lng!} label={event.location_name} />
                   </div>
                   <div className="p-4">
-                    <p className="text-[14px] font-semibold text-white">{event.location_name}</p>
+                    <p className="text-[14px] font-semibold text-(--ev-ink)">{event.location_name}</p>
                     {event.location_address && (
-                      <p className="mt-0.5 text-[13px] text-white/75">{event.location_address}</p>
+                      <p className="mt-0.5 text-[13px] text-(--ev-ink-75)">{event.location_address}</p>
                     )}
                     <a
                       href={directionsUrl(event)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-white/[0.14] px-4 py-2 text-[13px] font-medium text-white/75 transition-colors hover:bg-white/[0.06]"
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-4 py-2 text-[13px] font-medium text-(--ev-ink-75) transition-colors hover:bg-(--ev-panel)"
                     >
                       <MapPin size={14} />
                       Directions
@@ -201,21 +212,21 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
             <div className="mb-4 flex items-center gap-3">
               <div
                 className="flex h-12 w-12 items-center justify-center rounded-[13px]"
-                style={{ backgroundColor: meta.color + '29' }}
+                style={{ backgroundColor: ink + TINT[tone].tile }}
               >
-                <Icon size={22} style={{ color: meta.color }} />
+                <Icon size={22} style={{ color: ink }} />
               </div>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: meta.color }}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: ink }}>
                   {meta.label}
                   {level && (
                     <>
-                      <span className="text-white/75"> · </span>
-                      <span style={{ color: RIDE_STYLE_COLOR[level] }} title={RIDE_STYLE_BLURB[level]}>{RIDE_STYLE_LABEL[level]}</span>
+                      <span className="text-(--ev-ink-75)"> · </span>
+                      <span style={{ color: rideStyleInk(level, tone) }} title={RIDE_STYLE_BLURB[level]}>{RIDE_STYLE_LABEL[level]}</span>
                     </>
                   )}
                 </p>
-                <p className="text-[13px] text-white/75">
+                <p className="text-[13px] text-(--ev-ink-75)">
                   {deadline && 'Entry deadline: '}
                   {dateLong(evDate)}
                   {timeStr && ` · ${timeStr}`}
@@ -225,22 +236,22 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
               <div className="ml-auto">
                 <button
                   onClick={() => { setSaved(!saved); showToast(saved ? 'Removed from saved' : 'Event saved') }}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.14] transition-colors hover:border-white/[0.25]"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-(--ev-line-mid) transition-colors hover:border-(--ev-line-stronger)"
                   aria-label={saved ? 'Remove bookmark' : 'Save event'}
                 >
-                  <Bookmark size={18} className={saved ? 'fill-lime text-lime' : 'text-white/60'} />
+                  <Bookmark size={18} className={saved ? 'fill-(--ev-accent) text-(--ev-accent)' : 'text-(--ev-ink-60)'} />
                 </button>
               </div>
             </div>
 
             {/* Title */}
-            <h1 className="mb-4 font-display text-[clamp(28px,3.5vw,40px)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h1 className="mb-4 font-display text-[clamp(28px,3.5vw,40px)] font-extrabold leading-[1.1] tracking-tight text-(--ev-ink)">
               {event.title}
             </h1>
 
             {/* Ride facts: the organizer's own numbers */}
             {rideFacts.length > 0 && (
-              <p className="-mt-2 mb-4 text-[14px] font-medium text-white/80">
+              <p className="-mt-2 mb-4 text-[14px] font-medium text-(--ev-ink-80)">
                 {rideFacts.join(' · ')}
               </p>
             )}
@@ -250,21 +261,21 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
               <div className="mb-6 flex flex-wrap gap-1.5">
                 {noDrop && (
                   <span
-                    className="inline-block rounded-full bg-lime/15 px-3 py-1 text-[12px] font-semibold text-lime"
+                    className="inline-block rounded-full bg-(--ev-accent-tint-15) px-3 py-1 text-[12px] font-semibold text-(--ev-accent)"
                     title="The organizer says nobody gets left behind: the group waits, or a sweep rides at the back."
                   >
                     No-drop
                   </span>
                 )}
                 {event.tags.map(tag => {
-                  const tm = getTagMeta(tag)
+                  const tm = tagInk(getTagMeta(tag), tone)
                   return (
                     <span
                       key={tag}
                       className="inline-block rounded-full px-3 py-1 text-[12px] font-semibold"
                       style={{ color: tm.color, backgroundColor: tm.bg }}
                     >
-                      {tm.label}
+                      {getTagMeta(tag).label}
                     </span>
                   )
                 })}
@@ -278,7 +289,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
                   href={directionsUrl(event)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-[10px] bg-lime px-5 py-2.5 text-[13px] font-bold text-navy transition-opacity hover:opacity-85"
+                  className="inline-flex items-center gap-2 rounded-[10px] bg-(--ev-accent-fill) px-5 py-2.5 text-[13px] font-bold text-(--ev-on-accent-fill) transition-opacity hover:opacity-85"
                 >
                   <MapPin size={15} />
                   Getting there
@@ -289,18 +300,18 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
               <div className="relative">
                 <button
                   onClick={() => setCalMenuOpen(!calMenuOpen)}
-                  className="inline-flex items-center gap-2 rounded-[10px] border border-white/[0.18] px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/[0.06]"
+                  className="inline-flex items-center gap-2 rounded-[10px] border border-(--ev-line-strong) px-5 py-2.5 text-[13px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
                 >
                   <Calendar size={15} />
                   Save to calendar
                 </button>
                 {calMenuOpen && (
-                  <div className="absolute left-0 top-full z-30 mt-2 w-56 overflow-hidden rounded-xl border border-white/[0.14] bg-[#2E2F45] py-1 shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
+                  <div className="absolute left-0 top-full z-30 mt-2 w-56 overflow-hidden rounded-xl border border-(--ev-line-mid) bg-(--ev-menu-raised) py-1 shadow-(--ev-shadow-deep)">
                     <a
                       href={gcalUrl(event)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-white/80 transition-colors hover:bg-white/[0.06]"
+                      className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
                       onClick={() => setCalMenuOpen(false)}
                     >
                       <Globe size={14} />
@@ -308,14 +319,14 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
                     </a>
                     <button
                       onClick={handleDownloadIcs}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-white/80 transition-colors hover:bg-white/[0.06]"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
                     >
                       <Calendar size={14} />
                       Apple Calendar (.ics)
                     </button>
                     <button
                       onClick={handleDownloadIcs}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-white/80 transition-colors hover:bg-white/[0.06]"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
                     >
                       <ExternalLink size={14} />
                       Download .ics file
@@ -327,7 +338,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
               {/* Share */}
               <button
                 onClick={handleShare}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/[0.18] text-white/75 transition-colors hover:bg-white/[0.06]"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-(--ev-line-strong) text-(--ev-ink-75) transition-colors hover:bg-(--ev-panel)"
                 aria-label="Share"
               >
                 <Share2 size={16} />
@@ -336,26 +347,26 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
 
             {/* Description */}
             {event.body && (
-              <div className="mb-8 text-[15px] leading-relaxed text-white/75 whitespace-pre-line">
+              <div className="mb-8 text-[15px] leading-relaxed text-(--ev-ink-75) whitespace-pre-line">
                 {event.body}
               </div>
             )}
 
             {/* Meta list */}
-            <div className="mb-8 flex flex-col gap-3 border-t border-white/[0.07] pt-6">
+            <div className="mb-8 flex flex-col gap-3 border-t border-(--ev-line) pt-6">
               <div className="flex gap-3">
-                <Calendar size={16} className="mt-0.5 shrink-0 text-white/40" />
+                <Calendar size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">{deadline ? 'Entry deadline' : 'Date'}</p>
-                  <p className="text-[14px] text-white/80">{dateLong(evDate)}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">{deadline ? 'Entry deadline' : 'Date'}</p>
+                  <p className="text-[14px] text-(--ev-ink-80)">{dateLong(evDate)}</p>
                 </div>
               </div>
               {timeStr && (
                 <div className="flex gap-3">
-                  <Clock size={16} className="mt-0.5 shrink-0 text-white/40" />
+                  <Clock size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">Time</p>
-                    <p className="text-[14px] text-white/80">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">Time</p>
+                    <p className="text-[14px] text-(--ev-ink-80)">
                       {timeStr}{endTimeStr && ` – ${endTimeStr}`}
                     </p>
                   </div>
@@ -363,36 +374,36 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
               )}
               {event.location_name && event.location_name !== 'See event page for details' && (
                 <div className="flex gap-3">
-                  <MapPin size={16} className="mt-0.5 shrink-0 text-white/40" />
+                  <MapPin size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">Where</p>
-                    <p className="text-[14px] text-white/80">{location}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">Where</p>
+                    <p className="text-[14px] text-(--ev-ink-80)">{location}</p>
                   </div>
                 </div>
               )}
               {event.organizer_name && (
                 <div className="flex gap-3">
-                  <Users size={16} className="mt-0.5 shrink-0 text-white/40" />
+                  <Users size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">Organizer</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">Organizer</p>
                     {event.organizer_url ? (
-                      <a href={withUtm(event.organizer_url)} target="_blank" rel="noopener noreferrer" className="text-[14px] text-lime hover:underline">
+                      <a href={withUtm(event.organizer_url)} target="_blank" rel="noopener noreferrer" className="text-[14px] text-(--ev-accent) hover:underline">
                         {event.organizer_name} <ExternalLink size={12} className="inline" />
                       </a>
                                         ) : (
-                      <p className="text-[14px] text-white/80">{event.organizer_name}</p>
+                      <p className="text-[14px] text-(--ev-ink-80)">{event.organizer_name}</p>
                     )}
                   </div>
                 </div>
               )}
               {event.sponsors && event.sponsors.length > 0 && (
                 <div className="flex gap-3">
-                  <Users size={16} className="mt-0.5 shrink-0 text-white/40" />
+                  <Users size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">
                       {event.organizer_name ? 'Presented with' : 'Presented by'}
                     </p>
-                    <p className="text-[14px] text-white/80">{event.sponsors.join(' · ')}</p>
+                    <p className="text-[14px] text-(--ev-ink-80)">{event.sponsors.join(' · ')}</p>
                   </div>
                 </div>
               )}
@@ -405,7 +416,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
                   href={withUtm(event.event_url)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-[10px] border border-white/[0.18] px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/[0.06]"
+                  className="inline-flex items-center gap-2 rounded-[10px] border border-(--ev-line-strong) px-5 py-2.5 text-[13px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
                 >
                   <Globe size={15} />
                   Event info
@@ -429,7 +440,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
 
       {/* Phone action bar: the primary link, save to calendar, share */}
       <div
-        className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t border-white/[0.1] bg-[#1F2034]/95 px-4 pt-3 backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t border-(--ev-line-10) bg-(--ev-bar-deep) px-4 pt-3 backdrop-blur lg:hidden"
         style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
       >
         {event.registration_url ? (
@@ -447,7 +458,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
             href={withUtm(event.event_url)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-lime px-4 text-[14px] font-bold text-navy"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-(--ev-accent-fill) px-4 text-[14px] font-bold text-(--ev-on-accent-fill)"
           >
             <Globe size={16} />
             Event info
@@ -457,7 +468,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
             href={directionsUrl(event)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-lime px-4 text-[14px] font-bold text-navy"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-(--ev-accent-fill) px-4 text-[14px] font-bold text-(--ev-on-accent-fill)"
           >
             <MapPin size={16} />
             Getting there
@@ -466,7 +477,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
         <div className="relative">
           <button
             onClick={() => setBarMenuOpen(!barMenuOpen)}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-white/[0.18] px-4 text-[13px] font-semibold text-white"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-(--ev-line-strong) px-4 text-[13px] font-semibold text-(--ev-ink)"
             aria-haspopup="menu"
             aria-expanded={barMenuOpen}
           >
@@ -474,12 +485,12 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
             Save
           </button>
           {barMenuOpen && (
-            <div className="absolute bottom-full right-0 z-50 mb-2 w-56 overflow-hidden rounded-xl border border-white/[0.14] bg-[#2E2F45] py-1 shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
+            <div className="absolute bottom-full right-0 z-50 mb-2 w-56 overflow-hidden rounded-xl border border-(--ev-line-mid) bg-(--ev-menu-raised) py-1 shadow-(--ev-shadow-deep)">
               <a
                 href={gcalUrl(event)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-white/80 transition-colors hover:bg-white/[0.06]"
+                className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
                 onClick={() => setBarMenuOpen(false)}
               >
                 <Globe size={14} />
@@ -487,7 +498,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
               </a>
               <button
                 onClick={() => { handleDownloadIcs(); setBarMenuOpen(false) }}
-                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-white/80 transition-colors hover:bg-white/[0.06]"
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
               >
                 <Calendar size={14} />
                 Apple Calendar (.ics)
@@ -497,7 +508,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
         </div>
         <button
           onClick={handleShare}
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-white/[0.18] text-white/80"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-(--ev-line-strong) text-(--ev-ink-80)"
           aria-label="Share"
         >
           <Share2 size={17} />
@@ -507,12 +518,13 @@ export default function EventDetail({ event, nextUp = null, isPast = false }: Ev
       {/* Toast */}
       {toast && (
         <div
-          className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-white/[0.14] bg-[#2E2F45] px-5 py-3 text-[13px] font-medium text-white shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
+          className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-(--ev-line-mid) bg-(--ev-toast) px-5 py-3 text-[13px] font-medium text-(--ev-ink-on-toast) shadow-(--ev-shadow)"
           style={{ animation: 'animate-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
         >
           {toast}
         </div>
       )}
     </div>
+    </EventsToneProvider>
   )
 }

@@ -6,6 +6,7 @@ import {
   type CommunityEvent, dateKey, parseEventDate, todayKey, dateMedium,
   eventDotsByDay, eventCountByDay,
 } from '@/lib/events'
+import { useEventsTone } from './EventsTone'
 
 /**
  * Desktop date navigator: a compact month with event dots. Picking a day
@@ -24,6 +25,7 @@ const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMonthProps) {
+  const { tone } = useEventsTone()
   const today = todayKey()
   const [ym, setYm] = useState(() => {
     const d = selectedDay ? parseEventDate(selectedDay) : new Date()
@@ -48,7 +50,9 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
     pendingFocus.current = null
   })
 
-  const dots = useMemo(() => eventDotsByDay(events), [events])
+  const dots = useMemo(() => eventDotsByDay(events, 3, tone), [events, tone])
+  // Dots on the selected day sit on the accent fill: navy on lime, cream on navy.
+  const onFill = tone === 'light' ? '#F4F8EE' : '#191A2E'
   const counts = useMemo(() => eventCountByDay(events), [events])
 
   const cells = useMemo(() => {
@@ -107,28 +111,28 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-card p-4">
+    <div className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-display text-[15px] font-bold text-white">{MONTHS[ym.m]} {ym.y}</span>
+        <span className="font-display text-[15px] font-bold text-(--ev-ink)">{MONTHS[ym.m]} {ym.y}</span>
         <div className="flex items-center gap-1">
           {!inMonth(today) && (
             <button
               onClick={goToday}
-              className="mr-1 rounded-full border border-white/[0.14] px-2.5 py-0.5 text-[11px] font-semibold text-white/80 transition-colors hover:bg-white/[0.06]"
+              className="mr-1 rounded-full border border-(--ev-line-mid) px-2.5 py-0.5 text-[11px] font-semibold text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
             >
               Today
             </button>
           )}
           <button
             onClick={() => shiftMonth(-1)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.14] text-white/80 transition-colors hover:bg-white/[0.06]"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-(--ev-line-mid) text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
             aria-label="Previous month"
           >
             <ChevronLeft size={14} />
           </button>
           <button
             onClick={() => shiftMonth(1)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.14] text-white/80 transition-colors hover:bg-white/[0.06]"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-(--ev-line-mid) text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
             aria-label="Next month"
           >
             <ChevronRight size={14} />
@@ -138,7 +142,7 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
 
       <div className="mb-1 grid grid-cols-7">
         {DAY_LETTERS.map((l, i) => (
-          <div key={i} className="py-1 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-white/70">{l}</div>
+          <div key={i} className="py-1 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-(--ev-ink-70)">{l}</div>
         ))}
       </div>
 
@@ -163,18 +167,18 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
               onClick={() => { if (!isPast) onSelectDay(isSelected ? null : key) }}
               onKeyDown={(e) => onKey(e, key)}
               onFocus={() => setFocusKey(key)}
-              className={`flex h-9 flex-col items-center justify-center rounded-lg text-[12px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-lime/70 ${
+              className={`flex h-9 flex-col items-center justify-center rounded-lg text-[12px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-(--ev-accent-line-70) ${
                 isSelected
-                  ? 'bg-lime text-navy'
+                  ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)'
                   : isPast
-                    ? 'cursor-default text-white/60'
-                    : 'text-white hover:bg-white/[0.06]'
-              } ${isToday && !isSelected ? 'ring-1 ring-lime/70' : ''}`}
+                    ? 'cursor-default text-(--ev-ink-60)'
+                    : 'text-(--ev-ink) hover:bg-(--ev-panel)'
+              } ${isToday && !isSelected ? 'ring-1 ring-(--ev-accent-line-70)' : ''}`}
             >
               <span className="leading-none">{d.getDate()}</span>
               <span className="mt-1 flex h-1 items-center gap-0.5">
                 {dayDots.map((c, j) => (
-                  <span key={j} className="h-1 w-1 rounded-full" style={{ backgroundColor: isSelected ? '#191A2E' : c }} />
+                  <span key={j} className="h-1 w-1 rounded-full" style={{ backgroundColor: isSelected ? onFill : c }} />
                 ))}
               </span>
             </button>
@@ -185,12 +189,12 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
       {selectedDay ? (
         <button
           onClick={() => onSelectDay(null)}
-          className="mt-3 w-full rounded-lg py-1.5 text-center text-[12px] font-semibold text-lime transition-colors hover:bg-white/[0.04]"
+          className="mt-3 w-full rounded-lg py-1.5 text-center text-[12px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-panel-faint)"
         >
           Showing {dateMedium(parseEventDate(selectedDay))} · Show all
         </button>
       ) : (
-        <p className="mt-3 text-center text-[12px] text-white/75">Pick a day to see only that day.</p>
+        <p className="mt-3 text-center text-[12px] text-(--ev-ink-75)">Pick a day to see only that day.</p>
       )}
     </div>
   )

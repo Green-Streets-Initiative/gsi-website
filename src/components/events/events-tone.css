@@ -1,0 +1,110 @@
+/* ── Events surface tones ─────────────────────────────────────────────────
+   The /events tree (calendar + event detail) paints from these variables so
+   the same components render on the app-dark surface (the original) or the
+   site's cream system. `events-tone` carries the dark values, which are the
+   exact literals the components used before; `events-tone-light` overrides
+   them. Custom properties only, so nothing here competes with utilities.
+   Body text on dark stays ≥ white/75 (the contrast rule); on cream the
+   equivalents are the site's ink tokens, never a gray scale. */
+.events-tone {
+  --ev-bg: #191A2E;
+  --ev-bar: rgba(25, 26, 46, 0.95);
+  --ev-bar-deep: rgba(31, 32, 52, 0.95);
+  --ev-card: #242538;
+  --ev-card-hover: #2E2F45;
+  --ev-input: #1F2034;
+  --ev-sheet: #1F2034;
+  --ev-menu: #242538;
+  --ev-menu-raised: #2E2F45;
+  --ev-toast: #2E2F45;
+  --ev-ink-on-toast: #ffffff;
+  --ev-scrim: rgba(0, 0, 0, 0.6);
+  --ev-panel-faint: rgba(255, 255, 255, 0.04);
+  --ev-panel: rgba(255, 255, 255, 0.06);
+  --ev-track: #242538;
+  --ev-line: rgba(255, 255, 255, 0.07);
+  --ev-line-10: rgba(255, 255, 255, 0.1);
+  --ev-line-12: rgba(255, 255, 255, 0.12);
+  --ev-line-mid: rgba(255, 255, 255, 0.14);
+  --ev-line-strong: rgba(255, 255, 255, 0.18);
+  --ev-line-stronger: rgba(255, 255, 255, 0.25);
+  --ev-ink: #ffffff;
+  --ev-ink-85: rgba(255, 255, 255, 0.85);
+  --ev-ink-80: rgba(255, 255, 255, 0.8);
+  --ev-ink-78: rgba(255, 255, 255, 0.78);
+  --ev-ink-75: rgba(255, 255, 255, 0.75);
+  --ev-ink-70: rgba(255, 255, 255, 0.7);
+  --ev-ink-60: rgba(255, 255, 255, 0.6);
+  --ev-ink-40: rgba(255, 255, 255, 0.4);
+  --ev-accent: #BAF14D;
+  --ev-accent-90: rgba(186, 241, 77, 0.9);
+  --ev-accent-fill: #BAF14D;
+  --ev-on-accent-fill: #191A2E;
+  --ev-on-accent-fill-soft: rgba(25, 26, 46, 0.8);
+  --ev-accent-tint-7: rgba(186, 241, 77, 0.07);
+  --ev-accent-tint-8: rgba(186, 241, 77, 0.08);
+  --ev-accent-tint: rgba(186, 241, 77, 0.1);
+  --ev-accent-tint-14: rgba(186, 241, 77, 0.14);
+  --ev-accent-tint-15: rgba(186, 241, 77, 0.15);
+  --ev-accent-line-30: rgba(186, 241, 77, 0.3);
+  --ev-accent-line-40: rgba(186, 241, 77, 0.4);
+  --ev-accent-line: rgba(186, 241, 77, 0.5);
+  --ev-accent-line-60: rgba(186, 241, 77, 0.6);
+  --ev-accent-line-70: rgba(186, 241, 77, 0.7);
+  --ev-blue-fill: #2966E5;
+  --ev-danger: #FF6B6B;
+  --ev-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --ev-shadow-deep: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --ev-shadow-up: 0 -16px 40px rgba(0, 0, 0, 0.5);
+}
+.events-tone-light {
+  --ev-bg: #F4F8EE;
+  --ev-bar: rgba(244, 248, 238, 0.95);
+  --ev-bar-deep: rgba(244, 248, 238, 0.95);
+  --ev-card: #ffffff;
+  --ev-card-hover: #ffffff;
+  --ev-input: #ffffff;
+  --ev-sheet: #ffffff;
+  --ev-menu: #ffffff;
+  --ev-menu-raised: #ffffff;
+  --ev-toast: #191A2E;
+  --ev-ink-on-toast: #ffffff;
+  --ev-scrim: rgba(25, 26, 46, 0.4);
+  --ev-panel-faint: rgba(25, 26, 46, 0.03);
+  --ev-panel: rgba(25, 26, 46, 0.05);
+  --ev-track: rgba(25, 26, 46, 0.06);
+  --ev-line: rgba(25, 26, 46, 0.1);
+  --ev-line-10: rgba(25, 26, 46, 0.12);
+  --ev-line-12: rgba(25, 26, 46, 0.13);
+  --ev-line-mid: rgba(25, 26, 46, 0.15);
+  --ev-line-strong: rgba(25, 26, 46, 0.25);
+  --ev-line-stronger: rgba(25, 26, 46, 0.35);
+  --ev-ink: #191A2E;
+  --ev-ink-85: #2F3150;
+  --ev-ink-80: #3A3D5C;
+  --ev-ink-78: #3A3D5C;
+  --ev-ink-75: #4A4D68;
+  --ev-ink-70: #4A4D68;
+  --ev-ink-60: #666984;
+  --ev-ink-40: #8A8B9A;
+  --ev-accent: #2D6A4F;
+  --ev-accent-90: #1B4332;
+  --ev-accent-fill: #191A2E;
+  --ev-on-accent-fill: #ffffff;
+  --ev-on-accent-fill-soft: rgba(255, 255, 255, 0.8);
+  --ev-accent-tint-7: rgba(45, 106, 79, 0.08);
+  --ev-accent-tint-8: rgba(45, 106, 79, 0.08);
+  --ev-accent-tint: rgba(45, 106, 79, 0.1);
+  --ev-accent-tint-14: rgba(45, 106, 79, 0.14);
+  --ev-accent-tint-15: rgba(45, 106, 79, 0.12);
+  --ev-accent-line-30: rgba(45, 106, 79, 0.35);
+  --ev-accent-line-40: rgba(45, 106, 79, 0.45);
+  --ev-accent-line: rgba(45, 106, 79, 0.55);
+  --ev-accent-line-60: rgba(45, 106, 79, 0.6);
+  --ev-accent-line-70: rgba(45, 106, 79, 0.7);
+  --ev-blue-fill: #2966E5;
+  --ev-danger: #B3361F;
+  --ev-shadow: 0 16px 40px rgba(25, 26, 46, 0.14);
+  --ev-shadow-deep: 0 16px 40px rgba(25, 26, 46, 0.14);
+  --ev-shadow-up: 0 -16px 40px rgba(25, 26, 46, 0.14);
+}
