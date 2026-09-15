@@ -186,6 +186,12 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
                 happening locally, and how the town is trending — built from real trips logged in the
                 Shift app.
               </p>
+              {/* Town digest signup — E19's front door, up top where readers
+                  actually are. Anchored: digest emails' forward-nudge links
+                  land forwarded readers right here. */}
+              <div id="digest" className="mt-7 scroll-mt-28">
+                <TownDigestSignup townName={name} townSlug={slug} variant="inline" />
+              </div>
             </div>
           </div>
         </section>
@@ -274,12 +280,6 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
             <RewardsPartners partners={partners} townName={name} />
           </Section>
         )}
-
-        {/* Town digest signup — E19's front door. Anchored: digest emails'
-            forward-nudge links land forwarded readers right here. */}
-        <Section id="digest" shape="wanderLeft" width="read" className="scroll-mt-28">
-          <TownDigestSignup townName={name} townSlug={slug} />
-        </Section>
 
         {/* CTA */}
         <Section shape="terminal" closing>

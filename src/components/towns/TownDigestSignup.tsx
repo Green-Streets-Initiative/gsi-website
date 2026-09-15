@@ -5,8 +5,12 @@ import { useState } from 'react'
 /**
  * Email capture on town pages — the E19 town digest's front door.
  * Posts to /api/towns/subscribe (Loops upsert, townDigest = slug).
+ *
+ * `inline` is the slim version that sits under the hero lede (Keith,
+ * 2026-09-15: the page is long, so the ask comes first); `card` is the
+ * original white card.
  */
-export default function TownDigestSignup({ townName, townSlug }: { townName: string; townSlug: string }) {
+export default function TownDigestSignup({ townName, townSlug, variant = 'card' }: { townName: string; townSlug: string; variant?: 'card' | 'inline' }) {
   const [email, setEmail] = useState('')
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle')
 
@@ -26,18 +30,28 @@ export default function TownDigestSignup({ townName, townSlug }: { townName: str
     }
   }
 
+  const inline = variant === 'inline'
   return (
-    <div className="max-w-[640px] rounded-[18px] border border-navy/10 bg-white px-6 py-7 md:px-8">
-      <h2 className="font-serif text-[clamp(1.5rem,3vw,1.875rem)] leading-tight text-navy">Keep a pulse on {townName}</h2>
-      <p className="mt-2 max-w-[460px] text-[15px] leading-relaxed text-ink-soft">
-        New street projects, meetings worth your voice, and how {townName} is moving — 1–2 emails a month.
-      </p>
+    <div className={inline ? 'max-w-[600px]' : 'max-w-[640px] rounded-[18px] border border-navy/10 bg-white px-6 py-7 md:px-8'}>
+      {inline ? (
+        <p className="text-[15px] leading-relaxed text-ink-soft">
+          <span className="font-semibold text-navy">Keep a pulse on {townName}.</span>{' '}
+          New street projects, meetings worth your voice, and how {townName} is moving — 1–2 emails a month.
+        </p>
+      ) : (
+        <>
+          <h2 className="font-serif text-[clamp(1.5rem,3vw,1.875rem)] leading-tight text-navy">Keep a pulse on {townName}</h2>
+          <p className="mt-2 max-w-[460px] text-[15px] leading-relaxed text-ink-soft">
+            New street projects, meetings worth your voice, and how {townName} is moving — 1–2 emails a month.
+          </p>
+        </>
+      )}
       {state === 'done' ? (
         <p className="mt-4 text-[15px] font-semibold text-green-deep">
           You&apos;re in — we&apos;ll be in touch when something&apos;s happening in {townName}.
         </p>
       ) : (
-        <form onSubmit={submit} className="mt-5 flex max-w-[440px] gap-2" data-ph-capture-attribute-entry="town_digest_signup">
+        <form onSubmit={submit} className={`${inline ? 'mt-3' : 'mt-5'} flex max-w-[440px] gap-2`} data-ph-capture-attribute-entry="town_digest_signup">
           <input
             type="email"
             required

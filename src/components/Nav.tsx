@@ -124,6 +124,9 @@ export default function Nav({ variant = 'dark' }: { variant?: Variant }) {
           <Link href="/shift/towns" className={linkCls}>
             Towns
           </Link>
+          <Link href="/nearby" className={linkCls}>
+            Nearby
+          </Link>
           <Link href="/guides" className={linkCls}>
             Guides
           </Link>
@@ -204,6 +207,7 @@ export default function Nav({ variant = 'dark' }: { variant?: Variant }) {
             <Link href="/challenges" className={mobileLink} onClick={() => setMenuOpen(false)}>Challenges</Link>
             <Link href="/programs" className={mobileLink} onClick={() => setMenuOpen(false)}>Programs</Link>
             <Link href="/shift/towns" className={mobileLink} onClick={() => setMenuOpen(false)}>Towns</Link>
+            <Link href="/nearby" className={mobileLink} onClick={() => setMenuOpen(false)}>Nearby</Link>
             <Link href="/guides" className={mobileLink} onClick={() => setMenuOpen(false)}>Guides</Link>
             <Link href="/events" className={mobileLink} onClick={() => setMenuOpen(false)}>Events</Link>
             <Link href="/about" className={mobileLink} onClick={() => setMenuOpen(false)}>About</Link>
