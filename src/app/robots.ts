@@ -21,6 +21,8 @@ export default function robots(): MetadataRoute.Robots {
           '/volunteer',
           '/prize',
           '/record',
+          // Review harnesses (fake clocks, forced flags); each also carries noindex.
+          '/preview',
         ],
       },
     ],

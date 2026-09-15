@@ -12,11 +12,9 @@ import { bucket, collapseSeries } from '@/lib/campaigns/rank'
 import type { Promotable, PromotablePhase } from '@/lib/campaigns/types'
 
 /*
- * STAGED. Not linked from anywhere, not in the sitemap, noindex.
- *
- * Going live means deleting the robots block below, adding the sitemap entry,
- * wiring the nav promo, and repointing Footer's "Flagship events" link and
- * the /shift/leaderboard redirect here. Until then production is unchanged.
+ * The programme hub: everything running now or coming up, plus the archive
+ * of past campaigns with a written report. Linked from the nav and footer,
+ * in the sitemap, and the target of the old /shift/leaderboard redirect.
  */
 export const revalidate = 600
 
@@ -24,7 +22,6 @@ export const metadata: Metadata = {
   title: 'Challenges & events — Green Streets Initiative',
   description:
     'Every Green Streets challenge that is running now or coming up: Walk/Ride Days, seasonal campaigns, and rewards you can pick up along the way.',
-  robots: { index: false, follow: false },
 }
 
 function Section({

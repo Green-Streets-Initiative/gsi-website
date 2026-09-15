@@ -51,7 +51,7 @@ const nextConfig: NextConfig = {
       // Shift leaderboard shortcut
       {
         source: '/shift/leaderboard',
-        destination: '/events/shift-your-summer',
+        destination: '/challenges',
         permanent: true,
       },
 
@@ -71,7 +71,7 @@ const nextConfig: NextConfig = {
       // Old program pages
       {
         source: '/walkridedays',
-        destination: '/programs',
+        destination: '/programs/walk-ride-days',
         permanent: true,
       },
       {
@@ -86,7 +86,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/sponsor',
-        destination: '/events/shift-your-summer/partners',
+        destination: '/contact',
         permanent: false,
       },
       // Self-serve partner signup superseded by the rewards-partners page,
@@ -131,12 +131,12 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/what-moves-boston-area-green-commuters',
-        destination: '/programs/what-moves-us/boston-area-commuters',
+        destination: '/programs/what-moves-us/boston-area-active-commuters',
         permanent: true,
       },
       {
         source: '/português-what-moves-everett-fair',
-        destination: '/programs/what-moves-us/everett-transportation-fair',
+        destination: '/programs/what-moves-us/everett-community-fair',
         permanent: true,
       },
       {

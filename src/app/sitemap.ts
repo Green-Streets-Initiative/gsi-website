@@ -15,6 +15,7 @@ type ChangeFreq = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>
 // disallowed in robots.ts.
 const STATIC_PAGES: { path: string; changeFrequency: ChangeFreq; priority: number }[] = [
   { path: '/', changeFrequency: 'weekly', priority: 1.0 },
+  { path: '/challenges', changeFrequency: 'weekly', priority: 0.9 },
   // Public campaign wrap — donor-facing, safe to index.
   { path: '/sponsors/shift-your-summer-2026', changeFrequency: 'monthly', priority: 0.7 },
   // Shift app + audience landing pages
@@ -30,7 +31,7 @@ const STATIC_PAGES: { path: string; changeFrequency: ChangeFreq; priority: numbe
   { path: '/nearby', changeFrequency: 'weekly', priority: 0.8 },
   // Programs
   { path: '/programs', changeFrequency: 'monthly', priority: 0.7 },
-  { path: '/programs/walk-ride-days', changeFrequency: 'monthly', priority: 0.7 },
+  { path: '/programs/walk-ride-days', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/programs/corporate-challenge', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/programs/what-moves-us', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/programs/what-moves-us/frisoli-youth-center', changeFrequency: 'yearly', priority: 0.4 },
