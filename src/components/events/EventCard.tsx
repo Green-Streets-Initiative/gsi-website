@@ -46,22 +46,33 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
   const datePart = showDate ? dateShort(evDate) : null
   const deadline = isDeadline(event.event_type)
 
-  // Phone meta line: date · time · place · distance
-  const metaParts: string[] = []
-  if (datePart && timeStr) metaParts.push(`${datePart} · ${timeStr}`)
-  else if (datePart) metaParts.push(datePart)
-  else if (timeStr) metaParts.push(timeStr)
-  if (deadline && metaParts.length > 0) metaParts[0] = `Entry deadline: ${metaParts[0]}`
+  // Who runs it sits on the card itself: people come to trust specific groups,
+  // and they shouldn't have to click through to find out (Keith, 2026-09-14).
+  const organizer = event.organizer_name?.trim() || null
+
+  // Phone meta line: date · time · organizer · place · distance
+  let when = datePart && timeStr ? `${datePart} · ${timeStr}` : datePart ?? timeStr ?? ''
+  if (deadline && when) when = `Entry deadline: ${when}`
 
   const place = event.location_name && event.location_name !== 'See event page for details' ? event.location_name : null
-  if (place) metaParts.push(place)
-  if (distance !== null) metaParts.push(formatDistance(distance))
+  const where = [place, distance !== null ? formatDistance(distance) : null].filter(Boolean).join(' · ')
 
-  // Desktop meta line: the time lives in its own column, so only place · distance
-  const metaPartsLg: string[] = []
-  if (datePart) metaPartsLg.push(deadline ? `Entry deadline: ${datePart}` : datePart)
-  if (place) metaPartsLg.push(place)
-  if (distance !== null) metaPartsLg.push(formatDistance(distance))
+  // Desktop meta line: the time lives in its own column, so date · organizer · place · distance
+  const whenLg = datePart ? (deadline ? `Entry deadline: ${datePart}` : datePart) : ''
+
+  /** "lead · organizer · tail", with the organizer set brighter than the rest. */
+  const metaLine = (lead: string, tail: string) => (
+    <>
+      {lead}
+      {organizer && (
+        <>
+          {lead && ' · '}
+          <span className="font-medium text-(--ev-ink-85)">{organizer}</span>
+        </>
+      )}
+      {tail && `${lead || organizer ? ' · ' : ''}${tail}`}
+    </>
+  )
 
   return (
     <div className="group relative flex min-h-[72px] items-start gap-3 rounded-[14px] border border-(--ev-line) bg-(--ev-card) p-3.5 transition-all duration-200 hover:border-(--ev-line-mid) hover:bg-(--ev-card-hover) sm:gap-4 sm:p-4 lg:min-h-0 lg:items-center lg:px-4 lg:py-3">
@@ -111,7 +122,7 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
           {event.title}
         </h3>
         <p className="mt-1 text-[13px] leading-snug text-(--ev-ink-75) lg:hidden">
-          {metaParts.join(' · ')}
+          {metaLine(when, where)}
         </p>
         <p className="mt-0.5 hidden truncate text-[13px] leading-snug text-(--ev-ink-75) lg:block">
           <span className="font-medium" style={{ color: ink }}>{meta.label}</span>
@@ -122,7 +133,8 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
               {rideDistance && ` · ${rideDistance}`}
             </>
           )}
-          {metaPartsLg.length > 0 && ` · ${metaPartsLg.join(' · ')}`}
+          {(whenLg || organizer || where) && ' · '}
+          {metaLine(whenLg, where)}
         </p>
         {(event.ride_series_id || noDrop || event.tags.length > 0) && (
           <div className="mt-1.5 flex flex-wrap gap-1 lg:mt-1">
