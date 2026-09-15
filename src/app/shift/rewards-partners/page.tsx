@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import { PILL } from '@/components/org/Section'
 import { supabase } from '@/lib/supabase'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 
@@ -392,40 +393,40 @@ export default function RewardsPartnersPage() {
 
   return (
     <>
-      <Nav />
-      <main style={{ paddingTop: '60px' }}>
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
 
         {/* ═══════════════════════════════════════════════════════
             1 · HERO
         ═══════════════════════════════════════════════════════ */}
-        <section className="relative overflow-hidden bg-[#191A2E] px-8 py-24 md:py-32">
+        <section className="relative overflow-hidden bg-cream px-6 pt-10 pb-8 lg:px-8 lg:pt-14 lg:pb-10">
           <div className="pointer-events-none absolute inset-0">
             <div
               className="absolute inset-0"
               style={{
                 backgroundImage:
-                  'linear-gradient(rgba(186,241,77,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(186,241,77,0.03) 1px, transparent 1px)',
+                  'linear-gradient(rgba(25,26,46,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(25,26,46,0.04) 1px, transparent 1px)',
                 backgroundSize: '48px 48px',
               }}
             />
-            <div className="absolute -right-[10%] top-[10%] h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(186,241,77,0.07)_0%,transparent_70%)]" />
+            <div className="absolute -right-[10%] top-[10%] h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(45,106,79,0.08)_0%,transparent_70%)]" />
           </div>
 
           <div className="relative mx-auto max-w-[1120px]">
-            <div className="mb-5 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">
+            <div className="mb-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               For local businesses
             </div>
 
-            <h1 className="mb-6 max-w-[720px] font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h1 className="mb-6 max-w-[720px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               Reach active commuters in your neighborhood.
             </h1>
 
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#BAF14D]/30 bg-[#BAF14D]/[0.08] px-4 py-1.5 text-sm font-semibold text-[#BAF14D]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#BAF14D]" />
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-forest/30 bg-forest/10 px-4 py-1.5 text-sm font-semibold text-green-deep">
+              <span className="h-1.5 w-1.5 rounded-full bg-forest" />
               Free to join &middot; No fees &middot; No contracts
             </div>
 
-            <p className="mb-12 max-w-[620px] text-lg leading-[1.7] text-white">
+            <p className="mb-10 max-w-[620px] text-[17px] leading-relaxed text-ink-soft">
               Join the Shift rewards network — put your business in front of people who walk, bike, and ride transit every day. No POS integration. No complicated setup.
             </p>
 
@@ -450,12 +451,12 @@ export default function RewardsPartnersPage() {
               ].map((item) => (
                 <div
                   key={item.title}
-                  className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-6"
+                  className="rounded-[14px] border border-navy/10 bg-white p-6"
                 >
-                  <h3 className="mb-2 font-display text-sm font-bold text-[#BAF14D]">
+                  <h3 className="mb-2 font-serif text-[1.25rem] leading-tight text-navy">
                     {item.title}
                   </h3>
-                  <p className="text-[0.875rem] leading-[1.6] text-white">{item.desc}</p>
+                  <p className="text-[15px] leading-relaxed text-ink-soft">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -463,7 +464,7 @@ export default function RewardsPartnersPage() {
             <div className="mt-10">
               <a
                 href="#apply"
-                className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                className={PILL}
               >
                 Become a rewards partner &rarr;
               </a>
@@ -475,15 +476,15 @@ export default function RewardsPartnersPage() {
             2 · CURRENT PARTNERS
         ═══════════════════════════════════════════════════════ */}
         {sponsors.length >= 5 ? (
-          <section className="bg-[#F4F8EE] px-8 py-24">
+          <section className="border-y border-navy/10 bg-white px-6 py-8 lg:px-8 lg:py-10">
             <div className="mx-auto max-w-[1120px]">
-              <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#7DB82E]">
+              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                 Our network
               </div>
-              <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
+              <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
                 Who&apos;s already in the network
               </h2>
-              <p className="mb-12 max-w-[560px] text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
+              <p className="mb-8 max-w-[560px] text-[17px] leading-relaxed text-ink-soft">
                 These businesses offer rewards to Shift users across Massachusetts.
               </p>
 
@@ -499,7 +500,7 @@ export default function RewardsPartnersPage() {
                     <Wrapper
                       key={sponsor.name}
                       {...wrapperProps}
-                      className="flex flex-col items-center gap-3 rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-5 transition-shadow hover:shadow-md"
+                      className="flex flex-col items-center gap-3 rounded-[14px] border border-navy/10 bg-white p-5 transition-shadow hover:shadow-md"
                     >
                       {logo ? (
                         <div className="flex h-16 w-full items-center justify-center">
@@ -514,13 +515,13 @@ export default function RewardsPartnersPage() {
                           />
                         </div>
                       ) : (
-                        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[#191A2E]/[0.06]">
-                          <span className="text-center font-display text-xs font-bold leading-tight text-[#191A2E]/60">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-navy/[0.06]">
+                          <span className="text-center font-display text-xs font-bold leading-tight text-ink-soft">
                             {sponsor.name.slice(0, 2).toUpperCase()}
                           </span>
                         </div>
                       )}
-                      <span className="text-center text-xs font-medium text-[#4A4D68]">
+                      <span className="text-center text-xs font-medium text-ink-soft">
                         {sponsor.name}
                       </span>
                     </Wrapper>
@@ -530,15 +531,15 @@ export default function RewardsPartnersPage() {
             </div>
           </section>
         ) : (
-          <section className="bg-[#F4F8EE] px-8 py-24">
+          <section className="border-y border-navy/10 bg-white px-6 py-8 lg:px-8 lg:py-10">
             <div className="mx-auto max-w-[1120px]">
-              <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#7DB82E]">
+              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                 Our network
               </div>
-              <h2 className="mb-4 max-w-[720px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
+              <h2 className="mb-4 max-w-[720px] font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
                 Launching across Greater Boston
               </h2>
-              <p className="max-w-[620px] text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
+              <p className="max-w-[620px] text-[17px] leading-relaxed text-ink-soft">
                 Rewards Partners in Somerville, Cambridge, Arlington, Medford, Boston, and growing. Join the first wave of businesses supporting active commuters in your neighborhood.
               </p>
             </div>
@@ -548,12 +549,12 @@ export default function RewardsPartnersPage() {
         {/* ═══════════════════════════════════════════════════════
             3 · HOW IT WORKS
         ═══════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24">
+        <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">
+            <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               How it works
             </div>
-            <h2 className="mb-14 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-10 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Three simple steps
             </h2>
 
@@ -577,15 +578,15 @@ export default function RewardsPartnersPage() {
               ].map((s) => (
                 <div
                   key={s.num}
-                  className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
+                  className="rounded-[14px] border border-navy/10 bg-white p-8"
                 >
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-sm font-extrabold text-[#BAF14D]">
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-forest/10 font-display text-sm font-extrabold text-green-deep">
                     {s.num}
                   </div>
-                  <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">
+                  <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                     {s.title}
                   </h3>
-                  <p className="text-[0.9375rem] leading-[1.6] text-white">{s.desc}</p>
+                  <p className="text-[15px] leading-relaxed text-ink-soft">{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -595,31 +596,31 @@ export default function RewardsPartnersPage() {
         {/* ═══════════════════════════════════════════════════════
             4 · INTAKE FORM
         ═══════════════════════════════════════════════════════ */}
-        <section id="apply" className="bg-[#F4F8EE] px-8 py-24">
+        <section id="apply" className="border-t border-navy/10 bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div ref={formRef} className="mx-auto max-w-[640px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#7DB82E]">
+            <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               Apply
             </div>
-            <h2 className="mb-2 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
+            <h2 className="mb-2 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Apply to join the network
             </h2>
-            <p className="mb-10 text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
+            <p className="mb-10 text-[17px] leading-relaxed text-ink-soft">
               Takes about 2 minutes. Free to participate.
             </p>
 
             {submitted ? (
-              <div className="rounded-[18px] border border-[rgba(186,241,77,0.25)] bg-[rgba(186,241,77,0.08)] p-8 text-center">
+              <div className="rounded-[14px] border border-forest/40 bg-forest/10 p-8 text-center">
                 <div className="mb-3 text-3xl">&#10003;</div>
-                <h3 className="mb-2 font-display text-xl font-bold text-[#191A2E]">
+                <h3 className="mb-2 font-serif text-[1.375rem] leading-tight text-navy">
                   Thanks, {form.business_name}!
                 </h3>
-                <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
+                <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                   We&apos;ll review your application and be in touch within a few business days.
                   Check your email — we&apos;ll send a confirmation and a link to your partner
                   dashboard once you&apos;re approved.
                 </p>
                 {logoUploadFailed && (
-                  <p className="mt-4 rounded-lg border border-[#E05252]/20 bg-[#E05252]/5 px-4 py-3 text-sm text-[#E05252]">
+                  <p className="mt-4 rounded-lg border border-[#B3361F]/20 bg-[#B3361F]/5 px-4 py-3 text-sm text-[#B3361F]">
                     Your logo couldn&apos;t be uploaded. You can add it later from your partner
                     dashboard, or email it to{' '}
                     <a href="mailto:info@gogreenstreets.org" className="underline">info@gogreenstreets.org</a>.
@@ -635,10 +636,10 @@ export default function RewardsPartnersPage() {
                       <div
                         className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
                           s === step
-                            ? 'bg-[#BAF14D] text-[#191A2E]'
+                            ? 'bg-navy text-white'
                             : s < step
-                              ? 'bg-[#191A2E] text-white'
-                              : 'bg-[#191A2E]/10 text-[#191A2E]/40'
+                              ? 'bg-forest/10 text-green-deep'
+                              : 'bg-navy/[0.08] text-ink-soft'
                         }`}
                       >
                         {s < step ? '\u2713' : s}
@@ -646,13 +647,13 @@ export default function RewardsPartnersPage() {
                       {s < 3 && (
                         <div
                           className={`h-0.5 w-8 rounded-full ${
-                            s < step ? 'bg-[#191A2E]' : 'bg-[#191A2E]/10'
+                            s < step ? 'bg-forest/40' : 'bg-navy/15'
                           }`}
                         />
                       )}
                     </div>
                   ))}
-                  <span className="ml-3 text-sm font-medium text-[#4A4D68]">
+                  <span className="ml-3 text-sm font-medium text-ink-soft">
                     Step {step} of 3
                   </span>
                 </div>
@@ -662,7 +663,7 @@ export default function RewardsPartnersPage() {
                   <div className="space-y-5">
                     {/* Partnership type — first decision, framed positively */}
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-[#191A2E]">
+                      <label className="mb-2 block text-sm font-semibold text-navy">
                         How would you like to partner with Shift?
                       </label>
                       <div className="grid gap-3 sm:grid-cols-2">
@@ -671,14 +672,14 @@ export default function RewardsPartnersPage() {
                           onClick={() => update('partner_kind', 'rewards')}
                           className={`rounded-xl border-2 p-4 text-left transition ${
                             form.partner_kind === 'rewards'
-                              ? 'border-[#191A2E] bg-[#191A2E]/[0.04]'
-                              : 'border-[rgba(25,26,46,0.12)] bg-white hover:border-[rgba(25,26,46,0.3)]'
+                              ? 'border-forest bg-forest/10'
+                              : 'border-navy/15 bg-white hover:border-navy/30'
                           }`}
                         >
-                          <div className="text-sm font-semibold text-[#191A2E]">
+                          <div className="text-sm font-semibold text-navy">
                             Rewards Partner
                           </div>
-                          <p className="mt-1 text-xs text-[#4A4D68]">
+                          <p className="mt-1 text-xs text-ink-soft">
                             Offer a discount to Shift users (any size, your call) — we feature your offer in the rewards directory.
                           </p>
                         </button>
@@ -687,20 +688,20 @@ export default function RewardsPartnersPage() {
                           onClick={() => update('partner_kind', 'community')}
                           className={`rounded-xl border-2 p-4 text-left transition ${
                             form.partner_kind === 'community'
-                              ? 'border-[#191A2E] bg-[#191A2E]/[0.04]'
-                              : 'border-[rgba(25,26,46,0.12)] bg-white hover:border-[rgba(25,26,46,0.3)]'
+                              ? 'border-forest bg-forest/10'
+                              : 'border-navy/15 bg-white hover:border-navy/30'
                           }`}
                         >
-                          <div className="text-sm font-semibold text-[#191A2E]">
+                          <div className="text-sm font-semibold text-navy">
                             Community Partner
                           </div>
-                          <p className="mt-1 text-xs text-[#4A4D68]">
+                          <p className="mt-1 text-xs text-ink-soft">
                             No discount — we cross-promote your business in the app, you cross-promote Shift to your customers.
                           </p>
                         </button>
                       </div>
                     </div>
-                    <h3 className="font-display text-lg font-bold text-[#191A2E]">
+                    <h3 className="font-serif text-[1.375rem] leading-tight text-navy">
                       Your business
                     </h3>
                     <Field
@@ -710,7 +711,7 @@ export default function RewardsPartnersPage() {
                       onChange={(v) => update('business_name', v)}
                     />
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
+                      <label className="mb-1.5 block text-sm font-medium text-navy">
                         Business logo
                       </label>
                       <div className="flex items-center gap-4">
@@ -718,10 +719,10 @@ export default function RewardsPartnersPage() {
                           <img
                             src={logoPreview}
                             alt="Logo preview"
-                            className="h-16 w-16 rounded-xl border border-[rgba(25,26,46,0.12)] object-contain"
+                            className="h-16 w-16 rounded-xl border border-navy/15 object-contain"
                           />
                         ) : (
-                          <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-[rgba(25,26,46,0.2)] bg-white text-[#8A8DA8]">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-navy/25 bg-white text-ink-soft">
                             <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
                             </svg>
@@ -758,7 +759,7 @@ export default function RewardsPartnersPage() {
                                 setLogoPreview(null)
                               }
                             }}
-                            className="w-full text-sm text-[#4A4D68] file:mr-3 file:rounded-full file:border-0 file:bg-[#191A2E]/[0.06] file:px-4 file:py-2 file:text-sm file:font-medium file:text-[#191A2E] file:cursor-pointer hover:file:bg-[#191A2E]/[0.1]"
+                            className="w-full text-sm text-ink-soft file:mr-3 file:rounded-full file:border-0 file:bg-navy/[0.06] file:px-4 file:py-2 file:text-sm file:font-medium file:text-navy file:cursor-pointer hover:file:bg-navy/[0.1]"
                           />
                           {logoFile && (
                             <button
@@ -767,7 +768,7 @@ export default function RewardsPartnersPage() {
                                 setLogoFile(null)
                                 setLogoPreview(null)
                               }}
-                              className="mt-1 text-xs text-[#8A8DA8] underline hover:text-[#4A4D68]"
+                              className="mt-1 text-xs text-ink-soft underline hover:text-ink-soft"
                             >
                               Remove
                             </button>
@@ -775,9 +776,9 @@ export default function RewardsPartnersPage() {
                         </div>
                       </div>
                       {logoError && (
-                        <p className="mt-1.5 text-xs font-medium text-[#E05252]">{logoError}</p>
+                        <p className="mt-1.5 text-xs font-medium text-[#B3361F]">{logoError}</p>
                       )}
-                      <p className="mt-1.5 text-xs text-[#8A8DA8]">
+                      <p className="mt-1.5 text-xs text-ink-soft">
                         Optional — square images work best. Max 5 MB.
                       </p>
                     </div>
@@ -834,13 +835,13 @@ export default function RewardsPartnersPage() {
                       placeholder="https://"
                     />
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
+                      <label className="mb-1.5 block text-sm font-medium text-navy">
                         How did you hear about Shift?
                       </label>
                       <select
                         value={form.referral_source}
                         onChange={(e) => update('referral_source', e.target.value)}
-                        className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
+                        className="w-full rounded-xl border border-navy/15 bg-white px-4 py-3 text-[0.9375rem] text-navy outline-none transition-colors focus:border-forest"
                       >
                         <option value="">Select one (optional)</option>
                         <option value="Email from Green Streets">Email from Green Streets</option>
@@ -857,22 +858,22 @@ export default function RewardsPartnersPage() {
                           onChange={(e) => update('referral_source_other', e.target.value)}
                           placeholder="Please specify"
                           maxLength={120}
-                          className="mt-2 w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
+                          className="mt-2 w-full rounded-xl border border-navy/15 bg-white px-4 py-3 text-[0.9375rem] text-navy outline-none transition-colors focus:border-forest"
                         />
                       )}
                     </div>
-                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[rgba(25,26,46,0.08)] bg-[rgba(25,26,46,0.03)] p-4">
+                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-navy/10 bg-navy/[0.03] p-4">
                       <input
                         type="checkbox"
                         checked={form.sticker_requested}
                         onChange={(e) => update('sticker_requested', e.target.checked)}
-                        className="mt-0.5 h-5 w-5 shrink-0 accent-[#191A2E]"
+                        className="mt-0.5 h-5 w-5 shrink-0 accent-forest"
                       />
                       <div>
-                        <span className="text-sm font-medium text-[#191A2E]">
+                        <span className="text-sm font-medium text-navy">
                           Send me a free Shift partner window sticker
                         </span>
-                        <p className="mt-0.5 text-xs text-[#8A8DA8]">
+                        <p className="mt-0.5 text-xs text-ink-soft">
                           Display in your storefront to let customers know you offer Shift discounts.
                           Shipped within 5&ndash;7 business days.
                         </p>
@@ -881,7 +882,7 @@ export default function RewardsPartnersPage() {
                     <button
                       onClick={() => goToStep(2)}
                       disabled={!isStep1Valid()}
-                      className="mt-4 rounded-full bg-[#191A2E] px-7 py-3 text-sm font-bold text-white transition-opacity hover:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className={`${PILL} mt-4 disabled:cursor-not-allowed disabled:opacity-40`}
                     >
                       Continue &rarr;
                     </button>
@@ -891,17 +892,17 @@ export default function RewardsPartnersPage() {
                 {/* Step 2 — Your discount (or listing details for Community Partners) */}
                 {step === 2 && (
                   <div className="space-y-5">
-                    <h3 className="font-display text-lg font-bold text-[#191A2E]">
+                    <h3 className="font-serif text-[1.375rem] leading-tight text-navy">
                       {form.partner_kind === 'community' ? 'Your listing' : 'Your discount'}
                     </h3>
                     {form.partner_kind === 'community' ? (
-                      <div className="rounded-xl border border-[#BAF14D]/40 bg-[#BAF14D]/10 p-4 text-[0.9375rem] leading-[1.6] text-[#191A2E]">
+                      <div className="rounded-xl border border-forest/40 bg-forest/10 p-4 text-[0.9375rem] leading-[1.6] text-navy">
                         <strong>You&apos;re joining as a Community Partner.</strong>{' '}
                         No discount required — just your contact info below. We&apos;ll
                         cross-promote your business in the Shift app.
                       </div>
                     ) : (
-                    <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
+                    <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                       Tell us what discount you&apos;d like to offer Shift users. Keep it simple
                       and specific — &ldquo;10% off any purchase&rdquo; or &ldquo;Free cookie with
                       any coffee order&rdquo; work well.
@@ -911,13 +912,13 @@ export default function RewardsPartnersPage() {
                     {form.partner_kind === 'rewards' && (
                     <>
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
-                        Discount type <span className="text-[#E05252]">*</span>
+                      <label className="mb-1.5 block text-sm font-medium text-navy">
+                        Discount type <span className="text-[#B3361F]">*</span>
                       </label>
                       <select
                         value={form.discount_type}
                         onChange={(e) => updateDiscountType(e.target.value)}
-                        className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
+                        className="w-full rounded-xl border border-navy/15 bg-white px-4 py-3 text-[0.9375rem] text-navy outline-none transition-colors focus:border-forest"
                       >
                         <option value="">Select a type</option>
                         <option value="percentage">Percentage off</option>
@@ -929,12 +930,12 @@ export default function RewardsPartnersPage() {
 
                     {(form.discount_type === 'percentage' || form.discount_type === 'fixed_amount') && (
                       <div>
-                        <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
+                        <label className="mb-1.5 block text-sm font-medium text-navy">
                           {form.discount_type === 'percentage' ? 'Percentage' : 'Dollar amount'}{' '}
-                          <span className="text-[#E05252]">*</span>
+                          <span className="text-[#B3361F]">*</span>
                         </label>
                         <div className="relative">
-                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8A8DA8]">
+                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft">
                             {form.discount_type === 'percentage' ? '%' : '$'}
                           </span>
                           <input
@@ -944,15 +945,15 @@ export default function RewardsPartnersPage() {
                             value={form.discount_value}
                             onChange={(e) => updateDiscountValue(e.target.value)}
                             placeholder={form.discount_type === 'percentage' ? '10' : '1.00'}
-                            className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white py-3 pl-10 pr-4 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]"
+                            className="w-full rounded-xl border border-navy/15 bg-white py-3 pl-10 pr-4 text-[0.9375rem] text-navy outline-none transition-colors placeholder:text-ink-soft focus:border-forest"
                           />
                         </div>
                       </div>
                     )}
 
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
-                        Describe the discount <span className="text-[#E05252]">*</span>
+                      <label className="mb-1.5 block text-sm font-medium text-navy">
+                        Describe the discount <span className="text-[#B3361F]">*</span>
                       </label>
                       <textarea
                         value={form.discount_description}
@@ -969,21 +970,21 @@ export default function RewardsPartnersPage() {
                           form.discount_type === 'custom' ? 'e.g. Buy one get one free' :
                           'e.g. 10% off all drinks'
                         }
-                        className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]"
+                        className="w-full rounded-xl border border-navy/15 bg-white px-4 py-3 text-[0.9375rem] text-navy outline-none transition-colors placeholder:text-ink-soft focus:border-forest"
                       />
-                      <p className="mt-1 text-xs text-[#8A8DA8]">
+                      <p className="mt-1 text-xs text-ink-soft">
                         This is exactly what Shift users will see. Add details like &ldquo;on all drinks&rdquo; or &ldquo;with any food order.&rdquo;
                       </p>
                     </div>
 
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
+                      <label className="mb-1.5 block text-sm font-medium text-navy">
                         Redemption limit
                       </label>
                       <select
                         value={form.redemption_limit}
                         onChange={(e) => update('redemption_limit', e.target.value)}
-                        className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
+                        className="w-full rounded-xl border border-navy/15 bg-white px-4 py-3 text-[0.9375rem] text-navy outline-none transition-colors focus:border-forest"
                       >
                         <option value="none">No limit</option>
                         <option value="once_per_visit">Once per visit</option>
@@ -991,25 +992,25 @@ export default function RewardsPartnersPage() {
                         <option value="once_per_week">Once per week</option>
                         <option value="once_per_month">Once per month</option>
                       </select>
-                      <p className="mt-1 text-xs text-[#8A8DA8]">
+                      <p className="mt-1 text-xs text-ink-soft">
                         This will be shown to Shift users alongside your discount.
                       </p>
                     </div>
 
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
-                        Where do customers redeem? <span className="text-[#E05252]">*</span>
+                      <label className="mb-1.5 block text-sm font-medium text-navy">
+                        Where do customers redeem? <span className="text-[#B3361F]">*</span>
                       </label>
                       <select
                         value={form.channel}
                         onChange={(e) => update('channel', e.target.value)}
-                        className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors focus:border-[#BAF14D]"
+                        className="w-full rounded-xl border border-navy/15 bg-white px-4 py-3 text-[0.9375rem] text-navy outline-none transition-colors focus:border-forest"
                       >
                         <option value="in_store">In my store or location</option>
                         <option value="online">On my website</option>
                         <option value="both">Both in-store and online</option>
                       </select>
-                      <p className="mt-1 text-xs text-[#8A8DA8]">
+                      <p className="mt-1 text-xs text-ink-soft">
                         {form.channel === 'in_store'
                           ? 'Customers will show an animated badge on their phone at checkout.'
                           : form.channel === 'online'
@@ -1021,24 +1022,24 @@ export default function RewardsPartnersPage() {
                     {(form.channel === 'online' || form.channel === 'both') && (
                       <>
                         <div>
-                          <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
-                            Discount code <span className="text-[#E05252]">*</span>
+                          <label className="mb-1.5 block text-sm font-medium text-navy">
+                            Discount code <span className="text-[#B3361F]">*</span>
                           </label>
                           <input
                             type="text"
                             value={form.discount_code}
                             onChange={(e) => update('discount_code', e.target.value.toUpperCase())}
                             placeholder="e.g. SHIFT10"
-                            className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 font-mono text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]"
+                            className="w-full rounded-xl border border-navy/15 bg-white px-4 py-3 font-mono text-[0.9375rem] text-navy outline-none transition-colors placeholder:text-ink-soft focus:border-forest"
                           />
-                          <p className="mt-1 text-xs text-[#8A8DA8]">
+                          <p className="mt-1 text-xs text-ink-soft">
                             The promo code Shift users will enter at checkout on your website.
                           </p>
                         </div>
 
                         {!form.website_url && (
-                          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                            <p className="text-sm text-amber-800">
+                          <div className="rounded-xl border border-[#8A5A00]/25 bg-[#8A5A00]/[0.06] px-4 py-3">
+                            <p className="text-sm text-[#8A5A00]">
                               <strong>Website URL required.</strong> Go back to step 1 and enter your website address so we can link Shift users to your store.
                             </p>
                           </div>
@@ -1048,8 +1049,8 @@ export default function RewardsPartnersPage() {
                     </>
                     )}
 
-                    <div className="border-t border-[rgba(25,26,46,0.09)] pt-5">
-                      <h4 className="mb-4 font-display text-sm font-bold text-[#191A2E]">
+                    <div className="border-t border-navy/10 pt-5">
+                      <h4 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                         Contact info
                       </h4>
                       <div className="space-y-5">
@@ -1073,7 +1074,7 @@ export default function RewardsPartnersPage() {
                             value={form.contact_email}
                             onChange={(v) => update('contact_email', v)}
                           />
-                          <p className="mt-1 text-xs text-[#8A8DA8]">
+                          <p className="mt-1 text-xs text-ink-soft">
                             We&apos;ll use this to send you a login link to manage your listing.
                           </p>
                         </div>
@@ -1088,14 +1089,14 @@ export default function RewardsPartnersPage() {
                     <div className="flex gap-3 pt-2">
                       <button
                         onClick={() => goToStep(1)}
-                        className="rounded-full border border-[rgba(25,26,46,0.15)] px-6 py-3 text-sm font-semibold text-[#191A2E] transition-colors hover:bg-[#191A2E]/5"
+                        className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
                       >
                         &larr; Back
                       </button>
                       <button
                         onClick={() => goToStep(3)}
                         disabled={!isStep2Valid()}
-                        className="rounded-full bg-[#191A2E] px-7 py-3 text-sm font-bold text-white transition-opacity hover:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className={`${PILL} disabled:cursor-not-allowed disabled:opacity-40`}
                       >
                         Continue &rarr;
                       </button>
@@ -1106,12 +1107,12 @@ export default function RewardsPartnersPage() {
                 {/* Step 3 — Agreement */}
                 {step === 3 && (
                   <div className="space-y-5">
-                    <h3 className="font-display text-lg font-bold text-[#191A2E]">
+                    <h3 className="font-serif text-[1.375rem] leading-tight text-navy">
                       Agreement
                     </h3>
 
                     <div
-                      className="max-h-[240px] overflow-y-scroll rounded-xl border border-[rgba(25,26,46,0.12)] bg-white p-5 text-[0.8125rem] leading-[1.7] text-[#4A4D68] whitespace-pre-line"
+                      className="max-h-[240px] overflow-y-scroll rounded-xl border border-navy/15 bg-white p-5 text-[0.8125rem] leading-[1.7] text-ink-soft whitespace-pre-line"
                       style={{ scrollbarWidth: 'auto' }}
                     >
                       {getAgreementText(form.channel, form.partner_kind)}
@@ -1129,15 +1130,15 @@ export default function RewardsPartnersPage() {
                         type="checkbox"
                         checked={form.agreement_accepted}
                         onChange={(e) => update('agreement_accepted', e.target.checked)}
-                        className="mt-0.5 h-5 w-5 shrink-0 rounded border-[rgba(25,26,46,0.2)] accent-[#BAF14D]"
+                        className="mt-0.5 h-5 w-5 shrink-0 rounded border-navy/25 accent-forest"
                       />
-                      <span className="text-sm leading-relaxed text-[#191A2E]">
+                      <span className="text-sm leading-relaxed text-navy">
                         I have read and agree to the Shift Rewards Partner Agreement
                       </span>
                     </label>
 
                     {submitError && (
-                      <div className="rounded-xl border border-[#E05252]/20 bg-[#E05252]/5 px-4 py-3 text-sm text-[#E05252]">
+                      <div className="rounded-xl border border-[#B3361F]/20 bg-[#B3361F]/5 px-4 py-3 text-sm text-[#B3361F]">
                         {submitError}
                       </div>
                     )}
@@ -1145,14 +1146,14 @@ export default function RewardsPartnersPage() {
                     <div className="flex gap-3 pt-2">
                       <button
                         onClick={() => goToStep(2)}
-                        className="rounded-full border border-[rgba(25,26,46,0.15)] px-6 py-3 text-sm font-semibold text-[#191A2E] transition-colors hover:bg-[#191A2E]/5"
+                        className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
                       >
                         &larr; Back
                       </button>
                       <button
                         onClick={handleSubmit}
                         disabled={!isStep3Valid() || submitting}
-                        className="rounded-full bg-[#BAF14D] px-7 py-3 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className={`${PILL} disabled:cursor-not-allowed disabled:opacity-40`}
                       >
                         {submitting ? 'Submitting\u2026' : 'Submit application'}
                       </button>
@@ -1167,18 +1168,18 @@ export default function RewardsPartnersPage() {
         {/* ═══════════════════════════════════════════════════════
             5 · EXISTING PARTNER LOGIN
         ═══════════════════════════════════════════════════════ */}
-        <section id="partner-login" className="bg-[#191A2E] px-8 py-24">
+        <section id="partner-login" className="border-t border-navy/10 bg-cream px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[480px] text-center">
-            <h2 className="mb-2 font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-2 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Already a rewards partner?
             </h2>
-            <p className="mb-8 text-[0.9375rem] leading-[1.65] text-white">
+            <p className="mb-8 text-[15px] leading-relaxed text-ink-soft">
               Log in to update your offer, edit your contact info, or manage your listing.
             </p>
 
             {loginSent ? (
-              <div className="rounded-[18px] border border-[rgba(186,241,77,0.2)] bg-[rgba(186,241,77,0.08)] p-6">
-                <p className="text-sm text-white">
+              <div className="rounded-[14px] border border-forest/40 bg-forest/10 p-6">
+                <p className="text-sm text-green-deep">
                   If that email is associated with a Shift rewards partner account, you&apos;ll
                   receive a login link shortly. Check your inbox.
                 </p>
@@ -1191,12 +1192,12 @@ export default function RewardsPartnersPage() {
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   required
-                  className="min-w-0 flex-1 rounded-full border border-white/[0.12] bg-white/[0.07] px-5 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/40 transition-colors focus:border-[#BAF14D]"
+                  className="min-w-0 flex-1 rounded-full border border-navy/15 bg-white px-5 py-3 text-[0.9375rem] text-navy outline-none placeholder:text-ink-soft transition-colors focus:border-forest"
                 />
                 <button
                   type="submit"
                   disabled={loginLoading}
-                  className="shrink-0 rounded-full bg-white/10 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-white/15 disabled:opacity-50"
+                  className="shrink-0 rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   {loginLoading ? 'Sending\u2026' : 'Send login link'}
                 </button>
@@ -1206,7 +1207,7 @@ export default function RewardsPartnersPage() {
         </section>
 
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }
@@ -1232,8 +1233,8 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-medium text-[#191A2E]">
-        {label} {required && <span className="text-[#E05252]">*</span>}
+      <label className="mb-1.5 block text-sm font-medium text-navy">
+        {label} {required && <span className="text-[#B3361F]">*</span>}
       </label>
       <input
         type={type}
@@ -1241,7 +1242,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#BAF14D]"
+        className="w-full rounded-xl border border-navy/15 bg-white px-4 py-3 text-[0.9375rem] text-navy outline-none transition-colors placeholder:text-ink-soft focus:border-forest"
       />
     </div>
   )

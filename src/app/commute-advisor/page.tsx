@@ -5,6 +5,7 @@ import Link from 'next/link'
 import posthog from 'posthog-js'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import { PILL } from '@/components/org/Section'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { GasPump, Lightning, Check } from '@phosphor-icons/react'
 import RecommendationCard from '@/components/commute/RecommendationCard'
@@ -580,15 +581,15 @@ export default function CommuteCalculator() {
 
   return (
     <>
-      <Nav />
-      <main className="bg-[#191A2E]" style={{ paddingTop: '60px' }}>
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
 
         {/* Hero — compact */}
-        <div className="mx-auto max-w-[640px] px-8 pb-8 pt-12 text-center">
-          <h1 className="mb-3 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.15] tracking-tighter text-white">
-            Find your <em className="not-italic text-[#BAF14D]">best commute</em>
+        <div className="mx-auto max-w-[640px] px-6 pb-8 pt-10 text-center lg:px-8 lg:pt-14">
+          <h1 className="mb-3 font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
+            Find your <em className="not-italic text-forest">best commute</em>
           </h1>
-          <p className="text-[1rem] leading-relaxed text-white/75">
+          <p className="text-[17px] leading-relaxed text-ink-soft">
             Tell us where you&apos;re going and we&apos;ll recommend the fastest, cheapest way to get there.
           </p>
         </div>
@@ -601,14 +602,14 @@ export default function CommuteCalculator() {
                 onClick={() => s < step && setStep(s)}
                 disabled={s > step}
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                  s === step ? 'bg-[#BAF14D] text-[#191A2E]'
-                  : s < step ? 'bg-[#BAF14D]/20 text-[#BAF14D] hover:bg-[#BAF14D]/30'
-                  : 'bg-white/[0.08] text-white/60'
+                  s === step ? 'bg-navy text-white'
+                  : s < step ? 'bg-forest/10 text-green-deep hover:bg-forest/20'
+                  : 'bg-navy/[0.06] text-ink-soft'
                 }`}
               >
                 {s < step ? <Check size={14} weight="bold" /> : s}
               </button>
-              {s < 3 && <div className={`h-px w-12 ${s < step ? 'bg-[#BAF14D]/30' : 'bg-white/[0.08]'}`} />}
+              {s < 3 && <div className={`h-px w-12 ${s < step ? 'bg-forest/40' : 'bg-navy/15'}`} />}
             </div>
           ))}
         </div>
@@ -616,8 +617,8 @@ export default function CommuteCalculator() {
         {/* ── STEP 1: Where's your commute? ── */}
         {step === 1 && (
           <div className="mx-auto max-w-[520px] px-8">
-            <div className="overflow-hidden rounded-[20px] border border-white/[0.12] bg-[#242538] p-8">
-              <div className="mb-6 font-display text-[1.125rem] font-bold text-white">Where&apos;s your commute?</div>
+            <div className="overflow-hidden rounded-[14px] border border-navy/10 bg-white p-8">
+              <div className="mb-6 font-serif text-[1.375rem] leading-tight text-navy">Where&apos;s your commute?</div>
 
               <div className="mb-5 space-y-3">
                 <AddressAutocomplete
@@ -625,7 +626,7 @@ export default function CommuteCalculator() {
                   onChange={(val) => { setHomeAddress(val); if (!val) setHomePlaceData(null) }}
                   onPlaceSelected={setHomePlaceData}
                   label="Home address"
-                  variant="dark"
+                  variant="light"
                   placeholder="Where do you live?"
                 />
                 <AddressAutocomplete
@@ -633,10 +634,10 @@ export default function CommuteCalculator() {
                   onChange={(val) => { setWorkAddress(val); if (!val) setWorkPlaceData(null) }}
                   onPlaceSelected={setWorkPlaceData}
                   label="Work address"
-                  variant="dark"
+                  variant="light"
                   placeholder="Where do you work?"
                 />
-                <p className="text-[0.75rem] leading-snug text-white/75">
+                <p className="text-[0.75rem] leading-snug text-ink-soft">
                   Addresses are only used to look up routes — never saved to a profile or shared.
                 </p>
               </div>
@@ -644,7 +645,7 @@ export default function CommuteCalculator() {
               <Field label="Or enter distance manually">
                 <div className="flex items-center gap-3">
                   <NumInput value={distance} onChange={setDistance} min={0.5} max={60} step={0.5} />
-                  <span className="text-[0.8rem] text-white">miles each way</span>
+                  <span className="text-[0.8rem] text-navy">miles each way</span>
                 </div>
                 {homePlaceData && workPlaceData && (
                   <Hint>Distance auto-set from addresses — adjust to override</Hint>
@@ -661,7 +662,7 @@ export default function CommuteCalculator() {
                   setStep(2)
                 }}
                 disabled={!(homePlaceData && workPlaceData) && distance <= 0}
-                className="mt-4 w-full rounded-xl bg-[#BAF14D] py-3 text-[0.9375rem] font-bold text-[#191A2E] transition-opacity hover:opacity-90 disabled:opacity-30"
+                className={`${PILL} mt-4 w-full disabled:opacity-30`}
               >
                 Next
               </button>
@@ -672,8 +673,8 @@ export default function CommuteCalculator() {
         {/* ── STEP 2: How do you get there now? ── */}
         {step === 2 && (
           <div className="mx-auto max-w-[520px] px-8">
-            <div className="overflow-hidden rounded-[20px] border border-white/[0.12] bg-[#242538] p-8">
-              <div className="mb-6 font-display text-[1.125rem] font-bold text-white">How do you get there now?</div>
+            <div className="overflow-hidden rounded-[14px] border border-navy/10 bg-white p-8">
+              <div className="mb-6 font-serif text-[1.375rem] leading-tight text-navy">How do you get there now?</div>
 
               <div className="mb-5 grid grid-cols-2 gap-2">
                 {([
@@ -694,8 +695,8 @@ export default function CommuteCalculator() {
                       opt.value === 'new' ? 'col-span-2' : ''
                     } ${
                       commuteMode === opt.value
-                        ? 'border-[#BAF14D] bg-[#BAF14D]/[0.12] text-[#BAF14D]'
-                        : 'border-white/[0.12] text-white hover:border-white/[0.25]'
+                        ? 'border-forest bg-forest/10 text-green-deep'
+                        : 'border-navy/10 text-navy hover:border-navy/25'
                     }`}
                   >
                     <ModeIcon mode={opt.value} size={20} />
@@ -705,7 +706,7 @@ export default function CommuteCalculator() {
               </div>
 
               <Field label={commuteMode === 'new' ? "Days you'll commute per week" : 'Days in the office per week'}>
-                <div className="mb-2.5 font-display text-base font-bold text-[#BAF14D]">
+                <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                   {driveDays} day{driveDays > 1 ? 's' : ''}/week
                 </div>
                 <RangeInput value={driveDays} onChange={setDriveDays} min={1} max={5} labels={['1','2','3','4','5']} />
@@ -727,9 +728,9 @@ export default function CommuteCalculator() {
               {commuteMode === 'drive' && vehicle !== 'ev' && (
                 <Field label="Gas price">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <span className="font-display text-lg font-bold text-forest">$</span>
                     <NumInput value={gasPrice} onChange={setGasPrice} min={2} max={8} step={0.01} width="88px" fontSize="1rem" />
-                    <span className="text-[0.8rem] text-white">per gallon</span>
+                    <span className="text-[0.8rem] text-navy">per gallon</span>
                   </div>
                   <Hint>Current MA average — updated regularly</Hint>
                 </Field>
@@ -737,16 +738,16 @@ export default function CommuteCalculator() {
 
               {commuteMode === 'drive' && vehicle === 'ev' && (
                 <Field label="Electricity cost">
-                  <div className="text-sm text-white">$0.048/mile based on MA residential rates</div>
+                  <div className="text-sm text-navy">$0.048/mile based on MA residential rates</div>
                 </Field>
               )}
 
               {commuteMode === 'carpool' && (
                 <Field label="Average daily carpool cost">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <span className="font-display text-lg font-bold text-forest">$</span>
                     <NumInput value={carpoolDaily} onChange={setCarpoolDaily} min={1} max={100} step={1} width="88px" fontSize="1rem" />
-                    <span className="text-[0.8rem] text-white">per day (your share)</span>
+                    <span className="text-[0.8rem] text-navy">per day (your share)</span>
                   </div>
                 </Field>
               )}
@@ -754,21 +755,21 @@ export default function CommuteCalculator() {
               {commuteMode === 'rideshare' && (
                 <Field label="Average daily rideshare cost">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <span className="font-display text-lg font-bold text-forest">$</span>
                     <NumInput value={rideshareDaily} onChange={setRideshareDaily} min={5} max={200} step={1} width="88px" fontSize="1rem" />
-                    <span className="text-[0.8rem] text-white">per day (round trip)</span>
+                    <span className="text-[0.8rem] text-navy">per day (round trip)</span>
                   </div>
                 </Field>
               )}
 
               {(commuteMode === 'bike' || commuteMode === 'walk') && (
-                <div className="mt-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-3 text-[0.8125rem] text-white/75">
+                <div className="mt-1 rounded-xl border border-navy/10 bg-navy/[0.04] px-5 py-3 text-[0.8125rem] text-ink-soft">
                   No commute costs to track — we&apos;ll show you how your current commute compares.
                 </div>
               )}
 
               {commuteMode === 'new' && (
-                <div className="mt-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-3 text-[0.8125rem] text-white/75">
+                <div className="mt-1 rounded-xl border border-navy/10 bg-navy/[0.04] px-5 py-3 text-[0.8125rem] text-ink-soft">
                   Just moved or starting fresh? We&apos;ll show what each option would cost — no current commute needed.
                 </div>
               )}
@@ -776,9 +777,9 @@ export default function CommuteCalculator() {
               {commuteMode === 'transit' && (
                 <Field label="Monthly transit pass">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <span className="font-display text-lg font-bold text-forest">$</span>
                     <NumInput value={transitMonthly} onChange={setTransitMonthly} min={0} max={300} step={1} width="88px" fontSize="1rem" />
-                    <span className="text-[0.8rem] text-white">{`per month (LinkPass $${PRICES.mbta.linkPassMonthly})`}</span>
+                    <span className="text-[0.8rem] text-navy">{`per month (LinkPass $${PRICES.mbta.linkPassMonthly})`}</span>
                   </div>
                 </Field>
               )}
@@ -786,9 +787,9 @@ export default function CommuteCalculator() {
               {commuteMode === 'bus' && (
                 <Field label="Monthly bus pass">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <span className="font-display text-lg font-bold text-forest">$</span>
                     <NumInput value={busMonthly} onChange={setBusMonthly} min={0} max={200} step={1} width="88px" fontSize="1rem" />
-                    <span className="text-[0.8rem] text-white">per month (MBTA bus pass $55)</span>
+                    <span className="text-[0.8rem] text-navy">per month (MBTA bus pass $55)</span>
                   </div>
                 </Field>
               )}
@@ -796,9 +797,9 @@ export default function CommuteCalculator() {
               {commuteMode === 'commuter_rail' && (
                 <Field label="Monthly commuter rail pass">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                    <span className="font-display text-lg font-bold text-forest">$</span>
                     <NumInput value={railZone} onChange={setRailZone} min={90} max={450} step={5} width="88px" fontSize="1rem" />
-                    <span className="text-[0.8rem] text-white">per month</span>
+                    <span className="text-[0.8rem] text-navy">per month</span>
                   </div>
                 </Field>
               )}
@@ -817,15 +818,15 @@ export default function CommuteCalculator() {
                   {parkMode !== 'free' && (
                     <div className="mt-3.5">
                       <div className="flex items-center gap-2">
-                        <span className="font-display text-lg font-bold text-[#BAF14D]">$</span>
+                        <span className="font-display text-lg font-bold text-forest">$</span>
                         <NumInput value={parkingCost} onChange={setParkingCost} min={0} max={80} step={1} width="78px" fontSize="1rem" />
-                        <span className="text-[0.8rem] text-white">per day</span>
+                        <span className="text-[0.8rem] text-navy">per day</span>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <span className="text-[0.63rem] text-white">Area medians:</span>
+                        <span className="text-[0.63rem] text-navy">Area medians:</span>
                         {PARKING_ANCHORS.map(a => (
                           <button key={a.val} onClick={() => setParkingCost(a.val)}
-                            className="rounded-md border border-white/[0.12] bg-white/[0.06] px-2 py-1 text-[0.65rem] font-semibold text-white transition-colors hover:bg-white/10 hover:text-white">
+                            className="rounded-md border border-navy/10 bg-navy/[0.04] px-2 py-1 text-[0.65rem] font-semibold text-navy transition-colors hover:bg-navy/[0.08]">
                             {a.label}
                           </button>
                         ))}
@@ -838,13 +839,13 @@ export default function CommuteCalculator() {
               <div className="mt-4 flex gap-3">
                 <button
                   onClick={() => setStep(1)}
-                  className="rounded-xl border border-white/[0.12] px-6 py-3 text-[0.9375rem] font-semibold text-white transition-colors hover:bg-white/[0.05]"
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleSeeOptions}
-                  className="flex-1 rounded-xl bg-[#BAF14D] py-3 text-[0.9375rem] font-bold text-[#191A2E] transition-opacity hover:opacity-90"
+                  className={`${PILL} flex-1`}
                 >
                   See my options
                 </button>
@@ -858,40 +859,40 @@ export default function CommuteCalculator() {
           <div ref={recommendRef} className="mx-auto max-w-[640px] px-8">
             {/* Loading */}
             {recLoading && !recommendation && (
-              <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7 text-center">
-                <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-[#BAF14D]" />
-                <LoadingMessages theme="dark" />
+              <div className="rounded-[14px] border border-navy/10 bg-white p-7 text-center">
+                <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-navy/15 border-t-forest" />
+                <LoadingMessages theme="light" />
               </div>
             )}
 
             {/* Missing-input fallback — protects restored sessions and any
                 path that reaches Step 3 without enough to compare */}
             {!recLoading && !recommendation && !recError && !outsideMA && (
-              <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7 text-center">
-                <p className="text-[0.9375rem] text-white">
+              <div className="rounded-[14px] border border-navy/10 bg-white p-7 text-center">
+                <p className="text-[0.9375rem] text-navy">
                   We need one more detail — add both addresses, or a distance, and we&apos;ll compare your options.
                 </p>
-                <button onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-[#BAF14D]">
+                <button onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-forest">
                   ← Back to Step 1
                 </button>
               </div>
             )}
 
             {outsideMA && (
-              <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
-                <p className="text-[0.9375rem] text-white">
+              <div className="rounded-[14px] border border-navy/10 bg-white p-7">
+                <p className="text-[0.9375rem] text-navy">
                   Our recommendation engine is optimized for Massachusetts commutes. For other locations, try{' '}
-                  <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" className="text-[#BAF14D] underline">Google Maps</a>{' '}
+                  <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" className="text-forest underline">Google Maps</a>{' '}
                   or a local transit app.
                 </p>
-                <button onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-[#BAF14D]">← Start over</button>
+                <button onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-forest">← Start over</button>
               </div>
             )}
 
             {recError && (
-              <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
-                <p className="text-[0.9375rem] text-white/70">{recError}</p>
-                <button onClick={handleSeeOptions} className="mt-3 text-sm font-semibold text-[#BAF14D]">Try again</button>
+              <div className="rounded-[14px] border border-navy/10 bg-white p-7">
+                <p className="text-[0.9375rem] text-ink-soft">{recError}</p>
+                <button onClick={handleSeeOptions} className="mt-3 text-sm font-semibold text-forest">Try again</button>
               </div>
             )}
 
@@ -978,7 +979,7 @@ export default function CommuteCalculator() {
                 })()}
 
                 {!homePlaceData && (
-                  <p className="text-center text-[0.8125rem] text-white/75">
+                  <p className="text-center text-[0.8125rem] text-ink-soft">
                     Enter your home and work addresses in Step 1 for live transit and Bluebikes availability.
                   </p>
                 )}
@@ -1000,23 +1001,23 @@ export default function CommuteCalculator() {
 
                 {/* Savings breakdown */}
                 {r && (
-                  <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-7">
-                    <div className="mb-4 font-display text-[0.9375rem] font-bold text-white">
+                  <div className="rounded-[14px] border border-navy/10 bg-white p-7">
+                    <div className="mb-4 font-serif text-[1.25rem] leading-tight text-navy">
                       {commuteMode === 'new' ? 'Estimated annual cost'
                         : r.baselineAnnualCost === 0 ? 'Annual commute cost comparison' : 'Estimated annual savings'}
                     </div>
 
                     <div className={`mb-4 rounded-[14px] border px-6 py-4 text-center ${
                       r.baselineAnnualCost === 0
-                        ? 'border-white/[0.12] bg-white/[0.04]'
-                        : 'border-[rgba(186,241,77,0.2)] bg-[rgba(186,241,77,0.08)]'
+                        ? 'border-navy/10 bg-navy/[0.04]'
+                        : 'border-forest/40 bg-forest/10'
                     }`}>
                       <div className={`font-display text-[2.25rem] font-extrabold leading-none tracking-tighter ${
-                        r.baselineAnnualCost === 0 ? 'text-white' : 'text-[#BAF14D]'
+                        r.baselineAnnualCost === 0 ? 'text-navy' : 'text-green-deep'
                       }`}>
                         {commuteMode === 'new' ? fmt(Math.abs(r.net)) : fmt(r.net)}
                       </div>
-                      <div className="mt-1 text-[0.75rem] text-[rgba(186,241,77,0.78)]">
+                      <div className="mt-1 text-[0.75rem] text-ink-soft">
                         {commuteMode === 'new'
                           ? (r.transitCost > 0 ? 'estimated cost per year for this option' : 'free — no fares, no fuel')
                           : r.baselineAnnualCost === 0
@@ -1049,15 +1050,15 @@ export default function CommuteCalculator() {
 
                     {/* Time comparison */}
                     <div className="mb-4 grid grid-cols-2 gap-2">
-                      <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
-                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/70">Driving</div>
-                        <div className="font-display text-lg font-bold text-white">
+                      <div className="rounded-[9px] border border-navy/10 bg-navy/[0.04] px-2 py-2.5 text-center">
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-soft">Driving</div>
+                        <div className="font-display text-lg font-bold text-navy">
                           {routeLoading ? '…' : `${r.isRealRouting ? '' : '~'}${r.driveMins} min`}
                         </div>
                       </div>
-                      <div className="rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-2 py-2.5 text-center">
-                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/70">{r.mode.label}</div>
-                        <div className="font-display text-lg font-bold text-white">
+                      <div className="rounded-[9px] border border-navy/10 bg-navy/[0.04] px-2 py-2.5 text-center">
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-soft">{r.mode.label}</div>
+                        <div className="font-display text-lg font-bold text-navy">
                           {routeLoading ? '…' : r.altMins !== null ? `${r.isRealRouting ? '' : '~'}${r.altMins} min` : 'varies'}
                         </div>
                       </div>
@@ -1067,20 +1068,20 @@ export default function CommuteCalculator() {
                     {r.isActive && (
                       <>
                         <div className="grid grid-cols-3 gap-2">
-                          <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
-                            <div className="font-display text-base font-bold text-[#EDB93C]">{r.activeMins}</div>
-                            <div className="mt-0.5 text-[9px] leading-snug text-white/70">active min/week</div>
+                          <div className="rounded-[9px] bg-navy/[0.04] px-2 py-2 text-center">
+                            <div className="font-display text-base font-bold text-[#8A5A00]">{r.activeMins}</div>
+                            <div className="mt-0.5 text-[9px] leading-snug text-ink-soft">active min/week</div>
                           </div>
-                          <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
-                            <div className="font-display text-base font-bold text-[#EDB93C]">{r.weeklyCals.toLocaleString()}</div>
-                            <div className="mt-0.5 text-[9px] leading-snug text-white/70">cal/week</div>
+                          <div className="rounded-[9px] bg-navy/[0.04] px-2 py-2 text-center">
+                            <div className="font-display text-base font-bold text-[#8A5A00]">{r.weeklyCals.toLocaleString()}</div>
+                            <div className="mt-0.5 text-[9px] leading-snug text-ink-soft">cal/week</div>
                           </div>
-                          <div className="rounded-[9px] bg-white/[0.04] px-2 py-2 text-center">
-                            <div className="font-display text-base font-bold text-[#EDB93C]">{fmtCO2(r.co2)}</div>
-                            <div className="mt-0.5 text-[9px] leading-snug text-white/70">CO₂ saved/yr</div>
+                          <div className="rounded-[9px] bg-navy/[0.04] px-2 py-2 text-center">
+                            <div className="font-display text-base font-bold text-[#8A5A00]">{fmtCO2(r.co2)}</div>
+                            <div className="mt-0.5 text-[9px] leading-snug text-ink-soft">CO₂ saved/yr</div>
                           </div>
                         </div>
-                        <div className="mt-2 text-center text-[0.75rem] text-white/75">
+                        <div className="mt-2 text-center text-[0.75rem] text-ink-soft">
                           {co2Equivalency(r.co2)}
                         </div>
                       </>
@@ -1097,15 +1098,15 @@ export default function CommuteCalculator() {
                 />
 
                 {/* Get the app CTA */}
-                <div className="rounded-2xl border border-[rgba(186,241,77,0.18)] bg-[linear-gradient(135deg,rgba(41,102,229,0.15),rgba(186,241,77,0.08))] px-7 py-6">
-                  <div className="mb-1 font-display text-[1.0625rem] font-extrabold tracking-tight text-white">Get the app</div>
-                  <div className="mb-3.5 text-[0.8rem] leading-relaxed text-white">
+                <div className="rounded-[14px] border border-forest/20 bg-[linear-gradient(135deg,rgba(45,106,79,0.06),rgba(45,106,79,0.03))] px-7 py-6">
+                  <div className="mb-1 font-serif text-[1.375rem] leading-tight text-navy">Get the app</div>
+                  <div className="mb-3.5 text-[15px] leading-relaxed text-ink-soft">
                     Track your active trips with Shift to see what you&rsquo;re saving, feel the health gains, and unlock perks at partner businesses around town.
                   </div>
                   <a
                     href="/shift"
                     onClick={() => posthog.capture('advisor_app_cta_clicked', { advisor_variant: 'public' })}
-                    className="inline-block rounded-lg bg-[#BAF14D] px-4 py-2 text-[0.8125rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                    className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-forest px-5 text-[14px] font-semibold text-white transition-colors hover:bg-green-deep"
                   >
                     Download the app &rarr;
                   </a>
@@ -1114,7 +1115,7 @@ export default function CommuteCalculator() {
                 {/* Edit inputs */}
                 <button
                   onClick={() => setStep(1)}
-                  className="w-full rounded-xl border border-white/[0.08] py-3 text-[0.8125rem] font-semibold text-white/75 transition-colors hover:border-white/[0.15] hover:text-white/90"
+                  className="w-full rounded-full border border-navy/25 py-3 text-[0.8125rem] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
                 >
                   ← Edit your commute details
                 </button>
@@ -1124,30 +1125,30 @@ export default function CommuteCalculator() {
         )}
 
         {/* Methodology */}
-        <div className="mx-auto mt-8 max-w-[860px] px-8">
-          <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-5 py-4">
-            <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white">How this is calculated</div>
-            <div className="text-[0.77rem] leading-[1.65] text-white">
-              Door-to-door travel times are powered by Google Maps with rush hour traffic data (Monday 8:30 AM departure). When addresses are entered, all mode comparisons use real routing — including driving time with parking. Fuel savings use your vehicle&apos;s EPA combined MPG estimate and the current Massachusetts average gas price. Maintenance savings apply the AAA variable rate per mile (~10–11¢/mile by vehicle type). <strong className="font-semibold text-white">Fixed costs like insurance, depreciation, and registration are excluded</strong> — those don&apos;t change based on how many days you drive. MBTA fares from{' '}
-              <a href="https://www.mbta.com/fares" target="_blank" rel="noopener noreferrer" className="text-white underline">mbta.com/fares</a>; the advisor compares monthly pass vs. per-ride cost and uses whichever is cheaper. Health estimates use MET values from the American College of Sports Medicine. Gas prices, MBTA fares, and parking costs are updated regularly from public sources.
+        <div className="mx-auto mt-8 max-w-[860px] px-6 lg:px-8">
+          <div className="rounded-xl border border-navy/10 bg-navy/[0.04] px-5 py-4">
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">How this is calculated</div>
+            <div className="text-[0.8125rem] leading-[1.65] text-ink-soft">
+              Door-to-door travel times are powered by Google Maps with rush hour traffic data (Monday 8:30 AM departure). When addresses are entered, all mode comparisons use real routing — including driving time with parking. Fuel savings use your vehicle&apos;s EPA combined MPG estimate and the current Massachusetts average gas price. Maintenance savings apply the AAA variable rate per mile (~10–11¢/mile by vehicle type). <strong className="font-semibold text-navy">Fixed costs like insurance, depreciation, and registration are excluded</strong> — those don&apos;t change based on how many days you drive. MBTA fares from{' '}
+              <a href="https://www.mbta.com/fares" target="_blank" rel="noopener noreferrer" className="text-forest underline">mbta.com/fares</a>; the advisor compares monthly pass vs. per-ride cost and uses whichever is cheaper. Health estimates use MET values from the American College of Sports Medicine. Gas prices, MBTA fares, and parking costs are updated regularly from public sources.
             </div>
           </div>
         </div>
 
         {/* FAQ */}
-        <div className="mx-auto max-w-[780px] px-8 pb-24 pt-14">
-          <h2 className="mb-6 font-display text-[1.375rem] font-bold tracking-tight text-white">
+        <div className="mx-auto max-w-[780px] px-6 pb-16 pt-10 lg:px-8 lg:pb-20 lg:pt-14">
+          <h2 className="mb-6 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
             Common questions about active commuting in Massachusetts
           </h2>
           {FAQ.map((item, i) => (
-            <div key={i} className="border-t border-white/[0.07] py-6 last:border-b">
-              <div className="mb-2.5 font-display font-semibold text-white">{item.q}</div>
-              <div className="text-[0.9rem] leading-[1.75] text-white" dangerouslySetInnerHTML={{ __html: item.a }} />
+            <div key={i} className="border-t border-navy/10 py-6 last:border-b">
+              <div className="mb-2.5 font-serif text-[1.25rem] leading-tight text-navy">{item.q}</div>
+              <div className="text-[15px] leading-[1.75] text-ink-soft" dangerouslySetInnerHTML={{ __html: item.a }} />
             </div>
           ))}
         </div>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }
@@ -1157,14 +1158,14 @@ export default function CommuteCalculator() {
 function Field({ label, children, last }: { label: string; children: React.ReactNode; last?: boolean }) {
   return (
     <div className={last ? '' : 'mb-6'}>
-      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white">{label}</label>
+      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-ink-soft">{label}</label>
       {children}
     </div>
   )
 }
 
 function Hint({ children }: { children: React.ReactNode }) {
-  return <div className="mt-1 text-[0.7rem] leading-snug text-white">{children}</div>
+  return <div className="mt-1 text-[0.75rem] leading-snug text-ink-soft">{children}</div>
 }
 
 function NumInput({ value, onChange, min, max, step, width, fontSize }: {
@@ -1176,7 +1177,7 @@ function NumInput({ value, onChange, min, max, step, width, fontSize }: {
       value={value}
       onChange={e => onChange(parseFloat(e.target.value) || 0)}
       min={min} max={max} step={step}
-      className="rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] px-3 py-2.5 text-center font-display font-bold text-white transition-colors focus:border-[#BAF14D] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+      className="rounded-[10px] border-[1.5px] border-navy/15 bg-white px-3 py-2.5 text-center font-display font-bold text-navy transition-colors focus:border-forest focus:ring-1 focus:ring-forest/20 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
       style={{ width: width || '100px', fontSize: fontSize || '1.25rem' }}
     />
   )
@@ -1190,11 +1191,11 @@ function RangeInput({ value, onChange, min, max, labels }: {
       <input
         type="range" min={min} max={max} step={1} value={value}
         onChange={e => onChange(parseInt(e.target.value))}
-        className="w-full cursor-pointer appearance-none rounded-full bg-white/10 outline-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-[#191A2E] [&::-webkit-slider-thumb]:bg-[#BAF14D] [&::-webkit-slider-thumb]:shadow-[0_0_0_1.5px_#BAF14D]"
+        className="w-full cursor-pointer appearance-none rounded-full bg-navy/15 outline-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-forest [&::-webkit-slider-thumb]:shadow-[0_0_0_1.5px_#2D6A4F]"
         style={{ height: '6px' }}
       />
       <div className="mt-1 flex justify-between">
-        {labels.map(l => <span key={l} className="text-[10px] text-white">{l}</span>)}
+        {labels.map(l => <span key={l} className="text-[10px] text-ink-soft">{l}</span>)}
       </div>
     </div>
   )
@@ -1207,9 +1208,9 @@ function Select({ value, onChange, options }: {
     <select
       value={value}
       onChange={e => onChange(e.target.value)}
-      className="w-full cursor-pointer appearance-none rounded-[10px] border-[1.5px] border-white/[0.12] bg-white/[0.06] bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2012%208%22%3E%3Cpath%20d%3D%22M1%201l5%205%205-5%22%20stroke%3D%22%238A8DA8%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E')] bg-[length:12px] bg-[right_0.875rem_center] bg-no-repeat px-3.5 py-2.5 text-sm text-white transition-colors focus:border-[#BAF14D] focus:outline-none"
+      className="w-full cursor-pointer appearance-none rounded-[10px] border-[1.5px] border-navy/15 bg-white bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2012%208%22%3E%3Cpath%20d%3D%22M1%201l5%205%205-5%22%20stroke%3D%22%238A8DA8%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E')] bg-[length:12px] bg-[right_0.875rem_center] bg-no-repeat px-3.5 py-2.5 text-sm text-navy transition-colors focus:border-forest focus:outline-none"
     >
-      {options.map(o => <option key={o.value} value={o.value} className="bg-[#242538] text-white">{o.label}</option>)}
+      {options.map(o => <option key={o.value} value={o.value} className="bg-white text-navy">{o.label}</option>)}
     </select>
   )
 }
@@ -1222,8 +1223,8 @@ function RadioPills({ name, value, onChange, options }: {
       {options.map(o => (
         <label key={o.value} className={`cursor-pointer whitespace-nowrap rounded-full border-[1.5px] px-3.5 py-1.5 text-xs font-semibold transition-all ${
           value === o.value
-            ? 'border-[#BAF14D] bg-[#BAF14D] text-[#191A2E]'
-            : 'border-white/[0.12] text-white hover:border-white/25'
+            ? 'border-forest bg-forest/10 text-green-deep'
+            : 'border-navy/10 text-navy hover:border-navy/25'
         }`}>
           <input type="radio" name={name} value={o.value} checked={value === o.value}
             onChange={() => onChange(o.value)} className="sr-only" />
@@ -1235,10 +1236,10 @@ function RadioPills({ name, value, onChange, options }: {
 }
 
 function ResultRow({ label, value, type }: { label: React.ReactNode; value: string; type: 'pos' | 'neg' | 'neu' }) {
-  const color = type === 'pos' ? 'text-[#BAF14D]' : type === 'neg' ? 'text-[#FF6B6B]' : 'text-white'
+  const color = type === 'pos' ? 'text-forest' : type === 'neg' ? 'text-[#B3361F]' : 'text-navy'
   return (
-    <div className="flex items-center justify-between rounded-[9px] border border-white/[0.07] bg-white/[0.04] px-3.5 py-2.5">
-      <span className="text-[0.8rem] text-white">{label}</span>
+    <div className="flex items-center justify-between rounded-[9px] border border-navy/10 bg-navy/[0.04] px-3.5 py-2.5">
+      <span className="text-[0.8rem] text-navy">{label}</span>
       <span className={`font-display text-[0.9rem] font-bold transition-all duration-300 ${color}`}>{value}</span>
     </div>
   )

@@ -3,6 +3,7 @@
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import Link from 'next/link'
+import { PILL } from '@/components/org/Section'
 import { useRef, useState } from 'react'
 
 /* ── Role data ── */
@@ -11,7 +12,7 @@ const ROLES = [
   {
     name: 'Shift Ambassador',
     program: 'Shift App',
-    programColor: 'bg-lime text-navy',
+    programColor: 'bg-navy text-white',
     description:
       'Help people in your community discover the Shift app and log their first trip.',
     timeAsk: '2–4 hours/month',
@@ -31,7 +32,7 @@ const ROLES = [
   {
     name: 'Rewards Partner Scout',
     program: 'Shift App',
-    programColor: 'bg-lime text-navy',
+    programColor: 'bg-navy text-white',
     description:
       'Help recruit local businesses to offer rewards for Shift app users in your neighborhood.',
     timeAsk: '2–3 hours/month',
@@ -41,7 +42,7 @@ const ROLES = [
   {
     name: 'Neighborhood Lead',
     program: 'Shift App',
-    programColor: 'bg-lime text-navy',
+    programColor: 'bg-navy text-white',
     description:
       'Be the face of Shift in your neighborhood \u2014 drive adoption, organize challenges, and climb the leaderboard.',
     timeAsk: '3–5 hours/month',
@@ -81,7 +82,7 @@ const ROLES = [
   {
     name: 'Beta Tester',
     program: 'Shift App',
-    programColor: 'bg-lime text-navy',
+    programColor: 'bg-navy text-white',
     description:
       'Get early access to Shift and help us find what needs fixing before we launch.',
     timeAsk: '1–2 hours/week during the beta period',
@@ -91,7 +92,7 @@ const ROLES = [
   {
     name: 'Content Contributor',
     program: 'GSI',
-    programColor: 'bg-[#8A8DA8] text-white',
+    programColor: 'bg-navy/[0.08] text-navy',
     description:
       'Share your own active commuting moments so GSI can show what real behavior change looks like.',
     timeAsk: 'As much or as little as you want',
@@ -101,7 +102,7 @@ const ROLES = [
   {
     name: 'Grant Researcher',
     program: 'GSI',
-    programColor: 'bg-[#8A8DA8] text-white',
+    programColor: 'bg-navy/[0.08] text-navy',
     description:
       'Help identify and summarize grant opportunities that fit GSI\u2019s mission.',
     timeAsk: '2–4 hours/month',
@@ -207,17 +208,17 @@ export default function GetInvolvedPage() {
 
   return (
     <>
-      <Nav />
-      <main className="bg-navy pt-[60px]">
+      <Nav variant="light" />
+      <main className="bg-cream pt-[60px]">
         {/* ── Hero ── */}
-        <section className="mx-auto max-w-[1120px] px-8 py-20 sm:py-28">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-lime">
+        <section className="mx-auto max-w-[1120px] px-6 pt-10 pb-8 lg:px-8 lg:pt-14 lg:pb-10">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
             Get involved
           </p>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-white sm:text-5xl">
+          <h1 className="font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
             Move Massachusetts with us.
           </h1>
-          <p className="mt-5 max-w-[640px] text-base leading-relaxed text-white">
+          <p className="mt-5 max-w-[640px] text-[17px] leading-relaxed text-ink-soft">
             Green Streets Initiative runs on community energy. Whether you have two hours a
             month or two days a week, there&apos;s a role that fits — and real work that
             needs doing.
@@ -225,20 +226,20 @@ export default function GetInvolvedPage() {
         </section>
 
         {/* ── Role cards ── */}
-        <section className="mx-auto max-w-[1120px] px-8 pb-20">
+        <section className="mx-auto max-w-[1120px] px-6 pb-10 lg:px-8 lg:pb-14">
           {CLUSTERS.map((cluster) => (
             <div key={cluster.label} className="mb-14">
-              <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-white/50">
+              <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                 {cluster.label}
               </p>
               <div className="grid gap-5 sm:grid-cols-2">
                 {ROLES.slice(cluster.start, cluster.end).map((role) => (
                   <div
                     key={role.name}
-                    className="flex flex-col rounded-xl bg-[#242538] p-6"
+                    className="flex flex-col rounded-[14px] border border-navy/10 bg-white p-6"
                   >
                     <div className="mb-3 flex items-start justify-between gap-3">
-                      <h3 className="font-display text-lg font-bold text-white">
+                      <h3 className="font-serif text-[1.375rem] leading-tight text-navy">
                         {role.name}
                       </h3>
                       <span
@@ -247,18 +248,18 @@ export default function GetInvolvedPage() {
                         {role.program}
                       </span>
                     </div>
-                    <p className="text-[0.9375rem] leading-relaxed text-white">
+                    <p className="text-[15px] leading-relaxed text-navy">
                       {role.description}
                     </p>
-                    <p className="mt-3 text-sm text-white/50">
+                    <p className="mt-3 text-sm text-ink-soft">
                       <ClockIcon /> {role.timeAsk}
                     </p>
-                    <p className="mt-3 text-sm leading-relaxed text-white/70">
+                    <p className="mt-3 text-sm leading-relaxed text-ink-soft">
                       {role.session}
                     </p>
                     <button
                       onClick={() => handleRoleClick(role.name)}
-                      className="mt-auto pt-5 text-left text-sm font-semibold text-lime transition-opacity hover:opacity-80"
+                      className="mt-auto pt-5 text-left text-sm font-semibold text-forest transition-opacity hover:opacity-80"
                     >
                       I&apos;m interested &rarr;
                     </button>
@@ -272,36 +273,36 @@ export default function GetInvolvedPage() {
         {/* ── Volunteer intake form ── */}
         <section
           ref={formRef}
-          className="border-t border-white/[0.07] bg-navy"
+          className="border-t border-navy/10 bg-cream"
         >
-          <div className="mx-auto max-w-[640px] px-8 py-20">
+          <div className="mx-auto max-w-[640px] px-6 py-10 lg:px-8 lg:py-14">
             {submitted ? (
               <div className="animate-in text-center">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-lime">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-forest/10">
                   <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                    <path stroke="#191A2E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    <path stroke="#2D6A4F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h2 className="font-display text-2xl font-bold text-white">
+                <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
                   Thanks{firstName ? `, ${firstName}` : ''}.
                 </h2>
-                <p className="mt-3 text-[0.9375rem] leading-relaxed text-white">
+                <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
                   We&apos;ll be in touch within a week. In the meantime, download the
                   Shift app and take your first active trip.
                 </p>
                 <Link
                   href="/shift"
-                  className="mt-6 inline-block rounded-full bg-lime px-6 py-2.5 text-sm font-semibold text-navy transition-opacity hover:opacity-85"
+                  className={`${PILL} mt-6`}
                 >
                   Download the app &rarr;
                 </Link>
               </div>
             ) : (
               <>
-                <h2 className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
                   Tell us you&apos;re interested
                 </h2>
-                <p className="mt-3 text-[0.9375rem] leading-relaxed text-white">
+                <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
                   Fill out the short form below and we&apos;ll be in touch within a week with
                   next steps.
                 </p>
@@ -321,14 +322,14 @@ export default function GetInvolvedPage() {
 
                   {/* Name */}
                   <div>
-                    <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-white">
-                      Your name <span className="text-lime">*</span>
+                    <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-navy">
+                      Your name <span className="text-forest">*</span>
                     </label>
                     <input
                       id="name"
                       type="text"
                       required
-                      className="form-input w-full"
+                      className="block w-full rounded-lg border border-navy/15 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                     />
@@ -336,14 +337,14 @@ export default function GetInvolvedPage() {
 
                   {/* Email */}
                   <div>
-                    <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-white">
-                      Email address <span className="text-lime">*</span>
+                    <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-navy">
+                      Email address <span className="text-forest">*</span>
                     </label>
                     <input
                       id="email"
                       type="email"
                       required
-                      className="form-input w-full"
+                      className="block w-full rounded-lg border border-navy/15 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
@@ -351,25 +352,25 @@ export default function GetInvolvedPage() {
 
                   {/* Roles */}
                   <fieldset>
-                    <legend className="mb-1.5 text-sm font-medium text-white">
-                      Which roles interest you? <span className="text-lime">*</span>
+                    <legend className="mb-1.5 text-sm font-medium text-navy">
+                      Which roles interest you? <span className="text-forest">*</span>
                     </legend>
-                    <p className="mb-3 text-xs text-white/50">
+                    <p className="mb-3 text-[13px] text-ink-soft">
                       Select all that apply. We&apos;ll follow up based on your selections.
                     </p>
                     <div className="space-y-2.5">
                       {ROLES.map((role) => (
                         <label
                           key={role.name}
-                          className="flex cursor-pointer items-center gap-3 rounded-lg border border-white/[0.08] px-4 py-3 transition-colors hover:border-white/20"
+                          className="flex cursor-pointer items-center gap-3 rounded-lg border border-navy/10 bg-white px-4 py-3 transition-colors hover:border-navy/25"
                         >
                           <input
                             type="checkbox"
                             checked={selectedRoles.has(role.name)}
                             onChange={() => toggleRole(role.name)}
-                            className="h-4 w-4 shrink-0 rounded border-white/30 bg-white/10 text-lime accent-[#BAF14D]"
+                            className="h-4 w-4 shrink-0 rounded border-navy/25 accent-forest"
                           />
-                          <span className="text-sm text-white">{role.name}</span>
+                          <span className="text-sm text-navy">{role.name}</span>
                         </label>
                       ))}
                     </div>
@@ -377,13 +378,13 @@ export default function GetInvolvedPage() {
 
                   {/* About */}
                   <div>
-                    <label htmlFor="about" className="mb-1.5 block text-sm font-medium text-white">
+                    <label htmlFor="about" className="mb-1.5 block text-sm font-medium text-navy">
                       A little about you
                     </label>
                     <textarea
                       id="about"
                       rows={3}
-                      className="form-input w-full"
+                      className="block w-full rounded-lg border border-navy/15 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
                       placeholder="Anything that would help us match you to the right role — your neighborhood, your connection to GSI, your commute situation, skills you'd like to use."
                       value={about}
                       onChange={(e) => setAbout(e.target.value)}
@@ -392,13 +393,13 @@ export default function GetInvolvedPage() {
 
                   {/* Referral */}
                   <div>
-                    <label htmlFor="referral" className="mb-1.5 block text-sm font-medium text-white">
+                    <label htmlFor="referral" className="mb-1.5 block text-sm font-medium text-navy">
                       How did you hear about volunteering with GSI?
                     </label>
                     <input
                       id="referral"
                       type="text"
-                      className="form-input w-full"
+                      className="block w-full rounded-lg border border-navy/15 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
                       value={referral}
                       onChange={(e) => setReferral(e.target.value)}
                     />
@@ -406,7 +407,7 @@ export default function GetInvolvedPage() {
 
                   {/* Error */}
                   {error && (
-                    <p className="text-sm text-red-400">{error}</p>
+                    <p className="text-sm font-medium text-[#B3361F]">{error}</p>
                   )}
 
                   {/* Submit */}
@@ -414,7 +415,7 @@ export default function GetInvolvedPage() {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="w-full rounded-full bg-lime px-8 py-3 text-sm font-semibold text-navy transition-opacity hover:opacity-85 disabled:opacity-50 sm:w-auto"
+                      className={`${PILL} w-full disabled:opacity-50 sm:w-auto`}
                     >
                       {submitting ? (
                         <span className="flex items-center justify-center gap-2">
@@ -436,25 +437,25 @@ export default function GetInvolvedPage() {
         </section>
 
         {/* ── Closing strip ── */}
-        <section className="border-t border-white/[0.07] bg-[#242538]">
-          <div className="mx-auto max-w-[640px] px-8 py-16 text-center">
-            <h2 className="font-display text-2xl font-bold tracking-tight text-white">
+        <section className="border-t border-navy/10 bg-white">
+          <div className="mx-auto max-w-[640px] px-6 py-10 text-center lg:px-8 lg:py-14">
+            <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Not ready to commit? Start with the app.
             </h2>
-            <p className="mt-3 text-[0.9375rem] leading-relaxed text-white">
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
               The best way to understand what GSI does is to try it yourself. Download
               the Shift app and take your first active trip.
             </p>
             <Link
               href="/shift"
-              className="mt-6 inline-block rounded-full bg-lime px-6 py-2.5 text-sm font-semibold text-navy transition-opacity hover:opacity-85"
+              className={`${PILL} mt-6`}
             >
               Download the app &rarr;
             </Link>
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }
