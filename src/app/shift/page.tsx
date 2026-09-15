@@ -380,7 +380,7 @@ export default function ShiftPage() {
               heading="Curated adventures on your doorstep."
               media={
                 /* Duo phone layout */
-                <div className="relative mx-auto min-h-[560px] w-[392px] max-w-full">
+                <div className="relative mx-auto min-h-[560px] w-full max-w-[392px]">
                   <div className="absolute right-0 top-0 z-[1] w-[210px] rotate-[8deg] scale-[0.94] brightness-[0.84]">
                     <PhoneFrame
                       src="/images/shift-app/roam-stop-detail.png"
