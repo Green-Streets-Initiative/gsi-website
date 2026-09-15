@@ -2,10 +2,10 @@
 import { ImageResponse } from 'next/og'
 import { getSchool } from '@/lib/semester/schools'
 import { SEMESTER_REWARD, SEMESTER_TRIPS, SEMESTER_OPENS, SEMESTER_CLOSES } from '@/lib/semester/campaign'
-import { SemesterCard, semesterFonts, size as hubSize } from '../opengraph-image'
+import { SemesterCard, semesterFonts } from '@/lib/semester/og-card'
 
 export const runtime = 'nodejs'
-export const size = hubSize
+export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 export const revalidate = 3600
 export const alt = 'Shift Your Semester — get around like a local, get $15 for it'
