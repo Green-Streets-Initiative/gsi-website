@@ -155,7 +155,7 @@ export default function AboutPage() {
         {/* ────────────────────────────────────────────────
             1 · HERO
         ──────────────────────────────────────────────── */}
-        <section className="relative flex min-h-screen flex-col justify-end overflow-hidden bg-cream px-[clamp(1.5rem,5vw,6rem)] pb-16 pt-[60px]">
+        <section className="relative flex min-h-[60vh] flex-col justify-end overflow-hidden bg-cream px-[clamp(1.5rem,5vw,6rem)] pb-16 pt-[120px]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_70%,rgba(45,106,79,0.08)_0%,transparent_60%)]" />
           <div className="relative z-10 max-w-[800px]">
             <FadeIn>
