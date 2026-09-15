@@ -73,25 +73,87 @@ const FIT_OPTS = { padding: 8, maxZoom: 13.75 }
  * corridors carry the banding on top; the grid remainder sits underneath,
  * thin and faint, so nothing published disappears; single-cell stubs are
  * dropped, since a 35m dash from GPS jitter says nothing a reader can use.
+ *
+ * The street-true runs also arrive fragmented: Cambridge's Massachusetts
+ * Avenue came as 106 pieces with a median length of 46m, which reads as
+ * dashes. Runs of the same corridor and band whose ends sit within
+ * BRIDGE_MAX_M are joined, and what is left under MIN_RUN_M is dropped.
+ * A bridge is a straight segment between two already-published stretches
+ * of the same street, so it reveals nothing about anyone; it only stops
+ * the line breaking where a single cell fell under the three-person floor.
  */
 const STUB_MAX_M = 60
+const BRIDGE_MAX_M = 100
+const MIN_RUN_M = 40
+
+type Pt = [number, number]
+function metersBetween(a: Pt, b: Pt): number {
+  return Math.hypot((b[1] - a[1]) * 111320, (b[0] - a[0]) * metersPerDegLng(a[1]))
+}
+function metersPerDegLng(lat: number): number {
+  return 111320 * Math.cos((lat * Math.PI) / 180)
+}
+function runLength(c: Pt[]): number {
+  let m = 0
+  for (let i = 1; i < c.length; i++) m += metersBetween(c[i - 1], c[i])
+  return m
+}
+
+/** Greedy endpoint chaining within one (corridor, band) group. */
+function joinRuns(runs: Pt[][]): Pt[][] {
+  const list = runs.map((r) => [...r])
+  let changed = true
+  while (changed) {
+    changed = false
+    outer: for (let i = 0; i < list.length; i++) {
+      const a = list[i]
+      for (let j = 0; j < list.length; j++) {
+        if (i === j) continue
+        const b = list[j]
+        const aEnd = a[a.length - 1]
+        if (metersBetween(aEnd, b[0]) <= BRIDGE_MAX_M) {
+          list[i] = [...a, ...b]
+        } else if (metersBetween(aEnd, b[b.length - 1]) <= BRIDGE_MAX_M) {
+          list[i] = [...a, ...[...b].reverse()]
+        } else if (metersBetween(a[0], b[b.length - 1]) <= BRIDGE_MAX_M) {
+          list[i] = [...b, ...a]
+        } else if (metersBetween(a[0], b[0]) <= BRIDGE_MAX_M) {
+          list[i] = [...[...b].reverse(), ...a]
+        } else {
+          continue
+        }
+        list.splice(j, 1)
+        changed = true
+        break outer
+      }
+    }
+  }
+  return list
+}
+
 function splitLayer(fc: GeoJSON.FeatureCollection): { streets: GeoJSON.FeatureCollection; grid: GeoJSON.FeatureCollection } {
-  const streets: GeoJSON.Feature[] = []
   const grid: GeoJSON.Feature[] = []
+  const groups = new Map<string, { props: GeoJSON.GeoJsonProperties; runs: Pt[][] }>()
   for (const f of fc.features) {
     if (f.geometry.type !== 'LineString') continue
-    const c = f.geometry.coordinates
-    const props = (f.properties ?? {}) as { name?: string; corridor?: string }
+    const c = f.geometry.coordinates as Pt[]
+    const props = (f.properties ?? {}) as { name?: string; corridor?: string; band?: number }
     if (props.name && props.corridor && c.length > 2) {
-      streets.push(f)
+      const key = `${props.corridor}|${props.band}`
+      const g = groups.get(key) ?? { props: f.properties, runs: [] }
+      g.runs.push(c)
+      groups.set(key, g)
       continue
     }
-    if (c.length === 2) {
-      const [a, b] = c
-      const m = Math.hypot((b[1] - a[1]) * 111320, (b[0] - a[0]) * 111320 * Math.cos((a[1] * Math.PI) / 180))
-      if (m < STUB_MAX_M) continue
-    }
+    if (c.length === 2 && metersBetween(c[0], c[1]) < STUB_MAX_M) continue
     grid.push(f)
+  }
+  const streets: GeoJSON.Feature[] = []
+  for (const g of groups.values()) {
+    for (const run of joinRuns(g.runs)) {
+      if (runLength(run) < MIN_RUN_M) continue
+      streets.push({ type: 'Feature', properties: g.props, geometry: { type: 'LineString', coordinates: run } })
+    }
   }
   return {
     streets: { type: 'FeatureCollection', features: streets },
