@@ -195,12 +195,12 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
           tone="light"
           sections={[
             ...(resources.length > 0 || civicEvents.length > 0 ? [['#involved', 'Get Involved'] as [string, string]] : []),
+            ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events & Roams'] as [string, string]] : []),
             ['#stats', 'Stats'],
             ...(heatmapLayers.length > 0 ? [['#moves', 'Where we move'] as [string, string]] : []),
             ['#momentum', 'Momentum'],
             ...(showCompetition ? [['#competition', 'Competition'] as [string, string]] : []),
             ['#modes', 'Modes'],
-            ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events & Roams'] as [string, string]] : []),
             ...(partners.length > 0 ? [['#rewards', 'Rewards'] as [string, string]] : []),
           ]}
         />
@@ -214,9 +214,17 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
           </Section>
         )}
 
+        {/* Events and roams follow Get Involved (Keith, 2026-09-15): roams draw
+            heavy traffic, and both speak to readers who are not Shift users. */}
+        {(events.length > 0 || roams.length > 0) && (
+          <Section id="events" shape="wanderRight" className="scroll-mt-28">
+            <EventsRoamsPanels events={events} roams={roams} townName={name} tone="light" />
+          </Section>
+        )}
+
         {/* Stats ledger: rank leads when the town has one; the disclaimer is
             the ledger's footnote so the numbers and their caveat stay together. */}
-        <Section id="stats" shape="wanderRight" className="scroll-mt-28">
+        <Section id="stats" shape="straight" tone="white" className="scroll-mt-28">
           <StatRow
             stats={stats}
             townName={name}
@@ -233,7 +241,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
 
         {/* Corridor heatmap */}
         {heatmapLayers.length > 0 && (
-          <Section id="moves" shape="wanderRight" tone="white" className="scroll-mt-28">
+          <Section id="moves" shape="wanderLeft" className="scroll-mt-28">
             <HeatmapSection layers={heatmapLayers} townName={name} centroid={centroid} />
           </Section>
         )}
@@ -259,13 +267,6 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         <Section shape="straight" width="read">
           <WhatIsShift townName={name} />
         </Section>
-
-        {/* Events + roams */}
-        {(events.length > 0 || roams.length > 0) && (
-          <Section id="events" shape="wanderLeft" tone="white" className="scroll-mt-28">
-            <EventsRoamsPanels events={events} roams={roams} townName={name} tone="light" />
-          </Section>
-        )}
 
         {/* Rewards Partners */}
         {partners.length > 0 && (
