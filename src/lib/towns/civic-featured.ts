@@ -67,8 +67,11 @@ export interface FeaturedItem {
   title: string
   desc: string | null
   label: string
+  /** Where the call to action goes; `'#'` means the item has nowhere to send people. */
   href: string
   sort: number
+  /** Set for comment windows and sign-up deadlines: the date the window closes. */
+  deadline?: string
   /** Set when the item came from the hearings pipeline. */
   civic?: TownCivicEvent
   /** Set when the item is a hand-entered dated resource. */
@@ -117,14 +120,25 @@ export function buildFeaturedCandidates(
       const title = name && !ce.title.toLowerCase().includes(name.toLowerCase())
         ? `${name}: ${ce.title}`
         : ce.title
+      // Nowhere to link is not a dead button: an item with only a contact
+      // address sends people to that address (the Somerville count, 09-15).
+      const url = ce.virtual_link ?? ce.source_url
+      const email = ce.comment_email?.trim() || null
+      const href = url ? linkFor(url) : email ? `mailto:${email}` : '#'
+      // A generic "See details" from the pipeline yields to the email label.
+      const generic = !ce.action_label || /^see details$/i.test(ce.action_label.trim())
+      const label = !url && email && generic
+        ? (isVolunteerDrive(ce) ? 'Email to volunteer' : 'Email to comment')
+        : ce.action_label ?? (ce.virtual_link ? 'Register' : 'See details')
       return {
         key: `civic-${ce.id}`,
         chip,
         title,
         desc: ce.description,
-        label: ce.action_label ?? (ce.virtual_link ? 'Register' : 'See details'),
-        href: linkFor(ce.virtual_link ?? ce.source_url),
+        label,
+        href,
         sort,
+        deadline: !ce.hearing_date && ce.comment_deadline ? ce.comment_deadline : undefined,
         civic: ce,
       }
     })

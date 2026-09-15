@@ -361,41 +361,77 @@ export function GetInvolved({
     <div className="max-w-[720px]">
       <SectionHeading title={`Get involved in ${townName}`} lede="Safer streets are made by neighbors who speak up. Start small:" />
 
-      {/* 1. Happening now — zero or one */}
-      {featured && (
-        <a
-          href={featured.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mb-4 block rounded-[16px] border border-gold/60 bg-white p-5 transition-colors hover:border-gold"
-        >
-          <div className="mb-2 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-gold px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-navy">
-              Happening now
-            </span>
-            <span className="text-[13px] font-semibold text-green-deep">{featured.chip}</span>
-          </div>
-          <p className="font-serif text-[1.375rem] leading-tight text-navy">{featured.title}</p>
-          {featured.desc && (
-            <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{featured.desc}</p>
-          )}
-          <span className={`mt-4 ${PILL} min-h-[44px] px-5 text-[14px]`}>
-            {featured.label} &rarr;
-          </span>
-        </a>
-      )}
+      {/* 1. Happening now — zero or one. An item with nowhere to send
+          people is a plain card: no button that leads back to this page. */}
+      {featured && (() => {
+        const linked = featured.href !== '#'
+        const Card = linked ? 'a' : 'div'
+        const linkProps = linked
+          ? featured.href.startsWith('mailto:')
+            ? { href: featured.href }
+            : { href: featured.href, target: '_blank', rel: 'noopener noreferrer' }
+          : {}
+        return (
+          <Card
+            {...linkProps}
+            className={`mb-4 block rounded-[16px] border border-gold/60 bg-white p-5 ${linked ? 'transition-colors hover:border-gold' : ''}`}
+          >
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-gold px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-navy">
+                Happening now
+              </span>
+              <span className="text-[13px] font-semibold text-green-deep">{featured.chip}</span>
+            </div>
+            <p className="font-serif text-[1.375rem] leading-tight text-navy">{featured.title}</p>
+            {featured.desc && (
+              <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{featured.desc}</p>
+            )}
+            {linked && (
+              <span className={`mt-4 ${PILL} min-h-[44px] px-5 text-[14px]`}>
+                {featured.label} &rarr;
+              </span>
+            )}
+          </Card>
+        )
+      })()}
 
-      {/* Also coming up — at most two slim rows */}
+      {/* Also coming up — at most two rows. A closing window gets a
+          Deadline badge and a countdown so it can't fade behind the lead. */}
       {upNext.length > 0 && (
         <ul className="mb-4 border-t border-navy/15">
-          {upNext.map((c) => (
-            <li key={c.key} className="border-b border-navy/15">
-              <a href={c.href} target="_blank" rel="noopener noreferrer" className="flex min-h-[44px] items-baseline gap-2.5 py-2.5 hover:text-forest">
-                <span className="shrink-0 text-[13px] font-semibold text-green-deep">{c.chip}</span>
-                <span className="min-w-0 truncate text-[15px] font-semibold text-navy">{c.title}</span>
-              </a>
-            </li>
-          ))}
+          {upNext.map((c) => {
+            const linked = c.href !== '#'
+            const daysLeft = c.deadline ? Math.max(0, Math.ceil((c.sort - Date.now()) / 86400000)) : null
+            const countdown = daysLeft === null ? null : daysLeft === 0 ? 'Today' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`
+            const inner = (
+              <>
+                <span className="flex shrink-0 flex-wrap items-center gap-2">
+                  {c.deadline && (
+                    <span className="rounded-full border border-gold bg-gold/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-navy">
+                      Deadline
+                    </span>
+                  )}
+                  <span className="text-[13px] font-semibold text-green-deep">
+                    {c.chip}
+                    {countdown && <span className="text-navy"> · {countdown}</span>}
+                  </span>
+                </span>
+                <span className="min-w-0 text-[15px] font-semibold leading-snug text-navy [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">{c.title}</span>
+              </>
+            )
+            const rowClass = 'flex min-h-[44px] flex-col gap-1 py-3 sm:flex-row sm:items-baseline sm:gap-3'
+            return (
+              <li key={c.key} className="border-b border-navy/15">
+                {linked ? (
+                  <a href={c.href} {...(c.href.startsWith('mailto:') ? {} : { target: '_blank', rel: 'noopener noreferrer' })} className={`${rowClass} hover:text-forest`}>
+                    {inner}
+                  </a>
+                ) : (
+                  <div className={rowClass}>{inner}</div>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
 
