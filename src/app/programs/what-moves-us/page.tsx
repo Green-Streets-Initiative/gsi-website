@@ -77,24 +77,24 @@ const campaigns = [
 export default function WhatMovesUsPage() {
   return (
     <>
-      <Nav />
-      <main style={{ paddingTop: '60px' }}>
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
 
         {/* ══════════════════════════════════════════════════════════
             1 · HERO
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24 md:py-32">
+        <section className="bg-cream px-6 pb-8 pt-12 md:pt-16 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">
+            <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               What Moves Us
             </div>
-            <h1 className="mb-6 max-w-[720px] font-display text-[clamp(2.25rem,5vw,3.5rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h1 className="mb-6 max-w-[720px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               Real stories from Massachusetts commuters.
             </h1>
-            <p className="mb-6 max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mb-6 max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               What Moves Us captures the voices of people who walk, bike, ride transit, and carpool — in their own words and community languages. These stories give commuters a voice in how streets are designed and transportation is planned.
             </p>
-            <p className="max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
+            <p className="max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               Since 2021, we&apos;ve partnered with schools, workplaces, youth centers, and municipalities to produce campaign-based storytelling projects across Massachusetts.
             </p>
           </div>
@@ -103,21 +103,21 @@ export default function WhatMovesUsPage() {
         {/* ══════════════════════════════════════════════════════════
             2 · AUDIENCE CALLOUTS
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 pb-24">
+        <section className="bg-cream px-6 pb-8 lg:px-8 lg:pb-10">
           <div className="mx-auto grid max-w-[1120px] gap-6 md:grid-cols-2">
-            <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-              <h2 className="mb-3 font-display text-xl font-bold tracking-tight text-white">
+            <div className="rounded-[14px] border border-navy/10 bg-white p-8">
+              <h2 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                 For communities
               </h2>
-              <p className="text-[0.9375rem] leading-[1.6] text-white">
+              <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                 Real voices from your neighborhood, in community languages. What Moves Us stories show planners and policymakers what mobility looks like on the ground — not from a spreadsheet, but from the people who live it.
               </p>
             </div>
-            <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-              <h2 className="mb-3 font-display text-xl font-bold tracking-tight text-white">
+            <div className="rounded-[14px] border border-navy/10 bg-white p-8">
+              <h2 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                 For commuters
               </h2>
-              <p className="text-[0.9375rem] leading-[1.6] text-white">
+              <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                 Share your story, shape your streets, and earn bonus XP in Shift. Your commute experience matters — and it can change how your city moves.
               </p>
             </div>
@@ -127,12 +127,12 @@ export default function WhatMovesUsPage() {
         {/* ══════════════════════════════════════════════════════════
             3 · CAMPAIGN ARCHIVE GRID
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#242538] px-8 py-24">
+        <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">
+            <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               Campaign archive
             </div>
-            <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-8 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Past campaigns
             </h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -140,26 +140,26 @@ export default function WhatMovesUsPage() {
                 <Link
                   key={campaign.slug}
                   href={`/programs/what-moves-us/${campaign.slug}`}
-                  className="group rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8 transition-colors hover:border-[#BAF14D]/30 hover:bg-white/[0.06]"
+                  className="group rounded-[14px] border border-navy/10 bg-cream p-8 transition-colors hover:border-navy/30"
                 >
                   <div className="mb-4 flex items-center gap-3">
-                    <span className="rounded-full bg-[#BAF14D]/10 px-3 py-1 text-xs font-semibold text-[#BAF14D]">
+                    <span className="rounded-full bg-forest/10 px-3 py-1 text-xs font-semibold text-forest">
                       {campaign.tag}
                     </span>
                     {campaign.year && (
-                      <span className="text-xs text-white/40">{campaign.year}</span>
+                      <span className="text-xs text-ink-soft">{campaign.year}</span>
                     )}
                   </div>
-                  <h3 className="mb-2 font-display text-lg font-bold tracking-tight text-white">
+                  <h3 className="mb-2 font-serif text-[1.375rem] leading-tight text-navy">
                     {campaign.name}
                   </h3>
-                  <p className="mb-1 text-xs font-medium text-white/50">
+                  <p className="mb-1 text-xs font-medium text-ink-soft">
                     {campaign.location}
                   </p>
-                  <p className="mb-4 text-[0.875rem] leading-[1.6] text-white/70">
+                  <p className="mb-4 text-[0.875rem] leading-[1.6] text-ink-soft">
                     {campaign.description}
                   </p>
-                  <span className="text-sm font-semibold text-[#BAF14D] transition-opacity group-hover:opacity-80">
+                  <span className="text-sm font-semibold text-forest underline-offset-4 group-hover:underline">
                     View campaign &rarr;
                   </span>
                 </Link>
@@ -171,21 +171,21 @@ export default function WhatMovesUsPage() {
         {/* ══════════════════════════════════════════════════════════
             4 · SHIFT CONNECTION
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24">
+        <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
-            <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8 md:p-12">
-              <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">
+            <div className="rounded-[14px] border border-navy/10 bg-white p-8 md:p-12">
+              <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                 Powered by Shift
               </div>
-              <h3 className="mb-4 font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+              <h3 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
                 Stories that connect to data.
               </h3>
-              <p className="mb-8 max-w-[560px] text-[1.0625rem] leading-[1.65] text-white">
+              <p className="mb-8 max-w-[560px] text-[1.0625rem] leading-[1.65] text-ink-soft">
                 Future What Moves Us campaigns will connect to the Shift platform. Participants who share their stories can track their own trips, earn XP, and see how their community moves — all in one place.
               </p>
               <Link
                 href="/shift"
-                className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Learn about the Shift app &rarr;
               </Link>
@@ -196,24 +196,24 @@ export default function WhatMovesUsPage() {
         {/* ══════════════════════════════════════════════════════════
             5 · CLOSING CTA
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 pb-24 md:pb-32">
+        <section className="bg-cream px-6 pb-20 lg:px-8 lg:pb-24">
           <div className="mx-auto max-w-[640px] text-center">
-            <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Commission a What Moves Us campaign.
             </h2>
-            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
               Whether you&apos;re a municipality, transit agency, school district, or community organization — we&apos;ll work with you to capture the stories your community needs heard.
             </p>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link
                 href="/contact?inquiry=general"
-                className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Get in touch &rarr;
               </Link>
               <Link
                 href="/programs"
-                className="inline-block rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
               >
                 All programs
               </Link>
@@ -221,7 +221,7 @@ export default function WhatMovesUsPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

@@ -28,25 +28,25 @@ export default function EmployerLogin() {
   }
 
   return (
-    <section id="employer-login" className="scroll-mt-20 bg-[#242538] px-8 py-16">
+    <section id="employer-login" className="scroll-mt-20 bg-white px-6 py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-[480px] text-center">
-        <h2 className="mb-3 font-display text-xl font-bold text-white">
+        <h2 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
           Already an employer partner?
         </h2>
 
         {sent ? (
           <div>
-            <p className="text-[0.9375rem] leading-[1.6] text-white">
+            <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
               Check your inbox. We sent a login link to{' '}
               <strong className="font-semibold">{email}</strong>.
             </p>
-            <p className="mt-2 text-sm text-white/75">
+            <p className="mt-2 text-sm text-ink-soft">
               The link expires in 1 hour. Don&apos;t see it? Check your spam folder.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
-            <p className="mb-5 text-[0.9375rem] leading-[1.6] text-white">
+            <p className="mb-5 text-[0.9375rem] leading-[1.6] text-ink-soft">
               Enter your admin email to sign in to your employer portal.
             </p>
             <div className="flex gap-3">
@@ -56,12 +56,12 @@ export default function EmployerLogin() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@yourcompany.com"
                 required
-                className="flex-1 rounded-xl border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-[0.9375rem] text-white outline-none placeholder:text-white/60 focus:border-[#BAF14D]"
+                className="flex-1 rounded-[10px] border border-navy/20 bg-white px-4 py-3 text-[0.9375rem] text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest"
               />
               <button
                 type="submit"
                 disabled={loading || !email.trim()}
-                className="rounded-full bg-[#BAF14D] px-5 py-3 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85 disabled:opacity-40"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-navy px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {loading ? 'Sending\u2026' : 'Send login link'}
               </button>

@@ -37,28 +37,28 @@ export default function CheckoutBanner() {
     <div
       className={`border-b ${
         isSuccess
-          ? 'border-[#BAF14D]/30 bg-[#BAF14D]/10'
+          ? 'border-forest/40 bg-forest/10'
           : 'border-[#EDB93C]/30 bg-[#EDB93C]/10'
       }`}
     >
-      <div className="mx-auto flex max-w-[1120px] items-start gap-4 px-8 py-5">
+      <div className="mx-auto flex max-w-[1120px] items-start gap-4 px-6 py-5 lg:px-8">
         <div
           className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-            isSuccess ? 'bg-[#BAF14D]' : 'bg-[#EDB93C]'
+            isSuccess ? 'bg-forest' : 'bg-[#EDB93C]'
           }`}
           aria-hidden
         >
-          <span className="text-base font-bold text-[#191A2E]">
+          <span className={`text-base font-bold ${isSuccess ? 'text-white' : 'text-navy'}`}>
             {isSuccess ? '\u2713' : '!'}
           </span>
         </div>
         <div className="flex-1">
           {isSuccess ? (
             <>
-              <h3 className="font-display text-base font-bold text-white">
+              <h3 className="text-base font-semibold text-navy">
                 You&apos;re in — welcome to Shift
               </h3>
-              <p className="mt-1 text-sm leading-[1.55] text-white/80">
+              <p className="mt-1 text-sm leading-[1.55] text-ink-soft">
                 Your subscription is active. Check your inbox for a
                 welcome email with your employee invite code and a
                 sign-in link to configure your portal. Didn&apos;t get
@@ -71,7 +71,7 @@ export default function CheckoutBanner() {
                       .getElementById('employer-login')
                       ?.scrollIntoView({ behavior: 'smooth' })
                   }}
-                  className="underline hover:text-[#BAF14D]"
+                  className="font-semibold text-forest underline underline-offset-4 hover:opacity-80"
                 >
                   Send me another link
                 </a>
@@ -80,14 +80,14 @@ export default function CheckoutBanner() {
             </>
           ) : (
             <>
-              <h3 className="font-display text-base font-bold text-white">
+              <h3 className="text-base font-semibold text-navy">
                 Checkout canceled
               </h3>
-              <p className="mt-1 text-sm leading-[1.55] text-white/80">
+              <p className="mt-1 text-sm leading-[1.55] text-ink-soft">
                 No charge was made. You can subscribe any time, or{' '}
                 <a
                   href="/contact?inquiry=employer"
-                  className="underline hover:text-[#BAF14D]"
+                  className="font-semibold text-forest underline underline-offset-4 hover:opacity-80"
                 >
                   talk to us
                 </a>{' '}
@@ -99,7 +99,7 @@ export default function CheckoutBanner() {
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="text-sm text-white/75 hover:text-white"
+          className="text-sm text-ink-soft hover:text-navy"
           aria-label="Dismiss"
         >
           <X size={16} weight="bold" />

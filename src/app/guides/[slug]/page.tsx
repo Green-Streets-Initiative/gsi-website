@@ -109,7 +109,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
 
   return (
     <>
-      <Nav />
+      <Nav variant="light" />
       <JsonLd
         data={[
           guideArticleSchema({
@@ -126,32 +126,32 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           ]),
         ]}
       />
-      <main className="bg-[#191A2E]" style={{ paddingTop: '60px' }}>
-        <article className="mx-auto max-w-[680px] px-8 pb-20 pt-12">
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
+        <article className="mx-auto max-w-[680px] px-6 pb-20 pt-12 lg:px-8 lg:pb-24">
           {/* Breadcrumb */}
-          <div className="mb-6 text-[11px] font-semibold uppercase tracking-widest text-white/75">
-            <Link href="/" className="text-[#BAF14D] no-underline hover:underline">Home</Link>
+          <div className="mb-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
+            <Link href="/" className="text-forest no-underline underline-offset-4 hover:underline">Home</Link>
             {' / '}
-            <Link href="/guides" className="text-white/75 no-underline hover:underline">Guides</Link>
+            <Link href="/guides" className="text-forest no-underline underline-offset-4 hover:underline">Guides</Link>
             {' / '}Guide
           </div>
 
           {/* Meta */}
           <div className="mb-4 flex flex-wrap items-center gap-3">
             {g.primary_mode && (
-              <span className="rounded-full bg-[#BAF14D]/[0.12] px-3 py-1 text-[0.75rem] font-semibold text-[#BAF14D]">
+              <span className="rounded-full bg-forest/10 px-3 py-1 text-[0.75rem] font-semibold text-forest">
                 {modeLabel[g.primary_mode] || g.primary_mode}
               </span>
             )}
             {g.read_time_minutes && (
-              <span className="text-[0.75rem] text-white/75">
+              <span className="text-[0.75rem] text-ink-soft">
                 {g.read_time_minutes} min read
               </span>
             )}
           </div>
 
           {/* Title */}
-          <h1 className="mb-8 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.15] tracking-tight text-white">
+          <h1 className="mb-8 font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.05] tracking-[-0.01em] text-navy">
             {g.title}
           </h1>
 
@@ -161,14 +161,14 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               cover); the body's lead paragraph already serves as the
               article's opener. Rendering both would feel magazine-y. */}
           <div
-            className="guide-body text-[0.9375rem] leading-[1.8] text-white"
+            className="guide-body text-[1.0625rem] leading-[1.75] text-navy"
             dangerouslySetInnerHTML={{ __html: renderMarkdown(g.body) }}
           />
 
           {/* Related guides */}
           {related.length > 0 && (
-            <div className="mt-12 border-t border-white/[0.12] pt-8">
-              <div className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-white/75">
+            <div className="mt-12 border-t border-navy/10 pt-8">
+              <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                 Related guides
               </div>
               <div className="space-y-3">
@@ -176,15 +176,15 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                   <Link
                     key={r.id}
                     href={`/guides/${r.slug ?? r.id}`}
-                    className="block rounded-2xl border border-white/[0.12] bg-[#242538] p-5 transition-colors hover:border-[#BAF14D]/40"
+                    className="block rounded-[14px] border border-navy/10 bg-white p-5 transition-colors hover:border-navy/30"
                   >
-                    <div className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-widest text-[#BAF14D]">
+                    <div className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-widest text-forest">
                       {modeLabel[r.primary_mode] || r.primary_mode}
                     </div>
-                    <div className="mb-1 font-display text-[1rem] font-bold leading-snug text-white">
+                    <div className="mb-1 font-serif text-[1.25rem] leading-tight text-navy">
                       {r.title}
                     </div>
-                    <p className="line-clamp-2 text-[0.875rem] leading-relaxed text-white/75">
+                    <p className="line-clamp-2 text-[0.875rem] leading-relaxed text-ink-soft">
                       {r.summary}
                     </p>
                   </Link>
@@ -194,10 +194,10 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           )}
 
           {/* Back CTA */}
-          <div className="mt-12 border-t border-white/[0.12] pt-8">
+          <div className="mt-12 border-t border-navy/10 pt-8">
             <Link
               href="/guides"
-              className="inline-flex items-center gap-2 text-[0.875rem] font-semibold text-[#BAF14D] transition-opacity hover:opacity-80"
+              className="inline-flex items-center gap-2 text-[0.9375rem] font-semibold text-forest underline-offset-4 hover:underline"
             >
               <svg className="h-3.5 w-3.5 rotate-180" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" />
@@ -207,7 +207,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           </div>
         </article>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }
@@ -218,18 +218,18 @@ function renderMarkdown(md: string): string {
 
   return md
     // Headings
-    .replace(/^### (.+)$/gm, '<h3 class="mt-8 mb-3 font-display text-[1.125rem] font-bold text-white">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="mt-10 mb-4 font-display text-[1.25rem] font-bold text-white">$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3 class="mt-8 mb-3 font-serif text-[1.25rem] leading-tight text-navy">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 class="mt-10 mb-4 font-serif text-[1.5rem] leading-tight text-navy">$1</h2>')
     // Bold
-    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-navy">$1</strong>')
     // Links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-[#BAF14D] underline hover:opacity-80" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="font-semibold text-forest underline underline-offset-4 hover:opacity-80" target="_blank" rel="noopener noreferrer">$1</a>')
     // Unordered list items
-    .replace(/^- (.+)$/gm, '<li class="ml-4 mb-1.5 list-disc text-white/80">$1</li>')
+    .replace(/^- (.+)$/gm, '<li class="ml-4 mb-1.5 list-disc text-ink-soft">$1</li>')
     // Wrap consecutive <li> in <ul>
     .replace(/((?:<li[^>]*>.*<\/li>\n?)+)/g, '<ul class="my-4">$1</ul>')
     // Paragraphs — lines that aren't already HTML tags
-    .replace(/^(?!<[hula]|$)(.+)$/gm, '<p class="mb-4 text-white/80">$1</p>')
+    .replace(/^(?!<[hula]|$)(.+)$/gm, '<p class="mb-4 text-ink-soft">$1</p>')
     // Clean up extra newlines
     .replace(/\n{2,}/g, '\n')
 }

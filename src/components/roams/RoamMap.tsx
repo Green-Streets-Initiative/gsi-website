@@ -73,7 +73,7 @@ export default function RoamMap({ routeCoordinates, checkpoints }: Props) {
               geometry: { type: 'LineString', coordinates: routeCoordinates },
             },
           })
-          // Soft glow under a crisp brand-lime line.
+          // Soft glow under a crisp brand-blue line.
           map.addLayer({
             id: 'roam-route-casing',
             type: 'line',
@@ -97,7 +97,7 @@ export default function RoamMap({ routeCoordinates, checkpoints }: Props) {
       required.forEach((c, i) => {
         const el = document.createElement('div')
         el.style.cssText =
-          'width:26px;height:26px;border-radius:50%;background:#BAF14D;border:2px solid #191A2E;display:flex;align-items:center;justify-content:center;font:700 12px system-ui;color:#191A2E;box-shadow:0 1px 4px rgba(0,0,0,0.5)'
+          'width:26px;height:26px;border-radius:50%;background:#191A2E;border:2px solid #FFFFFF;display:flex;align-items:center;justify-content:center;font:700 12px system-ui;color:#FFFFFF;box-shadow:0 1px 4px rgba(25,26,46,0.35)'
         el.textContent = String(i + 1)
         new maplibregl.Marker({ element: el })
           .setLngLat([c.lng, c.lat])
@@ -111,7 +111,7 @@ export default function RoamMap({ routeCoordinates, checkpoints }: Props) {
       bonus.forEach((c) => {
         const el = document.createElement('div')
         el.style.cssText =
-          'width:16px;height:16px;border-radius:50%;background:#242538;border:2.5px solid #EDB93C;box-shadow:0 1px 3px rgba(0,0,0,0.5)'
+          'width:16px;height:16px;border-radius:50%;background:#FFFFFF;border:2.5px solid #EDB93C;box-shadow:0 1px 3px rgba(25,26,46,0.35)'
         new maplibregl.Marker({ element: el })
           .setLngLat([c.lng, c.lat])
           .setPopup(

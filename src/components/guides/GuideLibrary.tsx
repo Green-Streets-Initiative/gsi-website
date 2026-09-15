@@ -116,8 +116,8 @@ export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
             className={
               'rounded-full px-4 py-1.5 text-[0.8125rem] font-semibold transition-colors ' +
               (mode === m.value
-                ? 'border border-[#BAF14D] bg-[#BAF14D]/[0.12] text-[#BAF14D]'
-                : 'border border-white/[0.16] bg-transparent text-white/80 hover:border-white/40')
+                ? 'border border-navy bg-navy text-white'
+                : 'border border-navy/25 bg-transparent text-navy hover:border-navy/50')
             }
           >
             {m.label}
@@ -135,8 +135,8 @@ export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
             className={
               'rounded-full px-3 py-1 text-[0.75rem] font-semibold transition-colors ' +
               (topic === 'all'
-                ? 'border border-white/40 bg-white/[0.08] text-white'
-                : 'border border-white/[0.12] bg-transparent text-white/75 hover:border-white/30')
+                ? 'border border-navy/60 bg-navy/[0.06] text-navy'
+                : 'border border-navy/15 bg-transparent text-ink-soft hover:border-navy/40')
             }
           >
             All topics
@@ -150,8 +150,8 @@ export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
               className={
                 'rounded-full px-3 py-1 text-[0.75rem] font-semibold transition-colors ' +
                 (topic === t
-                  ? 'border border-white/40 bg-white/[0.08] text-white'
-                  : 'border border-white/[0.12] bg-transparent text-white/75 hover:border-white/30')
+                  ? 'border border-navy/60 bg-navy/[0.06] text-navy'
+                  : 'border border-navy/15 bg-transparent text-ink-soft hover:border-navy/40')
               }
             >
               {topicLabel(t)}
@@ -161,14 +161,14 @@ export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
       )}
 
       {/* Result count */}
-      <div className="mb-4 text-[0.8125rem] text-white/75">
+      <div className="mb-4 text-[0.8125rem] text-ink-soft">
         {filtered.length} {filtered.length === 1 ? 'guide' : 'guides'}
       </div>
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-white/[0.12] bg-[#242538] p-8 text-center">
-          <p className="text-[0.9375rem] text-white/80">
+        <div className="rounded-[14px] border border-navy/10 bg-white p-8 text-center">
+          <p className="text-[0.9375rem] text-ink-soft">
             No guides match this combination yet. Try widening the filters.
           </p>
         </div>
@@ -178,27 +178,27 @@ export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
             <Link
               key={g.id}
               href={`/guides/${g.slug ?? g.id}`}
-              className="flex flex-col rounded-2xl border border-white/[0.12] bg-[#242538] p-6 transition-colors hover:border-[#BAF14D]/40"
+              className="flex flex-col rounded-[14px] border border-navy/10 bg-white p-6 transition-colors hover:border-navy/30"
             >
               <div className="mb-3 flex items-center gap-2">
-                <span className="rounded-full bg-[#BAF14D]/[0.12] px-2.5 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-[#BAF14D]">
+                <span className="rounded-full bg-forest/10 px-2.5 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-forest">
                   {MODE_LABEL[g.primary_mode] ?? g.primary_mode}
                 </span>
                 {g.is_starter && (
-                  <span className="rounded-full border border-white/[0.2] px-2.5 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-white/80">
+                  <span className="rounded-full border border-navy/25 px-2.5 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-soft">
                     Starter
                   </span>
                 )}
                 {g.read_time_minutes && (
-                  <span className="text-[0.75rem] text-white/75">
+                  <span className="text-[0.75rem] text-ink-soft">
                     {g.read_time_minutes} min
                   </span>
                 )}
               </div>
-              <h3 className="mb-2 font-display text-[1.0625rem] font-bold leading-snug text-white">
+              <h3 className="mb-2 font-serif text-[1.375rem] leading-tight text-navy">
                 {g.title}
               </h3>
-              <p className="line-clamp-3 text-[0.875rem] leading-relaxed text-white/80">
+              <p className="line-clamp-3 text-[0.875rem] leading-relaxed text-ink-soft">
                 {g.summary}
               </p>
             </Link>

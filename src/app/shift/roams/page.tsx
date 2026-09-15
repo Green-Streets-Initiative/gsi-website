@@ -28,17 +28,17 @@ export default async function RoamsIndexPage() {
 
   return (
     <>
-      <Nav />
-      <main style={{ paddingTop: '60px' }} className="bg-[#191A2E]">
-        <section className="px-8 pt-16 pb-10 md:pt-24">
+      <Nav variant="light" />
+      <main style={{ paddingTop: '60px' }} className="bg-cream">
+        <section className="px-6 pb-8 pt-12 md:pt-16 lg:px-8">
           <div className="mx-auto max-w-[860px] text-center">
-            <p className="mb-4 font-display text-xs font-bold uppercase tracking-[0.15em] text-[#BAF14D]">
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               Shift Roams
             </p>
-            <h1 className="mb-4 font-display text-[clamp(2.2rem,5vw,3.5rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h1 className="mb-5 font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               Routes worth roaming
             </h1>
-            <p className="mx-auto max-w-[600px] text-lg leading-[1.7] text-white/90">
+            <p className="mx-auto max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               Guided walking, biking, and transit adventures — rail trails, greenways, harbor
               loops, and food crawls. Preview any route here, then follow along in the free Shift
               app to check in at each stop and earn the badge.
@@ -46,15 +46,15 @@ export default async function RoamsIndexPage() {
           </div>
         </section>
 
-        <section className="px-8 pb-24">
+        <section className="px-6 pb-20 pt-4 lg:px-8 lg:pb-24">
           <div className="mx-auto grid max-w-[1120px] grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {roams.map((r) => (
-              <RoamCard key={r.id} roam={r} />
+              <RoamCard key={r.id} roam={r} tone="light" />
             ))}
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

@@ -127,40 +127,40 @@ export default function ShiftSchoolsPage() {
   const showContest = Date.now() < Date.parse('2026-10-05T04:00:00Z')
   return (
     <>
-      <Nav />
+      <Nav variant="light" />
       <JsonLd data={faqPageSchema(schoolFaqItems)} />
-      <main style={{ paddingTop: '60px' }}>
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
 
         {/* ══════════════════════════════════════════════════════════
             1 · HERO
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#F4F8EE] px-8 py-24 md:py-32">
+        <section className="bg-cream px-6 pb-8 pt-12 md:pt-16 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#52B788]">
+            <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               For schools
             </div>
-            <h1 className="mb-6 max-w-[720px] font-display text-[clamp(2.25rem,5vw,3.5rem)] font-extrabold leading-[1.08] tracking-tighter text-[#191A2E]">
+            <h1 className="mb-6 max-w-[720px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               The simplest school wellness program you&apos;ve ever run.
             </h1>
-            <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
+            <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               No apps on students&apos; phones. No accounts. No data on kids. Just a wall chart, a show of hands, and one photo every Friday. Shift handles the rest.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link
                 href="/contact?inquiry=school"
-                className="inline-block rounded-full bg-[#191A2E] px-7 py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-85"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Bring it to your school &rarr;
               </Link>
               <Link
                 href="/shift/schools/find"
-                className="inline-block rounded-full border-2 border-[#191A2E] px-7 py-3 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-75"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
               >
                 Find your school &rarr;
               </Link>
             </div>
             <div className="mt-10">
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[#4A4D68]/60">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-ink-soft">
                 Alliance Partner
               </p>
               <img
@@ -175,9 +175,9 @@ export default function ShiftSchoolsPage() {
         {/* ══════════════════════════════════════════════════════════
             2 · HOW IT WORKS
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-white px-8 py-24">
+        <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
-            <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
+            <h2 className="mb-8 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               How it works
             </h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -205,15 +205,15 @@ export default function ShiftSchoolsPage() {
               ].map((step) => (
                 <div
                   key={step.day}
-                  className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-[#F4F8EE] p-8"
+                  className="rounded-[14px] border border-navy/10 bg-cream p-8"
                 >
-                  <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#52B788]">
+                  <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                     {step.day}
                   </div>
-                  <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-[#191A2E]">
+                  <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                     {step.title}
                   </h3>
-                  <p className="text-[0.9375rem] leading-[1.6] text-[#4A4D68]">
+                  <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                     {step.body}
                   </p>
                 </div>
@@ -226,16 +226,16 @@ export default function ShiftSchoolsPage() {
             2b · HIGH SCHOOL VIDEO CONTEST CALLOUT (date-gated)
         ══════════════════════════════════════════════════════════ */}
         {showContest && (
-        <section className="bg-white px-8 pb-24">
+        <section className="bg-white px-6 pb-8 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[1120px]">
-            <div className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-[#F7F5FF] p-8 md:p-10">
-              <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#7C5CE0]">
+            <div className="rounded-[14px] border border-navy/10 bg-[#F7F5FF] p-8 md:p-10">
+              <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5B3FC4]">
                 For high schoolers · Fall 2026
               </div>
-              <h2 className="mb-3 font-display text-[clamp(1.5rem,3vw,2rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
+              <h2 className="mb-3 font-serif text-[clamp(1.5rem,3vw,2rem)] font-normal leading-[1.1] text-navy">
                 Calling high school filmmakers
               </h2>
-              <p className="mb-6 max-w-[680px] text-[1rem] leading-[1.65] text-[#4A4D68]">
+              <p className="mb-6 max-w-[680px] text-[1rem] leading-[1.65] text-ink-soft">
                 MassDOT&apos;s Safe Streets Smart Trips video contest invites students in grades
                 9&ndash;12 to create a 30&ndash;60 second PSA celebrating safe e-bike and e-scooter
                 riding. Winning videos earn up to $500 in Amazon gift cards and are featured at the
@@ -243,7 +243,7 @@ export default function ShiftSchoolsPage() {
               </p>
               <Link
                 href="/events/ce_massdot-video-contest_20261004"
-                className="inline-block rounded-full bg-[#191A2E] px-7 py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-85"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Contest details &rarr;
               </Link>
@@ -255,9 +255,9 @@ export default function ShiftSchoolsPage() {
         {/* ══════════════════════════════════════════════════════════
             3 · WHAT SCHOOLS GET
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24">
+        <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
-            <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-8 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               What schools get
             </h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -293,12 +293,12 @@ export default function ShiftSchoolsPage() {
               ].map((card) => (
                 <div
                   key={card.title}
-                  className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
+                  className="rounded-[14px] border border-navy/10 bg-white p-8"
                 >
-                  <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">
+                  <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                     {card.title}
                   </h3>
-                  <p className="text-[0.9375rem] leading-[1.6] text-white">
+                  <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                     {card.body}
                   </p>
                 </div>
@@ -310,9 +310,9 @@ export default function ShiftSchoolsPage() {
         {/* ══════════════════════════════════════════════════════════
             4 · PROGRAM DETAILS
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#242538] px-8 py-24">
+        <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
-            <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-8 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Program details
             </h2>
             <div className="grid gap-8 md:grid-cols-2">
@@ -324,10 +324,10 @@ export default function ShiftSchoolsPage() {
                   { label: 'Pilot', value: 'Massachusetts schools, 2026' },
                 ].map((row) => (
                   <div key={row.label}>
-                    <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#EDB93C]">
+                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                       {row.label}
                     </div>
-                    <div className="text-[0.9375rem] leading-[1.6] text-white">
+                    <div className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                       {row.value}
                     </div>
                   </div>
@@ -341,10 +341,10 @@ export default function ShiftSchoolsPage() {
                   { label: 'Cost to school', value: 'Free' },
                 ].map((row) => (
                   <div key={row.label}>
-                    <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#EDB93C]">
+                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                       {row.label}
                     </div>
-                    <div className="text-[0.9375rem] leading-[1.6] text-white">
+                    <div className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                       {row.value}
                     </div>
                   </div>
@@ -357,24 +357,24 @@ export default function ShiftSchoolsPage() {
         {/* ══════════════════════════════════════════════════════════
             5 · SCHOOL FAQ
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24">
+        <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[800px]">
-            <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-8 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Common questions
             </h2>
-            <FAQ items={schoolFaqItems} />
+            <FAQ items={schoolFaqItems} theme="light" />
           </div>
         </section>
 
         {/* ══════════════════════════════════════════════════════════
             6 · PROGRAM MATERIALS
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-white px-8 py-24">
+        <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
-            <h2 className="mb-3 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
+            <h2 className="mb-3 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               See the actual materials
             </h2>
-            <p className="mb-10 max-w-[680px] text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
+            <p className="mb-10 max-w-[680px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               Nothing behind a signup wall. These are the same PDFs participating
               teachers and coordinators use — download them, print them, share them
               with your PTO.
@@ -385,15 +385,15 @@ export default function ShiftSchoolsPage() {
                 href={`${ASSET_BASE}/program/shift-program-overview.pdf`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-[#F4F8EE] p-7 transition-opacity hover:opacity-85"
+                className="rounded-[14px] border border-navy/10 bg-cream p-7 transition-colors hover:border-navy/30"
               >
-                <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#52B788]">
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                   For principals & PTOs
                 </div>
-                <div className="font-display text-lg font-extrabold text-[#191A2E]">
+                <div className="font-serif text-[1.375rem] leading-tight text-navy">
                   Program overview (PDF)
                 </div>
-                <p className="mt-1 text-sm leading-[1.6] text-[#4A4D68]">
+                <p className="mt-1 text-sm leading-[1.6] text-ink-soft">
                   What the program is, what it asks of your school, and what your
                   school gets — on one page.
                 </p>
@@ -402,36 +402,36 @@ export default function ShiftSchoolsPage() {
                 href={`${ASSET_BASE}/program/shift-captain-quickstart.pdf`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-[#F4F8EE] p-7 transition-opacity hover:opacity-85"
+                className="rounded-[14px] border border-navy/10 bg-cream p-7 transition-colors hover:border-navy/30"
               >
-                <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#52B788]">
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                   For teachers
                 </div>
-                <div className="font-display text-lg font-extrabold text-[#191A2E]">
+                <div className="font-serif text-[1.375rem] leading-tight text-navy">
                   Classroom quick-start card (PDF)
                 </div>
-                <p className="mt-1 text-sm leading-[1.6] text-[#4A4D68]">
+                <p className="mt-1 text-sm leading-[1.6] text-ink-soft">
                   The Monday-to-Friday routine on a single card — under 5 minutes a
                   week.
                 </p>
               </a>
             </div>
 
-            <div className="rounded-[18px] border border-[rgba(25,26,46,0.09)] p-7 md:p-8">
-              <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#7C5CE0]">
+            <div className="rounded-[14px] border border-navy/10 bg-cream p-7 md:p-8">
+              <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5B3FC4]">
                 Curriculum connections
               </div>
-              <p className="mb-5 text-sm leading-[1.6] text-[#4A4D68]">
+              <p className="mb-5 text-sm leading-[1.6] text-ink-soft">
                 Standards-aligned activities that connect active transportation to
                 what classrooms already teach.
               </p>
               <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
                 {curriculumGroups.map((group) => (
                   <div key={group.subject} className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <span className="text-sm font-bold text-[#191A2E]">
+                    <span className="text-sm font-bold text-navy">
                       {group.subject}
                       {group.note && (
-                        <span className="ml-1 font-normal text-[#6B7280]">({group.note})</span>
+                        <span className="ml-1 font-normal text-ink-soft">({group.note})</span>
                       )}
                       :
                     </span>
@@ -441,7 +441,7 @@ export default function ShiftSchoolsPage() {
                         href={`${ASSET_BASE}/curriculum/${item.file}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm font-semibold text-[#2966E5] underline-offset-2 hover:underline"
+                        className="text-sm font-semibold text-forest underline-offset-4 hover:underline"
                       >
                         Grades {item.grades}
                       </a>
@@ -456,24 +456,24 @@ export default function ShiftSchoolsPage() {
         {/* ══════════════════════════════════════════════════════════
             7 · CLOSING CTA
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 pb-24 md:pb-32">
+        <section className="bg-cream px-6 pb-20 pt-8 lg:px-8 lg:pb-24 lg:pt-10">
           <div className="mx-auto max-w-[640px] text-center">
-            <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Ready to bring Shift to your school?
             </h2>
-            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
               Contact us and we&apos;ll walk you through everything. Onboarding takes about 30 minutes of your time — we handle the rest.
             </p>
             <Link
               href="/contact?inquiry=school"
-              className="inline-block rounded-full bg-[#EDB93C] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
             >
               Get in touch &rarr;
             </Link>
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

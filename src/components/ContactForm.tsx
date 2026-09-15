@@ -139,22 +139,22 @@ export default function ContactForm() {
   if (submitted) {
     const firstName = name.trim().split(' ')[0]
     return (
-      <div className="rounded-2xl bg-card p-8 text-center sm:p-12">
+      <div className="rounded-[14px] border border-navy/10 bg-white p-8 text-center sm:p-12">
         <div className="mb-4 text-4xl">&#10003;</div>
-        <h2 className="font-display text-2xl font-bold text-white">Message sent</h2>
-        <p className="mt-3 text-white">
+        <h2 className="font-serif text-[1.75rem] leading-tight text-navy">Message sent</h2>
+        <p className="mt-3 text-ink-soft">
           Thanks, {firstName}. We&apos;ll be in touch within 2 business days.
         </p>
         <div className="mt-8 space-y-3 text-sm">
-          <p className="text-white">In the meantime:</p>
+          <p className="text-ink-soft">In the meantime:</p>
           <div className="flex flex-col items-center gap-2">
-            <Link href="/shift" className="text-lime hover:underline">
+            <Link href="/shift" className="font-semibold text-forest underline-offset-4 hover:underline">
               Learn about the Shift app &rarr;
             </Link>
-            <Link href="/programs" className="text-lime hover:underline">
+            <Link href="/programs" className="font-semibold text-forest underline-offset-4 hover:underline">
               See our programs &rarr;
             </Link>
-            <Link href="/shift" className="text-lime hover:underline">
+            <Link href="/shift" className="font-semibold text-forest underline-offset-4 hover:underline">
               Download the app &rarr;
             </Link>
           </div>
@@ -164,7 +164,7 @@ export default function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl bg-card p-6 sm:p-10" noValidate>
+    <form onSubmit={handleSubmit} className="rounded-[14px] border border-navy/10 bg-white p-6 sm:p-10" noValidate>
       {/* Honeypot — hidden from real users */}
       <input
         type="text"
@@ -185,7 +185,7 @@ export default function ContactForm() {
             value={name}
             onChange={e => setName(e.target.value)}
             disabled={submitting}
-            className="form-input"
+            className="block w-full rounded-[10px] border border-navy/20 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
           />
         </Field>
 
@@ -197,7 +197,7 @@ export default function ContactForm() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             disabled={submitting}
-            className="form-input"
+            className="block w-full rounded-[10px] border border-navy/20 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
           />
         </Field>
 
@@ -207,7 +207,7 @@ export default function ContactForm() {
             value={inquiryType}
             onChange={e => setInquiryType(e.target.value as InquiryType)}
             disabled={submitting}
-            className="form-input"
+            className="block w-full rounded-[10px] border border-navy/20 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
           >
             {INQUIRY_TYPES.map(type => (
               <option key={type} value={type}>{type}</option>
@@ -224,7 +224,7 @@ export default function ContactForm() {
               value={companyName}
               onChange={e => setCompanyName(e.target.value)}
               disabled={submitting}
-              className="form-input"
+              className="block w-full rounded-[10px] border border-navy/20 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
             />
           </Field>
           <Field label="Approximate team size">
@@ -232,7 +232,7 @@ export default function ContactForm() {
               value={teamSize}
               onChange={e => setTeamSize(e.target.value)}
               disabled={submitting}
-              className="form-input"
+              className="block w-full rounded-[10px] border border-navy/20 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="">Select...</option>
               {TEAM_SIZES.map(size => (
@@ -250,19 +250,19 @@ export default function ContactForm() {
               value={schoolName}
               onChange={e => setSchoolName(e.target.value)}
               disabled={submitting}
-              className="form-input"
+              className="block w-full rounded-[10px] border border-navy/20 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
             />
           </Field>
           <Field label="Grade levels served">
             <div className="flex flex-wrap gap-3">
               {GRADE_LEVELS.map(level => (
-                <label key={level} className="flex cursor-pointer items-center gap-2 text-sm text-white">
+                <label key={level} className="flex cursor-pointer items-center gap-2 text-sm text-navy">
                   <input
                     type="checkbox"
                     checked={gradeLevels.includes(level)}
                     onChange={() => toggleGradeLevel(level)}
                     disabled={submitting}
-                    className="h-4 w-4 rounded border-white/20 bg-white/10 accent-lime"
+                    className="h-4 w-4 rounded border-navy/25 bg-white accent-forest"
                   />
                   {level}
                 </label>
@@ -279,7 +279,7 @@ export default function ContactForm() {
               value={businessName}
               onChange={e => setBusinessName(e.target.value)}
               disabled={submitting}
-              className="form-input"
+              className="block w-full rounded-[10px] border border-navy/20 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
             />
           </Field>
           <Field label="Neighborhood / city">
@@ -289,12 +289,12 @@ export default function ContactForm() {
               value={neighborhood}
               onChange={e => setNeighborhood(e.target.value)}
               disabled={submitting}
-              className="form-input"
+              className="block w-full rounded-[10px] border border-navy/20 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
             />
           </Field>
-          <p className="text-sm text-white">
+          <p className="text-sm text-navy">
             Prefer to apply directly?{' '}
-            <Link href="/shift/rewards-partners" className="text-lime hover:underline">
+            <Link href="/shift/rewards-partners" className="font-semibold text-forest underline-offset-4 hover:underline">
               Complete the rewards partner application &rarr;
             </Link>
           </p>
@@ -308,7 +308,7 @@ export default function ContactForm() {
             value={message}
             onChange={e => setMessage(e.target.value)}
             disabled={submitting}
-            className="form-input resize-y"
+            className="block w-full rounded-[10px] border border-navy/20 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest disabled:cursor-not-allowed disabled:opacity-50 resize-y"
           />
         </Field>
 
@@ -317,7 +317,7 @@ export default function ContactForm() {
           <button
             type="submit"
             disabled={submitting}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-lime px-8 py-3 text-sm font-bold text-navy transition-opacity hover:opacity-85 disabled:opacity-60 sm:w-auto"
+            className="flex w-full min-h-[48px] items-center justify-center gap-2 rounded-full bg-navy px-8 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:w-auto"
           >
             {submitting && (
               <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -331,7 +331,7 @@ export default function ContactForm() {
 
         {/* Error message */}
         {submitError && (
-          <p className="text-center text-sm text-red-400">
+          <p className="text-center text-sm text-[#B42318]">
             Something went wrong — please try again or email us directly at{' '}
             <a href="mailto:info@gogreenstreets.org" className="underline">info@gogreenstreets.org</a>
           </p>
@@ -356,12 +356,12 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-medium text-white">
+      <label className="mb-1.5 block text-sm font-semibold text-navy">
         {label}
-        {required && <span className="ml-0.5 text-lime">*</span>}
+        {required && <span className="ml-0.5 text-forest">*</span>}
       </label>
       {children}
-      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-1 text-xs text-[#B42318]">{error}</p>}
     </div>
   )
 }

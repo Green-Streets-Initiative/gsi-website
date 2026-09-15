@@ -15,8 +15,8 @@ type PricingCard = {
   features: string[]
   accent: string
   // Text color used ON the accent (badge background, checkmark glyph,
-  // highlighted button label). Defaults to navy; override to white for
-  // dark accents (e.g. Basic blue) where navy-on-accent fails contrast.
+  // highlighted button label). Every accent is dark enough to read on cream,
+  // so each one carries white.
   accentText?: string
   highlight?: boolean
 }
@@ -35,7 +35,8 @@ const CARDS: PricingCard[] = [
       'Commute Advisor (standard — no company customization)',
       'Optional public leaderboard for flagship events',
     ],
-    accent: '#5DD39E',
+    accent: '#2D6A4F',
+    accentText: '#FFFFFF',
   },
   {
     id: 'basic',
@@ -66,7 +67,8 @@ const CARDS: PricingCard[] = [
       'Company-funded rewards pool — gift cards for challenge winners',
       'Monthly email digest of team participation',
     ],
-    accent: '#BAF14D',
+    accent: '#1B4332',
+    accentText: '#FFFFFF',
   },
   {
     id: 'premium',
@@ -77,7 +79,8 @@ const CARDS: PricingCard[] = [
       'Everything in Standard',
       '"Sponsored by [Company]" attribution on the rewards you fund',
     ],
-    accent: '#E5A844',
+    accent: '#8A6D1F',
+    accentText: '#FFFFFF',
   },
 ]
 
@@ -108,16 +111,16 @@ export default function EmployerPricing() {
   }
 
   return (
-    <section className="bg-[#242538] px-8 py-24">
+    <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-[1240px]">
-        <div className="mb-12 text-center">
-          <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">
+        <div className="mb-10 text-center">
+          <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
             Plans
           </div>
-          <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+          <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
             Annual subscriptions
           </h2>
-          <p className="mx-auto max-w-[620px] text-[1.0625rem] leading-[1.65] text-white/80">
+          <p className="mx-auto max-w-[620px] text-[1.0625rem] leading-[1.65] text-ink-soft">
             Pick what fits how active you want your program to be. Every tier
             is annual, with custom packages and multi-year discounts available
             on request.
@@ -130,10 +133,8 @@ export default function EmployerPricing() {
             return (
             <div
               key={card.id}
-              className={`flex flex-col overflow-hidden rounded-2xl border ${
-                card.highlight
-                  ? 'bg-white/[0.06]'
-                  : 'border-white/[0.08] bg-white/[0.03]'
+              className={`flex flex-col overflow-hidden rounded-[14px] border bg-white ${
+                card.highlight ? '' : 'border-navy/10'
               }`}
               style={card.highlight ? { borderColor: card.accent } : undefined}
             >
@@ -152,19 +153,19 @@ export default function EmployerPricing() {
                   </div>
                 )}
                 <h3
-                  className="mb-1 font-display text-xl font-extrabold"
+                  className="mb-1 font-serif text-[1.375rem] leading-tight"
                   style={{ color: card.accent }}
                 >
                   {card.name}
                 </h3>
-                <div className="mb-1 text-3xl font-extrabold text-white">
+                <div className="mb-1 font-serif text-[2.25rem] leading-none text-navy">
                   {card.price}
-                  <span className="text-base font-medium text-white/75"> / year</span>
+                  <span className="text-base font-medium text-ink-soft"> / year</span>
                 </div>
-                <p className="mb-6 text-sm leading-[1.55] text-white/75">
+                <p className="mb-6 text-sm leading-[1.55] text-ink-soft">
                   {card.tagline}
                 </p>
-                <ul className="mb-8 flex-1 space-y-2.5 text-sm text-white">
+                <ul className="mb-8 flex-1 space-y-2.5 text-sm text-navy">
                   {card.features.map((f) => (
                     <li key={f} className="flex items-start gap-2">
                       <span
@@ -181,10 +182,10 @@ export default function EmployerPricing() {
                 <button
                   onClick={() => handleSubscribe(card.id)}
                   disabled={loadingTier !== null}
-                  className={`w-full rounded-full px-5 py-3 text-sm font-bold transition-opacity disabled:opacity-50 ${
+                  className={`inline-flex min-h-[48px] w-full items-center justify-center rounded-full px-5 text-[15px] font-semibold transition-opacity disabled:opacity-50 ${
                     card.highlight
-                      ? 'hover:opacity-85'
-                      : 'border border-white/[0.2] text-white hover:bg-white/[0.06]'
+                      ? 'hover:opacity-90'
+                      : 'border border-navy/25 text-navy transition-colors hover:bg-navy/[0.05]'
                   }`}
                   style={
                     card.highlight
@@ -203,7 +204,7 @@ export default function EmployerPricing() {
         </div>
 
         {error && (
-          <p className="mt-6 text-center text-sm text-[#E05252]">
+          <p className="mt-6 text-center text-sm text-[#B42318]">
             {error} — if this keeps happening, reach out at{' '}
             <a
               href="mailto:info@gogreenstreets.org"
@@ -215,12 +216,12 @@ export default function EmployerPricing() {
           </p>
         )}
 
-        <p className="mt-8 text-center text-xs italic text-white/75">
+        <p className="mt-8 text-center text-[13px] italic text-ink-soft">
           All tiers are annual. Custom packages and multi-year discounts
           available.{' '}
           <a
             href="/contact?inquiry=employer"
-            className="not-italic font-semibold text-white underline hover:text-[#BAF14D]"
+            className="not-italic font-semibold text-forest underline underline-offset-4 hover:opacity-80"
           >
             Talk to us
           </a>

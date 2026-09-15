@@ -11,21 +11,21 @@ export const metadata = {
 export default function ProgramsPage() {
   return (
     <>
-      <Nav />
-      <main style={{ paddingTop: '60px' }}>
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
 
         {/* ══════════════════════════════════════════════════════════
             1 · HERO
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24 md:py-32">
+        <section className="bg-cream px-6 pb-8 pt-12 md:pt-16 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[1120px] text-center">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">
+            <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               Programs
             </div>
-            <h1 className="mx-auto mb-6 max-w-[720px] font-display text-[clamp(2.25rem,5vw,3.5rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h1 className="mx-auto mb-6 max-w-[720px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               How we get Massachusetts moving.
             </h1>
-            <p className="mx-auto max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mx-auto max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               Beyond the app, Green Streets Initiative runs community programs that build awareness, generate data, and create the moments that turn one active trip into a lasting habit.
             </p>
           </div>
@@ -34,26 +34,26 @@ export default function ProgramsPage() {
         {/* ══════════════════════════════════════════════════════════
             2 · WALK/RIDE DAYS
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#F4F8EE] px-8 py-24">
+        <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
             <div className="grid items-start gap-12 md:grid-cols-2">
               {/* Copy */}
               <div>
-                <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#52B788]">
+                <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                   Community program
                 </div>
-                <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
+                <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
                   Walk/Ride Days
                 </h2>
-                <p className="mb-4 text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
+                <p className="mb-4 text-[1.0625rem] leading-[1.65] text-ink-soft">
                   Every last Friday of the month, Massachusetts comes together to walk, bike, and take transit. Since 2006, Walk/Ride Days have connected employers, schools, and neighborhoods around one simple idea: try an active trip.
                 </p>
-                <p className="mb-8 text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
+                <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
                   No sign-up, no cost, no minimum commitment. Just pick a Friday and move.
                 </p>
                 <Link
                   href="/programs/walk-ride-days"
-                  className="inline-block rounded-full bg-[#191A2E] px-7 py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-85"
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
                 >
                   Learn more &rarr;
                 </Link>
@@ -68,9 +68,9 @@ export default function ProgramsPage() {
                 ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-white p-6"
+                    className="rounded-[14px] border border-navy/10 bg-cream p-6"
                   >
-                    <span className="font-display text-base font-bold tracking-tight text-[#191A2E]">
+                    <span className="text-base font-semibold text-navy">
                       {stat.label}
                     </span>
                   </div>
@@ -83,32 +83,32 @@ export default function ProgramsPage() {
         {/* ══════════════════════════════════════════════════════════
             3 · WHAT MOVES US
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24">
+        <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">
+            <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               Community storytelling
             </div>
-            <h2 className="mb-4 max-w-[640px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-4 max-w-[640px] font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               What Moves Us
             </h2>
-            <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               Video and audio stories from real commuters — in their own words and community languages. What Moves Us gives everyday people a voice in how streets are designed and transportation is planned.
             </p>
 
             <div className="mb-10 grid gap-6 md:grid-cols-2">
-              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">
+              <div className="rounded-[14px] border border-navy/10 bg-white p-8">
+                <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                   For communities
                 </h3>
-                <p className="text-[0.9375rem] leading-[1.6] text-white">
+                <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                   Real voices from your neighborhood, in community languages. Stories that show planners and policymakers what mobility looks like on the ground.
                 </p>
               </div>
-              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">
+              <div className="rounded-[14px] border border-navy/10 bg-white p-8">
+                <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                   For commuters
                 </h3>
-                <p className="text-[0.9375rem] leading-[1.6] text-white">
+                <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                   Share your story, shape your streets, and earn bonus XP in Shift. Your commute experience matters — and it can change how your city moves.
                 </p>
               </div>
@@ -117,13 +117,13 @@ export default function ProgramsPage() {
             <div className="flex flex-col gap-4 sm:flex-row">
               <Link
                 href="/programs/what-moves-us"
-                className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
                 See past campaigns &rarr;
               </Link>
               <Link
                 href="/contact?inquiry=general"
-                className="inline-block rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
               >
                 Commission a campaign &rarr;
               </Link>
@@ -134,15 +134,15 @@ export default function ProgramsPage() {
         {/* ══════════════════════════════════════════════════════════
             4 · CORPORATE CHALLENGE
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#242538] px-8 py-24">
+        <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#2966E5]">
+            <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">
               Employer program
             </div>
-            <h2 className="mb-4 max-w-[640px] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-4 max-w-[640px] font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Corporate Challenge
             </h2>
-            <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               A team-based commute competition that motivates employees to try walking, biking, and transit. Verified data, private leaderboards, and end-of-challenge impact reporting — all powered by Shift.
             </p>
 
@@ -163,12 +163,12 @@ export default function ProgramsPage() {
               ].map((card) => (
                 <div
                   key={card.title}
-                  className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
+                  className="rounded-[14px] border border-navy/10 bg-cream p-8"
                 >
-                  <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-white">
+                  <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                     {card.title}
                   </h3>
-                  <p className="text-[0.9375rem] leading-[1.6] text-white">
+                  <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                     {card.body}
                   </p>
                 </div>
@@ -177,7 +177,7 @@ export default function ProgramsPage() {
 
             <Link
               href="/programs/corporate-challenge"
-              className="inline-block rounded-full bg-[#2966E5] px-7 py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-85"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-blue px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
             >
               Learn more &rarr;
             </Link>
@@ -187,22 +187,22 @@ export default function ProgramsPage() {
         {/* ══════════════════════════════════════════════════════════
             5 · SHIFT FOR SCHOOLS
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#F4F8EE] px-8 py-24">
+        <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
             <div className="grid items-start gap-12 md:grid-cols-2">
               <div>
-                <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#52B788]">
+                <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                   School program
                 </div>
-                <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-[#191A2E]">
+                <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
                   Shift for Schools
                 </h2>
-                <p className="mb-8 text-[1.0625rem] leading-[1.65] text-[#4A4D68]">
+                <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
                   The simplest school wellness program. No student apps, no accounts, no data on kids — just a wall chart, a show of hands, and one Friday photo. Shift handles the leaderboards, reports, and parent communications.
                 </p>
                 <Link
                   href="/shift/schools"
-                  className="inline-block rounded-full bg-[#191A2E] px-7 py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-85"
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
                 >
                   Learn more &rarr;
                 </Link>
@@ -217,9 +217,9 @@ export default function ProgramsPage() {
                 ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-white p-6"
+                    className="rounded-[14px] border border-navy/10 bg-white p-6"
                   >
-                    <span className="font-display text-base font-bold tracking-tight text-[#191A2E]">
+                    <span className="text-base font-semibold text-navy">
                       {stat.label}
                     </span>
                   </div>
@@ -232,20 +232,20 @@ export default function ProgramsPage() {
         {/* ══════════════════════════════════════════════════════════
             6 · BRIDGE STRIP
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24">
+        <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[640px] text-center">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">
+            <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               Connecting it all
             </div>
-            <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Every program runs on Shift.
             </h2>
-            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
               Walk/Ride Days, What Moves Us, Corporate Challenge, and Shift for Schools all connect through the Shift app — one platform that tracks trips, rewards active commuters, and generates the data communities need.
             </p>
             <Link
               href="/shift"
-              className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
             >
               Learn about the Shift app &rarr;
             </Link>
@@ -255,33 +255,33 @@ export default function ProgramsPage() {
         {/* ══════════════════════════════════════════════════════════
             6 · WORK WITH US — TWO CARDS
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 pb-24">
+        <section className="bg-white px-6 pb-20 lg:px-8 lg:pb-24">
           <div className="mx-auto grid max-w-[1120px] gap-6 md:grid-cols-2">
-            <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-              <h3 className="mb-3 font-display text-xl font-bold tracking-tight text-white">
+            <div className="rounded-[14px] border border-navy/10 bg-cream p-8">
+              <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                 Bring a program to your community
               </h3>
-              <p className="mb-6 text-[0.9375rem] leading-[1.6] text-white">
+              <p className="mb-6 text-[0.9375rem] leading-[1.6] text-ink-soft">
                 Whether you&apos;re a municipality, employer, school, or community organization — we&apos;ll help you find the right program and get it running.
               </p>
               <Link
                 href="/contact"
-                className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Get in touch &rarr;
               </Link>
             </div>
 
-            <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-              <h3 className="mb-3 font-display text-xl font-bold tracking-tight text-white">
+            <div className="rounded-[14px] border border-navy/10 bg-cream p-8">
+              <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                 Just want to participate?
               </h3>
-              <p className="mb-6 text-[0.9375rem] leading-[1.6] text-white">
+              <p className="mb-6 text-[0.9375rem] leading-[1.6] text-ink-soft">
                 Walk/Ride Days are open to everyone, every month. Download Shift to track your trips, earn rewards, and join your neighborhood leaderboard.
               </p>
               <Link
                 href="/shift"
-                className="inline-block rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
               >
                 Get the Shift app &rarr;
               </Link>
@@ -289,7 +289,7 @@ export default function ProgramsPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

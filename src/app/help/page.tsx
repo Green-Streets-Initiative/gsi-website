@@ -628,16 +628,16 @@ export default function HelpPage() {
 
   return (
     <>
-      <Nav />
+      <Nav variant="light" />
       <JsonLd data={faqPageSchema(faqSchemaItems)} />
-      <main style={{ paddingTop: '60px' }}>
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
         {/* ---- Hero ---- */}
-        <section className="bg-[#191A2E] px-8 py-24 md:py-32">
+        <section className="bg-cream px-6 pb-8 pt-12 md:pt-16 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[1120px] text-center">
-            <h1 className="font-display text-[clamp(2.25rem,5vw,3.5rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h1 className="font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               How can we help?
             </h1>
-            <p className="mx-auto mt-5 max-w-[640px] text-[1.0625rem] leading-[1.65] text-white/70">
+            <p className="mx-auto mt-5 max-w-[640px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               Everything you need to know about using Shift, unlocking rewards,
               running a schools challenge, or joining as a partner.
             </p>
@@ -645,14 +645,14 @@ export default function HelpPage() {
         </section>
 
         {/* ---- Quick Links ---- */}
-        <section className="bg-[#F4F8EE] px-8 py-16">
+        <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto grid max-w-[1120px] gap-6 md:grid-cols-3">
             {quickLinks.map((card) => (
               <div
                 key={card.label}
-                className="rounded-[18px] border border-[rgba(25,26,46,0.09)] bg-white p-6"
+                className="rounded-[14px] border border-navy/10 bg-white p-6"
               >
-                <h2 className="font-display text-lg font-bold tracking-tight text-[#191A2E]">
+                <h2 className="font-serif text-[1.375rem] leading-tight text-navy">
                   {card.label}
                 </h2>
                 <ul className="mt-3 flex flex-col gap-1.5">
@@ -660,7 +660,7 @@ export default function HelpPage() {
                     <li key={s.anchor}>
                       <a
                         href={s.anchor}
-                        className="text-sm text-[#2966E5] transition-colors hover:text-[#191A2E]"
+                        className="text-sm font-semibold text-forest underline-offset-4 hover:underline"
                       >
                         {s.name}
                       </a>
@@ -673,7 +673,7 @@ export default function HelpPage() {
         </section>
 
         {/* ---- FAQ Sections ---- */}
-        <section className="bg-[#F4F8EE] px-8 pb-24">
+        <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
             {faqSections.map((section, i) => (
               <div
@@ -681,7 +681,7 @@ export default function HelpPage() {
                 id={section.id}
                 className={i > 0 ? 'mt-16 scroll-mt-24' : 'scroll-mt-24'}
               >
-                <h2 className="mb-2 font-display text-xl font-bold tracking-tight text-[#191A2E]">
+                <h2 className="mb-2 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
                   {section.title}
                 </h2>
                 <FAQ items={section.items} theme="light" />
@@ -691,19 +691,19 @@ export default function HelpPage() {
         </section>
 
         {/* ---- Contact ---- */}
-        <section className="bg-[#191A2E] px-8 py-24">
+        <section className="bg-cream px-6 pb-20 pt-8 lg:px-8 lg:pb-24 lg:pt-10">
           <div className="mx-auto max-w-[1120px] text-center">
-            <h2 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold leading-[1.12] tracking-tighter text-white">
+            <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Still need help?
             </h2>
-            <p className="mx-auto mt-4 max-w-[520px] text-[1.0625rem] leading-[1.65] text-white/70">
+            <p className="mx-auto mt-4 max-w-[520px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               We&rsquo;re a small team and we read every message. Reach out and
               we&rsquo;ll get back to you as quickly as we can.
             </p>
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a
                 href="mailto:info@gogreenstreets.org"
-                className="inline-flex items-center rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-90"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
                 General Support
                 <svg
@@ -726,7 +726,7 @@ export default function HelpPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

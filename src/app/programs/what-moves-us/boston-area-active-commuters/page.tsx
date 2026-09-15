@@ -64,55 +64,55 @@ const featuredQuotes = [
 export default function BostonAreaCommutersPage() {
   return (
     <>
-      <Nav />
-      <main style={{ paddingTop: '60px' }}>
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
 
         {/* Hero */}
-        <section className="bg-[#191A2E] px-8 py-24 md:py-32">
+        <section className="bg-cream px-6 pb-8 pt-12 md:pt-16 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[1120px]">
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-[#BAF14D]/10 px-3 py-1 text-xs font-semibold text-[#BAF14D]">
+              <span className="rounded-full bg-forest/10 px-3 py-1 text-xs font-semibold text-forest">
                 Archived campaign
               </span>
-              <span className="rounded-full bg-white/[0.08] px-3 py-1 text-xs font-semibold text-white/60">
+              <span className="rounded-full bg-navy/[0.06] px-3 py-1 text-xs font-semibold text-navy">
                 Pilot project
               </span>
-              <span className="text-xs text-white/40">~2021</span>
+              <span className="text-xs text-ink-soft">~2021</span>
             </div>
-            <h1 className="mb-4 max-w-[720px] font-display text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h1 className="mb-4 max-w-[720px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               What Moves Boston Area Active Commuters
             </h1>
-            <p className="mb-2 text-sm font-medium text-white/50">
+            <p className="mb-2 text-sm font-medium text-ink-soft">
               Metro Boston
             </p>
           </div>
         </section>
 
         {/* Intro */}
-        <section className="bg-[#191A2E] px-8 pb-24">
+        <section className="bg-cream px-6 pb-8 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[800px]">
-            <p className="mb-6 text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mb-6 text-[1.0625rem] leading-[1.65] text-ink-soft">
               As a way to humanize car-light commuters and inspire others to join them, Green Streets interviewed Metro Boston folks who commute by foot, bike, bus, train, and every mode in between. The snippets below showcase their voices and hopes for the future of green transportation.
             </p>
-            <p className="text-[0.9375rem] leading-[1.6] text-white/60">
+            <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
               This was the pilot &ldquo;What Moves Us&rdquo; project. Questions can be tailored to clients&apos; needs in future campaigns.
             </p>
           </div>
         </section>
 
         {/* Interview themes */}
-        <section className="bg-[#242538] px-8 py-24">
+        <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
-            <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-8 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Interview themes
             </h2>
             <div className="grid gap-6 md:grid-cols-2">
               {questionThemes.map((theme) => (
                 <div
                   key={theme}
-                  className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
+                  className="rounded-[14px] border border-navy/10 bg-cream p-8"
                 >
-                  <p className="font-display text-base font-bold leading-[1.4] tracking-tight text-white">
+                  <p className="text-base font-semibold leading-[1.4] text-navy">
                     {theme}
                   </p>
                 </div>
@@ -122,32 +122,32 @@ export default function BostonAreaCommutersPage() {
         </section>
 
         {/* Stats */}
-        <section className="bg-[#191A2E] px-8 py-24">
+        <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto grid max-w-[1120px] gap-6 sm:grid-cols-3">
-            <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8 text-center">
-              <div className="mb-2 font-display text-3xl font-extrabold tracking-tight text-[#BAF14D]">31</div>
-              <div className="text-sm text-white/60">Video interviews</div>
+            <div className="rounded-[14px] border border-navy/10 bg-white p-8 text-center">
+              <div className="mb-2 font-serif text-[2.25rem] leading-none text-forest">31</div>
+              <div className="text-sm text-ink-soft">Video interviews</div>
             </div>
-            <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8 text-center">
-              <div className="mb-2 font-display text-3xl font-extrabold tracking-tight text-[#BAF14D]">5+</div>
-              <div className="text-sm text-white/60">Transportation modes represented</div>
+            <div className="rounded-[14px] border border-navy/10 bg-white p-8 text-center">
+              <div className="mb-2 font-serif text-[2.25rem] leading-none text-forest">5+</div>
+              <div className="text-sm text-ink-soft">Transportation modes represented</div>
             </div>
-            <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8 text-center">
-              <div className="mb-2 font-display text-3xl font-extrabold tracking-tight text-[#BAF14D]">4</div>
-              <div className="text-sm text-white/60">Interview themes</div>
+            <div className="rounded-[14px] border border-navy/10 bg-white p-8 text-center">
+              <div className="mb-2 font-serif text-[2.25rem] leading-none text-forest">4</div>
+              <div className="text-sm text-ink-soft">Interview themes</div>
             </div>
           </div>
         </section>
 
         {/* Video conversations */}
-        <section className="bg-[#191A2E] px-8 pb-24">
+        <section className="bg-cream px-6 pb-8 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[1120px]">
-            <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-8 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Video interviews
             </h2>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {videos.map((video) => (
-                <div key={video.id} className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-white/[0.04]">
+                <div key={video.id} className="overflow-hidden rounded-[14px] border border-navy/10 bg-white">
                   <div className="relative w-full" style={{ paddingBottom: '100%' }}>
                     <video
                       controls
@@ -157,8 +157,8 @@ export default function BostonAreaCommutersPage() {
                     />
                   </div>
                   <div className="px-6 py-4">
-                    <span className="font-display text-sm font-bold text-white">{video.name}</span>
-                    <span className="ml-2 text-xs text-white/40">{video.topic}</span>
+                    <span className="text-sm font-semibold text-navy">{video.name}</span>
+                    <span className="ml-2 text-xs text-ink-soft">{video.topic}</span>
                   </div>
                 </div>
               ))}
@@ -167,24 +167,24 @@ export default function BostonAreaCommutersPage() {
         </section>
 
         {/* CTA */}
-        <section className="bg-[#191A2E] px-8 pb-24">
+        <section className="bg-cream px-6 pb-20 lg:px-8 lg:pb-24">
           <div className="mx-auto max-w-[640px] text-center">
-            <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Commission your own campaign.
             </h2>
-            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
               We&apos;ll work with your community to capture the transportation stories that matter most.
             </p>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link
                 href="/contact?inquiry=general"
-                className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Get in touch &rarr;
               </Link>
               <Link
                 href="/programs/what-moves-us"
-                className="inline-block rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
               >
                 All campaigns
               </Link>
@@ -192,7 +192,7 @@ export default function BostonAreaCommutersPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

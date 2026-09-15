@@ -64,57 +64,57 @@ const testimonials = [
 export default function ParticipantVoicesPage() {
   return (
     <>
-      <Nav />
-      <main style={{ paddingTop: '60px' }}>
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
 
         {/* Hero */}
-        <section className="bg-[#191A2E] px-8 py-24 md:py-32">
+        <section className="bg-cream px-6 pb-8 pt-12 md:pt-16 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[1120px]">
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-[#BAF14D]/10 px-3 py-1 text-xs font-semibold text-[#BAF14D]">
+              <span className="rounded-full bg-forest/10 px-3 py-1 text-xs font-semibold text-forest">
                 Archived collection
               </span>
-              <span className="rounded-full bg-white/[0.08] px-3 py-1 text-xs font-semibold text-white/60">
+              <span className="rounded-full bg-navy/[0.06] px-3 py-1 text-xs font-semibold text-navy">
                 Walk/Ride Day
               </span>
             </div>
-            <h1 className="mb-4 max-w-[720px] font-display text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h1 className="mb-4 max-w-[720px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               Participant Voices
             </h1>
-            <p className="mb-2 text-sm font-medium text-white/50">
+            <p className="mb-2 text-sm font-medium text-ink-soft">
               Massachusetts workplaces
             </p>
           </div>
         </section>
 
         {/* Intro */}
-        <section className="bg-[#191A2E] px-8 pb-24">
+        <section className="bg-cream px-6 pb-8 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[800px]">
-            <p className="text-[1.0625rem] leading-[1.65] text-white">
+            <p className="text-[1.0625rem] leading-[1.65] text-ink-soft">
               These participants kindly shared a few words on the impact Walk/Ride Day has had on their lives. From cycling 40 miles to discovering the bus has bike racks — every story shows how small changes in commuting can add up to something meaningful.
             </p>
           </div>
         </section>
 
         {/* Testimonials grid */}
-        <section className="bg-[#242538] px-8 py-24">
+        <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
-            <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-8 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Stories from the community
             </h2>
             <div className="grid gap-6 md:grid-cols-2">
               {testimonials.map((t) => (
                 <div
                   key={t.name}
-                  className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8"
+                  className="rounded-[14px] border border-navy/10 bg-cream p-8"
                 >
-                  <p className="mb-4 text-[1.0625rem] italic leading-[1.65] text-white">
+                  <p className="mb-4 text-[1.0625rem] italic leading-[1.65] text-navy">
                     &ldquo;{t.quote}&rdquo;
                   </p>
                   <div>
-                    <span className="text-sm font-semibold text-[#BAF14D]">{t.name}</span>
+                    <span className="text-sm font-semibold text-forest">{t.name}</span>
                     {t.affiliation && (
-                      <span className="text-sm text-white/40"> &middot; {t.affiliation}</span>
+                      <span className="text-sm text-ink-soft"> &middot; {t.affiliation}</span>
                     )}
                   </div>
                 </div>
@@ -124,24 +124,24 @@ export default function ParticipantVoicesPage() {
         </section>
 
         {/* CTA */}
-        <section className="bg-[#191A2E] px-8 py-24">
+        <section className="bg-cream px-6 pb-20 pt-8 lg:px-8 lg:pb-24 lg:pt-10">
           <div className="mx-auto max-w-[640px] text-center">
-            <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Commission your own campaign.
             </h2>
-            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
               We&apos;ll work with your community to capture the transportation stories that matter most.
             </p>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link
                 href="/contact?inquiry=general"
-                className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Get in touch &rarr;
               </Link>
               <Link
                 href="/programs/what-moves-us"
-                className="inline-block rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
               >
                 All campaigns
               </Link>
@@ -149,7 +149,7 @@ export default function ParticipantVoicesPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

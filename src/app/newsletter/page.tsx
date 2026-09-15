@@ -11,26 +11,26 @@ export const metadata = {
 export default function NewsletterPage() {
   return (
     <>
-      <Nav />
-      <main style={{ paddingTop: '60px' }}>
-        <section className="bg-[#191A2E] px-8 py-24 md:py-32">
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
+        <section className="bg-cream px-6 pb-20 pt-12 md:pt-16 lg:px-8 lg:pb-24">
           <div className="mx-auto max-w-[640px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">
+            <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               Newsletter
             </div>
-            <h1 className="mb-6 font-display text-[clamp(2.25rem,5vw,3.5rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h1 className="mb-6 font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               Stories worth the trip.
             </h1>
-            <p className="mb-10 max-w-[520px] text-[1.0625rem] leading-relaxed text-white/80">
+            <p className="mb-10 max-w-[520px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               Occasional stories and impact updates from Green Streets Initiative —
               how communities across Massachusetts are walking, biking, and riding
               more, and how you can join them.
             </p>
-            <NewsletterSignupForm />
+            <NewsletterSignupForm variant="light" />
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

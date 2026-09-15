@@ -10,27 +10,27 @@ export const metadata = {
 export default function PressPage() {
   return (
     <>
-      <Nav />
-      <main style={{ paddingTop: '60px' }}>
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
 
         {/* ══════════════════════════════════════════════════════════
             1 · HERO
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#191A2E] px-8 py-24 md:py-32">
+        <section className="bg-cream px-6 pb-8 pt-12 md:pt-16 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#BAF14D]">
+            <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               Press
             </div>
-            <h1 className="mb-6 max-w-[720px] font-display text-[clamp(2.25rem,5vw,3.5rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h1 className="mb-6 max-w-[720px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               Press &amp; media
             </h1>
-            <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mb-8 max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               For press inquiries, interview requests, or media assets, please reach out
               directly. We&apos;ll get back to you within one business day.
             </p>
             <a
               href="mailto:info@gogreenstreets.org"
-              className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
             >
               info@gogreenstreets.org
             </a>
@@ -40,25 +40,25 @@ export default function PressPage() {
         {/* ══════════════════════════════════════════════════════════
             2 · QUICK REFERENCE
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-[#242538] px-8 py-24">
+        <section className="bg-white px-6 pb-20 pt-8 lg:px-8 lg:pb-24 lg:pt-10">
           <div className="mx-auto max-w-[1120px]">
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <h2 className="mb-3 font-display text-lg font-bold tracking-tight text-white">
+              <div className="rounded-[14px] border border-navy/10 bg-cream p-8">
+                <h2 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                   About GSI
                 </h2>
-                <p className="text-[0.9375rem] leading-[1.6] text-white/80">
+                <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                   Green Streets Initiative is a Cambridge-based 501(c)(3) nonprofit helping
                   commuters across Massachusetts shift trips to active transportation. Founded
                   in 2006.
                 </p>
               </div>
 
-              <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-                <h2 className="mb-3 font-display text-lg font-bold tracking-tight text-white">
+              <div className="rounded-[14px] border border-navy/10 bg-cream p-8">
+                <h2 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                   About Shift
                 </h2>
-                <p className="text-[0.9375rem] leading-[1.6] text-white/80">
+                <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                   Shift is GSI&apos;s behavior change platform &mdash; a mobile app that
                   auto-detects active trips, tracks Shift Rate, and rewards commuters for
                   walking, biking, and riding transit.
@@ -81,7 +81,7 @@ export default function PressPage() {
         </section>
 
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

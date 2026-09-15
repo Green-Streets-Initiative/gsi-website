@@ -25,68 +25,68 @@ const videos = [
 export default function CambridgeShopByBikePage() {
   return (
     <>
-      <Nav />
-      <main style={{ paddingTop: '60px' }}>
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
 
         {/* Hero */}
-        <section className="bg-[#191A2E] px-8 py-24 md:py-32">
+        <section className="bg-cream px-6 pb-8 pt-12 md:pt-16 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[1120px]">
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-[#BAF14D]/10 px-3 py-1 text-xs font-semibold text-[#BAF14D]">
+              <span className="rounded-full bg-forest/10 px-3 py-1 text-xs font-semibold text-forest">
                 Archived campaign
               </span>
             </div>
-            <h1 className="mb-4 max-w-[720px] font-display text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h1 className="mb-4 max-w-[720px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               What Moves Cambridge Bike Shoppers
             </h1>
-            <p className="mb-2 text-sm font-medium text-white/50">
+            <p className="mb-2 text-sm font-medium text-ink-soft">
               Cambridge, MA
             </p>
           </div>
         </section>
 
         {/* Intro */}
-        <section className="bg-[#191A2E] px-8 pb-24">
+        <section className="bg-cream px-6 pb-8 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[800px]">
-            <p className="mb-6 text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mb-6 text-[1.0625rem] leading-[1.65] text-ink-soft">
               To understand people who shop by bike in Cambridge and inspire others to join them, Green Streets interviewed folks in and around Cambridge who run everyday errands by bike. Enjoy snippets of their stories below — they&apos;re each 30 seconds or less!
             </p>
-            <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8">
-              <p className="text-[1.0625rem] italic leading-[1.65] text-white">
+            <div className="rounded-[14px] border border-navy/10 bg-white p-8">
+              <p className="text-[1.0625rem] italic leading-[1.65] text-navy">
                 &ldquo;Now in my early 70s, my bike is how I get to appointments, to classes, and errands.&rdquo;
               </p>
-              <p className="mt-3 text-sm font-semibold text-[#BAF14D]">Elisa</p>
+              <p className="mt-3 text-sm font-semibold text-forest">Elisa</p>
             </div>
           </div>
         </section>
 
         {/* Stats */}
-        <section className="bg-[#242538] px-8 py-24">
+        <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto grid max-w-[1120px] gap-6 sm:grid-cols-3">
-            <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8 text-center">
-              <div className="mb-2 font-display text-3xl font-extrabold tracking-tight text-[#BAF14D]">17</div>
-              <div className="text-sm text-white/60">Video interviews</div>
+            <div className="rounded-[14px] border border-navy/10 bg-cream p-8 text-center">
+              <div className="mb-2 font-serif text-[2.25rem] leading-none text-forest">17</div>
+              <div className="text-sm text-ink-soft">Video interviews</div>
             </div>
-            <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8 text-center">
-              <div className="mb-2 font-display text-3xl font-extrabold tracking-tight text-[#BAF14D]">30s</div>
-              <div className="text-sm text-white/60">Or less each</div>
+            <div className="rounded-[14px] border border-navy/10 bg-cream p-8 text-center">
+              <div className="mb-2 font-serif text-[2.25rem] leading-none text-forest">30s</div>
+              <div className="text-sm text-ink-soft">Or less each</div>
             </div>
-            <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-8 text-center">
-              <div className="mb-2 font-display text-3xl font-extrabold tracking-tight text-[#BAF14D]">95%</div>
-              <div className="text-sm text-white/60">Of Michal&apos;s shopping is by bike</div>
+            <div className="rounded-[14px] border border-navy/10 bg-cream p-8 text-center">
+              <div className="mb-2 font-serif text-[2.25rem] leading-none text-forest">95%</div>
+              <div className="text-sm text-ink-soft">Of Michal&apos;s shopping is by bike</div>
             </div>
           </div>
         </section>
 
         {/* Videos */}
-        <section className="bg-[#191A2E] px-8 py-24">
+        <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
-            <h2 className="mb-10 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-8 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Video stories
             </h2>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {videos.map((video) => (
-                <div key={video.id} className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-white/[0.04]">
+                <div key={video.id} className="overflow-hidden rounded-[14px] border border-navy/10 bg-white">
                   <div className="relative w-full" style={{ paddingBottom: '100%' }}>
                     <video
                       controls
@@ -96,37 +96,37 @@ export default function CambridgeShopByBikePage() {
                     />
                   </div>
                   <div className="px-6 py-4">
-                    <span className="font-display text-sm font-bold text-white">{video.name}</span>
-                    <span className="ml-2 text-sm text-white/50">&mdash; &ldquo;{video.caption}&rdquo;</span>
+                    <span className="text-sm font-semibold text-navy">{video.name}</span>
+                    <span className="ml-2 text-sm text-ink-soft">&mdash; &ldquo;{video.caption}&rdquo;</span>
                   </div>
                 </div>
               ))}
             </div>
-            <p className="mt-6 text-sm text-white/40">
+            <p className="mt-6 text-sm text-ink-soft">
               Showing 10 of 17 video stories. Additional interviews with Jon, Kevin, Michal, Michael, Wallace, Janie, and Lauren are available in the original collection.
             </p>
           </div>
         </section>
 
         {/* CTA */}
-        <section className="bg-[#191A2E] px-8 pb-24">
+        <section className="bg-cream px-6 pb-20 lg:px-8 lg:pb-24">
           <div className="mx-auto max-w-[640px] text-center">
-            <h2 className="mb-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Commission your own campaign.
             </h2>
-            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-white">
+            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
               We&apos;ll work with your community to capture the transportation stories that matter most.
             </p>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link
                 href="/contact?inquiry=general"
-                className="inline-block rounded-full bg-[#BAF14D] px-7 py-3.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Get in touch &rarr;
               </Link>
               <Link
                 href="/programs/what-moves-us"
-                className="inline-block rounded-full border border-white/[0.15] bg-white/[0.06] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
               >
                 All campaigns
               </Link>
@@ -134,7 +134,7 @@ export default function CambridgeShopByBikePage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

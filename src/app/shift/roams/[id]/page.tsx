@@ -27,10 +27,10 @@ const MODE_ICON: Record<string, React.ComponentType<{ size?: number; style?: Rea
 const MIN_COMPLETIONS_TO_SHOW = 10
 
 const COMFORT_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  protected: { bg: 'bg-[#BAF14D]/15', text: 'text-[#BAF14D]', label: 'Protected path' },
-  bike_lane: { bg: 'bg-[#60A5FA]/15', text: 'text-[#60A5FA]', label: 'Bike lane' },
-  shared_road: { bg: 'bg-[#F59E0B]/15', text: 'text-[#F59E0B]', label: 'Shared road' },
-  mixed: { bg: 'bg-white/10', text: 'text-white/75', label: 'Mixed' },
+  protected: { bg: 'bg-forest/10', text: 'text-forest', label: 'Protected path' },
+  bike_lane: { bg: 'bg-blue/10', text: 'text-blue', label: 'Bike lane' },
+  shared_road: { bg: 'bg-[#EDB93C]/15', text: 'text-[#8A6D1F]', label: 'Shared road' },
+  mixed: { bg: 'bg-navy/[0.06]', text: 'text-ink-soft', label: 'Mixed' },
 }
 
 function truncateAtSentence(text: string, maxLen: number): string {
@@ -93,37 +93,37 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 function TransitDetail({ transit }: { transit: NonNullable<RoamLeg['transit']> }) {
   return (
-    <div className="mt-2.5 space-y-1.5 border-t border-white/[0.06] pt-2.5">
+    <div className="mt-2.5 space-y-1.5 border-t border-navy/10 pt-2.5">
       {(transit.board_stop_name || transit.alight_stop_name) && (
         <div className="flex flex-wrap items-center gap-1.5 text-[0.8125rem]">
-          <Train size={13} style={{ color: '#BAF14D' }} />
+          <Train size={13} style={{ color: '#2D6A4F' }} />
           {transit.route_name && (
-            <span className="rounded bg-[#BAF14D]/15 px-1.5 py-0.5 text-xs font-semibold text-[#BAF14D]">
+            <span className="rounded bg-forest/10 px-1.5 py-0.5 text-xs font-semibold text-forest">
               {transit.route_name}
             </span>
           )}
           {transit.board_stop_name && (
-            <span className="text-white/90">Board at <span className="font-semibold text-white">{transit.board_stop_name}</span></span>
+            <span className="text-ink-soft">Board at <span className="font-semibold text-navy">{transit.board_stop_name}</span></span>
           )}
           {transit.alight_stop_name && (
             <>
-              <ArrowRight size={12} style={{ color: 'rgba(255,255,255,0.5)' }} />
-              <span className="text-white/90">{transit.alight_stop_name}</span>
+              <ArrowRight size={12} style={{ color: '#4A4D68' }} />
+              <span className="text-ink-soft">{transit.alight_stop_name}</span>
             </>
           )}
           {transit.num_stops != null && transit.num_stops > 0 && (
-            <span className="text-white/60">({transit.num_stops} {transit.num_stops === 1 ? 'stop' : 'stops'}{transit.direction ? `, ${transit.direction}` : ''})</span>
+            <span className="text-ink-soft">({transit.num_stops} {transit.num_stops === 1 ? 'stop' : 'stops'}{transit.direction ? `, ${transit.direction}` : ''})</span>
           )}
         </div>
       )}
       {transit.fare_note && (
-        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Fare:</span> {transit.fare_note}</p>
+        <p className="text-[0.8125rem] text-ink-soft"><span className="text-ink-soft">Fare:</span> {transit.fare_note}</p>
       )}
       {transit.transfer_note && (
-        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Transfers:</span> {transit.transfer_note}</p>
+        <p className="text-[0.8125rem] text-ink-soft"><span className="text-ink-soft">Transfers:</span> {transit.transfer_note}</p>
       )}
       {transit.boarding_tip && (
-        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Tip:</span> {transit.boarding_tip}</p>
+        <p className="text-[0.8125rem] text-ink-soft"><span className="text-ink-soft">Tip:</span> {transit.boarding_tip}</p>
       )}
     </div>
   )
@@ -132,20 +132,20 @@ function TransitDetail({ transit }: { transit: NonNullable<RoamLeg['transit']> }
 function BikeDetail({ bike }: { bike: NonNullable<RoamLeg['bike']> }) {
   const comfort = bike.comfort_rating ? COMFORT_COLORS[bike.comfort_rating] ?? COMFORT_COLORS.mixed : null
   return (
-    <div className="mt-2.5 space-y-1.5 border-t border-white/[0.06] pt-2.5">
+    <div className="mt-2.5 space-y-1.5 border-t border-navy/10 pt-2.5">
       {comfort && (
         <span className={`inline-block rounded-full ${comfort.bg} px-2.5 py-1 text-xs font-semibold ${comfort.text}`}>
           {comfort.label}
         </span>
       )}
       {bike.comfort_summary && (
-        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Route:</span> {bike.comfort_summary}</p>
+        <p className="text-[0.8125rem] text-ink-soft"><span className="text-ink-soft">Route:</span> {bike.comfort_summary}</p>
       )}
       {bike.elevation_summary && (
-        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Elevation:</span> {bike.elevation_summary}</p>
+        <p className="text-[0.8125rem] text-ink-soft"><span className="text-ink-soft">Elevation:</span> {bike.elevation_summary}</p>
       )}
       {bike.bike_parking_note && (
-        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Parking:</span> {bike.bike_parking_note}</p>
+        <p className="text-[0.8125rem] text-ink-soft"><span className="text-ink-soft">Parking:</span> {bike.bike_parking_note}</p>
       )}
     </div>
   )
@@ -153,12 +153,12 @@ function BikeDetail({ bike }: { bike: NonNullable<RoamLeg['bike']> }) {
 
 function WalkDetail({ walk }: { walk: NonNullable<RoamLeg['walk']> }) {
   return (
-    <div className="mt-2.5 space-y-1.5 border-t border-white/[0.06] pt-2.5">
+    <div className="mt-2.5 space-y-1.5 border-t border-navy/10 pt-2.5">
       {walk.terrain_note && (
-        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Terrain:</span> {walk.terrain_note}</p>
+        <p className="text-[0.8125rem] text-ink-soft"><span className="text-ink-soft">Terrain:</span> {walk.terrain_note}</p>
       )}
       {walk.waypoint_note && (
-        <p className="text-[0.8125rem] text-white/75"><span className="text-white/50">Along the way:</span> {walk.waypoint_note}</p>
+        <p className="text-[0.8125rem] text-ink-soft"><span className="text-ink-soft">Along the way:</span> {walk.waypoint_note}</p>
       )}
     </div>
   )
@@ -228,25 +228,25 @@ function StopRow({ stop, stopNumber, isStart, isFinal }: { stop: RoamCheckpoint;
   return (
     <div className="flex gap-4">
       <div className="flex w-8 flex-col items-center">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#BAF14D]/15 font-display text-xs font-extrabold text-[#BAF14D]">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest/10 text-xs font-bold text-forest">
           {stopNumber}
         </span>
-        {!isFinal && <div className="mt-1 w-px flex-1 bg-white/[0.08]" />}
+        {!isFinal && <div className="mt-1 w-px flex-1 bg-navy/15" />}
       </div>
       <div className="min-w-0 flex-1 pb-5">
-        <p className="text-sm font-semibold text-white">{stop.label}</p>
+        <p className="text-sm font-semibold text-navy">{stop.label}</p>
         {(isStart || isFinal) && (
-          <p className="text-xs text-white/50">{isStart ? 'Starting point' : 'Final stop'}</p>
+          <p className="text-xs text-ink-soft">{isStart ? 'Starting point' : 'Final stop'}</p>
         )}
         {stop.description && (
-          <p className="mt-1 text-[0.8125rem] leading-relaxed text-white/75">{stop.description}</p>
+          <p className="mt-1 text-[0.8125rem] leading-relaxed text-ink-soft">{stop.description}</p>
         )}
         {stop.external_url && (
           <a
             href={stop.external_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-[#BAF14D]"
+            className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-forest"
           >
             <Info size={11} />
             Learn more &rarr;
@@ -270,17 +270,17 @@ function LegRow({ leg }: { leg: RoamLeg }) {
   return (
     <div className="flex gap-4">
       <div className="flex w-8 flex-col items-center">
-        <div className="w-px flex-1 bg-white/[0.08]" />
+        <div className="w-px flex-1 bg-navy/15" />
       </div>
       <div className="min-w-0 flex-1 py-2">
-        <div className={`rounded-[10px] border border-white/[0.06] bg-white/[0.03] px-3.5 py-3${hasDetail ? '' : ' py-2.5'}`}>
+        <div className={`rounded-[12px] border border-navy/10 bg-white px-3.5 py-3${hasDetail ? '' : ' py-2.5'}`}>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <Icon size={13} style={{ color: 'rgba(255,255,255,0.5)' }} />
-            <span className="text-xs font-semibold capitalize text-white/75">{leg.leg_type}</span>
-            {meta && <span className="text-xs text-white/50">{meta}</span>}
+            <Icon size={13} style={{ color: '#4A4D68' }} />
+            <span className="text-xs font-semibold capitalize text-ink-soft">{leg.leg_type}</span>
+            {meta && <span className="text-xs text-ink-soft">{meta}</span>}
           </div>
           {leg.narrative_snippet && (
-            <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-white/75">{leg.narrative_snippet}</p>
+            <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-ink-soft">{leg.narrative_snippet}</p>
           )}
           {leg.transit && <TransitDetail transit={leg.transit} />}
           {leg.bike && <BikeDetail bike={leg.bike} />}
@@ -378,18 +378,18 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <>
-      <Nav />
+      <Nav variant="light" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <main style={{ paddingTop: '60px' }} className="bg-[#191A2E]">
+      <main style={{ paddingTop: '60px' }} className="bg-cream">
         {/* Hero image */}
         {roam.hero_image_url && (
-          <div className="relative mx-auto max-w-[1120px] px-8 pt-8">
+          <div className="relative mx-auto max-w-[1120px] px-6 pt-8 lg:px-8">
             <div className="relative overflow-hidden rounded-[20px]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={roam.hero_image_url} alt={roam.name} className="h-[260px] w-full object-cover md:h-[360px]" />
               {roam.hero_image_attribution && (
-                <span className="absolute bottom-2 right-3 rounded bg-black/50 px-2 py-0.5 text-[10px] text-white/75">
+                <span className="absolute bottom-2 right-3 rounded bg-navy/70 px-2 py-0.5 text-[10px] text-white">
                   {roam.hero_image_attribution_url ? (
                     <a href={roam.hero_image_attribution_url} target="_blank" rel="noopener noreferrer">
                       {roam.hero_image_attribution}
@@ -404,24 +404,24 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
         )}
 
         {/* Title + meta */}
-        <section className="px-8 pt-8">
+        <section className="px-6 pt-8 lg:px-8">
           <div className="mx-auto max-w-[860px]">
-            <p className="mb-2 font-display text-xs font-bold uppercase tracking-[0.15em] text-[#BAF14D]">
-              <Link href="/shift/roams" className="hover:text-white">Shift Roams</Link>
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
+              <Link href="/shift/roams" className="underline-offset-4 hover:underline">Shift Roams</Link>
             </p>
-            <h1 className="mb-3 font-display text-[clamp(2rem,4.5vw,3.2rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h1 className="mb-4 font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               {roam.name}
             </h1>
             {roam.tagline && (
-              <p className="mb-3 text-lg font-medium leading-[1.5] text-white/80">{roam.tagline}</p>
+              <p className="mb-3 text-lg font-medium leading-[1.5] text-navy">{roam.tagline}</p>
             )}
-            {roam.hook && <p className="mb-4 text-lg leading-[1.6] text-white/90">{roam.hook}</p>}
+            {roam.hook && <p className="mb-4 text-lg leading-[1.6] text-ink-soft">{roam.hook}</p>}
             <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
-              <span className="rounded-full border border-white/[0.1] bg-white/[0.05] px-3.5 py-1.5 font-semibold text-white">
+              <span className="rounded-full border border-navy/10 bg-white px-3.5 py-1.5 font-semibold text-navy">
                 {roamMetaLine(roam)}
               </span>
               {roam.badge_name && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-3.5 py-1.5 font-semibold text-[#EDB93C]">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EDB93C]/40 bg-[#EDB93C]/10 px-3.5 py-1.5 font-semibold text-[#8A6D1F]">
                   <Award size={14} />
                   Earn the {roam.badge_name} badge
                   {roam.xp_bonus ? ` · +${roam.xp_bonus} XP` : ''}
@@ -431,25 +431,25 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
 
             {/* Social proof + collection */}
             {roam.completion_count >= MIN_COMPLETIONS_TO_SHOW && (
-              <p className="mb-4 flex items-center gap-1.5 text-sm text-white/60">
+              <p className="mb-4 flex items-center gap-1.5 text-sm text-ink-soft">
                 <MapPin size={13} />
                 {roam.completion_count} people have completed this route
               </p>
             )}
 
             {roam.collection && (
-              <div className="mb-5 rounded-[10px] border border-[#BAF14D]/20 bg-[#BAF14D]/[0.06] px-4 py-3">
-                <p className="text-sm font-semibold text-[#BAF14D]">
+              <div className="mb-5 rounded-[12px] border border-forest/30 bg-forest/[0.06] px-4 py-3">
+                <p className="text-sm font-semibold text-forest">
                   Part of the {roam.collection.name}
                 </p>
-                <p className="mt-0.5 text-[0.8125rem] text-white/75">
+                <p className="mt-0.5 text-[0.8125rem] text-ink-soft">
                   {roam.collection.description} Complete all {roam.collection.item_count} routes to earn the {roam.collection.badge_name} badge.
                 </p>
               </div>
             )}
 
             {roam.description && (
-              <p className="max-w-[720px] text-[0.9875rem] leading-[1.7] text-white/85">{roam.description}</p>
+              <p className="max-w-[720px] text-[1.0625rem] leading-[1.65] text-ink-soft">{roam.description}</p>
             )}
             {roam.route_url && (
               <p className="mt-3">
@@ -457,7 +457,7 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
                   href={roam.route_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm font-semibold text-[#BAF14D]"
+                  className="text-sm font-semibold text-forest underline-offset-4 hover:underline"
                 >
                   Learn more about this trail &rarr;
                 </a>
@@ -468,9 +468,9 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
 
         {/* Map */}
         {(roam.route_coordinates || roam.checkpoints.length > 0) && (
-          <section className="px-8 pt-10">
+          <section className="px-6 pt-10 lg:px-8">
             <div className="mx-auto max-w-[860px]">
-              <div className="h-[380px] overflow-hidden rounded-[18px] border border-white/[0.08] md:h-[460px]">
+              <div className="h-[380px] overflow-hidden rounded-[18px] border border-navy/10 md:h-[460px]">
                 <RoamMap
                   routeCoordinates={roam.route_coordinates}
                   checkpoints={roam.checkpoints.map((c) => ({
@@ -482,7 +482,7 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
                   }))}
                 />
               </div>
-              <p className="mt-2 text-[11px] text-white/70">
+              <p className="mt-2 text-[11px] text-ink-soft">
                 Numbered pins are the roam&apos;s stops; gold rings are bonus stops. Check in at each
                 stop in the Shift app to complete the roam.
               </p>
@@ -492,13 +492,13 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
 
         {/* The route — unified timeline of stops + legs */}
         {hasRouteContent && (
-          <section className="px-8 pt-12">
+          <section className="px-6 pt-10 lg:px-8">
             <div className="mx-auto max-w-[860px]">
-              <h2 className="mb-1 font-display text-2xl font-bold tracking-tight text-white">
+              <h2 className="mb-1 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
                 The route
               </h2>
               {completionHint && (
-                <p className="mb-5 text-sm text-white/60">{completionHint}</p>
+                <p className="mb-5 text-sm text-ink-soft">{completionHint}</p>
               )}
               <div>
                 {timeline.map((entry, i) =>
@@ -521,27 +521,27 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
 
         {/* Bonus stops */}
         {bonusStops.length > 0 && (
-          <section className="px-8 pt-12">
+          <section className="px-6 pt-10 lg:px-8">
             <div className="mx-auto max-w-[860px]">
-              <h2 className="mb-1 font-display text-xl font-bold tracking-tight text-white">
+              <h2 className="mb-1 font-serif text-[1.375rem] leading-tight text-navy">
                 Bonus stops nearby
               </h2>
-              <p className="mb-4 text-sm text-white/75">
+              <p className="mb-4 text-sm text-ink-soft">
                 Optional detours worth the extra steps.
               </p>
               <div className="grid gap-3 md:grid-cols-2">
                 {bonusStops.map((c) => (
-                  <div key={c.id} className="rounded-[12px] border border-[#EDB93C]/20 bg-white/[0.03] px-4 py-3.5">
-                    <p className="text-sm font-semibold text-white">{c.label}</p>
+                  <div key={c.id} className="rounded-[12px] border border-[#EDB93C]/40 bg-white px-4 py-3.5">
+                    <p className="text-sm font-semibold text-navy">{c.label}</p>
                     {c.description && (
-                      <p className="mt-1 text-[0.8125rem] leading-relaxed text-white/75">{c.description}</p>
+                      <p className="mt-1 text-[0.8125rem] leading-relaxed text-ink-soft">{c.description}</p>
                     )}
                     {c.external_url && (
                       <a
                         href={c.external_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-[#BAF14D]"
+                        className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-forest"
                       >
                         <Info size={11} />
                         Learn more &rarr;
@@ -555,41 +555,41 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
         )}
 
         {/* How it works + CTA */}
-        <section className="px-8 py-20">
+        <section className="px-6 pb-20 pt-12 lg:px-8 lg:pb-24">
           <div className="mx-auto max-w-[860px]">
-            <h2 className="mb-3 text-center font-display text-[clamp(1.8rem,3.5vw,2.5rem)] font-extrabold leading-[1.08] tracking-tighter text-white">
+            <h2 className="mb-3 text-center font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               How it works
             </h2>
-            <p className="mx-auto mb-10 max-w-[520px] text-center text-[0.9375rem] leading-relaxed text-white/75">
+            <p className="mx-auto mb-10 max-w-[520px] text-center text-[0.9375rem] leading-relaxed text-ink-soft">
               A roam is a guided, self-paced adventure you follow in the free Shift app.
             </p>
             <div className="mb-12 grid gap-6 md:grid-cols-3">
-              <div className="rounded-[14px] border border-white/[0.06] bg-white/[0.03] px-5 py-6 text-center">
-                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15">
-                  <Navigation size={18} style={{ color: '#BAF14D' }} />
+              <div className="rounded-[14px] border border-navy/10 bg-white px-5 py-6 text-center">
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-forest/10">
+                  <Navigation size={18} style={{ color: '#2D6A4F' }} />
                 </div>
-                <p className="mb-1.5 text-sm font-semibold text-white">Follow the route</p>
-                <p className="text-[0.8125rem] leading-relaxed text-white/75">
+                <p className="mb-1.5 text-sm font-semibold text-navy">Follow the route</p>
+                <p className="text-[0.8125rem] leading-relaxed text-ink-soft">
                   Open this roam in the Shift app and follow the turn-by-turn route at your own pace.
                 </p>
               </div>
-              <div className="rounded-[14px] border border-white/[0.06] bg-white/[0.03] px-5 py-6 text-center">
-                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#BAF14D]/15">
-                  <MapPinned size={18} style={{ color: '#BAF14D' }} />
+              <div className="rounded-[14px] border border-navy/10 bg-white px-5 py-6 text-center">
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-forest/10">
+                  <MapPinned size={18} style={{ color: '#2D6A4F' }} />
                 </div>
-                <p className="mb-1.5 text-sm font-semibold text-white">Check in at each stop</p>
-                <p className="text-[0.8125rem] leading-relaxed text-white/75">
+                <p className="mb-1.5 text-sm font-semibold text-navy">Check in at each stop</p>
+                <p className="text-[0.8125rem] leading-relaxed text-ink-soft">
                   The app detects when you arrive and checks you in automatically. No scanning, no codes.
                 </p>
               </div>
-              <div className="rounded-[14px] border border-white/[0.06] bg-white/[0.03] px-5 py-6 text-center">
+              <div className="rounded-[14px] border border-navy/10 bg-white px-5 py-6 text-center">
                 <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#EDB93C]/15">
-                  <BadgeCheck size={18} style={{ color: '#EDB93C' }} />
+                  <BadgeCheck size={18} style={{ color: '#8A6D1F' }} />
                 </div>
-                <p className="mb-1.5 text-sm font-semibold text-white">
+                <p className="mb-1.5 text-sm font-semibold text-navy">
                   {roam.badge_name ? `Earn the ${roam.badge_name} badge` : 'Earn a badge'}
                 </p>
-                <p className="text-[0.8125rem] leading-relaxed text-white/75">
+                <p className="text-[0.8125rem] leading-relaxed text-ink-soft">
                   Complete the roam to earn {roam.badge_name ? `the ${roam.badge_name} badge` : 'a badge'}
                   {roam.xp_bonus ? ` and ${roam.xp_bonus} XP` : ''}.
                   {roam.collection
@@ -599,12 +599,12 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               </div>
             </div>
             <div className="text-center">
-              <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} className="justify-center" />
+              <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} tone="light" className="justify-center" />
             </div>
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

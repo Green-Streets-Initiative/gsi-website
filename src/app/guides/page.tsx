@@ -41,18 +41,18 @@ export default async function GuidesLibraryPage() {
 
   return (
     <>
-      <Nav />
-      <main className="bg-[#191A2E]" style={{ paddingTop: '60px' }}>
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
         {/* Hero */}
-        <section className="px-8 pb-12 pt-16 md:pt-24">
+        <section className="px-6 pb-8 pt-12 md:pt-16 lg:px-8">
           <div className="mx-auto max-w-[1120px]">
-            <div className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[#BAF14D]">
+            <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
               Guides
             </div>
-            <h1 className="mb-4 font-display text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h1 className="mb-5 max-w-[780px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               Real answers to the things that hold people back.
             </h1>
-            <p className="max-w-[680px] text-[1.0625rem] leading-relaxed text-white/80">
+            <p className="max-w-[620px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               Short, practical guides on biking, transit, and walking — written for people who
               want to try a different way of getting around but aren&apos;t sure where to start.
               Pick a mode or topic below.
@@ -61,15 +61,15 @@ export default async function GuidesLibraryPage() {
         </section>
 
         {/* Filter + grid (client) */}
-        <section className="px-8 pb-24">
+        <section className="px-6 pb-20 pt-4 lg:px-8 lg:pb-24">
           <div className="mx-auto max-w-[1120px]">
-            <Suspense fallback={<div className="text-[0.8125rem] text-white/75">Loading guides…</div>}>
+            <Suspense fallback={<div className="text-[0.8125rem] text-ink-soft">Loading guides…</div>}>
               <GuideLibrary guides={guides} />
             </Suspense>
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }
