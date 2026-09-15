@@ -8,6 +8,8 @@ import { MIN_RANKED_SCHOOLS, type SchoolStanding } from '@/lib/schools/types'
 import { getSchool, type School } from '@/lib/semester/schools'
 import { SEMESTER_CODE, SEMESTER_REWARD, SEMESTER_TRIPS, SEMESTER_WINDOW_DAYS, buildSemesterAppHref } from '@/lib/semester/campaign'
 import { withUtm } from '@/lib/utm'
+import { buildNearbySnapshotModel, type NearbySnapshotModel } from '@/lib/server/nearby-snapshot-model'
+import { CAMPUS_SNAPSHOT_OPTS } from '@/components/semester/CampusSnapshot'
 
 /*
  * Everything the Shift Your Semester pages read, free of markup. The
@@ -84,6 +86,9 @@ export interface SchoolData {
   pageUrl: string
   appHref: string
   nearbyHref: string
+  /** What's around campus, from the shared /nearby snapshot model; null
+   *  when the build failed outright (the page then shows the bare map). */
+  snapshot: NearbySnapshotModel | null
   blurb: string
   iosUrl: string
   androidUrl: string
@@ -95,12 +100,13 @@ export async function loadSchoolPage(slug: string, opts: { codeLive: boolean }):
   const { codeLive } = opts
 
   const centroid = { lat: school.lat, lng: school.lng }
-  const [group, events, roams, standings, primaryDomain] = await Promise.all([
+  const [group, events, roams, standings, primaryDomain, snapshot] = await Promise.all([
     fetchGroup(school.groupSlug),
     getCampusEvents(centroid).catch(() => []),
     getTownRoams(centroid).catch(() => []),
     getSchoolStandings().catch(() => []),
     fetchPrimaryDomain(school.slug),
+    buildNearbySnapshotModel(school.lat, school.lng, CAMPUS_SNAPSHOT_OPTS).catch(() => null),
   ])
 
   const joinUrl = group ? `https://shift.gogreenstreets.org/join/${group.invite_code}` : null
@@ -137,6 +143,7 @@ export async function loadSchoolPage(slug: string, opts: { codeLive: boolean }):
     pageUrl,
     appHref,
     nearbyHref,
+    snapshot,
     blurb,
     iosUrl,
     androidUrl,

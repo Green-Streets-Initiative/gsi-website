@@ -9,6 +9,7 @@ import SemesterJoinCard from '@/components/semester/SemesterJoinCard'
 import SchoolLeaderboardBoard from '@/components/schools/SchoolLeaderboardBoard'
 import OfferLedger from '@/components/semester/OfferLedger'
 import CampusMap from '@/components/semester/CampusMap'
+import CampusSnapshot from '@/components/semester/CampusSnapshot'
 import SchoolPerks from '@/components/semester/SchoolPerks'
 import CopyLinkButton from '@/components/semester/CopyLinkButton'
 import { LANE, RouteSegment } from '@/components/home/RouteLine'
@@ -165,13 +166,20 @@ export default function SchoolPage({ d, capture = true }: { d: SchoolData; captu
           </Section>
         )}
 
-        {/* Around campus: a real map, handing off to /nearby centred on campus. */}
-        <Section shape="wanderLeft" width="read" id="around" className="scroll-mt-28">
+        {/* Around campus: what the /nearby page knows about this spot —
+            stations, bike routes, docks, and where you can get to — with the
+            map handing off to the live page centred on campus. The bare map
+            is the fallback when the snapshot build failed. */}
+        <Section shape="wanderLeft" id="around" className="scroll-mt-28">
           <SectionHeading
             title="What’s around campus"
             lede={`Everywhere you can walk, bike, or ride to from ${school.shortName}. The live map opens centred on campus.`}
           />
-          <CampusMap lat={school.lat} lng={school.lng} href={d.nearbyHref} shortName={school.shortName} />
+          {d.snapshot ? (
+            <CampusSnapshot model={d.snapshot} lat={school.lat} lng={school.lng} href={d.nearbyHref} shortName={school.shortName} />
+          ) : (
+            <CampusMap lat={school.lat} lng={school.lng} href={d.nearbyHref} shortName={school.shortName} />
+          )}
         </Section>
 
         {/* Campus perks */}

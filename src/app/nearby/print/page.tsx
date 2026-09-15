@@ -6,20 +6,13 @@ import { splitPlaceLabel } from '@/lib/nearby/neighborhood'
 import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
 import { parsePartnerSlug, fetchPartner, partnerLogoPath } from '@/lib/nearby/partner'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
-import { getStopTopology } from '@/lib/server/mbta-topology'
-import { nearbyShuttleStops } from '@/lib/server/shuttle-gtfs'
 import { shuttleAgencyFor } from '@/lib/nearby/shuttle-agencies'
-import { getCorridorMeta, type CorridorMetaResult } from '@/lib/server/corridor-meta'
-import { getReach } from '@/lib/server/reach'
-import { getBluebikesDocks } from '@/lib/server/bluebikes'
-import { getBikeNetwork } from '@/lib/server/bike-network'
-import { corridorsFromTopology, buildBikeCorridors, SNAPSHOT_RAIL_TYPES, SNAPSHOT_MAX_STOPS, SNAPSHOT_RAIL_MAX_STATIONS } from '@/lib/nearby/corridors'
 import { protectionLabel } from '@/lib/nearby/bike-labels'
 import { modeOptions } from '@/lib/nearby/reach-ui'
 import { bikeTimeMinutes } from '@/lib/geo/measure'
-import { decodePolyline } from '@/lib/geo/polyline'
-import { buildPrintStations, buildPrintShuttles, shortFrequencyLabel } from '@/lib/nearby/print-model'
-import PrintMap, { PrintMarkerIcon, type PrintLine, type PrintMarker } from './PrintMap'
+import { buildNearbySnapshotModel } from '@/lib/server/nearby-snapshot-model'
+import { RASTER_TILE_ATTRIBUTION } from '@/lib/nearby/static-map'
+import PrintMap, { PrintMarkerIcon } from './PrintMap'
 import PrintButton from './PrintButton'
 import SheetViewport from './SheetViewport'
 import { t, resolveNearbyLocale, type NearbyLocale } from '@/lib/nearby/i18n'
@@ -94,13 +87,15 @@ export default async function NearbyPrintPage({ searchParams }: {
   const shareUrl = `${SITE_URL}${buildShareUrl(loc.lat, loc.lng, loc.label, stickyParams(params.toString()))}`
   const shortUrl = shareUrl.replace(/^https:\/\//, '')
 
-  const [busTopo, railTopo, reach, shuttleTopo, docks, network, qrSvg, popularStreetKeys, partner] = await Promise.all([
-    getStopTopology(loc.lat, loc.lng, { routeTypes: '3', radiusDeg: 0.01, nameStyle: 'short', maxStops: SNAPSHOT_MAX_STOPS }).catch(() => []),
-    getStopTopology(loc.lat, loc.lng, { routeTypes: SNAPSHOT_RAIL_TYPES, radiusDeg: 0.02, nameStyle: 'long', maxStops: SNAPSHOT_RAIL_MAX_STATIONS, perStation: true }).catch(() => []),
-    getReach(loc.lat, loc.lng).catch(() => ({ destinations: [] })),
-    nearbyShuttleStops(loc.lat, loc.lng, { maxStops: 6, perAgency: 3 }).catch(() => []),
-    getBluebikesDocks(loc.lat, loc.lng),
-    getBikeNetwork(loc.lat, loc.lng, 1.5).catch(() => null),
+  const [snapshot, qrSvg, popularStreetKeys, partner] = await Promise.all([
+    buildNearbySnapshotModel(loc.lat, loc.lng, {
+      maxTransit: MAX_PRINT_TRANSIT,
+      maxBike: MAX_PRINT_BIKE,
+      maxDocks: MAX_PRINT_DOCKS,
+      maxDestinations: MAX_PRINT_DESTINATIONS,
+      // What the ~1 mi, 720×264 viewport can show
+      mapHalf: { lat: 0.011, lng: 0.03 },
+    }),
     QRCode.toString(shareUrl, { type: 'svg', margin: 0, color: { dark: '#191A2E', light: '#ffffff' } }),
     // "Popular with Shift riders" markers — the label param carries
     // "Neighborhood, Town", and the lookup fails soft to an empty set
@@ -111,113 +106,11 @@ export default async function NearbyPrintPage({ searchParams }: {
     fetchPartner(parsePartnerSlug(params)).then(p =>
       p?.logoUrl ? { ...p, logoUrl: partnerLogoPath(p.slug) } : p),
   ])
-
-  // Shapes + weekday frequency per transit corridor; failures degrade to
-  // "see live schedule online" per line rather than failing the page.
-  // Rail first: the topology sorts by walk distance, and in bus-dense areas
-  // every bus route is closer than the T — which silently dropped the T
-  // lines' shapes (no rail on the printed map) and their frequencies.
-  // Nothing in reach for a family → its nearest option beyond the radius,
-  // same rule as the interactive page (server key + cache, so cost is moot)
-  const [railFar, busFar] = await Promise.all([
-    railTopo.length > 0 ? [] : getStopTopology(loc.lat, loc.lng, { routeTypes: SNAPSHOT_RAIL_TYPES, radiusDeg: 0.05, nameStyle: 'long', maxStops: 1, perStation: true }).catch(() => []),
-    busTopo.length > 0 ? [] : getStopTopology(loc.lat, loc.lng, { routeTypes: '3', radiusDeg: 0.03, nameStyle: 'short', maxStops: 2 }).catch(() => []),
-  ])
-  const allCorridors = corridorsFromTopology([...railTopo, ...railFar], [...busTopo, ...busFar])
-  const corridors = [
-    ...allCorridors.filter(c => c.kind !== 'bus'),
-    ...allCorridors.filter(c => c.kind === 'bus'),
-  ].slice(0, MAX_PRINT_TRANSIT)
-  const metaByRoute = new Map<string, CorridorMetaResult>()
-  await Promise.allSettled(corridors.map(async c => {
-    metaByRoute.set(c.routeId, await getCorridorMeta(c.routeId, c.access.stopId))
-  }))
-
-  const freqByRoute = new Map<string, string | null>()
-  for (const [routeId, meta] of metaByRoute) freqByRoute.set(routeId, shortFrequencyLabel(meta.frequency))
-
-  const stations = [
-    ...buildPrintStations(railTopo, busTopo, freqByRoute, undefined, { rail: railFar, bus: busFar }),
-    ...buildPrintShuttles(shuttleTopo),
-  ]
-  const anyFar = stations.some(s => s.farther)
-
-  const bikeBuild = network ? buildBikeCorridors(network.geojson, loc.lat, loc.lng) : { corridors: [] }
-  const bikeCorridors = bikeBuild.corridors.slice(0, MAX_PRINT_BIKE)
-
-  const destinations = reach.destinations.slice(0, MAX_PRINT_DESTINATIONS)
-  const printDocks = docks.slice(0, MAX_PRINT_DOCKS)
-
-  // Map layers, bottom to top: full lane network (thin) → named bike
-  // corridors → bus shapes → rail shapes, so the highest-signal lines stay
-  // on top
-  const lines: PrintLine[] = []
-
-  // EVERY mapped lane draws as a thin background line, exactly like the
-  // interactive map — only bolding the top corridors made whole streets of
-  // real infrastructure (Somerville Ave's painted lanes) vanish from paper.
-  // The bold corridors re-draw over their own thin twins, so no dedupe
-  // bookkeeping is needed. Bounds-filtered to what the ~1 mi viewport can
-  // show; the network load radius (1.5 mi) is wider than the map.
-  const QUALITY_COLOR: Record<string, string> = { path: '#BAF14D', protected: '#2DD4BF', painted: '#7FB5FF' }
-  const drawnTiers = new Set<string>()
-  const inMapBox = (coords: [number, number][]) =>
-    coords.some(([x, y]) => Math.abs(y - loc.lat) < 0.011 && Math.abs(x - loc.lng) < 0.03)
-  if (network) {
-    for (const f of network.geojson.features) {
-      if (f.geometry.type !== 'LineString') continue
-      const coords = f.geometry.coordinates as [number, number][]
-      if (!inMapBox(coords)) continue
-      const quality = (f.properties as { quality?: string })?.quality ?? 'painted'
-      drawnTiers.add(quality)
-      lines.push({
-        coords,
-        color: QUALITY_COLOR[quality] ?? '#7FB5FF',
-        dashed: quality === 'painted',
-        thin: true,
-      })
-    }
-  }
-
-  const bikeByTier = [...bikeCorridors].sort((a, b) =>
-    (a.protection === 'painted' ? 0 : 1) - (b.protection === 'painted' ? 0 : 1))
-  for (const c of bikeByTier) {
-    drawnTiers.add(c.protection === 'path' ? 'path' : c.protection === 'painted' ? 'painted' : 'protected')
-    for (const f of c.geojson.features) {
-      if (f.geometry.type !== 'LineString') continue
-      lines.push({
-        coords: f.geometry.coordinates as [number, number][],
-        color: (f.properties as { color?: string })?.color ?? '#2DD4BF',
-        dashed: c.protection === 'painted',
-      })
-    }
-  }
-  const transitByKind = [...corridors].sort((a, b) =>
-    (a.kind === 'bus' ? 0 : 1) - (b.kind === 'bus' ? 0 : 1))
-  for (const c of transitByKind) {
-    const meta = metaByRoute.get(c.routeId)
-    for (const encoded of (meta?.polylines ?? []).slice(0, 2)) {
-      lines.push({
-        coords: decodePolyline(encoded).map(([plat, plng]) => [plng, plat] as [number, number]),
-        color: c.color,
-      })
-    }
-  }
-
-  // Every listed station gets a name label (the dedupe caps this at ~8);
-  // markers carry the same Phosphor glyphs as the interactive map's pins
-  const markers: PrintMarker[] = [
-    ...stations.map(s => ({
-      lat: s.lat, lng: s.lng, kind: s.isShuttle ? ('shuttle' as const) : s.isRail ? ('rail' as const) : ('bus' as const),
-      color: s.lines[0]?.color ?? '#191A2E',
-      label: s.name,
-    })),
-    ...printDocks.map(d => ({ lat: d.lat, lng: d.lng, kind: 'dock' as const })),
-  ]
+  const { stations, anyFar, hasRail, hasBus, bikeCorridors, docks: printDocks, destinations, lines, markers, drawnTiers } = snapshot
 
   const legend: { swatch: React.ReactNode; label: string }[] = []
-  if (railTopo.length > 0) legend.push({ swatch: <LegendLine color="#DA291C" />, label: tr('print.legend_t_lines') })
-  if (busTopo.length > 0) legend.push({ swatch: <LegendLine color="#FFC72C" />, label: tr('print.legend_bus_routes') })
+  if (hasRail) legend.push({ swatch: <LegendLine color="#DA291C" />, label: tr('print.legend_t_lines') })
+  if (hasBus) legend.push({ swatch: <LegendLine color="#FFC72C" />, label: tr('print.legend_bus_routes') })
   if (drawnTiers.has('path')) legend.push({ swatch: <LegendLine color="#BAF14D" />, label: tr('print.legend_path') })
   if (drawnTiers.has('protected')) legend.push({ swatch: <LegendLine color="#2DD4BF" />, label: tr('print.legend_protected') })
   if (drawnTiers.has('painted')) legend.push({ swatch: <LegendLine color="#7FB5FF" dashed />, label: tr('print.legend_painted') })
@@ -477,7 +370,7 @@ export default async function NearbyPrintPage({ searchParams }: {
           {/* One line — the doubled OpenStreetMap credit wrapped it to two */}
           <p className="text-[0.62rem] leading-snug text-[#191A2E]/60">
             Green Streets Initiative, a 501(c)(3) · gogreenstreets.org · Data: MBTA · MAPC TrailMap · MassDOT ·
-            Bluebikes · Map © OpenStreetMap contributors © CARTO
+            Bluebikes · {RASTER_TILE_ATTRIBUTION}
           </p>
         </footer>
       </article>
