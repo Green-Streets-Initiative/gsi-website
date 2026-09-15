@@ -6,6 +6,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { resolveUnsplashPhoto } from '@/lib/unsplash'
 import { RoamsRibbon, type RoamCard } from './RoamsRibbon'
 import PartnerForm from './PartnerForm'
+import { PILL } from '@/components/org/Section'
 import {
   taglineFromDescription,
   formatDuration,
@@ -16,9 +17,9 @@ import {
 export const revalidate = 600
 
 export const metadata: Metadata = {
-  title: 'Partner with Shift Your Summer | Green Streets Initiative',
+  title: 'Shift Your Summer 2026 Partners | Green Streets Initiative',
   description:
-    "Sponsor or donate prizes to Massachusetts's 8-week active transportation challenge. Three sponsorship tiers from $1,000–$5,000.",
+    "The sponsors and prize donors behind Shift Your Summer 2026, Massachusetts's 8-week active transportation challenge, and how to partner on the next campaign.",
 }
 
 interface RoamRow {
@@ -84,8 +85,8 @@ export default async function PartnersPage() {
   )
 
   return (
-    <div className="min-h-screen bg-[#191A2E] text-white font-sans">
-      <Nav />
+    <div className="min-h-screen bg-cream text-navy font-sans">
+      <Nav variant="light" />
 
       <JumpBar />
 
@@ -103,7 +104,7 @@ export default async function PartnersPage() {
 
       <ContactSection />
 
-      <Footer />
+      <Footer variant="light" />
     </div>
   )
 }
@@ -112,29 +113,29 @@ export default async function PartnersPage() {
 
 function JumpBar() {
   return (
-    <div className="border-b border-white/[0.08] px-8">
-      <div className="max-w-[1100px] mx-auto flex gap-8 py-3.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="border-b border-navy/10 px-6 lg:px-8">
+      <div className="max-w-[1120px] mx-auto flex gap-8 py-3.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <a
           href="#sponsorship"
-          className="text-[0.8125rem] font-semibold uppercase tracking-wider text-white/70 hover:text-[#52B788] transition-colors whitespace-nowrap"
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] text-navy hover:text-forest transition-colors whitespace-nowrap"
         >
           Sponsorship
         </a>
         <a
           href="#prizes"
-          className="text-[0.8125rem] font-semibold uppercase tracking-wider text-white/70 hover:text-[#52B788] transition-colors whitespace-nowrap"
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] text-navy hover:text-forest transition-colors whitespace-nowrap"
         >
           Prize donations
         </a>
         <a
           href="#partner-form"
-          className="text-[0.8125rem] font-semibold uppercase tracking-wider text-white/70 hover:text-[#52B788] transition-colors whitespace-nowrap"
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] text-navy hover:text-forest transition-colors whitespace-nowrap"
         >
-          Become a partner
+          Sponsor the next campaign
         </a>
         <a
           href="#contact"
-          className="text-[0.8125rem] font-semibold uppercase tracking-wider text-white/70 hover:text-[#52B788] transition-colors whitespace-nowrap"
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] text-navy hover:text-forest transition-colors whitespace-nowrap"
         >
           Get in touch
         </a>
@@ -147,38 +148,43 @@ function JumpBar() {
 
 function Hero() {
   return (
-    <section className="px-8 pt-20 pb-16">
-      <div className="max-w-[1100px] mx-auto">
-        <span className="inline-block text-xs font-bold uppercase tracking-[0.08em] text-[#52B788] mb-4">
-          Partnership Opportunities
+    <section className="px-6 lg:px-8 py-8 lg:py-10">
+      <div className="max-w-[1120px] mx-auto">
+        <span className="inline-block text-[11px] font-semibold uppercase tracking-[0.14em] text-forest mb-4">
+          Partners
         </span>
-        <h1 className="font-display text-[clamp(2rem,5vw,3rem)] font-extrabold leading-[1.1] text-white mb-5">
-          Partner with
+        <h1 className="font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy mb-5">
+          The partners behind
           <br />
-          <span className="text-[#BAF14D]">Shift Your Summer 2026</span>
+          <span className="text-forest">Shift Your Summer 2026</span>
         </h1>
-        <p className="text-[1.125rem] leading-[1.7] text-white/75 max-w-[680px]">
-          Shift Your Summer is an 8-week active transportation challenge, open to anyone in
-          Massachusetts, that encourages people to walk, bike, and ride transit all summer
-          long. The Shift app automatically detects active trips — no manual logging — and
-          participants build streaks, unlock achievements, rise through status tiers, and
-          become eligible for prizes.
+        <p className="text-[1.0625rem] leading-[1.7] text-ink-soft max-w-[680px]">
+          Shift Your Summer 2026 was an 8-week active transportation challenge, open to anyone
+          in Massachusetts, that encouraged people to walk, bike, and ride transit from
+          June 15 to August 15. The Shift app detected active trips automatically, and
+          participants built streaks, unlocked achievements, rose through status tiers, and
+          became eligible for prizes.
         </p>
-        <p className="text-[1.125rem] leading-[1.7] text-white/75 max-w-[680px] mt-3">
-          We&rsquo;re looking for corporate sponsors and prize donors to help make it happen.
+        <p className="text-[1.0625rem] leading-[1.7] text-ink-soft max-w-[680px] mt-3">
+          Corporate sponsors and prize donors made it happen. Thank you. The 2026 sponsor roll
+          is on the{' '}
+          <Link href="/events/shift-your-summer" className="font-semibold text-forest underline-offset-4 hover:underline">challenge page</Link>,
+          and planning for the next campaign is underway &mdash;{' '}
+          <Link href="/contact" className="font-semibold text-forest underline-offset-4 hover:underline">get in touch</Link>{' '}
+          to be part of it.
         </p>
-        <div className="flex flex-wrap gap-8 mt-10 pt-8 border-t border-white/[0.08]">
+        <div className="flex flex-wrap gap-8 mt-10 pt-8 border-t border-navy/10">
           <div className="flex flex-col gap-1">
-            <span className="text-[1.75rem] font-extrabold text-[#BAF14D] font-display">8</span>
-            <span className="text-[0.8125rem] text-white/75">Weeks · June 15 – August 15</span>
+            <span className="font-serif text-[2rem] leading-none text-navy">8</span>
+            <span className="text-[13px] text-ink-soft">Weeks · June 15 – August 15, 2026</span>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-[1.75rem] font-extrabold text-[#2966E5] font-display">Open</span>
-            <span className="text-[0.8125rem] text-white/75">To all of Massachusetts</span>
+            <span className="font-serif text-[2rem] leading-none text-navy">Open</span>
+            <span className="text-[13px] text-ink-soft">To all of Massachusetts</span>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-[1.75rem] font-extrabold text-[#52B788] font-display">2006</span>
-            <span className="text-[0.8125rem] text-white/75">Year GSI was founded</span>
+            <span className="font-serif text-[2rem] leading-none text-navy">2006</span>
+            <span className="text-[13px] text-ink-soft">Year GSI was founded</span>
           </div>
         </div>
       </div>
@@ -190,12 +196,12 @@ function Hero() {
 
 function AboutSection() {
   return (
-    <section className="px-8 py-12 border-t border-white/[0.08]">
-      <div className="max-w-[1100px] mx-auto">
-        <h2 className="font-display text-[2rem] font-bold text-white mb-6">
-          Active transportation is <span className="text-[#BAF14D]">surging.</span>
+    <section className="px-6 lg:px-8 py-8 lg:py-10 border-t border-navy/10">
+      <div className="max-w-[1120px] mx-auto">
+        <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy mb-6">
+          Active transportation is <span className="text-forest">surging.</span>
         </h2>
-        <div className="text-base leading-[1.8] text-white/80 max-w-[700px] space-y-4">
+        <div className="text-[1.0625rem] leading-[1.7] text-ink-soft max-w-[700px] space-y-4">
           <p>
             Massachusetts is in the middle of a generational shift. New protected bike
             lanes, expanded transit service, and redesigned streetscapes are changing how
@@ -224,23 +230,23 @@ function AboutSection() {
 
 function RoamsSection({ roams }: { roams: RoamCard[] }) {
   return (
-    <section className="px-8 py-12 border-t border-white/[0.08] overflow-hidden">
-      <div className="max-w-[1100px] mx-auto">
+    <section className="px-6 lg:px-8 py-8 lg:py-10 border-t border-navy/10 overflow-hidden">
+      <div className="max-w-[1120px] mx-auto">
         <div className="mb-6">
-          <h3 className="font-display text-[1.5rem] font-bold text-white mb-3">
-            Explore Massachusetts with <span className="text-[#BAF14D]">Roams</span>
+          <h3 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy mb-3">
+            Explore Massachusetts with <span className="text-forest">Roams</span>
           </h3>
-          <p className="text-[0.9375rem] leading-[1.7] text-white/75 max-w-[640px]">
+          <p className="text-[15px] leading-relaxed text-ink-soft max-w-[640px]">
             Roams are curated, multi-stop active transportation adventures built into the
             Shift app — guided explorations by foot, by bike, or by transit. Each Roam
             includes a map, turn-by-turn stops, terrain details, and contextual information
             like nearby Bluebikes docks (with real-time availability), transit boarding
             points (with next arrival times), and tips for people trying a mode for the
-            first time. Completing Roams during Shift Your Summer unlocks prize eligibility.
+            first time. Completing Roams during Shift Your Summer unlocked prize eligibility.
           </p>
         </div>
         <RoamsRibbon roams={roams} />
-        <div className="flex items-center gap-2 mt-3 text-xs text-white/75">
+        <div className="flex items-center gap-2 mt-3 text-[13px] text-ink-soft">
           Scroll to explore <span className="inline-block">→</span>
         </div>
       </div>
@@ -261,7 +267,7 @@ const TIERS: Tier[] = [
   {
     name: 'Community',
     price: '$1,000',
-    accent: '#52B788',
+    accent: '#2D6A4F',
     benefits: [
       'Logo on challenge sponsors page',
       'Custom team sign-up link & QR code for employees',
@@ -289,7 +295,7 @@ const TIERS: Tier[] = [
   {
     name: 'Presenting',
     price: '$5,000',
-    accent: '#BAF14D',
+    accent: '#1B4332',
     benefits: [
       'Everything in Champion, plus:',
       '"Presented by" naming across all channels',
@@ -306,27 +312,28 @@ const TIERS: Tier[] = [
 
 function SponsorshipSection() {
   return (
-    <section id="sponsorship" className="px-8 py-20 border-t border-white/[0.08]">
-      <div className="max-w-[1100px] mx-auto">
-        <span className="text-xs font-bold uppercase tracking-[0.08em] text-[#52B788] mb-4 block">
+    <section id="sponsorship" className="px-6 lg:px-8 py-8 lg:py-10 border-t border-navy/10">
+      <div className="max-w-[1120px] mx-auto">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-forest mb-4 block">
           Sponsorship
         </span>
-        <h2 className="font-display text-[clamp(1.75rem,3.5vw,2.25rem)] font-extrabold text-white mb-3">
-          Three ways to <span className="text-[#BAF14D]">partner.</span>
+        <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy mb-3">
+          Three ways sponsors <span className="text-forest">partnered.</span>
         </h2>
-        <p className="text-base leading-[1.7] text-white/80 max-w-[680px] mb-12">
-          Corporate sponsors help underwrite and promote Shift Your Summer. Sponsorship
-          funds support paid advertising on Reddit, Nextdoor, Facebook, and Instagram to
+        <p className="text-[1.0625rem] leading-[1.7] text-ink-soft max-w-[680px] mb-12">
+          Corporate sponsors underwrote and promoted Shift Your Summer 2026. Sponsorship
+          funds supported paid advertising on Reddit, Nextdoor, Facebook, and Instagram to
           drive app installs, as well as event operations, prize fulfillment, and press
-          outreach. Every sponsor receives co-branded promotional materials to distribute
-          through their own channels.
+          outreach. Every sponsor received co-branded promotional materials to distribute
+          through their own channels. The 2026 tiers are below as a reference for the next
+          campaign.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
           {TIERS.map((tier) => (
             <div
               key={tier.name}
-              className="relative overflow-hidden bg-[#242538] rounded-xl border border-white/[0.08] p-8"
+              className="relative overflow-hidden bg-white rounded-[14px] border border-navy/10 p-8"
             >
               <div
                 className="absolute top-0 left-0 right-0 h-1"
@@ -338,14 +345,14 @@ function SponsorshipSection() {
               >
                 {tier.name}
               </div>
-              <div className="font-display text-[2rem] font-extrabold text-white mb-5">
+              <div className="font-serif text-[2rem] leading-none text-navy mb-5">
                 {tier.price}
               </div>
               <ul className="flex flex-col gap-2.5">
                 {tier.benefits.map((benefit, i) => (
                   <li
                     key={i}
-                    className="text-[0.8125rem] text-white leading-snug pl-5 relative"
+                    className="text-[15px] text-navy leading-snug pl-5 relative"
                   >
                     <span
                       className="absolute left-0 top-[0.4375rem] w-1.5 h-1.5 rounded-full"
@@ -359,13 +366,13 @@ function SponsorshipSection() {
           ))}
         </div>
 
-        <p className="text-[0.8125rem] text-white/75 italic text-center">
-          Custom packages available for multi-year or multi-event commitments.
+        <p className="text-[15px] text-ink-soft italic text-center">
+          Custom packages are available for multi-year or multi-event commitments.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 pt-12 border-t border-white/[0.08]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 pt-12 border-t border-navy/10">
           <ValueCard
-            dot="#BAF14D"
+            dot="#1B4332"
             title="Brand Alignment"
             body="Associate your brand with Massachusetts's largest active transportation initiative — a positive, community-driven campaign backed by a nonprofit with nearly two decades of credibility in the region."
           />
@@ -375,12 +382,12 @@ function SponsorshipSection() {
             body="Your team gets a custom challenge with its own leaderboard. The employer platform gives HR or sustainability teams a dashboard with participation data, trip counts, and environmental impact."
           />
           <ValueCard
-            dot="#52B788"
+            dot="#2D6A4F"
             title="Impact Reporting"
             body="Every sponsor receives an impact report at challenge close: total trips, miles traveled, carbon emissions avoided, and communities activated. Champion and Presenting sponsors also receive team-level data and a ready-to-use paragraph for sustainability filings."
           />
           <ValueCard
-            dot="#BAF14D"
+            dot="#1B4332"
             title="Press & Visibility"
             body="GSI conducts PR outreach to local media including the Boston Globe, GBH, Boston.com, Patch, and neighborhood outlets. All sponsors are listed on the challenge page with linked logos."
           />
@@ -392,15 +399,15 @@ function SponsorshipSection() {
 
 function ValueCard({ dot, title, body }: { dot: string; title: string; body: string }) {
   return (
-    <div className="p-6 bg-[#242538] rounded-[10px] border border-white/[0.08]">
-      <h4 className="text-base font-bold text-white mb-2 flex items-center gap-2">
+    <div className="p-6 bg-white rounded-[14px] border border-navy/10">
+      <h4 className="font-serif text-[1.375rem] leading-tight text-navy mb-2 flex items-center gap-2">
         <span
           className="inline-block w-2 h-2 rounded-full flex-shrink-0"
           style={{ background: dot }}
         />
         {title}
       </h4>
-      <p className="text-sm text-white/80 leading-relaxed">{body}</p>
+      <p className="text-[15px] text-ink-soft leading-relaxed">{body}</p>
     </div>
   )
 }
@@ -409,26 +416,26 @@ function ValueCard({ dot, title, body }: { dot: string; title: string; body: str
 
 function PrizeSection() {
   return (
-    <section id="prizes" className="px-8 py-20 border-t border-white/[0.08]">
-      <div className="max-w-[1100px] mx-auto">
-        <span className="text-xs font-bold uppercase tracking-[0.08em] text-[#52B788] mb-4 block">
+    <section id="prizes" className="px-6 lg:px-8 py-8 lg:py-10 border-t border-navy/10">
+      <div className="max-w-[1120px] mx-auto">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-forest mb-4 block">
           Prize Donations
         </span>
-        <h2 className="font-display text-[clamp(1.75rem,3.5vw,2.25rem)] font-extrabold text-white mb-3">
-          Donate a prize, <span className="text-[#BAF14D]">reach an audience.</span>
+        <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy mb-3">
+          Donated prizes <span className="text-forest">reached an audience.</span>
         </h2>
-        <p className="text-base leading-[1.7] text-white/80 max-w-[680px] mb-10">
-          Shift Your Summer participants become eligible for prizes by building streaks,
-          hitting active trip milestones, and completing Roams. We&rsquo;re looking for
-          in-kind donations across three categories — and every donated prize comes with
-          brand visibility for the donor.
+        <p className="text-[1.0625rem] leading-[1.7] text-ink-soft max-w-[680px] mb-10">
+          Shift Your Summer participants became eligible for prizes by building streaks,
+          hitting active trip milestones, and completing Roams. In-kind donations came in
+          across three categories — and every donated prize came with brand visibility for
+          the donor.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
           <PrizeCard
             title="Grand Prize"
             example="E-bikes, annual transit passes, high-value gear"
-            exampleColor="#BAF14D"
+            exampleColor="#1B4332"
             body="The headline prize that draws attention to the challenge. Featured prominently in press outreach, social campaigns, and the winner announcement at the wrap event."
           />
           <PrizeCard
@@ -440,14 +447,14 @@ function PrizeSection() {
           <PrizeCard
             title="Reward Catalog Items"
             example="Coffee, meals, local experiences"
-            exampleColor="#52B788"
+            exampleColor="#2D6A4F"
             body="Rewards from local businesses that participants access as they rise through status tiers. Great for local shops, restaurants, and service providers who want ongoing visibility with active transportation users."
           />
         </div>
 
-        <div className="bg-[#242538] rounded-xl border border-white/[0.08] p-8 md:p-10">
-          <h3 className="font-display text-[1.25rem] font-bold text-white mb-5">
-            What prize donors receive
+        <div className="bg-white rounded-[14px] border border-navy/10 p-8 md:p-10">
+          <h3 className="font-serif text-[1.375rem] leading-tight text-navy mb-5">
+            What prize donors received
           </h3>
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
             {[
@@ -458,8 +465,8 @@ function PrizeSection() {
               'Photo opportunity at the winner announcement (grand prize donors)',
               'Mention in press outreach (grand prize donors)',
             ].map((item) => (
-              <li key={item} className="text-sm text-white leading-snug pl-5 relative">
-                <span className="absolute left-0 top-[0.4375rem] w-1.5 h-1.5 rounded-full bg-[#52B788]" />
+              <li key={item} className="text-[15px] text-navy leading-snug pl-5 relative">
+                <span className="absolute left-0 top-[0.4375rem] w-1.5 h-1.5 rounded-full bg-forest" />
                 {item}
               </li>
             ))}
@@ -482,15 +489,15 @@ function PrizeCard({
   body: string
 }) {
   return (
-    <div className="bg-[#242538] rounded-[10px] border border-white/[0.08] p-7">
-      <h4 className="font-display text-[1.125rem] font-bold text-white mb-2">{title}</h4>
+    <div className="bg-white rounded-[14px] border border-navy/10 p-7">
+      <h4 className="font-serif text-[1.375rem] leading-tight text-navy mb-2">{title}</h4>
       <div
-        className="text-[0.8125rem] font-semibold mb-3"
+        className="text-[13px] font-semibold mb-3"
         style={{ color: exampleColor }}
       >
         {example}
       </div>
-      <p className="text-sm text-white/80 leading-relaxed">{body}</p>
+      <p className="text-[15px] text-ink-soft leading-relaxed">{body}</p>
     </div>
   )
 }
@@ -499,18 +506,17 @@ function PrizeCard({
 
 function PartnerFormSection() {
   return (
-    <section id="partner-form" className="px-8 py-20 border-t border-white/[0.08]">
+    <section id="partner-form" className="px-6 lg:px-8 py-8 lg:py-10 border-t border-navy/10">
       <div className="max-w-[840px] mx-auto">
-        <span className="text-xs font-bold uppercase tracking-[0.08em] text-[#52B788] mb-4 block">
-          Become a Partner
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-forest mb-4 block">
+          Sponsor the next campaign
         </span>
-        <h2 className="font-display text-[clamp(1.75rem,3.5vw,2.25rem)] font-extrabold text-white mb-3">
-          Ready to <span className="text-[#BAF14D]">get involved?</span>
+        <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy mb-3">
+          Want in <span className="text-forest">next time?</span>
         </h2>
-        <p className="text-base leading-[1.7] text-white/80 max-w-[680px] mb-10">
-          Tell us about your organization and how you&rsquo;d like to participate.
-          We&rsquo;ll follow up within two business days with next steps and a partnership
-          agreement.
+        <p className="text-[1.0625rem] leading-[1.7] text-ink-soft max-w-[680px] mb-10">
+          Tell us about your organization and how you&rsquo;d like to take part in a future
+          campaign. We&rsquo;ll follow up within two business days.
         </p>
         <PartnerForm />
       </div>
@@ -522,44 +528,41 @@ function PartnerFormSection() {
 
 function ContactSection() {
   return (
-    <section id="contact" className="px-8 py-20 border-t border-white/[0.08]">
-      <div className="max-w-[1100px] mx-auto">
-        <h2 className="font-display text-[clamp(2rem,4vw,2.5rem)] font-extrabold text-white mb-6 leading-[1.15]">
+    <section id="contact" className="px-6 lg:px-8 py-8 lg:py-10 border-t border-navy/10">
+      <div className="max-w-[1120px] mx-auto">
+        <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy mb-6">
           Let&rsquo;s shift
           <br />
           Massachusetts
           <br />
-          <span className="text-[#BAF14D]">together.</span>
+          <span className="text-forest">together.</span>
         </h2>
-        <p className="text-base leading-[1.7] text-white/80 max-w-[540px] mb-8">
-          Sponsorship commitments and prize donations for Shift Your Summer 2026 are open
-          now. Presenting sponsorship is limited to one partner. Reach out to discuss the
-          right fit for your organization.
+        <p className="text-[1.0625rem] leading-[1.7] text-ink-soft max-w-[540px] mb-8">
+          Shift Your Summer 2026 wrapped on August 15. Sponsorships and prize donations for
+          the next campaign open soon, and presenting sponsorship is limited to one partner.
+          Reach out to discuss the right fit for your organization.
         </p>
         <div className="flex flex-col gap-1 mb-8">
-          <span className="text-[1.125rem] font-semibold text-white">Keith Anderson</span>
-          <span className="text-sm text-white/75">
+          <span className="text-[1.125rem] font-semibold text-navy">Keith Anderson</span>
+          <span className="text-[15px] text-ink-soft">
             Executive Director, Green Streets Initiative
           </span>
           <a
             href="mailto:keith@gogreenstreets.org"
-            className="text-base font-medium text-[#52B788] hover:opacity-80 mt-2 inline-block"
+            className="text-[15px] font-semibold text-forest underline-offset-4 hover:underline mt-2 inline-block"
           >
             keith@gogreenstreets.org
           </a>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 mt-6">
-          <a
-            href="#partner-form"
-            className="inline-flex items-center gap-2 bg-[#52B788] text-[#191A2E] px-6 py-3.5 rounded-[10px] font-bold text-[0.9375rem] hover:opacity-90 transition-opacity"
-          >
-            Submit partnership interest →
-          </a>
+          <Link href="/contact" className={PILL}>
+            Get in touch →
+          </Link>
           <Link
             href="/events/shift-your-summer"
-            className="inline-flex items-center gap-2 bg-transparent text-white px-6 py-3.5 rounded-[10px] font-semibold text-[0.9375rem] border border-white/[0.12] hover:border-white/30 hover:text-white transition-colors"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
           >
-            See the public challenge page →
+            See the 2026 challenge →
           </Link>
         </div>
       </div>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import { PILL } from '@/components/org/Section'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import {
   brandLabel,
@@ -98,34 +99,34 @@ export default async function ShiftYourSummerRulesPage() {
 
   return (
     <>
-      <Nav />
-      <main className="bg-navy pt-[60px]">
-        <article className="mx-auto max-w-[720px] px-6 py-16 sm:py-20">
+      <Nav variant="light" />
+      <main className="bg-cream pt-[60px]">
+        <article className="mx-auto max-w-[720px] px-6 py-8 lg:py-10">
           {/* Header */}
           <Link
             href="/events/shift-your-summer"
-            className="mb-8 inline-flex items-center gap-1.5 text-sm text-white/75 transition-colors hover:text-white"
+            className="mb-8 inline-flex items-center gap-1.5 text-[15px] font-semibold text-forest underline-offset-4 hover:underline"
           >
             &larr; Back to Shift Your Summer
           </Link>
 
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-lime">Legal</p>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">Legal</p>
+          <h1 className="font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
             Official Rules
           </h1>
-          <p className="mt-3 text-sm text-white">
+          <p className="mt-4 text-[15px] text-ink-soft">
             Shift Your Summer 2026 &middot; Green Streets Initiative
           </p>
 
-          <hr className="my-10 border-white/[0.08]" />
+          <hr className="my-10 border-navy/10" />
 
           {/* Table of contents */}
           <nav aria-label="Table of contents" className="mb-10">
-            <h2 className="mb-4 font-display text-base font-bold text-white">Contents</h2>
-            <ol className="list-decimal space-y-1 pl-5 text-[0.875rem] leading-[1.6]">
+            <h2 className="mb-4 font-serif text-[1.375rem] leading-tight text-navy">Contents</h2>
+            <ol className="list-decimal space-y-1 pl-5 text-[15px] leading-[1.6]">
               {TOC.map(s => (
                 <li key={s.id}>
-                  <a href={`#${s.id}`} className="text-white/75 transition-colors hover:text-white">
+                  <a href={`#${s.id}`} className="font-semibold text-forest underline-offset-4 hover:underline">
                     {s.title}
                   </a>
                 </li>
@@ -133,7 +134,7 @@ export default async function ShiftYourSummerRulesPage() {
             </ol>
           </nav>
 
-          <hr className="my-10 border-white/[0.08]" />
+          <hr className="my-10 border-navy/10" />
 
           {/* Content */}
           <div className="space-y-10">
@@ -145,9 +146,9 @@ export default async function ShiftYourSummerRulesPage() {
                 <li><strong>Sponsor:</strong> Green Streets Initiative, Inc., a 501(c)(3) nonprofit, Cambridge, MA (&ldquo;GSI&rdquo;)</li>
                 <li>
                   Administered through the Shift mobile app, available on the{' '}
-                  <a href="https://apps.apple.com/us/app/shift-by-gsi/id6761119037" className="text-lime">App Store</a>{' '}
+                  <a href="https://apps.apple.com/us/app/shift-by-gsi/id6761119037" className="font-semibold text-forest underline-offset-4 hover:underline">App Store</a>{' '}
                   and{' '}
-                  <a href="https://play.google.com/store/apps/details?id=org.greenstreets.shift" className="text-lime">Google Play</a>
+                  <a href="https://play.google.com/store/apps/details?id=org.greenstreets.shift" className="font-semibold text-forest underline-offset-4 hover:underline">Google Play</a>
                 </li>
               </Ul>
             </Section>
@@ -173,9 +174,9 @@ export default async function ShiftYourSummerRulesPage() {
                   <Ul>
                     <li>
                       Download the app directly: <strong>iPhone/iPad</strong> &mdash;{' '}
-                      <a href="https://apps.apple.com/us/app/shift-by-gsi/id6761119037" className="text-lime">Shift on the App Store</a>.{' '}
+                      <a href="https://apps.apple.com/us/app/shift-by-gsi/id6761119037" className="font-semibold text-forest underline-offset-4 hover:underline">Shift on the App Store</a>.{' '}
                       <strong>Android</strong> &mdash;{' '}
-                      <a href="https://play.google.com/store/apps/details?id=org.greenstreets.shift" className="text-lime">Shift on Google Play</a>.
+                      <a href="https://play.google.com/store/apps/details?id=org.greenstreets.shift" className="font-semibold text-forest underline-offset-4 hover:underline">Shift on Google Play</a>.
                     </li>
                   </Ul>
                 </li>
@@ -320,7 +321,7 @@ export default async function ShiftYourSummerRulesPage() {
                   Shift app, hand-print your full name, mailing address, email address, and date of
                   birth on a 3&Prime;&times;5&Prime; postcard and mail it to:
                 </P>
-                <div className="my-4 rounded-[12px] border border-white/[0.08] bg-white/[0.04] px-5 py-4 text-[0.9375rem] leading-[1.7] text-white">
+                <div className="my-4 rounded-[12px] border border-navy/10 bg-navy/[0.04] px-5 py-4 text-[1.0625rem] leading-[1.7] text-navy">
                   Green Streets Initiative<br />
                   Shift Your Summer 2026 Sweepstakes<br />
                   519 Somerville Ave, Ste 2, Box 103<br />
@@ -471,11 +472,11 @@ export default async function ShiftYourSummerRulesPage() {
               <Ul>
                 <li>
                   Personal information collected through the Shift app is governed by GSI&rsquo;s{' '}
-                  <Link href="/privacy" className="text-lime">Privacy Policy</Link>.
+                  <Link href="/privacy" className="font-semibold text-forest underline-offset-4 hover:underline">Privacy Policy</Link>.
                 </li>
                 <li>
                   Use of the Shift app is also governed by GSI&rsquo;s{' '}
-                  <Link href="/terms" className="text-lime">Terms of Service</Link>.
+                  <Link href="/terms" className="font-semibold text-forest underline-offset-4 hover:underline">Terms of Service</Link>.
                 </li>
                 <li>
                   For referral-gated prizes: users who share referral links are sharing their
@@ -589,26 +590,26 @@ export default async function ShiftYourSummerRulesPage() {
             <Section id="contact" title="14. Contact">
               <Ul>
                 <li>Green Streets Initiative</li>
-                <li><a href="mailto:keith@gogreenstreets.org" className="text-lime">keith@gogreenstreets.org</a></li>
+                <li><a href="mailto:keith@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">keith@gogreenstreets.org</a></li>
                 <li>519 Somerville Ave, Ste 2, Box 103, Somerville, MA 02143</li>
               </Ul>
             </Section>
 
           </div>
 
-          <hr className="my-10 border-white/[0.08]" />
+          <hr className="my-10 border-navy/10" />
 
           <div className="text-center">
             <Link
               href="/events/shift-your-summer"
-              className="inline-flex items-center justify-center rounded-full bg-[#BAF14D] px-8 py-4 text-center text-lg font-extrabold text-[#191A2E] transition-opacity hover:opacity-85"
+              className={PILL}
             >
               Learn about Shift Your Summer
             </Link>
           </div>
         </article>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }
@@ -618,7 +619,7 @@ export default async function ShiftYourSummerRulesPage() {
 function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
     <section id={id}>
-      <h2 className="mb-4 font-display text-xl font-bold tracking-tight text-white">{title}</h2>
+      <h2 className="mb-4 font-serif text-[1.75rem] font-normal leading-[1.1] text-navy">{title}</h2>
       <div className="space-y-4">{children}</div>
     </section>
   )
@@ -627,18 +628,18 @@ function Section({ id, title, children }: { id?: string; title: string; children
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-6">
-      <h3 className="mb-3 font-display text-base font-bold text-white">{title}</h3>
+      <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">{title}</h3>
       <div className="space-y-3">{children}</div>
     </div>
   )
 }
 
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="text-[0.9375rem] leading-[1.7] text-white">{children}</p>
+  return <p className="text-[1.0625rem] leading-[1.7] text-navy">{children}</p>
 }
 
 function Ul({ children }: { children: React.ReactNode }) {
-  return <ul className="list-disc space-y-1.5 pl-5 text-[0.9375rem] leading-[1.7] text-white">{children}</ul>
+  return <ul className="list-disc space-y-1.5 pl-5 text-[1.0625rem] leading-[1.7] text-navy">{children}</ul>
 }
 
 /* ── dynamic prize table ────────────────────────────────────── */
@@ -686,24 +687,24 @@ function PrizeTable({ prizes }: { prizes: Prize[] }) {
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-[0.875rem]">
           <thead>
-            <tr className="border-b border-white/[0.08]">
-              <th className="pb-3 pr-4 text-xs font-semibold uppercase tracking-widest text-white/70">Prize</th>
-              <th className="pb-3 pr-4 text-xs font-semibold uppercase tracking-widest text-white/70">ARV</th>
-              <th className="pb-3 pr-4 text-xs font-semibold uppercase tracking-widest text-white/70">Qty</th>
-              <th className="pb-3 pr-4 text-xs font-semibold uppercase tracking-widest text-white/70">Donated by</th>
-              <th className="pb-3 pr-4 text-xs font-semibold uppercase tracking-widest text-white/70">Entry mechanic</th>
-              <th className="pb-3 text-xs font-semibold uppercase tracking-widest text-white/70">Drawing date</th>
+            <tr className="border-b border-navy/10">
+              <th className="pb-3 pr-4 text-xs font-semibold uppercase tracking-widest text-ink-soft">Prize</th>
+              <th className="pb-3 pr-4 text-xs font-semibold uppercase tracking-widest text-ink-soft">ARV</th>
+              <th className="pb-3 pr-4 text-xs font-semibold uppercase tracking-widest text-ink-soft">Qty</th>
+              <th className="pb-3 pr-4 text-xs font-semibold uppercase tracking-widest text-ink-soft">Donated by</th>
+              <th className="pb-3 pr-4 text-xs font-semibold uppercase tracking-widest text-ink-soft">Entry mechanic</th>
+              <th className="pb-3 text-xs font-semibold uppercase tracking-widest text-ink-soft">Drawing date</th>
             </tr>
           </thead>
           <tbody>
             {prizes.map(p => (
-              <tr key={p.id} className="border-b border-white/[0.06]">
-                <td className="py-3 pr-4 text-white">{p.description}</td>
-                <td className="py-3 pr-4 text-white">{p.value_amount != null ? `$${p.value_amount.toLocaleString()}` : '—'}</td>
-                <td className="py-3 pr-4 text-white">{p.quantity}</td>
-                <td className="py-3 pr-4 text-white">{brandLabel(p) ?? '—'}</td>
-                <td className="py-3 pr-4 text-white">{entryMechanicLabel(p)}</td>
-                <td className="py-3 text-white">{drawingDateLabel(p)}</td>
+              <tr key={p.id} className="border-b border-navy/10">
+                <td className="py-3 pr-4 text-navy">{p.description}</td>
+                <td className="py-3 pr-4 text-navy">{p.value_amount != null ? `$${p.value_amount.toLocaleString()}` : '—'}</td>
+                <td className="py-3 pr-4 text-navy">{p.quantity}</td>
+                <td className="py-3 pr-4 text-navy">{brandLabel(p) ?? '—'}</td>
+                <td className="py-3 pr-4 text-navy">{entryMechanicLabel(p)}</td>
+                <td className="py-3 text-navy">{drawingDateLabel(p)}</td>
               </tr>
             ))}
           </tbody>
@@ -713,26 +714,26 @@ function PrizeTable({ prizes }: { prizes: Prize[] }) {
       {/* Mobile: stacked cards */}
       <div className="md:hidden space-y-3">
         {prizes.map(p => (
-          <div key={p.id} className="rounded-[12px] border border-white/[0.08] bg-white/[0.04] p-4">
-            <p className="font-semibold text-white">{p.description}</p>
+          <div key={p.id} className="rounded-[12px] border border-navy/10 bg-navy/[0.04] p-4">
+            <p className="font-semibold text-navy">{p.description}</p>
             <div className="mt-2 grid grid-cols-2 gap-y-1.5 text-sm">
-              <span className="text-white/75">ARV</span>
-              <span className="text-white">{p.value_amount != null ? `$${p.value_amount.toLocaleString()}` : '—'}</span>
-              <span className="text-white/75">Qty</span>
-              <span className="text-white">{p.quantity}</span>
-              <span className="text-white/75">Donated by</span>
-              <span className="text-white">{brandLabel(p) ?? '—'}</span>
-              <span className="text-white/75">Entry</span>
-              <span className="text-white">{entryMechanicLabel(p)}</span>
-              <span className="text-white/75">Drawing</span>
-              <span className="text-white">{drawingDateLabel(p)}</span>
+              <span className="text-ink-soft">ARV</span>
+              <span className="text-navy">{p.value_amount != null ? `$${p.value_amount.toLocaleString()}` : '—'}</span>
+              <span className="text-ink-soft">Qty</span>
+              <span className="text-navy">{p.quantity}</span>
+              <span className="text-ink-soft">Donated by</span>
+              <span className="text-navy">{brandLabel(p) ?? '—'}</span>
+              <span className="text-ink-soft">Entry</span>
+              <span className="text-navy">{entryMechanicLabel(p)}</span>
+              <span className="text-ink-soft">Drawing</span>
+              <span className="text-navy">{drawingDateLabel(p)}</span>
             </div>
           </div>
         ))}
       </div>
 
       {totalArv > 0 && (
-        <p className="mt-6 text-[0.9375rem] leading-[1.7] text-white">
+        <p className="mt-6 text-[1.0625rem] leading-[1.7] text-navy">
           <strong>Total approximate retail value of all prizes: ${totalArv.toLocaleString()}.</strong>
         </p>
       )}

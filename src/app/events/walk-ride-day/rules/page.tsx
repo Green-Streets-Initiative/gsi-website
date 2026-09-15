@@ -115,40 +115,40 @@ export default async function WalkRideDayRulesPage() {
 
   return (
     <>
-      <Nav />
-      <main className="bg-navy pt-[60px]">
-        <article className="mx-auto max-w-[720px] px-6 py-16 sm:py-20">
+      <Nav variant="light" />
+      <main className="bg-cream pt-[60px]">
+        <article className="mx-auto max-w-[720px] px-6 py-8 lg:py-10">
           <Link
             href="/events"
-            className="mb-8 inline-flex items-center gap-1.5 text-sm text-white/75 transition-colors hover:text-white"
+            className="mb-8 inline-flex items-center gap-1.5 text-[15px] font-semibold text-forest underline-offset-4 hover:underline"
           >
             &larr; Back to events
           </Link>
 
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-lime">Legal</p>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">Legal</p>
+          <h1 className="font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
             Official Rules
           </h1>
-          <p className="mt-3 text-sm text-white">
+          <p className="mt-4 text-[15px] text-ink-soft">
             {competition?.name ?? 'Walk/Ride Day'}{' '}&middot; Green Streets Initiative
           </p>
 
-          <div className="mt-6 rounded-[12px] border border-lime/25 bg-lime/[0.06] p-5">
-            <p className="text-[0.9375rem] leading-[1.7] text-white">
+          <div className="mt-6 rounded-[12px] border border-navy/10 bg-navy/[0.04] p-5">
+            <p className="text-[1.0625rem] leading-[1.7] text-navy">
               <strong>You are entered automatically.</strong> There is nothing to sign up for.
               Every qualifying trip you record in the Shift app on Walk/Ride Day enters you in
               the drawing. No purchase, payment, or entry action of any kind is necessary.
             </p>
           </div>
 
-          <hr className="my-10 border-white/[0.08]" />
+          <hr className="my-10 border-navy/10" />
 
           <nav aria-label="Table of contents" className="mb-10">
-            <h2 className="mb-4 font-display text-base font-bold text-white">Contents</h2>
-            <ol className="list-decimal space-y-1 pl-5 text-[0.875rem] leading-[1.6]">
+            <h2 className="mb-4 font-serif text-[1.375rem] leading-tight text-navy">Contents</h2>
+            <ol className="list-decimal space-y-1 pl-5 text-[15px] leading-[1.6]">
               {TOC.map(s => (
                 <li key={s.id}>
-                  <a href={`#${s.id}`} className="text-white/75 transition-colors hover:text-white">
+                  <a href={`#${s.id}`} className="font-semibold text-forest underline-offset-4 hover:underline">
                     {s.title}
                   </a>
                 </li>
@@ -156,7 +156,7 @@ export default async function WalkRideDayRulesPage() {
             </ol>
           </nav>
 
-          <hr className="my-10 border-white/[0.08]" />
+          <hr className="my-10 border-navy/10" />
 
           <div className="space-y-10">
 
@@ -166,9 +166,9 @@ export default async function WalkRideDayRulesPage() {
                 <li><strong>Sponsor:</strong> Green Streets Initiative, Inc., a 501(c)(3) nonprofit, Cambridge, MA (&ldquo;GSI&rdquo;)</li>
                 <li>
                   Administered through the Shift mobile app, available on the{' '}
-                  <a href="https://apps.apple.com/us/app/shift-by-gsi/id6761119037" className="text-lime">App Store</a>{' '}
+                  <a href="https://apps.apple.com/us/app/shift-by-gsi/id6761119037" className="font-semibold text-forest underline-offset-4 hover:underline">App Store</a>{' '}
                   and{' '}
-                  <a href="https://play.google.com/store/apps/details?id=org.greenstreets.shift" className="text-lime">Google Play</a>
+                  <a href="https://play.google.com/store/apps/details?id=org.greenstreets.shift" className="font-semibold text-forest underline-offset-4 hover:underline">Google Play</a>
                 </li>
                 <li>
                   This drawing is separate from, and independent of, the Shift Your Summer 2026
@@ -409,7 +409,7 @@ export default async function WalkRideDayRulesPage() {
                 <li>
                   Information collected in connection with this drawing is used to administer the
                   drawing and deliver prizes. It is handled in accordance with the{' '}
-                  <Link href="/privacy" className="text-lime">GSI Privacy Policy</Link>.
+                  <Link href="/privacy" className="font-semibold text-forest underline-offset-4 hover:underline">GSI Privacy Policy</Link>.
                 </li>
                 <li>
                   Date of birth and state of residence supplied when claiming a prize are used to
@@ -453,7 +453,7 @@ export default async function WalkRideDayRulesPage() {
             <Section id="contact" title="13. Contact">
               <P>
                 Questions about this drawing, or about a prize, can be sent to{' '}
-                <a href="mailto:info@gogreenstreets.org" className="text-lime">
+                <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">
                   info@gogreenstreets.org
                 </a>
                 .
@@ -466,7 +466,7 @@ export default async function WalkRideDayRulesPage() {
           </div>
         </article>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }
@@ -474,7 +474,7 @@ export default async function WalkRideDayRulesPage() {
 function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
     <section id={id}>
-      <h2 className="mb-4 font-display text-xl font-bold tracking-tight text-white">{title}</h2>
+      <h2 className="mb-4 font-serif text-[1.75rem] font-normal leading-[1.1] text-navy">{title}</h2>
       <div className="space-y-4">{children}</div>
     </section>
   )
@@ -483,16 +483,16 @@ function Section({ id, title, children }: { id?: string; title: string; children
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-6">
-      <h3 className="mb-3 font-display text-base font-bold text-white">{title}</h3>
+      <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">{title}</h3>
       <div className="space-y-3">{children}</div>
     </div>
   )
 }
 
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="text-[0.9375rem] leading-[1.7] text-white">{children}</p>
+  return <p className="text-[1.0625rem] leading-[1.7] text-navy">{children}</p>
 }
 
 function Ul({ children }: { children: React.ReactNode }) {
-  return <ul className="list-disc space-y-1.5 pl-5 text-[0.9375rem] leading-[1.7] text-white">{children}</ul>
+  return <ul className="list-disc space-y-1.5 pl-5 text-[1.0625rem] leading-[1.7] text-navy">{children}</ul>
 }

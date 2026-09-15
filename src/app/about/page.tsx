@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import FadeIn from '@/components/FadeIn'
+import { PILL } from '@/components/org/Section'
 
 export const metadata = {
   title: 'About — Green Streets Initiative',
@@ -149,26 +150,26 @@ const supportRows = [
 export default function AboutPage() {
   return (
     <>
-      <Nav />
+      <Nav variant="light" />
       <main>
         {/* ────────────────────────────────────────────────
             1 · HERO
         ──────────────────────────────────────────────── */}
-        <section className="relative flex min-h-screen flex-col justify-end overflow-hidden bg-[#1a3a2a] px-[clamp(1.5rem,5vw,6rem)] pb-16 pt-[60px]">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_70%,rgba(59,165,122,0.08)_0%,transparent_60%)]" />
+        <section className="relative flex min-h-screen flex-col justify-end overflow-hidden bg-cream px-[clamp(1.5rem,5vw,6rem)] pb-16 pt-[60px]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_70%,rgba(45,106,79,0.08)_0%,transparent_60%)]" />
           <div className="relative z-10 max-w-[800px]">
             <FadeIn>
-              <p className="mb-8 font-sans text-[0.7rem] font-medium uppercase tracking-[0.25em] text-white/60">
+              <p className="mb-8 font-sans text-[0.7rem] font-medium uppercase tracking-[0.25em] text-ink-soft">
                 Strategic Vision &nbsp;&middot;&nbsp; Spring 2026
               </p>
             </FadeIn>
             <FadeIn delay={0.15}>
-              <h1 className="mb-8 font-serif text-[clamp(3rem,8vw,6rem)] font-normal leading-[1.05] text-[#f8f6f1]">
-                2026<br />and <em className="text-[#b8e6ce]">Beyond</em>
+              <h1 className="mb-8 font-serif text-[clamp(3rem,8vw,6rem)] font-normal leading-[1.05] text-navy">
+                2026<br />and <em className="text-forest">Beyond</em>
               </h1>
             </FadeIn>
             <FadeIn delay={0.3}>
-              <p className="max-w-[540px] font-serif text-[clamp(1.1rem,2.5vw,1.4rem)] italic leading-relaxed text-white/75">
+              <p className="max-w-[540px] font-serif text-[clamp(1.1rem,2.5vw,1.4rem)] italic leading-relaxed text-ink-soft">
                 Helping people shift trips to healthier, more affordable, and more fun
                 alternatives. Measuring the impact, trip by trip, community by community.
               </p>
@@ -179,18 +180,18 @@ export default function AboutPage() {
                   href="/GSI_Strategic_Vision_2026.pdf"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-sans text-[0.8rem] font-medium text-[#b8e6ce] underline underline-offset-2 transition-opacity hover:opacity-80"
+                  className="font-sans text-[0.8rem] font-medium text-forest underline underline-offset-2 transition-opacity hover:opacity-80"
                 >
                   Download the Strategic Vision (PDF)
                 </a>
                 <span className="hidden items-center gap-4 sm:flex">
-                  <span className="font-sans text-[0.75rem] uppercase tracking-[0.15em] text-white/60">
+                  <span className="font-sans text-[0.75rem] uppercase tracking-[0.15em] text-ink-soft">
                     gogreenstreets.org
                   </span>
-                  <span className="h-px w-10 bg-white/20" />
+                  <span className="h-px w-10 bg-navy/20" />
                   <span className="flex items-center gap-1.5">
-                    <span className="font-sans text-[1.1rem] font-bold text-[#b8e6ce]">Green Streets</span>
-                    <span className="font-sans text-[1.1rem] font-light text-white/80">Initiative</span>
+                    <span className="font-sans text-[1.1rem] font-bold text-forest">Green Streets</span>
+                    <span className="font-sans text-[1.1rem] font-light text-navy">Initiative</span>
                   </span>
                 </span>
               </div>
@@ -201,19 +202,19 @@ export default function AboutPage() {
         {/* ────────────────────────────────────────────────
             2 · OUR STORY
         ──────────────────────────────────────────────── */}
-        <section className="bg-[#f8f6f1] px-[clamp(1.5rem,5vw,6rem)] py-16">
+        <section className="bg-white px-[clamp(1.5rem,5vw,6rem)] py-16">
           <div className="mx-auto max-w-[960px]">
             <FadeIn>
               <div className="grid grid-cols-[3px_1fr] items-start gap-6">
-                <div className="mt-1 h-full w-[3px] rounded-sm bg-[#3BA57A]" />
+                <div className="mt-1 h-full w-[3px] rounded-sm bg-forest" />
                 <div>
-                  <p className="mb-4 font-serif text-[clamp(1.15rem,2.5vw,1.4rem)] leading-relaxed text-[#1a1a1a]">
+                  <p className="mb-4 font-serif text-[clamp(1.15rem,2.5vw,1.4rem)] leading-relaxed text-navy">
                     Green Streets Initiative was founded in 2006 by Janie Katz-Christy to make
                     active transportation a visible, celebrated part of daily life in Greater Boston.
                     For twenty years, GSI built community around walking, biking, and transit through
                     events, storytelling, and grassroots advocacy.
                   </p>
-                  <p className="font-sans text-[0.95rem] leading-[1.7] text-[#3a3f48]">
+                  <p className="font-sans text-[0.95rem] leading-[1.7] text-ink-soft">
                     Now under new leadership, GSI is bringing that foundation into a
                     technology-enabled model designed to scale &mdash; anchored by <strong>Shift</strong>,
                     a mobile platform that makes active transportation fun, rewarding, and
@@ -228,39 +229,39 @@ export default function AboutPage() {
         {/* ────────────────────────────────────────────────
             3 · THE PARADOX
         ──────────────────────────────────────────────── */}
-        <section className="bg-[#fdfcf9] px-[clamp(1.5rem,5vw,6rem)] py-20">
+        <section className="bg-cream px-[clamp(1.5rem,5vw,6rem)] py-20">
           <div className="mx-auto max-w-[960px]">
             <FadeIn>
-              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-[#3BA57A]">
+              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-forest">
                 Part One &middot; The Landscape
               </p>
-              <h2 className="mb-6 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-[#1a1a1a]">
+              <h2 className="mb-6 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-navy">
                 The Paradox
               </h2>
             </FadeIn>
             <FadeIn delay={0.1}>
-              <p className="mb-2 max-w-[700px] font-serif text-[clamp(1.3rem,3vw,1.8rem)] italic leading-[1.4] text-[#1a1a1a]">
+              <p className="mb-2 max-w-[700px] font-serif text-[clamp(1.3rem,3vw,1.8rem)] italic leading-[1.4] text-navy">
                 It has never been easier to choose active transportation.
               </p>
-              <p className="mb-12 font-sans text-base text-[#6b7280]">
+              <p className="mb-12 font-sans text-base text-ink-soft">
                 The question is why more people don&apos;t &mdash; and what would help them start.
               </p>
             </FadeIn>
             <FadeIn delay={0.15}>
-              <hr className="m-0 border-t border-[#d4d0c8]" />
+              <hr className="m-0 border-t border-navy/10" />
               <div className="grid grid-cols-2 lg:grid-cols-3">
                 {paradoxStats.map((s, i) => (
                   <div key={i} className="p-6 text-center">
-                    <div className="mb-1 font-serif text-[clamp(2rem,4vw,3rem)] font-normal leading-none text-[#3BA57A]">
+                    <div className="mb-1 font-serif text-[clamp(2rem,4vw,3rem)] font-normal leading-none text-forest">
                       {s.value}
                     </div>
-                    <div className="mx-auto max-w-[180px] font-sans text-[0.8rem] leading-[1.4] text-[#6b7280]">
+                    <div className="mx-auto max-w-[180px] font-sans text-[0.8rem] leading-[1.4] text-ink-soft">
                       {s.label}
                     </div>
                   </div>
                 ))}
               </div>
-              <hr className="m-0 border-t border-[#d4d0c8]" />
+              <hr className="m-0 border-t border-navy/10" />
             </FadeIn>
           </div>
         </section>
@@ -268,19 +269,19 @@ export default function AboutPage() {
         {/* ────────────────────────────────────────────────
             4 · WHAT WE HEARD
         ──────────────────────────────────────────────── */}
-        <section className="bg-[#f8f6f1] px-[clamp(1.5rem,5vw,6rem)] py-20">
+        <section className="bg-white px-[clamp(1.5rem,5vw,6rem)] py-20">
           <div className="mx-auto max-w-[960px]">
             <FadeIn>
-              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-[#3BA57A]">
+              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-forest">
                 Part One &middot; The Landscape
               </p>
-              <h2 className="mb-4 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-[#1a1a1a]">
+              <h2 className="mb-4 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-navy">
                 What We Heard
               </h2>
-              <p className="mb-4 font-serif text-[1.25rem] italic text-[#1a1a1a]">
+              <p className="mb-4 font-serif text-[1.25rem] italic text-navy">
                 Three months of listening.
               </p>
-              <p className="mb-10 max-w-[640px] font-sans text-[0.95rem] leading-[1.7] text-[#3a3f48]">
+              <p className="mb-10 max-w-[640px] font-sans text-[0.95rem] leading-[1.7] text-ink-soft">
                 A structured research process to assess the Greater Boston active transportation
                 landscape: key challenges, where the gaps are, and where we can best help.
               </p>
@@ -289,29 +290,29 @@ export default function AboutPage() {
               <div className="mb-12 grid grid-cols-2 gap-6 lg:grid-cols-4">
                 {researchStats.map((s, i) => (
                   <div key={i} className="p-6 text-center">
-                    <div className="mb-1 font-serif text-[clamp(2rem,4vw,3rem)] font-normal leading-none text-[#3BA57A]">
+                    <div className="mb-1 font-serif text-[clamp(2rem,4vw,3rem)] font-normal leading-none text-forest">
                       {s.value}
                     </div>
-                    <div className="mx-auto max-w-[180px] font-sans text-[0.8rem] leading-[1.4] text-[#6b7280]">
+                    <div className="mx-auto max-w-[180px] font-sans text-[0.8rem] leading-[1.4] text-ink-soft">
                       {s.label}
                     </div>
                   </div>
                 ))}
               </div>
             </FadeIn>
-            <hr className="m-0 border-t border-[#d4d0c8]" />
+            <hr className="m-0 border-t border-navy/10" />
             <div className="mt-10">
               {themes.map((t, i) => (
                 <FadeIn key={i} delay={0.1 * i}>
                   <div className="mb-8 grid grid-cols-[3rem_1fr] items-start gap-4">
-                    <span className="font-serif text-[2rem] leading-none text-[#3BA57A]">
+                    <span className="font-serif text-[2rem] leading-none text-forest">
                       {t.num}
                     </span>
                     <div>
-                      <h3 className="mb-1 font-sans text-[1.05rem] font-semibold text-[#1a1a1a]">
+                      <h3 className="mb-1 font-sans text-[1.05rem] font-semibold text-navy">
                         {t.title}
                       </h3>
-                      <p className="font-sans text-[0.9rem] leading-[1.7] text-[#3a3f48]">
+                      <p className="font-sans text-[0.9rem] leading-[1.7] text-ink-soft">
                         {t.body}
                       </p>
                     </div>
@@ -325,16 +326,16 @@ export default function AboutPage() {
         {/* ────────────────────────────────────────────────
             5 · WHERE WE FIT
         ──────────────────────────────────────────────── */}
-        <section className="bg-[#fdfcf9] px-[clamp(1.5rem,5vw,6rem)] py-20">
+        <section className="bg-cream px-[clamp(1.5rem,5vw,6rem)] py-20">
           <div className="mx-auto max-w-[960px]">
             <FadeIn>
-              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-[#3BA57A]">
+              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-forest">
                 Part One &middot; The Landscape
               </p>
-              <h2 className="mb-4 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-[#1a1a1a]">
+              <h2 className="mb-4 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-navy">
                 Where We Fit
               </h2>
-              <p className="mb-10 font-serif text-[1.25rem] italic text-[#1a1a1a]">
+              <p className="mb-10 font-serif text-[1.25rem] italic text-navy">
                 A complementary layer.
               </p>
             </FadeIn>
@@ -342,14 +343,14 @@ export default function AboutPage() {
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse font-sans text-[0.85rem]">
                   <thead>
-                    <tr className="border-b-2 border-[#1a1a1a]">
-                      <th className="p-3 text-left text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[#6b7280]">
+                    <tr className="border-b-2 border-navy">
+                      <th className="p-3 text-left text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-ink-soft">
                         Layer
                       </th>
-                      <th className="p-3 text-left text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[#6b7280]">
+                      <th className="p-3 text-left text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-ink-soft">
                         Who&apos;s Active
                       </th>
-                      <th className="p-3 text-left text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[#6b7280]">
+                      <th className="p-3 text-left text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-ink-soft">
                         GSI&apos;s Relationship
                       </th>
                     </tr>
@@ -358,13 +359,13 @@ export default function AboutPage() {
                     {ecosystemRows.map((r, i) => (
                       <tr
                         key={i}
-                        className={`border-b border-[#d4d0c8] ${r.highlight ? 'bg-[#3BA57A]/[0.06]' : ''}`}
+                        className={`border-b border-navy/10 ${r.highlight ? 'bg-forest/[0.06]' : ''}`}
                       >
-                        <td className={`whitespace-nowrap p-3 ${r.highlight ? 'font-semibold text-[#3BA57A]' : 'font-medium text-[#1a1a1a]'}`}>
+                        <td className={`whitespace-nowrap p-3 ${r.highlight ? 'font-semibold text-forest' : 'font-medium text-navy'}`}>
                           {r.layer}
                         </td>
-                        <td className="p-3 text-[#3a3f48]">{r.who}</td>
-                        <td className={`p-3 text-[#3a3f48] ${r.highlight ? 'font-semibold' : ''}`}>
+                        <td className="p-3 text-ink-soft">{r.who}</td>
+                        <td className={`p-3 text-ink-soft ${r.highlight ? 'font-semibold' : ''}`}>
                           {r.rel}
                         </td>
                       </tr>
@@ -379,16 +380,16 @@ export default function AboutPage() {
         {/* ────────────────────────────────────────────────
             6 · THEORY OF CHANGE
         ──────────────────────────────────────────────── */}
-        <section className="bg-[#1a3a2a] px-[clamp(1.5rem,5vw,6rem)] py-20">
+        <section className="bg-white px-[clamp(1.5rem,5vw,6rem)] py-20">
           <div className="mx-auto max-w-[960px]">
             <FadeIn>
-              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-[#3BA57A]">
+              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-forest">
                 Part Two &middot; How It Works
               </p>
-              <h2 className="mb-6 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-[#f8f6f1]">
-                The journey to<br /><em className="text-[#b8e6ce]">first shift.</em>
+              <h2 className="mb-6 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-navy">
+                The journey to<br /><em className="text-forest">first shift.</em>
               </h2>
-              <p className="mb-12 max-w-[640px] font-sans text-[0.95rem] leading-[1.7] text-white/75">
+              <p className="mb-12 max-w-[640px] font-sans text-[0.95rem] leading-[1.7] text-ink-soft">
                 Behavior change starts with a receptive moment. GSI meets people at that moment
                 with a first experience &mdash; and keeps them engaged after the first shift.
               </p>
@@ -396,19 +397,19 @@ export default function AboutPage() {
 
             {/* Receptive moments */}
             <FadeIn delay={0.1}>
-              <p className="mb-3 font-sans text-[0.7rem] font-semibold uppercase tracking-[0.15em] text-white/60">
+              <p className="mb-3 font-sans text-[0.7rem] font-semibold uppercase tracking-[0.15em] text-ink-soft">
                 Receptive Moments We Target
               </p>
               <div className="mb-12 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {receptiveMoments.map((m, i) => (
                   <div
                     key={i}
-                    className="rounded-md border border-white/10 bg-white/[0.04] p-4"
+                    className="rounded-[12px] border border-navy/10 bg-cream p-4"
                   >
-                    <div className="mb-1 font-sans text-[0.9rem] font-semibold text-[#f8f6f1]">
+                    <div className="mb-1 font-sans text-[0.9rem] font-semibold text-navy">
                       {m.event}
                     </div>
-                    <div className="font-sans text-[0.75rem] leading-[1.4] text-white/60">
+                    <div className="font-sans text-[0.75rem] leading-[1.4] text-ink-soft">
                       {m.channel}
                     </div>
                   </div>
@@ -422,18 +423,18 @@ export default function AboutPage() {
                 {journeySteps.map((s, i) => (
                   <div key={i} className="flex shrink-0 items-center">
                     <div
-                      className="w-[130px] rounded-lg border border-[#3BA57A]/20 p-4 text-center"
-                      style={{ background: `rgba(59,165,122,${0.08 + i * 0.04})` }}
+                      className="w-[130px] rounded-lg border border-forest/20 p-4 text-center"
+                      style={{ background: `rgba(45,106,79,${0.08 + i * 0.04})` }}
                     >
-                      <div className="mb-2 whitespace-pre-line font-sans text-[0.85rem] font-bold leading-[1.3] text-[#f8f6f1]">
+                      <div className="mb-2 whitespace-pre-line font-sans text-[0.85rem] font-bold leading-[1.3] text-navy">
                         {s.title}
                       </div>
-                      <div className="font-sans text-[0.7rem] leading-[1.4] text-white/60">
+                      <div className="font-sans text-[0.7rem] leading-[1.4] text-ink-soft">
                         {s.sub}
                       </div>
                     </div>
                     {i < journeySteps.length - 1 && (
-                      <span className="mx-1.5 shrink-0 text-[1.2rem] text-[#3BA57A]">&rsaquo;</span>
+                      <span className="mx-1.5 shrink-0 text-[1.2rem] text-forest">&rsaquo;</span>
                     )}
                   </div>
                 ))}
@@ -442,11 +443,11 @@ export default function AboutPage() {
 
             {/* North Star */}
             <FadeIn delay={0.25}>
-              <div className="mt-12 rounded-r-md border-l-[3px] border-[#3BA57A] bg-[#3BA57A]/[0.08] p-6">
-                <p className="mb-2 font-sans text-[0.85rem] font-semibold uppercase tracking-[0.1em] text-[#3BA57A]">
+              <div className="mt-12 rounded-r-md border-l-[3px] border-forest bg-forest/[0.08] p-6">
+                <p className="mb-2 font-sans text-[0.85rem] font-semibold uppercase tracking-[0.1em] text-forest">
                   North Star Metric
                 </p>
-                <p className="font-serif text-[1.15rem] leading-relaxed text-[#f8f6f1]">
+                <p className="font-serif text-[1.15rem] leading-relaxed text-navy">
                   Our north star is <strong>trips shifted</strong>. Every trip generates outcomes we can
                   report: money saved, fitness gained, emissions avoided, congestion reduced.
                 </p>
@@ -458,27 +459,27 @@ export default function AboutPage() {
         {/* ────────────────────────────────────────────────
             7 · OUR PROGRAMS
         ──────────────────────────────────────────────── */}
-        <section className="bg-[#f8f6f1] px-[clamp(1.5rem,5vw,6rem)] py-20">
+        <section className="bg-cream px-[clamp(1.5rem,5vw,6rem)] py-20">
           <div className="mx-auto max-w-[960px]">
             <FadeIn>
-              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-[#3BA57A]">
+              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-forest">
                 Part Two &middot; How It Works
               </p>
-              <h2 className="mb-6 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-[#1a1a1a]">
+              <h2 className="mb-6 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-navy">
                 Four programs, working together.
               </h2>
             </FadeIn>
             <div className="mt-4 grid grid-cols-1 gap-8 md:grid-cols-2">
               {programs.map((p, i) => (
                 <FadeIn key={i} delay={0.08 * i}>
-                  <div className="h-full rounded-lg border border-[#d4d0c8] bg-[#fdfcf9] p-6">
-                    <span className="mb-2 block font-serif text-[1.8rem] text-[#3BA57A]">
+                  <div className="h-full rounded-[14px] border border-navy/10 bg-white p-6">
+                    <span className="mb-2 block font-serif text-[1.8rem] text-forest">
                       {p.num}
                     </span>
-                    <h3 className="mb-2 font-sans text-[1.05rem] font-bold text-[#1a1a1a]">
+                    <h3 className="mb-2 font-sans text-[1.05rem] font-bold text-navy">
                       {p.name}
                     </h3>
-                    <p className="font-sans text-[0.85rem] leading-[1.7] text-[#3a3f48]">
+                    <p className="font-sans text-[0.85rem] leading-[1.7] text-ink-soft">
                       {p.desc}
                     </p>
                   </div>
@@ -491,45 +492,45 @@ export default function AboutPage() {
         {/* ────────────────────────────────────────────────
             8 · FLAGSHIP CAMPAIGNS
         ──────────────────────────────────────────────── */}
-        <section className="bg-[#fdfcf9] px-[clamp(1.5rem,5vw,6rem)] py-20">
+        <section className="bg-white px-[clamp(1.5rem,5vw,6rem)] py-20">
           <div className="mx-auto max-w-[960px]">
             <FadeIn>
-              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-[#3BA57A]">
+              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-forest">
                 Part Three &middot; The Year Ahead
               </p>
-              <h2 className="mb-6 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-[#1a1a1a]">
+              <h2 className="mb-6 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-navy">
                 Two seasonal windows.
               </h2>
             </FadeIn>
             <div className="mt-4 grid grid-cols-1 gap-8 md:grid-cols-2">
               <FadeIn delay={0.1}>
-                <div className="rounded-lg border-t-[3px] border-t-[#3BA57A] bg-[#f8f6f1] p-8">
-                  <h3 className="mb-1 font-serif text-[1.6rem] text-[#1a1a1a]">
+                <div className="rounded-lg border-t-[3px] border-t-forest bg-cream p-8">
+                  <h3 className="mb-1 font-serif text-[1.6rem] text-navy">
                     Shift Your Summer
                   </h3>
-                  <p className="mb-4 font-sans text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[#3BA57A]">
+                  <p className="mb-4 font-sans text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-forest">
                     June &ndash; August 2026
                   </p>
-                  <p className="mb-4 font-sans text-[0.9rem] leading-[1.7] text-[#3a3f48]">
+                  <p className="mb-4 font-sans text-[0.9rem] leading-[1.7] text-ink-soft">
                     The season when active transportation is most accessible. A community-wide
                     challenge with neighborhood leaderboards, employer team challenges, and
                     prizes.
                   </p>
-                  <p className="font-sans text-[0.8rem] italic leading-relaxed text-[#6b7280]">
+                  <p className="font-sans text-[0.8rem] italic leading-relaxed text-ink-soft">
                     Curated Roams: The Bakery Run &middot; The Emerald Necklace Ride &middot;
                     The Charles Loop &middot; Harbor Walk to Eastie Eats &middot; The Freedom Trail
                   </p>
                 </div>
               </FadeIn>
               <FadeIn delay={0.2}>
-                <div className="rounded-lg border-t-[3px] border-t-[#3BA57A] bg-[#f8f6f1] p-8">
-                  <h3 className="mb-1 font-serif text-[1.6rem] text-[#1a1a1a]">
+                <div className="rounded-lg border-t-[3px] border-t-forest bg-cream p-8">
+                  <h3 className="mb-1 font-serif text-[1.6rem] text-navy">
                     Shift Your September
                   </h3>
-                  <p className="mb-4 font-sans text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[#3BA57A]">
+                  <p className="mb-4 font-sans text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-forest">
                     September 2026
                   </p>
-                  <p className="font-sans text-[0.9rem] leading-[1.7] text-[#3a3f48]">
+                  <p className="font-sans text-[0.9rem] leading-[1.7] text-ink-soft">
                     September 1 is move-in day across the region. Back-to-school is when families
                     establish new routines and school programs launch. These are receptive moments &mdash;
                     Shift Your September brings schools, employers, and communities together under
@@ -539,7 +540,7 @@ export default function AboutPage() {
               </FadeIn>
             </div>
             <FadeIn delay={0.25}>
-              <p className="mt-8 font-sans text-[0.85rem] font-semibold leading-[1.7] text-[#1a1a1a]">
+              <p className="mt-8 font-sans text-[0.85rem] font-semibold leading-[1.7] text-navy">
                 Both campaigns are open for presenting sponsors and community partners.
                 Each includes co-branded visibility, social content, and a post-campaign
                 impact report with measurable outcomes.
@@ -551,41 +552,41 @@ export default function AboutPage() {
         {/* ────────────────────────────────────────────────
             9 · HOW YOU CAN SUPPORT US
         ──────────────────────────────────────────────── */}
-        <section className="bg-[#1a3a2a] px-[clamp(1.5rem,5vw,6rem)] py-20">
+        <section className="bg-cream px-[clamp(1.5rem,5vw,6rem)] py-20">
           <div className="mx-auto max-w-[960px]">
             <FadeIn>
-              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-[#3BA57A]">
+              <p className="mb-2 font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em] text-forest">
                 Part Three &middot; The Year Ahead
               </p>
-              <h2 className="mb-6 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-[#f8f6f1]">
+              <h2 className="mb-6 font-serif text-[clamp(2rem,5vw,3.2rem)] font-normal leading-[1.1] tracking-tight text-navy">
                 How you can support GSI &mdash;<br />
-                <em className="text-[#b8e6ce]">and how we can support you.</em>
+                <em className="text-forest">and how we can support you.</em>
               </h2>
             </FadeIn>
 
             {/* Desktop: grid table */}
             <div className="mt-4 hidden md:block">
               {/* Header row */}
-              <div className="grid grid-cols-[160px_1fr_1fr] gap-6 border-b border-white/25 py-3">
+              <div className="grid grid-cols-[160px_1fr_1fr] gap-6 border-b border-navy/25 py-3">
                 <span />
-                <span className="font-sans text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-white/60">
+                <span className="font-sans text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-ink-soft">
                   How you can support us
                 </span>
-                <span className="font-sans text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-white/60">
+                <span className="font-sans text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-ink-soft">
                   How we can support you
                 </span>
               </div>
               {/* Data rows */}
               {supportRows.map((a, i) => (
                 <FadeIn key={i} delay={0.06 * i}>
-                  <div className="grid grid-cols-[160px_1fr_1fr] items-start gap-6 border-b border-white/10 py-5">
-                    <span className="font-sans text-[0.85rem] font-semibold text-[#f8f6f1]">
+                  <div className="grid grid-cols-[160px_1fr_1fr] items-start gap-6 border-b border-navy/10 py-5">
+                    <span className="font-sans text-[0.85rem] font-semibold text-navy">
                       {a.who}
                     </span>
-                    <p className="font-sans text-[0.8rem] leading-[1.7] text-white/75">
+                    <p className="font-sans text-[0.8rem] leading-[1.7] text-ink-soft">
                       {a.give}
                     </p>
-                    <p className="font-sans text-[0.8rem] leading-[1.7] text-[#b8e6ce]">
+                    <p className="font-sans text-[0.8rem] leading-[1.7] text-forest">
                       {a.get}
                     </p>
                   </div>
@@ -597,20 +598,20 @@ export default function AboutPage() {
             <div className="mt-4 flex flex-col gap-6 md:hidden">
               {supportRows.map((a, i) => (
                 <FadeIn key={i} delay={0.06 * i}>
-                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
-                    <h3 className="mb-3 font-sans text-[0.95rem] font-semibold text-[#f8f6f1]">
+                  <div className="rounded-[14px] border border-navy/10 bg-white p-5">
+                    <h3 className="mb-3 font-sans text-[0.95rem] font-semibold text-navy">
                       {a.who}
                     </h3>
-                    <p className="mb-1 font-sans text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-white/60">
+                    <p className="mb-1 font-sans text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-ink-soft">
                       How you can support us
                     </p>
-                    <p className="mb-4 font-sans text-[0.8rem] leading-[1.7] text-white/75">
+                    <p className="mb-4 font-sans text-[0.8rem] leading-[1.7] text-ink-soft">
                       {a.give}
                     </p>
-                    <p className="mb-1 font-sans text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-white/60">
+                    <p className="mb-1 font-sans text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-ink-soft">
                       How we can support you
                     </p>
-                    <p className="font-sans text-[0.8rem] leading-[1.7] text-[#b8e6ce]">
+                    <p className="font-sans text-[0.8rem] leading-[1.7] text-forest">
                       {a.get}
                     </p>
                   </div>
@@ -623,29 +624,29 @@ export default function AboutPage() {
         {/* ────────────────────────────────────────────────
             10 · FOOTER CTA
         ──────────────────────────────────────────────── */}
-        <section className="border-t border-white/10 bg-[#1a3a2a] px-[clamp(1.5rem,5vw,6rem)] py-16">
+        <section className="border-t border-navy/10 bg-cream px-[clamp(1.5rem,5vw,6rem)] py-16">
           <div className="mx-auto max-w-[960px] text-center">
             <FadeIn>
-              <h2 className="mb-1 font-serif text-[clamp(2rem,5vw,3.5rem)] font-normal text-[#f8f6f1]">
-                Help make <em className="text-[#b8e6ce]">shift</em> happen.
+              <h2 className="mb-1 font-serif text-[clamp(2rem,5vw,3.5rem)] font-normal text-navy">
+                Help make <em className="text-forest">shift</em> happen.
               </h2>
-              <p className="mt-5 font-sans text-base text-white/75">
+              <p className="mt-5 font-sans text-base text-ink-soft">
                 Looking for ways to get involved?
               </p>
-              <p className="mx-auto mb-10 mt-2 max-w-[480px] font-sans text-[0.9rem] leading-[1.7] text-white/60">
+              <p className="mx-auto mb-10 mt-2 max-w-[480px] font-sans text-[0.9rem] leading-[1.7] text-ink-soft">
                 Download Shift and start tracking your trips. Tell a school, an employer, or
                 a local business. Become a Rewards Partner. Join the Board. Make a tax-deductible donation.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <Link
                   href="https://www.gogreenstreets.org/app"
-                  className="inline-block rounded-md bg-[#b8e6ce] px-6 py-3 font-sans text-[0.85rem] font-semibold text-[#1a3a2a] no-underline transition-opacity hover:opacity-85"
+                  className={PILL}
                 >
                   Download Shift
                 </Link>
                 <Link
                   href="/donate"
-                  className="inline-block rounded-md border border-white/30 bg-transparent px-6 py-3 font-sans text-[0.85rem] font-semibold text-[#f8f6f1] no-underline transition-opacity hover:opacity-85"
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
                 >
                   Support GSI
                 </Link>
@@ -654,19 +655,19 @@ export default function AboutPage() {
                 href="/GSI_Strategic_Vision_2026.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-6 inline-block font-sans text-[0.8rem] text-white/60 underline underline-offset-2 transition-opacity hover:opacity-80"
+                className="mt-6 inline-block font-sans text-[15px] font-semibold text-forest underline-offset-4 hover:underline"
               >
                 Download the full Strategic Vision (PDF)
               </a>
             </FadeIn>
 
             {/* Branding footer */}
-            <div className="mt-16 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-8">
+            <div className="mt-16 flex flex-wrap items-center justify-between gap-4 border-t border-navy/10 pt-8">
               <div>
-                <span className="font-sans text-base font-bold text-[#b8e6ce]">Green Streets </span>
-                <span className="font-sans text-base font-light text-white/75">Initiative</span>
+                <span className="font-sans text-base font-bold text-forest">Green Streets </span>
+                <span className="font-sans text-base font-light text-navy">Initiative</span>
               </div>
-              <div className="font-sans text-[0.75rem] text-white/60">
+              <div className="font-sans text-[0.75rem] text-ink-soft">
                 501(c)(3) nonprofit &nbsp;&middot;&nbsp; keith@gogreenstreets.org
               </div>
             </div>
@@ -674,7 +675,7 @@ export default function AboutPage() {
         </section>
 
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

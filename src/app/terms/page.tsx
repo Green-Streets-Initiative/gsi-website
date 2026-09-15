@@ -9,22 +9,22 @@ export const metadata = {
 export default function TermsPage() {
   return (
     <>
-      <Nav />
-      <main className="bg-navy pt-[60px]">
-        <article className="mx-auto max-w-[720px] px-6 py-16 sm:py-20">
+      <Nav variant="light" />
+      <main className="bg-cream pt-[60px]">
+        <article className="mx-auto max-w-[720px] px-6 py-8 lg:py-10">
           {/* Header */}
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-lime">Legal</p>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">Legal</p>
+          <h1 className="font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
             Terms of Service
           </h1>
-          <p className="mt-3 text-sm text-white">
+          <p className="mt-4 text-[15px] text-ink-soft">
             Shift by Green Streets Initiative &middot; Last updated May 2026
           </p>
-          <p className="mt-1 text-sm text-white">
-            Contact: <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>
+          <p className="mt-1 text-[15px] text-ink-soft">
+            Contact: <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>
           </p>
 
-          <hr className="my-10 border-white/[0.08]" />
+          <hr className="my-10 border-navy/10" />
 
           {/* Content */}
           <div className="space-y-10">
@@ -44,7 +44,7 @@ export default function TermsPage() {
                 By downloading the app, creating an account, accepting these Terms, accessing
                 the website, or otherwise using Shift or our services, you agree to be legally
                 bound by these Terms, our{' '}
-                <a href="/privacy" className="text-lime">Privacy Policy</a>, any applicable
+                <a href="/privacy" className="font-semibold text-forest underline-offset-4 hover:underline">Privacy Policy</a>, any applicable
                 Official Rules, program-specific consent terms, rewards partner agreements, and
                 any other terms that apply to a specific feature, campaign, competition, reward,
                 or program. If you do not agree to these Terms, please do not use Shift, the
@@ -96,7 +96,7 @@ export default function TermsPage() {
                 confidentiality of your login information, and all activity that occurs under
                 your account. If you believe your account has been compromised, contact us
                 at{' '}
-                <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>{' '}
+                <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>{' '}
                 immediately.
               </P>
               <P>
@@ -296,7 +296,7 @@ export default function TermsPage() {
                 your content to be shared with third-party planning organizations. You may
                 withdraw consent and request deletion of your submissions at any time by
                 contacting{' '}
-                <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>.
+                <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>.
               </P>
               <P>
                 You represent and warrant that you have all rights, permissions, and consents
@@ -322,7 +322,7 @@ export default function TermsPage() {
             <Section title="Privacy">
               <P>
                 Your use of Shift, the website, and related services is governed by our{' '}
-                <a href="/privacy" className="text-lime">Privacy Policy</a>, which is
+                <a href="/privacy" className="font-semibold text-forest underline-offset-4 hover:underline">Privacy Policy</a>, which is
                 incorporated into and made part of these Terms by reference. By using Shift, the
                 website, or related services, you agree that GSI may collect, use, disclose,
                 retain, and protect information as described in the Privacy Policy and any
@@ -669,7 +669,7 @@ export default function TermsPage() {
               <P>
                 Green Streets Initiative<br />
                 Cambridge, Massachusetts<br />
-                <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>
+                <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>
               </P>
               <P>
                 If you have questions about these Terms, please reach out. We&apos;re a small
@@ -679,7 +679,7 @@ export default function TermsPage() {
           </div>
         </article>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }
@@ -689,16 +689,16 @@ export default function TermsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-4 font-display text-xl font-bold tracking-tight text-white">{title}</h2>
+      <h2 className="mb-4 font-serif text-[1.75rem] font-normal leading-[1.1] text-navy">{title}</h2>
       <div className="space-y-4">{children}</div>
     </section>
   )
 }
 
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="text-[0.9375rem] leading-[1.7] text-white">{children}</p>
+  return <p className="text-[1.0625rem] leading-[1.7] text-navy">{children}</p>
 }
 
 function Ul({ children }: { children: React.ReactNode }) {
-  return <ul className="list-disc space-y-1.5 pl-5 text-[0.9375rem] leading-[1.7] text-white">{children}</ul>
+  return <ul className="list-disc space-y-1.5 pl-5 text-[1.0625rem] leading-[1.7] text-navy">{children}</ul>
 }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import { PILL } from '@/components/org/Section'
 import ShareKit from './ShareKit'
 
 export const metadata: Metadata = {
@@ -40,21 +41,21 @@ export default async function SharePage({
 
   return (
     <>
-      <Nav />
-      <main className="bg-[#191A2E] text-white" style={{ paddingTop: '60px' }}>
-        <section className="px-8 py-16 md:py-20">
+      <Nav variant="light" />
+      <main className="bg-cream text-navy" style={{ paddingTop: '60px' }}>
+        <section className="px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[680px]">
             <Link
               href="/events/shift-your-summer"
-              className="mb-8 inline-flex items-center gap-1.5 text-sm text-white/75 transition-colors hover:text-white"
+              className="mb-8 inline-flex items-center gap-1.5 text-[15px] font-semibold text-forest underline-offset-4 hover:underline"
             >
               &larr; Back to Shift Your Summer
             </Link>
 
-            <h1 className="mb-4 font-display text-[clamp(2rem,4vw,2.75rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+            <h1 className="mb-4 font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               Share Shift Your Summer
             </h1>
-            <p className="mb-10 text-[1.0625rem] leading-[1.65] text-white/85">
+            <p className="mb-10 text-[1.0625rem] leading-[1.7] text-ink-soft">
               Help us grow the challenge. Share with your team, your neighbors, or your friends — participants are eligible for prizes from brands like Segway, Quad Lock, and Kryptonite just by walking, biking, and taking transit this summer.
             </p>
 
@@ -66,31 +67,31 @@ export default async function SharePage({
               hasReferralCode={refCode !== null}
             />
 
-            <div className="mt-10 rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-6">
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-white/75">
+            <div className="mt-10 rounded-[14px] border border-navy/10 bg-white p-6">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                 Print or post the flyer
               </p>
-              <p className="mb-4 text-sm leading-[1.6] text-white/85">
+              <p className="mb-4 text-[15px] leading-relaxed text-ink-soft">
                 A one-page flyer that auto-updates with the latest sponsors and prizes. Print it for your office, classroom, or community board.
               </p>
               <Link
                 href="/events/shift-your-summer/flyer"
-                className="inline-flex items-center gap-2 rounded-full bg-[#BAF14D] px-5 py-2.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                className={PILL}
               >
                 Open the printable flyer &rarr;
               </Link>
             </div>
 
-            <div className="mt-6 rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-6">
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-white/75">
+            <div className="mt-6 rounded-[14px] border border-navy/10 bg-white p-6">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                 For employers
               </p>
-              <p className="mb-4 text-sm leading-[1.6] text-white/85">
+              <p className="mb-4 text-[15px] leading-relaxed text-ink-soft">
                 Want your own team leaderboard, branded challenge, and impact reporting?
               </p>
               <Link
                 href="/shift/employers"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-[#BAF14D] hover:opacity-85"
+                className="inline-flex items-center gap-2 text-[15px] font-semibold text-forest underline-offset-4 hover:underline"
               >
                 Learn about the employer platform &rarr;
               </Link>
@@ -98,7 +99,7 @@ export default async function SharePage({
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

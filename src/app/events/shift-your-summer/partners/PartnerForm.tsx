@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Check } from '@phosphor-icons/react'
+import { PILL } from '@/components/org/Section'
 
 type Tier = 'community' | 'champion' | 'presenting' | 'custom'
 type PrizeCategory = 'grand' | 'weekly' | 'catalog' | 'unsure'
@@ -113,12 +114,12 @@ export default function PartnerForm() {
 
   if (submitted) {
     return (
-      <div className="bg-[#242538] rounded-xl border border-white/[0.08] p-12 text-center">
-        <div className="text-3xl mb-4"><Check size={36} weight="bold" /></div>
-        <h3 className="font-display text-[1.5rem] font-bold text-white mb-3">Thank you!</h3>
-        <p className="text-base text-white/80 leading-relaxed max-w-[440px] mx-auto">
-          We&rsquo;ve received your partnership interest. Keith will follow up within two
-          business days with next steps and a partnership agreement.
+      <div className="bg-white rounded-[14px] border border-navy/10 p-12 text-center">
+        <div className="text-3xl mb-4 flex justify-center text-forest"><Check size={36} weight="bold" /></div>
+        <h3 className="font-serif text-[1.375rem] leading-tight text-navy mb-3">Thank you!</h3>
+        <p className="text-[1.0625rem] text-ink-soft leading-[1.7] max-w-[440px] mx-auto">
+          We&rsquo;ve received your interest in partnering on a future campaign. Keith will
+          follow up within two business days with next steps.
         </p>
       </div>
     )
@@ -127,7 +128,7 @@ export default function PartnerForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-[#242538] rounded-xl border border-white/[0.08] p-8 md:p-10 space-y-8"
+      className="bg-white rounded-[14px] border border-navy/10 p-8 md:p-10 space-y-8"
       encType="multipart/form-data"
     >
       {/* Honeypot — bots fill it, real users won't see it */}
@@ -174,7 +175,7 @@ export default function PartnerForm() {
         </Field>
       </div>
 
-      <hr className="border-white/[0.08]" />
+      <hr className="border-navy/10" />
 
       {/* Partnership type */}
       <FormSectionLabel>How would you like to partner?</FormSectionLabel>
@@ -184,7 +185,7 @@ export default function PartnerForm() {
           checked={state.isSponsor}
           onChange={(v) => update('isSponsor', v)}
           label="Cash sponsorship"
-          description="$1,000–$5,000 · Brand visibility, team leaderboard, impact reporting"
+          description="Brand visibility, team leaderboard, impact reporting · 2026 tiers ran $1,000–$5,000"
         />
         <CheckboxOption
           checked={state.isPrizeDonor}
@@ -202,7 +203,7 @@ export default function PartnerForm() {
 
       {/* Conditional: Sponsorship tier */}
       {state.isSponsor && (
-        <div className="space-y-3 pt-4 border-t border-white/[0.06]">
+        <div className="space-y-3 pt-4 border-t border-navy/10">
           <Field label="Select a sponsorship tier">
             <div className="space-y-2">
               <TierRadio
@@ -236,7 +237,7 @@ export default function PartnerForm() {
 
       {/* Conditional: Prize details */}
       {state.isPrizeDonor && (
-        <div className="space-y-4 pt-4 border-t border-white/[0.06]">
+        <div className="space-y-4 pt-4 border-t border-navy/10">
           <Field label="Prize category">
             <Select
               value={state.prizeCategory}
@@ -277,7 +278,7 @@ export default function PartnerForm() {
 
       {/* Conditional: Team participation */}
       {state.isTeamParticipant && (
-        <div className="space-y-4 pt-4 border-t border-white/[0.06]">
+        <div className="space-y-4 pt-4 border-t border-navy/10">
           <Field label="Approximate team size" optional>
             <Select
               value={state.teamSize}
@@ -293,7 +294,7 @@ export default function PartnerForm() {
         </div>
       )}
 
-      <hr className="border-white/[0.08]" />
+      <hr className="border-navy/10" />
 
       <Field label="Anything else?" optional>
         <Textarea
@@ -308,12 +309,12 @@ export default function PartnerForm() {
           type="file"
           accept=".png,.svg,.jpg,.jpeg,.webp"
           onChange={(e) => update('logo', e.target.files?.[0] ?? null)}
-          className="block w-full text-sm text-white/75 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-white/[0.07] file:text-white file:text-sm file:font-medium hover:file:bg-white/[0.12] file:cursor-pointer"
+          className="block w-full text-[15px] text-ink-soft file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-navy/[0.06] file:text-navy file:text-sm file:font-semibold hover:file:bg-navy/[0.1] file:cursor-pointer"
         />
       </Field>
 
       {error && (
-        <div className="bg-[#7a2424] border border-[#e74c3c]/40 rounded-md px-4 py-3 text-sm text-white">
+        <div className="bg-[#c0392b]/[0.08] border border-[#c0392b]/40 rounded-[12px] px-4 py-3 text-[15px] text-[#8f1d13]">
           {error}
         </div>
       )}
@@ -321,12 +322,12 @@ export default function PartnerForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="inline-flex items-center gap-2 bg-[#52B788] text-[#191A2E] px-7 py-3.5 rounded-[10px] font-bold text-[0.9375rem] hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
+        className={`${PILL} gap-2 disabled:opacity-60 disabled:cursor-not-allowed`}
       >
         {submitting ? 'Submitting…' : 'Submit partnership interest →'}
       </button>
 
-      <p className="text-[0.8125rem] text-white/75 leading-relaxed">
+      <p className="text-[15px] text-ink-soft leading-relaxed">
         We&rsquo;ll review your submission and follow up within two business days.
         Submitting this form does not create a binding agreement — we&rsquo;ll send a
         partnership agreement for your review and signature as a next step.
@@ -339,7 +340,7 @@ export default function PartnerForm() {
 
 function FormSectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-xs font-bold uppercase tracking-[0.08em] text-[#52B788]">
+    <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
       {children}
     </div>
   )
@@ -360,13 +361,13 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="block text-sm font-medium text-white mb-2">
+      <span className="block text-[15px] font-medium text-navy mb-2">
         {label}
-        {required && <span className="text-[#e74c3c] ml-1">*</span>}
-        {optional && <span className="text-white/60 ml-1">(optional)</span>}
+        {required && <span className="text-[#c0392b] ml-1">*</span>}
+        {optional && <span className="text-ink-soft ml-1">(optional)</span>}
       </span>
       {children}
-      {hint && <span className="block mt-1 text-xs text-white/60">{hint}</span>}
+      {hint && <span className="block mt-1 text-[13px] text-ink-soft">{hint}</span>}
     </label>
   )
 }
@@ -391,7 +392,7 @@ function Input({
       onChange={(e) => onChange(e.target.value)}
       required={required}
       placeholder={placeholder}
-      className="w-full px-4 py-3 bg-[#191A2E] border border-white/[0.12] rounded-md text-white placeholder:text-white/60 focus:outline-none focus:border-[#52B788] focus:ring-1 focus:ring-[#52B788]/30"
+      className="w-full px-4 py-3 bg-white border border-navy/15 rounded-[10px] text-navy placeholder:text-ink-soft focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest/30"
     />
   )
 }
@@ -409,7 +410,7 @@ function Select({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-4 py-3 bg-[#191A2E] border border-white/[0.12] rounded-md text-white focus:outline-none focus:border-[#52B788] focus:ring-1 focus:ring-[#52B788]/30"
+      className="w-full px-4 py-3 bg-white border border-navy/15 rounded-[10px] text-navy focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest/30"
     >
       {children}
     </select>
@@ -431,7 +432,7 @@ function Textarea({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={4}
-      className="w-full px-4 py-3 bg-[#191A2E] border border-white/[0.12] rounded-md text-white placeholder:text-white/60 focus:outline-none focus:border-[#52B788] focus:ring-1 focus:ring-[#52B788]/30 resize-y"
+      className="w-full px-4 py-3 bg-white border border-navy/15 rounded-[10px] text-navy placeholder:text-ink-soft focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest/30 resize-y"
     />
   )
 }
@@ -451,19 +452,19 @@ function CheckboxOption({
     <label
       className={`flex items-start gap-3 p-4 rounded-md border cursor-pointer transition-colors ${
         checked
-          ? 'bg-[#52B788]/10 border-[#52B788]'
-          : 'bg-[#191A2E] border-white/[0.12] hover:border-white/30'
+          ? 'bg-forest/10 border-forest'
+          : 'bg-cream border-navy/10 hover:border-navy/25'
       }`}
     >
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 w-4 h-4 accent-[#52B788] flex-shrink-0"
+        className="mt-0.5 w-4 h-4 accent-forest flex-shrink-0"
       />
       <div className="flex-1">
-        <div className="text-sm font-semibold text-white">{label}</div>
-        <div className="text-[0.8125rem] text-white/75 mt-0.5">{description}</div>
+        <div className="text-[15px] font-semibold text-navy">{label}</div>
+        <div className="text-[13px] text-ink-soft mt-0.5">{description}</div>
       </div>
     </label>
   )
@@ -484,8 +485,8 @@ function TierRadio({
     <label
       className={`flex items-start gap-3 p-4 rounded-md border cursor-pointer transition-colors ${
         checked
-          ? 'bg-[#2966E5]/10 border-[#2966E5]'
-          : 'bg-[#191A2E] border-white/[0.12] hover:border-white/30'
+          ? 'bg-blue/10 border-blue'
+          : 'bg-cream border-navy/10 hover:border-navy/25'
       }`}
     >
       <input
@@ -493,11 +494,11 @@ function TierRadio({
         name="tier"
         checked={checked}
         onChange={onChange}
-        className="mt-1 w-4 h-4 accent-[#2966E5] flex-shrink-0"
+        className="mt-1 w-4 h-4 accent-blue flex-shrink-0"
       />
       <div className="flex-1">
-        <div className="text-sm font-semibold text-white">{name}</div>
-        <div className="text-[0.8125rem] text-white/75 mt-0.5">{price}</div>
+        <div className="text-[15px] font-semibold text-navy">{name}</div>
+        <div className="text-[13px] text-ink-soft mt-0.5">{price}</div>
       </div>
     </label>
   )

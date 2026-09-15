@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import { PILL } from '@/components/org/Section'
 import StoreButtons from '@/components/StoreButtons'
 import CorporateShareKit from './CorporateShareKit'
 
@@ -105,13 +106,13 @@ export default async function CorporateSharePage({ params }: Props) {
 
   return (
     <>
-      <Nav />
-      <main className="bg-[#191A2E] text-white" style={{ paddingTop: '60px' }}>
-        <section className="px-8 py-16 md:py-20">
+      <Nav variant="light" />
+      <main className="bg-cream text-navy" style={{ paddingTop: '60px' }}>
+        <section className="px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[680px]">
             <Link
               href="/events/shift-your-summer"
-              className="mb-8 inline-flex items-center gap-1.5 text-sm text-white/75 transition-colors hover:text-white"
+              className="mb-8 inline-flex items-center gap-1.5 text-[15px] font-semibold text-forest underline-offset-4 hover:underline"
             >
               &larr; Back to Shift Your Summer
             </Link>
@@ -119,7 +120,7 @@ export default async function CorporateSharePage({ params }: Props) {
             {/* Company header */}
             <div className="mb-6">
               {group.logo_url && (
-                <div className="mb-5 inline-flex h-20 items-center rounded-2xl bg-white px-5">
+                <div className="mb-5 inline-flex h-20 items-center rounded-2xl border border-navy/10 bg-white px-5">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={group.logo_url}
@@ -128,55 +129,55 @@ export default async function CorporateSharePage({ params }: Props) {
                   />
                 </div>
               )}
-              <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
+              <h1 className="font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
                 Join {group.name}
                 {' '}for Shift&nbsp;Your&nbsp;Summer
               </h1>
             </div>
 
-            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-white/85">
+            <p className="mb-8 text-[1.0625rem] leading-[1.7] text-ink-soft">
               Walk, bike, and take transit this summer — and compete for prizes from brands like Segway, Quad Lock, and Kryptonite. Join your team in the Shift app to get started.
             </p>
 
             {/* App store buttons */}
-            <StoreButtons iosUrl={IOS_URL} androidUrl={ANDROID_URL} className="mb-10" />
+            <StoreButtons iosUrl={IOS_URL} androidUrl={ANDROID_URL} tone="light" className="mb-10" />
 
             {/* Path 1 — Deep link (recommended) */}
-            <div className="mb-6 rounded-[14px] border border-[#BAF14D]/20 bg-[#BAF14D]/[0.06] p-6">
-              <span className="mb-2 inline-block rounded-full bg-[#BAF14D]/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[#BAF14D]">
+            <div className="mb-6 rounded-[14px] border border-forest/40 bg-white p-6">
+              <span className="mb-2 inline-block rounded-full bg-forest/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-forest">
                 Recommended
               </span>
-              <h2 className="mb-2 text-lg font-bold text-white">
+              <h2 className="mb-2 font-serif text-[1.375rem] leading-tight text-navy">
                 Tap to join automatically
               </h2>
-              <p className="mb-5 text-[0.9375rem] leading-[1.6] text-white/85">
+              <p className="mb-5 text-[15px] leading-relaxed text-ink-soft">
                 Already have the Shift app? This link opens it and joins you to {group.name}&rsquo;s team automatically. Don&rsquo;t have it yet? You&rsquo;ll see download links for{' '}
-                <a href={IOS_URL} className="font-semibold text-white underline underline-offset-2" target="_blank" rel="noopener noreferrer">iOS</a>
+                <a href={IOS_URL} className="font-semibold text-forest underline underline-offset-4" target="_blank" rel="noopener noreferrer">iOS</a>
                 {' '}and{' '}
-                <a href={ANDROID_URL} className="font-semibold text-white underline underline-offset-2" target="_blank" rel="noopener noreferrer">Android</a>
+                <a href={ANDROID_URL} className="font-semibold text-forest underline underline-offset-4" target="_blank" rel="noopener noreferrer">Android</a>
                 {' '}— install the app, create an account, and you&rsquo;ll land on the join screen with {group.name}&rsquo;s code already filled in.
               </p>
               <a
                 href={joinUrl}
-                className="inline-flex w-full items-center justify-center rounded-full bg-[#BAF14D] px-8 py-4 text-center text-lg font-extrabold text-[#191A2E] transition-opacity hover:opacity-85 sm:w-auto"
+                className={`${PILL} w-full sm:w-auto`}
               >
                 Join {group.name}&rsquo;s team &rarr;
               </a>
             </div>
 
             {/* Path 2 — Manual code entry (fallback) */}
-            <div className="mb-10 rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-6">
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-white/75">
+            <div className="mb-10 rounded-[14px] border border-navy/10 bg-white p-6">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                 Or enter the code manually
               </p>
-              <p className="mb-5 text-sm leading-[1.6] text-white/85">
+              <p className="mb-5 text-[15px] leading-relaxed text-ink-soft">
                 If the link above doesn&rsquo;t open the app, you can join by entering your team&rsquo;s invite code directly in the Shift app.
               </p>
 
               {/* Invite code */}
-              <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-4">
-                <span className="text-sm font-medium text-white/75">Your team code:</span>
-                <span className="font-mono text-2xl font-extrabold tracking-[0.2em] text-[#BAF14D]">
+              <div className="mb-6 flex flex-wrap items-center gap-3 rounded-[12px] border border-navy/10 bg-cream px-5 py-4">
+                <span className="text-[15px] font-medium text-ink-soft">Your team code:</span>
+                <span className="font-mono text-2xl font-extrabold tracking-[0.2em] text-forest">
                   {group.invite_code}
                 </span>
               </div>
@@ -193,26 +194,26 @@ export default async function CorporateSharePage({ params }: Props) {
             {/* QR code + invite code */}
             <div className="mb-10 grid gap-6 sm:grid-cols-[auto_1fr]">
               <div className="flex flex-col items-center">
-                <div className="flex h-[140px] w-[140px] items-center justify-center rounded-2xl bg-white p-2">
+                <div className="flex h-[140px] w-[140px] items-center justify-center rounded-2xl border border-navy/10 bg-white p-2">
                   <div
                     className="h-[120px] w-[120px]"
                     dangerouslySetInnerHTML={{ __html: qrSvg }}
                   />
                 </div>
-                <p className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white/75">
+                <p className="mt-2 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                   Scan to join
                 </p>
               </div>
               <div className="flex flex-col justify-center">
-                <p className="text-sm leading-[1.6] text-white/85">
+                <p className="text-[15px] leading-relaxed text-ink-soft">
                   Scan the QR code with your phone to join {group.name}&rsquo;s team. If you already have Shift, it opens the join screen automatically. If not, you&rsquo;ll see download links.
                 </p>
               </div>
             </div>
 
             {/* Share kit */}
-            <div className="mb-10 rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-6">
-              <p className="mb-4 text-xs font-bold uppercase tracking-widest text-white/75">
+            <div className="mb-10 rounded-[14px] border border-navy/10 bg-white p-6">
+              <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                 Share with your team
               </p>
               <CorporateShareKit
@@ -221,20 +222,21 @@ export default async function CorporateSharePage({ params }: Props) {
                 emailSubject={emailSubject}
                 emailBody={emailBody}
                 inviteCode={group.invite_code}
+                tone="light"
               />
             </div>
 
             {/* Flyer link */}
-            <div className="rounded-[14px] border border-white/[0.08] bg-white/[0.04] p-6">
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-white/75">
+            <div className="rounded-[14px] border border-navy/10 bg-white p-6">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
                 Print or post the flyer
               </p>
-              <p className="mb-4 text-sm leading-[1.6] text-white/85">
+              <p className="mb-4 text-[15px] leading-relaxed text-ink-soft">
                 A branded one-page flyer with your team code. Print it for the office, post it on a bulletin board, or attach it to an email.
               </p>
               <Link
                 href={`/events/shift-your-summer/flyer?group=${clean}`}
-                className="inline-flex items-center gap-2 rounded-full bg-[#BAF14D] px-5 py-2.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                className={PILL}
               >
                 Open the printable flyer &rarr;
               </Link>
@@ -242,7 +244,7 @@ export default async function CorporateSharePage({ params }: Props) {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

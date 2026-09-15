@@ -33,9 +33,9 @@ export function modeLabel(mode: string): string {
 export function modeColor(mode: string): string {
   switch (mode) {
     case 'bike':
-      return '#BAF14D'
+      return '#2D6A4F'
     case 'walk':
-      return '#52B788'
+      return '#1B4332'
     case 'transit':
     case 'multi':
     default:

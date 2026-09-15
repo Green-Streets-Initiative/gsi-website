@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { PILL } from '@/components/org/Section'
 
 type Props = {
   shareUrl: string
@@ -37,14 +38,14 @@ export default function ShareKit({
     <div className="space-y-6">
       {/* Referral indicator */}
       {hasReferralCode && (
-        <div className="rounded-[10px] border border-[#BAF14D]/30 bg-[#BAF14D]/[0.08] px-4 py-3 text-sm text-white/85">
+        <div className="rounded-[12px] border border-navy/10 bg-navy/[0.04] px-4 py-3 text-[15px] leading-relaxed text-ink-soft">
           Your referral code is included in the link below. Friends who join through it count toward your referral entries.
         </div>
       )}
 
       {/* Share link */}
       <div>
-        <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-white/75">
+        <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
           Challenge link
         </label>
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -53,12 +54,12 @@ export default function ShareKit({
             readOnly
             value={shareUrl}
             onFocus={(e) => e.currentTarget.select()}
-            className="flex-1 rounded-[10px] border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-sm text-white placeholder:text-white/60 focus:border-[#BAF14D]/50 focus:outline-none"
+            className="flex-1 rounded-[10px] border border-navy/15 bg-white px-4 py-3 text-[15px] text-navy placeholder:text-ink-soft focus:border-forest focus:outline-none"
           />
           <button
             type="button"
             onClick={() => copy(shareUrl, 'link')}
-            className="rounded-full bg-[#BAF14D] px-5 py-3 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+            className={PILL}
           >
             {copiedField === 'link' ? 'Copied!' : 'Copy link'}
           </button>
@@ -67,7 +68,7 @@ export default function ShareKit({
 
       {/* Blurb */}
       <div>
-        <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-white/75">
+        <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
           Pre-written blurb
         </label>
         <textarea
@@ -75,19 +76,19 @@ export default function ShareKit({
           value={blurb}
           rows={6}
           onFocus={(e) => e.currentTarget.select()}
-          className="w-full resize-none rounded-[10px] border border-white/[0.12] bg-white/[0.07] px-4 py-3 text-sm leading-[1.6] text-white placeholder:text-white/60 focus:border-[#BAF14D]/50 focus:outline-none"
+          className="w-full resize-none rounded-[10px] border border-navy/15 bg-white px-4 py-3 text-[15px] leading-[1.6] text-navy placeholder:text-ink-soft focus:border-forest focus:outline-none"
         />
         <div className="mt-3 flex flex-wrap gap-3">
           <button
             type="button"
             onClick={() => copy(blurb, 'blurb')}
-            className="inline-flex items-center gap-2 rounded-full bg-[#BAF14D] px-5 py-2.5 text-sm font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+            className={PILL}
           >
             {copiedField === 'blurb' ? 'Copied!' : 'Copy blurb'}
           </button>
           <a
             href={mailto}
-            className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05] gap-2"
           >
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />

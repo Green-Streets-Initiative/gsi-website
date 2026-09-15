@@ -9,22 +9,22 @@ export const metadata = {
 export default function PrivacyPage() {
   return (
     <>
-      <Nav />
-      <main className="bg-navy pt-[60px]">
-        <article className="mx-auto max-w-[720px] px-6 py-16 sm:py-20">
+      <Nav variant="light" />
+      <main className="bg-cream pt-[60px]">
+        <article className="mx-auto max-w-[720px] px-6 py-8 lg:py-10">
           {/* Header */}
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-lime">Legal</p>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">Legal</p>
+          <h1 className="font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
             Privacy Policy
           </h1>
-          <p className="mt-3 text-sm text-white">
+          <p className="mt-4 text-[15px] text-ink-soft">
             Shift by Green Streets Initiative &middot; Last updated May 2026
           </p>
-          <p className="mt-1 text-sm text-white">
-            Contact: <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>
+          <p className="mt-1 text-[15px] text-ink-soft">
+            Contact: <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>
           </p>
 
-          <hr className="my-10 border-white/[0.08]" />
+          <hr className="my-10 border-navy/10" />
 
           {/* Content */}
           <div className="privacy-content space-y-10">
@@ -246,7 +246,7 @@ export default function PrivacyPage() {
                 shorter or longer period is disclosed in the campaign-specific consent terms or
                 required by law. You may withdraw consent and request deletion of your recordings
                 at any time in app settings or by contacting{' '}
-                <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>,
+                <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>,
                 subject to legal, archival, operational, or already-published materials that
                 cannot reasonably be withdrawn.
               </P>
@@ -450,13 +450,13 @@ export default function PrivacyPage() {
                 <li><strong>Saved locations:</strong> You may view, edit, or delete saved locations in app settings.</li>
                 <li><strong>Inferred route profile:</strong> You may view and delete your inferred route profile in app settings.</li>
                 <li><strong>Notifications:</strong> You may adjust or disable notifications in the app&apos;s notification settings or in your device settings.</li>
-                <li><strong>Account deletion:</strong> You may delete your account in the app or by contacting <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>. When you delete your account, we delete or de-identify personal information associated with your account as described in the Data Retention section.</li>
+                <li><strong>Account deletion:</strong> You may delete your account in the app or by contacting <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>. When you delete your account, we delete or de-identify personal information associated with your account as described in the Data Retention section.</li>
                 <li><strong>What Moves Us recordings:</strong> If you participate in a What Moves Us campaign, you may withdraw consent and request deletion of your recordings as described in the campaign-specific consent terms and in this Privacy Policy.</li>
                 <li><strong>Marketing communications:</strong> You may opt out of marketing-related emails or text messages as described in the Marketing Emails and SMS/Text Messages section.</li>
               </Ul>
               <P>
                 You may also contact us at{' '}
-                <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>{' '}
+                <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>{' '}
                 to ask questions about your information, request help accessing or deleting your
                 account, or raise a privacy concern.
               </P>
@@ -474,7 +474,7 @@ export default function PrivacyPage() {
                 You may opt out of marketing-related emails by following the unsubscribe
                 instructions in any marketing or promotional email you receive or by
                 contacting{' '}
-                <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>.
+                <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>.
               </P>
               <P>
                 If we send marketing SMS/text messages and you no longer want to receive them, you
@@ -514,7 +514,7 @@ export default function PrivacyPage() {
                 If you believe we have inadvertently collected personal information from a child
                 under 13 without appropriate consent or authorization, please contact us
                 immediately at{' '}
-                <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>{' '}
+                <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>{' '}
                 and we will take reasonable steps to delete the information or otherwise comply
                 with applicable law.
               </P>
@@ -570,7 +570,7 @@ export default function PrivacyPage() {
               <P>
                 To request this Privacy Policy in an alternative format, please contact us
                 at{' '}
-                <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>.
+                <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>.
               </P>
             </Section>
 
@@ -596,7 +596,7 @@ export default function PrivacyPage() {
               <P>
                 Green Streets Initiative<br />
                 Cambridge, MA<br />
-                <a href="mailto:info@gogreenstreets.org" className="text-lime">info@gogreenstreets.org</a>
+                <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>
               </P>
               <P>
                 If you have questions about this policy or how your data is handled, please reach
@@ -606,7 +606,7 @@ export default function PrivacyPage() {
           </div>
         </article>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }
@@ -616,20 +616,20 @@ export default function PrivacyPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-4 font-display text-xl font-bold tracking-tight text-white">{title}</h2>
+      <h2 className="mb-4 font-serif text-[1.75rem] font-normal leading-[1.1] text-navy">{title}</h2>
       <div className="space-y-4">{children}</div>
     </section>
   )
 }
 
 function H3({ children }: { children: React.ReactNode }) {
-  return <h3 className="mt-6 mb-2 font-display text-base font-semibold text-white">{children}</h3>
+  return <h3 className="mt-6 mb-2 font-serif text-[1.375rem] leading-tight text-navy">{children}</h3>
 }
 
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="text-[0.9375rem] leading-[1.7] text-white">{children}</p>
+  return <p className="text-[1.0625rem] leading-[1.7] text-navy">{children}</p>
 }
 
 function Ul({ children }: { children: React.ReactNode }) {
-  return <ul className="list-disc space-y-1.5 pl-5 text-[0.9375rem] leading-[1.7] text-white">{children}</ul>
+  return <ul className="list-disc space-y-1.5 pl-5 text-[1.0625rem] leading-[1.7] text-navy">{children}</ul>
 }
