@@ -141,25 +141,26 @@
 }
 
 @layer components {
+  /* Site-wide form control on the cream system. */
   .form-input {
     display: block;
     width: 100%;
     border-radius: 0.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(25, 26, 46, 0.15);
+    background-color: #ffffff;
     padding: 0.625rem 0.875rem;
     font-size: 0.875rem;
-    color: white;
+    color: #191A2E;
     outline: none;
     transition: border-color 0.15s;
   }
 
   .form-input::placeholder {
-    color: rgba(255, 255, 255, 0.35);
+    color: #4A4D68;
   }
 
   .form-input:focus {
-    border-color: #BAF14D;
+    border-color: #2D6A4F;
   }
 
   .form-input:disabled {
@@ -167,7 +168,6 @@
     cursor: not-allowed;
   }
 
-  /* Select arrow color fix for dark bg */
   select.form-input {
     appearance: auto;
   }
