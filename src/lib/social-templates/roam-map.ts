@@ -1,3 +1,4 @@
+import { rasterTileUrl } from '@/lib/nearby/static-map';
 /**
  * roam-map — server-side static map renderer for the roam_map social card.
  *
@@ -116,7 +117,7 @@ export function renderRoamMapLayer(opts: {
       if (tx < 0 || ty < 0 || tx > maxTile || ty > maxTile) continue;
       const left = tx * TILE - originX;
       const top = ty * TILE - originY;
-      const url = `https://basemaps.cartocdn.com/rastertiles/voyager/${zoom}/${tx}/${ty}@2x.png`;
+      const url = rasterTileUrl('voyager', zoom, tx, ty);
       tiles.push(
         `<img src="${url}" width="${TILE}" height="${TILE}" style="position:absolute;left:${left}px;top:${top}px" crossorigin="anonymous" />`,
       );

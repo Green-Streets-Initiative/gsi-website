@@ -83,7 +83,9 @@ function groupTopology(
         color: lineColor(route.id),
         textColor: lineTextColor(route.id),
         frequencyLabel: freqByRoute.get(route.id) ?? null,
-        endpoints: termini.length === 2 ? termini.join(' ↔ ') : null,
+        // A loop route names the same place at both ends (the Quincy ferry
+        // is "Quincy ↔ Quincy" in the MBTA feed) — say nothing rather than that
+        endpoints: termini.length === 2 && termini[0] !== termini[1] ? termini.join(' ↔ ') : null,
       })
     }
   }

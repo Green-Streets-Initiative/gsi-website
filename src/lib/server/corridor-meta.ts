@@ -229,7 +229,7 @@ async function getFrequency(routeId: string, stopId: string): Promise<FrequencyI
   return freq
 }
 
-const durableFrequency = unstable_cache(computeFrequency, ['nearby-frequency-v1'], {
+const durableFrequency = unstable_cache(computeFrequency, ['nearby-frequency-v2'], {
   revalidate: FREQ_TTL_MS / 1000,
 })
 
@@ -254,7 +254,13 @@ async function computeFrequency(routeId: string, stopId: string, date: string): 
 
   const byDirection = new Map<number, number[]>() // direction -> minutes-of-day, 07:00–19:00
   for (const row of rows) {
-    const t = row.attributes?.departure_time ?? row.attributes?.arrival_time
+    // Departures only. A row with no departure_time is a trip ENDING at
+    // this stop — nothing to board. Counting those doubled every terminal's
+    // departures, and on a loop route (the Quincy ferry starts and ends at
+    // Squantum Point) the 5-minute layover between a trip's arrival and the
+    // next departure became the median gap: "every few minutes" for a boat
+    // that runs every 75.
+    const t = row.attributes?.departure_time
     const dir = row.attributes?.direction_id
     if (!t || dir === undefined) continue
     const dt = new Date(t)
