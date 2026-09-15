@@ -17,6 +17,15 @@ export default function FadeIn({
   useEffect(() => {
     const el = ref.current
     if (!el) return
+    // Fail open: content already on screen at mount shows at once, and
+    // nothing stays hidden if the observer never fires (some embedded and
+    // emulated viewports report no intersections).
+    const rect = el.getBoundingClientRect()
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setVisible(true)
+      return
+    }
+    const fallback = window.setTimeout(() => setVisible(true), 2500)
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -27,7 +36,10 @@ export default function FadeIn({
       { threshold: 0.15 },
     )
     obs.observe(el)
-    return () => obs.disconnect()
+    return () => {
+      window.clearTimeout(fallback)
+      obs.disconnect()
+    }
   }, [])
 
   return (

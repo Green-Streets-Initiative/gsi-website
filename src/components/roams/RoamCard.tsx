@@ -33,7 +33,7 @@ const THEME: Record<Tone, { card: string; name: string; meta: string; hook: stri
     name: 'text-sm font-semibold leading-snug text-white',
     meta: 'text-xs text-white/75',
     hook: 'mt-1.5 text-xs leading-snug text-white/75',
-    done: 'mt-2 flex items-center gap-1 text-[10px] text-white/50',
+    done: 'mt-2 flex items-center gap-1 text-[10px] text-white/70',
   },
   light: {
     card: 'block overflow-hidden rounded-[14px] border border-navy/10 bg-white transition-colors hover:border-navy/30',

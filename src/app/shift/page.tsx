@@ -68,8 +68,8 @@ export default function ShiftPage() {
         <section className="relative overflow-hidden bg-cream px-8 pb-0 pt-12 md:pt-[50px]">
           {/* Background gradients */}
           <div className="pointer-events-none absolute inset-0 z-0">
-            <div className="absolute -right-[5%] top-[8%] h-[420px] w-[680px] rounded-full bg-[radial-gradient(circle,rgba(41,102,229,0.10),transparent_60%)]" />
-            <div className="absolute -left-[5%] bottom-[10%] h-[460px] w-[620px] rounded-full bg-[radial-gradient(circle,rgba(45,106,79,0.10),transparent_60%)]" />
+            <div className="absolute right-0 top-[8%] h-[420px] w-[min(680px,100%)] rounded-full bg-[radial-gradient(circle,rgba(41,102,229,0.10),transparent_60%)]" />
+            <div className="absolute left-0 bottom-[10%] h-[460px] w-[min(620px,100%)] rounded-full bg-[radial-gradient(circle,rgba(45,106,79,0.10),transparent_60%)]" />
           </div>
 
           <div className="relative z-10 mx-auto grid max-w-[1120px] items-center gap-6 md:grid-cols-[1.04fr_0.96fr]">
