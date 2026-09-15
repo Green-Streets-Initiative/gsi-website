@@ -1,6 +1,7 @@
 'use client'
 
 import { type StationGroup, shuttleAgencyForStation, isShuttleStation } from './useNearbyModel'
+import { withUtm } from '@/lib/utm'
 import { useNearbyT } from './NearbyI18n'
 import type { ShuttleAccess } from '@/lib/nearby/shuttle-agencies'
 
@@ -39,15 +40,25 @@ export function ShuttleOperatorLines({
   if (variant === 'detail') {
     return (
       <span className={`block text-[0.78rem] leading-snug ${className}`}>
-        <span className="block text-white/80">{agency.name}</span>
-        <span className="block text-white/75">{access}</span>
+        <span className="block text-(--nb-ink-80)">{agency.name}</span>
+        <span className="block text-(--nb-ink-70)">{access}</span>
+        {agency.url && (
+          <a
+            href={withUtm(agency.url, { medium: 'nearby', campaign: 'shuttle', content: agency.prefix }) ?? agency.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-block font-semibold text-(--nb-accent) underline-offset-2 hover:underline"
+          >
+            {tr('shuttle.operator_link')} &rarr;<span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        )}
       </span>
     )
   }
   return (
-    <span className={`block text-[0.78rem] leading-snug text-white/80 ${className}`}>
+    <span className={`block text-[0.78rem] leading-snug text-(--nb-ink-80) ${className}`}>
       {agency.name}
-      <span className="text-white/75"> · {access}</span>
+      <span className="text-(--nb-ink-70)"> · {access}</span>
     </span>
   )
 }

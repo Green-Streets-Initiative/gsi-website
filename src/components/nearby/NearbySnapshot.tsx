@@ -31,6 +31,8 @@ import { t, resolveNearbyLocale } from '@/lib/nearby/i18n'
 import { NearbyI18nProvider } from './NearbyI18n'
 import { NearbyPromosProvider } from './NearbyPromos'
 import NearbyLanguagePill from './NearbyLanguagePill'
+import { NearbyToneProvider, type NearbyTone } from './NearbyTone'
+import { parseInitialFocus } from '@/lib/nearby/focus'
 
 const REFRESH_MS = 30_000
 
@@ -54,8 +56,10 @@ interface Located {
   source: 'geolocation' | 'address' | 'url'
 }
 
-export default function NearbySnapshot() {
+export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } = {}) {
   const searchParams = useSearchParams()
+  // ?focus= opens the page already looking at one station/line/dock/route
+  const initialFocus = useMemo(() => parseInitialFocus(searchParams.get('focus')), [searchParams])
   const isDesktop = useIsDesktop()
 
   // Locale from ?lang= (wins) or the browser; provided to the whole tree below.
@@ -550,7 +554,9 @@ export default function NearbySnapshot() {
    *  One extra call, only on tap; deduped per route, cleared on relocation. */
   const requestCorridorShape = useCallback((routeId: string, stopId: string) => {
     if (onDemandRoutesRef.current.has(routeId)) return
-    const rows = [...rail.data, ...bus.data]
+    // Shuttle stops live in their own family — without them here a shuttle
+    // route chip found no boarding row and drew nothing
+    const rows = [...rail.data, ...bus.data, ...shuttles.data]
     const row = rows.find(r => r.stop_id === stopId && r.route_id === routeId)
       ?? rows.find(r => r.route_id === routeId)
     if (!row) return
@@ -578,7 +584,7 @@ export default function NearbySnapshot() {
           data: prev.data.map(c => (c.id === seed.id ? { ...c, frequency: 'unavailable' as const } : c)),
         }))
       })
-  }, [rail.data, bus.data])
+  }, [rail.data, bus.data, shuttles.data])
 
   // Named bike corridors become selectable entities; everything else —
   // unnamed segments, named lanes that didn't make the corridor cut, and
@@ -609,13 +615,13 @@ export default function NearbySnapshot() {
           <NearbyLanguagePill />
         </div>
         <div className="text-center">
-          <div className="mb-2 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#BAF14D]">
+          <div className="mb-2 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-(--nb-accent)">
             {tr('snap.eyebrow')}
           </div>
-          <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold leading-[1.12] tracking-tighter text-white">
-            {tr('snap.headline_lead')}<em className="not-italic text-[#BAF14D]">{tr('snap.headline_em')}</em>{tr('snap.headline_tail')}
+          <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold leading-[1.12] tracking-tighter text-(--nb-ink)">
+            {tr('snap.headline_lead')}<em className="not-italic text-(--nb-accent)">{tr('snap.headline_em')}</em>{tr('snap.headline_tail')}
           </h1>
-          <p className="mx-auto mt-3 max-w-[46ch] text-[1rem] leading-relaxed text-white/75">
+          <p className="mx-auto mt-3 max-w-[46ch] text-[1rem] leading-relaxed text-(--nb-ink-70)">
             {tr('snap.subtitle')}
           </p>
           {partner && (
@@ -635,15 +641,15 @@ export default function NearbySnapshot() {
           </div>
         )}
 
-        <div className="mx-auto mt-8 max-w-[440px] rounded-[20px] border border-white/[0.12] bg-[#242538] p-7">
+        <div className="mx-auto mt-8 max-w-[440px] rounded-[20px] border border-(--nb-line-mid) bg-(--nb-card) p-7">
           <button
             onClick={handleUseMyLocation}
             disabled={locating}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#BAF14D] py-3.5 text-[0.9375rem] font-bold text-[#191A2E] transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-(--nb-accent-fill) py-3.5 text-[0.9375rem] font-bold text-(--nb-on-accent-fill) transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             {locating ? (
               <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#191A2E]/30 border-t-[#191A2E]" />
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-(--nb-on-accent-fill)/30 border-t-(--nb-on-accent-fill)" />
                 {tr('snap.finding_you')}
               </>
             ) : (
@@ -655,13 +661,13 @@ export default function NearbySnapshot() {
           </button>
 
           {geoError && (
-            <p className="mt-3 text-[0.8125rem] leading-snug text-white/75">{geoError}</p>
+            <p className="mt-3 text-[0.8125rem] leading-snug text-(--nb-ink-70)">{geoError}</p>
           )}
 
           <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-white/[0.12]" />
-            <span className="text-[0.75rem] font-semibold uppercase tracking-wider text-white/70">{tr('snap.or')}</span>
-            <div className="h-px flex-1 bg-white/[0.12]" />
+            <div className="h-px flex-1 bg-(--nb-panel-hover)" />
+            <span className="text-[0.75rem] font-semibold uppercase tracking-wider text-(--nb-ink-70)">{tr('snap.or')}</span>
+            <div className="h-px flex-1 bg-(--nb-panel-hover)" />
           </div>
 
           <AddressAutocomplete
@@ -685,10 +691,10 @@ export default function NearbySnapshot() {
               })
             }}
             label={null}
-            variant="dark"
+            variant={tone === 'dark' ? 'dark' : 'light'}
             placeholder={tr('snap.address_placeholder')}
           />
-          <p className="mt-3 text-[0.75rem] leading-snug text-white/75">
+          <p className="mt-3 text-[0.75rem] leading-snug text-(--nb-ink-70)">
             {tr('snap.address_note')}
           </p>
         </div>
@@ -728,6 +734,7 @@ export default function NearbySnapshot() {
     : 'ready'
 
   const surfaceProps = {
+    initialFocus,
     center: location,
     displayLabel,
     subLabel,
@@ -762,10 +769,12 @@ export default function NearbySnapshot() {
   }
 
   return (
-    <NearbyI18nProvider locale={locale}>
-      <NearbyPromosProvider promos={promos}>
-        {isDesktop ? <NearbyDesktop {...surfaceProps} /> : <NearbyShell {...surfaceProps} />}
-      </NearbyPromosProvider>
-    </NearbyI18nProvider>
+    <NearbyToneProvider tone={tone}>
+      <NearbyI18nProvider locale={locale}>
+        <NearbyPromosProvider promos={promos}>
+          {isDesktop ? <NearbyDesktop {...surfaceProps} /> : <NearbyShell {...surfaceProps} />}
+        </NearbyPromosProvider>
+      </NearbyI18nProvider>
+    </NearbyToneProvider>
   )
 }

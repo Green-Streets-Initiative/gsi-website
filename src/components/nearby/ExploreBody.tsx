@@ -27,7 +27,7 @@ export function ExploreBody({ community, compact }: {
       {/* Nearby events — same type iconography as the town pages + calendar */}
       {events.length > 0 && (
         <div>
-          <div className="mb-2.5 flex items-center gap-1.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
+          <div className="mb-2.5 flex items-center gap-1.5 text-[0.7rem] font-bold uppercase tracking-wider text-(--nb-ink-70)">
             <CalendarBlank size={14} weight="bold" />
             {tr('explore.happening_near_you')}
           </div>
@@ -40,7 +40,7 @@ export function ExploreBody({ community, compact }: {
                   key={e.id}
                   href={`/events/${e.id}`}
                   onClick={() => posthog.capture('snapshot_event_clicked', { id: e.id })}
-                  className="flex items-start gap-3 rounded-xl border border-white/[0.08] bg-[#242538] px-4 py-3.5 transition-colors hover:border-white/[0.16]"
+                  className="flex items-start gap-3 rounded-xl border border-(--nb-line) bg-(--nb-card) px-4 py-3.5 transition-colors hover:border-(--nb-line-mid)"
                 >
                   <span
                     className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px]"
@@ -52,8 +52,8 @@ export function ExploreBody({ community, compact }: {
                     <span className="block text-[0.62rem] font-bold uppercase tracking-widest" style={{ color: meta.color }}>
                       {meta.label}
                     </span>
-                    <p className="text-[0.9rem] font-semibold leading-snug text-white">{e.title}</p>
-                    <p className="mt-0.5 text-[0.8rem] text-white/75">
+                    <p className="text-[0.9rem] font-semibold leading-snug text-(--nb-ink)">{e.title}</p>
+                    <p className="mt-0.5 text-[0.8rem] text-(--nb-ink-70)">
                       {parseEventDate(e.event_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                       {e.location_name ? ` · ${e.location_name}` : ''} · {tr('explore.distance_away', { distance: formatDistance(e.distance_miles) })}
                     </p>
@@ -63,7 +63,7 @@ export function ExploreBody({ community, compact }: {
             })}
           </div>
           {events.length > 3 && (
-            <Link href="/events" className="mt-2.5 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80">
+            <Link href="/events" className="mt-2.5 inline-block text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80">
               {tr('explore.see_all_events')}
             </Link>
           )}
@@ -73,7 +73,7 @@ export function ExploreBody({ community, compact }: {
       {/* Roams */}
       {roams.length > 0 && (
         <div className="mt-5">
-          <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
+          <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-(--nb-ink-70)">
             {tr('explore.explore_neighborhood')}
           </div>
           <div className={`grid gap-3 ${compact ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
@@ -84,7 +84,7 @@ export function ExploreBody({ community, compact }: {
             ))}
           </div>
           {roams.length > 3 && (
-            <Link href="/shift/roams" className="mt-2.5 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80">
+            <Link href="/shift/roams" className="mt-2.5 inline-block text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80">
               {tr('explore.more_roams')}
             </Link>
           )}

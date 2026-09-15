@@ -75,7 +75,7 @@
   }
 
   body {
-    background-color: #191A2E;
+    background-color: #F4F8EE;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -183,4 +183,73 @@
   .ticker-track:hover {
     animation-play-state: paused;
   }
+}
+
+/* ── Nearby surface tones ─────────────────────────────────────────────────
+   The /nearby tree paints from these variables so the same components can
+   render on the app-dark surface (the original) or the site's cream system.
+   `nearby-tone` carries the dark values; `nearby-tone-light` overrides them.
+   Body text on dark stays ≥ white/70 (the contrast rule); on cream the
+   equivalents are the site's ink tokens. */
+.nearby-tone {
+  --nb-bg: #191A2E;
+  --nb-card: #242538;
+  --nb-card-deep: #1F2030;
+  --nb-panel-faint: rgba(255, 255, 255, 0.035);
+  --nb-panel: rgba(255, 255, 255, 0.055);
+  --nb-panel-raised: rgba(255, 255, 255, 0.09);
+  --nb-panel-hover: rgba(255, 255, 255, 0.13);
+  --nb-panel-strong: rgba(255, 255, 255, 0.25);
+  --nb-scrim: rgba(255, 255, 255, 0.6);
+  --nb-line: rgba(255, 255, 255, 0.08);
+  --nb-line-mid: rgba(255, 255, 255, 0.14);
+  --nb-line-strong: rgba(255, 255, 255, 0.3);
+  --nb-ink: #ffffff;
+  --nb-ink-80: rgba(255, 255, 255, 0.8);
+  --nb-ink-70: rgba(255, 255, 255, 0.75);
+  --nb-ink-60: rgba(255, 255, 255, 0.6);
+  --nb-accent: #BAF14D;
+  --nb-accent-fill: #BAF14D;
+  --nb-on-accent-fill: #191A2E;
+  --nb-accent-tint: rgba(186, 241, 77, 0.12);
+  --nb-accent-line: rgba(186, 241, 77, 0.6);
+  --nb-warn: #EDB93C;
+  --nb-warn-tint: rgba(237, 185, 60, 0.1);
+  --nb-warn-line: rgba(237, 185, 60, 0.3);
+  --nb-painted: #7FB5FF;
+  --nb-painted-line: rgba(127, 181, 255, 0.6);
+  --nb-painted-tint: rgba(127, 181, 255, 0.15);
+  --nb-promo-bg: linear-gradient(135deg, rgba(41, 102, 229, 0.18), rgba(186, 241, 77, 0.1));
+  --nb-logo-plate: transparent;
+}
+.nearby-tone-light {
+  --nb-bg: #F4F8EE;
+  --nb-card: #ffffff;
+  --nb-card-deep: #FAFBF8;
+  --nb-panel-faint: rgba(25, 26, 46, 0.03);
+  --nb-panel: rgba(25, 26, 46, 0.05);
+  --nb-panel-raised: rgba(25, 26, 46, 0.08);
+  --nb-panel-hover: rgba(25, 26, 46, 0.12);
+  --nb-panel-strong: rgba(25, 26, 46, 0.2);
+  --nb-scrim: rgba(255, 255, 255, 0.75);
+  --nb-line: rgba(25, 26, 46, 0.12);
+  --nb-line-mid: rgba(25, 26, 46, 0.18);
+  --nb-line-strong: rgba(25, 26, 46, 0.32);
+  --nb-ink: #191A2E;
+  --nb-ink-80: #2F3150;
+  --nb-ink-70: #4A4D68;
+  --nb-ink-60: #666984;
+  --nb-accent: #2D6A4F;
+  --nb-accent-fill: #191A2E;
+  --nb-on-accent-fill: #ffffff;
+  --nb-accent-tint: rgba(45, 106, 79, 0.1);
+  --nb-accent-line: rgba(45, 106, 79, 0.55);
+  --nb-warn: #8A5A00;
+  --nb-warn-tint: rgba(237, 185, 60, 0.16);
+  --nb-warn-line: rgba(237, 185, 60, 0.55);
+  --nb-painted: #2B6CB0;
+  --nb-painted-line: rgba(43, 108, 176, 0.6);
+  --nb-painted-tint: rgba(43, 108, 176, 0.12);
+  --nb-promo-bg: linear-gradient(135deg, rgba(41, 102, 229, 0.08), rgba(45, 106, 79, 0.1));
+  --nb-logo-plate: #191A2E;
 }

@@ -25,6 +25,9 @@
 export type ShuttleAccess = 'public' | 'public-fare' | 'id' | 'unstated'
 
 export interface ShuttleAgencyMeta {
+  /** The operator's own schedule/routes page — linked from stop cards with
+   *  UTM tags so schools and TMAs can see the traffic we send them. */
+  url?: string
   /** Id namespace: `${prefix}:${routeId}` / `${prefix}:${stopId}` */
   prefix: string
   /** Short label on the map pill and list rows — "EZRide", "BC" */
@@ -38,31 +41,31 @@ export interface ShuttleAgencyMeta {
 
 export const SHUTTLE_AGENCY_META: readonly ShuttleAgencyMeta[] = [
   // "The EZRide is open to everyone – and it's fare-free." (charlesrivertma.org)
-  { prefix: 'crtma', label: 'EZRide', name: 'EZRide – Charles River TMA', idName: 'EZRide', access: 'public' },
+  { prefix: 'crtma', label: 'EZRide', name: 'EZRide – Charles River TMA', idName: 'EZRide', access: 'public', url: 'https://charlesrivertma.org/route-and-stops' },
   // "Any employee or student of a Longwood Collective member institution can
   //  ride the shuttles with a valid ID from their institution."
-  { prefix: 'longwood', label: 'Longwood', name: 'Longwood Collective', idName: 'Longwood member institution', access: 'id' },
+  { prefix: 'longwood', label: 'Longwood', name: 'Longwood Collective', idName: 'Longwood member institution', access: 'id', url: 'https://www.longwoodcollective.org/shuttle-schedules' },
   // "free for members of the Harvard community"; M2 states ID on boarding.
-  { prefix: 'harvard', label: 'Harvard', name: 'Harvard Shuttle', idName: 'Harvard', access: 'id' },
+  { prefix: 'harvard', label: 'Harvard', name: 'Harvard Shuttle', idName: 'Harvard', access: 'id', url: 'https://transportation.harvard.edu/shuttles' },
   // MIT lists every route as "free with MIT ID" (EZRide, listed separately
   // on the same page, is the one "free to all").
-  { prefix: 'mit', label: 'MIT', name: 'MIT Shuttles', idName: 'MIT', access: 'id' },
+  { prefix: 'mit', label: 'MIT', name: 'MIT Shuttles', idName: 'MIT', access: 'id', url: 'https://web.mit.edu/facilities/transportation/shuttles/' },
   // Tufts publishes routes and a live tracker but no boarding policy.
-  { prefix: 'tufts', label: 'Tufts', name: 'Tufts Shuttle', idName: 'Tufts', access: 'unstated' },
+  { prefix: 'tufts', label: 'Tufts', name: 'Tufts Shuttle', idName: 'Tufts', access: 'unstated', url: 'https://access.tufts.edu/shuttles' },
   // "Boston College students and employees can utilize the University's free
   //  shuttle buses"; BC does not state whether ID is checked.
-  { prefix: 'bc', label: 'BC', name: 'Boston College Shuttle', idName: 'Boston College', access: 'id' },
+  { prefix: 'bc', label: 'BC', name: 'Boston College Shuttle', idName: 'Boston College', access: 'id', url: 'https://www.bc.edu/bc-web/offices/aux-services/sites/transportation-parking/shuttles.html' },
   // "please be prepared to show the BUS operator a valid Boston University ID"
-  { prefix: 'bu', label: 'BU', name: 'Boston University Shuttle', idName: 'Boston University', access: 'id' },
+  { prefix: 'bu', label: 'BU', name: 'Boston University Shuttle', idName: 'Boston University', access: 'id', url: 'https://www.bu.edu/transportation/' },
   // UMass Boston publishes schedules and GPS tracking but no boarding policy.
-  { prefix: 'umb', label: 'UMass Boston', name: 'UMass Boston Shuttle', idName: 'UMass Boston', access: 'unstated' },
+  { prefix: 'umb', label: 'UMass Boston', name: 'UMass Boston Shuttle', idName: 'UMass Boston', access: 'unstated', url: 'https://www.umb.edu/transportation/' },
   // "The Lower Mystic Link is a no-fare service open to the public."
-  { prefix: 'lml', label: 'Lower Mystic', name: 'Lower Mystic Link', idName: 'Lower Mystic Link', access: 'public' },
+  { prefix: 'lml', label: 'Lower Mystic', name: 'Lower Mystic Link', idName: 'Lower Mystic Link', access: 'public', url: 'https://www.lowermystictma.org/' },
   // "All multi-stop Grid routes are also open to the public at the full
   //  public fare … CharlieCards and other MBTA passes aren't accepted."
-  { prefix: 'grid', label: 'The Grid', name: 'The Grid — 128 Business Council', idName: '128 Business Council', access: 'public-fare' },
+  { prefix: 'grid', label: 'The Grid', name: 'The Grid — 128 Business Council', idName: '128 Business Council', access: 'public-fare', url: 'https://128bc.org/' },
   // M3 names its shuttles and operator (TransAction) but no boarding policy.
-  { prefix: 'm3', label: 'Middlesex 3', name: 'Middlesex 3 TMA Shuttle', idName: 'Middlesex 3', access: 'unstated' },
+  { prefix: 'm3', label: 'Middlesex 3', name: 'Middlesex 3 TMA Shuttle', idName: 'Middlesex 3', access: 'unstated', url: 'https://www.middlesex3.com/' },
 ]
 
 /** One color for every shuttle — "indigo dot = a shuttle" is the map's

@@ -81,8 +81,15 @@ export default async function SchoolPosterPage({ params }: Props) {
           <PrintButton />
         </div>
 
-        <div className="rounded-[24px] bg-[#191A2E] px-10 py-12 text-center text-white">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-[#BAF14D]">Shift Your Semester</p>
+        <div className="overflow-hidden rounded-[24px] bg-[#191A2E] text-center text-white">
+        <div className="px-10 pb-10 pt-12">
+          {/* The campaign name with the app's own mark in it: the white Shift
+              wordmark stands in for the word. */}
+          <p className="mb-3 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[#BAF14D]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/shift-wordmark-white.svg" alt="Shift" className="h-[18px] w-auto" />
+            <span>Your Semester</span>
+          </p>
           <h1 className="mx-auto mb-4 max-w-[7in] font-display text-[44px] font-extrabold leading-[1.05] tracking-tighter">
             Walk. Bike. Ride the T.
             <br />
@@ -116,6 +123,24 @@ export default async function SchoolPosterPage({ params }: Props) {
           <p className="text-[13px] text-white/75">
             Free app · iOS &amp; Android · gogreenstreets.org/semester/{school.slug}
           </p>
+        </div>
+        {/* Who's behind it: the real marks, on white so the GSI wordmark
+            (green + navy, no light variant exists) reads in print. */}
+        {/* "Shift by Green Streets Initiative", the app's own lockup order. */}
+        <div className="border-t border-white/10 bg-white px-10 py-5">
+          <div className="flex items-center justify-center gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/shift-wordmark-dark.svg" alt="Shift" className="h-[24px] w-auto" />
+            <span className="text-[13px] text-[#191A2E]/60">by</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/gsi-wordmark.png" alt="Green Streets Initiative" className="h-[24px] w-auto" />
+          </div>
+          {/* Says who is behind the offer: a nonprofit rewarding active trips,
+              not an app buying sign-ups. */}
+          <p className="mt-2.5 text-[11px] leading-snug text-[#191A2E]/60">
+            A Massachusetts 501(c)(3) nonprofit promoting active transportation since 2006.
+          </p>
+        </div>
         </div>
 
         <p className="flyer-no-print mt-4 text-center text-sm text-[#191A2E]/60">

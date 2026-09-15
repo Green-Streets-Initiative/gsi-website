@@ -306,15 +306,15 @@ export function useNearbyModel({
     if (selection?.type !== 'station' || !onRequestCorridorShape) return
     const st = stationByKey.get(selection.key)
     if (!st) return
-    const rows = st.isRail ? [...rail, ...railFarRows] : [...bus, ...busFarRows]
+    // Shuttle routes have no MBTA shape, but corridor-meta now answers them
+    // with the feed's stop order joined into a line — so they fetch too
+    const rows = st.isRail ? [...rail, ...railFarRows] : [...bus, ...busFarRows, ...(shuttles ?? [])]
     for (const route of st.routes) {
       if (corridorById.has(`transit:${route.id}`)) continue
-      // Shuttle lines aren't in the MBTA corridor store — nothing to fetch
-      if (isShuttleRoute(route.id)) continue
       const row = rows.find(r => r.name.toLowerCase() === selection.key && r.route_id === route.id)
       if (row) onRequestCorridorShape(route.id, row.stop_id)
     }
-  }, [selection, stationByKey, corridorById, rail, bus, railFarRows, busFarRows, onRequestCorridorShape])
+  }, [selection, stationByKey, corridorById, rail, bus, shuttles, railFarRows, busFarRows, onRequestCorridorShape])
 
   /** Returns true when this call left something SELECTED — callers that
    *  reveal chrome (the mobile sheet's half snap) must not fire on a

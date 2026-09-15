@@ -14,7 +14,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const routeId = (searchParams.get('route') || '').slice(0, 40)
   const stopId = (searchParams.get('stop') || '').slice(0, 40)
-  if (!routeId || !stopId || !/^[\w.-]+$/.test(routeId) || !/^[\w.-]+$/.test(stopId)) {
+  // Shuttle ids are namespaced by operator ("umb:19"); a shuttle stop id
+  // may be its coordinates ("umb:42.3127,-71.0367")
+  if (!routeId || !stopId || !/^[\w.:-]+$/.test(routeId) || !/^[\w.:,-]+$/.test(stopId)) {
     return NextResponse.json({ error: 'route and stop required' }, { status: 400 })
   }
 

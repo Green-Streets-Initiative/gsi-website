@@ -11,7 +11,7 @@ export function SkeletonRows({ count }: { count: number }) {
   return (
     <div className="space-y-2.5" aria-hidden="true">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="h-[68px] animate-pulse rounded-xl border border-white/[0.06] bg-white/[0.06]" />
+        <div key={i} className="h-[68px] animate-pulse rounded-xl border border-(--nb-line) bg-(--nb-panel)" />
       ))}
     </div>
   )
@@ -20,9 +20,9 @@ export function SkeletonRows({ count }: { count: number }) {
 export function ErrorCard({ label, onRetry }: { label: string; onRetry: () => void }) {
   const tr = useNearbyT()
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4">
-      <span className="text-[0.875rem] text-white/75">{label}</span>
-      <button onClick={onRetry} className="shrink-0 text-[0.8125rem] font-bold text-[#BAF14D] hover:opacity-80">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-(--nb-line) bg-(--nb-panel-faint) px-5 py-4">
+      <span className="text-[0.875rem] text-(--nb-ink-70)">{label}</span>
+      <button onClick={onRetry} className="shrink-0 text-[0.8125rem] font-bold text-(--nb-accent) hover:opacity-80">
         {tr('section.retry')}
       </button>
     </div>
@@ -57,21 +57,21 @@ export function CollapsibleSection({ title, count, teaser, swatch, open, onToggl
       <button
         onClick={onToggle}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 rounded-lg py-1 text-left transition-colors hover:bg-white/[0.04]"
+        className="flex w-full items-center gap-2 rounded-lg py-1 text-left transition-colors hover:bg-(--nb-panel-faint)"
       >
         {swatch}
-        <span className="min-w-0 flex-1 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
+        <span className="min-w-0 flex-1 text-[0.7rem] font-bold uppercase tracking-wider text-(--nb-ink-70)">
           {title} · {count}
         </span>
         {/* A bare chevron read as decoration once every section defaulted
             closed — the list looked flat and finished. Naming the action
             makes it unmistakably a control at a glance. */}
-        <span className="shrink-0 text-[0.72rem] font-bold leading-none text-[#BAF14D]">
+        <span className="shrink-0 text-[0.72rem] font-bold leading-none text-(--nb-accent)">
           {open ? tr('lists.section_hide') : tr('lists.section_show')} {open ? '▴' : '▾'}
         </span>
       </button>
       {!open && teaser && (
-        <p className="mt-0.5 text-[0.78rem] leading-snug text-white/75">{teaser}</p>
+        <p className="mt-0.5 text-[0.78rem] leading-snug text-(--nb-ink-70)">{teaser}</p>
       )}
       {open && <div className="mt-2.5">{children}</div>}
     </div>

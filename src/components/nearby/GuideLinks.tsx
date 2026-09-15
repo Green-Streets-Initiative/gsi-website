@@ -26,11 +26,11 @@ export default function GuideLinks({ context, guides, modeFilter }: {
           key={g.id}
           href={`/guides/${g.slug ?? g.id}`}
           onClick={() => posthog.capture('snapshot_guide_clicked', { slug: g.slug ?? g.id, context })}
-          className="group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[0.8rem] transition-colors hover:bg-white/[0.05]"
+          className="group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[0.8rem] transition-colors hover:bg-(--nb-panel)"
         >
-          <span className="text-[0.7rem] text-[#BAF14D]">▸</span>
-          <span className="min-w-0 truncate font-semibold text-white/90 group-hover:text-white">{g.title}</span>
-          <span className="ml-auto shrink-0 text-[0.75rem] font-semibold text-[#BAF14D] opacity-80 group-hover:opacity-100">
+          <span className="text-[0.7rem] text-(--nb-accent)">▸</span>
+          <span className="min-w-0 truncate font-semibold text-(--nb-ink-80) group-hover:text-(--nb-ink)">{g.title}</span>
+          <span className="ml-auto shrink-0 text-[0.75rem] font-semibold text-(--nb-accent) opacity-80 group-hover:opacity-100">
             {tr('guides.guide_link')}
           </span>
         </Link>

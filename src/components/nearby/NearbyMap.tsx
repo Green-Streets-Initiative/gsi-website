@@ -6,6 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
 import { haversineMeters } from '@/lib/geo/measure'
 import { bearingDegrees } from '@/lib/geo/polyline'
+import { BASEMAP_STYLE, CORRIDOR_CASING, useNearbyTone } from './NearbyTone'
 
 export interface NearbyMarker {
   id: string
@@ -130,6 +131,7 @@ export default function NearbyMap({
   cooperative = true, controls, fitPadding, focusPoint, focusPadding,
   heightClass = 'h-[320px] sm:h-[380px]',
 }: Props) {
+  const tone = useNearbyTone()
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const centerRef = useRef(center)
@@ -178,7 +180,7 @@ export default function NearbyMap({
 
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+        style: BASEMAP_STYLE[tone],
         center: [center.lng, center.lat],
         zoom: 13.5,
         attributionControl: false,
@@ -219,7 +221,7 @@ export default function NearbyMap({
           pendingLinesRef.current = null
         }
         if (pendingCorridorsRef.current) {
-          applyCorridors(map, pendingCorridorsRef.current, lineEmphasisRef.current)
+          applyCorridors(map, pendingCorridorsRef.current, lineEmphasisRef.current, CORRIDOR_CASING[tone])
           if (fitToLinesRef.current) {
             const bounds = linesBounds(maplibregl, pendingCorridorsRef.current)
             if (bounds) {
@@ -362,7 +364,7 @@ export default function NearbyMap({
       pendingCorridorsRef.current = corridorLines
       return
     }
-    applyCorridors(map, corridorLines, lineEmphasisRef.current)
+    applyCorridors(map, corridorLines, lineEmphasisRef.current, CORRIDOR_CASING[tone])
     if (fitToLinesRef.current && !didFitRef.current) {
       ;(async () => {
         const maplibregl = await loadMaplibre()
@@ -375,7 +377,7 @@ export default function NearbyMap({
         }
       })()
     }
-  }, [corridorLines])
+  }, [corridorLines, tone])
 
   // Selection: highlight via paint expressions, fit to the selected shape,
   // ease home on deselect
@@ -548,7 +550,7 @@ function linesBounds(
   return hasPoint ? bounds : null
 }
 
-function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollection, emphasis = false) {
+function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollection, emphasis = false, casing = '#191A2E') {
   const existing = map.getSource('corridors') as maplibregl.GeoJSONSource | undefined
   if (existing) {
     existing.setData(corridors)
@@ -574,7 +576,7 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
     id: 'corridor-casing',
     type: 'line',
     source: 'corridors',
-    paint: { 'line-color': '#191A2E', 'line-width': emphasis ? 6 : 5, 'line-opacity': emphasis ? 0.8 : 0.6 },
+    paint: { 'line-color': casing, 'line-width': emphasis ? 6 : 5, 'line-opacity': emphasis ? 0.8 : 0.6 },
     layout: { 'line-cap': 'round', 'line-join': 'round' },
   })
   map.addLayer({

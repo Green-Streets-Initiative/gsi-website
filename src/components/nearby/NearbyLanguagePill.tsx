@@ -24,7 +24,7 @@ export default function NearbyLanguagePill({ className = '' }: { className?: str
   }
 
   return (
-    <div className={`inline-flex items-center rounded-full bg-white/[0.08] p-0.5 text-[0.68rem] font-bold ${className}`}>
+    <div className={`inline-flex items-center rounded-full bg-(--nb-panel-raised) p-0.5 text-[0.68rem] font-bold ${className}`}>
       {NEARBY_LOCALES.map(loc => {
         const active = loc === locale
         return (
@@ -33,7 +33,7 @@ export default function NearbyLanguagePill({ className = '' }: { className?: str
             onClick={() => switchTo(loc)}
             aria-pressed={active}
             className={`rounded-full px-2 py-1 transition-colors ${
-              active ? 'bg-[#BAF14D] text-[#191A2E]' : 'text-white/75 hover:text-white'
+              active ? 'bg-(--nb-accent-fill) text-(--nb-on-accent-fill)' : 'text-(--nb-ink-70) hover:text-(--nb-ink)'
             }`}
           >
             {NEARBY_LOCALE_LABELS[loc]}

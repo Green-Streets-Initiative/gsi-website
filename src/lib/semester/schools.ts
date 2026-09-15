@@ -96,7 +96,7 @@ export const SCHOOLS: School[] = [
       { text: 'Bluebikes stations sit right at the edge of campus on Boylston and Stuart Streets.', sourceUrl: 'https://emerson.edu/emerson-life/campus/sustainability/what-were-doing/sustainability-campus' },
     ],
     moving: [
-      { text: 'The Theatre District campus is one of the most walkable college addresses in the country — Chinatown, Downtown Crossing, and the Common are all minutes on foot.', sourceUrl: 'https://emerson.edu/about/sustainability/' },
+      { text: 'The Theatre District campus is one of the most walkable campuses in Boston — Chinatown, Downtown Crossing, and the Common are all minutes on foot.', sourceUrl: 'https://emerson.edu/about/sustainability/' },
     ],
   },
   {
@@ -136,7 +136,7 @@ export const SCHOOLS: School[] = [
     seoDescription:
       'The BU Cycle Kitchen at 1019 Comm Ave — free, self-service, staff teach and you wrench — plus BU\'s discounted Bluebikes membership, secure bike rooms, and The BUS running seven days a week.',
     transit: [
-      { text: 'BU’s transportation office publishes refreshingly honest guidance on when a semester pass beats paying per ride — worth reading before you buy.', sourceUrl: 'https://www.bu.edu/transportation/public-transit/student-mbta-options/' },
+      { text: 'BU’s transportation office publishes clear guidance on when a semester pass beats paying per ride — worth reading before you buy.', sourceUrl: 'https://www.bu.edu/transportation/public-transit/student-mbta-options/' },
       { text: 'The BUS — BU’s free shuttle — runs seven days a week with late-night service, with live tracking in the Terrier Transit app.', sourceUrl: 'https://www.bu.edu/transportation/bus/' },
     ],
     bike: [
@@ -145,7 +145,7 @@ export const SCHOOLS: School[] = [
       { text: 'A live calendar of bike events: the Comm Ave Slow Roll, bike swap meets, and how-to workshops.', sourceUrl: 'https://www.bu.edu/transportation/bicycling/' },
     ],
     moving: [
-      { text: 'The Charles River Esplanade runs the length of campus — the prettiest walk or ride to class in Boston.', sourceUrl: 'https://www.bu.edu/transportation/bicycling/' },
+      { text: 'The Charles River Esplanade runs the length of campus — a riverside walk or ride to class.', sourceUrl: 'https://www.bu.edu/transportation/bicycling/' },
     ],
   },
   {
@@ -185,7 +185,7 @@ export const SCHOOLS: School[] = [
     seoDescription:
       'Quad Bikes at Cabot House — free repairs during open-stand hours, plus group rides — the nightly free Evening Van across Cambridge and Allston, and fix-it stations with pumps and tools around campus.',
     transit: [
-      { text: 'Harvard Square is a Red Line hub with bus connections in every direction — the campus was built around not driving.', sourceUrl: 'https://www.hupd.harvard.edu/transportation' },
+      { text: 'Harvard Square is a Red Line hub with bus connections in every direction — most of Cambridge and Boston is a one-seat ride.', sourceUrl: 'https://www.hupd.harvard.edu/transportation' },
       { text: 'The free Evening Van runs nightly across Cambridge and Allston during the academic year, 7 p.m.–3 a.m.', sourceUrl: 'https://transportation.harvard.edu/harvard-shuttle/evening-van' },
     ],
     bike: [
@@ -204,12 +204,12 @@ export const SCHOOLS: School[] = [
     groupSlug: 'mit',
     lat: 42.3601,
     lng: -71.0942,
-    highlight: 'MIT covers 50–70% of students’ MBTA pass costs — the deepest transit subsidy in Boston.',
+    highlight: 'MIT covers 50–70% of students’ MBTA pass costs.',
     seoTitle: 'MIT T pass subsidy, SafeRide & the Bike Lab — getting around MIT | Shift',
     seoDescription:
-      'MIT covers 50–70% of students\' MBTA pass costs — the deepest transit subsidy in Boston — plus free SafeRide night routes, subsidized Bluebikes, the volunteer-run Bike Lab, and grocery-run shuttles.',
+      'MIT covers 50–70% of students\' MBTA pass costs, plus free SafeRide night routes, subsidized Bluebikes, the volunteer-run Bike Lab, and grocery-run shuttles.',
     transit: [
-      { text: 'MIT covers 50–70% of the cost of MBTA passes for students — bus, subway, commuter rail, and boat. No other Boston school comes close.', sourceUrl: 'https://web.mit.edu/facilities/transportation/students.html' },
+      { text: 'MIT covers 50–70% of the cost of MBTA passes for students — bus, subway, commuter rail, and boat.', sourceUrl: 'https://web.mit.edu/facilities/transportation/students.html' },
       { text: 'Free shuttles run early to late — including named grocery runs to Trader Joe’s, Market Basket, and Costco — with live tracking.', sourceUrl: 'https://web.mit.edu/facilities/transportation/students.html' },
     ],
     bike: [
@@ -242,7 +242,7 @@ export const SCHOOLS: School[] = [
       { text: '“Bike Check!” reimburses repairs, helmets, and safety gear twice a year, and Tufts affiliates get a discounted Bluebikes membership.', sourceUrl: 'https://access.tufts.edu/commuter-benefits-discounts' },
     ],
     moving: [
-      { text: 'GoMassCommute tracks car-free commutes for prizes, with Emergency Ride Home as a backstop.', sourceUrl: 'https://access.tufts.edu/commuter-benefits-discounts' },
+      { text: 'GoMassCommute tracks walking, biking, transit, and carpool commutes for prizes, with Emergency Ride Home as a backstop.', sourceUrl: 'https://access.tufts.edu/commuter-benefits-discounts' },
     ],
     // Tufts' own fall challenge (read 2026-09-14 from access.tufts.edu).
     campusChallenge: {
@@ -272,7 +272,7 @@ export const SCHOOLS: School[] = [
     groupSlug: 'umass-boston',
     lat: 42.3134,
     lng: -71.0386,
-    highlight: 'A student-funded 50% T-pass subsidy — it sells out fast every term.',
+    highlight: 'A student-funded 50% T pass subsidy — it sells out fast every term.',
     seoTitle: 'UMass Boston T pass subsidy, free bike parking & the JFK/UMass shuttle | Shift',
     seoDescription:
       'The student-funded 50% semester T-pass subsidy (first-come, and it sells out), 740+ free bike parking spaces including a secured indoor shelter, and free shuttles from JFK/UMass every few minutes.',
@@ -386,7 +386,7 @@ export const SCHOOLS: School[] = [
  * Human name for a citation host, so a fact credits "Boston University" rather
  * than a bare lowercase "source".
  *
- * Keyed on hostname rather than the full URL so a school reorganising its site
+ * Keyed on hostname rather than the full URL so a school reorganizing its site
  * doesn't silently drop the label. Most entries are just the institution: the
  * ones that aren't are the cases where the publisher genuinely differs from the
  * school — a student newspaper, a student-run shop, a campus police department
@@ -417,7 +417,7 @@ const SOURCE_NAMES: Record<string, string> = {
 /**
  * Display name for a fact's citation. Falls back to the bare domain (minus
  * `www.`) for any host not in the map, so a new source still reads like a
- * citation instead of breaking the layout or going unlabelled.
+ * citation instead of breaking the layout or going unlabeled.
  */
 export function sourceName(url: string): string {
   try {

@@ -36,6 +36,10 @@ export interface NearbySnapshotOptions {
   /** Half-extents (degrees) of the map box the caller will draw, so the
    *  background lane network is trimmed to what can actually show. */
   mapHalf: { lat: number; lng: number }
+  /** Bike-network radius in miles. ≤ 2 rides the durable cache (the print
+   *  page); the school pages ask for 3 so their lists agree with where the
+   *  live page ends up. Default 3. */
+  bikeRadiusMiles?: number
 }
 
 export interface NearbySnapshotModel {
@@ -54,37 +58,6 @@ export interface NearbySnapshotModel {
   drawnTiers: Set<string>
 }
 
-/**
- * One facility, several OSM names: around UMass Boston the sources yield
- * "Harborwalk", "Boston Harborwalk", "UMass Harborwalk", and "Boston Harbor
- * Walk and Neponset River Greenway" as four corridors. Names that contain
- * one another (spaces and case aside) are one family; keep the longest
- * mileage as its representative, at the family's closest access point.
- */
-function dedupeCorridorFamilies(corridors: BikeCorridor[]): BikeCorridor[] {
-  const norm = (n: string) => n.toLowerCase().replace(/[^a-z0-9]/g, '')
-  const related = (a: string, b: string) => a.includes(b) || b.includes(a)
-  let kept: BikeCorridor[] = []
-  for (const c of corridors) {
-    const key = norm(c.name)
-    // Containment isn't transitive ("UMass Harborwalk" and "Boston
-    // Harborwalk" only meet through "Harborwalk"), so a newcomer that
-    // bridges several kept entries folds them all into one.
-    const family = kept.filter(k => related(norm(k.name), key))
-    if (family.length === 0) {
-      kept.push(c)
-      continue
-    }
-    const members = [...family, c]
-    const longer = members.reduce((a, b) => (b.lengthMiles > a.lengthMiles ? b : a))
-    const nearer = members.reduce((a, b) => (b.accessDistanceMeters < a.accessDistanceMeters ? b : a))
-    kept = kept.filter(k => !family.includes(k))
-    kept.push({ ...longer, accessDistanceMeters: nearer.accessDistanceMeters, accessPoint: nearer.accessPoint })
-  }
-  // buildBikeCorridors orders by access distance; a merge may have moved one
-  return kept.sort((a, b) => a.accessDistanceMeters - b.accessDistanceMeters)
-}
-
 export async function buildNearbySnapshotModel(
   lat: number,
   lng: number,
@@ -96,7 +69,12 @@ export async function buildNearbySnapshotModel(
     getReach(lat, lng).catch(() => ({ destinations: [] as ReachRow[] })),
     nearbyShuttleStops(lat, lng, { maxStops: 6, perAgency: 3 }).catch(() => []),
     getBluebikesDocks(lat, lng).catch(() => [] as BluebikeStationLive[]),
-    getBikeNetwork(lat, lng, 1.5).catch(() => null),
+    // 3 miles, not 1.5: the live page paints 1.5 first and then swaps in the
+    // 3-mile network, and a corridor's tier can change with the wider view
+    // (more mapped painted stretches → "mostly protected" becomes "painted").
+    // The static lists must agree with where the live page ENDS UP, or a
+    // school page names a route the live page then can't find.
+    getBikeNetwork(lat, lng, opts.bikeRadiusMiles ?? 3).catch(() => null),
   ])
 
   // Shapes + weekday frequency per transit corridor; failures degrade to
@@ -130,7 +108,13 @@ export async function buildNearbySnapshotModel(
   const anyFar = stations.some(s => s.farther)
 
   const bikeBuild = network ? buildBikeCorridors(network.geojson, lat, lng) : { corridors: [] as BikeCorridor[] }
-  const bikeCorridors = dedupeCorridorFamilies(bikeBuild.corridors).slice(0, opts.maxBike)
+  // Same order the live page shelves them: car-free paths, then the
+  // separated tiers, painted last (the live page hides those by default) —
+  // so the school page's four and the live page's first shelf agree.
+  const TIER: Record<BikeCorridor['protection'], number> = { path: 0, protected: 1, 'mostly-protected': 1, painted: 2 }
+  const bikeCorridors = [...bikeBuild.corridors]
+    .sort((a, b) => TIER[a.protection] - TIER[b.protection] || a.accessDistanceMeters - b.accessDistanceMeters)
+    .slice(0, opts.maxBike)
 
   const destinations = reach.destinations.slice(0, opts.maxDestinations)
   const printDocks = docks.slice(0, opts.maxDocks)

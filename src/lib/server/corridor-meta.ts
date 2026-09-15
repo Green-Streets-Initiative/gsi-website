@@ -1,4 +1,7 @@
 import 'server-only'
+import { isShuttleRouteId } from '@/lib/nearby/shuttle-agencies'
+import { SHUTTLE_AGENCIES, getShuttleFeed } from '@/lib/server/shuttle-gtfs'
+import { encodePolyline } from '@/lib/geo/polyline'
 
 import { unstable_cache } from 'next/cache'
 import { getConnections, type RouteConnection } from './mbta-connections'
@@ -306,7 +309,47 @@ async function computeFrequency(routeId: string, stopId: string, date: string): 
 /** Everything the snapshot needs about one route at one boarding stop.
  *  Each part degrades independently — a schedules hiccup still returns the
  *  shape, matching the old API route's behavior exactly. */
+
+/**
+ * Campus and TMA shuttles have no MBTA shapes, and most of their feeds
+ * (TransLoc, Moovs, the 128BC page) publish no shapes.txt at all. The route
+ * is still answerable from the feed's stop order: the longest pattern's
+ * stops, joined in sequence, drawn as the line. Straight legs between
+ * stops, so the drawing says "this way round, these stops" rather than
+ * tracing every turn — still the difference between a route and a
+ * scatter of dots.
+ */
+async function shuttleCorridorMeta(routeId: string): Promise<CorridorMetaResult> {
+  const empty: CorridorMetaResult = { polylines: [], frequency: null, directions: [], connections: [], connectionsOk: true }
+  const i = routeId.indexOf(':')
+  const prefix = routeId.slice(0, i)
+  const bare = routeId.slice(i + 1)
+  const agency = SHUTTLE_AGENCIES.find(a => a.prefix === prefix)
+  if (!agency) return empty
+  const feed = await getShuttleFeed(agency.id).catch(() => null)
+  const route = feed?.routes.find(r => r.id === bare)
+  if (!feed || !route?.stops?.length) return empty
+  const stopById = new Map(feed.stops.map(st => [st.id, st]))
+  // One zipped list, so a stop id the feed doesn't know drops out of BOTH
+  // the line and the stop list instead of shifting every later name.
+  const known = route.stops.flatMap(id => {
+    const st = stopById.get(id)
+    return st ? [{ id, st }] : []
+  })
+  const pts = known.map(({ st }) => [st.lat, st.lng] as [number, number])
+  if (pts.length < 2) return empty
+  // A loop route ends where it starts; close the ring so the map shows it
+  const first = pts[0], last = pts[pts.length - 1]
+  const closed = first[0] === last[0] && first[1] === last[1] ? pts : [...pts, first]
+  const stops: DirectionStops[] = [{
+    directionId: 0,
+    stops: known.map(({ id, st }) => ({ id: `${prefix}:${id}`, name: st.name ?? '', lat: st.lat, lng: st.lng })),
+  }]
+  return { polylines: [encodePolyline(closed)], frequency: null, directions: stops, connections: [], connectionsOk: true }
+}
+
 export async function getCorridorMeta(routeId: string, stopId: string): Promise<CorridorMetaResult> {
+  if (isShuttleRouteId(routeId)) return shuttleCorridorMeta(routeId)
   const [polylines, frequency, withPos] = await Promise.all([
     getShapes(routeId).catch(() => [] as string[]),
     getFrequency(routeId, stopId).catch(() => null),

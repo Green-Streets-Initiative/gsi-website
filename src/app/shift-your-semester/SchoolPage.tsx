@@ -17,6 +17,7 @@ import { PILL, Section, SectionHeading } from '@/components/org/Section'
 import CorporateShareKit from '@/app/events/shift-your-summer/share/[slug]/CorporateShareKit'
 import { SEMESTER_CLOSES, SEMESTER_CODE, SEMESTER_OPENS, SEMESTER_REWARD, SEMESTER_TRIPS, SEMESTER_WINDOW_DAYS } from '@/lib/semester/campaign'
 import { IS_LIVE, type SchoolData } from './_lib/load'
+import { withUtm } from '@/lib/utm'
 import { activeCampusChallenge } from './_lib/campus-challenge'
 
 /*
@@ -140,12 +141,13 @@ export default function SchoolPage({ d, capture = true }: { d: SchoolData; captu
                   </p>
                 )}
                 <a
-                  href={challenge.url}
+                  href={withUtm(challenge.url, { medium: 'school_page', campaign: 'semester', content: school.slug }) ?? challenge.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-4 inline-flex min-h-[44px] items-center gap-1.5 font-semibold text-forest underline-offset-4 hover:underline"
                 >
                   Join the {challenge.name} <span aria-hidden>&rarr;</span>
+                  <span className="sr-only">(opens in a new tab)</span>
                 </a>
               </div>
               <div className="border-t border-navy/15 pt-5 md:border-l md:border-t-0 md:pl-10 md:pt-0">
@@ -168,12 +170,12 @@ export default function SchoolPage({ d, capture = true }: { d: SchoolData; captu
 
         {/* Around campus: what the /nearby page knows about this spot —
             stations, bike routes, docks, and where you can get to — with the
-            map handing off to the live page centred on campus. The bare map
+            map handing off to the live page centered on campus. The bare map
             is the fallback when the snapshot build failed. */}
         <Section shape="wanderLeft" id="around" className="scroll-mt-28">
           <SectionHeading
             title="What’s around campus"
-            lede={`Everywhere you can walk, bike, or ride to from ${school.shortName}. The live map opens centred on campus.`}
+            lede={`Everywhere you can walk, bike, or ride to from ${school.shortName}. The live map opens centered on campus.`}
           />
           {d.snapshot ? (
             <CampusSnapshot model={d.snapshot} lat={school.lat} lng={school.lng} href={d.nearbyHref} shortName={school.shortName} />

@@ -34,10 +34,10 @@ export default function PartnerCobrand({ partner, logoClass = 'max-h-8', gsiClas
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/images/gsi-wordmark.png" alt="Green Streets Initiative" className={`${gsiClass} w-auto`} />
       </span>
-      <span className={`${textClass} leading-snug text-white/80`}>
+      <span className={`${textClass} leading-snug text-(--nb-ink-80)`}>
         {partner.logoUrl
           ? tr('partner.in_partnership_with')
-          : <>{tr('partner.in_partnership_with')} <span className="font-semibold text-white">{partner.name}</span></>}
+          : <>{tr('partner.in_partnership_with')} <span className="font-semibold text-(--nb-ink)">{partner.name}</span></>}
       </span>
       {partner.logoUrl && (
         <span className="shrink-0 rounded-md bg-white px-2 py-1">

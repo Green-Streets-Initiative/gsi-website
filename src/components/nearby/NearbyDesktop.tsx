@@ -6,6 +6,8 @@ import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
 import NearbyMap, { type FitPadding, type RouteLegTapInfo } from './NearbyMap'
+import { useInitialFocus } from './useInitialFocus'
+import type { InitialFocus } from '@/lib/nearby/focus'
 import {
   useNearbyModel, MODE_FILTER_DEFAULT, PAINTED_DEFAULT,
   type ModeFilter, type Selection,
@@ -39,6 +41,8 @@ import NearbyLanguagePill from './NearbyLanguagePill'
  */
 
 interface Props {
+  /** ?focus= deep link — see useInitialFocus */
+  initialFocus: InitialFocus | null
   center: { lat: number; lng: number }
   displayLabel: string
   /** Town, shown beneath the neighborhood headline (null when no neighborhood) */
@@ -101,7 +105,7 @@ const RAIL_TAB_LABEL_KEYS: Record<RailTab, string> = {
 }
 
 export default function NearbyDesktop({
-  center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
+  initialFocus, center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, railFar, busFar, shuttles, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
@@ -253,6 +257,12 @@ export default function NearbyDesktop({
     })
   }, [defaultOpenShelf])
 
+  useInitialFocus(initialFocus, {
+    corridorById, stationByKey: model.stationByKey, docks, reachRows: reach.data,
+    select: selectShowing, isSectionOpen, toggleSection, selection,
+    showDestinations: useCallback(() => setRailTab('destinations'), []),
+  })
+
   useEffect(() => { setLegInfo(null); setHighlightedStreetKey(null); setBikeAlt(false) }, [selection])
   const handleLegTap = useCallback((info: RouteLegTapInfo) => {
     setLegInfo(info)
@@ -267,14 +277,14 @@ export default function NearbyDesktop({
       <div className="mx-auto max-w-[1200px] px-6 pb-4 pt-6 lg:px-8">
         <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
           <div className="min-w-0">
-            <div className="text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#BAF14D]">
+            <div className="text-[0.72rem] font-bold uppercase tracking-[0.16em] text-(--nb-accent)">
               {tr('desktop.eyebrow_snapshot')}
             </div>
-            <h1 className="mt-1 truncate font-display text-[1.35rem] font-extrabold tracking-tight text-white">
+            <h1 className="mt-1 truncate font-display text-[1.35rem] font-extrabold tracking-tight text-(--nb-ink)">
               {displayLabel}
             </h1>
             {subLabel && (
-              <div className="mt-0.5 text-[0.9rem] font-semibold text-white/70">{subLabel}</div>
+              <div className="mt-0.5 text-[0.9rem] font-semibold text-(--nb-ink-70)">{subLabel}</div>
             )}
           </div>
           {/* Partner co-brand — secondary to the GSI headline, hugging the
@@ -293,7 +303,7 @@ export default function NearbyDesktop({
           </div>
         )}
         {outside && (
-          <p className="mt-3 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-5 py-3.5 text-[0.875rem] leading-relaxed text-white">
+          <p className="mt-3 rounded-xl border border-(--nb-warn-line) bg-(--nb-warn-tint) px-5 py-3.5 text-[0.875rem] leading-relaxed text-(--nb-ink)">
             {tr('desktop.outside_banner')}
           </p>
         )}
@@ -302,33 +312,33 @@ export default function NearbyDesktop({
       {/* Sticky top bar. The FIXED h-[52px] single row is load-bearing: the
           map pane below assumes 60px nav + 52px bar + 16px gap (top-[128px] /
           calc(100vh-144px)). Overflow scrolls horizontally — never wrap. */}
-      <div className="sticky top-[60px] z-20 border-b border-white/[0.12] bg-[#191A2E]/95 backdrop-blur">
+      <div className="sticky top-[60px] z-20 border-b border-(--nb-line-mid) bg-(--nb-bg)/95 backdrop-blur">
         <div className="relative mx-auto max-w-[1200px]">
           <div className="flex h-[52px] items-center gap-3 overflow-x-auto whitespace-nowrap px-6 lg:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <span className="min-w-0 shrink truncate text-[0.85rem] font-bold text-white">
-              {displayLabel}{subLabel && <span className="font-semibold text-white/70">{` · ${subLabel}`}</span>}
+            <span className="min-w-0 shrink truncate text-[0.85rem] font-bold text-(--nb-ink)">
+              {displayLabel}{subLabel && <span className="font-semibold text-(--nb-ink-70)">{` · ${subLabel}`}</span>}
             </span>
             <button
               onClick={onCopyLink}
-              className="shrink-0 rounded-lg border border-white/[0.15] px-3 py-1.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-white/[0.06]"
+              className="shrink-0 rounded-lg border border-(--nb-line-mid) px-3 py-1.5 text-[0.78rem] font-semibold text-(--nb-ink) transition-colors hover:bg-(--nb-panel)"
             >
               {copied ? tr('desktop.copied') : tr('desktop.copy_link')}
             </button>
             <button
               onClick={onChangeLocation}
-              className="shrink-0 rounded-lg border border-white/[0.15] px-3 py-1.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-white/[0.06]"
+              className="shrink-0 rounded-lg border border-(--nb-line-mid) px-3 py-1.5 text-[0.78rem] font-semibold text-(--nb-ink) transition-colors hover:bg-(--nb-panel)"
             >
               {tr('desktop.change_location')}
             </button>
             <button
               onClick={onPrint}
-              className="shrink-0 rounded-lg border border-white/[0.15] px-3 py-1.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-white/[0.06]"
+              className="shrink-0 rounded-lg border border-(--nb-line-mid) px-3 py-1.5 text-[0.78rem] font-semibold text-(--nb-ink) transition-colors hover:bg-(--nb-panel)"
             >
               {tr('desktop.print_version')}
             </button>
             <NearbyLanguagePill className="shrink-0" />
           </div>
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#191A2E] to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-(--nb-bg) to-transparent" />
         </div>
       </div>
 
@@ -341,7 +351,7 @@ export default function NearbyDesktop({
               the response to a tap is always where the user is looking —
               never below the fold, and the map never resizes. */}
           <div className="lg:sticky lg:top-[128px] lg:flex lg:h-[calc(100vh-144px)] lg:min-h-[420px] lg:flex-col lg:self-start">
-            <div ref={mapBoxRef} className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/[0.08]">
+            <div ref={mapBoxRef} className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-(--nb-line)">
               <NearbyMap
                 center={center}
                 markers={overlay.markers}
@@ -372,7 +382,7 @@ export default function NearbyDesktop({
               {selection && selection.type !== 'reach' && (
                 <div
                   key={selectionKey(selection)}
-                  className="animate-detail-card-in absolute inset-x-3 bottom-3 z-10 max-h-[45%] overflow-y-auto rounded-xl border border-[rgba(186,241,77,0.25)] bg-[#242538] px-4 py-3.5 shadow-[0_8px_28px_rgba(0,0,0,0.45)]"
+                  className="animate-detail-card-in absolute inset-x-3 bottom-3 z-10 max-h-[45%] overflow-y-auto rounded-xl border border-(--nb-accent-line) bg-(--nb-card) px-4 py-3.5 shadow-[0_8px_28px_rgba(0,0,0,0.45)]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
@@ -389,7 +399,7 @@ export default function NearbyDesktop({
                     <button
                       onClick={() => select(null, 'panel-close')}
                       aria-label={tr('desktop.close_details')}
-                      className="shrink-0 rounded-lg border border-white/[0.15] px-2.5 py-1 text-[0.9rem] font-bold text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white"
+                      className="shrink-0 rounded-lg border border-(--nb-line-mid) px-2.5 py-1 text-[0.9rem] font-bold text-(--nb-ink-80) transition-colors hover:bg-(--nb-panel-raised) hover:text-(--nb-ink)"
                     >
                       ✕
                     </button>
@@ -404,15 +414,15 @@ export default function NearbyDesktop({
               mobile sheet header. Both stick just under the top bar
               (60+52=112). */}
           <div className="min-w-0">
-            <div className="sticky top-[112px] z-10 bg-[#191A2E] pb-2.5 pt-1">
-              <div className="flex gap-1 rounded-xl bg-white/[0.05] p-1">
+            <div className="sticky top-[112px] z-10 bg-(--nb-bg) pb-2.5 pt-1">
+              <div className="flex gap-1 rounded-xl bg-(--nb-panel) p-1">
                 {RAIL_TABS.map(t => (
                   <button
                     key={t.id}
                     onClick={() => changeRailTab(t.id)}
                     aria-pressed={railTab === t.id}
                     className={`flex-1 rounded-lg py-2 text-[0.8rem] font-bold transition-colors ${
-                      railTab === t.id ? 'bg-[#BAF14D] text-[#191A2E]' : 'text-white/75 hover:text-white'
+                      railTab === t.id ? 'bg-(--nb-accent-fill) text-(--nb-on-accent-fill)' : 'text-(--nb-ink-70) hover:text-(--nb-ink)'
                     }`}
                   >
                     {tr(RAIL_TAB_LABEL_KEYS[t.id])}
@@ -488,7 +498,7 @@ export default function NearbyDesktop({
                   lives inside that answer, for the trips you actually repeat. */}
               <TripPlanner center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} />
 
-              <p className="mb-3 mt-6 text-[0.8rem] leading-snug text-white/75">
+              <p className="mb-3 mt-6 text-[0.8rem] leading-snug text-(--nb-ink-70)">
                 {tr('desktop.destinations_intro')}
               </p>
               {reach.status === 'loading' && <SkeletonRows count={4} />}
@@ -510,7 +520,7 @@ export default function NearbyDesktop({
                 />
               )}
               {reach.status === 'ready' && reachRows.length === 0 && (
-                <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
+                <p className="rounded-xl border border-(--nb-line) bg-(--nb-panel-faint) px-5 py-4 text-[0.875rem] text-(--nb-ink-70)">
                   {tr('desktop.no_destinations')}
                 </p>
               )}
@@ -524,13 +534,13 @@ export default function NearbyDesktop({
                 tab (was gated to Explore). In New Routes context the reward
                 offer sits under the headline instead. */}
             {!newRoutes && (
-              <div className="mt-4 rounded-xl border border-white/[0.1] bg-[#242538] px-4 py-3.5">
-                <div className="text-[0.9rem] font-bold text-white">{tr('desktop.get_app_title')}</div>
-                <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
+              <div className="mt-4 rounded-xl border border-(--nb-line-mid) bg-(--nb-card) px-4 py-3.5">
+                <div className="text-[0.9rem] font-bold text-(--nb-ink)">{tr('desktop.get_app_title')}</div>
+                <p className="mt-0.5 text-[0.8rem] leading-snug text-(--nb-ink-80)">{partnerLine}</p>
                 <a
                   href={appHref}
                   onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
-                  className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
+                  className="mt-2 inline-block rounded-lg border border-(--nb-accent-line) px-3.5 py-1.5 text-[0.78rem] font-bold text-(--nb-accent) transition-colors hover:bg-(--nb-accent-fill) hover:text-(--nb-on-accent-fill)"
                 >
                   {tr('desktop.download_app')}
                 </a>

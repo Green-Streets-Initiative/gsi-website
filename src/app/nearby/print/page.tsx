@@ -95,6 +95,8 @@ export default async function NearbyPrintPage({ searchParams }: {
       maxDestinations: MAX_PRINT_DESTINATIONS,
       // What the ~1 mi, 720×264 viewport can show
       mapHalf: { lat: 0.011, lng: 0.03 },
+      // 1.5 mi fits Vercel's durable data cache; this page renders per request
+      bikeRadiusMiles: 1.5,
     }),
     QRCode.toString(shareUrl, { type: 'svg', margin: 0, color: { dark: '#191A2E', light: '#ffffff' } }),
     // "Popular with Shift riders" markers — the label param carries
@@ -242,10 +244,13 @@ export default async function NearbyPrintPage({ searchParams }: {
                       <span className="min-w-0 text-[0.68rem] leading-snug text-[#191A2E]/80">
                         {l.endpoints && <span className="font-semibold text-[#191A2E]/90">{l.endpoints}</span>}
                         {l.endpoints && l.frequencyLabel && ' · '}
-                        {l.frequencyLabel ?? (l.endpoints ? '' : tr(s.isShuttle ? 'print.shuttle_schedule' : 'print.see_live_schedule'))}
+                        {l.frequencyLabel ?? (l.endpoints || s.isShuttle ? '' : tr('print.see_live_schedule'))}
                       </span>
                     </div>
                   ))}
+                  {s.isShuttle && (
+                    <div className="mt-0.5 text-[0.65rem] text-[#191A2E]/70">{tr('print.shuttle_schedule')}</div>
+                  )}
                 </div>
               ))}
             </div>

@@ -41,7 +41,7 @@ export function RouteLegNote({ info }: { info: RouteLegTapInfo }) {
       : bikeText()
   const dotColor = info.leg === 'bike' && tier ? NEARBY_COMFORT_COLORS[tier] : '#9BA3BF'
   return (
-    <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-white/[0.14] bg-white/[0.05] px-3 py-1.5 text-[0.78rem] text-white">
+    <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-(--nb-line-mid) bg-(--nb-panel) px-3 py-1.5 text-[0.78rem] text-(--nb-ink)">
       <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: dotColor }} aria-hidden="true" />
       {/* No "You tapped:" scaffolding — the block only ever appears in
           response to a tap, and the section header above already says so.
@@ -75,8 +75,8 @@ export function TransitChain({ steps, transfers = true }: {
           <span key={`${s.label}-${j}`} className="flex items-center gap-1.5">
             {j > 0 && (
               at
-                ? <span className="text-[0.7rem] text-white/75">{tr('reach.change_at', { stop: at })}</span>
-                : <span className="text-[0.7rem] text-white/70">→</span>
+                ? <span className="text-[0.7rem] text-(--nb-ink-70)">{tr('reach.change_at', { stop: at })}</span>
+                : <span className="text-[0.7rem] text-(--nb-ink-70)">→</span>
             )}
             <span
               className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
@@ -112,7 +112,7 @@ export function TripFacts({ row }: { row: ReachRow }) {
     bits.push(tr('reach.walking_total', { minutes: row.transit_walk_minutes }))
   }
   if (bits.length === 0) return null
-  return <div className="mt-2 text-[0.78rem] text-white/80">{bits.join(' · ')}</div>
+  return <div className="mt-2 text-[0.78rem] text-(--nb-ink-80)">{bits.join(' · ')}</div>
 }
 
 /** The route's real length — the sum of its comfort stretches. The list row's
@@ -171,8 +171,8 @@ export function RouteChoice({ row, alt, onPick }: {
         aria-pressed={alt === isAlt}
         className={`flex-1 rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
           alt === isAlt
-            ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.08)] text-white'
-            : 'border-white/[0.12] text-white/75 hover:bg-white/[0.05]'
+            ? 'border-(--nb-accent-line) bg-(--nb-accent-tint) text-(--nb-ink)'
+            : 'border-(--nb-line-mid) text-(--nb-ink-70) hover:bg-(--nb-panel)'
         }`}
       >
         <span className="block text-[0.72rem] font-bold uppercase tracking-wider">{label}</span>
@@ -191,7 +191,7 @@ export function RouteChoice({ row, alt, onPick }: {
         {chip(true, tr('reach.alt_fastest'), fastMin, row.bike_alt.comfort)}
       </div>
       {delta && (
-        <p className="mt-1 text-[0.75rem] leading-snug text-white/75">
+        <p className="mt-1 text-[0.75rem] leading-snug text-(--nb-ink-70)">
           {tr('reach.alt_delta', { label: tr('reach.alt_fastest'), delta })}
         </p>
       )}
@@ -245,7 +245,7 @@ export function TransitLegs({ steps, segments }: { steps: ReachStep[]; segments?
               >
                 {tr('reach.leg_walk_badge')}
               </span>
-              <span className="min-w-0 text-[0.78rem] leading-snug text-white/80">
+              <span className="min-w-0 text-[0.78rem] leading-snug text-(--nb-ink-80)">
                 {tr('reach.leg_walk', { minutes: item.walk })}
               </span>
             </li>
@@ -276,11 +276,11 @@ export function TransitLegs({ steps, segments }: { steps: ReachStep[]; segments?
         </span>
         <span className="min-w-0">
           {s.boardStop && (
-            <span className="block text-[0.78rem] font-semibold text-white">
+            <span className="block text-[0.78rem] font-semibold text-(--nb-ink)">
               {tr('reach.leg_board', { stop: s.boardStop })}
             </span>
           )}
-          {ride && <span className="block text-[0.75rem] leading-snug text-white/80">{ride}</span>}
+          {ride && <span className="block text-[0.75rem] leading-snug text-(--nb-ink-80)">{ride}</span>}
         </span>
       </li>
     )
@@ -344,7 +344,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
 
   return (
     <>
-      <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#242538]">
+      <div className="overflow-hidden rounded-xl border border-(--nb-line) bg-(--nb-card)">
           {rows.map((row, i) => {
             const options = modeOptions(row)
             // Fastest gets the emphasis — unless the page's mode filter names
@@ -358,10 +358,10 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
             const compactBody = (chevron: boolean) => (
               <div>
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="min-w-0 truncate text-[0.9rem] font-semibold text-white">{row.name}</span>
-                  <span className="flex shrink-0 items-baseline gap-1.5 text-[0.72rem] text-white/70">
+                  <span className="min-w-0 truncate text-[0.9rem] font-semibold text-(--nb-ink)">{row.name}</span>
+                  <span className="flex shrink-0 items-baseline gap-1.5 text-[0.72rem] text-(--nb-ink-70)">
                     {tr('reach.mi', { miles: row.distance_miles })}
-                    {chevron && <span className="text-[0.85rem] font-bold leading-none text-[#BAF14D]">›</span>}
+                    {chevron && <span className="text-[0.85rem] font-bold leading-none text-(--nb-accent)">›</span>}
                   </span>
                 </div>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -369,7 +369,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                     <span
                       key={o.key}
                       className={`flex items-center gap-1.5 tabular-nums ${
-                        j === emphasisIdx ? 'text-[0.85rem] font-bold text-[#BAF14D]' : 'text-[0.78rem] text-white/80'
+                        j === emphasisIdx ? 'text-[0.85rem] font-bold text-(--nb-accent)' : 'text-[0.78rem] text-(--nb-ink-80)'
                       }`}
                     >
                       <ModeIcon mode={o.key} size={j === emphasisIdx ? 15 : 13} />
@@ -390,7 +390,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                     {row.steps.length > 0 ? (
                       <TransitChain steps={row.steps} />
                     ) : (
-                      <span className="text-[0.75rem] text-white/75">
+                      <span className="text-[0.75rem] text-(--nb-ink-70)">
                         {row.transit_minutes !== null ? tr('reach.close_enough') : tr('reach.no_direct_transit')}
                       </span>
                     )}
@@ -398,7 +398,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                 ) : (
                   (row.bike_steps?.length ?? 0) > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-white/75"><ModeIcon mode="bike" size={13} /></span>
+                      <span className="text-(--nb-ink-70)"><ModeIcon mode="bike" size={13} /></span>
                       <TransitChain steps={row.bike_steps!} transfers={false} />
                     </div>
                   )
@@ -407,16 +407,16 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
             )
 
             return (
-              <div key={row.id} className={i > 0 ? 'border-t border-white/[0.07]' : ''}>
+              <div key={row.id} className={i > 0 ? 'border-t border-(--nb-line)' : ''}>
                 {drawable ? (
                   <button
                     onClick={() => toggleRow(row)}
                     aria-expanded={onRowTap ? undefined : isOpen}
-                    className="w-full px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
+                    className="w-full px-4 py-3 text-left transition-colors hover:bg-(--nb-panel-faint)"
                   >
                     {compactBody(!!onRowTap)}
                     {!onRowTap && (
-                      <div className="mt-1.5 text-[0.72rem] font-semibold text-[#BAF14D]">
+                      <div className="mt-1.5 text-[0.72rem] font-semibold text-(--nb-accent)">
                         {isOpen ? tr('reach.hide_details') : tr('reach.details_route')}
                       </div>
                     )}
@@ -428,7 +428,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                 {/* The route, drawn right here under the tapped row — the
                     page never scrolls anywhere as a side effect */}
                 {isOpen && expanded && (
-                  <div className="border-t border-white/[0.07] bg-[#1F2030] px-4 pb-4 pt-3">
+                  <div className="border-t border-(--nb-line) bg-(--nb-card-deep) px-4 pb-4 pt-3">
                     {chipsBlock(expanded.mode)}
                     {hasTransitRoute(row) && hasBikeRoute(row) && (
                       <div className="mb-2.5 flex flex-wrap items-center gap-2">
@@ -437,8 +437,8 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                           aria-pressed={expanded.mode === 'transit'}
                           className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.75rem] font-semibold transition-colors ${
                             expanded.mode === 'transit'
-                              ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.12)] text-white'
-                              : 'border-white/[0.15] text-white/75 hover:border-white/[0.3]'
+                              ? 'border-(--nb-accent-line) bg-(--nb-accent-tint) text-(--nb-ink)'
+                              : 'border-(--nb-line-mid) text-(--nb-ink-70) hover:border-(--nb-line-strong)'
                           }`}
                         >
                           <ModeIcon mode="transit" size={13} /> {tr('reach.transit_mode', { minutes: row.transit_minutes })}
@@ -448,8 +448,8 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                           aria-pressed={expanded.mode === 'bike'}
                           className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.75rem] font-semibold transition-colors ${
                             expanded.mode === 'bike'
-                              ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.12)] text-white'
-                              : 'border-white/[0.15] text-white/75 hover:border-white/[0.3]'
+                              ? 'border-(--nb-accent-line) bg-(--nb-accent-tint) text-(--nb-ink)'
+                              : 'border-(--nb-line-mid) text-(--nb-ink-70) hover:border-(--nb-line-strong)'
                           }`}
                         >
                           <ModeIcon mode="bike" size={13} /> {tr('reach.bike_mode', { estimate: row.bike_is_estimate ? '~' : '', minutes: row.bike_minutes })}
@@ -461,7 +461,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                       <>
                         <TripFacts row={row} />
                         <TransitLegs steps={row.steps} segments={row.transit_segments} />
-                        <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
+                        <p className="mt-2 text-[0.72rem] leading-snug text-(--nb-ink-70)">
                           {tr('reach.transit_leg_hint')}
                         </p>
                       </>
@@ -469,7 +469,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                     {expanded.mode === 'bike' && row.bike_comfort && (
                       <>
                         <RouteChoice row={row} alt={bikeAlt} onPick={onPickRoute} />
-                        <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
+                        <p className="mt-2 text-[0.72rem] leading-snug text-(--nb-ink-70)">
                           {tr('reach.bike_leg_hint')}
                         </p>
                         <BikeComfortBlock
@@ -488,7 +488,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'reach', mode: expanded.mode })}
-                      className="mt-2 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+                      className="mt-2 inline-block text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
                     >
                       {tr('reach.open_in_maps')}
                     </a>
@@ -498,7 +498,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                       <Link
                         href={partnerSlug ? `/commute-advisor?partner=${partnerSlug}` : '/commute-advisor'}
                         onClick={() => onPlanCommute(row)}
-                        className="mt-3 block rounded-lg bg-[#BAF14D] px-4 py-2 text-center text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+                        className="mt-3 block rounded-lg bg-(--nb-accent-fill) px-4 py-2 text-center text-[0.8rem] font-bold text-(--nb-on-accent-fill) transition-opacity hover:opacity-85"
                       >
                         {tr('reach.plan_commute')}
                       </Link>
@@ -510,7 +510,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
           })}
         </div>
 
-      <p className="mt-2.5 px-1 text-[0.75rem] leading-snug text-white/70">
+      <p className="mt-2.5 px-1 text-[0.75rem] leading-snug text-(--nb-ink-70)">
         {tr('reach.times_note')}
       </p>
     </>

@@ -174,7 +174,7 @@ const NearbySheet = forwardRef<NearbySheetRef, Props>(function NearbySheet(
   return (
     <div
       ref={sheetRef}
-      className="absolute bottom-0 left-0 right-0 z-20 flex flex-col overflow-hidden rounded-t-2xl border-t border-white/[0.08] bg-[#1F2030] shadow-[0_-8px_28px_rgba(0,0,0,0.4)]"
+      className="absolute bottom-0 left-0 right-0 z-20 flex flex-col overflow-hidden rounded-t-2xl border-t border-(--nb-line) bg-(--nb-card-deep) shadow-[0_-8px_28px_rgba(0,0,0,0.4)]"
       style={{ height: containerH ? undefined : `${peekContentPx}px`, transition: TRANSITION }}
     >
       {/* Drag surface: handle + header */}
@@ -191,7 +191,7 @@ const NearbySheet = forwardRef<NearbySheetRef, Props>(function NearbySheet(
           aria-label="Resize panel"
           className="block w-full cursor-grab py-2.5 active:cursor-grabbing"
         >
-          <span className="mx-auto block h-1 w-10 rounded-full bg-white/[0.25]" />
+          <span className="mx-auto block h-1 w-10 rounded-full bg-(--nb-panel-strong)" />
         </button>
         {header}
       </div>

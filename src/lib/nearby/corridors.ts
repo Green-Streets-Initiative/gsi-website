@@ -12,6 +12,7 @@ import { haversineMeters, walkTimeMinutes } from '@/lib/geo/measure'
 import { fetchStopTopology, type StopTopology } from './live-data'
 import { canonicalStreetKey, displayStreetName } from './street-names'
 import { lineColor, lineTextColor, ROUTE_COLORS, type RouteConnection } from './transit-ui'
+import { isShuttleRouteId, SHUTTLE_COLOR } from '@/lib/nearby/shuttle-agencies'
 
 export type CorridorKind = 'subway' | 'commuter-rail' | 'bus' | 'bike'
 
@@ -224,8 +225,9 @@ export function seedCorridorFromStop(
     kind: routeKind(routeId),
     routeId,
     name: stop.route_name,
-    color: lineColor(routeId),
-    textColor: lineTextColor(routeId),
+    // Shuttles draw in the map's one shuttle color, never an MBTA line color
+    color: isShuttleRouteId(routeId) ? SHUTTLE_COLOR : lineColor(routeId),
+    textColor: isShuttleRouteId(routeId) ? '#FFFFFF' : lineTextColor(routeId),
     endpoints: ['', ''],
     access: {
       stopId: stop.stop_id,
@@ -410,6 +412,48 @@ export interface BikeCorridorBuild {
   claimed: Set<unknown>
 }
 
+/**
+ * One facility, several OSM names: around UMass Boston the sources yield
+ * "Harborwalk", "Boston Harborwalk", "UMass Harborwalk", and "Boston Harbor
+ * Walk and Neponset River Greenway" as four corridors. Off-street PATHS
+ * whose names contain one another (spaces and case aside) are one family.
+ * Streets are never merged — "Broadway" and "West Broadway" are different
+ * streets, and merging them made a corridor's id change between the
+ * 1.5-mile and 3-mile network loads, which orphaned a selection.
+ *
+ * The family keeps the SHORTEST name as its id (the one most likely to
+ * exist at either radius, so links into it stay valid), the longest
+ * mileage as its geometry, and the closest access point.
+ */
+export function dedupeCorridorFamilies(corridors: BikeCorridor[]): BikeCorridor[] {
+  const norm = (n: string) => n.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const related = (a: string, b: string) => a.includes(b) || b.includes(a)
+  let kept: BikeCorridor[] = []
+  for (const c of corridors) {
+    if (c.protection !== 'path') {
+      kept.push(c)
+      continue
+    }
+    const key = norm(c.name)
+    // Containment isn't transitive ("UMass Harborwalk" and "Boston
+    // Harborwalk" only meet through "Harborwalk"), so a newcomer that
+    // bridges several kept entries folds them all into one.
+    const family = kept.filter(k => k.protection === 'path' && related(norm(k.name), key))
+    if (family.length === 0) {
+      kept.push(c)
+      continue
+    }
+    const members = [...family, c]
+    const longer = members.reduce((a, b) => (b.lengthMiles > a.lengthMiles ? b : a))
+    const nearer = members.reduce((a, b) => (b.accessDistanceMeters < a.accessDistanceMeters ? b : a))
+    const shortest = members.reduce((a, b) => (norm(b.name).length < norm(a.name).length ? b : a))
+    kept = kept.filter(k => !family.includes(k))
+    kept.push({ ...longer, id: shortest.id, name: shortest.name, accessDistanceMeters: nearer.accessDistanceMeters, accessPoint: nearer.accessPoint })
+  }
+  // buildBikeCorridors orders by access distance; a merge may have moved one
+  return kept.sort((a, b) => a.accessDistanceMeters - b.accessDistanceMeters)
+}
+
 export function buildBikeCorridors(
   network: GeoJSON.FeatureCollection,
   lat: number,
@@ -581,5 +625,5 @@ export function buildBikeCorridors(
   for (const k of kept) {
     for (const f of k.source) claimed.add(f)
   }
-  return { corridors: kept.map(k => k.corridor), claimed }
+  return { corridors: dedupeCorridorFamilies(kept.map(k => k.corridor)), claimed }
 }

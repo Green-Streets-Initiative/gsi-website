@@ -155,11 +155,11 @@ export function PanelPhoto({ spec, alt }: { spec: PhotoSpec; alt: string }) {
       />
       {!useSv && meta?.attribution && (
         meta.attributionUrl ? (
-          <a href={meta.attributionUrl} target="_blank" rel="noopener noreferrer" className="mt-0.5 block text-[0.65rem] text-white/70 hover:text-white">
+          <a href={meta.attributionUrl} target="_blank" rel="noopener noreferrer" className="mt-0.5 block text-[0.65rem] text-(--nb-ink-70) hover:text-(--nb-ink)">
             {meta.attribution}
           </a>
         ) : (
-          <span className="mt-0.5 block text-[0.65rem] text-white/70">{meta.attribution}</span>
+          <span className="mt-0.5 block text-[0.65rem] text-(--nb-ink-70)">{meta.attribution}</span>
         )
       )}
     </div>
@@ -184,16 +184,16 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
     if (!st) return null
     return (
       <div>
-        <div className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
+        <div className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-(--nb-accent)">
           {isShuttleStation(st) ? <ShuttleIcon size={12} /> : st.routes.every(r => r.id.startsWith('Boat-')) ? <FerryIcon size={12} /> : st.isRail ? <TrainIcon size={12} /> : <BusIcon size={12} />}
           {isShuttleStation(st) ? tr('detail.shuttle_stop') : st.routes.every(r => r.id.startsWith('Boat-')) ? tr('detail.ferry_terminal') : st.isRail ? tr('detail.station') : tr('detail.bus_stop')}
         </div>
-        <div className="text-[0.95rem] font-bold text-white">{st.name}</div>
+        <div className="text-[0.95rem] font-bold text-(--nb-ink)">{st.name}</div>
         {/* "Market Basket Somerville" alone reads like a public bus stop.
             Name the operator, then say who can board — the two things a
             rider has to know before walking there. */}
         <ShuttleOperatorLines station={st} variant="detail" />
-        <div className="text-[0.78rem] text-white/75">
+        <div className="text-[0.78rem] text-(--nb-ink-70)">
           {tr('detail.walk_distance', { minutes: walkTimeMinutes(st.dist), distance: formatDistance(st.dist) })}
         </div>
         <a
@@ -201,7 +201,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => posthog.capture('snapshot_directions_clicked', { type: st.isRail ? 'station' : 'bus_stop' })}
-          className="mt-0.5 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+          className="mt-0.5 inline-block text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
         >
           {tr('detail.walk_there')}
         </a>
@@ -213,7 +213,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
               <button
                 key={r.id}
                 onClick={() => onSelectCorridor(`transit:${r.id}`)}
-                className="flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-white/[0.05]"
+                className="flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-(--nb-panel)"
               >
                 <span
                   className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
@@ -226,9 +226,9 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                   <span className="w-full space-y-0.5">
                     {dirs.map(a => (
                       <span key={a.direction} className="flex items-baseline justify-between gap-2">
-                        <span className="min-w-0 truncate text-[0.78rem] text-white/80">→ {a.direction}</span>
+                        <span className="min-w-0 truncate text-[0.78rem] text-(--nb-ink-80)">→ {a.direction}</span>
                         {a.nextMin !== null && (
-                          <strong className="shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
+                          <strong className="shrink-0 text-[0.75rem] font-bold text-(--nb-accent)">
                             {a.nextMin === 0 ? tr('detail.now') : tr('detail.in_min', { minutes: a.nextMin })}
                           </strong>
                         )}
@@ -236,13 +236,13 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                     ))}
                   </span>
                 ) : (
-                  <span className="min-w-0 flex-1 truncate text-[0.78rem] text-white/80">{routeEndpoints(corridor, r)}</span>
+                  <span className="min-w-0 flex-1 truncate text-[0.78rem] text-(--nb-ink-80)">{routeEndpoints(corridor, r)}</span>
                 )}
               </button>
             )
           })}
         </div>
-        <div className="mt-1 text-[0.72rem] text-white/70">{tr('detail.tap_route_hint')}</div>
+        <div className="mt-1 text-[0.72rem] text-(--nb-ink-70)">{tr('detail.tap_route_hint')}</div>
         <PanelPhoto
           spec={st.isRail
             ? { kind: 'resolve', name: st.name, photoKind: 'station', lat: st.lat, lng: st.lng, sv: { lat: st.lat, lng: st.lng } }
@@ -259,19 +259,19 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
     if (c.kind === 'bike') {
       return (
         <div>
-          <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">{tr('detail.bike_route_eyebrow')}</div>
-          <div className="text-[0.95rem] font-bold text-white">{c.name}</div>
+          <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-(--nb-accent)">{tr('detail.bike_route_eyebrow')}</div>
+          <div className="text-[0.95rem] font-bold text-(--nb-ink)">{c.name}</div>
           <div className="mt-0.5 text-[0.8rem]">
             {(() => {
               const p = protectionLabel(c.protection, c.onewayOnly, tr)
-              return <span className={p.emphasis ? 'font-bold text-[#BAF14D]' : 'text-white/80'}>{p.text}</span>
+              return <span className={p.emphasis ? 'font-bold text-(--nb-accent)' : 'text-(--nb-ink-80)'}>{p.text}</span>
             })()}
           </div>
-          <div className="mt-0.5 text-[0.78rem] text-white/80">
+          <div className="mt-0.5 text-[0.78rem] text-(--nb-ink-80)">
             {tr('detail.bike_length', { miles: c.lengthMiles, minutes: bikeTimeMinutes(c.accessDistanceMeters) })}
           </div>
           {SOURCE_LABEL[c.source] && (
-            <div className="mt-1 text-[0.72rem] text-white/70">{tr('detail.data_source', { source: SOURCE_LABEL[c.source] })}</div>
+            <div className="mt-1 text-[0.72rem] text-(--nb-ink-70)">{tr('detail.data_source', { source: SOURCE_LABEL[c.source] })}</div>
           )}
           <PanelPhoto spec={corridorPhotoSpec(c)} alt={c.name} />
         </div>
@@ -294,7 +294,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
     const perDirection = boarding.length > 1 && !boardingIsShared(boarding)
     return (
       <div>
-        <div className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
+        <div className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-(--nb-accent)">
           {c.kind === 'bus' ? <BusIcon size={12} /> : <TrainIcon size={12} />}
           {c.kind === 'bus' ? tr('detail.bus_route_eyebrow') : tr('detail.line_eyebrow')}
         </div>
@@ -303,14 +303,14 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
             {/^\d/.test(c.name) ? tr('detail.route_name', { name: c.name }) : c.name}
           </span>
           {(c.endpoints[0] || c.endpoints[1]) && (
-            <span className="text-[0.85rem] font-semibold text-white">
+            <span className="text-[0.85rem] font-semibold text-(--nb-ink)">
               {[...new Set([c.endpoints[0], c.endpoints[1]].filter(Boolean))].join(' ↔ ')}
             </span>
           )}
         </div>
-        <div className="mt-1 text-[0.85rem] text-white">
-          {freq === null && <span className="inline-block h-4 w-44 animate-pulse rounded bg-white/[0.08]" aria-hidden="true" />}
-          {freq === 'unavailable' && <span className="text-white/75">{tr('detail.schedule_unavailable')}</span>}
+        <div className="mt-1 text-[0.85rem] text-(--nb-ink)">
+          {freq === null && <span className="inline-block h-4 w-44 animate-pulse rounded bg-(--nb-panel-raised)" aria-hidden="true" />}
+          {freq === 'unavailable' && <span className="text-(--nb-ink-70)">{tr('detail.schedule_unavailable')}</span>}
           {freq !== null && freq !== 'unavailable' && (freq as FrequencyInfo).label}
         </div>
         {/* Where to stand. A bus stop serves ONE direction — the other way
@@ -318,21 +318,21 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
             INSIDE each direction row, not once above both. Rail resolves to
             the same station both ways and collapses back to a single line. */}
         {perDirection ? (
-          <div className="mt-2 space-y-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-2">
+          <div className="mt-2 space-y-2 rounded-lg border border-(--nb-line) bg-(--nb-panel-faint) px-2.5 py-2">
             {boarding.map(b => {
               const dest = c.endpoints[b.directionId] || ''
               const live = liveDirs.find(a => a.direction === dest)
               return (
                 <div key={b.directionId}>
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="min-w-0 truncate text-[0.8rem] text-white/80">→ {dest}</span>
+                    <span className="min-w-0 truncate text-[0.8rem] text-(--nb-ink-80)">→ {dest}</span>
                     {live?.nextMin != null && (
-                      <strong className="shrink-0 text-[0.8rem] font-bold text-[#BAF14D]">
+                      <strong className="shrink-0 text-[0.8rem] font-bold text-(--nb-accent)">
                         {live.nextMin === 0 ? tr('detail.now') : tr('detail.in_min', { minutes: live.nextMin })}
                       </strong>
                     )}
                   </div>
-                  <div className="text-[0.75rem] leading-snug text-white/75">
+                  <div className="text-[0.75rem] leading-snug text-(--nb-ink-70)">
                     {tr('detail.board_at', { stop: b.stopName, minutes: b.walkMin })}
                   </div>
                   {/* Each direction boards on a different street — the link
@@ -343,7 +343,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'boarding_stop' })}
-                    className="text-[0.75rem] font-semibold text-[#BAF14D] hover:opacity-80"
+                    className="text-[0.75rem] font-semibold text-(--nb-accent) hover:opacity-80"
                   >
                     {tr('detail.walk_there')}
                   </a>
@@ -353,7 +353,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
           </div>
         ) : (
           <>
-            <div className="mt-0.5 text-[0.78rem] text-white/80">
+            <div className="mt-0.5 text-[0.78rem] text-(--nb-ink-80)">
               {tr('detail.board_at', {
                 stop: boarding[0]?.stopName ?? c.access.stopName,
                 minutes: boarding[0]?.walkMin ?? c.access.walkMin,
@@ -364,17 +364,17 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'boarding_stop' })}
-              className="mt-0.5 inline-block text-[0.78rem] font-semibold text-[#BAF14D] hover:opacity-80"
+              className="mt-0.5 inline-block text-[0.78rem] font-semibold text-(--nb-accent) hover:opacity-80"
             >
               {tr('detail.walk_there')}
             </a>
             {liveDirs.length > 0 && (
-              <div className="mt-2 space-y-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-2">
+              <div className="mt-2 space-y-1 rounded-lg border border-(--nb-line) bg-(--nb-panel-faint) px-2.5 py-2">
                 {liveDirs.map(a => (
                   <div key={a.direction} className="flex items-baseline justify-between gap-2">
-                    <span className="min-w-0 truncate text-[0.8rem] text-white/80">→ {a.direction}</span>
+                    <span className="min-w-0 truncate text-[0.8rem] text-(--nb-ink-80)">→ {a.direction}</span>
                     {a.nextMin !== null && (
-                      <strong className="shrink-0 text-[0.8rem] font-bold text-[#BAF14D]">
+                      <strong className="shrink-0 text-[0.8rem] font-bold text-(--nb-accent)">
                         {a.nextMin === 0 ? tr('detail.now') : tr('detail.in_min', { minutes: a.nextMin })}
                       </strong>
                     )}
@@ -396,20 +396,20 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
     if (!d) return null
     return (
       <div>
-        <div className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">
+        <div className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-(--nb-painted)">
           {(() => {
             const logo = bikeshareLogoUrl(d.system_id ?? 'bluebikes')
             return logo
-              ? <><img src={logo} alt="" className="h-4 w-auto" />{tr('detail.dock_label')}</>
+              ? <><span className="inline-flex rounded bg-(--nb-logo-plate) px-1 py-0.5"><img src={logo} alt="" className="h-4 w-auto" /></span>{tr('detail.dock_label')}</>
               : tr('detail.bike_share_dock', { system: d.system_name ?? 'Bluebikes' })
           })()}
         </div>
-        <div className="text-[0.95rem] font-bold text-white">{d.name}</div>
-        <div className="text-[0.78rem] text-white/75">
+        <div className="text-[0.95rem] font-bold text-(--nb-ink)">{d.name}</div>
+        <div className="text-[0.78rem] text-(--nb-ink-70)">
           {tr('detail.walk_distance', { minutes: walkTimeMinutes(d.distance_meters), distance: formatDistance(d.distance_meters) })}
         </div>
-        <div className="mt-1 text-[0.8rem] text-white/80">
-          <strong className="font-bold text-[#BAF14D]">{dockStatsText(d.num_bikes_available, d.num_ebikes_available, tr)}</strong>
+        <div className="mt-1 text-[0.8rem] text-(--nb-ink-80)">
+          <strong className="font-bold text-(--nb-accent)">{dockStatsText(d.num_bikes_available, d.num_ebikes_available, tr)}</strong>
           {' · '}{tr('detail.open_docks', { count: d.num_docks_available })}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -418,7 +418,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('snapshot_directions_clicked', { type: d.system_id ?? 'bluebike' })}
-            className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+            className="text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
           >
             {tr('detail.walk_there')}
           </a>
@@ -437,7 +437,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                   system: d.system_id ?? 'bluebikes',
                   target: links.appUrl ? 'app' : 'site',
                 })}
-                className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+                className="text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
               >
                 {links.appUrl
                   ? tr('detail.open_vendor_app', { system: d.system_name ?? 'Bluebikes' })
@@ -462,18 +462,18 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
       : { url: p.url, target: 'site' as const }
     return (
       <div>
-        <div className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#EDB93C]">
+        <div className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-(--nb-warn)">
           {(() => {
             const logo = borrowLogoUrl(p.org)
             return logo ? <img src={logo} alt="" className="h-5 w-auto" /> : null
           })()}
           {tr('detail.borrow_rent_eyebrow')}
         </div>
-        <div className="text-[0.95rem] font-bold text-white">{p.name}</div>
-        <div className="text-[0.78rem] text-white/75">
+        <div className="text-[0.95rem] font-bold text-(--nb-ink)">{p.name}</div>
+        <div className="text-[0.78rem] text-(--nb-ink-70)">
           {tr('detail.walk_distance', { minutes: walkTimeMinutes(p.distMiles * 1609.34), distance: formatDistance(p.distMiles * 1609.34) })}
         </div>
-        <div className="mt-1 text-[0.82rem] text-white/80">
+        <div className="mt-1 text-[0.82rem] text-(--nb-ink-80)">
           {tr(p.org === 'cargob' ? 'borrow.cargob' : 'borrow.pedal_power')}
           {p.approximate ? tr('detail.exact_address_note') : ''}
         </div>
@@ -487,7 +487,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'borrow', org: p.org })}
-              className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+              className="text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
             >
               {tr('detail.walk_there')}
             </a>
@@ -497,7 +497,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('snapshot_borrow_clicked', { org: p.org, target: vendor.target })}
-            className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+            className="text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
           >
             {vendor.target === 'app_store'
               ? tr('detail.get_vendor_app', { name: 'CargoB' })
@@ -513,14 +513,14 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
     const copy = laneTierCopy(selection.info.quality, tr)
     return (
       <div>
-        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">{tr('detail.bike_infra_eyebrow')}</div>
-        <div className="text-[0.95rem] font-bold text-white">{selection.info.name ?? copy.title}</div>
-        <div className="mt-0.5 text-[0.8rem] leading-relaxed text-white/80">
-          {selection.info.name && <span className="font-semibold text-white">{copy.title} — </span>}
+        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-(--nb-accent)">{tr('detail.bike_infra_eyebrow')}</div>
+        <div className="text-[0.95rem] font-bold text-(--nb-ink)">{selection.info.name ?? copy.title}</div>
+        <div className="mt-0.5 text-[0.8rem] leading-relaxed text-(--nb-ink-80)">
+          {selection.info.name && <span className="font-semibold text-(--nb-ink)">{copy.title} — </span>}
           {copy.detail}
         </div>
         {selection.info.source && SOURCE_LABEL[selection.info.source] && (
-          <div className="mt-1 text-[0.72rem] text-white/70">
+          <div className="mt-1 text-[0.72rem] text-(--nb-ink-70)">
             {tr('detail.data_source', { source: SOURCE_LABEL[selection.info.source] })}
             {selection.info.nameInferred && tr('detail.name_inferred_note')}
           </div>
@@ -557,7 +557,7 @@ function ConnectsTo({ connections, corridorById, onSelectCorridor }: {
   if (!connections || connections.length === 0) return null
   return (
     <div className="mt-3">
-      <div className="mb-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#BAF14D]">
+      <div className="mb-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-(--nb-accent)">
         {tr('detail.connects_to')}
       </div>
       <div className="space-y-1">
@@ -573,7 +573,7 @@ function ConnectsTo({ connections, corridorById, onSelectCorridor }: {
               >
                 {conn.name}
               </span>
-              <span className="min-w-0 text-[0.78rem] text-white/80">{where}</span>
+              <span className="min-w-0 text-[0.78rem] text-(--nb-ink-80)">{where}</span>
             </>
           )
           // Only the lines actually on this page can be opened; the rest are
@@ -588,7 +588,7 @@ function ConnectsTo({ connections, corridorById, onSelectCorridor }: {
                 posthog.capture('snapshot_connection_tapped', { route: conn.routeId })
                 onSelectCorridor(onPage.id)
               }}
-              className="flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-white/[0.05]"
+              className="flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-(--nb-panel)"
             >
               {body}
             </button>
@@ -629,12 +629,12 @@ function AllStops({ corridor: c }: { corridor: TransitCorridor }) {
           setOpen(o => !o)
         }}
         aria-expanded={open}
-        className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+        className="text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
       >
         {open ? tr('detail.hide_stops') : tr('detail.see_all_stops', { count: active.stops.length })}
       </button>
       {open && (
-        <div className="mt-2 rounded-lg border border-white/[0.08] bg-white/[0.03] p-3">
+        <div className="mt-2 rounded-lg border border-(--nb-line) bg-(--nb-panel-faint) p-3">
           {dirs.length > 1 && (
             <div className="mb-2.5 flex flex-wrap gap-1.5">
               {dirs.map((d, i) => {
@@ -647,8 +647,8 @@ function AllStops({ corridor: c }: { corridor: TransitCorridor }) {
                     aria-pressed={activeChip}
                     className={`rounded-full border px-2.5 py-0.5 text-[0.72rem] font-semibold transition-colors ${
                       activeChip
-                        ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.12)] text-white'
-                        : 'border-white/[0.15] text-white/75 hover:border-white/[0.3]'
+                        ? 'border-(--nb-accent-line) bg-(--nb-accent-tint) text-(--nb-ink)'
+                        : 'border-(--nb-line-mid) text-(--nb-ink-70) hover:border-(--nb-line-strong)'
                     }`}
                   >
                     {tr('detail.toward', { dest })}
@@ -662,10 +662,10 @@ function AllStops({ corridor: c }: { corridor: TransitCorridor }) {
               const here = isBoarding(s)
               return (
                 <li key={s.id} className="flex items-center gap-2">
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${here ? 'bg-[#BAF14D]' : 'bg-white/60'}`} aria-hidden="true" />
-                  <span className={`text-[0.8rem] ${here ? 'font-bold text-white' : 'text-white/80'}`}>
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${here ? 'bg-(--nb-accent-fill)' : 'bg-(--nb-scrim)'}`} aria-hidden="true" />
+                  <span className={`text-[0.8rem] ${here ? 'font-bold text-(--nb-ink)' : 'text-(--nb-ink-80)'}`}>
                     {s.name}
-                    {here && <span className="ml-1.5 text-[0.72rem] font-semibold text-[#BAF14D]">{tr('detail.your_stop')}</span>}
+                    {here && <span className="ml-1.5 text-[0.72rem] font-semibold text-(--nb-accent)">{tr('detail.your_stop')}</span>}
                   </span>
                 </li>
               )

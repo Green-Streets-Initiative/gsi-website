@@ -1,6 +1,7 @@
 import { ArrowUpRight, Bicycle, PersonSimpleWalk, Train } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import { sourceName, type School, type SchoolFact } from '@/lib/semester/schools'
+import { withUtm } from '@/lib/utm'
 
 /*
  * What the school already gives you: transit, bike, and around-campus facts
@@ -12,12 +13,12 @@ const GROUPS: { key: 'transit' | 'bike' | 'moving'; label: string; icon: Icon }[
   { key: 'moving', label: 'Around campus', icon: PersonSimpleWalk },
 ]
 
-function FactRow({ fact }: { fact: SchoolFact }) {
+function FactRow({ fact, slug }: { fact: SchoolFact; slug: string }) {
   return (
     <li className="border-b border-navy/15 py-3.5">
       <p className="text-[16px] leading-[1.55] text-navy">{fact.text}</p>
       <a
-        href={fact.sourceUrl}
+        href={withUtm(fact.sourceUrl, { medium: 'school_page', campaign: 'semester', content: slug }) ?? fact.sourceUrl}
         target="_blank"
         rel="noopener noreferrer"
         className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-semibold text-forest underline-offset-4 hover:underline"
@@ -43,7 +44,7 @@ export default function SchoolPerks({ school }: { school: School }) {
           </div>
           <ul className="mt-3 border-t border-navy/15">
             {school[g.key].map((f) => (
-              <FactRow key={f.sourceUrl + f.text.slice(0, 24)} fact={f} />
+              <FactRow key={f.sourceUrl + f.text.slice(0, 24)} fact={f} slug={school.slug} />
             ))}
           </ul>
         </div>

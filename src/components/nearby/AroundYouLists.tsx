@@ -37,7 +37,7 @@ import {
 
 const rowClass = (active: boolean) =>
   `flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg px-2.5 py-2 text-left transition-colors ${
-    active ? 'bg-[rgba(186,241,77,0.08)]' : 'hover:bg-white/[0.05]'
+    active ? 'bg-(--nb-accent-tint)' : 'hover:bg-(--nb-panel)'
   }`
 
 // A div carrying a button role needs its own keyboard activation — used where
@@ -62,7 +62,7 @@ function AlertPill({ open, onToggle }: { open: boolean; onToggle: () => void }) 
       type="button"
       onClick={e => { e.stopPropagation(); onToggle() }}
       aria-expanded={open}
-      className="inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-[#EDB93C] transition-colors hover:bg-[#EDB93C]/10"
+      className="inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-(--nb-warn) transition-colors hover:bg-(--nb-warn-tint)"
     >
       <Warning size={12} weight="fill" aria-hidden="true" />
       {tr('lists.service_alert')}
@@ -85,17 +85,17 @@ function AlertDetailBlock({ alerts }: { alerts: SurfacedAlert[] }) {
       {alerts.map(a => {
         const promo = matchPromo(a, promos)
         return (
-        <span key={a.id} className="block rounded-lg border border-[#EDB93C]/25 bg-[#EDB93C]/[0.06] px-3 py-2">
-          <span className="block text-[0.78rem] leading-relaxed text-white">{a.header}</span>
+        <span key={a.id} className="block rounded-lg border border-(--nb-warn-line) bg-(--nb-warn-tint) px-3 py-2">
+          <span className="block text-[0.78rem] leading-relaxed text-(--nb-ink)">{a.header}</span>
           {a.description && (
-            <span className="mt-1 block text-[0.75rem] leading-relaxed text-white/80">{a.description}</span>
+            <span className="mt-1 block text-[0.75rem] leading-relaxed text-(--nb-ink-80)">{a.description}</span>
           )}
           <a
             href={a.url ?? 'https://www.mbta.com/alerts'}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('snapshot_alert_link', { effect: a.effect })}
-            className="mt-1.5 inline-block text-[0.75rem] font-bold text-[#BAF14D]"
+            className="mt-1.5 inline-block text-[0.75rem] font-bold text-(--nb-accent)"
           >
             {tr('lists.full_details')}
           </a>
@@ -139,10 +139,10 @@ function RouteSummaryLine({ r, corridorById, alerts }: {
           />
         )}
         {ends && (
-          <span className="min-w-0 flex-1 truncate text-[0.78rem] text-white/80">{ends}</span>
+          <span className="min-w-0 flex-1 truncate text-[0.78rem] text-(--nb-ink-80)">{ends}</span>
         )}
         {next !== null && (
-          <strong className="ml-auto shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
+          <strong className="ml-auto shrink-0 text-[0.75rem] font-bold text-(--nb-accent)">
             {next === 0 ? tr('lists.now') : tr('lists.in_min', { min: next })}
           </strong>
         )}
@@ -186,8 +186,8 @@ function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRout
           }}
         />
       )}
-      <span className="ml-auto text-[0.75rem] text-white/75">
-        {corridor?.frequency === null && <span className="inline-block h-3 w-20 animate-pulse rounded bg-white/[0.08] align-middle" aria-hidden="true" />}
+      <span className="ml-auto text-[0.75rem] text-(--nb-ink-70)">
+        {corridor?.frequency === null && <span className="inline-block h-3 w-20 animate-pulse rounded bg-(--nb-panel-raised) align-middle" aria-hidden="true" />}
         {corridor?.frequency === 'unavailable' && tr('lists.schedule_unavailable')}
         {fs}
       </span>
@@ -196,9 +196,9 @@ function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRout
         <span className="w-full space-y-0.5">
           {dirs.map(a => (
             <span key={a.direction} className="flex items-baseline justify-between gap-2">
-              <span className="min-w-0 truncate text-[0.8rem] text-white/80">&rarr; {a.direction}</span>
+              <span className="min-w-0 truncate text-[0.8rem] text-(--nb-ink-80)">&rarr; {a.direction}</span>
               {a.nextMin !== null && (
-                <strong className="shrink-0 text-[0.75rem] font-bold text-[#BAF14D]">
+                <strong className="shrink-0 text-[0.75rem] font-bold text-(--nb-accent)">
                   {a.nextMin === 0 ? tr('lists.now') : tr('lists.in_min', { min: a.nextMin })}
                 </strong>
               )}
@@ -206,7 +206,7 @@ function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRout
           ))}
         </span>
       ) : (
-        <span className="min-w-0 flex-1 truncate text-[0.8rem] text-white/80">{routeEndpoints(corridor, r)}</span>
+        <span className="min-w-0 flex-1 truncate text-[0.8rem] text-(--nb-ink-80)">{routeEndpoints(corridor, r)}</span>
       )}
       {open && routeAlerts.length > 0 && <AlertDetailBlock alerts={routeAlerts} />}
     </div>
@@ -265,23 +265,23 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
 
   return (
     <div className="mt-5">
-      <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
+      <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-(--nb-ink-70)">
         {tr('lists.stations_heading')}
       </div>
       {status === 'loading' && <SkeletonRows count={3} />}
       {status === 'error' && <ErrorCard label={tr('lists.error_mbta')} onRetry={onRetry} />}
       {status === 'ready' && stations.length === 0 && (
-        <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
+        <p className="rounded-xl border border-(--nb-line) bg-(--nb-panel-faint) px-5 py-4 text-[0.875rem] text-(--nb-ink-70)">
           {tr('lists.no_stations')}
         </p>
       )}
       {status === 'ready' && farOnly && (
-        <p className="mb-2.5 text-[0.875rem] text-white/80">
+        <p className="mb-2.5 text-[0.875rem] text-(--nb-ink-80)">
           {tr(mode === 'bus' ? 'lists.far_lead_bus' : mode === 'train' ? 'lists.far_lead_train' : 'lists.far_lead_all')}
         </p>
       )}
       {status === 'ready' && crossModeNearest && (
-        <p className="mb-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[0.875rem] text-white/80">
+        <p className="mb-2.5 rounded-xl border border-(--nb-line) bg-(--nb-panel-faint) px-4 py-3 text-[0.875rem] text-(--nb-ink-80)">
           {tr(mode === 'bus' ? 'lists.cross_mode_train' : 'lists.cross_mode_bus', {
             route: crossRoutes,
             name: crossModeNearest.name,
@@ -293,7 +293,7 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
               onSwitchMode(mode === 'bus' ? 'train' : 'bus')
               posthog.capture('snapshot_cross_mode_switch', { from: mode })
             }}
-            className="ml-2 font-semibold text-[#BAF14D] hover:opacity-80"
+            className="ml-2 font-semibold text-(--nb-accent) hover:opacity-80"
           >
             {tr(mode === 'bus' ? 'lists.cross_mode_show_trains' : 'lists.cross_mode_show_buses')}
           </button>
@@ -307,8 +307,8 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
           return (
             <div
               key={cardKey}
-              className={`rounded-xl border bg-[#242538] px-3 py-3 transition-colors ${
-                lit ? 'border-[#BAF14D]/60' : 'border-white/[0.08]'
+              className={`rounded-xl border bg-(--nb-card) px-3 py-3 transition-colors ${
+                lit ? 'border-(--nb-accent-line)' : 'border-(--nb-line)'
               }`}
             >
               {/* Header + compact summary toggle the card open; the full
@@ -322,18 +322,18 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                 className="w-full cursor-pointer px-1.5 text-left"
               >
                 {st.farther && (
-                  <span className="mb-1 block text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
+                  <span className="mb-1 block text-[0.7rem] font-bold uppercase tracking-wider text-(--nb-ink-70)">
                     {tr(st.isRail ? 'lists.nearest_rail_tag' : 'lists.nearest_bus_tag')}
                   </span>
                 )}
                 <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                  <span className="flex items-center gap-1.5 text-[0.95rem] font-bold text-white">
-                    <span className="text-white/80">{isShuttleStation(st) ? <ShuttleIcon size={15} /> : st.routes.every(r => r.id.startsWith('Boat-')) ? <FerryIcon size={15} /> : st.isRail ? <TrainIcon size={15} /> : <BusIcon size={15} />}</span>
+                  <span className="flex items-center gap-1.5 text-[0.95rem] font-bold text-(--nb-ink)">
+                    <span className="text-(--nb-ink-80)">{isShuttleStation(st) ? <ShuttleIcon size={15} /> : st.routes.every(r => r.id.startsWith('Boat-')) ? <FerryIcon size={15} /> : st.isRail ? <TrainIcon size={15} /> : <BusIcon size={15} />}</span>
                     {st.name}
                   </span>
-                  <span className="text-[0.78rem] text-white/75">
+                  <span className="text-[0.78rem] text-(--nb-ink-70)">
                     {tr('lists.walk_time', { minutes: walkTimeMinutes(st.dist), dist: formatDistance(st.dist) })}
-                    <span className="ml-1.5 font-semibold text-[#BAF14D]">{open ? '▴' : '▾'}</span>
+                    <span className="ml-1.5 font-semibold text-(--nb-accent)">{open ? '▴' : '▾'}</span>
                   </span>
                 </span>
                 {/* Operator + who may board. Without it "Market Basket
@@ -353,7 +353,7 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                 {/* A stop several lines share IS an interchange — say so.
                     Costs nothing: the routes are already in hand. */}
                 {st.routes.length > 1 && !isShuttleStation(st) && (
-                  <span className="mt-1.5 block text-[0.75rem] text-white/75">
+                  <span className="mt-1.5 block text-[0.75rem] text-(--nb-ink-70)">
                     {tr('lists.lines_meet_here', { count: st.routes.length })}
                   </span>
                 )}
@@ -386,11 +386,11 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                       e.stopPropagation()
                       posthog.capture('snapshot_directions_clicked', { type: st.isRail ? 'station' : 'bus_stop' })
                     }}
-                    className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+                    className="text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
                   >
                     {tr('lists.walk_there')}
                   </a>
-                  {lit && <span className="text-[0.75rem] text-white/75">{tr('lists.shown_on_map')}</span>}
+                  {lit && <span className="text-[0.75rem] text-(--nb-ink-70)">{tr('lists.shown_on_map')}</span>}
                 </div>
               )}
               {/* Lines serving it — tap one to light it up on the map */}
@@ -481,7 +481,7 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
           onToggle={() => onToggleSection(shelf.key)}
         >
           {shelf.hint && (
-            <p className="mb-2 text-[0.78rem] leading-snug text-white/75">{shelf.hint}</p>
+            <p className="mb-2 text-[0.78rem] leading-snug text-(--nb-ink-70)">{shelf.hint}</p>
           )}
           <div className="space-y-2.5">
             {shelf.items.map(c => (
@@ -491,14 +491,14 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
                 aria-expanded={highlightedCorridorId === c.id}
                 className={`w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
                   highlightedCorridorId === c.id
-                    ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.06)]'
-                    : 'border-white/[0.08] bg-[#242538] hover:border-white/[0.2]'
+                    ? 'border-(--nb-accent-line) bg-(--nb-accent-tint)'
+                    : 'border-(--nb-line) bg-(--nb-card) hover:border-(--nb-line-strong)'
                 }`}
               >
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="text-[0.9rem] font-semibold text-white">{c.name}</span>
+                  <span className="text-[0.9rem] font-semibold text-(--nb-ink)">{c.name}</span>
                   {popularStreetKeys.has(canonicalStreetKey(c.name)) && (
-                    <span className="rounded-full bg-[#BAF14D]/15 px-2 py-0.5 text-[0.68rem] font-semibold text-[#BAF14D]">
+                    <span className="rounded-full bg-(--nb-accent-tint) px-2 py-0.5 text-[0.68rem] font-semibold text-(--nb-accent)">
                       {tr('lists.popular_with_riders')}
                     </span>
                   )}
@@ -506,10 +506,10 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
                 <div className="mt-0.5 text-[0.8rem]">
                   {(() => {
                     const p = protectionLabel(c.protection, c.onewayOnly, tr)
-                    return <span className={p.emphasis ? 'font-bold text-[#BAF14D]' : 'text-white/80'}>{p.text}</span>
+                    return <span className={p.emphasis ? 'font-bold text-(--nb-accent)' : 'text-(--nb-ink-80)'}>{p.text}</span>
                   })()}
                 </div>
-                <div className="mt-1 text-[0.8rem] text-white/80">
+                <div className="mt-1 text-[0.8rem] text-(--nb-ink-80)">
                   {tr('lists.bike_length', { miles: c.lengthMiles, rideMin: bikeTimeMinutes(c.accessDistanceMeters), dist: formatDistance(c.accessDistanceMeters) })}
                 </div>
               </button>
@@ -537,10 +537,10 @@ export function DockList({ docks, onSelect, selectedId, isSectionOpen, onToggleS
   if (docks.length === 0) {
     return (
       <div className="mt-5">
-        <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-white/70">
+        <div className="mb-2.5 text-[0.7rem] font-bold uppercase tracking-wider text-(--nb-ink-70)">
           {tr('lists.bike_share_docks_heading')}
         </div>
-        <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
+        <p className="rounded-xl border border-(--nb-line) bg-(--nb-panel-faint) px-5 py-4 text-[0.875rem] text-(--nb-ink-70)">
           {tr('lists.no_docks')}
         </p>
       </div>
@@ -568,13 +568,13 @@ export function DockList({ docks, onSelect, selectedId, isSectionOpen, onToggleS
               aria-expanded={selectedId === d.station_id}
               className={`w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
                 selectedId === d.station_id
-                  ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.06)]'
-                  : 'border-white/[0.08] bg-[#242538] hover:border-white/[0.2]'
+                  ? 'border-(--nb-accent-line) bg-(--nb-accent-tint)'
+                  : 'border-(--nb-line) bg-(--nb-card) hover:border-(--nb-line-strong)'
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#7FB5FF]">
+                  <div className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-(--nb-painted)">
                     {(() => {
                       const logo = bikeshareLogoUrl(d.system_id ?? 'bluebikes')
                       return logo
@@ -582,15 +582,15 @@ export function DockList({ docks, onSelect, selectedId, isSectionOpen, onToggleS
                         : tr('lists.bike_share_dock', { system: d.system_name ?? 'Bluebikes' })
                     })()}
                   </div>
-                  <span className="block truncate text-[0.9rem] font-semibold text-white">{d.name}</span>
+                  <span className="block truncate text-[0.9rem] font-semibold text-(--nb-ink)">{d.name}</span>
                 </div>
-                <span className="text-[0.8rem] text-white/75">
+                <span className="text-[0.8rem] text-(--nb-ink-70)">
                   {tr('lists.walk_time', { minutes: walkTimeMinutes(d.distance_meters), dist: formatDistance(d.distance_meters) })}
                 </span>
               </div>
               <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[0.8rem] text-white/80">
-                  <strong className="font-bold text-[#BAF14D]">{dockStatsText(d.num_bikes_available, d.num_ebikes_available, tr)}</strong>
+                <span className="text-[0.8rem] text-(--nb-ink-80)">
+                  <strong className="font-bold text-(--nb-accent)">{dockStatsText(d.num_bikes_available, d.num_ebikes_available, tr)}</strong>
                   {' · '}{tr('lists.open_docks', { count: d.num_docks_available })}
                 </span>
                 <a
@@ -598,7 +598,7 @@ export function DockList({ docks, onSelect, selectedId, isSectionOpen, onToggleS
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => { e.stopPropagation(); posthog.capture('snapshot_directions_clicked', { type: d.system_id ?? 'bluebike' }) }}
-                  className="text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+                  className="text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
                 >
                   {tr('lists.walk_there')}
                 </a>
@@ -606,10 +606,10 @@ export function DockList({ docks, onSelect, selectedId, isSectionOpen, onToggleS
             </button>
           ))}
           {systemIds.has('bluebikes') && (
-            <p className="px-1 text-[0.8rem] leading-relaxed text-white/75">{tr('misc.bluebikes_note', { price: usd(PRICES.bluebikes.annual) })}</p>
+            <p className="px-1 text-[0.8rem] leading-relaxed text-(--nb-ink-70)">{tr('misc.bluebikes_note', { price: usd(PRICES.bluebikes.annual) })}</p>
           )}
           {systemIds.has('valleybike') && (
-            <p className="px-1 text-[0.8rem] leading-relaxed text-white/75">{tr('misc.valleybike_note')}</p>
+            <p className="px-1 text-[0.8rem] leading-relaxed text-(--nb-ink-70)">{tr('misc.valleybike_note')}</p>
           )}
         </div>
     </CollapsibleSection>
@@ -646,8 +646,8 @@ export function BorrowRentList({ points, onSelect, selectedId, isSectionOpen, on
             aria-expanded={selectedId === p.id}
             className={`block w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
               selectedId === p.id
-                ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.06)]'
-                : 'border-white/[0.08] bg-[#242538] hover:border-white/[0.2]'
+                ? 'border-(--nb-accent-line) bg-(--nb-accent-tint)'
+                : 'border-(--nb-line) bg-(--nb-card) hover:border-(--nb-line-strong)'
             }`}
           >
             {(() => {
@@ -655,12 +655,12 @@ export function BorrowRentList({ points, onSelect, selectedId, isSectionOpen, on
               return logo ? <img src={logo} alt="" className="mb-1 h-4.5 w-auto" /> : null
             })()}
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-              <span className="text-[0.9rem] font-semibold text-white">{p.name}</span>
-              <span className="text-[0.78rem] text-white/75">
+              <span className="text-[0.9rem] font-semibold text-(--nb-ink)">{p.name}</span>
+              <span className="text-[0.78rem] text-(--nb-ink-70)">
                 {formatDistance(p.distMiles * 1609.34)}
               </span>
             </div>
-            <div className="mt-1 text-[0.82rem] text-white/80">
+            <div className="mt-1 text-[0.82rem] text-(--nb-ink-80)">
               {tr(p.org === 'cargob' ? 'borrow.cargob' : 'borrow.pedal_power')}
               {p.approximate ? tr('lists.exact_address_note') : ''}
             </div>
@@ -721,15 +721,15 @@ function AlertRow({ alert, routeNames }: { alert: SurfacedAlert; routeNames: Map
           setOpen(o => !o)
         }}
         aria-expanded={open}
-        className="flex w-full items-start gap-2 rounded-lg bg-white/[0.04] px-3 py-2.5 text-left"
+        className="flex w-full items-start gap-2 rounded-lg bg-(--nb-panel-faint) px-3 py-2.5 text-left"
       >
         <span className="min-w-0 flex-1">
           <AlertLineBadges routeIds={alert.routeIds} routeNames={routeNames} size="xs" />
-          <span className={`mt-1 block text-[0.8rem] leading-relaxed text-white ${open ? '' : 'line-clamp-2'}`}>
+          <span className={`mt-1 block text-[0.8rem] leading-relaxed text-(--nb-ink) ${open ? '' : 'line-clamp-2'}`}>
             {alert.header}
           </span>
           {open && alert.description && (
-            <span className="mt-1.5 block text-[0.78rem] leading-relaxed text-white/80">{alert.description}</span>
+            <span className="mt-1.5 block text-[0.78rem] leading-relaxed text-(--nb-ink-80)">{alert.description}</span>
           )}
           {open ? (
             <a
@@ -737,15 +737,15 @@ function AlertRow({ alert, routeNames }: { alert: SurfacedAlert; routeNames: Map
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => { e.stopPropagation(); posthog.capture('snapshot_alert_link', { effect: alert.effect }) }}
-              className="mt-2 inline-block text-[0.78rem] font-bold text-[#BAF14D]"
+              className="mt-2 inline-block text-[0.78rem] font-bold text-(--nb-accent)"
             >
               {tr('lists.full_details')}
             </a>
           ) : (
-            <span className="mt-1 block text-[0.7rem] text-white/60">{tr('lists.tap_for_details')}</span>
+            <span className="mt-1 block text-[0.7rem] text-(--nb-ink-60)">{tr('lists.tap_for_details')}</span>
           )}
         </span>
-        <span className="shrink-0 text-[0.72rem] font-semibold text-[#BAF14D]" aria-hidden="true">{open ? '▴' : '▾'}</span>
+        <span className="shrink-0 text-[0.72rem] font-semibold text-(--nb-accent)" aria-hidden="true">{open ? '▴' : '▾'}</span>
       </button>
       {/* Promo sits OUTSIDE the button (its own buttons/links can't nest in one) */}
       {open && promo && <NearbyPromoCard promo={promo} />}
@@ -766,7 +766,7 @@ export function ServiceDisruptionsCard({ alerts, routeNames }: {
   const overflow = alerts.length - shown.length
   const affectedIds = alerts.flatMap(a => a.routeIds)
   return (
-    <div className="mb-2.5 overflow-hidden rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10">
+    <div className="mb-2.5 overflow-hidden rounded-xl border border-(--nb-warn-line) bg-(--nb-warn-tint)">
       <button
         type="button"
         onClick={() => {
@@ -776,9 +776,9 @@ export function ServiceDisruptionsCard({ alerts, routeNames }: {
         aria-expanded={open}
         className="flex w-full items-center gap-2 px-4 py-3 text-left"
       >
-        <Warning size={18} weight="fill" className="shrink-0 text-[#EDB93C]" aria-hidden="true" />
+        <Warning size={18} weight="fill" className="shrink-0 text-(--nb-warn)" aria-hidden="true" />
         <span className="min-w-0 flex-1">
-          <span className="block text-[0.82rem] font-bold text-white">
+          <span className="block text-[0.82rem] font-bold text-(--nb-ink)">
             {alerts.length === 1 ? tr('lists.disruptions_one') : tr('lists.disruptions_other', { count: alerts.length })}
           </span>
           {!open && (
@@ -787,7 +787,7 @@ export function ServiceDisruptionsCard({ alerts, routeNames }: {
             </span>
           )}
         </span>
-        <span className="shrink-0 text-[0.8rem] font-semibold text-[#BAF14D]" aria-hidden="true">{open ? '▴' : '▾'}</span>
+        <span className="shrink-0 text-[0.8rem] font-semibold text-(--nb-accent)" aria-hidden="true">{open ? '▴' : '▾'}</span>
       </button>
       {open && (
         <div className="space-y-2 px-3 pb-3">
@@ -799,7 +799,7 @@ export function ServiceDisruptionsCard({ alerts, routeNames }: {
               href="https://www.mbta.com/alerts"
               target="_blank"
               rel="noopener noreferrer"
-              className="block px-1 text-[0.78rem] font-semibold text-[#BAF14D]"
+              className="block px-1 text-[0.78rem] font-semibold text-(--nb-accent)"
             >
               {tr('lists.more_at_mbta', { count: overflow })}
             </a>

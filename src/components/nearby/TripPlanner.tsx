@@ -5,6 +5,7 @@ import posthog from 'posthog-js'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import type { ReachRow } from './types'
 import { useNearbyT } from './NearbyI18n'
+import { useNearbyTone } from './NearbyTone'
 
 /**
  * "Where do you want to go?" — the Destinations tab's opening move.
@@ -28,6 +29,7 @@ export default function TripPlanner({ center, onPlanned, partnerSlug }: {
   partnerSlug?: string | null
 }) {
   const tr = useNearbyT()
+  const tone = useNearbyTone()
   const [address, setAddress] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
 
@@ -56,24 +58,24 @@ export default function TripPlanner({ center, onPlanned, partnerSlug }: {
   }
 
   return (
-    <div className="mt-2 rounded-xl border border-[rgba(186,241,77,0.25)] bg-[linear-gradient(135deg,rgba(41,102,229,0.18),rgba(186,241,77,0.1))] px-4 py-4">
-      <div className="text-[0.95rem] font-bold text-white">{tr('trip.title')}</div>
-      <p className="mt-1 text-[0.82rem] leading-snug text-white/80">{tr('trip.body')}</p>
+    <div className="mt-2 rounded-xl border border-(--nb-accent-line) bg-[image:var(--nb-promo-bg)] px-4 py-4">
+      <div className="text-[0.95rem] font-bold text-(--nb-ink)">{tr('trip.title')}</div>
+      <p className="mt-1 text-[0.82rem] leading-snug text-(--nb-ink-80)">{tr('trip.body')}</p>
       <div className="mt-2.5">
         <AddressAutocomplete
           value={address}
           onChange={(a) => { setAddress(a); if (status === 'error') setStatus('idle') }}
           onPlaceSelected={(p) => plan(p)}
-          variant="dark"
+          variant={tone === 'dark' ? 'dark' : 'light'}
           label={null}
           placeholder={tr('trip.placeholder')}
         />
       </div>
       {status === 'loading' && (
-        <p className="mt-2 text-[0.8rem] text-white/80">{tr('trip.working')}</p>
+        <p className="mt-2 text-[0.8rem] text-(--nb-ink-80)">{tr('trip.working')}</p>
       )}
       {status === 'error' && (
-        <p className="mt-2 text-[0.8rem] text-white/80">{tr('trip.error')}</p>
+        <p className="mt-2 text-[0.8rem] text-(--nb-ink-80)">{tr('trip.error')}</p>
       )}
     </div>
   )

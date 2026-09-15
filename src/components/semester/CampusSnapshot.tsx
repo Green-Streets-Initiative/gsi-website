@@ -9,6 +9,7 @@ import { protectionLabel } from '@/lib/nearby/bike-labels'
 import { modeOptions } from '@/lib/nearby/reach-ui'
 import { bikeTimeMinutes, walkTimeMinutes } from '@/lib/geo/measure'
 import { t } from '@/lib/nearby/i18n'
+import { focusParam, type InitialFocus } from '@/lib/nearby/focus'
 
 /*
  * What's around campus, as the /nearby page knows it: the static map with
@@ -16,7 +17,7 @@ import { t } from '@/lib/nearby/i18n'
  * weekday frequencies, the comfortable bike routes and docks, and where you
  * can get to with the time by the fastest way. All server-rendered from the
  * shared snapshot model; live arrivals stay on the live map, which the
- * whole map block opens centred on campus.
+ * whole map block opens centered on campus.
  */
 
 export const MAP_W = 900
@@ -71,6 +72,9 @@ export default function CampusSnapshot({
   shortName: string
 }) {
   const stations = model.stations.slice(0, MAX_STATIONS)
+  // Every row is a door into the live page, opened on that very thing
+  const focusHref = (f: InitialFocus) => `${href}&focus=${encodeURIComponent(focusParam(f))}`
+  const ROW = 'group/row -mx-2 block rounded-lg px-2 transition-colors hover:bg-navy/[0.04] focus-visible:outline-2 focus-visible:outline-forest'
   const markers = [{ lat, lng, kind: 'home' as const, label: shortName }, ...model.markers]
 
   const legend: { swatch: React.ReactNode; label: string }[] = []
@@ -136,9 +140,10 @@ export default function CampusSnapshot({
                 {stations.map(s => {
                   const agency = s.isShuttle ? shuttleAgencyFor(s.lines[0]?.routeId ?? '') : null
                   return (
-                    <li key={s.name} className="border-b border-navy/15 py-3">
+                    <li key={s.name} className="border-b border-navy/15">
+                      <a href={focusHref({ type: 'station', key: s.name.toLowerCase() })} className={`${ROW} py-3`} aria-label={`${s.name} on the live map`}>
                       <div className="flex items-baseline justify-between gap-3">
-                        <span className="text-[16px] font-semibold leading-snug text-navy">{s.name}</span>
+                        <span className="text-[16px] font-semibold leading-snug text-navy group-hover/row:underline">{s.name}</span>
                         <span className="shrink-0 text-[13px] text-ink-soft">{s.walkMin} min walk</span>
                       </div>
                       {agency && (
@@ -146,9 +151,23 @@ export default function CampusSnapshot({
                           {agency.name} · {tr(`shuttle.access_${agency.access.replace('-', '_')}`, { operator: agency.idName })}
                         </p>
                       )}
-                      {/* A shuttle stop's operator line already names the
-                          shuttle; its single route chip would say it again. */}
-                      {(!s.isShuttle || s.lines.length > 1) && s.lines.map(l => (
+                      {/* A shuttle stop with several routes: the routes as one
+                          wrapped row of chips (the operator prefix dropped —
+                          the line above already says who runs them), and one
+                          note about where the schedules live. */}
+                      {s.isShuttle && s.lines.length > 1 && (
+                        <>
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {s.lines.map(l => (
+                              <span key={l.routeId} className="rounded px-1.5 py-px text-[11px] font-bold" style={{ backgroundColor: l.color, color: l.textColor }}>
+                                {l.label.replace(/^[^·]+ · /, '')}
+                              </span>
+                            ))}
+                          </div>
+                          <p className="mt-1.5 text-[12px] text-ink-soft">Schedules on the {agency?.idName ?? 'operator'} site.</p>
+                        </>
+                      )}
+                      {!s.isShuttle && s.lines.map(l => (
                         <div key={l.routeId} className="mt-1.5 flex items-baseline gap-2">
                           <span
                             className="shrink-0 rounded px-1.5 py-px text-[11px] font-bold"
@@ -163,6 +182,7 @@ export default function CampusSnapshot({
                           </span>
                         </div>
                       ))}
+                      </a>
                     </li>
                   )
                 })}
@@ -179,14 +199,16 @@ export default function CampusSnapshot({
                   {model.bikeCorridors.map(c => {
                     const label = protectionLabel(c.protection, c.onewayOnly, tr)
                     return (
-                      <li key={c.id} className="border-b border-navy/15 py-3">
+                      <li key={c.id} className="border-b border-navy/15">
+                        <a href={focusHref({ type: 'corridor', id: c.id })} className={`${ROW} py-3`} aria-label={`${c.name} on the live map`}>
                         <div className="flex items-baseline justify-between gap-3">
-                          <span className="text-[16px] font-semibold leading-snug text-navy">{c.name}</span>
+                          <span className="text-[16px] font-semibold leading-snug text-navy group-hover/row:underline">{c.name}</span>
                           <span className="shrink-0 text-[13px] text-ink-soft">{bikeTimeMinutes(c.accessDistanceMeters)} min ride away</span>
                         </div>
                         <p className="mt-0.5 text-[13px] leading-snug text-ink-soft">
                           <span className={label.emphasis ? 'font-medium text-navy' : ''}>{label.text}</span> · {c.lengthMiles} mi through the area
                         </p>
+                        </a>
                       </li>
                     )
                   })}
@@ -199,9 +221,11 @@ export default function CampusSnapshot({
                   <h4 className="mt-5 text-[12px] font-semibold uppercase tracking-[0.12em] text-ink-soft">Bluebikes docks</h4>
                   <ul className="mt-1.5 border-t border-navy/15">
                     {model.docks.map(d => (
-                      <li key={d.station_id} className="flex items-baseline justify-between gap-3 border-b border-navy/15 py-2.5">
-                        <span className="text-[15px] leading-snug text-navy">{d.name}</span>
-                        <span className="shrink-0 text-[13px] text-ink-soft">{walkTimeMinutes(d.distance_meters)} min walk</span>
+                      <li key={d.station_id} className="border-b border-navy/15">
+                        <a href={focusHref({ type: 'dock', id: d.station_id })} className={`${ROW} flex items-baseline justify-between gap-3 py-2.5`} aria-label={`${d.name} dock on the live map`}>
+                          <span className="text-[15px] leading-snug text-navy group-hover/row:underline">{d.name}</span>
+                          <span className="shrink-0 text-[13px] text-ink-soft">{walkTimeMinutes(d.distance_meters)} min walk</span>
+                        </a>
                       </li>
                     ))}
                   </ul>
@@ -217,8 +241,9 @@ export default function CampusSnapshot({
                 {model.destinations.map(row => {
                   const options = modeOptions(row)
                   return (
-                    <li key={row.id} className="border-b border-navy/15 py-3">
-                      <span className="text-[16px] font-semibold leading-snug text-navy">{row.name}</span>
+                    <li key={row.id} className="border-b border-navy/15">
+                      <a href={focusHref({ type: 'reach', id: row.id })} className={`${ROW} py-3`} aria-label={`Route to ${row.name} on the live map`}>
+                      <span className="text-[16px] font-semibold leading-snug text-navy group-hover/row:underline">{row.name}</span>
                       <p className="mt-0.5 text-[13px] leading-snug text-ink-soft tabular-nums">
                         {options.map((o, i) => (
                           <span key={o.key}>
@@ -229,6 +254,7 @@ export default function CampusSnapshot({
                           </span>
                         ))}
                       </p>
+                      </a>
                     </li>
                   )
                 })}

@@ -6,9 +6,9 @@ import { loadMaplibre } from '@/lib/map/loadMaplibre'
 
 /*
  * A real map of the campus and what is around it, as the "around campus"
- * visual on a school page: the free CARTO Voyager basemap (no key), centred
+ * visual on a school page: the free CARTO Voyager basemap (no key), centered
  * on the campus, not interactive. The whole block is one link to /nearby,
- * which opens the live map centred in the same place.
+ * which opens the live map centered in the same place.
  *
  * The map library is large, so it only loads once the block scrolls into
  * view, and the cream placeholder keeps the block's shape until then. The

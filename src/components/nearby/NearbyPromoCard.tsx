@@ -48,17 +48,17 @@ export default function NearbyPromoCard({ promo }: { promo: NearbyPromo }) {
         <Bicycle size={14} weight="fill" aria-hidden="true" />
         {tr('promo.eyebrow')}
       </span>
-      <span className="mt-1 block text-[0.9rem] font-bold leading-snug text-white">{promo.title}</span>
-      {promo.subtitle && <span className="mt-0.5 block text-[0.75rem] text-white/70">{promo.subtitle}</span>}
+      <span className="mt-1 block text-[0.9rem] font-bold leading-snug text-(--nb-ink)">{promo.title}</span>
+      {promo.subtitle && <span className="mt-0.5 block text-[0.75rem] text-(--nb-ink-70)">{promo.subtitle}</span>}
 
       {promo.code && (
         <button
           type="button"
           onClick={copyCode}
-          className="mt-2 flex items-center gap-2 rounded-md border border-dashed border-white/30 bg-white/[0.06] px-2.5 py-1.5 text-left transition-colors hover:bg-white/[0.1]"
+          className="mt-2 flex items-center gap-2 rounded-md border border-dashed border-(--nb-line-strong) bg-(--nb-panel) px-2.5 py-1.5 text-left transition-colors hover:bg-(--nb-panel-raised)"
         >
-          <span className="font-mono text-[0.85rem] font-bold tracking-wider text-white">{promo.code}</span>
-          <span className="text-[0.68rem] font-semibold text-[#BAF14D]">
+          <span className="font-mono text-[0.85rem] font-bold tracking-wider text-(--nb-ink)">{promo.code}</span>
+          <span className="text-[0.68rem] font-semibold text-(--nb-accent)">
             {copied ? tr('promo.copied') : tr('promo.copy_hint')}
           </span>
         </button>
@@ -70,7 +70,7 @@ export default function NearbyPromoCard({ promo }: { promo: NearbyPromo }) {
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => posthog.capture('snapshot_promo_cta', { promo: promo.id })}
-          className="mt-2 inline-block rounded-lg px-3 py-1.5 text-[0.78rem] font-bold text-white transition-opacity hover:opacity-90"
+          className="mt-2 inline-block rounded-lg px-3 py-1.5 text-[0.78rem] font-bold text-(--nb-ink) transition-opacity hover:opacity-90"
           style={{ backgroundColor: BLUEBIKES_BLUE }}
         >
           {promo.ctaLabel ?? tr('promo.get_app')} &rarr;
@@ -78,7 +78,7 @@ export default function NearbyPromoCard({ promo }: { promo: NearbyPromo }) {
       )}
 
       {promo.sponsor && (
-        <span className="mt-2 flex items-center gap-1.5 text-[0.68rem] text-white/60">
+        <span className="mt-2 flex items-center gap-1.5 text-[0.68rem] text-(--nb-ink-60)">
           {promo.sponsorLogoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={promo.sponsorLogoUrl} alt={promo.sponsor} className="h-4 w-auto" />
@@ -86,7 +86,7 @@ export default function NearbyPromoCard({ promo }: { promo: NearbyPromo }) {
           {tr('promo.sponsored_by', { sponsor: promo.sponsor })}
         </span>
       )}
-      {promo.finePrint && <span className="mt-1 block text-[0.64rem] leading-snug text-white/45">{promo.finePrint}</span>}
+      {promo.finePrint && <span className="mt-1 block text-[0.64rem] leading-snug text-(--nb-ink-60)">{promo.finePrint}</span>}
     </div>
   )
 }

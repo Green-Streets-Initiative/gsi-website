@@ -104,7 +104,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                     />
                     <span className="truncate">{s.label}</span>
                   </span>
-                  <span className="shrink-0 tabular-nums text-white/75">
+                  <span className="shrink-0 tabular-nums text-(--nb-ink-70)">
                     {s.distance_mi} {tr('bike.unit_mi')}{' '}
                     {s.mixed
                       ? tr('bike.mostly_tier', { tier: labels[s.rating].toLowerCase() })
@@ -119,7 +119,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                     onClick={() => onHighlightStreet(on ? null : s.key!)}
                     aria-pressed={on}
                     className={`flex w-full items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left text-[0.78rem] transition-colors ${
-                      on ? 'bg-white/[0.09] text-white' : 'text-white/80 hover:bg-white/[0.05]'
+                      on ? 'bg-(--nb-panel-raised) text-(--nb-ink)' : 'text-(--nb-ink-80) hover:bg-(--nb-panel)'
                     }`}
                   >
                     {body}
@@ -134,7 +134,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                   )}
                 </div>
               ) : (
-                <div key={s.label} className="flex items-baseline justify-between gap-2 px-1 text-[0.78rem] text-white/80">
+                <div key={s.label} className="flex items-baseline justify-between gap-2 px-1 text-[0.78rem] text-(--nb-ink-80)">
                   {body}
                 </div>
               )
@@ -163,7 +163,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                     </span>
                     <span className="truncate">{tr('bike.connecting_stretches')}</span>
                   </span>
-                  <span className="shrink-0 tabular-nums text-white/75">
+                  <span className="shrink-0 tabular-nums text-(--nb-ink-70)">
                     {made || `${otherMi} ${tr('bike.unit_mi')}`}
                   </span>
                 </>
@@ -176,7 +176,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                     aria-pressed={on}
                     aria-label={tr('bike.connecting_stretches_a11y', { miles: otherMi })}
                     className={`flex w-full items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left text-[0.78rem] transition-colors ${
-                      on ? 'bg-white/[0.09] text-white' : 'text-white/80 hover:bg-white/[0.05]'
+                      on ? 'bg-(--nb-panel-raised) text-(--nb-ink)' : 'text-(--nb-ink-80) hover:bg-(--nb-panel)'
                     }`}
                   >
                     {body}
@@ -184,7 +184,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                   {photo && <PanelPhoto spec={{ kind: 'sv', ...photo }} alt={tr('bike.connecting_stretches')} />}
                 </div>
               ) : (
-                <div key="other" className="flex items-baseline justify-between gap-2 px-1 text-[0.78rem] text-white/80">
+                <div key="other" className="flex items-baseline justify-between gap-2 px-1 text-[0.78rem] text-(--nb-ink-80)">
                   {body}
                 </div>
               )

@@ -22,17 +22,17 @@ import { ANDROID_URL, IOS_URL, IS_LIVE, type HubData } from './_lib/load'
 
 const STEPS_LIVE = [
   { title: 'Get the Shift app', body: 'Free on iOS and Android. Sign up with whatever email you already use: Gmail, Apple, anything.' },
-  { title: `Enter code ${SEMESTER_CODE}`, body: 'Tap your school’s link from this site, or type the code in the code field when you sign up. Installing from the store? The link won’t carry over, the code does.' },
+  { title: `Enter code ${SEMESTER_CODE}`, body: 'Tap your school’s link from this site, or type it in the code field when you sign up. Installing from the store? The link won’t carry over, the code does.' },
   { title: 'Verify your school email in the app', body: 'Add your .edu address. We match it to your school, put you in your campus group, and you’re enrolled. Your account stays on the email you signed up with.' },
   { title: `Take ${SEMESTER_TRIPS} active trips in ${SEMESTER_WINDOW_DAYS} days`, body: 'Walk to class, bike the Esplanade, ride the T or the ferry. Shift counts them on its own, no check-ins.' },
   { title: `Pick your ${SEMESTER_REWARD} reward`, body: 'A gift card at one of ~60 local shops in the rewards catalog, or a digital gift card you choose.' },
 ]
 
 const STEPS_PRE = [
-  { title: 'Get the Shift app', body: 'Free on iOS and Android. Set up takes about a minute.' },
+  { title: 'Get the Shift app', body: 'Free on iOS and Android. Setup takes about a minute.' },
   { title: 'Join your school', body: 'One tap from your school’s page, and your trips count for your campus.' },
   { title: `Take ${SEMESTER_TRIPS} active trips in ${SEMESTER_WINDOW_DAYS} days`, body: 'Walk to class, bike the Esplanade, ride the T. Every trip counts automatically.' },
-  { title: `Pick your ${SEMESTER_REWARD} reward`, body: 'Choose from ~60 local merchants, cafés, bike shops, restaurants, or a digital gift card you choose.' },
+  { title: `Pick your ${SEMESTER_REWARD} reward`, body: 'Pick from ~60 local merchants — cafés, bike shops, restaurants — or a digital gift card.' },
 ]
 
 /**
@@ -132,7 +132,7 @@ export default function HubPage({ codeLive, standings, boardLive }: HubData & { 
         <Section shape="wanderLeft" id="schools">
           <SectionHeading
             title="Find your school"
-            lede="Every campus page has your school’s transit and bike perks, what’s around campus, events nearby, and your join code."
+            lede="Every campus page has your school’s transit and bike perks, what’s around campus, and how to join."
           />
           <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {SCHOOLS.map((school) => (
@@ -157,7 +157,7 @@ export default function HubPage({ codeLive, standings, boardLive }: HubData & { 
             Featured schools are colleges within the MBTA&rsquo;s core service area. Any Massachusetts college or university qualifies:
             verify your school email in the app and you&rsquo;re in. Want your school featured?{' '}
             <Link href="/contact" className="font-semibold text-forest underline-offset-4 hover:underline">
-              Tell us
+              Tell us about your school
             </Link>
             .
           </p>

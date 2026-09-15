@@ -8,7 +8,7 @@ import { MIN_RANKED_SCHOOLS, type SchoolStanding } from '@/lib/schools/types'
 type Metric = 'shift_rate' | 'active_trips'
 
 /**
- * School-vs-school standings with the same Shift Rate ↔ Active Trips toggle
+ * School-vs-school standings with the same Shift rate ↔ Active trips toggle
  * as the town board and the in-app group screen. Rendered on the Shift Your
  * Semester hub and each school page (highlighting that school). Renders
  * nothing until MIN_RANKED_SCHOOLS schools clear the 20-trip floor, so the
@@ -56,7 +56,7 @@ export default function SchoolLeaderboardBoard({
             )}
           </p>
         </div>
-        <div className="inline-flex rounded-full border border-navy/20 p-0.5" aria-label="Rank by">
+        <div role="group" className="inline-flex rounded-full border border-navy/20 p-0.5" aria-label="Rank by">
           {([['shift_rate', 'Shift rate'], ['active_trips', 'Active trips']] as [Metric, string][]).map(([m, label]) => (
             <button
               key={m}

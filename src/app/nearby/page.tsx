@@ -38,13 +38,13 @@ export const viewport: Viewport = {
 export default function NearbyPage() {
   return (
     <>
-      <Nav />
-      <main className="bg-[#191A2E]" style={{ paddingTop: '60px' }}>
+      <Nav variant="light" />
+      <main className="nearby-tone nearby-tone-light bg-(--nb-bg)" style={{ paddingTop: '60px' }}>
         <Suspense fallback={null}>
-          <NearbySnapshot />
+          <NearbySnapshot tone="light" />
         </Suspense>
       </main>
-      <Footer />
+      <Footer variant="light" />
     </>
   )
 }

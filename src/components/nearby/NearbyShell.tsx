@@ -13,6 +13,8 @@ import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } f
 import NearbyMap, { type FitPadding, type RouteLegTapInfo } from './NearbyMap'
 import { useReachOverlay } from './useReachOverlay'
 import NearbySheet from './NearbySheet'
+import { useInitialFocus } from './useInitialFocus'
+import type { InitialFocus } from '@/lib/nearby/focus'
 import {
   useNearbyModel, MODE_FILTER_DEFAULT, PAINTED_DEFAULT,
   type ModeFilter, type Selection,
@@ -55,6 +57,8 @@ const TAB_LABEL_KEYS: Record<Tab, string> = {
 }
 
 interface Props {
+  /** ?focus= deep link — see useInitialFocus */
+  initialFocus: InitialFocus | null
   center: { lat: number; lng: number }
   displayLabel: string
   /** Town, shown after the neighborhood in the location pill (null when none) */
@@ -94,7 +98,7 @@ interface Props {
 }
 
 export default function NearbyShell({
-  center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
+  initialFocus, center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, railFar, busFar, shuttles, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
@@ -248,6 +252,12 @@ export default function NearbyShell({
     })
   }, [defaultOpenShelf])
 
+  useInitialFocus(initialFocus, {
+    corridorById, stationByKey: model.stationByKey, docks, reachRows: reachRows,
+    select: selectShowing, isSectionOpen, toggleSection, selection,
+    showDestinations: useCallback(() => setTab('destinations'), []),
+  })
+
   useEffect(() => { setLegInfo(null); setHighlightedStreetKey(null); setBikeAlt(false) }, [selection])
   const handleLegTap = useCallback((info: RouteLegTapInfo) => {
     setLegInfo(info)
@@ -272,14 +282,14 @@ export default function NearbyShell({
   // and the sheet's measured peek height keeps them visible when tucked
   const tabBar = (
     <>
-      <div className="mx-4 mb-2 flex gap-1 rounded-xl bg-white/[0.05] p-1">
+      <div className="mx-4 mb-2 flex gap-1 rounded-xl bg-(--nb-panel) p-1">
         {TABS.map(t => (
           <button
             key={t.id}
             onClick={() => changeTab(t.id)}
             aria-pressed={tab === t.id}
             className={`flex-1 rounded-lg py-2 text-[0.8rem] font-bold transition-colors ${
-              tab === t.id ? 'bg-[#BAF14D] text-[#191A2E]' : 'text-white/75 hover:text-white'
+              tab === t.id ? 'bg-(--nb-accent-fill) text-(--nb-on-accent-fill)' : 'text-(--nb-ink-70) hover:text-(--nb-ink)'
             }`}
           >
             {tr(TAB_LABEL_KEYS[t.id])}
@@ -300,11 +310,11 @@ export default function NearbyShell({
   return (
     // Fixed to the viewport (below the fixed Nav) rather than sized with
     // dvh math — Safari's URL-bar dance and scroll quirks can't touch it
-    <div className="fixed inset-x-0 bottom-0 top-[60px] z-30 flex flex-col overflow-hidden bg-[#191A2E]">
+    <div className="fixed inset-x-0 bottom-0 top-[60px] z-30 flex flex-col overflow-hidden bg-(--nb-bg)">
       {/* Thin orientation strip — tells you what page you're on without
           spending real screen space */}
-      <div className="flex h-8 shrink-0 items-center justify-between border-b border-white/[0.08] px-4">
-        <span className="truncate text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#BAF14D]">
+      <div className="flex h-8 shrink-0 items-center justify-between border-b border-(--nb-line) px-4">
+        <span className="truncate text-[0.62rem] font-bold uppercase tracking-[0.16em] text-(--nb-accent)">
           {tr('shell.eyebrow_snapshot')}
         </span>
         <NearbyLanguagePill className="shrink-0" />
@@ -312,7 +322,7 @@ export default function NearbyShell({
       {/* Partner co-brand row — only exists on partner deep links; the stage
           below flexes to the remaining height, so sheet snaps stay correct */}
       {partner && (
-        <div className="flex h-10 shrink-0 items-center border-b border-white/[0.08] px-4">
+        <div className="flex h-10 shrink-0 items-center border-b border-(--nb-line) px-4">
           <PartnerCobrand partner={partner} logoClass="max-h-6" gsiClass="max-h-4" textClass="text-[0.7rem]" />
         </div>
       )}
@@ -349,28 +359,28 @@ export default function NearbyShell({
       </div>
 
       {/* Compact location pill over the map */}
-      <div className="absolute left-3 right-3 top-3 z-10 flex items-center gap-2 rounded-full border border-white/[0.1] bg-[#191A2E]/85 py-1.5 pl-4 pr-1.5 backdrop-blur">
+      <div className="absolute left-3 right-3 top-3 z-10 flex items-center gap-2 rounded-full border border-(--nb-line-mid) bg-(--nb-bg)/85 py-1.5 pl-4 pr-1.5 backdrop-blur">
         {/* Neighborhood only on the tight mobile pill — the town is on the
             map (and in the desktop header). Appending "· Town" here just ate
             the width and truncated ("Union Square · So…"). */}
-        <span className="min-w-0 flex-1 truncate text-[0.85rem] font-bold text-white">
+        <span className="min-w-0 flex-1 truncate text-[0.85rem] font-bold text-(--nb-ink)">
           {displayLabel}
         </span>
         <button
           onClick={onCopyLink}
-          className="shrink-0 rounded-full px-2.5 py-1 text-[0.72rem] font-semibold text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white"
+          className="shrink-0 rounded-full px-2.5 py-1 text-[0.72rem] font-semibold text-(--nb-ink-80) transition-colors hover:bg-(--nb-panel-raised) hover:text-(--nb-ink)"
         >
           {copied ? tr('shell.copied') : tr('shell.copy_link')}
         </button>
         <button
           onClick={onPrint}
-          className="shrink-0 rounded-full px-2.5 py-1 text-[0.72rem] font-semibold text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white"
+          className="shrink-0 rounded-full px-2.5 py-1 text-[0.72rem] font-semibold text-(--nb-ink-80) transition-colors hover:bg-(--nb-panel-raised) hover:text-(--nb-ink)"
         >
           {tr('shell.print')}
         </button>
         <button
           onClick={onChangeLocation}
-          className="shrink-0 rounded-full bg-white/[0.08] px-2.5 py-1 text-[0.72rem] font-semibold text-white transition-colors hover:bg-white/[0.14]"
+          className="shrink-0 rounded-full bg-(--nb-panel-raised) px-2.5 py-1 text-[0.72rem] font-semibold text-(--nb-ink) transition-colors hover:bg-(--nb-panel-hover)"
         >
           {tr('shell.change')}
         </button>
@@ -383,7 +393,7 @@ export default function NearbyShell({
           <div>
             <button
               onClick={() => select(null, 'sheet-back')}
-              className="mb-2 flex items-center gap-1.5 rounded-lg py-1 text-[0.8rem] font-semibold text-[#BAF14D] transition-opacity hover:opacity-80"
+              className="mb-2 flex items-center gap-1.5 rounded-lg py-1 text-[0.8rem] font-semibold text-(--nb-accent) transition-opacity hover:opacity-80"
             >
               {tr('shell.back')}
             </button>
@@ -432,7 +442,7 @@ export default function NearbyShell({
 
         <div className={selection || tab !== 'transit' ? 'hidden' : ''}>
           {outside && (
-            <p className="mb-2 rounded-xl border border-[#EDB93C]/30 bg-[#EDB93C]/10 px-4 py-3 text-[0.82rem] leading-relaxed text-white">
+            <p className="mb-2 rounded-xl border border-(--nb-warn-line) bg-(--nb-warn-tint) px-4 py-3 text-[0.82rem] leading-relaxed text-(--nb-ink)">
               {tr('shell.outside_banner')}
             </p>
           )}
@@ -493,7 +503,7 @@ export default function NearbyShell({
               in a row like any other; the Advisor's full cost comparison
               lives inside that answer, for the trips you actually repeat. */}
           <TripPlanner center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} />
-          <p className="mt-6 text-[0.8rem] leading-snug text-white/75">
+          <p className="mt-6 text-[0.8rem] leading-snug text-(--nb-ink-70)">
             {tr('shell.destinations_intro')}
           </p>
           <div className="mt-3">
@@ -508,7 +518,7 @@ export default function NearbyShell({
               />
             )}
             {reach.status === 'ready' && reachRows.length === 0 && (
-              <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-[0.875rem] text-white/75">
+              <p className="rounded-xl border border-(--nb-line) bg-(--nb-panel-faint) px-5 py-4 text-[0.875rem] text-(--nb-ink-70)">
                 {tr('shell.no_destinations')}
               </p>
             )}
@@ -525,13 +535,13 @@ export default function NearbyShell({
             (was gated to Explore). In New Routes context the reward offer sits
             up top instead, so this stays the general "get the app" hook. */}
         {!selection && !newRoutes && (
-          <div className="mt-5 rounded-xl border border-white/[0.1] bg-[#242538] px-4 py-3.5">
-            <div className="text-[0.9rem] font-bold text-white">{tr('shell.get_app_title')}</div>
-            <p className="mt-0.5 text-[0.8rem] leading-snug text-white/80">{partnerLine}</p>
+          <div className="mt-5 rounded-xl border border-(--nb-line-mid) bg-(--nb-card) px-4 py-3.5">
+            <div className="text-[0.9rem] font-bold text-(--nb-ink)">{tr('shell.get_app_title')}</div>
+            <p className="mt-0.5 text-[0.8rem] leading-snug text-(--nb-ink-80)">{partnerLine}</p>
             <a
               href={appHref}
               onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
-              className="mt-2 inline-block rounded-lg border border-[#BAF14D] px-3.5 py-1.5 text-[0.78rem] font-bold text-[#BAF14D] transition-colors hover:bg-[#BAF14D] hover:text-[#191A2E]"
+              className="mt-2 inline-block rounded-lg border border-(--nb-accent-line) px-3.5 py-1.5 text-[0.78rem] font-bold text-(--nb-accent) transition-colors hover:bg-(--nb-accent-fill) hover:text-(--nb-on-accent-fill)"
             >
               {tr('shell.download_app')}
             </a>
@@ -566,8 +576,8 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
   const chip = (active: boolean) =>
     `flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.75rem] font-semibold transition-colors ${
       active
-        ? 'border-[#BAF14D]/60 bg-[rgba(186,241,77,0.12)] text-white'
-        : 'border-white/[0.15] text-white/75 hover:border-white/[0.3]'
+        ? 'border-(--nb-accent-line) bg-(--nb-accent-tint) text-(--nb-ink)'
+        : 'border-(--nb-line-mid) text-(--nb-ink-70) hover:border-(--nb-line-strong)'
     }`
 
   return (
@@ -575,7 +585,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
       {/* No eyebrow, no straight-line miles (Keith, 2026-09-12): the caption
           was clutter, and the as-the-crow-flies distance sat above route cards
           stating the real miles — two numbers for one trip. */}
-      <div className="text-[0.95rem] font-bold text-white">{row.name}</div>
+      <div className="text-[0.95rem] font-bold text-(--nb-ink)">{row.name}</div>
       {legInfo && <div className="mt-2"><RouteLegNote info={legInfo} /></div>}
 
       {hasTransit && hasBike && (
@@ -599,7 +609,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
         <>
           <TripFacts row={row} />
           <TransitLegs steps={row.steps} segments={row.transit_segments} />
-          <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
+          <p className="mt-2 text-[0.72rem] leading-snug text-(--nb-ink-70)">
             {tr('shell.transit_legend')}
           </p>
         </>
@@ -608,7 +618,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
       {mode === 'bike' && row.bike_comfort && (
         <>
           <RouteChoice row={row} alt={bikeAlt} onPick={onPickRoute} />
-          <p className="mt-2 text-[0.72rem] leading-snug text-white/70">
+          <p className="mt-2 text-[0.72rem] leading-snug text-(--nb-ink-70)">
             {tr('shell.bike_legend')}
           </p>
           <BikeComfortBlock
@@ -628,7 +638,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'reach', mode })}
-        className="mt-2 inline-block text-[0.8rem] font-semibold text-[#BAF14D] hover:opacity-80"
+        className="mt-2 inline-block text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
       >
         {tr('shell.open_in_maps')}
       </a>
@@ -638,7 +648,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
         <Link
           href={partnerSlug ? `/commute-advisor?partner=${partnerSlug}` : '/commute-advisor'}
           onClick={() => onPlanCommute(row)}
-          className="mt-3 block rounded-lg bg-[#BAF14D] px-4 py-2 text-center text-[0.8rem] font-bold text-[#191A2E] transition-opacity hover:opacity-85"
+          className="mt-3 block rounded-lg bg-(--nb-accent-fill) px-4 py-2 text-center text-[0.8rem] font-bold text-(--nb-on-accent-fill) transition-opacity hover:opacity-85"
         >
           {tr('shell.plan_commute')}
         </Link>
