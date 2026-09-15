@@ -104,7 +104,9 @@ export function routeEndpoints(
   corridor: TransitCorridor | undefined,
   route: StationGroup['routes'][number],
 ): string {
-  const ends = (corridor?.endpoints ?? []).filter(Boolean)
+  // A loop route names one place at both ends ("Quincy", "Quincy" for the
+  // Quincy ferry) — a Set leaves it saying the place once
+  const ends = [...new Set((corridor?.endpoints ?? []).filter(Boolean))]
   return ends.length > 0 ? ends.join(' ↔ ') : routeTermini(route)
 }
 

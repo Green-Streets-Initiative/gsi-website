@@ -304,7 +304,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
           </span>
           {(c.endpoints[0] || c.endpoints[1]) && (
             <span className="text-[0.85rem] font-semibold text-white">
-              {[c.endpoints[0], c.endpoints[1]].filter(Boolean).join(' ↔ ')}
+              {[...new Set([c.endpoints[0], c.endpoints[1]].filter(Boolean))].join(' ↔ ')}
             </span>
           )}
         </div>
