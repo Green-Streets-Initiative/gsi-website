@@ -228,17 +228,19 @@ export const SCHOOLS: School[] = [
     groupSlug: 'tufts-university',
     lat: 42.4075,
     lng: -71.119,
-    highlight: 'Free bike checkout at the library desk, and a free repair shop with student mechanics.',
-    seoTitle: 'Tufts SafeRide, free bike checkout & the Tufts Bikes repair shop | Shift',
+    highlight: 'The Green Line Extension stops right at campus, one stop from Davis Square.',
+    seoTitle: 'Tufts SafeRide, the Medford/Tufts Green Line stop & student bike checkout | Shift',
     seoDescription:
-      'TUPD SafeRide and the Davis Square and Saturday grocery shuttles, free bike-and-helmet checkout at the Tisch Library desk, and the free Tufts Bikes repair shop at 28 Sawyer Ave.',
+      'The Medford/Tufts Green Line stop, TUPD SafeRide and the Davis Square and Saturday grocery shuttles, free bike-and-helmet checkout for students at the Tisch Library desk, and Bike Check reimbursements.',
     transit: [
       { text: 'The Green Line Extension’s Medford/Tufts station puts the Hill one stop from Davis Square and a straight shot downtown.', sourceUrl: 'https://access.tufts.edu/commuter-benefits-discounts' },
       { text: 'Campus shuttles cover Davis Square, the SMFA campus, Saturday groceries, and TUPD SafeRide for late nights.', sourceUrl: 'https://access.tufts.edu/shuttles-sharing-services' },
     ],
     bike: [
-      { text: 'Tufts Bikes runs a free repair shop at 28 Sawyer Ave — a student mechanic fixes your bike with you, at no cost.', sourceUrl: 'https://tuftsbikes.com/' },
-      { text: 'Free bike share: check out a bike and helmet at the Tisch Library circulation desk with your Tufts ID.', sourceUrl: 'https://tuftsbikes.com/' },
+      // Tufts Bikes (2026-09-16, Orion, president): the bikeshare is students only, and the shop is a
+      // small volunteer crew with limited capacity. Say so, and don't sell it as a drop-in service.
+      { text: 'Students can check out a bike and helmet free at the Tisch Library circulation desk with a Tufts ID (students only, not faculty or staff).', sourceUrl: 'https://tuftsbikes.com/' },
+      { text: 'Tufts Bikes, a small crew of student volunteers, runs a repair shop at 28 Sawyer Ave with limited hours. Check tuftsbikes.com before you go.', sourceUrl: 'https://tuftsbikes.com/' },
       { text: '“Bike Check!” reimburses repairs, helmets, and safety gear twice a year, and Tufts affiliates get a discounted Bluebikes membership.', sourceUrl: 'https://access.tufts.edu/commuter-benefits-discounts' },
     ],
     moving: [
