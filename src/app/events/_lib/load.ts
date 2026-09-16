@@ -172,13 +172,9 @@ export function buildEventPageMetadata(loaded: LoadedEvent | null): Metadata {
       description,
       url,
       siteName: 'Green Streets Initiative',
-      // An event with no photo of its own would otherwise share as a bare
-      // link: the calendar's card is a better fallback than nothing. The
-      // file-convention image at /events covers that route only — it is not
-      // inherited by /events/[id].
-      images: [
-        event.image_url ?? { url: `${SITE_URL}/events/opengraph-image`, width: 1200, height: 630 },
-      ],
+      // No images here on purpose: opengraph-image.tsx in this segment builds
+      // the card, photo and all, and Next emits the tags for it. Setting
+      // images would override that with the bare photo.
     },
     // Without this the root layout's generic card wins on X, and a shared
     // event reads "Green Streets Initiative / Shift how you move."
