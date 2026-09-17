@@ -114,6 +114,10 @@ export interface TownEvent {
   image_url: string | null
   location_name: string | null
   event_type: string | null
+  /** Venue coordinates. Present on every pooled event — fetchEventPool drops
+   *  rows without them, because distance is what puts an event on a page. */
+  lat: number
+  lng: number
   /** Miles from the town centroid */
   distance_miles: number
   tags: string[]
@@ -300,6 +304,13 @@ export async function getTownCentroid(groupId: string): Promise<{ lat: number; l
 }
 
 const EVENT_RADIUS_MILES = 8
+/**
+ * "In this town" for event ranking. The centroid is the mean of the town's
+ * neighborhood centers, so it can sit ~0.5mi off the conventional center — 2
+ * miles of slack covers a town the size of Cambridge or Somerville end to end
+ * without reaching into the next one.
+ */
+const IN_TOWN_MILES = 2.0
 
 /**
  * Shared pool builder for "events near a point" surfaces (town pages, campus
@@ -356,6 +367,8 @@ export async function fetchEventPool(
       image_url: (row.image_url as string) ?? null,
       location_name: (row.location_name as string) ?? null,
       event_type: (row.event_type as string) ?? null,
+      lat,
+      lng,
       distance_miles: distance,
       tags: (row.tags as string[]) ?? [],
       occurrences: 1,
@@ -365,9 +378,17 @@ export async function fetchEventPool(
 
   // Series dedupe: weekly series (Open Newbury, Monday-night rides, …) collapse
   // into one card showing the next occurrence + "repeats <weekday>".
+  //
+  // Keyed on title + rounded coordinates, NOT on location_name: a feed can
+  // spell one venue three ways across a weekly series and each spelling became
+  // its own card. Charles River Wheelers' Monday ride was rendering three times
+  // on the Arlington and Medford pages as "Minuteman Bikeway trailhead",
+  // "Minuteman Bikeway trailhead, Alewife Station" and "Minuteman Bikeway
+  // Trailhead – Alewife". 3 decimal places is ~110m — close enough to be the
+  // same trailhead, far enough that two different rides don't merge.
   const bySeries = new Map<string, TownEvent[]>()
   for (const e of pool) {
-    const key = `${e.title}|${e.location_name ?? ''}`
+    const key = `${e.title}|${e.lat.toFixed(3)}|${e.lng.toFixed(3)}`
     const list = bySeries.get(key)
     if (list) list.push(e)
     else bySeries.set(key, [e])
@@ -399,22 +420,41 @@ export async function getTownEvents(centroid: { lat: number; lng: number } | nul
   if (!centroid) return []
   const deduped = await fetchEventPool(centroid)
 
-  // Priority selection (Keith, 2026-07-09):
+  // Priority selection (Keith, 2026-07-09; proximity tier added 2026-09-17):
   //   1. Open Streets within ~3 miles — the marquee car-free events.
-  //   2. Family- or beginner-friendly tagged events.
-  //   3. Everything else by date.
+  //   2. Events in the town itself (within IN_TOWN_MILES of the centroid).
+  //   3. Family- or beginner-friendly tagged events.
+  //   4. Everything else by date.
   // 3.5mi cutoff: "within ~3 miles" measured from the neighborhood-average
   // centroid, which can sit ~0.5mi from the town's conventional center.
+  //
+  // Why tier 2 exists: the pool is every approved event within 8 miles, which
+  // in Greater Boston is ~75 events competing for 8 slots. Before this tier,
+  // open-streets plus the family/beginner tag filled all 8 on their own and
+  // distance never entered the ranking again — so Cambridge's page showed Open
+  // Newbury (2.2mi, Boston) and an Allston open street while the City of
+  // Cambridge's own free Learn to Bike classes, half a mile away and correctly
+  // geocoded, never rendered. A town page that can't show the town's own
+  // events is not a town page.
   const isTier1 = (e: TownEvent) => e.event_type === 'open_streets' && e.distance_miles <= 3.5
-  const isTier2 = (e: TownEvent) =>
-    !isTier1(e) && (e.tags.includes('family_friendly') || e.tags.includes('beginner_friendly'))
+  const isTier2 = (e: TownEvent) => !isTier1(e) && e.distance_miles <= IN_TOWN_MILES
+  const isTier3 = (e: TownEvent) =>
+    !isTier1(e) && !isTier2(e) &&
+    (e.tags.includes('family_friendly') || e.tags.includes('beginner_friendly'))
   const byDate = (a: TownEvent, b: TownEvent) => a.event_date.localeCompare(b.event_date)
+  // Within the in-town tier, soonest first, then nearest — two events on the
+  // same day should resolve toward the one the reader can walk to.
+  const byDateThenDistance = (a: TownEvent, b: TownEvent) =>
+    a.event_date.localeCompare(b.event_date) || a.distance_miles - b.distance_miles
 
   const tier1 = deduped.filter(isTier1).sort(byDate)
-  const tier2 = deduped.filter(isTier2).sort(byDate)
-  const tier3 = deduped.filter((e) => !isTier1(e) && !isTier2(e)).sort(byDate)
+  const tier2 = deduped.filter(isTier2).sort(byDateThenDistance)
+  const tier3 = deduped.filter(isTier3).sort(byDate)
+  const tier4 = deduped
+    .filter((e) => !isTier1(e) && !isTier2(e) && !isTier3(e))
+    .sort(byDate)
 
-  return [...tier1, ...tier2, ...tier3].slice(0, limit)
+  return [...tier1, ...tier2, ...tier3, ...tier4].slice(0, limit)
 }
 
 /**
