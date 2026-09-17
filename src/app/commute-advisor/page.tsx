@@ -5,6 +5,7 @@ import Link from 'next/link'
 import posthog from 'posthog-js'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import JsonLd from '@/components/JsonLd'
 import { PILL } from '@/components/org/Section'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { GasPump, Lightning, Check } from '@phosphor-icons/react'
@@ -79,7 +80,7 @@ const FAQ = [
   },
   {
     q: 'What health benefits do I get from an active commute?',
-    a: 'A 7-mile bike commute at a moderate pace burns roughly 400–500 calories and delivers about 45 minutes of moderate cardiovascular exercise — equivalent to a solid gym session. Doing this three days a week adds up to <strong>100+ active minutes and 1,200+ calories per week</strong>, which meets or exceeds the American Heart Association\'s weekly physical activity recommendations. For people who struggle to find time to exercise, commuting actively is often the most sustainable way to build consistent movement into an already-structured day.',
+    a: 'A 7-mile bike commute at a moderate pace is about 45 minutes of moderate-intensity cardiovascular exercise — the kind of effort that leaves you warm and a little breathless, not wrecked. Riding it three days a week puts you at <strong>roughly 135 minutes of moderate activity per week</strong>, most of the way to the American Heart Association\'s 150-minute guideline, without setting foot in a gym or finding a spare hour. Add a fourth day, or a walk to the T on the others, and you clear it comfortably. For people who struggle to find time to exercise, commuting actively is often the most sustainable way to build consistent movement into a day that\'s already structured.',
   },
   {
     q: 'Is the MBTA a reliable alternative to driving for Boston-area commuters?',
@@ -94,6 +95,46 @@ const FAQ = [
     a: 'Daily parking rates in the Boston area vary significantly by neighborhood. Downtown Boston and the Seaport typically run <strong>$28–$35 per day</strong>. Back Bay and the South End average $22–$28. Cambridge near Kendall Square runs $18–$25. Somerville, Medford, and inner suburban areas typically range from $10–$16. Monthly garage parking in downtown Boston averages $350–$500/month. Many employers subsidize or provide free parking — which is why this calculator asks about your actual situation rather than assuming you pay market rate.',
   },
 ]
+
+/* ── Structured data ── */
+// This page is the site's largest impression source and ranks on
+// question-shaped queries, but carried only the site-wide Organization markup.
+// The six answers below were already visible on the page — this only describes
+// them to search and answer engines, which is what FAQPage requires.
+//
+// Both blocks are derived from the same constants the page renders, so the
+// markup cannot drift from the visible copy. Keep it that way: never hand-write
+// a question or answer here.
+const PAGE_URL = 'https://www.gogreenstreets.org/commute-advisor'
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      // The rendered answer is HTML; schema.org text wants the words only.
+      text: item.a.replace(/<[^>]*>/g, ''),
+    },
+  })),
+}
+
+const appSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'Commute Advisor',
+  url: PAGE_URL,
+  applicationCategory: 'TravelApplication',
+  browserRequirements: 'Requires JavaScript.',
+  operatingSystem: 'Any',
+  description:
+    'Compares how long a trip takes walking, biking, on transit, and driving in Greater Boston, with the daily and yearly cost of each.',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  areaServed: { '@type': 'AdministrativeArea', name: 'Greater Boston, Massachusetts' },
+  publisher: { '@id': 'https://www.gogreenstreets.org/#organization' },
+}
 
 /* ── Session persistence ── */
 const SESSION_KEY = 'commute-advisor-state'
@@ -1149,6 +1190,7 @@ export default function CommuteCalculator() {
         </div>
       </main>
       <Footer variant="light" />
+      <JsonLd data={[faqSchema, appSchema]} />
     </>
   )
 }
