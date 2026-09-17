@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getQualifyingTowns } from '@/lib/towns/queries'
 import { getActiveRoams } from '@/lib/roams/queries'
+import { SCHOOLS } from '@/lib/semester/schools'
 import { SITE_URL } from '@/lib/seo'
 
 // Served at /llms.txt. Generated (not a static file) so the guide and town
@@ -104,6 +105,20 @@ export async function GET() {
     }
     L.push('')
   }
+
+  // Campus pages. Thirteen URLs are in the sitemap and, until this section
+  // existed, none were in llms.txt — a whole page class invisible to the
+  // answer engines that read this file. They answer the campus transportation
+  // questions students actually search: the MBTA semester pass subsidy, campus
+  // bike co-ops and repair stands, Bluebikes student discounts, and late-night
+  // shuttles. Static, so no DB call and nothing to fail open on.
+  L.push('## Campus pages')
+  L.push(`- [Shift Your Semester](${SITE_URL}/shift-your-semester): How students at twelve Greater Boston campuses get around — MBTA pass subsidies, campus bike shops, Bluebikes discounts, and shuttles.`)
+  for (const s of SCHOOLS) {
+    const summary = s.seoDescription ? `: ${s.seoDescription}` : ''
+    L.push(`- [Getting around ${s.name}](${SITE_URL}/shift-your-semester/${s.slug})${summary}`)
+  }
+  L.push('')
 
   L.push('## For organizations')
   L.push(`- [For employers](${SITE_URL}/shift/employers): Commute programs, workplace challenges, and aggregate impact reporting for HR and sustainability teams.`)
