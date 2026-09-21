@@ -24,7 +24,9 @@
         "(tern|yuba|xtracycle|urban arrow|rad ?power|radwagon|benno|bullitt|gsd)\\b.*(used|price|cost|\\$)",
         "(used|second.?hand).*(cargo|e-?bike|ebike).*(price|cost|\\$|worth)"
       ],
-      "target_urls": ["/commute-advisor"],
+      "target_urls": [
+        "/commute-advisor"
+      ],
       "proposed_assets": [
         "/guides/ebike-vs-used-car-costs (new micro-guide)",
         "A used cargo e-bike price page — see the 2026-09-08 deep-dive: variants of '\"tern gsd\" used \"$3000\"' took 34 impressions over the 28 days to 2026-09-04 at position ~10, recurring across two pulls, with no page of ours answering what a used cargo e-bike costs around here."
@@ -56,8 +58,14 @@
         "charliecard",
         "walkable.*(boston|cambridge|somerville)"
       ],
-      "target_urls": ["/nearby", "/shift/towns", "/commute-advisor"],
-      "proposed_assets": ["/guides/getting-around-boston-newcomers (new micro-guide)"],
+      "target_urls": [
+        "/nearby",
+        "/shift/towns",
+        "/commute-advisor"
+      ],
+      "proposed_assets": [
+        "/guides/getting-around-boston-newcomers (new micro-guide)"
+      ],
       "aeo_questions": [
         "Do you need a car to live in Boston?",
         "What's the best way to get around Boston without a car?"
@@ -84,8 +92,12 @@
         "(bike|bicycle).*(trailer|seat)",
         "(carry|carrying|haul).*(groceries|cargo).*bike"
       ],
-      "target_urls": ["/guides"],
-      "proposed_assets": ["Verify/expand existing cargo-bike + carrying guides; consider a 'family by bike' hub"],
+      "target_urls": [
+        "/guides"
+      ],
+      "proposed_assets": [
+        "Verify/expand existing cargo-bike + carrying guides; consider a 'family by bike' hub"
+      ],
       "aeo_questions": [
         "Can you carry kids and groceries by bike?",
         "What's the best cargo bike for a family?"
@@ -110,8 +122,12 @@
         "(winter|rain|cold|snow).*(bike|biking|commut|walk)",
         "(gear|clothing|layers).*(bike|winter|cold)"
       ],
-      "target_urls": ["/guides"],
-      "proposed_assets": ["Confirm existing weather guides rank; consider a seasonal 'year-round riding' hub refreshed each fall"],
+      "target_urls": [
+        "/guides"
+      ],
+      "proposed_assets": [
+        "Confirm existing weather guides rank; consider a seasonal 'year-round riding' hub refreshed each fall"
+      ],
       "aeo_questions": [
         "Can you bike through a Boston winter?",
         "What gear do you need to bike commute in the cold?"
@@ -140,7 +156,11 @@
         "(cycle kitchen|bike kitchen|quad bikes|safe ?ride|red ?eye shuttle)",
         "(college|university).*(mbta|t.?pass|blue ?bike|bike|shuttle|commut|semester pass)"
       ],
-      "target_urls": ["/shift-your-semester", "/nearby", "/commute-advisor"],
+      "target_urls": [
+        "/shift-your-semester",
+        "/nearby",
+        "/commute-advisor"
+      ],
       "proposed_assets": [
         "The twelve /shift-your-semester/<school> pages already exist and rank on page one for these queries; the 2026-09-08 title rewrite (commit e0635fb) is the live experiment. Next lever if titles are not enough: give each page a FAQPage block answering the pass/discount/shuttle questions verbatim."
       ],
@@ -166,12 +186,17 @@
         "mass central rail trail"
       ],
       "gsc_patterns": [
-        "(fresh pond|emerald necklace|minuteman|community path|charles river|freedom (stroll|walk|trail)|marblehead|silvio conte|fort river|mass central rail trail|mcrt|watertown branch|wwii veterans memorial)",
+        "(fresh pond|emerald necklace|minuteman|community path|charles river|charles loop|freedom (stroll|walk|trail)|marblehead|silvio conte|fort river|mass central rail trail|mcrt|watertown branch|wwii veterans memorial|battle road|shining sea|manhan|twin cities rail trail|wachusett greenway|mystic river greenway|alewife|north point|bakery run|sunset pedal|b-?line crawl|museum hop|harbor walk|eastie eats|salem by rail|harbor islands|city of squares)",
         "(how long|how far|distance|miles|length) .*(loop|trail|path|greenway|bikeway|walk|ride)",
         "(loop|trail|path|greenway|bikeway) .*(how long|how far|distance|miles|length|map|start|parking)",
-        "(walking|running|biking|bike|cycling) (loop|route|trail|tour) .*(boston|cambridge|somerville|brookline|arlington|medford|newton|watertown)"
+        "(walking|running|biking|bike|cycling) (loop|route|trail|tour) .*(boston|cambridge|somerville|brookline|arlington|medford|newton|watertown)",
+        "(rail trail|greenway|bikeway) .*(massachusetts|ma\\b|boston|concord|lexington|falmouth|northampton|leominster)"
       ],
-      "target_urls": ["/shift/roams", "/shift/towns", "/nearby"],
+      "target_urls": [
+        "/shift/roams",
+        "/shift/towns",
+        "/nearby"
+      ],
       "proposed_assets": [
         "The twelve /shift/roams/<id> pages already exist and rank around position 8 for these queries. First lever: put the distance in the title, since the query is usually a request for that number (see the 2026-09-14 report, item 2)."
       ],
@@ -179,7 +204,42 @@
         "How long is the Fresh Pond loop?",
         "Where does the Minuteman Bikeway start and end?"
       ],
-      "messaging_notes": "These searchers already intend to walk or ride — there is nothing to persuade. Answer the factual question first (distance, surface, where it starts, how to get there without driving) and let the route itself do the inviting. Like students-campus, this cluster sits ahead of town-commuters on purpose: bucketing takes the first matching cluster, and 'community path somerville' or 'minuteman' would otherwise fall to the town patterns and be read as town-page demand. Note when comparing to earlier runs that town-commuters figures before 2026-09-14 include some of this traffic."
+      "messaging_notes": "These searchers already intend to walk or ride — there is nothing to persuade. Answer the factual question first (distance, surface, where it starts, how to get there without driving) and let the route itself do the inviting. Like students-campus, this cluster sits ahead of town-commuters on purpose: bucketing takes the first matching cluster, and 'community path somerville' or 'minuteman' would otherwise fall to the town patterns and be read as town-page demand. Note when comparing to earlier runs that town-commuters figures before 2026-09-14 include some of this traffic. Pattern maintenance (2026-09-21): the original name list was drawn from the twelve Roams that happened to be indexed on 2026-09-11, so as the rest indexed their queries fell straight back into unmatched — battle road trail (25 impressions), shining sea bikeway (4) and salem/b-line/bakery-run traffic were all unbucketed in the week to 2026-09-18, and cluster coverage fell 88% -> 73%. The alternation is now generated from all 25 published Roams. Regenerate it whenever a Roam is added; a cluster fitted to the indexed sample rather than the published inventory decays every time the class grows."
+    },
+    {
+      "id": "events-programs",
+      "audience": "People looking for something specific to turn up to — a learn-to-ride class, a free bike repair workshop, a group ride, a community fair — usually in a named town and usually soon. Discovered in the 2026-09-21 pulse, once the page table stopped truncating at 40 rows: 33 event URLs took 299 impressions and 7 clicks at 2.34% CTR, the best-converting class on the site, and every query behind them was filed as unmatched noise.",
+      "intent": "transactional",
+      "priority": 1,
+      "queries": [
+        "free bike repair workshop boston",
+        "learn to bike class cambridge",
+        "group ride boston",
+        "bike events near me boston",
+        "everett community fair",
+        "massdot video contest",
+        "community bike safety event",
+        "walking tour somerville"
+      ],
+      "gsc_patterns": [
+        "(bike|cycling|walk|walking|transit) .*(event|class|clinic|workshop|repair|tour|ride|meetup|fair|festival)",
+        "(event|class|clinic|workshop|repair cafe|learn to (bike|ride)|group ride|bike month|bike week)",
+        "(everett|cambridge|somerville|boston|medford|malden|chelsea|revere) .*(fair|festival|contest|workshop|pop-?up)",
+        "(massdot|mass ?dot) .*(contest|video|challenge)"
+      ],
+      "target_urls": [
+        "/events",
+        "/programs",
+        "/programs/walk-ride-days"
+      ],
+      "proposed_assets": [
+        "The event pages already exist and already rank at positions 3.6-7.7. First lever is discovery, not content: 33 of them earn impressions while the sitemap lists two and llms.txt lists none (see the 2026-09-21 report, item 2)."
+      ],
+      "aeo_questions": [
+        "Where can I get my bike fixed for free in Boston?",
+        "Is there a learn-to-ride class in Cambridge this month?"
+      ],
+      "messaging_notes": "These searchers have already decided to come to something; answer the practical question first — what it is, when, where, whether it costs anything, whether you need to register — and let the event do the inviting. Placed AFTER students-campus and roams-trails because bucketing takes the first match and a campus bike-kitchen event belongs with the campus pages it shares a searcher with; placed BEFORE town-commuters so 'learn to bike cambridge' does not read as town-page demand."
     },
     {
       "id": "town-commuters",
@@ -202,8 +262,16 @@
         "(greenway|rail trail|community path|minuteman|esplanade|harborwalk)",
         "bluebikes"
       ],
-      "target_urls": ["/shift/towns", "/shift/roams", "/nearby", "/commute-advisor", "/guides"],
-      "proposed_assets": ["Extend town pages as new towns pass the publication gate; consider neighborhood-level pages for the biggest towns"],
+      "target_urls": [
+        "/shift/towns",
+        "/shift/roams",
+        "/nearby",
+        "/commute-advisor",
+        "/guides"
+      ],
+      "proposed_assets": [
+        "Extend town pages as new towns pass the publication gate; consider neighborhood-level pages for the biggest towns"
+      ],
       "aeo_questions": [
         "How do people bike commute in Somerville?",
         "How does Bluebikes work?"
@@ -231,8 +299,13 @@
         "^commute times?$",
         "how (far|long).*(walk|walking|bike|biking).*(mile|minute|min)"
       ],
-      "target_urls": ["/commute-advisor", "/guides/when-walking-is-faster"],
-      "proposed_assets": ["/guides/how-far-is-a-ten-minute-drive-on-foot (drafted 2026-08-24, awaiting approval)"],
+      "target_urls": [
+        "/commute-advisor",
+        "/guides/when-walking-is-faster"
+      ],
+      "proposed_assets": [
+        "/guides/how-far-is-a-ten-minute-drive-on-foot (drafted 2026-08-24, awaiting approval)"
+      ],
       "aeo_questions": [
         "How far is a 10-minute drive on foot?",
         "How long does a 5-minute drive take to walk?"
@@ -257,8 +330,14 @@
         "(rebate|incentive).*(e-?bike|bike).*(ma|massachusetts)",
         "e-?bike.*(vs|versus).*(regular|normal|acoustic) bike"
       ],
-      "target_urls": ["/guides", "/events", "/commute-advisor"],
-      "proposed_assets": ["Guide on the MA e-bike incentive landscape; surface e-bike demo events from the events calendar"],
+      "target_urls": [
+        "/guides",
+        "/events",
+        "/commute-advisor"
+      ],
+      "proposed_assets": [
+        "Guide on the MA e-bike incentive landscape; surface e-bike demo events from the events calendar"
+      ],
       "aeo_questions": [
         "Is there an e-bike rebate in Massachusetts?",
         "How far can an e-bike go on one charge?"
@@ -283,8 +362,13 @@
         "commut.*(benefit|program|challenge).*(employee|employer|work)",
         "return to office.*commut"
       ],
-      "target_urls": ["/shift/employers", "/programs/corporate-challenge"],
-      "proposed_assets": ["Comparison/how-to content for HR buyers"],
+      "target_urls": [
+        "/shift/employers",
+        "/programs/corporate-challenge"
+      ],
+      "proposed_assets": [
+        "Comparison/how-to content for HR buyers"
+      ],
       "aeo_questions": [
         "How do you run an employee commuter challenge?",
         "What are commuter benefits for employees?"
@@ -309,8 +393,13 @@
         "school.*(wellness|active|transportation|walk|bike).*program",
         "(get )?kids.*(walk|bike).*school"
       ],
-      "target_urls": ["/shift/schools", "/programs/what-moves-us/everett-schools"],
-      "proposed_assets": ["How-to content for teachers/PTAs starting a program"],
+      "target_urls": [
+        "/shift/schools",
+        "/programs/what-moves-us/everett-schools"
+      ],
+      "proposed_assets": [
+        "How-to content for teachers/PTAs starting a program"
+      ],
       "aeo_questions": [
         "How do you start a walking school bus?",
         "What is a good active school wellness program?"
@@ -334,8 +423,12 @@
         "partner.*(nonprofit|local).*(boston|cambridge|somerville)",
         "(local business|small business).*(reward|community|foot traffic|marketing)"
       ],
-      "target_urls": ["/shift/rewards-partners"],
-      "proposed_assets": ["Rewards Partners page rewrite (current page is client-rendered, thin on ranking content) — first structural experiment candidate"],
+      "target_urls": [
+        "/shift/rewards-partners"
+      ],
+      "proposed_assets": [
+        "Rewards Partners page rewrite (current page is client-rendered, thin on ranking content) — first structural experiment candidate"
+      ],
       "aeo_questions": [
         "How can a local business reach people who walk and bike nearby?"
       ],
@@ -365,7 +458,11 @@
         "frisoli",
         "what moves us"
       ],
-      "target_urls": ["/", "/shift", "/about"],
+      "target_urls": [
+        "/",
+        "/shift",
+        "/about"
+      ],
       "proposed_assets": [],
       "aeo_questions": [],
       "messaging_notes": "Measured, not optimized. Watch the ratio of branded to non-branded impressions over time: growth that is only branded means awareness work is landing but the discovery content is not. Program brands (Green Line Velo, Recreation Sundays, Frisoli) sit here too because the searcher already knows the name."
@@ -384,7 +481,12 @@
         "how does Bluebikes work"
       ],
       "gsc_patterns": [],
-      "target_urls": ["/commute-advisor", "/nearby", "/guides", "/shift/towns"],
+      "target_urls": [
+        "/commute-advisor",
+        "/nearby",
+        "/guides",
+        "/shift/towns"
+      ],
       "proposed_assets": [],
       "aeo_questions": [
         "How much money do you save biking to work?",
