@@ -179,10 +179,15 @@ async function weeklySnapshot(client, siteUrl, clusters, endLag) {
     priorTotals: totals(qPrior),
     clusters: clusterOut,
     unmatched_top_queries: unmatched.slice(0, 30),
+    // The API call above already fetches 500 page rows; persisting only the top
+    // 40 threw the rest away. At 2026-09-18 volumes those 40 rows covered 85% of
+    // site impressions and cut off at 22 impressions/page, so a page could leave
+    // the table by growth elsewhere and read as deindexed. 150 is a near-census
+    // at current volumes and costs nothing — same query, more of it written down.
     top_pages: pages
       .map((r) => ({ page: r.keys?.[0], clicks: r.clicks, impressions: r.impressions, position: +r.position.toFixed(1) }))
       .sort((a, b) => b.impressions - a.impressions)
-      .slice(0, 40),
+      .slice(0, 150),
   }
 }
 
@@ -247,7 +252,7 @@ async function main() {
       top_pages: pages
         .map((r) => ({ page: r.keys?.[0], clicks: r.clicks, impressions: r.impressions, position: +r.position.toFixed(1) }))
         .sort((a, b) => b.impressions - a.impressions)
-        .slice(0, 60),
+        .slice(0, 250),
       device_split: byDevice.map((r) => ({ device: r.keys?.[0], clicks: r.clicks, impressions: r.impressions })),
       daily_trend: byDate
         .map((r) => ({ date: r.keys?.[0], clicks: r.clicks, impressions: r.impressions }))

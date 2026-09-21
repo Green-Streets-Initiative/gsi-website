@@ -188,10 +188,16 @@ if (want('pages')) {
 
   // Page-class rollup. Catches a whole section growing or collapsing, which a
   // per-URL list buries — this is how the campus pages were found.
+  // Group two segments deep under /shift, matching scripts/seo/health-check.mjs.
+  // On the first segment alone, /shift/roams — the best-converting page class on
+  // the site — was invisible inside /shift, so the rollup built to catch a
+  // section growing could not report the section that was growing fastest.
+  const NESTED_PARENTS = new Set(['shift'])
   const classOf = (u) => {
     const p = (u || '').replace('https://www.gogreenstreets.org', '').split('?')[0]
     const seg = p.split('/').filter(Boolean)
-    return seg.length ? '/' + seg[0] : '/(home)'
+    if (!seg.length) return '/(home)'
+    return NESTED_PARENTS.has(seg[0]) && seg.length > 1 ? `/${seg[0]}/${seg[1]}` : '/' + seg[0]
   }
   const byClass = new Map()
   for (const p of pages) {

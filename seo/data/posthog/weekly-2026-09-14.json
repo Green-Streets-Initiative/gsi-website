@@ -1,0 +1,172 @@
+{
+  "pulled_at": "2026-09-21T14:16:41.919Z",
+  "project_id": 436603,
+  "host": "https://us.posthog.com",
+  "definition": "Organic = distinct $session_id on $pageview where $referring_domain matches google/bing/duckduckgo/ecosia/yahoo/brave, excluding mail-security link-scanner paths (%/1/0100% and /preferences/%). Monday-start weeks.",
+  "partial_week": {
+    "week_start": "2026-09-21",
+    "sessions": 2
+  },
+  "weeks": [
+    {
+      "week_start": "2026-09-14",
+      "sessions": 71
+    },
+    {
+      "week_start": "2026-09-07",
+      "sessions": 29
+    },
+    {
+      "week_start": "2026-08-31",
+      "sessions": 35
+    },
+    {
+      "week_start": "2026-08-24",
+      "sessions": 29
+    },
+    {
+      "week_start": "2026-08-17",
+      "sessions": 35
+    },
+    {
+      "week_start": "2026-08-10",
+      "sessions": 25
+    },
+    {
+      "week_start": "2026-08-03",
+      "sessions": 32
+    },
+    {
+      "week_start": "2026-07-27",
+      "sessions": 24
+    },
+    {
+      "week_start": "2026-07-20",
+      "sessions": 29
+    },
+    {
+      "week_start": "2026-07-13",
+      "sessions": 35
+    }
+  ],
+  "organic_sessions_last_complete_week": 71,
+  "organic_sessions_4wk_mean": 41,
+  "organic_sessions_12wk_mean": 34.4,
+  "top_organic_landing_pages": [
+    {
+      "path": "/",
+      "sessions": 13
+    },
+    {
+      "path": "/events/shift-your-summer",
+      "sessions": 7
+    },
+    {
+      "path": "/shift-your-semester/berklee",
+      "sessions": 5
+    },
+    {
+      "path": "/programs",
+      "sessions": 3
+    },
+    {
+      "path": "/shift/roams/marblehead-rail-trail",
+      "sessions": 3
+    },
+    {
+      "path": "/events",
+      "sessions": 3
+    },
+    {
+      "path": "/shift",
+      "sessions": 3
+    },
+    {
+      "path": "/shift/roams/emerald-necklace",
+      "sessions": 3
+    },
+    {
+      "path": "/events/ce_ksa_community_bike_safety_pop__20260915",
+      "sessions": 2
+    },
+    {
+      "path": "/events/lgr26_boston_glv_2026-09-02",
+      "sessions": 2
+    },
+    {
+      "path": "/shift/towns/cambridge-ma",
+      "sessions": 2
+    },
+    {
+      "path": "/events/ce_import_free-bike-repair-workshop-at-bpl-east-boston_2026-09-15",
+      "sessions": 2
+    },
+    {
+      "path": "/shift-your-semester/northeastern",
+      "sessions": 2
+    },
+    {
+      "path": "/shift-your-semester",
+      "sessions": 2
+    },
+    {
+      "path": "/shift/towns",
+      "sessions": 2
+    },
+    {
+      "path": "/challenges",
+      "sessions": 2
+    },
+    {
+      "path": "/about",
+      "sessions": 2
+    },
+    {
+      "path": "/shift/towns/somerville-ma",
+      "sessions": 2
+    },
+    {
+      "path": "/events/ce_import_happy-biking-hour_2026-09-08",
+      "sessions": 1
+    },
+    {
+      "path": "/shift/roams/freedom-stroll",
+      "sessions": 1
+    },
+    {
+      "path": "/events/ce_bike_nation_20260920",
+      "sessions": 1
+    },
+    {
+      "path": "/shift/towns/burlington-ma",
+      "sessions": 1
+    },
+    {
+      "path": "/shift/roams/twin-cities-rail-trail",
+      "sessions": 1
+    },
+    {
+      "path": "/events/ce_sync_boston_bike_events_887aa746fc20",
+      "sessions": 1
+    },
+    {
+      "path": "/events/ce_import_free-bike-repair-workshop-at-bpl-east-boston_2026-10-20",
+      "sessions": 1
+    }
+  ],
+  "answer_engine_referrals_7d": [
+    {
+      "referrer": "chatgpt.com",
+      "sessions": 1
+    },
+    {
+      "referrer": "www.perplexity.ai",
+      "sessions": 1
+    },
+    {
+      "referrer": "gemini.google.com",
+      "sessions": 1
+    }
+  ],
+  "answer_engine_referral_sessions_7d": 3
+}
