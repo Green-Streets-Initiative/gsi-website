@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getQualifyingTowns } from '@/lib/towns/queries'
 import { getActiveRoams } from '@/lib/roams/queries'
 import { SCHOOLS } from '@/lib/semester/schools'
+import { loadEventsListing } from '@/app/events/_lib/load'
 import { SITE_URL } from '@/lib/seo'
 
 // Served at /llms.txt. Generated (not a static file) so the guide and town
@@ -42,6 +43,13 @@ export async function GET() {
   // Roams are the same page class the sitemap lists, from the same source. They
   // were missing here until 2026-09-14, while being the site's best-converting
   // pages — 852 impressions and 57% of its clicks in the week to 2026-09-11.
+  let events: Awaited<ReturnType<typeof loadEventsListing>> = []
+  try {
+    events = await loadEventsListing()
+  } catch {
+    // DB unreachable — the rest of the file still renders.
+  }
+
   let roams: Awaited<ReturnType<typeof getActiveRoams>> = []
   try {
     roams = await getActiveRoams()
@@ -119,6 +127,23 @@ export async function GET() {
     L.push(`- [Getting around ${s.name}](${SITE_URL}/shift-your-semester/${s.slug})${summary}`)
   }
   L.push('')
+
+  // What's on. These pages rank at positions 3.6-7.7 and convert better than
+  // anything else on the site, and the file said only that /events exists. An
+  // answer engine asked "is there a learn-to-ride class in Cambridge this
+  // month" can now answer from the list rather than from the hub. Upcoming
+  // events only, soonest first, so the section empties itself as they pass.
+  if (events.length > 0) {
+    L.push('## What is on')
+    for (const e of events.slice(0, 60)) {
+      const when = [e.event_date, e.event_time].filter(Boolean).join(' ')
+      const detail = [when, e.location_name].filter(Boolean).join(' — ')
+      L.push(
+        `- [${e.title}](${SITE_URL}/events/${encodeURIComponent(e.id)})${detail ? `: ${detail}` : ''}`,
+      )
+    }
+    L.push('')
+  }
 
   L.push('## For organizations')
   L.push(`- [For employers](${SITE_URL}/shift/employers): Commute programs, workplace challenges, and aggregate impact reporting for HR and sustainability teams.`)
