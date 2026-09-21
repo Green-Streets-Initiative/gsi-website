@@ -1,0 +1,211 @@
+SEO / AEO weekly pulse — Sunday 21 September 2026
+Search Console week 12–18 Sept. Fifth run.
+
+═══════════════════════════════════════════════
+THE LEDGER
+═══════════════════════════════════════════════
+
+                                  This week   vs 4-wk   vs 12-wk
+Organic clicks                           34     +60%      +160%
+Organic impressions                   3,291     +39%      +135%
+Click-through rate                    1.03%   (0.53% last week)
+Average position                        8.9   (10.3 last week)
+Non-brand impressions (trigger)         476      +8% week on week
+PostHog organic sessions                 71    +122%      +134%
+Answer-engine referrals (7 days)          3    (0 last run)
+AEO sentinel citations               0 of 6      unchanged
+Rotated SERP checks                  0 of 3      (1 of 3 last run)
+
+Best week the routine has recorded, and it is last week's story in reverse.
+Impressions came DOWN 17% from last week's record, and clicks went UP 62%,
+click-through doubled, and average position improved again to 8.9 — the best
+on both counts since this started. Last week the site was shown more and
+clicked less. This week it was shown a little less and clicked much more.
+
+Four-week trend: 24.0 clicks a week against 12.8 in the four weeks before
+that (+88%), on 2,793 impressions against 1,136 (+146%).
+
+Stagnation trigger: no. Non-brand discovery impressions 442 → 476. Next
+week is the fourth week on this measure and the first time the proper
+four-week comparison can be read.
+
+═══════════════════════════════════════════════
+THE FINDING: we had been reading 40 rows of a 128-row table
+═══════════════════════════════════════════════
+
+The weekly data pull asked Search Console for 500 pages and wrote down the
+top 40. Those 40 covered 85% of our impressions and stopped at 22 impressions
+per page. Everything below that line has been invisible to every report I
+have written for you.
+
+I raised the limit. Two things that were already true turned out to have
+been wrong in the reports:
+
+1. THE EVENT PAGES ARE THE BEST-CONVERTING THING ON THE SITE.
+
+   Thirty-three event pages, 299 impressions, 7 clicks — a 2.34% click-through
+   rate against a 1.03% site average — ranking at positions 3.6 to 7.7.
+   Previous reports saw two to four of them and filed the whole class as a
+   rounding error. The BU Cycle Kitchen event ranks 4.6. The East Boston
+   library free repair workshop ranks 5.2.
+
+   The sitemap lists two event pages. llms.txt lists none. Google found all
+   thirty-three anyway, through internal links and the share cards you added
+   on the 16th.
+
+2. "ONLY 12 OF 25 ROAMS ARE INDEXED" WAS NEVER TRUE.
+
+   That has been on the watch list since the 14th and it shaped how the Roam
+   title experiment was framed. Twenty-four Roam pages earn impressions. The
+   other twelve were simply below the old cutoff.
+
+This is the third time a page class has become a major surface while
+invisible to the ledger — campus, then Roams, now events. The first two were
+missing search-term patterns. This one was an instrument limit, which is
+worse, because no amount of portfolio work would have found it.
+
+═══════════════════════════════════════════════
+WHAT ELSE MOVED
+═══════════════════════════════════════════════
+
+THE ROAM RAMP IS MORE PAGES, NOT YET BETTER PAGES. The class grew from 852 to
+1,094 impressions, but the ten pages that were already indexed took exactly
+the same 793 impressions as last week and one click fewer. All the growth is
+new pages appearing. Your distance-in-the-title change shipped on the 14th,
+four days into a seven-day window, so this is "no signal yet" rather than a
+bad result. Verdict still 26 October.
+
+CAMPUS IMPRESSIONS HALVED — 1,129 down to 541 — while the rest of the site
+held. That is one week and term has just started, so it is a data point, not
+a verdict. But it is the first evidence FOR the "September spike" idea rather
+than against it. When the campus title experiment is called on 20 October the
+honest question is now two questions: did the titles lift click-through, AND
+was there a durable audience under the September volume.
+
+POSTHOG ORGANIC SESSIONS MORE THAN DOUBLED, to 71 against a 32 average. I am
+flagging rather than celebrating. Search Console agrees on direction but not
+size, and the ratio between the two sources jumped. In its favour: those 71
+sessions are spread across 25 landing pages with no single page dominating,
+which is not the shape a bot makes. Treat next week as the confirmation.
+
+FIRST ANSWER-ENGINE REFERRALS THAT ARE NOT CONTEST TRAFFIC. Three sessions:
+one from ChatGPT, one from Perplexity, one from Gemini. Three is noise and I
+will not dress it up. What is notable is the shape — one each from three
+different engines, where every previous referral came from one engine
+pointing at one contest-rules page. It is also the first week after the Roams
+and campus sections went into llms.txt. Both true; neither proves the other.
+
+THE DRIVE-TIME GUIDE HAS GENUINELY ZERO IMPRESSIONS at three weeks live. It
+is absent from a 128-row table whose floor is one impression, so this is a
+real reading now rather than "not in the top 40". That points away from
+waiting and toward the structural options when it is called on 12 October.
+
+THE THREE WEDGE-AUDIENCE SEARCHES ARE OWNED BY VENDORS. This week's rotation
+checked the head queries for used-car shoppers, parents, and new movers.
+Every single result on the first two is a bike manufacturer or retailer blog.
+We do not appear on any of the three. That is worth knowing before October:
+our opening in those audiences is the local, specific question a vendor blog
+cannot answer — the same shape that is already winning on Roams and events —
+not the generic head query.
+
+═══════════════════════════════════════════════
+HEALTH — all green
+═══════════════════════════════════════════════
+
+Sitemap 200, 140 pages. robots.txt 200 (the hash changed, and it is benign —
+your "Challenges goes live" commit added a Disallow for the preview
+harnesses). llms.txt 200, now 122 links across 7 sections, up from 79 and 5 —
+both the Roams section and the campus section are live. Structured data
+confirmed live on the Commute Advisor, Nearby, the campus pages, the guides
+and the town pages. No coverage gaps reported.
+
+What we can and cannot measure has not changed: we see Search Console, live
+web search, referrals from answer-engine domains, and structured-data health.
+We cannot see inside ChatGPT, Perplexity or Claude, or into Google's AI
+Overviews. I will never invent an "AI visibility" score.
+
+═══════════════════════════════════════════════
+BRANCH HOUSEKEEPING — one thing to know
+═══════════════════════════════════════════════
+
+All four branches that were waiting for your decision are now dead. Three of
+them you already shipped. The fourth, seo/2026-09-answer-schema, is the one
+to watch: you re-implemented its 62 lines directly on the 17th rather than
+merging the branch, so the branch still sits on a base from before the cream
+refresh. Merging it today would delete 241 files and revert a week of work.
+It has nothing left to give — all four should simply be deleted, and I have
+left that to you rather than doing it unasked.
+
+═══════════════════════════════════════════════
+PROPOSED — three items
+═══════════════════════════════════════════════
+
+ITEM 1 — Change one word that is now machine-readable
+
+On the 14th I asked for one word to change before the Commute Advisor schema
+shipped: an answer there says "the most sustainable way to build consistent
+movement". The schema shipped on the 17th and the word went with it, so it is
+now inside the markup that answer engines read back as our description of
+ourselves. It was used in the "lasting" sense, so it is fine as body copy —
+but "durable" says the same thing and costs us nothing.
+
+One word. Effort: trivial. Impact: guardrail, not traffic.
+Branch: seo/2026-09-faq-wording
+to ship: open Claude Code and say "ship SEO item 1"
+
+ITEM 2 — Put the event pages in the sitemap and llms.txt
+
+Thirty-three event pages convert at more than double the site average and the
+sitemap lists two of them. This adds every approved upcoming event to the
+sitemap, and a "What's on" section to llms.txt with dates and locations.
+Because it reads the upcoming-events list, a page drops off both the day after
+the event happens — no cleanup logic, nothing to maintain.
+
+This is the same move that worked twice this month: the campus pages and the
+Roams each got their llms.txt section and the file went from 79 links to 122.
+
+Typecheck is clean. I could not see the rendered output — an unattended run
+cannot start a dev server — so it is worth a look at the Vercel preview,
+particularly that event titles read well as link text.
+
+Effort: small. Impact: medium-high.
+Branch: seo/2026-09-events-discoverable
+to ship: open Claude Code and say "ship SEO item 2"
+
+ITEM 3 — Fix the search-term buckets
+
+Coverage of what people actually searched fell from 88% to 73% in a week, for
+two reasons. The Roams bucket was built from the twelve Roam names that were
+indexed when I wrote it, so every Roam that appeared afterwards fell straight
+back into "unsorted" — the Battle Road Trail alone is 25 impressions on a page
+earning 3 clicks. And the event pages had no bucket at all. This regenerates
+the Roam names from all 25 published Roams and adds an events bucket.
+
+Tested against this week's real searches: coverage 73% → 81%, unsorted down
+from 165 to 116, and the trigger number is unchanged — it sorts existing
+traffic rather than inventing any.
+
+Effort: small. Impact: measurement, not traffic directly.
+Branch: seo/2026-09-portfolio-repair
+to ship: open Claude Code and say "ship SEO item 3"
+
+(To decline any of these, say "decline SEO item N".)
+
+Still waiting from 8 September: the cargo e-bike cost guide draft. Two weeks
+undecided, ages out 3 November. This week's SERP check is relevant to it —
+that query is owned end to end by bike retailers.
+
+═══════════════════════════════════════════════
+
+I committed one thing to main myself: the data-pull fix above. It is
+instruments only — no site code, no content, nothing anyone can see — and
+without it this week's numbers could not be reproduced next week. Older data
+files keep their 40-row tables and cannot be fixed retroactively, which is
+why the Roam comparison above uses a fixed set of ten pages rather than class
+totals.
+
+Full report:
+https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-09-21.md
+
+Next pulse: Sunday 28 September — and the first week the four-week stagnation
+comparison can actually be read.
