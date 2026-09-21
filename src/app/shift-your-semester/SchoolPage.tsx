@@ -30,12 +30,13 @@ export default function SchoolPage({ d, capture = true }: { d: SchoolData; captu
   const hasEvents = d.events.length > 0 || d.roams.length > 0
   const challenge = activeCampusChallenge(school)
 
+  // Order matches the page: the campus answer first, then the campaign.
   const toc: Array<[string, string]> = [
+    ['#benefits', `Getting around ${school.shortName}`],
     ['#join', group ? 'Join' : 'Get the app'],
     ...(challenge ? [['#campus-challenge', challenge.navLabel] as [string, string]] : []),
     ...(d.boardLive ? [['#standings', 'Standings'] as [string, string]] : []),
     ['#around', 'Around campus'],
-    ['#benefits', 'Campus perks'],
     ...(hasEvents ? [['#events', 'Events'] as [string, string]] : []),
     ...(group ? [['#share', 'Share'] as [string, string]] : []),
   ]
@@ -58,12 +59,21 @@ export default function SchoolPage({ d, capture = true }: { d: SchoolData; captu
                   · {SEMESTER_OPENS.replace(', 2026', '')} – {SEMESTER_CLOSES}
                 </p>
                 <h1 className="font-serif text-[clamp(2.25rem,5vw,3.75rem)] font-normal leading-[1.05] tracking-[-0.01em] text-navy">
-                  Shift Your Semester at {school.name}
+                  {school.h1 ?? `Shift Your Semester at ${school.name}`}
                 </h1>
+                {/* The answer the search brought them for, before anything is
+                    asked of them. The offer is the line under it, and the join
+                    card is further down the page — see the note on `h1` in
+                    lib/semester/schools.ts. */}
                 <p className="mt-5 max-w-[540px] text-[1.125rem] leading-[1.6] text-ink-soft">
-                  {school.highlight ? `${school.highlight} ` : ''}
-                  Join {school.shortName} on the free Shift app, take {SEMESTER_TRIPS} active trips in {SEMESTER_WINDOW_DAYS} days, and pick a{' '}
-                  {SEMESTER_REWARD} reward from ~60 local merchants or a gift card you choose.
+                  {school.answer ?? school.highlight ?? ''}
+                </p>
+                <p className="mt-4 max-w-[540px] text-[1rem] leading-[1.6] text-ink-soft">
+                  {school.shortName} students are also taking {SEMESTER_TRIPS} active trips in {SEMESTER_WINDOW_DAYS} days to unlock a{' '}
+                  {SEMESTER_REWARD} reward on Shift.{' '}
+                  <Link href="#join" className="font-semibold text-forest underline underline-offset-4">
+                    How that works
+                  </Link>
                 </p>
               </div>
               <div className="flex h-[160px] items-center justify-center rounded-[18px] border border-navy/10 bg-white px-8 md:h-[220px]">
@@ -74,9 +84,24 @@ export default function SchoolPage({ d, capture = true }: { d: SchoolData; captu
           </div>
         </section>
 
-        <OfferLedger />
-
         <TownToc sections={toc} tone="light" />
+
+        {/* The answer, in full, before the offer. Moved above the join card on
+            2026-09-21: these pages rank on page one for questions like "bu cycle
+            kitchen" and "lesley shuttle schedule" and took 824 Google
+            impressions for zero clicks in 90 days. A student who did click
+            landed on a campaign headline, an offer ledger and a join card, and
+            met the thing they searched for in the seventh section. */}
+        <Section shape="straight" tone="white" id="benefits" className="scroll-mt-28">
+          <SectionHeading
+            title={`Getting around ${school.shortName}`}
+            lede={`What ${school.shortName} already runs — passes, shuttles, bike space and repairs — with a link to each program.`}
+          />
+          <SchoolPerks school={school} />
+          <p className="mt-5 text-[13px] text-ink-soft">Programs and prices change each term. Check the linked school pages for current details.</p>
+        </Section>
+
+        <OfferLedger />
 
         {/* Join */}
         <Section shape="straight" tone="white" id="join" className="scroll-mt-28">
@@ -182,13 +207,6 @@ export default function SchoolPage({ d, capture = true }: { d: SchoolData; captu
           ) : (
             <CampusMap lat={school.lat} lng={school.lng} href={d.nearbyHref} shortName={school.shortName} />
           )}
-        </Section>
-
-        {/* Campus perks */}
-        <Section shape="straight" tone="white" id="benefits" className="scroll-mt-28">
-          <SectionHeading title={`${school.shortName} campus perks`} lede="Your school already gives you a head start." />
-          <SchoolPerks school={school} />
-          <p className="mt-5 text-[13px] text-ink-soft">Programs and prices change each term. Check the linked school pages for current details.</p>
         </Section>
 
         {hasEvents && (

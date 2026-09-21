@@ -50,6 +50,23 @@ export type School = {
   /** One distinctive lead fact for the hub card / page hero. */
   highlight?: string
   /**
+   * The page's own headline, replacing "Shift Your Semester at X" as the H1.
+   *
+   * Added 2026-09-21. The retitle below fixed what the search result said; this
+   * fixes what the page says when someone acts on it. A student searching "bu
+   * cycle kitchen" used to land on a campaign headline, an offer ledger and a
+   * join card, and had to reach the seventh section — headed "BU campus perks"
+   * — before the page mentioned the Cycle Kitchen at all. Lead with the answer
+   * they came for; the offer follows it.
+   */
+  h1?: string
+  /**
+   * One sentence answering this campus's top search query outright, as the
+   * page's opening line. Must restate a sourced fact from the arrays below,
+   * not tease it.
+   */
+  answer?: string
+  /**
    * Search title/description, overriding the "Shift Your Semester at X"
    * template in the page's generateMetadata.
    *
@@ -64,6 +81,11 @@ export type School = {
    * in that school's arrays below. Do not title a page for a query it cannot
    * answer — "simmons student parking" gets impressions, but there is no
    * parking fact here, so the title does not promise one.
+   *
+   * Second rule, added 2026-09-21: **no offer in the description.** Several of
+   * these ended with "Plus Shift, which logs your trips automatically" — spending
+   * the snippet on a pitch, in the one place where the searcher is deciding
+   * whether this page answers their question. The snippet is all answer now.
    */
   seoTitle?: string
   seoDescription?: string
@@ -84,9 +106,14 @@ export const SCHOOLS: School[] = [
     lat: 42.3521,
     lng: -71.0658,
     highlight: 'Campus on Boston Common, steps from the Green and Orange Lines.',
-    seoTitle: 'Emerson MBTA pass discount, free bike rooms & the Theatre District campus | Shift',
+    // Search demand here is thin (1 impression, 90 days) — titled for the two
+    // facts a student would plausibly look up rather than an observed query.
+    h1: 'Emerson’s bike rooms, and getting around the Theatre District',
+    answer:
+      'Emerson has two free indoor bike rooms — Boylston Place and the Ansin Building — open to students, faculty and staff once your bike is registered.',
+    seoTitle: 'Emerson free indoor bike rooms and the semester MBTA pass',
     seoDescription:
-      'Emerson\'s discounted semester MBTA passes, the two free indoor bike rooms at Boylston Place and Ansin, and Bluebikes at the edge of campus. Plus Shift, which logs your walks, rides and T trips automatically.',
+      'Two free indoor bike rooms at Boylston Place and Ansin, open once you register your bike, plus discounted semester MBTA passes and Bluebikes at the edge of campus on Boylston and Stuart.',
     transit: [
       { text: 'Discounted semester MBTA passes for on- and off-campus students, picked up on campus near the start of term.', sourceUrl: 'https://emerson.edu/departments/off-campus-student-services/programs' },
       { text: 'The campus sits at the junction of the Green and Orange Lines plus several bus routes — most of Boston is a one-seat ride away.', sourceUrl: 'https://emerson.edu/about/sustainability/' },
@@ -108,9 +135,14 @@ export const SCHOOLS: School[] = [
     lat: 42.3355,
     lng: -71.1685,
     highlight: 'The Green Line B ends at the foot of campus — BC is literally the end of the line.',
-    seoTitle: 'BC MBTA pass discount, bike parking & the Green Line B to campus | Shift',
+    // Only observed query is "boston college car rental" (1 impression, position
+    // 42) — nothing here answers that, so it is not titled for.
+    h1: 'BC bike parking, the Green Line B, and getting around campus',
+    answer:
+      'BC has roughly 300 bike parking spaces across 15 locations, free registration, and locker rooms with showers for anyone who rides in.',
+    seoTitle: 'BC bike parking and showers, and the Green Line B to campus',
     seoDescription:
-      'BC\'s discounted semester MBTA passes, roughly 300 bike parking spaces across 15 locations, showers for bike commuters, and the Green Line B ending at campus. Plus Shift, which logs your trips automatically.',
+      'Roughly 300 bike parking spaces across 15 locations at BC, free registration, and locker rooms with showers. Plus discounted semester MBTA passes, the Green Line B ending at campus, and the free inter-campus shuttles.',
     transit: [
       { text: 'Discounted semester MBTA passes through Student Services — they open in summer and close early, so order ahead.', sourceUrl: 'https://www.bc.edu/bc-web/offices/student-services/billing-student-accounts/mbta-passes-parking-permits.html' },
       { text: 'The Green Line B branch terminates at the foot of campus on Comm Ave.', sourceUrl: 'https://www.bc.edu/bc-web/offices/aux-services/sites/transportation-parking/commuting.html' },
@@ -132,9 +164,16 @@ export const SCHOOLS: School[] = [
     lat: 42.3505,
     lng: -71.1054,
     highlight: 'Home of the BU Cycle Kitchen — a free DIY bike shop that teaches you to fix your own ride.',
-    seoTitle: 'BU Cycle Kitchen, the Bluebikes discount & The BUS shuttle | Shift',
+    // Biggest search demand of any campus page: "bu cycle kitchen" alone drew
+    // 216 impressions at position 6.2 in the 90 days to 2026-09-19, with
+    // "bu bike kitchen" (63) and "bu bike shop" (19) behind it. All of it bike
+    // repair; none of it converted.
+    h1: 'The BU Cycle Kitchen, and the rest of getting around BU',
+    answer:
+      'The BU Cycle Kitchen at 1019 Comm Ave is a free, self-service repair space — the staff teach, you do the wrenching. It has helped more than 900 riders.',
+    seoTitle: 'BU Cycle Kitchen: free DIY bike repair at 1019 Comm Ave',
     seoDescription:
-      'The BU Cycle Kitchen at 1019 Comm Ave — free, self-service, staff teach and you wrench — plus BU\'s discounted Bluebikes membership, secure bike rooms, and The BUS running seven days a week.',
+      'The BU Cycle Kitchen is free and self-service — staff teach, you wrench. Where it is and what it does, plus the rest of getting around BU: the discounted Bluebikes membership, secure bike rooms, and The BUS seven days a week.',
     transit: [
       { text: 'BU’s transportation office publishes clear guidance on when a semester pass beats paying per ride — worth reading before you buy.', sourceUrl: 'https://www.bu.edu/transportation/public-transit/student-mbta-options/' },
       { text: 'The BUS — BU’s free shuttle — runs seven days a week with late-night service, with live tracking in the Terrier Transit app.', sourceUrl: 'https://www.bu.edu/transportation/bus/' },
@@ -157,9 +196,14 @@ export const SCHOOLS: School[] = [
     lat: 42.3398,
     lng: -71.0892,
     highlight: 'Free on-demand night shuttle covers everything within 1.5 miles of Snell Library.',
-    seoTitle: 'Northeastern Bluebikes discount, the RedEye night shuttle & bike storage | Shift',
+    // "northeastern blue bike discount" (11) plus its variant (2) at position
+    // 10.1 is the whole of this page's observed demand.
+    h1: 'The Northeastern Bluebikes discount, and getting around campus',
+    answer:
+      'Northeastern offers a discounted Bluebikes membership to the university community, with a deeper discount for Pell Grant recipients.',
+    seoTitle: 'Northeastern Bluebikes discount, and the Pell Grant rate',
     seoDescription:
-      'Northeastern\'s discounted Bluebikes membership (deeper for Pell Grant recipients), free NUPD bike registration with a metal security plate, secure indoor storage, and the free RedEye night shuttle.',
+      'Northeastern’s discounted Bluebikes membership, with extra discounts for Pell Grant recipients. Plus free NUPD registration with a tamper-resistant metal plate, secure indoor storage, and the free RedEye night shuttle.',
     transit: [
       { text: 'The campus touches the Green Line E and the Orange Line at Ruggles, with five Bluebikes stations in the campus area.', sourceUrl: 'https://pref.northeastern.edu/bike' },
     ],
@@ -181,9 +225,14 @@ export const SCHOOLS: School[] = [
     lat: 42.3744,
     lng: -71.1169,
     highlight: 'Quad Bikes: a student-run shop with free repairs and group rides.',
-    seoTitle: 'Harvard Quad Bikes, the Evening Van & campus fix-it stations | Shift',
+    // "quad bikes harvard" (34 impressions, position 10.9) is two-thirds of this
+    // page's demand; everything else sits past position 30.
+    h1: 'Quad Bikes, the Evening Van, and getting around Harvard',
+    answer:
+      'Quad Bikes is the student-run shop at Cabot House — free repairs during open-stand hours, plus maintenance teaching and group rides.',
+    seoTitle: 'Quad Bikes at Harvard: free student-run bike repairs',
     seoDescription:
-      'Quad Bikes at Cabot House — free repairs during open-stand hours, plus group rides — the nightly free Evening Van across Cambridge and Allston, and fix-it stations with pumps and tools around campus.',
+      'Quad Bikes at Cabot House offers free repairs during open-stand hours, maintenance teaching and group rides. Plus the nightly free Evening Van across Cambridge and Allston, and fix-it stations with pumps and tools around campus.',
     transit: [
       { text: 'Harvard Square is a Red Line hub with bus connections in every direction — most of Cambridge and Boston is a one-seat ride.', sourceUrl: 'https://www.hupd.harvard.edu/transportation' },
       { text: 'The free Evening Van runs nightly across Cambridge and Allston during the academic year, 7 p.m.–3 a.m.', sourceUrl: 'https://transportation.harvard.edu/harvard-shuttle/evening-van' },
@@ -205,9 +254,15 @@ export const SCHOOLS: School[] = [
     lat: 42.3601,
     lng: -71.0942,
     highlight: 'MIT covers 50–70% of students’ MBTA pass costs.',
-    seoTitle: 'MIT T pass subsidy, SafeRide & the Bike Lab — getting around MIT | Shift',
+    // The T pass is nearly all of it: "mit mbta pass" (20), "mit t pass" (20),
+    // "t pass mit" (11), "mit tpass" (9), "mit mbta discount" (6), "mit student
+    // t pass" (5), "mit transit pass" (5) — 76 impressions around position 10.
+    h1: 'The MIT T pass subsidy, and getting around MIT',
+    answer:
+      'MIT covers 50–70% of the cost of an MBTA pass for students — bus, subway, commuter rail and boat.',
+    seoTitle: 'MIT T pass: the 50–70% MBTA subsidy for students',
     seoDescription:
-      'MIT covers 50–70% of students\' MBTA pass costs, plus free SafeRide night routes, subsidized Bluebikes, the volunteer-run Bike Lab, and grocery-run shuttles.',
+      'MIT covers 50 to 70% of students’ MBTA pass costs across bus, subway, commuter rail and boat. Plus free SafeRide night routes, a deeply subsidized Bluebikes membership, the volunteer-run Bike Lab, and the named grocery shuttles.',
     transit: [
       { text: 'MIT covers 50–70% of the cost of MBTA passes for students — bus, subway, commuter rail, and boat.', sourceUrl: 'https://web.mit.edu/facilities/transportation/students.html' },
       { text: 'Free shuttles run early to late — including named grocery runs to Trader Joe’s, Market Basket, and Costco — with live tracking.', sourceUrl: 'https://web.mit.edu/facilities/transportation/students.html' },
@@ -229,9 +284,15 @@ export const SCHOOLS: School[] = [
     lat: 42.4075,
     lng: -71.119,
     highlight: 'The Green Line Extension stops right at campus, one stop from Davis Square.',
-    seoTitle: 'Tufts SafeRide, the Medford/Tufts Green Line stop & student bike checkout | Shift',
+    // Two clusters, near-equal: SafeRide ("tufts safe ride" 41 at position 6.2,
+    // "safe ride tufts" 7) and the shuttles ("tufts grocery shuttle" 23, the
+    // Davis Square variants 17, SMFA 6). The title carries both.
+    h1: 'Tufts SafeRide, the shuttles, and getting around the Hill',
+    answer:
+      'TUPD SafeRide covers late nights, and campus shuttles run to Davis Square, the SMFA campus, and a Saturday grocery run.',
+    seoTitle: 'Tufts SafeRide and the Davis Square and grocery shuttles',
     seoDescription:
-      'The Medford/Tufts Green Line stop, TUPD SafeRide and the Davis Square and Saturday grocery shuttles, free bike-and-helmet checkout for students at the Tisch Library desk, and Bike Check reimbursements.',
+      'TUPD SafeRide for late nights, plus the Davis Square, SMFA and Saturday grocery shuttles. The Medford/Tufts Green Line stop puts the Hill one stop from Davis, and students can check out a bike and helmet free at the Tisch Library desk.',
     transit: [
       { text: 'The Green Line Extension’s Medford/Tufts station puts the Hill one stop from Davis Square and a straight shot downtown.', sourceUrl: 'https://access.tufts.edu/commuter-benefits-discounts' },
       { text: 'Campus shuttles cover Davis Square, the SMFA campus, Saturday groceries, and TUPD SafeRide for late nights.', sourceUrl: 'https://access.tufts.edu/shuttles-sharing-services' },
@@ -275,9 +336,14 @@ export const SCHOOLS: School[] = [
     lat: 42.3134,
     lng: -71.0386,
     highlight: 'A student-funded 50% T pass subsidy — it sells out fast every term.',
-    seoTitle: 'UMass Boston T pass subsidy, free bike parking & the JFK/UMass shuttle | Shift',
+    // Thin and scattered (12 impressions), but every query is the shuttle:
+    // schedule, bus, tracker, "umass boston transportation".
+    h1: 'The JFK/UMass shuttle, and getting around UMass Boston',
+    answer:
+      'Free campus shuttles run from JFK/UMass station into campus every few minutes, and student government funds a 50% subsidy on semester T passes.',
+    seoTitle: 'UMass Boston shuttle from JFK/UMass and the T pass subsidy',
     seoDescription:
-      'The student-funded 50% semester T-pass subsidy (first-come, and it sells out), 740+ free bike parking spaces including a secured indoor shelter, and free shuttles from JFK/UMass every few minutes.',
+      'Free shuttles from JFK/UMass station into campus every few minutes, and a student-government-funded 50% semester T-pass subsidy that goes first-come and sells out early. Plus 740+ free bike parking spaces and a secured indoor shelter in the West Garage.',
     transit: [
       { text: 'A student-government-funded subsidy covers 50% of semester T passes for undergrads, first-come first-served — it sells out early, so act fast each term.', sourceUrl: 'https://www.umb.edu/transportation/mbta/students/' },
       { text: 'Free campus shuttles run from JFK/UMass station into campus every few minutes.', sourceUrl: 'https://www.umb.edu/transportation/' },
@@ -299,9 +365,15 @@ export const SCHOOLS: School[] = [
     lat: 42.3588,
     lng: -71.0616,
     highlight: 'A downtown campus deliberately designed around walking and transit.',
-    seoTitle: 'Suffolk MBTA pass discount & getting around the Beacon Hill campus | Shift',
+    // "suffolk mbta pass" (8 at position 10.2) and its long form are the only
+    // real queries. Also ranks #1 for "is anything free", which is nobody's
+    // question about Suffolk.
+    h1: 'The Suffolk MBTA pass discount, and getting around Beacon Hill',
+    answer:
+      'Suffolk sells discounted semester MBTA passes to undergraduates and graduate students through the university’s online store.',
+    seoTitle: 'Suffolk MBTA pass: discounted semester passes for students',
     seoDescription:
-      'Suffolk\'s discounted semester MBTA passes for undergrads and grad students, indoor bike storage in the residence halls, outdoor racks at six locations, and Park Street and Government Center on foot.',
+      'Discounted semester MBTA passes for Suffolk undergrads and graduate students through the university store. Plus indoor bike storage in the residence halls, outdoor racks at six campus locations, and Park Street, Government Center and Bowdoin on foot.',
     transit: [
       { text: 'Discounted semester MBTA passes for undergrads and grad students through the university’s online store.', sourceUrl: 'https://www.suffolk.edu/student-life/housing-dining/student-resources/discount-mbta-program' },
       { text: 'The Beacon Hill campus has several MBTA lines within a short walk — Park Street, Government Center, and Bowdoin are all close.', sourceUrl: 'https://www.suffolk.edu/about/directory/department-of-facilities/sustainability/transportation' },
@@ -322,9 +394,14 @@ export const SCHOOLS: School[] = [
     lat: 42.3465,
     lng: -71.0878,
     highlight: 'A card-access bike pavilion in the heart of Back Bay.',
-    seoTitle: 'Berklee semester MBTA pass & the card-access bike pavilion | Shift',
+    // 6 impressions in 90 days, and the top two are a scraper's quoted-phrase
+    // query. No real demand to title for — led with the page's best fact.
+    h1: 'The Berklee bike pavilion, and getting around Back Bay',
+    answer:
+      'Berklee’s gated bike pavilion at Cambria and Boylston Streets is secure, free, and opens with your Berklee ID.',
+    seoTitle: 'Berklee bike pavilion and semester MBTA passes',
     seoDescription:
-      'Berklee\'s full-term semester MBTA passes, the gated bike pavilion at Cambria and Boylston with card access on your Berklee ID, and Hynes and Back Bay Station both minutes from campus.',
+      'The gated bike pavilion at Cambria and Boylston, free and card-access with your Berklee ID, plus full-term semester MBTA passes ordered through the college, and Hynes and Back Bay Station minutes from campus.',
     transit: [
       { text: 'Semester MBTA passes covering the full fall or spring term, ordered through the college.', sourceUrl: 'https://berklee.helpscoutdocs.com/article/5112-transportation' },
       { text: 'Campus is steps from Hynes (Green Line) and near Back Bay Station (Orange Line, commuter rail, Amtrak) — one of the most transit-dense addresses in Boston.', sourceUrl: 'https://berklee.helpscoutdocs.com/article/5112-transportation' },
@@ -345,9 +422,18 @@ export const SCHOOLS: School[] = [
     lat: 42.3391,
     lng: -71.0997,
     highlight: 'Free Longwood-area shuttles every 8–10 minutes.',
-    seoTitle: 'Simmons MBTA pass, the free Longwood shuttles & bike repair stations | Shift',
+    // Simmons' demand is almost entirely parking — "simmons parking pass" (6),
+    // "simmons student parking" (6), "simmons parking" (5) and eight garage
+    // variants, 24 impressions in all. There is no sourced parking fact on this
+    // page, so per the rule above the title does not chase it. The one bright
+    // spot is "simmons campus map" at position 5.5, which the page also cannot
+    // answer. Worth revisiting if a parking or map fact is ever added.
+    h1: 'The Longwood shuttles, and getting around Simmons',
+    answer:
+      'Free MASCO shuttles run through the Longwood Medical Area every 8 to 10 minutes and connect to Ruggles and JFK/UMass stations.',
+    seoTitle: 'Simmons and the free Longwood shuttles, every 8–10 minutes',
     seoDescription:
-      'Free MASCO shuttles through the Longwood Medical Area every 8–10 minutes, discounted semester MBTA passes, self-service bike repair stations, and CommuteFit rewards for walking commutes.',
+      'Free MASCO shuttles through the Longwood Medical Area every 8 to 10 minutes, connecting to Ruggles and JFK/UMass. Plus discounted semester MBTA passes, two self-service bike repair stations, and CommuteFit for walking commutes.',
     transit: [
       { text: 'Free MASCO shuttles run the Longwood Medical Area every 8–10 minutes and connect to Ruggles and JFK/UMass stations.', sourceUrl: 'https://www.simmons.edu/maps-directions/commuting-alternatives' },
       { text: 'Discounted semester MBTA passes ordered through Student Financial Services.', sourceUrl: 'https://www.simmons.edu/maps-directions/commuting-alternatives' },
@@ -368,9 +454,15 @@ export const SCHOOLS: School[] = [
     lat: 42.3888,
     lng: -71.1225,
     highlight: 'Porter Square campus, right on the Red Line and commuter rail.',
-    seoTitle: 'Lesley MBTA pass, the campus shuttle & Porter Square transit | Shift',
+    // The most single-minded page of the twelve: all 81 impressions are the
+    // shuttle schedule ("lesley shuttle schedule" 63 at position 8.5, "lesley
+    // shuttle" 17). Three queries, one question.
+    h1: 'The Lesley shuttle, and getting around Porter Square',
+    answer:
+      'The free Lesley shuttle links all three campuses every 10 to 15 minutes during the academic year.',
+    seoTitle: 'Lesley shuttle: all three campuses, every 10–15 minutes',
     seoDescription:
-      'Lesley\'s discounted semester MBTA passes, the free shuttle linking all three campuses every 10–15 minutes, covered bike racks with a repair stand, and the Red Line and Fitchburg line at Porter.',
+      'The free Lesley shuttle runs between all three campuses every 10 to 15 minutes in the academic year. Plus discounted semester MBTA passes, covered bike racks and the repair stand behind Stebbins Hall, and the Red Line and Fitchburg line at Porter.',
     transit: [
       { text: 'Discounted semester MBTA passes ordered through the Office of Student Activities.', sourceUrl: 'https://lesley.edu/students/transportation-parking-and-shuttle/bike-services' },
       { text: 'The free Lesley shuttle links all three campuses every 10–15 minutes during the academic year.', sourceUrl: 'https://lesley.edu/students/transportation-parking-and-shuttle/shuttle-schedule' },
