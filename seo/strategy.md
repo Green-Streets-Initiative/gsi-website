@@ -40,9 +40,16 @@ These come straight from org policy and are non-negotiable:
   car-shaming, no us-vs-them. We add a capability, we don't attack one.
 - **Lead with the positive benefits** of walking, biking, and transit — money
   kept, time reclaimed, health, fresh air, community, fun.
-- **Say "active transportation," never "sustainable."** (We may _target_ a
-  query that contains "sustainable" because that's what someone typed — but our
-  own copy never uses the word.)
+- **Lead with the practical benefits; don't lean on "sustainable."** Prefer
+  "active transportation" as our own term for what we do. **This is a matter of
+  emphasis, not a banned word** — corrected by Keith 2026-09-22: _"We don't have
+  a rule about never using the word 'sustainable,' we just try to lead with
+  practical benefits to active transportation."_ So: money kept, time
+  reclaimed, health, fresh air, community and fun come first, and "sustainable"
+  is fine where it is the accurate word — including in its ordinary sense of
+  "something you can keep up." Do not flag an instance of it as a finding on its
+  own, and do not propose one-word swaps to remove it. We may also _target_ a
+  query containing the word because that is what someone typed.
 - **No negative framing.** Don't tell people what things aren't or what they're
   doing wrong. Cut sentences that define by negation.
 - Match the site's established voice (see `content/micro-guides-library.md`).

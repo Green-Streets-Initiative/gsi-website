@@ -50,7 +50,7 @@
     {
       "since": "2026-09-21",
       "what": "/events IS THE BEST-CONVERTING CLASS ON THE SITE and was invisible until the page table stopped truncating at 40 rows. 33 URLs, 299 impressions, 7 clicks, 2.34% CTR against a 1.03% site average, at positions 3.6-7.7. The sitemap lists 2 of them and llms.txt lists none.",
-      "action": "Report /events impressions, clicks and CTR every weekly pulse alongside /shift/roams. If item 2 of 2026-09-21 ships, watch whether listing them in the sitemap and llms.txt grows the class or merely formalises what Google already found."
+      "action": "Report /events impressions, clicks and CTR every weekly pulse alongside /shift/roams. Item 2 SHIPPED 2026-09-22 (exp-2026-09-6, verdict 2026-11-02) — at the verdict, separate 'pages newly found because we listed them' from 'better click-through on pages Google already had', the same cohort discipline the Roam ramp needed. Also watch answer-engine referrals: llms.txt is where this change should show up first."
     },
     {
       "since": "2026-09-21",
@@ -177,37 +177,6 @@
   ],
   "pending": [
     {
-      "report_date": "2026-09-21",
-      "item_n": 1,
-      "type": "page-edit-branch",
-      "ref": "seo/2026-09-faq-wording",
-      "title": "Commute Advisor FAQ: 'the most durable way', not 'the most sustainable way'",
-      "diff_stat": "src/app/commute-advisor/page.tsx, +1/-1",
-      "rebased_onto": "84b9f3f",
-      "ship_steps": "Merge seo/2026-09-faq-wording into main, push, confirm the Vercel deploy, delete the branch. Then re-run node scripts/seo/health-check.mjs and confirm /commute-advisor still emits FAQPage + Question x6 + Answer x6. No experiment clock — this is guardrail compliance, not a traffic bet."
-    },
-    {
-      "report_date": "2026-09-21",
-      "item_n": 2,
-      "type": "page-edit-branch",
-      "ref": "seo/2026-09-events-discoverable",
-      "experiment_id": "exp-2026-09-6",
-      "title": "Put upcoming event pages in the sitemap and llms.txt",
-      "diff_stat": "src/app/sitemap.ts +30, src/app/llms.txt/route.ts +24",
-      "rebased_onto": "84b9f3f",
-      "ship_steps": "Eyeball the Vercel preview first — the rendered sitemap <loc> entries and the 'What is on' llms.txt block were NOT checked (an unattended run cannot start a dev server); check especially that event titles read well as link text. Then merge, push, confirm the deploy, delete the branch. Verify: sitemap <loc> count should jump from 140 by the number of upcoming events, and llms.txt should go 7 -> 8 sections. Record the ship date against exp-2026-09-6."
-    },
-    {
-      "report_date": "2026-09-21",
-      "item_n": 3,
-      "type": "portfolio-branch",
-      "ref": "seo/2026-09-portfolio-repair",
-      "title": "Portfolio: repair roams-trails from the full Roam inventory, add events-programs",
-      "diff_stat": "seo/keyword-portfolio.json, +128/-26",
-      "rebased_onto": "84b9f3f",
-      "ship_steps": "Merge seo/2026-09-portfolio-repair into main, push, delete the branch. No deploy needed — the portfolio is read by the SEO scripts, not the site. Then note in .seo-state.json that n goes 13 -> 14 for the SERP rotation and hand-correct serp_rotation_index if the cycle desyncs."
-    },
-    {
       "report_date": "2026-09-08",
       "item_n": 3,
       "type": "guide-draft",
@@ -220,6 +189,14 @@
   ],
   "declined": [
     {
+      "report_date": "2026-09-21",
+      "item_n": 1,
+      "title": "Commute Advisor FAQ: 'the most durable way' instead of 'the most sustainable way'",
+      "declined_on": "2026-09-22",
+      "reason": "Keith: \"We don't have a rule about 'never' using the word 'sustainable,' we just try to lead with practical benefits to active transportation.\" The sentence stays as written.",
+      "do_not_repropose": "Do NOT propose removing or swapping the word 'sustainable' from GSI copy again — not in page text, not in structured data, not in llms.txt. The guardrail is about EMPHASIS (lead with money, time, health, fresh air, community, fun) and about preferring 'active transportation' as our own term for what we do. It is not a banned word, and its ordinary sense of 'something you can keep up' is legitimate. seo/strategy.md overstated this as 'never' and was corrected 2026-09-22. This is the SECOND time the routine raised the word as a finding (the first was the MassCEC listing, declined 2026-09-14); there should not be a third."
+    },
+    {
       "report_date": "2026-09-14",
       "item_n": 4,
       "title": "Ask MassCEC to update their directory description of GSI",
@@ -229,6 +206,24 @@
     }
   ],
   "shipped": [
+    {
+      "report_date": "2026-09-21",
+      "item_n": 2,
+      "ref": "seo/2026-09-events-discoverable",
+      "experiment_id": "exp-2026-09-6",
+      "title": "Put upcoming event pages in the sitemap and llms.txt",
+      "shipped_on": "2026-09-22",
+      "note": "Merged to main and pushed. Typecheck clean. Base for the verdict: /events 299 impressions / 7 clicks / 2.34% CTR across 33 urls, week to 2026-09-18. Verdict 2026-11-02. Both surfaces read loadEventsListing(), which returns approved UPCOMING events only, so entries age out on their own. Verify after the Vercel deploy: sitemap <loc> count rises from 140 by the number of upcoming events, and llms.txt goes 7 -> 8 sections."
+    },
+    {
+      "report_date": "2026-09-21",
+      "item_n": 3,
+      "ref": "seo/2026-09-portfolio-repair",
+      "experiment_id": "item-2026-09-21-3",
+      "title": "Portfolio: repair roams-trails from the full Roam inventory, add events-programs",
+      "shipped_on": "2026-09-22",
+      "note": "Merged to main and pushed. Verified live with scripts/seo/analyze.mjs --section clusters: coverage 73% -> 81%, unmatched 165 -> 116, roams-trails 156, events-programs 23, non-brand trigger 479. Not a traffic bet — measurement only. NOTE the non-sentinel cluster count is now 14, so the SERP rotation cycle shifts; serp_rotation_index is 3 and the next run should expect the cycle to have moved and say so."
+    },
     {
       "report_date": "2026-09-08",
       "item_n": 1,
