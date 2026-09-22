@@ -168,6 +168,26 @@ export function borrowRentHtml(title: string, label: string, selected = false): 
     </div>`
 }
 
+// Phosphor Wrench (regular) — dark so it reads on the teal repair pin
+const WRENCH_SVG = '<svg width="14" height="14" viewBox="0 0 256 256" fill="#191A2E"><path d="M226.76,69a8,8,0,0,0-12.84-2.88l-40.3,37.19-17.23-3.7-3.7-17.23,37.19-40.3A8,8,0,0,0,187,29.24,72,72,0,0,0,88,96,72.34,72.34,0,0,0,94,124.94L33.79,177c-.15.12-.29.26-.43.39a32,32,0,0,0,45.26,45.26c.13-.13.27-.28.39-.42L131.06,162A72,72,0,0,0,232,96,71.56,71.56,0,0,0,226.76,69ZM160,152a56.14,56.14,0,0,1-27.07-7,8,8,0,0,0-9.92,1.77L67.11,211.51a16,16,0,0,1-22.62-22.62L109.18,133a8,8,0,0,0,1.77-9.93,56,56,0,0,1,58.36-82.31l-31.2,33.81a8,8,0,0,0-1.94,7.1L141.83,108a8,8,0,0,0,6.14,6.14l26.35,5.66a8,8,0,0,0,7.1-1.94l33.81-31.2A56.06,56.06,0,0,1,160,152Z"/></svg>'
+
+/** Teal circle + wrench for community repair co-ops ("Fix your bike") —
+ *  the app's MapPinCircle(Colors.teal, Wrench). The place name rides
+ *  underneath like a station's: a co-op is a landmark you ride to, and
+ *  "Somerville Bike Kitchen" is the thing worth reading at a glance. */
+export function repairHtml(title: string, selected = false): string {
+  const ring = selected ? '#BAF14D' : '#fff'
+  const glow = selected ? ',0 0 12px rgba(186,241,77,0.6)' : ''
+  return pinWithLabel(
+    `<div title="${escapeAttr(title)}" style="
+        display:flex;align-items:center;justify-content:center;
+        width:${selected ? 28 : 24}px;height:${selected ? 28 : 24}px;border-radius:50%;
+        background:#5FD4BD;border:${selected ? 3 : 2}px solid ${ring};box-shadow:0 2px 5px rgba(0,0,0,0.35)${glow};
+      ">${WRENCH_SVG}</div>`,
+    labelPill(title, selected),
+  )
+}
+
 const FLAG_SVG = '<svg width="13" height="13" viewBox="0 0 256 256" fill="#191A2E"><path d="M42.76,50A8,8,0,0,0,40,56V224a8,8,0,0,0,16,0V179.77c26.79-21.16,49.87-9.75,76.45,3.41,16.4,8.11,34.06,16.85,53,16.85,13.93,0,28.54-4.75,43.82-18a8,8,0,0,0,2.76-6V56A8,8,0,0,0,218.76,50c-28,24.23-51.72,12.49-79.21-1.12C111.07,34.76,78.78,18.79,42.76,50Z"/></svg>'
 
 /** Destination flag for route maps — white so it can't be confused with the

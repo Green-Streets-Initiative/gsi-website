@@ -9,6 +9,9 @@ import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfindi
 import { directionsUrl, lineColor, lineTextColor } from '@/lib/nearby/transit-ui'
 import { protectionLabel } from '@/lib/nearby/bike-labels'
 import { type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
+import type { RepairPlaceNearby } from '@/lib/nearby/repair'
+import { repairStatus } from '@/lib/nearby/repair-status'
+import { repairStatusLine, type RepairTone } from '@/lib/nearby/repair-format'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
@@ -666,6 +669,72 @@ export function BorrowRentList({ points, onSelect, selectedId, isSectionOpen, on
             </div>
           </button>
         ))}
+      </div>
+    </CollapsibleSection>
+  )
+}
+
+
+/* ── Fix your bike: community repair co-ops (town_resources bike_repair) ── */
+
+/** Status colour, shared with the detail card: open is affirmative (accent),
+ *  soon is a nudge (warn), muted is neither. */
+export function repairToneClass(tone: RepairTone): string {
+  return tone === 'open' ? 'text-(--nb-accent)' : tone === 'soon' ? 'text-(--nb-warn)' : 'text-(--nb-ink-70)'
+}
+
+export function RepairList({ places, onSelect, selectedId, isSectionOpen, onToggleSection }: {
+  places: RepairPlaceNearby[]
+  onSelect?: (id: string) => void
+  selectedId?: string | null
+  isSectionOpen: (key: string) => boolean
+  onToggleSection: (key: string) => void
+}) {
+  const tr = useNearbyT()
+  if (places.length === 0) return null
+  // Rows select (matching the map marker) — the hours link and directions
+  // live in the detail card, same as Borrow & rent.
+  return (
+    <CollapsibleSection
+      title={tr('lists.repair_heading')}
+      count={places.length}
+      teaser={tr('lists.section_nearest_plain', { name: places[0].name })}
+      open={isSectionOpen('repair')}
+      onToggle={() => onToggleSection('repair')}
+    >
+      <div className="space-y-2.5">
+        {places.map(p => {
+          const line = repairStatusLine(
+            repairStatus({
+              hours: p.hours,
+              seasonality: p.seasonality,
+              effectiveStart: p.effectiveStart,
+              effectiveEnd: p.effectiveEnd,
+              verifiedAt: p.verifiedAt,
+            }),
+            tr,
+          )
+          return (
+            <button
+              key={p.id}
+              onClick={() => onSelect?.(p.id)}
+              aria-expanded={selectedId === p.id}
+              className={`block w-full rounded-xl border px-4 py-3.5 text-left transition-colors ${
+                selectedId === p.id
+                  ? 'border-(--nb-accent-line) bg-(--nb-accent-tint)'
+                  : 'border-(--nb-line) bg-(--nb-card) hover:border-(--nb-line-strong)'
+              }`}
+            >
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                <span className="text-[0.9rem] font-semibold text-(--nb-ink)">{p.name}</span>
+                <span className="text-[0.78rem] text-(--nb-ink-70)">
+                  {formatDistance(p.distMiles * 1609.34)}
+                </span>
+              </div>
+              <div className={`mt-1 text-[0.82rem] font-semibold ${repairToneClass(line.tone)}`}>{line.text}</div>
+            </button>
+          )
+        })}
       </div>
     </CollapsibleSection>
   )

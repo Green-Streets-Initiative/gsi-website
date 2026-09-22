@@ -15,7 +15,7 @@ import {
 import { useReachOverlay } from './useReachOverlay'
 import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
-import { StationList, BikeRouteList, DockList, BorrowRentList, ServiceDisruptionsCard, firstBikeShelfKey } from './AroundYouLists'
+import { StationList, BikeRouteList, DockList, BorrowRentList, RepairList, ServiceDisruptionsCard, firstBikeShelfKey } from './AroundYouLists'
 import { nearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
 import { ReachList } from './ReachSection'
 import TripPlanner from './TripPlanner'
@@ -85,7 +85,7 @@ interface Props {
  *  markers replays the entrance animation and resets the card's scroll. */
 function selectionKey(sel: NonNullable<Selection>): string {
   switch (sel.type) {
-    case 'corridor': case 'dock': case 'borrow': case 'reach': return `${sel.type}-${sel.id}`
+    case 'corridor': case 'dock': case 'borrow': case 'repair': case 'reach': return `${sel.type}-${sel.id}`
     case 'station': return `station-${sel.key}`
     case 'lane': return `lane-${sel.info.lngLat?.lng ?? 0}-${sel.info.lngLat?.lat ?? 0}`
   }
@@ -392,6 +392,7 @@ export default function NearbyDesktop({
                         corridorById={corridorById}
                         docks={docks}
                         borrowRent={model.borrowRent}
+                repairPlaces={model.repairPlaces}
                 center={center}
                         onSelectCorridor={(id) => selectShowing({ type: 'corridor', id }, 'panel')}
                       />
@@ -487,6 +488,13 @@ export default function NearbyDesktop({
                   {model.borrowRent.length > 0 && (
                     <GuideLinks context="borrow" guides={guides.data} modeFilter={modeFilter} />
                   )}
+                  <RepairList
+                    places={model.repairPlaces}
+                    onSelect={(id) => selectShowing({ type: 'repair', id }, 'list')}
+                    selectedId={selection?.type === 'repair' ? selection.id : null}
+                    isSectionOpen={isSectionOpen}
+                    onToggleSection={toggleSection}
+                  />
                 </>
               )}
             </div>

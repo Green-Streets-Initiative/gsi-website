@@ -7,8 +7,9 @@ import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { lineColor } from '@/lib/nearby/transit-ui'
 import { isShuttleRouteId, shuttleAgencyLabel, shuttleAgencyFor, type ShuttleAgencyMeta } from '@/lib/nearby/shuttle-agencies'
 import type { NearbyMarker, LaneTapInfo } from './NearbyMap'
-import { userDotHtml, busStopHtml, trainStopHtml, ferryStopHtml, shuttleStopHtml, bluebikeHtml, borrowRentHtml } from './markers'
+import { userDotHtml, busStopHtml, trainStopHtml, ferryStopHtml, shuttleStopHtml, bluebikeHtml, borrowRentHtml, repairHtml } from './markers'
 import { nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
+import { fetchRepairPlacesClient, nearbyRepair, type RepairPlace } from '@/lib/nearby/repair'
 
 /**
  * Shared derivation layer for the corridor explorer: station grouping,
@@ -22,6 +23,8 @@ export type Selection =
   | { type: 'station'; key: string }
   | { type: 'dock'; id: string }
   | { type: 'borrow'; id: string }
+  /** A community repair co-op — a place with opening hours, not an event. */
+  | { type: 'repair'; id: string }
   | { type: 'lane'; info: LaneTapInfo }
   | { type: 'reach'; id: string; mode: 'transit' | 'bike' }
   | null
@@ -348,7 +351,7 @@ export function useNearbyModel({
     let hidden = false
     if (selection.type === 'station') {
       hidden = !stationByKey.has(selection.key)
-    } else if (selection.type === 'dock' || selection.type === 'borrow') {
+    } else if (selection.type === 'dock' || selection.type === 'borrow' || selection.type === 'repair') {
       hidden = !showBike
     } else if (selection.type === 'lane') {
       hidden = !showBike || (selection.info.quality === 'painted' && !painted)
@@ -369,6 +372,8 @@ export function useNearbyModel({
       select({ type: 'dock', id: id.replace(/^dock-/, '') }, 'map')
     } else if (id.startsWith('borrow-')) {
       select({ type: 'borrow', id: id.replace(/^borrow-/, '') }, 'map')
+    } else if (id.startsWith('repair-')) {
+      select({ type: 'repair', id: id.replace(/^repair-/, '') }, 'map')
     }
   }, [select])
 
@@ -376,14 +381,27 @@ export function useNearbyModel({
   // 2 mi radius, nearest first (same data as the Shift app's layer)
   const borrowRent = useMemo(() => nearbyBorrowRent(center.lat, center.lng), [center])
 
+  // Fix your bike (community repair co-ops) — from the database, not a
+  // bundled file: their hours change with the term and the season. One small
+  // read of the whole approved set, then filtered to the visitor; the wider
+  // 8 mi radius reflects how scarce they are. Fails soft to no section.
+  const [repairAll, setRepairAll] = useState<RepairPlace[]>([])
+  useEffect(() => {
+    const ac = new AbortController()
+    fetchRepairPlacesClient(ac.signal).then(places => { if (!ac.signal.aborted) setRepairAll(places) })
+    return () => ac.abort()
+  }, [])
+  const repairPlaces = useMemo(() => nearbyRepair(repairAll, center.lat, center.lng), [repairAll, center])
+
   // Something point-like is picked, so everything else steps back. Several
   // bus stops within a block of each other are identical yellow dots; a ring
   // and a label on the chosen one only read once the neighbours recede.
   const dockActive = (id: string) => selection?.type === 'dock' && selection.id === id
   const borrowActive = (id: string) => selection?.type === 'borrow' && selection.id === id
+  const repairActive = (id: string) => selection?.type === 'repair' && selection.id === id
   const anyPointActive =
     !!focusedStationKey || selection?.type === 'station' ||
-    selection?.type === 'dock' || selection?.type === 'borrow'
+    selection?.type === 'dock' || selection?.type === 'borrow' || selection?.type === 'repair'
   // A destination route is on the map, so the map is about the route (Keith,
   // 2026-09-12): transit stops go. Bike-side pins (docks, borrow/rent) still
   // matter on a bike ride — it often starts at a dock — so they gray out and
@@ -407,6 +425,16 @@ export function useNearbyModel({
       analyticsType: 'borrow',
       dimmed: (anyPointActive && !borrowActive(p.id)) || bikePinsDuringRoute,
       zIndex: borrowActive(p.id) ? 6 : 1,
+    })) : []),
+    ...(showBikePins ? repairPlaces.map(p => ({
+      id: `repair-${p.id}`,
+      lat: p.lat,
+      lng: p.lng,
+      html: repairHtml(p.name, repairActive(p.id)),
+      tappable: !bikePinsDuringRoute,
+      analyticsType: 'repair',
+      dimmed: (anyPointActive && !repairActive(p.id)) || bikePinsDuringRoute,
+      zIndex: repairActive(p.id) ? 6 : 1,
     })) : []),
     ...(routeFocused ? [] : families.rail.map(g => ({
       id: `rail-${g.key}`,
@@ -473,7 +501,7 @@ export function useNearbyModel({
       zIndex: dockActive(d.station_id) ? 6 : 1,
     })) : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [center, families, docks, borrowRent, showBike, showBikePins, bikePinsDuringRoute, routeFocused, selection, stationActive, anyPointActive, focusedStationKey])
+  ], [center, families, docks, borrowRent, repairPlaces, showBike, showBikePins, bikePinsDuringRoute, routeFocused, selection, stationActive, anyPointActive, focusedStationKey])
 
   // Where the camera should ease when a point-like thing is tapped, so the
   // tapped marker stays visible above the detail card / sheet. Corridor-driven
@@ -500,8 +528,12 @@ export function useNearbyModel({
       const p = borrowRent.find(x => x.id === selection.id)
       return p ? { lat: p.lat, lng: p.lng } : null
     }
+    if (selection?.type === 'repair') {
+      const p = repairPlaces.find(x => x.id === selection.id)
+      return p ? { lat: p.lat, lng: p.lng } : null
+    }
     return null
-  }, [selection, highlightedCorridorId, focusedStationKey, stationByKey, docks, borrowRent])
+  }, [selection, highlightedCorridorId, focusedStationKey, stationByKey, docks, borrowRent, repairPlaces])
 
   // Boarding locations belong in the first frame even when their stations
   // didn't make the marker cut — and so does a "nearest option" pin beyond
@@ -518,7 +550,7 @@ export function useNearbyModel({
   return {
     selection, select, handleMarkerTap,
     focusedStationKey, focusStation: setFocusedStationKey,
-    corridorById, stations, stationByKey, crossModeNearest, borrowRent,
+    corridorById, stations, stationByKey, crossModeNearest, borrowRent, repairPlaces,
     corridorLines, highlightedCorridorId, selectionPoint,
     markers, accessPoints,
     showRail, showBus, showBike,

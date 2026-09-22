@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react'
 import posthog from 'posthog-js'
 import { type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
+import type { RepairPlaceNearby } from '@/lib/nearby/repair'
+import { repairStatus } from '@/lib/nearby/repair-status'
+import { lastConfirmedLine, repairStatusLine, weekRows } from '@/lib/nearby/repair-format'
+import { repairToneClass } from './AroundYouLists'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl, lineColor, lineTextColor, type RouteConnection } from '@/lib/nearby/transit-ui'
@@ -168,12 +172,13 @@ export function PanelPhoto({ spec, alt }: { spec: PhotoSpec; alt: string }) {
 
 /* ── Detail content per selection type ── */
 
-export function DetailContent({ selection, stationByKey, corridorById, docks, borrowRent, center, onSelectCorridor }: {
+export function DetailContent({ selection, stationByKey, corridorById, docks, borrowRent, repairPlaces, center, onSelectCorridor }: {
   selection: NonNullable<Selection>
   stationByKey: Map<string, StationGroup>
   corridorById: Map<string, TransitCorridor | BikeCorridor>
   docks: BluebikeStationLive[]
   borrowRent: (BorrowRentPoint & { distMiles: number })[]
+  repairPlaces: RepairPlaceNearby[]
   /** Where the visitor is — the boarding resolver measures from here. */
   center: { lat: number; lng: number }
   onSelectCorridor: (id: string) => void
@@ -503,6 +508,86 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
               ? tr('detail.get_vendor_app', { name: 'CargoB' })
               : tr('detail.open_site')}
           </a>
+        </div>
+      </div>
+    )
+  }
+
+  // Community repair co-op — a place with hours, mirrors the app's DetailPane
+  if (selection.type === 'repair') {
+    const p = repairPlaces.find(x => x.id === selection.id)
+    if (!p) return null
+    const status = repairStatus({
+      hours: p.hours,
+      seasonality: p.seasonality,
+      effectiveStart: p.effectiveStart,
+      effectiveEnd: p.effectiveEnd,
+      verifiedAt: p.verifiedAt,
+    })
+    const line = repairStatusLine(status, tr, { note: p.note })
+    const confirmed = lastConfirmedLine(status, p.verifiedAt, tr)
+    const week = weekRows(p.hours, tr)
+    const hoursHref = p.hoursUrl || p.url
+    // A place that tells you to check before setting off gets that link as
+    // the primary action; directions come second.
+    const checkFirst = Boolean(p.hoursUrl) && line.tone !== 'open'
+    const directions = (
+      <a
+        href={directionsUrl(p.lat, p.lng)}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'repair' })}
+        className="text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
+      >
+        {tr('detail.walk_there')}
+      </a>
+    )
+    const hoursLink = hoursHref ? (
+      <a
+        href={hoursHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => posthog.capture('snapshot_repair_clicked', { target: p.hoursUrl ? 'hours' : 'site' })}
+        className="text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
+      >
+        {p.hoursUrl ? tr('repair.check_hours') : tr('repair.open_site')}
+      </a>
+    ) : null
+    return (
+      <div>
+        <div className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-(--nb-accent)">
+          {tr('detail.repair_eyebrow')}
+        </div>
+        <div className="text-[0.95rem] font-bold text-(--nb-ink)">{p.name}</div>
+        <div className={`mt-0.5 text-[0.85rem] font-semibold ${repairToneClass(line.tone)}`}>{line.text}</div>
+        <div className="text-[0.78rem] text-(--nb-ink-70)">
+          {tr('detail.walk_distance', { minutes: walkTimeMinutes(p.distMiles * 1609.34), distance: formatDistance(p.distMiles * 1609.34) })}
+        </div>
+        {line.sub && (
+          <p className="mt-1.5 text-[0.8rem] leading-relaxed text-(--nb-ink-80)">{line.sub}</p>
+        )}
+        {confirmed && (
+          <p className="mt-1 text-[0.75rem] text-(--nb-ink-70)">{confirmed}</p>
+        )}
+        {week.length > 0 && (
+          <div className="mt-2 rounded-lg border border-(--nb-line) bg-(--nb-panel-faint) px-3 py-2">
+            <div className="text-[0.65rem] font-bold uppercase tracking-wider text-(--nb-ink-70)">{tr('repair.this_week')}</div>
+            {week.map(row => (
+              <div key={`${row.day}-${row.range}`} className="mt-1 flex justify-between gap-3 text-[0.8rem]">
+                <span className="font-semibold text-(--nb-ink)">{row.day}</span>
+                <span className="text-(--nb-ink-80)">{row.range}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {p.address && (
+          <p className="mt-2 text-[0.78rem] text-(--nb-ink-70)">{p.address}</p>
+        )}
+        {p.description && (
+          <p className="mt-1.5 text-[0.8rem] leading-relaxed text-(--nb-ink-80)">{p.description}</p>
+        )}
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+          {checkFirst ? (<>{hoursLink}{directions}</>) : (<>{directions}{hoursLink}</>)}
         </div>
       </div>
     )
