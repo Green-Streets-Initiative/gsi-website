@@ -1,26 +1,28 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { NEARBY_LOCALES, NEARBY_LOCALE_LABELS, type NearbyLocale } from '@/lib/nearby/i18n'
-import { useNearbyLocale } from './NearbyI18n'
+import { useNearbyLocale, useNearbySetLocale } from './NearbyI18n'
 
 /**
- * EN / ES / PT / 中文 switcher. Sets `?lang=` on the current URL (dropping it
- * for English so shared coordinate links stay clean), preserving every other
- * param (lat/lng/label/partner). Mirrors the wayfinding LanguagePill.
+ * EN / ES / PT / 中文 switcher. Flips the locale in React state immediately
+ * (see NearbyI18n) and mirrors it into `?lang=` on the current URL — dropped
+ * for English so shared coordinate links stay clean — preserving every other
+ * param (lat/lng/label/partner). The URL write goes through
+ * history.replaceState like the rest of this page's URL upkeep: no router
+ * navigation, no server fetch, nothing that can leave a tap unanswered.
  */
 export default function NearbyLanguagePill({ className = '' }: { className?: string }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
   const locale = useNearbyLocale()
+  const setLocale = useNearbySetLocale()
 
   const switchTo = (next: NearbyLocale) => {
-    const params = new URLSearchParams(searchParams.toString())
-    if (next === 'en') params.delete('lang')
-    else params.set('lang', next)
-    const qs = params.toString()
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    setLocale(next)
+    try {
+      const url = new URL(window.location.href)
+      if (next === 'en') url.searchParams.delete('lang')
+      else url.searchParams.set('lang', next)
+      window.history.replaceState(window.history.state, '', url.toString())
+    } catch { /* the page already switched; the URL is a courtesy */ }
   }
 
   return (
@@ -30,6 +32,7 @@ export default function NearbyLanguagePill({ className = '' }: { className?: str
         return (
           <button
             key={loc}
+            type="button"
             onClick={() => switchTo(loc)}
             aria-pressed={active}
             className={`rounded-full px-2 py-1 transition-colors ${

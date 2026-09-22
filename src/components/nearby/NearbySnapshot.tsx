@@ -27,7 +27,7 @@ import NearbyDesktop from './NearbyDesktop'
 import PartnerCobrand from './PartnerCobrand'
 import NewRoutesOffer from './NewRoutesOffer'
 import { useIsDesktop } from './useIsDesktop'
-import { t, resolveNearbyLocale } from '@/lib/nearby/i18n'
+import { t, resolveNearbyLocale, type NearbyLocale } from '@/lib/nearby/i18n'
 import { NearbyI18nProvider } from './NearbyI18n'
 import { NearbyPromosProvider } from './NearbyPromos'
 import NearbyLanguagePill from './NearbyLanguagePill'
@@ -71,7 +71,12 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
   useEffect(() => {
     setBrowserLang(typeof navigator !== 'undefined' ? navigator.language : null)
   }, [])
-  const locale = resolveNearbyLocale(langParam, browserLang)
+  // A tap on the language pill lands here, not in the URL: the pill flips
+  // this state and mirrors it into ?lang= as a courtesy. Deriving the locale
+  // from the URL alone meant the switch waited on a router navigation, and
+  // a stalled one left the pill looking dead (Keith, 2026-09-22).
+  const [chosenLocale, setChosenLocale] = useState<NearbyLocale | null>(null)
+  const locale = chosenLocale ?? resolveNearbyLocale(langParam, browserLang)
   const tr = (key: string, replacements?: Record<string, string | number>) => t(locale, key, replacements)
 
   const [location, setLocation] = useState<Located | null>(null)
@@ -618,7 +623,7 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
 
   if (!location) {
     return (
-      <NearbyI18nProvider locale={locale}>
+      <NearbyI18nProvider locale={locale} setLocale={setChosenLocale}>
       <div className="mx-auto max-w-[640px] px-6 pb-24 pt-14">
         <div className="mb-4 flex justify-end">
           <NearbyLanguagePill />
@@ -779,7 +784,7 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
 
   return (
     <NearbyToneProvider tone={tone}>
-      <NearbyI18nProvider locale={locale}>
+      <NearbyI18nProvider locale={locale} setLocale={setChosenLocale}>
         <NearbyPromosProvider promos={promos}>
           {isDesktop ? <NearbyDesktop {...surfaceProps} /> : <NearbyShell {...surfaceProps} />}
         </NearbyPromosProvider>

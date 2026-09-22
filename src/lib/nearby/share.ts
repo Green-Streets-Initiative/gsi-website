@@ -28,15 +28,18 @@ export function parseSnapshotParams(searchParams: URLSearchParams): SnapshotLoca
 
 /**
  * Params that must survive the page's own URL rewrites: the partner
- * co-brand slug plus any utm_* a campaign link arrived with. Everything
- * else stays out of share URLs on purpose — the builder constructing its
- * params from scratch is what keeps stray query junk from spreading.
+ * co-brand slug, any utm_* a campaign link arrived with, and the language
+ * someone chose (a location change used to drop `lang` and silently put the
+ * page back in English; a copied or printed link should open in the
+ * language it was made in). Everything else stays out of share URLs on
+ * purpose — the builder constructing its params from scratch is what keeps
+ * stray query junk from spreading.
  */
 export function stickyParams(search: string): URLSearchParams {
   const current = new URLSearchParams(search)
   const keep = new URLSearchParams()
   for (const [k, v] of current) {
-    if (k === 'partner' || k.startsWith('utm_')) keep.append(k, v)
+    if (k === 'partner' || k === 'lang' || k.startsWith('utm_')) keep.append(k, v)
   }
   return keep
 }
