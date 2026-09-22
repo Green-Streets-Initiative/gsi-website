@@ -240,26 +240,67 @@ fabricate an "AI visibility" score.
 ## Keeping pending branches shippable (step 2 of every run)
 
 A proposed branch is cut from `main` and then waits for approval while ordinary
-work keeps landing on `main`. The longer it waits, the further it drifts — and
-a drifted branch does not merely conflict, it silently *reverts* whatever
-landed after it was cut. On 2026-08-31 both pending branches had drifted to
-~125-file diffs that would have undone a week of walk-audit and events-calendar
-work. Nothing about the branch looked wrong; only the diff stat gave it away.
+work keeps landing on `main`. The longer it waits, the further it drifts.
 
-So, at the start of **every** run, before reading or quoting any branch:
+### What drift does and does not do (corrected 2026-09-22)
+
+**It does not silently revert later work.** This file previously claimed that a
+drifted branch "does not merely conflict, it silently *reverts* whatever landed
+after it was cut," citing ~125-file diffs on 2026-08-31 and noting that "only
+the diff stat gave it away." That was a misreading of the diff stat, and it was
+repeated on 2026-09-14 and 2026-09-21 before being caught.
+
+`git diff main..branch` compares two **end states**. It counts everything `main`
+gained after the branch was cut as though the branch would undo it, which is why
+a stale branch shows a huge deletion count. A merge does not work that way: it
+is a three-way merge against the point where the branch split off, so it applies
+**only the branch's own changes**. Verified on 2026-09-22 against
+`seo/2026-09-answer-schema`, whose `git diff` read 241 files / −15,156 lines
+while the actual merge result was 2 files / +19 lines.
+
+**What drift really costs**, and why step 2 still exists:
+
+- **Conflicts**, which grow with distance. Two of the four September branches
+  conflicted against the cream refresh because they still carried the old
+  `<Footer />` form.
+- **A dishonest diff.** The number quoted to Keith should be the number he is
+  approving. An unrebased branch cannot give one.
+- **A bad conflict resolution.** This is the real hazard: resolving a conflict
+  by taking the branch's side reintroduces pre-drift code. Narrow, and only
+  reachable through a conflict someone then resolves carelessly.
+
+**Preview the merge, don't read the two-dot diff.** To see what a branch would
+actually do:
+
+```
+git merge-tree --write-tree --name-only main <branch>
+```
+
+Non-zero exit means it would conflict, and the output names the files. On a
+clean exit, `git diff --stat main <the printed tree>` is the true merge preview.
+
+### The step
+
+At the start of **every** run, before reading or quoting any branch:
 
 1. List pending branches: `git branch --list 'seo/*'`.
-2. For each: `git checkout <branch>` then `git rebase main`.
-3. Confirm the diff is what the item claims — `git diff main..HEAD --stat`
-   should touch only the files that item is about. **If it touches anything
-   else, the rebase is wrong or the branch is stale beyond repair — do not
-   quote it as shippable.**
-4. `git push --force-with-lease origin <branch>` (never a bare `--force`).
-5. `git checkout main` before continuing.
+2. **Check whether the branch is still the only copy of its change.** If its
+   content already landed on `main` by another commit — a re-implementation, or
+   Keith shipping it by hand — the branch is dead and should be deleted, not
+   rebased. `git branch --merged main` catches the easy cases; a
+   re-implementation leaves the branch unmerged and looking live, so grep the
+   actual change on `main`. All four September branches failed this test.
+3. For each surviving branch: `git checkout <branch>` then `git rebase main`.
+   If another session holds uncommitted work in the shared tree, do this in a
+   throwaway `git worktree` — never stash or check out over their edits.
+4. Confirm the diff is what the item claims. Use the merge preview above, not
+   `git diff main..HEAD --stat`.
+5. `git push --force-with-lease origin <branch>` (never a bare `--force`).
+6. `git checkout main` before continuing.
 
-Then quote the *rebased* diff stat in the report and email, so the size Keith
-sees is the size he would actually be approving. If a rebase conflicts, say so
-in the email as a blocker on that item rather than quietly leaving it stale.
+Then quote the *rebased* diff in the report and email, so the size Keith sees is
+the size he would actually be approving. If a rebase conflicts, say so in the
+email as a blocker on that item rather than quietly leaving it stale.
 
 The real fix is a fast decision — an approve or a decline both end the drift —
 so keep the pending list short and age items out on schedule.

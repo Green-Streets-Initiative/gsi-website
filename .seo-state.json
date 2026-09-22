@@ -85,6 +85,12 @@
   ],
   "resolved_notes": [
     {
+      "date": "2026-09-22",
+      "what": "The routine had been reading `git diff main..branch` as a merge preview for three runs. It is not one: it compares two END STATES, so everything main gains after a branch is cut shows as a deletion the branch would supposedly make. That is where '241 files, -15,156 lines, would revert a week of work' came from on 2026-09-21. The real merge result for seo/2026-09-answer-schema was 2 files / +19 lines. seo/methodology.md had encoded the same misreading as doctrine since 2026-08-31 ('a drifted branch does not merely conflict, it silently reverts whatever landed after it was cut' — and, tellingly, 'only the diff stat gave it away').",
+      "fix": "Corrected the 'Keeping pending branches shippable' section of seo/methodology.md: what drift really costs (conflicts that grow with distance, a dishonest diff to approve, and a careless conflict resolution reintroducing pre-drift code), plus a new step 2 — check whether the branch is still the only copy of its change before rebasing it. Corrected the 2026-09-21 report in place with a marked correction block.",
+      "do_not": "Do not quote `git diff main..branch --stat` as what a merge would do. Use `git merge-tree --write-tree --name-only main <branch>` — non-zero exit means conflict and names the files; on clean exit, `git diff --stat main <printed tree>` is the true preview. And do not rebase a pending branch before checking whether its content already landed on main by another commit: `git branch --merged main` misses a re-implementation, which leaves the branch unmerged and looking live."
+    },
+    {
       "date": "2026-09-21",
       "what": "The routine had been reading 40 rows of what is really a 128-row page table. pull-gsc.mjs asked Search Console for 500 page rows and persisted the top 40; at 2026-09-18 volumes those covered 85% of impressions and cut off at 22 impressions per page. Two reports' worth of conclusions were affected: /events (33 urls, 299 impressions, 7 clicks, 2.34% CTR — the best-converting class on the site) was filed as a rounding error for a month, and the 2026-09-14 watch item 'only 12 of 25 Roams are indexed' was a truncation artifact — 24 earn impressions.",
       "fix": "Commit 84b9f3f raises the persisted slice to 150 (weekly) and 250 (monthly), and groups analyze.mjs's page-class rollup two segments deep under /shift to match health-check.mjs. This week's file was re-pulled at the new limit.",
@@ -318,6 +324,39 @@
       "shipped_on": "2026-08-31",
       "live_url": "https://www.gogreenstreets.org/guides/how-far-is-a-ten-minute-drive-on-foot",
       "note": "Live and verified. As of 2026-09-21 it has ZERO impressions at three weeks — absent from a 128-row page table whose floor is 1 impression, so this is now a real reading rather than a truncation. Call it 2026-10-12."
+    }
+  ],
+  "deleted_branches": [
+    {
+      "deleted_on": "2026-09-22",
+      "why": "All four were superseded: every change they carried was verified live on main before deletion (roams-trails cluster in keyword-portfolio.json, Campus section in llms.txt, FAQPage on /commute-advisor, distance-led Roam titles). Keith approved deletion 2026-09-22.",
+      "restore": "git branch <name> <sha> && git push origin <name>",
+      "branches": [
+        {
+          "name": "seo/2026-09-answer-schema",
+          "remote_sha": "a6efe62e6432f912d842ea97b666a2e6ed57feb1",
+          "local_sha": "a6efe62e6432f912d842ea97b666a2e6ed57feb1",
+          "merge_result_vs_main_at_deletion": "CONFLICT in src/app/commute-advisor/page.tsx and src/app/nearby/page.tsx (pre-cream <Footer /> form)"
+        },
+        {
+          "name": "seo/2026-09-llms-campus",
+          "remote_sha": "1fb3ab34aa21bc5ac25ed64482876e609cbada64",
+          "local_sha": "1fb3ab34aa21bc5ac25ed64482876e609cbada64",
+          "merge_result_vs_main_at_deletion": "no-op (ancestor of main)"
+        },
+        {
+          "name": "seo/2026-09-roam-titles",
+          "remote_sha": "a8a26a8ca9e803315b8c4c01f83d4afba1816beb",
+          "local_sha": "2ecff597e3e2acb3da141d742319bd686b32fe7d",
+          "merge_result_vs_main_at_deletion": "CONFLICT in src/app/shift/roams/[id]/page.tsx"
+        },
+        {
+          "name": "seo/2026-09-roams-cluster",
+          "remote_sha": "26d40f1cc2eb489be1dbe52b69798a45be989499",
+          "local_sha": "c8eb9ed3c735ad3b042a4a843282ca59775de519",
+          "merge_result_vs_main_at_deletion": "no-op"
+        }
+      ]
     }
   ]
 }
