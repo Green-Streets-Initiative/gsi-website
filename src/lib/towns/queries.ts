@@ -146,6 +146,15 @@ export interface NamedCorridor {
   name: string
   score: number
   segments: number
+  /**
+   * "New to Shift" flag. The full rule, so nobody has to re-derive it:
+   * a person is "newer" when their Shift account is under 90 days old
+   * (Shift migration 00559); a grid cell is flagged when at least 2 of its
+   * people are newer AND they are at least 40% of everyone on it; a corridor
+   * is flagged when at least 30% of its real (3+ cell) stretches are flagged
+   * (compute-town-heatmaps edge function). The website then shows the chip
+   * only while fewer than 60% of a tab's listed corridors carry it.
+   */
   newer: boolean
   /** Transit entries only: "train" | "commuter rail" | "bus" */
   mode?: string

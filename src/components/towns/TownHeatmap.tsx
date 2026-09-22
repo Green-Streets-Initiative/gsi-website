@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { NamedCorridor, TownHeatmapLayer } from '@/lib/towns/queries'
+import { splitLayer } from './heatmap-geometry'
 
 let maplibrePromise: Promise<typeof import('maplibre-gl')> | null = null
 function loadMaplibre() {
@@ -27,9 +28,10 @@ const BAND_COLORS: [number, string][] = [
 
 /**
  * Named corridor rankings + supporting map. The list leads — tapping a name
- * highlights that corridor's segments on the map. "Popular with newer
- * riders" chips render only when the flag discriminates (if nearly every
- * corridor carries it — true while the app is young — showing it is noise).
+ * highlights that corridor's segments on the map. "New to Shift" chips (see
+ * NamedCorridor.newer in lib/towns/queries.ts for the rule) render only when
+ * the flag discriminates: if nearly every corridor carries it — true while
+ * the app is young — showing it is noise, so the chips hide on that tab.
  */
 /**
  * Default view frames the TOWN (centroid ± ~1.8mi), not the full feature
@@ -63,103 +65,6 @@ function townBounds(
 }
 
 const FIT_OPTS = { padding: 8, maxZoom: 13.75 }
-
-/**
- * The nightly job publishes two kinds of feature in one collection: named
- * corridors redrawn along real street or rail geometry (smooth, many
- * vertices), and the remainder as chains of ~35m grid cells. Drawn as one
- * layer at one weight they read as one grainy mesh, and the single-cell
- * leftovers show as ticks across the streets. Split them: the street-true
- * corridors carry the banding on top; the grid remainder sits underneath,
- * thin and faint, so nothing published disappears; single-cell stubs are
- * dropped, since a 35m dash from GPS jitter says nothing a reader can use.
- *
- * The street-true runs also arrive fragmented: Cambridge's Massachusetts
- * Avenue came as 106 pieces with a median length of 46m, which reads as
- * dashes. Runs of the same corridor and band whose ends sit within
- * BRIDGE_MAX_M are joined, and what is left under MIN_RUN_M is dropped.
- * A bridge is a straight segment between two already-published stretches
- * of the same street, so it reveals nothing about anyone; it only stops
- * the line breaking where a single cell fell under the three-person floor.
- */
-const STUB_MAX_M = 60
-const BRIDGE_MAX_M = 100
-const MIN_RUN_M = 40
-
-type Pt = [number, number]
-function metersBetween(a: Pt, b: Pt): number {
-  return Math.hypot((b[1] - a[1]) * 111320, (b[0] - a[0]) * metersPerDegLng(a[1]))
-}
-function metersPerDegLng(lat: number): number {
-  return 111320 * Math.cos((lat * Math.PI) / 180)
-}
-function runLength(c: Pt[]): number {
-  let m = 0
-  for (let i = 1; i < c.length; i++) m += metersBetween(c[i - 1], c[i])
-  return m
-}
-
-/** Greedy endpoint chaining within one (corridor, band) group. */
-function joinRuns(runs: Pt[][]): Pt[][] {
-  const list = runs.map((r) => [...r])
-  let changed = true
-  while (changed) {
-    changed = false
-    outer: for (let i = 0; i < list.length; i++) {
-      const a = list[i]
-      for (let j = 0; j < list.length; j++) {
-        if (i === j) continue
-        const b = list[j]
-        const aEnd = a[a.length - 1]
-        if (metersBetween(aEnd, b[0]) <= BRIDGE_MAX_M) {
-          list[i] = [...a, ...b]
-        } else if (metersBetween(aEnd, b[b.length - 1]) <= BRIDGE_MAX_M) {
-          list[i] = [...a, ...[...b].reverse()]
-        } else if (metersBetween(a[0], b[b.length - 1]) <= BRIDGE_MAX_M) {
-          list[i] = [...b, ...a]
-        } else if (metersBetween(a[0], b[0]) <= BRIDGE_MAX_M) {
-          list[i] = [...[...b].reverse(), ...a]
-        } else {
-          continue
-        }
-        list.splice(j, 1)
-        changed = true
-        break outer
-      }
-    }
-  }
-  return list
-}
-
-function splitLayer(fc: GeoJSON.FeatureCollection): { streets: GeoJSON.FeatureCollection; grid: GeoJSON.FeatureCollection } {
-  const grid: GeoJSON.Feature[] = []
-  const groups = new Map<string, { props: GeoJSON.GeoJsonProperties; runs: Pt[][] }>()
-  for (const f of fc.features) {
-    if (f.geometry.type !== 'LineString') continue
-    const c = f.geometry.coordinates as Pt[]
-    const props = (f.properties ?? {}) as { name?: string; corridor?: string; band?: number }
-    if (props.name && props.corridor && c.length > 2) {
-      const key = `${props.corridor}|${props.band}`
-      const g = groups.get(key) ?? { props: f.properties, runs: [] }
-      g.runs.push(c)
-      groups.set(key, g)
-      continue
-    }
-    if (c.length === 2 && metersBetween(c[0], c[1]) < STUB_MAX_M) continue
-    grid.push(f)
-  }
-  const streets: GeoJSON.Feature[] = []
-  for (const g of groups.values()) {
-    for (const run of joinRuns(g.runs)) {
-      if (runLength(run) < MIN_RUN_M) continue
-      streets.push({ type: 'Feature', properties: g.props, geometry: { type: 'LineString', coordinates: run } })
-    }
-  }
-  return {
-    streets: { type: 'FeatureCollection', features: streets },
-    grid: { type: 'FeatureCollection', features: grid },
-  }
-}
 
 export default function TownHeatmap({
   layers,
@@ -211,8 +116,9 @@ export default function TownHeatmap({
         for (const layer of layers) {
           const first = layers[0]?.mode_group ?? 'all'
           const { streets, grid } = splitLayer(layer.geojson)
-          // Two sources per layer: the grid remainder underneath, faint and
-          // thin, and the street-true corridors on top carrying the banding.
+          // Two sources per layer: the unnamed remainder underneath, faint and
+          // thin, and the corridor chains on top carrying the banding (see
+          // heatmap-geometry.ts for how the published runs become chains).
           map.addSource(`hm-${layer.mode_group}-grid`, { type: 'geojson', data: grid })
           map.addSource(`hm-${layer.mode_group}`, { type: 'geojson', data: streets })
           map.addLayer({
@@ -245,7 +151,9 @@ export default function TownHeatmap({
                 '#9DB1E4',
               ] as unknown as string,
               'line-width': ['match', ['get', 'band'], 1, 2, 2, 3, 3, 4.2, 4, 5.4, 2] as unknown as number,
-              'line-opacity': ['match', ['get', 'band'], 1, 0.75, 2, 0.88, 3, 0.95, 4, 1, 0.75] as unknown as number,
+              // Opaque: the band colors already carry the hierarchy, and any
+              // translucency drew a darker dot wherever two round caps met.
+              'line-opacity': 1,
             },
           })
           // Highlight overlay for the selected named corridor.
@@ -285,13 +193,11 @@ export default function TownHeatmap({
     if (!map || !ready) return
     for (const layer of layers) {
       const vis = layer.mode_group === active ? 'visible' : 'none'
-      if (map.getLayer(`hm-${layer.mode_group}`)) {
-        map.setLayoutProperty(`hm-${layer.mode_group}-grid`, 'visibility', vis)
-        map.setLayoutProperty(`hm-${layer.mode_group}`, 'visibility', vis)
-        map.setLayoutProperty(`hm-${layer.mode_group}-hl`, 'visibility', vis)
+      for (const id of [`hm-${layer.mode_group}-grid`, `hm-${layer.mode_group}`, `hm-${layer.mode_group}-hl`]) {
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis)
       }
     }
-    map.fitBounds(townBounds(centroid, layers[0]), { ...FIT_OPTS, duration: 600 })
+    map.fitBounds(townBounds(centroid, activeLayer ?? layers[0]), { ...FIT_OPTS, duration: 600 })
     setSelectedId(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, ready])
@@ -304,14 +210,7 @@ export default function TownHeatmap({
     const hl = `${base}-hl`
     if (!map.getLayer(hl)) return
     map.setFilter(hl, ['==', ['get', 'corridor'], selectedId ?? '___none___'])
-    map.setPaintProperty(
-      base,
-      'line-opacity',
-      selectedId
-        ? 0.18
-        : (['match', ['get', 'band'], 1, 0.8, 2, 0.9, 3, 0.95, 4, 1, 0.8] as unknown as number),
-    )
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    map.setPaintProperty(base, 'line-opacity', selectedId ? 0.18 : 1)
   }, [selectedId, active, ready])
 
   if (layers.length === 0) return null
@@ -364,7 +263,7 @@ export default function TownHeatmap({
                       )}
                       {showNewerChips && c.newer && (
                         <span className="shrink-0 rounded-full bg-forest/10 px-2 py-0.5 text-[10px] font-semibold text-green-deep">
-                          newer riders
+                          new to Shift
                         </span>
                       )}
                     </span>
@@ -378,6 +277,12 @@ export default function TownHeatmap({
                 </li>
               )
             })}
+            {showNewerChips && (
+              <li className="px-2 pb-2 pt-2.5 text-[12px] leading-snug text-ink-soft">
+                <span className="font-semibold text-green-deep">New to Shift:</span> stretches of this route are
+                mostly traveled by people who joined Shift in the last 90 days.
+              </li>
+            )}
           </ol>
         )}
 
