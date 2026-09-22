@@ -2,6 +2,7 @@
 
 import posthog from 'posthog-js'
 import { gaEvent } from '@/lib/ga'
+import { trackAdConversion } from '@/lib/ad-pixels'
 import { HOME_CTA_EVENT, type Audience, type Placement } from '@/components/home/tracking'
 
 type Store = 'ios' | 'android'
@@ -27,6 +28,7 @@ export default function StoreButtons({
     const base = { store, placement }
     gaEvent('shift_store_click', base)
     posthog.capture('shift_store_click', base)
+    trackAdConversion('ShiftStoreClick', base)
     if (placement) {
       const props = { placement, destination: store === 'ios' ? 'app_store' : 'google_play', audience }
       posthog.capture(HOME_CTA_EVENT, props)

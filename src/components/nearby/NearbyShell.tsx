@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
+import { trackAdConversion } from '@/lib/ad-pixels'
 import type { BluebikeStationLive, MBTAStopLive, SheetSnap } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import ModeIcon from '@/components/commute/ModeIcon'
@@ -436,7 +437,10 @@ export default function NearbyShell({
             <NewRoutesOffer
               href={appHref}
               variant="compact"
-              onCta={() => posthog.capture('snapshot_app_cta_clicked', { campaign: 'newroutes', ...(partnerSlug ? { partner: partnerSlug } : {}) })}
+              onCta={() => {
+                posthog.capture('snapshot_app_cta_clicked', { campaign: 'newroutes', ...(partnerSlug ? { partner: partnerSlug } : {}) })
+                trackAdConversion('ShiftStoreClick', { placement: 'nearby_newroutes', partner: partnerSlug ?? undefined })
+              }}
             />
           </div>
         )}
@@ -548,7 +552,10 @@ export default function NearbyShell({
             <p className="mt-0.5 text-[0.8rem] leading-snug text-(--nb-ink-80)">{partnerLine}</p>
             <a
               href={appHref}
-              onClick={() => posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})}
+              onClick={() => {
+                posthog.capture('snapshot_app_cta_clicked', partnerSlug ? { partner: partnerSlug } : {})
+                trackAdConversion('ShiftStoreClick', { placement: 'nearby', partner: partnerSlug ?? undefined })
+              }}
               className="mt-2 inline-block rounded-lg border border-(--nb-accent-line) px-3.5 py-1.5 text-[0.78rem] font-bold text-(--nb-accent) transition-colors hover:bg-(--nb-accent-fill) hover:text-(--nb-on-accent-fill)"
             >
               {tr('shell.download_app')}

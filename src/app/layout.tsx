@@ -4,6 +4,7 @@ import './globals.css'
 import { GoogleAnalytics } from '@next/third-parties/google'
 import Script from 'next/script'
 import PostHogProvider from '@/components/PostHogProvider'
+import AdPixels from '@/components/AdPixels'
 import JsonLd from '@/components/JsonLd'
 import { organizationSchema } from '@/lib/structured-data'
 
@@ -68,6 +69,7 @@ export default function RootLayout({
       <body className="font-sans">
         <JsonLd data={organizationSchema()} />
         <PostHogProvider />
+        <AdPixels />
         {children}
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID ?? 'G-6HQWGDZ6RH'} />
         <Script id="google-ads-tag" strategy="afterInteractive">
