@@ -29,15 +29,16 @@
     "_aeo_referral_note": "THREE answer-engine referral sessions in the 7 days to 2026-09-21 — chatgpt.com 1, www.perplexity.ai 1, gemini.google.com 1 — against 0 for the two prior runs. n=3 is noise and must not be reported as a trend. What is new is the SHAPE: one session each from three different engines, where every previous answer-engine referral came from one engine pointing at one contest-rules page and stopped when the contest ended. First weekly pulse after the Roams and Campus sections landed in llms.txt (79 -> 122 links); both facts are true and neither proves the other. Watch whether it persists."
   },
   "health": {
-    "sitemap_loc_count": 140,
-    "llms_txt_hash": "4d47065c24d87c72494ee6376b1dcd3401ef075b5d44f18f10f0ad9ac115e8c5",
-    "llms_txt_link_count": 122,
-    "llms_txt_section_count": 7,
-    "_llms_note": "/llms.txt is generated per request, so its hash changes whenever content is published — treat hash drift as expected; link and section counts are the meaningful signals. 2026-09-21: 122 links / 7 sections, up from 79/5, as the Roams section (shipped 2026-09-14) and Campus section (2026-09-17) both went live. If item 2 of 2026-09-21 ships, expect sections 7 -> 8 and links to rise by the number of upcoming events (capped at 60).",
+    "sitemap_loc_count": 306,
+    "llms_txt_link_count": 182,
+    "llms_txt_section_count": 8,
+    "_llms_note": "/llms.txt is generated per request, so its hash changes whenever content is published — treat hash drift as expected; link and section counts are the meaningful signals. 2026-09-22 after SEO item 2: 8 sections, 182 links (60 of them the capped 'What is on' event list). The sitemap count is now EVENT-DRIVEN and will swing week to week as events are added and pass — a fall is not automatically a regression. Read the non-event portion (~142) as the stable fingerprint and treat a drop THERE as the DB-blip signal.",
     "robots_hash": "87554763188151d8aea395e9a6b2129c6b5597a3aacad864f06e58293cf3586c",
-    "_last_fingerprint_update": "2026-09-21",
+    "_last_fingerprint_update": "2026-09-22",
     "_llms_gap_note": "The 2026-09-14 Roams gap is CLOSED — health-check.mjs now groups two segments deep under /shift and reports no missing class. A residual blind spot remains and is item 2: the check is satisfied at CLASS level by the single /events hub line in llms.txt, while 33 individual event pages — the best-converting class on the site — are listed in neither llms.txt nor the sitemap.",
-    "_robots_note": "Hash changed 2026-09-21 and the cause is benign: commit 228e503 ('Challenges goes live') added `Disallow: /preview` for the review harnesses, which also carry noindex. Not a regression."
+    "_robots_note": "Hash changed 2026-09-21 and the cause is benign: commit 228e503 ('Challenges goes live') added `Disallow: /preview` for the review harnesses, which also carry noindex. Not a regression.",
+    "llms_txt_hash": null,
+    "_llms_hash_note": "Not tracked since 2026-09-22 — the file now changes whenever an event is added or passes, so the hash is pure noise. Link and section counts are the signal."
   },
   "blockers": [],
   "carryover_serp_checks": [],
@@ -213,7 +214,8 @@
       "experiment_id": "exp-2026-09-6",
       "title": "Put upcoming event pages in the sitemap and llms.txt",
       "shipped_on": "2026-09-22",
-      "note": "Merged to main and pushed. Typecheck clean. Base for the verdict: /events 299 impressions / 7 clicks / 2.34% CTR across 33 urls, week to 2026-09-18. Verdict 2026-11-02. Both surfaces read loadEventsListing(), which returns approved UPCOMING events only, so entries age out on their own. Verify after the Vercel deploy: sitemap <loc> count rises from 140 by the number of upcoming events, and llms.txt goes 7 -> 8 sections."
+      "note": "Merged to main and pushed. Typecheck clean. Base for the verdict: /events 299 impressions / 7 clicks / 2.34% CTR across 33 urls, week to 2026-09-18. Verdict 2026-11-02. Both surfaces read loadEventsListing(), which returns approved UPCOMING events only, so entries age out on their own. Verify after the Vercel deploy: sitemap <loc> count rises from 140 by the number of upcoming events, and llms.txt goes 7 -> 8 sections. VERIFIED LIVE 2026-09-22: sitemap 143 -> 306 <loc> entries, of which 164 are /events/ URLs (was 2); llms.txt 7 -> 8 sections and 122 -> 182 links, the new 'What is on' section carrying 60 events (the cap). Spot-checked entries are all dated today or later, so the upcoming-only filter is working. MINOR NIT for a future tidy, not worth its own item: llms.txt renders event times with seconds ('2026-09-22 06:00:00'); trimming to HH:MM would read better to a human and no worse to a machine.",
+      "verified_live": "2026-09-22"
     },
     {
       "report_date": "2026-09-21",
