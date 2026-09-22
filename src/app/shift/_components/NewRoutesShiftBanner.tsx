@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import posthog from 'posthog-js'
 import StoreButtons from '@/components/StoreButtons'
-import { NEWROUTES_CODE, isNewRoutesContext, storeUrlWithAttribution } from '@/lib/nearby/campaign'
+import { NEWROUTES_CODE, resolveNewRoutesContext, storeUrlWithAttribution } from '@/lib/nearby/campaign'
 import { parsePartnerSlug } from '@/lib/nearby/partner'
 
 /**
@@ -16,6 +16,11 @@ import { parsePartnerSlug } from '@/lib/nearby/partner'
  * the page isn't in a New Routes context, so /shift stays static/ISR and the
  * banner is pure progressive enhancement for campaign traffic. Store URLs come
  * from the server page (env vars) as props.
+ *
+ * The context check is async because a ?partner= slug alone no longer means
+ * New Routes — the partner's row decides (resolveNewRoutesContext). A co-brand
+ * that runs no campaign hands its people the plain /shift page, which is the
+ * point: they were promised a snapshot, not a reward.
  */
 export default function NewRoutesShiftBanner({
   iosUrl,
@@ -29,11 +34,15 @@ export default function NewRoutesShiftBanner({
 
   useEffect(() => {
     const search = window.location.search
-    if (!isNewRoutesContext(search)) return
-    const slug = parsePartnerSlug(new URLSearchParams(search))
-    setPartner(slug)
-    setShow(true)
-    posthog.capture('newroutes_shift_banner_shown', slug ? { partner: slug } : {})
+    let cancelled = false
+    void (async () => {
+      if (!(await resolveNewRoutesContext(search)) || cancelled) return
+      const slug = parsePartnerSlug(new URLSearchParams(search))
+      setPartner(slug)
+      setShow(true)
+      posthog.capture('newroutes_shift_banner_shown', slug ? { partner: slug } : {})
+    })()
+    return () => { cancelled = true }
   }, [])
 
   if (!show) return null

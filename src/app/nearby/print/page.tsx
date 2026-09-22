@@ -78,14 +78,22 @@ export default async function NearbyPrintPage({ searchParams }: {
 
   const outside = isOutsideArea(loc.lat, loc.lng)
   const label = loc.label || tr('print.your_neighborhood')
-  // New Routes prints (partner co-brand or utm_campaign=newroutes) carry the
-  // reward + the code a mover enters in the app — the printed code is the
-  // attribution floor once a store install wipes the link.
-  const newRoutes = isNewRoutesContext(params.toString())
+  const partnerSlug = parsePartnerSlug(params)
+
   // The QR keeps the partner/utm params, so a scanned print lands on the
-  // co-branded interactive page and the visit still attributes
+  // co-branded interactive page and the visit still attributes. The PRINTED
+  // url stays clean — long utm tails on paper are noise nobody types.
   const shareUrl = `${SITE_URL}${buildShareUrl(loc.lat, loc.lng, loc.label, stickyParams(params.toString()))}`
   const shortUrl = shareUrl.replace(/^https:\/\//, '')
+
+  // ...but a scan and an emailed click are indistinguishable once they land,
+  // which makes "did the printed sheet do anything?" unanswerable. utm_medium
+  // marks the QR as paper; utm_* is already sticky (stickyParams), so the tag
+  // rides through the page's own URL rewrites onto every event of that visit.
+  const qrParams = stickyParams(params.toString())
+  qrParams.set('utm_medium', 'print')
+  if (partnerSlug && !qrParams.has('utm_source')) qrParams.set('utm_source', partnerSlug)
+  const qrUrl = `${SITE_URL}${buildShareUrl(loc.lat, loc.lng, loc.label, qrParams)}`
 
   const [snapshot, qrSvg, popularStreetKeys, partner] = await Promise.all([
     buildNearbySnapshotModel(loc.lat, loc.lng, {
@@ -98,17 +106,24 @@ export default async function NearbyPrintPage({ searchParams }: {
       // 1.5 mi fits Vercel's durable data cache; this page renders per request
       bikeRadiusMiles: 1.5,
     }),
-    QRCode.toString(shareUrl, { type: 'svg', margin: 0, color: { dark: '#191A2E', light: '#ffffff' } }),
+    QRCode.toString(qrUrl, { type: 'svg', margin: 0, color: { dark: '#191A2E', light: '#ffffff' } }),
     // "Popular with Shift riders" markers — the label param carries
     // "Neighborhood, Town", and the lookup fails soft to an empty set
     fetchPopularBikeStreets(splitPlaceLabel(loc.label ?? '').town),
     // Partner co-brand for outreach prints; null (default header) on any
     // miss. The logo renders via the same-origin proxy path — the browser
     // fetching this server-rendered page may block supabase.co directly.
-    fetchPartner(parsePartnerSlug(params)).then(p =>
+    fetchPartner(partnerSlug).then(p =>
       p?.logoUrl ? { ...p, logoUrl: partnerLogoPath(p.slug) } : p),
   ])
   const { stations, anyFar, hasRail, hasBus, bikeCorridors, docks: printDocks, destinations, lines, markers, drawnTiers } = snapshot
+
+  // New Routes prints carry the reward + the code a mover enters in the app —
+  // the printed code is the attribution floor once a store install wipes the
+  // link. Decided AFTER the partner row loads: a co-brand alone no longer
+  // means the campaign, so a partner handing this sheet to their own
+  // community no longer prints a movers' reward on it.
+  const newRoutes = isNewRoutesContext(params.toString(), partner?.campaign)
 
   const legend: { swatch: React.ReactNode; label: string }[] = []
   if (hasRail) legend.push({ swatch: <LegendLine color="#DA291C" />, label: tr('print.legend_t_lines') })
@@ -143,7 +158,7 @@ export default async function NearbyPrintPage({ searchParams }: {
         <p className="text-sm text-white/80">
           {tr('print.toolbar_note')}
         </p>
-        <PrintButton />
+        <PrintButton partner={partnerSlug} />
       </div>
 
       <article className="print-article mx-auto max-w-[760px] px-5 py-5">
@@ -178,7 +193,7 @@ export default async function NearbyPrintPage({ searchParams }: {
               </div>
             ) : (
               <p className="text-[0.7rem] leading-snug text-[#191A2E]/70">
-                {tr('print.header_tagline')}
+                {tr(newRoutes ? 'print.header_tagline_newroutes' : 'print.header_tagline')}
               </p>
             )}
           </div>

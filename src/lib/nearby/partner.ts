@@ -23,6 +23,11 @@ export interface NearbyPartner {
   slug: string
   name: string
   logoUrl: string | null
+  /** Campaign this co-brand also runs, or null for co-branding only. A
+   *  partner is NOT a campaign: brokers/movers carry 'newroutes', while a
+   *  campus or employer handing the snapshot to its own community gets the
+   *  plain page. See isNewRoutesContext in ./campaign. */
+  campaign: string | null
 }
 
 // Must stay in step with the admin dashboard's SLUG_RE
@@ -56,13 +61,13 @@ export async function fetchPartner(slug: string | null | undefined): Promise<Nea
   try {
     const { data } = await supabase
       .from('partners')
-      .select('slug, name, logo_url')
+      .select('slug, name, logo_url, campaign')
       .eq('slug', slug)
       .eq('active', true)
       .limit(1)
     const row = data?.[0]
     if (!row?.name) return null
-    return { slug: row.slug, name: row.name, logoUrl: row.logo_url ?? null }
+    return { slug: row.slug, name: row.name, logoUrl: row.logo_url ?? null, campaign: row.campaign ?? null }
   } catch {
     return null
   }
@@ -77,7 +82,7 @@ export async function fetchPartnerClient(slug: string | null | undefined): Promi
     if (!res.ok) return null
     const data = await res.json()
     if (!data?.name || !data?.slug) return null
-    return { slug: data.slug, name: data.name, logoUrl: data.logoUrl ?? null }
+    return { slug: data.slug, name: data.name, logoUrl: data.logoUrl ?? null, campaign: data.campaign ?? null }
   } catch {
     return null
   }

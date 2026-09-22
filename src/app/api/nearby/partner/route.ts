@@ -25,6 +25,9 @@ export async function GET(req: Request) {
       slug: partner.slug,
       name: partner.name,
       logoUrl: partner.logoUrl ? partnerLogoPath(partner.slug) : null,
+      // Whether this co-brand also runs a campaign — the client decides
+      // whether to show a campaign offer from this, never from the slug alone
+      campaign: partner.campaign,
     },
     // Short CDN cache: rejecting/deactivating a partner takes effect within
     // ~a minute instead of instantly — acceptable for the spam guard.

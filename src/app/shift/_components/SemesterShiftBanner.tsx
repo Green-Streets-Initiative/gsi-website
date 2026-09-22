@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import posthog from 'posthog-js'
 import StoreButtons from '@/components/StoreButtons'
-import { isNewRoutesContext } from '@/lib/nearby/campaign'
+import { resolveNewRoutesContext } from '@/lib/nearby/campaign'
 import {
   SEMESTER_CODE, SEMESTER_CODE_LIVE, SEMESTER_REWARD, SEMESTER_TRIPS, SEMESTER_WINDOW_DAYS,
   isSemesterContext,
@@ -26,9 +26,18 @@ export default function SemesterShiftBanner({ iosUrl, androidUrl }: { iosUrl: st
   useEffect(() => {
     if (!SEMESTER_CODE_LIVE) return
     const search = window.location.search
-    if (!isSemesterContext(search) || isNewRoutesContext(search)) return
-    setShow(true)
-    posthog.capture('semester_shift_banner_shown')
+    if (!isSemesterContext(search)) return
+    let cancelled = false
+    void (async () => {
+      // Async for the same reason as the New Routes banner: whether a
+      // ?partner= co-brand counts as New Routes now lives on its row. Keeps
+      // the one-campaign-per-page invariant true instead of racing it.
+      if (await resolveNewRoutesContext(search)) return
+      if (cancelled) return
+      setShow(true)
+      posthog.capture('semester_shift_banner_shown')
+    })()
+    return () => { cancelled = true }
   }, [])
 
   if (!show) return null

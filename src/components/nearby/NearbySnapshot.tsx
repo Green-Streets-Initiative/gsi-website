@@ -133,25 +133,34 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
     [],
   )
   const [partner, setPartner] = useState<NearbyPartner | null>(null)
+  // Distinct from `partner` being null: an unknown or blocked slug also
+  // resolves to null, and the campaign decision below must not fire before
+  // the lookup settles or it would flash the wrong offer in.
+  const [partnerResolved, setPartnerResolved] = useState(false)
   useEffect(() => {
-    if (!partnerSlug) return
+    if (!partnerSlug) { setPartnerResolved(true); return }
     let cancelled = false
     // Same-origin lookup — content blockers strip direct supabase.co calls
-    fetchPartnerClient(partnerSlug).then(p => { if (!cancelled) setPartner(p) })
+    fetchPartnerClient(partnerSlug)
+      .then(p => { if (!cancelled) setPartner(p) })
+      .finally(() => { if (!cancelled) setPartnerResolved(true) })
     return () => { cancelled = true }
   }, [partnerSlug])
 
-  // New Routes campaign context (partner co-brand or utm_campaign=newroutes)
-  // and the attributed /shift hand-off href. Read from window.location at mount
-  // for the same reason as partnerSlug — useSearchParams can be empty on the
-  // first render. Resolved post-mount, so SSR renders the plain page and the
-  // offer/attribution enhance in on the client.
+  // New Routes campaign context (an explicit utm_campaign=newroutes, or a
+  // co-brand whose row runs the campaign) and the attributed /shift hand-off
+  // href. Read from window.location at mount for the same reason as
+  // partnerSlug — useSearchParams can be empty on the first render. Waits on
+  // partnerResolved: a co-brand alone no longer implies the campaign, so
+  // deciding at mount would put a movers' reward back in front of every
+  // partner's community. SSR renders the plain page; this enhances in.
   const [newRoutes, setNewRoutes] = useState(false)
   const [appHref, setAppHref] = useState('/shift')
   useEffect(() => {
-    setNewRoutes(isNewRoutesContext(window.location.search))
-    setAppHref(buildAppHref(window.location.search))
-  }, [])
+    if (!partnerResolved) return
+    setNewRoutes(isNewRoutesContext(window.location.search, partner?.campaign))
+    setAppHref(buildAppHref(window.location.search, partner?.campaign))
+  }, [partnerResolved, partner])
 
   /** Single entry point for a chosen location — rounds coords, updates the
    *  URL (refresh keeps state, link is shareable; partner/utm params ride

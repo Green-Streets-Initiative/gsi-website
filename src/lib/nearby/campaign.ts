@@ -1,4 +1,5 @@
 import { stickyParams } from './share'
+import { parsePartnerSlug, fetchPartnerClient } from './partner'
 
 /**
  * New Routes campaign glue for the web surfaces.
@@ -18,13 +19,39 @@ export const NEWROUTES_CAMPAIGN = 'newroutes'
 
 /**
  * True when the page arrived via a New Routes context: an explicit
- * utm_campaign=newroutes, or a partner co-brand slug (partners — property
- * managers, brokers, movers — are the campaign's distribution channel).
+ * utm_campaign=newroutes, or a co-brand whose partner row RUNS the campaign.
+ *
+ * `partnerCampaign` is the `campaign` column off the partner row. It used to
+ * be enough that a ?partner= slug existed at all, which meant every co-brand
+ * — including one that only wants a snapshot to introduce its own community
+ * to what's nearby — served a "$15 if you just moved" offer and printed the
+ * NEWROUTES code on its sheet. Callers that have only the URL and cannot wait
+ * on the partner lookup should use resolveNewRoutesContext() instead; omitting
+ * the argument deliberately fails CLOSED (no campaign), because showing
+ * someone a reward we never meant to offer them is the worse error.
  */
-export function isNewRoutesContext(search: string): boolean {
+export function isNewRoutesContext(search: string, partnerCampaign?: string | null): boolean {
   const p = new URLSearchParams(search)
   if ((p.get('utm_campaign') ?? '').toLowerCase() === NEWROUTES_CAMPAIGN) return true
-  return !!p.get('partner')
+  return !!p.get('partner') && partnerCampaign === NEWROUTES_CAMPAIGN
+}
+
+/**
+ * isNewRoutesContext for a CLIENT surface holding only the URL: resolves the
+ * partner row first (same-origin, CDN-cached ~60s) so the campaign decision
+ * comes from the row rather than the slug. Fails soft to false — a lookup
+ * that errors must not conjure an offer.
+ */
+export async function resolveNewRoutesContext(search: string): Promise<boolean> {
+  const p = new URLSearchParams(search)
+  if ((p.get('utm_campaign') ?? '').toLowerCase() === NEWROUTES_CAMPAIGN) return true
+  const slug = parsePartnerSlug(p)
+  if (!slug) return false
+  try {
+    return (await fetchPartnerClient(slug))?.campaign === NEWROUTES_CAMPAIGN
+  } catch {
+    return false
+  }
 }
 
 // The app-open link on shift.gogreenstreets.org. A New Routes tap goes here so
@@ -42,12 +69,13 @@ const GO_NEWROUTES = 'https://shift.gogreenstreets.org/go/newroutes'
  * The hand-off href for a /nearby "Get Shift" tap. Carries partner + any utm_*
  * through (stickyParams). In a New Routes context it returns the app-open link
  * (GO_NEWROUTES) with the campaign tag guaranteed, so installed users auto-join;
- * otherwise it returns the /shift download page. (The general get-app card only
+ * otherwise it returns the /shift download page — which is where a co-brand
+ * with no campaign lands, still attributed by its partner param. (The general get-app card only
  * renders when NOT in a New Routes context, so it always gets /shift.)
  */
-export function buildAppHref(search: string): string {
+export function buildAppHref(search: string, partnerCampaign?: string | null): string {
   const params = stickyParams(search) // partner + utm_*
-  if (isNewRoutesContext(search)) {
+  if (isNewRoutesContext(search, partnerCampaign)) {
     params.set('utm_campaign', NEWROUTES_CAMPAIGN) // set() collapses any dupes
     if (!params.has('utm_source')) params.set('utm_source', 'nearby')
     const qs = params.toString()
