@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getQualifyingTowns } from '@/lib/towns/queries'
 import { getActiveRoams } from '@/lib/roams/queries'
 import { SCHOOLS } from '@/lib/semester/schools'
+import { loadEventsListing } from '@/app/events/_lib/load'
 import { SITE_URL } from '@/lib/seo'
 
 export const revalidate = 3600 // re-fetch dynamic guide list at most hourly
@@ -124,5 +125,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
-  return [...staticEntries, ...townEntries, ...roamEntries, ...guideEntries, ...schoolEntries]
+  // Individual event pages. Only /events and /events/shift-your-summer were
+  // listed here, yet Search Console shows 33 event URLs earning impressions at
+  // positions 3.6-7.7 — Google found them through internal links and share
+  // cards. They are the best-converting class on the site (299 impressions, 7
+  // clicks, 2.34% CTR in the week to 2026-09-18, against a 1.03% site average).
+  // loadEventsListing() returns approved UPCOMING events only, so a page leaves
+  // the sitemap the day after it happens without any expiry logic here.
+  let eventEntries: MetadataRoute.Sitemap = []
+  try {
+    const events = await loadEventsListing()
+    eventEntries = events.map((e) => ({
+      url: `${SITE_URL}/events/${encodeURIComponent(e.id)}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    }))
+  } catch {
+    // DB unreachable — ship the rest.
+  }
+
+  return [
+    ...staticEntries,
+    ...townEntries,
+    ...roamEntries,
+    ...guideEntries,
+    ...schoolEntries,
+    ...eventEntries,
+  ]
 }
