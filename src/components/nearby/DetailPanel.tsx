@@ -297,11 +297,14 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
     // means we keep the single line we've always shown.
     const boarding = boardingByDirection(c.directions, center)
     const perDirection = boarding.length > 1 && !boardingIsShared(boarding)
+    const isFerry = c.routeId.startsWith('Boat-')
     return (
       <div>
+        {/* Ferries ride in the bus corridor set (too few to earn their own
+            toggle) but a ferry is not a bus: the eyebrow says what it is. */}
         <div className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-(--nb-accent)">
-          {c.kind === 'bus' ? <BusIcon size={12} /> : <TrainIcon size={12} />}
-          {c.kind === 'bus' ? tr('detail.bus_route_eyebrow') : tr('detail.line_eyebrow')}
+          {isFerry ? <FerryIcon size={12} /> : c.kind === 'bus' ? <BusIcon size={12} /> : <TrainIcon size={12} />}
+          {isFerry ? tr('detail.ferry_route_eyebrow') : c.kind === 'bus' ? tr('detail.bus_route_eyebrow') : tr('detail.line_eyebrow')}
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-2">
           <span className="rounded px-2 py-0.5 text-[0.72rem] font-bold" style={{ backgroundColor: c.color, color: c.textColor }}>
