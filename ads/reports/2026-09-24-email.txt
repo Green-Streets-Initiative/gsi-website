@@ -1,0 +1,12 @@
+Act this week. Setup is compliant and the ads got their first click (Sept 24, $11.52), but September has zero conversions and only 16 impressions.
+
+Click rate this month: 6.25% (1 click / 16 impressions). That's too little traffic to judge. September should close above 5% if it stays this quiet; October is the month that counts.
+
+This week's actions:
+1. Add the GSI Brand campaign. About 200 brand searches a month would bring clicks, a high click rate, and a conversion.
+2. Finish conversion tracking. Google says "setup incomplete" and September needs 1 conversion.
+3. Strengthen the 2 ads Google rates "Poor" (Just moved, Student life Boston).
+
+To do one, open Claude Code and say "do ad grants item N".
+
+Full report: https://claude.ai/artifact/UuoYJsktAySt3HY5KinrbF

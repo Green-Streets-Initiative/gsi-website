@@ -1,0 +1,121 @@
+{
+  "account": {
+    "id": "328-499-4589",
+    "ocid": "151431556",
+    "authuser": 9,
+    "login": "walkrideday@gmail.com"
+  },
+  "artifact_url": "https://claude.ai/artifact/UuoYJsktAySt3HY5KinrbF",
+  "rules": {
+    "ctr_floor_pct": 5,
+    "ctr_rule": "calendar month, account level; two consecutive months below = account paused (reinstatement form)",
+    "ctr_volume_caveat_impressions": 200,
+    "min_conversions_per_month": 1,
+    "min_ad_groups_per_campaign": 2,
+    "min_ads_per_ad_group": 2,
+    "min_sitelinks": 2,
+    "no_single_word_keywords": true,
+    "no_quality_score_1_or_2": true
+  },
+  "never": [
+    "Recommend Maximize Clicks or manual CPC (grant $2 cap; failed Aug 31 - Sep 20)",
+    "Undo or re-tighten a change younger than 14 days",
+    "Edit the account or click Apply on Google Recommendations; recommend only"
+  ],
+  "changes": [
+    {
+      "date": "2026-09-21",
+      "what": "All 3 campaigns to Maximize Conversions; Page view goal removed from account default; 23 keywords removed (22 low volume + 'car free boston'); remaining 37 recreated as broad match"
+    }
+  ],
+  "open_items": [
+    {
+      "id": "brand-campaign",
+      "status": "approved by Keith 2026-09-24; upload file ~/Downloads/ad-grants-new-campaigns.csv ready, Keith uploads via Tools > Bulk actions > Uploads; NOT yet in account at 09-24 weekly run (only the 3 original campaigns)",
+      "what": "GSI — Brand campaign, 2 ad groups, $30/day"
+    },
+    {
+      "id": "local-keywords",
+      "status": "approved by Keith 2026-09-24; upload file ~/Downloads/ad-grants-new-campaigns.csv ready, Keith uploads via Tools > Bulk actions > Uploads; NOT yet in account at 09-24 weekly run (only the 3 original campaigns)",
+      "what": "New campaigns How-to Guides (4 ad groups -> /guides/*) and Town Walking & Biking (town pages + walk/bike to school), $50 + $40/day"
+    },
+    {
+      "id": "conversion-tracking",
+      "status": "awaiting Keith (weekly report item 2, opened 2026-09-24)",
+      "what": "All campaigns show 'Eligible (Limited): conversion tracking setup is incomplete'; Sign-up and Outbound click goals 'Needs attention', newsletter_signup 'Awaiting conversions'. Site fires newsletter_signup (NewsletterSignupForm.tsx) and shift_store_click (StoreButtons.tsx) via gaEvent; check GA4 key events + Ads import. Sept has 0 conversions."
+    },
+    {
+      "id": "poor-ads",
+      "status": "awaiting Keith (weekly report item 3, opened 2026-09-24)",
+      "what": "2 RSAs rated Poor: one in New Routes / Just moved, one in Shift Your Semester / Student life Boston. Add headlines/descriptions."
+    },
+    {
+      "id": "script-thresholds",
+      "status": "optional",
+      "what": "Compliance script: calendar-month CTR, 200-impression floor before alarming, no-QS = pending not passing"
+    }
+  ],
+  "snapshots": [
+    {
+      "date": "2026-09-24",
+      "source": "live account + 09-23 script email",
+      "window": "2026-08-25..2026-09-23",
+      "impressions": 13,
+      "clicks": 0,
+      "ctr_pct": 0,
+      "cost": 0,
+      "conversions": 0,
+      "by_campaign": {
+        "New Routes — Movers": {
+          "impressions": 13,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 0,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 0,
+          "clicks": 0
+        }
+      },
+      "keywords": {
+        "total": 37,
+        "match": "broad",
+        "low_search_volume": 2
+      },
+      "ads": {
+        "total": 12,
+        "all_eligible": true,
+        "strength": "Average"
+      },
+      "sitelinks": 15,
+      "conversion_actions": [
+        "newsletter_signup (Sign-up, primary)",
+        "shift_store_click (Outbound click, primary)",
+        "donate_page_view (not in account goals)"
+      ],
+      "conversion_tracking_status": "Awaiting conversions (GA4 linked, importing)",
+      "verdict": "Setup compliant; no traffic yet. Sept will close under 5% CTR; October needs clicks."
+    },
+    {
+      "date": "2026-09-24",
+      "source": "scheduled weekly run: live account (calendar month) + 09-23 script email + GSC weekly-2026-09-18",
+      "window": "2026-09-01..2026-09-24",
+      "impressions": 16, "clicks": 1, "ctr_pct": 6.25, "cost": 11.52, "conversions": 0,
+      "by_campaign": {
+        "New Routes — Movers": { "impressions": 16, "clicks": 1 },
+        "Shift App — Massachusetts": { "impressions": 0, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 }
+      },
+      "top_keyword": { "keyword": "biking in boston", "impressions": 8, "clicks": 1 },
+      "keywords": { "total": 37, "match": "broad", "low_search_volume": 2, "single_word": 0 },
+      "ads": { "total": 12, "all_eligible": true, "strength": "10 Average, 2 Poor" },
+      "sitelinks": 15,
+      "campaign_status": "Eligible (Limited): conversion tracking setup is incomplete (all 3)",
+      "conversion_tracking_status": "Sign-up and Outbound click goals Needs attention; newsletter_signup Awaiting conversions",
+      "brand_search_gsc_week": { "range": "2026-09-12..2026-09-18", "impressions": 46, "clicks": 3, "note": "greenstreets 27, green streets 13, green streets initiative 6 (3 clicks)" },
+      "verdict": "Act this week: first click landed, MTD CTR 6.25% on 16 impr (too little to judge; Sept likely closes above 5%), 0 conversions in Sept."
+    }
+  ]
+}
