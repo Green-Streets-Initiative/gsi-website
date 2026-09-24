@@ -65,6 +65,16 @@ serve(async (req: Request) => {
     return jsonResponse({ error: "Prize not found" }, 404);
   }
 
+  // Placing gift card orders spends money: team viewers can see a prize but
+  // only the group's admins (or GSI) may pay it out.
+  const [{ data: isGroupAdmin }, { data: isGsiAdmin }] = await Promise.all([
+    userSupabase.rpc("is_group_admin", { p_group_id: prize.group_id }),
+    userSupabase.rpc("is_gsi_admin"),
+  ]);
+  if (!isGroupAdmin && !isGsiAdmin) {
+    return jsonResponse({ error: "Only an admin can send prizes" }, 403);
+  }
+
   if (!prize.funded_from_pool) {
     return jsonResponse({ error: "Prize is not pool-funded" }, 400);
   }
@@ -142,6 +152,9 @@ serve(async (req: Request) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          // One order per winner, ever: a retry or a double click gets the
+          // original order back from Tremendous instead of a second card.
+          external_id: `employer-prize-winner-${winner.id}`,
           payment: {
             funding_source_id: TREMENDOUS_FUNDING_SOURCE_ID,
           },
