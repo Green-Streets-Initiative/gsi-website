@@ -493,9 +493,9 @@ async function handleSubscriptionCreated(
  *   3. Credit balance_cents + lifetime_funded_cents by metadata.amount_cents.
  *   4. File an info-level admin_notifications row for audit.
  *
- * Idempotency: the Stripe event id is stored on the notification
- * context. If we see the same event twice (Stripe can replay), the
- * repeat attempt is rejected at the notification-insert step.
+ * Idempotency: credit_reward_pool_topup records the checkout session id
+ * on the pool ledger (unique) and returns 'duplicate' for a session it
+ * has already credited, so a replayed event credits nothing.
  */
 async function handleRewardPoolTopup(
   session: Stripe.Checkout.Session,
@@ -524,23 +524,44 @@ async function handleRewardPoolTopup(
     return;
   }
 
-  const { data: pool, error: poolErr } = await supabase
-    .from("reward_pools")
-    .select("id, owner_group_id, balance_cents, lifetime_funded_cents, active")
-    .eq("id", poolId)
-    .maybeSingle();
-  if (poolErr || !pool) {
-    console.error("[EmployerWebhook] reward pool lookup failed:", poolErr);
+  // One transaction: lock the pool, check group and status, refuse a
+  // session we've already credited (Stripe replays events), credit, and
+  // write the ledger row.
+  const { data: outcome, error: creditErr } = await supabase.rpc(
+    "credit_reward_pool_topup",
+    {
+      p_pool_id: poolId,
+      p_group_id: groupId,
+      p_amount_cents: amountCents,
+      p_stripe_session_id: session.id,
+    },
+  );
+  if (creditErr) {
+    // The handler's errors are swallowed (Stripe gets a 200), so a failed
+    // credit must leave a trail or the employer's money silently vanishes.
+    console.error("[EmployerWebhook] reward pool credit failed:", creditErr);
+    await supabase.from("admin_notifications").insert({
+      level: "critical",
+      source: "rewards",
+      title: "Top-up paid but not credited",
+      body: `Stripe session ${session.id} paid ${amountCents} cents for pool ${poolId}, but crediting failed: ${creditErr.message}`,
+      context: {
+        kind: "topup_credit_failed",
+        pool_id: poolId,
+        group_id: groupId,
+        stripe_session_id: session.id,
+        amount_cents: amountCents,
+      },
+    });
     return;
   }
-  if (pool.owner_group_id !== groupId) {
-    console.error(
-      "[EmployerWebhook] pool group mismatch",
-      { poolGroup: pool.owner_group_id, metaGroup: groupId },
+  if (outcome === "duplicate") {
+    console.log(
+      `[EmployerWebhook] session ${session.id} already credited to pool ${poolId}, skipping`,
     );
     return;
   }
-  if (!pool.active) {
+  if (outcome === "inactive") {
     console.error(
       `[EmployerWebhook] pool ${poolId} is suspended — payment received but not credited`,
     );
@@ -559,16 +580,11 @@ async function handleRewardPoolTopup(
     });
     return;
   }
-
-  const { error: updErr } = await supabase
-    .from("reward_pools")
-    .update({
-      balance_cents: pool.balance_cents + amountCents,
-      lifetime_funded_cents: pool.lifetime_funded_cents + amountCents,
-    })
-    .eq("id", poolId);
-  if (updErr) {
-    console.error("[EmployerWebhook] reward pool credit failed:", updErr);
+  if (outcome !== "credited") {
+    console.error(
+      `[EmployerWebhook] pool ${poolId} not credited (${outcome}) for session ${session.id}`,
+      { groupId, amountCents },
+    );
     return;
   }
 
