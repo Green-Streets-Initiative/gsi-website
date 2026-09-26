@@ -59,14 +59,14 @@ export default async function WalkRideDayRulesPage() {
 
   const { data: competitionsRaw } = await supabase
     .from('competitions')
-    .select('id, name, starts_at, ends_at')
+    .select('id, name, starts_at, ends_at, drawing_at')
     .eq('is_public', true)
     .is('group_id', null)
     .like('name', '%Walk/Ride Day%')
     .order('starts_at', { ascending: true })
 
   const competitions = (competitionsRaw ?? []) as {
-    id: string; name: string; starts_at: string; ends_at: string
+    id: string; name: string; starts_at: string; ends_at: string; drawing_at: string | null
   }[]
 
   // Active first, then the next upcoming, then the most recent past — so the
@@ -104,8 +104,12 @@ export default async function WalkRideDayRulesPage() {
   }
 
   const dayLabel = competition ? eventDay(competition.starts_at) : null
+  // The scheduled drawing when one is set; otherwise the day after the event.
   const drawLabel = competition
-    ? longDate(new Date(new Date(competition.ends_at).getTime() + 6 * 60 * 60 * 1000).toISOString())
+    ? longDate(
+        competition.drawing_at ??
+          new Date(new Date(competition.ends_at).getTime() + 6 * 60 * 60 * 1000).toISOString(),
+      )
     : null
 
   const totalArv = prizes.reduce(
