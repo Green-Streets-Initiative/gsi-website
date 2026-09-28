@@ -19,6 +19,7 @@ import {
   parseGridServiceDays,
   parseMoovsSchedule,
   parseMoovsServiceDays,
+  parseTripshotDay,
   rotateDow,
   serviceActive,
   zonedClock,
@@ -63,9 +64,9 @@ function isLiveFeed(kind: ShuttleFeedKind): boolean {
   return kind === 'transloc'
 }
 
-export type ShuttleFeedKind = 'passio-gtfs' | 'gtfs-url' | 'transloc' | 'moovs' | 'wp-128bc'
+export type ShuttleFeedKind = 'passio-gtfs' | 'gtfs-url' | 'transloc' | 'moovs' | 'wp-128bc' | 'tripshot'
 
-/** Where an operator's stops come from. Five shapes because five is what
+/** Where an operator's stops come from. Six shapes because six is what
  *  the Boston-area operators actually publish — only two of them ship a
  *  GTFS zip you can just download. */
 export type ShuttleFeedConfig =
@@ -81,6 +82,10 @@ export type ShuttleFeedConfig =
   /** 128 Business Council: their WordPress routes page embeds the stops and
    *  the REST API names the routes. Their published GTFS died in 2019. */
   | { kind: 'wp-128bc' }
+  /** TripShot's public rider site (no account): the route list for a day,
+   *  then each route's detail for that day — stops in order plus every
+   *  run's times. One region per operator. */
+  | { kind: 'tripshot'; slug: string; regionId: string }
 
 export type ShuttleAgency = ShuttleAgencyMeta & { id: string } & ShuttleFeedConfig
 
@@ -112,6 +117,7 @@ const FEEDS: Record<string, ShuttleFeedConfig> = {
     routeName: 'Lower Mystic Link',
   },
   grid: { kind: 'wp-128bc' },
+  brandeis: { kind: 'tripshot', slug: 'brandeis', regionId: 'CA558DDC-D7F2-4B48-9CAC-DEEA1134F820' },
 }
 
 export const SHUTTLE_AGENCIES: ShuttleAgency[] = SHUTTLE_AGENCY_META
@@ -878,6 +884,91 @@ async function attachGridSchedules(
 
 /* ── Cache: in-process L1 (per instance) over Next's data cache (durable) ── */
 
+/* — TripShot (Brandeis) —
+ * The public rider site needs no account. It publishes ONE DAY at a time:
+ * which routes run that day, then each route's stops and runs for that day.
+ * Brandeis's weekday Campus and Waltham loops, the weekend Combo and the
+ * Friday–Sunday Boston/Cambridge run all differ by day, so the next seven
+ * dates are each read from their own pages — the Moovs lesson (tagging one
+ * day's times onto every day) applied up front. A date whose page fails
+ * contributes nothing rather than claiming "no service" that day. */
+
+async function tripshotJson(url: string): Promise<unknown | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+    return res.ok ? await res.json() : null
+  } catch {
+    return null
+  }
+}
+
+async function parseTripshot(agency: ShuttleAgency & { slug: string; regionId: string }): Promise<ParsedFeed> {
+  const base = `https://${agency.slug}.tripshot.com`
+  const now = Date.now()
+  const todayBit = zonedClock(now, ET).dow
+  const days: { date: string; bit: number }[] = []
+  for (let ahead = 0; ahead < 7; ahead++) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: ET, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(new Date(now + ahead * 86_400_000))
+    const get = (t: string) => parts.find(p => p.type === t)?.value ?? ''
+    let bit = todayBit
+    for (let n = 0; n < ahead; n++) bit = rotateDow(bit)
+    days.push({ date: `${get('year')}-${get('month')}-${get('day')}`, bit })
+  }
+
+  // Which routes run on each date. includePreviousDayRidesSpanningMidnight
+  // stays FALSE here and below: true (what the rider site sends) repeats
+  // Friday's 12:01 AM run on Saturday's page as "24:01", which the rollover
+  // then files under Sunday — a Mon–Fri shuttle claiming a Sunday run. Each
+  // day's own page already carries its after-midnight runs as 24:xx.
+  const lists = await Promise.all(days.map(d => tripshotJson(
+    `${base}/v1/p/shared/route?includePreviousDayRidesSpanningMidnight=false&startDay=${d.date}&endDay=${d.date}&regionId=${agency.regionId}`,
+  )))
+  const wanted: { routeId: string; date: string; bit: number }[] = []
+  lists.forEach((list, i) => {
+    for (const entry of (list as { routes?: unknown[] } | null)?.routes ?? []) {
+      const r = Object.values(entry as Record<string, { sharedRouteId?: string; name?: string }>)[0]
+      if (!r?.sharedRouteId || EXCLUDED_ROUTES.test(r.name ?? '')) continue
+      wanted.push({ routeId: r.sharedRouteId, date: days[i].date, bit: days[i].bit })
+    }
+  })
+  if (wanted.length === 0) throw new Error(`TripShot ${agency.id}: no routes in the next 7 days`)
+
+  // Each detail carries turn-by-turn navigation we don't read (~2 MB raw,
+  // ~17 KB gzipped, under a second each) — four at a time, not ~25 at once.
+  const details: (ReturnType<typeof parseTripshotDay>)[] = []
+  for (let i = 0; i < wanted.length; i += 4) {
+    const batch = await Promise.all(wanted.slice(i, i + 4).map(async w => parseTripshotDay(
+      await tripshotJson(`${base}/v3/p/shared/route/${w.routeId}?day=${w.date}&breakupExactLoops=true&includePreviousDayRidesSpanningMidnight=false`),
+      w.bit,
+    )))
+    details.push(...batch)
+  }
+
+  const stopsById = new Map<string, ParsedStop>()
+  const routes = new Map<string, ParsedRoute>()
+  for (const day of details) {
+    if (!day) continue
+    const route = routes.get(day.routeId) ?? routes.set(day.routeId, { id: day.routeId, name: day.name, stops: [] }).get(day.routeId)!
+    for (const st of day.stops) {
+      if (CLOSED_STOP.test(st.name)) continue
+      const stop = stopsById.get(st.id)
+        ?? stopsById.set(st.id, { id: st.id, name: st.name, lat: st.lat, lng: st.lng, routeIds: [] }).get(st.id)!
+      if (!stop.routeIds.includes(day.routeId)) stop.routeIds.push(day.routeId)
+      if (!route.stops.includes(st.id)) route.stops.push(st.id)
+      for (const dep of day.departures.get(st.id) ?? []) (stop.departures ??= []).push(dep)
+    }
+  }
+  if (stopsById.size === 0) throw new Error(`TripShot ${agency.id}: no usable stops`)
+  return {
+    agencyId: agency.id,
+    stops: [...stopsById.values()].map(s => ({ ...s, departures: tidyDepartures(s.departures) })),
+    routes: [...routes.values()],
+    fetchedAt: Date.now(),
+  }
+}
+
 async function loadFeed(agencyId: string): Promise<ParsedFeed> {
   const agency = SHUTTLE_AGENCIES.find(a => a.id === agencyId)
   if (!agency) throw new Error(`unknown shuttle agency ${agencyId}`)
@@ -885,6 +976,7 @@ async function loadFeed(agencyId: string): Promise<ParsedFeed> {
     case 'transloc': return parseTransloc(agency)
     case 'moovs': return parseMoovs(agency)
     case 'wp-128bc': return parseWp128bc(agency)
+    case 'tripshot': return parseTripshot(agency)
     default: return parseGtfsZip(agency)
   }
 }

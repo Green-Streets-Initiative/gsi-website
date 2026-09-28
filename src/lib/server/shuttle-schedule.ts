@@ -379,3 +379,84 @@ export function zonedClock(epochMs: number, timeZone: string): { secs: number; d
     dow: dowMap[get('weekday')] ?? 0,
   }
 }
+
+/* ── TripShot ── */
+
+/** One stop as a TripShot route detail lists it. */
+export interface TripshotStop { id: string; name: string; lat: number; lng: number }
+
+/** One route on one day, read from TripShot's public route detail
+ *  (`/v3/p/shared/route/<id>?day=YYYY-MM-DD`). */
+export interface TripshotDay {
+  routeId: string
+  name: string
+  /** Stops in first-visit order. A loop lists its start again at the end,
+   *  and Brandeis's Campus Shuttle passes J Lot twice on the way round; the
+   *  place is one stop on a map, so each id appears once. */
+  stops: TripshotStop[]
+  /** Boardable departures, keyed by stop id, tagged with `dowBit`. */
+  departures: Map<string, ParsedDeparture[]>
+}
+
+/**
+ * Parse one day's route detail. Pure: the caller fetches, and passes the
+ * weekday bit for the date it asked about — TripShot publishes one day at a
+ * time, and a Friday-only weekend run must not be tagged onto Monday.
+ *
+ * Every visit carries a departure time (Brandeis times every stop, not only
+ * timepoints). Visits marked DropOffOnly — the end of each run — are not a
+ * place anyone can board, so they never become departures. Times past
+ * midnight ("24:01:00") roll onto the next day via normalizeDeparture.
+ * Returns null for a day the route does not run (no timetable at all).
+ */
+export function parseTripshotDay(detail: unknown, dowBit: number): TripshotDay | null {
+  const root = (detail as { InternalRouteDetails?: Record<string, unknown> })?.InternalRouteDetails
+  if (!root) return null
+  const route = root.route as { routeId?: string; publicName?: string; name?: string } | undefined
+  const routeId = route?.routeId
+  const name = (route?.publicName || route?.name || '').trim()
+  if (!routeId || !name) return null
+  const tables = [
+    ...((root.exactTimetables as unknown[]) ?? []),
+    ...((root.inexactTimetables as unknown[]) ?? []),
+  ] as { stops?: unknown[]; timetable?: unknown[] }[]
+  if (tables.length === 0) return null
+
+  const stops: TripshotStop[] = []
+  const seen = new Set<string>()
+  const nameById = new Map<string, string>()
+  const departures = new Map<string, ParsedDeparture[]>()
+  for (const table of tables) {
+    for (const raw of table.stops ?? []) {
+      const s = raw as { sharedStopId?: string; name?: string; location?: { lt?: number; lg?: number } }
+      const lat = Number(s.location?.lt)
+      const lng = Number(s.location?.lg)
+      if (!s.sharedStopId || !s.name || !Number.isFinite(lat) || !Number.isFinite(lng)) continue
+      nameById.set(s.sharedStopId, s.name.trim())
+      if (seen.has(s.sharedStopId)) continue
+      seen.add(s.sharedStopId)
+      stops.push({ id: s.sharedStopId, name: s.name.trim(), lat, lng })
+    }
+    for (const trip of table.timetable ?? []) {
+      if (!Array.isArray(trip)) continue
+      trip.forEach((raw, i) => {
+        const v = raw as { sharedStopId?: string; visitDetails?: { departureTime?: string | null; arrivalTime?: string | null; visitType?: string } }
+        const vd = v.visitDetails
+        if (!v.sharedStopId || !vd || vd.visitType === 'DropOffOnly') return
+        const secs = gtfsSecs(vd.departureTime ?? vd.arrivalTime ?? undefined)
+        if (secs === null) return
+        // Where this run goes next — a stop passed twice on one loop (J Lot)
+        // is two different rides, and the rider needs the one going their way.
+        let headsign: string | undefined
+        for (let k = i + 1; k < trip.length; k++) {
+          const next = nameById.get((trip[k] as { sharedStopId?: string }).sharedStopId ?? '')
+          if (next && next !== nameById.get(v.sharedStopId)) { headsign = next; break }
+        }
+        const list = departures.get(v.sharedStopId) ?? departures.set(v.sharedStopId, []).get(v.sharedStopId)!
+        list.push(normalizeDeparture({ secs, dow: dowBit, routeId, ...(headsign ? { headsign } : {}) }))
+      })
+    }
+  }
+  if (stops.length < 2) return null
+  return { routeId, name, stops, departures }
+}

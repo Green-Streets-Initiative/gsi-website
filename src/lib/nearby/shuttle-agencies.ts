@@ -65,6 +65,9 @@ export const SHUTTLE_AGENCY_META: readonly ShuttleAgencyMeta[] = [
   //  public fare … CharlieCards and other MBTA passes aren't accepted."
   { prefix: 'grid', label: 'The Grid', name: 'The Grid — 128 Business Council', idName: '128 Business Council', access: 'public-fare', url: 'https://128bc.org/' },
   // M3 names its shuttles and operator (TransAction) but no boarding policy.
+  // "Brandeis ID holders can board the bus by showing their ID to the
+  //  driver." (Shuttle Services FAQ, 2026-09-28)
+  { prefix: 'brandeis', label: 'Brandeis', name: 'Brandeis Shuttle', idName: 'Brandeis', access: 'id', url: 'https://www.brandeis.edu/campus-services/transportation/shuttle-services/route-maps-schedule-stops.html' },
   { prefix: 'm3', label: 'Middlesex 3', name: 'Middlesex 3 TMA Shuttle', idName: 'Middlesex 3', access: 'unstated', url: 'https://www.middlesex3.com/' },
 ]
 
