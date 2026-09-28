@@ -35,6 +35,11 @@ export interface CommunityEvent {
   pace: string | null
   /** True when the organizer promises nobody gets dropped; set on Shift-planned rides or by hand. */
   no_drop: boolean | null
+  /** Organizer changed the plan (Shift 01013). Cancelled/postponed rows are archived but keep their page. */
+  schedule_status?: 'cancelled' | 'postponed' | 'moved' | null
+  schedule_note?: string | null
+  previous_event_date?: string | null
+  previous_event_time?: string | null
 }
 
 export interface EventOrganizer {

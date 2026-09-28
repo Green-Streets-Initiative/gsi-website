@@ -35,6 +35,10 @@ const EVENT_FIELDS = `
       distance_text,
       pace,
       no_drop,
+      schedule_status,
+      schedule_note,
+      previous_event_date,
+      previous_event_time,
       content_items!inner (
         id,
         title,
@@ -77,6 +81,10 @@ function toCommunityEvent(row: EventRow): CommunityEvent {
     distance_text: (row.distance_text as string | null) ?? null,
     pace: (row.pace as string | null) ?? null,
     no_drop: (row.no_drop as boolean | null) ?? null,
+    schedule_status: (row.schedule_status as CommunityEvent['schedule_status']) ?? null,
+    schedule_note: (row.schedule_note as string | null) ?? null,
+    previous_event_date: (row.previous_event_date as string | null) ?? null,
+    previous_event_time: (row.previous_event_time as string | null) ?? null,
   }
 }
 
@@ -126,20 +134,28 @@ export interface LoadedEvent {
   timezone: string | null
 }
 
-/** One approved event by content id, with the next occurrence when this one has passed. */
+/**
+ * One event by content id, with the next occurrence when this one has passed.
+ * Approved events, plus ones the organizer cancelled or postponed: those are
+ * off every list but keep their page, so a saved or shared link explains
+ * what happened instead of a 404.
+ */
 export async function loadEvent(id: string): Promise<LoadedEvent | null> {
   const supabase = createServerSupabaseClient()
   const { data } = await supabase
     .from('event_details')
     .select(DETAIL_SELECT)
     .eq('content_id', decodeURIComponent(id))
-    .eq('content_items.status', 'approved')
+    .in('content_items.status', ['approved', 'archived'])
     .eq('content_items.content_type', 'community_event')
     .single()
 
   if (!data) return null
 
   const row = data as unknown as EventRow
+  const status = (row.content_items as Record<string, unknown>).status
+  const calledOff = row.schedule_status === 'cancelled' || row.schedule_status === 'postponed'
+  if (status !== 'approved' && !calledOff) return null
   const event = toCommunityEvent(row)
   const nextUp = await findNextUp(supabase, {
     id: event.id,

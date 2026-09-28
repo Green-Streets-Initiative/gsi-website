@@ -205,9 +205,18 @@ export function buildEventJsonLd(
     '@type': 'Event',
     name: event.title,
     startDate: isoDateTime(event.event_date, event.event_time, timeZone),
-    eventStatus: 'https://schema.org/EventScheduled',
+    eventStatus: event.schedule_status === 'cancelled'
+      ? 'https://schema.org/EventCancelled'
+      : event.schedule_status === 'postponed'
+        ? 'https://schema.org/EventPostponed'
+        : event.schedule_status === 'moved'
+          ? 'https://schema.org/EventRescheduled'
+          : 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: place,
+    ...(event.schedule_status === 'moved' && event.previous_event_date
+      ? { previousStartDate: isoDateTime(event.previous_event_date, event.previous_event_time ?? event.event_time, timeZone) }
+      : {}),
     url: `${EVENT_BASE}/${encodeURIComponent(event.id)}`,
     description: plainDescription(
       event.body,

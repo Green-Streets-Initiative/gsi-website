@@ -49,6 +49,27 @@ function withUtm(url: string): string {
  * carry them to the next occurrence of the same ride, or failing that to the
  * organizer's next event.
  */
+/** The organizer cancelled, postponed or moved this one (Shift 01013). */
+function ScheduleBanner({ event }: { event: CommunityEvent }) {
+  const status = event.schedule_status
+  if (!status) return null
+  let headline: string
+  if (status === 'cancelled') headline = 'Cancelled by the organizer'
+  else if (status === 'postponed') headline = 'Postponed. No new date yet.'
+  else if (event.previous_event_date && event.previous_event_date !== event.event_date) {
+    headline = `Moved from ${dateLong(parseEventDate(event.previous_event_date))}`
+  } else if (event.previous_event_time) headline = `New start time (was ${formatTime(event.previous_event_time)})`
+  else headline = 'New start time'
+  const note = event.schedule_note?.trim()
+
+  return (
+    <div className="mb-6 rounded-2xl border border-(--ev-accent-line-30) bg-(--ev-accent-tint-7) p-4 sm:mb-8 sm:p-5">
+      <p className="font-display text-[19px] font-extrabold leading-tight text-(--ev-ink) sm:text-[22px]">{headline}</p>
+      {note && <p className="mt-1 text-[13px] text-(--ev-ink-75)">From the organizer: &ldquo;{note}&rdquo;</p>}
+    </div>
+  )
+}
+
 function NextUpBanner({ nextUp }: { nextUp: NextUp | null }) {
   const { hrefBase } = useEventsTone()
   const label = nextUp
@@ -185,6 +206,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
           All events
         </Link>
 
+        <ScheduleBanner event={event} />
         {isPast && <NextUpBanner nextUp={nextUp} />}
 
         <div className={`grid gap-6 sm:gap-10 ${hasLeftColumn ? 'lg:grid-cols-2' : ''}`}>
