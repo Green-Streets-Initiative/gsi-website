@@ -15,6 +15,22 @@ Statuses: `proposed` → `shipped` → `won` / `lost` / `inconclusive`.
 | exp-2026-09-4 | 2026-09-08 | People pricing a used cargo e-bike are already finding us at position ~9 with no page that answers what one costs. A cost guide captures a wedge audience that has shown almost nothing since the routine began. | Micro-guide `what-a-cargo-ebike-costs` (`seo/drafts/guides/what-a-cargo-ebike-costs.md`) | used-car-to-ebike | `used-car-to-ebike` impressions and clicks (base: 34 impr / **0 clicks**, avg pos 9.1, 28 days to 2026-09-04) | — | 2026-10-20 | proposed | — |
 | exp-2026-09-6 | 2026-09-21 | Thirty-three event pages rank at positions 3.6-7.7 and convert at 2.34% against a 1.03% site average, and Google found every one of them without help — the sitemap lists two and llms.txt lists none. Listing them grows the class and gives answer engines something specific to cite. | Emit approved upcoming event pages from `src/app/sitemap.ts`; add a "What is on" section to `src/app/llms.txt/route.ts` (branch `seo/2026-09-events-discoverable`) | events-programs | `/events` impressions, clicks and CTR (base: **299 impr / 7 clicks = 2.34%**, 33 urls, week to 2026-09-18) | **2026-09-22** | 2026-11-02 | shipped | — |
 
+## Hypothesis backlog (added 2026-09-28)
+
+The middle of the growth loop (see `seo/methodology.md`). Each row came from an
+insight. ICE = impact × confidence × ease, each scored 1–5. Every run re-scores
+and re-ranks. The top rows get promoted to the experiment table above when
+fewer than 2–4 experiments are running. Retire a row with a one-line reason and
+never silently delete it.
+
+| ID | Added | Insight (evidence) | Hypothesis: if we… then… by… | Metric | I | C | E | ICE | Status |
+|----|-------|--------------------|------------------------------|--------|---|---|---|-----|--------|
+| hyp-01 | 2026-09-28 | Organic sessions reach app intent at ~1.6% (3 of 189, 4 wks to 09-27), while paid social on the campus pages converts ~7%. Organic lands mostly on Roams, events, towns and home, pages built to answer a question, not to invite. | …add a contextual Shift invitation where organic visitors land (on a Roam: "walk this route with Shift and unlock rewards"; on an event: "log your ride there"), then organic app-intent rate rises from ~1.6% to ≥3% within 6 weeks | organic `app_intent / sessions` (PostHog `channels_by_week`) | 5 | 3 | 3 | **45** | backlog. Next step: audit what CTA each top organic landing class shows today |
+| hyp-02 | 2026-09-08 | People pricing a used cargo e-bike land on us at position ~9 (34 impr / 28 days) and nothing of ours answers what one costs locally. Vendors own the generic head query, not the used/local one. | …publish the cargo e-bike cost guide (exp-2026-09-4), then `used-car-to-ebike` gets its first clicks, and the guide earns impressions on used/price queries by 2026-11-16 | `used-car-to-ebike` impressions/clicks; guide page impressions | 2 | 3 | 5 | **30** | **recommended to ship now** (Keith wanted it 2026-09-21) |
+| hyp-03 | 2026-09-08 | `year-round-weather` has 3 short guides and 0 impressions. The SERP (sentinel + 09-28 rotation) is won by one comprehensive local page per publisher. | …combine the three weather guides under one "riding through a Boston winter" hub before November, then the cluster earns its first impressions by mid-December | `year-round-weather` impressions | 3 | 3 | 3 | 27 | backlog. Brief at the 2026-10-05 deep-dive |
+| hyp-04 | 2026-09-28 | Ad Grants will generate search-term data from queries we don't rank for. Paid demand is the cheapest keyword research we have. | …mine the weekly Ad Grants search terms for recurring queries with no organic page, then turn the top one into a guide or page each month and watch its organic impressions | new-page impressions on paid-discovered queries | 3 | 2 | 4 | 24 | backlog. Needs `search_terms` in the snapshot (from 2026-09-30) |
+| hyp-05 | 2026-09-21 | The drive-time guide has 0 impressions at 4 weeks while `/commute-advisor` takes ~160/wk at 0–1 clicks. | …put the drive-time conversion table on `/commute-advisor` itself rather than in a separate guide, then advisor CTR rises above 1% | `/commute-advisor` CTR | 3 | 2 | 3 | 18 | backlog. Decide at the 2026-10-12 call |
+
 ## Shipped infrastructure (no verdict clock)
 
 Measurement and hygiene fixes. They change what we can see or how the site is

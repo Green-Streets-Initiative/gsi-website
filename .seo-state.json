@@ -6,6 +6,19 @@
   "_serp_rotation_note_2026_09_28": "n is now 14 non-sentinel clusters (events-programs added 2026-09-22). Index 3 selected year-round-weather / students-campus / roams-trails on 2026-09-28 (the cycle shifted as predicted; no hand-correction — coverage over time is the point). Index 6 next = events-programs / town-commuters / drive-time-conversion, which usefully lines up with the 2026-10-12 drive-time call.",
   "_serp_rotation_note": "Index selects clusters (excluding aeo-sentinels) in portfolio order: for k in 0..2, cluster[(index+k) % n], query[floor(index/n) % len]. History: 0 = used-car-to-ebike / new-to-boston / family-logistics; 3 = year-round-weather / town-commuters / ebike-curious; 6 = employers-rto / schools-wellness / local-business-partners; 9-11 hand-advanced on 2026-09-14 to students-campus / drive-time-conversion / brand-navigational and the index parked at 12. On 2026-09-21 n was 13 (roams-trails shipped), so 12 wrapped to 0 on its own and the hand-correction that note predicted was NOT needed — the cycle restarted cleanly at used-car-to-ebike / new-to-boston / family-logistics. Index now 3. NOTE: if item 3 of 2026-09-21 ships, events-programs takes n from 13 to 14 and the cycle shifts again; the point is coverage over time, not a fixed cycle, so hand-correct and say so.",
   "stagnant_weeks": 0,
+  "north_star": {
+    "_definition": "App-intent sessions (shift_store_click / snapshot_app_cta_clicked / advisor_app_cta_clicked) from organic_search + paid_search + paid_other + answer_engine, PostHog channels_by_week, Monday-start weeks. Printed by `analyze.mjs --section growth`. Added 2026-09-28 at Keith's request to make the routine growth-oriented.",
+    "week_of_2026_09_21": 27,
+    "prior_4wk_mean": 2.0,
+    "by_channel_week_of_2026_09_21": {
+      "organic_search": { "sessions": 54, "activated": 1, "app_intent": 1 },
+      "paid_search": { "sessions": 11, "activated": 1, "app_intent": 0 },
+      "paid_other": { "sessions": 383, "activated": 13, "app_intent": 26 },
+      "answer_engine": { "sessions": 5, "activated": 0, "app_intent": 0 }
+    },
+    "organic_intent_rate_4wk": "3 / 189 = 1.6%",
+    "_note": "paid_other is almost entirely the Reddit 'semester' campaign (rdt_cid, 393 landings in 7d, mostly /shift-your-semester/<school>). paid_search (gclid) shows 9-11 sessions/wk while the Ad Grants snapshot shows 1 click MTD at 2026-09-24 — unreconciled; gclid may include Google Ads traffic outside the grant account. Report the gap, don't pick a side."
+  },
   "baselines": {
     "clicks_4wk": 32.25,
     "clicks_12wk": 17.83,
@@ -219,7 +232,8 @@
       "ref": "seo/drafts/guides/what-a-cargo-ebike-costs.md",
       "experiment_id": "exp-2026-09-4",
       "title": "Micro-guide: what a cargo e-bike costs — new, used, and what drives the price",
-      "age_note": "Proposed 2026-09-08, still undecided at 2026-09-28 (3 weeks); the 2026-10-05 deep-dive should recommend reshape-or-retire. Ages out 2026-11-03 under the 8-week rule. The 2026-09-21 rotation is relevant evidence: 'e-bike vs used car cost' and 'cargo bike for kids' are owned end-to-end by manufacturer and retailer blogs, so a generic cost guide competes with vendors on their own ground. If it ships, the local angle is the differentiator, not the price table.",
+      "recommendation_2026_09_28": "SHIP. Keith wanted to publish it the week of 2026-09-21 and the routine's hedging held it back; the vendor-owned SERP evidence was about the generic head query ('e-bike vs used car cost'), not the used/local price queries that actually reach us. Do not re-litigate. At ship time re-verify the MassCEC voucher sentence (verified closed 2026-09-08). Verdict-by moves to 6 weeks after ship.",
+      "age_note": "Proposed 2026-09-08, undecided at 2026-09-28 (3 weeks) because of routine hedging, not Keith's. Ages out 2026-11-03 under the 8-week rule. The 2026-09-21 rotation is relevant evidence: 'e-bike vs used car cost' and 'cargo bike for kids' are owned end-to-end by manufacturer and retailer blogs, so a generic cost guide competes with vendors on their own ground. If it ships, the local angle is the differentiator, not the price table.",
       "ship_steps": "Follow the ship checklist in the draft file: append the YAML+body to content/micro-guides-library.md, flip status draft -> approved, bump the guide-count check in scripts/build-micro-guides-migration.mjs from 21 to 22, run the migration builder, commit both by filename, apply the migration. Then check the /guides index, sitemap.xml and llms.txt — not just the slug URL. Record the ship date against exp-2026-09-4."
     }
   ],

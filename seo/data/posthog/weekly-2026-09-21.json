@@ -1,11 +1,11 @@
 {
-  "pulled_at": "2026-09-28T11:02:11.460Z",
+  "pulled_at": "2026-09-28T13:09:40.330Z",
   "project_id": 436603,
   "host": "https://us.posthog.com",
   "definition": "Organic = distinct $session_id on $pageview where $referring_domain matches google/bing/duckduckgo/ecosia/yahoo/brave, excluding mail-security link-scanner paths (%/1/0100% and /preferences/%). Monday-start weeks.",
   "partial_week": {
     "week_start": "2026-09-28",
-    "sessions": 6
+    "sessions": 7
   },
   "weeks": [
     {
@@ -59,7 +59,7 @@
   "top_organic_landing_pages": [
     {
       "path": "/",
-      "sessions": 12
+      "sessions": 13
     },
     {
       "path": "/programs",
@@ -82,10 +82,6 @@
       "sessions": 4
     },
     {
-      "path": "/commute-advisor",
-      "sessions": 3
-    },
-    {
       "path": "/shift-your-semester/umass-boston",
       "sessions": 3
     },
@@ -98,11 +94,19 @@
       "sessions": 3
     },
     {
+      "path": "/shift",
+      "sessions": 3
+    },
+    {
       "path": "/challenges",
       "sessions": 3
     },
     {
-      "path": "/shift/schools",
+      "path": "/commute-advisor",
+      "sessions": 3
+    },
+    {
+      "path": "/get-involved",
       "sessions": 2
     },
     {
@@ -110,15 +114,11 @@
       "sessions": 2
     },
     {
-      "path": "/get-involved",
-      "sessions": 2
-    },
-    {
       "path": "/nearby",
       "sessions": 2
     },
     {
-      "path": "/shift",
+      "path": "/shift/schools",
       "sessions": 2
     },
     {
@@ -126,15 +126,15 @@
       "sessions": 1
     },
     {
-      "path": "/shift/roams/b-line-crawl",
-      "sessions": 1
-    },
-    {
-      "path": "/events/mitcob26_minuteman_2026-09-24",
-      "sessions": 1
-    },
-    {
       "path": "/shift/roams/sunset-pedal",
+      "sessions": 1
+    },
+    {
+      "path": "/events/ce_import_weekly-social-bike-ride_2026-09-17",
+      "sessions": 1
+    },
+    {
+      "path": "/shift/roams/b-line-crawl",
       "sessions": 1
     },
     {
@@ -146,23 +146,454 @@
       "sessions": 1
     },
     {
-      "path": "/events/ce_import_weekly-social-bike-ride_2026-09-17",
-      "sessions": 1
-    },
-    {
-      "path": "/guides/what-you-can-do-with-an-e-cargo-bike",
-      "sessions": 1
-    },
-    {
       "path": "/guides",
+      "sessions": 1
+    },
+    {
+      "path": "/events/mitcob26_minuteman_2026-09-24",
+      "sessions": 1
+    },
+    {
+      "path": "/shift/roams/twin-cities-rail-trail",
       "sessions": 1
     }
   ],
   "answer_engine_referrals_7d": [
     {
       "referrer": "chatgpt.com",
-      "sessions": 5
+      "sessions": 4
     }
   ],
-  "answer_engine_referral_sessions_7d": 5
+  "answer_engine_referral_sessions_7d": 4,
+  "channels_definition": "Per session, first match wins: paid_search (gclid/wbraid/gbraid or utm_medium cpc|ppc|paid), organic_search (search-engine referrer), answer_engine (answer-engine referrer). Web events only. activated = 'advisor_results_shown', 'snapshot_viewed'; app_intent = 'shift_store_click', 'snapshot_app_cta_clicked', 'advisor_app_cta_clicked'. Weeks keyed by the session's first event. NOTE organic_search here EXCLUDES paid; the older `weeks` series above does not, and diverges once Ad Grants traffic grows.",
+  "channels_by_week": {
+    "2026-09-28": {
+      "organic_search": {
+        "sessions": 7,
+        "activated": 0,
+        "app_intent": 1
+      },
+      "paid_other": {
+        "sessions": 37,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-09-21": {
+      "answer_engine": {
+        "sessions": 5,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 54,
+        "activated": 1,
+        "app_intent": 1
+      },
+      "paid_other": {
+        "sessions": 383,
+        "activated": 13,
+        "app_intent": 26
+      },
+      "paid_search": {
+        "sessions": 11,
+        "activated": 1,
+        "app_intent": 0
+      }
+    },
+    "2026-09-14": {
+      "answer_engine": {
+        "sessions": 1,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 71,
+        "activated": 0,
+        "app_intent": 2
+      },
+      "paid_other": {
+        "sessions": 69,
+        "activated": 1,
+        "app_intent": 6
+      },
+      "paid_search": {
+        "sessions": 3,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-09-07": {
+      "organic_search": {
+        "sessions": 29,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 1,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_search": {
+        "sessions": 11,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-08-31": {
+      "organic_search": {
+        "sessions": 35,
+        "activated": 1,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 2,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_search": {
+        "sessions": 14,
+        "activated": 2,
+        "app_intent": 0
+      }
+    },
+    "2026-08-24": {
+      "answer_engine": {
+        "sessions": 2,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 29,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 7,
+        "activated": 3,
+        "app_intent": 0
+      },
+      "paid_search": {
+        "sessions": 5,
+        "activated": 1,
+        "app_intent": 0
+      }
+    },
+    "2026-08-17": {
+      "answer_engine": {
+        "sessions": 5,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 35,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 2,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_search": {
+        "sessions": 18,
+        "activated": 9,
+        "app_intent": 0
+      }
+    },
+    "2026-08-10": {
+      "answer_engine": {
+        "sessions": 3,
+        "activated": 1,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 25,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 235,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-08-03": {
+      "answer_engine": {
+        "sessions": 1,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 32,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 629,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-07-27": {
+      "organic_search": {
+        "sessions": 24,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 2,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-07-20": {
+      "organic_search": {
+        "sessions": 28,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 198,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-07-13": {
+      "organic_search": {
+        "sessions": 35,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 89,
+        "activated": 0,
+        "app_intent": 0
+      }
+    }
+  },
+  "channels_last_complete_week": {
+    "answer_engine": {
+      "sessions": 5,
+      "activated": 0,
+      "app_intent": 0
+    },
+    "organic_search": {
+      "sessions": 54,
+      "activated": 1,
+      "app_intent": 1
+    },
+    "paid_other": {
+      "sessions": 383,
+      "activated": 13,
+      "app_intent": 26
+    },
+    "paid_search": {
+      "sessions": 11,
+      "activated": 1,
+      "app_intent": 0
+    }
+  },
+  "paid_landings_7d": [
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/mit",
+      "sessions": 73
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/northeastern",
+      "sessions": 60
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/boston-university",
+      "sessions": 53
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/harvard",
+      "sessions": 46
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/boston-college",
+      "sessions": 37
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/umass-boston",
+      "sessions": 35
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/tufts",
+      "sessions": 35
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/berklee",
+      "sessions": 12
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/",
+      "sessions": 10
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/emerson",
+      "sessions": 8
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/challenges",
+      "sessions": 8
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": "newroutes",
+      "path": "/shift",
+      "sessions": 7
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "meta",
+      "utm_medium": null,
+      "utm_campaign": "newroutes",
+      "path": "/nearby",
+      "sessions": 7
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/",
+      "sessions": 7
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/shift",
+      "sessions": 7
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/about",
+      "sessions": 6
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift",
+      "sessions": 5
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/nearby",
+      "sessions": 4
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/programs/walk-ride-days",
+      "sessions": 3
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/events/walk-ride-day/rules",
+      "sessions": 2
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester",
+      "sessions": 2
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/shift/towns",
+      "sessions": 2
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/shift",
+      "sessions": 2
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/events/walk-ride-day/rules",
+      "sessions": 2
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/events",
+      "sessions": 1
+    }
+  ]
 }

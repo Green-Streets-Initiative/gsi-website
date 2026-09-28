@@ -3,7 +3,7 @@
  * Analyze the committed Search Console pulls for the SEO/AEO routine.
  *
  *   node scripts/seo/analyze.mjs            # full report
- *   node scripts/seo/analyze.mjs --section baselines|weeks|clusters|pages|cohort|trigger|queries
+ *   node scripts/seo/analyze.mjs --section baselines|weeks|clusters|pages|cohort|trigger|growth|queries
  *   node scripts/seo/analyze.mjs --section cohort --class /events,/shift/roams
  *
  * WHY THIS FILE EXISTS. Every run of the routine used to recompute baselines and
@@ -270,6 +270,74 @@ if (want('trigger')) {
     const t4 = mean(vals.slice(-4), (x) => x.v)
     const p4 = mean(vals.slice(0, 4), (x) => x.v)
     console.log(`  trailing 4 wk ${t4.toFixed(1)}/wk vs prior 4 wk ${p4.toFixed(1)}/wk  ${pct(t4, p4)}`)
+  }
+}
+
+/* ── Growth funnel by channel ─────────────────────────────────────────────────
+ * The routine is accountable for growth, not traffic alone: search impressions
+ * -> clicks -> sessions -> activated (used a tool) -> app intent (clicked toward
+ * the Shift app). Sessions and outcomes come from the newest PostHog pull
+ * (channels_by_week); Ad Grants account numbers come from the newest snapshot
+ * the ad-grants-review routine writes to ads/ad-grants-state.json (Wednesdays),
+ * so this section never touches the Ads account itself.
+ */
+if (want('growth')) {
+  const PH = path.join(REPO, 'seo', 'data', 'posthog')
+  const phFiles = fs.existsSync(PH) ? fs.readdirSync(PH).filter((f) => /^weekly-.*\.json$/.test(f)).sort() : []
+  const ph = phFiles.length ? readJson(path.join(PH, phFiles[phFiles.length - 1])) : null
+  console.log('\n=== GROWTH FUNNEL BY CHANNEL (PostHog, Monday-start weeks) ===')
+  if (!ph?.channels_by_week) {
+    console.log('  no channels_by_week in the newest PostHog pull — re-run pull-posthog.mjs')
+  } else {
+    const weeks = (ph.weeks || []).map((w) => w.week_start) // complete weeks, newest first
+    const CH = ['organic_search', 'paid_search', 'paid_other', 'answer_engine']
+    const get = (wk, ch) => ph.channels_by_week[wk]?.[ch] || { sessions: 0, activated: 0, app_intent: 0 }
+    const rate = (n, d) => (d ? ((n / d) * 100).toFixed(1) + '%' : '—')
+    console.log(`  week of ${weeks[0]}            sessions  activated   app intent   intent rate   vs prior-4 sessions`)
+    for (const ch of CH) {
+      const c = get(weeks[0], ch)
+      const p4 = mean(weeks.slice(1, 5), (wk) => get(wk, ch).sessions)
+      console.log(
+        `  ${ch.padEnd(24)} ${String(c.sessions).padStart(8)}  ${String(c.activated).padStart(9)}  ${String(c.app_intent).padStart(11)}  ${rate(c.app_intent, c.sessions).padStart(12)}   ${p4.toFixed(1)} (${pct(c.sessions, p4)})`,
+      )
+    }
+    const tot = CH.reduce((s, ch) => s + get(weeks[0], ch).app_intent, 0)
+    const p4tot = mean(weeks.slice(1, 5), (wk) => CH.reduce((s, ch) => s + get(wk, ch).app_intent, 0))
+    console.log(`  NORTH STAR — app-intent sessions from search + answer + paid: ${tot}  (prior-4 mean ${p4tot.toFixed(1)}, ${pct(tot, p4tot)})`)
+    const org4 = weeks.slice(0, 4).reduce((s, wk) => ({ n: s.n + get(wk, 'organic_search').sessions, a: s.a + get(wk, 'organic_search').app_intent }), { n: 0, a: 0 })
+    console.log(`  organic 4-wk: ${org4.n} sessions -> ${org4.a} app intent (${rate(org4.a, org4.n)})`)
+    if (ph.paid_landings_7d?.length) {
+      const bySrc = new Map()
+      for (const r of ph.paid_landings_7d) {
+        const k = `${r.click_id}/${r.utm_campaign ?? '—'}`
+        bySrc.set(k, (bySrc.get(k) || 0) + r.sessions)
+      }
+      console.log('  paid landings 7d by click-id/campaign: ' + [...bySrc].map(([k, v]) => `${k} ${v}`).join(', '))
+    }
+  }
+
+  const ADS = path.join(REPO, 'ads', 'ad-grants-state.json')
+  console.log('\n=== AD GRANTS (newest snapshot from ads/ad-grants-state.json) ===')
+  if (!fs.existsSync(ADS)) {
+    console.log('  no ads/ad-grants-state.json')
+  } else {
+    const ads = readJson(ADS)
+    const s = (ads.snapshots || []).slice(-1)[0]
+    if (!s) console.log('  no snapshots yet')
+    else {
+      console.log(`  as of ${s.date}  window ${s.window}  (source: ${s.source})`)
+      console.log(`  impressions ${s.impressions}  clicks ${s.clicks}  CTR ${s.ctr_pct}%  cost $${s.cost}  conversions ${s.conversions}`)
+      for (const [name, c] of Object.entries(s.by_campaign || {}))
+        console.log(`    ${name.padEnd(34)} impr ${String(c.impressions).padStart(5)}  clicks ${String(c.clicks).padStart(4)}`)
+      if (s.verdict) console.log(`  verdict: ${s.verdict}`)
+      if (s.search_terms?.length) {
+        console.log('  top paid search terms (keyword research for organic):')
+        for (const t of s.search_terms.slice(0, 15))
+          console.log(`    ${String(t.impressions).padStart(5)} impr  ${String(t.clicks).padStart(3)} clk  ${t.term}`)
+      } else console.log('  no search_terms in the snapshot yet (ad-grants-review records them from 2026-09-30)')
+      const open = (ads.open_items || []).filter((o) => !/^done|shipped/i.test(o.status || ''))
+      if (open.length) console.log(`  open Ad Grants items: ${open.map((o) => o.id).join(', ')}`)
+    }
   }
 }
 

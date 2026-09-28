@@ -5,6 +5,62 @@ thin pointer to this file. Read `seo/strategy.md` first, then follow this.
 
 Project: `/Users/keithanderson/gsi-website` · Site: https://www.gogreenstreets.org
 
+## The growth loop (the routine's job, from 2026-09-28)
+
+Keith, 2026-09-28: the analysis should *inform an SEO and growth strategy*,
+through an action-oriented loop:
+
+**data → analysis → insight → hypothesis → experiment → data**
+
+Every run moves work around that loop. Reporting numbers is not the output.
+Decisions and experiments are.
+
+1. **Data.** Search Console (organic), PostHog (sessions and outcomes by
+   channel), the Ad Grants snapshot (paid search), live SERP/AEO checks.
+2. **Analysis.** The scripts in `scripts/seo/`. Keep the rigor (fixed cohorts,
+   exact baselines), but put it in the report, not the email.
+3. **Insight.** A finding only counts as an insight if it names an
+   **opportunity or a risk to growth** and the evidence for it. Write each one as
+   *"X is happening → which means Y."* A number that changes no decision is
+   context, not an insight.
+4. **Hypothesis.** Every insight either produces a hypothesis in the backlog
+   (`seo/experiments.md` → *Hypothesis backlog*) or says in one line why not.
+   A hypothesis is falsifiable: *"If we <change>, <metric> moves <direction> by
+   <verdict date>, because <insight>."* Score each **ICE** (impact, confidence,
+   ease, 1–5 each), and take the product.
+5. **Experiment.** The top of the backlog becomes a proposed experiment with an
+   exact change, a metric, a baseline and a verdict date. Keep **2–4
+   experiments running** at all times. Fewer than 2 running is itself a finding,
+   and the run must propose enough to refill the pipeline.
+6. **Data → verdict → learning.** At the verdict date the result is won / lost /
+   inconclusive-extend. Each verdict writes one line to *Learnings* in
+   `seo/strategy.md`. Learnings are where the next hypotheses come from, which
+   closes the loop.
+
+**Operating rules**
+
+- **Recommend, don't hedge.** Every item Keith is asked to decide carries a
+  clear recommendation (ship / decline / change X then ship) and the cost of
+  waiting. An experiment is how we find out. Do not argue an idea to death
+  before running it when the downside is small and reversible.
+- **Once Keith says he wants to ship something, stop relitigating it.** New
+  evidence can shape *how* it ships, e.g. a title tweak. It does not reopen
+  *whether*. (Lesson: the cargo e-bike guide sat three weeks because the
+  routine kept attaching doubts drawn from a different query's SERP.)
+- **Cheap and reversible beats perfect.** Titles, snippets, internal links,
+  structured data, llms.txt, a new guide: all reversible. Bias toward shipping
+  these and letting the verdict decide.
+- **Decision queue ≤ 3.** More than three open asks is a routine failure, not
+  Keith's. Consolidate, drop the weakest, or age items out.
+- **Organic and paid are one system.** Paid search is the fastest test bed we
+  have: search terms reveal demand we don't rank for, and ad headlines that
+  win are title candidates. Organic pages that rank well can take paid budget
+  elsewhere. Reason across both.
+- **North star.** *App-intent sessions from search, answer engines and paid*:
+  sessions in which the visitor clicked toward the Shift app (store button or
+  app CTA). Traffic is the leading indicator. Intent is the outcome.
+  `analyze.mjs --section growth` prints it.
+
 ## Which mode
 
 Check today's date. If day-of-month ≤ 7 **and** `.seo-state.json.last_deep_dive`
@@ -32,6 +88,22 @@ is not in the current month → run the **monthly deep-dive**. Otherwise run the
   unattended run cannot complete, so PostHog silently vanished from the ledger
   whenever its session lapsed — that is exactly what happened on 2026-09-14. A
   key in a file behaves the same at 3am as it does by hand.
+  The pull also writes `channels_by_week`: sessions per channel
+  (`organic_search`, `paid_search` = Ad Grants/Google Ads, `paid_other` = the
+  Meta/Reddit campaigns, `answer_engine`), each with `activated` (used the
+  Commute Advisor or a /nearby snapshot) and `app_intent` (clicked toward the
+  Shift app), plus `paid_landings_7d` by click id and campaign. **Organic
+  excludes paid** in this series: an Ad Grants click has a google.com referrer
+  like an organic one, and only the gclid separates them.
+- **Ad Grants (paid search)**: read, don't pull. The `ad-grants-review` routine
+  checks the live account every Wednesday and appends a snapshot to
+  `ads/ad-grants-state.json` (impressions, clicks, CTR vs the 5% grant floor,
+  conversions, per-campaign rows, open items, and from 2026-09-30 the top
+  `search_terms`). `node scripts/seo/analyze.mjs --section growth` prints the
+  newest snapshot next to the PostHog funnel. This routine never opens the Ads
+  account. Say how old the snapshot is. If PostHog's gclid sessions and the
+  snapshot's clicks disagree badly, report the gap as a finding rather than
+  choosing one.
 - **Live search / AEO checks**: the `WebSearch` tool. Competitor teardown pages:
   `WebFetch`.
 - **Email**: `node scripts/seo/send-report-email.mjs --subject "…" --body
@@ -107,8 +179,9 @@ all, which is how the 2026-09-14 run ended up prompting 15+ times against a
    new is being proposed.
 3. `node scripts/seo/pull-gsc.mjs --mode weekly`.
 4. `node scripts/seo/pull-posthog.mjs --mode weekly` — organic sessions this week
-   vs the trailing 4-week mean, top organic landing pages, and answer-engine
-   referral sessions. The organic definition lives in the script, not in prose,
+   vs the trailing 4-week mean, top organic landing pages, answer-engine
+   referral sessions, and sessions + outcomes by channel. Then read the Ad
+   Grants snapshot via `analyze.mjs --section growth`. The organic definition lives in the script, not in prose,
    so it cannot drift between runs.
 5. **SERP spot-checks (6 queries):** the 3 fixed sentinels from the
    `aeo-sentinels` cluster + 3 rotated through the portfolio using
@@ -119,17 +192,51 @@ all, which is how the 2026-09-14 run ended up prompting 15+ times against a
    vs the state fingerprint (a drop = a DB blip dropped a section — flag it);
    robots.txt and llms.txt return 200 and hash vs fingerprint; 2 key pages
    still emit their expected `<title>` and canonical.
-7. **Diff:** per cluster, clicks / impressions / avg-position vs the 4-week and
-   12-week baselines (recomputed from `seo/data/gsc/weekly-*.json`). Flag movers
-   (±20% clicks or ≥3 positions). Check `experiments.md` for entries whose
-   `verdict-by` date has passed → write a verdict (won / lost / inconclusive—
-   extend) from that cluster's data.
-8. Write `seo/reports/YYYY-MM-DD.md`. Update `.seo-state.json` (baselines cache,
-   rotation index, `stagnant_weeks`, pending-item registry, health
-   fingerprints). Commit + push those files.
-9. **Email:** ledger scoreboard first (below), then experiment verdicts, then
-   **at most 3 proposed actions** each ending with a ship phrase, then a
-   one-line health status and a link to the report on GitHub.
+7. **Analysis:** `node scripts/seo/analyze.mjs` (all sections, including
+   `cohort`, `trigger` and `growth`). Per cluster, clicks / impressions /
+   avg-position vs the 4-week and 12-week baselines. Flag movers (±20% clicks
+   or ≥3 positions). Read page classes on fixed cohorts, and name any single
+   page carrying >25% of its class before reading the class total.
+8. **Close the loop (this step decides the email):**
+   - **Verdicts.** Any `experiments.md` entry past its `verdict-by` gets won /
+     lost / inconclusive-extend, from its stated metric. Each verdict appends one
+     line to *Learnings* in `seo/strategy.md`.
+   - **Insights.** Write at most 5, each as "X is happening → which means Y",
+     spanning organic, paid and the funnel. At least one must be about
+     **outcomes** (activation / app intent), not just traffic.
+   - **Hypotheses.** Add or re-score backlog rows from those insights (ICE).
+     Retire rows the data has overtaken.
+   - **Experiments.** If fewer than 2 are running, promote the top of the
+     backlog to proposed. Anything proposed carries a recommendation.
+9. Write `seo/reports/YYYY-MM-DD.md` (full analysis lives here). Update
+   `.seo-state.json` (baselines cache, rotation index, `stagnant_weeks`,
+   `north_star`, pending-item registry, health fingerprints). Commit + push.
+10. **Email:** see *The email* below.
+
+### The email (growth format, from 2026-09-28)
+
+Short. The report on GitHub holds the analysis. The email holds the decisions.
+In this order:
+
+1. **Headline.** One sentence: the most important thing that happened to
+   growth this week and what we're doing about it.
+2. **Scoreboard** (≤6 lines, each vs 4-wk): north star (app-intent sessions);
+   organic clicks and impressions (GSC); sessions by channel (organic / Ad
+   Grants / other paid / answer engines) with app-intent rate; Ad Grants
+   month-to-date CTR vs the 5% floor, and conversions; non-brand discovery
+   impressions.
+3. **Decisions for Keith** (≤3). Each: what, the recommendation, why (the
+   insight), the cost of waiting, and the ship phrase: *"to ship: open Claude
+   Code and say 'ship SEO item N'"* (and "decline SEO item N").
+4. **Experiment board.** Running experiments, one line each: what, metric,
+   verdict date, early read. Plus any verdicts this week and the learning each
+   produced.
+5. **Insights → next hypotheses.** The top 3 backlog items by ICE, one line
+   each, so Keith sees what's coming and can redirect early.
+6. **Health.** One line. Link to the full report.
+
+Don't put diagnostic detail in the email (cohort tables, pattern coverage,
+instrument fixes) unless it changes a decision. It belongs in the report.
 
 ## Monthly deep-dive (first ≤7 days of the month)
 
@@ -157,16 +264,22 @@ Everything in the weekly pulse, plus:
    `seo/drafts/guides/<slug>.md` (full YAML + body, library voice, messaging
    policy), and/or one page-edit branch `seo/YYYY-MM-<slug>` (pushed, never
    merged). Self-check every drafted word against `seo/strategy.md`.
-7. **Email:** prioritized numbered list (effort × expected impact), teardown
-   highlights, portfolio changes, the ledger.
+7. **Growth strategy review:** re-rank the hypothesis backlog end to end.
+   Check the channel mix (is organic's app-intent rate improving? what are
+   paid search terms telling us about unmet demand?), and propose one change to
+   `seo/strategy.md` if the learnings warrant it.
+8. **Email:** the growth format above, plus teardown highlights and portfolio
+   changes in two lines each.
 
 ## The accountability ledger (top of every report and email)
 
 | Metric | This period | vs 4-wk avg | vs 12-wk avg |
 |---|---|---|---|
+| **North star: app-intent sessions** (search + answer + paid) | | | |
 | Organic clicks (GSC) — total + per active cluster | | | |
 | Impressions + avg position per cluster | | | |
-| PostHog organic sessions | | | |
+| Sessions by channel + app-intent rate (PostHog `channels_by_week`) | | | |
+| Ad Grants: clicks, CTR vs 5% floor (month to date), conversions — snapshot date | | | |
 | AEO sentinel citations (n of 6) | | | |
 
 Baselines are trailing means recomputed each run from the committed

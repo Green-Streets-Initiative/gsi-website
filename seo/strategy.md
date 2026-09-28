@@ -71,6 +71,60 @@ bike, and foot."
   (`content/micro-guides-library.md` → migration → Supabase). Town pages are
   the proven organic engine; extend them as towns qualify.
 
+## Growth model (added 2026-09-28)
+
+Search traffic matters because of what visitors do next. The funnel we manage:
+
+**impressions → clicks → sessions → activated (used the Commute Advisor or a
+/nearby snapshot) → app intent (clicked toward the Shift app)**
+
+**North star: app-intent sessions from search, answer engines and paid.**
+Organic traffic is the compounding asset. Paid is the fast lane and the test
+bed.
+
+**Channel roles**
+
+- **Organic search:** durable, compounding reach. Town pages, Roams, events
+  and guides. Accountable for impressions → clicks *and*, from now on, for its
+  app-intent rate. Organic visitors almost never click through to the app
+  (3 in 189 sessions over the four weeks to 2026-09-27), so conversion on
+  high-traffic pages is as big a lever as more traffic.
+- **Google Ad Grants ($10k/month, search only):** reach for the queries we
+  don't rank for yet, a brand defense, and a fast test lab. Its search terms
+  are keyword research for organic, and its winning headlines are title
+  candidates. Grant rules (5% CTR by calendar month, ≥1 conversion a month) are
+  hard constraints. The `ad-grants-review` routine owns the account. This
+  routine reads its snapshots and reasons across both channels.
+- **Other paid (Meta/Reddit campaigns):** campaign-driven bursts. The SEO
+  routine measures them in the funnel so paid spikes are never mistaken for
+  organic growth, and borrows what converts (e.g. the semester landing pages
+  convert paid social at ~7% to app intent).
+- **Answer engines:** input-optimized (structured data, llms.txt, citable
+  answers), proxy-measured.
+
+**The loop:** data → analysis → insight → hypothesis → experiment → data. See
+`seo/methodology.md`. The hypothesis backlog and experiments live in
+`seo/experiments.md`. Verdicts write to *Learnings* below.
+
+## Learnings
+
+One line per verdict or hard-won observation, newest first. Next hypotheses
+come from here.
+
+- 2026-09-28 (observed): organic sessions convert to app intent at ~1.6%;
+  Reddit semester-campaign sessions landing on the same campus pages convert at
+  ~7%. The pages can convert. Organic visitors arrive with a different job.
+- 2026-09-28 (observed): a festival page run by someone else can take hundreds
+  of impressions at zero CTR. Event growth must be read net of one-offs.
+- 2026-09-21 (observed): the wedge audiences' *head* queries are owned by
+  vendor blogs. The opening is the local, specific question (used prices here,
+  local routes, local events), which is also where we already win (Roams, events
+  at positions 3–9).
+- 2026-09-21 (observed): event pages are the best-converting search class
+  (2–3% CTR at positions 4–8), and new event pages supply most event clicks.
+- 2026-09-08 (observed): a zero-impression cluster that already has content is
+  a visibility/structure problem, not a content problem (year-round-weather).
+
 ## What "winning" looks like
 
 - Organic clicks and impressions trending up per audience cluster, not just in
@@ -79,6 +133,10 @@ bike, and foot."
   impressions where we had ~none.
 - The sentinel AEO questions increasingly returning GSI as a cited source.
 - No regression on the core town-commuter cluster.
+- The north star (app-intent sessions from search + answer + paid) trending up,
+  and organic's app-intent rate climbing, not just its session count.
+- Ad Grants compliant every calendar month and feeding real search-term
+  evidence into organic hypotheses.
 
 Steady and compounding beats spiky. The routine is accountable for the trend,
 and must re-strategize (not just report) when it flattens.

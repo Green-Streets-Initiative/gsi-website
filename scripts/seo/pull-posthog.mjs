@@ -210,6 +210,78 @@ const answerEngineQuery = `
   LIMIT 25
 `
 
+// ---- channels and outcomes (added 2026-09-28) ----
+//
+// The routine is accountable for growth, not just traffic, so each session is
+// classified by channel and checked for what the visitor went on to do.
+//
+// PAID MUST BE SEPARATED FROM ORGANIC. An Ad Grants click arrives with a
+// google.com referrer exactly like an organic click; only the gclid (or a
+// cpc utm_medium) tells them apart. Before this, the organic count would have
+// silently absorbed the grant's traffic as soon as the brand campaign started.
+//
+// Channel is decided per session, first match wins:
+//   paid_search    Google Ads (the Ad Grant): gclid / wbraid / gbraid, or utm_source google + paid medium
+//   paid_other     any other paid click (the New Routes Meta/Reddit ads): fbclid, rdt_cid, or a paid utm_medium
+//   organic_search a search-engine referring domain
+//   answer_engine  an answer-engine referring domain
+// Outcomes (any event in the session):
+//   activated      used a tool: Commute Advisor result or a /nearby snapshot
+//   app_intent     clicked through toward the Shift app (store button or app CTA)
+const ACTIVATION_EVENTS = `'advisor_results_shown', 'snapshot_viewed'`
+const APP_INTENT_EVENTS = `'shift_store_click', 'snapshot_app_cta_clicked', 'advisor_app_cta_clicked'`
+
+const channelSessionsQuery = `
+  SELECT week_start, channel, count() AS sessions,
+         countIf(activated) AS activated, countIf(app_intent) AS app_intent
+  FROM (
+    SELECT
+      properties.$session_id AS sid,
+      toStartOfWeek(min(timestamp), 1) AS week_start,
+      multiIf(
+        countIf(properties.gclid IS NOT NULL OR properties.wbraid IS NOT NULL OR properties.gbraid IS NOT NULL
+                OR (lower(toString(properties.utm_source)) LIKE '%google%'
+                    AND lower(toString(properties.utm_medium)) IN ('cpc', 'ppc', 'paid'))) > 0, 'paid_search',
+        countIf(properties.fbclid IS NOT NULL OR properties.rdt_cid IS NOT NULL
+                OR lower(toString(properties.utm_medium)) IN ('cpc', 'ppc', 'paid', 'paid_social', 'paidsocial', 'social_paid')) > 0, 'paid_other',
+        countIf(event = '$pageview' AND ${domainMatch('properties.$referring_domain', ORGANIC_DOMAINS)}) > 0, 'organic_search',
+        countIf(event = '$pageview' AND ${domainMatch('properties.$referring_domain', ANSWER_ENGINE_DOMAINS)}) > 0, 'answer_engine',
+        'other') AS channel,
+      countIf(event IN (${ACTIVATION_EVENTS})) > 0 AS activated,
+      countIf(event IN (${APP_INTENT_EVENTS})) > 0 AS app_intent
+    FROM events
+    WHERE timestamp >= toStartOfWeek(now(), 1) - INTERVAL ${WEEKS} WEEK
+      AND properties.$lib = 'web'
+      AND properties.$session_id IS NOT NULL${SCANNER_EXCLUSION}
+    GROUP BY sid
+  )
+  WHERE channel != 'other'
+  GROUP BY week_start, channel
+  ORDER BY week_start DESC, channel
+`
+
+// Any paid-looking landing in the last 7 days, with its source, so a new paid
+// channel shows up by name instead of being folded into someone else's number.
+const paidLandingQuery = `
+  SELECT
+    multiIf(properties.gclid IS NOT NULL, 'gclid', properties.fbclid IS NOT NULL, 'fbclid',
+            properties.rdt_cid IS NOT NULL, 'rdt_cid', 'utm') AS click_id,
+    toString(properties.utm_source) AS utm_source,
+    toString(properties.utm_medium) AS utm_medium,
+    toString(properties.utm_campaign) AS utm_campaign,
+    properties.$pathname AS path,
+    count(DISTINCT properties.$session_id) AS sessions
+  FROM events
+  WHERE event = '$pageview'
+    AND timestamp >= now() - INTERVAL 1 WEEK
+    AND properties.$lib = 'web'
+    AND (properties.gclid IS NOT NULL OR properties.fbclid IS NOT NULL OR properties.rdt_cid IS NOT NULL
+         OR lower(toString(properties.utm_medium)) IN ('cpc', 'ppc', 'paid', 'paid_social', 'paidsocial', 'social_paid'))
+  GROUP BY click_id, utm_source, utm_medium, utm_campaign, path
+  ORDER BY sessions DESC
+  LIMIT 25
+`
+
 function mean(xs) {
   if (xs.length === 0) return null
   return Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 100) / 100
@@ -227,11 +299,21 @@ async function main() {
   }
   if (mode !== 'weekly') die(`unknown --mode "${mode}" (expected check or weekly)`)
 
-  const [sessionRows, landingRows, answerRows] = await Promise.all([
+  const [sessionRows, landingRows, answerRows, channelRows, paidLandingRows] = await Promise.all([
     hogql(cred, projectId, weeklySessionsQuery),
     hogql(cred, projectId, landingPagesQuery),
     hogql(cred, projectId, answerEngineQuery),
+    hogql(cred, projectId, channelSessionsQuery),
+    hogql(cred, projectId, paidLandingQuery),
   ])
+
+  // { 'YYYY-MM-DD': { organic_search: {sessions, activated, app_intent}, ... } }
+  const byWeek = {}
+  for (const [week_start, channel, sessions, activated, app_intent] of channelRows) {
+    const wk = String(week_start).slice(0, 10)
+    byWeek[wk] ??= {}
+    byWeek[wk][channel] = { sessions: Number(sessions), activated: Number(activated), app_intent: Number(app_intent) }
+  }
 
   // Row 0 is the current, partial week — real but not comparable to full weeks.
   const weeks = sessionRows.map(([week_start, sessions]) => ({
@@ -262,6 +344,16 @@ async function main() {
       sessions: Number(sessions),
     })),
     answer_engine_referral_sessions_7d: answerRows.reduce((a, r) => a + Number(r[1]), 0),
+    channels_definition:
+      'Per session, first match wins: paid_search (gclid/wbraid/gbraid or utm_medium cpc|ppc|paid), ' +
+      'organic_search (search-engine referrer), answer_engine (answer-engine referrer). Web events only. ' +
+      `activated = ${ACTIVATION_EVENTS}; app_intent = ${APP_INTENT_EVENTS}. Weeks keyed by the session's first event. ` +
+      'NOTE organic_search here EXCLUDES paid; the older `weeks` series above does not, and diverges once Ad Grants traffic grows.',
+    channels_by_week: byWeek,
+    channels_last_complete_week: byWeek[complete[0]?.week_start] ?? null,
+    paid_landings_7d: paidLandingRows.map(([click_id, utm_source, utm_medium, utm_campaign, path, sessions]) => ({
+      click_id, utm_source, utm_medium, utm_campaign, path, sessions: Number(sessions),
+    })),
   }
 
   fs.mkdirSync(DATA_DIR, { recursive: true })
@@ -272,7 +364,8 @@ async function main() {
     `wrote ${path.relative(REPO_ROOT, file)}  ` +
       `(organic sessions ${out.organic_sessions_last_complete_week}, ` +
       `4-wk mean ${out.organic_sessions_4wk_mean}, ` +
-      `answer-engine referrals ${out.answer_engine_referral_sessions_7d})`,
+      `answer-engine referrals ${out.answer_engine_referral_sessions_7d})\n` +
+      `channels last complete week: ${JSON.stringify(out.channels_last_complete_week)}`,
   )
 }
 
