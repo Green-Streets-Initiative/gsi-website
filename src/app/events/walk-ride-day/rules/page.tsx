@@ -82,10 +82,17 @@ export default async function WalkRideDayRulesPage() {
 
   let prizes: PrizeRow[] = []
   let maxEntries = 3
+  // Referral entries are a per-month opt-in: a prize with referral_entry_cap > 0,
+  // referral_mode 'first_trip_only' and a referral_opens_at in its
+  // eligibility_criteria. Without all three, the referral wording below does not
+  // render and trips are the only entry method.
+  let referralOpensAt: string | null = null
+  let referralMax = 0
+  let referralPerFriend = 1
   if (competition) {
     const { data } = await supabase
       .from('competition_prizes')
-      .select('id, description, value_amount, quantity, eligibility_criteria')
+      .select('id, description, value_amount, quantity, eligibility_criteria, referral_entry_cap')
       .eq('competition_id', competition.id)
       .eq('prize_type', 'individual')
       .order('display_order', { ascending: true })
@@ -101,9 +108,35 @@ export default async function WalkRideDayRulesPage() {
       .map((r: any) => r.eligibility_criteria?.max_daily_entries)
       .find((v: unknown) => typeof v === 'number')
     if (typeof cap === 'number') maxEntries = cap
+
+    type ReferralRow = {
+      referral_entry_cap: number | null
+      eligibility_criteria: {
+        referral_opens_at?: unknown
+        referral_mode?: unknown
+        referral_stage_entries?: { first_trip?: unknown }
+      } | null
+    }
+    const referralRow = ((data ?? []) as ReferralRow[]).find(r => {
+      const opens = r.eligibility_criteria?.referral_opens_at
+      return (
+        (r.referral_entry_cap ?? 0) > 0 &&
+        r.eligibility_criteria?.referral_mode === 'first_trip_only' &&
+        typeof opens === 'string' &&
+        !Number.isNaN(Date.parse(opens))
+      )
+    })
+    if (referralRow) {
+      referralOpensAt = referralRow.eligibility_criteria?.referral_opens_at as string
+      const perFriend = referralRow.eligibility_criteria?.referral_stage_entries?.first_trip
+      if (typeof perFriend === 'number' && perFriend > 0) referralPerFriend = perFriend
+      // referral_entry_cap = most friends who can add entries; entries = friends × per friend.
+      referralMax = (referralRow.referral_entry_cap ?? 0) * referralPerFriend
+    }
   }
 
   const dayLabel = competition ? eventDay(competition.starts_at) : null
+  const referralOpensLabel = referralOpensAt && dayLabel ? longDate(referralOpensAt) : null
   // The scheduled drawing when one is set; otherwise the day after the event.
   const drawLabel = competition
     ? longDate(
@@ -142,6 +175,12 @@ export default async function WalkRideDayRulesPage() {
               <strong>You are entered automatically.</strong> There is nothing to sign up for.
               Every qualifying trip you record in the Shift app on Walk/Ride Day enters you in
               the drawing. No purchase, payment, or entry action of any kind is necessary.
+              {referralOpensLabel && (
+                <>
+                  {' '}You can also receive extra entries by inviting friends to Shift between{' '}
+                  {referralOpensLabel} and {dayLabel}. See Section 4.
+                </>
+              )}
             </p>
           </div>
 
@@ -193,7 +232,8 @@ export default async function WalkRideDayRulesPage() {
                 </li>
                 <li>
                   <strong>Eligibility is confirmed when a prize is claimed, not at the time of
-                  entry.</strong> Entries accrue automatically from qualifying trips, so a person
+                  entry.</strong> Entries accrue automatically from qualifying trips
+                  {referralOpensLabel ? ' and referrals' : ''}, so a person
                   who does not meet the eligibility requirements may nonetheless be selected. Any
                   selected entrant who does not confirm that they are 18 or older and a Massachusetts
                   resident forfeits the prize, and the prize is awarded to a replacement entrant
@@ -224,9 +264,17 @@ export default async function WalkRideDayRulesPage() {
                   </li>
                 )}
                 <li>
-                  Only trips recorded within the Promotion Period count toward entries. Trips recorded
-                  before or after it do not, regardless of when they are confirmed in the app.
+                  Only trips recorded within the Promotion Period count toward trip entries. Trips
+                  recorded before or after it do not, regardless of when they are confirmed in the app.
                 </li>
+                {referralOpensLabel && (
+                  <li>
+                    The Referral Period runs from 12:00 AM Eastern Time on {referralOpensLabel}{' '}
+                    through 11:59 PM Eastern Time on {dayLabel}. A referral entry (Section 4) is
+                    received only when the friend both enters the code and records their first trip
+                    within the Referral Period.
+                  </li>
+                )}
               </Ul>
             </Section>
 
@@ -235,6 +283,12 @@ export default async function WalkRideDayRulesPage() {
                 Entry is automatic. Record a qualifying trip in the Shift app during the Promotion
                 Period and you are entered. There is no opt-in, no form, and no separate
                 registration.
+                {referralOpensLabel && (
+                  <>
+                    {' '}You may also receive additional entries by referring friends, as described
+                    below. Referring friends is optional and is never required to enter or win.
+                  </>
+                )}
               </P>
 
               <SubSection title="What counts as a qualifying trip">
@@ -255,9 +309,10 @@ export default async function WalkRideDayRulesPage() {
                 <Ul>
                   <li>Each qualifying trip counts as one (1) entry.</li>
                   <li>
-                    A maximum of {maxEntries} {maxEntries === 1 ? 'entry' : 'entries'} may be
-                    received per person during the Promotion Period. Additional qualifying trips are
-                    welcome but do not increase the number of entries.
+                    A maximum of {maxEntries} {maxEntries === 1 ? 'entry' : 'entries'} from trips may
+                    be received per person during the Promotion Period. Additional qualifying trips
+                    are welcome but do not increase the number of entries.
+                    {referralOpensLabel && ' Referral entries are counted separately, as described below.'}
                   </li>
                   <li>
                     Entries are per person, not per device or per account. Attempting to gain
@@ -266,12 +321,53 @@ export default async function WalkRideDayRulesPage() {
                 </Ul>
               </SubSection>
 
+              {referralOpensLabel && (
+                <SubSection title="Referral entries">
+                  <Ul>
+                    <li>
+                      Every Shift member has a personal referral code in the Shift app. You receive
+                      {referralPerFriend === 1 ? 'one (1) entry' : `${referralPerFriend} entries`} in
+                      this drawing for each friend who enters your code in the
+                      Shift app and then records their first trip that the Shift app verifies. Both
+                      must happen during the Referral Period ({referralOpensLabel} through{' '}
+                      {dayLabel}).
+                    </li>
+                    <li>
+                      A maximum of {referralMax} referral{' '}
+                      {referralMax === 1 ? 'entry' : 'entries'} may be received per person. Referral
+                      entries are in addition to the trip maximum above.
+                    </li>
+                    <li>
+                      Referral entries count only in this Walk/Ride Day drawing and do not carry
+                      over to any other drawing. A friend&rsquo;s first trip recorded after 11:59 PM
+                      Eastern Time on {dayLabel} does not add an entry.
+                    </li>
+                    <li>
+                      A referral code must be entered within 30 days of the friend creating their
+                      Shift account. Each person can use one referral code, and no one can use their
+                      own. The friend receives entries from their own qualifying trips in the usual
+                      way.
+                    </li>
+                    <li>
+                      Referring friends is free and optional, and is never required to enter or win.
+                    </li>
+                    <li>
+                      Each referral must be a different, real person. GSI may review and void
+                      referral entries that involve a shared device, more than one account for the
+                      same person, or any other misuse. Referral entries do not change who is
+                      eligible to win (Section 2).
+                    </li>
+                  </Ul>
+                </SubSection>
+              )}
+
               <SubSection title="No alternate method of entry is required">
                 <P>
                   Because entry requires no purchase, no payment, no subscription, and no entry
                   action of any kind &mdash; entries accrue from ordinary use of a free app &mdash;
                   no alternate method of entry is offered for this drawing. The Shift app is free to
                   download and free to use.
+                  {referralOpensLabel && ' Referring a friend is free and optional, and is never required to enter or win.'}
                 </P>
               </SubSection>
             </Section>
@@ -290,7 +386,7 @@ export default async function WalkRideDayRulesPage() {
                       <li key={p.id}>
                         <strong>{p.quantity} &times;</strong> {p.description}
                         {p.value_amount != null && (
-                          <> &mdash; approximate retail value ${p.value_amount.toLocaleString()} each</>
+                          <> &mdash; approximate retail value ${p.value_amount.toLocaleString()}{p.quantity > 1 ? ' each' : ''}</>
                         )}
                       </li>
                     ))}
@@ -315,6 +411,12 @@ export default async function WalkRideDayRulesPage() {
                 </li>
                 <li>Prizes have no cash value and cannot be redeemed for cash.</li>
                 <li>Limit one prize per person.</li>
+                {prizes.length > 1 && (
+                  <li>
+                    Every entry counts toward every prize level listed above. Entrants do not choose
+                    a prize level.
+                  </li>
+                )}
               </Ul>
             </Section>
 
@@ -323,8 +425,15 @@ export default async function WalkRideDayRulesPage() {
                 <li>
                   Winners are selected at random from all entries received during the Promotion
                   Period. An entrant&rsquo;s chance of winning is proportional to the number of
-                  entries they received, up to the maximum in Section 4.
+                  entries they received, up to the {referralOpensLabel ? 'maximums' : 'maximum'} in Section 4.
                 </li>
+                {prizes.length > 1 && (
+                  <li>
+                    Prizes are drawn in the order listed in Section 5, starting with the
+                    highest-value prize. A person selected for one prize is not eligible to be
+                    selected for another prize in the same drawing.
+                  </li>
+                )}
                 <li>
                   {drawLabel
                     ? <>The drawing will be conducted on or about {drawLabel}.</>
