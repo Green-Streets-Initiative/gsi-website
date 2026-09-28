@@ -11,10 +11,26 @@
     "week_of_2026_09_21": 27,
     "prior_4wk_mean": 2.0,
     "by_channel_week_of_2026_09_21": {
-      "organic_search": { "sessions": 54, "activated": 1, "app_intent": 1 },
-      "paid_search": { "sessions": 11, "activated": 1, "app_intent": 0 },
-      "paid_other": { "sessions": 383, "activated": 13, "app_intent": 26 },
-      "answer_engine": { "sessions": 5, "activated": 0, "app_intent": 0 }
+      "organic_search": {
+        "sessions": 54,
+        "activated": 1,
+        "app_intent": 1
+      },
+      "paid_search": {
+        "sessions": 11,
+        "activated": 1,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 383,
+        "activated": 13,
+        "app_intent": 26
+      },
+      "answer_engine": {
+        "sessions": 5,
+        "activated": 0,
+        "app_intent": 0
+      }
     },
     "organic_intent_rate_4wk": "3 / 189 = 1.6%",
     "_note": "paid_other is almost entirely the Reddit 'semester' campaign (rdt_cid, 393 landings in 7d, mostly /shift-your-semester/<school>). paid_search (gclid) shows 9-11 sessions/wk while the Ad Grants snapshot shows 1 click MTD at 2026-09-24 — unreconciled; gclid may include Google Ads traffic outside the grant account. Report the gap, don't pick a side."
@@ -213,50 +229,7 @@
       "do_not": "Do not assume a guide is discoverable just because its own /guides/<slug> URL returns 200. After shipping a guide, check the /guides index, sitemap.xml and llms.txt too — the slug route is dynamic and will 200 well before the index catches up."
     }
   ],
-  "pending": [
-    {
-      "report_date": "2026-09-28",
-      "item_n": 2,
-      "type": "page-edit-branch",
-      "ref": "seo/2026-09-app-invites",
-      "experiment_id": "exp-2026-09-7 + exp-2026-09-8",
-      "title": "Shift invitation above the fold on Roam pages; invitation + Register/Event-info tracking on event pages",
-      "diff": "3 files, +61/-1 (Roam page, EventDetail, CTA placement vocabulary), cut from main at ccb8291. tsc --noEmit clean. Not rendered locally (the session could not start a dev server); check the Vercel preview.",
-      "why": "Growth-loop run requested by Keith 2026-09-28. Organic app intent 3/125 since tracking began 2026-09-14; 0/23 organic Roam landings, 0/36 organic event landings; same campus pages convert Reddit visitors 32/447 (7.2%).",
-      "ship_steps": "Look at one Roam page and one event page on the Vercel preview (mobile width too). Merge seo/2026-09-app-invites into main, push, confirm the Vercel deploy, delete the branch. Set Shipped date on exp-2026-09-7 and exp-2026-09-8 and verdict-by = ship + 4 weeks. After a few days, confirm shift_store_click arrives with placement roam_top / event_detail and that event_outbound_click appears."
-    },
-    {
-      "report_date": "2026-09-28",
-      "item_n": 3,
-      "type": "guide-draft",
-      "ref": "seo/drafts/guides/what-a-cargo-ebike-costs.md",
-      "experiment_id": "exp-2026-09-4",
-      "title": "Publish the cargo e-bike cost guide (same draft as 2026-09-08 item 3, re-listed so the current ship phrase works)",
-      "ship_steps": "Same as the 2026-09-08 item 3 entry below; re-verify the MassCEC voucher sentence first."
-    },
-    {
-      "report_date": "2026-09-28",
-      "item_n": 1,
-      "type": "page-edit-branch",
-      "ref": "seo/2026-09-events-patterns",
-      "experiment_id": "item-2026-09-28-1",
-      "title": "Portfolio: bucket events by the shape of an event name (fest/festival, open streets, '<year> schedule'); Roam alternation gains sudhud, 'silvio o conte', b-line",
-      "diff": "1 file (seo/keyword-portfolio.json), +6/-3, cut from main at ca1a4a8",
-      "verified": "Replayed on the week to 2026-09-25: coverage 58% -> 94%, unmatched 217 -> 32, events-programs 9 -> 182, roams-trails 100 -> 112, non-brand trigger 455 -> 455.",
-      "ship_steps": "Merge seo/2026-09-events-patterns into main, push, delete the branch. No deploy impact (seo/ only). Record in experiments.md 'Shipped infrastructure' as item-2026-09-28-1. Then run `node scripts/seo/analyze.mjs --section clusters` to confirm ~94% coverage."
-    },
-    {
-      "report_date": "2026-09-08",
-      "item_n": 3,
-      "type": "guide-draft",
-      "ref": "seo/drafts/guides/what-a-cargo-ebike-costs.md",
-      "experiment_id": "exp-2026-09-4",
-      "title": "Micro-guide: what a cargo e-bike costs — new, used, and what drives the price",
-      "recommendation_2026_09_28": "SHIP. Keith wanted to publish it the week of 2026-09-21 and the routine's hedging held it back; the vendor-owned SERP evidence was about the generic head query ('e-bike vs used car cost'), not the used/local price queries that actually reach us. Do not re-litigate. At ship time re-verify the MassCEC voucher sentence (verified closed 2026-09-08). Verdict-by moves to 6 weeks after ship.",
-      "age_note": "Proposed 2026-09-08, undecided at 2026-09-28 (3 weeks) because of routine hedging, not Keith's. Ages out 2026-11-03 under the 8-week rule. The 2026-09-21 rotation is relevant evidence: 'e-bike vs used car cost' and 'cargo bike for kids' are owned end-to-end by manufacturer and retailer blogs, so a generic cost guide competes with vendors on their own ground. If it ships, the local angle is the differentiator, not the price table.",
-      "ship_steps": "Follow the ship checklist in the draft file: append the YAML+body to content/micro-guides-library.md, flip status draft -> approved, bump the guide-count check in scripts/build-micro-guides-migration.mjs from 21 to 22, run the migration builder, commit both by filename, apply the migration. Then check the /guides index, sitemap.xml and llms.txt — not just the slug URL. Record the ship date against exp-2026-09-4."
-    }
-  ],
+  "pending": [],
   "declined": [
     {
       "report_date": "2026-09-21",
@@ -276,6 +249,35 @@
     }
   ],
   "shipped": [
+    {
+      "report_date": "2026-09-28",
+      "item_n": 1,
+      "ref": "seo/2026-09-events-patterns",
+      "experiment_id": "item-2026-09-28-1",
+      "title": "Portfolio: bucket events by the shape of an event name",
+      "shipped_on": "2026-09-28",
+      "note": "Merged (8a1d687), branch deleted. Verified: analyze.mjs --section clusters coverage 94%, non-brand 455."
+    },
+    {
+      "report_date": "2026-09-28",
+      "item_n": 2,
+      "ref": "seo/2026-09-app-invites",
+      "experiment_id": "exp-2026-09-7 + exp-2026-09-8",
+      "title": "Shift invitation above the fold on Roam pages; invitation + Register/Event-info tracking on event pages",
+      "shipped_on": "2026-09-28",
+      "note": "Merged (ba4d0d4), Vercel production deploy success, branch deleted. VERIFIED LIVE 2026-09-28: /shift/roams/fresh-pond-loop shows the card under the title chips (desktop; mobile 375px buttons go full width); /events/os26_boston_allston_2026-10-04 shows the invitation under Event info. Tracking not click-tested on production (would write a fake event). Verdict 2026-10-26 on landing_outcomes by channel; also check shift_store_click placements roam_top / roam_bottom / event_detail and that event_outbound_click is arriving.",
+      "verified_live": "2026-09-28"
+    },
+    {
+      "report_date": "2026-09-28",
+      "item_n": 3,
+      "ref": "seo/drafts/guides/what-a-cargo-ebike-costs.md",
+      "experiment_id": "exp-2026-09-4",
+      "title": "Micro-guide: what a cargo e-bike costs",
+      "shipped_on": "2026-09-28",
+      "live_url": "https://www.gogreenstreets.org/guides/what-a-cargo-ebike-costs",
+      "note": "Also 2026-09-08 item 3. Committed 11e206f; migration applied via management API (upsert-only); content_items row approved, 22 approved guides. mode corrected biking -> cycling. MassCEC sentence re-verified (2025 program closed, not expected to reopen in 2026). Guide URL 200 at ship; /guides index, sitemap and llms.txt revalidate hourly — CHECK THEM at the next run. Verdict 2026-11-09."
+    },
     {
       "report_date": "2026-09-21",
       "item_n": 2,
