@@ -186,7 +186,7 @@
         "mass central rail trail"
       ],
       "gsc_patterns": [
-        "(fresh pond|emerald necklace|minuteman|community path|charles river|charles loop|freedom (stroll|walk|trail)|marblehead|silvio conte|fort river|mass central rail trail|mcrt|watertown branch|wwii veterans memorial|battle road|shining sea|manhan|twin cities rail trail|wachusett greenway|mystic river greenway|alewife|north point|bakery run|sunset pedal|b-?line crawl|museum hop|harbor walk|eastie eats|salem by rail|harbor islands|city of squares)",
+        "(fresh pond|emerald necklace|minuteman|community path|charles river|charles loop|freedom (stroll|walk|trail)|marblehead|silvio (o\\.? )?conte|fort river|mass central rail trail|mcrt|sudhud|watertown branch|wwii veterans memorial|battle road|shining sea|manhan|twin cities rail trail|wachusett greenway|mystic river greenway|alewife|north point|bakery run|sunset pedal|\\bb-?line\\b|museum hop|harbor walk|eastie eats|salem by rail|harbor islands|city of squares)",
         "(how long|how far|distance|miles|length) .*(loop|trail|path|greenway|bikeway|walk|ride)",
         "(loop|trail|path|greenway|bikeway) .*(how long|how far|distance|miles|length|map|start|parking)",
         "(walking|running|biking|bike|cycling) (loop|route|trail|tour) .*(boston|cambridge|somerville|brookline|arlington|medford|newton|watertown)",
@@ -225,7 +225,10 @@
         "(bike|cycling|walk|walking|transit) .*(event|class|clinic|workshop|repair|tour|ride|meetup|fair|festival)",
         "(event|class|clinic|workshop|repair cafe|learn to (bike|ride)|group ride|bike month|bike week)",
         "(everett|cambridge|somerville|boston|medford|malden|chelsea|revere) .*(fair|festival|contest|workshop|pop-?up)",
-        "(massdot|mass ?dot) .*(contest|video|challenge)"
+        "(massdot|mass ?dot) .*(contest|video|challenge)",
+        "open streets?",
+        "\\bfest(ival)?s?\\b",
+        "\\b20\\d\\d (schedule|dates?|lineup)\\b"
       ],
       "target_urls": [
         "/events",
@@ -239,7 +242,7 @@
         "Where can I get my bike fixed for free in Boston?",
         "Is there a learn-to-ride class in Cambridge this month?"
       ],
-      "messaging_notes": "These searchers have already decided to come to something; answer the practical question first — what it is, when, where, whether it costs anything, whether you need to register — and let the event do the inviting. Placed AFTER students-campus and roams-trails because bucketing takes the first match and a campus bike-kitchen event belongs with the campus pages it shares a searcher with; placed BEFORE town-commuters so 'learn to bike cambridge' does not read as town-page demand."
+      "messaging_notes": "These searchers have already decided to come to something; answer the practical question first — what it is, when, where, whether it costs anything, whether you need to register — and let the event do the inviting. Placed AFTER students-campus and roams-trails because bucketing takes the first match and a campus bike-kitchen event belongs with the campus pages it shares a searcher with; placed BEFORE town-commuters so 'learn to bike cambridge' does not read as town-page demand. Pattern maintenance (2026-09-28): coverage fell 81% -> 58% in one week because searchers name an event, not a category — 'fluff fest', 'open streets allston', 'bu sustainability festival' carried ~200 impressions between them and matched nothing, since every pattern above needs a bike/walk word or a town in front. The inventory churns weekly, so a name list would decay faster than the Roam list did; the added patterns are the generic shapes of an event name instead (fest/festival, open streets, '<year> schedule'). Read the cluster alongside the page table: a big festival run by someone else can put hundreds of impressions on one of our listing pages at near-zero CTR, because the searcher wants the organizer."
     },
     {
       "id": "town-commuters",
