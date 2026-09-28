@@ -1,0 +1,168 @@
+{
+  "pulled_at": "2026-09-28T11:02:11.460Z",
+  "project_id": 436603,
+  "host": "https://us.posthog.com",
+  "definition": "Organic = distinct $session_id on $pageview where $referring_domain matches google/bing/duckduckgo/ecosia/yahoo/brave, excluding mail-security link-scanner paths (%/1/0100% and /preferences/%). Monday-start weeks.",
+  "partial_week": {
+    "week_start": "2026-09-28",
+    "sessions": 6
+  },
+  "weeks": [
+    {
+      "week_start": "2026-09-21",
+      "sessions": 55
+    },
+    {
+      "week_start": "2026-09-14",
+      "sessions": 71
+    },
+    {
+      "week_start": "2026-09-07",
+      "sessions": 29
+    },
+    {
+      "week_start": "2026-08-31",
+      "sessions": 35
+    },
+    {
+      "week_start": "2026-08-24",
+      "sessions": 29
+    },
+    {
+      "week_start": "2026-08-17",
+      "sessions": 35
+    },
+    {
+      "week_start": "2026-08-10",
+      "sessions": 25
+    },
+    {
+      "week_start": "2026-08-03",
+      "sessions": 32
+    },
+    {
+      "week_start": "2026-07-27",
+      "sessions": 24
+    },
+    {
+      "week_start": "2026-07-20",
+      "sessions": 29
+    },
+    {
+      "week_start": "2026-07-13",
+      "sessions": 35
+    }
+  ],
+  "organic_sessions_last_complete_week": 55,
+  "organic_sessions_4wk_mean": 47.5,
+  "organic_sessions_12wk_mean": 36.27,
+  "top_organic_landing_pages": [
+    {
+      "path": "/",
+      "sessions": 12
+    },
+    {
+      "path": "/programs",
+      "sessions": 8
+    },
+    {
+      "path": "/about",
+      "sessions": 6
+    },
+    {
+      "path": "/shift-your-semester/tufts",
+      "sessions": 5
+    },
+    {
+      "path": "/shift-your-semester/boston-university",
+      "sessions": 5
+    },
+    {
+      "path": "/shift/roams/marblehead-rail-trail",
+      "sessions": 4
+    },
+    {
+      "path": "/commute-advisor",
+      "sessions": 3
+    },
+    {
+      "path": "/shift-your-semester/umass-boston",
+      "sessions": 3
+    },
+    {
+      "path": "/events/os26_boston_allston_2026-10-04",
+      "sessions": 3
+    },
+    {
+      "path": "/events",
+      "sessions": 3
+    },
+    {
+      "path": "/challenges",
+      "sessions": 3
+    },
+    {
+      "path": "/shift/schools",
+      "sessions": 2
+    },
+    {
+      "path": "/shift/towns",
+      "sessions": 2
+    },
+    {
+      "path": "/get-involved",
+      "sessions": 2
+    },
+    {
+      "path": "/nearby",
+      "sessions": 2
+    },
+    {
+      "path": "/shift",
+      "sessions": 2
+    },
+    {
+      "path": "/events/ce_massdot-video-contest_20261004",
+      "sessions": 1
+    },
+    {
+      "path": "/shift/roams/b-line-crawl",
+      "sessions": 1
+    },
+    {
+      "path": "/events/mitcob26_minuteman_2026-09-24",
+      "sessions": 1
+    },
+    {
+      "path": "/shift/roams/sunset-pedal",
+      "sessions": 1
+    },
+    {
+      "path": "/events/ce_sync_massbike_5e7dd9b71afe",
+      "sessions": 1
+    },
+    {
+      "path": "/programs/what-moves-us/frisoli-youth-center",
+      "sessions": 1
+    },
+    {
+      "path": "/events/ce_import_weekly-social-bike-ride_2026-09-17",
+      "sessions": 1
+    },
+    {
+      "path": "/guides/what-you-can-do-with-an-e-cargo-bike",
+      "sessions": 1
+    },
+    {
+      "path": "/guides",
+      "sessions": 1
+    }
+  ],
+  "answer_engine_referrals_7d": [
+    {
+      "referrer": "chatgpt.com",
+      "sessions": 5
+    }
+  ],
+  "answer_engine_referral_sessions_7d": 5
+}

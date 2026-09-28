@@ -184,10 +184,14 @@ async function weeklySnapshot(client, siteUrl, clusters, endLag) {
     // site impressions and cut off at 22 impressions/page, so a page could leave
     // the table by growth elsewhere and read as deindexed. 150 is a near-census
     // at current volumes and costs nothing — same query, more of it written down.
+    // 2026-09-28: the week to 09-25 filled all 150 rows (floor 2 impr) once event
+    // pages entered the sitemap, so the census became a sample again. 400 leaves
+    // headroom under the 500 fetched; `analyze.mjs --section cohort` prints the
+    // row count and floor so the next saturation is visible, not silent.
     top_pages: pages
       .map((r) => ({ page: r.keys?.[0], clicks: r.clicks, impressions: r.impressions, position: +r.position.toFixed(1) }))
       .sort((a, b) => b.impressions - a.impressions)
-      .slice(0, 150),
+      .slice(0, 400),
   }
 }
 

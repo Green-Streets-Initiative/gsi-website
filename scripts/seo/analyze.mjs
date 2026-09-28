@@ -3,7 +3,8 @@
  * Analyze the committed Search Console pulls for the SEO/AEO routine.
  *
  *   node scripts/seo/analyze.mjs            # full report
- *   node scripts/seo/analyze.mjs --section baselines|weeks|clusters|pages|queries
+ *   node scripts/seo/analyze.mjs --section baselines|weeks|clusters|pages|cohort|trigger|queries
+ *   node scripts/seo/analyze.mjs --section cohort --class /events,/shift/roams
  *
  * WHY THIS FILE EXISTS. Every run of the routine used to recompute baselines and
  * replay cluster bucketing through a series of ad-hoc `node -e '...'` one-liners.
@@ -216,6 +217,60 @@ if (want('pages')) {
   const utm = pages.filter((p) => (p.page || '').includes('utm_'))
   if (utm.length)
     console.log(`\n  UTM-parameterized rows still indexed: ${utm.length}, ${utm.reduce((s, p) => s + p.impressions, 0)} impressions`)
+}
+
+/* ── Fixed cohort, week over week ─────────────────────────────────────────────
+ * Class totals mix two effects: pages newly indexed, and pages Google already
+ * had doing better or worse. Experiments on titles/snippets (exp-2026-09-5) and
+ * discovery (exp-2026-09-6) must be read on the pages present in BOTH weeks.
+ * Also prints each week's row count and floor, because a page missing from a
+ * truncated table is not a page with zero impressions (see 2026-09-21 notes).
+ */
+if (want('cohort')) {
+  const prev = series[series.length - 2]
+  if (prev) {
+    const strip = (u) => (u || '').replace('https://www.gogreenstreets.org', '')
+    const table = (j) => new Map((j.top_pages || []).map((p) => [strip(p.page), p]))
+    const a = table(prev.j)
+    const b = table(latest.j)
+    const floor = (m) => Math.min(...[...m.values()].map((p) => p.impressions))
+    console.log(`\n=== FIXED COHORT — ${prev.end} -> ${latest.end} ===`)
+    console.log(`  page table: ${a.size} rows (floor ${floor(a)} impr) -> ${b.size} rows (floor ${floor(b)} impr)`)
+    const classes = (argOf('class', '/events,/shift/roams,/shift/towns,/shift-your-semester,/guides')).split(',')
+    const sum = (rows) => rows.reduce((s, p) => ({ i: s.i + p.impressions, c: s.c + p.clicks }), { i: 0, c: 0 })
+    const ctr = (s) => (s.i ? ((s.c / s.i) * 100).toFixed(2) + '%' : 'n/a')
+    for (const cls of classes) {
+      const inCls = (k) => k === cls || k.startsWith(cls + '/')
+      const both = [...b.keys()].filter((k) => inCls(k) && a.has(k))
+      const fresh = [...b.keys()].filter((k) => inCls(k) && !a.has(k))
+      const gone = [...a.keys()].filter((k) => inCls(k) && !b.has(k))
+      const before = sum(both.map((k) => a.get(k)))
+      const after = sum(both.map((k) => b.get(k)))
+      const n = sum(fresh.map((k) => b.get(k)))
+      const g = sum(gone.map((k) => a.get(k)))
+      console.log(`  ${cls}`)
+      console.log(`    cohort ${String(both.length).padStart(3)} pages  impr ${before.i} -> ${after.i} (${pct(after.i, before.i)})  clicks ${before.c} -> ${after.c}  CTR ${ctr(before)} -> ${ctr(after)}`)
+      console.log(`    new    ${String(fresh.length).padStart(3)} pages  impr ${n.i}  clicks ${n.c}  CTR ${ctr(n)}`)
+      console.log(`    gone   ${String(gone.length).padStart(3)} pages  impr ${g.i}  clicks ${g.c}  (last week)`)
+    }
+  }
+}
+
+/* ── Stagnation trigger series ────────────────────────────────────────────────
+ * Replays every current-series week against the CURRENT portfolio and prints
+ * the non-brand discovery impressions, then trailing-4 vs prior-4 — the exact
+ * comparison seo/methodology.md specifies. Replaying keeps the series on one
+ * portfolio, so a pattern edit cannot look like a traffic change.
+ */
+if (want('trigger')) {
+  console.log('\n=== STAGNATION TRIGGER — non-brand discovery impressions (replayed on current portfolio) ===')
+  const vals = series.slice(-8).map((s) => ({ end: s.end, v: replay(s.j).nonBrand }))
+  for (const x of vals) console.log(`  ${x.end}  ${String(x.v).padStart(5)}`)
+  if (vals.length === 8) {
+    const t4 = mean(vals.slice(-4), (x) => x.v)
+    const p4 = mean(vals.slice(0, 4), (x) => x.v)
+    console.log(`  trailing 4 wk ${t4.toFixed(1)}/wk vs prior 4 wk ${p4.toFixed(1)}/wk  ${pct(t4, p4)}`)
+  }
 }
 
 /* ── Unmatched queries ────────────────────────────────────────────────────── */
