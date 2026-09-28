@@ -200,7 +200,7 @@ export default function SchoolPage({ d, capture = true }: { d: SchoolData; captu
         <Section shape="wanderLeft" id="around" className="scroll-mt-28">
           <SectionHeading
             title="What’s around campus"
-            lede={`Everywhere you can walk, bike, or ride to from ${school.shortName}. The live map opens centered on campus.`}
+            lede={`Everywhere you can walk, bike, or ride to from ${school.shortName}. The live map opens centered on campus, with real-time arrivals for every route.`}
           />
           {d.snapshot ? (
             <CampusSnapshot model={d.snapshot} lat={school.lat} lng={school.lng} href={d.nearbyHref} shortName={school.shortName} />

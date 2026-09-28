@@ -11,6 +11,11 @@ import { fetchEventPool, type TownEvent } from '@/lib/towns/queries'
  *     students / family_friendly tags get a boost (beginner sessions first)
  *   - diversity: at most 2 picks per category bucket, so the list mixes rides,
  *     repair/learning sessions, and festivals instead of three of a kind.
+ *   - near campus first: anything within NEAR_CAMPUS_MILES outranks the rest,
+ *     score deciding only within each group. Without it the tag boost beat
+ *     distance, and Brandeis showed rides in Boston 7 miles off while rides
+ *     in Weston and Newton, 2 miles from campus, never rendered. Same fix
+ *     the town pages got on 2026-09-17 (getTownEvents' in-town tier).
  */
 
 const BOOST_TAGS = ['beginner_friendly', 'students', 'family_friendly']
@@ -28,6 +33,7 @@ const CATEGORY_BUCKETS: Record<string, string> = {
 }
 
 const PER_BUCKET_CAP = 2
+const NEAR_CAMPUS_MILES = 3
 
 function bucketOf(e: TownEvent): string {
   return (e.event_type && CATEGORY_BUCKETS[e.event_type]) || 'other'
@@ -54,7 +60,8 @@ export async function getCampusEvents(
   const pool = await fetchEventPool(centroid)
   const todayStr = new Date().toISOString().slice(0, 10)
 
-  const ranked = [...pool].sort((a, b) => score(b, todayStr) - score(a, todayStr))
+  const near = (e: TownEvent) => (e.distance_miles <= NEAR_CAMPUS_MILES ? 0 : 1)
+  const ranked = [...pool].sort((a, b) => near(a) - near(b) || score(b, todayStr) - score(a, todayStr))
 
   // Greedy diversity pass: take in score order, capped per bucket. If the cap
   // leaves the list short (thin week), backfill with the remaining best.

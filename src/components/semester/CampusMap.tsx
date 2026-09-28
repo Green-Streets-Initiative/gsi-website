@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
+import LiveMapButton from '@/components/semester/LiveMapButton'
 
 /*
  * A real map of the campus and what is around it, as the "around campus"
@@ -96,13 +97,10 @@ export default function CampusMap({
         </div>
         <a
           href={href}
-          className="group absolute inset-0 flex items-end p-4 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-forest md:p-5"
+          className="group absolute inset-0 flex items-end p-4 transition-colors hover:bg-navy/[0.06] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-forest md:p-5"
           aria-label={`Open the live map around ${shortName}`}
         >
-          <span className="inline-flex max-w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-full border border-navy/10 bg-white/95 px-4 py-2.5 text-[14px] text-navy shadow-sm">
-            <span className="text-ink-soft">T stops, Bluebikes docks, bike paths</span>
-            <span className="font-semibold text-forest group-hover:underline">Open the {shortName} map &rarr;</span>
-          </span>
+          <LiveMapButton />
         </a>
       </div>
       <p className="mt-2 text-[11px] text-ink-soft">

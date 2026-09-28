@@ -10,6 +10,7 @@ import { modeOptions } from '@/lib/nearby/reach-ui'
 import { bikeTimeMinutes, walkTimeMinutes } from '@/lib/geo/measure'
 import { t } from '@/lib/nearby/i18n'
 import { focusParam, type InitialFocus } from '@/lib/nearby/focus'
+import LiveMapButton from '@/components/semester/LiveMapButton'
 
 /*
  * What's around campus, as the /nearby page knows it: the static map with
@@ -110,13 +111,10 @@ export default function CampusSnapshot({
         />
         <a
           href={href}
-          className="group absolute inset-0 flex items-end p-4 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-forest md:p-5"
+          className="group absolute inset-0 flex items-end p-4 transition-colors hover:bg-navy/[0.06] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-forest md:p-5"
           aria-label={`Open the live map around ${shortName}`}
         >
-          <span className="inline-flex max-w-full flex-wrap items-center gap-x-3 gap-y-0.5 rounded-full border border-navy/10 bg-white/95 px-3.5 py-2 text-[13px] text-navy shadow-sm md:px-4 md:py-2.5 md:text-[14px]">
-            <span className="text-ink-soft">Live arrivals, every route</span>
-            <span className="font-semibold text-forest group-hover:underline">Open the {shortName} map &rarr;</span>
-          </span>
+          <LiveMapButton />
         </a>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-ink-soft">
