@@ -459,7 +459,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 places to enter, not to travel to, so they skip it.
                 Experiment exp-2026-09-8. */}
             {!deadline && STORE_LIVE && (
-              <div className="rounded-[14px] border border-(--ev-line-strong) px-5 py-4">
+              <div className="mt-6 rounded-[14px] border border-(--ev-line-strong) px-5 py-4">
                 <p className="text-[14px] font-semibold text-(--ev-ink)">Walking, biking or taking transit there?</p>
                 <p className="mt-1 text-[13px] leading-relaxed text-(--ev-ink-80)">
                   Shift counts the trip without you touching anything and turns it into money saved and perks from
