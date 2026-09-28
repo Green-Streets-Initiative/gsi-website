@@ -1,0 +1,49 @@
+GSI SEO weekly pulse, 2026-09-28
+Search Console week 09-19 to 09-25. PostHog week of 09-21.
+
+SCOREBOARD (this week / vs 4-wk avg / vs 12-wk avg)
+- Organic clicks: 44 / 24.0 (+83%) / 15.3 (+189%). The most the routine has recorded.
+- Organic impressions: 3,411 / 2,793 (+22%) / 1,599 (+113%)
+- Avg position 8.0 (best yet), CTR 1.29%
+- Non-brand discovery impressions (stagnation trigger): 455. Trailing 4 wks 416/wk vs prior 4 wks 96/wk (+332%). Stagnant weeks: 0.
+- PostHog organic sessions: 55 / 41.0 (+34%) / 34.4 over 10 wks (+60%)
+- Answer-engine referral sessions: 5, all ChatGPT. Too few to call a trend.
+- AEO sentinel citations: 0 of 6. Rotated SERP checks: 0 of 3.
+
+Clicks by page class: events 14, Roams 12, home 7, campus 3, towns 2.
+
+WHAT HAPPENED
+1. Last week's PostHog jump is partly real. It settled at 55 sessions (71 last week, low 30s all summer), and Search Console now agrees on the size again. Organic traffic has stepped up to about 50 a week. The 71 was that step plus a one-off.
+
+2. The record clicks come with two caveats:
+ - One page, our listing for Somerville's Fluff Fest (a MassBike event), got 500 impressions and 0 clicks. People searching for it want the organizer's site. Nothing is wrong with our page.
+ - Set that page aside and impressions on pages Google already had fell about 11%. Campus pages halved for the second week in a row, so the September move-in spike is now the leading explanation. Town pages fell 18%, which is the one to watch: a second fall would count as a regression on our core pages.
+
+3. New event pages delivered most of the clicks: 30 new pages, 12 clicks, 2.94% CTR. The top one is Allston-Brighton Open Streets (Oct 4), at position 5.4 with 4 clicks. The event-sitemap experiment shipped only four days into this week, so it gets no credit yet. Verdict Nov 2.
+
+4. Roam pages held their clicks (13 to 12) on fewer impressions, and click-through rate edged up. That's the first reading with two full weeks of the new titles. Verdict Oct 26.
+
+5. The drive-time guide has zero impressions after four weeks. Next week's deep-dive brings structural options before the Oct 12 call.
+
+EXPERIMENT VERDICTS
+None due this week. Next: Oct 20 (campus titles, campus llms.txt, Commute Advisor schema), Oct 26 (Roam titles), Nov 2 (events in sitemap/llms.txt).
+
+PROPOSED ACTION
+1. Fix how the report counts event searches. People search events by name ("fluff fest", "open streets allston", "bu sustainability festival"), and our event keyword rules only matched phrases like "bike repair workshop". So the share of search queries the report can sort fell from 81% to 58% in one week. Adding the general shape of an event name brings it back to 94% without changing the traffic totals. This is a measurement fix only: 1 file, 6 lines.
+   Review: https://github.com/Green-Streets-Initiative/gsi-website/compare/main...seo/2026-09-events-patterns
+   To ship: open Claude Code and say 'ship SEO item 1' (or 'decline SEO item 1').
+
+Still waiting from Sept 8: the cargo e-bike cost guide (item 3 of 2026-09-08). It's been undecided for three weeks and ages out Nov 3. Next week's deep-dive will recommend reshaping it or dropping it.
+
+ALSO DONE (no approval needed)
+The report's page table filled up again once event pages joined the sitemap. I raised its capacity and added two checks: one compares the same pages week to week, and one tracks the stagnation trigger over time. These are the routine's own measurement scripts. No site code changed.
+
+HEALTH
+All green. Sitemap 293 entries (non-event pages steady at 141; event entries drop as events pass). robots.txt unchanged. llms.txt has 182 links in 8 sections. All five key pages return 200 with the correct title, canonical and structured data.
+
+NEXT RUN
+Oct 5: monthly deep-dive.
+
+About the AEO numbers: we measure Search Console, live web search presence, visits referred by answer engines, and structured-data/llms.txt health. We can't see rankings inside ChatGPT, Perplexity or Claude, or Google AI Overviews, and we don't invent an "AI visibility" score.
+
+Full report: https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-09-28.md

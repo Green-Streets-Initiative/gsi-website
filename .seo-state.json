@@ -1,40 +1,48 @@
 {
   "_comment": "Run state for the SEO/AEO routine. Updated each run. Baselines are a cache; the authoritative time series is the committed seo/data/gsc/ files.",
-  "last_run": "2026-09-21",
+  "last_run": "2026-09-28",
   "last_deep_dive": "2026-09",
-  "serp_rotation_index": 3,
+  "serp_rotation_index": 6,
+  "_serp_rotation_note_2026_09_28": "n is now 14 non-sentinel clusters (events-programs added 2026-09-22). Index 3 selected year-round-weather / students-campus / roams-trails on 2026-09-28 (the cycle shifted as predicted; no hand-correction — coverage over time is the point). Index 6 next = events-programs / town-commuters / drive-time-conversion, which usefully lines up with the 2026-10-12 drive-time call.",
   "_serp_rotation_note": "Index selects clusters (excluding aeo-sentinels) in portfolio order: for k in 0..2, cluster[(index+k) % n], query[floor(index/n) % len]. History: 0 = used-car-to-ebike / new-to-boston / family-logistics; 3 = year-round-weather / town-commuters / ebike-curious; 6 = employers-rto / schools-wellness / local-business-partners; 9-11 hand-advanced on 2026-09-14 to students-campus / drive-time-conversion / brand-navigational and the index parked at 12. On 2026-09-21 n was 13 (roams-trails shipped), so 12 wrapped to 0 on its own and the hand-correction that note predicted was NOT needed — the cycle restarted cleanly at used-car-to-ebike / new-to-boston / family-logistics. Index now 3. NOTE: if item 3 of 2026-09-21 ships, events-programs takes n from 13 to 14 and the cycle shifts again; the point is coverage over time, not a fixed cycle, so hand-correct and say so.",
   "stagnant_weeks": 0,
   "baselines": {
-    "clicks_4wk": 24.0,
-    "clicks_12wk": 15.25,
-    "impressions_4wk": 2793.3,
-    "impressions_12wk": 1598.7,
-    "_basis": "EXACT. Recomputed 2026-09-21 by scripts/seo/analyze.mjs from the nineteen weekly files containing site_totals (2026-05-09 -> 2026-09-18), asserted contiguous with no overlapping ranges. These INCLUDE the week ending 2026-09-18. Files WITHOUT site_totals are the superseded 2026-08-20 backfill and must be excluded — mixing the series double-counts.",
-    "_comparison_baselines_note": "The 2026-09-21 report's 'vs 4-wk / vs 12-wk' columns compare that week AGAINST the trailing means EXCLUDING it: clicks 21.25 / 13.08, impressions 2359.3 / 1402.8 — the prior run's cached values.",
+    "clicks_4wk": 32.25,
+    "clicks_12wk": 17.83,
+    "impressions_4wk": 3304.5,
+    "impressions_12wk": 1808.5,
+    "_basis": "EXACT. Recomputed 2026-09-28 by scripts/seo/analyze.mjs from the twenty weekly files containing site_totals (2026-05-09 -> 2026-09-25), asserted contiguous with no overlapping ranges. These INCLUDE the week ending 2026-09-25. Files WITHOUT site_totals are the superseded 2026-08-20 backfill and must be excluded — mixing the series double-counts.",
+    "_comparison_baselines_note": "The 2026-09-28 report's 'vs 4-wk / vs 12-wk' columns compare that week AGAINST the trailing means EXCLUDING it: clicks 24.0 / 15.25, impressions 2793.3 / 1598.7 — the prior run's cached values.",
     "clicks_prior_4wk": 12.75,
-    "impressions_prior_4wk": 1135.5,
-    "clicks_4wk_querydim": 2.25,
+    "impressions_prior_4wk": 1263.3,
+    "clicks_4wk_querydim": 3.5,
     "clicks_12wk_querydim": 3.0,
-    "impressions_4wk_querydim": 599.5,
+    "impressions_4wk_querydim": 707.3,
     "impressions_12wk_querydim": 330.0,
     "_querydim_note": "The 12-week query-dimension figures are carried forward approximations — analyze.mjs prints the 4-week values exactly and the 12-week ones are not yet emitted. Use them for direction, not for a stated percentage; the site_totals series above is the exact one.",
-    "nonbrand_discovery_impressions_wk": 476,
+    "nonbrand_discovery_impressions_wk": 455,
+    "nonbrand_4wk": 416.0,
+    "nonbrand_prior_4wk": 96.3,
+    "_nonbrand_note_2026_09_28": "Now computed by `analyze.mjs --section trigger`, which replays every week on the CURRENT portfolio (replayed series 80, 83, 96, 126, 288, 442, 479, 455 for weeks ending 08-07..09-25). Trailing 4 vs prior 4 = +332%, stagnant_weeks 0. CAVEAT carried forward: 455 is the first w/w fall (-5%) and ~80 of it is Fluff Fest queries; ex-festival ~375 (-22% w/w) as the campus surge fades. The trailing mean stays high through October on September's numbers alone — the week of 2026-10-16 (after 09-04 and 09-11 roll out) is the real test. The older note below is superseded where it conflicts.",
     "_nonbrand_note": "Bucketed non-brand query-dimension impressions (all clusters except brand-navigational, plus unmatched). Series: 48 (2026-08-24), 49 (2026-08-31), 284 (2026-09-08), 442 (2026-09-14), 476 (2026-09-21). THIS IS THE STAGNATION TRIGGER'S BASIS — see seo/methodology.md. +8% week over week, above the 5% reset threshold, so stagnant_weeks stays 0. The 2026-09-28 run is the FOURTH week on this basis and the first where the specified trailing-4-week comparison is readable; until then this is a week-over-week read and must be reported as such. If item 3 ships, the events-programs cluster reclassifies ~23 impressions WITHIN non-brand (476 -> 479 on replay) — it does not add volume.",
-    "posthog_organic_sessions_wk": 71,
-    "posthog_organic_sessions_4wk": 32.0,
+    "posthog_organic_sessions_wk": 55,
+    "posthog_organic_sessions_4wk": 41.0,
+    "_posthog_note_2026_09_28": "55 in the week of 2026-09-21 vs trailing-4 EXCLUDING it 41.0 (+34%) and 10-wk mean 34.4 (+60%). The 71 is RESOLVED: level shift real (~30 -> ~50+/wk, GSC clicks 34 -> 44 agree), magnitude was a one-week excess. PostHog/GSC ratio back to 1.25, inside the normal 1.0-1.4 band. Supersedes the note below.",
     "_posthog_note": "71 organic sessions in the week starting 2026-09-14, against a trailing-4-week mean of 32.0 EXCLUDING it (+122%) and a 12-week mean of 30.3 (+134%). Series: 71 (09-14), 29, 35, 29, 35, 25, 32, 24, 29, 35 (07-13). TREAT AS UNCONFIRMED until the 2026-09-28 pulse. GSC agrees on direction (clicks 21 -> 34) but not magnitude, and the PostHog/GSC ratio moved from ~1.0-1.4 to 2.1. What argues it is real: the 71 spread across 25 landing pages with no single page dominating (home 13, /events/shift-your-summer 7, /shift-your-semester/berklee 5, then a tail of events/Roams/towns) — not a bot shape. Windows differ: PostHog is Monday-start (09-14 -> 09-20), GSC is Saturday-to-Friday (09-12 -> 09-18).",
     "aeo_sentinel_citations": 0,
-    "answer_engine_referral_sessions_7d": 3,
+    "answer_engine_referral_sessions_7d": 5,
+    "_aeo_referral_note_2026_09_28": "5 sessions, all chatgpt.com — the three-engine spread of 2026-09-21 did not repeat. Noise at this n; no trend claimed.",
     "_aeo_referral_note": "THREE answer-engine referral sessions in the 7 days to 2026-09-21 — chatgpt.com 1, www.perplexity.ai 1, gemini.google.com 1 — against 0 for the two prior runs. n=3 is noise and must not be reported as a trend. What is new is the SHAPE: one session each from three different engines, where every previous answer-engine referral came from one engine pointing at one contest-rules page and stopped when the contest ended. First weekly pulse after the Roams and Campus sections landed in llms.txt (79 -> 122 links); both facts are true and neither proves the other. Watch whether it persists."
   },
   "health": {
-    "sitemap_loc_count": 306,
+    "sitemap_loc_count": 293,
+    "sitemap_non_event_loc_count": 141,
+    "_sitemap_2026_09_28": "293 = 152 events + 141 non-event. Non-event is the stable fingerprint (was ~142). llms.txt 182 links / 8 sections unchanged; robots hash unchanged.",
     "llms_txt_link_count": 182,
     "llms_txt_section_count": 8,
     "_llms_note": "/llms.txt is generated per request, so its hash changes whenever content is published — treat hash drift as expected; link and section counts are the meaningful signals. 2026-09-22 after SEO item 2: 8 sections, 182 links (60 of them the capped 'What is on' event list). The sitemap count is now EVENT-DRIVEN and will swing week to week as events are added and pass — a fall is not automatically a regression. Read the non-event portion (~142) as the stable fingerprint and treat a drop THERE as the DB-blip signal.",
     "robots_hash": "87554763188151d8aea395e9a6b2129c6b5597a3aacad864f06e58293cf3586c",
-    "_last_fingerprint_update": "2026-09-22",
+    "_last_fingerprint_update": "2026-09-28",
     "_llms_gap_note": "The 2026-09-14 Roams gap is CLOSED — health-check.mjs now groups two segments deep under /shift and reports no missing class. A residual blind spot remains and is item 2: the check is satisfied at CLASS level by the single /events hub line in llms.txt, while 33 individual event pages — the best-converting class on the site — are listed in neither llms.txt nor the sitemap.",
     "_robots_note": "Hash changed 2026-09-21 and the cause is benign: commit 228e503 ('Challenges goes live') added `Disallow: /preview` for the review harnesses, which also carry noindex. Not a regression.",
     "llms_txt_hash": null,
@@ -44,9 +52,19 @@
   "carryover_serp_checks": [],
   "watch_list": [
     {
-      "since": "2026-09-21",
-      "what": "THE POSTHOG JUMP IS UNCONFIRMED. 71 organic sessions against a 32.0 trailing-4-week mean (+122%) in the week of 2026-09-14. GSC agrees on direction (clicks 21 -> 34) but not magnitude, and the PostHog/GSC ratio moved from ~1.0-1.4 to 2.1.",
-      "action": "Confirm or retract at the 2026-09-28 pulse. If it holds near 70, it is the story of the quarter and belongs at the top of the October deep-dive. If it falls back to the low 30s, record it as a one-week artifact and say so plainly — do not quietly drop it."
+      "since": "2026-09-28",
+      "what": "TOWN PAGES FELL 18% ON A FIXED COHORT. 27 /shift/towns pages indexed in both weeks went 567 -> 467 impressions and 5 -> 2 clicks (week to 2026-09-25). The strategy names 'no regression on the core town-commuter cluster' as a win condition.",
+      "action": "Read `analyze.mjs --section cohort` at the 2026-10-05 deep-dive. A second consecutive fall is a regression and goes to the top of the report with a diagnosis (seasonal? a title/template change? cannibalisation by Roams or events?) — check git log on src/app/shift/towns first."
+    },
+    {
+      "since": "2026-09-28",
+      "what": "DISCOVERY AFTER THE SPIKE. Non-brand discovery impressions 479 -> 455, the first w/w fall on this basis, and ~80 of the 455 is Fluff Fest queries (ex-festival ~375, -22%). The trailing-4 mean (416) is carried by September's campus weeks.",
+      "action": "Report non-brand both with and without one-off festival queries until the September weeks roll out. Week ending 2026-10-16 is the real read: below ~300 there means the September growth was seasonal, and the stagnation logic should be read with that in mind rather than on the +332% headline."
+    },
+    {
+      "since": "2026-09-28",
+      "what": "ONE-OFF FESTIVAL PAGES DISTORT /events. The Fluff Fest listing (a MassBike-synced event for Union Square's festival) took 500 impressions / 0 clicks — 44% of the class. Searchers want the organizer.",
+      "action": "Before reading /events class totals (and at the exp-2026-09-6 verdict 2026-11-02), name and set aside any single page carrying >25% of the class. Compare the verdict against this week's NEW-page base: 30 pages, 408 impr, 12 clicks, 2.94% CTR."
     },
     {
       "since": "2026-09-21",
@@ -61,7 +79,7 @@
     {
       "since": "2026-09-21",
       "what": "IS THE CAMPUS SURGE SEASONAL? /shift-your-semester fell 1,129 -> 541 impressions (-52%) in the week to 2026-09-18 while the rest of the site held. Clicks 2, one of which is the hub at position 1.0. First evidence FOR the September-spike hypothesis rather than against it. Supersedes the 2026-09-08 version of this item.",
-      "action": "Report students-campus impressions every pulse. At the exp-2026-09-1 verdict on 2026-10-20 the call is TWO questions, not one: did the titles lift CTR, and was there a durable audience under the September volume. A second consecutive fall makes seasonality the leading explanation."
+      "action": "Report students-campus impressions every pulse. At the exp-2026-09-1 verdict on 2026-10-20 the call is TWO questions, not one: did the titles lift CTR, and was there a durable audience under the September volume. A second consecutive fall makes seasonality the leading explanation. UPDATE 2026-09-28: second fall happened (541 -> 280, cohort -48%) — seasonality is now the leading explanation; durable base looks like ~250-300 impr/wk. Cohort CTR 0.37% -> 1.07% (2 -> 3 clicks, too few to call)."
     },
     {
       "since": "2026-09-21",
@@ -85,6 +103,12 @@
     }
   ],
   "resolved_notes": [
+    {
+      "date": "2026-09-28",
+      "what": "Two things resolved. (1) The 2026-09-21 PostHog jump: 55 sessions this week — the ~30 -> ~50+ level shift is real and GSC agrees (ratio back to 1.25); the 71 was a one-week excess. (2) The page table saturated again: the first weekly pull filled all 150 persisted rows (floor 2) one week after the cap was raised, because event pages entered the sitemap. Also: events-programs coverage collapsed 81% -> 58% because searchers name events ('fluff fest', 'open streets allston') and every pattern needed a bike/walk word or town in front.",
+      "fix": "ca1a4a8 raises the persisted page slice to 400 (of 500 fetched) and adds `analyze.mjs --section cohort` (prints both tables' row count and floor, plus per-class cohort/new/gone) and `--section trigger` (non-brand series replayed on the current portfolio). Re-pulled: 173 rows, floor 1. Event-name patterns proposed as item 1 (seo/2026-09-events-patterns): coverage 58% -> 94%, trigger unchanged.",
+      "do_not": "Do not trust a page census without checking the row count against the persist cap — `--section cohort` prints it; if rows == cap, raise the cap and re-pull before reading page-level numbers. Do not fit event patterns to event NAMES: the inventory turns over weekly, so use the generic shapes of an event name instead."
+    },
     {
       "date": "2026-09-22",
       "what": "The routine had been reading `git diff main..branch` as a merge preview for three runs. It is not one: it compares two END STATES, so everything main gains after a branch is cut shows as a deletion the branch would supposedly make. That is where '241 files, -15,156 lines, would revert a week of work' came from on 2026-09-21. The real merge result for seo/2026-09-answer-schema was 2 files / +19 lines. seo/methodology.md had encoded the same misreading as doctrine since 2026-08-31 ('a drifted branch does not merely conflict, it silently reverts whatever landed after it was cut' — and, tellingly, 'only the diff stat gave it away').",
@@ -178,13 +202,24 @@
   ],
   "pending": [
     {
+      "report_date": "2026-09-28",
+      "item_n": 1,
+      "type": "page-edit-branch",
+      "ref": "seo/2026-09-events-patterns",
+      "experiment_id": "item-2026-09-28-1",
+      "title": "Portfolio: bucket events by the shape of an event name (fest/festival, open streets, '<year> schedule'); Roam alternation gains sudhud, 'silvio o conte', b-line",
+      "diff": "1 file (seo/keyword-portfolio.json), +6/-3, cut from main at ca1a4a8",
+      "verified": "Replayed on the week to 2026-09-25: coverage 58% -> 94%, unmatched 217 -> 32, events-programs 9 -> 182, roams-trails 100 -> 112, non-brand trigger 455 -> 455.",
+      "ship_steps": "Merge seo/2026-09-events-patterns into main, push, delete the branch. No deploy impact (seo/ only). Record in experiments.md 'Shipped infrastructure' as item-2026-09-28-1. Then run `node scripts/seo/analyze.mjs --section clusters` to confirm ~94% coverage."
+    },
+    {
       "report_date": "2026-09-08",
       "item_n": 3,
       "type": "guide-draft",
       "ref": "seo/drafts/guides/what-a-cargo-ebike-costs.md",
       "experiment_id": "exp-2026-09-4",
       "title": "Micro-guide: what a cargo e-bike costs — new, used, and what drives the price",
-      "age_note": "Proposed 2026-09-08, still undecided at 2026-09-21 (2 weeks). Ages out 2026-11-03 under the 8-week rule. The 2026-09-21 rotation is relevant evidence: 'e-bike vs used car cost' and 'cargo bike for kids' are owned end-to-end by manufacturer and retailer blogs, so a generic cost guide competes with vendors on their own ground. If it ships, the local angle is the differentiator, not the price table.",
+      "age_note": "Proposed 2026-09-08, still undecided at 2026-09-28 (3 weeks); the 2026-10-05 deep-dive should recommend reshape-or-retire. Ages out 2026-11-03 under the 8-week rule. The 2026-09-21 rotation is relevant evidence: 'e-bike vs used car cost' and 'cargo bike for kids' are owned end-to-end by manufacturer and retailer blogs, so a generic cost guide competes with vendors on their own ground. If it ships, the local angle is the differentiator, not the price table.",
       "ship_steps": "Follow the ship checklist in the draft file: append the YAML+body to content/micro-guides-library.md, flip status draft -> approved, bump the guide-count check in scripts/build-micro-guides-migration.mjs from 21 to 22, run the migration builder, commit both by filename, apply the migration. Then check the /guides index, sitemap.xml and llms.txt — not just the slug URL. Record the ship date against exp-2026-09-4."
     }
   ],
