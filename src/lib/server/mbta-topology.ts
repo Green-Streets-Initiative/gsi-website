@@ -62,7 +62,7 @@ export async function getStopTopology(lat: number, lng: number, opts: ServerTopo
   return topology
 }
 
-const durableTopology = unstable_cache(computeTopology, ['nearby-topology-v1'], {
+const durableTopology = unstable_cache(computeTopology, ['nearby-topology-v2'], {
   revalidate: CACHE_TTL_MS / 1000,
 })
 
@@ -121,7 +121,12 @@ async function computeTopology(lat3: number, lng3: number, opts: ServerTopologyO
       )
       const data = await res.json()
       if (!res.ok || data.errors) throw new Error(`routes ${res.status}`)
-      const routes: StopRoute[] = (data.data || []).map((r: { id: string; attributes: { long_name?: string; direction_names?: string[]; direction_destinations?: string[] } }) => ({
+      // Unlisted routes are the MBTA's rail-replacement shuttles
+      // ("Shuttle-AlewifeLittletonLocal"), which it keeps off its own route
+      // lists: they run only during a diversion, and listing one beside the
+      // train it replaces duplicated the station under a raw route id.
+      type ApiRoute = { id: string; attributes: { long_name?: string; listed_route?: boolean; direction_names?: string[]; direction_destinations?: string[] } }
+      const routes: StopRoute[] = ((data.data || []) as ApiRoute[]).filter(r => r.attributes.listed_route !== false).map(r => ({
         id: r.id,
         name: opts.nameStyle === 'short' ? r.id.replace(/^0*/, '') : (r.attributes.long_name ?? r.id),
         directions: r.attributes.direction_destinations || r.attributes.direction_names || [],
@@ -131,5 +136,8 @@ async function computeTopology(lat3: number, lng3: number, opts: ServerTopologyO
   )
 
   const routesByKey = new Map(routeResults.map(r => [r.key, r.routes]))
-  return topStops.map(s => ({ ...s, routes: routesByKey.get(routeKey(s)) || [] }))
+  // A stop served only by replacement shuttles has nothing left to show
+  return topStops
+    .map(s => ({ ...s, routes: routesByKey.get(routeKey(s)) || [] }))
+    .filter(s => s.routes.length > 0)
 }

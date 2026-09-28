@@ -72,7 +72,7 @@ export function capitalizeStopName(name: string): string {
 
 function getCachedTopology(cachePrefix: string, lat: number, lng: number): StopTopology[] | null {
   try {
-    const key = `${cachePrefix}-${lat.toFixed(4)},${lng.toFixed(4)}`
+    const key = `${cachePrefix}-v2-${lat.toFixed(4)},${lng.toFixed(4)}`
     const raw = sessionStorage.getItem(key)
     if (!raw) return null
     const cached = JSON.parse(raw)
@@ -83,7 +83,7 @@ function getCachedTopology(cachePrefix: string, lat: number, lng: number): StopT
 
 function setCachedTopology(cachePrefix: string, lat: number, lng: number, data: StopTopology[]) {
   try {
-    const key = `${cachePrefix}-${lat.toFixed(4)},${lng.toFixed(4)}`
+    const key = `${cachePrefix}-v2-${lat.toFixed(4)},${lng.toFixed(4)}`
     sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }))
   } catch {}
 }
@@ -156,13 +156,17 @@ export async function fetchStopTopology(lat: number, lng: number, opts: Topology
   }
   if (topStops.length === 0) return []
 
+  type ApiRoute = { id: string; attributes: { long_name?: string; listed_route?: boolean; direction_names?: string[]; direction_destinations?: string[] } }
   const routeResults = await Promise.all(
     routeStops.map(async (s) => {
       const res = await fetch(`https://api-v3.mbta.com/routes?filter[stop]=${s.id}&filter[type]=${opts.routeTypes}`)
       const data = await res.json()
       return {
         key: routeKey(s),
-        routes: (data.data || []).map((r: { id: string; attributes: { long_name?: string; direction_names?: string[]; direction_destinations?: string[] } }) => ({
+        // Unlisted routes are the MBTA's rail-replacement shuttles
+        // ("Shuttle-AlewifeLittletonLocal"), kept off its own route lists;
+        // same filter as the server twin in lib/server/mbta-topology.ts.
+        routes: ((data.data || []) as ApiRoute[]).filter(r => r.attributes.listed_route !== false).map(r => ({
           id: r.id,
           name: opts.nameStyle === 'short' ? r.id.replace(/^0*/, '') : (r.attributes.long_name ?? r.id),
           directions: r.attributes.direction_destinations || r.attributes.direction_names || [],
@@ -172,7 +176,10 @@ export async function fetchStopTopology(lat: number, lng: number, opts: Topology
   )
 
   const routesByKey = new Map(routeResults.map(r => [r.key, r.routes]))
-  const topology = topStops.map(s => ({ ...s, routes: routesByKey.get(routeKey(s)) || [] }))
+  // A stop served only by replacement shuttles has nothing left to show
+  const topology = topStops
+    .map(s => ({ ...s, routes: routesByKey.get(routeKey(s)) || [] }))
+    .filter(s => s.routes.length > 0)
 
   setCachedTopology(opts.cachePrefix, lat, lng, topology)
   return topology
