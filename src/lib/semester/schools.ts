@@ -474,6 +474,47 @@ export const SCHOOLS: School[] = [
       { text: 'The Porter campus sits on the Red Line and the Fitchburg commuter rail line — Davis, Harvard, and downtown are minutes away.', sourceUrl: 'https://support.lesley.edu/support/solutions/articles/4000225603-getting-around-cambridge' },
     ],
   },
+  {
+    // Added 2026-09-28, the thirteenth campus. The group ('brandeis-university')
+    // and the registry flip to featured are Shift migration 00997, held in
+    // migrations-pending until Keith approves; until it applies, the join
+    // section shows the "group is being set up" state. Lat/lng is the campus
+    // centroid (Wikipedia), 0.3 mi north of the Brandeis/Roberts stop.
+    // No search data yet (no page until now), so the title leads with the
+    // student bike share and the shuttles, the two things Brandeis has going on.
+    slug: 'brandeis',
+    name: 'Brandeis University',
+    shortName: 'Brandeis',
+    logo: '/images/schools/brandeis.png',
+    groupSlug: 'brandeis-university',
+    lat: 42.3657,
+    lng: -71.2597,
+    highlight: 'DeisBikes, the student-run free campus bike share, is up and running at Massell Quad.',
+    h1: 'DeisBikes, the Brandeis shuttles, and getting around campus',
+    answer:
+      'DeisBikes, a student-run free bike share, is up and running from the Massell Quad bike shelter, and free Brandeis shuttles run to Waltham, Harvard Square and Back Bay.',
+    seoTitle: 'Brandeis shuttles, DeisBikes, and the Brandeis/Roberts train',
+    seoDescription:
+      'Free Brandeis shuttles around campus, into Waltham, and on weekends to Harvard Square and Back Bay. Plus the Brandeis/Roberts commuter rail stop at the edge of campus, free bike registration, and DeisBikes, the student-run free bike share.',
+    transit: [
+      { text: 'The Brandeis/Roberts stop on the Fitchburg commuter rail line borders campus, with trains to North Station in Boston.', sourceUrl: 'https://www.brandeis.edu/admissions/visit/getting-here.html' },
+      { text: 'The free Boston and Cambridge shuttle runs Friday through Sunday to Harvard Square and to Mass Ave at Marlborough Street in Back Bay. Show your Brandeis ID to board.', sourceUrl: 'https://www.brandeis.edu/campus-services/transportation/shuttle-services/route-maps-schedule-stops.html' },
+      { text: 'MBTA bus 70 runs to University Park in Cambridge, connecting to the Red Line, and bus 553 runs to Newton Corner.', sourceUrl: 'https://www.brandeis.edu/campus-services/transportation/mbta/index.html' },
+    ],
+    bike: [
+      // Status as of spring 2026 (The Justice, February; Union Senate log, March):
+      // funded by the Campus Sustainability Fund, 12-bike pilot in April, 20 bikes
+      // planned for the fall launch. Keith confirmed 2026-09-28 it is running this
+      // fall (active on Instagram), so the copy says it runs.
+      { text: 'DeisBikes, a student club, runs a free bike share for Brandeis students out of the Massell Quad bike shelter. Riders unlock bikes through an app after a short safety course. Follow @deisbikes on Instagram for news and new bikes.', sourceUrl: 'https://www.thejustice.org/article/2026/02/bike-sharing-program-on-campus-works-to-spread-sustainable-transportation' },
+      { text: 'The Brandeis Cycling Club, a club sport for cycling and triathlon, runs group rides around Waltham. Join through CampusGroups.', sourceUrl: 'https://campusgroups.brandeis.edu/cycling/' },
+      { text: 'Bike registration with Public Safety is free and comes with a numbered, tamper-resistant sticker, which you need to park at campus bike racks.', sourceUrl: 'https://www.brandeis.edu/publicsafety/transparency/documents/policies/bikeregistration_s2023.pdf' },
+    ],
+    moving: [
+      { text: 'Free shuttles loop the campus and run into Waltham, with live bus tracking in the TripShot app.', sourceUrl: 'https://www.brandeis.edu/campus-services/transportation/shuttle-services/index.html' },
+      { text: 'This fall the Sunday shuttle adds a stop at Market Basket Plaza in Waltham, 10 a.m. to 4:15 p.m.', sourceUrl: 'https://www.brandeis.edu/campus-services/transportation/shuttle-services/route-maps-schedule-stops.html' },
+    ],
+  },
 ]
 
 /**
@@ -506,6 +547,9 @@ const SOURCE_NAMES: Record<string, string> = {
   'www.transportation.harvard.edu': 'Harvard Transportation',
   'www.hupd.harvard.edu': 'Harvard University Police',
   'www.thecrimson.com': 'The Harvard Crimson',
+  'www.brandeis.edu': 'Brandeis University',
+  'www.thejustice.org': 'The Justice',
+  'campusgroups.brandeis.edu': 'Brandeis Cycling Club',
 }
 
 /**

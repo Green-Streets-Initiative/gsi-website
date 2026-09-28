@@ -121,7 +121,7 @@ export async function GET() {
   // bike co-ops and repair stands, Bluebikes student discounts, and late-night
   // shuttles. Static, so no DB call and nothing to fail open on.
   L.push('## Campus pages')
-  L.push(`- [Shift Your Semester](${SITE_URL}/shift-your-semester): How students at twelve Greater Boston campuses get around — MBTA pass subsidies, campus bike shops, Bluebikes discounts, and shuttles.`)
+  L.push(`- [Shift Your Semester](${SITE_URL}/shift-your-semester): How students at ${SCHOOLS.length} Greater Boston campuses get around — MBTA pass subsidies, campus bike shops, Bluebikes discounts, and shuttles.`)
   for (const s of SCHOOLS) {
     const summary = s.seoDescription ? `: ${s.seoDescription}` : ''
     L.push(`- [Getting around ${s.name}](${SITE_URL}/shift-your-semester/${s.slug})${summary}`)

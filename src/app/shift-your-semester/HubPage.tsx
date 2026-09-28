@@ -154,7 +154,7 @@ export default function HubPage({ codeLive, standings, boardLive }: HubData & { 
             ))}
           </ul>
           <p className="mt-6 max-w-[640px] text-[13px] leading-relaxed text-ink-soft">
-            Featured schools are colleges within the MBTA&rsquo;s core service area. Any Massachusetts college or university qualifies:
+            Featured schools are colleges on the MBTA network. Any Massachusetts college or university qualifies:
             verify your school email in the app and you&rsquo;re in. Want your school featured?{' '}
             <Link href="/contact" className="font-semibold text-forest underline-offset-4 hover:underline">
               Tell us about your school
