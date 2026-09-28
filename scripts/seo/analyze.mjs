@@ -301,11 +301,20 @@ if (want('growth')) {
         `  ${ch.padEnd(24)} ${String(c.sessions).padStart(8)}  ${String(c.activated).padStart(9)}  ${String(c.app_intent).padStart(11)}  ${rate(c.app_intent, c.sessions).padStart(12)}   ${p4.toFixed(1)} (${pct(c.sessions, p4)})`,
       )
     }
+    // App intent was not recorded before ph.outcome_tracking_start, so outcome
+    // baselines only use weeks on or after it — a zero there means "not tracked".
+    const tracked = weeks.filter((wk) => !ph.outcome_tracking_start || wk >= ph.outcome_tracking_start)
     const tot = CH.reduce((s, ch) => s + get(weeks[0], ch).app_intent, 0)
-    const p4tot = mean(weeks.slice(1, 5), (wk) => CH.reduce((s, ch) => s + get(wk, ch).app_intent, 0))
-    console.log(`  NORTH STAR — app-intent sessions from search + answer + paid: ${tot}  (prior-4 mean ${p4tot.toFixed(1)}, ${pct(tot, p4tot)})`)
-    const org4 = weeks.slice(0, 4).reduce((s, wk) => ({ n: s.n + get(wk, 'organic_search').sessions, a: s.a + get(wk, 'organic_search').app_intent }), { n: 0, a: 0 })
-    console.log(`  organic 4-wk: ${org4.n} sessions -> ${org4.a} app intent (${rate(org4.a, org4.n)})`)
+    const prior = tracked.slice(1, 5)
+    const p4tot = mean(prior, (wk) => CH.reduce((s, ch) => s + get(wk, ch).app_intent, 0))
+    console.log(`  NORTH STAR — app-intent sessions from search + answer + paid: ${tot}  (prior tracked weeks: ${prior.length}, mean ${p4tot.toFixed(1)}, ${prior.length ? pct(tot, p4tot) : 'n/a'})  [tracked since ${ph.outcome_tracking_start ?? '?'}]`)
+    const org4 = tracked.slice(0, 4).reduce((s, wk) => ({ n: s.n + get(wk, 'organic_search').sessions, a: s.a + get(wk, 'organic_search').app_intent }), { n: 0, a: 0 })
+    console.log(`  organic, tracked weeks (${Math.min(4, tracked.length)}): ${org4.n} sessions -> ${org4.a} app intent (${rate(org4.a, org4.n)})`)
+    if (ph.landing_outcomes_8wk?.length) {
+      console.log(`\n  LANDING CLASS OUTCOMES since ${ph.outcome_tracking_start ?? '8 wks'} (channel / first page / sessions / activated / app intent)`)
+      for (const r of ph.landing_outcomes_8wk)
+        console.log(`    ${r.channel.padEnd(15)} ${r.landing_class.padEnd(24)} ${String(r.sessions).padStart(5)} ${String(r.activated).padStart(5)} ${String(r.app_intent).padStart(5)}  ${rate(r.app_intent, r.sessions)}`)
+    }
     if (ph.paid_landings_7d?.length) {
       const bySrc = new Map()
       for (const r of ph.paid_landings_7d) {

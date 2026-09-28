@@ -228,7 +228,13 @@ const answerEngineQuery = `
 // Outcomes (any event in the session):
 //   activated      used a tool: Commute Advisor result or a /nearby snapshot
 //   app_intent     clicked through toward the Shift app (store button or app CTA)
-const ACTIVATION_EVENTS = `'advisor_results_shown', 'snapshot_viewed'`
+// shift_store_click only started firing in PostHog with 809c1fa (2026-09-13).
+// Before that, app intent reads 0 because nothing was recorded, not because
+// nobody clicked. Outcome comparisons must start here; analyze.mjs honours it.
+const OUTCOME_TRACKING_START = '2026-09-14'
+// event_outbound_click (Register / Event info on an event page) arrives with
+// seo/2026-09-app-invites; until that ships it simply never matches.
+const ACTIVATION_EVENTS = `'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click'`
 const APP_INTENT_EVENTS = `'shift_store_click', 'snapshot_app_cta_clicked', 'advisor_app_cta_clicked'`
 
 const channelSessionsQuery = `
@@ -282,6 +288,43 @@ const paidLandingQuery = `
   LIMIT 25
 `
 
+// Where each channel lands and what it does next, over 8 weeks, by page class
+// (first pageview of the session; two segments deep under /shift, matching
+// analyze.mjs). This is the table that says which landing pages turn visitors
+// into app intent and which ones leak them — the input to CTA experiments.
+const landingOutcomesQuery = `
+  SELECT channel, landing_class, count() AS sessions,
+         countIf(activated) AS activated, countIf(app_intent) AS app_intent
+  FROM (
+    SELECT
+      properties.$session_id AS sid,
+      argMinIf(properties.$pathname, timestamp, event = '$pageview') AS landing,
+      splitByChar('/', ifNull(landing, '')) AS seg,
+      if(length(seg) < 2 OR seg[2] = '', '/(home)',
+         if(seg[2] = 'shift' AND length(seg) >= 3 AND seg[3] != '', concat('/shift/', seg[3]), concat('/', seg[2]))) AS landing_class,
+      multiIf(
+        countIf(properties.gclid IS NOT NULL OR properties.wbraid IS NOT NULL OR properties.gbraid IS NOT NULL
+                OR (lower(toString(properties.utm_source)) LIKE '%google%'
+                    AND lower(toString(properties.utm_medium)) IN ('cpc', 'ppc', 'paid'))) > 0, 'paid_search',
+        countIf(properties.fbclid IS NOT NULL OR properties.rdt_cid IS NOT NULL
+                OR lower(toString(properties.utm_medium)) IN ('cpc', 'ppc', 'paid', 'paid_social', 'paidsocial', 'social_paid')) > 0, 'paid_other',
+        countIf(event = '$pageview' AND ${domainMatch('properties.$referring_domain', ORGANIC_DOMAINS)}) > 0, 'organic_search',
+        countIf(event = '$pageview' AND ${domainMatch('properties.$referring_domain', ANSWER_ENGINE_DOMAINS)}) > 0, 'answer_engine',
+        'other') AS channel,
+      countIf(event IN (${ACTIVATION_EVENTS})) > 0 AS activated,
+      countIf(event IN (${APP_INTENT_EVENTS})) > 0 AS app_intent
+    FROM events
+    WHERE timestamp >= greatest(toStartOfWeek(now(), 1) - INTERVAL 8 WEEK, toDateTime('${OUTCOME_TRACKING_START}'))
+      AND properties.$lib = 'web'
+      AND properties.$session_id IS NOT NULL${SCANNER_EXCLUSION}
+    GROUP BY sid
+  )
+  WHERE channel != 'other'
+  GROUP BY channel, landing_class
+  HAVING sessions >= 3
+  ORDER BY channel, sessions DESC
+`
+
 function mean(xs) {
   if (xs.length === 0) return null
   return Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 100) / 100
@@ -299,12 +342,13 @@ async function main() {
   }
   if (mode !== 'weekly') die(`unknown --mode "${mode}" (expected check or weekly)`)
 
-  const [sessionRows, landingRows, answerRows, channelRows, paidLandingRows] = await Promise.all([
+  const [sessionRows, landingRows, answerRows, channelRows, paidLandingRows, landingOutcomeRows] = await Promise.all([
     hogql(cred, projectId, weeklySessionsQuery),
     hogql(cred, projectId, landingPagesQuery),
     hogql(cred, projectId, answerEngineQuery),
     hogql(cred, projectId, channelSessionsQuery),
     hogql(cred, projectId, paidLandingQuery),
+    hogql(cred, projectId, landingOutcomesQuery),
   ])
 
   // { 'YYYY-MM-DD': { organic_search: {sessions, activated, app_intent}, ... } }
@@ -351,6 +395,10 @@ async function main() {
       'NOTE organic_search here EXCLUDES paid; the older `weeks` series above does not, and diverges once Ad Grants traffic grows.',
     channels_by_week: byWeek,
     channels_last_complete_week: byWeek[complete[0]?.week_start] ?? null,
+    outcome_tracking_start: OUTCOME_TRACKING_START,
+    landing_outcomes_8wk: landingOutcomeRows.map(([channel, landing_class, sessions, activated, app_intent]) => ({
+      channel, landing_class, sessions: Number(sessions), activated: Number(activated), app_intent: Number(app_intent),
+    })),
     paid_landings_7d: paidLandingRows.map(([click_id, utm_source, utm_medium, utm_campaign, path, sessions]) => ({
       click_id, utm_source, utm_medium, utm_campaign, path, sessions: Number(sessions),
     })),

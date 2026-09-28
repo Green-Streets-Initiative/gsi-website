@@ -216,6 +216,26 @@
   "pending": [
     {
       "report_date": "2026-09-28",
+      "item_n": 2,
+      "type": "page-edit-branch",
+      "ref": "seo/2026-09-app-invites",
+      "experiment_id": "exp-2026-09-7 + exp-2026-09-8",
+      "title": "Shift invitation above the fold on Roam pages; invitation + Register/Event-info tracking on event pages",
+      "diff": "3 files, +61/-1 (Roam page, EventDetail, CTA placement vocabulary), cut from main at ccb8291. tsc --noEmit clean. Not rendered locally (the session could not start a dev server); check the Vercel preview.",
+      "why": "Growth-loop run requested by Keith 2026-09-28. Organic app intent 3/125 since tracking began 2026-09-14; 0/23 organic Roam landings, 0/36 organic event landings; same campus pages convert Reddit visitors 32/447 (7.2%).",
+      "ship_steps": "Look at one Roam page and one event page on the Vercel preview (mobile width too). Merge seo/2026-09-app-invites into main, push, confirm the Vercel deploy, delete the branch. Set Shipped date on exp-2026-09-7 and exp-2026-09-8 and verdict-by = ship + 4 weeks. After a few days, confirm shift_store_click arrives with placement roam_top / event_detail and that event_outbound_click appears."
+    },
+    {
+      "report_date": "2026-09-28",
+      "item_n": 3,
+      "type": "guide-draft",
+      "ref": "seo/drafts/guides/what-a-cargo-ebike-costs.md",
+      "experiment_id": "exp-2026-09-4",
+      "title": "Publish the cargo e-bike cost guide (same draft as 2026-09-08 item 3, re-listed so the current ship phrase works)",
+      "ship_steps": "Same as the 2026-09-08 item 3 entry below; re-verify the MassCEC voucher sentence first."
+    },
+    {
+      "report_date": "2026-09-28",
       "item_n": 1,
       "type": "page-edit-branch",
       "ref": "seo/2026-09-events-patterns",

@@ -1,11 +1,11 @@
 {
-  "pulled_at": "2026-09-28T13:09:40.330Z",
+  "pulled_at": "2026-09-28T14:17:32.546Z",
   "project_id": 436603,
   "host": "https://us.posthog.com",
   "definition": "Organic = distinct $session_id on $pageview where $referring_domain matches google/bing/duckduckgo/ecosia/yahoo/brave, excluding mail-security link-scanner paths (%/1/0100% and /preferences/%). Monday-start weeks.",
   "partial_week": {
     "week_start": "2026-09-28",
-    "sessions": 7
+    "sessions": 9
   },
   "weeks": [
     {
@@ -82,6 +82,14 @@
       "sessions": 4
     },
     {
+      "path": "/shift",
+      "sessions": 4
+    },
+    {
+      "path": "/commute-advisor",
+      "sessions": 3
+    },
+    {
       "path": "/shift-your-semester/umass-boston",
       "sessions": 3
     },
@@ -94,27 +102,23 @@
       "sessions": 3
     },
     {
-      "path": "/shift",
-      "sessions": 3
-    },
-    {
       "path": "/challenges",
       "sessions": 3
-    },
-    {
-      "path": "/commute-advisor",
-      "sessions": 3
-    },
-    {
-      "path": "/get-involved",
-      "sessions": 2
     },
     {
       "path": "/shift/towns",
       "sessions": 2
     },
     {
+      "path": "/events/ce_sync_massbike_5e7dd9b71afe",
+      "sessions": 2
+    },
+    {
       "path": "/nearby",
+      "sessions": 2
+    },
+    {
+      "path": "/get-involved",
       "sessions": 2
     },
     {
@@ -126,19 +130,19 @@
       "sessions": 1
     },
     {
-      "path": "/shift/roams/sunset-pedal",
-      "sessions": 1
-    },
-    {
-      "path": "/events/ce_import_weekly-social-bike-ride_2026-09-17",
-      "sessions": 1
-    },
-    {
       "path": "/shift/roams/b-line-crawl",
       "sessions": 1
     },
     {
-      "path": "/events/ce_sync_massbike_5e7dd9b71afe",
+      "path": "/shift/roams/battle-road-trail",
+      "sessions": 1
+    },
+    {
+      "path": "/shift/roams/sunset-pedal",
+      "sessions": 1
+    },
+    {
+      "path": "/events/mitcob26_minuteman_2026-09-24",
       "sessions": 1
     },
     {
@@ -146,11 +150,7 @@
       "sessions": 1
     },
     {
-      "path": "/guides",
-      "sessions": 1
-    },
-    {
-      "path": "/events/mitcob26_minuteman_2026-09-24",
+      "path": "/events/ce_import_weekly-social-bike-ride_2026-09-17",
       "sessions": 1
     },
     {
@@ -165,16 +165,16 @@
     }
   ],
   "answer_engine_referral_sessions_7d": 4,
-  "channels_definition": "Per session, first match wins: paid_search (gclid/wbraid/gbraid or utm_medium cpc|ppc|paid), organic_search (search-engine referrer), answer_engine (answer-engine referrer). Web events only. activated = 'advisor_results_shown', 'snapshot_viewed'; app_intent = 'shift_store_click', 'snapshot_app_cta_clicked', 'advisor_app_cta_clicked'. Weeks keyed by the session's first event. NOTE organic_search here EXCLUDES paid; the older `weeks` series above does not, and diverges once Ad Grants traffic grows.",
+  "channels_definition": "Per session, first match wins: paid_search (gclid/wbraid/gbraid or utm_medium cpc|ppc|paid), organic_search (search-engine referrer), answer_engine (answer-engine referrer). Web events only. activated = 'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click'; app_intent = 'shift_store_click', 'snapshot_app_cta_clicked', 'advisor_app_cta_clicked'. Weeks keyed by the session's first event. NOTE organic_search here EXCLUDES paid; the older `weeks` series above does not, and diverges once Ad Grants traffic grows.",
   "channels_by_week": {
     "2026-09-28": {
       "organic_search": {
-        "sessions": 7,
+        "sessions": 9,
         "activated": 0,
         "app_intent": 1
       },
       "paid_other": {
-        "sessions": 37,
+        "sessions": 41,
         "activated": 0,
         "app_intent": 0
       }
@@ -394,6 +394,121 @@
       "app_intent": 0
     }
   },
+  "outcome_tracking_start": "2026-09-14",
+  "landing_outcomes_8wk": [
+    {
+      "channel": "answer_engine",
+      "landing_class": "/programs",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/events",
+      "sessions": 36,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/(home)",
+      "sessions": 26,
+      "activated": 1,
+      "app_intent": 1
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift-your-semester",
+      "sessions": 23,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift/roams",
+      "sessions": 23,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift/towns",
+      "sessions": 10,
+      "activated": 0,
+      "app_intent": 1
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/programs",
+      "sessions": 6,
+      "activated": 0,
+      "app_intent": 1
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 1
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/shift-your-semester",
+      "sessions": 449,
+      "activated": 2,
+      "app_intent": 32
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/shift",
+      "sessions": 17,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/nearby",
+      "sessions": 12,
+      "activated": 12,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/shift/towns",
+      "sessions": 4,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/programs",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/events",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/challenges",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/(home)",
+      "sessions": 10,
+      "activated": 0,
+      "app_intent": 0
+    }
+  ],
   "paid_landings_7d": [
     {
       "click_id": "rdt_cid",
@@ -409,7 +524,7 @@
       "utm_medium": "cpc",
       "utm_campaign": "semester",
       "path": "/shift-your-semester/northeastern",
-      "sessions": 60
+      "sessions": 61
     },
     {
       "click_id": "rdt_cid",
@@ -425,7 +540,7 @@
       "utm_medium": "cpc",
       "utm_campaign": "semester",
       "path": "/shift-your-semester/harvard",
-      "sessions": 46
+      "sessions": 47
     },
     {
       "click_id": "rdt_cid",
@@ -433,7 +548,7 @@
       "utm_medium": "cpc",
       "utm_campaign": "semester",
       "path": "/shift-your-semester/boston-college",
-      "sessions": 37
+      "sessions": 38
     },
     {
       "click_id": "rdt_cid",
