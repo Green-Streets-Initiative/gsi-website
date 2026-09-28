@@ -8,6 +8,9 @@ import {
   Clock, Mail, ArrowRight,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import posthog from 'posthog-js'
+import StoreButtons from '@/components/StoreButtons'
+import { withUtm as appUtm } from '@/lib/utm'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import {
   type CommunityEvent, type NextUp,
@@ -20,6 +23,12 @@ import { EventsToneProvider, toneClass, useEventsTone, type EventsTone } from '.
 import './events-tone.css'
 
 const EventMap = dynamic(() => import('./EventMap'), { ssr: false })
+
+const IOS_URL = process.env.NEXT_PUBLIC_IOS_URL || ''
+const ANDROID_URL = process.env.NEXT_PUBLIC_ANDROID_URL || ''
+const STORE_LIVE = !!(IOS_URL && ANDROID_URL)
+const withAppUtm = (url: string) =>
+  appUtm(url, { source: 'web_events', medium: 'event_page', campaign: 'community_events' }) ?? url
 
 function withUtm(url: string): string {
   try {
@@ -153,6 +162,13 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
     URL.revokeObjectURL(url)
     setCalMenuOpen(false)
     showToast('Calendar file downloaded')
+  }
+
+  // Register / Event info clicks leave the site, so without this an event page
+  // had no measurable outcome at all. `event_outbound_click` counts as an
+  // activation in scripts/seo/pull-posthog.mjs.
+  const trackOutbound = (kind: 'register' | 'info', surface: 'details' | 'phone_bar') => {
+    posthog.capture('event_outbound_click', { kind, surface, event_id: event.id, event_type: event.event_type, is_past: isPast })
   }
 
   const timeStr = event.event_time ? formatTime(event.event_time) : null
@@ -417,6 +433,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-[10px] border border-(--ev-line-strong) px-5 py-2.5 text-[13px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
+                  onClick={() => trackOutbound('info', 'details')}
                 >
                   <Globe size={15} />
                   Event info
@@ -428,12 +445,35 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-[10px] bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-85"
+                  onClick={() => trackOutbound('register', 'details')}
                 >
                   <Ticket size={15} />
                   Register
                 </a>
               )}
             </div>
+
+            {/* App invitation. Event pages are the site's top organic click class
+                and, until 2026-09, the only major landing class with no way into
+                Shift (0 of 36 organic event visits reached the app). Contests are
+                places to enter, not to travel to, so they skip it.
+                Experiment exp-2026-09-8. */}
+            {!deadline && STORE_LIVE && (
+              <div className="rounded-[14px] border border-(--ev-line-strong) px-5 py-4">
+                <p className="text-[14px] font-semibold text-(--ev-ink)">Walking, biking or taking transit there?</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-(--ev-ink-80)">
+                  Shift counts the trip without you touching anything and turns it into money saved and perks from
+                  local businesses. It&apos;s free.
+                </p>
+                <StoreButtons
+                  iosUrl={withAppUtm(IOS_URL)}
+                  androidUrl={withAppUtm(ANDROID_URL)}
+                  placement="event_detail"
+                  tone={tone === 'light' ? 'light' : 'dark'}
+                  className="mt-3.5 [&>a]:max-[420px]:basis-full"
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -449,6 +489,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-blue px-4 text-[14px] font-bold text-white"
+            onClick={() => trackOutbound('register', 'phone_bar')}
           >
             <Ticket size={16} />
             Register
@@ -459,6 +500,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-(--ev-accent-fill) px-4 text-[14px] font-bold text-(--ev-on-accent-fill)"
+            onClick={() => trackOutbound('info', 'phone_bar')}
           >
             <Globe size={16} />
             Event info

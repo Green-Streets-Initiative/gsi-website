@@ -17,6 +17,9 @@ export type Placement =
   | 'semester_school'
   | 'town_page'
   | 'towns_hub'
+  | 'roam_top'
+  | 'roam_bottom'
+  | 'event_detail'
 
 export type Audience =
   | 'individual'

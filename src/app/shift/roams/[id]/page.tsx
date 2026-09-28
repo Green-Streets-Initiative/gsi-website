@@ -429,6 +429,21 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               )}
             </div>
 
+            {/* App invitation above the fold. Search visitors land here asking how
+                long the route is and leave with the answer; until 2026-09 the only
+                app buttons sat below the full route, and 0 of 23 organic Roam
+                visits reached them. Experiment exp-2026-09-7. */}
+            <div className="mb-5 flex flex-col gap-4 rounded-[14px] border border-navy/10 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-[46ch]">
+                <p className="text-[0.9375rem] font-semibold text-navy">Follow this roam in the free Shift app</p>
+                <p className="mt-1 text-[0.875rem] leading-relaxed text-ink-soft">
+                  Shift guides you along the route, checks you in at each stop automatically
+                  {roam.badge_name ? `, and unlocks the ${roam.badge_name} badge when you finish.` : ', and marks the roam complete when you finish.'}
+                </p>
+              </div>
+              <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="roam_top" tone="light" className="shrink-0 [&>a]:max-[420px]:basis-full" />
+            </div>
+
             {/* Social proof + collection */}
             {roam.completion_count >= MIN_COMPLETIONS_TO_SHOW && (
               <p className="mb-4 flex items-center gap-1.5 text-sm text-ink-soft">
@@ -599,7 +614,7 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               </div>
             </div>
             <div className="text-center">
-              <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} tone="light" className="justify-center" />
+              <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="roam_bottom" tone="light" className="justify-center" />
             </div>
           </div>
         </section>
