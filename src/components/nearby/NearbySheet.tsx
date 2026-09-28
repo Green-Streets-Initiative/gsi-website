@@ -125,8 +125,14 @@ const NearbySheet = forwardRef<NearbySheetRef, Props>(function NearbySheet(
     return closest
   }, [points, snap])
 
+  // The header's tabs and filter chips live inside this drag surface, and a
+  // pointer capture retargets their click to the surface — every tab and chip
+  // silently did nothing. Presses on a control stay clicks; the resize handle
+  // and the header's bare space still drag.
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (!sheetRef.current) return
+    const control = (e.target as HTMLElement).closest('button, a, input, select, label')
+    if (control && !control.hasAttribute('data-sheet-handle')) return
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     dragState.current = {
       startY: e.clientY,
@@ -188,6 +194,7 @@ const NearbySheet = forwardRef<NearbySheetRef, Props>(function NearbySheet(
       >
         <button
           onClick={onHandleClick}
+          data-sheet-handle
           aria-label="Resize panel"
           className="block w-full cursor-grab py-2.5 active:cursor-grabbing"
         >

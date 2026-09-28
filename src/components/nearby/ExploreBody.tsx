@@ -79,7 +79,7 @@ export function ExploreBody({ community, compact }: {
           <div className={`grid gap-3 ${compact ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
             {roams.slice(0, 3).map(r => (
               <div key={r.id} onClick={() => posthog.capture('snapshot_roam_clicked', { id: r.id })}>
-                <RoamCard roam={r} />
+                <RoamCard roam={r} tone="nearby" />
               </div>
             ))}
           </div>

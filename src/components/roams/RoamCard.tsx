@@ -23,10 +23,12 @@ export function roamMetaLine(r: {
     .join(' · ')
 }
 
-type Tone = 'dark' | 'light'
+type Tone = 'dark' | 'light' | 'nearby'
 
 // `light` is the cream campaign pages; `dark` (default) keeps every existing
-// caller byte-identical.
+// caller byte-identical. `nearby` paints from the /nearby --nb-* variables, so
+// it matches whichever surface that page is on — on the cream surface the
+// `dark` card put white text on near-white.
 const THEME: Record<Tone, { card: string; name: string; meta: string; hook: string; done: string }> = {
   dark: {
     card: 'block overflow-hidden rounded-[14px] border border-white/[0.08] bg-white/[0.04] transition-colors hover:bg-white/[0.07]',
@@ -41,6 +43,13 @@ const THEME: Record<Tone, { card: string; name: string; meta: string; hook: stri
     meta: 'text-[13px] text-ink-soft',
     hook: 'mt-1.5 text-[13px] leading-snug text-ink-soft',
     done: 'mt-2 flex items-center gap-1 text-[11px] text-ink-soft',
+  },
+  nearby: {
+    card: 'block overflow-hidden rounded-[14px] border border-(--nb-line-mid) bg-(--nb-card) transition-colors hover:border-(--nb-line-strong)',
+    name: 'text-sm font-semibold leading-snug text-(--nb-ink)',
+    meta: 'text-xs text-(--nb-ink-80)',
+    hook: 'mt-1.5 text-xs leading-snug text-(--nb-ink-80)',
+    done: 'mt-2 flex items-center gap-1 text-[10px] text-(--nb-ink-70)',
   },
 }
 
