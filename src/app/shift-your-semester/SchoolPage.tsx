@@ -211,7 +211,7 @@ export default function SchoolPage({ d, capture = true }: { d: SchoolData; captu
 
         {hasEvents && (
           <Section shape="wanderRight" id="events" className="scroll-mt-28">
-            <EventsRoamsPanels events={d.events} roams={d.roams} townName={school.shortName} tone="light" />
+            <EventsRoamsPanels events={d.events} roams={d.roams} townName={school.shortName} tone="light" roamsFrom={{ near: 'on campus', from: 'from campus' }} />
           </Section>
         )}
 

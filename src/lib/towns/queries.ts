@@ -138,6 +138,10 @@ export interface TownRoam {
   region: string | null
   completion_count: number
   vibe_tags: string[]
+  /** Miles from the page's centroid to the roam's first required checkpoint
+   *  (what getTownRoams ranks by). Distinct from distance_miles, the route's
+   *  own length. */
+  start_distance_miles?: number
 }
 
 export interface NamedCorridor {
@@ -519,7 +523,7 @@ export async function getTownRoams(
     .filter((x) => x.dist <= ROAM_RADIUS_MILES)
     .sort((a, b) => a.dist - b.dist)
     .slice(0, limit)
-    .map((x) => x.roam)
+    .map((x) => ({ ...x.roam, start_distance_miles: x.dist }))
 }
 
 /**

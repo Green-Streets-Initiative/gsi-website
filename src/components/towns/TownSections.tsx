@@ -255,11 +255,15 @@ export function EventsRoamsPanels({
   roams,
   townName,
   tone = 'dark',
+  roamsFrom = { near: `in central ${townName}`, from: `from central ${townName}` },
 }: {
   events: TownEvent[]
   roams: TownRoam[]
   townName: string
   tone?: 'dark' | 'light'
+  /** How a roam's start distance reads: a town page measures from the
+   *  town's centroid, a school page passes "on campus" / "from campus". */
+  roamsFrom?: { near: string; from: string }
 }) {
   if (events.length === 0 && roams.length === 0) return null
   const both = events.length > 0 && roams.length > 0
@@ -279,7 +283,12 @@ export function EventsRoamsPanels({
             </p>
             <div className="space-y-3">
               {roams.map((r) => (
-                <RoamCard key={r.id} roam={r} tone={tone} />
+                <RoamCard
+                  key={r.id}
+                  roam={r}
+                  tone={tone}
+                  start={r.start_distance_miles != null ? { miles: r.start_distance_miles, ...roamsFrom } : undefined}
+                />
               ))}
             </div>
             <Link href="/shift/roams" className={t.all}>
