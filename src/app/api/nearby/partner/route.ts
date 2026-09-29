@@ -1,4 +1,5 @@
-import { fetchPartner, normalizePartnerSlug, partnerLogoPath } from '@/lib/nearby/partner'
+import { normalizePartnerSlug, partnerLogoPath } from '@/lib/nearby/partner'
+import { fetchCoBrand } from '@/lib/nearby/cobrand-server'
 
 /**
  * Same-origin partner lookup for the interactive /nearby page. The browser
@@ -13,7 +14,7 @@ import { fetchPartner, normalizePartnerSlug, partnerLogoPath } from '@/lib/nearb
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const slug = normalizePartnerSlug(searchParams.get('slug'))
-  const partner = await fetchPartner(slug)
+  const partner = await fetchCoBrand(slug)
   if (!partner) {
     // Cache misses briefly too — bots probing random slugs shouldn't hit the DB each time
     return Response.json(null, {

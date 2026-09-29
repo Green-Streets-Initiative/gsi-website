@@ -9,6 +9,7 @@ import Topbar from './_components/Topbar'
 import AgreementGate from './_components/AgreementGate'
 import SetupProgressBanner from './_components/SetupProgressBanner'
 import AccessLapsedNotice from './_components/AccessLapsedNotice'
+import PortalTracking from './_components/PortalTracking'
 import './portal.css'
 
 const sourceSans = Source_Sans_3({
@@ -29,6 +30,7 @@ function PortalShell({ children }: { children: React.ReactNode }) {
   return (
     <PortalProvider>
       <ToastProvider>
+        <PortalTracking />
         <div
           className={`${sourceSans.variable} ${dmMono.variable} grid min-h-screen min-[980px]:grid-cols-[256px_1fr] bg-canvas`}
           style={{ fontFamily: "'Source Sans 3', var(--font-source-sans), var(--font-sans), system-ui, sans-serif" }}

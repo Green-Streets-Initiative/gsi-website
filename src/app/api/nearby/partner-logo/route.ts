@@ -1,4 +1,5 @@
-import { fetchPartner, normalizePartnerSlug } from '@/lib/nearby/partner'
+import { normalizePartnerSlug } from '@/lib/nearby/partner'
+import { fetchCoBrand } from '@/lib/nearby/cobrand-server'
 
 /**
  * Same-origin partner logo: streams the partner's storage object through
@@ -11,7 +12,7 @@ import { fetchPartner, normalizePartnerSlug } from '@/lib/nearby/partner'
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const slug = normalizePartnerSlug(searchParams.get('slug'))
-  const partner = await fetchPartner(slug)
+  const partner = await fetchCoBrand(slug)
   if (!partner?.logoUrl) {
     return new Response('Not found', {
       status: 404,

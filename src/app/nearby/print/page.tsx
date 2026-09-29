@@ -4,7 +4,8 @@ import { parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from 
 import { isNewRoutesContext, NEWROUTES_CODE } from '@/lib/nearby/campaign'
 import { splitPlaceLabel } from '@/lib/nearby/neighborhood'
 import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
-import { parsePartnerSlug, fetchPartner, partnerLogoPath } from '@/lib/nearby/partner'
+import { parsePartnerSlug, partnerLogoPath } from '@/lib/nearby/partner'
+import { fetchCoBrand } from '@/lib/nearby/cobrand-server'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import { shuttleAgencyFor } from '@/lib/nearby/shuttle-agencies'
 import { protectionLabel } from '@/lib/nearby/bike-labels'
@@ -113,7 +114,7 @@ export default async function NearbyPrintPage({ searchParams }: {
     // Partner co-brand for outreach prints; null (default header) on any
     // miss. The logo renders via the same-origin proxy path — the browser
     // fetching this server-rendered page may block supabase.co directly.
-    fetchPartner(partnerSlug).then(p =>
+    fetchCoBrand(partnerSlug).then(p =>
       p?.logoUrl ? { ...p, logoUrl: partnerLogoPath(p.slug) } : p),
   ])
   const { stations, anyFar, hasRail, hasBus, bikeCorridors, docks: printDocks, destinations, lines, markers, drawnTiers } = snapshot
