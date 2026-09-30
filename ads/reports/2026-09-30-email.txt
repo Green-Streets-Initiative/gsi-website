@@ -1,0 +1,10 @@
+Act this week. September is closing at a 3.0% click rate (1 click / 33 impressions), under the 5% floor. That is the first month under; if October also ends under 5%, Google pauses the account.
+
+This week's actions:
+1. Upload the 3 new campaigns you approved on 09-24 (Brand, How-to Guides, Town Walking & Biking). They are still not in the account, and brand searches are the main fix for October's click rate.
+2. Complete advertiser verification. Google's banner says ads stop running without it; only you can do it.
+3. Finish conversion tracking. September ended with 0 conversions; the grant needs 1 a month.
+
+To do one, open Claude Code and say "do ad grants item N".
+
+Full report: https://claude.ai/artifact/UuoYJsktAySt3HY5KinrbF

@@ -31,23 +31,33 @@
   "open_items": [
     {
       "id": "brand-campaign",
-      "status": "approved by Keith 2026-09-24; upload file ~/Downloads/ad-grants-new-campaigns.csv ready, Keith uploads via Tools > Bulk actions > Uploads; NOT yet in account at 09-24 weekly run (only the 3 original campaigns)",
+      "status": "approved by Keith 2026-09-24; upload file ~/Downloads/ad-grants-new-campaigns.csv ready, Keith uploads via Tools > Bulk actions > Uploads; STILL NOT in account at 09-30 weekly run (weekly report item 1 again)",
       "what": "GSI — Brand campaign, 2 ad groups, $30/day"
     },
     {
       "id": "local-keywords",
-      "status": "approved by Keith 2026-09-24; upload file ~/Downloads/ad-grants-new-campaigns.csv ready, Keith uploads via Tools > Bulk actions > Uploads; NOT yet in account at 09-24 weekly run (only the 3 original campaigns)",
+      "status": "approved by Keith 2026-09-24; same upload file; STILL NOT in account at 09-30 weekly run (part of weekly report item 1)",
       "what": "New campaigns How-to Guides (4 ad groups -> /guides/*) and Town Walking & Biking (town pages + walk/bike to school), $50 + $40/day"
     },
     {
       "id": "conversion-tracking",
-      "status": "awaiting Keith (weekly report item 2, opened 2026-09-24)",
+      "status": "awaiting Keith (weekly report item 3 on 09-30; opened 2026-09-24); unchanged at 09-30, Sept closed with 0 conversions",
       "what": "All campaigns show 'Eligible (Limited): conversion tracking setup is incomplete'; Sign-up and Outbound click goals 'Needs attention', newsletter_signup 'Awaiting conversions'. Site fires newsletter_signup (NewsletterSignupForm.tsx) and shift_store_click (StoreButtons.tsx) via gaEvent; check GA4 key events + Ads import. Sept has 0 conversions."
     },
     {
       "id": "poor-ads",
-      "status": "awaiting Keith (weekly report item 3, opened 2026-09-24)",
+      "status": "awaiting Keith (opened 2026-09-24; dropped to a footnote 09-30, lower priority); Just moved ad still Poor at 09-30",
       "what": "2 RSAs rated Poor: one in New Routes / Just moved, one in Shift Your Semester / Student life Boston. Add headlines/descriptions."
+    },
+    {
+      "id": "advertiser-verification",
+      "status": "awaiting Keith (weekly report item 2, opened 2026-09-30); only Keith can complete (org identity)",
+      "what": "Account banner: 'Complete advertiser verification - To keep running ads, complete advertiser verification.' No deadline shown."
+    },
+    {
+      "id": "bluebikes-negatives",
+      "status": "hold until 2026-10-05 (09-21 broad-match change must be 14 days old)",
+      "what": "9 of 20 named Sept search terms were Bluebikes lookups (bluebikes, blue bikes, bluebike, bluebikes map, bluebikes boston) in New Routes / Getting around Boston; navigational, low CTR. Consider negative keywords after Oct 5."
     },
     {
       "id": "script-thresholds",
@@ -116,6 +126,43 @@
       "conversion_tracking_status": "Sign-up and Outbound click goals Needs attention; newsletter_signup Awaiting conversions",
       "brand_search_gsc_week": { "range": "2026-09-12..2026-09-18", "impressions": 46, "clicks": 3, "note": "greenstreets 27, green streets 13, green streets initiative 6 (3 clicks)" },
       "verdict": "Act this week: first click landed, MTD CTR 6.25% on 16 impr (too little to judge; Sept likely closes above 5%), 0 conversions in Sept."
+    },
+    {
+      "date": "2026-09-30",
+      "source": "scheduled weekly run: live account (calendar month Sep 1-30) + 09-30 script email + GSC weekly-2026-09-25. Search terms page is /aw/keywords/searchterms (/aw/searchterms 404s); 15 named terms shown, 13 impressions incl. the 1 click are under 'Other search terms'",
+      "window": "2026-09-01..2026-09-30",
+      "impressions": 33, "clicks": 1, "ctr_pct": 3.03, "cost": 11.52, "conversions": 0,
+      "august": { "impressions": 0, "clicks": 0, "note": "no CTR in August; September is the first month under 5%" },
+      "by_campaign": {
+        "New Routes — Movers": { "impressions": 33, "clicks": 1 },
+        "Shift App — Massachusetts": { "impressions": 0, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 }
+      },
+      "keywords": { "total": 37, "match": "broad", "low_search_volume": 2, "single_word": 0 },
+      "ads": { "total": 12, "all_eligible": true, "strength": "mostly Average; at least 1 Poor (New Routes / Just moved) still" },
+      "sitelinks": 15,
+      "campaign_status": "Eligible (Limited): conversion tracking setup is incomplete (all 3); Maximize conversions",
+      "conversion_tracking_status": "Sign-up, Outbound click, Page view goals Needs attention; all 3 actions Awaiting conversions",
+      "account_banners": ["Complete advertiser verification - To keep running ads, complete advertiser verification", "Improve account security"],
+      "brand_search_gsc_week": { "range": "2026-09-19..2026-09-25", "impressions": 18, "clicks": 2, "note": "greenstreets 8, green streets initiative 7 (2 clicks), green streets 2, go shift app 1" },
+      "search_terms": [
+        { "term": "blue bikes", "impressions": 2, "clicks": 0, "conversions": 0 },
+        { "term": "bluebike", "impressions": 2, "clicks": 0, "conversions": 0 },
+        { "term": "bluebikes", "impressions": 2, "clicks": 0, "conversions": 0 },
+        { "term": "bluebikes map", "impressions": 2, "clicks": 0, "conversions": 0 },
+        { "term": "bike paths in boston", "impressions": 2, "clicks": 0, "conversions": 0 },
+        { "term": "bike lane", "impressions": 1, "clicks": 0, "conversions": 0 },
+        { "term": "boston t", "impressions": 1, "clicks": 0, "conversions": 0 },
+        { "term": "great places to bike near me", "impressions": 1, "clicks": 0, "conversions": 0 },
+        { "term": "public transportation boston", "impressions": 1, "clicks": 0, "conversions": 0 },
+        { "term": "transit", "impressions": 1, "clicks": 0, "conversions": 0 },
+        { "term": "bike trails boston", "impressions": 1, "clicks": 0, "conversions": 0 },
+        { "term": "bike trails boston ma", "impressions": 1, "clicks": 0, "conversions": 0 },
+        { "term": "bike lane map boston", "impressions": 1, "clicks": 0, "conversions": 0 },
+        { "term": "bike path boston", "impressions": 1, "clicks": 0, "conversions": 0 },
+        { "term": "bluebikes boston", "impressions": 1, "clicks": 0, "conversions": 0 }
+      ],
+      "verdict": "Act this week: September closes at 3.03% (1/33), first month under 5%; October must reach 5%. Approved new campaigns still not uploaded; advertiser verification banner new; 0 conversions."
     }
   ]
 }
