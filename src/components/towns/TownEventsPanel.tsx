@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { eventPath } from '@/lib/events-url'
 import { Calendar } from 'lucide-react'
 import { formatDistance, getTagMeta, getTypeMeta, parseEventDate, TYPE_FILTER_ORDER } from '@/lib/events'
 import { EVENT_TYPE_ICONS } from '@/components/events/event-type-icons'
@@ -91,7 +92,7 @@ export default function TownEventsPanel({ events, townName, tone = 'dark' }: { e
                 {items.map((e) => (
                   <Link
                     key={e.id}
-                    href={`/events/${encodeURIComponent(e.id)}`}
+                    href={eventPath(e)}
                     className={t.row}
                   >
                     <p className={t.title}>{e.title}</p>

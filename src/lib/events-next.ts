@@ -41,7 +41,7 @@ interface NextRow {
   event_date: string
   event_time: string | null
   location_name: string | null
-  content_items: { title: string } | { title: string }[]
+  content_items: { title: string; slug?: string | null } | { title: string; slug?: string | null }[]
 }
 
 function firstRow(rows: NextRow[] | null, kind: NextUpKind): NextUp | null {
@@ -52,6 +52,7 @@ function firstRow(rows: NextRow[] | null, kind: NextUpKind): NextUp | null {
   return {
     kind,
     id: row.content_id,
+    slug: ci.slug ?? null,
     title: ci.title,
     event_date: row.event_date,
     event_time: row.event_time,
@@ -60,7 +61,7 @@ function firstRow(rows: NextRow[] | null, kind: NextUpKind): NextUp | null {
 }
 
 const SELECT =
-  'content_id, event_date, event_time, location_name, content_items!inner(title, status, content_type)'
+  'content_id, event_date, event_time, location_name, content_items!inner(title, slug, status, content_type)'
 
 /**
  * The next event worth pointing a visitor at, or null if there isn't one.

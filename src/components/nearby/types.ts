@@ -16,6 +16,7 @@ export interface BikeNetworkData {
 /** Shapes returned by /api/nearby/events (subset of the town-page types) */
 export interface NearbyEvent {
   id: string
+  slug?: string | null
   title: string
   event_date: string
   event_time: string | null

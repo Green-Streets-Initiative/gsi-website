@@ -4,6 +4,7 @@ import { getActiveRoams } from '@/lib/roams/queries'
 import { SCHOOLS } from '@/lib/semester/schools'
 import { loadEventsListing } from '@/app/events/_lib/load'
 import { SITE_URL } from '@/lib/seo'
+import { eventUrl } from '@/lib/events-url'
 
 // Served at /llms.txt. Generated (not a static file) so the guide and town
 // inventories stay in sync with the database the same way the sitemap does.
@@ -139,7 +140,7 @@ export async function GET() {
       const when = [e.event_date, e.event_time].filter(Boolean).join(' ')
       const detail = [when, e.location_name].filter(Boolean).join(' — ')
       L.push(
-        `- [${e.title}](${SITE_URL}/events/${encodeURIComponent(e.id)})${detail ? `: ${detail}` : ''}`,
+        `- [${e.title}](${eventUrl(e, SITE_URL)})${detail ? `: ${detail}` : ''}`,
       )
     }
     L.push('')

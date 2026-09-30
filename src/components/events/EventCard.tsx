@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { eventPath } from '@/lib/events-url'
 import { Calendar, Bookmark } from 'lucide-react'
 import { type CommunityEvent, getTypeMeta, getTagMeta, formatTime, formatDistance, haversine, isDeadline, parseEventDate, dateShort, eventRideStyle, isNoDrop, formatDistanceText, RIDE_STYLE_LABEL } from '@/lib/events'
 import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
@@ -76,7 +77,7 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
 
   return (
     <div className="group relative flex min-h-[72px] items-start gap-3 rounded-[14px] border border-(--ev-line) bg-(--ev-card) p-3.5 transition-all duration-200 hover:border-(--ev-line-mid) hover:bg-(--ev-card-hover) sm:gap-4 sm:p-4 lg:min-h-0 lg:items-center lg:px-4 lg:py-3">
-      <Link href={`${hrefBase}/${encodeURIComponent(event.id)}`} onClick={onOpen} className="absolute inset-0 z-10 rounded-[14px]" aria-label={event.title} />
+      <Link href={eventPath(event, hrefBase)} onClick={onOpen} className="absolute inset-0 z-10 rounded-[14px]" aria-label={event.title} />
 
       {/* Desktop time column */}
       <div className="hidden w-[76px] shrink-0 flex-col lg:flex">

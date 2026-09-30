@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { Resend } from 'resend'
+import { eventUrl } from '@/lib/events-url'
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 
@@ -52,6 +53,76 @@ const MAX_DAYS_AHEAD = 730
 // a way through, since no heuristic is perfect.
 const TRY_AGAIN_MESSAGE =
   "We couldn't process this submission. If you're a person, email info@gogreenstreets.org and we'll add your event by hand."
+
+// The calendar's own duplicate scorer, run against every live or pending
+// event on the same date before anything is saved. It may ask Claude about a
+// borderline pair, so give it room; if it is slow or unavailable the
+// submission goes through unchecked — a real person's event must never be
+// lost to a check that hiccuped.
+const DEDUPE_TIMEOUT_MS = 20_000
+
+interface ExistingListing {
+  id: string
+  slug: string | null
+  title: string
+  status: 'approved' | 'draft'
+  event_date: string
+}
+
+async function findExistingListing(
+  body: Record<string, string | undefined>,
+  organizerId: string | null,
+): Promise<ExistingListing | null> {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.INTERNAL_RENDER_API_KEY
+  if (!base || !key) return null
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), DEDUPE_TIMEOUT_MS)
+  try {
+    const res = await fetch(`${base}/functions/v1/sync-community-events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Internal-Key': key },
+      body: JSON.stringify({
+        action: 'dedupe_check',
+        event: {
+          title: body.title?.trim(),
+          date: body.date,
+          time: body.startTime || null,
+          location_name: body.venueName?.trim() || null,
+          location_address: body.address?.trim() || null,
+          lat: body.lat ? parseFloat(body.lat) : null,
+          lng: body.lng ? parseFloat(body.lng) : null,
+          organizer_id: organizerId,
+          organizer_name: body.organizerName?.trim() || null,
+          description: body.description?.trim() || null,
+          event_url: body.eventUrl?.trim() || null,
+          registration_url: body.registrationUrl?.trim() || null,
+        },
+      }),
+      signal: controller.signal,
+    })
+    if (!res.ok) {
+      console.warn(`[events/submit] duplicate check unavailable (${res.status}); accepting unchecked`)
+      return null
+    }
+    const data = await res.json()
+    const d = data?.duplicate
+    if (!d?.content_id) return null
+    return {
+      id: d.content_id,
+      slug: d.slug ?? null,
+      title: d.title,
+      status: d.status === 'draft' ? 'draft' : 'approved',
+      event_date: d.event_date,
+    }
+  } catch (err) {
+    console.warn('[events/submit] duplicate check failed; accepting unchecked:', err)
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
 
 /**
  * Scores a single free-text field for "random token" junk — the signature of
@@ -154,6 +225,32 @@ export async function POST(request: Request) {
 
   const supabase = createServerSupabaseClient()
 
+  // A suggestion the submitter picked; verified so a forged id can't link a
+  // stranger's events to an organizer.
+  let organizerId: string | null = null
+  if (typeof body.organizerId === 'string' && body.organizerId) {
+    const { data: org } = await supabase
+      .from('event_organizers')
+      .select('id')
+      .eq('id', body.organizerId)
+      .eq('status', 'active')
+      .maybeSingle()
+    organizerId = org?.id ?? null
+  }
+
+  // Already on the calendar (or already in the review queue)? Say so, with a
+  // link, instead of filing a second copy for triage.
+  const existing = await findExistingListing(body, organizerId)
+  if (existing) {
+    return Response.json(
+      {
+        error: 'This event is already listed.',
+        duplicate: { ...existing, url: eventUrl(existing) },
+      },
+      { status: 409 },
+    )
+  }
+
   const slug = body.title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -186,19 +283,6 @@ export async function POST(request: Request) {
   // not false: the calendar only shows the promise where someone made it.
   const pace = VALID_PACES.includes(body.pace) ? body.pace : null
   const noDrop = body.noDrop === true ? true : null
-
-  // A suggestion the submitter picked; verified so a forged id can't link a
-  // stranger's events to an organizer.
-  let organizerId: string | null = null
-  if (typeof body.organizerId === 'string' && body.organizerId) {
-    const { data: org } = await supabase
-      .from('event_organizers')
-      .select('id')
-      .eq('id', body.organizerId)
-      .eq('status', 'active')
-      .maybeSingle()
-    organizerId = org?.id ?? null
-  }
 
   const lat = body.lat ? parseFloat(body.lat) : null
   const lng = body.lng ? parseFloat(body.lng) : null

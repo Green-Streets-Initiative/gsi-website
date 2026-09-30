@@ -1,4 +1,5 @@
 import type { CommunityEvent } from './events'
+import { eventUrl } from '@/lib/events-url'
 import { parseEventDate, formatTime } from './events'
 
 /**
@@ -217,7 +218,7 @@ export function buildEventJsonLd(
     ...(event.schedule_status === 'moved' && event.previous_event_date
       ? { previousStartDate: isoDateTime(event.previous_event_date, event.previous_event_time ?? event.event_time, timeZone) }
       : {}),
-    url: `${EVENT_BASE}/${encodeURIComponent(event.id)}`,
+    url: eventUrl(event),
     description: plainDescription(
       event.body,
       `${event.title} at ${event.location_name}.`,

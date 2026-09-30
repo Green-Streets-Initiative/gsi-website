@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { eventPath } from '@/lib/events-url'
 import { supabase } from '@/lib/supabase'
 import type { ContentItem, EventWithDetails, Mode, BarrierCode } from '@/lib/types/commute'
 
@@ -185,7 +186,7 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
           <p className="mb-4 line-clamp-2 text-[0.875rem] leading-relaxed text-[#5A5C6E]">
             {event.content_items.summary}
           </p>
-          <Link href={`/events/${event.id}`} className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#2D6A4F] transition-opacity hover:opacity-80">
+          <Link href={eventPath(event)} className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-[#2D6A4F] transition-opacity hover:opacity-80">
             Learn more
             <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" />

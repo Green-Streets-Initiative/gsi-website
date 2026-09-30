@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { Resend } from 'resend'
+import { eventUrl } from '@/lib/events-url'
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
 
   const { data: events } = await supabase
     .from('content_items')
-    .select('id, title, event_details(event_date, event_time, location_name), event_submissions(submitter_email, submitter_name)')
+    .select('id, slug, title, event_details(event_date, event_time, location_name), event_submissions(submitter_email, submitter_name)')
     .in('id', eventIds)
     .eq('status', 'approved')
 
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
           time: ed.event_time,
           location: ed.location_name,
           submitterName: sub.submitter_name,
-          eventUrl: `https://gogreenstreets.org/events/${ev.id}`,
+          eventUrl: eventUrl(ev),
         }),
       })
       sent++

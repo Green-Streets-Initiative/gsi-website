@@ -1,4 +1,5 @@
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
+import { eventPath } from '@/lib/events-url'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import EventDetail from '@/components/events/EventDetail'
@@ -20,6 +21,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   if (!loaded) notFound()
 
   const { event, nextUp, timezone, sponsorLinks } = loaded
+
+  // Old links carry the internal id; send them to the readable address for good.
+  if (event.slug && decodeURIComponent(id) !== event.slug) permanentRedirect(eventPath(event))
   const jsonLd = buildEventJsonLd(event, { timeZone: timezone })
 
   return (

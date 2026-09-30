@@ -104,6 +104,7 @@ export interface TownPageStats {
 
 export interface TownEvent {
   id: string
+  slug: string | null
   title: string
   event_date: string
   event_time: string | null
@@ -346,7 +347,7 @@ export async function fetchEventPool(
     .select(`
       content_id, event_date, event_time, event_end_time, location_name, location_lat, location_lng, event_type, tags,
       organizer_name, organizer_url, image_url,
-      content_items!inner ( id, title, status, summary )
+      content_items!inner ( id, slug, title, status, summary )
     `)
     .eq('content_items.status', 'approved')
     .eq('content_items.content_type', 'community_event')
@@ -370,6 +371,7 @@ export async function fetchEventPool(
     const ci = row.content_items as Record<string, unknown>
     pool.push({
       id: ci.id as string,
+      slug: (ci.slug as string | null) ?? null,
       title: ci.title as string,
       event_date: row.event_date as string,
       event_time: (row.event_time as string) ?? null,

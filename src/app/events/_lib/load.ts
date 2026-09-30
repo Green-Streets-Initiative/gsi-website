@@ -5,6 +5,7 @@ import type { CommunityEvent, NextUp } from '@/lib/events'
 import { findNextUp } from '@/lib/events-next'
 import { buildEventTitle, buildEventDescription } from '@/lib/events-seo'
 import { SITE_URL } from '@/lib/seo'
+import { eventUrl } from '@/lib/events-url'
 
 /**
  * Data for the events calendar and the event detail page, shared by the
@@ -41,6 +42,7 @@ const EVENT_FIELDS = `
       previous_event_time,
       content_items!inner (
         id,
+        slug,
         title,
         body,
         status
@@ -57,6 +59,7 @@ function toCommunityEvent(row: EventRow): CommunityEvent {
   const ci = row.content_items as unknown as Record<string, unknown>
   return {
     id: ci.id as string,
+    slug: (ci.slug as string | null) ?? null,
     title: ci.title as string,
     body: ci.body as string | null,
     status: ci.status as string,
@@ -176,20 +179,31 @@ async function resolveSponsorLinks(
 }
 
 /**
- * One event by content id, with the next occurrence when this one has passed.
- * Approved events, plus ones the organizer cancelled or postponed: those are
- * off every list but keep their page, so a saved or shared link explains
- * what happened instead of a 404.
+ * A legacy content id ("ce_sync_massbike_8912d763626a") always carries an
+ * underscore; a slug ("a-simple-machine-bike-convoy-2026-10-11") never does.
  */
-export async function loadEvent(id: string): Promise<LoadedEvent | null> {
+export function isLegacyEventId(key: string): boolean {
+  return key.includes('_')
+}
+
+/**
+ * One event by slug or legacy content id, with the next occurrence when this
+ * one has passed. Approved events, plus ones the organizer cancelled or
+ * postponed: those are off every list but keep their page, so a saved or
+ * shared link explains what happened instead of a 404.
+ */
+export async function loadEvent(key: string): Promise<LoadedEvent | null> {
   const supabase = createServerSupabaseClient()
-  const { data } = await supabase
+  const decoded = decodeURIComponent(key)
+  const query = supabase
     .from('event_details')
     .select(DETAIL_SELECT)
-    .eq('content_id', decodeURIComponent(id))
     .in('content_items.status', ['approved', 'archived'])
     .eq('content_items.content_type', 'community_event')
-    .single()
+  const { data } = await (isLegacyEventId(decoded)
+    ? query.eq('content_id', decoded)
+    : query.eq('content_items.slug', decoded)
+  ).single()
 
   if (!data) return null
 
@@ -221,7 +235,7 @@ export function buildEventPageMetadata(loaded: LoadedEvent | null): Metadata {
 
   const title = buildEventTitle(event, recurring)
   const description = buildEventDescription(event, recurring)
-  const url = `${SITE_URL}/events/${encodeURIComponent(event.id)}`
+  const url = eventUrl(event, SITE_URL)
 
   return {
     title,

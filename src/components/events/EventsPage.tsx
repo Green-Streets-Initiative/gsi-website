@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useSyncExternalStore } from 'react'
 import Link from 'next/link'
+import { eventPath } from '@/lib/events-url'
 import { ArrowRight, Calendar as CalendarIcon, List, Search, SlidersHorizontal } from 'lucide-react'
 import {
   type CommunityEvent, getTypeMeta, parseEventDate, dateLong, formatTime, isDeadline,
@@ -60,7 +61,7 @@ function SpotlightCard({ event, compact }: { event: CommunityEvent; compact: boo
 
   return (
     <Link
-      href={`${hrefBase}/${encodeURIComponent(event.id)}`}
+      href={eventPath(event, hrefBase)}
       className="group flex min-w-[86%] snap-start items-start gap-4 rounded-2xl border p-5 transition-all duration-200 hover:brightness-110 sm:min-w-0 sm:gap-5 sm:p-7 lg:gap-4 lg:p-4"
       style={{ borderColor: ink + tint.spotLine, backgroundColor: ink + tint.spotBg }}
     >

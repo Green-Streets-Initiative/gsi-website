@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import { eventPath } from '@/lib/events-url'
 import {
   MapPin, Calendar, Users,
   ChevronLeft, Bookmark, Share2, Globe, ExternalLink, Ticket,
@@ -85,7 +86,7 @@ function NextUpBanner({ nextUp }: { nextUp: NextUp | null }) {
       {nextUp && label ? (
         <>
           <Link
-            href={`${hrefBase}/${encodeURIComponent(nextUp.id)}`}
+            href={eventPath(nextUp, hrefBase)}
             className="mt-1.5 inline-flex items-center gap-1.5 font-display text-[19px] font-extrabold leading-tight text-(--ev-ink) transition-opacity hover:opacity-80 sm:text-[22px]"
           >
             Next {nextUp.kind === 'series' ? 'one' : 'event'}: {label}

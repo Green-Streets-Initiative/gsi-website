@@ -9,6 +9,7 @@ import TownToc from '@/components/towns/TownToc'
 import { Section } from '@/components/org/Section'
 import { Eyebrow, LANE, RouteSegment } from '@/components/home/RouteLine'
 import { withUtm } from '@/lib/utm'
+import { eventUrl } from '@/lib/events-url'
 import {
   getQualifyingTowns,
   getTownBySlug,
@@ -144,7 +145,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         // These are approved upcoming events by construction (getTownEvents
         // filters on status + date), so "scheduled" is always accurate.
         eventStatus: 'https://schema.org/EventScheduled',
-        url: `${SITE_URL}/events/${encodeURIComponent(e.id)}`,
+        url: eventUrl(e, SITE_URL),
         ...(e.event_time && e.event_end_time ? { endDate: `${e.event_date}T${e.event_end_time}` } : {}),
         ...(e.summary ? { description: e.summary } : {}),
         ...(e.image_url ? { image: e.image_url } : {}),

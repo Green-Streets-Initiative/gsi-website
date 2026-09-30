@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
-import { Check, Info } from 'lucide-react'
+import { Check, CalendarCheck, Info } from 'lucide-react'
 import { EVENT_TYPES, TYPE_FILTER_ORDER, TAG_META, PACE_BAND_LABEL, isRideEvent } from '@/lib/events'
 import { tagInk } from '@/lib/events-tone'
 import { PILL } from '@/components/org/Section'
@@ -46,6 +46,18 @@ const EMPTY_FORM: FormData = {
 const PACE_OPTIONS = ['kids', 'relaxed', 'moderate', 'brisk', 'fast'] as const
 
 type OrganizerSuggestion = { id: string; name: string; url: string | null }
+
+/** What the API returns when the event is already on file. */
+type ExistingListing = {
+  title: string
+  status: 'approved' | 'draft'
+  event_date: string
+  url: string
+}
+
+function longDate(ymd: string): string {
+  return new Date(`${ymd}T12:00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+}
 
 const FEED_TYPE_OPTIONS = [
   { value: 'not_applicable', label: 'Not applicable' },
@@ -121,6 +133,7 @@ export default function SubmitEventForm({ tone = 'dark', hrefBase = '/events' }:
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submittedEmail, setSubmittedEmail] = useState('')
+  const [existing, setExisting] = useState<ExistingListing | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [honeypot, setHoneypot] = useState('')
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -223,6 +236,10 @@ export default function SubmitEventForm({ tone = 'dark', hrefBase = '/events' }:
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
+        if (res.status === 409 && data.duplicate?.url) {
+          setExisting(data.duplicate as ExistingListing)
+          return
+        }
         showToast(data.error ?? 'Something went wrong. Please try again.')
         return
       }
@@ -241,6 +258,52 @@ export default function SubmitEventForm({ tone = 'dark', hrefBase = '/events' }:
     }`
 
   const labelClass = 'block mb-1.5 text-[13px] font-semibold text-(--ev-ink-80)'
+
+  // --- Already listed ---
+
+  if (existing) {
+    const live = existing.status === 'approved'
+    return (
+      <div className={`min-h-screen bg-(--ev-bg) px-8 pb-24 pt-12 ${toneClass(tone)}`}>
+        <div className="mx-auto max-w-[600px]">
+          <div className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-10 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-(--ev-accent-fill)">
+              <CalendarCheck size={28} className="text-(--ev-on-accent-fill)" />
+            </div>
+            <h2 className={t.thanks}>{live ? 'Good news: this one is already listed.' : 'This one is already on its way.'}</h2>
+            <p className="mt-3 text-[14px] leading-relaxed text-(--ev-ink-70)">
+              {live ? (
+                <>
+                  <span className="font-semibold text-(--ev-ink)">{existing.title}</span> is on our calendar for{' '}
+                  {longDate(existing.event_date)}, so there is nothing more to do.
+                </>
+              ) : (
+                <>
+                  Someone already sent us <span className="font-semibold text-(--ev-ink)">{existing.title}</span> for{' '}
+                  {longDate(existing.event_date)}. It is in our review queue and we will publish it soon.
+                </>
+              )}
+            </p>
+            <p className="mt-3 text-[14px] leading-relaxed text-(--ev-ink-70)">
+              If our listing has something wrong, or this is a different event, email{' '}
+              <a href="mailto:info@gogreenstreets.org" className="font-semibold text-(--ev-ink) underline">info@gogreenstreets.org</a>{' '}
+              and we will sort it out.
+            </p>
+            <div className="mt-8 flex justify-center gap-3">
+              <button type="button" onClick={() => setExisting(null)} className={t.secondary}>
+                Back to my submission
+              </button>
+              {live ? (
+                <a href={existing.url} className={t.primary}>See the listing</a>
+              ) : (
+                <Link href={hrefBase} className={t.primary}>Back to events</Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // --- Success state ---
 

@@ -6,6 +6,8 @@
 
 export interface CommunityEvent {
   id: string
+  /** Readable URL key, e.g. "a-simple-machine-bike-convoy-2026-10-11" (Shift 01037). */
+  slug: string | null
   title: string
   body: string | null
   status: string
@@ -60,6 +62,7 @@ export type NextUpKind = 'series' | 'organizer'
 export interface NextUp {
   kind: NextUpKind
   id: string
+  slug: string | null
   title: string
   event_date: string
   event_time: string | null

@@ -221,13 +221,13 @@ async function fetchGuide(primaryMode: string, barrier: string | null): Promise<
   return data || null
 }
 
-async function fetchEvent(primaryMode: string): Promise<EventWithDetails | null> {
+async function fetchEvent(primaryMode: string): Promise<(EventWithDetails & { slug: string | null }) | null> {
   const today = new Date().toISOString().split('T')[0]
   const { data } = await supabase
     .from('event_details')
     .select(`
-      id, event_date, location_name,
-      content_items!inner(title, summary, primary_mode)
+      content_id, event_date, location_name,
+      content_items!inner(slug, title, summary, primary_mode)
     `)
     .eq('content_items.status', 'approved')
     .eq('content_items.primary_mode', primaryMode)
@@ -236,7 +236,15 @@ async function fetchEvent(primaryMode: string): Promise<EventWithDetails | null>
     .limit(1)
     .single()
 
-  return data as EventWithDetails | null
+  if (!data) return null
+  const row = data as unknown as { content_id: string; event_date: string; location_name: string | null; content_items: EventWithDetails['content_items'] & { slug?: string | null } }
+  return {
+    id: row.content_id,
+    slug: row.content_items?.slug ?? null,
+    event_date: row.event_date,
+    location_name: row.location_name,
+    content_items: row.content_items,
+  }
 }
 
 /* ── Map Edge Function response → Website types ── */

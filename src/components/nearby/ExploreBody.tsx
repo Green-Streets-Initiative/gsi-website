@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { eventPath } from '@/lib/events-url'
 import posthog from 'posthog-js'
 import { CalendarBlank } from '@phosphor-icons/react'
 import RoamCard from '@/components/roams/RoamCard'
@@ -38,7 +39,7 @@ export function ExploreBody({ community, compact }: {
               return (
                 <Link
                   key={e.id}
-                  href={`/events/${e.id}`}
+                  href={eventPath(e)}
                   onClick={() => posthog.capture('snapshot_event_clicked', { id: e.id })}
                   className="flex items-start gap-3 rounded-xl border border-(--nb-line) bg-(--nb-card) px-4 py-3.5 transition-colors hover:border-(--nb-line-mid)"
                 >
