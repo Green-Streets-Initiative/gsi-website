@@ -125,9 +125,11 @@ interface EventDetailProps {
   tone?: EventsTone
   /** Where the back link and next-occurrence links point. */
   hrefBase?: string
+  /** Sponsor name → website, from the organizer directory (see loadEvent). */
+  sponsorLinks?: Record<string, string>
 }
 
-export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events' }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {} }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
   // The type's color for this surface: the navy-tuned one, or its ink on cream.
@@ -441,7 +443,23 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                     <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">
                       {event.organizer_name ? 'Presented with' : 'Presented by'}
                     </p>
-                    <p className="text-[14px] text-(--ev-ink-80)">{event.sponsors.join(' · ')}</p>
+                    <p className="text-[14px] text-(--ev-ink-80)">
+                      {event.sponsors.map((name, i) => {
+                        const url = sponsorLinks[name]
+                        return (
+                          <span key={name}>
+                            {i > 0 && ' · '}
+                            {url ? (
+                              <a href={withUtm(url)} target="_blank" rel="noopener noreferrer" className="text-(--ev-accent) hover:underline">
+                                {name} <ExternalLink size={12} className="inline" />
+                              </a>
+                            ) : (
+                              name
+                            )}
+                          </span>
+                        )
+                      })}
+                    </p>
                   </div>
                 </div>
               )}

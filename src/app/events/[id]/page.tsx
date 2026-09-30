@@ -19,7 +19,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   if (!loaded) notFound()
 
-  const { event, nextUp, timezone } = loaded
+  const { event, nextUp, timezone, sponsorLinks } = loaded
   const jsonLd = buildEventJsonLd(event, { timeZone: timezone })
 
   return (
@@ -30,7 +30,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <EventDetail event={event} nextUp={nextUp} isPast={isPastEvent(event.event_date)} tone="light" />
+        <EventDetail event={event} nextUp={nextUp} isPast={isPastEvent(event.event_date)} tone="light" sponsorLinks={sponsorLinks} />
       </main>
       <Footer variant="light" />
     </>

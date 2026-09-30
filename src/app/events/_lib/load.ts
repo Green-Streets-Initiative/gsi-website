@@ -132,6 +132,47 @@ export interface LoadedEvent {
   event: CommunityEvent
   nextUp: NextUp | null
   timezone: string | null
+  /** Sponsor name → website, for the sponsors we know from the organizer directory. */
+  sponsorLinks: Record<string, string>
+}
+
+/** "WalkBike Worcester" / "walkbike-worcester" / "WalkBikeWorcester.Org" all collapse to one key. */
+function nameKey(name: string): string {
+  return name.toLowerCase().replace(/\.(org|com|net)$/i, '').replace(/[^a-z0-9]+/g, '')
+}
+
+/**
+ * Sponsors are stored as plain names (the sync reads them off the listing),
+ * so link them by looking the names up in the organizer directory, which is
+ * the one place we keep an organization's website. Name or alias, matched
+ * loosely; unknown sponsors stay as plain text.
+ */
+async function resolveSponsorLinks(
+  supabase: ReturnType<typeof createServerSupabaseClient>,
+  sponsors: string[] | null,
+): Promise<Record<string, string>> {
+  if (!sponsors || sponsors.length === 0) return {}
+  const { data } = await supabase
+    .from('event_organizers')
+    .select('name, url, aliases')
+    .eq('status', 'active')
+    .not('url', 'is', null)
+  if (!data) return {}
+
+  const byKey = new Map<string, string>()
+  for (const org of data as { name: string; url: string; aliases: string[] | null }[]) {
+    for (const n of [org.name, ...(org.aliases ?? [])]) {
+      const k = nameKey(n)
+      if (k && !byKey.has(k)) byKey.set(k, org.url)
+    }
+  }
+
+  const links: Record<string, string> = {}
+  for (const sponsor of sponsors) {
+    const url = byKey.get(nameKey(sponsor))
+    if (url) links[sponsor] = url
+  }
+  return links
 }
 
 /**
@@ -157,13 +198,16 @@ export async function loadEvent(id: string): Promise<LoadedEvent | null> {
   const calledOff = row.schedule_status === 'cancelled' || row.schedule_status === 'postponed'
   if (status !== 'approved' && !calledOff) return null
   const event = toCommunityEvent(row)
-  const nextUp = await findNextUp(supabase, {
-    id: event.id,
-    title: event.title,
-    organizerId: (row.organizer_id as string | null) ?? null,
-  })
+  const [nextUp, sponsorLinks] = await Promise.all([
+    findNextUp(supabase, {
+      id: event.id,
+      title: event.title,
+      organizerId: (row.organizer_id as string | null) ?? null,
+    }),
+    resolveSponsorLinks(supabase, event.sponsors),
+  ])
 
-  return { event, nextUp, timezone: (row.timezone as string | null) ?? null }
+  return { event, nextUp, timezone: (row.timezone as string | null) ?? null, sponsorLinks }
 }
 
 /** Title, description, canonical, and Open Graph for a detail page; the staged copy reuses it. */
