@@ -18,7 +18,8 @@
  *
  * `null` when nothing in the listing says: we never assert a level we can't
  * support. The organizer's own pace band (event_details.pace, the same five
- * bands the ride planner uses) always wins over anything inferred.
+ * bands the ride planner uses) wins over anything inferred, except
+ * distance: twenty miles is never easy, whatever the pace.
  */
 
 export type RideStyle = 'easy' | 'moderate' | 'rec'
@@ -80,20 +81,21 @@ export function isRideEvent(eventType?: string | null): boolean {
 export function rideStyle(input: RideStyleInput): RideStyle | null {
   if (input.eventType != null && !isRideEvent(input.eventType)) return null
 
-  // 1. What the organizer said.
+  const text = `${input.title ?? ''} ${input.description ?? ''}`
+  const tags = input.tags ?? []
+  const miles = parseMiles(input.distanceText)
+
+  // 1. Distance settles it: twenty miles is a recreational outing whatever
+  //    the listing calls its skill level or pace ("Beginner Road Ride · 21
+  //    miles"; a club's "relaxed" 20-25 miles is still 20-25 miles).
+  if (miles != null && miles >= 20) return 'rec'
+
+  // 2. What the organizer said about pace, for anything shorter.
   const stated = fromPace(input.pace)
   if (stated) return stated
 
   // A bike bus is kids' pace by definition.
   if (input.eventType === 'bike_bus') return 'easy'
-
-  const text = `${input.title ?? ''} ${input.description ?? ''}`
-  const tags = input.tags ?? []
-  const miles = parseMiles(input.distanceText)
-
-  // 2. Distance settles it: twenty miles is a recreational outing whatever
-  //    the listing calls its skill level ("Beginner Road Ride · 21 miles").
-  if (miles != null && miles >= 20) return 'rec'
 
   // 3. The discipline named in the listing.
   if (REC_WORDS.test(text)) return 'rec'

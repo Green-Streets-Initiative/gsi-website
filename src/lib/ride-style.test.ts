@@ -58,8 +58,10 @@ describe('rideStyle', () => {
     assert.equal(ride('Needham Advanced Road Ride'), 'rec')
   })
 
-  it("lets the organizer's own pace band win", () => {
-    assert.equal(ride('Needham Intermediate Road Ride', { distanceText: '25 miles', pace: 'relaxed' }), 'easy')
+  it("lets the organizer's own pace band win under twenty miles", () => {
+    assert.equal(ride('Revisit the Charles', { distanceText: '14 miles', pace: 'relaxed' }), 'easy')
+    assert.equal(ride('Bike Thursday', { distanceText: '20-25 miles', pace: 'relaxed' }), 'rec')
+    assert.equal(ride('Wednesday Wheelers', { distanceText: '30 and 40 miles', pace: 'moderate' }), 'rec')
     assert.equal(ride('Slow Social Roll', { pace: 'fast' }), 'rec')
   })
 
