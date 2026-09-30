@@ -42,7 +42,9 @@ const getDesktopServerSnapshot = () => false
 // (a statewide contest shouldn't vanish under "5 mi").
 // ---------------------------------------------------------------------------
 
-function SpotlightCard({ event }: { event: CommunityEvent }) {
+const SPOTLIGHT_MAX = 3
+
+function SpotlightCard({ event, compact }: { event: CommunityEvent; compact: boolean }) {
   const { tone, hrefBase } = useEventsTone()
   const meta = getTypeMeta(event.event_type)
   const ink = typeInk(meta, tone)
@@ -82,7 +84,7 @@ function SpotlightCard({ event }: { event: CommunityEvent }) {
         )}
       </div>
       <span
-        className="mt-1 hidden shrink-0 items-center gap-1.5 text-[13px] font-semibold sm:flex"
+        className={`mt-1 hidden shrink-0 items-center gap-1.5 text-[13px] font-semibold sm:flex ${compact ? 'lg:hidden' : ''}`}
         style={{ color: ink }}
       >
         See details
@@ -162,7 +164,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
   const spotlightEvents = events
     .filter((ev) => ev.featured && parseEventDate(ev.event_date) >= today)
     .sort((a, b) => a.event_date.localeCompare(b.event_date))
-    .slice(0, 2)
+    .slice(0, SPOTLIGHT_MAX)
 
   const pickView = (v: 'calendar' | 'list') => {
     setPhoneView(v)
@@ -211,9 +213,13 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
       {/* Spotlight */}
       {spotlightEvents.length > 0 && (
         <section className="px-4 pb-5 sm:px-8 sm:pb-6 lg:pb-4">
-          <div className="mx-auto flex max-w-[1200px] snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-col sm:gap-4 sm:overflow-visible sm:pb-0 lg:grid lg:grid-cols-2 lg:gap-4">
+          <div
+            className={`mx-auto flex max-w-[1200px] snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-col sm:gap-4 sm:overflow-visible sm:pb-0 lg:grid lg:gap-4 ${
+              spotlightEvents.length >= 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'
+            }`}
+          >
             {spotlightEvents.map((ev) => (
-              <SpotlightCard key={ev.id} event={ev} />
+              <SpotlightCard key={ev.id} event={ev} compact={spotlightEvents.length >= 3} />
             ))}
           </div>
         </section>
