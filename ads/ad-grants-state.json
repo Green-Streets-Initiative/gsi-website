@@ -68,6 +68,11 @@
       "what": "9 of 20 named Sept search terms were Bluebikes lookups (bluebikes, blue bikes, bluebike, bluebikes map, bluebikes boston) in New Routes / Getting around Boston; navigational, low CTR. Consider negative keywords after Oct 5."
     },
     {
+      "id": "employer-municipal-campaigns",
+      "status": "idea from Keith 2026-09-30; revisit after the 10-07 run once the 3 new campaigns have a week of data",
+      "what": "Two more campaigns: employers (commute benefits / workplace challenge) and municipalities (town staff, TMAs), conversion = inquiry to learn more. Prerequisites found 09-30: no trackable inquiry exists. /shift/employers and /contact only offer a mailto:info@ link with no gaEvent, and there is no municipality landing page (/shift/towns pages are for residents). Needs a short inquiry form on each landing page firing gaEvent('employer_inquiry' / 'municipal_inquiry'), marked as GA4 key events and imported to Ads, before the campaigns can optimize to it."
+    },
+    {
       "id": "script-thresholds",
       "status": "optional",
       "what": "Compliance script: calendar-month CTR, 200-impression floor before alarming, no-QS = pending not passing"
