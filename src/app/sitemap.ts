@@ -5,6 +5,7 @@ import { getActiveRoams } from '@/lib/roams/queries'
 import { SCHOOLS } from '@/lib/semester/schools'
 import { loadEventsListing } from '@/app/events/_lib/load'
 import { SITE_URL } from '@/lib/seo'
+import { eventUrl } from '@/lib/events-url'
 
 export const revalidate = 3600 // re-fetch dynamic guide list at most hourly
 
@@ -136,7 +137,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const events = await loadEventsListing()
     eventEntries = events.map((e) => ({
-      url: `${SITE_URL}/events/${encodeURIComponent(e.id)}`,
+      url: eventUrl(e, SITE_URL),
       lastModified: now,
       changeFrequency: 'weekly' as const,
       priority: 0.6,
