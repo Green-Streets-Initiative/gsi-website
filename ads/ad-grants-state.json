@@ -26,27 +26,35 @@
     {
       "date": "2026-09-21",
       "what": "All 3 campaigns to Maximize Conversions; Page view goal removed from account default; 23 keywords removed (22 low volume + 'car free boston'); remaining 37 recreated as broad match"
+    },
+    {
+      "date": "2026-09-30",
+      "what": "Claude, on Keith's approval in chat: bulk-uploaded 3 new campaigns (GSI — Brand $30/day, How-to Guides $50/day, Town Walking & Biking $40/day; Maximize conversions; Massachusetts; 8 ad groups, 16 RSAs, 60+ keywords). Campaign-level sitelinks from the approved file were NOT uploaded (bulk format rejected them); account sitelinks still apply. Upload file needed 'EU political ads' = 'No' on campaign rows and Location on the campaign row."
+    },
+    {
+      "date": "2026-09-30",
+      "what": "Claude, on Keith's approval: strengthened the 2 Poor RSAs. New Routes / Just moved 'New Here? We Can Help' 6 -> 15 headlines (keyword headlines: Just Moved to Boston?, New to Boston? Start Here, How to Get Around Boston, Boston Neighborhood Guide, Moving to Somerville?, Moving to Cambridge?, plus Walk, Bike, or Ride Transit / Take 10 Trips, Unlock $15 / Free App for New Arrivals) -> Average at save. Shift Your Semester / Student life Boston 'Shift Your Semester | Save Money...' 12 -> 15 headlines (How to Use the MBTA, College Bike Commute Made Easy, Best App for College Students) -> Excellent at save."
     }
   ],
   "open_items": [
     {
       "id": "brand-campaign",
-      "status": "approved by Keith 2026-09-24; upload file ~/Downloads/ad-grants-new-campaigns.csv ready, Keith uploads via Tools > Bulk actions > Uploads; STILL NOT in account at 09-30 weekly run (weekly report item 1 again)",
+      "status": "DONE 2026-09-30 (Claude uploaded after Keith's approval in chat); all 6 campaigns enabled. Judge from Oct 14 (14-day rule).",
       "what": "GSI — Brand campaign, 2 ad groups, $30/day"
     },
     {
       "id": "local-keywords",
-      "status": "approved by Keith 2026-09-24; same upload file; STILL NOT in account at 09-30 weekly run (part of weekly report item 1)",
+      "status": "DONE 2026-09-30 in the same upload. Campaign sitelinks from the file not uploaded; add later only if a new campaign shows no sitelinks.",
       "what": "New campaigns How-to Guides (4 ad groups -> /guides/*) and Town Walking & Biking (town pages + walk/bike to school), $50 + $40/day"
     },
     {
       "id": "conversion-tracking",
-      "status": "awaiting Keith (weekly report item 3 on 09-30; opened 2026-09-24); unchanged at 09-30, Sept closed with 0 conversions",
+      "status": "CHECKED 2026-09-30, nothing broken: site fires both events to GA4 G-6HQWGDZ6RH (property a405919368p551486918); both are GA4 key events with stream data; Ads imports them from GA4; Sign-up + Outbound click goals apply to 6 of 6 campaigns; auto-tagging Yes. 'Setup incomplete' / 'Needs attention' persists only because no ad click has converted yet (1 click in Sept). Recheck once brand traffic arrives; if clicks > ~30 with 0 conversions, dig into Ads-GA4 link.",
       "what": "All campaigns show 'Eligible (Limited): conversion tracking setup is incomplete'; Sign-up and Outbound click goals 'Needs attention', newsletter_signup 'Awaiting conversions'. Site fires newsletter_signup (NewsletterSignupForm.tsx) and shift_store_click (StoreButtons.tsx) via gaEvent; check GA4 key events + Ads import. Sept has 0 conversions."
     },
     {
       "id": "poor-ads",
-      "status": "awaiting Keith (opened 2026-09-24; dropped to a footnote 09-30, lower priority); Just moved ad still Poor at 09-30",
+      "status": "DONE 2026-09-30 (see changes). Confirm next run that neither ad is Poor after re-rating.",
       "what": "2 RSAs rated Poor: one in New Routes / Just moved, one in Shift Your Semester / Student life Boston. Add headlines/descriptions."
     },
     {
