@@ -59,7 +59,7 @@
     },
     {
       "id": "advertiser-verification",
-      "status": "awaiting Keith (weekly report item 2, opened 2026-09-30); only Keith can complete (org identity + Google sign-in). DEADLINE Oct 28, 2026 or account paused. Checked 09-30 with Keith: Admin > Account > Advertiser Verification shows 'Provide client's information' because the Sep 14 'About your business' answer created a 'Client verification' task (History: Client verification In progress since Sep 14). Path: Start task, 'client' = Green Streets Initiative itself, legal name exactly as on IRS/state records.",
+      "status": "awaiting Keith (weekly report item 2, opened 2026-09-30); only Keith can complete (org identity + Google sign-in). DEADLINE: the account page said Oct 28 on 09-30, but on 10-01 the verification start page says 'Pass advertiser verification by October 14, 2026'; treat Oct 14 as the deadline. On 10-01 Keith's browser showed a blank 'Verifying for a client / choose a client profile' screen (the profile list never loaded). The same link loaded fine in Claude's Chrome tab, steps: 1 create or select a PAYMENTS PROFILE for the advertiser, 2 name + location (proof documents if the profile is unverified), 3 personal info + ID. Checked 09-30 with Keith: Admin > Account > Advertiser Verification shows 'Provide client's information' because the Sep 14 'About your business' answer created a 'Client verification' task (History: Client verification In progress since Sep 14). Path: Start task, 'client' = Green Streets Initiative itself, legal name exactly as on IRS/state records.",
       "what": "Account banner: 'Complete advertiser verification - To keep running ads, complete advertiser verification.' Review takes 1 to 10 days."
     },
     {
