@@ -20,11 +20,11 @@ import { signTownDigestUnsubToken } from '../src/lib/town-digest-token'
 import {
   getTownCentroid,
   getTownDirectory,
-  getTownEvents,
   getTownPartners,
   getTownResources,
   type TownCivicEvent,
 } from '../src/lib/towns/queries'
+import { getEventPicks } from '../src/lib/towns/event-picks'
 
 const DAY = process.argv[2]
 if (!/^\d{4}-\d{2}-\d{2}$/.test(DAY ?? '')) {
@@ -95,7 +95,7 @@ async function main() {
 
     const centroid = await getTownCentroid(town.group_id)
     const [events, partners, resources] = await Promise.all([
-      getTownEvents(centroid, 3),
+      getEventPicks(centroid, 3),
       getTownPartners(town.town_name),
       getTownResources(town.group_id),
     ])

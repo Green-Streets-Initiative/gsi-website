@@ -14,7 +14,6 @@ import {
   getQualifyingTowns,
   getTownBySlug,
   getTownCentroid,
-  getTownEvents,
   getTownHeatmap,
   getTownPageStats,
   getTownCivicEvents,
@@ -24,6 +23,7 @@ import {
   stateLabel,
   MIN_RANKED_TRIPS,
 } from '@/lib/towns/queries'
+import { getEventPicks } from '@/lib/towns/event-picks'
 import {
   EventsRoamsPanels,
   GetInvolved,
@@ -105,7 +105,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
     getTownRoams(centroid),
     getTownPartners(name, town.state),
     getTownHeatmap(town.group_id),
-    getTownEvents(centroid),
+    getEventPicks(centroid, 8, { recRidesAsFill: true }),
     getTownResources(town.group_id),
     getTownCivicEvents(name),
   ])
@@ -142,7 +142,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         '@type': 'Event',
         name: e.title,
         startDate: e.event_time ? `${e.event_date}T${e.event_time}` : e.event_date,
-        // These are approved upcoming events by construction (getTownEvents
+        // These are approved upcoming events by construction (getEventPicks
         // filters on status + date), so "scheduled" is always accurate.
         eventStatus: 'https://schema.org/EventScheduled',
         url: eventUrl(e, SITE_URL),

@@ -322,18 +322,11 @@ export async function getTownCentroid(groupId: string): Promise<{ lat: number; l
 
 const EVENT_RADIUS_MILES = 8
 /**
- * "In this town" for event ranking. The centroid is the mean of the town's
- * neighborhood centers, so it can sit ~0.5mi off the conventional center — 2
- * miles of slack covers a town the size of Cambridge or Somerville end to end
- * without reaching into the next one.
- */
-const IN_TOWN_MILES = 2.0
-
-/**
  * Shared pool builder for "events near a point" surfaces (town pages, campus
  * pages): upcoming approved events within the radius, weekly series collapsed
  * to their next occurrence. Callers apply their own selection/ranking on top —
- * getTownEvents keeps the town tiering, the semester pages rank for campuses.
+ * getEventPicks (towns/event-picks.ts) mixes kinds for town pages, the digest
+ * and /nearby; the semester pages rank for campuses.
  */
 export async function fetchEventPool(
   centroid: { lat: number; lng: number },
@@ -433,48 +426,6 @@ export async function fetchEventPool(
   }
 
   return deduped
-}
-
-/** Upcoming approved community events within EVENT_RADIUS_MILES of the town centroid. */
-export async function getTownEvents(centroid: { lat: number; lng: number } | null, limit = 8): Promise<TownEvent[]> {
-  if (!centroid) return []
-  const deduped = await fetchEventPool(centroid)
-
-  // Priority selection (Keith, 2026-07-09; proximity tier added 2026-09-17):
-  //   1. Open Streets within ~3 miles — the marquee car-free events.
-  //   2. Events in the town itself (within IN_TOWN_MILES of the centroid).
-  //   3. Family- or beginner-friendly tagged events.
-  //   4. Everything else by date.
-  // 3.5mi cutoff: "within ~3 miles" measured from the neighborhood-average
-  // centroid, which can sit ~0.5mi from the town's conventional center.
-  //
-  // Why tier 2 exists: the pool is every approved event within 8 miles, which
-  // in Greater Boston is ~75 events competing for 8 slots. Before this tier,
-  // open-streets plus the family/beginner tag filled all 8 on their own and
-  // distance never entered the ranking again — so Cambridge's page showed Open
-  // Newbury (2.2mi, Boston) and an Allston open street while the City of
-  // Cambridge's own free Learn to Bike classes, half a mile away and correctly
-  // geocoded, never rendered. A town page that can't show the town's own
-  // events is not a town page.
-  const isTier1 = (e: TownEvent) => e.event_type === 'open_streets' && e.distance_miles <= 3.5
-  const isTier2 = (e: TownEvent) => !isTier1(e) && e.distance_miles <= IN_TOWN_MILES
-  const isTier3 = (e: TownEvent) =>
-    !isTier1(e) && !isTier2(e) &&
-    (e.tags.includes('family_friendly') || e.tags.includes('beginner_friendly'))
-  const byDate = (a: TownEvent, b: TownEvent) => a.event_date.localeCompare(b.event_date)
-  // Within the in-town tier, soonest first, then nearest — two events on the
-  // same day should resolve toward the one the reader can walk to.
-  const byDateThenDistance = (a: TownEvent, b: TownEvent) =>
-    a.event_date.localeCompare(b.event_date) || a.distance_miles - b.distance_miles
-
-  const tier1 = deduped.filter(isTier1).sort(byDate)
-  const tier2 = deduped.filter(isTier2).sort(byDateThenDistance)
-  const tier3 = deduped.filter(isTier3).sort(byDate)
-  const tier4 = deduped
-    .filter((e) => !isTier1(e) && !isTier2(e) && !isTier3(e))
-    .sort(byDate)
-
-  return [...tier1, ...tier2, ...tier3, ...tier4].slice(0, limit)
 }
 
 /**

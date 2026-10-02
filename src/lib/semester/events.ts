@@ -15,7 +15,8 @@ import { fetchEventPool, type TownEvent } from '@/lib/towns/queries'
  *     score deciding only within each group. Without it the tag boost beat
  *     distance, and Brandeis showed rides in Boston 7 miles off while rides
  *     in Weston and Newton, 2 miles from campus, never rendered. Same fix
- *     the town pages got on 2026-09-17 (getTownEvents' in-town tier).
+ *     the town pages got on 2026-09-17 (an in-town tier, since replaced by
+ *     getEventPicks' near-first ordering).
  */
 
 const BOOST_TAGS = ['beginner_friendly', 'students', 'family_friendly']
