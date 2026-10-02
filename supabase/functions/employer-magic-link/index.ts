@@ -27,6 +27,39 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// The emailed link carries a one-time sign-in token, so it may only point at
+// the portal on GSI's own sites. This function builds the link itself (Supabase's
+// redirect allowlist never sees it), so an unchecked redirect_to would hand an
+// admin's token to any site a stranger named. localhost is allowed for the dev
+// server: a token sent there stays on the admin's own computer.
+const PORTAL_HOSTS = new Set([
+  "gogreenstreets.org",
+  "www.gogreenstreets.org",
+  "shiftatwork.org",
+  "www.shiftatwork.org",
+]);
+const PORTAL_PATH = "/shift/employers/portal";
+const DEFAULT_REDIRECT = `https://www.gogreenstreets.org${PORTAL_PATH}/dashboard`;
+
+function portalRedirect(raw: unknown): string {
+  if (typeof raw !== "string") return DEFAULT_REDIRECT;
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return DEFAULT_REDIRECT;
+  }
+  const local = url.protocol === "http:" &&
+    (url.hostname === "localhost" || url.hostname === "127.0.0.1");
+  const ours = url.protocol === "https:" && PORTAL_HOSTS.has(url.hostname);
+  const portalPath = url.pathname === PORTAL_PATH ||
+    url.pathname.startsWith(`${PORTAL_PATH}/`);
+  if (!(local || ours) || !portalPath || url.username || url.password) {
+    return DEFAULT_REDIRECT;
+  }
+  return `${url.origin}${url.pathname}`;
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
@@ -94,7 +127,7 @@ serve(async (req: Request) => {
     );
   }
 
-  let body: { email?: string; redirect_to?: string };
+  let body: { email?: string; redirect_to?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -104,7 +137,7 @@ serve(async (req: Request) => {
     );
   }
 
-  const email = body.email?.trim().toLowerCase();
+  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   if (!email) {
     return new Response(
       JSON.stringify({ error: "Email is required" }),
@@ -112,7 +145,7 @@ serve(async (req: Request) => {
     );
   }
 
-  const redirectTo = body.redirect_to ?? "https://gogreenstreets.org/shift/employers/portal";
+  const redirectTo = portalRedirect(body.redirect_to);
 
   // Always return success to avoid leaking whether email exists
   const successResponse = new Response(
@@ -158,7 +191,10 @@ serve(async (req: Request) => {
 
   // Build the magic link URL with token
   const token = linkData.properties.hashed_token;
-  const magicLink = `${redirectTo}?token_hash=${token}&type=magiclink`;
+  const link = new URL(redirectTo);
+  link.searchParams.set("token_hash", token);
+  link.searchParams.set("type", "magiclink");
+  const magicLink = link.toString();
 
   // Send email via Resend
   if (RESEND_API_KEY) {
