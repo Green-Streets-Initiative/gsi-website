@@ -6,11 +6,11 @@ import {
   getTownCentroid,
   getTownCivicEvents,
   getTownDirectory,
-  getTownEvents,
   getTownPartners,
   getTownResources,
   type TownCivicEvent,
 } from '@/lib/towns/queries'
+import { getEventPicks } from '@/lib/towns/event-picks'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -162,7 +162,7 @@ export async function GET(req: Request) {
 
       const centroid = await getTownCentroid(town.group_id)
       const [events, partners, resources] = await Promise.all([
-        getTownEvents(centroid, 3),
+        getEventPicks(centroid, 3),
         getTownPartners(town.town_name, town.state),
         getTownResources(town.group_id),
       ])

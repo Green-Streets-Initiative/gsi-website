@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getTownEvents, getTownRoams, getTownPartners } from '@/lib/towns/queries'
+import { getTownRoams, getTownPartners } from '@/lib/towns/queries'
+import { getEventPicks } from '@/lib/towns/event-picks'
 
 /**
  * Community context for the /nearby snapshot: beginner-prioritized events
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   const centroid = { lat, lng }
   const [events, roams, partners] = await Promise.all([
-    getTownEvents(centroid, 4).catch(() => []),
+    getEventPicks(centroid, 4).catch(() => []),
     getTownRoams(centroid, 3).catch(() => []),
     town ? getTownPartners(town).catch(() => []) : Promise.resolve([]),
   ])

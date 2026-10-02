@@ -126,6 +126,9 @@ export interface TownEvent {
   occurrences: number
   /** Weekday name when a recurring series always falls on the same day */
   recurring_weekday: string | null
+  /** Organizer's stated pace band and listed distance — inputs to rideStyle(). */
+  pace: string | null
+  distance_text: string | null
 }
 
 export interface TownRoam {
@@ -346,7 +349,7 @@ export async function fetchEventPool(
     .from('event_details')
     .select(`
       content_id, event_date, event_time, event_end_time, location_name, location_lat, location_lng, event_type, tags,
-      organizer_name, organizer_url, image_url,
+      organizer_name, organizer_url, image_url, pace, distance_text,
       content_items!inner ( id, slug, title, status, summary )
     `)
     .eq('content_items.status', 'approved')
@@ -388,6 +391,8 @@ export async function fetchEventPool(
       tags: (row.tags as string[]) ?? [],
       occurrences: 1,
       recurring_weekday: null,
+      pace: (row.pace as string) ?? null,
+      distance_text: (row.distance_text as string) ?? null,
     })
   }
 
