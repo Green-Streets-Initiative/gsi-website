@@ -1,12 +1,4 @@
-import { Source_Sans_3 } from 'next/font/google'
 import type { Metadata } from 'next'
-
-const sourceSans = Source_Sans_3({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-source-sans',
-  display: 'swap',
-})
 
 // This page already ranks for the questions people actually type — Search
 // Console, Jul 4 – Aug 1: "how long does it take to walk a 20 minute drive",
@@ -67,7 +59,6 @@ export default function CommuteAdvisorLayout({
 }) {
   return (
     <div
-      className={sourceSans.variable}
       style={{ fontFamily: "'Source Sans 3', var(--font-source-sans), var(--font-sans), system-ui, sans-serif" }}
     >
       {children}

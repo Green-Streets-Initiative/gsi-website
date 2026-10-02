@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { Bricolage_Grotesque, DM_Sans, DM_Mono, Instrument_Serif } from 'next/font/google'
+import { preload } from 'react-dom'
+import './fonts.css'
 import './globals.css'
 import { GoogleAnalytics } from '@next/third-parties/google'
 import Script from 'next/script'
@@ -8,34 +9,15 @@ import AdPixels from '@/components/AdPixels'
 import JsonLd from '@/components/JsonLd'
 import { organizationSchema } from '@/lib/structured-data'
 
-const bricolage = Bricolage_Grotesque({
-  subsets: ['latin'],
-  weight: ['400', '600', '700', '800'],
-  variable: '--font-bricolage',
-  display: 'swap',
-})
-
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  weight: ['300', '400', '500'],
-  variable: '--font-dm-sans',
-  display: 'swap',
-})
-
-const dmMono = DM_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500'],
-  variable: '--font-dm-mono',
-  display: 'swap',
-})
-
-const instrumentSerif = Instrument_Serif({
-  subsets: ['latin'],
-  weight: ['400'],
-  style: ['normal', 'italic'],
-  variable: '--font-instrument',
-  display: 'swap',
-})
+// Faces every page uses; next/font/google preloaded these same files.
+const PRELOAD_FONTS = [
+  'bricolage-400-800-latin',
+  'dm-sans-300-500-latin',
+  'dm-mono-400-latin',
+  'dm-mono-500-latin',
+  'instrument-serif-400-latin',
+  'instrument-serif-400-italic-latin',
+]
 
 export const metadata: Metadata = {
   title: 'Green Streets Initiative — Shift how you move',
@@ -64,8 +46,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  for (const f of PRELOAD_FONTS) {
+    preload(`/fonts/web/${f}.woff2`, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' })
+  }
   return (
-    <html lang="en" className={`${bricolage.variable} ${dmSans.variable} ${dmMono.variable} ${instrumentSerif.variable}`}>
+    <html lang="en">
       <body className="font-sans">
         <JsonLd data={organizationSchema()} />
         <PostHogProvider />
