@@ -59,8 +59,8 @@ function buildInviteHtml(opts: {
          set up your company profile, invite your team, and launch your first
          commute challenge.`
       : `${escapeHtml(inviterEmail)} invited you to ${escapeHtml(companyName)}'s employer
-         portal on Shift — where your team tracks green commutes, runs challenges,
-         and measures its impact.`;
+         portal on Shift — the place to help your team walk, bike, and take transit
+         to work more often, and see what it adds up to.`;
   const inviteCodeSection =
     variant === "welcome" && inviteCode
       ? `<div style="background:#F4F6F1;border-radius:10px;padding:16px 20px;margin:0 0 8px;">
