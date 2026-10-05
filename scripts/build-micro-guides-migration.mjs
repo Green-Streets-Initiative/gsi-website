@@ -292,8 +292,8 @@ const guides = rawGuides.map((g) => ({
 }))
 
 // Sanity checks
-if (guides.length !== 22) {
-  console.warn(`WARNING: expected 22 guides, found ${guides.length}`)
+if (guides.length !== 23) {
+  console.warn(`WARNING: expected 23 guides, found ${guides.length}`)
 }
 const ids = guides.map((g) => g.yaml.id)
 const dupeIds = ids.filter((id, i) => ids.indexOf(id) !== i)

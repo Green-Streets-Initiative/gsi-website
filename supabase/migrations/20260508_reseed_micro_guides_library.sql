@@ -1,4 +1,4 @@
--- Seed migration for the micro-guide library (22 guides).
+-- Seed migration for the micro-guide library (23 guides).
 -- Generated from content/micro-guides-library.md by
 -- scripts/build-micro-guides-migration.mjs — do not edit by hand.
 --
@@ -18,7 +18,7 @@ UPDATE content_items SET primary_mode = 'cycling' WHERE primary_mode = 'bike';
 UPDATE content_items SET status = 'archived'
   WHERE id IN ('mg_blue_bikes', 'mg_return_bluebike');
 
--- 3. Upsert the 22-guide library.
+-- 3. Upsert the 23-guide library.
 INSERT INTO content_items (
   id, title, slug, summary, body, body_template, primary_mode, primary_barrier, status,
   content_type, surfaces, topics, related_guides, is_starter,
@@ -641,7 +641,7 @@ Most "rain rides" are light drizzle or brief showers. Truly heavy rain during co
     'micro_guide',
     ARRAY['home_feed', 'guide_library']::text[],
     ARRAY['weather', 'gear', 'year-round']::text[],
-    ARRAY['mg_cold_weather', 'mg_bike_commute_gear']::text[],
+    ARRAY['mg_cold_weather', 'mg_boston_winter', 'mg_bike_commute_gear']::text[],
     false,
     2,
     now()
@@ -721,9 +721,121 @@ Winter biking has real advantages once you're set up: lighter traffic, no overhe
     'micro_guide',
     ARRAY['home_feed', 'guide_library']::text[],
     ARRAY['weather', 'gear', 'year-round']::text[],
-    ARRAY['mg_biking_in_rain', 'mg_bike_commute_gear']::text[],
+    ARRAY['mg_boston_winter', 'mg_biking_in_rain', 'mg_bike_commute_gear']::text[],
     false,
     2,
+    now()
+  ),
+  (
+    'mg_boston_winter',
+    'Biking through a Boston winter: Boston, Cambridge and Somerville',
+    'biking-through-a-boston-winter',
+    'Plenty of people around here ride straight through to spring. Where local riders share real-time conditions, how Bluebikes runs in winter, routes to start on in Boston, Cambridge and Somerville, and the gear that makes it comfortable.',
+    $guidebody$Riding through a winter in Boston, Cambridge or Somerville is more ordinary than it sounds. Plenty of people who bike here in summer keep going right through to spring, and they get quiet streets, crisp air, and an arrival that feels earned. Here's what makes it work around here specifically.
+
+### Join the riders who report conditions in real time.
+
+After a storm, conditions change street by street and day by day: one bike lane is clear by morning, the next stays packed with snow for a while. The best way to know before you leave is to hear from people who rode it an hour ago.
+
+- **[r/bikeboston](https://www.reddit.com/r/bikeboston/)** is the go-to local bike forum. After a snowfall, riders post which lanes and paths are clear and which to skip.
+- **Neighborhood Discord and WhatsApp groups**, often run by local bike groups and commuter crews, trade quick updates about specific streets and bridges. Ask on r/bikeboston or at a local bike shop which ones cover your route.
+
+Post what you see on your own ride, too. Every report makes the next person's morning easier.
+
+If a bike lane on your route stays buried, report it to your city: **Boston** through 311 (call, or the BOS:311 app), and **Cambridge** and **Somerville** through their own service-request lines and apps. Reports point crews to the spots riders need most.
+
+### Bluebikes runs all winter.
+
+Bluebikes is open 24 hours a day, every day of the year, across Boston, Cambridge, Somerville and the rest of its network. Most stations stay in place all winter. Starting in October, a handful of on-street stations come out for the season so plows can get through, so check the station map in the app before you head out — your usual dock may have a winter neighbor a block away.
+
+Bluebikes is also an easy way to try a winter ride before committing your own bike to the salt.
+
+### Start on paths and quiet streets.
+
+Your first few winter rides go best on routes with fewer cars and more room. Check the latest rider reports first, then try one of these on a clear day:
+
+**Boston.** The City of Boston points winter riders to the **Southwest Corridor** through Jamaica Plain, Roxbury and the South End, the **Harborwalk** along the waterfront, the **Neponset River Greenway** in Mattapan and Dorchester, and the **paths along the Charles River**.
+
+**Cambridge.** The **Linear Path** from Davis Square to Alewife, the **[Fresh Pond loop](/shift/roams/fresh-pond-loop)**, and the Cambridge side of the **Charles River paths**.
+
+**Somerville.** The **[Community Path](/shift/roams/community-path)**, which runs from Davis Square east toward Lechmere and links up with the Linear Path toward Alewife and the Minuteman.
+
+For more routes and local options, see our town pages for [Boston](/shift/towns/boston-ma), [Cambridge](/shift/towns/cambridge-ma) and [Somerville](/shift/towns/somerville-ma).
+
+Ride a slower, steadier pace than you would in July, and give yourself a few short trips to learn how your bike feels on cold pavement.
+
+### Dress for the ride, and the rest follows.
+
+Your body makes plenty of heat once you're moving, so dress to feel slightly cool when you step outside. Our [cold-weather biking guide](/guides/cold-weather-biking) covers layering, hands and feet, and the gear that matters most below freezing. Our [rain guide](/guides/biking-in-the-rain) covers fenders and staying dry on the wet days, which a New England winter has plenty of.
+
+### Watch for the shiny patches.
+
+Below freezing, a thin film of water can turn to black ice. Treat shiny pavement, painted lines and metal plates as slow zones, brake early and gently, and keep your tire pressure a little lower than usual for grip. Lights front and back, every ride — the short days mean most winter commutes happen at least partly in the dark.
+
+### Mix and match on the stormiest days.
+
+Winter riders here use the whole toolkit. On a heavy-snow morning, the T, a bus, or a walk ([our guide to walking through the weather](/guides/walking-through-the-weather)) gets you there, and the bike is ready again once riders report your route clear. Choosing the best mode for the day is part of what makes year-round riding easy to keep up.
+
+### One last thing
+
+Winter is when bike shops are quietest, so it's a great time for a tune-up — and our [events calendar](/events) lists free repair clinics around Greater Boston. A bike that shifts and stops cleanly makes every cold ride more pleasant.$guidebody$,
+    $guidebody$Riding through a winter in Boston, Cambridge or Somerville is more ordinary than it sounds. Plenty of people who bike here in summer keep going right through to spring, and they get quiet streets, crisp air, and an arrival that feels earned. Here's what makes it work around here specifically.
+
+### Join the riders who report conditions in real time.
+
+After a storm, conditions change street by street and day by day: one bike lane is clear by morning, the next stays packed with snow for a while. The best way to know before you leave is to hear from people who rode it an hour ago.
+
+- **[r/bikeboston](https://www.reddit.com/r/bikeboston/)** is the go-to local bike forum. After a snowfall, riders post which lanes and paths are clear and which to skip.
+- **Neighborhood Discord and WhatsApp groups**, often run by local bike groups and commuter crews, trade quick updates about specific streets and bridges. Ask on r/bikeboston or at a local bike shop which ones cover your route.
+
+Post what you see on your own ride, too. Every report makes the next person's morning easier.
+
+If a bike lane on your route stays buried, report it to your city: **Boston** through 311 (call, or the BOS:311 app), and **Cambridge** and **Somerville** through their own service-request lines and apps. Reports point crews to the spots riders need most.
+
+### Bluebikes runs all winter.
+
+Bluebikes is open 24 hours a day, every day of the year, across Boston, Cambridge, Somerville and the rest of its network. Most stations stay in place all winter. Starting in October, a handful of on-street stations come out for the season so plows can get through, so check the station map in the app before you head out — your usual dock may have a winter neighbor a block away.
+
+Bluebikes is also an easy way to try a winter ride before committing your own bike to the salt.
+
+### Start on paths and quiet streets.
+
+Your first few winter rides go best on routes with fewer cars and more room. Check the latest rider reports first, then try one of these on a clear day:
+
+**Boston.** The City of Boston points winter riders to the **Southwest Corridor** through Jamaica Plain, Roxbury and the South End, the **Harborwalk** along the waterfront, the **Neponset River Greenway** in Mattapan and Dorchester, and the **paths along the Charles River**.
+
+**Cambridge.** The **Linear Path** from Davis Square to Alewife, the **[Fresh Pond loop](/shift/roams/fresh-pond-loop)**, and the Cambridge side of the **Charles River paths**.
+
+**Somerville.** The **[Community Path](/shift/roams/community-path)**, which runs from Davis Square east toward Lechmere and links up with the Linear Path toward Alewife and the Minuteman.
+
+For more routes and local options, see our town pages for [Boston](/shift/towns/boston-ma), [Cambridge](/shift/towns/cambridge-ma) and [Somerville](/shift/towns/somerville-ma).
+
+Ride a slower, steadier pace than you would in July, and give yourself a few short trips to learn how your bike feels on cold pavement.
+
+### Dress for the ride, and the rest follows.
+
+Your body makes plenty of heat once you're moving, so dress to feel slightly cool when you step outside. Our [cold-weather biking guide](/guides/cold-weather-biking) covers layering, hands and feet, and the gear that matters most below freezing. Our [rain guide](/guides/biking-in-the-rain) covers fenders and staying dry on the wet days, which a New England winter has plenty of.
+
+### Watch for the shiny patches.
+
+Below freezing, a thin film of water can turn to black ice. Treat shiny pavement, painted lines and metal plates as slow zones, brake early and gently, and keep your tire pressure a little lower than usual for grip. Lights front and back, every ride — the short days mean most winter commutes happen at least partly in the dark.
+
+### Mix and match on the stormiest days.
+
+Winter riders here use the whole toolkit. On a heavy-snow morning, the T, a bus, or a walk ([our guide to walking through the weather](/guides/walking-through-the-weather)) gets you there, and the bike is ready again once riders report your route clear. Choosing the best mode for the day is part of what makes year-round riding easy to keep up.
+
+### One last thing
+
+Winter is when bike shops are quietest, so it's a great time for a tune-up — and our [events calendar](/events) lists free repair clinics around Greater Boston. A bike that shifts and stops cleanly makes every cold ride more pleasant.$guidebody$,
+    'cycling',
+    'weather',
+    'approved',
+    'micro_guide',
+    ARRAY['home_feed', 'guide_library']::text[],
+    ARRAY['weather', 'year-round', 'routes', 'bike-share']::text[],
+    ARRAY['mg_cold_weather', 'mg_biking_in_rain', 'mg_walking_weather']::text[],
+    false,
+    4,
     now()
   ),
   (
@@ -1347,7 +1459,7 @@ Most "the weather is bad" conclusions are made by people standing inside dressed
     'micro_guide',
     ARRAY['home_feed', 'guide_library']::text[],
     ARRAY['weather', 'gear', 'year-round']::text[],
-    ARRAY['mg_biking_in_rain', 'mg_cold_weather']::text[],
+    ARRAY['mg_biking_in_rain', 'mg_cold_weather', 'mg_boston_winter']::text[],
     true,
     2,
     now()
