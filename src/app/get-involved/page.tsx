@@ -17,7 +17,7 @@ const ROLES = [
       'Help people in your community discover the Shift app and log their first trip.',
     timeAsk: '2–4 hours/month',
     session:
-      'You meet people where they are \u2014 school pickup lines, community events, farmers markets, neighborhood meetings \u2014 and start a different kind of conversation. \u201cDid you know you\u2019re probably already walking enough to earn rewards?\u201d You help people download the app, see that their trips are already being tracked, and discover what their short trips add up to. The best moment is when someone realizes their quarter-mile walk to the coffee shop already counted.\n\nTraining included.',
+      'You meet people where they are \u2014 school pickup lines, community events, farmers markets, neighborhood meetings \u2014 and start a different kind of conversation: which of their short trips could they walk, bike, or take transit for? You help people download the app, pick one trip to try a new way, and see what those trips add up to. The best moment is when someone tells you they walked to the coffee shop for the first time, and liked it.\n\nTraining included.',
   },
   {
     name: 'Story Collector',

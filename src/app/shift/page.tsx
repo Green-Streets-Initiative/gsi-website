@@ -83,7 +83,7 @@ export default function ShiftPage() {
                 <em className="text-green-deep">Every trip.</em>
               </h1>
               <p className="mt-5 max-w-[46ch] text-[clamp(18px,1.6vw,21px)] leading-[1.6] text-navy">
-                Shift automatically detects your walks, bike rides, and transit trips, then turns the way you already move into status, streaks, local perks, and a little friendly competition with your neighborhood.
+                Shift helps you make more of your trips on foot, by bike, and on transit, and turns each one into status, streaks, local perks, and a little friendly competition with your neighborhood.
               </p>
 
               {IS_LIVE ? (
@@ -330,7 +330,7 @@ export default function ShiftPage() {
               }
             >
               <p className="text-[18px] leading-[1.6] text-ink-soft">
-                A few times a year, Shift runs statewide challenges with real rewards. This fall: Shift Your Semester for students and New Routes for anyone new to the area, each worth $15 for your first 10 active trips. Simply moving the way you already do gets you there.
+                A few times a year, Shift runs statewide challenges with real rewards. This fall: Shift Your Semester for students and New Routes for anyone new to the area, each worth $15 for your first 10 active trips. It’s a good reason to try the bike route or bus line you’ve been meaning to.
               </p>
               <div className="mt-5 flex flex-wrap gap-2.5">
                 <span className="rounded-full border border-forest/40 bg-forest/10 px-3.5 py-[7px] font-display text-[13px] font-semibold text-green-deep">$15 rewards</span>

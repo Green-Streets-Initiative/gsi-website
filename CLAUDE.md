@@ -42,6 +42,26 @@ etc.) or it gets bumped.
 Rare: disabled controls, decorative watermarks, truly tertiary metadata in a
 visually busy card. Floor at `text-white/60` even for those. Never go lower.
 
+## Positioning: Shift is about shifting (HARD RULE)
+
+Shift exists to help people SHIFT their trips to walking, biking, transit,
+and carpooling. It does not exist to reward people for what they already do.
+Keith has corrected this for months; it keeps reappearing in website copy.
+
+- **Never** write "the way you already move", "how you already move",
+  "simply moving the way you already do", "the trip you were going to take
+  anyway", "your trips are already being tracked", "you're probably already
+  walking enough", "commute the way you already do", or any variant.
+- Lead with the change: trying a new route, making one more trip on foot, by
+  bike, or on transit, a challenge as a reason to try something new.
+- Auto-detection is a convenience, never the headline or the pitch.
+- Same rule for every audience: riders, employers ("help more of your team
+  walk, bike, or take transit"), schools, cities, partners, volunteers.
+- Still positive: never position against cars (see memory/messaging rules).
+
+Before finishing any copy touch, grep the diff for `already` and read each
+hit in context.
+
 ## Code style
 
 - Next.js 15 App Router, TypeScript, Tailwind.
