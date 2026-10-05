@@ -78,6 +78,27 @@
       "what": "Compliance script: calendar-month CTR, 200-impression floor before alarming, no-QS = pending not passing"
     }
   ],
+  "pulse_log": [
+    {
+      "date": "2026-10-05",
+      "source": "first quick check, run live in chat at Keith's request (not emailed)",
+      "mtd": { "window": "2026-10-01..2026-10-05", "impressions": 68, "clicks": 5, "ctr_pct": 7.35, "cost": 30.07, "conversions": 0 },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 31, "clicks": 4 },
+        "GSI — Brand": { "impressions": 4, "clicks": 1 },
+        "New Routes — Movers": { "impressions": 15, "clicks": 0 },
+        "Town Walking & Biking": { "impressions": 18, "clicks": 0 },
+        "Shift App — Massachusetts": { "impressions": 0, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 }
+      },
+      "keywords": { "total": 102, "low_search_volume": 35, "note": "about 25 of the 30 Town Walking & Biking town keywords plus 6 How-to Guides and 3 Brand keywords are 'Not eligible: Low search volume'" },
+      "ads": { "total": 28, "checked": 10, "disapproved_seen": 0, "poor": ["How-to Guides / Paying for the T: 'Paying for the MBTA | New to the T?' (6 headlines)"] },
+      "search_terms": "all visible terms on target (paying for the T, 'go green streets' brand); no negatives needed",
+      "banner": "Improve account security (not serving-related)",
+      "alerts": ["Shift App and Shift Your Semester at 0 impressions for all of September and October", "Town campaign keywords mostly low search volume"],
+      "emailed": false
+    }
+  ],
   "snapshots": [
     {
       "date": "2026-09-24",
