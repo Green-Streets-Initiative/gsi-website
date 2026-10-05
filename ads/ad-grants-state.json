@@ -34,6 +34,10 @@
     {
       "date": "2026-09-30",
       "what": "Claude, on Keith's approval: strengthened the 2 Poor RSAs. New Routes / Just moved 'New Here? We Can Help' 6 -> 15 headlines (keyword headlines: Just Moved to Boston?, New to Boston? Start Here, How to Get Around Boston, Boston Neighborhood Guide, Moving to Somerville?, Moving to Cambridge?, plus Walk, Bike, or Ride Transit / Take 10 Trips, Unlock $15 / Free App for New Arrivals) -> Average at save. Shift Your Semester / Student life Boston 'Shift Your Semester | Save Money...' 12 -> 15 headlines (How to Use the MBTA, College Bike Commute Made Easy, Best App for College Students) -> Excellent at save."
+    },
+    {
+      "date": "2026-10-05",
+      "what": "Claude, on Keith's approval in chat. (1) How-to Guides / Paying for the T: the Poor RSA 'Paying for the MBTA | New to the T?' went 6 -> 15 headlines (added: How to Pay for the T in Boston, Boston T Passes Explained, CharlieCard or Tap to Pay?, How Much Does the T Cost?, MBTA Fares, Made Simple, Monthly Pass or Pay per Ride, Pay With Your Phone on the T, Boston Transit Costs, Free Guide From Green Streets); descriptions, URL and paths unchanged. Ad strength read Average after the 9th headline and Good at save; the Ads list shows 'Pending' while it re-rates. Judge the ad from about Oct 19 (14 days). (2) NOT APPLIED: the bulk upload ~/Downloads/ad-grants-oct5-new-keywords.csv (84 keywords, 8 RSAs, 4 new ad groups) previewed at 96 changes / 34 successful / 62 errors and was discarded, nothing changed in the account. Every row for 'Shift App — Massachusetts' (27) and 'Shift Your Semester — Students' (35) failed with 'Missing value in \"Campaign ID\"'; all 34 'Town Walking & Biking' rows passed. The two failing campaigns are the ones whose rows create NEW ad groups and whose names contain an em dash; the Town rows go into the existing 'Town routes' ad group and the name is plain ASCII. A corrected file, ad-grants-oct5-new-keywords-v2.csv, is in ~/Downloads with a 'Campaign ID' column (Shift App 24198829115, Semester 24199025930, Town 24312169801) and otherwise identical content. Re-run: Tools > Bulk actions > Uploads, Preview, expect 96 / 0 errors, then Apply. A diagnostic preview to split the two causes was not run (the session's permission check blocked a second upload)."
     }
   ],
   "open_items": [
@@ -76,6 +80,11 @@
       "id": "script-thresholds",
       "status": "optional",
       "what": "Compliance script: calendar-month CTR, 200-impression floor before alarming, no-QS = pending not passing"
+    },
+    {
+      "id": "oct5-keyword-upload",
+      "what": "Add 84 informational keywords, 8 RSAs and 4 ad groups (Campus transportation in Shift Your Semester; Weather and winter, E-cargo bikes, Plan a trip in Shift App; town keywords in Town Walking & Biking). Keith approved the file 2026-10-05.",
+      "status": "BLOCKED 2026-10-05: first upload previewed with 62 'Missing value in Campaign ID' errors on the Shift App and Shift Your Semester rows and was discarded. Corrected file ~/Downloads/ad-grants-oct5-new-keywords-v2.csv (adds a Campaign ID column, same content) is ready to preview and apply on Keith's go. Until it lands, Shift App and Shift Your Semester still have 0 impressions in October and the Town campaign has no new town keywords. Judge 14 days after it applies."
     }
   ],
   "pulse_log": [
