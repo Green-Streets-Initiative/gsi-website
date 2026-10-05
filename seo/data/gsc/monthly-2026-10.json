@@ -1,0 +1,3429 @@
+{
+  "mode": "monthly",
+  "range": {
+    "startDate": "2026-09-05",
+    "endDate": "2026-10-02"
+  },
+  "priorRange": {
+    "startDate": "2026-08-08",
+    "endDate": "2026-09-04"
+  },
+  "site_totals": {
+    "clicks": 155,
+    "impressions": 14121,
+    "ctr": 0.011,
+    "position": 8.8
+  },
+  "prior_site_totals": {
+    "clicks": 73,
+    "impressions": 6675,
+    "ctr": 0.0109,
+    "position": 11.7
+  },
+  "totals": {
+    "clicks": 32,
+    "impressions": 2835,
+    "ctr": 0.0113,
+    "position": 11
+  },
+  "priorTotals": {
+    "clicks": 13,
+    "impressions": 1272,
+    "ctr": 0.0102,
+    "position": 17.2
+  },
+  "clusters": [
+    {
+      "id": "used-car-to-ebike",
+      "clicks": 0,
+      "impressions": 5,
+      "avg_position": 9.2,
+      "top_queries": [
+        {
+          "query": "\"tern gsd\" used \"$3000\"",
+          "clicks": 0,
+          "impressions": 4,
+          "ctr": 0,
+          "position": 9.25
+        },
+        {
+          "query": "\"tern gsd\" used \"$3,000\"",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 9
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 34
+    },
+    {
+      "id": "new-to-boston",
+      "clicks": 0,
+      "impressions": 18,
+      "avg_position": 17.3,
+      "top_queries": [
+        {
+          "query": "getting around cambridge",
+          "clicks": 0,
+          "impressions": 14,
+          "ctr": 0,
+          "position": 15.785714285714286
+        },
+        {
+          "query": "open newbury boston",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 6
+        },
+        {
+          "query": "newbury boston",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 70
+        },
+        {
+          "query": "open newbury street boston",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 9
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 33
+    },
+    {
+      "id": "family-logistics",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "year-round-weather",
+      "clicks": 0,
+      "impressions": 2,
+      "avg_position": 1,
+      "top_queries": [
+        {
+          "query": "how do commuters plan a trip that combines a bus, train, and walking in one city?",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 1
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "students-campus",
+      "clicks": 0,
+      "impressions": 568,
+      "avg_position": 9.4,
+      "top_queries": [
+        {
+          "query": "bu cycle kitchen",
+          "clicks": 0,
+          "impressions": 211,
+          "ctr": 0,
+          "position": 6.5829383886255926
+        },
+        {
+          "query": "lesley shuttle schedule",
+          "clicks": 0,
+          "impressions": 75,
+          "ctr": 0,
+          "position": 8.719999999999999
+        },
+        {
+          "query": "bu bike kitchen",
+          "clicks": 0,
+          "impressions": 68,
+          "ctr": 0,
+          "position": 7.1911764705882355
+        },
+        {
+          "query": "quad bikes harvard",
+          "clicks": 0,
+          "impressions": 30,
+          "ctr": 0,
+          "position": 11
+        },
+        {
+          "query": "lesley shuttle",
+          "clicks": 0,
+          "impressions": 29,
+          "ctr": 0,
+          "position": 7.379310344827586
+        },
+        {
+          "query": "bu bike shop",
+          "clicks": 0,
+          "impressions": 19,
+          "ctr": 0,
+          "position": 6.315789473684211
+        },
+        {
+          "query": "bu bike registration",
+          "clicks": 0,
+          "impressions": 10,
+          "ctr": 0,
+          "position": 9.4
+        },
+        {
+          "query": "bu bluebike discount",
+          "clicks": 0,
+          "impressions": 10,
+          "ctr": 0,
+          "position": 10.2
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 222
+    },
+    {
+      "id": "roams-trails",
+      "clicks": 3,
+      "impressions": 680,
+      "avg_position": 10.8,
+      "top_queries": [
+        {
+          "query": "charles river bike path",
+          "clicks": 0,
+          "impressions": 105,
+          "ctr": 0,
+          "position": 10.59047619047619
+        },
+        {
+          "query": "battle road trail",
+          "clicks": 0,
+          "impressions": 80,
+          "ctr": 0,
+          "position": 8.975
+        },
+        {
+          "query": "marblehead rail trail",
+          "clicks": 1,
+          "impressions": 79,
+          "ctr": 0.012658227848101266,
+          "position": 9.481012658227849
+        },
+        {
+          "query": "somerville community path",
+          "clicks": 0,
+          "impressions": 34,
+          "ctr": 0,
+          "position": 11.029411764705882
+        },
+        {
+          "query": "how long is the fresh pond loop",
+          "clicks": 0,
+          "impressions": 32,
+          "ctr": 0,
+          "position": 5.84375
+        },
+        {
+          "query": "how long is fresh pond loop",
+          "clicks": 0,
+          "impressions": 29,
+          "ctr": 0,
+          "position": 6.724137931034483
+        },
+        {
+          "query": "fresh pond loop",
+          "clicks": 0,
+          "impressions": 27,
+          "ctr": 0,
+          "position": 8.25925925925926
+        },
+        {
+          "query": "mass central rail trail hudson ma",
+          "clicks": 0,
+          "impressions": 20,
+          "ctr": 0,
+          "position": 10.3
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 51
+    },
+    {
+      "id": "events-programs",
+      "clicks": 8,
+      "impressions": 449,
+      "avg_position": 6.3,
+      "top_queries": [
+        {
+          "query": "allston open streets",
+          "clicks": 2,
+          "impressions": 76,
+          "ctr": 0.02631578947368421,
+          "position": 4.2368421052631575
+        },
+        {
+          "query": "open streets allston",
+          "clicks": 2,
+          "impressions": 69,
+          "ctr": 0.028985507246376812,
+          "position": 5.463768115942029
+        },
+        {
+          "query": "allston brighton open streets",
+          "clicks": 3,
+          "impressions": 67,
+          "ctr": 0.04477611940298507,
+          "position": 5.373134328358209
+        },
+        {
+          "query": "bu sustainability festival",
+          "clicks": 0,
+          "impressions": 55,
+          "ctr": 0,
+          "position": 3.2
+        },
+        {
+          "query": "open streets allston brighton",
+          "clicks": 1,
+          "impressions": 23,
+          "ctr": 0.043478260869565216,
+          "position": 4.956521739130435
+        },
+        {
+          "query": "fluff fest",
+          "clicks": 0,
+          "impressions": 22,
+          "ctr": 0,
+          "position": 10.590909090909092
+        },
+        {
+          "query": "fluff festival 2026 schedule",
+          "clicks": 0,
+          "impressions": 18,
+          "ctr": 0,
+          "position": 9.166666666666666
+        },
+        {
+          "query": "roslindale open streets",
+          "clicks": 0,
+          "impressions": 17,
+          "ctr": 0,
+          "position": 5.529411764705882
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 20
+    },
+    {
+      "id": "town-commuters",
+      "clicks": 0,
+      "impressions": 108,
+      "avg_position": 18.4,
+      "top_queries": [
+        {
+          "query": "somerville bike path",
+          "clicks": 0,
+          "impressions": 32,
+          "ctr": 0,
+          "position": 10.46875
+        },
+        {
+          "query": "melrose bike bus",
+          "clicks": 0,
+          "impressions": 15,
+          "ctr": 0,
+          "position": 7.2
+        },
+        {
+          "query": "leominster rail trail",
+          "clicks": 0,
+          "impressions": 9,
+          "ctr": 0,
+          "position": 8
+        },
+        {
+          "query": "commuter benefits cambridge ma",
+          "clicks": 0,
+          "impressions": 8,
+          "ctr": 0,
+          "position": 54.875
+        },
+        {
+          "query": "hudson rail trail",
+          "clicks": 0,
+          "impressions": 7,
+          "ctr": 0,
+          "position": 19.428571428571427
+        },
+        {
+          "query": "benefits of electric bikes for commuting boston",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 4
+        },
+        {
+          "query": "boston commute",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 7.666666666666667
+        },
+        {
+          "query": "somerville community bike path",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 24.333333333333332
+        }
+      ],
+      "prev_clicks": 2,
+      "prev_impressions": 83
+    },
+    {
+      "id": "drive-time-conversion",
+      "clicks": 0,
+      "impressions": 27,
+      "avg_position": 12.4,
+      "top_queries": [
+        {
+          "query": "commute times",
+          "clicks": 0,
+          "impressions": 6,
+          "ctr": 0,
+          "position": 6.666666666666667
+        },
+        {
+          "query": "commute time",
+          "clicks": 0,
+          "impressions": 4,
+          "ctr": 0,
+          "position": 10.75
+        },
+        {
+          "query": "1 min drive to walk",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 11
+        },
+        {
+          "query": "1 minute drive to walk",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 6
+        },
+        {
+          "query": "10 minute car ride to walking",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 10
+        },
+        {
+          "query": "15 min drive to walk",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 13
+        },
+        {
+          "query": "15 minute drive to walk",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 9
+        },
+        {
+          "query": "20 min drive to walk",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 19
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 73
+    },
+    {
+      "id": "ebike-curious",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "employers-rto",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "schools-wellness",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "local-business-partners",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "brand-navigational",
+      "clicks": 19,
+      "impressions": 411,
+      "avg_position": 7.7,
+      "top_queries": [
+        {
+          "query": "frisoli youth center",
+          "clicks": 0,
+          "impressions": 139,
+          "ctr": 0,
+          "position": 7.129496402877698
+        },
+        {
+          "query": "green street",
+          "clicks": 0,
+          "impressions": 79,
+          "ctr": 0,
+          "position": 10.379746835443038
+        },
+        {
+          "query": "greenstreets",
+          "clicks": 0,
+          "impressions": 53,
+          "ctr": 0,
+          "position": 9
+        },
+        {
+          "query": "green streets initiative",
+          "clicks": 19,
+          "impressions": 36,
+          "ctr": 0.5277777777777778,
+          "position": 1.2222222222222223
+        },
+        {
+          "query": "green streets",
+          "clicks": 0,
+          "impressions": 35,
+          "ctr": 0,
+          "position": 7.2
+        },
+        {
+          "query": "shift town",
+          "clicks": 0,
+          "impressions": 14,
+          "ctr": 0,
+          "position": 3.357142857142857
+        },
+        {
+          "query": "shift ride",
+          "clicks": 0,
+          "impressions": 11,
+          "ctr": 0,
+          "position": 7.909090909090909
+        },
+        {
+          "query": "gotogreenstreet",
+          "clicks": 0,
+          "impressions": 10,
+          "ctr": 0,
+          "position": 3.9
+        }
+      ],
+      "prev_clicks": 11,
+      "prev_impressions": 464
+    },
+    {
+      "id": "aeo-sentinels",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    }
+  ],
+  "unmatched_top_queries": [
+    {
+      "query": "massdot moving together conference 2026",
+      "clicks": 0,
+      "impressions": 41,
+      "ctr": 0,
+      "position": 3.5121951219512195
+    },
+    {
+      "query": "current shift route store",
+      "clicks": 0,
+      "impressions": 25,
+      "ctr": 0,
+      "position": 5.48
+    },
+    {
+      "query": "henry arfoon",
+      "clicks": 0,
+      "impressions": 19,
+      "ctr": 0,
+      "position": 7.684210526315789
+    },
+    {
+      "query": "car donation cambridge ma",
+      "clicks": 0,
+      "impressions": 17,
+      "ctr": 0,
+      "position": 42.294117647058826
+    },
+    {
+      "query": "fair everett",
+      "clicks": 0,
+      "impressions": 15,
+      "ctr": 0,
+      "position": 8.6
+    },
+    {
+      "query": "landry charlestown",
+      "clicks": 0,
+      "impressions": 15,
+      "ctr": 0,
+      "position": 7.533333333333333
+    },
+    {
+      "query": "current shift route",
+      "clicks": 0,
+      "impressions": 14,
+      "ctr": 0,
+      "position": 7.857142857142857
+    },
+    {
+      "query": "shift your trip",
+      "clicks": 0,
+      "impressions": 14,
+      "ctr": 0,
+      "position": 6.071428571428571
+    },
+    {
+      "query": "shift invite code",
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 7.6923076923076925
+    },
+    {
+      "query": "bikes not bombs century challenge",
+      "clicks": 0,
+      "impressions": 11,
+      "ctr": 0,
+      "position": 5.181818181818182
+    },
+    {
+      "query": "crw cranberry century",
+      "clicks": 0,
+      "impressions": 9,
+      "ctr": 0,
+      "position": 7.333333333333333
+    },
+    {
+      "query": "henry ar foon",
+      "clicks": 1,
+      "impressions": 7,
+      "ctr": 0.14285714285714285,
+      "position": 6.571428571428571
+    },
+    {
+      "query": "%\"gogreen shift competition\"",
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 2.857142857142857
+    },
+    {
+      "query": "landry's charlestown",
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 10.428571428571429
+    },
+    {
+      "query": "+\"gogreen shift competition\"",
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 3
+    },
+    {
+      "query": "bcu labs",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "query": "bu green",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "query": "community initiatives off-road",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 65.8
+    },
+    {
+      "query": "commute distance map",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 29.8
+    },
+    {
+      "query": "healthy schools tracker",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 66
+    },
+    {
+      "query": "moving together conference",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 4.4
+    },
+    {
+      "query": "brookline transportation",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 14
+    },
+    {
+      "query": "bu cycling kitchen",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 6.5
+    },
+    {
+      "query": "commute radius",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 17.75
+    },
+    {
+      "query": "go for a ride day",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 21
+    },
+    {
+      "query": "natick landrys",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 10.5
+    },
+    {
+      "query": "ride for your life boston",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 3.75
+    },
+    {
+      "query": "sprint rewards tracker",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 10.25
+    },
+    {
+      "query": "bu walk",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 8.666666666666668
+    },
+    {
+      "query": "cambridge hills road",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 57
+    },
+    {
+      "query": "communityinitiatives off-road",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 64.33333333333334
+    },
+    {
+      "query": "green bu",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 9.333333333333334
+    },
+    {
+      "query": "hill road cambridge",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 52.333333333333336
+    },
+    {
+      "query": "livable streets cambridge",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 34.333333333333336
+    },
+    {
+      "query": "massdot moving together",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 5.333333333333333
+    },
+    {
+      "query": "northeastern crossing",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 25.666666666666668
+    },
+    {
+      "query": "pastry run",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 4.333333333333334
+    },
+    {
+      "query": "pedal thru youth",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 36.333333333333336
+    },
+    {
+      "query": "praline cambridge",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "query": "reduce picker walking distance",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 60.666666666666664
+    },
+    {
+      "query": "river ruckus 2025",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 60.666666666666664
+    },
+    {
+      "query": "shift program",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 19
+    },
+    {
+      "query": "shift stt",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 9.333333333333334
+    },
+    {
+      "query": "smfa shuttle schedule",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 15.666666666666666
+    },
+    {
+      "query": "street shift",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 9.666666666666666
+    },
+    {
+      "query": "streets initiative",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 15
+    },
+    {
+      "query": "\"summer camp\" \"museum\" \"pavilion\" \"brookline\"",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "query": "7 acre park everett ma",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 12
+    },
+    {
+      "query": "boston ma to everett ma",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 24.5
+    },
+    {
+      "query": "boston wikitravel",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 19
+    }
+  ],
+  "top_pages": [
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/fresh-pond-loop",
+      "clicks": 4,
+      "impressions": 794,
+      "position": 8.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_boston_allston_2026-10-04",
+      "clicks": 15,
+      "impressions": 701,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/commute-advisor",
+      "clicks": 2,
+      "impressions": 646,
+      "position": 8.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/boston-university",
+      "clicks": 1,
+      "impressions": 616,
+      "position": 7.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_7d6d1c8d4ff2",
+      "clicks": 0,
+      "impressions": 557,
+      "position": 7.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/when-walking-is-faster",
+      "clicks": 0,
+      "impressions": 508,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift",
+      "clicks": 1,
+      "impressions": 435,
+      "position": 6.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/",
+      "clicks": 30,
+      "impressions": 390,
+      "position": 6.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/tufts",
+      "clicks": 0,
+      "impressions": 333,
+      "position": 10.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/community-path",
+      "clicks": 2,
+      "impressions": 330,
+      "position": 9.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/battle-road-trail",
+      "clicks": 4,
+      "impressions": 321,
+      "position": 8.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/lesley",
+      "clicks": 0,
+      "impressions": 310,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/cambridge-ma",
+      "clicks": 2,
+      "impressions": 294,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/somerville-ma",
+      "clicks": 3,
+      "impressions": 286,
+      "position": 9.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/marblehead-rail-trail",
+      "clicks": 8,
+      "impressions": 279,
+      "position": 8.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/mcrt-sudhud",
+      "clicks": 3,
+      "impressions": 248,
+      "position": 8.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/charles-loop",
+      "clicks": 1,
+      "impressions": 238,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/frisoli-youth-center",
+      "clicks": 1,
+      "impressions": 214,
+      "position": 7.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/everett-ma",
+      "clicks": 0,
+      "impressions": 213,
+      "position": 9.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/brookline-ma",
+      "clicks": 1,
+      "impressions": 204,
+      "position": 9.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/boston-ma",
+      "clicks": 0,
+      "impressions": 187,
+      "position": 11.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/emerald-necklace",
+      "clicks": 9,
+      "impressions": 180,
+      "position": 8.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/freedom-stroll",
+      "clicks": 1,
+      "impressions": 179,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/mit",
+      "clicks": 0,
+      "impressions": 178,
+      "position": 11.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/newton-ma",
+      "clicks": 1,
+      "impressions": 165,
+      "position": 10.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events",
+      "clicks": 1,
+      "impressions": 155,
+      "position": 21.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/medford-ma",
+      "clicks": 1,
+      "impressions": 155,
+      "position": 8.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/emerson",
+      "clicks": 1,
+      "impressions": 154,
+      "position": 6.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/northeastern",
+      "clicks": 2,
+      "impressions": 136,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_bu_cycle_kitchen_f5ec9ea81311",
+      "clicks": 1,
+      "impressions": 130,
+      "position": 4.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/roam-1776607065055",
+      "clicks": 2,
+      "impressions": 129,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/everett-community-fair",
+      "clicks": 0,
+      "impressions": 124,
+      "position": 10.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/minuteman",
+      "clicks": 1,
+      "impressions": 116,
+      "position": 8.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/donate",
+      "clicks": 0,
+      "impressions": 116,
+      "position": 31.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/twin-cities-rail-trail",
+      "clicks": 3,
+      "impressions": 114,
+      "position": 9.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/wwii-veterans-memorial-trail",
+      "clicks": 0,
+      "impressions": 111,
+      "position": 9.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/about",
+      "clicks": 7,
+      "impressions": 106,
+      "position": 2.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/umass-boston",
+      "clicks": 0,
+      "impressions": 101,
+      "position": 11.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/b-line-crawl",
+      "clicks": 1,
+      "impressions": 94,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs",
+      "clicks": 0,
+      "impressions": 94,
+      "position": 17.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/salem-by-rail",
+      "clicks": 1,
+      "impressions": 91,
+      "position": 7.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_b49998bb61ce",
+      "clicks": 0,
+      "impressions": 91,
+      "position": 4.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/fort-river-trail",
+      "clicks": 1,
+      "impressions": 89,
+      "position": 9.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/shining-sea-bikeway",
+      "clicks": 0,
+      "impressions": 89,
+      "position": 18.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/harvard",
+      "clicks": 1,
+      "impressions": 87,
+      "position": 17.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/wachusett-greenways",
+      "clicks": 1,
+      "impressions": 81,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/museum-hop",
+      "clicks": 0,
+      "impressions": 80,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_newbury_2026-09-20",
+      "clicks": 1,
+      "impressions": 79,
+      "position": 7.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/berklee",
+      "clicks": 0,
+      "impressions": 79,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/what-you-can-do-with-an-e-cargo-bike",
+      "clicks": 1,
+      "impressions": 78,
+      "position": 8.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/arlington-ma",
+      "clicks": 0,
+      "impressions": 78,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_boston_roslindale_2026-10-18",
+      "clicks": 0,
+      "impressions": 77,
+      "position": 5.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/watertown-ma",
+      "clicks": 0,
+      "impressions": 76,
+      "position": 11.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/manhan-rail-trail",
+      "clicks": 1,
+      "impressions": 74,
+      "position": 10.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_massdot-video-contest_20261004",
+      "clicks": 1,
+      "impressions": 72,
+      "position": 6.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns",
+      "clicks": 0,
+      "impressions": 66,
+      "position": 4.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/bakery-run",
+      "clicks": 1,
+      "impressions": 65,
+      "position": 5.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_cambridge_learn_to_bike_3b70ad5a4220",
+      "clicks": 1,
+      "impressions": 64,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/get-involved",
+      "clicks": 0,
+      "impressions": 59,
+      "position": 2.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/where-to-lock-your-bike",
+      "clicks": 0,
+      "impressions": 59,
+      "position": 8.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/eastie-eats",
+      "clicks": 0,
+      "impressions": 57,
+      "position": 7.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/revere-ma",
+      "clicks": 0,
+      "impressions": 54,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_ddd0384c17e8",
+      "clicks": 1,
+      "impressions": 53,
+      "position": 5.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/walking-with-stuff",
+      "clicks": 0,
+      "impressions": 52,
+      "position": 5.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/sponsor",
+      "clicks": 0,
+      "impressions": 52,
+      "position": 7.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_f7bb40e355ed",
+      "clicks": 0,
+      "impressions": 47,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/suffolk",
+      "clicks": 0,
+      "impressions": 47,
+      "position": 8.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/help",
+      "clicks": 0,
+      "impressions": 45,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/employers",
+      "clicks": 0,
+      "impressions": 45,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/lynnfield-ma",
+      "clicks": 0,
+      "impressions": 45,
+      "position": 9.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_free-bike-repair-workshop-at-bpl-east-boston_2026-10-20",
+      "clicks": 1,
+      "impressions": 44,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_memdrive_2026-09-13",
+      "clicks": 0,
+      "impressions": 44,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/burlington-ma",
+      "clicks": 0,
+      "impressions": 44,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_323399e30d40",
+      "clicks": 0,
+      "impressions": 42,
+      "position": 6.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/simmons",
+      "clicks": 0,
+      "impressions": 42,
+      "position": 16.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams",
+      "clicks": 0,
+      "impressions": 41,
+      "position": 5.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_68a0c2bf2575",
+      "clicks": 3,
+      "impressions": 38,
+      "position": 4.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/stoneham-ma",
+      "clicks": 1,
+      "impressions": 38,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_charlestown_road_2026-09-06",
+      "clicks": 0,
+      "impressions": 37,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/walk-ride-days",
+      "clicks": 0,
+      "impressions": 37,
+      "position": 9.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/bedford-ma",
+      "clicks": 0,
+      "impressions": 37,
+      "position": 10.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/beverly-ma",
+      "clicks": 0,
+      "impressions": 37,
+      "position": 7.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/lexington-ma",
+      "clicks": 0,
+      "impressions": 35,
+      "position": 6.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_887aa746fc20",
+      "clicks": 1,
+      "impressions": 33,
+      "position": 3.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_40714a020911",
+      "clicks": 1,
+      "impressions": 33,
+      "position": 6.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_cambridge_learn_to_bike_87175399c37e",
+      "clicks": 0,
+      "impressions": 33,
+      "position": 6.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/schools",
+      "clicks": 0,
+      "impressions": 33,
+      "position": 18.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_free-bike-repair-workshop-at-bpl-east-boston_2026-09-15",
+      "clicks": 2,
+      "impressions": 32,
+      "position": 6.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/boston-college",
+      "clicks": 0,
+      "impressions": 32,
+      "position": 8.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/belmont-ma",
+      "clicks": 0,
+      "impressions": 31,
+      "position": 7.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_boston_glv_2026-09-02",
+      "clicks": 1,
+      "impressions": 30,
+      "position": 4.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/press",
+      "clicks": 0,
+      "impressions": 30,
+      "position": 3.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/peabody-ma",
+      "clicks": 0,
+      "impressions": 30,
+      "position": 8.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_5e7dd9b71afe",
+      "clicks": 4,
+      "impressions": 29,
+      "position": 4.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/newburyport-ma",
+      "clicks": 0,
+      "impressions": 27,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/quincy-ma",
+      "clicks": 0,
+      "impressions": 27,
+      "position": 7.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_submit_crw-cranberry-harvest-century-2026_2026-10-18",
+      "clicks": 0,
+      "impressions": 26,
+      "position": 6.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/waltham-ma",
+      "clicks": 0,
+      "impressions": 24,
+      "position": 9.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift?from=AppAgg.com&utm_campaign=AppAgg.com&utm_medium=referral&utm_source=AppAgg.com",
+      "clicks": 0,
+      "impressions": 24,
+      "position": 5.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_natick_mtb_2026-10-27",
+      "clicks": 0,
+      "impressions": 23,
+      "position": 8.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/alewife-mystic-greenway",
+      "clicks": 0,
+      "impressions": 23,
+      "position": 9.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/framingham-ma",
+      "clicks": 0,
+      "impressions": 23,
+      "position": 8.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_newbury_2026-09-06",
+      "clicks": 0,
+      "impressions": 22,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/harbor-islands",
+      "clicks": 0,
+      "impressions": 22,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/lynn-ma",
+      "clicks": 1,
+      "impressions": 21,
+      "position": 6.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/your-first-bus-ride",
+      "clicks": 0,
+      "impressions": 21,
+      "position": 9.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/melrose-ma",
+      "clicks": 0,
+      "impressions": 21,
+      "position": 7.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/transit-plus-walking-or-biking",
+      "clicks": 1,
+      "impressions": 20,
+      "position": 4.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us",
+      "clicks": 0,
+      "impressions": 20,
+      "position": 27.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_free-bike-repair-workshop-at-bpl-south-boston_2026-09-08",
+      "clicks": 0,
+      "impressions": 19,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/bike-commute-gear",
+      "clicks": 0,
+      "impressions": 19,
+      "position": 8.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/planning-a-transit-trip",
+      "clicks": 0,
+      "impressions": 19,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/wilmington-ma",
+      "clicks": 0,
+      "impressions": 19,
+      "position": 9.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_streetwise_bcu_labs_what_we_ar_20260819",
+      "clicks": 0,
+      "impressions": 18,
+      "position": 6.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_charlestown_road_2026-08-30",
+      "clicks": 0,
+      "impressions": 18,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/bbt26_chelsea_mass_high",
+      "clicks": 0,
+      "impressions": 17,
+      "position": 6.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/mgh-ihp",
+      "clicks": 0,
+      "impressions": 17,
+      "position": 6.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/hingham-ma",
+      "clicks": 0,
+      "impressions": 17,
+      "position": 5.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/shift-your-summer",
+      "clicks": 1,
+      "impressions": 16,
+      "position": 6.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_learn-to-ride-malden-kids_2026-08-18",
+      "clicks": 0,
+      "impressions": 16,
+      "position": 7.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_cambridge_learn_to_bike_1a5cc2f63bb8",
+      "clicks": 0,
+      "impressions": 16,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/everett-ma?utm_content=footer_towns",
+      "clicks": 0,
+      "impressions": 16,
+      "position": 10.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_memdrive_2026-11-01",
+      "clicks": 1,
+      "impressions": 15,
+      "position": 6.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/sunset-pedal",
+      "clicks": 1,
+      "impressions": 15,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/mitcob26_minuteman_2026-09-03",
+      "clicks": 0,
+      "impressions": 15,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/north-point-city-hall",
+      "clicks": 0,
+      "impressions": 15,
+      "position": 7.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/dedham-ma",
+      "clicks": 0,
+      "impressions": 15,
+      "position": 10.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_07ac7b01ae1a",
+      "clicks": 0,
+      "impressions": 14,
+      "position": 5.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/malden-ma",
+      "clicks": 0,
+      "impressions": 14,
+      "position": 8.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_weekly-social-bike-ride_2026-09-03",
+      "clicks": 1,
+      "impressions": 13,
+      "position": 3.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/salem-ma",
+      "clicks": 1,
+      "impressions": 13,
+      "position": 7.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/privacy",
+      "clicks": 0,
+      "impressions": 13,
+      "position": 6.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_boston_slowroll_2026-09-07",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/rewards-partners",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 9.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/woburn-ma",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 8.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides",
+      "clicks": 0,
+      "impressions": 11,
+      "position": 11.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/everett-schools",
+      "clicks": 0,
+      "impressions": 11,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_free-bike-repair-workshop-at-bpl-south-boston_2026-10-13",
+      "clicks": 1,
+      "impressions": 10,
+      "position": 8.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/contact",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 10.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_needham_road_2026-10-20",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 8.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ride-chill-2026-10-11",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/newton-ma?utm_content=footer_towns",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 9.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/rockport-ma",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/volunteer",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_fall_cargo_bike_test_drive_eve_20260927",
+      "clicks": 3,
+      "impressions": 9,
+      "position": 3.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_happy-biking-hour_2026-09-08",
+      "clicks": 1,
+      "impressions": 9,
+      "position": 5.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_camp-gig-girls-in-gear-summer-camp_2026-09-02",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_camp-gig-girls-in-gear-summer-camp_2026-09-03",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 5.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_intro_to_bluebikes_group_ride_20260808",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 8.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_77d4b15d3d29",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 4.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/corporate-challenge",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 7.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/braintree-ma",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_7c0b4300b10e",
+      "clicks": 1,
+      "impressions": 8,
+      "position": 5.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester",
+      "clicks": 1,
+      "impressions": 8,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_charlestown_road_2026-10-04",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_needham_road_2026-09-15",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 6.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/your-first-ride-in-a-bike-lane",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 5.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_cambridge_bike_safety_6685839e121c",
+      "clicks": 1,
+      "impressions": 7,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/shift-your-summer/rules",
+      "clicks": 1,
+      "impressions": 7,
+      "position": 15.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/bbt26_lost_highway_redux",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 4.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_free-bike-repair-workshop-at-bpl-east-boston_2026-08-18",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_cafe_bikers_ddf33e669845",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 6.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_e6ee818aa6f3",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 3.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_d410c7a042e3",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_natick_road_2026-09-09",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 9.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/submit",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 6.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/concord-ma",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_bike_ride_decorating_event_fri_20260829",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 3.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_broadway_safety_improvement_th_20260920",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_family_group_bike_ride_with_bi_20260927",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_7c77e76c62f0",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_8a5a778658bf",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_walk-ride-day_20260925",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 6.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/nearby",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/natick-ma",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/saugus-ma",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 10.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_weekly-social-bike-ride_2026-09-17",
+      "clicks": 1,
+      "impressions": 5,
+      "position": 1.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_0b84734c9e3f",
+      "clicks": 1,
+      "impressions": 5,
+      "position": 5.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_tour_of_waltham_20261004",
+      "clicks": 1,
+      "impressions": 5,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/mitcob26_minuteman_2026-09-17",
+      "clicks": 1,
+      "impressions": 5,
+      "position": 2.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/faqs",
+      "clicks": 1,
+      "impressions": 5,
+      "position": 1.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_learn-to-ride-malden-adults_2026-08-22",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 12.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_needham_road_2026-08-18",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 8.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_needham_wnb_mtb_2026-10-06",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 11.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/foxborough-ma",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 9.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/milton-ma",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 4.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_camp-gig-girls-in-gear-summer-camp_2026-08-31",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_weekly-social-bike-ride_2026-08-13",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_636c83595251",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 4.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_d210d7f05d78",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_braintree_enduro_2026-08-20",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 9.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_needham_road_2026-08-25",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_needham_wnb_mtb_2026-10-20",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 7.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_memdrive_2026-09-20",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ride-for-your-life-2026-10-25",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 2.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/turkey-burner-2026-11-27",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/newsletter",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 9.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/challenges",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_walk-ride-day_20261030",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 8.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_walk-ride-day_20261218",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_boston_glv_2026-10-21",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_braintree_road_2026-09-05",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 1.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_needham_wnb_road_2026-09-03",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_needham_wnb_road_2026-09-10",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 17.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_newbury_2026-09-13",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/picking-a-bike-route",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/boston-area-active-commuters",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/somerville-ma?utm_content=events_page_xlink",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 10.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_braintree_enduro_2026-10-08",
+      "clicks": 1,
+      "impressions": 2,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/cashier-guide.html",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 6.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/50-adults-worcester-earn-a-bike-nights-2026-10-06",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 14
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_7ca96c73c7e5",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_8df9e6b3e08c",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 3.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_8912d763626a",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_e9a681aa99db",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_natick_road_2026-09-30",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 10.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_natick_road_2026-10-21",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_worcester_road_2026-09-30",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_worcester_road_2026-10-07",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/mitcob26_minuteman_2026-10-01",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/partners",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/participant-voices",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/terms",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/wayfinding/carnaval",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_2f6369644195",
+      "clicks": 1,
+      "impressions": 1,
+      "position": 2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/commute-advisor/",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/contact?inquiry=employer",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_abha-social-bike-ride_2026-09-30",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_free-bike-repair-workshop-at-bpl-mattapan_2026-11-18",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_weekly-social-bike-ride_2026-08-20",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_bu_cycle_kitchen_4f01378c5647",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_002cf098315f",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_1e8c9862d6e9",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_4fd3e9586c34",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_95e9738fd71a",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_b1a332384567",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_b77710fb83c4",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_bcb49595d5d6",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_db375ad7ca20",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_e9661a82d195",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_f43688fd5f22",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_walk-ride-day_20261120",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/golden-gears-springfield-2026-09-27",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/how-do-you-like-them-apples-2026-10-10",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_natick_road_2026-10-07",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_natick_road_2026-10-14",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 12
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_needham_wnb_road_2026-09-17",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 58
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/speedy-croissant-women-nb-ride-24-2026-09-29",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/worcester-bike-party-2026-09-25",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/walking-through-the-weather",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 7
+    }
+  ],
+  "device_split": [
+    {
+      "device": "MOBILE",
+      "clicks": 82,
+      "impressions": 7613
+    },
+    {
+      "device": "DESKTOP",
+      "clicks": 71,
+      "impressions": 6412
+    },
+    {
+      "device": "TABLET",
+      "clicks": 2,
+      "impressions": 96
+    }
+  ],
+  "daily_trend": [
+    {
+      "date": "2026-03-19",
+      "clicks": 7,
+      "impressions": 84
+    },
+    {
+      "date": "2026-03-20",
+      "clicks": 3,
+      "impressions": 64
+    },
+    {
+      "date": "2026-03-21",
+      "clicks": 0,
+      "impressions": 57
+    },
+    {
+      "date": "2026-03-22",
+      "clicks": 0,
+      "impressions": 77
+    },
+    {
+      "date": "2026-03-23",
+      "clicks": 3,
+      "impressions": 69
+    },
+    {
+      "date": "2026-03-24",
+      "clicks": 1,
+      "impressions": 73
+    },
+    {
+      "date": "2026-03-25",
+      "clicks": 6,
+      "impressions": 111
+    },
+    {
+      "date": "2026-03-26",
+      "clicks": 5,
+      "impressions": 100
+    },
+    {
+      "date": "2026-03-27",
+      "clicks": 6,
+      "impressions": 158
+    },
+    {
+      "date": "2026-03-28",
+      "clicks": 0,
+      "impressions": 78
+    },
+    {
+      "date": "2026-03-29",
+      "clicks": 3,
+      "impressions": 106
+    },
+    {
+      "date": "2026-03-30",
+      "clicks": 3,
+      "impressions": 164
+    },
+    {
+      "date": "2026-03-31",
+      "clicks": 6,
+      "impressions": 105
+    },
+    {
+      "date": "2026-04-01",
+      "clicks": 3,
+      "impressions": 97
+    },
+    {
+      "date": "2026-04-02",
+      "clicks": 1,
+      "impressions": 88
+    },
+    {
+      "date": "2026-04-03",
+      "clicks": 6,
+      "impressions": 78
+    },
+    {
+      "date": "2026-04-04",
+      "clicks": 2,
+      "impressions": 78
+    },
+    {
+      "date": "2026-04-05",
+      "clicks": 1,
+      "impressions": 67
+    },
+    {
+      "date": "2026-04-06",
+      "clicks": 1,
+      "impressions": 139
+    },
+    {
+      "date": "2026-04-07",
+      "clicks": 1,
+      "impressions": 139
+    },
+    {
+      "date": "2026-04-08",
+      "clicks": 1,
+      "impressions": 100
+    },
+    {
+      "date": "2026-04-09",
+      "clicks": 8,
+      "impressions": 212
+    },
+    {
+      "date": "2026-04-10",
+      "clicks": 2,
+      "impressions": 100
+    },
+    {
+      "date": "2026-04-11",
+      "clicks": 2,
+      "impressions": 99
+    },
+    {
+      "date": "2026-04-12",
+      "clicks": 1,
+      "impressions": 82
+    },
+    {
+      "date": "2026-04-13",
+      "clicks": 3,
+      "impressions": 151
+    },
+    {
+      "date": "2026-04-14",
+      "clicks": 4,
+      "impressions": 134
+    },
+    {
+      "date": "2026-04-15",
+      "clicks": 4,
+      "impressions": 128
+    },
+    {
+      "date": "2026-04-16",
+      "clicks": 4,
+      "impressions": 125
+    },
+    {
+      "date": "2026-04-17",
+      "clicks": 1,
+      "impressions": 97
+    },
+    {
+      "date": "2026-04-18",
+      "clicks": 2,
+      "impressions": 85
+    },
+    {
+      "date": "2026-04-19",
+      "clicks": 2,
+      "impressions": 70
+    },
+    {
+      "date": "2026-04-20",
+      "clicks": 2,
+      "impressions": 106
+    },
+    {
+      "date": "2026-04-21",
+      "clicks": 5,
+      "impressions": 121
+    },
+    {
+      "date": "2026-04-22",
+      "clicks": 7,
+      "impressions": 116
+    },
+    {
+      "date": "2026-04-23",
+      "clicks": 4,
+      "impressions": 139
+    },
+    {
+      "date": "2026-04-24",
+      "clicks": 2,
+      "impressions": 77
+    },
+    {
+      "date": "2026-04-25",
+      "clicks": 2,
+      "impressions": 94
+    },
+    {
+      "date": "2026-04-26",
+      "clicks": 2,
+      "impressions": 33
+    },
+    {
+      "date": "2026-04-27",
+      "clicks": 3,
+      "impressions": 84
+    },
+    {
+      "date": "2026-04-28",
+      "clicks": 6,
+      "impressions": 79
+    },
+    {
+      "date": "2026-04-29",
+      "clicks": 7,
+      "impressions": 56
+    },
+    {
+      "date": "2026-04-30",
+      "clicks": 2,
+      "impressions": 78
+    },
+    {
+      "date": "2026-05-01",
+      "clicks": 0,
+      "impressions": 66
+    },
+    {
+      "date": "2026-05-02",
+      "clicks": 0,
+      "impressions": 46
+    },
+    {
+      "date": "2026-05-03",
+      "clicks": 0,
+      "impressions": 52
+    },
+    {
+      "date": "2026-05-04",
+      "clicks": 7,
+      "impressions": 86
+    },
+    {
+      "date": "2026-05-05",
+      "clicks": 3,
+      "impressions": 86
+    },
+    {
+      "date": "2026-05-06",
+      "clicks": 4,
+      "impressions": 91
+    },
+    {
+      "date": "2026-05-07",
+      "clicks": 3,
+      "impressions": 72
+    },
+    {
+      "date": "2026-05-08",
+      "clicks": 1,
+      "impressions": 94
+    },
+    {
+      "date": "2026-05-09",
+      "clicks": 0,
+      "impressions": 47
+    },
+    {
+      "date": "2026-05-10",
+      "clicks": 0,
+      "impressions": 30
+    },
+    {
+      "date": "2026-05-11",
+      "clicks": 8,
+      "impressions": 113
+    },
+    {
+      "date": "2026-05-12",
+      "clicks": 4,
+      "impressions": 121
+    },
+    {
+      "date": "2026-05-13",
+      "clicks": 2,
+      "impressions": 115
+    },
+    {
+      "date": "2026-05-14",
+      "clicks": 1,
+      "impressions": 115
+    },
+    {
+      "date": "2026-05-15",
+      "clicks": 0,
+      "impressions": 95
+    },
+    {
+      "date": "2026-05-16",
+      "clicks": 1,
+      "impressions": 78
+    },
+    {
+      "date": "2026-05-17",
+      "clicks": 2,
+      "impressions": 53
+    },
+    {
+      "date": "2026-05-18",
+      "clicks": 0,
+      "impressions": 84
+    },
+    {
+      "date": "2026-05-19",
+      "clicks": 1,
+      "impressions": 69
+    },
+    {
+      "date": "2026-05-20",
+      "clicks": 6,
+      "impressions": 68
+    },
+    {
+      "date": "2026-05-21",
+      "clicks": 4,
+      "impressions": 77
+    },
+    {
+      "date": "2026-05-22",
+      "clicks": 3,
+      "impressions": 82
+    },
+    {
+      "date": "2026-05-23",
+      "clicks": 0,
+      "impressions": 59
+    },
+    {
+      "date": "2026-05-24",
+      "clicks": 0,
+      "impressions": 86
+    },
+    {
+      "date": "2026-05-25",
+      "clicks": 0,
+      "impressions": 69
+    },
+    {
+      "date": "2026-05-26",
+      "clicks": 13,
+      "impressions": 139
+    },
+    {
+      "date": "2026-05-27",
+      "clicks": 6,
+      "impressions": 147
+    },
+    {
+      "date": "2026-05-28",
+      "clicks": 4,
+      "impressions": 135
+    },
+    {
+      "date": "2026-05-29",
+      "clicks": 3,
+      "impressions": 123
+    },
+    {
+      "date": "2026-05-30",
+      "clicks": 0,
+      "impressions": 91
+    },
+    {
+      "date": "2026-05-31",
+      "clicks": 0,
+      "impressions": 111
+    },
+    {
+      "date": "2026-06-01",
+      "clicks": 4,
+      "impressions": 144
+    },
+    {
+      "date": "2026-06-02",
+      "clicks": 4,
+      "impressions": 146
+    },
+    {
+      "date": "2026-06-03",
+      "clicks": 1,
+      "impressions": 128
+    },
+    {
+      "date": "2026-06-04",
+      "clicks": 3,
+      "impressions": 141
+    },
+    {
+      "date": "2026-06-05",
+      "clicks": 4,
+      "impressions": 124
+    },
+    {
+      "date": "2026-06-06",
+      "clicks": 1,
+      "impressions": 136
+    },
+    {
+      "date": "2026-06-07",
+      "clicks": 1,
+      "impressions": 95
+    },
+    {
+      "date": "2026-06-08",
+      "clicks": 2,
+      "impressions": 155
+    },
+    {
+      "date": "2026-06-09",
+      "clicks": 4,
+      "impressions": 181
+    },
+    {
+      "date": "2026-06-10",
+      "clicks": 4,
+      "impressions": 159
+    },
+    {
+      "date": "2026-06-11",
+      "clicks": 2,
+      "impressions": 112
+    },
+    {
+      "date": "2026-06-12",
+      "clicks": 9,
+      "impressions": 122
+    },
+    {
+      "date": "2026-06-13",
+      "clicks": 0,
+      "impressions": 163
+    },
+    {
+      "date": "2026-06-14",
+      "clicks": 2,
+      "impressions": 148
+    },
+    {
+      "date": "2026-06-15",
+      "clicks": 6,
+      "impressions": 202
+    },
+    {
+      "date": "2026-06-16",
+      "clicks": 2,
+      "impressions": 214
+    },
+    {
+      "date": "2026-06-17",
+      "clicks": 2,
+      "impressions": 155
+    },
+    {
+      "date": "2026-06-18",
+      "clicks": 2,
+      "impressions": 134
+    },
+    {
+      "date": "2026-06-19",
+      "clicks": 1,
+      "impressions": 133
+    },
+    {
+      "date": "2026-06-20",
+      "clicks": 0,
+      "impressions": 117
+    },
+    {
+      "date": "2026-06-21",
+      "clicks": 0,
+      "impressions": 133
+    },
+    {
+      "date": "2026-06-22",
+      "clicks": 4,
+      "impressions": 159
+    },
+    {
+      "date": "2026-06-23",
+      "clicks": 0,
+      "impressions": 140
+    },
+    {
+      "date": "2026-06-24",
+      "clicks": 2,
+      "impressions": 168
+    },
+    {
+      "date": "2026-06-25",
+      "clicks": 0,
+      "impressions": 120
+    },
+    {
+      "date": "2026-06-26",
+      "clicks": 2,
+      "impressions": 104
+    },
+    {
+      "date": "2026-06-27",
+      "clicks": 3,
+      "impressions": 116
+    },
+    {
+      "date": "2026-06-28",
+      "clicks": 1,
+      "impressions": 113
+    },
+    {
+      "date": "2026-06-29",
+      "clicks": 3,
+      "impressions": 118
+    },
+    {
+      "date": "2026-06-30",
+      "clicks": 2,
+      "impressions": 168
+    },
+    {
+      "date": "2026-07-01",
+      "clicks": 1,
+      "impressions": 130
+    },
+    {
+      "date": "2026-07-02",
+      "clicks": 2,
+      "impressions": 116
+    },
+    {
+      "date": "2026-07-03",
+      "clicks": 1,
+      "impressions": 132
+    },
+    {
+      "date": "2026-07-04",
+      "clicks": 0,
+      "impressions": 114
+    },
+    {
+      "date": "2026-07-05",
+      "clicks": 1,
+      "impressions": 118
+    },
+    {
+      "date": "2026-07-06",
+      "clicks": 3,
+      "impressions": 157
+    },
+    {
+      "date": "2026-07-07",
+      "clicks": 2,
+      "impressions": 160
+    },
+    {
+      "date": "2026-07-08",
+      "clicks": 0,
+      "impressions": 115
+    },
+    {
+      "date": "2026-07-09",
+      "clicks": 0,
+      "impressions": 146
+    },
+    {
+      "date": "2026-07-10",
+      "clicks": 0,
+      "impressions": 111
+    },
+    {
+      "date": "2026-07-11",
+      "clicks": 0,
+      "impressions": 82
+    },
+    {
+      "date": "2026-07-12",
+      "clicks": 0,
+      "impressions": 116
+    },
+    {
+      "date": "2026-07-13",
+      "clicks": 3,
+      "impressions": 137
+    },
+    {
+      "date": "2026-07-14",
+      "clicks": 2,
+      "impressions": 125
+    },
+    {
+      "date": "2026-07-15",
+      "clicks": 1,
+      "impressions": 128
+    },
+    {
+      "date": "2026-07-16",
+      "clicks": 2,
+      "impressions": 109
+    },
+    {
+      "date": "2026-07-17",
+      "clicks": 1,
+      "impressions": 93
+    },
+    {
+      "date": "2026-07-18",
+      "clicks": 0,
+      "impressions": 108
+    },
+    {
+      "date": "2026-07-19",
+      "clicks": 0,
+      "impressions": 139
+    },
+    {
+      "date": "2026-07-20",
+      "clicks": 2,
+      "impressions": 117
+    },
+    {
+      "date": "2026-07-21",
+      "clicks": 1,
+      "impressions": 141
+    },
+    {
+      "date": "2026-07-22",
+      "clicks": 2,
+      "impressions": 129
+    },
+    {
+      "date": "2026-07-23",
+      "clicks": 1,
+      "impressions": 105
+    },
+    {
+      "date": "2026-07-24",
+      "clicks": 2,
+      "impressions": 126
+    },
+    {
+      "date": "2026-07-25",
+      "clicks": 3,
+      "impressions": 98
+    },
+    {
+      "date": "2026-07-26",
+      "clicks": 1,
+      "impressions": 88
+    },
+    {
+      "date": "2026-07-27",
+      "clicks": 0,
+      "impressions": 115
+    },
+    {
+      "date": "2026-07-28",
+      "clicks": 3,
+      "impressions": 158
+    },
+    {
+      "date": "2026-07-29",
+      "clicks": 1,
+      "impressions": 172
+    },
+    {
+      "date": "2026-07-30",
+      "clicks": 0,
+      "impressions": 124
+    },
+    {
+      "date": "2026-07-31",
+      "clicks": 3,
+      "impressions": 100
+    },
+    {
+      "date": "2026-08-01",
+      "clicks": 0,
+      "impressions": 85
+    },
+    {
+      "date": "2026-08-02",
+      "clicks": 0,
+      "impressions": 117
+    },
+    {
+      "date": "2026-08-03",
+      "clicks": 6,
+      "impressions": 150
+    },
+    {
+      "date": "2026-08-04",
+      "clicks": 1,
+      "impressions": 154
+    },
+    {
+      "date": "2026-08-05",
+      "clicks": 1,
+      "impressions": 141
+    },
+    {
+      "date": "2026-08-06",
+      "clicks": 0,
+      "impressions": 126
+    },
+    {
+      "date": "2026-08-07",
+      "clicks": 0,
+      "impressions": 155
+    },
+    {
+      "date": "2026-08-08",
+      "clicks": 1,
+      "impressions": 143
+    },
+    {
+      "date": "2026-08-09",
+      "clicks": 0,
+      "impressions": 160
+    },
+    {
+      "date": "2026-08-10",
+      "clicks": 2,
+      "impressions": 152
+    },
+    {
+      "date": "2026-08-11",
+      "clicks": 1,
+      "impressions": 195
+    },
+    {
+      "date": "2026-08-12",
+      "clicks": 1,
+      "impressions": 221
+    },
+    {
+      "date": "2026-08-13",
+      "clicks": 2,
+      "impressions": 156
+    },
+    {
+      "date": "2026-08-14",
+      "clicks": 2,
+      "impressions": 177
+    },
+    {
+      "date": "2026-08-15",
+      "clicks": 3,
+      "impressions": 200
+    },
+    {
+      "date": "2026-08-16",
+      "clicks": 3,
+      "impressions": 169
+    },
+    {
+      "date": "2026-08-17",
+      "clicks": 3,
+      "impressions": 224
+    },
+    {
+      "date": "2026-08-18",
+      "clicks": 4,
+      "impressions": 285
+    },
+    {
+      "date": "2026-08-19",
+      "clicks": 4,
+      "impressions": 287
+    },
+    {
+      "date": "2026-08-20",
+      "clicks": 3,
+      "impressions": 215
+    },
+    {
+      "date": "2026-08-21",
+      "clicks": 3,
+      "impressions": 175
+    },
+    {
+      "date": "2026-08-22",
+      "clicks": 0,
+      "impressions": 183
+    },
+    {
+      "date": "2026-08-23",
+      "clicks": 0,
+      "impressions": 168
+    },
+    {
+      "date": "2026-08-24",
+      "clicks": 1,
+      "impressions": 187
+    },
+    {
+      "date": "2026-08-25",
+      "clicks": 2,
+      "impressions": 225
+    },
+    {
+      "date": "2026-08-26",
+      "clicks": 2,
+      "impressions": 192
+    },
+    {
+      "date": "2026-08-27",
+      "clicks": 4,
+      "impressions": 196
+    },
+    {
+      "date": "2026-08-28",
+      "clicks": 2,
+      "impressions": 215
+    },
+    {
+      "date": "2026-08-29",
+      "clicks": 2,
+      "impressions": 254
+    },
+    {
+      "date": "2026-08-30",
+      "clicks": 3,
+      "impressions": 262
+    },
+    {
+      "date": "2026-08-31",
+      "clicks": 8,
+      "impressions": 394
+    },
+    {
+      "date": "2026-09-01",
+      "clicks": 2,
+      "impressions": 375
+    },
+    {
+      "date": "2026-09-02",
+      "clicks": 9,
+      "impressions": 407
+    },
+    {
+      "date": "2026-09-03",
+      "clicks": 4,
+      "impressions": 393
+    },
+    {
+      "date": "2026-09-04",
+      "clicks": 2,
+      "impressions": 465
+    },
+    {
+      "date": "2026-09-05",
+      "clicks": 2,
+      "impressions": 457
+    },
+    {
+      "date": "2026-09-06",
+      "clicks": 5,
+      "impressions": 581
+    },
+    {
+      "date": "2026-09-07",
+      "clicks": 7,
+      "impressions": 527
+    },
+    {
+      "date": "2026-09-08",
+      "clicks": 3,
+      "impressions": 560
+    },
+    {
+      "date": "2026-09-09",
+      "clicks": 2,
+      "impressions": 660
+    },
+    {
+      "date": "2026-09-10",
+      "clicks": 1,
+      "impressions": 655
+    },
+    {
+      "date": "2026-09-11",
+      "clicks": 1,
+      "impressions": 526
+    },
+    {
+      "date": "2026-09-12",
+      "clicks": 2,
+      "impressions": 565
+    },
+    {
+      "date": "2026-09-13",
+      "clicks": 5,
+      "impressions": 397
+    },
+    {
+      "date": "2026-09-14",
+      "clicks": 4,
+      "impressions": 506
+    },
+    {
+      "date": "2026-09-15",
+      "clicks": 3,
+      "impressions": 487
+    },
+    {
+      "date": "2026-09-16",
+      "clicks": 8,
+      "impressions": 503
+    },
+    {
+      "date": "2026-09-17",
+      "clicks": 9,
+      "impressions": 391
+    },
+    {
+      "date": "2026-09-18",
+      "clicks": 3,
+      "impressions": 442
+    },
+    {
+      "date": "2026-09-19",
+      "clicks": 5,
+      "impressions": 722
+    },
+    {
+      "date": "2026-09-20",
+      "clicks": 10,
+      "impressions": 437
+    },
+    {
+      "date": "2026-09-21",
+      "clicks": 5,
+      "impressions": 439
+    },
+    {
+      "date": "2026-09-22",
+      "clicks": 7,
+      "impressions": 399
+    },
+    {
+      "date": "2026-09-23",
+      "clicks": 5,
+      "impressions": 469
+    },
+    {
+      "date": "2026-09-24",
+      "clicks": 9,
+      "impressions": 498
+    },
+    {
+      "date": "2026-09-25",
+      "clicks": 3,
+      "impressions": 447
+    },
+    {
+      "date": "2026-09-26",
+      "clicks": 4,
+      "impressions": 340
+    },
+    {
+      "date": "2026-09-27",
+      "clicks": 5,
+      "impressions": 353
+    },
+    {
+      "date": "2026-09-28",
+      "clicks": 7,
+      "impressions": 398
+    },
+    {
+      "date": "2026-09-29",
+      "clicks": 8,
+      "impressions": 479
+    },
+    {
+      "date": "2026-09-30",
+      "clicks": 9,
+      "impressions": 524
+    },
+    {
+      "date": "2026-10-01",
+      "clicks": 9,
+      "impressions": 590
+    },
+    {
+      "date": "2026-10-02",
+      "clicks": 14,
+      "impressions": 769
+    }
+  ]
+}

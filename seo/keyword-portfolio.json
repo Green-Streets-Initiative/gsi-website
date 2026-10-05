@@ -228,7 +228,10 @@
         "(massdot|mass ?dot) .*(contest|video|challenge)",
         "open streets?",
         "\\bfest(ival)?s?\\b",
-        "\\b20\\d\\d (schedule|dates?|lineup)\\b"
+        "\\b20\\d\\d (schedule|dates?|lineup)\\b",
+        "\\bconference\\b",
+        "\\bcentury\\b",
+        "slow ?roll|block party|ride ?out\\b|\\bride for\\b"
       ],
       "target_urls": [
         "/events",
@@ -456,6 +459,8 @@
         "gogreenstreets",
         "go-?shift(\\.app)?",
         "shift (app|town|towns|ride|rides|roam|roams)",
+        "shift (invite|referral|promo) code",
+        "gogreen",
         "green ?line velo",
         "recreation sundays?",
         "frisoli",

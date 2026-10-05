@@ -111,6 +111,19 @@ bed.
 One line per verdict or hard-won observation, newest first. Next hypotheses
 come from here.
 
+- 2026-10-05 (observed): named public events with a practical "when, where,
+  how to get there" question are the fastest-compounding organic class. The
+  Allston Open Streets listing ranked 5.5 and took 11 clicks in one week,
+  20% of the site's clicks; Fluff Fest (organizer-owned) took 0. List
+  city-run car-free days early; set aside one-offs whose searchers want the
+  organizer.
+- 2026-10-05 (observed): when every result states the same fact (Fresh Pond
+  loop = 2.25 mi), putting it in our title is table stakes, not an edge. The
+  next Roam lever is what the others don't combine: start by T/bike, surface,
+  time at walking vs riding pace.
+- 2026-10-05 (observed): event URLs moved to readable slugs on 2026-09-30
+  (308 from legacy ids). Read event cohorts across that date on a mapped
+  old-id ↔ slug basis.
 - 2026-09-28 (observed): organic sessions convert to app intent at ~1.6%;
   Reddit semester-campaign sessions landing on the same campus pages convert at
   ~7%. The pages can convert. Organic visitors arrive with a different job.

@@ -1,0 +1,37 @@
+Best click week on record: 56 organic clicks (+74% vs the 4-week average), led by event pages, especially the Allston-Brighton Open Streets listing (11 clicks). This month's one decision: ship a local "Biking through a Boston winter" guide before the November search season starts.
+
+SCOREBOARD (week to Oct 2; vs the 4-week average)
+- North star, people who clicked through to the Shift app from search/paid: 8 (last week 27). The drop is Reddit's semester ads converting at 2.4% instead of 6.8%. Organic visitors who clicked to the app rose from 1 to 3.
+- Google organic: 56 clicks (+74%), 3,453 impressions (+4%), 1.62% CTR, average position 7.6. This was a click-through and ranking gain, not more reach.
+- Visits by channel: organic 151 (2.0% clicked to app) | Ad Grants 11 (0%) | other paid 206 (2.4%) | AI answer engines 0. The organic count includes Sunday's Open Streets day.
+- Ad Grants, September final (snapshot Sep 30): 33 impressions, 1 click, 3.03% CTR (below the 5% floor), 0 conversions. The ad-grants-review routine owns this.
+- Non-brand discovery impressions: 546 a week (4-week average 477 vs 148 before), so no stagnation flag. The week ending Oct 16 is the real test now that the campus surge is fading.
+
+DECISION
+1. Ship the "Biking through a Boston winter" guide. Recommendation: SHIP THIS WEEK.
+   Why: our three weather guides earned 2 impressions in 28 days. Google ranks one local page per publisher for this topic (Streetsblog 2022, boston.gov), and neither says how Boston clears bike lanes (within 24 hours after a snowfall) or how Bluebikes runs in winter. The draft covers both, names routes to start on, and links the three existing guides for gear. One sentence (that 40-50% of summer riders keep riding) needs a source confirmed at ship, or gets cut.
+   Cost of waiting: the search season starts in November, and Google needs a few weeks to find a new page.
+   Draft: seo/drafts/guides/biking-through-a-boston-winter.md
+   To ship: open Claude Code and say "ship SEO item 1" (or "decline SEO item 1").
+
+EXPERIMENT BOARD (8 running, none due before Oct 20)
+- Campus page titles: verdict Oct 20. 452 impressions and 0 clicks over 28 days, and impressions are still falling. The September spike was seasonal.
+- Campus pages in llms.txt: verdict Oct 20. 0 visits from AI answer engines this week.
+- Commute Advisor FAQ markup: verdict Oct 20. 118 impressions, 0 clicks.
+- Roam titles that lead with distance: verdict Oct 26. Leaning negative: on the same 26 pages, CTR fell from 1.25% to 0.58%. Every top result already states the distance, so the number no longer sets us apart.
+- Shift app invite on Roam pages: verdict Oct 26. 0 of 35 search visitors clicked to the app.
+- Shift app invite on event pages: verdict Oct 26. 2 of 126 search visitors clicked to the app, up from 0 of 36 before the invite.
+- Event pages in the sitemap and llms.txt: verdict Nov 2. New event pages convert at 2.89%. Note: event URLs changed to readable slugs on Sep 30 (old links redirect), so this verdict compares the old and new URL for each event.
+- Cargo e-bike cost guide: verdict Nov 9. Listed in /guides, the sitemap and llms.txt; no impressions yet in week 1.
+No verdicts this week.
+
+NEXT HYPOTHESES (top 3 by score)
+- Retitle the Roams hub as "bike paths, trails and walking loops around Boston". Ad Grants search terms show generic demand ("bike paths in boston", "bike trails boston"), and the hub's current title is a brand phrase nobody searches.
+- List each city-run Open Streets day as soon as it's announced, with the closed streets and how to arrive by T or bike. Allston earned 11 clicks at position 5.5. Roslindale (Oct 18) is already at position 5.7.
+- Commute Advisor drive-time table: decide Oct 12. The results above us are forums and spam, so the goal is more clicks, not a higher rank.
+
+TEARDOWN: Open Streets: boston.gov lists dates only, while our per-event pages add streets and how to get there, which is why we rank. Fresh Pond: every result states 2.25 mi, so the next Roam lever is a summary that says where to start by T or bike and how long it takes. Winter: Streetsblog 2022 is dated and boston.gov has no snow-clearing facts; the guide above fills both gaps.
+PORTFOLIO: added generic event patterns (conference, century, slow roll, block party, ride for) and brand patterns ("shift invite code", "gogreen"). Share of searches sorted into topics went from 74% to 87%. Measurement only.
+
+HEALTH: All OK. Sitemap 261 URLs (143 non-event, +2 as expected), llms.txt 184 links in 8 sections, structured data present on 5 of 5 key pages, and old event links redirect correctly. AI answer engines cited GSI on 0 of 6 test questions.
+Full report: https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-10-05.md
