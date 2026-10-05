@@ -32,7 +32,7 @@ serve(async (req: Request) => {
     return jsonResponse({ error: "Missing bearer token" }, 401);
   }
 
-  let body: { return_url?: unknown };
+  let body: { return_url?: unknown; flow?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -52,7 +52,7 @@ serve(async (req: Request) => {
 
   const { data: adminRow, error: adminErr } = await userSupabase
     .from("group_admins")
-    .select("group_id, role, groups!inner(id, name, tier, stripe_customer_id, admin_email)")
+    .select("group_id, role, groups!inner(id, name, tier, stripe_customer_id, stripe_subscription_id, admin_email)")
     .eq("email", email)
     .limit(1)
     .maybeSingle();
@@ -66,7 +66,14 @@ serve(async (req: Request) => {
   if (adminRow.role !== "admin") {
     return jsonResponse({ error: "Admin role required for billing" }, 403);
   }
-  const group = adminRow.groups as { id: string; name: string; tier: string; stripe_customer_id: string | null; admin_email: string | null };
+  const group = adminRow.groups as unknown as {
+    id: string;
+    name: string;
+    tier: string;
+    stripe_customer_id: string | null;
+    stripe_subscription_id: string | null;
+    admin_email: string | null;
+  };
 
   let stripe: ReturnType<typeof createStripeClient>;
   try {
@@ -102,14 +109,69 @@ serve(async (req: Request) => {
     }
   }
 
+  // `flow` opens Stripe's portal on one screen instead of the overview:
+  //   cancel          -> cancel the subscription (at period end when the
+  //                      portal configuration says so: Settings -> Billing ->
+  //                      Customer portal -> Cancellations)
+  //   update          -> switch plan (needs "Customers can switch plans" with
+  //                      the employer products in that same configuration)
+  //   payment_method  -> add or replace the card
+  // Stripe refuses a flow its configuration does not allow, or one that needs
+  // a subscription the customer does not have. For cancel and update we then
+  // say so (`unavailable`) rather than open the overview, which has no way to
+  // do what the admin asked; the portal shows a sentence and an email link.
+  const flow = body.flow === "cancel" || body.flow === "update" || body.flow === "payment_method"
+    ? body.flow
+    : null;
+  const subscriptionId = group.stripe_subscription_id;
   try {
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: returnUrl,
-    });
-
+    let portalSession;
+    if (flow === "cancel" || flow === "update") {
+      if (!subscriptionId) {
+        return jsonResponse({ unavailable: flow, reason: "no_subscription" });
+      }
+      try {
+        portalSession = await stripe.billingPortal.sessions.create({
+          customer: customerId,
+          return_url: returnUrl,
+          flow_data: flow === "cancel"
+            ? {
+              type: "subscription_cancel",
+              subscription_cancel: { subscription: subscriptionId },
+              after_completion: { type: "redirect", redirect: { return_url: returnUrl } },
+            }
+            : {
+              type: "subscription_update",
+              subscription_update: { subscription: subscriptionId },
+            },
+        });
+      } catch (err) {
+        console.warn(`[BillingPortal] ${flow} flow refused for group ${group.id}:`, err);
+        return jsonResponse({ unavailable: flow, reason: "refused" });
+      }
+    } else if (flow === "payment_method") {
+      try {
+        portalSession = await stripe.billingPortal.sessions.create({
+          customer: customerId,
+          return_url: returnUrl,
+          flow_data: {
+            type: "payment_method_update",
+            after_completion: { type: "redirect", redirect: { return_url: returnUrl } },
+          },
+        });
+      } catch (err) {
+        // The overview has the payment method too; fall through to it.
+        console.warn(`[BillingPortal] payment_method flow refused for group ${group.id}:`, err);
+      }
+    }
+    if (!portalSession) {
+      portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl,
+      });
+    }
     console.log(
-      `[BillingPortal] Session for group ${group.id} (${group.name})`,
+      `[BillingPortal] Session for group ${group.id} (${group.name})${flow ? ` [${flow} flow]` : ""}`,
     );
     return jsonResponse({ url: portalSession.url });
   } catch (err) {

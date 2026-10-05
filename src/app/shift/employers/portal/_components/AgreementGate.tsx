@@ -18,7 +18,7 @@ import {
 // confirmation copy to the accepter and GSI. Viewers see a waiting notice;
 // GSI admins bypass entirely.
 export default function AgreementGate({ children }: { children: ReactNode }) {
-  const { group, setGroup, isAdmin, isGsiAdmin, sessionEmail, loading } = usePortal()
+  const { group, setGroup, isAdmin, sessionEmail, admins, agreementGated } = usePortal()
 
   const [name, setName] = useState('')
   const [title, setTitle] = useState('')
@@ -40,23 +40,25 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
     el.addEventListener('scroll', check, { passive: true })
   }, [])
 
-  const gated =
-    !loading &&
-    !!group &&
-    !!group.agreement_required &&
-    !group.agreement_accepted_at &&
-    !isGsiAdmin
-
-  if (!gated) return <>{children}</>
+  if (!agreementGated) return <>{children}</>
 
   if (!isAdmin) {
+    const adminNames = admins
+      .filter((a) => a.role === 'admin')
+      .map((a) => a.name?.trim() || a.email)
+    const who =
+      adminNames.length === 0
+        ? 'your workplace admin'
+        : adminNames.length === 1
+          ? adminNames[0]
+          : `${adminNames.slice(0, -1).join(', ')} or ${adminNames[adminNames.length - 1]}`
     return (
       <Card pad className="mx-auto mt-10 max-w-[560px] text-center">
-        <h2 className="text-[18px] font-bold text-ink">One step before you're in</h2>
+        <h2 className="text-[18px] font-bold text-ink">One step before you&apos;re in</h2>
         <p className="mt-2 text-[14px] leading-relaxed text-ink-muted">
           {group!.name}&apos;s Employer Platform Agreement hasn&apos;t been accepted
-          yet, and only a workspace admin can accept it. Ask your admin to sign in —
-          once they accept, your access opens automatically.
+          yet, and only an admin can accept it. Ask {who} to sign in and accept it.
+          Once they do, your access opens on its own.
         </p>
       </Card>
     )
@@ -107,15 +109,15 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto max-w-[760px]">
       <Card className="overflow-hidden">
-        <div className="border-b border-line px-7 py-5">
+        <div className="border-b border-line px-5 py-5 sm:px-7">
           <h1 className="text-[20px] font-bold text-ink">{AGREEMENT_TITLE}</h1>
-          <p className="mt-1 text-[13px] text-ink-faint">
+          <p className="mt-1 text-[13px] text-ink-tertiary">
             Version {AGREEMENT_VERSION} · Please review and accept to activate{' '}
             {group!.name}&apos;s portal.
           </p>
         </div>
 
-        <div ref={termsRef} className="max-h-[46vh] overflow-y-auto px-7 py-5">
+        <div ref={termsRef} className="max-h-[46vh] overflow-y-auto px-5 py-5 sm:px-7">
           <p className="text-[13.5px] leading-relaxed text-ink-muted">
             {AGREEMENT_PREAMBLE}
           </p>
@@ -129,8 +131,8 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
           ))}
         </div>
 
-        <div className="border-t border-line bg-surface-2 px-7 py-5">
-          <div className="grid grid-cols-2 gap-3">
+        <div className="border-t border-line bg-surface-2 px-5 py-5 sm:px-7">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
                 Your full name
@@ -168,7 +170,7 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
             </span>
           </label>
 
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <Button
               variant="primary"
               onClick={accept}
@@ -179,7 +181,7 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
               {submitting ? 'Recording…' : 'Accept and continue'}
             </Button>
             {!scrolledToEnd && (
-              <span className="text-[12.5px] text-ink-faint">
+              <span className="text-[12.5px] text-ink-tertiary">
                 Scroll through the agreement to enable Accept
               </span>
             )}

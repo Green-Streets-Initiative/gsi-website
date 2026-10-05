@@ -227,10 +227,12 @@ serve(async (req: Request) => {
         group_id: group.id,
         amount_cents: String(amountCents),
       },
-      // Come back to the portal with a flag so the UI can show a
-      // confirmation banner. Webhook has already credited by then.
-      success_url: `${resolvedOrigin}/shift/employers/portal?topup=success`,
-      cancel_url: `${resolvedOrigin}/shift/employers/portal?topup=canceled`,
+      // Come back to the Billing page with a flag so it can show a
+      // confirmation banner and refresh the balance (the portal root only
+      // redirected to the dashboard and dropped the flag). Webhook has
+      // already credited by then.
+      success_url: `${resolvedOrigin}/shift/employers/portal/billing?topup=success`,
+      cancel_url: `${resolvedOrigin}/shift/employers/portal/billing?topup=canceled`,
       expires_at: Math.floor(Date.now() / 1000) + 60 * 60 * 2,
     });
 

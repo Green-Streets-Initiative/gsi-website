@@ -36,7 +36,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id))
       }, 200)
-    }, 3000)
+    }, opts?.type === 'error' ? 5000 : 3000)
   }, [])
 
   return (
@@ -61,7 +61,10 @@ function ToastPill({ item }: { item: ToastItem }) {
 
   return (
     <div
-      className="rounded-full bg-ink px-5 py-2.5 text-[13.5px] font-medium text-white shadow-lg transition-all duration-200"
+      role={item.type === 'error' ? 'alert' : 'status'}
+      className={`max-w-[calc(100vw-32px)] rounded-full px-5 py-2.5 text-[13.5px] font-medium text-white shadow-lg transition-all duration-200 ${
+        item.type === 'error' ? 'bg-ep-danger' : item.type === 'success' ? 'bg-accent' : 'bg-ink'
+      }`}
       style={{
         opacity: mounted && !item.exiting ? 1 : 0,
         transform: mounted && !item.exiting ? 'translateY(0)' : 'translateY(8px)',

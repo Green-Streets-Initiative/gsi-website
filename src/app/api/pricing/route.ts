@@ -52,5 +52,6 @@ function getDefaults(): Record<string, number> {
     mbta_bus_monthly: PRICES.mbta.busPassMonthly,
     parking_daily_boston: PRICES.driving.parkingDailyBoston,
     maint_per_mile: PRICES.driving.maintPerMile,
+    bluebikes_annual: PRICES.bluebikes.annual,
   }
 }

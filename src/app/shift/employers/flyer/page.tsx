@@ -1,7 +1,25 @@
 import type { Metadata } from 'next'
 import QRCode from 'qrcode'
+import {
+  Bicycle,
+  Bus,
+  PersonSimpleWalk,
+  Scooter,
+  Train,
+  UsersThree,
+} from '@phosphor-icons/react/dist/ssr'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import PrintButton from '@/app/events/shift-your-summer/flyer/PrintButton'
+import {
+  contactSentence,
+  countingSentences,
+  effectiveRules,
+  whatToDo,
+  eligibilitySentence,
+  prizeSentence,
+  type ChallengeRulesInput,
+  type CountingRules,
+} from '@/lib/challenge-rules'
 
 export const metadata: Metadata = {
   title: 'Shift for Employers — Printable flyer',
@@ -24,6 +42,9 @@ type ChallengeRow = {
   name: string
   starts_at: string
   ends_at: string
+  counting_rules: CountingRules | null
+  contact_name: string | null
+  contact_email: string | null
 }
 
 type PrizeRow = {
@@ -33,6 +54,12 @@ type PrizeRow = {
   prize_description: string | null
   winner_count: number
   display_order: number
+  award_mode: string
+  min_threshold: number | null
+  funded_from_pool: boolean
+  requires_work_email: boolean
+  published_at: string | null
+  cancelled_at: string | null
 }
 
 function sanitizeSlug(value: string | string[] | undefined): string | null {
@@ -54,7 +81,33 @@ function formatDateRange(start: string, end: string) {
     ...opts,
     year: 'numeric',
   })
-  return `${startStr} – ${endStr}`
+  return `${startStr} to ${endStr}`
+}
+
+/** Read once per request (the page is force-dynamic), outside the render body. */
+function requestTime(): number {
+  return Date.now()
+}
+
+/**
+ * The mode pictograms on the sign, in the portal's icon set (bold weight;
+ * never a filled bicycle). A challenge shows only the modes that count for
+ * it; the plain join flyer shows the ones its lede names. Ferry rides under
+ * the transit pair rather than adding a seventh icon.
+ */
+const SIGN_MODES: { key: string; matches: string[]; Icon: React.ElementType; label: string }[] = [
+  { key: 'walk', matches: ['walk'], Icon: PersonSimpleWalk, label: 'Walk' },
+  { key: 'bike', matches: ['bike'], Icon: Bicycle, label: 'Bike' },
+  { key: 'escooter', matches: ['escooter'], Icon: Scooter, label: 'E-scooter' },
+  { key: 'bus', matches: ['transit_bus'], Icon: Bus, label: 'Bus' },
+  { key: 'train', matches: ['transit_train', 'transit_commuter_rail'], Icon: Train, label: 'Train' },
+  { key: 'carpool', matches: ['carpool'], Icon: UsersThree, label: 'Carpool' },
+]
+
+function signModes(rules: CountingRules | null | undefined, isChallenge: boolean) {
+  if (!isChallenge) return SIGN_MODES.filter((m) => m.key !== 'escooter')
+  const modes = effectiveRules(rules).modes
+  return SIGN_MODES.filter((m) => m.matches.some((x) => modes.includes(x)))
 }
 
 function formatDollars(cents: number): string {
@@ -126,13 +179,16 @@ export default async function EmployerFlyerPage({
 
   const { data: challengesRaw } = await supabase
     .from('competitions')
-    .select('id, name, starts_at, ends_at')
+    .select('id, name, starts_at, ends_at, counting_rules, contact_name, contact_email')
     .eq('group_id', group.id)
     .order('starts_at', { ascending: false })
 
   const allChallenges = (challengesRaw ?? []) as ChallengeRow[]
-  const nowMs = Date.now()
+  const nowMs = requestTime()
+  // The portal's "Printable flyer" for a specific challenge passes ?challenge=.
+  const requested = Array.isArray(params.challenge) ? params.challenge[0] : params.challenge
   const challenge: ChallengeRow | null =
+    allChallenges.find((c) => c.id === requested) ??
     allChallenges.find((c) => {
       const s = new Date(c.starts_at).getTime()
       const e = new Date(c.ends_at).getTime()
@@ -146,14 +202,45 @@ export default async function EmployerFlyerPage({
     const { data: prizeData } = await supabase
       .from('employer_challenge_prizes')
       .select(
-        'id, name, amount_cents, prize_description, winner_count, display_order',
+        'id, name, amount_cents, prize_description, winner_count, display_order, award_mode, min_threshold, funded_from_pool, requires_work_email, published_at, cancelled_at',
       )
       .eq('competition_id', challenge.id)
       .order('display_order')
-    prizes = (prizeData ?? []) as PrizeRow[]
+    // Draft or cancelled guaranteed rewards aren't promised to anyone yet.
+    prizes = ((prizeData ?? []) as PrizeRow[]).filter(
+      (p) => p.award_mode !== 'guaranteed' || (p.published_at && !p.cancelled_at),
+    )
   }
 
-  const totalPrizeValue = prizes.reduce(
+  const guaranteed = prizes.filter((p) => p.award_mode === 'guaranteed')
+  let domains: string[] = []
+  if (guaranteed.some((p) => p.requires_work_email)) {
+    const { data: d } = await supabase
+      .from('employer_email_domains')
+      .select('domain')
+      .eq('group_id', group.id)
+      .order('domain')
+    domains = (d ?? []).map((x: { domain: string }) => x.domain)
+  }
+  const commuteOnly = challenge?.counting_rules?.commute_only === true
+  const rulesInput = (p: PrizeRow): ChallengeRulesInput => ({
+    rules: challenge?.counting_rules ?? null,
+    startsAt: challenge!.starts_at,
+    endsAt: challenge!.ends_at,
+    goal: Number(p.min_threshold ?? 0),
+    spots: p.winner_count,
+    funded: p.funded_from_pool,
+    amountCents: p.amount_cents,
+    description: p.prize_description,
+    requiresWorkEmail: p.requires_work_email,
+    domains,
+    employer: group.name,
+    contactName: challenge?.contact_name,
+    contactEmail: challenge?.contact_email,
+  })
+  const otherPrizes = prizes.filter((p) => p.award_mode !== 'guaranteed')
+
+  const totalPrizeValue = otherPrizes.reduce(
     (sum, p) => sum + (p.amount_cents ?? 0) * Math.max(p.winner_count, 1),
     0,
   )
@@ -168,228 +255,167 @@ export default async function EmployerFlyerPage({
     ? formatDateRange(challenge.starts_at, challenge.ends_at)
     : null
 
+  const isChallenge = !!challenge
+  const startsLater = challenge ? new Date(challenge.starts_at).getTime() > nowMs : false
+  const lede = isChallenge
+    ? `A friendly commute challenge for everyone at ${group.name}. It runs on Shift, a free app from Green Streets Initiative, a Boston-area nonprofit. Shift records your trips on its own.`
+    : 'Shift is a free app from Green Streets Initiative, a Boston-area nonprofit. It records your walks, bike rides, transit trips and carpools on its own, and you can win rewards along the way.'
+
+  // The street-sign look (Keith 2026-09-28): Overpass ExtraBold headline in
+  // white on a borderless forest panel, everything else in Trebuchet, cream
+  // page, navy text. No monospace, no spaced-caps eyebrows, no date badges.
   return (
-    <main className="flyer-root min-h-screen bg-white text-[#191A2E]">
+    <main className="flyer-root street min-h-screen bg-cream text-navy" style={{ fontFamily: 'var(--font-gsi)' }}>
       <style>{`
-        @page { size: letter; margin: 0.25in 0.5in; }
+        /* Zero page margin so browsers don't print their own header and footer
+           (page title, URL, page count) on the flyer; the margin lives on the
+           article instead. One Letter page: 8.5 x 11in less 0.3in/0.45in. */
+        @page { size: letter; margin: 0; }
         @media print {
           .flyer-no-print { display: none !important; }
-          .flyer-root { background: white !important; min-height: 0 !important; }
+          .flyer-root { min-height: 0 !important; }
           body > :not(.flyer-root) { display: none !important; }
           [data-nextjs-toast], nextjs-portal { display: none !important; }
-          .flyer-article { padding: 0 !important; }
+          .flyer-article { padding: 0.3in 0.45in !important; max-width: none !important; }
         }
         .flyer-root { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       `}</style>
 
       {/* On-screen print button */}
-      <div className="flyer-no-print bg-[#191A2E] px-8 py-4 text-white">
-        <div className="mx-auto flex max-w-[8.5in] items-center justify-between">
+      <div className="flyer-no-print bg-navy px-8 py-4 text-white">
+        <div className="mx-auto flex max-w-[8.5in] items-center justify-between gap-4">
           <div>
             <p className="text-sm font-bold">Printable flyer</p>
-            <p className="text-xs text-white/85">
-              Use Cmd/Ctrl-P or the button to print or save as PDF.
-            </p>
+            <p className="text-xs text-white/85">Use Cmd/Ctrl-P or the button to print or save as PDF.</p>
           </div>
           <PrintButton />
         </div>
       </div>
 
-      <article className="flyer-article mx-auto max-w-[8.5in] px-10 py-2">
-        {/* Header */}
-        <header className="mb-2 border-b-2 border-[#191A2E] pb-1.5">
-          <div className="mb-2 inline-flex items-center gap-4">
-            <span className="flex items-center gap-1.5">
-              <span
-                className="text-xl font-extrabold tracking-tight"
-                style={{
-                  fontFamily:
-                    "'Bricolage Grotesque', var(--font-display), sans-serif",
-                }}
-              >
-                Shift
-              </span>
-              <svg
-                viewBox="0 0 40 26"
-                width="24"
-                height="16"
-                aria-hidden="true"
-                className="shrink-0"
-              >
-                <path
-                  d="M0,0 L16,13 L0,26 L0,19 L10,13 L0,7Z"
-                  fill="#BAF14D"
-                />
-                <path
-                  d="M20,0 L36,13 L20,26 L20,19 L30,13 L20,7Z"
-                  fill="#2966E5"
-                />
-              </svg>
-            </span>
-            <span className="text-[#191A2E]/30">&middot;</span>
-            <span
-              className="text-base tracking-wide"
-              style={{ fontFamily: "'Trebuchet MS', sans-serif" }}
-            >
-              <span className="font-bold">Green Streets</span>{' '}
-              <span className="font-normal">Initiative</span>
-            </span>
-          </div>
-
-          <div className="flex items-start gap-4">
-            <div className="flex-1">
-              <h1
-                className="mb-1 text-[32px] font-extrabold leading-[1.05] tracking-tight"
-                style={{
-                  fontFamily:
-                    "'Bricolage Grotesque', var(--font-display), sans-serif",
-                }}
-              >
-                {challenge ? (
-                  <>
-                    {challenge.name}
-                    <br />
-                    <span className="text-[22px]">× {group.name}</span>
-                  </>
-                ) : (
-                  <>
-                    Join {group.name}
-                    <br />
-                    <span className="text-[22px]">on Shift</span>
-                  </>
-                )}
-              </h1>
-              {dateRange && (
-                <div className="mb-1 flex items-center gap-3">
-                  <span className="inline-flex items-center rounded-full bg-[#BAF14D] px-3 py-1 text-sm font-bold text-[#191A2E]">
-                    {new Date(challenge!.starts_at).getTime() > nowMs
-                      ? `Starts ${new Date(challenge!.starts_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/New_York' })}`
-                      : 'Active now'}
-                  </span>
-                  <span className="text-base font-semibold text-[#191A2E]/75">
-                    {dateRange}
-                  </span>
-                </div>
-              )}
-              <p className="text-sm text-[#191A2E]/80">
-                {challenge
-                  ? 'Track your walks, bike rides, and transit trips. Every active trip counts.'
-                  : "Track your active commutes — walk, bike, or ride transit — and help your team go green."}
-              </p>
+      <article className="flyer-article mx-auto max-w-[8.5in] px-8 py-5">
+        {/* Wordmark row: GSI left, the employer's logo right */}
+        <header className="mb-3 flex items-center justify-between gap-4">
+          <p className="text-[17px] leading-none">
+            <span className="font-bold">Green Streets</span> Initiative
+          </p>
+          {group.logo_url && (
+            <div className="flex h-[52px] items-center rounded-xl bg-white px-3.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={group.logo_url} alt={group.name} className="h-[34px] w-auto max-w-[170px] object-contain" />
             </div>
-            {group.logo_url && (
-              <div className="flex h-[56px] shrink-0 items-center rounded-xl bg-white px-3 ring-1 ring-[#191A2E]/10">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={group.logo_url}
-                  alt={group.name}
-                  className="h-[38px] w-auto max-w-[160px] object-contain"
-                />
-              </div>
-            )}
-          </div>
+          )}
         </header>
 
-        {/* Hero row: pitch + QR */}
-        <section className="mb-3 grid grid-cols-[1fr_auto] gap-6">
-          <div>
-            <h2
-              className="mb-2 text-[22px] font-extrabold leading-tight"
-              style={{
-                fontFamily:
-                  "'Bricolage Grotesque', var(--font-display), sans-serif",
-              }}
-            >
-              Walk, bike, ride — and get rewarded for it.
-            </h2>
-            <p className="mb-2 text-sm leading-[1.5]">
-              The Shift app automatically detects your active trips. Build
-              streaks, climb the leaderboard, and earn rewards from your
-              employer.
+        {/* The sign */}
+        <section className="rounded-[20px] bg-forest px-8 pb-7 pt-6 text-white">
+          {/* Mode pictograms first, left-aligned, like the symbol row on a
+              transit sign (Keith 2026-10-01: bigger, on their own line) */}
+          <ul className="mb-3.5 flex items-center gap-4" aria-label="Ways to get around that count">
+            {signModes(challenge?.counting_rules, isChallenge).map(({ key, Icon, label }) => (
+              <li key={key} title={label}>
+                <Icon size={36} weight="bold" className="text-white" aria-hidden />
+                <span className="sr-only">{label}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[17px] leading-snug">
+            {isChallenge && dateRange ? (
+              <>
+                <span className="font-bold">{dateRange}</span>
+                <span>{startsLater ? 'Starts soon' : 'Happening now'}</span>
+              </>
+            ) : (
+              <>
+                <span className="font-bold">{group.name}</span>
+                <span>on Shift</span>
+              </>
+            )}
+          </p>
+          <h1 className="mt-3 font-headline text-[44px] font-extrabold leading-[1.02] tracking-[-0.01em] text-white">
+            {isChallenge ? challenge!.name : <>Join {group.name} on Shift</>}
+          </h1>
+          {isChallenge && (
+            <p className="mt-3 font-headline text-[22px] font-semibold leading-[1.2] text-white">
+              {group.name}
             </p>
-            <ol className="space-y-1 text-sm">
-              <li>
-                <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#BAF14D] text-sm font-extrabold">
-                  1
-                </span>
-                Download Shift on iOS or Android, or scan the QR code.
-              </li>
-              <li>
-                <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#BAF14D] text-sm font-extrabold">
-                  2
-                </span>
-                Enter code{' '}
-                <strong className="font-mono tracking-wider">
-                  {group.invite_code}
-                </strong>{' '}
-                to join {group.name}&rsquo;s team.
-              </li>
-              <li>
-                <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#BAF14D] text-sm font-extrabold">
-                  3
-                </span>
-                Walk, bike, or ride transit. Every active trip counts!
-              </li>
+          )}
+          <p className="mt-3 max-w-[560px] text-[16px] leading-[1.5] text-white">{lede}</p>
+        </section>
+
+        {/* How to take part + QR */}
+        <section className="mt-4 grid grid-cols-[1fr_170px] gap-8">
+          <div>
+            <h2 className="font-headline text-[22px] font-extrabold leading-tight">How to take part</h2>
+            <ol className="mt-3 grid gap-2.5 text-[15px] leading-[1.45]">
+              {[
+                <>Download Shift for iPhone or Android, or scan the code.</>,
+                <>
+                  Enter code <span className="font-headline text-[17px] font-extrabold tracking-[0.06em]">{group.invite_code}</span> to join {group.name}.
+                </>,
+                <>{isChallenge ? `${whatToDo(challenge!.counting_rules)} Shift does the rest.` : 'Walk, bike, carpool or take transit. Shift does the rest.'}</>,
+              ].map((step, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-forest font-headline text-[13px] font-extrabold text-white">
+                    {i + 1}
+                  </span>
+                  <span>{step}</span>
+                </li>
+              ))}
             </ol>
           </div>
-
-          <div className="flex flex-col items-center justify-center text-center">
-            <div
-              className="h-[120px] w-[120px]"
-              dangerouslySetInnerHTML={{ __html: qrSvg }}
-            />
-            <p className="mt-2 text-xs font-bold uppercase tracking-widest">
-              Scan to join {group.name}
-            </p>
-            <p className="mt-1 font-mono text-base font-extrabold tracking-[0.15em] text-[#191A2E]">
-              {group.invite_code}
-            </p>
+          <div className="flex flex-col items-center text-center">
+            <div className="rounded-2xl bg-white p-3">
+              <div className="h-[128px] w-[128px]" dangerouslySetInnerHTML={{ __html: qrSvg }} />
+            </div>
+            <p className="mt-2 text-[13px] leading-snug text-ink-soft">Scan to join</p>
+            <p className="font-headline text-[22px] font-extrabold tracking-[0.06em] text-forest">{group.invite_code}</p>
           </div>
         </section>
 
-        {/* Prizes */}
-        {prizes.length > 0 && (
-          <section className="mb-4">
-            <div className="mb-2 flex items-baseline justify-between">
-              <h2
-                className="text-xl font-extrabold uppercase tracking-wider"
-                style={{
-                  fontFamily:
-                    "'Bricolage Grotesque', var(--font-display), sans-serif",
-                }}
-              >
-                Prizes
-              </h2>
+        {/* How to win: the rules' own words */}
+        {isChallenge && guaranteed.length > 0 && (
+          <section className="mt-4 border-t-2 border-navy/15 pt-4">
+            <h2 className="font-headline text-[22px] font-extrabold leading-tight">How to win</h2>
+            <div className="mt-2.5 grid gap-1.5">
+              {guaranteed.map((p) => (
+                <p key={p.id} className="text-[16px] font-bold leading-snug">
+                  {prizeSentence(rulesInput(p))}
+                </p>
+              ))}
+            </div>
+            <ul className="mt-2.5 grid list-disc gap-1 pl-5 text-[13.5px] leading-[1.45] text-ink-soft">
+              {(() => {
+                const lines = countingSentences(rulesInput(guaranteed[0]))
+                const carpool = lines.find((l) => l.startsWith('For a carpool to count'))
+                const top = lines.slice(0, commuteOnly ? 5 : 4)
+                return [...top, ...(carpool ? [carpool] : [])]
+              })().map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+              {eligibilitySentence(rulesInput(guaranteed[0])) && <li>{eligibilitySentence(rulesInput(guaranteed[0]))}</li>}
+              {contactSentence(rulesInput(guaranteed[0])) && <li>{contactSentence(rulesInput(guaranteed[0]))}</li>}
+            </ul>
+          </section>
+        )}
+
+        {/* Drawings and leaderboard prizes */}
+        {otherPrizes.length > 0 && (
+          <section className="mt-4 border-t-2 border-navy/15 pt-4">
+            <div className="flex items-baseline justify-between gap-4">
+              <h2 className="font-headline text-[22px] font-extrabold leading-tight">Prizes</h2>
               {totalPrizeValue > 0 && (
-                <span className="text-sm font-bold text-[#191A2E]/75">
-                  {formatDollars(totalPrizeValue)}+ in prizes
-                </span>
+                <span className="font-headline text-[20px] font-extrabold text-forest">{formatDollars(totalPrizeValue)}+ in prizes</span>
               )}
             </div>
-            <ul className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px] leading-snug">
-              {prizes.slice(0, 8).map((p) => (
-                <li
-                  key={p.id}
-                  className="border-l-2 border-[#BAF14D] pl-3"
-                >
-                  <p className="font-semibold">
+            <ul className="mt-2.5 grid grid-cols-2 gap-x-8 gap-y-2 text-[14px] leading-snug">
+              {otherPrizes.slice(0, 8).map((p) => (
+                <li key={p.id} className="border-b-2 border-navy/10 pb-2">
+                  <p className="font-bold">
                     {p.name}
-                    {p.winner_count > 1 && (
-                      <span className="ml-1.5 text-sm font-normal text-[#191A2E]/60">
-                        &middot; {p.winner_count} winners
-                      </span>
-                    )}
+                    {p.winner_count > 1 && <span className="ml-1.5 font-normal text-ink-soft">· {p.winner_count} winners</span>}
                   </p>
-                  {p.amount_cents != null && p.amount_cents > 0 && (
-                    <p className="text-sm text-[#191A2E]/75">
-                      {formatDollars(p.amount_cents)} each
-                    </p>
-                  )}
-                  {p.prize_description && (
-                    <p className="text-sm text-[#191A2E]/75">
-                      {p.prize_description}
-                    </p>
-                  )}
+                  {p.amount_cents != null && p.amount_cents > 0 && <p className="text-forest">{formatDollars(p.amount_cents)} each</p>}
+                  {p.prize_description && <p className="text-ink-soft">{p.prize_description}</p>}
                 </li>
               ))}
             </ul>
@@ -397,17 +423,11 @@ export default async function EmployerFlyerPage({
         )}
 
         {/* Footer */}
-        <footer className="mt-3 border-t border-[#191A2E]/15 pt-1 text-sm text-[#191A2E]/75">
+        <footer className="mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t-2 border-navy pt-3 text-[14px]">
           <p>
-            Green Streets Initiative, a 501(c)(3) &middot;{' '}
-            <strong>gogreenstreets.org</strong>
+            <span className="font-bold">Green Streets</span> Initiative · a Massachusetts nonprofit
           </p>
-          <p className="mt-1">
-            Join {group.name}&rsquo;s team &middot;{' '}
-            <strong>
-              shift.gogreenstreets.org/join/{group.invite_code}
-            </strong>
-          </p>
+          <p className="text-ink-soft">shift.gogreenstreets.org/join/{group.invite_code}</p>
         </footer>
       </article>
     </main>

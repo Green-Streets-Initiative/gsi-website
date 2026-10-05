@@ -13,6 +13,8 @@ interface RecommendationCardProps {
   loading?: boolean
   routeTimeMinutes?: number | null
   routeTimes?: Record<string, number> // Google Maps times keyed by mode
+  /** Extra properties on `advisor_directions_clicked` (variant, employer slug). */
+  trackProps?: Record<string, unknown>
 }
 
 export default function RecommendationCard({
@@ -22,6 +24,7 @@ export default function RecommendationCard({
   loading,
   routeTimeMinutes,
   routeTimes,
+  trackProps,
 }: RecommendationCardProps) {
   // Override first reason bullet with Google Maps time if available
   const displayReasons = [...primary.reasons]
@@ -90,7 +93,7 @@ export default function RecommendationCard({
           href={primary.google_maps_url}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => posthog.capture('advisor_directions_clicked', { mode: primary.modes[0] ?? 'drive' })}
+          onClick={() => posthog.capture('advisor_directions_clicked', { ...trackProps, mode: primary.modes[0] ?? 'drive', source: 'recommendation' })}
           className="inline-flex items-center gap-2 rounded-full bg-[#2D6A4F] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1F4D3A]"
         >
           Get directions in Google Maps

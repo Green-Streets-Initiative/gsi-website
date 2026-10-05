@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { nudgeUnsubscribeSig } from '@/lib/employer-nudge'
+import { prizeSentence } from '@/lib/challenge-rules'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
@@ -18,6 +19,7 @@ interface ActiveChallenge {
   prize_description: string | null
   prize_headline: string | null
   prize_total: number
+  guaranteed_line?: string
 }
 
 interface NudgeData {
@@ -65,13 +67,14 @@ export async function POST(request: Request) {
       .maybeSingle(),
   ])
 
-  const isGroupAdmin = adminRes.data?.role === 'admin'
+  // Admins and managers (managers invite and encourage employees, 01081).
+  // Viewers are read-only by definition, and this endpoint emails an
+  // individual employee on the company's behalf.
+  const canNudge = adminRes.data?.role === 'admin' || adminRes.data?.role === 'manager'
   const isGsiAdmin = !!gsiRes.data
 
-  // Admins only — viewers are read-only by definition, and this endpoint
-  // emails an individual employee on the company's behalf.
-  if (!isGroupAdmin && !isGsiAdmin) {
-    return Response.json({ error: 'Only workspace admins can send nudges' }, { status: 403 })
+  if (!canNudge && !isGsiAdmin) {
+    return Response.json({ error: 'Only admins and managers can send nudges' }, { status: 403 })
   }
 
   const now = new Date().toISOString()
@@ -165,6 +168,39 @@ export async function POST(request: Request) {
         return { ...c, prize_headline: info.headline, prize_total: info.total }
       })
     }
+
+    // The group's own guaranteed rewards: say exactly what it takes to win,
+    // in the same words the app and the rules page use.
+    const { data: guaranteed } = await sb
+      .from('employer_challenge_prizes')
+      .select('competition_id, min_threshold, winner_count, funded_from_pool, amount_cents, prize_description, requires_work_email')
+      .in('competition_id', challengeIds)
+      .eq('award_mode', 'guaranteed')
+      .not('published_at', 'is', null)
+      .is('closed_at', null)
+      .order('display_order')
+    if (guaranteed && guaranteed.length > 0) {
+      activeChallenges = activeChallenges.map((c) => {
+        const g = guaranteed.find((x) => x.competition_id === c.id)
+        if (!g) return c
+        return {
+          ...c,
+          guaranteed_line: prizeSentence({
+            rules: null,
+            startsAt: c.ends_at,
+            endsAt: c.ends_at,
+            goal: Number(g.min_threshold),
+            spots: g.winner_count,
+            funded: g.funded_from_pool,
+            amountCents: g.amount_cents,
+            description: g.prize_description,
+            requiresWorkEmail: g.requires_work_email,
+            domains: [],
+            employer: group.name,
+          }),
+        }
+      })
+    }
   }
 
   const teamSize = dashboard?.member_count ?? 0
@@ -185,15 +221,20 @@ export async function POST(request: Request) {
   const html = buildNudgeHtml(nudgeData)
 
   try {
-    await resend.emails.send({
+    // Resend reports a refused send in `error`, not by throwing.
+    const { error: sendError } = await resend.emails.send({
       from: 'Shift <noreply@gogreenstreets.org>',
       to: userRes.data.email,
-      subject: `Your team at ${group.name} is counting on you!`,
+      subject: `A quick hello from your team at ${group.name}`,
       html,
       headers: {
         'List-Unsubscribe': `<${unsubscribeUrl}>`,
       },
     })
+    if (sendError) {
+      console.error(`Nudge email refused by Resend for group ${groupId}: ${sendError.name}: ${sendError.message}`)
+      return Response.json({ error: 'Failed to send email' }, { status: 500 })
+    }
   } catch (err) {
     console.error(`Nudge email failed for ${userRes.data.email}:`, err)
     return Response.json({ error: 'Failed to send email' }, { status: 500 })
@@ -233,7 +274,9 @@ function buildNudgeHtml(opts: NudgeData) {
     const items = activeChallenges.map((c) => {
       const ends = formatDateShort(c.ends_at)
       let prizeText = ''
-      if (c.prize_headline && c.prize_total > 0) {
+      if (c.guaranteed_line) {
+        prizeText = `<br/><span style="color:#2D6A4F;font-weight:600;">${escapeHtml(c.guaranteed_line)}</span>`
+      } else if (c.prize_headline && c.prize_total > 0) {
         const totalStr = c.prize_total >= 100
           ? `$${Math.round(c.prize_total / 100).toLocaleString('en-US')}`
           : ''
@@ -289,12 +332,12 @@ function buildNudgeHtml(opts: NudgeData) {
     <td style="padding:28px;">
       <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#1a1a2e;">${greeting}</p>
       <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#1a1a2e;">
-        Your team at <strong>${escapeHtml(groupName)}</strong> is logging commute trips with Shift, and we noticed you haven't logged one in a while.
+        Just checking in. Your team at <strong>${escapeHtml(groupName)}</strong> is logging trips with Shift, and every walk, bike ride, bus or train trip you take counts toward the team's numbers.
       </p>
       ${challengeSection}
       ${leaderboardSection}
       <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#1a1a2e;">
-        Every trip counts &mdash; whether you walked, biked, took the bus, or carpooled. Shift automatically tracks your trips, so all you have to do is choose how you get around.
+        Walks, bike rides, and bus and train trips all count. Shift tracks your trips automatically, so all you have to do is choose how you get around.
       </p>
       <p style="margin:0 0 24px;font-size:15px;line-height:1.55;color:#1a1a2e;">
         Your participation helps ${escapeHtml(groupName)} track its impact and unlock rewards for the whole team.

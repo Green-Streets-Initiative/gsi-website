@@ -32,7 +32,9 @@ const CARDS: PricingCard[] = [
       'Team name + logo on public leaderboard',
       'Aggregate dashboard (trips, miles, CO₂, mode mix, Shift Rate)',
       'Downloadable impact report',
-      'Commute Advisor (standard — no company customization)',
+      'Weekly email report on your team',
+      'Branded Commute Advisor page for your office',
+      'Branded Nearby page: live transit, Bluebikes and bike paths around your office',
       'Optional public leaderboard for flagship events',
     ],
     accent: '#2D6A4F',
@@ -44,10 +46,8 @@ const CARDS: PricingCard[] = [
     price: '$1,000',
     tagline: 'Everything you need to launch a workplace challenge.',
     features: [
-      'Employee invite code + private team leaderboard',
-      'Branded Commute Advisor page for your workplace',
+      'Everything in Starter',
       'Your company logo in the Shift app',
-      'Aggregate impact dashboard',
       'Downloadable impact reports for any date range',
       'Opt-in to regional public leaderboards',
     ],
@@ -65,7 +65,6 @@ const CARDS: PricingCard[] = [
       'Create your own branded team challenges',
       'Join flagship events like Shift Your Summer',
       'Company-funded rewards pool — gift cards for challenge winners',
-      'Monthly email digest of team participation',
     ],
     accent: '#1B4332',
     accentText: '#FFFFFF',
@@ -111,7 +110,7 @@ export default function EmployerPricing() {
   }
 
   return (
-    <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
+    <section id="plans" className="scroll-mt-20 bg-cream px-6 py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-[1240px]">
         <div className="mb-10 text-center">
           <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">

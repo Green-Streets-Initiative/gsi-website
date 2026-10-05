@@ -1,45 +1,86 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Trophy,
   Plus,
   Calendar,
   Gift,
   Pencil,
-  X,
-  Check,
   Send,
   ChevronDown,
   ChevronUp,
-  Search,
   Ban,
-  Info,
   Trash2,
+  ExternalLink,
+  Megaphone,
+  Clock,
+  FileEdit,
 } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
 import { usePortal } from '../_lib/portal-context'
-import { Card, CardHead } from '@/components/employer/Card'
+import { Card } from '@/components/employer/Card'
 import Badge from '@/components/employer/Badge'
 import Button from '@/components/employer/Button'
 import { supabase } from '@/lib/supabase'
-import {
-  PRIZE_METRIC_LABELS,
-  PRIZE_METRIC_UNITS,
-  EMPTY_PRIZE_FORM,
-  DEFAULT_METRIC_THRESHOLD,
-} from '../_lib/portal-constants'
+import posthog from 'posthog-js'
+import { PRIZE_METRIC_LABELS } from '../_lib/portal-constants'
 import { useToast } from '@/components/employer/Toast'
-import { formatDate } from '../_lib/portal-utils'
+import { useConfirm } from '@/components/employer/ConfirmDialog'
+import { formatDate, etDateInput, etStartOfDayIso, etEndOfDayIso } from '../_lib/portal-utils'
+import { dollars, type CountingRules } from '@/lib/challenge-rules'
+import GuaranteedChallengeSection, { prizeActionText, friendlyDbError, linkify, GENERIC_ERROR } from './GuaranteedChallengeSection'
+import ChallengeWizard, { draftStorageKey, readStoredDraft, prizeSummary as formPrizeSummary, type StoredDraft, type WizardForm } from './ChallengeWizard'
+import TellYourTeam, { type TeamPrize } from './TellYourTeam'
+import { useEmployerLocations } from '../_lib/use-employer-locations'
+import { useChallengeTemplates, type SeasonalOption } from '../_lib/use-challenge-templates'
+import YearPlanCard from './YearPlanCard'
+import AwardsRecap from './AwardsRecap'
+import TeamHearsPanel from './TeamHearsPanel'
+import { useYearPlan, runRange, templatePrizeLine } from '../_lib/use-year-plan'
+import { rulesPageUrl } from './TellYourTeam'
+import { onThisSite } from '@/lib/employer/office-links'
+import { availableCents, formPrizeCostCents, formsFundingGap, rowsFundingGap, shortSentence } from './funding'
 import type {
   Challenge,
   PrizeFormState,
-  PrizeMetric,
-  AwardMode,
   ChallengePrize,
   PrizeWinner,
-  TremendousProduct,
 } from '../_lib/portal-types'
+
+// Shift 01040: drawing and leaderboard winners get a catalog gift card at the
+// draw (catalog_reward_id), the sweep can draw on its own (auto_draw_*), and
+// two RPCs report card status and forfeit with a refund. Every use below
+// tolerates the columns and RPCs not being there yet.
+type WinnerRow = PrizeWinner & { catalog_reward_id?: string | null }
+type PrizeRow = ChallengePrize & { auto_draw_attempted_at?: string | null; auto_draw_error?: string | null }
+type CardStatus = { winner_id: string; card_status: string; card_expires_at: string | null }
+
+/** PostgREST's "no such function" errors, so a missing RPC falls back. */
+function rpcMissing(message: string | null | undefined): boolean {
+  const m = message ?? ''
+  return /could not find the function|does not exist|PGRST202/i.test(m)
+}
+
+/** One line for a collapsed row: what the reward is, in the words the
+ *  expanded blocks use, so the admin can tell rows apart without opening
+ *  them. "First 25 to reach 10 trips · A company fleece", "Drawing · 3
+ *  winners · $25 gift card each", "Top 5 · $50 gift card each". */
+function prizeSummary(prizes: ChallengePrize[]): string {
+  if (prizes.length === 0) return 'No reward'
+  const p = prizes.find((x) => !x.cancelled_at) ?? prizes[0]
+  const reward = p.funded_from_pool && p.amount_cents ? `${dollars(p.amount_cents)} gift card each` : p.prize_description || 'You hand it out'
+  const n = p.winner_count
+  const head =
+    p.award_mode === 'guaranteed'
+      ? `First ${n} to reach ${p.min_threshold ?? 0} ${p.metric === 'trips' ? 'trips' : (PRIZE_METRIC_LABELS[p.metric] ?? p.metric).toLowerCase()}`
+      : p.award_mode === 'merit'
+        ? `Top ${n}`
+        : `Drawing · ${n} ${n === 1 ? 'winner' : 'winners'}`
+  const more = prizes.length > 1 ? ` · +${prizes.length - 1} more` : ''
+  const state = p.cancelled_at ? ' · cancelled' : ''
+  return `${head} · ${reward}${state}${more}`
+}
 
 function statusOf(c: Challenge): { label: string; tone: 'success' | 'info' | 'neutral' } {
   const now = new Date()
@@ -62,106 +103,140 @@ export default function ChallengesPage() {
     rewardPool,
     tierAtLeast,
     accessActive,
-    isAdmin,
+    canManageChallenges,
     isGsiAdmin,
     refreshPool,
+    admins,
+    sessionEmail,
+    benefitsForm,
+    loading,
   } = usePortal()
-  const canManage = isAdmin || isGsiAdmin
+  const { locations: savedLocations } = useEmployerLocations(group?.id)
+  const challengeTemplates = useChallengeTemplates()
+  const yearPlan = useYearPlan(group?.id)
+  const [launchOption, setLaunchOption] = useState<SeasonalOption | null>(null)
+  const [view, setView] = useState<'all' | 'active' | 'scheduled' | 'drafts' | 'past'>('all')
+  // The unfinished challenge this tab is holding (Keith 2026-10-05 funding
+  // gate): a new challenge the balance can't cover is never created, it
+  // waits here. Nothing is in the database and employees see nothing.
+  const [storedDraft, setStoredDraft] = useState<StoredDraft | null>(null)
+  const counts = {
+    active: challenges.filter((c) => statusOf(c).label === 'Active').length,
+    scheduled: challenges.filter((c) => statusOf(c).label === 'Scheduled').length,
+    past: challenges.filter((c) => statusOf(c).label === 'Ended').length,
+    drafts: yearPlan.drafts.length + (storedDraft ? 1 : 0),
+  }
+  const visibleChallenges =
+    view === 'all'
+      ? challenges
+      : view === 'drafts'
+        ? []
+        : challenges.filter((c) => statusOf(c).label === (view === 'past' ? 'Ended' : view === 'active' ? 'Active' : 'Scheduled'))
+  // Admins, managers and GSI staff run challenges and prizes.
+  const canManage = canManageChallenges
   const toast = useToast()
+  const confirm = useConfirm()
 
   const [builderOpen, setBuilderOpen] = useState(false)
+  const [resumeDraft, setResumeDraft] = useState(false)
+  const [saveProblems, setSaveProblems] = useState<string[]>([])
+  // The tab's draft is read whenever the builder is closed: it is written
+  // while the builder is open, and goes when the challenge is created.
+  useEffect(() => {
+    if (!group || builderOpen) return
+    setStoredDraft(readStoredDraft(group.id))
+  }, [group, builderOpen])
+  const [tellTeamFor, setTellTeamFor] = useState<string | null>(null)
+  // Rows start collapsed (Keith 2026-09-30: "a TON of info that's tough to
+  // parse"). Active challenges, and a lone visible row, open by default;
+  // a click on a row's header flips it. `null` = nobody has touched a row.
+  const [rowOverrides, setRowOverrides] = useState<Record<string, boolean>>({})
+  function rowOpen(c: Challenge): boolean {
+    if (c.id in rowOverrides) return rowOverrides[c.id]
+    return statusOf(c).label === 'Active' || visibleChallenges.length === 1
+  }
+  function toggleRow(c: Challenge) {
+    const next = !rowOpen(c)
+    setRowOverrides((prev) => ({ ...prev, [c.id]: next }))
+    if (!next && tellTeamFor === c.id) setTellTeamFor(null)
+  }
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null)
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<WizardForm>({
     name: '',
     starts_at: '',
     ends_at: '',
     prize_description: '',
     public_leaderboard: false,
+    counting_rules: null as CountingRules | null,
+    contact_name: '',
+    contact_email: '',
   })
+  const [domains, setDomains] = useState<string[]>([])
   const [prizeForms, setPrizeForms] = useState<PrizeFormState[]>([])
   const [saving, setSaving] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [drawingPrizeId, setDrawingPrizeId] = useState<string | null>(null)
-  const [flagshipChallenges, setFlagshipChallenges] = useState<{ id: string; name: string; starts_at: string; ends_at: string }[]>([])
-  const [tremendousProducts, setTremendousProducts] = useState<TremendousProduct[]>([])
-  const [tremendousLoading, setTremendousLoading] = useState(false)
-  const [tremendousError, setTremendousError] = useState('')
+  // True once this opening of the builder has created the challenge row: the
+  // tab's draft is then stale and goes when the builder closes (C2).
+  const createdThisOpen = useRef(false)
 
   useEffect(() => {
-    let cancelled = false
-    async function loadProducts() {
-      setTremendousLoading(true)
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/employer-tremendous-products`,
-          {
-            headers: {
-              Authorization: `Bearer ${session?.access_token}`,
-              apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            },
-          },
-        )
-        if (!res.ok) throw new Error('Failed to load')
-        const data = await res.json()
-        if (!cancelled) setTremendousProducts(data.products ?? [])
-      } catch {
-        if (!cancelled) setTremendousError('Could not load reward options')
-      } finally {
-        if (!cancelled) setTremendousLoading(false)
-      }
-    }
-    loadProducts()
-    return () => { cancelled = true }
-  }, [])
+    if (!group) return
+    supabase
+      .from('employer_email_domains')
+      .select('domain')
+      .eq('group_id', group.id)
+      .order('domain')
+      .then(({ data }) => setDomains((data ?? []).map((d: { domain: string }) => d.domain)))
+  }, [group])
 
-  useEffect(() => {
-    async function loadFlagships() {
-      const now = new Date().toISOString()
-      const { data } = await supabase
-        .from('competitions')
-        .select('id, name, starts_at, ends_at')
-        .eq('is_public', true)
-        .is('group_id', null)
-        .gte('ends_at', now)
-        .order('starts_at', { ascending: true })
-      if (data) {
-        const multiDay = data.filter((c: { starts_at: string; ends_at: string }) => {
-          const s = new Date(c.starts_at)
-          const e = new Date(c.ends_at)
-          return e.getTime() - s.getTime() > 2 * 24 * 60 * 60 * 1000
-        })
-        setFlagshipChallenges(multiDay)
-      }
-    }
-    loadFlagships()
-  }, [])
 
   const prizesFor = (challengeId: string) =>
     challengePrizes.filter((p) => p.competition_id === challengeId)
 
-  const set = (k: string, v: unknown) =>
-    setForm((p) => ({ ...p, [k]: v }))
+  // Same-day challenges (Walk/Ride Day) are fine: the day runs midnight to
+  // 11:59 pm Eastern. Only an end before the start is refused, matching the
+  // wizard's own check.
   const dateError =
-    form.starts_at && form.ends_at && form.ends_at <= form.starts_at
-      ? 'End date must be after the start date'
+    form.starts_at && form.ends_at && form.ends_at < form.starts_at
+      ? 'The end date can\'t be before the start date.'
       : null
   // Access window closed → every write is refused by RLS, so don't present a
   // form that will fail. Reads stay available; the banner below offers renewal.
+  const needsContact = prizeForms.some((p) => p.award_mode === 'guaranteed')
+  const contactError =
+    needsContact && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contact_email.trim())
+      ? 'Add an email your team can write to with questions.'
+      : null
   const canSave = !!(
-    accessActive && form.name.trim() && form.starts_at && form.ends_at && !dateError
+    accessActive && form.name.trim() && form.starts_at && form.ends_at && !dateError && !contactError
   )
 
-  const openEditor = (c?: Challenge) => {
+  const openEditor = (c?: Challenge, source: 'button' | 'empty_state' | 'year_plan' | 'edit' | 'draft_row' = 'button') => {
+    // A year-plan launch sets launchOption right after this call; every
+    // other way in starts clean so a past launch can't leak into Edit or
+    // the next Create.
+    setLaunchOption(null)
+    setSaveProblems([])
+    setResumeDraft(source === 'draft_row')
+    createdThisOpen.current = false
+    posthog.capture('portal_challenge_builder_opened', {
+      mode: c ? 'edit' : 'create',
+      source: c ? 'edit' : source,
+      seasonal_offered: challengeTemplates.calendar.length,
+    })
     if (c) {
       const prizes = prizesFor(c.id)
       setEditingChallenge(c)
       setForm({
         name: c.name,
-        starts_at: c.starts_at.split('T')[0],
-        ends_at: c.ends_at.split('T')[0],
+        starts_at: etDateInput(c.starts_at),
+        ends_at: etDateInput(c.ends_at),
         prize_description: c.prize_description || '',
         public_leaderboard: c.public_leaderboard,
+        counting_rules: c.counting_rules ?? null,
+        contact_name: c.contact_name ?? '',
+        contact_email: c.contact_email ?? '',
       })
       setPrizeForms(
         prizes.map((p) => ({
@@ -182,6 +257,9 @@ export default function ChallengesPage() {
           budget_cap_dollars: p.budget_cap_cents
             ? String(p.budget_cap_cents / 100)
             : '',
+          requires_work_email: p.requires_work_email,
+          published_at: p.published_at,
+          draw_status: p.draw_status,
         })),
       )
       setEditMode(true)
@@ -193,6 +271,11 @@ export default function ChallengesPage() {
         ends_at: '',
         prize_description: '',
         public_leaderboard: false,
+        counting_rules: null,
+        // Whoever sets up the challenge is the natural first contact; the
+        // form lets them name someone else (a Green Team lead, say).
+        contact_name: admins.find((a) => a.email.toLowerCase() === (sessionEmail ?? ''))?.name ?? '',
+        contact_email: sessionEmail ?? '',
       })
       setPrizeForms([])
       setEditMode(false)
@@ -200,69 +283,187 @@ export default function ChallengesPage() {
     setBuilderOpen(true)
   }
 
-  const addPrize = () =>
-    setPrizeForms((prev) => [...prev, { ...EMPTY_PRIZE_FORM }])
-
-  const updatePrize = (idx: number, patch: Partial<PrizeFormState>) =>
-    setPrizeForms((prev) =>
-      prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)),
-    )
-
-  const removePrize = (idx: number) =>
-    setPrizeForms((prev) => prev.filter((_, i) => i !== idx))
+  // A started challenge with a live guaranteed reward keeps its start date
+  // and counting rules (the database refuses changes); the form says so.
+  const rulesLocked =
+    !!editingChallenge &&
+    new Date(editingChallenge.starts_at) <= new Date() &&
+    prizeForms.some((p) => p.award_mode === 'guaranteed' && p.published_at)
+  const refreshPrizesFor = useCallback(
+    async (competitionId: string) => {
+      const { data: refreshed } = await supabase
+        .from('employer_challenge_prizes')
+        .select('*')
+        .eq('competition_id', competitionId)
+        .order('display_order')
+      if (refreshed) {
+        setChallengePrizes((prev: ChallengePrize[]) => [
+          ...prev.filter((p) => p.competition_id !== competitionId),
+          ...(refreshed as ChallengePrize[]),
+        ])
+      }
+    },
+    [setChallengePrizes],
+  )
 
   const save = useCallback(async () => {
     if (!group || !canSave) return
+    const canWritePrizes = tierAtLeast('standard') || isGsiAdmin
+
+    // A pool-funded prize with no amount would be written as amount_cents
+    // NULL, which the database refuses. The builder checks this on the
+    // Rewards step; this keeps every way into save() honest (edits too).
+    const noAmount = prizeForms.find(
+      (p) => p.funded_from_pool && !(p.award_mode === 'guaranteed' && p.published_at) && formPrizeCostCents({ ...p, winner_count: '1' }) < 500,
+    )
+    if (canWritePrizes && noAmount) {
+      const msg = prizeForms.length > 1 ? `${noAmount.name.trim() || 'A reward'}: gift cards start at $5.` : 'Gift cards start at $5.'
+      setSaveProblems([msg])
+      toast(msg, { type: 'error' })
+      return
+    }
+
+    // Saving a funded goal prize takes it live and sets the money aside the
+    // moment it is saved, so ask first, before anything is written (UX-28).
+    // When the balance is short there is nothing to confirm: the database
+    // refuses, and the prize stays saved with its "Go live" button.
+    const goingLive = canWritePrizes ? prizeForms.filter((p) => p.award_mode === 'guaranteed' && !p.published_at) : []
+    const setAside = goingLive.filter((p) => p.funded_from_pool).reduce((sum, p) => sum + formPrizeCostCents(p), 0)
+    const available = availableCents(rewardPool)
+    if (setAside > 0 && setAside <= available) {
+      const names = goingLive.filter((p) => p.funded_from_pool).map((p) => p.name.trim() || 'the goal prize').join(' and ')
+      const ok = await confirm({
+        title: `Set aside ${dollars(setAside)} for ${names}?`,
+        body: `${dollars(setAside)} comes out of your rewards balance now, ${dollars(Math.max(0, available - setAside))} stays available. Money for spots nobody wins comes back when the challenge ends. This can't be undone until the challenge ends.`,
+        confirmLabel: editMode ? 'Save and go live' : 'Create and go live',
+        tone: 'primary',
+      })
+      if (!ok) return
+    }
+
     setSaving(true)
+    setSaveProblems([])
     try {
-      const payload = {
+      // Challenge days are Eastern days: midnight on the start date through
+      // 11:59:59 pm on the end date. On edit, only send a date the admin
+      // actually changed, so older rows (stored at noon UTC) aren't moved and
+      // a started guaranteed challenge isn't refused for a no-op re-save.
+      const startIso = etStartOfDayIso(form.starts_at)
+      const endIso = etEndOfDayIso(form.ends_at)
+      const rulesChanged =
+        JSON.stringify(form.counting_rules ?? null) !==
+        JSON.stringify(editingChallenge?.counting_rules ?? null)
+      const payload: Record<string, unknown> = {
         group_id: group.id,
         name: form.name.trim(),
         metric: 'pct_non_car',
         duration_type: 'fixed' as const,
-        starts_at: form.starts_at + 'T12:00:00',
-        ends_at: form.ends_at + 'T12:00:00',
         is_public: false,
         event_type: 'employer',
         prize_description: form.prize_description.trim() || null,
+        contact_name: form.contact_name.trim() || null,
+        contact_email: form.contact_email.trim().toLowerCase() || null,
+      }
+      if (!editingChallenge || etDateInput(editingChallenge.starts_at) !== form.starts_at) {
+        payload.starts_at = startIso
+      }
+      if (!editingChallenge || etDateInput(editingChallenge.ends_at) !== form.ends_at) {
+        payload.ends_at = endIso
+      }
+      if (!editingChallenge || rulesChanged) payload.counting_rules = form.counting_rules
+      // Started from a GSI seasonal template (Shift 01024): keep the words for
+      // staff and which template and run it came from.
+      if (!editingChallenge && form.template_slug) {
+        payload.template_slug = form.template_slug
+        payload.template_run_id = form.template_run_id ?? null
+        if (form.description) payload.description = form.description
       }
 
       let competitionId: string | null = null
+      let savedChallenge: Challenge | null = null
 
       if (editingChallenge && editMode) {
-        await supabase
+        const { error: updErr } = await supabase
           .from('competitions')
           .update(payload)
           .eq('id', editingChallenge.id)
-        const updated = {
-          ...editingChallenge,
-          name: payload.name,
-          starts_at: payload.starts_at,
-          ends_at: payload.ends_at,
-          prize_description: payload.prize_description,
+        if (updErr) {
+          const msg = friendlyDbError(updErr.message)
+          setSaveProblems([msg])
+          toast(msg, { type: 'error' })
+          return
         }
-        setChallenges(challenges.map((c) => (c.id === updated.id ? updated : c)))
+        savedChallenge = {
+          ...editingChallenge,
+          name: payload.name as string,
+          starts_at: (payload.starts_at as string | undefined) ?? editingChallenge.starts_at,
+          ends_at: (payload.ends_at as string | undefined) ?? editingChallenge.ends_at,
+          prize_description: payload.prize_description as string | null,
+          counting_rules: form.counting_rules,
+          contact_name: payload.contact_name as string | null,
+          contact_email: payload.contact_email as string | null,
+        }
+        setChallenges(challenges.map((c) => (c.id === savedChallenge!.id ? savedChallenge! : c)))
         competitionId = editingChallenge.id
       } else {
         const { data, error: insertErr } = await supabase
           .from('competitions')
           .insert(payload)
-          .select('id, name, metric, starts_at, ends_at, prize_description')
+          .select('id, name, metric, starts_at, ends_at, prize_description, counting_rules, contact_name, contact_email')
           .single()
         if (insertErr || !data) {
-          const msg = insertErr?.message || 'Challenge was not created — no data returned'
           console.error('Challenge insert failed:', insertErr ?? 'data was null')
+          const msg = friendlyDbError(insertErr?.message)
+          setSaveProblems([msg])
           toast(msg, { type: 'error' })
           return
         }
-        setChallenges([{ ...data, public_leaderboard: false }, ...challenges])
+        savedChallenge = { ...data, public_leaderboard: false }
+        setChallenges([savedChallenge, ...challenges])
         competitionId = data.id
+        // The challenge now exists: from here on the builder edits it, so a
+        // retry after a prize problem never creates a second copy. The tab's
+        // draft goes now, not at the end: a prize problem after this point
+        // must not leave a draft that would create the challenge again (C2).
+        setEditingChallenge(savedChallenge)
+        setEditMode(true)
+        createdThisOpen.current = true
+        try {
+          sessionStorage.removeItem(draftStorageKey(group.id))
+        } catch {}
+        setStoredDraft(null)
       }
 
       // Save prizes
-      if (competitionId && (tierAtLeast('standard') || isGsiAdmin) && prizeForms.length > 0) {
+      const publishProblems: string[] = []
+      const nextPrizeForms = [...prizeForms]
+      if (competitionId && canWritePrizes && prizeForms.length > 0) {
         for (let i = 0; i < prizeForms.length; i++) {
           const pf = prizeForms[i]
+          const existing = pf.id ? challengePrizes.find((cp) => cp.id === pf.id) : null
+          const isGuaranteed = pf.award_mode === 'guaranteed'
+
+          // A live guaranteed reward: only its name and order are edited
+          // here. Spots go through set_guaranteed_prize_spots (it adjusts
+          // the money set aside); goal, reward and eligibility are fixed.
+          if (isGuaranteed && existing?.published_at) {
+            const { error: nErr } = await supabase
+              .from('employer_challenge_prizes')
+              .update({ name: pf.name.trim(), display_order: i })
+              .eq('id', pf.id!)
+            if (nErr) publishProblems.push(`${pf.name}: ${friendlyDbError(nErr.message)}`)
+            const spots = parseInt(pf.winner_count, 10) || existing.winner_count
+            if (spots !== existing.winner_count) {
+              const { data: r, error: sErr } = await supabase.rpc('set_guaranteed_prize_spots', {
+                p_prize_id: pf.id,
+                p_spots: spots,
+              })
+              if (sErr) publishProblems.push(`${pf.name}: ${friendlyDbError(sErr.message)}`)
+              else if (r && r.ok === false) publishProblems.push(`${pf.name}: ${prizeActionText(r)}`)
+            }
+            continue
+          }
+
           const prizePayload = {
             competition_id: competitionId,
             group_id: group.id,
@@ -279,48 +480,81 @@ export default function ChallengesPage() {
               pf.funded_from_pool && pf.amount_dollars
                 ? Math.round(parseFloat(pf.amount_dollars) * 100)
                 : null,
-            tremendous_product_id:
-              pf.funded_from_pool && pf.tremendous_product_id
-                ? pf.tremendous_product_id
-                : null,
+            // No gift-card product any more: winners pick in the app. A row
+            // saved before that change keeps its product so its pending
+            // winners can still be sent their cards.
+            tremendous_product_id: existing?.tremendous_product_id ?? null,
             prize_description: !pf.funded_from_pool
               ? pf.prize_description.trim() || null
               : null,
-            auto_draw: pf.auto_draw,
+            auto_draw: isGuaranteed ? false : pf.auto_draw,
+            requires_work_email: isGuaranteed ? pf.requires_work_email : false,
             budget_cap_cents:
               pf.funded_from_pool && pf.budget_cap_dollars
                 ? Math.round(parseFloat(pf.budget_cap_dollars) * 100)
                 : null,
             display_order: i,
           }
+          let prizeId = pf.id
           if (pf.id) {
-            await supabase
+            const { error: pErr } = await supabase
               .from('employer_challenge_prizes')
               .update(prizePayload)
               .eq('id', pf.id)
+            if (pErr) publishProblems.push(`${pf.name}: ${friendlyDbError(pErr.message)}`)
           } else {
-            const { data } = await supabase
+            const { data, error: pErr } = await supabase
               .from('employer_challenge_prizes')
               .insert(prizePayload)
               .select('id')
               .single()
-            if (data) prizeForms[i] = { ...pf, id: data.id }
+            if (pErr) publishProblems.push(`${pf.name}: ${friendlyDbError(pErr.message)}`)
+            if (data) {
+              nextPrizeForms[i] = { ...pf, id: data.id }
+              prizeId = data.id
+            }
+          }
+
+          // Saving a guaranteed reward takes it live: funded ones set aside
+          // spots x value from the rewards balance. If that fails (not enough
+          // balance, no email domain) it stays saved with a "Go live" button.
+          if (isGuaranteed && prizeId) {
+            const { data: r, error: rErr } = await supabase.rpc('publish_guaranteed_prize', {
+              p_prize_id: prizeId,
+            })
+            if (rErr) publishProblems.push(`${pf.name}: ${friendlyDbError(rErr.message)}`)
+            else if (r && r.ok === false) publishProblems.push(`${pf.name} is saved but not live yet. ${prizeActionText(r)}`)
+            else nextPrizeForms[i] = { ...nextPrizeForms[i], published_at: new Date().toISOString() }
           }
         }
-        // Delete removed prizes
+      }
+      // Delete removed prizes. This runs for every edit of an existing
+      // challenge, including when every prize was removed: a prize left in
+      // the database would still draw and pay after the end (C1).
+      const editingExisting = !!editingChallenge && editMode
+      if (competitionId && editingExisting) {
         const formIds = new Set(
           prizeForms.filter((f) => f.id).map((f) => f.id),
         )
-        const existingPrizes = prizesFor(competitionId)
+        const existingPrizes = challengePrizes.filter((cp) => cp.competition_id === competitionId)
         for (const existing of existingPrizes) {
           if (!formIds.has(existing.id)) {
-            await supabase
+            const { error: dErr } = await supabase
               .from('employer_challenge_prizes')
               .delete()
               .eq('id', existing.id)
+            if (dErr) {
+              publishProblems.push(
+                dErr.message.includes('guaranteed_prize_in_use')
+                  ? `${existing.name} is live, so it wasn't removed. Use "Cancel the prize" on the challenge page instead.`
+                  : `${existing.name}: ${friendlyDbError(dErr.message)}`,
+              )
+            }
           }
         }
-        // Refresh
+      }
+      // Refresh
+      if (competitionId && (editingExisting || (canWritePrizes && prizeForms.length > 0))) {
         const { data: refreshed } = await supabase
           .from('employer_challenge_prizes')
           .select('*')
@@ -331,27 +565,64 @@ export default function ChallengesPage() {
           setChallengePrizes([...otherPrizes, ...(refreshed as ChallengePrize[])])
         }
       }
+      setPrizeForms(nextPrizeForms)
 
-      // Public leaderboard — only sync when editing and the toggle actually changed
-      const wasPublic = editMode
-        ? (editingChallenge?.public_leaderboard ?? group.public_leaderboard ?? false)
-        : form.public_leaderboard
-      const wantsPublic = form.public_leaderboard
-      if (wantsPublic !== wasPublic) {
-        const { error: syncErr } = await supabase.rpc('sync_group_public_leaderboard', {
-          p_group_id: group.id,
-          p_wants_public: wantsPublic,
+      const guaranteedWentLive =
+        publishProblems.length === 0 &&
+        prizeForms.some((p) => p.award_mode === 'guaranteed' && !p.published_at)
+      await refreshPool()
+
+      if (competitionId) {
+        const days =
+          Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 86400000)
+        posthog.capture(editMode ? 'portal_challenge_saved' : 'portal_challenge_created', {
+          competition_id: competitionId,
+          employer_group_id: group.id,
+          template: form.template_slug ?? null,
+          template_run_id: form.template_run_id ?? null,
+          prize_kinds: Array.from(new Set(prizeForms.map((p) => p.award_mode))),
+          prize_count: prizeForms.length,
+          funded: prizeForms.some((p) => p.funded_from_pool),
+          guaranteed_published: guaranteedWentLive,
+          commute_only: !!form.counting_rules?.commute_only,
+          days,
+          source: form.template_slug ? (form.template_run_id ? 'year_plan_or_seasonal' : 'template') : 'blank',
+          had_problems: publishProblems.length > 0,
         })
-        if (syncErr) console.error('Leaderboard sync error:', syncErr)
       }
 
+      if (publishProblems.length > 0) {
+        // Stay open on Review with the notes; the challenge itself is saved.
+        setSaveProblems(publishProblems)
+        toast(
+          editMode
+            ? "Some of that didn't save. See the notes on the Review step."
+            : 'The challenge is saved, but a prize needs attention. See the notes on the Review step.',
+          { type: 'error' },
+        )
+        return
+      }
+
+      toast(
+        guaranteedWentLive
+          ? editMode
+            ? 'Challenge saved. The prize is live.'
+            : 'Challenge created. The prize is live.'
+          : editMode
+            ? 'Challenge saved.'
+            : 'Challenge created.',
+        { type: 'success' },
+      )
+      try {
+        sessionStorage.removeItem(draftStorageKey(group.id))
+      } catch {}
+      setLaunchOption(null)
       setBuilderOpen(false)
     } catch (err) {
       console.error('Challenge save error:', err)
-      toast(
-        err instanceof Error ? err.message : 'Something went wrong saving the challenge',
-        { type: 'error' },
-      )
+      const msg = friendlyDbError(err instanceof Error ? err.message : null)
+      setSaveProblems([msg])
+      toast(msg, { type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -365,74 +636,142 @@ export default function ChallengesPage() {
     challenges,
     challengePrizes,
     tierAtLeast,
-    accessActive,
     setChallenges,
     setChallengePrizes,
+    isGsiAdmin,
+    refreshPool,
+    rewardPool,
+    confirm,
+    toast,
   ])
 
-  async function deleteChallenge(challengeId: string) {
-    const hasDrawn = challengePrizes.some(
-      (p) => p.competition_id === challengeId && p.draw_status !== 'pending',
-    )
-    const msg = hasDrawn
-      ? 'This challenge has drawn prizes. Deleting it will remove all winner records. Continue?'
-      : 'Delete this challenge and all its prizes? This cannot be undone.'
-    if (!confirm(msg)) return
+  /** The draft row's Discard: the tab forgets it; there was never a row to delete. */
+  async function discardDraft() {
+    if (!group || !storedDraft) return
+    const ok = await confirm({
+      title: `Discard "${storedDraft.form.name.trim() || 'this draft'}"?`,
+      body: "It was never created, so nothing changes for your team. This can't be undone.",
+      confirmLabel: 'Discard the draft',
+      tone: 'danger',
+    })
+    if (!ok) return
+    try {
+      sessionStorage.removeItem(draftStorageKey(group.id))
+    } catch {}
+    setStoredDraft(null)
+    toast('Draft discarded', { type: 'success' })
+  }
+
+  async function deleteChallenge(c: Challenge) {
+    const prizes = prizesFor(c.id)
+    const hasDrawn = prizes.some((p) => p.draw_status !== 'pending')
+    const ok = await confirm({
+      title: `Delete "${c.name}"?`,
+      body: hasDrawn
+        ? `Its ${prizes.length === 1 ? 'reward' : 'rewards'} and the record of who won go with it. This can't be undone.`
+        : prizes.length > 0
+          ? `Its ${prizes.length === 1 ? 'reward goes' : `${prizes.length} rewards go`} with it, and it disappears from the app for your team. This can't be undone.`
+          : "It disappears from the app for your team. This can't be undone.",
+      confirmLabel: 'Delete the challenge',
+      tone: 'danger',
+    })
+    if (!ok) return
 
     const { error } = await supabase
       .from('competitions')
       .delete()
-      .eq('id', challengeId)
+      .eq('id', c.id)
     if (error) {
-      toast(error.message, { type: 'error' })
+      toast(friendlyDbError(error.message), { type: 'error' })
       return
     }
-    setChallenges(challenges.filter((c) => c.id !== challengeId))
-    setChallengePrizes(challengePrizes.filter((p) => p.competition_id !== challengeId))
-    toast('Challenge deleted')
+    setChallenges(challenges.filter((x) => x.id !== c.id))
+    setChallengePrizes(challengePrizes.filter((p) => p.competition_id !== c.id))
+    toast('Challenge deleted', { type: 'success' })
   }
 
-  async function drawPrize(prizeId: string) {
-    setDrawingPrizeId(prizeId)
-    const { error } = await supabase.rpc('draw_employer_challenge_prizes', {
-      p_prize_id: prizeId,
+  async function drawPrize(p: ChallengePrize) {
+    const n = p.winner_count
+    const each = p.amount_cents ?? 0
+    // True about the money: a funded draw spends per winner at the draw, and
+    // each winner then picks where to spend it in the app (Shift 01040).
+    const money = p.funded_from_pool
+      ? `${dollars(each * n)} at most leaves your rewards balance now, and each winner picks where to spend their gift card in the app.`
+      : 'You hand out the prize yourself; winners tap Claim in the app so you know who.'
+    const ok = await confirm({
+      title: `Draw ${n} ${n === 1 ? 'winner' : 'winners'} for ${p.name}?`,
+      body:
+        p.award_mode === 'drawing'
+          ? `Everyone who reached the minimum is in the hat. ${n} ${n === 1 ? 'winner' : 'winners'} picked at random. ${money}`
+          : `The top ${n} on the leaderboard win. ${money}`,
+      confirmLabel: 'Draw winners',
+      tone: 'primary',
     })
-    if (error) {
-      console.error('Draw failed:', error.message)
-      setDrawingPrizeId(null)
-      return
-    }
-    const { data: updated } = await supabase
-      .from('employer_challenge_prizes')
-      .select('*')
-      .eq('id', prizeId)
-      .single()
-    if (updated) {
-      setChallengePrizes(
-        challengePrizes.map((p) =>
-          p.id === prizeId ? (updated as ChallengePrize) : p,
-        ),
-      )
-    }
-    const { data: winners } = await supabase
-      .from('employer_prize_winners')
-      .select('*')
-      .eq('prize_id', prizeId)
-    if (winners) {
-      setPrizeWinnersMap({
-        ...prizeWinnersMap,
-        [prizeId]: winners as PrizeWinner[],
+    if (!ok) return
+    const shortMessage = `Your rewards balance is short: drawing ${n} ${n === 1 ? 'winner' : 'winners'} needs up to ${dollars(each * n)}. Add funds on the Billing page, then draw.`
+    setDrawingPrizeId(p.id)
+    try {
+      const { data, error } = await supabase.rpc('draw_employer_challenge_prizes', {
+        p_prize_id: p.id,
       })
+      if (error) {
+        console.error('Draw failed:', error.message)
+        toast(/insufficient_pool_balance|insufficient_balance/i.test(error.message) ? shortMessage : friendlyDbError(error.message), { type: 'error' })
+        return
+      }
+      const r = data as { ok: boolean; reason?: string; winners?: number } | null
+      if (r && r.ok === false) {
+        toast(
+          r.reason === 'no_eligible'
+            ? 'Nobody reached the minimum, so there is no one to draw.'
+            : r.reason === 'insufficient_pool_balance'
+              ? shortMessage
+              : prizeActionText(r),
+          { type: 'error' },
+        )
+        return
+      }
+      const [{ data: updated }, { data: winners }] = await Promise.all([
+        supabase.from('employer_challenge_prizes').select('*').eq('id', p.id).single(),
+        supabase.from('employer_prize_winners').select('*').eq('prize_id', p.id),
+      ])
+      if (updated) {
+        setChallengePrizes(
+          challengePrizes.map((cp) =>
+            cp.id === p.id ? (updated as ChallengePrize) : cp,
+          ),
+        )
+      }
+      const drawn = (winners ?? []) as PrizeWinner[]
+      if (winners) {
+        setPrizeWinnersMap({
+          ...prizeWinnersMap,
+          [p.id]: drawn,
+        })
+      }
+      if (rewardPool) await refreshPool()
+      toast(`${drawn.length} ${drawn.length === 1 ? 'winner' : 'winners'} drawn`, { type: 'success' })
+    } catch {
+      toast(GENERIC_ERROR, { type: 'error' })
+    } finally {
+      setDrawingPrizeId(null)
     }
-    if (rewardPool) await refreshPool()
-    setDrawingPrizeId(null)
+  }
+
+  // Until the portal has loaded, don't flash "No challenges yet".
+  if (loading || !group) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <span className="text-ink-tertiary">Loading...</span>
+      </div>
+    )
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PortalPageHead
         title="Challenges"
-        subtitle="Create friendly competitions to drive participation"
+        subtitle="Create friendly competitions to spark participation"
         actions={
           !builderOpen && canManage && (
             <Button variant="primary" icon={Plus} onClick={() => openEditor()}>
@@ -442,43 +781,259 @@ export default function ChallengesPage() {
         }
       />
 
+      {/* Status strip: everything on the page in one glance. A tile filters
+          the list; the current tile again shows all (Keith 2026-09-30). */}
+      {!builderOpen && (challenges.length > 0 || yearPlan.drafts.length > 0 || storedDraft) && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {(
+            [
+              ['active', 'Active', counts.active, 'success'],
+              ['scheduled', 'Scheduled', counts.scheduled, 'info'],
+              ['drafts', 'Drafts', counts.drafts, 'warn'],
+              ['past', 'Past', counts.past, 'neutral'],
+            ] as const
+          ).map(([key, label, n, tone]) => {
+            const on = view === key
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setView(on ? 'all' : key)}
+                aria-pressed={on}
+                className={`rounded-[14px] border px-4 py-3 text-left shadow-sm transition-colors ${
+                  on ? 'border-accent bg-accent-softer' : 'border-line bg-surface hover:border-ink-faint'
+                }`}
+              >
+                <div className="text-[22px] font-bold leading-none text-ink">{n}</div>
+                <div className="mt-1.5 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted">
+                  <span className={`h-[6px] w-[6px] rounded-full ${
+                    tone === 'success' ? 'bg-accent' : tone === 'info' ? 'bg-ep-info' : tone === 'warn' ? 'bg-ep-warning' : 'bg-ink-faint'
+                  }`} />
+                  {label}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Empty state: a new employer reads "No challenges yet" before the
+          year plan offers to fill the calendar. */}
+      {!builderOpen && challenges.length === 0 && yearPlan.drafts.length === 0 && !storedDraft && (
+        <Card pad className="py-16 text-center">
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-accent-soft text-accent">
+            <Trophy size={28} strokeWidth={1.75} />
+          </div>
+          <div className="mb-1.5 text-[16px] font-bold">
+            No challenges yet
+          </div>
+          <p className="mx-auto mb-5 max-w-[40ch] text-[14px] text-ink-muted">
+            Kick off a friendly competition to spark sign-ups and active trips.
+            Set a date range and add optional prizes.
+          </p>
+          {canManage && (
+            <Button variant="primary" icon={Plus} onClick={() => openEditor(undefined, 'empty_state')}>
+              Create a challenge
+            </Button>
+          )}
+        </Card>
+      )}
+
+      {!builderOpen && group && (
+        <YearPlanCard
+          plan={yearPlan}
+          canManage={canManage}
+          upcoming={challengeTemplates.calendar}
+          onLaunch={(o) => {
+            openEditor(undefined, 'year_plan')
+            setLaunchOption(o)
+          }}
+        />
+      )}
+
+      {/* The draft this tab is holding (funding gate): never created, so
+          nothing for employees to see. Finishing the wizard creates it; the
+          Review step decides between "Create challenge" and "Add funds". */}
+      {!builderOpen && (view === 'all' || view === 'drafts') && storedDraft && (() => {
+        const gap = formsFundingGap(storedDraft.prizeForms, rewardPool)
+        const name = storedDraft.form.name.trim() || 'Untitled challenge'
+        const { starts_at, ends_at } = storedDraft.form
+        return (
+          <Card pad className="border-ep-warning/40">
+            <div className="flex flex-wrap items-start justify-between gap-3.5">
+              <div className="min-w-0">
+                <div className="mb-1 flex flex-wrap items-center gap-2.5">
+                  <strong className="text-[16px] text-ink">{name}</strong>
+                  <Badge tone="warn" dot={false}>{gap.shortBy > 0 ? 'Draft, needs funding' : 'Draft'}</Badge>
+                </div>
+                <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-ink-muted">
+                  {starts_at && ends_at && (
+                    <span className="flex items-center gap-1.5">
+                      <Calendar size={14} strokeWidth={1.75} />
+                      {formatDate(etStartOfDayIso(starts_at))} to {formatDate(etStartOfDayIso(ends_at))}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1.5">
+                    <Gift size={14} strokeWidth={1.75} />
+                    {formPrizeSummary(storedDraft.prizeForms[0])}
+                  </span>
+                </div>
+                {gap.shortBy > 0 ? (
+                  <p className="mt-2 text-[12.5px] font-semibold leading-[1.5] text-ep-danger">
+                    {linkify(shortSentence(gap, dollars, 'on the Billing page'))}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-[12.5px] leading-[1.5] text-ink-muted">
+                    Your rewards balance covers it now. Continue to the Review step to create it.
+                  </p>
+                )}
+                <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-muted">
+                  Kept in this browser only. Nothing is visible to employees until you launch it.
+                </p>
+              </div>
+              {canManage && (
+                <div className="flex gap-2">
+                  <Button variant="primary" size="sm" icon={FileEdit} onClick={() => openEditor(undefined, 'draft_row')}>
+                    Continue
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={discardDraft}>
+                    Discard
+                  </Button>
+                </div>
+              )}
+            </div>
+          </Card>
+        )
+      })()}
+
+      {/* Drafts the year plan prepared: listed with the challenges, since
+          they are challenges waiting for a yes. */}
+      {!builderOpen && (view === 'all' || view === 'drafts') && yearPlan.drafts.length > 0 && (
+        <div className="grid grid-cols-1 gap-4">
+          {yearPlan.drafts.map((d) => (
+            <Card pad key={d.id} className="border-ep-warning/40">
+              <div className="flex flex-wrap items-start justify-between gap-3.5">
+                <div className="min-w-0">
+                  <div className="mb-1 flex items-center gap-2.5">
+                    <strong className="text-[16px]">{d.run.template.title}</strong>
+                    <Badge tone="warn" dot={false}>Draft</Badge>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-ink-tertiary">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar size={14} strokeWidth={1.75} />
+                      {runRange(d.run)}
+                    </span>
+                    {templatePrizeLine(d.run.template) && (
+                      <span className="flex items-center gap-1.5">
+                        <Gift size={14} strokeWidth={1.75} />
+                        {templatePrizeLine(d.run.template)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-[13.5px] leading-[1.5] text-ink">{d.run.template.line}</p>
+                  <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-muted">
+                    Drafted by your year plan. Nothing starts until you launch it, and skipping this one doesn&apos;t change the rest of the year.
+                  </p>
+                </div>
+                {canManage && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        openEditor(undefined, 'year_plan')
+                        setLaunchOption({ template: d.run.template, run: d.run })
+                      }}
+                    >
+                      Review and launch
+                    </Button>
+                    <Button variant="ghost" size="sm" disabled={yearPlan.busy} onClick={() => yearPlan.skipDraft(d.id)}>
+                      Skip this one
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
       {/* Challenge list */}
-      {!builderOpen && challenges.length > 0 && (
-        <div className="grid gap-4">
-          {challenges.map((c) => {
+      {!builderOpen && visibleChallenges.length > 0 && (
+        <div className="grid grid-cols-1 gap-4">
+          {visibleChallenges.map((c) => {
             const st = statusOf(c)
             const prizes = c.is_flagship ? [] : prizesFor(c.id)
+            const hasRulesPage = prizes.some((p) => p.award_mode === 'guaranteed' && p.published_at && !p.cancelled_at)
+            // "Tell your team" for a drawing, a leaderboard prize or no prize
+            // lives here; the goal kind has its own inside its section.
+            const hasGoalPrize = prizes.some((p) => p.award_mode === 'guaranteed')
+            const teamPrize: TeamPrize | null = c.is_flagship
+              ? null
+              : hasGoalPrize
+                ? null
+                : prizes.length > 0
+                  ? {
+                      kind: prizes[0].award_mode === 'merit' ? 'top' : 'drawing',
+                      goal: prizes[0].min_threshold ?? 0,
+                      spots: prizes[0].winner_count,
+                      funded: prizes[0].funded_from_pool,
+                      amountCents: prizes[0].amount_cents,
+                      description: prizes[0].prize_description,
+                      requiresWorkEmail: false,
+                      metric: prizes[0].metric,
+                    }
+                  : { kind: 'none', goal: 0, spots: 0, funded: false, amountCents: null, description: null, requiresWorkEmail: false }
+            const open = rowOpen(c)
+            // An ended challenge always has a body: its awards recap (Shift 01047).
+            const hasBody = !c.is_flagship && (prizes.length > 0 || (teamPrize !== null && st.label !== 'Ended') || st.label === 'Ended')
+            const bodyId = `challenge-body-${c.id}`
+            // Funding warning: what the prizes still need against the balance.
+            // The challenge stays as it is; the admin needs to know before
+            // the draw, when the money would be refused.
+            const gap = rowsFundingGap(prizes, rewardPool)
+            const needsFunding = st.label !== 'Ended' && gap.shortBy > 0
             return (
               <Card pad key={c.id}>
                 <div className="flex flex-wrap items-start justify-between gap-3.5">
-                  <div className="min-w-0">
-                    <div className="mb-1 flex items-center gap-2.5">
-                      <strong className="text-[16px]">{c.name}</strong>
+                  {/* The header is the row's toggle. Edit and delete sit
+                      outside it so a click on them never flips the row. */}
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-default"
+                    aria-expanded={hasBody ? open : undefined}
+                    aria-controls={hasBody && open ? bodyId : undefined}
+                    disabled={!hasBody}
+                    onClick={() => hasBody && toggleRow(c)}
+                  >
+                    <div className="mb-1 flex flex-wrap items-center gap-2.5">
+                      <strong className="text-[16px] text-ink">{c.name}</strong>
                       <Badge tone={st.tone} dot={false}>
                         {st.label}
                       </Badge>
-                      {c.is_flagship && (
-                        <Badge tone="info" dot={false}>
-                          Flagship
+                      {needsFunding && (
+                        <Badge tone="warn" dot={false}>
+                          Needs funding
                         </Badge>
                       )}
-                      {!c.is_flagship && c.public_leaderboard && (
-                        <Badge tone="info" dot={false}>
-                          Public board
-                        </Badge>
+                      {c.is_flagship && (
+                        <span title="A citywide challenge run by Green Streets. You can't edit it here.">
+                          <Badge tone="info" dot={false}>
+                            Citywide
+                          </Badge>
+                        </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-ink-faint">
+                    <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-ink-muted">
                       <span className="flex items-center gap-1.5">
                         <Calendar size={14} strokeWidth={1.75} />
-                        {formatDate(c.starts_at)} →{' '}
+                        {formatDate(c.starts_at)} to{' '}
                         {formatDate(c.ends_at)}
                       </span>
                       {!c.is_flagship && (
                         <span className="flex items-center gap-1.5">
                           <Gift size={14} strokeWidth={1.75} />
-                          {prizes.length}{' '}
-                          {prizes.length === 1 ? 'prize' : 'prizes'}
+                          {prizeSummary(prizes)}
                         </span>
                       )}
                       {c.is_flagship && c.prize_description && (
@@ -488,39 +1043,86 @@ export default function ChallengesPage() {
                         </span>
                       )}
                     </div>
-                  </div>
-                  {canManage && !c.is_flagship && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        icon={Pencil}
-                        onClick={() => openEditor(c)}
+                    {c.is_flagship && (
+                      <p className="mt-1.5 text-[12.5px] text-ink-muted">
+                        A citywide challenge run by Green Streets. Your team takes part automatically; you can&apos;t edit it here.
+                      </p>
+                    )}
+                    {needsFunding && (
+                      <p className="mt-1.5 text-[12.5px] font-semibold leading-[1.5] text-ep-danger">
+                        {linkify(shortSentence(gap, dollars, 'on the Billing page'))}
+                      </p>
+                    )}
+                  </button>
+                  <div className="flex items-center gap-2">
+                    {hasRulesPage && (
+                      <a
+                        href={onThisSite(rulesPageUrl(c.id))}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mr-1 flex items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline"
                       >
-                        Edit
-                      </Button>
+                        <ExternalLink size={14} strokeWidth={1.75} />
+                        Rules page
+                      </a>
+                    )}
+                    {canManage && !c.is_flagship && (
+                      <>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon={Pencil}
+                          onClick={() => openEditor(c)}
+                        >
+                          Edit
+                        </Button>
+                        <button
+                          type="button"
+                          className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted hover:bg-ep-danger/5 hover:text-ep-danger"
+                          onClick={() => deleteChallenge(c)}
+                          aria-label={`Delete ${c.name}`}
+                          title="Delete challenge"
+                        >
+                          <Trash2 size={15} strokeWidth={1.75} />
+                        </button>
+                      </>
+                    )}
+                    {hasBody && (
                       <button
-                        className="grid h-8 w-8 place-items-center rounded-lg text-ink-faint hover:text-ep-danger"
-                        onClick={() => deleteChallenge(c.id)}
+                        type="button"
+                        className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted hover:bg-surface-2 hover:text-ink"
+                        onClick={() => toggleRow(c)}
+                        aria-expanded={open}
+                        aria-label={open ? `Hide details for ${c.name}` : `Show details for ${c.name}`}
                       >
-                        <Trash2 size={15} strokeWidth={1.75} />
+                        {open ? <ChevronUp size={16} strokeWidth={2} /> : <ChevronDown size={16} strokeWidth={2} />}
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
 
-                {/* Prize list */}
-                {prizes.length > 0 && (
+                {/* Prize list, only while the row is open. A collapsed row
+                    also skips the progress fetch its goal prize would make. */}
+                {open && hasBody && <div id={bodyId} className="contents">
+                {hasGoalPrize && (
+                  <div className="mt-5 border-t border-line-2 pt-5">
+                    <GuaranteedChallengeSection
+                      challenge={c}
+                      domains={domains}
+                      onPrizesChanged={() => refreshPrizesFor(c.id)}
+                    />
+                  </div>
+                )}
+                {prizes.some((p) => p.award_mode !== 'guaranteed') && (
                   <div className="mt-5 grid gap-3 border-t border-line-2 pt-5">
-                    {prizes.map((p) => (
+                    {prizes.filter((p) => p.award_mode !== 'guaranteed').map((p) => (
                       <PrizeCard
                         key={p.id}
                         prize={p}
-                        products={tremendousProducts}
                         winners={prizeWinnersMap[p.id] || []}
                         challengeStatus={st.label}
                         drawing={drawingPrizeId === p.id}
-                        onDraw={() => drawPrize(p.id)}
+                        onDraw={() => drawPrize(p)}
                         onWinnersUpdated={(updated) => {
                           setPrizeWinnersMap({ ...prizeWinnersMap, [p.id]: updated })
                         }}
@@ -535,224 +1137,95 @@ export default function ChallengesPage() {
                     ))}
                   </div>
                 )}
+                {/* The automatic notes and the awards, so the admin can see them (Keith 2026-10-01) */}
+                {!c.is_flagship && (
+                  <TeamHearsPanel
+                    challenge={c}
+                    groupName={group?.name ?? 'Your workplace'}
+                    goalPrize={prizes.find((p) => p.award_mode === 'guaranteed' && p.published_at && !p.cancelled_at) ?? null}
+                    ended={st.label === 'Ended'}
+                  />
+                )}
+                {teamPrize && st.label !== 'Ended' && (
+                  <div className="mt-5 border-t border-line-2 pt-5">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={Megaphone}
+                      onClick={() => setTellTeamFor(tellTeamFor === c.id ? null : c.id)}
+                    >
+                      {tellTeamFor === c.id ? 'Hide team announcement' : 'Tell your team'}
+                    </Button>
+                    {tellTeamFor === c.id && (
+                      <div className="mt-3">
+                        <TellYourTeam challenge={c} domains={domains} prize={teamPrize} />
+                      </div>
+                    )}
+                  </div>
+                )}
+                {st.label === 'Ended' && <AwardsRecap challenge={c} />}
+                </div>}
               </Card>
             )
           })}
         </div>
       )}
 
-      {/* Empty state */}
-      {!builderOpen && challenges.length === 0 && (
-        <Card pad className="py-16 text-center">
-          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-accent-soft text-accent">
-            <Trophy size={28} strokeWidth={1.75} />
-          </div>
-          <div className="mb-1.5 text-[16px] font-bold">
-            No challenges yet
-          </div>
-          <p className="mx-auto mb-5 max-w-[40ch] text-[14px] text-ink-muted">
-            Kick off a friendly competition to drive sign-ups and active trips.
-            Set a date range and add optional prizes.
-          </p>
-          {canManage && (
-            <Button variant="primary" icon={Plus} onClick={() => openEditor()}>
-              Create a challenge
-            </Button>
-          )}
-        </Card>
-      )}
-
-      {/* Builder */}
-      {builderOpen && (
-        <Card>
-          <CardHead
-            title={editMode ? 'Edit challenge' : 'Your challenge'}
-            sub="Set it up now — you can edit any time before it starts"
-          />
-          <div className="grid gap-5 px-6 py-5">
-            {/* Name */}
-            <div>
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-                Challenge name <span className="text-ep-danger">*</span>
-              </label>
-              <input
-                className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
-                placeholder="e.g. Summer Active Commute Challenge 2026"
-                value={form.name}
-                onChange={(e) => set('name', e.target.value)}
-              />
-            </div>
-
-            {/* Dates */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-                  Start date <span className="text-ep-danger">*</span>
-                </label>
-                <input
-                  type="date"
-                  className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
-                  value={form.starts_at}
-                  onChange={(e) => {
-                    const starts = e.target.value
-                    setForm((p) => ({
-                      ...p,
-                      starts_at: starts,
-                      // Default a 4-week window — the sweet spot for
-                      // engagement challenges (3-4 weeks; >1 month drags).
-                      ends_at:
-                        starts && (!p.ends_at || p.ends_at <= starts)
-                          ? new Date(
-                              new Date(starts + 'T12:00:00').getTime() +
-                                28 * 86400000,
-                            )
-                              .toISOString()
-                              .slice(0, 10)
-                          : p.ends_at,
-                    }))
-                  }}
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-                  End date <span className="text-ep-danger">*</span>
-                </label>
-                <input
-                  type="date"
-                  className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
-                  value={form.ends_at}
-                  onChange={(e) => set('ends_at', e.target.value)}
-                />
-              </div>
-              {dateError && (
-                <p className="col-span-2 -mt-2 text-[12.5px] text-ep-danger">
-                  {dateError}
-                </p>
-              )}
-              <p className="col-span-2 -mt-1 text-[12.5px] text-ink-faint">
-                Tip: 3–4 weeks works best. Weekly prize drawings for anyone who
-                logs a green commute beat one big end prize for participation.
-              </p>
-            </div>
-
-            {/* Prizes */}
-            {(tierAtLeast('standard') || isGsiAdmin) && (
-              <div>
-                <div className="mb-2.5 text-[12.5px] font-semibold text-ink-muted">
-                  Prizes{' '}
-                  <span className="font-normal text-ink-faint">· optional</span>
-                </div>
-                <div className="grid gap-3">
-                  {prizeForms.map((p, idx) => (
-                    <PrizeEditor
-                      key={idx}
-                      prize={p}
-                      products={tremendousProducts}
-                      productsLoading={tremendousLoading}
-                      productsError={tremendousError}
-                      onChange={(patch) => updatePrize(idx, patch)}
-                      onRemove={() => removePrize(idx)}
-                    />
-                  ))}
-                  <button
-                    className="flex items-center gap-2 self-start rounded-[10px] border border-dashed border-line px-4 py-2.5 text-[13px] font-semibold text-ink-muted transition-colors hover:border-accent hover:text-accent"
-                    onClick={addPrize}
-                  >
-                    <Plus size={16} strokeWidth={1.75} />
-                    Add prize
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Public leaderboard */}
-            {flagshipChallenges.length > 0 && (
-              <div
-                className="flex cursor-pointer items-start gap-3"
-                onClick={() =>
-                  set('public_leaderboard', !form.public_leaderboard)
-                }
-              >
-                <div
-                  className={`mt-0.5 grid h-[22px] w-[22px] shrink-0 place-items-center rounded-md border-2 transition-colors ${
-                    form.public_leaderboard
-                      ? 'border-accent bg-accent text-white'
-                      : 'border-line'
-                  }`}
-                >
-                  {form.public_leaderboard && (
-                    <Check size={13} strokeWidth={2.5} />
-                  )}
-                </div>
-                <div>
-                  <div className="text-[14px] font-semibold">
-                    Include our company in the{' '}
-                    {flagshipChallenges.slice(0, 2).map((fc, i) => (
-                      <span key={fc.id}>
-                        {i > 0 && ' and '}
-                        {fc.name}
-                      </span>
-                    ))}
-                    {flagshipChallenges.length > 2 &&
-                      ` and ${flagshipChallenges.length - 2} more`}{' '}
-                    public leaderboard{flagshipChallenges.length > 1 ? 's' : ''}
-                  </div>
-                  <div className="mt-1 text-[13px] text-ink-muted">
-                    {flagshipChallenges.slice(0, 3).map((fc) => {
-                      const s = new Date(fc.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                      const e = new Date(fc.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                      return `${fc.name}: ${s} – ${e}`
-                    }).join(' · ')}
-                    {' · '}
-                    Your company appears on the Corporate Challenge tab alongside
-                    other employers. Individual employee data is never shown
-                    publicly — only your aggregate Shift Rate and trip count.
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between border-t border-line-2 px-6 py-4">
-            <span className="text-[13px] text-ink-faint">
-              {prizeForms.length}{' '}
-              {prizeForms.length === 1 ? 'prize' : 'prizes'} ·{' '}
-              {form.public_leaderboard
-                ? 'Listed publicly'
-                : 'Private to your team'}
-            </span>
-            <div className="flex gap-2.5">
-              <Button
-                variant="ghost"
-                onClick={() => setBuilderOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                icon={Trophy}
-                disabled={!canSave || saving}
-                onClick={save}
-              >
-                {saving
-                  ? 'Saving...'
-                  : editMode
-                    ? 'Save changes'
-                    : 'Create challenge'}
-              </Button>
-            </div>
-          </div>
-        </Card>
+      {/* Builder: ready-made start, four short steps, live preview */}
+      {builderOpen && group && (
+        <ChallengeWizard
+          group={{ id: group.id, name: group.name }}
+          editMode={editMode}
+          form={form}
+          setForm={(u) => setForm((p) => u(p))}
+          prizeForms={prizeForms}
+          setPrizeForms={setPrizeForms}
+          domains={domains}
+          onDomainsChanged={setDomains}
+          suggestedOffice={
+            benefitsForm.destination_address && benefitsForm.destination_lat != null && benefitsForm.destination_lng != null
+              ? { address: benefitsForm.destination_address, lat: benefitsForm.destination_lat, lng: benefitsForm.destination_lng, radius_m: 250 }
+              : null
+          }
+          seasonal={challengeTemplates}
+          initialSeasonal={launchOption}
+          savedOffices={savedLocations.map((l) => ({ address: l.address, lat: l.lat, lng: l.lng, radius_m: l.radius_m }))}
+          pool={rewardPool}
+          canUsePrizes={tierAtLeast('standard') || isGsiAdmin}
+          accessActive={accessActive}
+          rulesLocked={rulesLocked}
+          saving={saving}
+          canSave={canSave}
+          problems={saveProblems}
+          onSave={save}
+          resumeDraft={resumeDraft}
+          onSaveDraft={() => {
+            toast('Saved as a draft in this browser. Nothing is visible to employees until you launch it.', { type: 'success' })
+            setBuilderOpen(false)
+            setLaunchOption(null)
+            setSaveProblems([])
+          }}
+          onCancel={() => {
+            // The row was created during this opening: the tab's draft
+            // would only create it again (C2).
+            if (createdThisOpen.current) {
+              try {
+                sessionStorage.removeItem(draftStorageKey(group.id))
+              } catch {}
+            }
+            setBuilderOpen(false)
+            setLaunchOption(null)
+            setSaveProblems([])
+          }}
+        />
       )}
     </div>
   )
 }
 
 function PrizeCard({
-  prize: p,
-  products,
-  winners,
+  prize,
+  winners: winnerRows,
   challengeStatus,
   drawing,
   onDraw,
@@ -760,7 +1233,6 @@ function PrizeCard({
   onPrizeUpdated,
 }: {
   prize: ChallengePrize
-  products: TremendousProduct[]
   winners: PrizeWinner[]
   challengeStatus: string
   drawing: boolean
@@ -768,17 +1240,67 @@ function PrizeCard({
   onWinnersUpdated: (w: PrizeWinner[]) => void
   onPrizeUpdated: (p: ChallengePrize) => void
 }) {
-  const { members, refreshPool, rewardPool, isAdmin, isGsiAdmin } = usePortal()
-  const canManage = isAdmin || isGsiAdmin
+  const p = prize as PrizeRow
+  const winners = winnerRows as WinnerRow[]
+  const { members, refreshPool, rewardPool, canManageChallenges } = usePortal()
+  const canManage = canManageChallenges
   const toast = useToast()
+  const confirm = useConfirm()
   const [expanded, setExpanded] = useState(false)
   const [fulfilling, setFulfilling] = useState(false)
+  const [forfeiting, setForfeiting] = useState<string | null>(null)
+  // Gift-card status per winner from get_employer_prize_card_status; null
+  // while loading or when the RPC isn't there yet (then today's statuses).
+  const [cardStatus, setCardStatus] = useState<Record<string, CardStatus> | null>(null)
 
   const memberMap = new Map(members.map((m) => [m.user_id, m]))
-  const pendingCount = winners.filter((w) => w.fulfillment_status === 'pending').length
+  const nameOf = (w: PrizeWinner) => memberMap.get(w.user_id)?.display_name || 'A member'
+  const each = p.amount_cents ?? 0
+  // A row set up before winners picked in the app: it still names a
+  // gift-card product and its cards go out by email from here.
+  const legacy = !!p.tremendous_product_id
+  const catalogWinners = winners.filter((w) => !!w.catalog_reward_id)
+  const pendingLegacy = winners.filter((w) => w.fulfillment_status === 'pending' && !w.catalog_reward_id)
+  const pendingCount = pendingLegacy.length
+  const pendingTotalCents = pendingLegacy.reduce((sum, w) => sum + (w.amount_cents ?? each), 0)
   const fulfilledCount = winners.filter((w) => w.fulfillment_status === 'fulfilled').length
 
+  const loadCardStatus = useCallback(async () => {
+    if (!p.funded_from_pool || catalogWinners.length === 0) return
+    const { data, error } = await supabase.rpc('get_employer_prize_card_status', { p_prize_id: p.id })
+    if (error) {
+      if (!rpcMissing(error.message)) console.error('Card status failed:', error.message)
+      setCardStatus(null)
+      return
+    }
+    const map: Record<string, CardStatus> = {}
+    for (const row of (data ?? []) as CardStatus[]) map[row.winner_id] = row
+    setCardStatus(map)
+  }, [p.id, p.funded_from_pool, catalogWinners.length])
+
+  useEffect(() => {
+    if (expanded) void loadCardStatus()
+  }, [expanded, loadCardStatus])
+
+  async function reloadWinners() {
+    const [{ data: updatedWinners }, { data: updatedPrize }] = await Promise.all([
+      supabase.from('employer_prize_winners').select('*').eq('prize_id', p.id),
+      supabase.from('employer_challenge_prizes').select('*').eq('id', p.id).single(),
+    ])
+    if (updatedWinners) onWinnersUpdated(updatedWinners as PrizeWinner[])
+    if (updatedPrize) onPrizeUpdated(updatedPrize as ChallengePrize)
+    if (rewardPool) await refreshPool()
+    await loadCardStatus()
+  }
+
   async function fulfillPrize() {
+    const ok = await confirm({
+      title: `Send ${pendingCount} gift ${pendingCount === 1 ? 'card' : 'cards'}?`,
+      body: `${dollars(pendingTotalCents)} goes to ${pendingCount} ${pendingCount === 1 ? 'winner' : 'winners'} from your rewards balance. Each winner gets an email with a link to their gift card. This can't be undone.`,
+      confirmLabel: `Send ${dollars(pendingTotalCents)} to ${pendingCount} ${pendingCount === 1 ? 'winner' : 'winners'}`,
+      tone: 'primary',
+    })
+    if (!ok) return
     setFulfilling(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -794,70 +1316,167 @@ function PrizeCard({
           body: JSON.stringify({ prize_id: p.id }),
         },
       )
-      const result = await res.json()
+      const result = await res.json().catch(() => ({}))
       if (!res.ok) {
-        toast(result.error || 'Fulfillment failed', { type: 'error' })
+        const raw = String(result.error ?? '')
+        toast(
+          /insufficient|balance/i.test(raw)
+            ? 'Your rewards balance is short. Add funds on the Billing page, then send the gift cards.'
+            : /admin|forbidden/i.test(raw)
+              ? 'Only an admin on your team can send gift cards.'
+              : GENERIC_ERROR,
+          { type: 'error' },
+        )
         return
       }
-      toast(`${result.fulfilled} reward${result.fulfilled === 1 ? '' : 's'} sent`)
-      const { data: updatedWinners } = await supabase
-        .from('employer_prize_winners')
-        .select('*')
-        .eq('prize_id', p.id)
-      if (updatedWinners) onWinnersUpdated(updatedWinners as PrizeWinner[])
-      const { data: updatedPrize } = await supabase
-        .from('employer_challenge_prizes')
-        .select('*')
-        .eq('id', p.id)
-        .single()
-      if (updatedPrize) onPrizeUpdated(updatedPrize as ChallengePrize)
-      if (rewardPool) await refreshPool()
+      const n = Number(result.fulfilled ?? pendingCount)
+      toast(`${n} gift ${n === 1 ? 'card' : 'cards'} sent`, { type: 'success' })
+      await reloadWinners()
     } catch {
-      toast('Network error during fulfillment', { type: 'error' })
+      toast("We couldn't reach the server to send the gift cards. Check your connection and try again.", { type: 'error' })
     } finally {
       setFulfilling(false)
     }
   }
 
-  async function forfeitWinner(winnerId: string) {
-    await supabase
+  /** Today's forfeit: the status flag only, no refund (the RPC isn't there). */
+  async function forfeitWithoutRefund(w: WinnerRow, name: string) {
+    const { error } = await supabase
       .from('employer_prize_winners')
       .update({ fulfillment_status: 'forfeited' })
-      .eq('id', winnerId)
-    onWinnersUpdated(
-      winners.map((w) =>
-        w.id === winnerId ? { ...w, fulfillment_status: 'forfeited' as const } : w,
-      ),
-    )
-    toast('Winner marked as forfeited')
+      .eq('id', w.id)
+    if (error) {
+      toast(friendlyDbError(error.message), { type: 'error' })
+      return
+    }
+    onWinnersUpdated(winners.map((x) => (x.id === w.id ? { ...x, fulfillment_status: 'forfeited' as const } : x)))
+    toast(`${name} marked as forfeited`, { type: 'success' })
   }
 
-  const productName = p.tremendous_product_id
-    ? products.find((prod) => prod.id === p.tremendous_product_id)?.name
-    : null
+  async function forfeitWinner(w: WinnerRow) {
+    const name = nameOf(w)
+    const amount = dollars(w.amount_cents ?? each)
+    const moneyBack = p.funded_from_pool && !w.tremendous_order_id
+    const ok = await confirm({
+      title: `Mark ${name} as forfeited?`,
+      body: moneyBack
+        ? `${name} won't get the gift card. ${amount} goes back to your rewards balance. This can't be undone.`
+        : `${name} is taken off the winners list for this prize. This can't be undone.`,
+      confirmLabel: 'Mark as forfeited',
+      tone: 'danger',
+    })
+    if (!ok) return
+    setForfeiting(w.id)
+    try {
+      const { data, error } = await supabase.rpc('forfeit_employer_prize_winner', { p_winner_id: w.id })
+      if (error) {
+        if (!rpcMissing(error.message)) {
+          toast(friendlyDbError(error.message), { type: 'error' })
+          return
+        }
+        // The refunding forfeit hasn't shipped yet: say so, then do today's.
+        const still = moneyBack
+          ? await confirm({
+              title: 'Refunds are not on yet',
+              body: `${name} can still be taken off the winners list, but the ${amount} already spent won't come back to your rewards balance on its own. Write to info@gogreenstreets.org if you'd like it back.`,
+              confirmLabel: 'Take them off the list',
+              tone: 'danger',
+            })
+          : true
+        if (still) await forfeitWithoutRefund(w, name)
+        return
+      }
+      const r = (data ?? {}) as { ok?: boolean; reason?: string }
+      if (r.ok === false) {
+        toast(
+          r.reason === 'already'
+            ? `${name} was already marked as forfeited.`
+            : r.reason === 'already_picked'
+              ? `${name} already picked where to spend their gift card, so it can't be taken back.`
+              : r.reason === 'already_sent'
+                ? `${name}'s gift card was already sent by email, so it can't be taken back.`
+                : prizeActionText(r as { ok: boolean; reason?: string }),
+          { type: 'error' },
+        )
+        return
+      }
+      toast(moneyBack ? `${name} forfeited. ${amount} is back in your rewards balance.` : `${name} marked as forfeited`, { type: 'success' })
+      await reloadWinners()
+    } catch {
+      toast(GENERIC_ERROR, { type: 'error' })
+    } finally {
+      setForfeiting(null)
+    }
+  }
+
+  /** The Status column: what the winner's gift card (or claim) is doing. */
+  function winnerStatus(w: WinnerRow): { label: string; tone: 'success' | 'info' | 'neutral' | 'warn' } {
+    if (w.fulfillment_status === 'forfeited') return { label: 'Forfeited', tone: 'neutral' }
+    if (p.funded_from_pool) {
+      if (w.catalog_reward_id) {
+        const cs = cardStatus?.[w.id]?.card_status
+        if (cs === 'earned') return { label: 'Picking where to spend it', tone: 'info' }
+        if (cs === 'selected' || cs === 'fulfilling') return { label: 'Picked, on the way', tone: 'success' }
+        if (cs === 'delivered') return { label: 'Delivered', tone: 'success' }
+        if (cs === 'expired') return { label: 'Expired, refunded', tone: 'neutral' }
+        if (cs === 'failed') return { label: 'Delivery failed', tone: 'warn' }
+        return { label: 'Gift card in the app', tone: 'info' }
+      }
+      return w.fulfillment_status === 'fulfilled'
+        ? { label: 'Gift card sent', tone: 'success' }
+        : { label: 'Waiting to be sent', tone: 'info' }
+    }
+    return w.fulfillment_status === 'fulfilled' ? { label: 'Handed out', tone: 'success' } : { label: 'To hand out', tone: 'info' }
+  }
+
+  /** Forfeit only while there is something to take back. */
+  function canForfeit(w: WinnerRow): boolean {
+    if (!canManage || w.fulfillment_status === 'forfeited') return false
+    if (!p.funded_from_pool) return w.fulfillment_status === 'pending'
+    if (w.catalog_reward_id) {
+      const cs = cardStatus?.[w.id]?.card_status
+      return cs === undefined || cs === 'earned'
+    }
+    return w.fulfillment_status === 'pending' && !w.tremendous_order_id
+  }
+
+  const autoDrawError =
+    p.draw_status === 'pending' && p.auto_draw_error
+      ? /insufficient_pool_balance|insufficient_balance/i.test(p.auto_draw_error)
+        ? 'We couldn’t draw this automatically: your rewards balance is short. Add funds on the Billing page, then draw.'
+        : 'We couldn’t draw this automatically. Draw it here, or write to info@gogreenstreets.org.'
+      : null
 
   return (
     <div className="rounded-xl border border-line bg-surface-2">
-      <div className="flex items-center justify-between px-4 py-3.5">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-3.5">
+        <div className="flex min-w-0 items-start gap-3">
           <div className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-accent-soft text-accent">
             <Gift size={16} strokeWidth={1.75} />
           </div>
-          <div>
-            <div className="text-[14px] font-semibold">{p.name}</div>
-            <div className="text-[12.5px] text-ink-faint">
-              {p.award_mode === 'drawing' ? 'Random drawing' : 'Top performers'}{' '}
+          <div className="min-w-0">
+            <div className="text-[14px] font-semibold text-ink">{p.name}</div>
+            <div className="text-[12.5px] leading-[1.5] text-ink-muted">
+              {p.award_mode === 'drawing' ? 'Random drawing' : 'Top of the leaderboard'}{' '}
               · {p.winner_count} {p.winner_count === 1 ? 'winner' : 'winners'}{' '}
               · {p.funded_from_pool
-                ? `$${(p.amount_cents ?? 0) / 100}${productName ? ` ${productName}` : ' from pool'}`
-                : 'Self-fulfilled'}
-              {p.budget_cap_cents != null && (
-                <> · Budget: ${(p.budget_cap_cents / 100).toLocaleString()}</>
-              )}
+                ? legacy
+                  ? `${dollars(each)} gift card each, sent by email`
+                  : `${dollars(each)} gift card each, winner's choice, from your rewards balance`
+                : 'You hand it out'}
             </div>
+            {p.draw_status === 'pending' && p.auto_draw && !autoDrawError && (
+              <div className="mt-1 flex items-center gap-1.5 text-[12.5px] text-ink-muted">
+                <Clock size={13} strokeWidth={1.75} />
+                Draws itself the day after the challenge ends.
+              </div>
+            )}
+            {autoDrawError && (
+              <div className="mt-1 text-[12.5px] font-semibold leading-[1.5] text-ep-danger">{linkify(autoDrawError)}</div>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {canManage && p.draw_status === 'pending' && challengeStatus === 'Ended' && (
             <Button
               variant="primary"
@@ -868,7 +1487,7 @@ function PrizeCard({
               {drawing ? 'Drawing...' : 'Draw winners'}
             </Button>
           )}
-          {canManage && p.draw_status === 'drawn' && p.funded_from_pool && pendingCount > 0 && (
+          {canManage && legacy && p.draw_status === 'drawn' && p.funded_from_pool && pendingCount > 0 && (
             <Button
               variant="primary"
               size="sm"
@@ -877,19 +1496,27 @@ function PrizeCard({
               disabled={fulfilling}
             >
               {fulfilling
-                ? `Sending ${pendingCount} reward${pendingCount === 1 ? '' : 's'}...`
-                : `Fulfill ${pendingCount} reward${pendingCount === 1 ? '' : 's'}`}
+                ? `Sending ${pendingCount} gift ${pendingCount === 1 ? 'card' : 'cards'}...`
+                : `Send ${pendingCount} gift ${pendingCount === 1 ? 'card' : 'cards'}`}
             </Button>
           )}
-          {p.draw_status === 'fulfilled' && (
+          {legacy && p.draw_status === 'fulfilled' && (
             <Badge tone="success" dot={false}>
-              All fulfilled
+              All sent
+            </Badge>
+          )}
+          {p.draw_status !== 'pending' && !expanded && (
+            <Badge tone="success" dot={false}>
+              {winners.length} drawn
             </Badge>
           )}
           {p.draw_status !== 'pending' && (
             <button
-              className="grid h-8 w-8 place-items-center rounded-lg text-ink-faint hover:bg-surface"
+              type="button"
+              className="grid h-8 w-8 place-items-center rounded-lg text-ink-muted hover:bg-surface"
               onClick={() => setExpanded(!expanded)}
+              aria-expanded={expanded}
+              aria-label={expanded ? 'Hide winners' : 'Show winners'}
             >
               {expanded ? (
                 <ChevronUp size={16} strokeWidth={1.75} />
@@ -898,506 +1525,83 @@ function PrizeCard({
               )}
             </button>
           )}
-          {p.draw_status !== 'pending' && !expanded && (
-            <Badge tone="success" dot={false}>
-              {winners.length} drawn
-            </Badge>
-          )}
         </div>
       </div>
 
       {expanded && winners.length > 0 && (
         <div className="border-t border-line-2 px-4 py-3">
-          <table className="w-full text-left text-[13px]">
-            <thead>
-              <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-ink-faint">
-                <th className="pb-2">Winner</th>
-                <th className="pb-2 text-right">{PRIZE_METRIC_LABELS[p.metric]}</th>
-                {p.funded_from_pool && <th className="pb-2 text-right">Amount</th>}
-                <th className="pb-2 text-right">Status</th>
-                <th className="pb-2 w-8" />
-              </tr>
-            </thead>
-            <tbody>
-              {winners.map((w) => {
-                const member = memberMap.get(w.user_id)
-                return (
-                  <tr key={w.id} className="border-t border-line-2">
-                    <td className="py-2 font-semibold text-ink">
-                      {member?.display_name || w.user_id.slice(0, 8) + '...'}
-                    </td>
-                    <td className="py-2 text-right text-ink-muted">
-                      {p.metric === 'pct_non_car'
-                        ? `${Number(w.metric_value).toFixed(1)}%`
-                        : Number(w.metric_value).toFixed(1)}
-                    </td>
-                    {p.funded_from_pool && (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[480px] text-left text-[13px]">
+              <thead>
+                <tr className="text-[12.5px] font-semibold text-ink-muted">
+                  <th className="pb-2 font-semibold">Winner</th>
+                  <th className="pb-2 text-right font-semibold">{PRIZE_METRIC_LABELS[p.metric]}</th>
+                  {p.funded_from_pool && <th className="pb-2 text-right font-semibold">Amount</th>}
+                  <th className="pb-2 text-right font-semibold">Status</th>
+                  {canManage && <th className="w-8 pb-2" />}
+                </tr>
+              </thead>
+              <tbody>
+                {winners.map((w) => {
+                  const ws = winnerStatus(w)
+                  return (
+                    <tr key={w.id} className="border-t border-line-2">
+                      <td className="py-2 font-semibold text-ink">{nameOf(w)}</td>
                       <td className="py-2 text-right text-ink-muted">
-                        ${((w.amount_cents ?? 0) / 100).toFixed(0)}
+                        {p.metric === 'pct_non_car'
+                          ? `${Number(w.metric_value).toFixed(1)}%`
+                          : Number(w.metric_value).toFixed(1)}
                       </td>
-                    )}
-                    <td className="py-2 text-right">
-                      <Badge
-                        tone={
-                          w.fulfillment_status === 'fulfilled'
-                            ? 'success'
-                            : w.fulfillment_status === 'forfeited'
-                              ? 'neutral'
-                              : 'info'
-                        }
-                        dot={false}
-                      >
-                        {w.fulfillment_status === 'fulfilled'
-                          ? 'Fulfilled'
-                          : w.fulfillment_status === 'forfeited'
-                            ? 'Forfeited'
-                            : 'Pending'}
-                      </Badge>
-                    </td>
-                    <td className="py-2 text-right">
-                      {w.fulfillment_status === 'pending' && (
-                        <button
-                          className="text-ink-faint hover:text-ep-danger"
-                          title="Mark as forfeited"
-                          onClick={() => forfeitWinner(w.id)}
-                        >
-                          <Ban size={14} strokeWidth={1.75} />
-                        </button>
+                      {p.funded_from_pool && (
+                        <td className="py-2 text-right text-ink-muted">
+                          {dollars(w.amount_cents ?? each)}
+                        </td>
                       )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                      <td className="py-2 text-right">
+                        <Badge tone={ws.tone} dot={false}>
+                          {ws.label}
+                        </Badge>
+                      </td>
+                      {canManage && (
+                        <td className="py-2 pl-2 text-right">
+                          {canForfeit(w) && (
+                            <button
+                              type="button"
+                              className="grid h-8 w-8 place-items-center rounded-lg text-ink-muted hover:text-ep-danger disabled:opacity-50"
+                              title="Mark as forfeited"
+                              aria-label={`Mark ${nameOf(w)} as forfeited`}
+                              disabled={forfeiting !== null}
+                              onClick={() => forfeitWinner(w)}
+                            >
+                              <Ban size={14} strokeWidth={1.75} />
+                            </button>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
           {p.draw_status === 'drawn' && !p.funded_from_pool && (
-            <p className="mt-3 text-[12.5px] text-ink-faint">
-              Self-fulfilled prizes are managed outside of Shift. Mark winners as forfeited if they don&apos;t claim their prize.
+            <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-muted">
+              You hand out this prize yourself. If someone doesn&apos;t claim theirs, mark them as forfeited.
             </p>
           )}
-          {fulfilledCount > 0 && fulfilledCount === winners.length && (
-            <p className="mt-3 text-[12.5px] text-ink-faint">
-              All rewards have been sent via Tremendous. Winners receive an email with their reward link.
+          {p.funded_from_pool && catalogWinners.length > 0 && (
+            <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-muted">
+              Winners pick where to spend their gift card in the app: a local shop or a national brand. A card nobody
+              picks within 60 days expires and its value comes back to your rewards balance.
+            </p>
+          )}
+          {legacy && fulfilledCount > 0 && fulfilledCount === winners.length && p.funded_from_pool && (
+            <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-muted">
+              Winners got an email with their gift card link.
             </p>
           )}
         </div>
       )}
-    </div>
-  )
-}
-
-function PrizeEditor({
-  prize: p,
-  products,
-  productsLoading,
-  productsError,
-  onChange,
-  onRemove,
-}: {
-  prize: PrizeFormState
-  products: TremendousProduct[]
-  productsLoading: boolean
-  productsError: string
-  onChange: (patch: Partial<PrizeFormState>) => void
-  onRemove: () => void
-}) {
-  const [open, setOpen] = useState(!p.id)
-  const [showDrawingInfo, setShowDrawingInfo] = useState(false)
-  const [productSearch, setProductSearch] = useState('')
-
-  const filteredProducts = productSearch
-    ? products.filter((prod) =>
-        prod.name.toLowerCase().includes(productSearch.toLowerCase()),
-      )
-    : products
-
-  const selectedProduct = products.find(
-    (prod) => prod.id === p.tremendous_product_id,
-  )
-
-  if (!open) {
-    return (
-      <div className="flex items-center justify-between rounded-xl border border-line bg-surface-2 px-4 py-3.5">
-        <div className="flex items-center gap-3">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-accent-soft text-accent">
-            <Gift size={16} strokeWidth={1.75} />
-          </div>
-          <div>
-            <div className="text-[14px] font-semibold">
-              {p.name || 'Untitled prize'}
-            </div>
-            <div className="text-[12.5px] text-ink-faint">
-              {p.award_mode === 'drawing' ? 'Random drawing' : 'Top performers'}{' '}
-              · {p.winner_count} {Number(p.winner_count) === 1 ? 'winner' : 'winners'} ·{' '}
-              {p.funded_from_pool
-                ? `$${p.amount_dollars || '25'}${selectedProduct ? ` ${selectedProduct.name}` : ' from pool'}`
-                : 'Self-fulfilled'}
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-1.5">
-          <Button variant="ghost" size="sm" icon={Pencil} onClick={() => setOpen(true)}>
-            Edit
-          </Button>
-          <button
-            className="grid h-8 w-8 place-items-center rounded-lg text-ink-faint hover:text-ep-danger"
-            onClick={onRemove}
-          >
-            <X size={16} strokeWidth={1.75} />
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="rounded-xl border border-accent bg-surface-2 p-[18px]">
-      <div className="grid gap-4">
-        <div>
-          <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-            Prize name
-          </label>
-          <input
-            className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
-            placeholder="e.g. Gift Card Drawing"
-            value={p.name}
-            onChange={(e) => onChange({ name: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <div className="mb-2 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted">
-            How are winners selected?
-            <button
-              type="button"
-              className="text-ink-faint hover:text-accent"
-              onClick={() => setShowDrawingInfo(true)}
-            >
-              <Info size={14} strokeWidth={2} />
-            </button>
-          </div>
-          <div className="flex gap-2">
-            <button
-              className={`flex items-center gap-2 rounded-[10px] border px-4 py-2.5 text-[13px] font-semibold transition-colors ${
-                p.award_mode === 'drawing'
-                  ? 'border-accent bg-accent-soft text-accent-ink'
-                  : 'border-line text-ink-muted hover:border-accent'
-              }`}
-              onClick={() => onChange({ award_mode: 'drawing' })}
-            >
-              Random drawing
-              <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-accent">
-                Recommended
-              </span>
-            </button>
-            <button
-              className={`rounded-[10px] border px-4 py-2.5 text-[13px] font-semibold transition-colors ${
-                p.award_mode === 'merit'
-                  ? 'border-accent bg-accent-soft text-accent-ink'
-                  : 'border-line text-ink-muted hover:border-accent'
-              }`}
-              onClick={() => onChange({ award_mode: 'merit' })}
-            >
-              Top performers (merit)
-            </button>
-          </div>
-          {showDrawingInfo && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowDrawingInfo(false)}>
-              <div className="mx-4 max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-                <div className="mb-3 flex items-center justify-between">
-                  <h3 className="text-[15px] font-bold text-ink">Why random drawings?</h3>
-                  <button className="text-ink-faint hover:text-ink" onClick={() => setShowDrawingInfo(false)}>
-                    <X size={18} strokeWidth={2} />
-                  </button>
-                </div>
-                <p className="text-[13.5px] leading-[1.6] text-ink-muted">
-                  We recommend random drawings because they encourage broader participation. Merit-based prizes tend to attract a small group of over-zealous competitors, which can discourage everyone else. With a random drawing, every eligible participant has an equal chance to win, keeping more people engaged throughout the challenge.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-3 gap-3.5">
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-              Metric
-            </label>
-            <select
-              className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
-              value={p.metric}
-              onChange={(e) => {
-                const next = e.target.value as PrizeMetric
-                const patch: Partial<PrizeFormState> = { metric: next }
-                if (p.min_threshold === (DEFAULT_METRIC_THRESHOLD[p.metric] ?? '25')) {
-                  patch.min_threshold = DEFAULT_METRIC_THRESHOLD[next] ?? '25'
-                }
-                onChange(patch)
-              }}
-            >
-              {Object.entries(PRIZE_METRIC_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-              Min {PRIZE_METRIC_LABELS[p.metric] ?? 'Shift Rate'}
-            </label>
-            <div className="flex items-center rounded-[10px] border border-line bg-surface">
-              <input
-                type="number"
-                min="0"
-                className="w-full border-0 bg-transparent px-3 py-2.5 text-[14px] text-ink outline-none"
-                value={p.min_threshold}
-                onChange={(e) =>
-                  onChange({ min_threshold: e.target.value })
-                }
-              />
-              <span className="pr-3 text-[14px] text-ink-faint">
-                {PRIZE_METRIC_UNITS[p.metric] ?? '%'}
-              </span>
-            </div>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-              Winners
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="500"
-              className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
-              value={p.winner_count}
-              onChange={(e) => onChange({ winner_count: e.target.value })}
-            />
-          </div>
-        </div>
-        {p.award_mode === 'merit' && p.min_threshold && Number(p.min_threshold) > 0 && (
-          <p className="text-[12px] leading-[1.5] text-ink-faint">
-            {Number(p.winner_count) >= 100
-              ? `All employees reaching ${p.min_threshold} ${PRIZE_METRIC_UNITS[p.metric] ?? '%'} ${PRIZE_METRIC_LABELS[p.metric] ?? 'Shift Rate'} will receive this prize (up to ${p.winner_count}).`
-              : `Everyone meeting this threshold is eligible. The top ${p.winner_count} by ${PRIZE_METRIC_LABELS[p.metric] ?? 'Shift Rate'} will win. Set a high winner count to include everyone who qualifies.`}
-          </p>
-        )}
-
-        <div>
-          <div className="mb-2 text-[12.5px] font-semibold text-ink-muted">
-            Fulfillment
-          </div>
-          <div className="flex gap-2">
-            {(['pool', 'self'] as const).map((mode) => (
-              <button
-                key={mode}
-                className={`rounded-[10px] border px-4 py-2.5 text-[13px] font-semibold transition-colors ${
-                  (mode === 'pool') === p.funded_from_pool
-                    ? 'border-accent bg-accent-soft text-accent-ink'
-                    : 'border-line text-ink-muted hover:border-accent'
-                }`}
-                onClick={() =>
-                  onChange({ funded_from_pool: mode === 'pool' })
-                }
-              >
-                {mode === 'pool' ? 'Fund from pool' : 'Self-fulfilled'}
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-[12px] leading-[1.5] text-ink-faint">
-            {p.funded_from_pool
-              ? 'Winners receive rewards from your Shift rewards pool (gift cards or bank transfers).'
-              : 'You handle prize distribution directly — for example, company swag, experiences, or gift cards you purchase separately.'}
-          </p>
-        </div>
-
-        {p.funded_from_pool ? (
-          <>
-            <div>
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-                Amount per winner
-              </label>
-              <div className="flex items-center rounded-[10px] border border-line bg-surface">
-                <span className="pl-3 text-[14px] text-ink-faint">$</span>
-                <input
-                  type="number"
-                  min="1"
-                  className="w-full border-0 bg-transparent px-2 py-2.5 text-[14px] text-ink outline-none"
-                  placeholder="25"
-                  value={p.amount_dollars}
-                  onChange={(e) => onChange({ amount_dollars: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-                Budget cap <span className="font-normal text-ink-faint">· optional</span>
-              </label>
-              <div className="flex items-center rounded-[10px] border border-line bg-surface">
-                <span className="pl-3 text-[14px] text-ink-faint">$</span>
-                <input
-                  type="number"
-                  min="1"
-                  className="w-full border-0 bg-transparent px-2 py-2.5 text-[14px] text-ink outline-none"
-                  placeholder="No limit"
-                  value={p.budget_cap_dollars}
-                  onChange={(e) => onChange({ budget_cap_dollars: e.target.value })}
-                />
-              </div>
-              <p className="mt-1.5 text-[12px] leading-[1.5] text-ink-faint">
-                Limits total spend for this prize.
-                {p.budget_cap_dollars && p.amount_dollars && parseFloat(p.amount_dollars) > 0
-                  ? ` Up to ${Math.floor(parseFloat(p.budget_cap_dollars) / parseFloat(p.amount_dollars))} recipients.`
-                  : ' If more people qualify than the budget covers, top performers receive the prize.'}
-              </p>
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-                Reward type
-              </label>
-              {productsLoading && (
-                <div className="rounded-[10px] border border-line bg-surface px-3.5 py-3 text-[13px] text-ink-faint">
-                  Loading reward options...
-                </div>
-              )}
-              {productsError && (
-                <div className="rounded-[10px] border border-ep-danger/30 bg-ep-danger/5 px-3.5 py-3 text-[13px] text-ep-danger">
-                  {productsError}
-                </div>
-              )}
-              {!productsLoading && !productsError && products.length > 0 && (
-                <div>
-                  {selectedProduct && !productSearch ? (
-                    <div className="flex items-center justify-between rounded-[10px] border border-accent bg-accent-soft px-3.5 py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        {selectedProduct.image_url && (
-                          <img
-                            src={selectedProduct.image_url}
-                            alt=""
-                            className="h-7 w-7 rounded object-contain"
-                          />
-                        )}
-                        <span className="text-[14px] font-semibold text-accent-ink">
-                          {selectedProduct.name}
-                        </span>
-                      </div>
-                      <button
-                        className="text-[12.5px] font-semibold text-accent hover:underline"
-                        onClick={() => {
-                          onChange({ tremendous_product_id: '' })
-                          setProductSearch('')
-                        }}
-                      >
-                        Change
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="relative mb-2">
-                        <Search
-                          size={15}
-                          strokeWidth={1.75}
-                          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
-                        />
-                        <input
-                          className="w-full rounded-[10px] border border-line bg-surface py-2.5 pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-faint outline-none focus:border-accent"
-                          placeholder="Search rewards (Visa, Amazon, Starbucks...)"
-                          value={productSearch}
-                          onChange={(e) => setProductSearch(e.target.value)}
-                        />
-                      </div>
-                      <div className="grid max-h-[240px] gap-1 overflow-y-auto rounded-[10px] border border-line bg-surface p-1.5">
-                        {filteredProducts.slice(0, 50).map((prod) => (
-                          <button
-                            key={prod.id}
-                            className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors hover:bg-accent-softer ${
-                              p.tremendous_product_id === prod.id
-                                ? 'bg-accent-soft'
-                                : ''
-                            }`}
-                            onClick={() => {
-                              onChange({ tremendous_product_id: prod.id })
-                              setProductSearch('')
-                            }}
-                          >
-                            {prod.image_url && (
-                              <img
-                                src={prod.image_url}
-                                alt=""
-                                className="h-6 w-6 rounded object-contain"
-                              />
-                            )}
-                            <span className="text-[13px] font-medium text-ink">
-                              {prod.name}
-                            </span>
-                          </button>
-                        ))}
-                        {filteredProducts.length === 0 && (
-                          <div className="px-3 py-3 text-center text-[13px] text-ink-faint">
-                            No matching rewards
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
-              Prize description
-            </label>
-            <input
-              className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
-              placeholder="e.g. Branded water bottle, gift card, etc."
-              value={p.prize_description}
-              onChange={(e) =>
-                onChange({ prize_description: e.target.value })
-              }
-            />
-          </div>
-        )}
-
-        <div
-          className="flex cursor-pointer items-center gap-2.5"
-          onClick={() => onChange({ auto_draw: !p.auto_draw })}
-        >
-          <div
-            className={`grid h-[22px] w-[22px] shrink-0 place-items-center rounded-md border-2 transition-colors ${
-              p.auto_draw
-                ? 'border-accent bg-accent text-white'
-                : 'border-line'
-            }`}
-          >
-            {p.auto_draw && <Check size={13} strokeWidth={2.5} />}
-          </div>
-          <span className="text-[14px]">
-            Automatically select winners when challenge ends
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-line-2 pt-3.5">
-          <button
-            className="flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-ep-danger hover:bg-ep-danger/10"
-            onClick={onRemove}
-          >
-            <X size={15} strokeWidth={1.75} />
-            Remove
-          </button>
-          <Button
-            variant="primary"
-            size="sm"
-            icon={Check}
-            onClick={() => setOpen(false)}
-          >
-            Done
-          </Button>
-        </div>
-      </div>
     </div>
   )
 }

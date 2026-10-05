@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { PRICES } from '@/lib/facts/prices'
 import type {
   Mode,
@@ -294,6 +295,34 @@ function mapComparisons(modes: EdgeModeResult[], bikeInfraQuality: BikeInfraQual
   }))
 }
 
+/* ── Usage log (Shift 01048) ── */
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * One advisor_runs row per completed recommendation on an employer's page:
+ * which employer (resolved from its slug), which office, the recommended
+ * mode and the distance category. Never the addresses or coordinates.
+ * Runs after the response has been sent; any failure is swallowed, so the
+ * log can never slow down or break a recommendation.
+ */
+async function logAdvisorRun(slug: string, locationId: string | null, primaryMode: string, distanceCategory: string): Promise<void> {
+  try {
+    const admin = createServerSupabaseClient()
+    const { data: group } = await admin.from('groups').select('id').eq('slug', slug).limit(1).maybeSingle()
+    if (!group?.id) return
+    await admin.from('advisor_runs').insert({
+      group_id: group.id,
+      location_id: locationId && UUID_RE.test(locationId) ? locationId : null,
+      primary_mode: primaryMode,
+      distance_category: distanceCategory,
+      variant: 'employer',
+    })
+  } catch {
+    /* usage logging never affects the recommendation */
+  }
+}
+
 /* ── Route handler ── */
 
 export const maxDuration = 30
@@ -309,6 +338,9 @@ export async function GET(req: NextRequest) {
   const commuteDailyCost = parseFloat(searchParams.get('commute_daily_cost') || '') || undefined
   const parkingDaily = parseFloat(searchParams.get('parking_daily') || '') || 0
   const parkingMonthly = Math.round(parkingDaily * 20)
+  // Employer pages pass their slug (and office) so the portal can count runs; the public advisor sends neither.
+  const groupSlug = searchParams.get('group') || null
+  const locationParam = searchParams.get('location') || null
 
   if (isNaN(originLat) || isNaN(originLng) || isNaN(destLat) || isNaN(destLng)) {
     return NextResponse.json({ error: 'origin_lat, origin_lng, dest_lat, dest_lng required' }, { status: 400 })
@@ -448,6 +480,12 @@ export async function GET(req: NextRequest) {
             summary: edge.bike_comfort_summary,
           }
         : null,
+    }
+
+    if (groupSlug) {
+      const runMode = edge.recommended_mode
+      const runCategory = response.distance_category
+      after(() => logAdvisorRun(groupSlug, locationParam, runMode, runCategory))
     }
 
     return NextResponse.json(response, {

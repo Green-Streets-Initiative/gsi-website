@@ -8,9 +8,13 @@
  * inserted the row client-side and sent nothing).
  *
  * Auth: caller must be a portal admin of the group, or a GSI admin
- * (school_roles.role = 'gsi_admin'). Gateway verify_jwt stays ON.
+ * (school_roles.role = 'gsi_admin'). Managers can't change the team, so they
+ * can't use this. Gateway verify_jwt stays ON.
  *
- * POST { group_id, email, role: 'admin' | 'viewer', name?, variant? }
+ * POST { group_id, email, role: 'admin' | 'manager' | 'viewer', name?, variant? }
+ *   'manager' needs migration 01081 (the role check); before it, the insert
+ *   is refused and this returns an error. A re-invite never changes the
+ *   account owner's role: the owner is always an admin.
  *   variant 'welcome' — first-admin welcome email (includes the employee
  *   invite code); default is the teammate-invite email.
  */
@@ -39,7 +43,7 @@ function escapeHtml(str: string): string {
 function buildInviteHtml(opts: {
   companyName: string;
   inviterEmail: string;
-  role: "admin" | "viewer";
+  role: "admin" | "manager" | "viewer";
   magicLink: string;
   variant: "invite" | "welcome";
   inviteCode: string | null;
@@ -48,7 +52,9 @@ function buildInviteHtml(opts: {
   const roleLine =
     role === "admin"
       ? "As an <strong>admin</strong> you can manage settings, challenges, prizes, and the team."
-      : "As a <strong>viewer</strong> you can see the dashboard, impact data, and reports.";
+      : role === "manager"
+        ? "As a <strong>manager</strong> you can run challenges and prizes, invite employees, and edit the Commute Advisor page."
+        : "As a <strong>viewer</strong> you can see the dashboard, impact data, and reports.";
   const heading =
     variant === "welcome"
       ? `Welcome to Shift — ${escapeHtml(companyName)}`
@@ -144,7 +150,7 @@ serve(async (req: Request) => {
 
   const groupId = body.group_id;
   const inviteeEmail = body.email?.trim().toLowerCase();
-  const role = body.role === "admin" ? "admin" : "viewer";
+  const role = body.role === "admin" ? "admin" : body.role === "manager" ? "manager" : "viewer";
   if (!groupId || !inviteeEmail || !inviteeEmail.includes("@")) {
     return jsonResponse({ error: "group_id and a valid email are required" }, 400);
   }
@@ -192,6 +198,19 @@ serve(async (req: Request) => {
     .maybeSingle();
   if (!group || !["active", "cancelled"].includes(group.status)) {
     return jsonResponse({ error: "Group not found or inactive" }, 404);
+  }
+
+  // The account owner is always an admin (01081). A re-invite must not
+  // demote them; the database refuses it too, with a less useful error.
+  // select('*') so this still works before 01081 adds is_owner.
+  const { data: existingRow } = await admin
+    .from("group_admins")
+    .select("*")
+    .eq("group_id", groupId)
+    .eq("email", inviteeEmail)
+    .maybeSingle();
+  if ((existingRow as { is_owner?: boolean } | null)?.is_owner && role !== "admin") {
+    return jsonResponse({ error: "That's the account owner. They're always an admin." }, 409);
   }
 
   // Upsert the access row (re-inviting an existing teammate refreshes role/name

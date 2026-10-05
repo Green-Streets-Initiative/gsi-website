@@ -27,5 +27,15 @@
     "gasPerGallonMa": 3.59,
     "maintPerMile": 0.109,
     "parkingDailyBoston": 18
+  },
+  "effort": {
+    "_comment": "Shared by both Commute Advisors (public and employer). MET values from the ACSM compendium; speeds are typical urban door-to-door.",
+    "walkMet": 4.0,
+    "bikeMet": 8.0,
+    "ebikeMet": 4.5,
+    "walkMph": 3.5,
+    "bikeMph": 11,
+    "ebikeMph": 15,
+    "driveMph": 14
   }
 }

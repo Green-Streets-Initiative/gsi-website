@@ -9,9 +9,12 @@
  *     then emails the admin a single welcome email containing both the
  *     portal magic link and the employee invite code.
  *   - customer.subscription.deleted
- *     Marks the group inactive and caps access_ends_at at now(). Existing
- *     employees retain personal trip history; group-scoped features go
- *     unavailable.
+ *     Marks the group inactive and sets access_ends_at to least(existing,
+ *     now()). Existing employees retain personal trip history; group-scoped
+ *     features go unavailable.
+ *   - customer.subscription.updated
+ *     Mirrors cancel_at_period_end → 'cancelled', pause_collection / the
+ *     paused status → 'paused', an active subscription → 'active'.
  *
  * Auth: public (--no-verify-jwt). Signature is verified against
  *       STRIPE_WEBHOOK_SECRET before any DB work. Any request that fails
@@ -614,15 +617,36 @@ async function handleSubscriptionDeleted(
   const subscription = event.data.object as Stripe.Subscription;
   const supabase = createAdminClient();
 
+  // Access ends at least(existing, now): a period-end cancel already carries
+  // the paid-through date, so the deletion at that date keeps it; an
+  // immediate cancel (or an unpaid subscription) ends access now.
+  const { data: existing, error: lookupErr } = await supabase
+    .from("groups")
+    .select("id, access_ends_at")
+    .eq("stripe_subscription_id", subscription.id)
+    .maybeSingle();
+  if (lookupErr) {
+    console.error("[EmployerWebhook] subscription.deleted lookup failed:", lookupErr);
+    return;
+  }
+  if (!existing) {
+    console.log(
+      `[EmployerWebhook] subscription.deleted for unknown subscription ${subscription.id} — skipping`,
+    );
+    return;
+  }
+  const now = new Date();
+  const existingEnd = existing.access_ends_at ? new Date(existing.access_ends_at) : null;
+  const accessEndsAt =
+    existingEnd && !Number.isNaN(existingEnd.getTime()) && existingEnd < now ? existingEnd : now;
+
   const { error } = await supabase
     .from("groups")
     .update({
       status: "inactive",
-      // Don't retroactively shorten access_ends_at — Stripe has already
-      // honored the paid period up to now. Cap it at min(existing, now).
-      access_ends_at: new Date().toISOString(),
+      access_ends_at: accessEndsAt.toISOString(),
     })
-    .eq("stripe_subscription_id", subscription.id);
+    .eq("id", existing.id);
 
   if (error) {
     console.error("[EmployerWebhook] subscription.deleted update failed:", error);
@@ -699,11 +723,19 @@ async function handleSubscriptionUpdated(
   //   active | past_due | unpaid | trialing | incomplete | canceled | incomplete_expired
   // For our purposes, only cancel_at_period_end is the signal we care
   // about (with deletion handled separately).
-  let nextStatus: "active" | "cancelled" | "inactive" = group.status as
+  // A paused subscription (Stripe `pause_collection`, API-only, or the
+  // `paused` status after a trial with no payment method) → 'paused': the
+  // portal shows a Paused badge and every write is refused until it resumes.
+  // access_ends_at is left alone on a pause.
+  let nextStatus: "active" | "cancelled" | "inactive" | "paused" = group.status as
     | "active"
     | "cancelled"
-    | "inactive";
-  if (subscription.status === "canceled") {
+    | "inactive"
+    | "paused";
+  const isPaused = !!subscription.pause_collection || subscription.status === "paused";
+  if (isPaused) {
+    nextStatus = "paused";
+  } else if (subscription.status === "canceled") {
     nextStatus = "inactive";
   } else if (subscription.cancel_at_period_end) {
     nextStatus = "cancelled";
@@ -717,7 +749,7 @@ async function handleSubscriptionUpdated(
       status: nextStatus,
       tier,
       access_starts_at: accessStartsAt,
-      access_ends_at: accessEndsAt,
+      ...(isPaused ? {} : { access_ends_at: accessEndsAt }),
     })
     .eq("id", group.id);
 
@@ -727,7 +759,7 @@ async function handleSubscriptionUpdated(
   }
 
   console.log(
-    `[EmployerWebhook] subscription ${subscription.id} → status=${nextStatus}, tier=${tier}, cancel_at_period_end=${subscription.cancel_at_period_end}`,
+    `[EmployerWebhook] subscription ${subscription.id} → status=${nextStatus}, tier=${tier}, cancel_at_period_end=${subscription.cancel_at_period_end}, paused=${isPaused}`,
   );
 }
 

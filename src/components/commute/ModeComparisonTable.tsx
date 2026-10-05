@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from 'react'
 import posthog from 'posthog-js'
 import type { BikeComfort, ModeComparison } from '@/lib/types/commute'
 import ModeIcon from '@/components/commute/ModeIcon'
+import type { ComponentProps } from 'react'
 import ComfortBar from '@/components/commute/ComfortBar'
 
 const MODE_LABELS: Record<string, string> = {
@@ -54,12 +55,15 @@ interface ModeComparisonTableProps {
   destLat?: number
   destLng?: number
   bikeComfort?: BikeComfort | null
+  /** Extra properties on `advisor_directions_clicked` (variant, employer slug). */
+  trackProps?: Record<string, unknown>
 }
 
 export default function ModeComparisonTable({
   comparisons, winnerMode, selectedMode, onSelectMode,
   routeTimes, originLat, originLng, destLat, destLng,
   bikeComfort,
+  trackProps,
 }: ModeComparisonTableProps) {
   if (comparisons.length < 2) return null
 
@@ -101,7 +105,7 @@ export default function ModeComparisonTable({
                 {/* Mode icon + label */}
                 <div className="flex min-w-0 flex-1 items-center gap-2.5">
                   <span className={isSelected ? 'text-[#2D6A4F]' : 'text-[#191A2E]'}>
-                    <ModeIcon mode={c.mode as any} size={20} />
+                    <ModeIcon mode={c.mode as ComponentProps<typeof ModeIcon>['mode']} size={20} />
                   </span>
                   <span className={`text-[0.8125rem] font-semibold ${isSelected ? 'text-[#2D6A4F]' : 'text-[#191A2E]'}`}>
                     {MODE_LABELS[c.mode] || c.label}
@@ -174,7 +178,7 @@ export default function ModeComparisonTable({
                       href={buildGoogleMapsUrl(originLat!, originLng!, destLat!, destLng!, c.mode)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={() => posthog.capture('advisor_directions_clicked', { mode: c.mode })}
+                      onClick={() => posthog.capture('advisor_directions_clicked', { ...trackProps, mode: c.mode, source: 'comparison' })}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-[#2D6A4F] px-4 py-2 text-[0.8125rem] font-bold text-white transition-colors hover:bg-[#1F4D3A]"
                     >
                       Get directions

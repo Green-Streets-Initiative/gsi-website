@@ -74,6 +74,7 @@ export interface ContentItem {
 
 export interface EventWithDetails {
   id: string
+  slug?: string | null
   event_date: string
   location_name: string | null
   content_items: {
@@ -119,6 +120,18 @@ export interface EmployerGroup {
   logo_url: string | null
   tier: string
   employer_benefits: EmployerBenefits
+  /** The team code employees type into the app; also builds the join link. */
+  invite_code?: string
+  /** Offices/branches, main first. Two or more = staff choose theirs. */
+  locations?: EmployerAdvisorLocation[]
+}
+
+export interface EmployerAdvisorLocation {
+  id: string
+  name: string | null
+  address: string
+  lat: number
+  lng: number
 }
 
 export interface ModeComparison {

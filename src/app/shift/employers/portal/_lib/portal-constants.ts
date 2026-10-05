@@ -45,6 +45,24 @@ export const EMPTY_PRIZE_FORM: PrizeFormState = {
   prize_description: '',
   auto_draw: true,
   budget_cap_dollars: '',
+  requires_work_email: false,
+}
+
+/** Guaranteed reward: first N members to reach the goal each win. */
+export const EMPTY_GUARANTEED_PRIZE_FORM: PrizeFormState = {
+  id: null,
+  name: 'Reach the goal',
+  award_mode: 'guaranteed',
+  metric: 'trips',
+  min_threshold: '10',
+  winner_count: '50',
+  funded_from_pool: true,
+  amount_dollars: '15',
+  tremendous_product_id: '',
+  prize_description: '',
+  auto_draw: false,
+  budget_cap_dollars: '',
+  requires_work_email: true,
 }
 
 export const MODE_LABEL: Record<string, string> = {
@@ -66,7 +84,10 @@ export const METRIC_LABELS: Record<string, string> = {
   miles: 'Miles shifted',
 }
 
+// 'free' is the plan GSI sets for prospects trying the portal and comped
+// companies; it has no annual fee and the same features as Starter.
 export const TIER_LABEL: Record<string, string> = {
+  free: 'Complimentary',
   starter: 'Starter',
   basic: 'Basic',
   standard: 'Standard',
@@ -81,6 +102,7 @@ export const TIER_ANNUAL_PRICE: Record<string, number> = {
 }
 
 export const TIER_ORDER: Record<string, number> = {
+  free: 0,
   starter: 0,
   basic: 1,
   standard: 2,

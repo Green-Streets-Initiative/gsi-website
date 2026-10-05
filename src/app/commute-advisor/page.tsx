@@ -39,15 +39,17 @@ const VEHICLES: Record<string, { mpg: number; maint: number; isEV?: boolean; cos
   ev:           { mpg: 0,  maint: 0.06, isEV: true, costPerMile: 0.048 },
 }
 
+// Effort and speed constants live in src/lib/facts/prices.json ("effort"),
+// shared with the employer advisor so both pages agree.
 const MODES: Record<string, { met: number; mph: number | null; label: string; healthNote: string }> = {
-  walk:          { met: 4.0, mph: 3.5,  label: 'Walking',       healthNote: 'each way on foot' },
-  bike:          { met: 8.0, mph: 11,   label: 'Cycling',       healthNote: 'each way by bike' },
-  ebike:         { met: 4.5, mph: 15,   label: 'E-bike',        healthNote: 'each way by e-bike' },
+  walk:          { met: PRICES.effort.walkMet,  mph: PRICES.effort.walkMph,  label: 'Walking',       healthNote: 'each way on foot' },
+  bike:          { met: PRICES.effort.bikeMet,  mph: PRICES.effort.bikeMph,  label: 'Cycling',       healthNote: 'each way by bike' },
+  ebike:         { met: PRICES.effort.ebikeMet, mph: PRICES.effort.ebikeMph, label: 'E-bike',        healthNote: 'each way by e-bike' },
   mbta:          { met: 0,   mph: null,  label: 'MBTA',          healthNote: '' },
   commuter_rail: { met: 0,   mph: null,  label: 'Commuter rail', healthNote: '' },
 }
 
-const DRIVE_MPH = 14
+const DRIVE_MPH = PRICES.effort.driveMph
 
 // Default pricing — canonical facts, overridden by /api/pricing on mount
 let MBTA_SUBWAY_SINGLE = PRICES.mbta.subwaySingle
@@ -155,7 +157,7 @@ export default function CommuteCalculator() {
   const [distance, setDistance] = useState(s?.distance ?? 0)
   const [driveDays, setDriveDays] = useState(s?.driveDays ?? 5)
   const [vehicle, setVehicle] = useState(s?.vehicle ?? 'medium_sedan')
-  const [gasPrice, setGasPrice] = useState(s?.gasPrice ?? 3.59)
+  const [gasPrice, setGasPrice] = useState(s?.gasPrice ?? PRICES.driving.gasPerGallonMa)
   const [parkMode, setParkMode] = useState(s?.parkMode ?? 'free')
   const [parkingCost, setParkingCost] = useState(s?.parkingCost ?? 15)
   // Default to "new here — still figuring it out" (not Drive): the advisor's
@@ -988,6 +990,7 @@ export default function CommuteCalculator() {
                   distanceCategory={recommendation.distance_category}
                   onRefresh={handleRefresh}
                   loading={recLoading}
+                  trackProps={{ advisor_variant: 'public' }}
                   routeTimeMinutes={getRouteTimeForMode()}
                   routeTimes={hasGoogleTimes ? googleTimes : undefined}
                 />
@@ -1015,6 +1018,7 @@ export default function CommuteCalculator() {
                       destLat={workPlaceData?.lat}
                       destLng={workPlaceData?.lng}
                       bikeComfort={recommendation.bike_comfort}
+                      trackProps={{ advisor_variant: 'public' }}
                     />
                   )
                 })()}

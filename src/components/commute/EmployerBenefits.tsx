@@ -27,8 +27,8 @@ export default function EmployerBenefits({ companyName, benefits }: EmployerBene
       items.push(`Free shuttle: ${route.name} from ${route.from_stop}`)
     }
   }
-  if (benefits.other_benefits) {
-    items.push(benefits.other_benefits)
+  if (benefits.other_benefits && benefits.other_benefits.trim()) {
+    items.push(`Also from ${companyName}: ${benefits.other_benefits.trim()}`)
   }
 
   if (items.length === 0) return null

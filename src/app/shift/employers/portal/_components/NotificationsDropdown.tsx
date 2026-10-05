@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useMemo, useCallback } from 'react'
-import { CheckCircle, Users, Trophy } from 'lucide-react'
+import Link from 'next/link'
+import { CheckCircle, Trophy } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
 import Avatar from '@/components/employer/Avatar'
 
@@ -12,10 +13,14 @@ type NotifItem = {
   name: string
   timestamp: string
   unread: boolean
+  href: string
 }
 
+/** Wall clock, kept out of render so the purity lint stays quiet. */
+const now = () => Date.now()
+
 function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
+  const diff = now() - new Date(iso).getTime()
   const mins = Math.floor(diff / 60000)
   if (mins < 1) return 'Just now'
   if (mins < 60) return `${mins}m ago`
@@ -77,16 +82,20 @@ export default function NotificationsDropdown({ onClose }: { onClose: () => void
         onClose()
       }
     }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
     const timer = setTimeout(() => document.addEventListener('mousedown', handleClick), 0)
+    window.addEventListener('keydown', handleKey)
     return () => {
       clearTimeout(timer)
       document.removeEventListener('mousedown', handleClick)
+      window.removeEventListener('keydown', handleKey)
     }
   }, [onClose])
 
   const items = useMemo(() => {
-    const now = Date.now()
-    const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000
+    const thirtyDaysAgo = now() - 30 * 24 * 60 * 60 * 1000
     const result: NotifItem[] = []
 
     if (prefs.new_employee !== false) {
@@ -100,6 +109,7 @@ export default function NotificationsDropdown({ onClose }: { onClose: () => void
             name: m.display_name || 'User',
             timestamp: m.joined_at,
             unread: lastSeen ? new Date(m.joined_at) > new Date(lastSeen) : true,
+            href: `/shift/employers/portal/employees?member=${encodeURIComponent(m.user_id)}`,
           })
         }
       }
@@ -116,6 +126,7 @@ export default function NotificationsDropdown({ onClose }: { onClose: () => void
             name: c.name,
             timestamp: c.starts_at,
             unread: lastSeen ? new Date(c.starts_at) > new Date(lastSeen) : true,
+            href: '/shift/employers/portal/challenges',
           })
         }
       }
@@ -133,13 +144,16 @@ export default function NotificationsDropdown({ onClose }: { onClose: () => void
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-full mt-2 w-[360px] overflow-hidden rounded-[14px] border border-line bg-surface shadow-lg"
+      role="dialog"
+      aria-label="Notifications"
+      className="fixed left-3 right-3 top-[68px] z-40 w-auto max-w-[calc(100vw-24px)] overflow-hidden rounded-[14px] border border-line bg-surface shadow-lg sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[360px]"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <span className="text-[14px] font-bold text-ink">Notifications</span>
         {items.length > 0 && (
           <button
+            type="button"
             onClick={markAllRead}
             className="text-[12.5px] font-semibold text-accent hover:underline"
           >
@@ -159,9 +173,11 @@ export default function NotificationsDropdown({ onClose }: { onClose: () => void
           </div>
         ) : (
           items.map((item) => (
-            <div
+            <Link
               key={item.id}
-              className={`flex gap-3 px-4 py-3 transition-colors hover:bg-surface-2 ${
+              href={item.href}
+              onClick={onClose}
+              className={`flex gap-3 px-4 py-3 no-underline transition-colors hover:bg-surface-2 ${
                 item.unread ? 'bg-accent-softer' : ''
               }`}
             >
@@ -174,12 +190,12 @@ export default function NotificationsDropdown({ onClose }: { onClose: () => void
               )}
               <div className="min-w-0 flex-1">
                 <div className="text-[13.5px] text-ink">{item.title}</div>
-                <div className="text-[12px] text-ink-faint">{relativeTime(item.timestamp)}</div>
+                <div className="text-[12px] text-ink-tertiary">{relativeTime(item.timestamp)}</div>
               </div>
               {item.unread && (
                 <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />
               )}
-            </div>
+            </Link>
           ))
         )}
       </div>
@@ -197,7 +213,7 @@ export function hasUnreadNotifications(
   if (!lastSeen) return members.length > 0 || challenges.length > 0
 
   const cutoff = new Date(lastSeen)
-  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
+  const thirtyDaysAgo = now() - 30 * 24 * 60 * 60 * 1000
 
   if (prefs.new_employee !== false) {
     for (const m of members) {

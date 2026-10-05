@@ -4,6 +4,7 @@ import posthog from 'posthog-js'
 import { usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import { usePortal } from '../_lib/portal-context'
+import { supabase } from '@/lib/supabase'
 
 /**
  * Ties portal visits to the employer. PostHogProvider already sends a plain
@@ -18,6 +19,19 @@ import { usePortal } from '../_lib/portal-context'
 export default function PortalTracking() {
   const { group, isGsiAdmin } = usePortal()
   const pathname = usePathname()
+
+  // Name the admin, not just the device: without identify, the same person
+  // on two browsers counts twice and one browser shared by two admins
+  // counts once. The Supabase user id is the identity; no email is sent.
+  useEffect(() => {
+    if (!group?.id) return
+    let cancelled = false
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled || !session?.user?.id) return
+      posthog.identify(session.user.id, { employer_group_id: group.id, is_gsi_admin: isGsiAdmin })
+    })
+    return () => { cancelled = true }
+  }, [group?.id, isGsiAdmin])
 
   useEffect(() => {
     if (!group?.id || !pathname) return

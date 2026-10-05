@@ -65,14 +65,19 @@ serve(async (req: Request) => {
     return jsonResponse({ error: "Prize not found" }, 404);
   }
 
-  // Placing gift card orders spends money: team viewers can see a prize but
-  // only the group's admins (or GSI) may pay it out.
-  const [{ data: isGroupAdmin }, { data: isGsiAdmin }] = await Promise.all([
-    userSupabase.rpc("is_group_admin", { p_group_id: prize.group_id }),
+  // Placing gift card orders spends the prize money already set aside: team
+  // viewers can see a prize but only the group's admins and managers (or
+  // GSI) may pay it out. Managers run prizes (Shift migration 01081); until
+  // that migration adds is_group_manager_or_admin, fall back to admins only.
+  const [{ data: canRun, error: canRunErr }, { data: isGsiAdmin }] = await Promise.all([
+    userSupabase.rpc("is_group_manager_or_admin", { p_group_id: prize.group_id }),
     userSupabase.rpc("is_gsi_admin"),
   ]);
+  const isGroupAdmin = canRunErr
+    ? (await userSupabase.rpc("is_group_admin", { p_group_id: prize.group_id })).data
+    : canRun;
   if (!isGroupAdmin && !isGsiAdmin) {
-    return jsonResponse({ error: "Only an admin can send prizes" }, 403);
+    return jsonResponse({ error: "Only an admin or manager can send prizes" }, 403);
   }
 
   if (!prize.funded_from_pool) {
@@ -125,6 +130,28 @@ serve(async (req: Request) => {
   const fulfilledUserIds: string[] = [];
 
   for (const winner of winners) {
+    // Never invent a prize value. The amount is the winner's (copied from
+    // the prize at draw time) or the prize's; if neither is set, the draw
+    // never debited the pool for this card (Shift 01040 only debits when
+    // amount_cents IS NOT NULL), so ordering one would spend Tremendous
+    // funds nobody paid for (portal review 2026-10-01, SEC-8; Shift 01126
+    // forbids the shape at the table). Log, count it as failed, skip.
+    const rawAmount: unknown = winner.amount_cents ?? prize.amount_cents ?? null;
+    if (
+      typeof rawAmount !== "number" || !Number.isInteger(rawAmount) ||
+      rawAmount <= 0
+    ) {
+      console.error(
+        `[Tremendous] refusing winner ${winner.id} of prize ${prizeId}: amount_cents is ${rawAmount}; no order placed`,
+      );
+      errors.push(
+        `No prize amount set for winner ${winner.id}; nothing was ordered`,
+      );
+      failed++;
+      continue;
+    }
+    const amountCents: number = rawAmount;
+
     const { data: authUser } = await admin.auth.admin.getUserById(
       winner.user_id,
     );
@@ -140,9 +167,6 @@ serve(async (req: Request) => {
       authUser?.user?.user_metadata?.display_name ??
       authUser?.user?.user_metadata?.full_name ??
       recipientEmail.split("@")[0];
-
-    const amountCents =
-      winner.amount_cents ?? prize.amount_cents ?? 2500;
 
     try {
       const orderRes = await fetch(`${TREMENDOUS_API_URL}/orders`, {

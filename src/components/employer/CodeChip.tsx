@@ -9,8 +9,7 @@ export default function CodeChip({
 }) {
   return (
     <span
-      className={`inline-block rounded-[12px] bg-accent-soft px-[18px] py-3 text-[26px] font-medium tracking-[0.18em] text-accent-ink ${className}`}
-      style={{ fontFamily: "'DM Mono', var(--font-dm-mono), ui-monospace, monospace" }}
+      className={`inline-block rounded-[12px] bg-accent-soft px-[18px] py-3 font-headline text-[26px] font-extrabold tracking-[0.12em] text-accent-ink ${className}`}
     >
       {code}
     </span>

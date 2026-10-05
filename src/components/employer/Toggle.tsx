@@ -16,7 +16,7 @@ export default function Toggle({
       {(title || desc) && (
         <div className="min-w-0">
           {title && <div className="text-[14px] font-medium text-ink">{title}</div>}
-          {desc && <div className="mt-0.5 text-[13px] text-ink-faint">{desc}</div>}
+          {desc && <div className="mt-0.5 text-[13px] text-ink-muted">{desc}</div>}
         </div>
       )}
       <button

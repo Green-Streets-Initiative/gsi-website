@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useId, type KeyboardEvent } from 'react'
 
 type Prediction = {
   placeId: string
@@ -44,13 +44,26 @@ export default function AddressAutocomplete({
 }: Props) {
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [open, setOpen] = useState(false)
-  const [focused, setFocused] = useState(false)
+  // The suggestion the arrow keys are on; -1 = none. Focus stays in the
+  // field (ARIA 1.2 combobox, same pattern as the portal's ChampionField),
+  // so the list never unmounts under the keyboard the way it used to when
+  // Tab moved focus onto a suggestion (portal review A11Y-1).
+  const [active, setActive] = useState(-1)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  // Bumped on every request and on every pick, so a slow or superseded
+  // response can't overwrite newer suggestions or reopen a closed list.
+  const requestRef = useRef(0)
+  const inputId = useId()
+  const listId = useId()
+  const optionId = (i: number) => `${listId}-opt-${i}`
+  const expanded = open && predictions.length > 0
 
   const isDark = variant === 'dark'
 
   const fetchPredictions = useCallback(async (input: string) => {
+    const req = ++requestRef.current
     if (input.length < 3) {
       setPredictions([])
       return
@@ -64,12 +77,16 @@ export default function AddressAutocomplete({
       })
 
       const data = await res.json()
+      if (req !== requestRef.current) return
       const items: Prediction[] = data.predictions || []
 
       setPredictions(items)
-      setOpen(items.length > 0)
+      setActive(-1)
+      // Only open while the person is still in this field: a response that
+      // lands after they've tabbed on must not cover the next field.
+      setOpen(items.length > 0 && document.activeElement === inputRef.current)
     } catch {
-      setPredictions([])
+      if (req === requestRef.current) setPredictions([])
     }
   }, [])
 
@@ -80,8 +97,11 @@ export default function AddressAutocomplete({
   }
 
   async function selectPrediction(prediction: Prediction) {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    requestRef.current++
     onChange(prediction.text)
     setOpen(false)
+    setActive(-1)
     setPredictions([])
 
     // Fetch place details for lat/lng, city, and structured address
@@ -140,6 +160,37 @@ export default function AddressAutocomplete({
     }
   }
 
+  function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    const n = predictions.length
+    if (e.key === 'ArrowDown') {
+      if (n === 0) return
+      e.preventDefault()
+      if (!open) {
+        setOpen(true)
+        setActive(0)
+      } else {
+        setActive((a) => (a + 1) % n)
+      }
+    } else if (e.key === 'ArrowUp') {
+      if (!expanded) return
+      e.preventDefault()
+      setActive((a) => (a <= 0 ? n - 1 : a - 1))
+    } else if (e.key === 'Enter') {
+      // Only take Enter when a suggestion is highlighted; otherwise let the
+      // surrounding form submit as before.
+      if (expanded && active >= 0) {
+        e.preventDefault()
+        selectPrediction(predictions[active])
+      }
+    } else if (e.key === 'Escape') {
+      if (expanded) {
+        e.preventDefault()
+        setOpen(false)
+        setActive(-1)
+      }
+    }
+  }
+
   // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -154,49 +205,76 @@ export default function AddressAutocomplete({
   return (
     <div ref={containerRef} className="relative">
       {label !== null && (
-        <label className={`mb-1.5 block text-sm font-medium ${isDark ? 'text-white' : 'text-[#191A2E]'}`}>
-          {label || <>Address <span className={isDark ? 'text-lime' : 'text-[#E05252]'}>*</span></>}
+        <label htmlFor={inputId} className={`mb-1.5 block text-sm font-medium ${isDark ? 'text-white' : 'text-[#191A2E]'}`}>
+          {label || <>Address <span aria-hidden="true" className={isDark ? 'text-lime' : 'text-[#E05252]'}>*</span></>}
         </label>
       )}
       <input
+        ref={inputRef}
+        id={inputId}
         type="text"
+        // The browser's own address dropdown would sit on top of ours.
+        autoComplete="off"
+        role="combobox"
+        aria-label={label === null ? placeholder : undefined}
+        aria-autocomplete="list"
+        aria-expanded={expanded}
+        aria-controls={listId}
+        aria-activedescendant={expanded && active >= 0 ? optionId(active) : undefined}
         value={value}
         onChange={(e) => handleInput(e.target.value)}
         onFocus={() => {
-          setFocused(true)
           if (predictions.length > 0) setOpen(true)
         }}
-        onBlur={() => setFocused(false)}
+        // Suggestions swallow mousedown (keeping focus here), so closing on
+        // blur never cancels a click on one.
+        onBlur={() => {
+          setOpen(false)
+          setActive(-1)
+        }}
+        onKeyDown={onKeyDown}
         placeholder={placeholder}
         className={isDark
           ? 'w-full rounded-xl border border-white/[0.12] bg-white/[0.06] px-4 py-3 text-[0.9375rem] text-white outline-none transition-colors placeholder:text-white/60 focus:border-[#BAF14D]'
-          : 'w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#8A8DA8] focus:border-[#2D6A4F]'
+          : 'w-full rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-4 py-3 text-[0.9375rem] text-[#191A2E] outline-none transition-colors placeholder:text-[#5A5C6E] focus:border-[#2D6A4F]'
         }
       />
-      {open && focused && predictions.length > 0 && (
-        <ul className={`absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-xl border shadow-lg ${
+      <ul
+        id={listId}
+        role="listbox"
+        aria-label="Address suggestions"
+        hidden={!expanded}
+        className={`absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-xl border shadow-lg ${
           isDark
             ? 'border-white/[0.12] bg-[#242538]'
             : 'border-[rgba(25,26,46,0.12)] bg-white'
-        }`}>
-          {predictions.map((p) => (
-            <li key={p.placeId}>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => selectPrediction(p)}
-                className={`w-full px-4 py-2.5 text-left text-[0.875rem] transition-colors ${
-                  isDark
-                    ? 'text-white hover:bg-white/[0.06]'
-                    : 'text-[#191A2E] hover:bg-[#F4F8EE]'
-                }`}
-              >
-                {p.text}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+        }`}
+      >
+        {expanded && predictions.map((p, i) => (
+          <li
+            key={p.placeId}
+            id={optionId(i)}
+            role="option"
+            aria-selected={i === active}
+            // mousedown only keeps focus in the field; the pick happens on
+            // click, so screen-reader activation (which may send only click)
+            // works, and the list doesn't vanish under the pointer before
+            // mouseup lands on whatever is beneath it.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => selectPrediction(p)}
+            className={`cursor-pointer px-4 py-2.5 text-left text-[0.875rem] transition-colors ${
+              isDark
+                ? `text-white hover:bg-white/[0.06] ${i === active ? 'bg-white/[0.14] shadow-[inset_3px_0_0_#BAF14D]' : ''}`
+                : `text-[#191A2E] hover:bg-[#F4F8EE] ${i === active ? 'bg-[#E3EFD6] shadow-[inset_3px_0_0_#2D6A4F]' : ''}`
+            }`}
+          >
+            {p.text}
+          </li>
+        ))}
+      </ul>
+      <p className="sr-only" aria-live="polite">
+        {expanded ? `${predictions.length} ${predictions.length === 1 ? 'suggestion' : 'suggestions'}. Use the up and down arrows to choose.` : ''}
+      </p>
     </div>
   )
 }

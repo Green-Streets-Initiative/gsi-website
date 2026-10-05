@@ -14,8 +14,25 @@ type Office = {
   destination_lng?: number | null
 }
 
-export function employerAdvisorUrl(slug: string): string {
-  return `${SITE}/commute-advisor/${encodeURIComponent(slug)}`
+/**
+ * For an "Open" button in the portal: the same page on the site the admin is
+ * on now. The shareable links stay on www (that is what staff receive), but a
+ * click should open this deployment's copy, so a preview or the dev server
+ * shows the page that ships with it, not whatever www runs today.
+ */
+export function onThisSite(url: string): string {
+  return url.replace(/^(https?:\/\/)?(www\.)?gogreenstreets\.org(?=\/|$)/, '') || '/'
+}
+
+/** The branded Commute Advisor; with a location id it opens at that location. */
+export function employerAdvisorUrl(slug: string, locationId?: string | null): string {
+  const base = `${SITE}/commute-advisor/${encodeURIComponent(slug)}`
+  return locationId ? `${base}?location=${encodeURIComponent(locationId)}` : base
+}
+
+/** An employer location in the shape the Nearby helpers take. */
+export function locationAsOffice(l: { address: string; lat: number; lng: number }): Office {
+  return { destination_address: l.address, destination_lat: l.lat, destination_lng: l.lng }
 }
 
 /**

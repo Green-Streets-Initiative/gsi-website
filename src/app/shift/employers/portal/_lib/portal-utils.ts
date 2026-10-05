@@ -124,29 +124,35 @@ export function resolveImpactWindow(
   }
 }
 
-export async function loadImageForPdf(
-  url: string,
-): Promise<{ dataUrl: string; format: 'PNG' | 'JPEG'; width: number; height: number } | null> {
-  try {
-    const resp = await fetch(url, { mode: 'cors' })
-    if (!resp.ok) return null
-    const blob = await resp.blob()
-    if (blob.type === 'image/svg+xml') return null
-    const format = blob.type.includes('jpeg') ? 'JPEG' : 'PNG'
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result as string)
-      reader.onerror = () => reject()
-      reader.readAsDataURL(blob)
-    })
-    const dims = await new Promise<{ width: number; height: number }>((resolve, reject) => {
-      const img = new Image()
-      img.onload = () => resolve({ width: img.width, height: img.height })
-      img.onerror = () => reject()
-      img.src = dataUrl
-    })
-    return { dataUrl, format, width: dims.width, height: dims.height }
-  } catch {
-    return null
-  }
+// ── Challenge dates are Eastern days ────────────────────────────────────
+// A challenge "Oct 6 – Nov 2" runs from midnight Eastern on Oct 6 to
+// 11:59:59 pm Eastern on Nov 2, matching how trips are counted (by Eastern
+// calendar day) and how every other Shift competition ends (23:59 ET).
+
+function etOffsetMinutes(utcMs: number): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    hourCycle: 'h23',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(new Date(utcMs))
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value)
+  const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'))
+  return (asUtc - utcMs) / 60000
+}
+
+/** 'YYYY-MM-DD' (an Eastern date) + wall time → ISO instant. */
+function etWallToIso(date: string, h: number, m: number, s: number): string {
+  const [y, mo, d] = date.split('-').map(Number)
+  const guess = Date.UTC(y, mo - 1, d, h, m, s)
+  const offset = etOffsetMinutes(guess)
+  return new Date(guess - offset * 60000).toISOString()
+}
+
+export const etStartOfDayIso = (date: string) => etWallToIso(date, 0, 0, 0)
+export const etEndOfDayIso = (date: string) => etWallToIso(date, 23, 59, 59)
+
+/** ISO instant → the Eastern calendar date, 'YYYY-MM-DD', for date inputs. */
+export function etDateInput(iso: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(iso))
 }

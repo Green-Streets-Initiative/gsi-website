@@ -41,16 +41,24 @@ function shiftRateColor(pct: number) {
 const TH = 'py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft'
 const ROW = 'border-b border-navy/10 last:border-b-0'
 
-function GroupStandingsTable({
+/**
+ * The workplace/town/school standings table. Exported so the employer
+ * portal's Public listing card can show a real row the way the open web
+ * sees it; `rankLabel` replaces every rank number with one string ("—")
+ * for a preview that isn't a ranking. Existing callers are unchanged.
+ */
+export function GroupStandingsTable({
   standings,
   showLogo = false,
   sortBy,
   rowLimit,
+  rankLabel,
 }: {
   standings: GroupStanding[]
   showLogo?: boolean
   sortBy: SortBy
   rowLimit?: number
+  rankLabel?: string
 }) {
   if (standings.length === 0) {
     return <p className="py-10 text-center text-[15px] text-ink-soft">No standings yet. Check back once the event is underway.</p>
@@ -78,7 +86,9 @@ function GroupStandingsTable({
           {display.map((s, i) => (
             <tr key={s.groupId} className={ROW}>
               <td className="py-3 pr-2 text-right">
-                <span className={`font-serif text-[1.125rem] ${i < 3 ? 'text-forest' : 'text-ink-soft'}`}>{i + 1}</span>
+                <span className={`font-serif text-[1.125rem] ${rankLabel == null && i < 3 ? 'text-forest' : 'text-ink-soft'}`}>
+                  {rankLabel ?? i + 1}
+                </span>
               </td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-3">
@@ -178,7 +188,7 @@ function IndividualStandingsTable({
 }
 
 type Tab = 'towns' | 'corporate' | 'schools' | 'individual'
-type SortBy = 'shift_rate' | 'active_trips'
+export type SortBy = 'shift_rate' | 'active_trips'
 
 export default function LeaderboardTabs({ geoStandings, corpStandings, schoolStandings = [], individualStandings, participantCount, initialRowLimit }: Props) {
   const showCorporate = corpStandings.length > 0

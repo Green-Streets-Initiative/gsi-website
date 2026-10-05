@@ -12,10 +12,16 @@
 // the invoice, added confidentiality / security & breach notice / license &
 // IP / taxes / metrics-estimates clauses, honest two-level data wording,
 // maintained notice contact, publicity by prior approval.
+//
+// v2026-10-EMP-3 (2026-09-30): added "Rewards to employees" (rewards Customer
+// funds and its employees receive are Customer's compensation for tax
+// purposes; GSI does not withhold, report or advise; annual statement in the
+// portal) and listed it among the surviving sections.
+//
 // ATTORNEY REVIEW STILL PENDING — planned as fixed-fee review before
 // customer #2-3; "Nature of payment" UBIT question flagged for counsel.
 
-export const AGREEMENT_VERSION = '2026-07-EMP-2'
+export const AGREEMENT_VERSION = '2026-10-EMP-3'
 
 export const AGREEMENT_TITLE = 'Shift Employer Platform Agreement'
 
@@ -72,12 +78,16 @@ export const AGREEMENT_SECTIONS: Array<{ heading: string; body: string }> = [
     body: 'The subscription fee is payment for the platform services described in this Agreement. It is not a charitable contribution, and GSI will not issue a charitable donation receipt for it. Any tax or accounting treatment of the fee is solely for Customer and its advisors to determine; GSI provides no tax advice.',
   },
   {
+    heading: 'Rewards to employees',
+    body: 'Rewards funded by Customer and delivered to its employees through the platform, including gift cards paid from a prize fund Customer tops up and any prize Customer hands out itself, are Customer\'s compensation to its employees for tax purposes. GSI does not withhold, report, or advise on the tax treatment of rewards; it provides Customer an annual statement in the portal listing who received what, and Customer is responsible for any reporting and withholding.',
+  },
+  {
     heading: 'Warranty and disclaimer',
     body: 'GSI warrants that the platform will materially conform to the service description in this Agreement during a paid term; Customer\'s exclusive remedy for breach of this warranty is GSI\'s re-performance or, if GSI cannot re-perform within a reasonable time, a pro-rated refund of the unused portion of the fee. EXCEPT AS STATED IN THIS SECTION, THE PLATFORM IS PROVIDED "AS IS" TO THE FULLEST EXTENT PERMITTED BY LAW, AND GSI MAKES NO OTHER WARRANTIES, EXPRESS OR IMPLIED. GSI makes no representations regarding employee sign-up rates, participation, engagement, commute behavior change, or emissions outcomes. GSI is not responsible for delays or non-performance caused by events beyond its reasonable control, including outages of third-party vendors or infrastructure, app-store actions, public-health events, or governmental action.',
   },
   {
     heading: 'Termination',
-    body: 'Either party may terminate this Agreement immediately on written notice if the other party materially breaches it and fails to cure within ten (10) days of written notice, or engages in unlawful conduct or conduct that causes material harm to the other party, its reputation, or program participants. If this Agreement is terminated for any reason other than Customer\'s uncured breach — including termination by GSI under this section or discontinuation of the Employer Platform — GSI will refund the pro-rated unused portion of the fee for the current term. Upon termination, Customer\'s portal access ends; employees\' individual app accounts are unaffected. Sections concerning fees, data, confidentiality, marks, nature of payment, indemnification, limitation of liability, governing law, and general terms survive termination.',
+    body: 'Either party may terminate this Agreement immediately on written notice if the other party materially breaches it and fails to cure within ten (10) days of written notice, or engages in unlawful conduct or conduct that causes material harm to the other party, its reputation, or program participants. If this Agreement is terminated for any reason other than Customer\'s uncured breach — including termination by GSI under this section or discontinuation of the Employer Platform — GSI will refund the pro-rated unused portion of the fee for the current term. Upon termination, Customer\'s portal access ends; employees\' individual app accounts are unaffected. Sections concerning fees, data, confidentiality, marks, nature of payment, rewards to employees, indemnification, limitation of liability, governing law, and general terms survive termination.',
   },
   {
     heading: 'Indemnification',
