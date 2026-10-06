@@ -106,6 +106,25 @@
       "banner": "Improve account security (not serving-related)",
       "alerts": ["Shift App and Shift Your Semester at 0 impressions for all of September and October", "Town campaign keywords mostly low search volume"],
       "emailed": false
+    },
+    {
+      "date": "2026-10-06",
+      "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-6",
+      "mtd": { "window": "2026-10-01..2026-10-06", "impressions": 125, "clicks": 7, "ctr_pct": 5.6, "cost": 38.51, "conversions": 0 },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 79, "clicks": 6 },
+        "GSI — Brand": { "impressions": 4, "clicks": 1 },
+        "New Routes — Movers": { "impressions": 23, "clicks": 0 },
+        "Town Walking & Biking": { "impressions": 19, "clicks": 0 },
+        "Shift App — Massachusetts": { "impressions": 0, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 }
+      },
+      "campaign_status": "all 6 Eligible (Limited): conversion tracking setup is incomplete (unchanged)",
+      "banners": ["Set up conversion tracking", "Add Dynamic Image Assets"],
+      "ads": { "total": 36, "checked": 34, "disapproved_seen": 0, "strength": "15 Average, 1 Excellent, 9 Poor, 9 Pending", "poor": ["GSI — Brand: Green Streets Initiative", "GSI — Brand: Shift by Green Streets", "How-to Guides: Bluebikes, Explained", "How-to Guides: Your First Bus Ride", "How-to Guides: Bike Commuting Tips", "How-to Guides: Bike to Work With Ease", "Town Walking & Biking: Walking School Bus Ideas", "Town Walking & Biking: Walking and Biking Near You", "Town Walking & Biking: Your Town, On Foot and Bike"], "pending": "the 8 RSAs uploaded 10-05 plus the strengthened Paying for the MBTA" },
+      "search_terms": "39 named terms, none with 3+ impressions; top: how to pay for the t in boston 1/3, boston t passes 1/2, go green streets 1/2; all on target, no negatives proposed",
+      "alerts": ["9 of 36 ads rated Poor after Google rated the 09-30 upload (emailed as a Suggest item: add headlines)"],
+      "emailed": true
     }
   ],
   "snapshots": [
