@@ -336,7 +336,7 @@ export default async function ShiftEmployersPage() {
               See it before you decide
             </h2>
             <p className="mb-8 max-w-[680px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              This is what your people see on their phones. Two more pieces are live on this site, and the employer dashboard is easiest to see in a 20-minute walkthrough you can book below.
+              This is what your people see on their phones, and what you see in the employer portal. Two more pieces are live on this site, and a 20-minute walkthrough is the easiest way to see it all together.
             </p>
             <ul className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
@@ -348,6 +348,22 @@ export default async function ShiftEmployersPage() {
                 <li key={shot.src} className="min-w-0">
                   <div className="relative aspect-[9/19] overflow-hidden rounded-[18px] border border-navy/10 bg-white">
                     <Image src={shot.src} alt={shot.alt} fill sizes="(max-width: 640px) 45vw, 22vw" className="object-cover object-top" />
+                  </div>
+                  <p className="mt-2 text-center text-[13px] leading-snug text-ink-soft">{shot.caption}</p>
+                </li>
+              ))}
+            </ul>
+            <h3 className="mb-4 font-serif text-[1.375rem] leading-tight text-navy">Your portal</h3>
+            <ul className="mb-10 grid gap-5 sm:grid-cols-2">
+              {[
+                { src: '/images/portal/portal-home.jpg', alt: 'Employer portal home: the goal you set, the closest figure we track, and the last 30 days of active trips, miles shifted, CO₂ avoided and Shift Rate', caption: 'Home: your goal and the last 30 days' },
+                { src: '/images/portal/portal-challenges.jpg', alt: 'Employer portal Challenges page: a drafted seasonal challenge, a scheduled one and a live one with its prize', caption: 'Challenges: seasons drafted for you, prizes you fund' },
+                { src: '/images/portal/portal-share-kit.jpg', alt: 'Employer portal Share kit: invite code, join link and QR code, with the team blurb, email and printable flyer', caption: 'Share kit: code, link, QR, flyer and the note to send' },
+                { src: '/images/portal/portal-impact.jpg', alt: 'Employer portal Impact page with the downloadable impact report', caption: 'Impact: the report you can download' },
+              ].map((shot) => (
+                <li key={shot.src} className="min-w-0">
+                  <div className="relative aspect-[1210/628] overflow-hidden rounded-[14px] border border-navy/10 bg-white">
+                    <Image src={shot.src} alt={shot.alt} fill sizes="(max-width: 640px) 90vw, 45vw" className="object-cover object-top" />
                   </div>
                   <p className="mt-2 text-center text-[13px] leading-snug text-ink-soft">{shot.caption}</p>
                 </li>
