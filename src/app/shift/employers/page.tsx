@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import FAQ from '@/components/FAQ'
@@ -108,7 +109,7 @@ export default async function ShiftEmployersPage() {
               Help your people try walking, biking and transit for more of their trips to work.
             </h1>
             <p className="mb-10 max-w-[640px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              Staff join with a private code. The free Shift app notices their trips on its own. You get the numbers for your climate, wellness and commute reporting, with nothing to run. One flat annual price, from $500, and you can try it free on Walk/Ride Day.
+              Staff join with a private code and the free Shift app notices their walking, biking and transit trips on its own. You get a commute people choose, less pressure on parking, more use of the commuter benefits you already pay for, and the numbers to show it, with nothing to run. One flat annual price from $500. Try it free on Walk/Ride Day.
             </p>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
               <a
@@ -193,20 +194,28 @@ export default async function ShiftEmployersPage() {
             <div className="grid gap-6 md:grid-cols-2">
               {[
                 {
-                  title: 'Numbers for your climate goals',
-                  body: 'Most companies count employee commuting in their footprint and have no way to move it. Shift gives staff a reason to try an active trip and gives you a measured result: trips by mode, participation and CO₂ avoided, ready for your sustainability, ESG or wellness report.',
+                  title: 'A commute people choose',
+                  body: 'More people are back in the office more days, and the trip in is the part they like least. Team leaderboards, challenges, monthly prize drawings and route help for your office give people a reason to try walking, biking or transit, and to keep doing it.',
+                },
+                {
+                  title: 'Less pressure on parking, more from the benefits you already pay for',
+                  body: 'Every active trip is a parking space you do not need that day, and a transit pass or bike benefit that gets used instead of sitting in the handbook. Shift runs alongside your pre-tax commuter benefit, with no payroll or benefits-admin work.',
                 },
                 {
                   title: 'Nothing to run',
-                  body: 'No forms, no spreadsheets, no logging. The app picks up walking, biking, transit and carpool trips on its own, the weekly email comes to you, and your group is live within a week.',
+                  body: 'No forms, no spreadsheets, no logging. The app picks up walking, biking and transit trips on its own, the weekly email comes to you, and your group is live within a week.',
                 },
                 {
-                  title: 'A reason to try something new',
-                  body: 'Team leaderboards, challenges and monthly prize drawings people can win, plus route help for the trip to your office. If your people were asked back to the office, this makes the commute something they choose.',
+                  title: 'Numbers for whatever you report',
+                  body: 'Participation, trips by mode and CO₂ avoided, in an impact report you can drop into a wellness update, a sustainability or ESG report, or a MassDEP, Cambridge PTDM or Boston commute filing.',
                 },
                 {
                   title: 'Private by design',
                   body: 'You see team totals and the leaderboard, never anyone’s trips or routes. Joining is always each person’s choice.',
+                },
+                {
+                  title: 'Built by a Massachusetts nonprofit',
+                  body: 'Green Streets Initiative has run Walk/Ride Day since 2006 and built Shift in Somerville. One flat price, no per-user meter, and a team that knows your transit map.',
                 },
               ].map((card) => (
                 <div
@@ -260,7 +269,7 @@ export default async function ShiftEmployersPage() {
                   {[
                     'Private team leaderboard — see how you stack up against colleagues',
                     'Tier status and badges that reward consistency over time',
-                    'Flagship events like Shift Your Summer with city-wide competition',
+                    'Flagship events like Shift Your Summer, a statewide challenge',
                   ].map((item) => (
                     <li key={item} className="flex gap-3 text-[0.9375rem] leading-[1.6] text-ink-soft">
                       <span className="mt-1.5 block h-2 w-2 shrink-0 rounded-full bg-blue" />
@@ -314,6 +323,70 @@ export default async function ShiftEmployersPage() {
                   </p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════
+            4.2 · SEE IT (live demos, and a demo you can book)
+        ══════════════════════════════════════════════════════════ */}
+        <section id="see-it" className="scroll-mt-20 bg-cream px-6 py-8 lg:px-8 lg:py-10">
+          <div className="mx-auto max-w-[1120px]">
+            <h2 className="mb-3 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
+              See it before you decide
+            </h2>
+            <p className="mb-8 max-w-[680px] text-[1.0625rem] leading-[1.65] text-ink-soft">
+              This is what your people see on their phones. Two more pieces are live on this site, and the employer dashboard is easiest to see in a 20-minute walkthrough you can book below.
+            </p>
+            <ul className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {[
+                { src: '/images/shift-app/shift-join-step1.png', alt: 'Shift app: joining a team with an invite code', caption: 'Join with your code' },
+                { src: '/images/shift-app/home-streak.png', alt: 'Shift app home screen with a trip streak', caption: 'Trips noticed on their own' },
+                { src: '/images/shift-app/leaderboard.png', alt: 'Shift app team leaderboard', caption: 'The team leaderboard' },
+                { src: '/images/shift-app/rewards-screen.png', alt: 'Shift app rewards screen', caption: 'Drawings and rewards' },
+              ].map((shot) => (
+                <li key={shot.src} className="min-w-0">
+                  <div className="relative aspect-[9/19] overflow-hidden rounded-[18px] border border-navy/10 bg-white">
+                    <Image src={shot.src} alt={shot.alt} fill sizes="(max-width: 640px) 45vw, 22vw" className="object-cover object-top" />
+                  </div>
+                  <p className="mt-2 text-center text-[13px] leading-snug text-ink-soft">{shot.caption}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="grid gap-6 md:grid-cols-3">
+              <Link
+                href="/commute-advisor/demo"
+                className="group rounded-[14px] border border-navy/10 bg-white p-8 transition-colors hover:border-forest"
+              >
+                <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">Live demo</div>
+                <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">Commute Advisor for your office</h3>
+                <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
+                  The page each employee uses to compare ways to get to work. Yours carries your company name and office address.
+                </p>
+                <span className="mt-4 inline-block text-[15px] font-semibold text-forest underline-offset-4 group-hover:underline">Try the demo &rarr;</span>
+              </Link>
+              <Link
+                href="/nearby"
+                className="group rounded-[14px] border border-navy/10 bg-white p-8 transition-colors hover:border-forest"
+              >
+                <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">Live</div>
+                <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">Nearby page for your office</h3>
+                <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
+                  Live transit, Bluebikes and bike paths around any address, with a printable version for the lobby. Yours is centred on your office with your logo.
+                </p>
+                <span className="mt-4 inline-block text-[15px] font-semibold text-forest underline-offset-4 group-hover:underline">Open Nearby &rarr;</span>
+              </Link>
+              <a
+                href="#inquiry"
+                className="group rounded-[14px] border border-navy/10 bg-white p-8 transition-colors hover:border-forest"
+              >
+                <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">20 minutes</div>
+                <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">Dashboard and app walkthrough</h3>
+                <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
+                  What your admin sees each week, how a challenge is set up, what an employee sees on their phone, and what the impact report looks like on day 30.
+                </p>
+                <span className="mt-4 inline-block text-[15px] font-semibold text-blue underline-offset-4 group-hover:underline">Book a demo &rarr;</span>
+              </a>
             </div>
           </div>
         </section>
