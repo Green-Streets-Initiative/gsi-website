@@ -340,10 +340,10 @@ export default async function ShiftEmployersPage() {
             </p>
             <ul className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
-                { src: '/images/shift-app/shift-join-step1.png', alt: 'Shift app: joining a team with an invite code', caption: 'Join with your code' },
-                { src: '/images/shift-app/home-streak.png', alt: 'Shift app home screen with a trip streak', caption: 'Trips noticed on their own' },
-                { src: '/images/shift-app/leaderboard.png', alt: 'Shift app team leaderboard', caption: 'The team leaderboard' },
-                { src: '/images/shift-app/rewards-screen.png', alt: 'Shift app rewards screen', caption: 'Drawings and rewards' },
+                { src: '/images/shift-app/employer-join.png', alt: 'Shift app: the Join a Group screen asking for an invite code', caption: 'Join with your code' },
+                { src: '/images/shift-app/employer-progress.png', alt: 'Shift app Progress tab: miles by mode and lifetime impact', caption: 'Trips noticed on their own' },
+                { src: '/images/shift-app/employer-group.png', alt: 'Shift app employer group screen: team totals this month, a live challenge, and the note that the employer sees names and trip totals, never routes', caption: 'Your team’s page and challenges' },
+                { src: '/images/shift-app/employer-rewards.png', alt: 'Shift app Rewards tab: an employer-funded gift card and the Walk/Ride Day drawing', caption: 'Drawings and rewards' },
               ].map((shot) => (
                 <li key={shot.src} className="min-w-0">
                   <div className="relative aspect-[9/19] overflow-hidden rounded-[18px] border border-navy/10 bg-white">
