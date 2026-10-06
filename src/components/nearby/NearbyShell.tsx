@@ -60,6 +60,9 @@ const TAB_LABEL_KEYS: Record<Tab, string> = {
 interface Props {
   /** ?focus= deep link — see useInitialFocus */
   initialFocus: InitialFocus | null
+  /** ?plan=1 (the /plan short address): open on Destinations, sheet up,
+   *  trip search focused. */
+  planFirst?: boolean
   center: { lat: number; lng: number }
   displayLabel: string
   /** Town, shown after the neighborhood in the location pill (null when none) */
@@ -99,15 +102,15 @@ interface Props {
 }
 
 export default function NearbyShell({
-  initialFocus, center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
+  initialFocus, planFirst = false, center, displayLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, railFar, busFar, shuttles, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
   onRequestCorridorShape,
 }: Props) {
   const tr = useNearbyT()
-  const [tab, setTab] = useState<Tab>('transit')
-  const [snap, setSnap] = useState<SheetSnap>('half')
+  const [tab, setTab] = useState<Tab>(planFirst ? 'destinations' : 'transit')
+  const [snap, setSnap] = useState<SheetSnap>(planFirst ? 'full' : 'half')
   const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
   const [paintedOn, setPaintedOn] = useState(PAINTED_DEFAULT)
   // Selecting Bike turns painted lanes on — part of the bike picture, not
@@ -514,7 +517,7 @@ export default function NearbyShell({
               their own destination, not our curated set. It answers here,
               in a row like any other; the Advisor's full cost comparison
               lives inside that answer, for the trips you actually repeat. */}
-          <TripPlanner center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} />
+          <TripPlanner center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} autoFocus={planFirst} />
           <p className="mt-6 text-[0.8rem] leading-snug text-(--nb-ink-70)">
             {tr('shell.destinations_intro')}
           </p>

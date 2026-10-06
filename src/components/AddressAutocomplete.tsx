@@ -30,6 +30,8 @@ type Props = {
   label?: string | null
   variant?: 'light' | 'dark'
   placeholder?: string
+  /** Focus the box on mount (a page opened specifically to type here). */
+  autoFocus?: boolean
 }
 
 export default function AddressAutocomplete({
@@ -41,6 +43,7 @@ export default function AddressAutocomplete({
   label,
   variant = 'light',
   placeholder = 'Start typing an address…',
+  autoFocus = false,
 }: Props) {
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [open, setOpen] = useState(false)
@@ -52,6 +55,9 @@ export default function AddressAutocomplete({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus()
+  }, [autoFocus])
   // Bumped on every request and on every pick, so a slow or superseded
   // response can't overwrite newer suggestions or reopen a closed list.
   const requestRef = useRef(0)

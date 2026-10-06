@@ -60,6 +60,9 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
   const searchParams = useSearchParams()
   // ?focus= opens the page already looking at one station/line/dock/route
   const initialFocus = useMemo(() => parseInitialFocus(searchParams.get('focus')), [searchParams])
+  // ?plan=1 (the /plan short address, the nav's "Plan a route"): open on the
+  // Destinations tab with the trip search ready to type into.
+  const planFirst = searchParams.get('plan') === '1'
   const isDesktop = useIsDesktop()
 
   // Locale from ?lang= (wins) or the browser; provided to the whole tree below.
@@ -749,6 +752,7 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
 
   const surfaceProps = {
     initialFocus,
+    planFirst,
     center: location,
     displayLabel,
     subLabel,

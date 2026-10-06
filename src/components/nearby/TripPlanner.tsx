@@ -22,11 +22,13 @@ import { useNearbyTone } from './NearbyTone'
  * turn-by-turn. The Advisor is still one tap away inside that result, where
  * it belongs: for the trips you actually repeat.
  */
-export default function TripPlanner({ center, onPlanned, partnerSlug }: {
+export default function TripPlanner({ center, onPlanned, partnerSlug, autoFocus = false }: {
   center: { lat: number; lng: number }
   /** The planned row, ready to be prepended to the list and selected. */
   onPlanned: (row: ReachRow) => void
   partnerSlug?: string | null
+  /** /plan opened the page: cursor in the address box on arrival. */
+  autoFocus?: boolean
 }) {
   const tr = useNearbyT()
   const tone = useNearbyTone()
@@ -69,6 +71,7 @@ export default function TripPlanner({ center, onPlanned, partnerSlug }: {
           variant={tone === 'dark' ? 'dark' : 'light'}
           label={null}
           placeholder={tr('trip.placeholder')}
+          autoFocus={autoFocus}
         />
       </div>
       {status === 'loading' && (

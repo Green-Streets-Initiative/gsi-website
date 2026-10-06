@@ -43,6 +43,9 @@ import NearbyLanguagePill from './NearbyLanguagePill'
 interface Props {
   /** ?focus= deep link — see useInitialFocus */
   initialFocus: InitialFocus | null
+  /** ?plan=1 (the /plan short address): open the Destinations rail with the
+   *  trip search focused. */
+  planFirst?: boolean
   center: { lat: number; lng: number }
   displayLabel: string
   /** Town, shown beneath the neighborhood headline (null when no neighborhood) */
@@ -105,7 +108,7 @@ const RAIL_TAB_LABEL_KEYS: Record<RailTab, string> = {
 }
 
 export default function NearbyDesktop({
-  initialFocus, center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
+  initialFocus, planFirst = false, center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, railFar, busFar, shuttles, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
@@ -182,7 +185,7 @@ export default function NearbyDesktop({
   // Rail tabs — the mobile sheet's three-way split, so the rail is a set of
   // short panes instead of one long scroll. Content stays mounted (hidden)
   // so scroll positions and expanded rows survive tab hops.
-  const [railTab, setRailTab] = useState<RailTab>('transit')
+  const [railTab, setRailTab] = useState<RailTab>(planFirst ? 'destinations' : 'transit')
   const changeRailTab = useCallback((next: RailTab) => {
     setRailTab(next)
     if (selection) select(null, 'tab-change')
@@ -504,7 +507,7 @@ export default function NearbyDesktop({
                   their own destination, not our curated set. It answers here,
                   in a row like any other; the Advisor's full cost comparison
                   lives inside that answer, for the trips you actually repeat. */}
-              <TripPlanner center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} />
+              <TripPlanner center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} autoFocus={planFirst} />
 
               <p className="mb-3 mt-6 text-[0.8rem] leading-snug text-(--nb-ink-70)">
                 {tr('desktop.destinations_intro')}
