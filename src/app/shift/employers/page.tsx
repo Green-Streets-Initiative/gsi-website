@@ -65,7 +65,7 @@ const employerFaqItems = [
   {
     question: 'How is individual employee privacy protected?',
     answer:
-      'Employers receive aggregate data only. No individual trips, routes, Shift Rate, or XP is ever visible to your organization. Participation is voluntary — employees opt in by downloading the app and entering your invite code.',
+      'Your organization never sees anyone\'s trips or routes. Your dashboard, weekly email and impact reports are aggregates: active members, trips, mode share and CO₂ avoided. The team leaderboard shows members\' names and trip counts, the same view members see in the app. Participation is voluntary: employees join by downloading the app and entering your invite code, and can leave the group at any time.',
   },
   {
     question: 'How does this connect to our ESG reporting?',
