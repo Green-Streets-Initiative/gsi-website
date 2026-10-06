@@ -43,7 +43,7 @@ const employerFaqItems = [
   {
     question: 'Can my company use Shift for a workplace challenge?',
     answer:
-      'Yes. Shift supports invite-code-gated private groups where employees compete, win prizes, and track collective impact. You can run a time-limited challenge (like a month-long competition) or an ongoing year-round program.',
+      'Yes. Your company gets a private group. Employees join with your invite code, and you can also require a verified work email address so only your staff can join. People compete on a team leaderboard, win prizes, and see the team\'s collective impact. Run a time-limited challenge, such as a month-long competition, or an ongoing year-round program.',
   },
   {
     question: 'What does an employer challenge look like?',
