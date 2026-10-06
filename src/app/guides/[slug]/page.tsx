@@ -6,8 +6,17 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import JsonLd from '@/components/JsonLd'
+import StoreBadges from '@/components/StoreBadges'
 import { pageMetadata } from '@/lib/seo'
 import { guideArticleSchema, breadcrumbSchema } from '@/lib/structured-data'
+
+/** "October 2026" — month granularity: a review is a pass, not a timestamp. */
+function reviewedLabel(iso: string | null): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'America/New_York' })
+}
 
 interface GuideRow {
   id: string
@@ -148,6 +157,11 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                 {g.read_time_minutes} min read
               </span>
             )}
+            {reviewedLabel(g.last_reviewed_at) && (
+              <span className="text-[0.75rem] text-ink-soft">
+                Reviewed {reviewedLabel(g.last_reviewed_at)}
+              </span>
+            )}
           </div>
 
           {/* Title */}
@@ -164,6 +178,27 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
             className="guide-body text-[1.0625rem] leading-[1.75] text-navy"
             dangerouslySetInnerHTML={{ __html: renderMarkdown(g.body) }}
           />
+
+          {/* Try it: every guide ends by pointing at the tool that does the
+              thing it just explained. The app first; the web Nearby page for
+              a reader who isn't ready to install anything. */}
+          <div className="mt-12 rounded-[14px] border border-navy/10 bg-white p-6">
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
+              Try it
+            </div>
+            <p className="mb-4 text-[0.9375rem] leading-relaxed text-navy">
+              Shift finds the calmest way to wherever you&apos;re headed, by bike, on foot or on
+              transit, and gives you credit for every trip you shift.
+            </p>
+            <StoreBadges height={40} placement="guide" />
+            <p className="mt-4 text-[0.875rem] leading-relaxed text-ink-soft">
+              Not ready for the app?{' '}
+              <Link href="/nearby" className="font-semibold text-forest underline underline-offset-4 hover:opacity-80">
+                Plan a route on the Nearby page
+              </Link>{' '}
+              in your browser.
+            </p>
+          </div>
 
           {/* Related guides */}
           {related.length > 0 && (

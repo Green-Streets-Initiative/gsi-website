@@ -66,6 +66,7 @@ New topics can be added later but should be kept pruned — too many tags makes 
 
 ```yaml
 id: mg_low_stress_routes
+reviewed: 2026-10-06
 title: "Picking a bike route that feels comfortable"
 summary: "Comfort beats speed for a route you'll actually keep using. How to pick one that feels manageable from day one."
 slug: picking-a-bike-route
@@ -78,31 +79,31 @@ topics: [routes, getting-started, infrastructure]
 related: [mg_first_bike_lane, mg_bike_commute_gear]
 ```
 
-The fastest route isn't always the right route. A five-minute-longer ride on protected infrastructure is almost always better than a "direct" route on a four-lane stretch with no bike lane. Here's how to pick well, especially when you're new.
+The fastest route isn't always the right route. A ride that's five minutes longer on a protected lane is almost always better than a "direct" route on a four-lane road with no bike lane. Here's how to pick well, especially when you're new.
 
 ### 1. Know your infrastructure types.
 
-Protected lanes (physically separated from traffic) are the most comfortable. Shared-use paths like the Minuteman or the Charles River paths are completely separate from cars. Painted lanes are good but watch the door zone. Neighborhood streets are often fine even without bike-specific infrastructure.
+Protected lanes (physically separated from traffic) are the most comfortable. Shared-use paths like the Minuteman or the Charles River paths are completely separate from cars. Painted lanes are good, but watch for car doors opening. Neighborhood streets are often fine even without bike lanes.
 
-### 2. Use a bike-specific routing app.
+### 2. Let a map show you the comfortable streets.
 
-Google Maps' cycling layer shows infrastructure. The Strava global heatmap shows where cyclists actually ride — a useful proxy for where it's both safe and pleasant.
+In the Shift app, open Around You and pick where you're headed. You'll see the calmest route and the fastest one, with every street rated for comfort and the busy crossings called out. Don't have the app? The Nearby page at gogreenstreets.org/nearby does the same thing in a browser. Google Maps' cycling layer is a good second opinion: it shows bike lanes and paths, and it's the app you'll navigate with anyway.
 
 ### 3. Start with paths, not roads.
 
-Before committing to a road-based commute, ride one of the great regional paths once for confidence: the Minuteman (Arlington–Bedford), the Charles River paths, the Somerville Community Path, or the Southwest Corridor. Flat, scenic, fully separated.
+Before committing to a commute on the road, ride one of the region's paths once for confidence: the Minuteman (Alewife in Cambridge to Bedford), the Charles River paths, the Somerville Community Path, or the Southwest Corridor. Flat, scenic and fully separated from traffic.
 
-### 4. One block off changes everything.
+### 4. One block over changes everything.
 
-If your route includes a busy stretch, look at the parallel street one block over. It's almost always quieter and only adds a minute or two.
+If your route has a busy stretch, look at the parallel street one block over. It's almost always quieter and adds only a minute or two.
 
 ### 5. Try it on a weekend first.
 
-Ride your planned commute once on a Saturday morning with no time pressure. Knowing the route removes most of the stress before you ride it on a Tuesday.
+Ride your planned commute once on a Saturday morning with no time pressure. Knowing the route takes most of the stress out of riding it on a Tuesday.
 
 ### Try this first
 
-Pull up Google Maps with the cycling layer on and look at your typical destination. You'll often spot a path or protected lane within a block of where you were planning to ride.
+Pick the place you go most and compare the calmest route with the fastest. The difference is usually a couple of minutes and a lot less traffic.
 
 ---
 
@@ -110,6 +111,7 @@ Pull up Google Maps with the cycling layer on and look at your typical destinati
 
 ```yaml
 id: mg_first_bike_lane
+reviewed: 2026-05-08
 title: "Your first ride in a bike lane"
 summary: "Protected, painted, sharrows, green paint — what each kind of bike lane means and how to ride it without overthinking."
 slug: your-first-ride-in-a-bike-lane
@@ -150,6 +152,7 @@ Look behind you before changing your position in the lane. A quick shoulder chec
 
 ```yaml
 id: mg_bike_commute_gear
+reviewed: 2026-10-01
 title: "The gear that actually matters for bike commuting"
 summary: "What's worth spending on for daily bike commuting, what isn't, and which two purchases matter most."
 slug: bike-commute-gear
@@ -199,6 +202,7 @@ If you only buy two things, make them lights and a U-lock. Everything else can w
 
 ```yaml
 id: mg_bike_time
+reviewed: 2026-05-08
 title: "When biking is actually the faster option"
 summary: "Door-to-door, biking beats driving for more trips than people expect. The five situations where it definitely wins."
 slug: when-biking-is-faster
@@ -239,6 +243,7 @@ An e-cargo bike (a long-tail or front-bucket frame with pedal-assist) can carry 
 
 ```yaml
 id: mg_bike_sweat
+reviewed: 2026-05-08
 title: "How to bike-commute without breaking a sweat"
 summary: "Pace, route, gear, and the desk-side kit that makes August humidity manageable on a bike."
 slug: bike-commute-without-sweat
@@ -287,6 +292,7 @@ August humidity is real. On the worst handful of days, take the T or work from h
 
 ```yaml
 id: mg_cargo_bike
+reviewed: 2026-05-08
 title: "What you can do with an e-cargo bike"
 summary: "An e-cargo bike replaces most car trips a family makes in a week. What they handle, and where to try one before buying."
 slug: what-you-can-do-with-an-e-cargo-bike
@@ -336,6 +342,7 @@ Borrow one from Community Pedal Power for a weekend. Use it for one school picku
 
 ```yaml
 id: mg_bluebikes
+reviewed: 2026-05-08
 title: "Bluebikes from start to finish"
 summary: "How to unlock, ride, dock, and avoid surprise charges with Greater Boston's bike-share. First-trip jitters, sorted."
 slug: how-to-use-bluebikes
@@ -386,6 +393,7 @@ Dock at any station along the way, wait a minute, and undock a new bike. The clo
 
 ```yaml
 id: mg_bike_lock
+reviewed: 2026-10-01
 title: "Where (and how) to lock your bike"
 summary: "Most stolen bikes weren't unlocked — they were locked badly. Six rules that make the difference."
 slug: where-to-lock-your-bike
@@ -430,6 +438,7 @@ Register your bike at [bikeindex.org](https://bikeindex.org) (free, helps recove
 
 ```yaml
 id: mg_biking_in_rain
+reviewed: 2026-10-01
 title: "Biking in the rain"
 summary: "Light rain stops feeling like a barrier after the third or fourth time. The minimal gear that gets you there fast."
 slug: biking-in-the-rain
@@ -479,6 +488,7 @@ Most "rain rides" are light drizzle or brief showers. Truly heavy rain during co
 
 ```yaml
 id: mg_cold_weather
+reviewed: 2026-10-01
 title: "Cold-weather biking"
 summary: "Dress for the riding body, not the standing-still body. Layering, hands and feet, and what matters most below freezing."
 slug: cold-weather-biking
@@ -530,6 +540,7 @@ Winter biking has real advantages once you're set up: lighter traffic, no overhe
 
 ```yaml
 id: mg_boston_winter
+reviewed: 2026-10-05
 title: "Biking through a Boston winter: Boston, Cambridge and Somerville"
 summary: "Plenty of people around here ride straight through to spring. Where local riders share real-time conditions, how Bluebikes runs in winter, routes to start on in Boston, Cambridge and Somerville, and the gear that makes it comfortable."
 slug: biking-through-a-boston-winter
@@ -599,6 +610,7 @@ Winter is when bike shops are quietest, so it's a great time for a tune-up — a
 
 ```yaml
 id: mg_subway_vs_bus
+reviewed: 2026-05-08
 title: "Subway vs. bus — what's different"
 summary: "Bus, subway, Green Line — three modes, one fare. What to expect the first time you ride each."
 slug: subway-vs-bus
@@ -635,6 +647,7 @@ If you pay with a Charlie Card or phone, a single bus-to-subway transfer is free
 
 ```yaml
 id: mg_bus_transfers
+reviewed: 2026-05-08
 title: "How bus transfers work"
 summary: "Two-hour free transfers are the MBTA's quietest perk. The basic rule and the gotchas."
 slug: how-bus-transfers-work
@@ -661,8 +674,9 @@ If your trip involves more than one bus or train, you're probably paying less th
 
 ```yaml
 id: mg_pay_for_t
+reviewed: 2026-10-01
 title: "How to pay for the T"
-summary: "Tap if you ride a few times a month. Get a CharlieCard pass if you commute. The pricing math in plain language."
+summary: "Tap if you ride now and then. A monthly pass if you ride almost every workday. Transfers, Commuter Rail and reduced fares in plain language."
 slug: how-to-pay-for-the-t
 mode: transit
 barrier: planning
@@ -673,40 +687,40 @@ topics: [fares, getting-started, mbta-basics]
 related: [mg_bus_transfers, mg_first_bus_ride]
 ```
 
-The MBTA accepts both contactless payments and the older CharlieCard system. Which to use depends on how often you ride.
+The MBTA takes both tap-to-pay and the CharlieCard. Which to use depends on how often you ride.
 
 ### For occasional riders: tap to pay.
 
-Hold your phone (Apple Pay, Google Pay) or a contactless card on the reader at any fare gate or bus farebox. You pay per ride — {{price:mbta.subwaySingle}} subway, {{price:mbta.busSingle}} local bus, {{price:mbta.commuterRailMin}}-{{price:mbta.commuterRailMax}} commuter rail by zone.
+Hold your phone (Apple Pay, Google Pay) or a contactless card on the reader at any fare gate or bus farebox. You pay per ride: {{price:mbta.subwaySingle}} subway, {{price:mbta.busSingle}} local bus.
 
-### For regular riders: a CharlieCard with a pass saves money.
+### For regular riders: do the math on a pass.
 
-Pay-per-tap adds up fast. A monthly LinkPass on a CharlieCard is {{price:mbta.linkPassMonthly}} for unlimited subway + local bus rides — cheaper than per-ride pricing for most daily commutes, and notably cheaper for bus-only commuters ({{price:mbta.busPassMonthly}}/month with the Local Bus Pass).
+A Monthly LinkPass on a CharlieCard is {{price:mbta.linkPassMonthly}} for unlimited subway and local bus. A subway round trip every workday costs about $4.80 a day, so the pass comes out ahead once you ride about 19 days a month. If you only take the bus, the Monthly Local Bus Pass is {{price:mbta.busPassMonthly}}, which beats paying per ride at about 17 round trips a month.
 
 ### Pass options on a CharlieCard
 
-- **1-Day Pass:** {{price:mbta.dayPass}} — unlimited subway and bus for 24 hours.
-- **7-Day Pass:** {{price:mbta.weekPass}} — unlimited for 7 days.
-- **Monthly LinkPass:** {{price:mbta.linkPassMonthly}} — unlimited subway and bus for the calendar month.
-- **Monthly Local Bus Pass:** {{price:mbta.busPassMonthly}} — bus only.
+- **1-Day Pass:** {{price:mbta.dayPass}}, unlimited subway and bus for 24 hours.
+- **7-Day Pass:** {{price:mbta.weekPass}}, unlimited for 7 days.
+- **Monthly LinkPass:** {{price:mbta.linkPassMonthly}}, unlimited subway and bus for the calendar month.
+- **Monthly Local Bus Pass:** {{price:mbta.busPassMonthly}}, bus only.
 
-Get a CharlieCard from any subway station's vending machine; load it with cash or a card.
+Get a CharlieCard from a subway station fare machine and load it with cash or a card.
 
-### Transfers are free
+### Transfers
 
-Within 2 hours bus-to-bus, bus-to-subway, and subway-to-bus. The transfer benefit applies whether you're using a CharlieCard or contactless.
+Within 2 hours, you can change between buses, the subway and the ferry as many times as you need and pay only the highest fare on the trip. Going from a bus to the subway costs the $0.70 difference; subway to bus is free. Use the same card or phone the whole way. Transfers don't work with cash or a paper CharlieTicket.
 
 ### For the Commuter Rail, use the mTicket app.
 
-Buy your ticket in the app before boarding, show the active ticket to the conductor.
+Buy your ticket in the app before boarding and show it to the conductor. Tap-to-pay isn't accepted on the Commuter Rail yet. Fares run {{price:mbta.commuterRailMin}} to {{price:mbta.commuterRailMax}} by zone.
 
 ### Reduced fares
 
-Available for riders 65+, riders with disabilities, students, and income-eligible riders. Details at mbta.com/fares.
+Children 11 and under ride free. Reduced fares are available for riders 65 and older, riders with disabilities, middle and high school students, and income-eligible adults. Details at mbta.com/fares.
 
 ### The bottom line
 
-If you ride a few times a month, just tap. If you commute regularly, get a CharlieCard with a monthly pass — it pays for itself within a couple weeks.
+If you ride a few times a week, just tap. If you ride the subway round trip almost every workday, a monthly pass saves a little and means you never think about the fare.
 
 ---
 
@@ -714,6 +728,7 @@ If you ride a few times a month, just tap. If you commute regularly, get a Charl
 
 ```yaml
 id: mg_first_bus_ride
+reviewed: 2026-10-01
 title: "Your first bus ride — what to expect"
 summary: "Step by step from finding the right route to walking off at your stop, with paying and transfers in between."
 slug: your-first-bus-ride
@@ -730,27 +745,27 @@ If you've never taken a city bus, or haven't in years, here's what to expect. It
 
 ### Before you leave
 
-Find your route in Google Maps, Apple Maps, or the Transit app. Enter your destination, select "Transit," and the app will tell you which bus, where to catch it, and when it arrives. Most also show real-time bus location, so you'll know whether to head out now or wait a minute.
+Find your route in Google Maps, Apple Maps, or the Transit app. Enter your destination, choose "Transit," and the app tells you which bus, where to catch it, and when it arrives. Most show where the bus is right now, so you know whether to head out or wait a minute.
 
 ### At the stop
 
-Look for a bus stop sign — the route number(s) will be listed. The bus pulls up and opens the front door. Board through the front, where the fare reader is.
+Look for the bus stop sign; the route numbers are listed on it. When the bus pulls up, board through the front door, where the fare reader is.
 
 ### Paying
 
-- **Tap to pay (easiest):** Tap your phone (Apple Pay, Google Pay) or contactless card on the reader.
-- **CharlieCard:** Tap on the same reader.
-- **Cash:** Feed bills or coins into the farebox. Exact change only — the machine doesn't give change back.
+- **Tap to pay (easiest):** tap your phone (Apple Pay, Google Pay) or a contactless card on the reader.
+- **CharlieCard:** tap it on the same reader.
+- **Cash:** feed bills or coins into the farebox. It doesn't give change, but it can put the extra on a CharlieCard for next time.
 
 ### On the bus
 
-Move toward the back to make room for new riders. Hold a pole or strap if standing. Your stop will be announced over the speakers and shown on the display above. To request your stop, push the yellow strip on the wall or pull the cord above the windows. Exit through the rear door (push the yellow bars to open).
+Move toward the back to make room. Hold a pole or strap if you're standing. Stops are announced and shown on the display. To request your stop, press the yellow strip on the wall or pull the cord above the windows. Exit through the rear door (push the yellow bars to open it).
 
 ### A few useful things to know
 
-- **Transfers are free** within 2 hours if you connect to another bus or the subway using the same payment method.
-- **The bus can kneel.** If you need step-free boarding, the driver can lower the bus.
-- **Drivers are used to new riders.** If you're not sure whether you got the right bus or how something works, just ask.
+- **Transfers:** within 2 hours, a second bus is free and the subway costs the $0.70 difference, as long as you pay the same way each time. Cash doesn't carry a transfer.
+- **The bus can kneel.** If you need step-free boarding, the driver can lower it.
+- **Drivers are used to new riders.** If you're not sure you're on the right bus, just ask.
 
 ---
 
@@ -758,6 +773,7 @@ Move toward the back to make room for new riders. Hold a pole or strap if standi
 
 ```yaml
 id: mg_transit_plus_walking
+reviewed: 2026-10-01
 title: "Combining transit with walking or biking"
 summary: "Transit plus a short walk or bike at each end beats pure transit and pure walking on most longer trips."
 slug: transit-plus-walking-or-biking
@@ -770,35 +786,35 @@ topics: [routes, multimodal, getting-started]
 related: [mg_transit_planning, mg_subway_vs_bus]
 ```
 
-For trips over 3-4 miles, mixing transit with a walk or bike at each end is often the fastest and most pleasant way to get there. You skip the slowest parts of pure-transit (local bus stops, transfers), get built-in exercise without adding total time, and arrive right at the door.
+For trips over 3 or 4 miles, mixing transit with a walk or bike ride at each end is often the fastest and most pleasant way to get there. You skip the slowest parts of an all-transit trip (local stops, transfers), get some exercise without adding much time, and arrive right at the door.
 
 ### How it works
 
-1. Walk or bike to a transit stop (5-15 min).
-2. Ride the bus or train for the long middle section.
-3. Walk or bike from your destination stop (5-15 min).
+1. Walk or bike to a stop or station (5 to 15 min).
+2. Ride the bus or train for the long middle part.
+3. Walk or bike from the stop to where you're going (5 to 15 min).
 
 ### Planning the trip
 
-- **Use Google Maps or the Transit app.** Enter your destination, look at transit options, and notice which stops are within a 10-15 minute walk of your start and end points.
-- **Choose rapid transit for the middle.** Subway, commuter rail, or express buses are the fastest options for the long leg.
-- **Consider Bluebikes for the last mile.** Stations are often near transit stops. Biking the last mile is usually faster than waiting for a connecting bus.
+- **Use Google Maps or the Transit app.** Enter your destination, look at the transit options, and notice which stops are within a 10 to 15 minute walk of each end.
+- **Choose rapid transit for the middle.** The subway, Commuter Rail or an express bus is the fastest way to cover the long stretch.
+- **Consider Bluebikes for the last mile.** Stations are often right next to transit stops, and biking the last mile is usually quicker than waiting for a connecting bus.
 
 ### An example
 
-Somerville to the Seaport is a 6-mile trip. Multimodal version:
+Somerville to the Seaport is about 6 miles. One way to do it:
 
-- Walk 8 min to Davis Square Red Line station
-- Ride Red Line to South Station (15 min)
+- Walk 8 min to Davis station
+- Ride the Red Line to South Station (about 17 min)
 - Walk 10 min to the Seaport
 
-Total: 33 minutes, {{price:mbta.subwaySingle}}, and 18 minutes of walking built into the day.
+About 35 minutes, {{price:mbta.subwaySingle}}, and 18 minutes of walking built into the day.
 
 ### A few practical things
 
-- **Build in buffer time** — allow 5 extra minutes until you learn the routine.
-- **Have a backup plan** — know the all-transit route for bad weather days when the walk or bike-share segment is less appealing.
-- **For repeat trips, the routine compounds.** Once you know the timing and rhythm, the planning effort drops to nearly zero.
+- **Build in buffer time.** Allow 5 extra minutes until you know the routine.
+- **Have a backup.** Know the all-transit route for bad-weather days.
+- **It gets easier.** Once you know the timing, the planning drops to almost nothing.
 
 ---
 
@@ -806,6 +822,7 @@ Total: 33 minutes, {{price:mbta.subwaySingle}}, and 18 minutes of walking built 
 
 ```yaml
 id: mg_transit_planning
+reviewed: 2026-05-08
 title: "Planning a transit trip — it's mostly the apps doing the work"
 summary: "Real-time apps do the work that printed schedules used to. Five rules for getting the most out of them."
 slug: planning-a-transit-trip
@@ -854,6 +871,7 @@ For first-time multi-leg trips, screenshot the directions in case signal drops o
 
 ```yaml
 id: mg_transit_time
+reviewed: 2026-05-08
 title: "When transit is actually the faster option"
 summary: "On most trips into or across downtown, transit door-to-door beats driving once you count the parking search."
 slug: when-transit-is-faster
@@ -896,6 +914,7 @@ A 30-minute drive is 30 minutes of driving. A 30-minute train ride is 30 minutes
 
 ```yaml
 id: mg_walking_vs_driving
+reviewed: 2026-10-01
 title: "When walking is actually the faster option"
 summary: "For trips under a mile, walking often beats driving once you count getting to the car. Five times it definitely wins."
 slug: when-walking-is-faster
@@ -928,7 +947,7 @@ A 1-mile drive in stop-and-go traffic can easily take 10-15 minutes. A 1-mile wa
 
 ### 5. What walking does that GPS doesn't track.
 
-A 15-minute walk burns about 60 calories, lets you notice your neighborhood, and ends with you in a better mood than you started.
+A 15-minute walk lets you notice your neighborhood, and ends with you in a better mood than you started.
 
 ---
 
@@ -936,6 +955,7 @@ A 15-minute walk burns about 60 calories, lets you notice your neighborhood, and
 
 ```yaml
 id: mg_walking_carrying
+reviewed: 2026-05-08
 title: "Walking with stuff: how to carry what you need"
 summary: "A rolling cart, a good backpack, and one delivery a week cover almost any load people typically drive for."
 slug: walking-with-stuff
@@ -980,6 +1000,7 @@ A rolling cart, an e-cargo bike, and a delivery subscription cover almost any lo
 
 ```yaml
 id: mg_walking_weather
+reviewed: 2026-05-08
 title: "Walking through the weather"
 summary: "Most weather is more walkable than it looks from the warm side of a window. The shoes, layers, and bail-out plan that get you out the door."
 slug: walking-through-the-weather
@@ -1024,6 +1045,7 @@ Most "the weather is bad" conclusions are made by people standing inside dressed
 
 ```yaml
 id: mg_drive_time_on_foot
+reviewed: 2026-08-31
 title: "How far is a 10-minute drive on foot or by bike?"
 summary: "A 10-minute drive across Greater Boston is roughly two and a half miles — about 12 minutes on a bike. Here's the whole conversion, plus the door-to-door minutes each way of getting around adds on top."
 slug: how-far-is-a-ten-minute-drive-on-foot
@@ -1078,6 +1100,7 @@ Put your own trip into the [Commute Advisor](https://www.gogreenstreets.org/comm
 
 ```yaml
 id: mg_cargo_bike_cost
+reviewed: 2026-09-28
 title: "What a cargo e-bike costs — new, used, and what drives the price"
 summary: "Cargo e-bikes run from around $2,000 to well past $8,000 new, and a well-kept used one often lands near $3,000. Here's what you're paying for, what to check before you buy secondhand, and where to try one first."
 slug: what-a-cargo-ebike-costs

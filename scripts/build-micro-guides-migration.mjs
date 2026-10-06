@@ -173,6 +173,17 @@ function sqlBody(body) {
   return `$${tag}$${body}$${tag}$`
 }
 
+// Every guide carries its own `reviewed: YYYY-MM-DD` in YAML. The seed used to
+// write now() for all rows on every rebuild, so shipping one new guide stamped
+// all 23 as "reviewed today" (2026-10-05) and the website's "Reviewed" line
+// would have lied. Bump a guide's date when you edit it or check its facts.
+function reviewedSql(y) {
+  const v = y.reviewed
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    throw new Error(`Guide ${y.id} needs "reviewed: YYYY-MM-DD" in its YAML block`)
+  }
+  return `${sqlString(v)}::timestamptz`
+}
 function rowSql(guide) {
   const y = guide.yaml
   const id = y.id
@@ -197,7 +208,7 @@ function rowSql(guide) {
     ${sqlTextArray(y.related)},
     ${isStarter ? 'true' : 'false'},
     ${readMin},
-    now()
+    ${reviewedSql(y)}
   )`
 }
 
@@ -248,6 +259,11 @@ ON CONFLICT (id) DO UPDATE SET
   read_time_minutes = EXCLUDED.read_time_minutes,
   last_reviewed_at = EXCLUDED.last_reviewed_at;
   -- created_at intentionally not in SET so existing rows keep their original timestamp.
+  -- external_links and expires_at are not in this seed; Shift migrations own them.
+  -- Every column this seed DOES own is overwritten on each run, so a fix to
+  -- title/summary/body made anywhere else is lost on the next rebuild (that is
+  -- how the 2026-10-05 run reverted Shift migrations 01052 and 01058). Edit the
+  -- markdown, not the database.
 
 COMMIT;
 `
