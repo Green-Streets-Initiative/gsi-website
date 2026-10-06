@@ -122,7 +122,7 @@ export default function EmployerPricing() {
             One flat annual price
           </h2>
           <p className="mx-auto max-w-[640px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-            Rewards and reporting are included, and the price never goes up because more of your people join. Up to 250 people: Starter or Basic. More than 250: Standard or Premium.
+            Reporting and GSI-funded Walk/Ride Day drawings are included, and the price never goes up because more of your people join. Prizes your company adds are funded separately. Up to 250 people: Starter or Basic. More than 250: Standard or Premium.
           </p>
         </div>
 

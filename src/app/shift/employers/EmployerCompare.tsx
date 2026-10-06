@@ -17,7 +17,7 @@ type Row = {
 const ROWS: Row[] = [
   {
     question: 'What will it cost us?',
-    shift: 'One flat annual price, $500 to $5,000, rewards and reporting included. It never goes up because more of your people join.',
+    shift: 'One flat annual price, $500 to $5,000, with reporting and GSI-funded Walk/Ride Day drawings included. It never goes up because more of your people join. Prizes you add are funded separately.',
     perUser: 'Per active user per month, from $3 to about $25, with rewards billed on top.',
     enterprise: 'Not published. Enterprise contracts plus implementation fees.',
     spreadsheet: 'Free, paid for in staff time.',
@@ -31,7 +31,7 @@ const ROWS: Row[] = [
   },
   {
     question: 'Will people actually use it?',
-    shift: 'Team leaderboard, your own challenges, and monthly Walk/Ride Day drawings funded by GSI give people a reason to try. Participation is reported to you every week.',
+    shift: 'Getting people to join is the hard part of every commute program, so we plan for it: a launch tied to a day with prizes already on it (Walk/Ride Day), a ready-made note and flyer with your code, a leaderboard people check, and a prize at the end of month one. You see join and active rates every week and we adjust with you.',
     perUser: 'Challenges and recognition; prizes cost extra.',
     enterprise: 'Incentives if your contract includes them.',
     spreadsheet: 'Usually one burst, then it fades.',
@@ -52,7 +52,7 @@ const ROWS: Row[] = [
   },
   {
     question: 'How fast can we start?',
-    shift: 'A free trial code for the next Walk/Ride Day in two business days. A paid group live within a week.',
+    shift: 'A free trial code in two business days and your private group within a week. Plan two to four weeks to tell staff before launch day, and we give you the kit and a date to aim at.',
     perUser: 'Self-serve sign-up.',
     enterprise: 'An implementation project.',
     spreadsheet: 'A spreadsheet and a reminder email.',

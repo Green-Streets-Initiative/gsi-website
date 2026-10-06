@@ -36,7 +36,7 @@ const TRIAL_STEPS = [
 export const metadata = {
   title: 'Shift for Employers — Green Streets Initiative',
   description:
-    'Help your people try walking, biking and transit for more of their trips to work. One flat annual price, automatic trip detection, rewards included, and the numbers for your climate and wellness reporting. Try it free on Walk/Ride Day.',
+    'Help your people try walking, biking and transit for more of their trips to work. One flat annual price, automatic trip detection, monthly GSI-funded drawings, and the numbers for your wellness, climate and commute reporting. Try it free on Walk/Ride Day.',
 }
 
 const employerFaqItems = [
@@ -78,7 +78,7 @@ const employerFaqItems = [
   {
     question: 'We\'re interested. How do we get started?',
     answer:
-      'Use the form at the bottom of this page. We reply within two business days with a free team code for the next Walk/Ride Day, or set up a 20-minute call about your goals, team size and timeline. A paid group is live within a week.',
+      'Use the form at the bottom of this page. We reply within two business days with a free team code for the next Walk/Ride Day, or set up a 20-minute call about your goals, team size and timeline. A paid group is ready within a week; plan two to four weeks to tell staff before your launch day so people have time to join.',
   },
 ]
 
@@ -203,7 +203,7 @@ export default async function ShiftEmployersPage() {
                 },
                 {
                   title: 'Nothing to run',
-                  body: 'No forms, no spreadsheets, no logging. The app picks up walking, biking and transit trips on its own, the weekly email comes to you, and your group is live within a week.',
+                  body: 'No forms, no spreadsheets, no logging. The app picks up walking, biking and transit trips on its own, the weekly email comes to you, and we hand you the invite note, flyer and launch date.',
                 },
                 {
                   title: 'Numbers for whatever you report',
@@ -294,13 +294,13 @@ export default async function ShiftEmployersPage() {
               {[
                 {
                   step: '1',
-                  title: 'We configure your group',
-                  body: 'We set up a private employer group with a unique invite code. Typically takes about a week after we agree on parameters.',
+                  title: 'We set up your group and a launch date',
+                  body: 'Your private group and invite code are ready within a week. Together we pick a launch day, usually the next Walk/Ride Day or your own first challenge, two to four weeks out, so staff hear about it more than once before it starts.',
                 },
                 {
                   step: '2',
-                  title: 'Employees join',
-                  body: 'Employees download the Shift app, enter the invite code, and start commuting. Setup takes about 5 minutes.',
+                  title: 'Staff hear about it and join',
+                  body: 'You send the note we wrote and post the flyer with the code and QR. Employees download the free Shift app and enter the code; it takes about five minutes. We report how many have joined each week.',
                 },
                 {
                   step: '3',
