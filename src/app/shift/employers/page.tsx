@@ -7,6 +7,8 @@ import JsonLd from '@/components/JsonLd'
 import { faqPageSchema } from '@/lib/structured-data'
 import EmployerLogin from './EmployerLogin'
 import EmployerPricing from './EmployerPricing'
+import EmployerCompare from './EmployerCompare'
+import EmployerInquiry from './EmployerInquiry'
 import CheckoutBanner from './CheckoutBanner'
 import { loadWalkRideDays } from '@/app/programs/walk-ride-days/_lib/load'
 import { weekdayDateET } from '@/lib/campaigns/format'
@@ -33,7 +35,7 @@ const TRIAL_STEPS = [
 export const metadata = {
   title: 'Shift for Employers — Green Streets Initiative',
   description:
-    'Help your team commute better with Shift. Verified trip data, custom leaderboards, and impact reporting for HR and sustainability teams.',
+    'Help your people try walking, biking and transit for more of their trips to work. One flat annual price, automatic trip detection, rewards included, and the numbers for your climate and wellness reporting. Try it free on Walk/Ride Day.',
 }
 
 const employerFaqItems = [
@@ -75,7 +77,7 @@ const employerFaqItems = [
   {
     question: 'We\'re interested. How do we get started?',
     answer:
-      'Contact us for a conversation. We\'ll discuss your goals, team size, and timeline. Your employer group can typically be configured within a week of agreeing on parameters.',
+      'Use the form at the bottom of this page. We reply within two business days with a free team code for the next Walk/Ride Day, or set up a 20-minute call about your goals, team size and timeline. A paid group is live within a week.',
   },
 ]
 
@@ -102,33 +104,38 @@ export default async function ShiftEmployersPage() {
             <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">
               For employers
             </div>
-            <h1 className="mb-6 max-w-[720px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
-              Your team wants to come in. The commute is what stops them.
+            <h1 className="mb-6 max-w-[760px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
+              Help your people try walking, biking and transit for more of their trips to work.
             </h1>
-            <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              Shift helps your people try walking, biking and transit for more of their trips to work, and gives you the numbers to see it working.
+            <p className="mb-10 max-w-[640px] text-[1.0625rem] leading-[1.65] text-ink-soft">
+              Staff join with a private code. The free Shift app notices their trips on its own. You get the numbers for your climate, wellness and commute reporting, with nothing to run. One flat annual price, from $500, and you can try it free on Walk/Ride Day.
             </p>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
-              <Link
-                href="/contact?inquiry=employer"
+              <a
+                href="#inquiry"
                 className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-blue px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
-                Get in touch &rarr;
-              </Link>
+                Get a free trial code &rarr;
+              </a>
               <a
-                href="#walk-ride-day"
+                href="#compare"
                 className="inline-flex min-h-[48px] items-center text-[15px] font-semibold text-forest underline underline-offset-4 hover:opacity-80"
               >
-                Or try it free on Walk/Ride Day
+                See how Shift compares
               </a>
             </div>
           </div>
         </section>
 
         {/* ══════════════════════════════════════════════════════════
+            1.2 · HOW SHIFT COMPARES (above the fold on desktop)
+        ══════════════════════════════════════════════════════════ */}
+        <EmployerCompare />
+
+        {/* ══════════════════════════════════════════════════════════
             1.5 · FREE TRIAL ON WALK/RIDE DAY
         ══════════════════════════════════════════════════════════ */}
-        <section id="walk-ride-day" className="scroll-mt-20 bg-white px-6 py-8 lg:px-8 lg:py-10">
+        <section id="walk-ride-day" className="scroll-mt-20 bg-cream px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
             <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
               Try it free on Walk/Ride Day
@@ -144,7 +151,7 @@ export default async function ShiftEmployersPage() {
             </p>
             <ol className="mb-8 grid gap-6 md:grid-cols-3">
               {TRIAL_STEPS.map((s, i) => (
-                <li key={s.title} className="rounded-[14px] border border-navy/10 bg-cream p-8">
+                <li key={s.title} className="rounded-[14px] border border-navy/10 bg-white p-8">
                   <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-full bg-forest/10 text-sm font-bold text-forest">
                     {i + 1}
                   </div>
@@ -154,12 +161,12 @@ export default async function ShiftEmployersPage() {
               ))}
             </ol>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-              <Link
-                href="/contact?inquiry=employer"
+              <a
+                href="#inquiry"
                 className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-forest px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Bring my team &rarr;
-              </Link>
+              </a>
               <p className="text-[13px] leading-snug text-ink-soft">
                 Nobody at your company sees an individual&apos;s trips. Drawings are open to Shift members 18 or older in Massachusetts.{' '}
                 <Link href="/events/walk-ride-day/rules" className="font-semibold text-forest underline-offset-4 hover:underline">
@@ -178,33 +185,33 @@ export default async function ShiftEmployersPage() {
         {/* ══════════════════════════════════════════════════════════
             3 · WHAT EMPLOYERS GET
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
+        <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
             <h2 className="mb-8 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
-              What employers get
+              Why employers join
             </h2>
             <div className="grid gap-6 md:grid-cols-2">
               {[
                 {
-                  title: 'Higher in-office attendance',
-                  body: 'When the commute gets easier, people show up more. Shift removes friction by helping employees find faster, cheaper, healthier ways to get to work.',
+                  title: 'Numbers for your climate goals',
+                  body: 'Most companies count employee commuting in their footprint and have no way to move it. Shift gives staff a reason to try an active trip and gives you a measured result: trips by mode, participation and CO₂ avoided, ready for your sustainability, ESG or wellness report.',
                 },
                 {
-                  title: 'A real wellness benefit',
-                  body: 'Not another app nobody uses. Shift tracks participation automatically — you get real data on how your team moves, without anyone filling out a form.',
+                  title: 'Nothing to run',
+                  body: 'No forms, no spreadsheets, no logging. The app picks up walking, biking, transit and carpool trips on its own, the weekly email comes to you, and your group is live within a week.',
                 },
                 {
-                  title: 'ESG and sustainability reporting',
-                  body: 'Verified trip data by mode, total CO₂ avoided, and participation rates — ready for your sustainability reports and wellness program documentation.',
+                  title: 'A reason to try something new',
+                  body: 'Team leaderboards, challenges and monthly prize drawings people can win, plus route help for the trip to your office. If your people were asked back to the office, this makes the commute something they choose.',
                 },
                 {
-                  title: 'Real commute data',
-                  body: 'See how your team gets to work: mode share, participation trends and patterns over time, from trips the app detects on its own.',
+                  title: 'Private by design',
+                  body: 'You see team totals and the leaderboard, never anyone’s trips or routes. Joining is always each person’s choice.',
                 },
               ].map((card) => (
                 <div
                   key={card.title}
-                  className="rounded-[14px] border border-navy/10 bg-white p-8"
+                  className="rounded-[14px] border border-navy/10 bg-cream p-8"
                 >
                   <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
                     {card.title}
@@ -288,8 +295,8 @@ export default async function ShiftEmployersPage() {
                 },
                 {
                   step: '3',
-                  title: 'You get the data',
-                  body: 'Receive aggregate reports on active employee count, total trips, mode share, and CO₂ avoided. Employees get a better commute with real rewards.',
+                  title: 'You see the results',
+                  body: 'An aggregate dashboard, a weekly email on your team and an impact report you can download: active members, trips, mode share and CO₂ avoided.',
                 },
               ].map((card) => (
                 <div
@@ -329,24 +336,9 @@ export default async function ShiftEmployersPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
-            7 · CLOSING CTA
+            7 · INQUIRY FORM (the page's one conversion)
         ══════════════════════════════════════════════════════════ */}
-        <section className="bg-cream px-6 pb-20 pt-8 lg:px-8 lg:pb-24 lg:pt-10">
-          <div className="mx-auto max-w-[640px] text-center">
-            <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
-              Ready to talk?
-            </h2>
-            <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
-              Contact us for a conversation. Your employer group can typically be configured within a week.
-            </p>
-            <Link
-              href="/contact?inquiry=employer"
-              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-blue px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
-            >
-              Get in touch &rarr;
-            </Link>
-          </div>
-        </section>
+        <EmployerInquiry nextDate={wrdDate} />
       </main>
       <Footer variant="light" />
     </>

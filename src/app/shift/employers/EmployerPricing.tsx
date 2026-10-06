@@ -26,14 +26,14 @@ const CARDS: PricingCard[] = [
     id: 'starter',
     name: 'Starter',
     price: '$500',
-    tagline: 'For small teams who want to track and celebrate progress.',
+    tagline: 'Up to 250 people.',
     features: [
-      'Private invite code & team leaderboard',
-      'Team name + logo on public leaderboard',
-      'Aggregate dashboard (trips, miles, CO₂, mode mix, Shift Rate)',
-      'Downloadable impact report',
-      'Commute Advisor (standard — no company customization)',
-      'Optional public leaderboard for flagship events',
+      'Private invite code and team leaderboard',
+      'Automatic trip detection, nothing to log',
+      'Branded Commute Advisor and Nearby page for your office',
+      'Aggregate dashboard, weekly email and impact report',
+      'Walk/Ride Day drawings every month, funded by GSI',
+      'Full-workforce commute survey available as an add-on',
     ],
     accent: '#2D6A4F',
     accentText: '#FFFFFF',
@@ -42,42 +42,43 @@ const CARDS: PricingCard[] = [
     id: 'basic',
     name: 'Basic',
     price: '$1,000',
-    tagline: 'Everything you need to launch a workplace challenge.',
+    tagline: 'Up to 250 people, with your brand on everything.',
     features: [
-      'Employee invite code + private team leaderboard',
-      'Branded Commute Advisor page for your workplace',
+      'Everything in Starter',
       'Your company logo in the Shift app',
-      'Aggregate impact dashboard',
-      'Downloadable impact reports for any date range',
-      'Opt-in to regional public leaderboards',
+      'Opt in to regional public leaderboards',
+      'Results by location for employers with several offices',
+      'Full-workforce commute survey available as an add-on',
     ],
     accent: '#2966E5',
     accentText: '#FFFFFF',
-    highlight: true,
   },
   {
     id: 'standard',
     name: 'Standard',
     price: '$3,000',
-    tagline: 'For employers ready to actively drive participation.',
+    tagline: 'More than 250 people, or any team that wants to run challenges.',
     features: [
       'Everything in Basic',
-      'Create your own branded team challenges',
-      'Join flagship events like Shift Your Summer',
-      'Company-funded rewards pool — gift cards for challenge winners',
-      'Monthly email digest of team participation',
+      'Your own branded team challenges',
+      'Flagship events like Shift Your Summer, as a team',
+      'Company-funded rewards pool with gift cards for winners',
+      'One full-workforce commute survey a year, run by GSI, with a regulator-format summary',
     ],
     accent: '#1B4332',
     accentText: '#FFFFFF',
+    highlight: true,
   },
   {
     id: 'premium',
     name: 'Premium',
     price: '$5,000',
-    tagline: 'Put your company name on the rewards you fund.',
+    tagline: 'More than 250 people, filing a commute report.',
     features: [
       'Everything in Standard',
-      '"Sponsored by [Company]" attribution on the rewards you fund',
+      'Filing packet for MassDEP, Cambridge PTDM or Boston TAPA',
+      'Mid-year check on how your measures are working',
+      '"Sponsored by [Company]" on the rewards you fund',
     ],
     accent: '#8A6D1F',
     accentText: '#FFFFFF',
@@ -111,19 +112,17 @@ export default function EmployerPricing() {
   }
 
   return (
-    <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
+    <section id="plans" className="scroll-mt-20 bg-cream px-6 py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-[1240px]">
         <div className="mb-10 text-center">
           <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
             Plans
           </div>
           <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
-            Annual subscriptions
+            One flat annual price
           </h2>
-          <p className="mx-auto max-w-[620px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-            Pick what fits how active you want your program to be. Every tier
-            is annual, with custom packages and multi-year discounts available
-            on request.
+          <p className="mx-auto max-w-[640px] text-[1.0625rem] leading-[1.65] text-ink-soft">
+            Rewards and reporting are included, and the price never goes up because more of your people join. Up to 250 people: Starter or Basic. More than 250: Standard or Premium.
           </p>
         </div>
 
@@ -149,7 +148,7 @@ export default function EmployerPricing() {
                     className="mb-4 inline-flex self-start rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
                     style={{ backgroundColor: card.accent, color: onAccent }}
                   >
-                    Most popular
+                    Recommended
                   </div>
                 )}
                 <h3
@@ -216,14 +215,13 @@ export default function EmployerPricing() {
           </p>
         )}
 
-        <p className="mt-8 text-center text-[13px] italic text-ink-soft">
-          All tiers are annual. Custom packages and multi-year discounts
-          available.{' '}
+        <p className="mx-auto mt-8 max-w-[720px] text-center text-[13px] leading-[1.6] text-ink-soft">
+          All plans are annual. The add-on commute survey for Starter and Basic is $750 to $1,500 per site per cycle. Rewards you fund are paid into your rewards pool separately from the plan price. Custom packages and multi-year discounts on request:{' '}
           <a
-            href="/contact?inquiry=employer"
-            className="not-italic font-semibold text-forest underline underline-offset-4 hover:opacity-80"
+            href="#inquiry"
+            className="font-semibold text-forest underline underline-offset-4 hover:opacity-80"
           >
-            Talk to us
+            talk to us
           </a>
           .
         </p>

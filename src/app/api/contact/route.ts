@@ -14,6 +14,7 @@ interface ContactBody {
   gradeLevels?: string[]
   businessName?: string
   neighborhood?: string
+  source?: string // which page the form was on (contact, employers)
   website?: string // honeypot
 }
 
@@ -35,7 +36,7 @@ function buildEmailHtml(body: ContactBody): string {
     `<br/><p><strong>Message:</strong></p>`,
     `<p>${body.message.replace(/\n/g, '<br/>')}</p>`,
     `<hr/>`,
-    `<p style="color:#888;font-size:12px">Submitted via gogreenstreets.org/contact<br/>${new Date().toISOString()}</p>`,
+    `<p style="color:#888;font-size:12px">Submitted via gogreenstreets.org/${body.source === 'employers' ? 'shift/employers' : 'contact'}<br/>${new Date().toISOString()}</p>`,
   )
 
   return lines.join('\n')

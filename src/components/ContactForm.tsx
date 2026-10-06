@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { gaEvent } from '@/lib/ga'
 
 const INQUIRY_TYPES = [
   'Employer partnership',
@@ -27,7 +28,7 @@ const INQUIRY_PARAM_MAP: Record<string, InquiryType> = {
 }
 
 const MESSAGE_PLACEHOLDERS: Record<InquiryType, string> = {
-  'Employer partnership': 'Tell us about your organization and what you\'re hoping to accomplish.',
+  'Employer partnership': 'Tell us about your office and what you\'d like: a free Walk/Ride Day trial code, a 20-minute call, or both.',
   'School program': 'Tell us about your school and what you\'re interested in.',
   'Rewards partner (local business)': 'Tell us about your business and the offer you have in mind.',
   'Media / press': 'Tell us about your story or request.',
@@ -36,17 +37,24 @@ const MESSAGE_PLACEHOLDERS: Record<InquiryType, string> = {
   'General / other': 'What\'s on your mind?',
 }
 
-const TEAM_SIZES = ['Under 50', '50–200', '200–500', '500+']
+const TEAM_SIZES = ['Under 50', '50–250', '250–1,000', '1,000+']
 const GRADE_LEVELS = ['K–2', '3–5', '6–8', 'High school']
 
 type FormErrors = Record<string, string>
 
-export default function ContactForm() {
+type ContactFormProps = {
+  /** Preselects the inquiry type (the employers page presets 'Employer partnership'). */
+  defaultInquiryType?: InquiryType
+  /** Which page the form sits on; sent with the inquiry and the analytics event. */
+  source?: string
+}
+
+export default function ContactForm({ defaultInquiryType, source = 'contact' }: ContactFormProps = {}) {
   const searchParams = useSearchParams()
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [inquiryType, setInquiryType] = useState<InquiryType>('General / other')
+  const [inquiryType, setInquiryType] = useState<InquiryType>(defaultInquiryType ?? 'General / other')
   const [message, setMessage] = useState('')
   const [companyName, setCompanyName] = useState('')
   const [teamSize, setTeamSize] = useState('')
@@ -122,12 +130,19 @@ export default function ContactForm() {
           gradeLevels: inquiryType === 'School program' && gradeLevels.length > 0 ? gradeLevels : undefined,
           businessName: inquiryType === 'Rewards partner (local business)' ? businessName.trim() : undefined,
           neighborhood: inquiryType === 'Rewards partner (local business)' ? neighborhood.trim() || undefined : undefined,
+          source,
           website: honeypot,
         }),
       })
 
       if (!res.ok) throw new Error('Submit failed')
       setSubmitted(true)
+      // One event per inquiry, plus a dedicated one for employers so the
+      // Ad Grant and the inbound watch can count them.
+      gaEvent('contact_inquiry', { inquiry_type: inquiryType, source })
+      if (inquiryType === 'Employer partnership') {
+        gaEvent('employer_inquiry', { source, team_size: teamSize || '(not given)' })
+      }
     } catch {
       setSubmitError(true)
     } finally {
