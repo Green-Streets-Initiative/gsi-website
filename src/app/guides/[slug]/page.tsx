@@ -78,6 +78,27 @@ const modeLabel: Record<string, string> = {
   transit: 'Transit',
 }
 
+// App strip under the title, matched to what the reader needs next. Every
+// claim is something the app does today (Around You, live since 2026-09-14).
+const appStrip: Record<string, { headline: string; line: string }> = {
+  transit: {
+    headline: 'See when your bus or train is coming.',
+    line: 'Shift shows live arrivals at the stops near you. Take more trips by transit and you can unlock gift cards from local shops. Free.',
+  },
+  cycling: {
+    headline: 'Find the calm way to ride there.',
+    line: 'Shift maps low-stress bike routes and the nearest Bluebikes. Ride more and you can unlock gift cards from local shops. Free.',
+  },
+  walking: {
+    headline: 'Find the easy way there on foot.',
+    line: 'Shift shows what you can reach on foot and the closest bus or train. Walk more and you can unlock gift cards from local shops. Free.',
+  },
+}
+const appStripDefault = {
+  headline: 'Find the easy way there.',
+  line: 'Shift shows live bus and train arrivals, low-stress bike routes and the nearest Bluebikes. Make more trips this way and you can unlock gift cards from local shops. Free.',
+}
+
 export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
@@ -168,6 +189,26 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           <h1 className="mb-8 font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.05] tracking-[-0.01em] text-navy">
             {g.title}
           </h1>
+
+          {/* Early app strip: ad visitors get their answer from the lead
+              paragraph and leave before the "Try it" box at the end, so the
+              badges also sit here. Its own placement tag shows which spot
+              gets the store clicks. */}
+          <div className="mb-10 rounded-[14px] border border-navy/10 bg-white px-5 py-5">
+            <p className="mb-1 text-[1.0625rem] font-semibold leading-snug text-navy">
+              {(appStrip[g.primary_mode ?? ''] ?? appStripDefault).headline}
+            </p>
+            <p className="mb-4 text-[0.9375rem] leading-relaxed text-navy">
+              {(appStrip[g.primary_mode ?? ''] ?? appStripDefault).line}
+            </p>
+            <StoreBadges height={40} placement="guide_top" />
+            <Link
+              href="/shift"
+              className="mt-3 inline-block text-[0.875rem] font-semibold text-forest underline underline-offset-4 hover:opacity-80"
+            >
+              See how Shift works
+            </Link>
+          </div>
 
           {/* Body — rendered from markdown.
               Summary is intentionally not rendered here. Summaries are
