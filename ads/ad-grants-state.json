@@ -47,7 +47,7 @@
   "open_items": [
     {
       "id": "brand-campaign",
-      "status": "DONE 2026-09-30 (Claude uploaded after Keith's approval in chat); all 6 campaigns enabled. Judge from Oct 14 (14-day rule).",
+      "status": "DONE 2026-09-30 (Claude uploaded after Keith's approval in chat); all 6 campaigns enabled. Judge from Oct 14 (14-day rule). 10-07: Brand 4 impr / 1 click MTD, 'Limited by search volume'; GSC brand week Sep 26-Oct 2 = 28 searches, 13 organic clicks. Expect Brand to stay small; How-to Guides is what carries CTR.",
       "what": "GSI — Brand campaign, 2 ad groups, $30/day"
     },
     {
@@ -57,12 +57,12 @@
     },
     {
       "id": "conversion-tracking",
-      "status": "CHECKED 2026-09-30, nothing broken: site fires both events to GA4 G-6HQWGDZ6RH (property a405919368p551486918); both are GA4 key events with stream data; Ads imports them from GA4; Sign-up + Outbound click goals apply to 6 of 6 campaigns; auto-tagging Yes. 'Setup incomplete' / 'Needs attention' persists only because no ad click has converted yet (1 click in Sept). Recheck once brand traffic arrives; if clicks > ~30 with 0 conversions, dig into Ads-GA4 link.",
+      "status": "CHECKED 2026-09-30, nothing broken: site fires both events to GA4 G-6HQWGDZ6RH (property a405919368p551486918); both are GA4 key events with stream data; Ads imports them from GA4; Sign-up + Outbound click goals apply to 6 of 6 campaigns; auto-tagging Yes. 'Setup incomplete' / 'Needs attention' persists only because no ad click has converted yet (1 click in Sept). Recheck once brand traffic arrives; if clicks > ~30 with 0 conversions, dig into Ads-GA4 link. 10-07: 24 October clicks, 0 conversions; goals still 'Needs attention'. Nearly all clicks land on the T fares guide, whose only conversion points are the bottom 'Try it' StoreBadges (shift_store_click) and the footer newsletter form. Recommended as weekly item 2 (test the chain end to end; move Try-it higher if nobody reaches it). Grant needs >= 1 conversion in October.",
       "what": "All campaigns show 'Eligible (Limited): conversion tracking setup is incomplete'; Sign-up and Outbound click goals 'Needs attention', newsletter_signup 'Awaiting conversions'. Site fires newsletter_signup (NewsletterSignupForm.tsx) and shift_store_click (StoreButtons.tsx) via gaEvent; check GA4 key events + Ads import. Sept has 0 conversions."
     },
     {
       "id": "poor-ads",
-      "status": "DONE 2026-09-30 (see changes). Confirm next run that neither ad is Poor after re-rating.",
+      "status": "DONE. Confirmed 10-07: 'New Here? We Can Help' (Just moved) is Average, Student life Boston ad is Excellent. After the 10-05/10-06 rewrites only 1 ad of 36 is Poor: Town / Walk and bike to school 'Walking School Bus Ideas' (drafted headlines in the 10-06 change entry; Keith can paste). 17 still Pending re-rating.",
       "what": "2 RSAs rated Poor: one in New Routes / Just moved, one in Shift Your Semester / Student life Boston. Add headlines/descriptions."
     },
     {
@@ -72,12 +72,12 @@
     },
     {
       "id": "bluebikes-negatives",
-      "status": "hold until 2026-10-05 (09-21 broad-match change must be 14 days old)",
+      "status": "RECOMMENDED 2026-10-07 as weekly item 3 (hold date passed). Oct MTD New Routes / Getting around Boston 27 impr, 0 clicks; terms: blue bike, bluebikes boston, bike rental cambridge, cambridge bike rental, bike trail map. Proposal: negatives bluebikes / blue bike / bike rental in New Routes only (How-to Guides / Bluebikes has the matching ad) + pause New Routes copy of 'biking in boston' (duplicate of Town's). Win: New Routes > 3% CTR by 10-21; kill: if New Routes impressions fall to ~0, restore 'biking in boston'.",
       "what": "9 of 20 named Sept search terms were Bluebikes lookups (bluebikes, blue bikes, bluebike, bluebikes map, bluebikes boston) in New Routes / Getting around Boston; navigational, low CTR. Consider negative keywords after Oct 5."
     },
     {
       "id": "employer-municipal-campaigns",
-      "status": "idea from Keith 2026-09-30; revisit after the 10-07 run once the 3 new campaigns have a week of data",
+      "status": "idea from Keith 2026-09-30. Revisited 10-07: still blocked on a trackable inquiry form (no change on the site). Not recommended this week; conversions and the QS fix come first. Revisit 10-21.",
       "what": "Two more campaigns: employers (commute benefits / workplace challenge) and municipalities (town staff, TMAs), conversion = inquiry to learn more. Prerequisites found 09-30: no trackable inquiry exists. /shift/employers and /contact only offer a mailto:info@ link with no gaEvent, and there is no municipality landing page (/shift/towns pages are for residents). Needs a short inquiry form on each landing page firing gaEvent('employer_inquiry' / 'municipal_inquiry'), marked as GA4 key events and imported to Ads, before the campaigns can optimize to it."
     },
     {
@@ -88,7 +88,12 @@
     {
       "id": "oct5-keyword-upload",
       "what": "Add 84 informational keywords, 8 RSAs and 4 ad groups (Campus transportation in Shift Your Semester; Weather and winter, E-cargo bikes, Plan a trip in Shift App; town keywords in Town Walking & Biking). Keith approved the file 2026-10-05.",
-      "status": "DONE 2026-10-05 1:17 PM, applied by Keith from the v2 file (Campaign ID column added). Keywords 102 -> 186, ad groups 10 -> 14. Judge from about Oct 19: first signal is impressions on Shift App and Shift Your Semester (both 0 all of September and October so far) and the new town terms showing search volume. Watch the search terms report for off-target campus queries (housing, parking, tuition) and add negatives."
+      "status": "DONE 2026-10-05 1:17 PM, applied by Keith from the v2 file (Campaign ID column added). Keywords 102 -> 186, ad groups 10 -> 14. Judge from about Oct 19: first signal is impressions on Shift App and Shift Your Semester (both 0 all of September and October so far) and the new town terms showing search volume. Watch the search terms report for off-target campus queries (housing, parking, tuition) and add negatives. 10-07: 60 of 186 keywords Low search volume (Semester 15/42, Town 29/68, How-to 7/20, Shift App 6/31, Brand 3/11). Semester still 0 impressions; Shift App 3. No campus search terms yet."
+    },
+    {
+      "id": "worcester-qs1",
+      "what": "Keyword 'biking in worcester' (Town Walking & Biking / Town routes, added 10-05) has Quality Score 1, 'Rarely shown (low Quality Score)'; 4 impr, 0 clicks. Grant forbids QS 1-2. Script email 10-07 flagged it too.",
+      "status": "RECOMMENDED 2026-10-07 as weekly item 1: pause it. Deliberate exception to the 14-day rule because it is a grant-rule breach, not tuning; the other 67 town keywords untouched."
     }
   ],
   "pulse_log": [
@@ -229,6 +234,61 @@
         { "term": "bluebikes boston", "impressions": 1, "clicks": 0, "conversions": 0 }
       ],
       "verdict": "Act this week: September closes at 3.03% (1/33), first month under 5%; October must reach 5%. Approved new campaigns still not uploaded; advertiser verification banner new; 0 conversions."
+    },
+    {
+      "date": "2026-10-07",
+      "source": "scheduled weekly run: live account (This month = Oct 1-7; keyword, ad and search-term views; campaign table lagged by ~1 click while refreshing) + 10-07 script email (rolling 30d: 304 impr, 20 clicks, 6.6%, $113.61, 0 conv; flagged QS<3 on 'biking in worcester') + GSC weekly-2026-10-02. Conversions/goals page loads at /aw/conversions (the /aw/conversions/goals URL shows an ad-blocker notice). Search terms at /aw/keywords/searchterms, 89 rows.",
+      "window": "2026-10-01..2026-10-07",
+      "impressions": 350, "clicks": 24, "ctr_pct": 6.86, "cost": 142.94, "conversions": 0,
+      "avg_cpc": 5.96,
+      "by_campaign": {
+        "How-to Guides": { "impressions": 281, "clicks": 23 },
+        "GSI — Brand": { "impressions": 4, "clicks": 1 },
+        "Town Walking & Biking": { "impressions": 34, "clicks": 0 },
+        "New Routes — Movers": { "impressions": 27, "clicks": 0 },
+        "Shift App — Massachusetts": { "impressions": 3, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 }
+      },
+      "concentration": "23 of 24 clicks from one keyword, 'how to pay for the t' (How-to Guides / Paying for the T). Strengthened RSA 'Paying for the MBTA' 212 impr / 18 clicks (8.5%); sibling RSA 70 / 5.",
+      "keywords": { "total": 186, "match": "175 broad, 9 phrase, 2 exact", "eligible": 125, "low_search_volume": 60, "low_search_volume_by_campaign": { "GSI — Brand": "3 of 11", "How-to Guides": "7 of 20", "New Routes — Movers": "0 of 14", "Shift App — Massachusetts": "6 of 31", "Shift Your Semester — Students": "15 of 42", "Town Walking & Biking": "29 of 68" }, "single_word": ["\"gogreenstreets\" (brand, allowed)"], "low_quality_score": ["biking in worcester (Town / Town routes): QS 1, 'Rarely shown (low Quality Score)', 4 impr 0 clicks"], "duplicate": "'biking in boston' in both New Routes (27 impr) and Town (22 impr), 0 clicks" },
+      "ads": { "total": 36, "ad_groups": 18, "per_ad_group": 2, "all_eligible": true, "strength": "17 Average, 17 Pending, 1 Excellent, 1 Poor", "poor": ["Town Walking & Biking / Walk and bike to school: Walking School Bus Ideas"] },
+      "sitelinks": 15,
+      "campaign_status": "all 6 Eligible (Limited): conversion tracking setup is incomplete; Brand also Limited by search volume; all Maximize conversions",
+      "conversion_tracking_status": "Sign-up and Outbound click goals (6 of 6 campaigns) Needs attention; Page view goal 0 of 6. 0 conversions on 24 clicks. Fares-guide landing page has StoreBadges (fires shift_store_click) only in the bottom 'Try it' box plus footer newsletter form.",
+      "account_banners": ["Set up conversion tracking", "Add Dynamic Image Assets"],
+      "brand_search_gsc_week": { "range": "2026-09-26..2026-10-02", "impressions": 28, "clicks": 13, "note": "green streets initiative 19 (13 clicks), green streets 7, greenstreets 2" },
+      "month_end_math": "pace ~50 impr/day -> ~1,550 impr in October -> ~78 clicks needed for 5%; 54 more needed over 24 days (~2.3/day) vs ~3.4/day now",
+      "search_terms": [
+        { "term": "boston public transportation", "impressions": 9, "clicks": 0, "conversions": 0 },
+        { "term": "how to pay for the t in boston", "impressions": 7, "clicks": 1, "conversions": 0 },
+        { "term": "how to ride the t in boston", "impressions": 5, "clicks": 0, "conversions": 0 },
+        { "term": "boston transit system", "impressions": 4, "clicks": 1, "conversions": 0 },
+        { "term": "the t in boston", "impressions": 4, "clicks": 0, "conversions": 0 },
+        { "term": "how do you pay for the t in boston", "impressions": 4, "clicks": 0, "conversions": 0 },
+        { "term": "boston mass transit", "impressions": 3, "clicks": 0, "conversions": 0 },
+        { "term": "boston train", "impressions": 3, "clicks": 0, "conversions": 0 },
+        { "term": "mapa metro boston pdf", "impressions": 3, "clicks": 0, "conversions": 0 },
+        { "term": "boston metro pass", "impressions": 2, "clicks": 2, "conversions": 0 },
+        { "term": "boston subway", "impressions": 2, "clicks": 1, "conversions": 0 },
+        { "term": "how to take the t into boston", "impressions": 2, "clicks": 1, "conversions": 0 },
+        { "term": "mass transit", "impressions": 2, "clicks": 1, "conversions": 0 },
+        { "term": "public transportation boston ma", "impressions": 2, "clicks": 1, "conversions": 0 },
+        { "term": "boston t pass", "impressions": 2, "clicks": 1, "conversions": 0 },
+        { "term": "boston t passes", "impressions": 2, "clicks": 1, "conversions": 0 },
+        { "term": "paying for the t in boston", "impressions": 2, "clicks": 1, "conversions": 0 },
+        { "term": "go green streets", "impressions": 2, "clicks": 1, "conversions": 0 },
+        { "term": "boston subway fares", "impressions": 2, "clicks": 0, "conversions": 0 },
+        { "term": "boston the t", "impressions": 2, "clicks": 0, "conversions": 0 },
+        { "term": "boston train pass", "impressions": 2, "clicks": 0, "conversions": 0 },
+        { "term": "boston transit", "impressions": 2, "clicks": 0, "conversions": 0 },
+        { "term": "boston transit day pass", "impressions": 2, "clicks": 0, "conversions": 0 },
+        { "term": "commuter trains into boston", "impressions": 2, "clicks": 0, "conversions": 0 },
+        { "term": "blue bike", "impressions": 2, "clicks": 0, "conversions": 0 }
+      ],
+      "search_terms_note": "89 named terms (160 impr, 12 clicks); 190 impr / 12 clicks under 'Other search terms'. 'how to pay for the t in boston' appears twice (phrase and exact rows), merged above. Non-transit terms: New Routes got bike-share/map lookups (blue bike, bluebikes boston, bike rental cambridge, bike trail map); Town got event/trail names (biketothesea, hub on wheels, rail trail, ride for your life boston).",
+      "recommended": ["1 pause 'biking in worcester' (QS 1; rule breach, exception to 14-day rule)", "2 prove conversion chain on the fares guide; move Try-it store badges higher if nobody reaches them; goal 1 conversion by Oct 31", "3 New Routes: negatives bluebikes / blue bike / bike rental; pause duplicate 'biking in boston' there"],
+      "emailed": true,
+      "verdict": "Act this week (two small fixes): October 6.86% (24/350), on pace above 5%; fails: QS-1 keyword and 0 conversions."
     }
   ]
 }

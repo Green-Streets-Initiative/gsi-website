@@ -1,0 +1,10 @@
+Act this week (two small fixes). October's click rate is 6.9% (24 clicks / 350 impressions), on pace to clear the 5% floor. Two grant rules still fail: one keyword has a quality score of 1, and October has 0 conversions after 24 clicks.
+
+This week's actions:
+1. Pause the keyword "biking in worcester" (quality score 1, which the grant does not allow; 4 impressions, 0 clicks).
+2. Prove a conversion can be counted: test the app store badge on the T fares guide where nearly all ad visitors land, and move the "Try it" box higher if people just aren't reaching it. Goal: 1 conversion by Oct 31.
+3. Stop New Routes from showing for Bluebikes and bike-map lookups (negatives in New Routes only, and pause its duplicate "biking in boston"). 27 impressions, 0 clicks this month.
+
+To do one, open Claude Code and say "do ad grants item N".
+
+Full report: https://claude.ai/artifact/UuoYJsktAySt3HY5KinrbF
