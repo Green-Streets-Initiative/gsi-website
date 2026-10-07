@@ -42,6 +42,10 @@
     {
       "date": "2026-10-06",
       "what": "Claude, on Keith's 'let's do it' in chat (ad grants item 1 from the 10-06 quick check): took 8 of the 9 Poor RSAs to 15 headlines each; descriptions, URLs and paths unchanged; every save passed policy review. Strength at save: Bluebikes, Explained -> Good; Your First Bus Ride -> Good; GSI Brand 'Green Streets Initiative | Walking, Biking and Transit' (get-involved) -> Average; Shift by Green Streets -> Good; Walking and Biking Near You -> Average; Bike Commuting Tips -> Good; Bike to Work With Ease -> Good; Your Town, On Foot and Bike -> Average. New headlines lean on each ad group's keywords (How to Use Bluebikes, How Does Bluebikes Work?, First Time Riding the Bus?, How MBTA Bus Transfers Work, Bike Commute Gear Checklist, Cold Weather Biking Tips, Bike Routes in Your Town, Walking Trails Near You, Join Walk/Ride Day, Join the Shift Competition, Go Green Streets, etc.). NOT done: Town Walking & Biking / Walk and bike to school 'Walking School Bus Ideas' (6 headlines, still Poor); the session's permission check refused typing into that ad. Drafted headlines for it, if Keith wants to paste them himself: Safe Routes to School in MA; Walk to School Day, MA; Start a Bike Bus at School; Walk/Ride Day Massachusetts; Walk and Bike to School; Get Your School Involved; Ideas for Families and PTOs; Free Across Massachusetts; Green Streets Initiative. Also skipped on purpose: adding descriptions (item 1 said headlines only). Judge the 8 ads from about Oct 20."
+    },
+    {
+      "date": "2026-10-07",
+      "what": "Claude, on Keith's 'do ad grants items 1 and 3' in an interactive chat (Ads UI via Claude in Chrome, no upload). Item 1: paused keyword 'biking in worcester' (Town Walking & Biking / Town routes, QS 1). Item 3: paused 'biking in boston' in New Routes — Movers / Getting around Boston (the Town copy stays enabled) and added campaign-level broad negatives to New Routes — Movers: bluebikes, bluebike, blue bike, blue bikes, bike rental, bike rentals. Verified in the UI: both keywords show Paused; Negative keywords tab lists 6 rows, Level Campaign, Broad match. Judge from 10-21."
     }
   ],
   "open_items": [
@@ -72,7 +76,7 @@
     },
     {
       "id": "bluebikes-negatives",
-      "status": "RECOMMENDED 2026-10-07 as weekly item 3 (hold date passed). Oct MTD New Routes / Getting around Boston 27 impr, 0 clicks; terms: blue bike, bluebikes boston, bike rental cambridge, cambridge bike rental, bike trail map. Proposal: negatives bluebikes / blue bike / bike rental in New Routes only (How-to Guides / Bluebikes has the matching ad) + pause New Routes copy of 'biking in boston' (duplicate of Town's). Win: New Routes > 3% CTR by 10-21; kill: if New Routes impressions fall to ~0, restore 'biking in boston'. Keith said go 10-07; Ads edits refused by the session permission check, so rows 2-8 of ~/Downloads/ad-grants-oct7-fixes.csv carry it (pause 'biking in boston' in Getting around Boston; Negative Broad bluebikes / blue bike / bike rental in Getting around Boston and Just moved). Not yet applied.",
+      "status": "DONE 2026-10-07 (evening): Claude, on Keith's 'do ad grants items 1 and 3'. (a) Paused 'biking in boston' in New Routes / Getting around Boston (28 impr, 0 clicks Oct MTD); Town Walking & Biking's 'biking in boston' (22 impr) left on. (b) Added 6 campaign-level broad negatives to New Routes — Movers only: bluebikes, bluebike, blue bike, blue bikes, bike rental, bike rentals (variants added because negatives do not match plurals/close variants). First negatives in the account. Not added: 'bike trail map' (not in the approved list; watch the search terms). The ~/Downloads/ad-grants-oct7-fixes.csv rows are now obsolete (do not upload). Win: New Routes > 3% CTR by 10-21; kill: if New Routes impressions fall to ~0, re-enable its 'biking in boston'.",
       "what": "9 of 20 named Sept search terms were Bluebikes lookups (bluebikes, blue bikes, bluebike, bluebikes map, bluebikes boston) in New Routes / Getting around Boston; navigational, low CTR. Consider negative keywords after Oct 5."
     },
     {
@@ -93,7 +97,7 @@
     {
       "id": "worcester-qs1",
       "what": "Keyword 'biking in worcester' (Town Walking & Biking / Town routes, added 10-05) has Quality Score 1, 'Rarely shown (low Quality Score)'; 4 impr, 0 clicks. Grant forbids QS 1-2. Script email 10-07 flagged it too.",
-      "status": "RECOMMENDED 2026-10-07 as weekly item 1: pause it. Deliberate exception to the 14-day rule because it is a grant-rule breach, not tuning; the other 67 town keywords untouched. Keith said go 10-07; the session's permission check refused editing the Ads account, so the pause is row 1 of ~/Downloads/ad-grants-oct7-fixes.csv for Keith to upload (Tools > Bulk actions > Uploads, Preview, Apply). Also seen 10-07 afternoon: 'boston bike paths' (Town / Town routes, 3 impr) now 'Rarely shown (low Quality Score)' too; QS number not visible; recheck next run."
+      "status": "DONE 2026-10-07 (evening): Claude paused 'biking in worcester' in the Ads UI on Keith's 'do ad grants items 1 and 3'; status reads Paused. Row 1 of ~/Downloads/ad-grants-oct7-fixes.csv is now obsolete (do not upload). Still watch 'boston bike paths' (Town / Town routes, 'Rarely shown (low Quality Score)' 10-07); pause it too if a QS 1-2 shows."
     }
   ],
   "pulse_log": [
