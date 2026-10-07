@@ -139,6 +139,14 @@ serve(async (req: Request) => {
 
   const admin = createAdminClient();
 
+  // The sales-demo workplace (billing_type 'demo', Shift migration 01145) is
+  // fictional: no Stripe customer, no checkout. Read with the service client,
+  // so the employer's own column grants never decide this.
+  const { data: billing } = await admin.from("groups").select("billing_type").eq("id", group.id).maybeSingle();
+  if (billing?.billing_type === "demo") {
+    return jsonResponse({ error: "This is a demo workplace, so adding funds is turned off." }, 409);
+  }
+
   let customerId: string;
   try {
     customerId = await ensureStripeCustomer(stripe, admin, {
