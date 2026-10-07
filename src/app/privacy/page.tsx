@@ -18,7 +18,7 @@ export default function PrivacyPage() {
             Privacy Policy
           </h1>
           <p className="mt-4 text-[15px] text-ink-soft">
-            Shift by Green Streets Initiative &middot; Last updated May 2026
+            Shift by Green Streets Initiative &middot; Last updated October 2026
           </p>
           <p className="mt-1 text-[15px] text-ink-soft">
             Contact: <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>
@@ -114,6 +114,32 @@ export default function PrivacyPage() {
                 device&apos;s activity recognition capabilities, to classify your travel mode.
                 This data is used only for trip detection and is not stored independently of
                 trip records.
+              </P>
+            </Section>
+
+            <Section title="Health App Data (Apple Health and Health Connect)">
+              <P>
+                If you turn on workout import in Shift&apos;s settings, Shift reads workouts you
+                have recorded with Apple Health (iOS) or Health Connect (Android): the workout
+                type (walking, running, hiking or cycling), its start and end time, its distance,
+                and the first and last point of its route. We do not read heart rate, steps,
+                sleep, or any other health data, and we never write to Apple Health or Health
+                Connect.
+              </P>
+              <P>
+                We use this data for one purpose: to find walks, runs and rides that Shift&apos;s
+                automatic trip detection missed and offer them to you as trips. A workout that
+                no Shift trip already covers is added to your trip list as an unconfirmed trip,
+                for you to confirm or remove; a confirmed workout becomes an ordinary trip
+                record, treated as described under Trip Records. When you remove one, the trip
+                is deleted; we keep a short note that it wasn&apos;t a trip, with its start and
+                end points, so trip detection can learn from it. Health app data is never sold,
+                shared with advertisers, or used for advertising.
+              </P>
+              <P>
+                You can turn workout import off at any time in Shift&apos;s settings, or revoke
+                Shift&apos;s access in the Apple Health or Health Connect app. Trips you already
+                confirmed stay in your history until you delete them or delete your account.
               </P>
             </Section>
 
