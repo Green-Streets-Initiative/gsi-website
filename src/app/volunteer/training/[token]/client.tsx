@@ -178,27 +178,10 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
   }
 
   async function certifyTrack() {
-    const expiresAt = track.recertificationMonths
-      ? new Date(Date.now() + track.recertificationMonths * 30.44 * 24 * 60 * 60 * 1000).toISOString()
-      : null
-
-    // Insert track completion
-    await supabase.from('volunteer_track_completions').upsert({
-      volunteer_id: props.volunteerId,
-      track_id: track.id,
-      certified_at: new Date().toISOString(),
-      certification_expires_at: expiresAt,
-    })
-
-    // Update denormalized cache on volunteer_profiles
-    await supabase
-      .from('volunteer_profiles')
-      .update({
-        training_completed: true,
-        training_completed_at: new Date().toISOString(),
-        lifecycle_phase: 'onboarded',
-      })
-      .eq('id', props.volunteerId)
+    // Track completion + profile cache, through the token-checked RPC (the
+    // tables are not writable by anon). The server re-checks every module is
+    // complete and sets the same expiry.
+    await supabase.rpc('volunteer_training_certify', { p_token: props.token })
 
     // Notify GSI admin of completion (fire-and-forget)
     supabase.functions.invoke('training-complete-notify', {
@@ -255,6 +238,7 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
           {/* CORI upload section */}
           {needsCori && (
             <CoriUploadSection
+              token={props.token}
               volunteerId={props.volunteerId}
             />
           )}
@@ -275,7 +259,7 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
     return (
       <ModuleView
         module={mod}
-        volunteerId={props.volunteerId}
+        token={props.token}
         trackTitle={track.title}
         moduleIndex={activeModuleIndex}
         totalModules={totalCount}
@@ -336,6 +320,7 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
       {props.coriRequired && (
         <div className="mx-auto max-w-2xl px-6 pt-4">
           <CoriBanner
+            token={props.token}
             volunteerId={props.volunteerId}
             status={props.backgroundCheckStatus}
           />
@@ -433,7 +418,7 @@ export default function TrainingPortalClient(props: TrainingPortalProps) {
 
 function ModuleView({
   module: mod,
-  volunteerId,
+  token,
   trackTitle,
   moduleIndex,
   totalModules,
@@ -441,7 +426,7 @@ function ModuleView({
   onBack,
 }: {
   module: ModuleWithState
-  volunteerId: string
+  token: string
   trackTitle: string
   moduleIndex: number
   totalModules: number
@@ -490,15 +475,11 @@ function ModuleView({
 
   async function handleAcknowledge() {
     setSaving(true)
-    await supabase.from('volunteer_module_completions').upsert({
-      volunteer_id: volunteerId,
-      module_id: mod.id,
-      started_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-      quiz_passed: null,
-      quiz_attempts: 0,
-      quiz_score: null,
-    }, { onConflict: 'volunteer_id,module_id' })
+    await supabase.rpc('volunteer_training_save_module', {
+      p_token: token,
+      p_module_id: mod.id,
+      p_quiz_score: null,
+    })
     setSaving(false)
     onComplete(null, null)
   }
@@ -512,26 +493,14 @@ function ModuleView({
     const score = Math.round((correct / mod.questions.length) * 100)
     setQuizScore(score)
     setSubmitted(true)
-    const passed = score >= 80
     setSaving(true)
 
-    const { data: existing } = await supabase
-      .from('volunteer_module_completions')
-      .select('quiz_attempts')
-      .eq('volunteer_id', volunteerId)
-      .eq('module_id', mod.id)
-      .single()
-
-    const attempts = (existing?.quiz_attempts ?? 0) + 1
-    await supabase.from('volunteer_module_completions').upsert({
-      volunteer_id: volunteerId,
-      module_id: mod.id,
-      started_at: new Date().toISOString(),
-      completed_at: passed ? new Date().toISOString() : null,
-      quiz_passed: passed,
-      quiz_attempts: attempts,
-      quiz_score: score,
-    }, { onConflict: 'volunteer_id,module_id' })
+    // The server counts attempts and marks the module passed at >= 80.
+    await supabase.rpc('volunteer_training_save_module', {
+      p_token: token,
+      p_module_id: mod.id,
+      p_quiz_score: score,
+    })
     setSaving(false)
     // Stay on quiz phase so volunteer can review answers — they click Continue manually
   }
@@ -949,9 +918,11 @@ function GuideDownloadButton({ storagePath }: { storagePath: string }) {
 // ── CORI Banner (shown on track overview) ──────────────────────
 
 function CoriBanner({
+  token,
   volunteerId,
   status,
 }: {
+  token: string
   volunteerId: string
   status: string
 }) {
@@ -986,14 +957,10 @@ function CoriBanner({
       return
     }
 
-    await supabase
-      .from('volunteer_profiles')
-      .update({
-        cori_document_path: storagePath,
-        cori_uploaded_at: new Date().toISOString(),
-        background_check_status: 'pending',
-      })
-      .eq('id', volunteerId)
+    await supabase.rpc('volunteer_training_record_cori', {
+      p_token: token,
+      p_storage_path: storagePath,
+    })
 
     setUploading(false)
     setLocalStatus('pending')
@@ -1058,7 +1025,7 @@ function CoriBanner({
 
 // ── CORI Upload Section (certification complete screen) ────────
 
-function CoriUploadSection({ volunteerId }: { volunteerId: string }) {
+function CoriUploadSection({ token, volunteerId }: { token: string; volunteerId: string }) {
   const [uploading, setUploading] = useState(false)
   const [uploaded, setUploaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -1094,14 +1061,10 @@ function CoriUploadSection({ volunteerId }: { volunteerId: string }) {
     }
 
     // Update volunteer profile
-    await supabase
-      .from('volunteer_profiles')
-      .update({
-        cori_document_path: storagePath,
-        cori_uploaded_at: new Date().toISOString(),
-        background_check_status: 'pending',
-      })
-      .eq('id', volunteerId)
+    await supabase.rpc('volunteer_training_record_cori', {
+      p_token: token,
+      p_storage_path: storagePath,
+    })
 
     setUploading(false)
     setUploaded(true)
