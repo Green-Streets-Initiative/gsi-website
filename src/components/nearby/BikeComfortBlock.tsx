@@ -2,6 +2,7 @@
 
 import ComfortBar from '@/components/commute/ComfortBar'
 import { useNearbyT } from './NearbyI18n'
+import { useNearbyTone } from './NearbyTone'
 import { PanelPhoto } from './DetailPanel'
 import { decodePolyline, bearingDegrees } from '@/lib/geo/polyline'
 import { OTHER_OWNER } from '@/lib/nearby/route-lines'
@@ -64,6 +65,9 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
   onHighlightStreet?: (key: string | null) => void
 }) {
   const tr = useNearbyT()
+  // ComfortBar defaults to the navy styling (white text); on the cream page
+  // its header and legend were white-on-cream, leaving bare dots
+  const tone = useNearbyTone()
   if (!comfort.segments || comfort.segments.length === 0) return null
   const labels: Record<BikeComfortTier, string> = {
     path: tr('bike.path'),
@@ -78,6 +82,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
         segments={comfort.segments.map(s => ({ label: '', rating: s.rating, distance_mi: s.distance_mi }))}
         colors={NEARBY_COMFORT_COLORS}
         labels={labels}
+        theme={tone}
       />
       {comfort.streets.length > 0 && (() => {
         // The server hands us the leftover already derived, so the rows plus
