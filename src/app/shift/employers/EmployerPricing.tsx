@@ -219,7 +219,7 @@ export default function EmployerPricing() {
           All tiers are annual. Custom packages and multi-year discounts
           available.{' '}
           <a
-            href="/contact?inquiry=employer"
+            href="#inquiry"
             className="not-italic font-semibold text-forest underline underline-offset-4 hover:opacity-80"
           >
             Talk to us

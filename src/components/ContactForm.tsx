@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { gaEvent } from '@/lib/ga'
 
 const INQUIRY_TYPES = [
   'Employer partnership',
@@ -27,7 +28,7 @@ const INQUIRY_PARAM_MAP: Record<string, InquiryType> = {
 }
 
 const MESSAGE_PLACEHOLDERS: Record<InquiryType, string> = {
-  'Employer partnership': 'Tell us about your organization and what you\'re hoping to accomplish.',
+  'Employer partnership': 'Optional: your office location, a date that works for a call, or a question.',
   'School program': 'Tell us about your school and what you\'re interested in.',
   'Rewards partner (local business)': 'Tell us about your business and the offer you have in mind.',
   'Media / press': 'Tell us about your story or request.',
@@ -37,19 +38,33 @@ const MESSAGE_PLACEHOLDERS: Record<InquiryType, string> = {
 }
 
 const TEAM_SIZES = ['Under 50', '50–200', '200–500', '500+']
+const EMPLOYER_WANTS = [
+  'A free commuter challenge on the next Walk/Ride Day',
+  'A 20-minute demo of the dashboard and app',
+  'Both',
+  'Something else',
+] as const
 const GRADE_LEVELS = ['K–2', '3–5', '6–8', 'High school']
 
 type FormErrors = Record<string, string>
 
-export default function ContactForm() {
+type ContactFormProps = {
+  /** Preselects the inquiry type (the employers page presets 'Employer partnership'). */
+  defaultInquiryType?: InquiryType
+  /** Which page the form sits on; sent with the inquiry and the analytics event. */
+  source?: string
+}
+
+export default function ContactForm({ defaultInquiryType, source = 'contact' }: ContactFormProps = {}) {
   const searchParams = useSearchParams()
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [inquiryType, setInquiryType] = useState<InquiryType>('General / other')
+  const [inquiryType, setInquiryType] = useState<InquiryType>(defaultInquiryType ?? 'General / other')
   const [message, setMessage] = useState('')
   const [companyName, setCompanyName] = useState('')
   const [teamSize, setTeamSize] = useState('')
+  const [employerWants, setEmployerWants] = useState<string>(EMPLOYER_WANTS[0])
   const [schoolName, setSchoolName] = useState('')
   const [gradeLevels, setGradeLevels] = useState<string[]>([])
   const [businessName, setBusinessName] = useState('')
@@ -83,7 +98,8 @@ export default function ContactForm() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errs.email = 'Please enter a valid email address'
     }
-    if (!message.trim()) errs.message = 'Message is required'
+    // Employers pick what they want from a list, so a message is optional for them.
+    if (!message.trim() && inquiryType !== 'Employer partnership') errs.message = 'Message is required'
 
     if (inquiryType === 'Employer partnership' && !companyName.trim()) {
       errs.companyName = 'Company name is required'
@@ -115,19 +131,31 @@ export default function ContactForm() {
           name: name.trim(),
           email: email.trim(),
           inquiryType,
-          message: message.trim(),
+          // Employers: lead the message with what they asked for, so the
+          // CRM note and the reply draft start from it.
+          message:
+            inquiryType === 'Employer partnership'
+              ? [`Wants: ${employerWants}`, message.trim()].filter(Boolean).join('\n\n')
+              : message.trim(),
           companyName: inquiryType === 'Employer partnership' ? companyName.trim() : undefined,
           teamSize: inquiryType === 'Employer partnership' ? teamSize || undefined : undefined,
           schoolName: inquiryType === 'School program' ? schoolName.trim() : undefined,
           gradeLevels: inquiryType === 'School program' && gradeLevels.length > 0 ? gradeLevels : undefined,
           businessName: inquiryType === 'Rewards partner (local business)' ? businessName.trim() : undefined,
           neighborhood: inquiryType === 'Rewards partner (local business)' ? neighborhood.trim() || undefined : undefined,
+          source,
           website: honeypot,
         }),
       })
 
       if (!res.ok) throw new Error('Submit failed')
       setSubmitted(true)
+      // One event per inquiry, plus a dedicated one for employers so the
+      // Ad Grant and the inbound watch can count them.
+      gaEvent('contact_inquiry', { inquiry_type: inquiryType, source })
+      if (inquiryType === 'Employer partnership') {
+        gaEvent('employer_inquiry', { source, team_size: teamSize || '(not given)' })
+      }
     } catch {
       setSubmitError(true)
     } finally {
@@ -227,7 +255,7 @@ export default function ContactForm() {
               className="block w-full rounded-[10px] border border-navy/20 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
             />
           </Field>
-          <Field label="Approximate team size">
+          <Field label="People at your Massachusetts office">
             <select
               value={teamSize}
               onChange={e => setTeamSize(e.target.value)}
@@ -237,6 +265,18 @@ export default function ContactForm() {
               <option value="">Select...</option>
               {TEAM_SIZES.map(size => (
                 <option key={size} value={size}>{size}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="I'd like" required>
+            <select
+              value={employerWants}
+              onChange={e => setEmployerWants(e.target.value)}
+              disabled={submitting}
+              className="block w-full rounded-[10px] border border-navy/20 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {EMPLOYER_WANTS.map(w => (
+                <option key={w} value={w}>{w}</option>
               ))}
             </select>
           </Field>
@@ -301,7 +341,7 @@ export default function ContactForm() {
         </ConditionalSection>
 
         {/* Message */}
-        <Field label="Message" required error={errors.message}>
+        <Field label={inquiryType === 'Employer partnership' ? 'Anything else we should know' : 'Message'} required={inquiryType !== 'Employer partnership'} error={errors.message}>
           <textarea
             rows={4}
             placeholder={MESSAGE_PLACEHOLDERS[inquiryType]}
