@@ -143,6 +143,25 @@
       "search_terms": "39 named terms, none with 3+ impressions; top: how to pay for the t in boston 1/3, boston t passes 1/2, go green streets 1/2; all on target, no negatives proposed",
       "alerts": ["9 of 36 ads rated Poor after Google rated the 09-30 upload (emailed as a Suggest item: add headlines)"],
       "emailed": true
+    },
+    {
+      "date": "2026-10-08",
+      "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-8",
+      "mtd": { "window": "2026-10-01..2026-10-08", "impressions": 441, "clicks": 31, "ctr_pct": 7.03, "cost": 203.73, "conversions": 0 },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 357, "clicks": 30 },
+        "GSI — Brand": { "impressions": 4, "clicks": 1 },
+        "Town Walking & Biking": { "impressions": 48, "clicks": 0 },
+        "New Routes — Movers": { "impressions": 27, "clicks": 0 },
+        "Shift App — Massachusetts": { "impressions": 4, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+      },
+      "campaign_status": "status column did not render text; all 6 serving (impressions this month); no Paused/Removed/Not eligible text on the page",
+      "banners": ["Set up conversion tracking", "Add Dynamic Image Assets"],
+      "ads": { "total": 36, "disapproved_seen": 0, "strength": "17 Average, 13+ Pending, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known)", "note": "Paying for the MBTA RSA 283 impr / 23 clicks (8.1%), still Pending re-rating" },
+      "search_terms": "93 named terms read; all transit how-to lookups in How-to Guides plus a few New Routes map/bike-share terms at 2 impr (bike trail map, blue bike) and 'boston bike paths' 4/0 in Town. None off-target at 3+ impr; 'mapa metro boston pdf' 3/0 is transit-related and Paying for the T changed 10-05 (<14 days), so no negatives proposed",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
