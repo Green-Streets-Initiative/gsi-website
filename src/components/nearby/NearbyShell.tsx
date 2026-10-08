@@ -12,7 +12,7 @@ import { directionsUrl } from '@/lib/nearby/transit-ui'
 import BikeComfortBlock from './BikeComfortBlock'
 import type { TripDest } from '@/lib/nearby/share'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
-import NearbyMap, { type FitPadding, type RouteLegTapInfo } from './NearbyMap'
+import NearbyMap, { TrafficToggle, TrafficLegend, useTrafficPreference, type FitPadding, type RouteLegTapInfo } from './NearbyMap'
 import { useReachOverlay } from './useReachOverlay'
 import NearbySheet from './NearbySheet'
 import { useInitialFocus } from './useInitialFocus'
@@ -116,6 +116,9 @@ export default function NearbyShell({
   const [snap, setSnap] = useState<SheetSnap>(planFirst ? 'full' : 'half')
   const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
   const [paintedOn, setPaintedOn] = useState(PAINTED_DEFAULT)
+  // Live traffic: on by default in weekday commute windows, remembered once
+  // touched (see useTrafficPreference)
+  const { trafficOn, toggleTraffic } = useTrafficPreference()
   // Selecting Bike turns painted lanes on — part of the bike picture, not
   // clutter. The user can still toggle them back off.
   const handleModeChange = useCallback((m: ModeFilter) => {
@@ -303,14 +306,16 @@ export default function NearbyShell({
           </button>
         ))}
       </div>
-      <div className="mx-4 mb-2.5">
+      <div className="mx-4 mb-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
         <ModeFilterChips
           mode={modeFilter}
           onMode={handleModeChange}
           painted={paintedOn}
           onPaintedToggle={() => setPaintedOn(p => !p)}
         />
+        <TrafficToggle on={trafficOn} onToggle={toggleTraffic} />
       </div>
+      {trafficOn && <TrafficLegend className="mx-4 mb-2.5" />}
     </>
   )
 
@@ -345,6 +350,7 @@ export default function NearbyShell({
           lines={backgroundLines}
           paintedVisible={showBike && paintedOn}
           separatedVisible={showBike}
+          trafficVisible={trafficOn}
           corridorLines={shellCorridorLines}
           selectedCorridorId={effectiveHighlight}
             highlightedStreetKey={highlightedStreetKey}

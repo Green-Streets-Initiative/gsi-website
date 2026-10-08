@@ -6,7 +6,7 @@ import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import type { TripDest } from '@/lib/nearby/share'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
-import NearbyMap, { type FitPadding, type RouteLegTapInfo } from './NearbyMap'
+import NearbyMap, { TrafficToggle, TrafficLegend, useTrafficPreference, type FitPadding, type RouteLegTapInfo } from './NearbyMap'
 import { useInitialFocus } from './useInitialFocus'
 import type { InitialFocus } from '@/lib/nearby/focus'
 import {
@@ -120,6 +120,9 @@ export default function NearbyDesktop({
   const tr = useNearbyT()
   const [modeFilter, setModeFilter] = useState<ModeFilter>(MODE_FILTER_DEFAULT)
   const [paintedOn, setPaintedOn] = useState(PAINTED_DEFAULT)
+  // Live traffic: on by default in weekday commute windows, remembered once
+  // touched (see useTrafficPreference)
+  const { trafficOn, toggleTraffic } = useTrafficPreference()
   // Selecting Bike turns painted lanes on — in the bike view they're part of
   // the picture, not clutter. The user can still toggle them back off.
   const handleModeChange = useCallback((m: ModeFilter) => {
@@ -364,6 +367,7 @@ export default function NearbyDesktop({
                 lines={backgroundLines}
                 paintedVisible={showBike && paintedOn}
                 separatedVisible={showBike}
+                trafficVisible={trafficOn}
                 corridorLines={overlay.lines}
                 selectedCorridorId={overlay.highlight}
                 highlightedStreetKey={highlightedStreetKey}
@@ -436,14 +440,16 @@ export default function NearbyDesktop({
                   </button>
                 ))}
               </div>
-              <div className="mt-2">
+              <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
                 <ModeFilterChips
                   mode={modeFilter}
                   onMode={handleModeChange}
                   painted={paintedOn}
                   onPaintedToggle={() => setPaintedOn(p => !p)}
                 />
+                <TrafficToggle on={trafficOn} onToggle={toggleTraffic} />
               </div>
+              {trafficOn && <TrafficLegend className="mt-1.5" />}
             </div>
 
             <div className={railTab === 'transit' ? '' : 'hidden'}>

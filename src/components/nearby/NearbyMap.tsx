@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import posthog from 'posthog-js'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
 import { haversineMeters } from '@/lib/geo/measure'
 import { bearingDegrees } from '@/lib/geo/polyline'
 import { BASEMAP_STYLE, CORRIDOR_CASING, useNearbyTone } from './NearbyTone'
+import { useNearbyT } from './NearbyI18n'
 
 export interface NearbyMarker {
   id: string
@@ -63,6 +64,10 @@ interface Props {
   paintedVisible?: boolean
   /** Show the lime car-free/protected background lanes */
   separatedVisible?: boolean
+  /** Draw live traffic (Mapbox congestion tiles via /api/nearby/traffic)
+   *  under the bike layers — how the drive is moving right now, as one more
+   *  input to the trip choice. See TrafficToggle / useTrafficPreference. */
+  trafficVisible?: boolean
   /** Corridor shapes — features carry properties.corridorId/color/kind */
   corridorLines?: GeoJSON.FeatureCollection | null
   selectedCorridorId?: string | null
@@ -116,6 +121,18 @@ const CORRIDOR_OPACITY_DEFAULT = 0.45
 const CORRIDOR_WIDTH_DEFAULT = 2.5
 const BIKE_BG_OPACITY = { separated: 0.9, glow: 0.15, painted: 0.65 }
 
+/* ── Live traffic ── */
+
+const TRAFFIC_SOURCE = 'traffic'
+const TRAFFIC_LAYER = 'traffic-flow'
+/** Mapbox republishes the traffic tileset every few minutes — re-ask on
+ *  that cadence while the layer is on and the tab is in front. */
+const TRAFFIC_REFRESH_MS = 3 * 60_000
+/** Moderate / heavy / severe. Free-flow segments are filtered out — they
+ *  add nothing the basemap's roads don't already say. */
+export const TRAFFIC_COLORS = { moderate: '#E0A63C', heavy: '#E0633C', severe: '#B3361F' } as const
+const TRAFFIC_STORAGE_KEY = 'nearby.traffic'
+
 /**
  * Shared MapLibre wrapper for the snapshot maps. Dark basemap; cooperative
  * gestures so one-finger scrolling scrolls the page. Corridors draw faintly
@@ -124,7 +141,7 @@ const BIKE_BG_OPACITY = { separated: 0.9, glow: 0.15, painted: 0.65 }
  * back to the neighborhood view.
  */
 export default function NearbyMap({
-  center, markers, lines, paintedVisible = true, separatedVisible = true,
+  center, markers, lines, paintedVisible = true, separatedVisible = true, trafficVisible = false,
   corridorLines, selectedCorridorId = null, highlightedStreetKey = null, onCorridorSelect,
   onMarkerTap, onLaneTap, onReachLegTap,
   fitCount, extraFitPoints, fitToLines = false, lineEmphasis = false,
@@ -154,6 +171,8 @@ export default function NearbyMap({
   paintedRef.current = paintedVisible
   const separatedRef = useRef(separatedVisible)
   separatedRef.current = separatedVisible
+  const trafficRef = useRef(trafficVisible)
+  trafficRef.current = trafficVisible
   const onSelectRef = useRef(onCorridorSelect)
   onSelectRef.current = onCorridorSelect
   const onMarkerTapRef = useRef(onMarkerTap)
@@ -221,6 +240,9 @@ export default function NearbyMap({
       map.on('load', () => {
         if (cancelled) return
         loadedRef.current = true
+        // Traffic goes in first so the bike layers (and everything after)
+        // stack above it — it is context under the network, not a subject
+        if (trafficRef.current) applyTraffic(map, true)
         if (pendingLinesRef.current) {
           applyBikeBackground(map, pendingLinesRef.current, paintedRef.current, separatedRef.current)
           pendingLinesRef.current = null
@@ -362,6 +384,29 @@ export default function NearbyMap({
     }
   }, [separatedVisible])
 
+  // Live traffic on/off. Added lazily on first use; the source carries the
+  // Mapbox attribution, which MapLibre only shows while a visible layer
+  // uses it — so "© Mapbox" appears and disappears with the toggle.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    applyTraffic(map, trafficVisible)
+  }, [trafficVisible])
+
+  // Traffic refresh: while on and the tab is in front, re-ask for tiles
+  // every few minutes (setTiles drops the cache and refetches through the
+  // same-origin proxy, whose own 2-minute cache does the rest)
+  useEffect(() => {
+    if (!trafficVisible) return
+    const timer = setInterval(() => {
+      const map = mapRef.current
+      if (!map || document.hidden || !map.getLayer(TRAFFIC_LAYER)) return
+      const src = map.getSource(TRAFFIC_SOURCE) as maplibregl.VectorTileSource | undefined
+      src?.setTiles?.([trafficTileUrl()])
+    }, TRAFFIC_REFRESH_MS)
+    return () => clearInterval(timer)
+  }, [trafficVisible])
+
   // Corridor shapes
   useEffect(() => {
     const map = mapRef.current
@@ -496,6 +541,110 @@ export default function NearbyMap({
   }, [focusPoint?.lat, focusPoint?.lng])
 
   return <div ref={containerRef} className={`${heightClass} w-full`} />
+}
+
+/* ── Traffic preference, toggle and legend ── */
+
+/** Weekday commute windows, Eastern: Mon–Fri 6:30–10:00 and 15:00–19:00.
+ *  The layer defaults on inside them (when the drive is the question) and
+ *  off outside; a person's own choice, once made, wins from then on. */
+export function isCommuteWindowEastern(now: Date = new Date()): boolean {
+  let weekday = ''
+  let hour = 0
+  let minute = 0
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: 'numeric', hourCycle: 'h23',
+    }).formatToParts(now)
+    for (const p of parts) {
+      if (p.type === 'weekday') weekday = p.value
+      else if (p.type === 'hour') hour = Number(p.value)
+      else if (p.type === 'minute') minute = Number(p.value)
+    }
+  } catch {
+    return false
+  }
+  if (weekday === 'Sat' || weekday === 'Sun' || !weekday) return false
+  const mins = hour * 60 + minute
+  return (mins >= 6 * 60 + 30 && mins < 10 * 60) || (mins >= 15 * 60 && mins < 19 * 60)
+}
+
+/** The remembered choice (localStorage `nearby.traffic`, written once the
+ *  person touches the toggle), else the commute-hours default. */
+function readTrafficPreference(): boolean {
+  if (typeof window === 'undefined') return false
+  let stored: string | null = null
+  try { stored = window.localStorage.getItem(TRAFFIC_STORAGE_KEY) } catch { /* private mode / blocked storage */ }
+  return stored === '1' ? true : stored === '0' ? false : isCommuteWindowEastern()
+}
+
+/** Traffic layer on/off for a map surface. The surfaces only mount once a
+ *  location is known (client-side), so the lazy initializer can read the
+ *  browser directly with no hydration concern. */
+export function useTrafficPreference(): { trafficOn: boolean; toggleTraffic: () => void } {
+  const [trafficOn, setTrafficOn] = useState(readTrafficPreference)
+  // Remember only a choice the person made — the commute-hours default
+  // must keep following the clock until they touch the toggle
+  const touchedRef = useRef(false)
+  useEffect(() => {
+    if (!touchedRef.current) return
+    try { window.localStorage.setItem(TRAFFIC_STORAGE_KEY, trafficOn ? '1' : '0') } catch { /* ignore */ }
+  }, [trafficOn])
+  const toggleTraffic = useCallback(() => {
+    touchedRef.current = true
+    setTrafficOn(prev => !prev)
+  }, [])
+  return { trafficOn, toggleTraffic }
+}
+
+/** The "Traffic" pill — same shape as the painted-lanes sub-toggle it sits
+ *  beside (ModeFilterChips), with a three-color swatch for its line. */
+export function TrafficToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  const tr = useNearbyT()
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        posthog.capture('nearby_layer_toggled', { layer: 'traffic', visible: !on })
+        onToggle()
+      }}
+      aria-pressed={on}
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.75rem] font-semibold transition-colors ${
+        on
+          ? 'border-[rgba(224,166,60,0.6)] bg-[rgba(224,166,60,0.15)] text-(--nb-ink)'
+          : 'border-(--nb-line-mid) text-(--nb-ink-70) hover:border-(--nb-line-strong)'
+      }`}
+    >
+      <span
+        aria-hidden
+        className="inline-block h-[3px] w-6 rounded"
+        style={{ backgroundImage: `linear-gradient(90deg, ${TRAFFIC_COLORS.moderate} 0 33%, ${TRAFFIC_COLORS.heavy} 33% 66%, ${TRAFFIC_COLORS.severe} 66% 100%)` }}
+      />
+      {tr('map.traffic_toggle')}
+    </button>
+  )
+}
+
+/** "Traffic right now: Slow · Heavy · Stopped" — rendered only while the
+ *  layer is on. Neutral information, one line. */
+export function TrafficLegend({ className = '' }: { className?: string }) {
+  const tr = useNearbyT()
+  const items: { key: keyof typeof TRAFFIC_COLORS; label: string }[] = [
+    { key: 'moderate', label: tr('map.traffic_moderate') },
+    { key: 'heavy', label: tr('map.traffic_heavy') },
+    { key: 'severe', label: tr('map.traffic_severe') },
+  ]
+  return (
+    <div className={`flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[0.72rem] font-semibold leading-snug text-(--nb-ink-70) ${className}`}>
+      <span>{tr('map.traffic_legend')}</span>
+      {items.map(({ key, label }) => (
+        <span key={key} className="flex items-center gap-1.5">
+          <span aria-hidden className="inline-block h-[3px] w-4 rounded" style={{ backgroundColor: TRAFFIC_COLORS[key] }} />
+          {label}
+        </span>
+      ))}
+    </div>
+  )
 }
 
 /* ── Recenter control ── */
@@ -828,4 +977,65 @@ function applyBikeBackground(
     map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer' })
     map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = '' })
   }
+}
+
+
+/* ── Live traffic layer ── */
+
+function trafficTileUrl(): string {
+  return `${window.location.origin}/api/nearby/traffic/{z}/{x}/{y}`
+}
+
+/** Where the traffic line slots in: under the bike network and corridors
+ *  when they exist, otherwise under the basemap's label block — so it
+ *  always sits above the roads and never over a street name. The label
+ *  block is the first symbol layer AFTER the last drawn (fill/line)
+ *  basemap layer: the CARTO styles put `waterway_label` early, below
+ *  every road and building layer, and inserting there left the traffic
+ *  painted over by the road fills (invisible on the Commute Advisor map,
+ *  2026-10-05). */
+function trafficBeforeId(map: maplibregl.Map): string | undefined {
+  for (const id of ['bike-painted', 'bike-separated-glow', 'bike-separated', 'corridor-lines-hit', 'corridor-casing', 'corridor-lines', 'corridor-lines-dashed']) {
+    if (map.getLayer(id)) return id
+  }
+  const layers = map.getStyle()?.layers ?? []
+  const ours = (id: string) => /^(corridor-|bike-|traffic-)/.test(id)
+  let lastDrawn = -1
+  layers.forEach((l, i) => { if (l.type !== 'symbol' && !ours(l.id)) lastDrawn = i })
+  return layers.find((l, i) => i > lastDrawn && l.type === 'symbol')?.id ?? layers.find(l => l.type === 'symbol')?.id
+}
+
+function applyTraffic(map: maplibregl.Map, visible: boolean) {
+  if (map.getLayer(TRAFFIC_LAYER)) {
+    map.setLayoutProperty(TRAFFIC_LAYER, 'visibility', visible ? 'visible' : 'none')
+    return
+  }
+  if (!visible) return
+
+  if (!map.getSource(TRAFFIC_SOURCE)) {
+    map.addSource(TRAFFIC_SOURCE, {
+      type: 'vector',
+      tiles: [trafficTileUrl()],
+      minzoom: 6,
+      maxzoom: 16,
+      attribution: '© Mapbox',
+    })
+  }
+  map.addLayer({
+    id: TRAFFIC_LAYER,
+    type: 'line',
+    source: TRAFFIC_SOURCE,
+    'source-layer': 'traffic',
+    // Free-flow adds nothing — only draw where the drive is slowed
+    filter: ['match', ['get', 'congestion'], ['moderate', 'heavy', 'severe'], true, false],
+    paint: {
+      'line-color': ['match', ['get', 'congestion'],
+        'severe', TRAFFIC_COLORS.severe,
+        'heavy', TRAFFIC_COLORS.heavy,
+        TRAFFIC_COLORS.moderate],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1.5, 15, 4],
+      'line-opacity': 0.85,
+    },
+    layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'visible' },
+  }, trafficBeforeId(map))
 }
