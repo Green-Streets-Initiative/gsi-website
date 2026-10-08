@@ -33,7 +33,7 @@ import { getCrashClusters, type CrashCluster } from './crash-clusters'
  * while local testing (which deletes .next and varies coordinates) missed
  * both stale layers entirely. One constant, four call sites, no drift.
  */
-export const REACH_ROW_VERSION = 'v15'
+export const REACH_ROW_VERSION = 'v16' // v16: Logan Express + Massport shuttle chips
 
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
 
@@ -184,10 +184,31 @@ function nextMonday830(): string {
   return monday.toISOString()
 }
 
+/** Massport's GTFS names Logan Express routes by lot code ("BB"), which means
+ *  nothing to a rider. Keep in step with Shift nearby-transit/shape.ts. */
+const LOGAN_EXPRESS: Record<string, string> = {
+  BB: 'Back Bay',
+  BT: 'Braintree',
+  FH: 'Framingham',
+  RF: 'Framingham',
+  WO: 'Woburn',
+  DV: 'Danvers',
+}
+
 /** Map a Google transit line to a colored chip. */
-function toStep(line: { name?: string; nameShort?: string }): ReachStep {
+function toStep(line: GoogleTransitLine): ReachStep {
   const name = line.name ?? ''
   const short = line.nameShort ?? ''
+
+  // Google files Logan Express under agency "Logan Express" and the terminal
+  // shuttles (22/33/55/66/88…) under "Massport" (checked 2026-10-08).
+  if ((line.agencies ?? []).some((a) => /massport|logan express/i.test(a.name ?? ''))) {
+    const lot = LOGAN_EXPRESS[short]
+    // Massport's own route colors; its airport shuttles are numbered like
+    // MBTA buses (there is an MBTA 55 too), so they must not wear MBTA yellow.
+    if (lot) return { label: `Logan Express – ${lot}`, color: line.color || '#E0592A', textColor: '#fff' }
+    return { label: `Airport shuttle ${short || name}`.trim(), color: '#0E3475', textColor: '#fff' }
+  }
 
   if (name.startsWith('Green Line')) {
     const branch = name.replace('Green Line', '').trim()
@@ -203,12 +224,19 @@ function toStep(line: { name?: string; nameShort?: string }): ReachStep {
   return { label: short || name || 'Transit', color: '#666666', textColor: '#fff' }
 }
 
+interface GoogleTransitLine {
+  name?: string
+  nameShort?: string
+  color?: string
+  agencies?: Array<{ name?: string }>
+}
+
 interface GoogleStep {
   polyline?: { encodedPolyline?: string }
   staticDuration?: string
   travelMode?: string
   transitDetails?: {
-    transitLine?: { name?: string; nameShort?: string }
+    transitLine?: GoogleTransitLine
     stopDetails?: { departureStop?: { name?: string }; arrivalStop?: { name?: string } }
     headsign?: string
     stopCount?: number
