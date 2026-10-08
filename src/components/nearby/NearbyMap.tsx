@@ -139,6 +139,11 @@ export default function NearbyMap({
   // Bumped once the map instance exists so the marker effect re-runs —
   // without it, markers passed statically at mount would never render
   const [mapReadyTick, setMapReadyTick] = useState(0)
+  // A selection that arrived before its line could be drawn (a ?to= link
+  // plans its trip within a second, often before the map's 'load') — the
+  // fit below re-runs once the lines are on the map.
+  const [selectionFitTick, setSelectionFitTick] = useState(0)
+  const selectionFitPendingRef = useRef(false)
   const markersRef = useRef<maplibregl.Marker[]>([])
   const loadedRef = useRef(false)
   const didFitRef = useRef(false)
@@ -232,6 +237,7 @@ export default function NearbyMap({
           }
           pendingCorridorsRef.current = null
         }
+        if (selectionFitPendingRef.current) setSelectionFitTick(t => t + 1)
       })
 
       // Background tap clears the selection (layer taps are handled by the
@@ -365,6 +371,7 @@ export default function NearbyMap({
       return
     }
     applyCorridors(map, corridorLines, lineEmphasisRef.current, CORRIDOR_CASING[tone])
+    if (selectionFitPendingRef.current) setSelectionFitTick(t => t + 1)
     if (fitToLinesRef.current && !didFitRef.current) {
       ;(async () => {
         const maplibregl = await loadMaplibre()
@@ -383,8 +390,12 @@ export default function NearbyMap({
   // ease home on deselect
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !loadedRef.current || !map.getLayer('corridor-lines')) return
+    if (!map || !loadedRef.current || !map.getLayer('corridor-lines')) {
+      if (selectedCorridorId) selectionFitPendingRef.current = true
+      return
+    }
     const sel = selectedCorridorId
+    selectionFitPendingRef.current = false
 
     // A pointed-at row narrows the emphasis one step further: inside the
     // selected route, only the stretches that row counts stay bright. Every
@@ -434,7 +445,10 @@ export default function NearbyMap({
           ? all.filter(f => (f.properties as { legOwner?: string })?.legOwner === owner)
           : []
         const features = onStreet.length > 0 ? onStreet : all
-        if (features.length === 0) return
+        if (features.length === 0) {
+          selectionFitPendingRef.current = true
+          return
+        }
         const bounds = new maplibregl.LngLatBounds()
         for (const f of features) {
           const geom = f.geometry
@@ -450,7 +464,7 @@ export default function NearbyMap({
         map.fitBounds(homeBoundsRef.current, { padding: clampedPadding(map, fitPaddingRef.current, 52), maxZoom: 14, duration: 700 })
       }
     })()
-  }, [selectedCorridorId, highlightedStreetKey])
+  }, [selectedCorridorId, highlightedStreetKey, selectionFitTick])
 
   // Point focus: ease so a tapped station/dock/borrow marker lands in the
   // window above the detail card (desktop) / sheet (mobile). Pure pan via a
