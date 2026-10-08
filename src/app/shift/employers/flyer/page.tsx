@@ -9,6 +9,7 @@ import {
   UsersThree,
 } from '@phosphor-icons/react/dist/ssr'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { loadWalkRideDays } from '@/app/programs/walk-ride-days/_lib/load'
 import PrintButton from '@/app/events/shift-your-summer/flyer/PrintButton'
 import {
   contactSentence,
@@ -257,9 +258,23 @@ export default async function EmployerFlyerPage({
 
   const isChallenge = !!challenge
   const startsLater = challenge ? new Date(challenge.starts_at).getTime() > nowMs : false
+  // Carpools are confirmed with a tap, never detected; say so.
   const lede = isChallenge
     ? `A friendly commute challenge for everyone at ${group.name}. It runs on Shift, a free app from Green Streets Initiative, a Boston-area nonprofit. Shift records your trips on its own.`
-    : 'Shift is a free app from Green Streets Initiative, a Boston-area nonprofit. It records your walks, bike rides, transit trips and carpools on its own, and you can win rewards along the way.'
+    : 'Shift is a free app from Green Streets Initiative, a Boston-area nonprofit. It records your walks, bike rides and transit trips on its own (a carpool takes one tap to confirm), and you can win prizes along the way.'
+
+  // A team with no challenge of its own (a Walk/Ride Day trial team, or a
+  // customer between challenges) gets the next Walk/Ride Day and its GSI
+  // drawing, so the flyer has a date to rally around.
+  const wrd = isChallenge ? null : await loadWalkRideDays(new Date(nowMs))
+  const wrdDate = wrd?.next
+    ? new Date(wrd.next.startsAt).toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'America/New_York',
+      })
+    : null
 
   // The street-sign look (Keith 2026-09-28): Overpass ExtraBold headline in
   // white on a borderless forest panel, everything else in Trebuchet, cream
@@ -352,7 +367,7 @@ export default async function EmployerFlyerPage({
                 <>
                   Enter code <span className="font-headline text-[17px] font-extrabold tracking-[0.06em]">{group.invite_code}</span> to join {group.name}.
                 </>,
-                <>{isChallenge ? `${whatToDo(challenge!.counting_rules)} Shift does the rest.` : 'Walk, bike, carpool or take transit. Shift does the rest.'}</>,
+                <>{isChallenge ? `${whatToDo(challenge!.counting_rules)} Shift does the rest.` : 'Walk, bike or take transit. Shift does the rest.'}</>,
               ].map((step, i) => (
                 <li key={i} className="flex items-start gap-3">
                   <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-forest font-headline text-[13px] font-extrabold text-white">
@@ -371,6 +386,28 @@ export default async function EmployerFlyerPage({
             <p className="font-headline text-[22px] font-extrabold tracking-[0.06em] text-forest">{group.invite_code}</p>
           </div>
         </section>
+
+        {/* Next Walk/Ride Day, for teams without a challenge of their own */}
+        {wrdDate && (
+          <section className="mt-4 border-t-2 border-navy/15 pt-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 className="font-headline text-[22px] font-extrabold leading-tight">
+                {wrd?.next?.active ? 'Walk/Ride Day is today' : `Walk/Ride Day is ${wrdDate}`}
+              </h2>
+              {wrd?.prizes && (
+                <span className="font-headline text-[20px] font-extrabold text-forest">
+                  {wrd.prizes.count} gift cards to win
+                </span>
+              )}
+            </div>
+            <p className="mt-2 max-w-[640px] text-[15px] leading-[1.5]">
+              Make one walking, biking or transit trip that day and you&rsquo;re entered in the Green Streets Initiative gift card drawing. There&rsquo;s nothing to log.
+            </p>
+            <p className="mt-1.5 text-[13.5px] leading-[1.45] text-ink-soft">
+              Open to Shift members 18 or older in Massachusetts. Rules: gogreenstreets.org/events/walk-ride-day/rules
+            </p>
+          </section>
+        )}
 
         {/* How to win: the rules' own words */}
         {isChallenge && guaranteed.length > 0 && (
