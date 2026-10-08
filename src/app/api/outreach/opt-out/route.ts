@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { SHIFT_WORDMARK_WHITE_URL } from '@/app/shift/employers/portal/_lib/portal-constants'
 
 export const runtime = 'nodejs'
 
@@ -33,8 +34,7 @@ function pageHtml(title: string, bodyHtml: string): string {
 </head>
 <body style="margin:0;background:#191A2E;font-family:'Helvetica Neue',Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;">
   <div style="max-width:420px;padding:40px 28px;text-align:center;">
-    <p style="font-size:22px;font-weight:900;color:#FFFFFF;margin:0 0 4px;font-family:'Arial Black',Arial,sans-serif;">Shift</p>
-    <p style="font-size:12px;margin:0 0 28px;"><span style="color:#52B788;font-weight:700;">Green Streets</span> <span style="color:rgba(255,255,255,0.75);">Initiative</span></p>
+    <img src="${SHIFT_WORDMARK_WHITE_URL}" alt="Shift" width="146" height="48" style="display:block;margin:0 auto 28px;border:0;">
     <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">${title}</h1>
     ${bodyHtml}
     <p style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.75);margin:28px 0 0;">Green Streets Initiative, 519 Somerville Ave, Ste 2, Box 103, Somerville, MA 02143</p>
