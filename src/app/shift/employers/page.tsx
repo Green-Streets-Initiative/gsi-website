@@ -1,6 +1,5 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import FAQ from '@/components/FAQ'
@@ -11,6 +10,7 @@ import EmployerPricing from './EmployerPricing'
 import EmployerCompare from './EmployerCompare'
 import EmployerInquiry from './EmployerInquiry'
 import CheckoutBanner from './CheckoutBanner'
+import ScreenshotGallery from './ScreenshotGallery'
 import { loadWalkRideDays } from '@/app/programs/walk-ride-days/_lib/load'
 import { weekdayDateET } from '@/lib/campaigns/format'
 
@@ -338,37 +338,28 @@ export default async function ShiftEmployersPage() {
             <p className="mb-8 max-w-[680px] text-[1.0625rem] leading-[1.65] text-ink-soft">
               This is what your people see on their phones, and what you see in the employer portal. Two more pieces are live on this site, and a 20-minute walkthrough is the easiest way to see it all together.
             </p>
-            <ul className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {[
-                { src: '/images/shift-app/employer-join.png', alt: 'Shift app: the Join a Group screen asking for an invite code', caption: 'Join with your code' },
-                { src: '/images/shift-app/employer-progress.png', alt: 'Shift app Progress tab: miles by mode and lifetime impact', caption: 'Trips noticed on their own' },
-                { src: '/images/shift-app/employer-group.png', alt: 'Shift app employer group screen: team totals this month, a live challenge, and the note that the employer sees names and trip totals, never routes', caption: 'Your team’s page and challenges' },
-                { src: '/images/shift-app/employer-rewards.png', alt: 'Shift app Rewards tab: an employer-funded gift card and the Walk/Ride Day drawing', caption: 'Drawings and rewards' },
-              ].map((shot) => (
-                <li key={shot.src} className="min-w-0">
-                  <div className="relative aspect-[9/19] overflow-hidden rounded-[18px] border border-navy/10 bg-white">
-                    <Image src={shot.src} alt={shot.alt} fill sizes="(max-width: 640px) 45vw, 22vw" className="object-cover object-top" />
-                  </div>
-                  <p className="mt-2 text-center text-[13px] leading-snug text-ink-soft">{shot.caption}</p>
-                </li>
-              ))}
-            </ul>
+            <ScreenshotGallery
+              variant="phone"
+              label="The Shift app"
+              shots={[
+                { src: '/images/shift-app/employer-join-2026-10.png', width: 1170, height: 2532, alt: 'Shift app: the Join a Group screen with the employer’s invite code, QUILL1, typed in', caption: 'Join with your code' },
+                { src: '/images/shift-app/employer-trips-2026-10.png', width: 1170, height: 2532, alt: 'Shift app Trip History: walks, bike rides, train and bus trips listed by day, each with its miles, time and what it saved', caption: 'Trip logging is automatic' },
+                { src: '/images/shift-app/employer-group-2026-10.png', width: 1170, height: 2532, alt: 'Shift app team page for Quillmont Analytics, a sample company: this month’s Shift Rate, active trips, miles and time, the member’s own standing, the note that the employer sees names and trip totals but never routes, and the live Fall Commute Challenge', caption: 'Your team’s page and challenges' },
+                { src: '/images/shift-app/employer-prizes-2026-10.png', width: 1170, height: 2532, alt: 'Shift app challenge page: the Fall Commute Challenge, ending on Walk/Ride Day, with a $15 gift card the member earned by reaching 20 trips', caption: 'Prizes your company funds' },
+              ]}
+            />
             <h3 className="mb-4 font-serif text-[1.375rem] leading-tight text-navy">Your portal</h3>
-            <ul className="mb-10 grid gap-5 sm:grid-cols-2">
-              {[
-                { src: '/images/portal/portal-home.jpg', alt: 'Employer portal home: the goal you set, the closest figure we track, and the last 30 days of active trips, miles shifted, CO₂ avoided and Shift Rate', caption: 'Home: your goal and the last 30 days' },
-                { src: '/images/portal/portal-challenges.jpg', alt: 'Employer portal Challenges page: a drafted seasonal challenge, a scheduled one and a live one with its prize', caption: 'Challenges: seasons drafted for you, prizes you fund' },
-                { src: '/images/portal/portal-share-kit.jpg', alt: 'Employer portal Share kit: invite code, join link and QR code, with the team blurb, email and printable flyer', caption: 'Share kit: code, link, QR, flyer and the note to send' },
-                { src: '/images/portal/portal-impact.jpg', alt: 'Employer portal Impact page with the downloadable impact report', caption: 'Impact: the report you can download' },
-              ].map((shot) => (
-                <li key={shot.src} className="min-w-0">
-                  <div className="relative aspect-[1210/628] overflow-hidden rounded-[14px] border border-navy/10 bg-white">
-                    <Image src={shot.src} alt={shot.alt} fill sizes="(max-width: 640px) 90vw, 45vw" className="object-cover object-top" />
-                  </div>
-                  <p className="mt-2 text-center text-[13px] leading-snug text-ink-soft">{shot.caption}</p>
-                </li>
-              ))}
-            </ul>
+            <ScreenshotGallery
+              variant="portal"
+              label="The employer portal"
+              shots={[
+                { src: '/images/portal/portal-home-2026-10.jpg', width: 2880, height: 1494, alt: 'Employer portal home for Quillmont Analytics, a sample company: the last 30 days of active trips, miles shifted, CO₂e avoided and Shift Rate, shortcuts, and the goal the company set', caption: 'Home: the last 30 days and your goal' },
+                { src: '/images/portal/portal-challenges-2026-10.jpg', width: 2880, height: 1494, alt: 'Employer portal Challenges page: one active, two scheduled and one drafted challenge, with the year plan that drafts each season’s challenge for you', caption: 'Challenges: seasons drafted for you, prizes you fund' },
+                { src: '/images/portal/portal-share-kit-2026-10.jpg', width: 2880, height: 1494, alt: 'Employer portal Share kit: invite code, join link and QR code, with the team blurb, email and printable flyer', caption: 'Share kit: code, link, QR, flyer and the note to send' },
+                { src: '/images/portal/portal-impact-2026-10.jpg', width: 2880, height: 1494, alt: 'Employer portal Impact page: Shift Rate, drive-alone share, participation and emissions shifted for the last 30 days, compared with the 30 days before, and the printable report', caption: 'Impact: the report you can download' },
+              ]}
+            />
+            <p className="-mt-6 mb-10 text-center text-[13px] leading-snug text-ink-soft">Tap any screenshot to see it full size. Quillmont Analytics is a sample company with made-up people.</p>
             <div className="grid gap-6 md:grid-cols-3">
               <Link
                 href="/commute-advisor/demo"

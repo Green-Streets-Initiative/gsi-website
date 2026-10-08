@@ -215,6 +215,30 @@ export default function EmployerPricing() {
           </p>
         )}
 
+        {/* Massachusetts nonprofit rate: employer item 9, Keith 2026-10-08.
+            Capped at the first 10 organizations; large institutions pay the
+            listed price. Granted by hand (comped Starter, or a Stripe coupon
+            Keith creates), never through checkout. */}
+        <div className="mx-auto mt-8 max-w-[720px] rounded-2xl border-2 border-forest/30 bg-white px-6 py-5 text-center">
+          <p className="text-[1.0625rem] font-semibold text-navy">
+            Massachusetts nonprofits: a founding rate for the first 10
+          </p>
+          <p className="mt-2 text-[0.9375rem] leading-[1.6] text-navy">
+            Starter is free for nonprofits under 250 staff, and Basic and
+            Standard are half price from 250 to 999 staff. In return, we ask to
+            name you as an organization using Shift and to hear how it&apos;s
+            going after a couple of months. Hospitals, universities and
+            organizations with 1,000 or more staff pay the listed price.{' '}
+            <a
+              href="#inquiry"
+              className="font-semibold text-forest underline underline-offset-4 hover:opacity-80"
+            >
+              Ask about the nonprofit rate
+            </a>
+            .
+          </p>
+        </div>
+
         <p className="mt-8 text-center text-[13px] italic text-ink-soft">
           All tiers are annual. Custom packages and multi-year discounts
           available.{' '}
