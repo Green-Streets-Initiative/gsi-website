@@ -4,7 +4,8 @@
 // employer gets to show, and what happens to location data).
 // Competitor facts come from .claude/skills/employer-lead/references/competitors.md
 // in the Shift repo (checked 2026-10-05); change them there first.
-// Deliberately not a "vs" page: no TMA platform appears here.
+// No TMA platform appears here. The named comparison lives at
+// /shift/employers/compare.
 
 type Row = {
   question: string
@@ -116,7 +117,10 @@ export default function EmployerCompare() {
           </table>
         </div>
         <p className="mt-3 text-[13px] leading-snug text-ink-soft">
-          Competitor prices as published on their own sites in October 2026. Love to Ride publishes £10 to £20 per active user per month, shown here in dollars at October 2026 rates. Enterprise platforms do not publish prices.
+          Competitor prices as published on their own sites in October 2026. Love to Ride publishes £10 to £20 per active user per month, shown here in dollars at October 2026 rates. Enterprise platforms do not publish prices.{' '}
+          <a href="/shift/employers/compare" className="font-semibold text-forest underline-offset-4 hover:underline">
+            Compare Shift with Pave Commute, Love to Ride, Luum and Commutifi by name
+          </a>
         </p>
       </div>
     </section>
