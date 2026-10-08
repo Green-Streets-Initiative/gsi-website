@@ -26,14 +26,14 @@ const ROWS: Row[] = [
   {
     question: 'What do my employees have to do?',
     shift: 'Download the free app and enter your code. Walking, biking and transit trips are noticed on their own; a carpool is confirmed with a tap.',
-    perUser: 'Log each trip by hand, or track bikes only.',
+    perUser: 'Bike rides tracked automatically on cycling apps; others do not say how trips are recorded.',
     enterprise: 'Log trips, with optional tracking.',
     spreadsheet: 'Fill in a form, every time.',
   },
   {
     question: 'Will people actually use it?',
     shift: 'Getting people to join is the hard part of every commute program, so we plan for it: a launch tied to a day with prizes already on it (Walk/Ride Day), a ready-made note and flyer with your code, a leaderboard people check, and a prize at the end of month one. You see join and active rates every week and we adjust with you.',
-    perUser: 'Challenges and recognition; prizes cost extra.',
+    perUser: 'Challenges and recognition; rewards you add are billed on top.',
     enterprise: 'Incentives if your contract includes them.',
     spreadsheet: 'Usually one burst, then it fades.',
   },
