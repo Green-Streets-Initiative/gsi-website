@@ -11,6 +11,14 @@ const IOS_DEFAULT = process.env.NEXT_PUBLIC_IOS_URL ?? 'https://apps.apple.com/u
 const ANDROID_DEFAULT =
   process.env.NEXT_PUBLIC_ANDROID_URL ?? 'https://play.google.com/store/apps/details?id=org.greenstreets.shift'
 
+// Google's official PNG (646×250) carries transparent clear space: the badge
+// itself is the 168px-tall band from y=41 to y=209. Scale the image so the
+// VISIBLE badge matches Apple's height, and cancel the padding with negative
+// margins, rather than cropping the official file.
+const PLAY_IMG_H = 250
+const PLAY_BADGE_H = 168
+const PLAY_PAD = 41
+
 export const STORE_CREDIT_LINES =
   'App Store is a trademark of Apple Inc., registered in the U.S. and other countries. Google Play and the Google Play logo are trademarks of Google LLC.'
 
@@ -54,6 +62,8 @@ export default function StoreBadges({
     }
   }
   const pad = Math.round(height / 4)
+  const playImgH = (height * PLAY_IMG_H) / PLAY_BADGE_H
+  const playInset = (height * PLAY_PAD) / PLAY_BADGE_H
 
   return (
     <div className={className}>
@@ -78,7 +88,11 @@ export default function StoreBadges({
           style={{ padding: pad, margin: -pad }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/store/google-play-badge-en.png" alt="Get it on Google Play" style={{ height }} />
+          <img
+            src="/brand/store/google-play-badge-en.png"
+            alt="Get it on Google Play"
+            style={{ height: playImgH, maxWidth: 'none', margin: -playInset }}
+          />
         </a>
       </div>
       {credit && <p className="mt-3 max-w-[60ch] text-[11px] leading-[1.5] text-ink-tertiary">{STORE_CREDIT_LINES}</p>}
