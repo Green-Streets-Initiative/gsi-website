@@ -62,13 +62,20 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
   const initialFocus = useMemo(() => parseInitialFocus(searchParams.get('focus')), [searchParams])
   // ?plan=1 (the /plan short address, the nav's "Plan a route"): open on the
   // Destinations tab with the trip search ready to type into.
-  // ?to=lat,lng&toName= opens with that trip already planned. Read from
-  // window.location for the reason given on partnerSlug below.
+  // ?to=lat,lng&toName= opens with that trip already planned. Both are read
+  // once at mount from window.location: picking a location rewrites the URL
+  // to lat/lng (plan=1 isn't sticky), and a live read of searchParams went
+  // false before the map view mounted, so Plan a route opened on Transit
+  // (Keith 2026-10-08). See also the reason given on partnerSlug below.
   const planTo = useMemo(
     () => (typeof window === 'undefined' ? null : parseTripDest(new URLSearchParams(window.location.search))),
     []
   )
-  const planFirst = searchParams.get('plan') === '1' || !!planTo
+  const planParam = useMemo(
+    () => (typeof window === 'undefined' ? false : new URLSearchParams(window.location.search).get('plan') === '1'),
+    []
+  )
+  const planFirst = planParam || !!planTo
   const isDesktop = useIsDesktop()
 
   // Locale from ?lang= (wins) or the browser; provided to the whole tree below.
