@@ -250,6 +250,8 @@ export async function ingestAgency(supabase, agency) {
   const iStop = header.indexOf('stop_id')
   const iDep = header.indexOf('departure_time')
   const iArr = header.indexOf('arrival_time')
+  const iPick = header.indexOf('pickup_type')
+  const iDrop = header.indexOf('drop_off_type')
   if (iTrip < 0 || iStop < 0 || (iDep < 0 && iArr < 0)) {
     throw new Error('stop_times.txt missing required columns')
   }
@@ -277,6 +279,10 @@ export async function ingestAgency(supabase, agency) {
     if (!service) continue
     const stopId = cols[iStop]
     if (!knownStops.has(stopId)) continue
+    // No pickup AND no drop-off = the bus only passes this point. Massport
+    // uses these for recorded announcements ("Announcement #4 - Back Bay to
+    // Airport", "Now Entering Terminal B"); they are not stops to wait at.
+    if (iPick >= 0 && iDrop >= 0 && cols[iPick] === '1' && cols[iDrop] === '1') continue
     const secs = timeToSecs((iDep >= 0 ? cols[iDep] : '') || (iArr >= 0 ? cols[iArr] : ''))
     if (secs === null) continue
     const route = routes.get(trip.routeId)
