@@ -26,6 +26,26 @@ export function parseSnapshotParams(searchParams: URLSearchParams): SnapshotLoca
   return { lat: round3(lat), lng: round3(lng), label }
 }
 
+export interface TripDest {
+  lat: number
+  lng: number
+  name: string
+  /** &toMode= — which answer opens first; absent = the page's usual pick */
+  mode?: 'transit' | 'bike'
+}
+
+/** ?to=lat,lng&toName= — a link that opens with a trip already planned from
+ *  the page's location ("Boston College to Logan" in a Reddit reply). Same
+ *  bounds as the origin; not sticky, so choosing a new location drops it. */
+export function parseTripDest(searchParams: URLSearchParams): TripDest | null {
+  const [lat, lng] = (searchParams.get('to') ?? '').split(',').map(s => parseFloat(s))
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  if (lat < 40 || lat > 44 || lng < -75 || lng > -69) return null
+  const name = (searchParams.get('toName') ?? '').trim().slice(0, 80)
+  const m = searchParams.get('toMode')
+  return { lat, lng, name, ...(m === 'transit' || m === 'bike' ? { mode: m } : {}) }
+}
+
 /**
  * Params that must survive the page's own URL rewrites: the partner
  * co-brand slug, any utm_* a campaign link arrived with, and the language

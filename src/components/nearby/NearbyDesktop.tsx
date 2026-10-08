@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
+import type { TripDest } from '@/lib/nearby/share'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
 import NearbyMap, { type FitPadding, type RouteLegTapInfo } from './NearbyMap'
 import { useInitialFocus } from './useInitialFocus'
@@ -46,6 +47,8 @@ interface Props {
   /** ?plan=1 (the /plan short address): open the Destinations rail with the
    *  trip search focused. */
   planFirst?: boolean
+  /** ?to=&toName= — plan this trip on arrival (see parseTripDest) */
+  planTo?: TripDest | null
   center: { lat: number; lng: number }
   displayLabel: string
   /** Town, shown beneath the neighborhood headline (null when no neighborhood) */
@@ -108,7 +111,7 @@ const RAIL_TAB_LABEL_KEYS: Record<RailTab, string> = {
 }
 
 export default function NearbyDesktop({
-  initialFocus, planFirst = false, center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
+  initialFocus, planFirst = false, planTo = null, center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, railFar, busFar, shuttles, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
@@ -168,9 +171,9 @@ export default function NearbyDesktop({
     : null
   /** A planned trip lands in the list and opens immediately — the answer is
    *  the point of the search, not a row you then have to find and tap. */
-  const onPlanned = useCallback((row: ReachRow) => {
+  const onPlanned = useCallback((row: ReachRow, prefer?: 'transit' | 'bike') => {
     setPlannedRows(prev => [row, ...prev.filter(r => r.id !== row.id)])
-    select({ type: 'reach', id: row.id, mode: defaultRouteMode(row, reachModeFor(modeFilter) ?? undefined) }, 'trip')
+    select({ type: 'reach', id: row.id, mode: defaultRouteMode(row, prefer ?? reachModeFor(modeFilter) ?? undefined) }, 'trip')
   }, [select, modeFilter])
 
   const onRouteSelect = useCallback((sel: { id: string; mode: 'transit' | 'bike' } | null) => {
@@ -507,7 +510,7 @@ export default function NearbyDesktop({
                   their own destination, not our curated set. It answers here,
                   in a row like any other; the Advisor's full cost comparison
                   lives inside that answer, for the trips you actually repeat. */}
-              <TripPlanner center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} autoFocus={planFirst} />
+              <TripPlanner center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} autoFocus={planFirst && !planTo} initialDest={planTo} />
 
               <p className="mb-3 mt-6 text-[0.8rem] leading-snug text-(--nb-ink-70)">
                 {tr('desktop.destinations_intro')}

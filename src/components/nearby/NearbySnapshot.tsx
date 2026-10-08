@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops, fetchShuttleStops } from '@/lib/nearby/live-data'
 import { fetchNearbyAlertsAndClosures, type SurfacedAlert, type NearbyPromo } from '@/lib/nearby/alerts'
-import { round3, parseSnapshotParams, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
+import { round3, parseSnapshotParams, parseTripDest, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
 import { buildAppHref, isNewRoutesContext } from '@/lib/nearby/campaign'
 import { parsePartnerSlug, fetchPartnerClient, type NearbyPartner } from '@/lib/nearby/partner'
 import { resolvePlaceLabel, combinePlaceLabel, splitPlaceLabel } from '@/lib/nearby/neighborhood'
@@ -62,7 +62,13 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
   const initialFocus = useMemo(() => parseInitialFocus(searchParams.get('focus')), [searchParams])
   // ?plan=1 (the /plan short address, the nav's "Plan a route"): open on the
   // Destinations tab with the trip search ready to type into.
-  const planFirst = searchParams.get('plan') === '1'
+  // ?to=lat,lng&toName= opens with that trip already planned. Read from
+  // window.location for the reason given on partnerSlug below.
+  const planTo = useMemo(
+    () => (typeof window === 'undefined' ? null : parseTripDest(new URLSearchParams(window.location.search))),
+    []
+  )
+  const planFirst = searchParams.get('plan') === '1' || !!planTo
   const isDesktop = useIsDesktop()
 
   // Locale from ?lang= (wins) or the browser; provided to the whole tree below.
@@ -753,6 +759,7 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
   const surfaceProps = {
     initialFocus,
     planFirst,
+    planTo,
     center: location,
     displayLabel,
     subLabel,

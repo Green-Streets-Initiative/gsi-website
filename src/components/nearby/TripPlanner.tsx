@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import posthog from 'posthog-js'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import type { ReachRow } from './types'
@@ -22,20 +22,22 @@ import { useNearbyTone } from './NearbyTone'
  * turn-by-turn. The Advisor is still one tap away inside that result, where
  * it belongs: for the trips you actually repeat.
  */
-export default function TripPlanner({ center, onPlanned, partnerSlug, autoFocus = false }: {
+export default function TripPlanner({ center, onPlanned, partnerSlug, autoFocus = false, initialDest = null }: {
   center: { lat: number; lng: number }
   /** The planned row, ready to be prepended to the list and selected. */
-  onPlanned: (row: ReachRow) => void
+  onPlanned: (row: ReachRow, prefer?: 'transit' | 'bike') => void
   partnerSlug?: string | null
   /** /plan opened the page: cursor in the address box on arrival. */
   autoFocus?: boolean
+  /** ?to=&toName= in the page link: plan this trip once, on arrival. */
+  initialDest?: { lat: number; lng: number; name: string; mode?: 'transit' | 'bike' } | null
 }) {
   const tr = useNearbyT()
   const tone = useNearbyTone()
   const [address, setAddress] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
 
-  async function plan(place: { address: string; lat: number; lng: number }) {
+  async function plan(place: { address: string; lat: number; lng: number }, via: 'search' | 'link' = 'search') {
     setStatus('loading')
     // The label people recognise is the first line, not the full postal
     // address — "Porter Square", not "Porter Square, Cambridge, MA 02140".
@@ -49,15 +51,25 @@ export default function TripPlanner({ center, onPlanned, partnerSlug, autoFocus 
       posthog.capture('snapshot_trip_planned', {
         transit: row?.transit_minutes ?? null,
         bike: row?.bike_minutes ?? null,
+        via,
         ...(partnerSlug ? { partner: partnerSlug } : {}),
       })
       setStatus('idle')
       setAddress('')
-      onPlanned(row as ReachRow)
+      onPlanned(row as ReachRow, via === 'link' ? initialDest?.mode : undefined)
     } catch {
       setStatus('error')
     }
   }
+
+  const linkPlanned = useRef(false)
+  useEffect(() => {
+    if (!initialDest || linkPlanned.current) return
+    linkPlanned.current = true
+    plan({ address: initialDest.name, lat: initialDest.lat, lng: initialDest.lng }, 'link')
+  // Once per page load — the link names one trip
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDest])
 
   return (
     <div className="mt-2 rounded-xl border border-(--nb-accent-line) bg-[image:var(--nb-promo-bg)] px-4 py-4">
