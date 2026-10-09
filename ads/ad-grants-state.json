@@ -162,6 +162,25 @@
       "search_terms": "93 named terms read; all transit how-to lookups in How-to Guides plus a few New Routes map/bike-share terms at 2 impr (bike trail map, blue bike) and 'boston bike paths' 4/0 in Town. None off-target at 3+ impr; 'mapa metro boston pdf' 3/0 is transit-related and Paying for the T changed 10-05 (<14 days), so no negatives proposed",
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-10-09",
+      "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-9",
+      "mtd": { "window": "2026-10-01..2026-10-09", "impressions": 552, "clicks": 38, "ctr_pct": 6.88, "cost": 245.02, "conversions": 0 },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 472, "clicks": 37 },
+        "GSI — Brand": { "impressions": 4, "clicks": 1 },
+        "Town Walking & Biking": { "impressions": 62, "clicks": 0 },
+        "New Routes — Movers": { "impressions": 27, "clicks": 0 },
+        "Shift App — Massachusetts": { "impressions": 4, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+      },
+      "campaign_status": "status column did not render text again; all 6 serving; no Paused/Removed/Not eligible text",
+      "banners": ["Set up conversion tracking", "Add Dynamic Image Assets"],
+      "ads": { "total": 36, "all_eligible": true, "disapproved_seen": 0, "strength": "17 Average, 17 Pending, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known)" },
+      "search_terms": "139 terms this month; top 30 by impressions read: all transit how-to lookups in How-to Guides / Paying for the T (boston public transportation 1/16, how to ride the t in boston 0/7, the t in boston 0/6, how to pay for the t in boston 0/6) plus 'boston bike paths' 0/4 in Town. Nothing off-target; Paying for the T changed 10-05 (<14 days), so no negatives proposed. New Routes still flat at 27 impr since the 10-07 negatives (judge 10-21).",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
