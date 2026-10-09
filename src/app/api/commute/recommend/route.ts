@@ -176,7 +176,7 @@ function buildReasons(
   } else {
     const savings = baselineDailyCost - winnerDailyCost
     if (savings > 1) {
-      reasons.push(`${fmtCost(winnerDailyCost)}/day vs. ${fmtCost(baselineDailyCost)}/day ${baselineLabel} — saves ~${fmtCost(savings * WORKDAYS_PER_YEAR)}/year`)
+      reasons.push(`${fmtCost(winnerDailyCost)}/day vs. ${fmtCost(baselineDailyCost)}/day ${baselineLabel} — saves ~${fmtCost(savings * WORKDAYS_PER_MONTH * 12)}/year`)
     } else {
       reasons.push(`${fmtCost(winnerDailyCost)}/day — similar cost to ${baselineLabel} at ${fmtCost(baselineDailyCost)}/day`)
     }

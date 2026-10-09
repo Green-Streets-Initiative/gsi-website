@@ -215,7 +215,7 @@ export default function CommutePlanPrint({
   if (guide) steps.push(`Read the guide "${guide.title}": ${clip(guide.summary, 120)}`)
   const event = recommendation.content.event
   if (event) {
-    const when = new Date(event.event_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+    const when = new Date(`${event.event_date}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
     steps.push(`Try it with others on ${when}: ${event.content_items.title}${event.location_name ? `, ${event.location_name}` : ''}.`)
   }
   if (group.invite_code) {

@@ -124,7 +124,7 @@ export default function StarterGuides({ modes, event }: StarterGuidesProps) {
             {event.content_items.title}
           </h5>
           <div className="mb-2 text-[0.8125rem] text-[#5A5C6E]">
-            {new Date(event.event_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            {new Date(`${event.event_date}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             {event.location_name && ` · ${event.location_name}`}
           </div>
           <p className="mb-4 line-clamp-2 text-[0.875rem] leading-relaxed text-[#5A5C6E]">

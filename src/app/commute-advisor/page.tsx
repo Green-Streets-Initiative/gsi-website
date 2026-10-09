@@ -15,7 +15,6 @@ import StarterGuides from '@/components/commute/StarterGuides'
 import ModeComparisonTable from '@/components/commute/ModeComparisonTable'
 import ModeIcon from '@/components/commute/ModeIcon'
 import LoadingMessages from '@/components/commute/LoadingMessages'
-import { co2Equivalency } from '@/lib/co2-equivalency'
 import type { RecommendationResponse, CurrentCommuteMode, Mode } from '@/lib/types/commute'
 import { PRICES } from '@/lib/facts/prices'
 
@@ -58,10 +57,8 @@ let MBTA_BUS_SINGLE = PRICES.mbta.busSingle
 let MBTA_BUS_MONTHLY = PRICES.mbta.busPassMonthly
 const WEEKS = 52
 const CO2_PER_MILE = 0.404
-const BODY_WEIGHT_LBS = 165
 
 const fmt = (n: number) => n < 0 ? `-$${Math.abs(Math.round(n)).toLocaleString()}` : `$${Math.round(n).toLocaleString()}`
-const fmtCO2 = (kg: number) => kg >= 1000 ? `${(kg / 1000).toFixed(2)} tons` : `${Math.round(kg)} kg`
 
 const PARKING_ANCHORS = [
   { label: 'Downtown Boston $32', val: 32 },
@@ -323,7 +320,7 @@ export default function CommuteCalculator() {
           if (d < 2) candidates.push({ mode: 'walk', label: 'Walk', mins: Math.round((d / 3.5) * 60), cost: 0,
             reasons: [`${Math.round((d / 3.5) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(baselineCost)}/day ${baselineLabel}`, 'Zero cost, built-in exercise'] })
           if (d < 8) candidates.push({ mode: 'bike', label: 'Bike', mins: Math.round((d / 11) * 60), cost: 0,
-            reasons: [`${Math.round((d / 11) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(baselineCost)}/day ${baselineLabel} — saves ~$${Math.round(baselineCost * 260)}/year`, 'Built-in exercise, no parking needed'] })
+            reasons: [`${Math.round((d / 11) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(baselineCost)}/day ${baselineLabel} — saves ~$${Math.round(baselineCost * 240)}/year`, 'Built-in exercise, no parking needed'] })
           if (d >= 4 && d < 12) candidates.push({ mode: 'ebike', label: 'E-bike', mins: Math.round((d / 15) * 60), cost: 0,
             reasons: [`${Math.round((d / 15) * 60)} min vs. ${driveMins} min driving`, `Free vs. ~$${Math.round(baselineCost)}/day ${baselineLabel}`, 'Arrive without sweating'] })
           candidates.push({ mode: 'transit', label: 'MBTA Transit', mins: Math.round(d * 4), cost: 4.8,
@@ -341,8 +338,8 @@ export default function CommuteCalculator() {
             secondary: runnerUp ? { modes: runnerUp.mode === 'drive' ? [] as unknown as ('walk' | 'bike' | 'ebike' | 'transit' | 'bus')[] : [runnerUp.mode as 'walk' | 'bike' | 'ebike' | 'transit'], label: runnerUp.label, time_estimate_minutes: runnerUp.mins } : null,
             map_data: { bluebikes_origin: [], bluebikes_dest: [], mbta_stops: [], bike_infra_quality: 'unknown' },
             content: { guide: null, event: null },
-            comparisons: candidates.map(c => ({ mode: c.mode as 'walk' | 'bike' | 'ebike' | 'transit' | 'bus' | 'drive', label: c.label, time_minutes: c.mins, daily_cost: c.cost, annual_cost: Math.round(c.cost * 260), pros: c.reasons })),
-            drive_comparison: { time_minutes: driveMins, daily_cost: driveCostDaily, annual_cost: Math.round(driveCostDaily * 260) },
+            comparisons: candidates.map(c => ({ mode: c.mode as 'walk' | 'bike' | 'ebike' | 'transit' | 'bus' | 'drive', label: c.label, time_minutes: c.mins, daily_cost: c.cost, annual_cost: Math.round(c.cost * 240), pros: c.reasons })),
+            drive_comparison: { time_minutes: driveMins, daily_cost: driveCostDaily, annual_cost: Math.round(driveCostDaily * 240) },
             distance_miles: d,
             distance_category: category,
           })
@@ -586,14 +583,20 @@ export default function CommuteCalculator() {
       }
     }
 
+    // Once the comparison table has loaded, use its times here too, so the
+    // page never shows two different drive (or bike) times for one trip.
+    const tableDriveMins = recommendation?.drive_comparison?.time_minutes
+    const tableAltMins = recommendation?.comparisons?.find(c => c.mode === altMode)?.time_minutes
+    if (tableDriveMins) driveMins = tableDriveMins
+    if (tableAltMins) altMins = tableAltMins
+
     // Health
     const isActive = ['walk', 'bike', 'ebike'].includes(altMode)
-    let activeMins = 0, weeklyCals = 0, gymEquiv = '0'
+    let activeMins = 0, gymEquiv = '0'
     if (isActive && mode.mph) {
-      const minsPerTrip = Math.round((distance / mode.mph) * 60)
+      // The routed time for this mode, not the driving distance at a typical speed.
+      const minsPerTrip = altMins ?? Math.round((distance / mode.mph) * 60)
       activeMins = minsPerTrip * 2 * sd
-      const weightKg = BODY_WEIGHT_LBS / 2.205
-      weeklyCals = Math.round(mode.met * weightKg * (activeMins / 60))
       gymEquiv = (activeMins / 45).toFixed(1)
     }
 
@@ -605,10 +608,10 @@ export default function CommuteCalculator() {
       fuelIcon, fuelText, rideshareSavings, isRideshare,
       baselineAnnualCost, baselineLabel,
       driveMins, altMins, timeNote, isRealRouting, mode,
-      isActive, activeMins, weeklyCals, gymEquiv,
+      isActive, activeMins, gymEquiv,
       annualMiles, co2,
     }
-  }, [distance, driveDays, vehicle, gasPrice, parkMode, parkingCost, altMode, railZone, commuteMode, rideshareDaily, carpoolDaily, transitMonthly, busMonthly, mbtaType, hasEmployerSubsidy, employerSubsidy, routeData])
+  }, [distance, driveDays, vehicle, gasPrice, parkMode, parkingCost, altMode, railZone, commuteMode, rideshareDaily, carpoolDaily, transitMonthly, busMonthly, mbtaType, hasEmployerSubsidy, employerSubsidy, routeData, recommendation])
 
   const r = calc()
 
@@ -1112,22 +1115,9 @@ export default function CommuteCalculator() {
                     {/* Health */}
                     {r.isActive && (
                       <>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="rounded-[9px] bg-navy/[0.04] px-2 py-2 text-center">
-                            <div className="font-display text-base font-bold text-[#8A5A00]">{r.activeMins}</div>
-                            <div className="mt-0.5 text-[9px] leading-snug text-ink-soft">active min/week</div>
-                          </div>
-                          <div className="rounded-[9px] bg-navy/[0.04] px-2 py-2 text-center">
-                            <div className="font-display text-base font-bold text-[#8A5A00]">{r.weeklyCals.toLocaleString()}</div>
-                            <div className="mt-0.5 text-[9px] leading-snug text-ink-soft">cal/week</div>
-                          </div>
-                          <div className="rounded-[9px] bg-navy/[0.04] px-2 py-2 text-center">
-                            <div className="font-display text-base font-bold text-[#8A5A00]">{fmtCO2(r.co2)}</div>
-                            <div className="mt-0.5 text-[9px] leading-snug text-ink-soft">CO₂ saved/yr</div>
-                          </div>
-                        </div>
-                        <div className="mt-2 text-center text-[0.75rem] text-ink-soft">
-                          {co2Equivalency(r.co2)}
+                        <div className="rounded-[9px] bg-navy/[0.04] px-2 py-2 text-center">
+                          <div className="font-display text-base font-bold text-[#8A5A00]">{r.activeMins}</div>
+                          <div className="mt-0.5 text-[9px] leading-snug text-ink-soft">active min/week</div>
                         </div>
                       </>
                     )}
