@@ -1,4 +1,5 @@
 import type { RoamCardData } from '@/components/roams/RoamCard'
+import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 
 export type SectionStatus = 'loading' | 'ready' | 'error'
 
@@ -124,6 +125,9 @@ export interface ReachRow {
     polyline: string
     comfort: BikeComfortData | null
   } | null
+  /** Bike-share docks nearest the destination, live, nearest first. Only on
+   *  trips the visitor planned (/api/nearby/trip); absent on curated rows. */
+  dest_docks?: BluebikeStationLive[]
 }
 
 export interface GuideItem {

@@ -188,11 +188,14 @@ export interface NearbyModelInput {
   /** Fetch + draw a line whose corridor fell outside the nearby top-8 when its
    *  station is tapped (the Orange Line at Sullivan Sq). No-op when absent. */
   onRequestCorridorShape?: (routeId: string, stopId: string) => void
+  /** The start dock's pill on a bike route ("6 bikes"), in the page's
+   *  language. Short on purpose: the start sits at the map's edge. */
+  startDockLabel?: (dock: BluebikeStationLive) => string
 }
 
 export function useNearbyModel({
   center, transitCorridors, bikeCorridors, rail, bus, railFar, busFar, shuttles, docks,
-  modeFilter, paintedVisible, onRequestCorridorShape,
+  modeFilter, paintedVisible, onRequestCorridorShape, startDockLabel,
 }: NearbyModelInput) {
   const mode = modeFilter ?? MODE_FILTER_DEFAULT
   const painted = paintedVisible ?? PAINTED_DEFAULT
@@ -200,6 +203,10 @@ export function useNearbyModel({
   const showBus = mode === 'all' || mode === 'bus'
   const showBike = mode === 'all' || mode === 'bike'
   const [selection, setSelection] = useState<Selection>(null)
+  // A dock opened FROM a bike route. The route stays on the map behind the
+  // dock's card, and closing the card goes back to the route (Keith
+  // 2026-10-09: the dock you'd start from has to stay tappable mid-route).
+  const [routeBehind, setRouteBehind] = useState<Extract<Selection, { type: 'reach' }> | null>(null)
   // A station the LIST has opened. Separate from `selection` on purpose: the
   // list card already shows the detail inline, so opening one must light its
   // marker and move the camera WITHOUT also opening the floating detail card
@@ -328,21 +335,27 @@ export function useNearbyModel({
     // / a tab change — and a mobile destination row could not be closed at
     // all. The explicit close paths all pass null, which never matches a
     // non-null selection, so they are unaffected.
-    let toggledOff = false
-    setSelection(prev => {
-      if (sameSelection(prev, next)) {
-        toggledOff = true
-        return null
-      }
-      return next
-    })
-    if (toggledOff) return false
+    const prev = selection
+    // Closing a dock that was opened from a bike route goes back to the route
+    if (routeBehind && prev?.type === 'dock' && (next === null || sameSelection(prev, next))) {
+      setRouteBehind(null)
+      setSelection(routeBehind)
+      return true
+    }
+    if (sameSelection(prev, next)) {
+      setRouteBehind(null)
+      setSelection(null)
+      return false
+    }
+    if (next?.type === 'dock' && prev?.type === 'reach' && prev.mode === 'bike') setRouteBehind(prev)
+    else if (!(next?.type === 'dock' && prev?.type === 'dock' && routeBehind)) setRouteBehind(null)
+    setSelection(next)
     if (next) posthog.capture('snapshot_detail_viewed', { type: next.type, source })
     if (next?.type === 'corridor') {
       posthog.capture('corridor_selected', { corridor: next.id, source })
     }
     return !!next
-  }, [])
+  }, [selection, routeBehind])
 
   // Filtering away the mode a selection lives in would leave an orphaned
   // detail panel pointing at nothing on the map — clear it instead
@@ -406,8 +419,21 @@ export function useNearbyModel({
   // 2026-09-12): transit stops go. Bike-side pins (docks, borrow/rent) still
   // matter on a bike ride — it often starts at a dock — so they gray out and
   // stop taking taps rather than vanish; on a transit route they go too.
-  const routeFocused = selection?.type === 'reach'
-  const bikePinsDuringRoute = routeFocused && selection.mode === 'bike'
+  // The route on the map: the open destination, or the one behind a dock
+  // card opened from it.
+  const routeSelection: Extract<Selection, { type: 'reach' }> | null =
+    selection?.type === 'reach' ? selection
+      : selection?.type === 'dock' && routeBehind ? routeBehind
+        : null
+  const routeFocused = !!routeSelection
+  const bikePinsDuringRoute = routeSelection?.mode === 'bike'
+  // ...except the dock you'd start the ride from: it stays lit and tappable
+  // (the far-end dock is added by useReachOverlay, which has the route).
+  const startDockId = useMemo(() => {
+    let best: BluebikeStationLive | null = null
+    for (const d of docks) if (!best || d.distance_meters < best.distance_meters) best = d
+    return best?.station_id ?? null
+  }, [docks])
   const showBikePins = showBike && (!routeFocused || bikePinsDuringRoute)
 
   const markers = useMemo<NearbyMarker[]>(() => [
@@ -494,14 +520,20 @@ export function useNearbyModel({
         d.num_ebikes_available,
         d.name,
         dockActive(d.station_id),
+        bikePinsDuringRoute && d.station_id === startDockId && startDockLabel
+          ? { count: d.num_bikes_available, label: startDockLabel(d) }
+          : undefined,
       ),
-      tappable: !bikePinsDuringRoute,
+      tappable: !bikePinsDuringRoute || d.station_id === startDockId,
       analyticsType: 'bluebike',
-      dimmed: (anyPointActive && !dockActive(d.station_id)) || bikePinsDuringRoute,
-      zIndex: dockActive(d.station_id) ? 6 : 1,
+      dimmed: (anyPointActive && !dockActive(d.station_id))
+        || (bikePinsDuringRoute && d.station_id !== startDockId && !dockActive(d.station_id)),
+      // Above the you-are-here dot on a bike route: it's usually a block away,
+      // so at city zoom the dot would cover it and swallow the tap.
+      zIndex: bikePinsDuringRoute && d.station_id === startDockId ? 11 : dockActive(d.station_id) ? 6 : 1,
     })) : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [center, families, docks, borrowRent, repairPlaces, showBike, showBikePins, bikePinsDuringRoute, routeFocused, selection, stationActive, anyPointActive, focusedStationKey])
+  ], [center, families, docks, borrowRent, repairPlaces, showBike, showBikePins, bikePinsDuringRoute, routeFocused, selection, stationActive, anyPointActive, focusedStationKey, startDockId, startDockLabel])
 
   // Where the camera should ease when a point-like thing is tapped, so the
   // tapped marker stays visible above the detail card / sheet. Corridor-driven
@@ -548,7 +580,7 @@ export function useNearbyModel({
   )
 
   return {
-    selection, select, handleMarkerTap,
+    selection, select, handleMarkerTap, routeSelection,
     focusedStationKey, focusStation: setFocusedStationKey,
     corridorById, stations, stationByKey, crossModeNearest, borrowRent, repairPlaces,
     corridorLines, highlightedCorridorId, selectionPoint,

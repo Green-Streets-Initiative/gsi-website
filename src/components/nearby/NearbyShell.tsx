@@ -126,9 +126,11 @@ export default function NearbyShell({
     if (m === 'bike') setPaintedOn(true)
   }, [])
 
+  const startDockLabel = useCallback(
+    (d: BluebikeStationLive) => tr('dock.pin_bikes', { count: d.num_bikes_available }), [tr])
   const model = useNearbyModel({
     center, transitCorridors, bikeCorridors, rail, bus, railFar, busFar, shuttles, docks,
-    modeFilter, paintedVisible: paintedOn, onRequestCorridorShape,
+    modeFilter, paintedVisible: paintedOn, onRequestCorridorShape, startDockLabel,
   })
   const {
     selection, select, handleMarkerTap,
@@ -211,9 +213,19 @@ export default function NearbyShell({
   // next one.
   const [bikeAlt, setBikeAlt] = useState(false)
 
+  const openDocksLabel = useCallback((count: number) => tr('detail.open_docks', { count }), [tr])
   const { reachRow, lines: shellCorridorLines, markers: shellMarkers, highlight: effectiveHighlight } = useReachOverlay({
-    selection, reachRows, corridorLines, markers, highlightedCorridorId, bikeAlt,
+    selection: model.routeSelection ?? selection, reachRows, corridorLines, markers, highlightedCorridorId, bikeAlt,
+    dockSelectedId: selection?.type === 'dock' ? selection.id : null,
+    openDocksLabel,
   })
+  // The dock card can open on the far-end dock, which is the route's, not
+  // one of the page's nearby docks.
+  const detailDocks = useMemo(() => {
+    const route = model.routeSelection ? reachRows.find(r => r.id === model.routeSelection!.id) : undefined
+    const extra = (route?.dest_docks ?? []).filter(d => !docks.some(x => x.station_id === d.station_id))
+    return extra.length ? [...docks, ...extra] : docks
+  }, [docks, reachRows, model.routeSelection])
 
   const selectReach = useCallback((row: ReachRow, mode: 'transit' | 'bike', source: string) => {
     selectReveal({ type: 'reach', id: row.id, mode }, source)
@@ -353,6 +365,7 @@ export default function NearbyShell({
           trafficVisible={trafficOn}
           corridorLines={shellCorridorLines}
           selectedCorridorId={effectiveHighlight}
+          holdSelectionFit={selection?.type === 'dock' && !!model.routeSelection}
             highlightedStreetKey={highlightedStreetKey}
           onCorridorSelect={(id, source) => {
             if (id) selectReveal({ type: 'corridor', id }, source)
@@ -431,7 +444,7 @@ export default function NearbyShell({
                 selection={selection}
                 stationByKey={stationByKey}
                 corridorById={corridorById}
-                docks={docks}
+                docks={detailDocks}
                 borrowRent={model.borrowRent}
                 repairPlaces={model.repairPlaces}
                 center={center}

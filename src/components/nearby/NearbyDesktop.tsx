@@ -130,9 +130,11 @@ export default function NearbyDesktop({
     if (m === 'bike') setPaintedOn(true)
   }, [])
 
+  const startDockLabel = useCallback(
+    (d: BluebikeStationLive) => tr('dock.pin_bikes', { count: d.num_bikes_available }), [tr])
   const model = useNearbyModel({
     center, transitCorridors, bikeCorridors, rail, bus, railFar, busFar, shuttles, docks,
-    modeFilter, paintedVisible: paintedOn, onRequestCorridorShape,
+    modeFilter, paintedVisible: paintedOn, onRequestCorridorShape, startDockLabel,
   })
   const {
     selection, select, handleMarkerTap,
@@ -153,9 +155,19 @@ export default function NearbyDesktop({
   // next one.
   const [bikeAlt, setBikeAlt] = useState(false)
 
+  const openDocksLabel = useCallback((count: number) => tr('detail.open_docks', { count }), [tr])
   const overlay = useReachOverlay({
-    selection, reachRows, corridorLines, markers, highlightedCorridorId, bikeAlt,
+    selection: model.routeSelection ?? selection, reachRows, corridorLines, markers, highlightedCorridorId, bikeAlt,
+    dockSelectedId: selection?.type === 'dock' ? selection.id : null,
+    openDocksLabel,
   })
+  // The dock card can open on the far-end dock, which is the route's, not
+  // one of the page's nearby docks.
+  const detailDocks = useMemo(() => {
+    const route = model.routeSelection ? reachRows.find(r => r.id === model.routeSelection!.id) : undefined
+    const extra = (route?.dest_docks ?? []).filter(d => !docks.some(x => x.station_id === d.station_id))
+    return extra.length ? [...docks, ...extra] : docks
+  }, [docks, reachRows, model.routeSelection])
 
   // A list tap can target a painted corridor while painted lanes are hidden —
   // bring them back so the selection actually draws
@@ -370,6 +382,7 @@ export default function NearbyDesktop({
                 trafficVisible={trafficOn}
                 corridorLines={overlay.lines}
                 selectedCorridorId={overlay.highlight}
+                holdSelectionFit={selection?.type === 'dock' && !!model.routeSelection}
                 highlightedStreetKey={highlightedStreetKey}
                 onCorridorSelect={(id, source) => {
                   if (id) select({ type: 'corridor', id }, source)
@@ -400,7 +413,7 @@ export default function NearbyDesktop({
                         selection={selection}
                         stationByKey={stationByKey}
                         corridorById={corridorById}
-                        docks={docks}
+                        docks={detailDocks}
                         borrowRent={model.borrowRent}
                 repairPlaces={model.repairPlaces}
                 center={center}

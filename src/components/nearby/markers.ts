@@ -62,16 +62,22 @@ export function dockStatsText(bikesAvailable: number, ebikes: number, tr?: Nearb
   return `${classic} classic · ${ebikes} e-bike${ebikes === 1 ? '' : 's'}`
 }
 
-export function bluebikeHtml(bikesAvailable: number, ebikes: number, name: string, selected = false): string {
+/** `endpoint` marks a dock a bike route starts or ends at: the pin counts
+ *  what matters there (bikes at the start, open docks at the end) and says
+ *  so in a pill, so it reads at city zoom among the grayed-out rest. */
+export function bluebikeHtml(bikesAvailable: number, ebikes: number, name: string, selected = false,
+  endpoint?: { count: number; label: string }): string {
   const ring = selected ? '#BAF14D' : '#fff'
   const glow = selected ? ',0 0 12px rgba(186,241,77,0.6)' : ''
-  return `
-    <div title="${escapeAttr(name)} — Bluebikes dock, ${escapeAttr(dockStatsText(bikesAvailable, ebikes))}" style="
+  const stats = endpoint ? endpoint.label : dockStatsText(bikesAvailable, ebikes)
+  const dot = `
+    <div title="${escapeAttr(name)} — Bluebikes dock, ${escapeAttr(stats)}" style="
       display:flex;align-items:center;justify-content:center;
       min-width:${selected ? 32 : 28}px;height:${selected ? 32 : 28}px;padding:0 4px;border-radius:50%;
       background:#2B6CB0;border:${selected ? 3 : 2}px solid ${ring};box-shadow:0 2px 6px rgba(0,0,0,0.35)${glow};
       color:#fff;font:700 12px/1 -apple-system,sans-serif;cursor:pointer;
-    ">${bikesAvailable}</div>`
+    ">${endpoint ? endpoint.count : bikesAvailable}</div>`
+  return endpoint ? pinWithLabel(dot, labelPill(endpoint.label, selected)) : dot
 }
 
 /** `name` labels the pin while it's selected. Rail stations carry their names

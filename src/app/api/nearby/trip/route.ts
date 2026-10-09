@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getTrip, inServiceArea } from '@/lib/server/trip'
+import { getBikeShareDocks } from '@/lib/server/bluebikes'
 
 /**
  * One planned trip: /api/nearby/trip?from=lat,lng&to=lat,lng&name=…
@@ -10,6 +11,9 @@ import { getTrip, inServiceArea } from '@/lib/server/trip'
  */
 
 export const maxDuration = 30
+
+/** Docks this close to the destination are worth ending a bike ride at. */
+const DEST_DOCK_RADIUS_METERS = 400
 
 function parsePoint(raw: string | null): { lat: number; lng: number } | null {
   if (!raw) return null
@@ -30,7 +34,14 @@ export async function GET(req: NextRequest) {
   // into the page as the row title and never goes near the cache key.
   const name = (searchParams.get('name') || 'Your destination').slice(0, 80)
 
-  const row = await getTrip(from, to, name)
+  // The bike-share docks at the far end ride along live, never inside
+  // getTrip's day-long cache: the map lights the nearest one on a bike route,
+  // and its card has bikes and open docks right now.
+  const [trip, destDocks] = await Promise.all([
+    getTrip(from, to, name),
+    getBikeShareDocks(to.lat, to.lng, DEST_DOCK_RADIUS_METERS).catch(() => []),
+  ])
+  const row = trip ? { ...trip, dest_docks: destDocks.slice(0, 2) } : trip
   // Private: the destination is one person's search, not a shared page.
   // The upstream Google calls are still cached cross-visitor by getTrip.
   return NextResponse.json({ row }, { headers: { 'Cache-Control': 'private, no-store' } })

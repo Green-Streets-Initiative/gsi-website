@@ -106,6 +106,10 @@ interface Props {
   /** Ease the camera to keep this tapped point visible (station/dock/borrow
    *  selections) — null leaves the camera alone */
   focusPoint?: { lat: number; lng: number } | null
+  /** Keep the selected route's highlight but don't fit to it — a dock card
+   *  opened from the route owns the camera. Turning it off refits, which is
+   *  how Back from that card lands on the whole route again. */
+  holdSelectionFit?: boolean
   /** Padding for the point-focus ease only — desktop passes the floating
    *  card's footprint here without skewing the home/initial fits.
    *  Falls back to fitPadding. */
@@ -145,7 +149,7 @@ export default function NearbyMap({
   corridorLines, selectedCorridorId = null, highlightedStreetKey = null, onCorridorSelect,
   onMarkerTap, onLaneTap, onReachLegTap,
   fitCount, extraFitPoints, fitToLines = false, lineEmphasis = false,
-  cooperative = true, controls, fitPadding, focusPoint, focusPadding,
+  cooperative = true, controls, fitPadding, focusPoint, focusPadding, holdSelectionFit = false,
   heightClass = 'h-[320px] sm:h-[380px]',
 }: Props) {
   const tone = useNearbyTone()
@@ -477,6 +481,7 @@ export default function NearbyMap({
       map.setPaintProperty('bike-painted', 'line-opacity', sel ? 0.08 : BIKE_BG_OPACITY.painted)
     }
 
+    if (holdSelectionFit) return
     ;(async () => {
       const maplibregl = await loadMaplibre()
       if (sel && corridorLinesRef.current) {
@@ -509,7 +514,7 @@ export default function NearbyMap({
         map.fitBounds(homeBoundsRef.current, { padding: clampedPadding(map, fitPaddingRef.current, 52), maxZoom: 14, duration: 700 })
       }
     })()
-  }, [selectedCorridorId, highlightedStreetKey, selectionFitTick])
+  }, [selectedCorridorId, highlightedStreetKey, selectionFitTick, holdSelectionFit])
 
   // Point focus: ease so a tapped station/dock/borrow marker lands in the
   // window above the detail card (desktop) / sheet (mobile). Pure pan via a

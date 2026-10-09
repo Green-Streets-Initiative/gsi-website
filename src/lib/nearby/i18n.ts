@@ -328,6 +328,7 @@ const en: Dict = {
   'dock.stats_other': '{classic} classic · {ebikes} e-bikes',
   'dock.no_classic_one': 'no classic bikes right now — {ebikes} e-bike',
   'dock.no_classic_other': 'no classic bikes right now — {ebikes} e-bikes',
+  'dock.pin_bikes': '{count} bikes',
 
   // ── borrow (borrow-rent.ts blurbs) + misc shared notes ──
   'borrow.cargob': 'Rent an e-cargo bike by the minute',
@@ -648,6 +649,7 @@ const es: Dict = {
   "dock.stats_other": "{classic} clásicas · {ebikes} bicis eléctricas",
   "dock.no_classic_one": "no hay bicis clásicas ahora — {ebikes} bici eléctrica",
   "dock.no_classic_other": "no hay bicis clásicas ahora — {ebikes} bicis eléctricas",
+  "dock.pin_bikes": "{count} bicis",
   "borrow.cargob": "Renta una bici de carga eléctrica por minuto",
   "borrow.pedal_power": "Pide prestada una bici eléctrica gratis por una semana",
 
@@ -961,6 +963,7 @@ const ptBR: Dict = {
   "dock.stats_other": "{classic} clássicas · {ebikes} bikes elétricas",
   "dock.no_classic_one": "sem bikes clássicas agora — {ebikes} bike elétrica",
   "dock.no_classic_other": "sem bikes clássicas agora — {ebikes} bikes elétricas",
+  "dock.pin_bikes": "{count} bikes",
   "borrow.cargob": "Alugue uma cargo bike elétrica por minuto",
   "borrow.pedal_power": "Empreste uma bike elétrica grátis por uma semana",
 
@@ -1274,6 +1277,7 @@ const zhHans: Dict = {
   "dock.stats_other": "{classic} 辆普通车 · {ebikes} 辆电动车",
   "dock.no_classic_one": "暂无普通车 — {ebikes} 辆电动车",
   "dock.no_classic_other": "暂无普通车 — {ebikes} 辆电动车",
+  "dock.pin_bikes": "{count} 辆车",
   "borrow.cargob": "按分钟租用电动载货自行车",
   "borrow.pedal_power": "免费借用电动自行车一周",
 
