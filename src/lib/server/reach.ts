@@ -14,7 +14,7 @@ import { getCrashClusters, type CrashCluster } from './crash-clusters'
  * destinations (Harvard Square, Downtown, Fenway, …), plus a bike-time
  * estimate. One Google Routes TRANSIT call per destination, departure
  * anchored to the next Monday 8:30 AM (same convention as the Commute
- * Advisor), cached in memory for 24 h per rounded coordinate so a
+ * Advisor), cached for 7 days per ~220 m grid cell (see snapOrigin) so a
  * neighborhood's first visitor pays for everyone.
  *
  * Extracted from /api/nearby/reach (now a thin wrapper) so the
@@ -37,8 +37,29 @@ export const REACH_ROW_VERSION = 'v16' // v16: Logan Express + Massport shuttle 
 
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
 
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000
+// Seven days, not one: every row answers "next Monday 8:30 AM", and
+// schedules don't change day to day. At 24 h the same few hundred cells were
+// re-bought every morning (Google Routes, ~$5 per 1,000 calls past the free
+// tier; Oct 2026 was running ~1,900 calls/day).
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
+// A degraded answer (Google failing) is never kept durably; in memory it only
+// absorbs a burst, so a recovered API is used within minutes.
+const DEGRADED_TTL_MS = 10 * 60 * 1000
 const CACHE_MAX_ENTRIES = 500
+
+// Origin grid: 0.002° lat × 0.0027° lng ≈ 220 m × 220 m in Massachusetts.
+// Cell centres, so the walk to the first stop starts at most ~155 m (about two
+// minutes) from where the visitor stands, and everyone in the cell shares one
+// set of Google calls. The old 3-decimal rounding made ~110 × 80 m cells, so
+// nearly every app open from a new spot was a fresh 14–28 paid calls.
+const GRID_LAT_DEG = 0.002
+const GRID_LNG_DEG = 0.0027
+
+function snapOrigin(lat: number, lng: number): { lat: number; lng: number } {
+  const snap = (v: number, step: number) =>
+    Math.round((Math.floor(v / step) * step + step / 2) * 100000) / 100000
+  return { lat: snap(lat, GRID_LAT_DEG), lng: snap(lng, GRID_LNG_DEG) }
+}
 
 // Straight-line → road factor and casual-pace speed for the bike estimate
 const BIKE_ROUTE_FACTOR = 1.3
@@ -1033,8 +1054,8 @@ function chooseBikeRoute(
   return { primary, alt }
 }
 
-/** Takes already-validated coordinates; rounds to 3 decimals internally so
- *  cache keys coincide across visitors in one area. */
+/** Takes already-validated coordinates; snaps them to the origin grid
+ *  internally (snapOrigin) so cache keys coincide across visitors in one area. */
 export interface ReachRegionInfo {
   id: string
   label: string
@@ -1044,15 +1065,14 @@ export async function getReach(
   lat: number,
   lng: number,
 ): Promise<{ destinations: ReachRow[]; region: ReachRegionInfo | null }> {
-  const lat3 = Math.round(lat * 1000) / 1000
-  const lng3 = Math.round(lng * 1000) / 1000
+  const origin = snapOrigin(lat, lng)
   // v4: bike chips + comfort streets are in travel order — don't serve older ordering
   // v5: comfort tiers split 'path' from 'protected'
   // v6: sidepath detection reclassifies street-named "paths" as protected lanes
   // v7: unnamed lanes inherit names from overlapping segments
   // v9: comfort segments carry the street they ride (tapped-leg naming)
   // v10: regional destination lists (Around You M6) + region metadata
-  const cacheKey = `${REACH_ROW_VERSION}:${lat3},${lng3}`
+  const cacheKey = `${REACH_ROW_VERSION}:${origin.lat},${origin.lng}`
 
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) return cached.data
@@ -1061,13 +1081,17 @@ export async function getReach(
   // cold print renders took ~20 s — serverless instances recycle within
   // minutes, so the in-memory cache never survives to the next real visit.
   // A fully-degraded result (every transit lookup failed) is served but NOT
-  // durably cached, so an outage never freezes bad rows for 24 h.
+  // durably cached, so an outage never freezes bad rows for a week.
   let data: { destinations: ReachRow[]; region: ReachRegionInfo | null }
+  let ttl = CACHE_TTL_MS
   try {
-    data = await durableReach(lat3, lng3)
+    data = await durableReach(origin.lat, origin.lng)
   } catch (e) {
     if (e instanceof DegradedResultError || (e as Error)?.name === 'DegradedResultError') {
-      data = await computeReach(lat3, lng3)
+      // The rejected result rides on the error: computing it again here
+      // doubled the paid calls on every request during an outage.
+      data = (e as DegradedResultError).data ?? (await computeReach(origin.lat, origin.lng))
+      ttl = DEGRADED_TTL_MS
     } else {
       throw e
     }
@@ -1077,16 +1101,21 @@ export async function getReach(
     const oldest = cache.keys().next().value
     if (oldest) cache.delete(oldest)
   }
-  cache.set(cacheKey, { data, expires: Date.now() + CACHE_TTL_MS })
+  cache.set(cacheKey, { data, expires: Date.now() + ttl })
   return data
 }
 
-class DegradedResultError extends Error {}
+class DegradedResultError extends Error {
+  constructor(readonly data?: { destinations: ReachRow[]; region: ReachRegionInfo | null }) {
+    super('degraded reach result')
+    this.name = 'DegradedResultError'
+  }
+}
 
 const durableReach = unstable_cache(async (lat3: number, lng3: number) => {
   const data = await computeReach(lat3, lng3)
   const anyReal = data.destinations.some(r => r.transit_minutes !== null || !r.bike_is_estimate)
-  if (data.destinations.length > 0 && !anyReal) throw new DegradedResultError()
+  if (data.destinations.length > 0 && !anyReal) throw new DegradedResultError(data)
   return data
 }, [`nearby-reach-${REACH_ROW_VERSION}`], { revalidate: CACHE_TTL_MS / 1000 })
 
