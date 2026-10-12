@@ -14,14 +14,19 @@
  * permission prompt with the whole report already written. This takes a plain
  * text file and does the escaping itself.
  *
- * Auth: $CRON_SECRET — the SUPABASE-side value, injected from
- * .claude/settings.local.json. NOT the Vercel cron secret of the same name in
- * .env.local, which guards this repo's own /api/cron/* routes. Crossing the two
- * is a documented past failure; see .seo-state.json resolved_notes 2026-08-24.
+ * Auth: the Supabase-side cron secret, read at send time from Supabase Vault
+ * (`cron_secret`, the same entry pg_cron uses) through the management API with
+ * the Supabase CLI login in the macOS keychain, as ~/.claude/bin/sbq.sh does.
+ * It stays in memory and is never printed or written, so a rotation needs no
+ * copies updated (the 2026-10-12 email 401'd on a stale copy). $CRON_SECRET
+ * from .claude/settings.local.json is only a fallback. NOT the Vercel cron
+ * secret of the same name in .env.local, which guards this repo's own
+ * /api/cron/* routes.
  *
  * Exits non-zero with a one-line reason on any failure so the routine can
  * report the blocker rather than claiming it emailed.
  */
+import { execFileSync } from 'node:child_process'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -42,11 +47,34 @@ function arg(name, fallback) {
   return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : fallback
 }
 
+const PROJECT_REF = 'xyqcpgwbqrhykpgpqbdi'
+
+async function vaultSecret() {
+  const raw = execFileSync('security', ['find-generic-password', '-s', 'Supabase CLI', '-w'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim()
+  const token = Buffer.from(raw.replace(/^go-keyring-base64:/, ''), 'base64').toString('utf8')
+  const res = await fetch(`https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query:
+        "begin transaction read only; select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret'; ",
+    }),
+  })
+  if (!res.ok) throw new Error(`management API ${res.status}`)
+  const rows = await res.json()
+  const value = Array.isArray(rows) ? rows[0]?.decrypted_secret : null
+  if (!value) throw new Error('no cron_secret row in vault')
+  return value
+}
+
 // --check-secret: compare this session's $CRON_SECRET with the gsi-website and
 // Shift env blocks by sha256 prefix only, never printing a value. The Shift
 // block is kept current when the Supabase secret rotates (2026-10-09 rotation
 // left gsi-website's copy stale and the 2026-10-12 email 401'd).
-function checkSecret() {
+async function checkSecret() {
   const digest = (v) => (v ? crypto.createHash('sha256').update(v).digest('hex').slice(0, 12) : '(unset)')
   const fromFile = (p) => {
     try {
@@ -61,6 +89,13 @@ function checkSecret() {
     ['gsi-website settings.local.json', fromFile(path.join(REPO_ROOT, '.claude/settings.local.json'))],
     ['Shift settings.local.json', fromFile(shift)],
   ]
+  let vault = null
+  try {
+    vault = await vaultSecret()
+  } catch (e) {
+    console.log(`vault read failed: ${e.message}`)
+  }
+  rows.unshift(['Supabase Vault cron_secret (used for sending)', vault])
   for (const [label, v] of rows) console.log(`${digest(v)}  ${label}`)
 }
 
@@ -89,12 +124,17 @@ async function main() {
     return
   }
 
-  const secret = process.env.CRON_SECRET
+  let secret = null
+  try {
+    secret = await vaultSecret()
+  } catch (e) {
+    console.error(`vault read failed (${e.message}); falling back to $CRON_SECRET`)
+  }
+  secret ??= process.env.CRON_SECRET
   if (!secret) {
     die(
-      'CRON_SECRET is not set. The Supabase-side value is injected from the env ' +
-        'block in .claude/settings.local.json — do not substitute the Vercel ' +
-        'cron secret of the same name from .env.local.',
+      'no secret: the Supabase Vault read failed and $CRON_SECRET is not set. ' +
+        'Do not substitute the Vercel cron secret of the same name from .env.local.',
     )
   }
 

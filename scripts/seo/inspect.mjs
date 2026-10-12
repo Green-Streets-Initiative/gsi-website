@@ -6,6 +6,7 @@
 //   node scripts/seo/inspect.mjs queries <regex> [--file weekly-YYYY-MM-DD.json]
 //   node scripts/seo/inspect.mjs pages <regex>   [--file ...]
 //   node scripts/seo/inspect.mjs meta <path>          live title / description / canonical / JSON-LD types
+//   node scripts/seo/inspect.mjs meta <path> --expect "<text>"   wait for a deploy, then print
 //   node scripts/seo/inspect.mjs listed <text> [...]  is each string in sitemap.xml, llms.txt and /guides?
 //
 // <regex> is case-insensitive. Default file is the newest weekly GSC file
@@ -105,7 +106,17 @@ async function listed(needles) {
 try {
   if (cmd === 'queries') rows('query', args[0])
   else if (cmd === 'pages') rows('page', args[0])
-  else if (cmd === 'meta') await meta(args[0] ?? '/')
+  else if (cmd === 'meta' && args[1] === '--expect') {
+    // Poll (up to ~10 min) until a deploy puts the expected text on the page.
+    const url = args[0].startsWith('http') ? args[0] : `${SITE}${args[0]}`
+    for (let i = 0; i < 40; i++) {
+      const { text } = await fetchText(`${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`)
+      if (text.includes(args[2])) break
+      if (i === 39) throw new Error(`"${args[2]}" not live after 10 minutes`)
+      await new Promise((r) => setTimeout(r, 15000))
+    }
+    await meta(args[0])
+  } else if (cmd === 'meta') await meta(args[0] ?? '/')
   else if (cmd === 'listed') await listed(args)
   else {
     console.error('usage: inspect.mjs queries|pages <regex> [--file f] | meta <path> | listed <text>...')

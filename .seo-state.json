@@ -268,17 +268,7 @@
       "do_not": "Do not assume a guide is discoverable just because its own /guides/<slug> URL returns 200. After shipping a guide, check the /guides index, sitemap.xml and llms.txt too — the slug route is dynamic and will 200 well before the index catches up."
     }
   ],
-  "pending": [
-    {
-      "report_date": "2026-10-12",
-      "item_n": 1,
-      "type": "page-edit-branch",
-      "ref": "seo/2026-10-guide-search-titles",
-      "experiment_id": "exp-2026-10-2",
-      "title": "Search title + description for /guides/how-to-pay-for-the-t (adds Boston, MBTA, CharlieCard)",
-      "ship_steps": "Merge seo/2026-10-guide-search-titles into main (1 file, +16/-2, merge-tree clean at 8782a72), push, confirm Vercel deploy, run `node scripts/seo/inspect.mjs meta /guides/how-to-pay-for-the-t` to verify the new title, delete the branch, set exp-2026-10-2 shipped (verdict 2026-11-23)."
-    }
-  ],
+  "pending": [],
   "declined": [
     {
       "report_date": "2026-09-21",
@@ -298,6 +288,16 @@
     }
   ],
   "shipped": [
+    {
+      "report_date": "2026-10-12",
+      "item_n": 1,
+      "ref": "seo/2026-10-guide-search-titles",
+      "experiment_id": "exp-2026-10-2",
+      "title": "Search title + description for /guides/how-to-pay-for-the-t (adds Boston, MBTA, CharlieCard)",
+      "shipped_on": "2026-10-12",
+      "note": "Merged 5862843 via `branch.mjs ship` (worktree, never the shared tree); branch deleted local + remote. Verified live with `inspect.mjs meta --expect`: title 'How to pay for the T in Boston: tap, CharlieCard or a pass'. Base 0 impr / 0 clicks (week to 2026-10-09). Verdict 2026-11-23, target >= 30 impr/week. If it wins, audit all guide titles against paid search terms (hyp-08).",
+      "verified_live": "2026-10-12"
+    },
     {
       "report_date": "2026-10-05",
       "item_n": 1,

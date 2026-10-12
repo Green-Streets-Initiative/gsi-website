@@ -8,6 +8,8 @@
 //   node scripts/seo/branch.mjs check <branch>     npx tsc --noEmit inside it
 //   node scripts/seo/branch.mjs finish <branch> --message-file <f> <path> [...]
 //        commit those paths, push -u, print the merge preview vs main, remove the worktree
+//   node scripts/seo/branch.mjs ship <branch>      ONLY after Keith says "ship SEO item N": merge into
+//                                                  origin/main in a worktree, push, delete the branch
 //   node scripts/seo/branch.mjs rebase <branch>    rebase a pending branch onto origin/main in a worktree,
 //                                                  push --force-with-lease, remove the worktree
 //
@@ -81,6 +83,24 @@ try {
     console.log(`pushed ${branch}`)
     preview()
     remove()
+  } else if (cmd === 'ship') {
+    // Only when Keith has said "ship SEO item N". Merges on a detached
+    // worktree at origin/main, pushes main, deletes the branch everywhere.
+    git(['worktree', 'add', '--detach', wt, 'origin/main'])
+    try {
+      git(['merge', '--no-ff', '-m', `Merge ${branch} (approved by Keith)`, branch], wt)
+    } catch (e) {
+      git(['merge', '--abort'], wt)
+      remove()
+      console.log(`MERGE CONFLICT on ${branch}: nothing pushed.`)
+      process.exit(1)
+    }
+    git(['push', '-q', 'origin', 'HEAD:main'], wt)
+    console.log(`merged and pushed: ${git(['log', '--oneline', '-1'], wt)}`)
+    remove()
+    git(['push', '-q', 'origin', '--delete', branch])
+    git(['branch', '-D', branch])
+    console.log(`deleted ${branch} (local + remote)`)
   } else if (cmd === 'rebase') {
     git(['worktree', 'add', wt, branch])
     try {

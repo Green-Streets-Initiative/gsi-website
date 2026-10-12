@@ -447,8 +447,15 @@ type:
   `node scripts/build-micro-guides-migration.mjs`, commit both by filename, push,
   and apply the generated migration through the existing migration flow (the
   `apply-pending-migrations` routine, or directly with Keith watching).
-- **Page-edit branch:** merge `seo/…` into `main`, push, confirm the Vercel
-  deploy succeeds, delete the branch.
+- **Page-edit branch:** `node scripts/seo/branch.mjs ship seo/…` (merges on a
+  worktree at origin/main, pushes, deletes the branch), then
+  `node scripts/seo/inspect.mjs meta <path> --expect "<new text>"` to wait for
+  the Vercel deploy and confirm it is live.
+
+Email auth: `send-report-email.mjs` reads the cron secret from Supabase Vault at
+send time (keychain Supabase login, in memory only, never printed). Rotations
+need no local copies updated. `--check-secret` compares fingerprints if a send
+ever 401s.
 
 Then record the ship date in `experiments.md` (this starts the verdict clock)
 and clear the pending entry. "decline SEO item N" marks it declined in state so
