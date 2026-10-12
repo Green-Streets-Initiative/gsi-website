@@ -47,6 +47,19 @@ const getGuideBySlug = cache(async (slug: string): Promise<GuideRow | null> => {
   return (data as GuideRow | null) ?? null
 })
 
+// Search titles for guides whose library title is written for the app and
+// leaves out the words people search with. The page heading keeps the library
+// title. Evidence for each entry is in seo/reports/.
+const searchMeta: Record<string, { title: string; description: string }> = {
+  // 2026-10-12: Ad Grants search terms are "how to pay for the t in boston" and
+  // siblings; the organic page had 0 impressions with no "Boston" or "MBTA".
+  'how-to-pay-for-the-t': {
+    title: 'How to pay for the T in Boston: tap, CharlieCard or a pass',
+    description:
+      'Tap your phone or a contactless card, or load a CharlieCard pass if you ride most workdays. MBTA transfers, Commuter Rail and reduced fares in plain language.',
+  },
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -57,9 +70,10 @@ export async function generateMetadata({
   // Legacy id-based URLs (handled by the page's redirect) and unknown slugs
   // fall back to a generic title rather than the inherited root title.
   if (!guide) return { title: 'Guides — Green Streets Initiative' }
+  const override = guide.slug ? searchMeta[guide.slug] : undefined
   return pageMetadata({
-    title: `${guide.title} — Green Streets Initiative`,
-    description: guide.summary,
+    title: override?.title ?? `${guide.title} — Green Streets Initiative`,
+    description: override?.description ?? guide.summary,
     path: `/guides/${guide.slug ?? slug}`,
   })
 }
