@@ -1,0 +1,34 @@
+Record week: 103 search clicks. The Allston Open Streets listing took 28 of them, and the rest of the site still set a record at 75. People are searching "how to pay for the T in Boston" (our Ad Grants terms show it), and our guide on exactly that gets zero search traffic. A one-line title fix is ready to ship.
+
+SCOREBOARD (vs 4-week average)
+- North star, app-intent sessions: 21 (vs 14.3, +47%)
+- Search clicks / impressions: 103 / 5,348 (+166% / +51%). Without Allston: 75 / 3,826
+- Sessions by channel (app-intent rate): organic 96 (4.2%, best yet) · Ad Grants 61 (0%) · other paid 638 (2.7%) · answer engines 0
+- Ad Grants, Oct 1-7: CTR 6.86% (above the 5% floor), 0 conversions (snapshot 10-07)
+- Non-brand discovery impressions: 1,131 (about 537 without Allston), trailing 4 weeks +173%
+
+DECISION
+1. Give "How to pay for the T" a title people search for. RECOMMEND: SHIP.
+   The guide is titled "How to pay for the T", with no Boston, MBTA or CharlieCard, and it has 0 search impressions. Ad Grants' top searches this month are "how to pay for the t in boston" and its variants, and the current Google results for that are mostly scraped junk pages. That's a weak field. The change sets the search title to "How to pay for the T in Boston: tap, CharlieCard or a pass" and leaves the page itself unchanged. One file, typecheck clean, merges cleanly. Waiting costs us those searches every week, and Google takes weeks to pick up a new title.
+   Branch: https://github.com/Green-Streets-Initiative/gsi-website/compare/main...seo/2026-10-guide-search-titles
+   To ship: open Claude Code and say "ship SEO item 1" (or "decline SEO item 1").
+
+EXPERIMENT BOARD (9 running, no verdicts until 10-20)
+- Campus titles (10-20): campus pages up 16%, first rise after three falls. Brandeis took 3 clicks on "brandeis shuttle" searches.
+- Campus in llms.txt (10-20): 0 answer-engine visits. Leaning inconclusive.
+- Commute Advisor FAQ markup (10-20): 106 impressions, 0 clicks. Leaning lost.
+- Roam distance titles (10-26): click rate recovered 0.59% -> 0.92%. Last week's drop didn't repeat.
+- Roam app invite (10-26): 0 of 38 search visitors to the app.
+- Event app invite (10-26): 2 of 174 (1.1%). Leaning lost. This week's organic app clicks all came from home, town and campus pages.
+- Events in sitemap/llms.txt (11-02): new event pages converting 2.25%.
+- Cargo e-bike cost guide (11-09) and winter biking guide (12-14): live and listed everywhere, no impressions yet (2 weeks and 1 week).
+- Called today: the 10-minute-drive guide is LOST. 6 weeks with 0 impressions while the Commute Advisor keeps the question. Learning: put the answer on the page that already ranks, not in a new guide.
+
+NEXT HYPOTHESES
+1. Retitle the Roams hub for "bike paths and trails around Boston" (Ad Grants searches; the hub's title is a brand phrase).
+2. List each city Open Streets day early, with streets and getting-there detail. Roslindale (10-18) is already at position 5.5.
+3. Answer "Brandeis shuttle to Boston" on the Brandeis page (about 30 searches a week at position 8).
+
+HEALTH: all pages 200. Sitemap 264 (145 non-event, +2 expected), llms.txt 188 links, structured data OK on 5/5 key pages. Full report: https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-10-12.md
+
+ON THE APPROVAL PROMPTS: you're right, and I'm sorry. Your allow rules were already set up. This run broke them by starting commands with "cd ... &&" and using one-off grep/curl commands, which never match a rule. I've committed two helper scripts that do those jobs under the rule you already have, and written "never do that" into the routine's own instructions. Next week's run should need no clicks. If it asks for even one, tell me which command it was.

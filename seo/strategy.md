@@ -111,6 +111,14 @@ bed.
 One line per verdict or hard-won observation, newest first. Next hypotheses
 come from here.
 
+- 2026-10-12 (verdict, drive-time guide, lost): a standalone guide on a
+  question one of our stronger pages already answers in its title gets no
+  foothold. Six weeks, 0 impressions, while `/commute-advisor` kept ~100/wk.
+  Consolidate onto the page that ranks; don't add siblings.
+- 2026-10-12 (observed): paid search terms surfaced demand for a guide we
+  already had ("how to pay for the T") that was invisible organically because
+  its title was written for the app. Check existing titles against paid terms
+  before drafting anything new.
 - 2026-10-05 (observed): named public events with a practical "when, where,
   how to get there" question are the fastest-compounding organic class. The
   Allston Open Streets listing ranked 5.5 and took 11 clicks in one week,

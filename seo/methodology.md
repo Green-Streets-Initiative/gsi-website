@@ -153,6 +153,25 @@ precisely because the routine kept re-deriving the same work in throwaway
 one-liners — and `Bash(node scripts/seo/:*)` covers all four and every future
 one with a single rule.
 
+**Hard rules (Keith, 2026-10-12, after yet another run that made him click
+approve over and over):**
+
+- **Never start a command with `cd … &&`.** The shell is already in the repo.
+  `cd x && git commit` does not match `Bash(git commit:*)`, so a command that
+  is allowed on its own prompts the moment it is prefixed.
+- **No raw `grep`, `curl`, `sed`, `ln`, `rm` or `cat` against data or live
+  pages.** Use `node scripts/seo/inspect.mjs`: `queries <regex>` and
+  `pages <regex>` search the newest GSC file, `meta <path>` prints a live
+  page's title, description, canonical and JSON-LD types, and `listed <slug…>`
+  checks the sitemap, llms.txt and /guides. If a lookup is missing, add a
+  subcommand to that script instead of improvising a shell line.
+- **Page-edit branches go through `node scripts/seo/branch.mjs`**:
+  `start seo/<name>` (worktree under `.claude/worktrees/`, never the shared
+  tree), edit with the Edit tool, `check seo/<name>` (typecheck), then
+  `finish seo/<name> --message-file <f> <paths…>` (commit, push, merge
+  preview, remove worktree). Step 2's pending-branch rebase is
+  `branch.mjs rebase seo/<name>`.
+
 Two habits to drop, both of which cost the 2026-09-14 run a prompt each time:
 
 - **Do not validate JSON with `python3 -c`.** Running
