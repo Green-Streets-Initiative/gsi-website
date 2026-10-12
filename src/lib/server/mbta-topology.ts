@@ -62,7 +62,7 @@ export async function getStopTopology(lat: number, lng: number, opts: ServerTopo
   return topology
 }
 
-const durableTopology = unstable_cache(computeTopology, ['nearby-topology-v2'], {
+const durableTopology = unstable_cache(computeTopology, ['nearby-topology-v3'], {
   revalidate: CACHE_TTL_MS / 1000,
 })
 
@@ -95,9 +95,12 @@ async function computeTopology(lat3: number, lng3: number, opts: ServerTopologyO
   nearbyStops.sort((a, b) => a.dist - b.dist)
 
   // perStation: cap by unique station (nearest-first), keep all platforms,
-  // fetch /routes once per station. Else the platform is the unit.
+  // and ask /routes once per station for ALL its platforms (comma list).
+  // Asking for the nearest platform alone listed Back Bay as Worcester-only:
+  // its Orange Line and Providence/Needham/Franklin platforms went unasked.
+  // Else the platform is the unit.
   let topStops = nearbyStops
-  let routeStops = nearbyStops
+  let routeQueries: { key: string; stopIds: string }[]
   const routeKey = (s: { id: string; name: string }) => (opts.perStation ? s.name.toLowerCase() : s.id)
   if (opts.perStation) {
     const byStation = new Map<string, typeof nearbyStops>()
@@ -106,17 +109,17 @@ async function computeTopology(lat3: number, lng3: number, opts: ServerTopologyO
     }
     const kept = [...byStation.values()].slice(0, opts.maxStops ?? 10)
     topStops = kept.flat()
-    routeStops = kept.map(g => g[0])
+    routeQueries = kept.map(g => ({ key: routeKey(g[0]), stopIds: g.map(s => s.id).join(',') }))
   } else {
     topStops = nearbyStops.slice(0, opts.maxStops ?? 10)
-    routeStops = topStops
+    routeQueries = topStops.map(s => ({ key: routeKey(s), stopIds: s.id }))
   }
   if (topStops.length === 0) return []
 
   const routeResults = await Promise.all(
-    routeStops.map(async (s) => {
+    routeQueries.map(async (q) => {
       const res = await fetch(
-        mbtaUrl('/routes', new URLSearchParams({ 'filter[stop]': s.id, 'filter[type]': opts.routeTypes })),
+        mbtaUrl('/routes', new URLSearchParams({ 'filter[stop]': q.stopIds, 'filter[type]': opts.routeTypes })),
         { signal: AbortSignal.timeout(8000) }
       )
       const data = await res.json()
@@ -131,7 +134,7 @@ async function computeTopology(lat3: number, lng3: number, opts: ServerTopologyO
         name: opts.nameStyle === 'short' ? r.id.replace(/^0*/, '') : (r.attributes.long_name ?? r.id),
         directions: r.attributes.direction_destinations || r.attributes.direction_names || [],
       }))
-      return { key: routeKey(s), routes }
+      return { key: q.key, routes }
     })
   )
 

@@ -193,12 +193,14 @@ async function loadStopTopology(lat: number, lng: number, opts: TopologyOptions)
 
   nearbyStops.sort((a, b) => a.dist - b.dist)
 
-  // Which stops to keep, and which represent a station for the /routes call.
+  // Which stops to keep, and which /routes call answers for them.
   // perStation: cap by unique station (nearest-first, nearbyStops is sorted),
-  // keep ALL their platforms, and fetch routes once per station. Otherwise:
-  // the platform IS the unit (bus poles are distinct locations).
+  // keep ALL their platforms, and fetch routes once per station for all its
+  // platforms (comma list) — the nearest platform alone listed Back Bay as
+  // Worcester-only. Otherwise: the platform IS the unit (bus poles are
+  // distinct locations).
   let topStops = nearbyStops
-  let routeStops = nearbyStops
+  let routeQueries: { key: string; stopIds: string }[]
   const routeKey = (s: { id: string; name: string }) =>
     opts.perStation ? s.name.toLowerCase() : s.id
   if (opts.perStation) {
@@ -209,21 +211,21 @@ async function loadStopTopology(lat: number, lng: number, opts: TopologyOptions)
     }
     const keptStations = [...byStation.values()].slice(0, opts.maxStops ?? 10)
     topStops = keptStations.flat()
-    routeStops = keptStations.map(g => g[0]) // nearest platform speaks for the station
+    routeQueries = keptStations.map(g => ({ key: routeKey(g[0]), stopIds: g.map(s => s.id).join(',') }))
   } else {
     topStops = nearbyStops.slice(0, opts.maxStops ?? 10)
-    routeStops = topStops
+    routeQueries = topStops.map(s => ({ key: routeKey(s), stopIds: s.id }))
   }
   if (topStops.length === 0) return []
 
   type ApiRoute = { id: string; attributes: { long_name?: string; listed_route?: boolean; direction_names?: string[]; direction_destinations?: string[] } }
   const routeResults = await Promise.all(
-    routeStops.map(async (s) => {
-      const res = await fetch(`https://api-v3.mbta.com/routes?filter[stop]=${s.id}&filter[type]=${opts.routeTypes}`)
+    routeQueries.map(async (q) => {
+      const res = await fetch(`https://api-v3.mbta.com/routes?filter[stop]=${q.stopIds}&filter[type]=${opts.routeTypes}`)
       const data = await res.json()
       if (!res.ok || data.errors) throw new Error(`routes ${res.status}`)
       return {
-        key: routeKey(s),
+        key: q.key,
         // Unlisted routes are the MBTA's rail-replacement shuttles
         // ("Shuttle-AlewifeLittletonLocal"), kept off its own route lists;
         // same filter as the server twin in lib/server/mbta-topology.ts.

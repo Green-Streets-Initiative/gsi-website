@@ -232,7 +232,7 @@ async function getFrequency(routeId: string, stopId: string): Promise<FrequencyI
   return freq
 }
 
-const durableFrequency = unstable_cache(computeFrequency, ['nearby-frequency-v2'], {
+const durableFrequency = unstable_cache(computeFrequency, ['nearby-frequency-v3'], {
   revalidate: FREQ_TTL_MS / 1000,
 })
 
@@ -241,17 +241,31 @@ async function computeFrequency(routeId: string, stopId: string, date: string): 
 
   // Schedules attach to child platforms, not parent stations — when the
   // nearest stop is a parent ("place-…"), expand to its children and retry.
-  if (rows.length === 0 && stopId.startsWith('place-')) {
+  // A platform that doesn't serve this route does the same via its parent:
+  // station topology lists every line at every platform, so the Orange Line
+  // at Back Bay can arrive here paired with a commuter rail platform.
+  if (rows.length === 0) {
     try {
-      const res = await fetch(
-        mbtaUrl(`/stops/${stopId}`, new URLSearchParams({ include: 'child_stops', 'fields[stop]': 'name,location_type' })),
-        { signal: AbortSignal.timeout(8000) }
-      )
-      const data = await res.json()
-      const children = ((data.included ?? []) as { id: string; attributes?: { location_type?: number } }[])
-        .filter(s => s.attributes?.location_type === 0)
-        .map(s => s.id)
-      if (children.length > 0) rows = await fetchScheduleRows(routeId, children.join(','), date)
+      let parent: string | null = stopId.startsWith('place-') ? stopId : null
+      if (!parent && !stopId.includes(',')) {
+        const res = await fetch(
+          mbtaUrl(`/stops/${stopId}`, new URLSearchParams({ include: 'parent_station', 'fields[stop]': 'name' })),
+          { signal: AbortSignal.timeout(8000) }
+        )
+        const data = await res.json()
+        parent = data.data?.relationships?.parent_station?.data?.id ?? null
+      }
+      if (parent) {
+        const res = await fetch(
+          mbtaUrl(`/stops/${parent}`, new URLSearchParams({ include: 'child_stops', 'fields[stop]': 'name,location_type' })),
+          { signal: AbortSignal.timeout(8000) }
+        )
+        const data = await res.json()
+        const children = ((data.included ?? []) as { id: string; attributes?: { location_type?: number } }[])
+          .filter(s => s.attributes?.location_type === 0)
+          .map(s => s.id)
+        if (children.length > 0) rows = await fetchScheduleRows(routeId, children.join(','), date)
+      }
     } catch { /* fall through */ }
   }
 
