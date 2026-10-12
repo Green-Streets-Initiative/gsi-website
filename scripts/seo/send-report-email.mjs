@@ -22,7 +22,9 @@
  * Exits non-zero with a one-line reason on any failure so the routine can
  * report the blocker rather than claiming it emailed.
  */
+import crypto from 'node:crypto'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -40,7 +42,30 @@ function arg(name, fallback) {
   return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : fallback
 }
 
+// --check-secret: compare this session's $CRON_SECRET with the gsi-website and
+// Shift env blocks by sha256 prefix only, never printing a value. The Shift
+// block is kept current when the Supabase secret rotates (2026-10-09 rotation
+// left gsi-website's copy stale and the 2026-10-12 email 401'd).
+function checkSecret() {
+  const digest = (v) => (v ? crypto.createHash('sha256').update(v).digest('hex').slice(0, 12) : '(unset)')
+  const fromFile = (p) => {
+    try {
+      return JSON.parse(fs.readFileSync(p, 'utf8')).env?.CRON_SECRET ?? null
+    } catch {
+      return null
+    }
+  }
+  const shift = path.join(os.homedir(), 'Documents/GreenStreetsInitiative/Shift/.claude/settings.local.json')
+  const rows = [
+    ['this session $CRON_SECRET', process.env.CRON_SECRET],
+    ['gsi-website settings.local.json', fromFile(path.join(REPO_ROOT, '.claude/settings.local.json'))],
+    ['Shift settings.local.json', fromFile(shift)],
+  ]
+  for (const [label, v] of rows) console.log(`${digest(v)}  ${label}`)
+}
+
 async function main() {
+  if (process.argv.includes('--check-secret')) return checkSecret()
   const dryRun = process.argv.includes('--dry-run')
   const subject = arg('subject', null)
   const bodyPath = arg('body', null)
