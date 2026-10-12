@@ -144,11 +144,12 @@ function routeKind(routeId: string): TransitCorridor['kind'] {
 
 /* ── Transit corridors from the already-cached stop topology ── */
 
-/** Snapshot-page topology opts — 5 stops per mode keeps a cold visitor
- *  under the anonymous MBTA rate limit (each stop costs one /routes call). */
-export const SNAPSHOT_BUS_OPTS = { cachePrefix: 'mbta-bus-nearby-v1', maxStops: 5 }
-/** v2: rail caps by STATION (perStation), so the cache mustn't mix with v1 */
-export const SNAPSHOT_RAIL_PREFIX = 'mbta-rail0124-nearby-v1'
+/** Snapshot-page topology opts. Read from our server (`server`), which
+ *  computes them with these same caps. -v2 prefixes: v1 sessions may hold a
+ *  rate-limited empty answer cached as "no stops here". */
+export const SNAPSHOT_BUS_OPTS = { cachePrefix: 'mbta-bus-nearby-v2', maxStops: 5, server: true }
+/** Rail caps by STATION (perStation), so the cache mustn't mix with platform caps */
+export const SNAPSHOT_RAIL_PREFIX = 'mbta-rail0124-nearby-v2'
 export const SNAPSHOT_RAIL_TYPES = '0,1,2,4'
 export const SNAPSHOT_MAX_STOPS = 5
 /** Rail: unique stations, not platforms — 6 reaches Sullivan (0.8mi) and
@@ -165,11 +166,11 @@ export async function buildTransitCorridors(lat: number, lng: number): Promise<T
   const [bus, rail] = await Promise.all([
     fetchStopTopology(lat, lng, {
       routeTypes: '3', radiusDeg: 0.01, nameStyle: 'short',
-      cachePrefix: SNAPSHOT_BUS_OPTS.cachePrefix, maxStops: SNAPSHOT_MAX_STOPS,
+      cachePrefix: SNAPSHOT_BUS_OPTS.cachePrefix, maxStops: SNAPSHOT_MAX_STOPS, server: 'bus',
     }),
     fetchStopTopology(lat, lng, {
       routeTypes: SNAPSHOT_RAIL_TYPES, radiusDeg: 0.02, nameStyle: 'long',
-      cachePrefix: SNAPSHOT_RAIL_PREFIX, maxStops: SNAPSHOT_RAIL_MAX_STATIONS, perStation: true,
+      cachePrefix: SNAPSHOT_RAIL_PREFIX, maxStops: SNAPSHOT_RAIL_MAX_STATIONS, perStation: true, server: 'rail',
     }),
   ])
   return corridorsFromTopology(rail, bus)

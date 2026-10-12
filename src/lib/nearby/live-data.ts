@@ -1,7 +1,8 @@
 /**
  * Client-side live-data fetchers for nearby active-transportation options:
  * Bluebikes docks (GBFS), MBTA stops/routes/predictions (api-v3.mbta.com,
- * keyless — per-visitor rates stay far under MBTA's cap), and bike parking
+ * keyless, ~20 req/min per visitor IP — the /nearby snapshot reads its
+ * stop topology from our server instead, see TopologyOptions.server), and bike parking
  * (OpenStreetMap Overpass).
  *
  * Extracted verbatim from src/components/wayfinding/EventMap.tsx and
@@ -106,17 +107,76 @@ interface TopologyOptions {
    *  the cap counts unique stations and keeps ALL their platforms (so
    *  per-direction arrivals survive), fetching /routes just once per station. */
   perStation?: boolean
+  /** Read this family from our /api/nearby/topology instead of MBTA directly.
+   *  Only for the /nearby snapshot's own parameters, which that endpoint
+   *  computes with the keyed MBTA API and caches across visitors. Keyless,
+   *  the snapshot spent ~29 MBTA calls per cold load against a ~20/min cap,
+   *  and the overflow emptied the T and bus lists (Comm Ave & Harvard Ave
+   *  lost Green Line B, 2026-10-12). Falls back to MBTA if our server fails. */
+  server?: 'rail' | 'bus'
 }
 
-/** Nearby stops with the routes serving them. Cached 30 min per rounded coord. */
-export async function fetchStopTopology(lat: number, lng: number, opts: TopologyOptions): Promise<StopTopology[]> {
+type ServerTopology = { rail: StopTopology[]; bus: StopTopology[]; shuttles: StopTopology[] }
+const serverTopologyInflight = new Map<string, Promise<ServerTopology>>()
+
+/** One /api/nearby/topology request per point, shared by the rail, bus and
+ *  shuttle readers that all fire at once on a /nearby load. */
+function fetchServerTopology(lat: number, lng: number): Promise<ServerTopology> {
+  const key = `${lat},${lng}`
+  let p = serverTopologyInflight.get(key)
+  if (!p) {
+    p = fetch(`/api/nearby/topology?lat=${lat}&lng=${lng}`).then(async res => {
+      if (!res.ok) throw new Error(`topology ${res.status}`)
+      return res.json() as Promise<ServerTopology>
+    })
+    p.finally(() => serverTopologyInflight.delete(key)).catch(() => {})
+    serverTopologyInflight.set(key, p)
+  }
+  return p
+}
+
+const topologyInflight = new Map<string, Promise<StopTopology[]>>()
+
+/** Nearby stops with the routes serving them. Cached 30 min per rounded coord.
+ *  Concurrent identical calls (the corridor builder and the station list ask
+ *  for the same topology at the same moment) share one fetch. */
+export function fetchStopTopology(lat: number, lng: number, opts: TopologyOptions): Promise<StopTopology[]> {
   const cached = getCachedTopology(opts.cachePrefix, lat, lng)
-  if (cached) return cached
+  if (cached) return Promise.resolve(cached)
+
+  const key = `${opts.cachePrefix}|${opts.server ?? ''}|${lat},${lng}`
+  let p = topologyInflight.get(key)
+  if (!p) {
+    p = loadStopTopology(lat, lng, opts)
+    p.finally(() => topologyInflight.delete(key)).catch(() => {})
+    topologyInflight.set(key, p)
+  }
+  return p
+}
+
+async function loadStopTopology(lat: number, lng: number, opts: TopologyOptions): Promise<StopTopology[]> {
+  if (opts.server) {
+    try {
+      const family = (await fetchServerTopology(lat, lng))[opts.server] ?? []
+      // The server measures from a coord rounded to ~100 m; re-measure from
+      // the visitor's own point so "1 min walk" is theirs
+      const topology = family
+        .map(s => ({ ...s, dist: haversineDist(lat, lng, s.lat, s.lng) }))
+        .sort((a, b) => a.dist - b.dist)
+      setCachedTopology(opts.cachePrefix, lat, lng, topology)
+      return topology
+    } catch {
+      // Our server is down: ask MBTA directly, as before
+    }
+  }
 
   const stopsRes = await fetch(
     `https://api-v3.mbta.com/stops?filter[latitude]=${lat}&filter[longitude]=${lng}&filter[radius]=${opts.radiusDeg}&filter[route_type]=${opts.routeTypes}`
   )
   const stopsData = await stopsRes.json()
+  // A refusal (429 rate limit) is not "no stops here" — throw so it's never
+  // cached as an empty answer for 30 min. Same rule as the server twin.
+  if (!stopsRes.ok || stopsData.errors) throw new Error(`stops ${stopsRes.status}`)
   const nearbyStops: { id: string; name: string; lat: number; lng: number; dist: number }[] = []
 
   for (const stop of stopsData.data || []) {
@@ -161,6 +221,7 @@ export async function fetchStopTopology(lat: number, lng: number, opts: Topology
     routeStops.map(async (s) => {
       const res = await fetch(`https://api-v3.mbta.com/routes?filter[stop]=${s.id}&filter[type]=${opts.routeTypes}`)
       const data = await res.json()
+      if (!res.ok || data.errors) throw new Error(`routes ${res.status}`)
       return {
         key: routeKey(s),
         // Unlisted routes are the MBTA's rail-replacement shuttles
@@ -242,13 +303,14 @@ export function mergePredictions(topology: StopTopology[], predMap: Map<string, 
  *  the original wayfinding version; budget-sensitive pages pass overrides. */
 export async function fetchMBTAStops(
   lat: number, lng: number,
-  overrides?: { cachePrefix?: string; maxStops?: number; radiusDeg?: number },
+  overrides?: { cachePrefix?: string; maxStops?: number; radiusDeg?: number; server?: boolean },
 ): Promise<MBTAStopLive[]> {
   try {
     const topology = await fetchStopTopology(lat, lng, {
       routeTypes: '3', radiusDeg: overrides?.radiusDeg ?? 0.01, nameStyle: 'short',
       cachePrefix: overrides?.cachePrefix ?? 'mbta-stops-v2',
       maxStops: overrides?.maxStops,
+      server: overrides?.server ? 'bus' : undefined,
     })
     if (topology.length === 0) return []
     const predMap = await fetchPredictions(topology.map(s => s.id), '3')
@@ -267,6 +329,8 @@ export async function fetchTrainStops(
   cachePrefix = 'mbta-train-v2',
   maxStops?: number,
   radiusDeg = 0.02,
+  /** /nearby snapshot parameters only — see TopologyOptions.server */
+  server = false,
 ): Promise<MBTAStopLive[]> {
   try {
     // Rail: cap by station (each has 2 platforms) so both directions'
@@ -274,6 +338,7 @@ export async function fetchTrainStops(
     // pushed off by a closer station's second platform.
     const topology = await fetchStopTopology(lat, lng, {
       routeTypes, radiusDeg, cachePrefix, nameStyle: 'long', maxStops, perStation: true,
+      server: server ? 'rail' : undefined,
     })
     if (topology.length === 0) return []
     const predMap = await fetchPredictions(topology.map(s => s.id), routeTypes)
@@ -396,10 +461,7 @@ export async function fetchShuttleStops(lat: number, lng: number): Promise<MBTAS
   } catch {}
 
   try {
-    const res = await fetch(`/api/nearby/topology?lat=${lat}&lng=${lng}`)
-    if (!res.ok) return []
-    const data = await res.json()
-    const shuttles: StopTopology[] = data.shuttles ?? []
+    const shuttles: StopTopology[] = (await fetchServerTopology(lat, lng)).shuttles ?? []
     if (shuttles.length === 0) return []
 
     const stops: MBTAStopLive[] = []

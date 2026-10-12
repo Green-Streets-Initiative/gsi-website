@@ -348,7 +348,7 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
     // Each family resolves to [inRadius, far]: the far fetch runs only when
     // the primary came back empty, and "ready" waits for it so the list
     // never flashes the empty message before the nearest option arrives.
-    const railP = fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_MAX_STATIONS)
+    const railP = fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_MAX_STATIONS, 0.02, true)
       .then(async rows => [rows, rows.length === 0 ? await fetchRailFar(lat, lng) : []] as const)
     const busP = fetchMBTAStops(lat, lng, SNAPSHOT_BUS_OPTS)
       .then(async rows => [rows, rows.length === 0 ? await fetchMBTAStops(lat, lng, SNAPSHOT_BUS_FAR_OPTS) : []] as const)
@@ -480,7 +480,7 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
       refreshBusyRef.current = true
       try {
         const [railRows, busRows, bbRows] = await Promise.all([
-          fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_MAX_STATIONS),
+          fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_MAX_STATIONS, 0.02, true),
           fetchMBTAStops(lat, lng, SNAPSHOT_BUS_OPTS),
           fetchBikeShareDocks(lat, lng),
         ])
