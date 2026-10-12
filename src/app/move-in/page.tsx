@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
-import { CONTAINER, SignHero, SignTop } from '@/components/street/Street'
+import { CONTAINER, GSI_FONT, SignHero, SignTop } from './sign'
 import { PartnerSignupForm, SignupProvider } from './PartnerSignupForm'
 import ResidentPreview from './ResidentPreview'
 
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 
 export default function MoveInPage() {
   return (
-    <div className="street min-h-screen bg-cream text-navy">
+    <div className="street min-h-screen bg-cream text-navy" style={{ fontFamily: GSI_FONT }}>
       <Nav variant="light" street />
 
       <SignHero
@@ -66,7 +66,7 @@ export default function MoveInPage() {
         </section>
       </SignupProvider>
 
-      <Footer variant="light" street />
+      <Footer variant="light" />
     </div>
   )
 }

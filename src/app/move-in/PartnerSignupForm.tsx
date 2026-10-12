@@ -4,8 +4,7 @@ import posthog from 'posthog-js'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowSquareOut, Check, Copy, UploadSimple } from '@phosphor-icons/react'
 import { gaEvent } from '@/lib/ga'
-import { currentAttribution, type StoreAttribution } from '@/lib/store-attribution'
-import { BUTTON, H3 } from '@/components/street/Street'
+import { BUTTON, H3 } from './sign'
 
 /**
  * Self-serve co-brand signup: name, role and an optional logo in, a live
@@ -39,17 +38,23 @@ const ROLES: { value: string; label: string }[] = [
   { value: 'other', label: 'Something else' },
 ]
 
-function utmProps(attr: StoreAttribution | null) {
-  return {
-    utm_source: attr?.source,
-    utm_medium: attr?.medium,
-    utm_campaign: attr?.campaign,
-    utm_content: attr?.content,
+// The visit's utm tags, read from this page's URL: outreach emails link
+// straight here, so the tags are on the landing URL.
+const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'] as const
+
+function utmProps(): Partial<Record<(typeof UTM_KEYS)[number], string>> {
+  if (typeof window === 'undefined') return {}
+  const params = new URLSearchParams(window.location.search)
+  const out: Partial<Record<(typeof UTM_KEYS)[number], string>> = {}
+  for (const k of UTM_KEYS) {
+    const v = params.get(k)?.trim()
+    if (v) out[k] = v
   }
+  return out
 }
 
 function track(name: string, props: Record<string, unknown>) {
-  const all = { ...utmProps(currentAttribution()), ...props }
+  const all = { ...utmProps(), ...props }
   posthog.capture(name, all)
   gaEvent(name, all)
 }
@@ -150,7 +155,6 @@ export function PartnerSignupForm() {
 
     setSubmitting(true)
     track('partner_signup_submitted', { role, has_logo: !!logo })
-    const attr = currentAttribution()
     try {
       const fd = new FormData()
       fd.set('name', name)
@@ -158,7 +162,7 @@ export function PartnerSignupForm() {
       fd.set('contact_email', email)
       if (logo) fd.set('logo', logo)
       fd.set('website', honeypot)
-      for (const [k, v] of Object.entries(utmProps(attr))) if (v) fd.set(k, v)
+      for (const [k, v] of Object.entries(utmProps())) if (v) fd.set(k, v)
       const res = await fetch('/api/partners', { method: 'POST', body: fd })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
