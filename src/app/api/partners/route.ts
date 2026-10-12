@@ -3,7 +3,7 @@ import { slugify } from '@/lib/utm'
 import { Resend } from 'resend'
 
 /**
- * Self-service partner signup (/partners): org name + logo in, a pending
+ * Self-service partner signup (/move-in): org name + optional logo in, a pending
  * `partners` row + public logo out. The co-branded /nearby?partner=<slug>
  * link works the moment this returns — review happens after the fact in the
  * admin dashboard (pending → approved/rejected), so nobody waits on Keith.
@@ -16,6 +16,10 @@ const MAX_LOGO_BYTES = 2 * 1024 * 1024
 const MAX_NAME_LEN = 120
 // Slugs must satisfy parsePartnerSlug (src/lib/nearby/partner.ts): ^[a-z0-9-]{1,60}$
 const MAX_SLUG_LEN = 60
+
+const ROLES = ['property_manager', 'leasing_agent', 'broker', 'mover', 'other'] as const
+type Role = (typeof ROLES)[number]
+const UTM_KEYS = ['source', 'medium', 'campaign', 'content'] as const
 
 const RATE_LIMIT_MAX = 5
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
@@ -89,45 +93,64 @@ export async function POST(req: Request) {
   const name = typeof nameRaw === 'string' ? nameRaw.trim() : ''
   const emailRaw = form.get('contact_email')
   const contactEmail = typeof emailRaw === 'string' ? emailRaw.trim() : ''
+  const roleRaw = form.get('role')
+  const role = (typeof roleRaw === 'string' && (ROLES as readonly string[]).includes(roleRaw) ? roleRaw : null) as Role | null
+
+  // The visit's utm tags, so each signup traces back to the email or post
+  // that sent it. Free text from the client, so trimmed and capped.
+  const signupUtm: Record<string, string> = {}
+  for (const k of UTM_KEYS) {
+    const v = form.get(`utm_${k}`)
+    if (typeof v === 'string' && v.trim()) signupUtm[k] = v.trim().slice(0, 100)
+  }
 
   const errors: string[] = []
   if (!name) errors.push('Organization name is required')
   else if (name.length > MAX_NAME_LEN) errors.push(`Organization name must be ${MAX_NAME_LEN} characters or fewer`)
   if (contactEmail && !EMAIL_RE.test(contactEmail)) errors.push('Invalid email format')
+  if (!role) errors.push('Please choose what best describes you')
 
-  const logoFile = form.get('logo')
-  if (!(logoFile instanceof File) || logoFile.size === 0) {
-    errors.push('A logo is required')
-  } else if (logoFile.size > MAX_LOGO_BYTES) {
+  // The logo is optional: without one, /nearby and the print sheet show the
+  // partner's name in the credit line instead (PartnerCobrand).
+  const logoField = form.get('logo')
+  const logoFile = logoField instanceof File && logoField.size > 0 ? logoField : null
+  if (logoFile && logoFile.size > MAX_LOGO_BYTES) {
     errors.push('Logo file too large (max 2MB)')
   }
   if (errors.length > 0) {
     return Response.json({ error: errors.join('; ') }, { status: 400 })
   }
 
-  const logoBytes = new Uint8Array(await (logoFile as File).arrayBuffer())
-  const sniffed = sniffImage(logoBytes)
-  if (!sniffed) {
-    return Response.json(
-      { error: 'Logo must be a PNG, JPEG, or WebP image' },
-      { status: 400 },
-    )
+  let logo: { bytes: Uint8Array; ext: string; contentType: string } | null = null
+  if (logoFile) {
+    const bytes = new Uint8Array(await logoFile.arrayBuffer())
+    const sniffed = sniffImage(bytes)
+    if (!sniffed) {
+      return Response.json(
+        { error: 'Logo must be a PNG, JPEG, or WebP image' },
+        { status: 400 },
+      )
+    }
+    logo = { bytes, ...sniffed }
   }
 
   const supabase = createServerSupabaseClient()
 
   // Upload first — the row needs the public URL. Path/type come from the
   // sniffed bytes, never the client filename.
-  const objectPath = `${Date.now()}-${crypto.randomUUID()}.${sniffed.ext}`
-  const { error: uploadError } = await supabase.storage
-    .from('partner-logos')
-    .upload(objectPath, logoBytes, { contentType: sniffed.contentType, upsert: false })
-  if (uploadError) {
-    console.error('Partner logo upload error:', uploadError)
-    return Response.json({ error: 'Could not save your logo. Please try again.' }, { status: 500 })
+  let objectPath: string | null = null
+  let logoUrl: string | null = null
+  if (logo) {
+    objectPath = `${Date.now()}-${crypto.randomUUID()}.${logo.ext}`
+    const { error: uploadError } = await supabase.storage
+      .from('partner-logos')
+      .upload(objectPath, logo.bytes, { contentType: logo.contentType, upsert: false })
+    if (uploadError) {
+      console.error('Partner logo upload error:', uploadError)
+      return Response.json({ error: 'Could not save your logo. Please try again.' }, { status: 500 })
+    }
+    logoUrl = supabase.storage.from('partner-logos').getPublicUrl(objectPath).data.publicUrl
   }
-  const { data: pub } = supabase.storage.from('partner-logos').getPublicUrl(objectPath)
-  const logoUrl = pub.publicUrl
 
   // Insert with slug dedupe: the unique constraint is the arbiter (23505),
   // numeric suffixes first, one random suffix as the last resort.
@@ -137,15 +160,29 @@ export async function POST(req: Request) {
 
   let slug: string | null = null
   let insertError: unknown = null
+  const attribution: Record<string, unknown> = {
+    role,
+    signup_utm: Object.keys(signupUtm).length ? signupUtm : null,
+  }
   for (const candidate of candidates) {
-    const { error } = await supabase.from('partners').insert({
+    const row = {
       slug: candidate,
       name,
       logo_url: logoUrl,
       contact_email: contactEmail || null,
       active: true,
       status: 'pending',
-    })
+      // Self-serve signups come from the New Routes outreach, so their pages
+      // show the New Routes offer (resolveNewRoutesContext reads this).
+      campaign: 'newroutes',
+    }
+    let { error } = await supabase.from('partners').insert({ ...row, ...attribution })
+    // Before migration 20261006 is applied the two attribution columns don't
+    // exist (PostgREST PGRST204). Never lose a signup over them.
+    if (error?.code === 'PGRST204') {
+      console.error('partners attribution columns missing; saving without them')
+      ;({ error } = await supabase.from('partners').insert(row))
+    }
     if (!error) {
       slug = candidate
       break
@@ -157,7 +194,7 @@ export async function POST(req: Request) {
   if (!slug) {
     console.error('Partner insert error:', insertError)
     // Best-effort cleanup so failed signups don't strand logos in the bucket
-    await supabase.storage.from('partner-logos').remove([objectPath]).catch(() => {})
+    if (objectPath) await supabase.storage.from('partner-logos').remove([objectPath]).catch(() => {})
     return Response.json({ error: 'Could not create your page. Please try again.' }, { status: 500 })
   }
 
@@ -175,11 +212,15 @@ export async function POST(req: Request) {
         `<h2>New self-service partner signup</h2>`,
         `<p><strong>${esc(name)}</strong> (status: pending)</p>`,
         `<p>Live link: <a href="${liveUrl}">${liveUrl}</a></p>`,
-        `<p>Logo: <a href="${logoUrl}">${logoUrl}</a><br/>`,
-        `<img src="${logoUrl}" alt="" style="max-height:60px;background:#fff;padding:8px;border-radius:6px"/></p>`,
+        logoUrl
+          ? `<p>Logo: <a href="${logoUrl}">${logoUrl}</a><br/><img src="${logoUrl}" alt="" style="max-height:60px;background:#fff;padding:8px;border-radius:6px"/></p>`
+          : `<p>Logo: none (the page shows their name)</p>`,
         contactEmail ? `<p>Contact: ${esc(contactEmail)}</p>` : '',
+        `<p>Role: ${esc(role ?? 'not given')}<br/>Came from: ${esc(
+          Object.keys(signupUtm).length ? UTM_KEYS.filter((k) => signupUtm[k]).map((k) => `${k}=${signupUtm[k]}`).join(', ') : 'direct (no utm tags)',
+        )}</p>`,
         `<p>Review it on the <a href="https://admin.gogreenstreets.org">admin dashboard</a> (Outreach Partners) — reject reverts the link to the default page.</p>`,
-        `<hr/><p style="color:#888;font-size:12px">Submitted via gogreenstreets.org/partners<br/>${new Date().toISOString()}</p>`,
+        `<hr/><p style="color:#888;font-size:12px">Submitted via gogreenstreets.org/move-in<br/>${new Date().toISOString()}</p>`,
       ].join('\n'),
     })
   } catch (emailError) {
