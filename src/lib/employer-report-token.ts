@@ -87,3 +87,73 @@ export function verifyEmployerReportToken(token: string, groupId: string): Emplo
 
   return { ok: true, payload }
 }
+
+// ── Commute survey reports (Shift 01170): same shape, its own scope ───────
+
+const SURVEY_SCOPE = 'employer_survey_report'
+
+export type SurveyReportVariant = 'filing' | 'leadership'
+
+export interface EmployerSurveyReportTokenPayload {
+  survey_id: string
+  group_id: string
+  format: string
+  variant: SurveyReportVariant
+  email: string
+  scope: typeof SURVEY_SCOPE
+  iat: number
+  exp: number
+}
+
+export function signEmployerSurveyReportToken(args: {
+  surveyId: string
+  groupId: string
+  format: string
+  variant: SurveyReportVariant
+  email: string
+}): string {
+  const secret = process.env.EMPLOYER_REPORT_TOKEN_SECRET
+  if (!secret) throw new Error('EMPLOYER_REPORT_TOKEN_SECRET not set')
+  const iat = Math.floor(Date.now() / 1000)
+  const payload: EmployerSurveyReportTokenPayload = {
+    survey_id: args.surveyId,
+    group_id: args.groupId,
+    format: args.format,
+    variant: args.variant,
+    email: args.email,
+    scope: SURVEY_SCOPE,
+    iat,
+    exp: iat + EMPLOYER_REPORT_TOKEN_TTL_SECONDS,
+  }
+  const header = base64UrlEncode(Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })))
+  const body = base64UrlEncode(Buffer.from(JSON.stringify(payload)))
+  const sig = createHmac('sha256', secret).update(`${header}.${body}`).digest()
+  return `${header}.${body}.${base64UrlEncode(sig)}`
+}
+
+export type EmployerSurveyReportTokenResult =
+  | { ok: true; payload: EmployerSurveyReportTokenPayload }
+  | { ok: false; error: 'config' | 'malformed' | 'signature' | 'expired' | 'scope' | 'survey' }
+
+/** Verifies the signature, the expiry, and that the token is for `surveyId`, `format` and `variant`. */
+export function verifyEmployerSurveyReportToken(token: string, surveyId: string, format: string, variant: string): EmployerSurveyReportTokenResult {
+  const secret = process.env.EMPLOYER_REPORT_TOKEN_SECRET
+  if (!secret) return { ok: false, error: 'config' }
+  const parts = token.split('.')
+  if (parts.length !== 3) return { ok: false, error: 'malformed' }
+  const [header, body, sig] = parts
+  const expected = createHmac('sha256', secret).update(`${header}.${body}`).digest()
+  const given = base64UrlDecode(sig)
+  if (expected.length !== given.length || !timingSafeEqual(expected, given)) return { ok: false, error: 'signature' }
+  let payload: EmployerSurveyReportTokenPayload
+  try {
+    payload = JSON.parse(base64UrlDecode(body).toString('utf8'))
+  } catch {
+    return { ok: false, error: 'malformed' }
+  }
+  if (payload.scope !== SURVEY_SCOPE) return { ok: false, error: 'scope' }
+  if (!payload.survey_id || !payload.group_id || typeof payload.exp !== 'number') return { ok: false, error: 'malformed' }
+  if (payload.survey_id !== surveyId || payload.format !== format || payload.variant !== variant) return { ok: false, error: 'survey' }
+  if (payload.exp * 1000 < Date.now()) return { ok: false, error: 'expired' }
+  return { ok: true, payload }
+}

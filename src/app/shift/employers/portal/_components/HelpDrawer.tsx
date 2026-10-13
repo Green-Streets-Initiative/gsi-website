@@ -35,6 +35,7 @@ const PAGE_TITLES: Record<string, string> = {
   impact: 'Impact',
   billing: 'Billing & rewards',
   settings: 'Settings',
+  survey: 'Commute survey',
 }
 
 const HELP_CONTENT: Record<string, HelpItem[]> = {
@@ -147,6 +148,29 @@ const HELP_CONTENT: Record<string, HelpItem[]> = {
     {
       title: 'Notification preferences',
       body: 'Choose what we email you: a weekly summary of your team\'s commuting on Mondays, a note when someone new joins, and challenge milestones when your team hits a goal.',
+    },
+  ],
+  survey: [
+    {
+      title: 'The four steps',
+      body: [
+        'Set it up: which filings, which week, how many people per site.',
+        'Add your staff list, so each person gets a personal link.',
+        'Open the survey: the emails go out, with one reminder three days later to anyone who has not answered.',
+        'Close it and take the summary for your filing from the Summaries tab.',
+      ],
+    },
+    {
+      title: 'What "applicable commuters" means',
+      body: 'The staff MassDEP counts: 17 or more hours a week, start and end between 6 AM and 8 PM, and their own car used for work fewer than five times a month. The survey asks those three questions first and the MassDEP summary counts only people who said yes to all three.',
+    },
+    {
+      title: 'Which MassDEP form you will file',
+      body: 'Your response rate picks it: 90% or more allows the short SCD 1; 75% to 90% the SCD 2; 50% to 75% the SCD 2 if you add one more trip-reduction incentive, otherwise SCD 3. Half of applicable commuters is the floor for a census.',
+    },
+    {
+      title: 'Who sees what',
+      body: 'You see totals, the rate by site and department, and who has answered. Individual answers stay with Green Streets Initiative, which holds them for three years as the state asks, then deletes them.',
     },
   ],
 }

@@ -13,6 +13,7 @@ export default function PortalHeroPanel({
   title,
   lede,
   readouts,
+  below,
   actions,
   tile,
   className = '',
@@ -20,6 +21,8 @@ export default function PortalHeroPanel({
   title: ReactNode
   lede?: ReactNode
   readouts?: { label: string; value: ReactNode }[]
+  /** Anything under the lede at the column's full width (a HeroReadouts row). */
+  below?: ReactNode
   actions?: ReactNode
   tile?: ReactNode
   className?: string
@@ -30,6 +33,7 @@ export default function PortalHeroPanel({
         <div className="min-w-0">
           <h2 className="font-headline text-[26px] font-extrabold leading-[1.05] tracking-[-0.01em] text-white">{title}</h2>
           {lede && <div className="mt-3 max-w-[60ch] text-[15px] leading-[1.55] text-white">{lede}</div>}
+          {below && <div className="mt-5">{below}</div>}
           {readouts && readouts.length > 0 && (
             <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
               {readouts.map((r) => (

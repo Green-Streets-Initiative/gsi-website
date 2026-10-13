@@ -26,13 +26,26 @@ function Notice({ title, body }: { title: string; body: string }) {
  * QR). No sign-in: the link is the identity. Served fresh on every request
  * so a closed survey closes at once.
  */
-export default async function SurveyPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function SurveyPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { token } = await params
+  const sp = await searchParams
+  // ?preview=1: the portal's "what staff see" for a draft or closed survey.
+  // Only the open link renders this way (a personal link stays personal).
+  const preview = sp.preview === '1'
   const resolved = await resolveSurveyToken(token)
   if (resolved.kind === 'none') {
     return <Notice title="That link doesn't work" body="Check the link in your email, or ask the person who sent it for a new one." />
   }
   const { survey } = resolved
+  if (preview && resolved.kind === 'open' && survey.enabled) {
+    return <SurveyForm token={token} survey={survey} recipient={null} preview />
+  }
   if (!survey.enabled || survey.status === 'draft') {
     return <Notice title="This survey isn't open yet" body={`${survey.company} hasn't opened its commute survey. Try again once you get the email.`} />
   }

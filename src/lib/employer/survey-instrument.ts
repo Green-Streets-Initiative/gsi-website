@@ -29,7 +29,7 @@ export const RULE_SET_HELP: Record<RuleSet, string> = {
   massdep:
     'Sites with 1,000 or more applicable commuters (250 with an air permit). Report due December 31. A census needs 50% of applicable commuters to answer; 75% and 90% allow shorter summary forms.',
   cambridge:
-    'Properties with a Parking and Transportation Demand Management plan. Annual employee survey; report due November 30 or June 30 depending on the plan.',
+    'Properties with a Parking and Transportation Demand Management plan. The City runs the employee survey in its own tool (60% of employees must answer); report due November 30 or June 30.',
   boston:
     'Transportation Access Plan Agreement annual reports, due November 30. No template; the survey gives the mode-share paragraph.',
   emissions:

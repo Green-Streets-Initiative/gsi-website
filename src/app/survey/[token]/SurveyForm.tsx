@@ -42,6 +42,11 @@ type Props = {
   token: string
   survey: PublicSurvey
   recipient: { name: string | null; department: string | null; location_id: string | null } | null
+  /**
+   * The portal's "what staff see": the same form, nothing saved and nothing
+   * sent (Send is disabled), no draft in storage, and it fits a phone frame.
+   */
+  preview?: boolean
 }
 
 const GROUP_ORDER: (keyof typeof DAY_MODE_GROUP_LABEL)[] = ['active', 'transit', 'shared', 'car', 'away']
@@ -155,7 +160,7 @@ function YesNo({ value, onChange, name }: { value: boolean | undefined; onChange
   )
 }
 
-export default function SurveyForm({ token, survey, recipient }: Props) {
+export default function SurveyForm({ token, survey, recipient, preview = false }: Props) {
   const [screen, setScreen] = useState<SurveyAnswers['screen']>({})
   const [days, setDays] = useState<Partial<Record<Weekday, DayAnswer>>>({})
   const [a, setA] = useState<Omit<SurveyAnswers, 'screen' | 'days'>>({
@@ -180,6 +185,10 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
   const [stepIdx, setStepIdx] = useState(0)
 
   useEffect(() => {
+    if (preview) {
+      hydrated.current = true
+      return
+    }
     const d = readDraft(token)
     if (d) {
       setScreen(d.screen ?? {})
@@ -190,14 +199,14 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
       setSavedAt(d.saved_at)
     }
     hydrated.current = true
-  }, [token])
+  }, [token, preview])
 
   useEffect(() => {
     if (done) window.scrollTo({ top: 0 })
   }, [done])
 
   useEffect(() => {
-    if (!hydrated.current || done) return
+    if (preview || !hydrated.current || done) return
     const empty = Object.keys(screen).length === 0 && Object.keys(days).length === 0
     if (empty && !restored) return
     const t = window.setTimeout(() => {
@@ -206,7 +215,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
       setSavedAt(saved_at)
     }, 400)
     return () => window.clearTimeout(t)
-  }, [token, screen, days, a, done, restored, stepIdx])
+  }, [token, screen, days, a, done, restored, stepIdx, preview])
 
   const set = <K extends keyof typeof a>(k: K, v: (typeof a)[K]) => setA((prev) => ({ ...prev, [k]: v }))
   const setDay = (d: Weekday, patch: Partial<DayAnswer> | null) =>
@@ -319,6 +328,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
   }
 
   async function submit() {
+    if (preview) return
     // Anything missing sends the person back to the step it belongs to.
     const checks: [StepId, string[]][] = [
       ['screen', screenProblems()],
@@ -415,7 +425,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
   }
 
   return (
-    <main className="street min-h-screen bg-cream px-4 py-8 text-navy sm:px-6" style={{ fontFamily: 'var(--font-gsi)' }}>
+    <main className={`street bg-cream text-navy ${preview ? 'px-4 py-5' : 'min-h-screen px-4 py-8 sm:px-6'}`} style={{ fontFamily: 'var(--font-gsi)' }}>
       <form
         className="mx-auto max-w-[640px]"
         onSubmit={(e) => {
@@ -579,7 +589,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
                 <button
                   type="button"
                   onClick={() => void submit()}
-                  disabled={sending}
+                  disabled={sending || preview}
                   className="min-h-[48px] rounded-full bg-navy px-6 text-[16px] font-bold text-white hover:bg-forest disabled:opacity-60"
                 >
                   {sending ? 'Sending...' : 'Send now'}
@@ -807,7 +817,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
             {isLast ? (
               <button
                 type="submit"
-                disabled={sending}
+                disabled={sending || preview}
                 className="min-h-[52px] w-full rounded-full bg-navy px-6 text-[17px] font-bold text-white hover:bg-forest disabled:opacity-60 sm:w-auto sm:px-10"
               >
                 {sending ? 'Sending...' : 'Send my answers'}

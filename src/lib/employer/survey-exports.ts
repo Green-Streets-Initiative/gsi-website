@@ -393,16 +393,17 @@ export function cambridgeExport(survey: ExportSurvey, rows: ExportResponse[], ev
     { heading: '13. Why employees drive alone', note: 'Mark all that apply.', rows: tallyMulti(rows, 'why_drive', WHY_DRIVE) },
     { heading: '14. How likely employees would change if these were offered', note: 'Very likely / Somewhat likely / Not likely / Already available.', rows: incentiveRows },
     {
-      heading: 'Method',
+      heading: 'Method and how to use this',
       paragraphs: [
         `Survey of the week of ${weekLabel(survey.week_start)}, closed ${longDate(survey.closes_on)}, on the City of Cambridge employee transportation survey questions. Personal links went to ${survey.invited.toLocaleString()} work email addresses (one answer per person); an open link and QR code served staff without email; Shift app users answered in the app. "Dropped off" was offered as its own answer and is reported under carpool. Question 15 (free text) is held by Green Streets Initiative and is not in this summary.`,
+        'The City of Cambridge requires its own online survey for PTDM reporting (taken in the Transportation Monitoring Tool, Monday to Sunday, with 60% of employees answering), so these tallies are for your own records and for comparison with the City\u2019s results. For the report itself, list the Shift program under TDM Implementation and use the year-round numbers below in the Annual Review.',
       ],
     },
   ]
   if (evidence) sections.push(evidenceSection(evidence))
   return {
     title: `${RULE_SET_LABEL.cambridge} survey summary`,
-    subtitle: `${survey.title}. Tallies in the City template's order, for copying into the PTDM annual report.`,
+    subtitle: `${survey.title}. Tallies in the City template's order, for your records and the Annual Review. The City collects the PTDM survey itself.`,
     sections,
   }
 }
