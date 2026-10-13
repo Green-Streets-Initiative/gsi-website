@@ -39,16 +39,19 @@ export default function MoveInPage() {
         title="Welcome new residents with a live map of the neighborhood."
         lede={
           <p>
-            A free page with your logo on it. It shows the nearest T stops and buses with arrival
-            times, Bluebikes docks, comfortable bike routes and what&rsquo;s within a short walk,
-            plus a $15 welcome offer from Shift, our free app. Share the link in move-in emails, or
-            print it for welcome packets.
+            A free page with your logo on it, ready in about a minute. It shows the nearest T stops
+            and buses with arrival times, Bluebikes docks, comfortable bike routes and what&rsquo;s
+            within a short walk. Share the link in move-in emails, or print it for welcome packets.
           </p>
         }
         after={
-          <p className="mt-4 text-[15px] text-navy">
-            Free &middot; Ready in about a minute &middot; From Green Streets Initiative, a
-            Massachusetts nonprofit since 2006
+          // Who we are and what Shift is, before the offer (explain before
+          // mechanics): the reader may never have heard of either.
+          <p className="mt-5 max-w-[780px] text-[1.0625rem] leading-[1.6] text-navy">
+            Green Streets Initiative is a Massachusetts nonprofit that has helped people walk, bike
+            and take transit more since 2006. A move is a great time to start, so your page also
+            invites residents to try Shift, our free app for planning and tracking those trips,
+            with a $15 welcome offer.
           </p>
         }
       />
