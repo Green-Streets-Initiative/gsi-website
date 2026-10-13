@@ -385,7 +385,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
         How did you get to work the week of {weekLabel(survey.week_start)}? About two minutes.
       </p>
       <p className={help}>
-        {survey.company} sees totals and who has answered, never your individual answers. Run by Shift, from the nonprofit Green
+        {survey.company} sees totals and who has answered. Run by Shift, from the nonprofit Green
         Streets Initiative. Please answer by {longDate(survey.closes_on)}.
       </p>
     </header>
@@ -399,7 +399,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
           <div className={card}>
             <h2 className={h2}>Thank you</h2>
             <p className="mt-2 text-[16px] leading-[1.5] text-navy">
-              {`Your answers are in. ${survey.company} will see how the whole team gets to work, never one person's answers.`}
+              {`Your answers are in. ${survey.company} will see how the whole team gets to work.`}
             </p>
             <p className={help}>
               Want to see your own trips add up? Shift is a free app that records walks, bike rides, transit trips and carpools and
@@ -833,7 +833,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
             </p>
           )}
           <p className="pb-6 text-[13px] leading-[1.5] text-ink-soft">
-            {`Your answers are held by Green Streets Initiative for three years, as the state's commute-reporting rules require, then deleted. ${survey.company} sees totals and a list of who has answered, never what anyone said.`}
+            {`Your answers are held by Green Streets Initiative for three years, as the state's commute-reporting rules require, then deleted. ${survey.company} sees totals and a list of who has answered.`}
           </p>
         </div>
       </form>

@@ -40,7 +40,7 @@ export default async function SurveyPage({ params }: { params: Promise<{ token: 
     return <Notice title="This survey has closed" body={`${survey.company}'s commute survey is closed. Thank you if you answered.`} />
   }
   if (resolved.kind === 'recipient' && resolved.recipient.answered) {
-    return <Notice title="You've already answered" body={`Thanks. ${survey.company} sees totals and who has answered, never your individual answers.`} />
+    return <Notice title="You've already answered" body={`Thanks. ${survey.company} sees totals and who has answered.`} />
   }
   return (
     <SurveyForm

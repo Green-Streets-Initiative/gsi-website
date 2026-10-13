@@ -1,9 +1,8 @@
 'use client'
 
-import { Card, CardHead, CardBody } from '@/components/employer/Card'
 import StatTile from '@/components/employer/StatTile'
 import { massdepBand, pct } from '@/lib/employer/survey-exports'
-import type { SurveyStatus } from './survey-types'
+import { ruleSetsOf, type SurveyStatus } from './survey-types'
 
 const BANDS = [
   { at: 50, label: '50%', form: 'Census floor' },
@@ -16,9 +15,9 @@ function fewer(n: number | null, few: boolean): string {
 }
 
 /**
- * Responses so far against the headcount the admin gave, overall and by
- * site and department. MassDEP surveys show the 50 / 75 / 90% bands and the
- * summary form each one allows. Groups under 5 responses say "fewer than 5".
+ * Responses so far against the headcount, overall and by site and
+ * department. MassDEP surveys show the 50 / 75 / 90% bands and the summary
+ * form each one allows. Groups under 5 answers show "fewer than 5".
  */
 export default function ResponseRateCard({ status }: { status: SurveyStatus }) {
   const s = status.survey
@@ -26,30 +25,26 @@ export default function ResponseRateCard({ status }: { status: SurveyStatus }) {
   const headcount = s.headcount
   const ratePct = headcount ? Math.min(100, (responded / headcount) * 100) : null
   const listPct = status.invited ? (status.responded_matched / status.invited) * 100 : null
-  const isMassdep = s.rule_set === 'massdep'
+  const sets = ruleSetsOf(s)
+  const isMassdep = sets.includes('massdep')
   const band = ratePct != null ? massdepBand(ratePct) : null
 
   return (
-    <Card id="responses">
-      <CardHead
-        title="Responses"
-        sub={headcount ? `Against the headcount of ${headcount.toLocaleString()} you gave.` : 'Add a headcount to the survey details to see a response rate.'}
-      />
-      <CardBody>
+    <div>
+      <div className="border-b border-line px-6 py-[18px]">
+        <h3 className="text-[16px] font-bold tracking-[-0.01em] text-ink">Responses</h3>
+        <p className="mt-0.5 text-[13px] leading-[1.5] text-ink-muted">
+          {headcount ? `Against the ${headcount.toLocaleString()} people you counted.` : 'Add a headcount under Details to see a response rate.'}
+          {sets.includes('cambridge') ? ' Cambridge has no published floor; half is what properties have passed with.' : ''}
+        </p>
+      </div>
+      <div className="px-6 py-5">
         <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-          <StatTile label="Responses" value={responded.toLocaleString()} hint="Everyone who finished the survey: personal links, the app and the open link." />
-          <StatTile
-            label="Of headcount"
-            value={ratePct != null ? `${Math.round(ratePct * 10) / 10}%` : '—'}
-            hint="Responses divided by the headcount on the survey details. This is the rate a filing reports."
-          />
-          <StatTile
-            label="Of the list"
-            value={listPct != null ? `${Math.round(listPct * 10) / 10}%` : '—'}
-            hint="People on your staff list who answered through their own link or the app."
-          />
+          <StatTile label="Answered" value={responded.toLocaleString()} hint="Everyone who finished the survey: personal links, the app and the open link." />
+          <StatTile label="Of headcount" value={ratePct != null ? `${Math.round(ratePct * 10) / 10}%` : '—'} hint="Answers divided by the headcount under Details. This is the rate a filing reports." />
+          <StatTile label="Of the list" value={listPct != null ? `${Math.round(listPct * 10) / 10}%` : '—'} hint="People on your list who answered through their own link or the app." />
           {isMassdep ? (
-            <StatTile label="Applicable" value={status.applicable.toLocaleString()} hint="Respondents who said yes to all three MassDEP screening questions. Only they count in the MassDEP summary." />
+            <StatTile label="Applicable" value={status.applicable.toLocaleString()} hint="Answered yes to all three MassDEP screening questions. The MassDEP summary counts these." />
           ) : (
             <StatTile label="Open link" value={status.responded_unmatched.toLocaleString()} hint="Answers through the open link or QR, not tied to anyone on the list." />
           )}
@@ -76,7 +71,7 @@ export default function ResponseRateCard({ status }: { status: SurveyStatus }) {
               ))}
             </div>
             <p className="mt-2 text-[12.5px] leading-[1.55] text-ink-muted">
-              A census needs 50% of applicable commuters. From 90% you can file the short SCD 1 form; 75% to 90% the SCD 2; 50% to 75% the SCD 2 only with one more trip-reduction incentive, otherwise SCD 3.
+              Half of applicable commuters makes a census. From 90% you file the short SCD 1 form; 75% to 90% the SCD 2; 50% to 75% the SCD 2 with one more trip-reduction incentive, or SCD 3.
             </p>
           </div>
         )}
@@ -90,7 +85,7 @@ export default function ResponseRateCard({ status }: { status: SurveyStatus }) {
                   <thead>
                     <tr className="border-b border-line-2 text-[12px] text-ink-tertiary">
                       <th className="py-1.5 font-semibold">Site</th>
-                      <th className="py-1.5 text-right font-semibold">Responded</th>
+                      <th className="py-1.5 text-right font-semibold">Answered</th>
                       <th className="py-1.5 text-right font-semibold">Rate</th>
                     </tr>
                   </thead>
@@ -113,7 +108,7 @@ export default function ResponseRateCard({ status }: { status: SurveyStatus }) {
                   <thead>
                     <tr className="border-b border-line-2 text-[12px] text-ink-tertiary">
                       <th className="py-1.5 font-semibold">Department</th>
-                      <th className="py-1.5 text-right font-semibold">Responded</th>
+                      <th className="py-1.5 text-right font-semibold">Answered</th>
                       <th className="py-1.5 text-right font-semibold">Rate</th>
                     </tr>
                   </thead>
@@ -131,7 +126,7 @@ export default function ResponseRateCard({ status }: { status: SurveyStatus }) {
             )}
           </div>
         )}
-      </CardBody>
-    </Card>
+      </div>
+    </div>
   )
 }

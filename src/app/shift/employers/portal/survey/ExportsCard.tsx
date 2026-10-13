@@ -5,11 +5,10 @@ import { Copy, Download, FileText } from 'lucide-react'
 import posthog from 'posthog-js'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/employer/Button'
-import { Card, CardHead, CardBody } from '@/components/employer/Card'
 import { useToast } from '@/components/employer/Toast'
 import type { ExportDoc } from '@/lib/employer/survey-exports'
 import { RULE_SET_LABEL, type RuleSet } from '@/lib/employer/survey-instrument'
-import type { SurveyRow } from './survey-types'
+import { ruleSetsOf, type SurveyRow } from './survey-types'
 
 const FORMAT_LABEL: Record<RuleSet, string> = {
   massdep: 'MassDEP summary',
@@ -25,10 +24,11 @@ const FORMAT_LABEL: Record<RuleSet, string> = {
  */
 export default function ExportsCard({ survey, responded }: { survey: SurveyRow; responded: number }) {
   const toast = useToast()
-  const [format, setFormat] = useState<RuleSet>(survey.rule_set)
+  const [format, setFormat] = useState<RuleSet>(ruleSetsOf(survey)[0])
   const [result, setResult] = useState<{ format: RuleSet; doc: ExportDoc; csv: string; text: string } | null>(null)
   const [loading, setLoading] = useState(false)
-  const order: RuleSet[] = [survey.rule_set, ...(['massdep', 'cambridge', 'boston', 'emissions'] as RuleSet[]).filter((f) => f !== survey.rule_set)]
+  const sets = ruleSetsOf(survey)
+  const order: RuleSet[] = [...sets, ...(['massdep', 'cambridge', 'boston', 'emissions'] as RuleSet[]).filter((f) => !sets.includes(f))]
 
   async function run(f: RuleSet) {
     setFormat(f)
@@ -69,12 +69,15 @@ export default function ExportsCard({ survey, responded }: { survey: SurveyRow; 
   }
 
   return (
-    <Card id="exports">
-      <CardHead
-        title="Summaries for your filing"
-        sub={`Totals only, with Shift's year-round numbers at the end. Built for ${RULE_SET_LABEL[survey.rule_set]}; the other formats are here too.`}
-      />
-      <CardBody>
+    <div>
+      <div className="border-b border-line px-6 py-[18px]">
+        <h3 className="text-[16px] font-bold tracking-[-0.01em] text-ink">Summaries for your filing</h3>
+        <p className="mt-0.5 text-[13px] leading-[1.5] text-ink-muted">
+          Totals in each regulator&apos;s layout, with Shift&apos;s year-round numbers at the end. Copy the text into your report or download the CSV.
+          {sets.length > 0 ? ` This survey: ${sets.map((f) => RULE_SET_LABEL[f]).join(', ')}.` : ''}
+        </p>
+      </div>
+      <div className="px-6 py-5">
         {responded === 0 ? (
           <p className="text-[14px] text-ink-muted">Summaries appear once the first answers are in.</p>
         ) : (
@@ -132,7 +135,7 @@ export default function ExportsCard({ survey, responded }: { survey: SurveyRow; 
             )}
           </>
         )}
-      </CardBody>
-    </Card>
+      </div>
+    </div>
   )
 }
