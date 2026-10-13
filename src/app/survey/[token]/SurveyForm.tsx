@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   CAR_FOR_BUSINESS,
   CAR_PART_OPTIONS,
@@ -46,6 +46,37 @@ type Props = {
 }
 
 const GROUP_ORDER: (keyof typeof DAY_MODE_GROUP_LABEL)[] = ['active', 'transit', 'shared', 'car', 'away']
+
+/**
+ * Draft answers live in this browser under the link's token (Keith
+ * 2026-10-13: a long page must not lose partial work). Written on every
+ * change, restored when the page opens again, removed on submit. Nothing
+ * leaves the device until "Send"; a private window or blocked storage just
+ * means no draft.
+ */
+const DRAFT_KEY = (token: string) => `survey-draft:${token}`
+type Draft = { screen: SurveyAnswers['screen']; days: Partial<Record<Weekday, DayAnswer>>; a: Omit<SurveyAnswers, 'screen' | 'days'>; saved_at: string }
+
+function readDraft(token: string): Draft | null {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_KEY(token))
+    if (!raw) return null
+    const d = JSON.parse(raw) as Draft
+    return d && typeof d === 'object' && d.days && d.a ? d : null
+  } catch {
+    return null
+  }
+}
+function writeDraft(token: string, d: Draft) {
+  try {
+    window.localStorage.setItem(DRAFT_KEY(token), JSON.stringify(d))
+  } catch {}
+}
+function clearDraft(token: string) {
+  try {
+    window.localStorage.removeItem(DRAFT_KEY(token))
+  } catch {}
+}
 
 const card = 'rounded-[16px] border border-navy/[0.12] bg-white px-4 py-5 sm:px-6'
 const h2 = 'font-headline text-[20px] font-extrabold leading-tight text-navy'
@@ -140,6 +171,35 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
   const [done, setDone] = useState(false)
   const [failed, setFailed] = useState<string | null>(null)
   const topRef = useRef<HTMLDivElement>(null)
+  // Draft: restored once after mount (never during server render), then
+  // written on every change. `restored` says "picked up where you left off".
+  const hydrated = useRef(false)
+  const [restored, setRestored] = useState(false)
+  const [savedAt, setSavedAt] = useState<string | null>(null)
+
+  useEffect(() => {
+    const d = readDraft(token)
+    if (d) {
+      setScreen(d.screen ?? {})
+      setDays(d.days ?? {})
+      setA((prev) => ({ ...prev, ...d.a }))
+      setRestored(true)
+      setSavedAt(d.saved_at)
+    }
+    hydrated.current = true
+  }, [token])
+
+  useEffect(() => {
+    if (!hydrated.current || done) return
+    const empty = Object.keys(screen).length === 0 && Object.keys(days).length === 0
+    if (empty && !restored) return
+    const t = window.setTimeout(() => {
+      const saved_at = new Date().toISOString()
+      writeDraft(token, { screen, days, a, saved_at })
+      setSavedAt(saved_at)
+    }, 400)
+    return () => window.clearTimeout(t)
+  }, [token, screen, days, a, done, restored])
 
   const set = <K extends keyof typeof a>(k: K, v: (typeof a)[K]) => setA((prev) => ({ ...prev, [k]: v }))
   const setDay = (d: Weekday, patch: Partial<DayAnswer> | null) =>
@@ -166,6 +226,19 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
   const anyDrivePart = answered.some((x) => x.mode === 'drive_bike' || (x.mode === 'transit_drive' && x.car_part !== 'shuttle'))
   const showWhyShift = anyShift || commuteDays.length === 0
   const showWhyDrive = anyDriveAlone || commuteDays.length === 0
+  // Screening answered and all five days complete, follow-ups included:
+  // enough for the filing, so the early "Send now" appears.
+  const requiredDone =
+    SCREENING.every((q) => screen[q.code] !== undefined) &&
+    WEEKDAYS.every((d) => {
+      const v = days[d]
+      if (!v) return false
+      const opt = DAY_MODE_BY_CODE[v.mode]
+      if (v.mode === 'carpool' && !(v.size && v.size >= 2)) return false
+      if (opt.legs && !v.longest) return false
+      if (v.mode === 'transit_drive' && !v.car_part) return false
+      return true
+    })
 
   const modeGroups = useMemo(
     () => GROUP_ORDER.map((g) => ({ g, options: DAY_MODE_OPTIONS.filter((o) => o.group === g) })),
@@ -214,6 +287,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
       })
       const json = (await res.json().catch(() => null)) as { error?: string; problems?: string[] } | null
       if (res.ok) {
+        clearDraft(token)
         setDone(true)
         window.scrollTo({ top: 0 })
         return
@@ -222,6 +296,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
         setProblems(json.problems)
         topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       } else if (json?.error === 'answered') {
+        clearDraft(token)
         setDone(true)
       } else if (json?.error === 'closed') {
         setFailed('This survey has closed.')
@@ -264,7 +339,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
           <div className={card}>
             <h2 className={h2}>Thank you</h2>
             <p className="mt-2 text-[16px] leading-[1.5] text-navy">
-              Your answers are in. {survey.company} will see how the whole team gets to work, never one person&apos;s answers.
+              {`Your answers are in. ${survey.company} will see how the whole team gets to work, never one person's answers.`}
             </p>
             <p className={help}>
               Want to see your own trips add up? Shift is a free app that records walks, bike rides, transit trips and carpools and
@@ -291,6 +366,11 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
       >
         {header}
         <div ref={topRef} />
+        {restored && (
+          <p className="mb-4 rounded-[12px] border border-forest/30 bg-white px-4 py-3 text-[14px] leading-[1.45] text-navy" role="status">
+            Picked up where you left off. Your answers are saved on this device as you go; nothing is sent until you press Send.
+          </p>
+        )}
         {problems.length > 0 && (
           <div role="alert" className="mb-5 rounded-[12px] border border-[#B3361F]/40 bg-[#FBEDE9] px-4 py-3 text-[15px] leading-[1.45] text-[#8A2A17]">
             <div className="font-bold">A few things to finish:</div>
@@ -407,6 +487,29 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
               })}
             </div>
           </section>
+
+          {/* The required part ends here: send now, or keep going. */}
+          {requiredDone && (
+            <div className="rounded-[16px] border border-forest bg-white px-4 py-5 sm:px-6" role="status">
+              <h2 className={h2}>That&apos;s the part the filing needs</h2>
+              <p className="mt-1 text-[15px] leading-[1.5] text-navy">
+                You can send now. The next sections (about three more minutes) help {survey.company} plan better commute options, and are optional.
+              </p>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={() => void submit()}
+                  disabled={sending}
+                  className="min-h-[48px] rounded-full bg-navy px-6 text-[16px] font-bold text-white hover:bg-forest disabled:opacity-60"
+                >
+                  {sending ? 'Sending...' : 'Send now'}
+                </button>
+                <a href="#s-about" className="min-h-[44px] text-center text-[15px] font-bold text-forest underline sm:text-left">
+                  Keep going
+                </a>
+              </div>
+            </div>
+          )}
 
           {/* 3. About your commute */}
           <section className={card} aria-labelledby="s-about">
@@ -627,9 +730,13 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
           >
             {sending ? 'Sending...' : 'Send my answers'}
           </button>
+          {savedAt && (
+            <p className="text-[13px] leading-[1.5] text-ink-soft" aria-live="polite">
+              Draft saved on this device. You can close this page and come back to the same link.
+            </p>
+          )}
           <p className="pb-6 text-[13px] leading-[1.5] text-ink-soft">
-            Your answers are held by Green Streets Initiative for three years, as the state&apos;s commute-reporting rules require,
-            then deleted. {survey.company} sees totals and a list of who has answered, never what anyone said.
+            {`Your answers are held by Green Streets Initiative for three years, as the state's commute-reporting rules require, then deleted. ${survey.company} sees totals and a list of who has answered, never what anyone said.`}
           </p>
         </div>
       </form>
