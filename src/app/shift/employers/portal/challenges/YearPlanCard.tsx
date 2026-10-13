@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CalendarDays, ChevronDown, ChevronUp } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import { Card } from '@/components/employer/Card'
 import Button from '@/components/employer/Button'
 import { whatToDo } from '@/lib/challenge-rules'
@@ -36,21 +37,50 @@ function stateOf(o: SeasonalOption, plan: ReturnType<typeof useYearPlan>, today:
   return { kind: 'drafts_on', day: draftDate(run) }
 }
 
-function stateLabel(s: SeasonState, enabled: boolean): { text: string; tone: 'accent' | 'muted' | 'ink' } {
+/**
+ * The status pill. A filled green dot means the season is this company's
+ * challenge; a hollow ring means it is only on the calendar. A season whose
+ * dates have started reads "not running here" unless they launched it, so
+ * nobody mistakes GSI's calendar for their own challenge (Keith 2026-10-12,
+ * after Loomis's portal showed Commute Month as "Under way").
+ */
+type Pill = { text: string; tone: 'running' | 'waiting' | 'calendar' | 'off' }
+
+function stateLabel(s: SeasonState, enabled: boolean, run: { starts_on: string }, today: string): Pill {
   switch (s.kind) {
     case 'drafted':
-      return { text: 'Drafted, waiting for you', tone: 'accent' }
+      return { text: 'Drafted, waiting for you', tone: 'waiting' }
     case 'launched':
-      return { text: 'Launched', tone: 'ink' }
+      return run.starts_on <= today ? { text: 'Running here', tone: 'running' } : { text: 'Launched', tone: 'running' }
     case 'skipped':
-      return { text: 'Skipped this year', tone: 'muted' }
+      return { text: 'Skipped this year', tone: 'off' }
     case 'left_out':
-      return { text: 'Left out', tone: 'muted' }
+      return { text: 'Left out', tone: 'off' }
     case 'started':
-      return { text: 'Under way', tone: 'ink' }
+      return { text: `Started ${shortDay(run.starts_on)}, not running here`, tone: 'calendar' }
     case 'drafts_on':
-      return enabled ? { text: `Drafts ${shortDay(s.day)}`, tone: 'ink' } : { text: 'Not drafted (plan is off)', tone: 'muted' }
+      return enabled ? { text: `Drafts ${shortDay(s.day)}`, tone: 'calendar' } : { text: 'Not drafted (plan is off)', tone: 'off' }
   }
+}
+
+const pillClasses: Record<Pill['tone'], string> = {
+  running: 'bg-accent-soft text-accent-ink',
+  waiting: 'bg-accent-softer text-accent',
+  calendar: 'bg-surface-2 text-ink-muted',
+  off: 'text-ink-muted',
+}
+
+function StatusPill({ pill }: { pill: Pill }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-[10px] py-[4px] text-[12px] font-semibold leading-none ${pillClasses[pill.tone]}`}
+    >
+      {pill.tone === 'running' && <span className="h-[7px] w-[7px] rounded-full bg-accent" />}
+      {pill.tone === 'waiting' && <span className="h-[7px] w-[7px] rounded-full border-[1.5px] border-accent bg-accent-soft" />}
+      {pill.tone === 'calendar' && <span className="h-[7px] w-[7px] rounded-full border-[1.5px] border-ink-faint" />}
+      {pill.text}
+    </span>
+  )
 }
 
 export default function YearPlanCard({
@@ -74,6 +104,29 @@ export default function YearPlanCard({
   const seasons = upcoming.filter((o) => o.run && o.template.slug !== 'walk-ride-day-team')
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
   const states = seasons.map((o) => ({ o, s: stateOf(o, plan, today) }))
+
+  // How many workplaces are on each started season's public board. The link
+  // shows only when someone is on it: an empty board helps nobody, and a
+  // full one is worth seeing even when this company isn't on it (Keith
+  // 2026-10-12). Fetched when the calendar opens; until then, no link.
+  const startedIds = seasons.filter((o) => o.run!.starts_on <= today).map((o) => o.run!.id).join(',')
+  const [boardCounts, setBoardCounts] = useState<Record<string, number>>({})
+  useEffect(() => {
+    if (!open || !startedIds) return
+    let cancelled = false
+    const ids = startedIds.split(',')
+    Promise.all(ids.map((id) => supabase.rpc('get_seasonal_leaderboard', { p_run_id: id }))).then((res) => {
+      if (cancelled) return
+      const counts: Record<string, number> = {}
+      res.forEach(({ data }, i) => {
+        counts[ids[i]] = Array.isArray(data?.employers) ? data.employers.length : 0
+      })
+      setBoardCounts(counts)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open, startedIds])
 
   // The sentence under the switch: what is drafted now, and what drafts next.
   const nextToDraft = states.find(({ s }) => s.kind === 'drafts_on')
@@ -133,7 +186,8 @@ export default function YearPlanCard({
             const off = s.kind === 'left_out' || s.kind === 'skipped'
             const showing = detail === run.id
             const prize = templatePrizeLine(o.template)
-            const label = stateLabel(s, enabled)
+            const label = stateLabel(s, enabled, run, today)
+            const onBoard = boardCounts[run.id] ?? 0
             const canDraftNow = canManage && (s.kind === 'drafts_on' || s.kind === 'left_out' || s.kind === 'skipped' || s.kind === 'started')
             return (
               <div key={run.id} className="border-b border-line-2 last:border-0">
@@ -142,24 +196,20 @@ export default function YearPlanCard({
                     type="button"
                     onClick={() => setDetail(showing ? null : run.id)}
                     aria-expanded={showing}
-                    className={`flex min-w-0 items-center gap-2 text-left ${off ? 'text-ink-muted' : 'text-ink'}`}
+                    className={`flex min-w-0 items-center gap-2 text-left ${off || s.kind === 'started' ? 'text-ink-muted' : 'text-ink'}`}
                   >
                     <span className={off ? 'line-through' : ''}>
                       <strong>{o.template.title}</strong> · {runRange(run)}
                     </span>
                     {showing ? <ChevronUp size={14} strokeWidth={2} className="shrink-0 text-ink-icon" /> : <ChevronDown size={14} strokeWidth={2} className="shrink-0 text-ink-icon" />}
                   </button>
-                  <span
-                    className={`text-[12.5px] font-semibold ${
-                      label.tone === 'accent' ? 'text-accent' : label.tone === 'muted' ? 'text-ink-muted' : 'text-ink'
-                    }`}
-                  >
-                    {label.text}
+                  <span>
+                    <StatusPill pill={label} />
                   </span>
                   <span className="flex items-center gap-3 text-[12.5px] font-semibold">
-                    {run.starts_on <= today && (
+                    {run.starts_on <= today && onBoard > 0 && (
                       <a href={`/shift/season/${run.id}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
-                        Public leaderboard
+                        Public leaderboard ({onBoard} {onBoard === 1 ? 'workplace' : 'workplaces'})
                       </a>
                     )}
                     {canManage && enabled && s.kind !== 'launched' && s.kind !== 'skipped' && (
@@ -212,7 +262,7 @@ export default function YearPlanCard({
                                 ? 'Skipped for this year. You can still draft it yourself.'
                                 : s.kind === 'left_out'
                                   ? 'Left out of the plan. Include it and it drafts three weeks before the start.'
-                                  : 'This season has started. You can still draft a challenge for the rest of it.'}
+                                  : `This season started ${shortDay(run.starts_on)} on GSI's calendar, but your company isn't running it, so your team isn't taking part. You can still draft a challenge for the rest of it.`}
                       </dd>
                     </dl>
                     {canDraftNow && (
