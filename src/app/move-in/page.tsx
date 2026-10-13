@@ -23,9 +23,9 @@ import ResidentPreview from './ResidentPreview'
  */
 
 export const metadata: Metadata = {
-  title: 'A free neighborhood map for your new residents | Green Streets Initiative',
+  title: 'Help new residents get around from day one | Green Streets Initiative',
   description:
-    'Put your logo on a free, live neighborhood map for new residents: the nearest T stops and buses with arrival times, Bluebikes docks, bike routes and what is within a short walk. Ready in about a minute.',
+    'Put your logo on a free, live guide to getting around for new residents: the nearest T stops and buses with arrival times, Bluebikes docks, bike routes and what is within a short walk. Ready in about a minute.',
   alternates: { canonical: '/move-in' },
 }
 
@@ -36,7 +36,7 @@ export default function MoveInPage() {
 
       <SignHero
         top={<SignTop strong="For property managers, leasing agents, brokers and movers" />}
-        title="Welcome new residents with a live map of the neighborhood."
+        title="Help new residents get around from day one."
         lede={
           <p>
             A free page with your logo on it, ready in about a minute. It shows the nearest T stops
