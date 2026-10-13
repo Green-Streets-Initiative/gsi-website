@@ -14,7 +14,17 @@ import {
   type ExportResponse,
   type ExportSurvey,
 } from './survey-exports.ts'
-import { validateAnswers, type SurveyAnswers } from './survey-instrument.ts'
+import { hoursPerDay, validateAnswers, type SurveyAnswers } from './survey-instrument.ts'
+
+describe('hoursPerDay', () => {
+  it('derives the band from start and end', () => {
+    assert.equal(hoursPerDay({ start_time: '8', end_time: '5' }), '8plus')
+    assert.equal(hoursPerDay({ start_time: '9', end_time: '5' }), '6_8')
+    assert.equal(hoursPerDay({ start_time: 'after10', end_time: 'before4' }), '2_5')
+    assert.equal(hoursPerDay({ start_time: '8' }), undefined)
+    assert.equal(hoursPerDay({ hours_per_day: 'lt2', start_time: '8', end_time: '5' }), 'lt2')
+  })
+})
 
 const survey: ExportSurvey = {
   title: 'Commute survey, week of October 19, 2026',

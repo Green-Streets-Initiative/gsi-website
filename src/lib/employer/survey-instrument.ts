@@ -165,19 +165,40 @@ export const HOURS_PER_DAY: Choice[] = [
   { code: '8plus', label: 'More than 8' },
 ]
 export const MINUTES_ONE_WAY: Choice[] = [
-  { code: '0_15', label: '0 to 15' },
-  { code: '16_30', label: '16 to 30' },
-  { code: '31_45', label: '31 to 45' },
-  { code: '46_90', label: '46 to 90' },
-  { code: '90plus', label: 'More than 90' },
+  { code: '0_15', label: 'Up to 15 minutes' },
+  { code: '16_30', label: '16 to 30 minutes' },
+  { code: '31_45', label: '31 to 45 minutes' },
+  { code: '46_90', label: '46 to 90 minutes' },
+  { code: '90plus', label: 'More than 90 minutes' },
 ]
 export const MILES_ONE_WAY: Choice[] = [
-  { code: '0_10', label: '0 to 10' },
-  { code: '11_20', label: '11 to 20' },
-  { code: '21_40', label: '21 to 40' },
-  { code: '41_60', label: '41 to 60' },
-  { code: '60plus', label: 'More than 60' },
+  { code: '0_10', label: 'Up to 10 miles' },
+  { code: '11_20', label: '11 to 20 miles' },
+  { code: '21_40', label: '21 to 40 miles' },
+  { code: '41_60', label: '41 to 60 miles' },
+  { code: '60plus', label: 'More than 60 miles' },
 ]
+
+/** Midpoint hour of each start and end band, for the derived hours a day. */
+const START_HOUR: Record<string, number> = { before6: 5.5, '6': 6.5, '7': 7.5, '8': 8.5, '9': 9.5, after10: 10.5 }
+const END_HOUR: Record<string, number> = { before4: 15.5, '4': 16.5, '5': 17.5, '6': 18.5, '7': 19.5, after8: 20.5 }
+
+/**
+ * Cambridge question 4 (hours worked a day) follows from the usual start
+ * and end times, so the survey no longer asks it (Keith 2026-10-13). An
+ * answer stored by an older form wins when present.
+ */
+export function hoursPerDay(a: { hours_per_day?: string; start_time?: string; end_time?: string }): string | undefined {
+  if (a.hours_per_day) return a.hours_per_day
+  const s = a.start_time ? START_HOUR[a.start_time] : undefined
+  const e = a.end_time ? END_HOUR[a.end_time] : undefined
+  if (s == null || e == null) return undefined
+  const h = e - s
+  if (h < 2) return 'lt2'
+  if (h <= 5) return '2_5'
+  if (h <= 8) return '6_8'
+  return '8plus'
+}
 /** Midpoint of each distance band, in miles, for the emissions export. */
 export const MILES_ONE_WAY_MIDPOINT: Record<string, number> = {
   '0_10': 5,
@@ -283,7 +304,7 @@ export const INCENTIVE_RATINGS: { code: IncentiveRating; label: string; short: s
   { code: 'very', label: 'Very likely', short: 'Very' },
   { code: 'somewhat', label: 'Somewhat likely', short: 'Somewhat' },
   { code: 'not', label: 'Not likely', short: 'Not likely' },
-  { code: 'already', label: 'Already offered', short: 'Already' },
+  { code: 'already', label: 'We already have this', short: 'Already have it' },
 ]
 
 /** MassDEP background question 1. */
@@ -299,7 +320,7 @@ export const INTERESTS: Choice[] = [
 export const SCREENING = [
   { code: 'hours17', label: 'Do you work 17 hours or more a week, for 20 or more weeks a year?' },
   { code: 'daytime', label: 'Do you begin and end each workday between 6:00 AM and 8:00 PM?' },
-  { code: 'car_lt5', label: 'Do you use your car for work trips (not commuting) fewer than five times a month?' },
+  { code: 'car_lt5', label: 'Do you drive your own car for your job (client or site visits, errands for work, not your commute) fewer than five times a month?' },
 ] as const
 export type ScreeningCode = (typeof SCREENING)[number]['code']
 

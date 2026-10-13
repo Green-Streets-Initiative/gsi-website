@@ -8,7 +8,6 @@ import {
   DAY_MODE_GROUP_LABEL,
   DAY_MODE_OPTIONS,
   END_TIME,
-  HOURS_PER_DAY,
   INCENTIVES,
   INCENTIVE_RATINGS,
   INTERESTS,
@@ -81,10 +80,10 @@ function clearDraft(token: string) {
 }
 
 const card = 'rounded-[16px] border border-navy/[0.12] bg-white px-4 py-5 sm:px-6'
-const h2 = 'font-headline text-[20px] font-extrabold leading-tight text-navy'
-const help = 'mt-1 text-[14px] leading-[1.5] text-ink-soft'
-const label = 'block text-[15px] font-bold text-navy'
-const select = 'form-input mt-1.5 !text-[16px] !py-3'
+const h2 = 'font-headline text-[22px] font-extrabold leading-tight text-navy'
+const help = 'mt-1 text-[16px] leading-[1.5] text-ink-soft'
+const label = 'block text-[18px] font-bold leading-[1.3] text-navy'
+const select = 'form-input mt-1.5 !text-[17px] !py-3'
 
 /** A row of pill buttons for a one-choice question. Big enough for thumbs. */
 function Pills<T extends string>({
@@ -109,7 +108,7 @@ function Pills<T extends string>({
             role="radio"
             aria-checked={on}
             onClick={() => onChange(o.code)}
-            className={`min-h-[44px] rounded-full border px-4 py-2 text-[15px] leading-[1.2] transition-colors ${
+            className={`min-h-[46px] rounded-full border px-4 py-2 text-[17px] leading-[1.2] transition-colors ${
               on ? 'border-navy bg-navy font-bold text-white' : 'border-navy/25 bg-white text-navy hover:border-navy'
             }`}
           >
@@ -134,7 +133,7 @@ function Checks({ options, value, onChange, name }: { options: Choice[]; value: 
               onChange={(e) => onChange(e.target.checked ? [...value, o.code] : value.filter((x) => x !== o.code))}
               className="h-5 w-5 shrink-0 accent-forest"
             />
-            <span className="text-[15px] leading-[1.35] text-navy">{o.label}</span>
+            <span className="text-[17px] leading-[1.35] text-navy">{o.label}</span>
           </label>
         )
       })}
@@ -192,6 +191,10 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
     }
     hydrated.current = true
   }, [token])
+
+  useEffect(() => {
+    if (done) window.scrollTo({ top: 0 })
+  }, [done])
 
   useEffect(() => {
     if (!hydrated.current || done) return
@@ -341,8 +344,10 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
       const json = (await res.json().catch(() => null)) as { error?: string; problems?: string[] } | null
       if (res.ok) {
         clearDraft(token)
+        // The thank-you screen scrolls itself to the top once it has
+        // rendered (an effect below); scrolling here first flashed the top
+        // of the last step for a frame.
         setDone(true)
-        window.scrollTo({ top: 0 })
         return
       }
       if (json?.error === 'invalid' && json.problems) {
@@ -414,8 +419,11 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
       <form
         className="mx-auto max-w-[640px]"
         onSubmit={(e) => {
+          // Enter in a text box submits the form; before the last step that
+          // means "Next", never "send everything".
           e.preventDefault()
-          void submit()
+          if (isLast) void submit()
+          else next()
         }}
         noValidate
       >
@@ -432,7 +440,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
             <span className="font-bold">
               Step {idx + 1} of {steps.length}
             </span>
-            <span className="text-ink-soft">{idx < 2 ? 'Needed for the filing' : 'Optional'}</span>
+            <span className="text-ink-soft">{idx < 2 ? 'Required' : 'Optional'}</span>
           </div>
           <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-navy/[0.12]" role="progressbar" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={idx + 1} aria-label="Survey progress">
             <div className="h-full rounded-full bg-forest transition-all duration-300" style={{ width: `${((idx + 1) / steps.length) * 100}%` }} />
@@ -650,16 +658,13 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
                 <Pills name="End time" options={END_TIME} value={a.end_time} onChange={(v) => set('end_time', v)} />
               </div>
               <div>
-                <span className={label}>Hours you usually work a day</span>
-                <Pills name="Hours a day" options={HOURS_PER_DAY} value={a.hours_per_day} onChange={(v) => set('hours_per_day', v)} />
+                <span className={label}>How long does it take you to get to work, one way?</span>
+                <Pills name="Time to work, one way" options={MINUTES_ONE_WAY} value={a.minutes_one_way} onChange={(v) => set('minutes_one_way', v)} />
               </div>
               <div>
-                <span className={label}>Minutes to work, one way</span>
-                <Pills name="Minutes one way" options={MINUTES_ONE_WAY} value={a.minutes_one_way} onChange={(v) => set('minutes_one_way', v)} />
-              </div>
-              <div>
-                <span className={label}>Miles to work, one way (roughly)</span>
-                <Pills name="Miles one way" options={MILES_ONE_WAY} value={a.miles_one_way} onChange={(v) => set('miles_one_way', v)} />
+                <span className={label}>How far is it from home to work, one way?</span>
+                <p className={help}>A rough figure is fine.</p>
+                <Pills name="Distance to work, one way" options={MILES_ONE_WAY} value={a.miles_one_way} onChange={(v) => set('miles_one_way', v)} />
               </div>
               {anyTransit && (
                 <div>
@@ -679,7 +684,8 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
                 </div>
               )}
               <div>
-                <span className={label}>How often do you use your own car for work trips during the day?</span>
+                <span className={label}>How often do you drive your own car for your job during the workday?</span>
+                <p className={help}>Client or site visits, meetings elsewhere, errands for work. Not your commute.</p>
                 <Pills name="Car for business" options={CAR_FOR_BUSINESS} value={a.car_for_business} onChange={(v) => set('car_for_business', v)} />
               </div>
               {anyDriveFull && (
@@ -700,21 +706,19 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
 
           {/* 4. Why */}
           {step === 'why' && (
-            <section className={card} aria-labelledby="s-why">
-              <h2 id="s-why" className={h2}>
-                Why
-              </h2>
-              <p className={help}>Mark all that apply.</p>
-              <div className="mt-4 grid gap-6">
+            <section className={card} aria-label="Why you travel the way you do">
+              <div className="grid gap-6">
                 {showWhyShift && (
                   <div>
-                    <span className={label}>When you walk, bike, take transit or carpool, why?</span>
+                    <h2 className={h2}>When you walk, bike, take transit or carpool, why?</h2>
+                    <p className={help}>Mark all that apply.</p>
                     <Checks name="Why you shift" options={WHY_SHIFT} value={a.why_shift ?? []} onChange={(v) => set('why_shift', v)} />
                   </div>
                 )}
                 {showWhyDrive && (
                   <div>
-                    <span className={label}>When you drive alone, why?</span>
+                    <h2 className={h2}>When you drive alone, why?</h2>
+                    <p className={help}>Mark all that apply.</p>
                     <Checks name="Why you drive" options={WHY_DRIVE} value={a.why_drive ?? []} onChange={(v) => set('why_drive', v)} />
                   </div>
                 )}
@@ -732,7 +736,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
             <div className="mt-4 grid gap-4">
               {INCENTIVES.map((i) => (
                 <div key={i.code} className="border-t border-navy/[0.08] pt-3 first:border-t-0 first:pt-0">
-                  <span className="block text-[15px] leading-[1.35] text-navy">{i.label}</span>
+                  <span className="block text-[17px] leading-[1.35] text-navy">{i.label}</span>
                   <Pills<IncentiveRating>
                     name={i.label}
                     options={INCENTIVE_RATINGS.map((r) => ({ code: r.code, label: r.short }))}
@@ -747,12 +751,9 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
 
           {/* 6. In your words */}
           {step === 'words' && (
-          <section className={card} aria-labelledby="s-words">
-            <h2 id="s-words" className={h2}>
-              In your words
-            </h2>
-            <p className={help}>Optional. Only Green Streets Initiative reads these; {survey.company} gets a summary without names.</p>
-            <div className="mt-4 grid gap-5">
+          <section className={card} aria-label="A few more, in your own words">
+            <p className={help}>Last step. Only Green Streets Initiative reads what you write here; {survey.company} gets a summary without names.</p>
+            <div className="mt-4 grid gap-6">
               <div>
                 <span className={label}>Which of these would you like to try?</span>
                 <Checks name="Interests" options={INTERESTS} value={a.interests ?? []} onChange={(v) => set('interests', v)} />
