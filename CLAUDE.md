@@ -75,6 +75,10 @@ hit in context.
   via their own signatures/mechanisms; that setting lives in
   `supabase/config.toml`. Do not remove it.
 
+## Before marking any screen done
+
+Run `/polish <route>` (user-level skill at `~/.claude/skills/polish`): sequence, purpose, conversion, copy, layout by screenshot at desktop and phone width. No screen is reported done without its screenshots.
+
 ## Before every push
 
 1. **`git status -u`** in every touched repo (gsi-website and Shift often
