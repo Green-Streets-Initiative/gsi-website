@@ -47,6 +47,8 @@ type Props = {
 
 const GROUP_ORDER: (keyof typeof DAY_MODE_GROUP_LABEL)[] = ['active', 'transit', 'shared', 'car', 'away']
 
+type StepId = 'screen' | 'days' | 'about' | 'why' | 'incentives' | 'words'
+
 /**
  * Draft answers live in this browser under the link's token (Keith
  * 2026-10-13: a long page must not lose partial work). Written on every
@@ -55,7 +57,7 @@ const GROUP_ORDER: (keyof typeof DAY_MODE_GROUP_LABEL)[] = ['active', 'transit',
  * means no draft.
  */
 const DRAFT_KEY = (token: string) => `survey-draft:${token}`
-type Draft = { screen: SurveyAnswers['screen']; days: Partial<Record<Weekday, DayAnswer>>; a: Omit<SurveyAnswers, 'screen' | 'days'>; saved_at: string }
+type Draft = { screen: SurveyAnswers['screen']; days: Partial<Record<Weekday, DayAnswer>>; a: Omit<SurveyAnswers, 'screen' | 'days'>; saved_at: string; step?: number }
 
 function readDraft(token: string): Draft | null {
   try {
@@ -176,6 +178,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
   const hydrated = useRef(false)
   const [restored, setRestored] = useState(false)
   const [savedAt, setSavedAt] = useState<string | null>(null)
+  const [stepIdx, setStepIdx] = useState(0)
 
   useEffect(() => {
     const d = readDraft(token)
@@ -183,6 +186,7 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
       setScreen(d.screen ?? {})
       setDays(d.days ?? {})
       setA((prev) => ({ ...prev, ...d.a }))
+      if (typeof d.step === 'number') setStepIdx(d.step)
       setRestored(true)
       setSavedAt(d.saved_at)
     }
@@ -195,11 +199,11 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
     if (empty && !restored) return
     const t = window.setTimeout(() => {
       const saved_at = new Date().toISOString()
-      writeDraft(token, { screen, days, a, saved_at })
+      writeDraft(token, { screen, days, a, saved_at, step: stepIdx })
       setSavedAt(saved_at)
     }, 400)
     return () => window.clearTimeout(t)
-  }, [token, screen, days, a, done, restored])
+  }, [token, screen, days, a, done, restored, stepIdx])
 
   const set = <K extends keyof typeof a>(k: K, v: (typeof a)[K]) => setA((prev) => ({ ...prev, [k]: v }))
   const setDay = (d: Weekday, patch: Partial<DayAnswer> | null) =>
@@ -245,15 +249,57 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
     [],
   )
 
+  // One section per step (Keith 2026-10-13: a long page is hard to finish
+  // on a phone). "Why" only exists when it has a question to ask.
+  const steps = useMemo<{ id: StepId; title: string }[]>(
+    () => [
+      { id: 'screen', title: 'About your work week' },
+      { id: 'days', title: 'How you got to work each day' },
+      { id: 'about', title: 'About your commute' },
+      ...(showWhyShift || showWhyDrive ? [{ id: 'why' as StepId, title: 'Why' }] : []),
+      { id: 'incentives', title: 'What would change how you get to work?' },
+      { id: 'words', title: 'In your words' },
+    ],
+    [showWhyShift, showWhyDrive],
+  )
+  const idx = Math.min(stepIdx, steps.length - 1)
+  const step = steps[idx].id
+  const isLast = idx === steps.length - 1
+
+  function goTo(i: number) {
+    setStepIdx(Math.max(0, Math.min(i, steps.length - 1)))
+    setProblems([])
+    setFailed(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  /** Next: the current step's required answers, else move on. */
+  function next() {
+    const p = step === 'screen' ? screenProblems() : step === 'days' ? dayProblems() : step === 'about' ? zipProblems() : []
+    setProblems(p)
+    if (p.length > 0) {
+      topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+    goTo(idx + 1)
+  }
+
   function copyMonday() {
     const mon = days.mon
     if (!mon) return
     setDays({ mon, tue: { ...mon }, wed: { ...mon }, thu: { ...mon }, fri: { ...mon } })
   }
 
-  function localProblems(): string[] {
+  function screenProblems(): string[] {
     const out: string[] = []
     for (const q of SCREENING) if (screen[q.code] === undefined) out.push(`Answer "${q.label}"`)
+    return out
+  }
+  function zipProblems(): string[] {
+    return a.home_zip && !/^\d{5}$/.test(a.home_zip) ? ['Home ZIP code should be five digits'] : []
+  }
+  function dayProblems(): string[] {
+    const out: string[] = []
     for (const d of WEEKDAYS) {
       const v = days[d]
       const dayName = dayDateLabel(survey.week_start, d)
@@ -266,17 +312,24 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
       if (opt.legs && !v.longest) out.push(`${dayName}: which part of the trip covered the most distance?`)
       if (v.mode === 'transit_drive' && !v.car_part) out.push(`${dayName}: how did the car part of the trip happen?`)
     }
-    if (a.home_zip && !/^\d{5}$/.test(a.home_zip)) out.push('Home ZIP code should be five digits')
     return out
   }
 
   async function submit() {
-    const p = localProblems()
-    setProblems(p)
-    if (p.length > 0) {
+    // Anything missing sends the person back to the step it belongs to.
+    const checks: [StepId, string[]][] = [
+      ['screen', screenProblems()],
+      ['days', dayProblems()],
+      ['about', zipProblems()],
+    ]
+    const first = checks.find(([, p]) => p.length > 0)
+    if (first) {
+      setStepIdx(steps.findIndex((s) => s.id === first[0]))
+      setProblems(first[1])
       topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       return
     }
+    setProblems([])
     setSending(true)
     setFailed(null)
     try {
@@ -293,6 +346,8 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
         return
       }
       if (json?.error === 'invalid' && json.problems) {
+        // The server only checks the screening questions and the week.
+        setStepIdx(json.problems.some((p) => p.startsWith('Answer "')) ? 0 : 1)
         setProblems(json.problems)
         topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       } else if (json?.error === 'answered') {
@@ -371,6 +426,19 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
             Picked up where you left off. Your answers are saved on this device as you go; nothing is sent until you press Send.
           </p>
         )}
+        {/* Progress: which step, how many, and a bar. */}
+        <div className="mb-4" aria-live="polite">
+          <div className="flex items-baseline justify-between gap-3 text-[14px] text-navy">
+            <span className="font-bold">
+              Step {idx + 1} of {steps.length}
+            </span>
+            <span className="text-ink-soft">{idx < 2 ? 'Needed for the filing' : 'Optional'}</span>
+          </div>
+          <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-navy/[0.12]" role="progressbar" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={idx + 1} aria-label="Survey progress">
+            <div className="h-full rounded-full bg-forest transition-all duration-300" style={{ width: `${((idx + 1) / steps.length) * 100}%` }} />
+          </div>
+        </div>
+
         {problems.length > 0 && (
           <div role="alert" className="mb-5 rounded-[12px] border border-[#B3361F]/40 bg-[#FBEDE9] px-4 py-3 text-[15px] leading-[1.45] text-[#8A2A17]">
             <div className="font-bold">A few things to finish:</div>
@@ -384,9 +452,10 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
 
         <div className="grid gap-5">
           {/* 1. Who this applies to (MassDEP) */}
+          {step === 'screen' && (
           <section className={card} aria-labelledby="s-screen">
             <h2 id="s-screen" className={h2}>
-              1. About your work week
+              {steps[0].title}
             </h2>
             <p className={help}>Three quick questions that decide how your answers are counted.</p>
             <div className="mt-4 grid gap-5">
@@ -398,11 +467,13 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
               ))}
             </div>
           </section>
+          )}
 
           {/* 2. The week */}
+          {step === 'days' && (
           <section className={card} aria-labelledby="s-days">
             <h2 id="s-days" className={h2}>
-              2. How you got to work each day
+              {steps[1].title}
             </h2>
             <p className={help}>
               The week of {weekLabel(survey.week_start)}. Pick the one that fits best; if you used two ways, pick the combination.
@@ -487,9 +558,10 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
               })}
             </div>
           </section>
+          )}
 
           {/* The required part ends here: send now, or keep going. */}
-          {requiredDone && (
+          {step === 'days' && requiredDone && (
             <div className="rounded-[16px] border border-forest bg-white px-4 py-5 sm:px-6" role="status">
               <h2 className={h2}>That&apos;s the part the filing needs</h2>
               <p className="mt-1 text-[15px] leading-[1.5] text-navy">
@@ -504,17 +576,18 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
                 >
                   {sending ? 'Sending...' : 'Send now'}
                 </button>
-                <a href="#s-about" className="min-h-[44px] text-center text-[15px] font-bold text-forest underline sm:text-left">
+                <button type="button" onClick={() => goTo(idx + 1)} className="min-h-[44px] text-center text-[15px] font-bold text-forest underline sm:text-left">
                   Keep going
-                </a>
+                </button>
               </div>
             </div>
           )}
 
           {/* 3. About your commute */}
+          {step === 'about' && (
           <section className={card} aria-labelledby="s-about">
             <h2 id="s-about" className={h2}>
-              3. About your commute
+              About your commute
             </h2>
             <p className={help}>Optional, but each one helps {survey.company} plan better options.</p>
             <div className="mt-4 grid gap-5">
@@ -623,12 +696,13 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
               )}
             </div>
           </section>
+          )}
 
           {/* 4. Why */}
-          {(showWhyShift || showWhyDrive) && (
+          {step === 'why' && (
             <section className={card} aria-labelledby="s-why">
               <h2 id="s-why" className={h2}>
-                4. Why
+                Why
               </h2>
               <p className={help}>Mark all that apply.</p>
               <div className="mt-4 grid gap-6">
@@ -649,9 +723,10 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
           )}
 
           {/* 5. What would change things */}
+          {step === 'incentives' && (
           <section className={card} aria-labelledby="s-incentives">
             <h2 id="s-incentives" className={h2}>
-              5. What would change how you get to work?
+              What would change how you get to work?
             </h2>
             <p className={help}>For each one: how likely would you be to change your commute if it were offered?</p>
             <div className="mt-4 grid gap-4">
@@ -668,11 +743,13 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
               ))}
             </div>
           </section>
+          )}
 
           {/* 6. In your words */}
+          {step === 'words' && (
           <section className={card} aria-labelledby="s-words">
             <h2 id="s-words" className={h2}>
-              6. In your words
+              In your words
             </h2>
             <p className={help}>Optional. Only Green Streets Initiative reads these; {survey.company} gets a summary without names.</p>
             <div className="mt-4 grid gap-5">
@@ -717,19 +794,38 @@ export default function SurveyForm({ token, survey, recipient }: Props) {
               </div>
             </div>
           </section>
+          )}
 
           {failed && (
             <p role="alert" className="text-[15px] font-bold text-[#8A2A17]">
               {failed}
             </p>
           )}
-          <button
-            type="submit"
-            disabled={sending}
-            className="min-h-[52px] w-full rounded-full bg-navy px-6 text-[17px] font-bold text-white hover:bg-forest disabled:opacity-60 sm:w-auto sm:self-start sm:px-10"
-          >
-            {sending ? 'Sending...' : 'Send my answers'}
-          </button>
+          {/* Step navigation: Back, then Next or Send. */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            {isLast ? (
+              <button
+                type="submit"
+                disabled={sending}
+                className="min-h-[52px] w-full rounded-full bg-navy px-6 text-[17px] font-bold text-white hover:bg-forest disabled:opacity-60 sm:w-auto sm:px-10"
+              >
+                {sending ? 'Sending...' : 'Send my answers'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={next}
+                className="min-h-[52px] w-full rounded-full bg-navy px-6 text-[17px] font-bold text-white hover:bg-forest sm:w-auto sm:px-10"
+              >
+                Next
+              </button>
+            )}
+            {idx > 0 && (
+              <button type="button" onClick={() => goTo(idx - 1)} className="min-h-[44px] text-[15px] font-bold text-forest underline">
+                Back
+              </button>
+            )}
+          </div>
           {savedAt && (
             <p className="text-[13px] leading-[1.5] text-ink-soft" aria-live="polite">
               Draft saved on this device. You can close this page and come back to the same link.
