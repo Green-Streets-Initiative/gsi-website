@@ -1,0 +1,247 @@
+<!doctype html>
+<!--
+  One-page "How to pay for the T" cheat sheet (printable PDF), one per language.
+  Build: node scripts/t-cheat-sheet/build.mjs [lang]
+         -> public/downloads/t-cheat-sheet.pdf (en) or t-cheat-sheet-<lang>.pdf
+
+  Layout only. Every word is a "t:" token token from strings/<lang>.json so a
+  translation never touches this file. Prices are "price:" tokens from
+  src/lib/facts/prices.json (the same file the guide uses); "calc:" and
+  "reduced." are worked out in build.mjs; "icon:" token inlines a Phosphor icon
+  (regular by default; "icon:name:fill" for state markers, per the app's
+  icon weight rule).
+
+  Written for readers with limited English and for accessibility: 11pt body,
+  short lines, every icon has a text label next to it, meaning never carried by
+  color alone, dark text on white only. Keep it that way when editing.
+
+  Facts must agree with the "how-to-pay-for-the-t" guide in
+  content/micro-guides-library.md. Facts the guide does not cover were checked
+  on mbta.com on 2026-10-13:
+    - Express bus same as local bus (pilot from 2026-09-01): mbta.com/fares/bus-fares
+    - Ferry $2.40 to $9.75: mbta.com/fares
+    - Free and reduced fares (groups, $1.10 / $0.85 / $30): mbta.com/fares/reduced
+    - Passes do not work with tap to pay: mbta.com/fares
+    - 617-222-3200 interpreters in 160+ languages: mbta.com/language-services
+-->
+<html lang="{{t:meta.lang}}" dir="{{t:meta.dir}}">
+<head>
+<meta charset="utf-8">
+<title>{{t:meta.title}}</title>
+<style>
+  @font-face { font-family: 'GSI Trebuchet'; font-weight: 400; src: local('Trebuchet MS'), url(../../public/fonts/trebuchet-regular.ttf) format('truetype'); }
+  @font-face { font-family: 'GSI Trebuchet'; font-weight: 700; src: local('Trebuchet MS Bold'), local('TrebuchetMS-Bold'), url(../../public/fonts/trebuchet-bold.ttf) format('truetype'); }
+  @font-face { font-family: 'Overpass'; font-weight: 600 800; src: url(../../public/fonts/web/overpass-600-800-latin.woff2) format('woff2'); }
+  @font-face { font-family: 'Bricolage Grotesque'; font-weight: 400 800; src: url(../../public/fonts/web/bricolage-400-800-latin.woff2) format('woff2'); }
+
+  @page { size: Letter; margin: 0.38in 0.45in 0.34in; }
+  :root {
+    --navy: #191A2E;
+    --forest: #2D6A4F;
+    --forest-tint: #EAF3EE;
+    --muted: #3F4259;   /* 10:1 on white */
+    --hair: #9EA2B3;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  body {
+    /* Latin first; CJK / Vietnamese fall through to system fonts with full coverage. */
+    font-family: 'GSI Trebuchet', 'Trebuchet MS', 'PingFang SC', 'Noto Sans SC', 'Noto Sans', Verdana, sans-serif;
+    color: var(--navy);
+    font-size: 11pt;
+    line-height: 1.34;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page { display: flex; flex-direction: column; gap: 0.1in; }
+  p { margin: 0; }
+  b { font-weight: 700; }
+  .num { font-family: 'Overpass', 'GSI Trebuchet', sans-serif; font-weight: 800; }
+  svg.i { width: 1em; height: 1em; flex: none; display: block; }
+
+  /* Header: street-sign panel. */
+  .sign { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.2in; background: var(--forest); color: #fff; border-radius: 12px; padding: 0.11in 0.22in 0.12in; }
+  .sign .kicker { text-align: end; max-width: 1.5in; padding-top: 4px; }
+  .sign .kicker { font-size: 10.5pt; }
+  .sign h1 { margin: 2px 0 0; font-family: 'Overpass', 'GSI Trebuchet', sans-serif; font-weight: 800; font-size: 28pt; line-height: 1.02; margin: 0 !important; }
+  .sign .sub { margin-top: 4px; font-size: 12.5pt; font-weight: 700; }
+
+  h2 {
+    display: flex; align-items: center; gap: 7px;
+    margin: 0 0 6px;
+    font-family: 'Overpass', 'GSI Trebuchet', sans-serif;
+    font-weight: 800; font-size: 14.5pt; line-height: 1.15;
+    color: var(--forest);
+  }
+  h2 svg.i { font-size: 18pt; }
+
+  /* One ride: big price tiles. */
+  .fares { display: grid; grid-template-columns: 1fr 1fr 1.1fr 1.35fr 1.2fr; gap: 7px; }
+  .tile { border: 1.5px solid var(--navy); border-radius: 9px; padding: 6px 9px 7px; }
+  .tile .mode { display: flex; align-items: center; gap: 5px; font-weight: 700; font-size: 11pt; white-space: nowrap; }
+  .tile .mode svg.i { font-size: 17pt; }
+  .tile .n { font-size: 22pt; line-height: 1.05; margin-top: 2px; white-space: nowrap; }
+  .tile .n.range { font-size: 15pt; line-height: 1.2; padding-top: 4px; }
+  .tile .note { font-size: 9.5pt; line-height: 1.2; color: var(--muted); margin-top: 2px; }
+
+  /* Which pass: a real table. */
+  .pass-head { display: flex; align-items: baseline; gap: 0.2in; flex-wrap: wrap; margin-bottom: 6px; }
+  .pass-head h2 { margin: 0; align-self: center; }
+  .rule { font-size: 12pt; }
+  table { width: 100%; border-collapse: collapse; font-size: 11pt; line-height: 1.28; }
+  th {
+    text-align: start; font-weight: 700; font-size: 10pt; color: var(--navy);
+    background: var(--forest-tint);
+    border-top: 2px solid var(--navy); border-bottom: 2px solid var(--navy);
+    padding: 5px 8px;
+  }
+  td { border-bottom: 1px solid var(--hair); padding: 3px 8px; vertical-align: middle; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 2px solid var(--navy); }
+  td.pass { font-weight: 700; width: 22%; }
+  td.price { width: 13%; }
+  td.price .num { font-size: 15pt; }
+  td.price.small { font-size: 10.5pt; font-weight: 700; line-height: 1.25; }
+  td.rides { width: 20%; }
+  .fine { font-size: 10pt; color: var(--muted); margin-top: 5px; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0.24in; }
+
+  /* How to pay: two icon cards. */
+  .way { display: grid; grid-template-columns: 30px 1fr; gap: 0 9px; margin-bottom: 5px; }
+  .way svg.i { font-size: 26px; color: var(--forest); grid-row: span 2; margin-top: 1px; }
+  .way .k { font-weight: 700; }
+
+  /* Transfers: three rows, arrow diagram. */
+  .xrow { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--hair); }
+  .xrow:last-of-type { border-bottom: 0; }
+  .xrow .route { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+  .xrow .route svg.i { font-size: 15pt; }
+  .xrow .v { font-weight: 700; white-space: nowrap; }
+  .xtime { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+  .xtime svg.i { font-size: 15pt; color: var(--forest); }
+
+  /* Ride free or pay less: the highlighted box. */
+  .save { border: 3px solid var(--forest); border-radius: 12px; padding: 0.08in 0.17in 0.1in; background: var(--forest-tint); }
+  .save .cols { gap: 0.22in; }
+  .save h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 2px; font-size: 12.5pt; }
+  .save h3 svg.i { font-size: 16pt; color: var(--forest); }
+  .save .prices { font-weight: 700; margin-bottom: 2px; }
+  .save ul { margin: 2px 0 0; padding: 0; list-style: none; }
+  .save li { position: relative; padding-inline-start: 14px; margin: 0 0 1px; }
+  .save li::before { content: ''; position: absolute; inset-inline-start: 0; top: 0.5em; width: 6px; height: 6px; border-radius: 50%; background: var(--navy); }
+  .save .apply { margin-top: 5px; padding-top: 5px; border-top: 1.5px solid var(--forest); }
+
+  .job { display: grid; grid-template-columns: 26px 1fr; gap: 0 8px; align-items: start; margin-top: 5px; padding-top: 5px; border-top: 1.5px solid var(--forest); }
+  .job svg.i { font-size: 22px; color: var(--forest); margin-top: 1px; }
+
+  .foot { display: flex; align-items: center; justify-content: space-between; gap: 0.25in; border-top: 1.5px solid var(--navy); padding-top: 8px; }
+  .foot .shift { display: flex; align-items: center; gap: 12px; max-width: 5.5in; font-size: 10pt; line-height: 1.3; }
+  .foot .shift svg { flex: none; }
+  .foot .gsi { text-align: end; font-size: 10pt; }
+  .foot .gsi .wm { display: block; width: 1.75in; height: 0.27in; overflow: hidden; margin-inline-start: auto; }
+  .foot .gsi img { display: block; width: 100%; height: auto; margin-inline-start: -1px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="sign">
+    <div><h1>{{t:head.title}}</h1><p class="sub">{{t:head.sub}}</p></div>
+    <p class="kicker">{{t:head.kicker}}</p>
+  </header>
+
+  <section>
+    <h2>{{t:ride.h}}</h2>
+    <div class="fares">
+      <div class="tile"><p class="mode">{{icon:subway}}{{t:ride.subway}}</p><p class="n num">{{price:mbta.subwaySingle|cents}}</p></div>
+      <div class="tile"><p class="mode">{{icon:bus}}{{t:ride.bus}}</p><p class="n num">{{price:mbta.busSingle|cents}}</p></div>
+      <div class="tile"><p class="mode">{{icon:bus}}{{t:ride.express}}</p><p class="n num">{{price:mbta.busSingle|cents}}</p><p class="note">{{t:ride.express.note}}</p></div>
+      <div class="tile"><p class="mode">{{icon:train-regional}}{{t:ride.rail}}</p><p class="n num range">{{price:mbta.commuterRailMin|cents}}&ndash;{{price:mbta.commuterRailMax|cents}}</p><p class="note">{{t:ride.rail.note}}</p></div>
+      <div class="tile"><p class="mode">{{icon:boat}}{{t:ride.ferry}}</p><p class="n num range">{{ferry.min}}&ndash;{{ferry.max}}</p><p class="note">{{t:ride.ferry.note}}</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="pass-head"><h2>{{icon:cards}}{{t:pass.h}}</h2><p class="rule">{{t:pass.rule}}</p></div>
+    <table>
+      <thead>
+        <tr><th scope="col">{{t:pass.col.pass}}</th><th scope="col">{{t:pass.col.price}}</th><th scope="col">{{t:pass.col.rides}}</th><th scope="col">{{t:pass.col.deal}}</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="pass">{{t:pass.day}}</td><td class="price"><span class="num">{{price:mbta.dayPass}}</span></td><td class="rides">{{t:pass.day.rides}}</td><td>{{t:pass.day.deal}}</td></tr>
+        <tr><td class="pass">{{t:pass.week}}</td><td class="price"><span class="num">{{price:mbta.weekPass}}</span></td><td class="rides">{{t:pass.week.rides}}</td><td>{{t:pass.week.deal}}</td></tr>
+        <tr><td class="pass">{{t:pass.month}}</td><td class="price"><span class="num">{{price:mbta.linkPassMonthly}}</span></td><td class="rides">{{t:pass.month.rides}}</td><td>{{t:pass.month.deal}}</td></tr>
+        <tr><td class="pass">{{t:pass.bus}}</td><td class="price"><span class="num">{{price:mbta.busPassMonthly}}</span></td><td class="rides">{{t:pass.bus.rides}}</td><td>{{t:pass.bus.deal}}</td></tr>
+      </tbody>
+    </table>
+    <p class="fine">{{t:pass.note}}</p>
+  </section>
+
+  <div class="cols">
+    <section>
+      <h2>{{t:pay.h}}</h2>
+      <div class="way">{{icon:contactless-payment}}<p class="k">{{t:pay.tap.k}}</p><p>{{t:pay.tap.v}}</p></div>
+      <div class="way">{{icon:credit-card}}<p class="k">{{t:pay.card.k}}</p><p>{{t:pay.card.v}}</p></div>
+      <div class="way">{{icon:ticket}}<p class="k">{{t:pay.ticket.k}}</p><p>{{t:pay.ticket.v}}</p></div>
+    </section>
+
+    <section>
+      <h2>{{t:xfer.h}}</h2>
+      <p class="xtime">{{icon:clock}}<span>{{t:xfer.time}}</span></p>
+      <div class="xrow"><p class="route">{{icon:bus}}{{icon:arrow-right}}{{icon:subway}}<span>{{t:xfer.bus2subway}}</span></p><p class="v">{{t:xfer.bus2subway.v}}</p></div>
+      <div class="xrow"><p class="route">{{icon:subway}}{{icon:arrow-right}}{{icon:bus}}<span>{{t:xfer.subway2bus}}</span></p><p class="v">{{t:xfer.free}}</p></div>
+      <div class="xrow"><p class="route">{{icon:bus}}{{icon:arrow-right}}{{icon:bus}}<span>{{t:xfer.bus2bus}}</span></p><p class="v">{{t:xfer.free}}</p></div>
+      <p class="fine">{{t:xfer.note}}</p>
+    </section>
+  </div>
+
+  <section class="save">
+    <h2>{{icon:hand-coins}}{{t:save.h}}</h2>
+    <div class="cols">
+      <div>
+        <h3>{{icon:check-circle:fill}}{{t:save.free.h}}</h3>
+        <ul>
+          <li>{{t:save.free.kids}}</li>
+          <li>{{t:save.free.blind}}</li>
+          <li>{{t:save.free.75}}</li>
+          <li>{{t:save.free.military}}</li>
+          <li>{{t:save.free.uniform}}</li>
+        </ul>
+      </div>
+      <div>
+        <h3>{{icon:identification-card}}{{t:save.half.h}}</h3>
+        <p class="prices">{{t:save.half.prices}}</p>
+        <ul>
+          <li>{{t:save.half.65}}</li>
+          <li>{{t:save.half.disability}}</li>
+          <li>{{t:save.half.income}}</li>
+          <li>{{t:save.half.students}}</li>
+        </ul>
+      </div>
+    </div>
+    <p class="apply">{{t:save.apply}}</p>
+    <div class="job">
+      {{icon:briefcase}}
+      <p>{{t:job.work}} {{t:job.school}}</p>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="shift">
+      <!-- Real Shift wordmark, inlined from public/brand/shift-wordmark-dark.svg -->
+      <svg viewBox="0 0 125 40" width="78" height="25" role="img" aria-label="Shift">
+        <text x="0" y="30" font-family="'Bricolage Grotesque', 'Arial Black', sans-serif" font-weight="800" font-size="34" letter-spacing="-1.36" fill="#191A2E">Shift</text>
+        <path d="M85,7 L101,20 L85,33 L85,26 L95,20 L85,14Z" fill="#BAF14D"/>
+        <path d="M104,7 L120,20 L104,33 L104,26 L114,20 L104,14Z" fill="#2966E5"/>
+      </svg>
+      <p>{{t:foot.shift}} <b>{{t:foot.shift.url}}</b></p>
+    </div>
+    <div class="gsi">
+      <span class="wm"><img src="../../public/images/gsi-wordmark.png" alt="Green Streets Initiative"></span>
+      <p>{{t:foot.guides.url}}</p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

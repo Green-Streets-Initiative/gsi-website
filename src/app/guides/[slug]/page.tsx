@@ -7,6 +7,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import JsonLd from '@/components/JsonLd'
 import StoreBadges from '@/components/StoreBadges'
+import CheatSheetDownload from '@/components/guides/CheatSheetDownload'
 import { pageMetadata } from '@/lib/seo'
 import { guideArticleSchema, breadcrumbSchema } from '@/lib/structured-data'
 
@@ -113,6 +114,18 @@ const appStripDefault = {
   line: 'Shift shows live bus and train arrivals, low-stress bike routes and the nearest Bluebikes. Make more trips this way and you can unlock gift cards from local shops. Free.',
 }
 
+// Printable one-page sheets, offered right under the app strip. A download
+// needs no email and no app, so Ad Grants can count it as a conversion.
+// Source and build: scripts/t-cheat-sheet/ (rerun when prices.json changes).
+const cheatSheets: Record<string, { href: string; sheet: string; label: string; detail: string }> = {
+  'how-to-pay-for-the-t': {
+    href: '/downloads/t-cheat-sheet.pdf',
+    sheet: 't-cheat-sheet',
+    label: 'Download the one-page T cheat sheet (PDF)',
+    detail: 'Prices, passes, and who rides free or pays less. One printable page, no sign\u2011up.',
+  },
+}
+
 export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
@@ -150,6 +163,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   }
 
   const guideSlug = g.slug ?? slug
+  const cheatSheet = cheatSheets[guideSlug]
 
   return (
     <>
@@ -208,7 +222,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               paragraph and leave before the "Try it" box at the end, so the
               badges also sit here. Its own placement tag shows which spot
               gets the store clicks. */}
-          <div className="mb-10 rounded-[14px] border border-navy/10 bg-white px-5 py-5">
+          <div className={`${cheatSheet ? 'mb-4' : 'mb-10'} rounded-[14px] border border-navy/10 bg-white px-5 py-5`}>
             <p className="mb-1 text-[1.0625rem] font-semibold leading-snug text-navy">
               {(appStrip[g.primary_mode ?? ''] ?? appStripDefault).headline}
             </p>
@@ -223,6 +237,17 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               See how Shift works
             </Link>
           </div>
+
+          {cheatSheet && (
+            <CheatSheetDownload
+              href={cheatSheet.href}
+              sheet={cheatSheet.sheet}
+              placement="guide_top"
+              label={cheatSheet.label}
+              detail={cheatSheet.detail}
+              className="mb-10"
+            />
+          )}
 
           {/* Body — rendered from markdown.
               Summary is intentionally not rendered here. Summaries are
