@@ -48,7 +48,7 @@ export default function PressPage() {
                   About GSI
                 </h2>
                 <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
-                  Green Streets Initiative is a Cambridge-based 501(c)(3) nonprofit helping
+                  Green Streets Initiative is a Somerville-based 501(c)(3) nonprofit helping
                   commuters across Massachusetts shift trips to active transportation. Founded
                   in 2006.
                 </p>

@@ -269,7 +269,7 @@ export default function Footer({ variant = 'dark' }: { variant?: Variant } = {})
         </div>
 
         <div className={`mt-14 flex flex-col items-center justify-between gap-4 border-t ${t.rule} pt-8 text-xs ${t.fine} md:flex-row`}>
-          <p>&copy; 2026 Green Streets Initiative. Cambridge, MA. 501(c)(3) nonprofit.</p>
+          <p>&copy; 2026 Green Streets Initiative. Somerville, MA. 501(c)(3) nonprofit.</p>
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 md:justify-end">
             <Link href="/privacy" className={`transition-colors ${t.link}`}>
               Privacy policy

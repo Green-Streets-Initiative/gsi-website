@@ -40,7 +40,7 @@ export default function ContactPage() {
           </div>
           <div className="text-center sm:text-left">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">Based in</p>
-            <p className="mt-1 text-sm text-ink-soft">Cambridge, MA</p>
+            <p className="mt-1 text-sm text-ink-soft">Somerville, MA</p>
           </div>
         </div>
       </div>

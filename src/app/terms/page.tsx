@@ -32,7 +32,7 @@ export default function TermsPage() {
               <P>
                 Shift is a mobile application operated by Green Streets Initiative
                 (&ldquo;GSI,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;),
-                a 501(c)(3) nonprofit organization based in Cambridge, Massachusetts. These
+                a 501(c)(3) nonprofit organization based in Somerville, Massachusetts. These
                 Terms of Service (&ldquo;Terms&rdquo;) govern your access to and use of the
                 Shift mobile application, the Green Streets Initiative website at
                 gogreenstreets.org, and any related content, features, challenges, competitions,
@@ -668,7 +668,8 @@ export default function TermsPage() {
             <Section title="Contact">
               <P>
                 Green Streets Initiative<br />
-                Cambridge, Massachusetts<br />
+                519 Somerville Ave, Ste 2, Box 103<br />
+                Somerville, MA 02143<br />
                 <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>
               </P>
               <P>

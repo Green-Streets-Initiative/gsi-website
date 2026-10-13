@@ -91,7 +91,7 @@ function getAgreementText(
     return `Shift Community Partner Agreement
 Green Streets Initiative — ${AGREEMENT_YEAR}
 
-By submitting this application, you ("Partner") agree to the following terms with Green Streets Initiative ("GSI"), a 501(c)(3) nonprofit organization based in Cambridge, Massachusetts.
+By submitting this application, you ("Partner") agree to the following terms with Green Streets Initiative ("GSI"), a 501(c)(3) nonprofit organization based in Somerville, Massachusetts.
 
 1. Program participation
 Partner agrees to be listed as a Community Partner in the Shift app's partner directory. Partner's name, logo, and any provided description will be visible to Shift app users. No discount or other consideration is required from Partner. In return, Partner agrees to cross-promote Shift to its customers and community (e.g., displaying the provided window sticker, mentioning Shift in newsletters or social media when convenient).
@@ -121,7 +121,7 @@ By checking the box below, you confirm that you are authorized to enter into thi
   return `Shift Rewards Partner Agreement
 Green Streets Initiative — ${AGREEMENT_YEAR}
 
-By submitting this application, you ("Partner") agree to the following terms with Green Streets Initiative ("GSI"), a 501(c)(3) nonprofit organization based in Cambridge, Massachusetts.
+By submitting this application, you ("Partner") agree to the following terms with Green Streets Initiative ("GSI"), a 501(c)(3) nonprofit organization based in Somerville, Massachusetts.
 
 1. Program participation
 ${participation} GSI will list the Discount in the Shift partner directory once this application is reviewed and approved.

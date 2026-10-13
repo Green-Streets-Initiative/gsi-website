@@ -621,7 +621,8 @@ export default function PrivacyPage() {
             <Section title="Contact Us">
               <P>
                 Green Streets Initiative<br />
-                Cambridge, MA<br />
+                519 Somerville Ave, Ste 2, Box 103<br />
+                Somerville, MA 02143<br />
                 <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>
               </P>
               <P>
