@@ -238,7 +238,15 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       } catch {
         /* column not there yet */
       }
-      const groupRow: Group = { ...(groupData as Omit<Group, 'join_policy'>), join_policy: joinPolicy }
+      // commute_survey_enabled arrives with Shift 01170; read on its own for the same reason.
+      let surveyEnabled = false
+      try {
+        const { data: se } = await supabase.from('groups').select('commute_survey_enabled').eq('id', adminRow.group_id).maybeSingle()
+        surveyEnabled = (se as { commute_survey_enabled?: boolean } | null)?.commute_survey_enabled === true
+      } catch {
+        /* column not there yet */
+      }
+      const groupRow: Group = { ...(groupData as Omit<Group, 'join_policy'>), join_policy: joinPolicy, commute_survey_enabled: surveyEnabled }
       setGroup(groupRow)
       const eb = (groupData.employer_benefits || {}) as EmployerBenefits
       setBenefitsForm(eb)

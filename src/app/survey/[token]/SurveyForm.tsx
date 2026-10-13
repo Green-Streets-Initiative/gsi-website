@@ -1,0 +1,638 @@
+'use client'
+
+import { useMemo, useRef, useState } from 'react'
+import {
+  CAR_FOR_BUSINESS,
+  CAR_PART_OPTIONS,
+  DAY_MODE_BY_CODE,
+  DAY_MODE_GROUP_LABEL,
+  DAY_MODE_OPTIONS,
+  END_TIME,
+  HOURS_PER_DAY,
+  INCENTIVES,
+  INCENTIVE_RATINGS,
+  INTERESTS,
+  LONGEST_LEG_LABEL,
+  MILES_ONE_WAY,
+  MINUTES_ONE_WAY,
+  PARKING_FULL,
+  PARKING_PART,
+  SCREENING,
+  START_TIME,
+  TRANSIT_ROUTES,
+  WEEKDAYS,
+  WHY_DRIVE,
+  WHY_SHIFT,
+  dayDateLabel,
+  isCommuteDay,
+  longDate,
+  usesTransit,
+  weekLabel,
+  type CarPart,
+  type Choice,
+  type DayAnswer,
+  type DayMode,
+  type IncentiveRating,
+  type LongestLeg,
+  type SurveyAnswers,
+  type Weekday,
+} from '@/lib/employer/survey-instrument'
+import type { PublicSurvey } from '@/lib/employer/survey-server'
+
+type Props = {
+  token: string
+  survey: PublicSurvey
+  recipient: { name: string | null; department: string | null; location_id: string | null } | null
+}
+
+const GROUP_ORDER: (keyof typeof DAY_MODE_GROUP_LABEL)[] = ['active', 'transit', 'shared', 'car', 'away']
+
+const card = 'rounded-[16px] border border-navy/[0.12] bg-white px-4 py-5 sm:px-6'
+const h2 = 'font-headline text-[20px] font-extrabold leading-tight text-navy'
+const help = 'mt-1 text-[14px] leading-[1.5] text-ink-soft'
+const label = 'block text-[15px] font-bold text-navy'
+const select = 'form-input mt-1.5 !text-[16px] !py-3'
+
+/** A row of pill buttons for a one-choice question. Big enough for thumbs. */
+function Pills<T extends string>({
+  options,
+  value,
+  onChange,
+  name,
+}: {
+  options: { code: T; label: string }[]
+  value: T | undefined
+  onChange: (v: T) => void
+  name: string
+}) {
+  return (
+    <div role="radiogroup" aria-label={name} className="mt-2 flex flex-wrap gap-2">
+      {options.map((o) => {
+        const on = value === o.code
+        return (
+          <button
+            key={o.code}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => onChange(o.code)}
+            className={`min-h-[44px] rounded-full border px-4 py-2 text-[15px] leading-[1.2] transition-colors ${
+              on ? 'border-navy bg-navy font-bold text-white' : 'border-navy/25 bg-white text-navy hover:border-navy'
+            }`}
+          >
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function Checks({ options, value, onChange, name }: { options: Choice[]; value: string[]; onChange: (v: string[]) => void; name: string }) {
+  return (
+    <div role="group" aria-label={name} className="mt-2 grid gap-1 sm:grid-cols-2">
+      {options.map((o) => {
+        const on = value.includes(o.code)
+        return (
+          <label key={o.code} className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-[10px] px-2 py-2 hover:bg-cream">
+            <input
+              type="checkbox"
+              checked={on}
+              onChange={(e) => onChange(e.target.checked ? [...value, o.code] : value.filter((x) => x !== o.code))}
+              className="h-5 w-5 shrink-0 accent-forest"
+            />
+            <span className="text-[15px] leading-[1.35] text-navy">{o.label}</span>
+          </label>
+        )
+      })}
+    </div>
+  )
+}
+
+function YesNo({ value, onChange, name }: { value: boolean | undefined; onChange: (v: boolean) => void; name: string }) {
+  return (
+    <Pills
+      name={name}
+      options={[
+        { code: 'yes', label: 'Yes' },
+        { code: 'no', label: 'No' },
+      ]}
+      value={value === true ? 'yes' : value === false ? 'no' : undefined}
+      onChange={(v) => onChange(v === 'yes')}
+    />
+  )
+}
+
+export default function SurveyForm({ token, survey, recipient }: Props) {
+  const [screen, setScreen] = useState<SurveyAnswers['screen']>({})
+  const [days, setDays] = useState<Partial<Record<Weekday, DayAnswer>>>({})
+  const [a, setA] = useState<Omit<SurveyAnswers, 'screen' | 'days'>>({
+    transit_routes: [],
+    why_shift: [],
+    why_drive: [],
+    interests: [],
+    incentives: {},
+    location_id: recipient?.location_id ?? (survey.sites.length === 1 ? survey.sites[0].id : null),
+    department: recipient?.department ?? null,
+  })
+  const [problems, setProblems] = useState<string[]>([])
+  const [sending, setSending] = useState(false)
+  const [done, setDone] = useState(false)
+  const [failed, setFailed] = useState<string | null>(null)
+  const topRef = useRef<HTMLDivElement>(null)
+
+  const set = <K extends keyof typeof a>(k: K, v: (typeof a)[K]) => setA((prev) => ({ ...prev, [k]: v }))
+  const setDay = (d: Weekday, patch: Partial<DayAnswer> | null) =>
+    setDays((prev) => {
+      if (patch === null) {
+        const next = { ...prev }
+        delete next[d]
+        return next
+      }
+      const cur = prev[d]
+      const mode = (patch.mode ?? cur?.mode) as DayMode | undefined
+      if (!mode) return prev
+      // A new mode drops the old follow-ups.
+      const base: DayAnswer = patch.mode && patch.mode !== cur?.mode ? { mode: patch.mode } : { ...(cur ?? { mode }), ...patch }
+      return { ...prev, [d]: base }
+    })
+
+  const answered = WEEKDAYS.map((d) => days[d]).filter((x): x is DayAnswer => !!x)
+  const commuteDays = answered.filter((x) => isCommuteDay(x.mode))
+  const anyDriveAlone = answered.some((x) => x.mode === 'drive_alone')
+  const anyShift = commuteDays.some((x) => x.mode !== 'drive_alone' && x.mode !== 'ridehail_alone')
+  const anyTransit = answered.some((x) => usesTransit(x.mode))
+  const anyDriveFull = answered.some((x) => x.mode === 'drive_alone' || x.mode === 'carpool')
+  const anyDrivePart = answered.some((x) => x.mode === 'drive_bike' || (x.mode === 'transit_drive' && x.car_part !== 'shuttle'))
+  const showWhyShift = anyShift || commuteDays.length === 0
+  const showWhyDrive = anyDriveAlone || commuteDays.length === 0
+
+  const modeGroups = useMemo(
+    () => GROUP_ORDER.map((g) => ({ g, options: DAY_MODE_OPTIONS.filter((o) => o.group === g) })),
+    [],
+  )
+
+  function copyMonday() {
+    const mon = days.mon
+    if (!mon) return
+    setDays({ mon, tue: { ...mon }, wed: { ...mon }, thu: { ...mon }, fri: { ...mon } })
+  }
+
+  function localProblems(): string[] {
+    const out: string[] = []
+    for (const q of SCREENING) if (screen[q.code] === undefined) out.push(`Answer "${q.label}"`)
+    for (const d of WEEKDAYS) {
+      const v = days[d]
+      const dayName = dayDateLabel(survey.week_start, d)
+      if (!v) {
+        out.push(`Pick how you got to work on ${dayName}`)
+        continue
+      }
+      const opt = DAY_MODE_BY_CODE[v.mode]
+      if (v.mode === 'carpool' && !(v.size && v.size >= 2)) out.push(`${dayName}: how many people were in the carpool or vanpool, including you?`)
+      if (opt.legs && !v.longest) out.push(`${dayName}: which part of the trip covered the most distance?`)
+      if (v.mode === 'transit_drive' && !v.car_part) out.push(`${dayName}: how did the car part of the trip happen?`)
+    }
+    if (a.home_zip && !/^\d{5}$/.test(a.home_zip)) out.push('Home ZIP code should be five digits')
+    return out
+  }
+
+  async function submit() {
+    const p = localProblems()
+    setProblems(p)
+    if (p.length > 0) {
+      topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+    setSending(true)
+    setFailed(null)
+    try {
+      const res = await fetch(`/api/survey/${encodeURIComponent(token)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: { screen, days, ...a } }),
+      })
+      const json = (await res.json().catch(() => null)) as { error?: string; problems?: string[] } | null
+      if (res.ok) {
+        setDone(true)
+        window.scrollTo({ top: 0 })
+        return
+      }
+      if (json?.error === 'invalid' && json.problems) {
+        setProblems(json.problems)
+        topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      } else if (json?.error === 'answered') {
+        setDone(true)
+      } else if (json?.error === 'closed') {
+        setFailed('This survey has closed.')
+      } else {
+        setFailed("We couldn't save your answers. Check your connection and try again.")
+      }
+    } catch {
+      setFailed("We couldn't save your answers. Check your connection and try again.")
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const header = (
+    <header className="mb-6">
+      <div className="flex items-center gap-3">
+        {survey.logo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={survey.logo_url} alt="" className="h-10 w-auto max-w-[140px] rounded-md bg-white object-contain p-1" />
+        ) : null}
+        <div className="text-[14px] font-bold uppercase tracking-wide text-forest">{survey.company}</div>
+      </div>
+      <h1 className="font-headline mt-3 text-[30px] font-extrabold leading-[1.05] text-navy">Commute survey</h1>
+      <p className="mt-2 text-[16px] leading-[1.5] text-navy">
+        {recipient?.name ? `Hi ${recipient.name.split(/\s+/)[0]}. ` : ''}
+        How did you get to work the week of {weekLabel(survey.week_start)}? About two minutes.
+      </p>
+      <p className={help}>
+        {survey.company} sees totals and who has answered, never your individual answers. Run by Shift, from the nonprofit Green
+        Streets Initiative. Please answer by {longDate(survey.closes_on)}.
+      </p>
+    </header>
+  )
+
+  if (done) {
+    return (
+      <main className="street min-h-screen bg-cream px-4 py-8 text-navy sm:px-6" style={{ fontFamily: 'var(--font-gsi)' }}>
+        <div className="mx-auto max-w-[640px]">
+          {header}
+          <div className={card}>
+            <h2 className={h2}>Thank you</h2>
+            <p className="mt-2 text-[16px] leading-[1.5] text-navy">
+              Your answers are in. {survey.company} will see how the whole team gets to work, never one person&apos;s answers.
+            </p>
+            <p className={help}>
+              Want to see your own trips add up? Shift is a free app that records walks, bike rides, transit trips and carpools and
+              turns them into rewards.{' '}
+              <a href="https://shift.gogreenstreets.org" className="font-bold text-forest underline">
+                Get Shift
+              </a>
+            </p>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  return (
+    <main className="street min-h-screen bg-cream px-4 py-8 text-navy sm:px-6" style={{ fontFamily: 'var(--font-gsi)' }}>
+      <form
+        className="mx-auto max-w-[640px]"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void submit()
+        }}
+        noValidate
+      >
+        {header}
+        <div ref={topRef} />
+        {problems.length > 0 && (
+          <div role="alert" className="mb-5 rounded-[12px] border border-[#B3361F]/40 bg-[#FBEDE9] px-4 py-3 text-[15px] leading-[1.45] text-[#8A2A17]">
+            <div className="font-bold">A few things to finish:</div>
+            <ul className="mt-1 list-disc pl-5">
+              {problems.map((p) => (
+                <li key={p}>{p}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="grid gap-5">
+          {/* 1. Who this applies to (MassDEP) */}
+          <section className={card} aria-labelledby="s-screen">
+            <h2 id="s-screen" className={h2}>
+              1. About your work week
+            </h2>
+            <p className={help}>Three quick questions that decide how your answers are counted.</p>
+            <div className="mt-4 grid gap-5">
+              {SCREENING.map((q) => (
+                <div key={q.code}>
+                  <span className={label}>{q.label}</span>
+                  <YesNo name={q.label} value={screen[q.code]} onChange={(v) => setScreen((s) => ({ ...s, [q.code]: v }))} />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* 2. The week */}
+          <section className={card} aria-labelledby="s-days">
+            <h2 id="s-days" className={h2}>
+              2. How you got to work each day
+            </h2>
+            <p className={help}>
+              The week of {weekLabel(survey.week_start)}. Pick the one that fits best; if you used two ways, pick the combination.
+            </p>
+            <div className="mt-4 grid gap-5">
+              {WEEKDAYS.map((d, i) => {
+                const v = days[d]
+                const opt = v ? DAY_MODE_BY_CODE[v.mode] : null
+                return (
+                  <div key={d} className="border-t border-navy/[0.08] pt-4 first:border-t-0 first:pt-0">
+                    <label className={label} htmlFor={`day-${d}`}>
+                      {dayDateLabel(survey.week_start, d)}
+                    </label>
+                    <select
+                      id={`day-${d}`}
+                      className={select}
+                      value={v?.mode ?? ''}
+                      onChange={(e) => (e.target.value ? setDay(d, { mode: e.target.value as DayMode }) : setDay(d, null))}
+                    >
+                      <option value="">Choose one</option>
+                      {modeGroups.map(({ g, options }) => (
+                        <optgroup key={g} label={DAY_MODE_GROUP_LABEL[g]}>
+                          {options.map((o) => (
+                            <option key={o.code} value={o.code}>
+                              {o.label}
+                              {o.hint ? ` (${o.hint.toLowerCase()})` : ''}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                    {v?.mode === 'carpool' && (
+                      <div className="mt-3">
+                        <label className={label} htmlFor={`size-${d}`}>
+                          How many people in the vehicle, including you?
+                        </label>
+                        <input
+                          id={`size-${d}`}
+                          type="number"
+                          inputMode="numeric"
+                          min={2}
+                          max={30}
+                          value={v.size ?? ''}
+                          onChange={(e) => setDay(d, { size: e.target.value ? Number(e.target.value) : undefined })}
+                          className={`${select} max-w-[120px]`}
+                        />
+                      </div>
+                    )}
+                    {v?.mode === 'transit_drive' && (
+                      <div className="mt-3">
+                        <span className={label}>How did the car part happen?</span>
+                        <Pills<CarPart>
+                          name="Car part"
+                          options={CAR_PART_OPTIONS}
+                          value={v.car_part}
+                          onChange={(c) => setDay(d, { car_part: c })}
+                        />
+                      </div>
+                    )}
+                    {opt?.legs && (
+                      <div className="mt-3">
+                        <span className={label}>Which part covered the most distance?</span>
+                        <Pills<LongestLeg>
+                          name="Longest part"
+                          options={opt.legs.map((l) => ({ code: l, label: LONGEST_LEG_LABEL[l] }))}
+                          value={v?.longest}
+                          onChange={(l) => setDay(d, { longest: l })}
+                        />
+                      </div>
+                    )}
+                    {i === 0 && v && (
+                      <button
+                        type="button"
+                        onClick={copyMonday}
+                        className="mt-3 min-h-[44px] rounded-full border border-forest px-4 py-2 text-[14px] font-bold text-forest hover:bg-forest hover:text-white"
+                      >
+                        Same for the whole week
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+
+          {/* 3. About your commute */}
+          <section className={card} aria-labelledby="s-about">
+            <h2 id="s-about" className={h2}>
+              3. About your commute
+            </h2>
+            <p className={help}>Optional, but each one helps {survey.company} plan better options.</p>
+            <div className="mt-4 grid gap-5">
+              {(survey.sites.length > 1 || survey.departments.length > 0) && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {survey.sites.length > 1 && (
+                    <div>
+                      <label className={label} htmlFor="site">
+                        Where do you work?
+                      </label>
+                      <select id="site" className={select} value={a.location_id ?? ''} onChange={(e) => set('location_id', e.target.value || null)}>
+                        <option value="">Choose a site</option>
+                        {survey.sites.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {survey.departments.length > 0 && (
+                    <div>
+                      <label className={label} htmlFor="dept">
+                        Your department
+                      </label>
+                      <select id="dept" className={select} value={a.department ?? ''} onChange={(e) => set('department', e.target.value || null)}>
+                        <option value="">Choose one</option>
+                        {survey.departments.map((n) => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div>
+                <label className={label} htmlFor="zip">
+                  Home ZIP code
+                </label>
+                <input
+                  id="zip"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  maxLength={5}
+                  value={a.home_zip ?? ''}
+                  onChange={(e) => set('home_zip', e.target.value.replace(/\D/g, '').slice(0, 5))}
+                  className={`${select} max-w-[160px]`}
+                />
+                <p className={help}>Only ever reported as a count of people per ZIP code.</p>
+              </div>
+              <div>
+                <span className={label}>When do you usually start work?</span>
+                <Pills name="Start time" options={START_TIME} value={a.start_time} onChange={(v) => set('start_time', v)} />
+              </div>
+              <div>
+                <span className={label}>When do you usually finish?</span>
+                <Pills name="End time" options={END_TIME} value={a.end_time} onChange={(v) => set('end_time', v)} />
+              </div>
+              <div>
+                <span className={label}>Hours you usually work a day</span>
+                <Pills name="Hours a day" options={HOURS_PER_DAY} value={a.hours_per_day} onChange={(v) => set('hours_per_day', v)} />
+              </div>
+              <div>
+                <span className={label}>Minutes to work, one way</span>
+                <Pills name="Minutes one way" options={MINUTES_ONE_WAY} value={a.minutes_one_way} onChange={(v) => set('minutes_one_way', v)} />
+              </div>
+              <div>
+                <span className={label}>Miles to work, one way (roughly)</span>
+                <Pills name="Miles one way" options={MILES_ONE_WAY} value={a.miles_one_way} onChange={(v) => set('miles_one_way', v)} />
+              </div>
+              {anyTransit && (
+                <div>
+                  <span className={label}>Which transit did you use?</span>
+                  <Checks name="Transit routes" options={TRANSIT_ROUTES} value={a.transit_routes ?? []} onChange={(v) => set('transit_routes', v)} />
+                  <label className={`${label} mt-3`} htmlFor="bus">
+                    Bus route numbers
+                  </label>
+                  <input
+                    id="bus"
+                    type="text"
+                    value={a.bus_routes ?? ''}
+                    onChange={(e) => set('bus_routes', e.target.value)}
+                    placeholder="71, 73"
+                    className={`${select} max-w-[240px]`}
+                  />
+                </div>
+              )}
+              <div>
+                <span className={label}>How often do you use your own car for work trips during the day?</span>
+                <Pills name="Car for business" options={CAR_FOR_BUSINESS} value={a.car_for_business} onChange={(v) => set('car_for_business', v)} />
+              </div>
+              {anyDriveFull && (
+                <div>
+                  <span className={label}>When you drive the whole way, where do you park?</span>
+                  <Pills name="Parking" options={PARKING_FULL} value={a.parking_full} onChange={(v) => set('parking_full', v)} />
+                </div>
+              )}
+              {anyDrivePart && (
+                <div>
+                  <span className={label}>When you drive part of the way, where do you park?</span>
+                  <Pills name="Parking, part way" options={PARKING_PART} value={a.parking_part} onChange={(v) => set('parking_part', v)} />
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* 4. Why */}
+          {(showWhyShift || showWhyDrive) && (
+            <section className={card} aria-labelledby="s-why">
+              <h2 id="s-why" className={h2}>
+                4. Why
+              </h2>
+              <p className={help}>Mark all that apply.</p>
+              <div className="mt-4 grid gap-6">
+                {showWhyShift && (
+                  <div>
+                    <span className={label}>When you walk, bike, take transit or carpool, why?</span>
+                    <Checks name="Why you shift" options={WHY_SHIFT} value={a.why_shift ?? []} onChange={(v) => set('why_shift', v)} />
+                  </div>
+                )}
+                {showWhyDrive && (
+                  <div>
+                    <span className={label}>When you drive alone, why?</span>
+                    <Checks name="Why you drive" options={WHY_DRIVE} value={a.why_drive ?? []} onChange={(v) => set('why_drive', v)} />
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* 5. What would change things */}
+          <section className={card} aria-labelledby="s-incentives">
+            <h2 id="s-incentives" className={h2}>
+              5. What would change how you get to work?
+            </h2>
+            <p className={help}>For each one: how likely would you be to change your commute if it were offered?</p>
+            <div className="mt-4 grid gap-4">
+              {INCENTIVES.map((i) => (
+                <div key={i.code} className="border-t border-navy/[0.08] pt-3 first:border-t-0 first:pt-0">
+                  <span className="block text-[15px] leading-[1.35] text-navy">{i.label}</span>
+                  <Pills<IncentiveRating>
+                    name={i.label}
+                    options={INCENTIVE_RATINGS.map((r) => ({ code: r.code, label: r.short }))}
+                    value={a.incentives?.[i.code]}
+                    onChange={(v) => set('incentives', { ...(a.incentives ?? {}), [i.code]: v })}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* 6. In your words */}
+          <section className={card} aria-labelledby="s-words">
+            <h2 id="s-words" className={h2}>
+              6. In your words
+            </h2>
+            <p className={help}>Optional. Only Green Streets Initiative reads these; {survey.company} gets a summary without names.</p>
+            <div className="mt-4 grid gap-5">
+              <div>
+                <span className={label}>Which of these would you like to try?</span>
+                <Checks name="Interests" options={INTERESTS} value={a.interests ?? []} onChange={(v) => set('interests', v)} />
+                {a.interests?.includes('other') && (
+                  <input
+                    type="text"
+                    aria-label="Something else"
+                    value={a.interests_other ?? ''}
+                    onChange={(e) => set('interests_other', e.target.value)}
+                    placeholder="Such as..."
+                    className={`${select} max-w-[320px]`}
+                  />
+                )}
+              </div>
+              <div>
+                <label className={label} htmlFor="switch">
+                  What would make you switch from driving alone to another way?
+                </label>
+                <textarea id="switch" rows={3} value={a.switch_text ?? ''} onChange={(e) => set('switch_text', e.target.value)} className={select} />
+              </div>
+              <div>
+                <label className={label} htmlFor="transit-imp">
+                  What would make public transit work better for you?
+                </label>
+                <p className={help}>Nearby stops, buying passes at work, better schedules...</p>
+                <textarea
+                  id="transit-imp"
+                  rows={3}
+                  value={a.transit_improvements ?? ''}
+                  onChange={(e) => set('transit_improvements', e.target.value)}
+                  className={select}
+                />
+              </div>
+              <div>
+                <label className={label} htmlFor="facility">
+                  What could {survey.company} do to make carpooling, vanpooling, biking or walking easier?
+                </label>
+                <textarea id="facility" rows={3} value={a.facility_could ?? ''} onChange={(e) => set('facility_could', e.target.value)} className={select} />
+              </div>
+            </div>
+          </section>
+
+          {failed && (
+            <p role="alert" className="text-[15px] font-bold text-[#8A2A17]">
+              {failed}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={sending}
+            className="min-h-[52px] w-full rounded-full bg-navy px-6 text-[17px] font-bold text-white hover:bg-forest disabled:opacity-60 sm:w-auto sm:self-start sm:px-10"
+          >
+            {sending ? 'Sending...' : 'Send my answers'}
+          </button>
+          <p className="pb-6 text-[13px] leading-[1.5] text-ink-soft">
+            Your answers are held by Green Streets Initiative for three years, as the state&apos;s commute-reporting rules require,
+            then deleted. {survey.company} sees totals and a list of who has answered, never what anyone said.
+          </p>
+        </div>
+      </form>
+    </main>
+  )
+}

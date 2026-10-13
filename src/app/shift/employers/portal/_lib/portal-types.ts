@@ -57,6 +57,8 @@ export type Group = {
   agreement_version?: string | null
   agreement_accepted_at?: string | null
   agreement_accepted_by_email?: string | null
+  /** GSI switched the yearly commute survey on for this workplace (Shift 01170). */
+  commute_survey_enabled?: boolean
 }
 
 export type Challenge = {

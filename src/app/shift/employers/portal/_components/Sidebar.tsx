@@ -12,6 +12,7 @@ import {
   Route,
   Wallet,
   Settings,
+  ClipboardList,
   type LucideIcon,
 } from 'lucide-react'
 import { usePortal, type PortalRole } from '../_lib/portal-context'
@@ -29,6 +30,8 @@ export type PortalNavItem = {
   adminOnly?: boolean
   /** Admins or GSI staff. */
   adminOrGsi?: boolean
+  /** Only when GSI has switched the commute survey on for this workplace (Shift 01170). */
+  surveyOnly?: boolean
   showDot?: boolean
   showCount?: boolean
 }
@@ -51,6 +54,8 @@ export const PORTAL_NAV: PortalNavEntry[] = [
   { key: 'share-kit', label: 'Share kit', icon: UserPlus, href: '/shift/employers/portal/share-kit' },
   { key: 'challenges', label: 'Challenges', icon: Trophy, href: '/shift/employers/portal/challenges' },
   { key: 'impact', label: 'Impact', icon: ChartBar, href: '/shift/employers/portal/impact' },
+  // Survey week: the yearly commute survey (Shift 01170), per workplace switch.
+  { key: 'survey', label: 'Commute survey', icon: ClipboardList, href: '/shift/employers/portal/survey', surveyOnly: true },
   { divider: true },
   { key: 'advisor', label: 'Commute Advisor', icon: Route, href: '/shift/employers/portal/advisor' },
   { divider: true },
@@ -67,12 +72,14 @@ export function visibleNav(args: {
   role: PortalRole | null
   isGsiAdmin: boolean
   setupIncomplete: boolean
+  surveyEnabled?: boolean
 }): PortalNavEntry[] {
-  const { role, isGsiAdmin, setupIncomplete } = args
+  const { role, isGsiAdmin, setupIncomplete, surveyEnabled = false } = args
   const isAdmin = role === 'admin'
   const entries = PORTAL_NAV.filter((e) => {
     if (!isNavItem(e)) return true
     if (e.setupOnly && !setupIncomplete) return false
+    if (e.surveyOnly && !surveyEnabled) return false
     if (e.adminOnly && !isAdmin) return false
     if (e.adminOrGsi && !isAdmin && !isGsiAdmin) return false
     return true
@@ -101,7 +108,7 @@ function SidebarContent() {
 
   const setupIncomplete =
     !loading && !!group && !!nextSetupStep(computeSetupSteps({ group, benefitsForm, memberCount, challenges }))
-  const entries = visibleNav({ role, isGsiAdmin, setupIncomplete })
+  const entries = visibleNav({ role, isGsiAdmin, setupIncomplete, surveyEnabled: group?.commute_survey_enabled === true })
 
   return (
     <>

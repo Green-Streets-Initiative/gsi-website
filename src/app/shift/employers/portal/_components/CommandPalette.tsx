@@ -39,7 +39,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
     const q = query.toLowerCase().trim()
 
     const pages: ResultItem[] = [
-      ...visibleNav({ role, isGsiAdmin, setupIncomplete })
+      ...visibleNav({ role, isGsiAdmin, setupIncomplete, surveyEnabled: group?.commute_survey_enabled === true })
         .filter(isNavItem)
         .map((p) => ({ id: `p-${p.key}`, type: 'page' as const, label: p.label, href: p.href, icon: p.icon })),
       // Team is a section of Settings, not a sidebar item; still findable here.
