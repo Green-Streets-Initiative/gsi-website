@@ -3,6 +3,7 @@
 //
 //   node scripts/t-cheat-sheet/build.mjs          English  -> public/downloads/t-cheat-sheet.pdf
 //   node scripts/t-cheat-sheet/build.mjs es       Spanish  -> public/downloads/t-cheat-sheet-es.pdf
+//   node scripts/t-cheat-sheet/build.mjs all      every strings/<lang>.json
 //
 // Reads t-cheat-sheet.html (layout) and strings/<lang>.json (every word), fills
 // in {{t:...}} from the strings, {{price:...}} from src/lib/facts/prices.json
@@ -13,13 +14,17 @@
 //
 // Rerun every language after prices.json changes (the monthly freshness check),
 // and bump CHECKED when the sheet's facts are re-checked against mbta.com.
+// Each strings file spells the month itself (meta.months + meta.checked), so
+// no language depends on what Node's Intl happens to know (Haitian Creole).
 
 import { readFileSync, writeFileSync, mkdirSync, unlinkSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { readdirSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { chromium } from 'playwright-core'
 
-const CHECKED = 'October 2026'
+const CHECKED = { year: 2026, month: 10 }
 
 // Fares the guide does not carry, from mbta.com on 2026-10-13. Update by hand.
 const REDUCED = { subway: 1.1, bus: 0.85, month: 30 } // mbta.com/fares/reduced
@@ -28,6 +33,14 @@ const FERRY = { min: 2.4, max: 9.75 } // mbta.com/fares
 const lang = process.argv[2] ?? 'en'
 
 const here = dirname(fileURLToPath(import.meta.url))
+
+if (lang === 'all') {
+  for (const f of readdirSync(resolve(here, 'strings')).filter((f) => f.endsWith('.json')).sort()) {
+    execFileSync(process.execPath, [fileURLToPath(import.meta.url), f.replace(/\.json$/, '')], { stdio: 'inherit' })
+  }
+  process.exit(0)
+}
+
 const repoRoot = resolve(here, '../..')
 const templatePath = resolve(here, 't-cheat-sheet.html')
 const stringsPath = resolve(here, 'strings', `${lang}.json`)
@@ -99,7 +112,12 @@ html = html
     if (!(k in calc)) throw new Error(`Unknown calc "${k}"`)
     return calc[k]
   })
-  .replaceAll('{{checked}}', CHECKED)
+  .replaceAll(
+    '{{checked}}',
+    strings['meta.checked']
+      .replace('{month}', strings['meta.months'][CHECKED.month - 1])
+      .replace('{year}', String(CHECKED.year)),
+  )
 if (/\{\{/.test(html)) throw new Error('Unresolved token left in the sheet')
 
 // Written next to the template so its relative font and logo paths resolve.
@@ -115,12 +133,25 @@ try {
   const page = await browser.newPage()
   await page.goto(pathToFileURL(tmpHtml).href, { waitUntil: 'networkidle' })
   await page.evaluate(() => document.fonts.ready)
-  const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true, tagged: true })
+  // Translations run longer than English. Shrink the whole sheet in small
+  // steps until it fits one page, but never below MIN_SCALE (about 10pt body
+  // text): past that, shorten the strings instead.
+  const MIN_SCALE = 0.9
+  const countPages = (pdf) => (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) ?? []).length
+  let pdf
+  let scale = 1
+  for (;;) {
+    await page.evaluate((z) => document.documentElement.style.setProperty('--z', String(z)), scale)
+    pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true, tagged: true })
+    if (countPages(pdf) === 1) break
+    if (scale - 0.02 < MIN_SCALE - 1e-9) {
+      throw new Error(`Sheet is ${countPages(pdf)} pages at ${MIN_SCALE} scale; shorten strings/${lang}.json`)
+    }
+    scale = Math.round((scale - 0.02) * 100) / 100
+  }
   mkdirSync(dirname(outPath), { recursive: true })
   writeFileSync(outPath, pdf)
-  const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) ?? []).length
-  if (pages !== 1) throw new Error(`Sheet is ${pages} pages; it must fit on one`)
-  console.log(`Wrote ${outPath} (${pages} page, ${(pdf.length / 1024).toFixed(0)} KB)`)
+  console.log(`Wrote ${outPath} (1 page, scale ${scale}, ${(pdf.length / 1024).toFixed(0)} KB)`)
 } finally {
   await browser.close()
   unlinkSync(tmpHtml)

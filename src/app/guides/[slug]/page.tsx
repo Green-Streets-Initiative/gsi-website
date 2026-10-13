@@ -7,7 +7,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import JsonLd from '@/components/JsonLd'
 import StoreBadges from '@/components/StoreBadges'
-import CheatSheetDownload from '@/components/guides/CheatSheetDownload'
+import CheatSheetDownload, { type CheatSheetTranslation } from '@/components/guides/CheatSheetDownload'
 import { pageMetadata } from '@/lib/seo'
 import { guideArticleSchema, breadcrumbSchema } from '@/lib/structured-data'
 
@@ -116,13 +116,24 @@ const appStripDefault = {
 
 // Printable one-page sheets, offered right under the app strip. A download
 // needs no email and no app, so Ad Grants can count it as a conversion.
-// Source and build: scripts/t-cheat-sheet/ (rerun when prices.json changes).
-const cheatSheets: Record<string, { href: string; sheet: string; label: string; detail: string }> = {
+// Source and build: scripts/t-cheat-sheet/ (rerun `build.mjs all` when
+// prices.json changes). Translations are the MBTA Go app's languages.
+const cheatSheets: Record<
+  string,
+  { href: string; sheet: string; label: string; detail: string; translations?: CheatSheetTranslation[] }
+> = {
   'how-to-pay-for-the-t': {
     href: '/downloads/t-cheat-sheet.pdf',
     sheet: 't-cheat-sheet',
     label: 'Download the one-page T cheat sheet (PDF)',
     detail: 'Prices, passes, and who rides free or pays less. One printable page, no sign\u2011up.',
+    translations: [
+      { lang: 'es', label: 'Español', href: '/downloads/t-cheat-sheet-es.pdf' },
+      { lang: 'pt-BR', label: 'Português', href: '/downloads/t-cheat-sheet-pt-BR.pdf' },
+      { lang: 'ht', label: 'Kreyòl ayisyen', href: '/downloads/t-cheat-sheet-ht.pdf' },
+      { lang: 'zh-Hans', label: '简体中文', href: '/downloads/t-cheat-sheet-zh-Hans.pdf' },
+      { lang: 'vi', label: 'Tiếng Việt', href: '/downloads/t-cheat-sheet-vi.pdf' },
+    ],
   },
 }
 
@@ -245,6 +256,8 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               placement="guide_top"
               label={cheatSheet.label}
               detail={cheatSheet.detail}
+              translationsLabel="Also in"
+              translations={cheatSheet.translations}
               className="mb-10"
             />
           )}
