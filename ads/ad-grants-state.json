@@ -201,6 +201,25 @@
       "search_terms": "198 terms this month (416 impr / 28 clicks named). Top 25 by impressions all transit how-to lookups in How-to Guides / Paying for the T (boston public transportation 1/17, the t in boston 0/10, boston t 2/9, how to ride the t in boston 0/9, what is the t in boston 0/8) plus 'boston bike paths' 0/4 (Town, exact, added keyword). Nothing off-target at 3+ impr; Paying for the T changed 10-05 (<14 days), so no negatives proposed. New Routes still 27 impr since the 10-07 negatives (judge 10-21).",
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-10-13",
+      "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-13",
+      "mtd": { "window": "2026-10-01..2026-10-13", "impressions": 958, "clicks": 62, "ctr_pct": 6.47, "cost": 393.18, "conversions": 0 },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 841, "clicks": 60 },
+        "GSI — Brand": { "impressions": 4, "clicks": 1 },
+        "Town Walking & Biking": { "impressions": 93, "clicks": 1 },
+        "New Routes — Movers": { "impressions": 27, "clicks": 0 },
+        "Shift App — Massachusetts": { "impressions": 6, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+      },
+      "campaign_status": "all 6 Eligible (Limited): conversion tracking setup is incomplete; Brand also Limited by search volume (unchanged). Header chart said 972 impr; campaign table total 958 (used). Budgets as shown: How-to $50, Brand $30, Town $40, New Routes $109.50, Shift App $110, Semester $110 (account $449.50/day).",
+      "banners": ["Apply for financial products & services certification (known since 10-12; all ads still Eligible, none Limited by policy)", "Protect your account from unauthorized activity", "Recommendation card: Add broad match keywords (not applied)"],
+      "ads": { "total": 36, "disapproved_seen": 0, "limited_by_policy": 0, "strength": "25 Average, 1 Good, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known), 8 Pending" },
+      "search_terms": "227 terms this month (top 100 read: 474 impr / 33 clicks). Top 25 by impressions all transit how-to lookups in How-to Guides / Paying for the T (boston public transportation 2/20, the t in boston 0/10, how to pay for the t in boston 0/10, boston t 2/9, how to ride the t in boston 0/9, what is the t in boston 0/9) plus 'boston bike paths' 0/4 (Town). Nothing off-target at 3+ impr; no negatives proposed. New Routes flat at 27 impr since 10-07 (judge 10-21).",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
