@@ -23,7 +23,23 @@ const ROWS = [
 export default function PassGrid({ id = 'passes' }: { id?: string }) {
   return (
     <div id={id} className="scroll-mt-20">
-      <div className="overflow-x-auto rounded-[14px] border border-navy/10 bg-white">
+      {/* Phone: one card per pass, nothing to scroll sideways. */}
+      <ul className="m-0 flex list-none flex-col gap-3 p-0 sm:hidden">
+        {ROWS.map((r) => (
+          <li key={r.pass} className="rounded-[14px] border border-navy/10 bg-white px-4 py-3.5">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="font-semibold text-navy">{r.pass}</span>
+              <span className="font-semibold tabular-nums text-navy">{r.price}</span>
+            </div>
+            <p className="mt-1 text-[0.9375rem] leading-snug text-ink-muted">{r.covers}</p>
+            <p className="mt-1 text-[0.9375rem] leading-snug text-ink-muted">
+              <span className="font-semibold text-navy">Good deal if you ride:</span> {r.deal.charAt(0).toLowerCase() + r.deal.slice(1)}
+            </p>
+          </li>
+        ))}
+      </ul>
+      {/* Wider screens: one row per pass, the same columns on every row. */}
+      <div className="hidden overflow-x-auto rounded-[14px] border border-navy/10 bg-white sm:block">
         <table className="w-full border-collapse text-[0.9375rem] leading-snug">
           <thead>
             <tr className="text-left text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-ink-muted">
