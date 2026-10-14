@@ -1,12 +1,12 @@
 import 'server-only'
 
-import { unstable_cache } from 'next/cache'
 import { REACH_SKIP_WITHIN_MILES } from '@/lib/nearby/config'
 import { resolveRegion } from '@/lib/nearby/regions'
 import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
 import { canonicalStreetKey, displayStreetName } from '@/lib/nearby/street-names'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 import { getCrashClusters, type CrashCluster } from './crash-clusters'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 /**
  * "Everyday routes" for the /nearby snapshot: real transit times and route
@@ -1061,10 +1061,11 @@ export interface ReachRegionInfo {
   label: string
 }
 
-export async function getReach(
-  lat: number,
-  lng: number,
-): Promise<{ destinations: ReachRow[]; region: ReachRegionInfo | null }> {
+type ReachData = { destinations: ReachRow[]; region: ReachRegionInfo | null }
+
+const inflight = new Map<string, Promise<ReachData>>()
+
+export async function getReach(lat: number, lng: number): Promise<ReachData> {
   const origin = snapOrigin(lat, lng)
   // v4: bike chips + comfort streets are in travel order — don't serve older ordering
   // v5: comfort tiers split 'path' from 'protected'
@@ -1077,24 +1078,29 @@ export async function getReach(
   const cached = cache.get(cacheKey)
   if (cached && cached.expires > Date.now()) return cached.data
 
-  // Durable layer: these rows are Google Routes calls (paid) and the reason
-  // cold print renders took ~20 s — serverless instances recycle within
-  // minutes, so the in-memory cache never survives to the next real visit.
-  // A fully-degraded result (every transit lookup failed) is served but NOT
-  // durably cached, so an outage never freezes bad rows for a week.
-  let data: { destinations: ReachRow[]; region: ReachRegionInfo | null }
+  // One computation per cell per instance: the 14 campus pages prerender in
+  // parallel, and a burst of app opens in one cell shouldn't each pay.
+  const running = inflight.get(cacheKey)
+  if (running) return running
+  const promise = resolveReach(cacheKey, origin).finally(() => inflight.delete(cacheKey))
+  inflight.set(cacheKey, promise)
+  return promise
+}
+
+async function resolveReach(cacheKey: string, origin: { lat: number; lng: number }): Promise<ReachData> {
+  // Durable layer: Supabase, not Next's unstable_cache. These rows are paid
+  // Google Routes calls, and the Next data cache did not survive a deploy —
+  // every publish re-bought all 14 campus pages (~220–450 calls) and every
+  // cell anyone had looked at (Oct 2026: bursts on each deploy day, flat on
+  // days with none). A degraded result (Google failing) is served but never
+  // stored, so an outage can't freeze bad rows for a week.
+  let data = await readStoredReach(cacheKey)
   let ttl = CACHE_TTL_MS
-  try {
-    data = await durableReach(origin.lat, origin.lng)
-  } catch (e) {
-    if (e instanceof DegradedResultError || (e as Error)?.name === 'DegradedResultError') {
-      // The rejected result rides on the error: computing it again here
-      // doubled the paid calls on every request during an outage.
-      data = (e as DegradedResultError).data ?? (await computeReach(origin.lat, origin.lng))
-      ttl = DEGRADED_TTL_MS
-    } else {
-      throw e
-    }
+  if (!data) {
+    data = await computeReach(origin.lat, origin.lng)
+    const anyReal = data.destinations.some(r => r.transit_minutes !== null || !r.bike_is_estimate)
+    if (data.destinations.length > 0 && !anyReal) ttl = DEGRADED_TTL_MS
+    else await storeReach(cacheKey, origin, data)
   }
 
   if (cache.size >= CACHE_MAX_ENTRIES) {
@@ -1105,19 +1111,39 @@ export async function getReach(
   return data
 }
 
-class DegradedResultError extends Error {
-  constructor(readonly data?: { destinations: ReachRow[]; region: ReachRegionInfo | null }) {
-    super('degraded reach result')
-    this.name = 'DegradedResultError'
+/** A stored answer younger than CACHE_TTL_MS, or null. Never throws: a
+ *  database hiccup costs a recompute, not the page. */
+async function readStoredReach(key: string): Promise<ReachData | null> {
+  try {
+    const { data: row } = await createServerSupabaseClient()
+      .from('nearby_reach_cache')
+      .select('payload, computed_at')
+      .eq('key', key)
+      .maybeSingle()
+    if (!row) return null
+    if (Date.now() - new Date(row.computed_at).getTime() > CACHE_TTL_MS) return null
+    return row.payload as ReachData
+  } catch {
+    return null
   }
 }
 
-const durableReach = unstable_cache(async (lat3: number, lng3: number) => {
-  const data = await computeReach(lat3, lng3)
-  const anyReal = data.destinations.some(r => r.transit_minutes !== null || !r.bike_is_estimate)
-  if (data.destinations.length > 0 && !anyReal) throw new DegradedResultError(data)
-  return data
-}, [`nearby-reach-${REACH_ROW_VERSION}`], { revalidate: CACHE_TTL_MS / 1000 })
+async function storeReach(key: string, origin: { lat: number; lng: number }, data: ReachData): Promise<void> {
+  try {
+    await createServerSupabaseClient()
+      .from('nearby_reach_cache')
+      .upsert({
+        key,
+        version: REACH_ROW_VERSION,
+        lat: origin.lat,
+        lng: origin.lng,
+        payload: data,
+        computed_at: new Date().toISOString(),
+      })
+  } catch {
+    // unstored: the next request recomputes
+  }
+}
 
 async function computeReach(
   lat3: number,
