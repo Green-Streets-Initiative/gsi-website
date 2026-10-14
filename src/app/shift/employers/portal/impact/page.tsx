@@ -495,7 +495,7 @@ export default function ImpactPage() {
         <Card>
           <CardHead
             title="Shift Rate, week by week"
-            sub="Each week's share of trips made by walking, biking, scooter or transit, over the last 12 weeks"
+            sub="Each week's share of trips made without driving alone, over the last 12 weeks"
             action={
               shiftRate != null ? (
                 <Badge tone="success">

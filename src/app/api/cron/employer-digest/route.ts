@@ -52,6 +52,9 @@ type DashboardRow = {
   co2_avoided_kg_v2?: number
   mode_breakdown: Array<{ mode: string; trip_count: number }>
   shift_rate_trip_pct: number
+  /** Trips not driven alone (carpools count; Shift migration 01160). Absent
+   * until that migration is applied, when active trips are the best figure. */
+  shifted_trips_this_period?: number
 }
 
 type NotifPrefs = {
@@ -739,12 +742,16 @@ export async function GET(req: Request) {
     const priorActiveTrips = twoWeek
       ? twoWeek.active_trips_this_period - thisWeek.active_trips_this_period
       : 0
+    // Shift Rate counts every trip not driven alone (carpools too), the same
+    // rule as this week's shift_rate_trip_pct from the database.
+    const shiftedOf = (w: typeof thisWeek) => w.shifted_trips_this_period ?? w.active_trips_this_period
+    const priorShiftedTrips = twoWeek ? shiftedOf(twoWeek) - shiftedOf(thisWeek) : 0
     const priorWeek = twoWeek
       ? {
           active_trips: priorActiveTrips,
           miles: twoWeek.miles_shifted - thisWeek.miles_shifted,
           co2: co2Kg(twoWeek) == null || co2Kg(thisWeek) == null ? null : co2Kg(twoWeek)! - co2Kg(thisWeek)!,
-          shift_rate: priorTrips > 0 ? (priorActiveTrips / priorTrips) * 100 : 0,
+          shift_rate: priorTrips > 0 ? (priorShiftedTrips / priorTrips) * 100 : 0,
         }
       : { active_trips: 0, miles: 0, co2: 0, shift_rate: 0 }
 
