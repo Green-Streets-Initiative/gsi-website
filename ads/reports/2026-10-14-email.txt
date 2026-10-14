@@ -1,0 +1,9 @@
+Ad Grants weekly, October 14: Act this week (one rule fix, one conversion step).
+
+October click rate is 6.80% (82 clicks on 1,205 impressions), well over the 5% floor and on pace to stay there. Traffic tripled since last week. Still 0 conversions, and one town keyword has a quality score under 3.
+
+1. Pause the keyword "boston bike paths" (Town Walking & Biking). Quality score under 3 breaks a grant rule; 12 impressions, 0 clicks, costs nothing. Say "do ad grants item 1".
+2. Count the T cheat sheet download as a conversion: mark cheat_sheet_download as a GA4 key event and import it into Ads. 82 clicks, 0 conversions; the grant needs 1 a month. Say "do ad grants item 2".
+3. Add the 10 approved student keywords to Shift Your Semester (1 impression in 14 days). Needs an "Ask permissions" chat, or paste them yourself. Say "do ad grants item 3".
+
+Full report: https://claude.ai/artifact/UuoYJsktAySt3HY5KinrbF
