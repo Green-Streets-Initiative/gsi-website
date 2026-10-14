@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { cache } from 'react'
+import { cache, type ReactNode } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { notFound, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
@@ -8,6 +8,8 @@ import Footer from '@/components/Footer'
 import JsonLd from '@/components/JsonLd'
 import StoreBadges from '@/components/StoreBadges'
 import CheatSheetDownload, { type CheatSheetTranslation } from '@/components/guides/CheatSheetDownload'
+import PassGrid from '@/components/guides/PassGrid'
+import { PRICES, usd } from '@/lib/facts/prices'
 import { pageMetadata } from '@/lib/seo'
 import { guideArticleSchema, breadcrumbSchema } from '@/lib/structured-data'
 
@@ -51,13 +53,66 @@ const getGuideBySlug = cache(async (slug: string): Promise<GuideRow | null> => {
 // Search titles for guides whose library title is written for the app and
 // leaves out the words people search with. The page heading keeps the library
 // title. Evidence for each entry is in seo/reports/.
-const searchMeta: Record<string, { title: string; description: string }> = {
+const searchMeta: Record<string, { title: string; description: string; heading?: string }> = {
   // 2026-10-12: Ad Grants search terms are "how to pay for the t in boston" and
   // siblings; the organic page had 0 impressions with no "Boston" or "MBTA".
+  // 2026-10-14: the heading says the same thing the search title does, so an ad
+  // visitor sees the words they typed.
   'how-to-pay-for-the-t': {
     title: 'How to pay for the T in Boston: tap, CharlieCard or a pass',
     description:
       'Tap your phone or a contactless card, or load a CharlieCard pass if you ride most workdays. MBTA transfers, Commuter Rail and reduced fares in plain language.',
+    heading: 'How to pay for the T in Boston',
+  },
+}
+
+// The answer, first. An ad visitor typed a fare or pass question and wants the
+// price and the decision in the first screen; everything else on the page is
+// detail. Prices come from the canonical facts file. Keyed by slug.
+const quickAnswers: Record<string, { label: string; text: string }[]> = {
+  'how-to-pay-for-the-t': [
+    {
+      label: 'Tap to pay',
+      text: `Hold your phone or a contactless bank card on the reader. ${usd(PRICES.mbta.subwaySingle)} subway, ${usd(PRICES.mbta.busSingle)} bus.`,
+    },
+    {
+      label: 'Ride most workdays?',
+      text: `A Monthly LinkPass on a CharlieCard is ${usd(PRICES.mbta.linkPassMonthly)} for unlimited subway and bus.`,
+    },
+    {
+      label: 'Commuter Rail',
+      text: 'Buy your ticket in the mTicket app before you board. The fare depends on the zone.',
+    },
+  ],
+}
+
+// Body sections an ad can land on directly (final URL with #id), and sections
+// whose content is better as a component than as prose. Headings are matched by
+// their text in the guide body; ids are short so they fit in an ad's final URL.
+const sectionIds: Record<string, Record<string, string>> = {
+  'how-to-pay-for-the-t': {
+    'For occasional riders: tap to pay.': 'tap',
+    'For regular riders: do the math on a pass.': 'which-pass',
+    'Pass options on a CharlieCard': 'passes',
+    Transfers: 'transfers',
+    'For the Commuter Rail, use the mTicket app.': 'commuter-rail',
+    'Reduced fares': 'reduced-fares',
+  },
+}
+const sectionSwaps: Record<string, Record<string, ReactNode>> = {
+  'how-to-pay-for-the-t': {
+    // The bullet list of passes becomes a comparison grid: one row per pass,
+    // the same columns on every row.
+    'Pass options on a CharlieCard': <PassGrid id="passes" />,
+  },
+}
+// A one-line cheat-sheet offer after the sections that answer a narrower
+// search ("mbta monthly pass", "mbta reduced fare"), so a visitor who lands
+// mid-page still finds the download.
+const sectionAfter: Record<string, Record<string, { detail: string }>> = {
+  'how-to-pay-for-the-t': {
+    'Pass options on a CharlieCard': { detail: 'Want this on one page you can print?' },
+    'Reduced fares': { detail: 'Who rides free and who pays less, on one printable page:' },
   },
 }
 
@@ -97,7 +152,7 @@ const modeLabel: Record<string, string> = {
 // claim is something the app does today (Around You, live since 2026-09-14).
 const appStrip: Record<string, { headline: string; line: string }> = {
   transit: {
-    headline: 'See when your bus or train is coming.',
+    headline: 'Next, see when your bus or train is coming.',
     line: 'Shift shows live arrivals at the stops near you. Take more trips by transit and you can unlock gift cards from local shops. Free.',
   },
   cycling: {
@@ -175,6 +230,27 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
 
   const guideSlug = g.slug ?? slug
   const cheatSheet = cheatSheets[guideSlug]
+  const quickAnswer = quickAnswers[guideSlug]
+  const heading = searchMeta[guideSlug]?.heading ?? g.title
+  const strip = appStrip[g.primary_mode ?? ''] ?? appStripDefault
+
+  // The app strip sits under the answer and the download, not above them: the
+  // visitor came with a question, and the page answers it before it asks for
+  // anything. Its placement tag is unchanged so the store-click comparison with
+  // the bottom box continues.
+  const appStripBlock = (
+    <div className="mb-10 rounded-[14px] border border-navy/10 bg-white px-5 py-5">
+      <p className="mb-1 text-[1.0625rem] font-semibold leading-snug text-navy">{strip.headline}</p>
+      <p className="mb-4 text-[0.9375rem] leading-relaxed text-navy">{strip.line}</p>
+      <StoreBadges height={40} placement="guide_top" />
+      <Link
+        href="/shift"
+        className="mt-3 inline-block text-[0.875rem] font-semibold text-forest underline underline-offset-4 hover:opacity-80"
+      >
+        See how Shift works
+      </Link>
+    </div>
+  )
 
   return (
     <>
@@ -202,7 +278,6 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
             <Link href="/" className="text-forest no-underline underline-offset-4 hover:underline">Home</Link>
             {' / '}
             <Link href="/guides" className="text-forest no-underline underline-offset-4 hover:underline">Guides</Link>
-            {' / '}Guide
           </div>
 
           {/* Meta */}
@@ -225,30 +300,24 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           </div>
 
           {/* Title */}
-          <h1 className="mb-8 font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.05] tracking-[-0.01em] text-navy">
-            {g.title}
+          <h1 className="mb-6 font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.05] tracking-[-0.01em] text-navy">
+            {heading}
           </h1>
 
-          {/* Early app strip: ad visitors get their answer from the lead
-              paragraph and leave before the "Try it" box at the end, so the
-              badges also sit here. Its own placement tag shows which spot
-              gets the store clicks. */}
-          <div className={`${cheatSheet ? 'mb-4' : 'mb-10'} rounded-[14px] border border-navy/10 bg-white px-5 py-5`}>
-            <p className="mb-1 text-[1.0625rem] font-semibold leading-snug text-navy">
-              {(appStrip[g.primary_mode ?? ''] ?? appStripDefault).headline}
-            </p>
-            <p className="mb-4 text-[0.9375rem] leading-relaxed text-navy">
-              {(appStrip[g.primary_mode ?? ''] ?? appStripDefault).line}
-            </p>
-            <StoreBadges height={40} placement="guide_top" />
-            <Link
-              href="/shift"
-              className="mt-3 inline-block text-[0.875rem] font-semibold text-forest underline underline-offset-4 hover:opacity-80"
-            >
-              See how Shift works
-            </Link>
-          </div>
+          {/* The answer, before anything is asked of the visitor. */}
+          {quickAnswer && (
+            <dl className="mb-6 divide-y divide-navy/10 rounded-[14px] border border-navy/10 bg-white px-5">
+              {quickAnswer.map((a) => (
+                <div key={a.label} className="grid gap-x-4 gap-y-1 py-3.5 sm:grid-cols-[11rem_1fr]">
+                  <dt className="text-[0.9375rem] font-semibold leading-snug text-navy">{a.label}</dt>
+                  <dd className="m-0 text-[1rem] leading-relaxed text-navy">{a.text}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
 
+          {/* The download is the page's meaningful action (Ad Grants counts it),
+              so it comes right after the answer. */}
           {cheatSheet && (
             <CheatSheetDownload
               href={cheatSheet.href}
@@ -258,19 +327,50 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               detail={cheatSheet.detail}
               translationsLabel="Also in"
               translations={cheatSheet.translations}
-              className="mb-10"
+              className={quickAnswer ? 'mb-6' : 'mb-10'}
             />
           )}
+
+          {/* Early app strip: ad visitors get their answer from the top of the
+              page and leave before the "Try it" box at the end, so the badges
+              also sit here. Its own placement tag shows which spot gets the
+              store clicks. On a guide with an answer block it follows the
+              answer and the download; otherwise it is the first thing under
+              the title, as before. */}
+          {appStripBlock}
 
           {/* Body — rendered from markdown.
               Summary is intentionally not rendered here. Summaries are
               hand-authored hooks (used on /guides cards and the Shift app
               cover); the body's lead paragraph already serves as the
               article's opener. Rendering both would feel magazine-y. */}
-          <div
-            className="guide-body text-[1.0625rem] leading-[1.75] text-navy"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(g.body) }}
-          />
+          <div className="guide-body text-[1.0625rem] leading-[1.75] text-navy">
+            {splitSections(g.body).map((section, i) => {
+              const ids = sectionIds[guideSlug] ?? {}
+              const swap = sectionSwaps[guideSlug]?.[section.heading ?? '']
+              const after = sectionAfter[guideSlug]?.[section.heading ?? '']
+              const id = section.heading ? ids[section.heading] ?? slugify(section.heading) : undefined
+              return (
+                <section key={i} id={id} className={id ? 'scroll-mt-20' : undefined}>
+                  {section.heading && (
+                    <h3 className="mt-8 mb-3 font-serif text-[1.25rem] leading-tight text-navy">{section.heading}</h3>
+                  )}
+                  {swap ?? <div dangerouslySetInnerHTML={{ __html: renderMarkdown(section.body) }} />}
+                  {after && cheatSheet && (
+                    <CheatSheetDownload
+                      variant="inline"
+                      href={cheatSheet.href}
+                      sheet={cheatSheet.sheet}
+                      placement={`guide_${id ?? i}`}
+                      label="Download the one-page T cheat sheet (PDF)"
+                      detail={after.detail}
+                      className="mt-4"
+                    />
+                  )}
+                </section>
+              )
+            })}
+          </div>
 
           {/* Try it: every guide ends by pointing at the tool that does the
               thing it just explained. The app first; the web Nearby page for
@@ -338,6 +438,38 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
       <Footer variant="light" />
     </>
   )
+}
+
+/** "Reduced fares" -> "reduced-fares": an anchor an ad's final URL can use. */
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 60)
+}
+
+/**
+ * Split a guide body at its "###" headings so each section can carry an id, be
+ * swapped for a component, or be followed by one. Text before the first heading
+ * is a section with no heading. Guide bodies use "###" for every section head.
+ */
+function splitSections(md: string): { heading: string | null; body: string }[] {
+  if (!md) return []
+  const out: { heading: string | null; body: string }[] = []
+  let current: { heading: string | null; body: string } = { heading: null, body: '' }
+  for (const line of md.split('\n')) {
+    const m = /^### (.+)$/.exec(line)
+    if (m) {
+      if (current.heading !== null || current.body.trim()) out.push(current)
+      current = { heading: m[1].trim(), body: '' }
+    } else {
+      current.body += line + '\n'
+    }
+  }
+  if (current.heading !== null || current.body.trim()) out.push(current)
+  return out
 }
 
 /** Simple markdown to HTML — handles headings, bold, lists, links, paragraphs */

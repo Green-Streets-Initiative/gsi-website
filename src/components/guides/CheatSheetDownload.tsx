@@ -29,6 +29,7 @@ export default function CheatSheetDownload({
   translationsLabel,
   translations = [],
   className = '',
+  variant = 'box',
 }: {
   href: string
   /** Stable id for reporting, e.g. 't-cheat-sheet'. */
@@ -40,11 +41,34 @@ export default function CheatSheetDownload({
   translationsLabel?: string
   translations?: CheatSheetTranslation[]
   className?: string
+  /**
+   * 'box' is the bordered card under the title. 'inline' is one sentence with a
+   * link, for repeating the offer where a section answers a narrower question
+   * (which pass, who pays less) so an ad landing mid-page still finds it.
+   */
+  variant?: 'box' | 'inline'
 }) {
   const track = (lang: string) => {
     const props = { sheet, placement, lang }
     gaEvent('cheat_sheet_download', props)
     posthog.capture('cheat_sheet_download', props)
+  }
+
+  if (variant === 'inline') {
+    return (
+      <p className={`text-[0.9375rem] leading-relaxed text-ink-muted ${className}`}>
+        {detail}{' '}
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener"
+          onClick={() => track('en')}
+          className="font-semibold text-forest underline decoration-forest/40 underline-offset-4 hover:decoration-forest"
+        >
+          {label}
+        </a>
+      </p>
+    )
   }
 
   return (
