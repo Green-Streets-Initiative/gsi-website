@@ -10,7 +10,9 @@
     "dayPass": 11,
     "weekPass": 22.5,
     "commuterRailMin": 2.4,
-    "commuterRailMax": 13.25
+    "commuterRailMax": 13.25,
+    "_transferPilot": "Sept 1, 2026 for six months: unlimited subway/bus/ferry transfers within 2 hours on one card or phone, pay the highest single fare (https://www.mbta.com/fares/transfers). transferPilotEnds = first day it no longer applies; update if the MBTA extends or makes it permanent.",
+    "transferPilotEnds": "2027-03-01"
   },
   "bluebikes": {
     "sourceUrl": "https://bluebikes.com/pricing",

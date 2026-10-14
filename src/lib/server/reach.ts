@@ -7,6 +7,8 @@ import { canonicalStreetKey, displayStreetName } from '@/lib/nearby/street-names
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 import { getCrashClusters, type CrashCluster } from './crash-clusters'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { mbtaPilotFare } from '@/lib/nearby/mbta-fare'
+import { PRICES } from '@/lib/facts/prices'
 
 /**
  * "Everyday routes" for the /nearby snapshot: real transit times and route
@@ -33,7 +35,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
  * while local testing (which deletes .next and varies coordinates) missed
  * both stale layers entirely. One constant, four call sites, no drift.
  */
-export const REACH_ROW_VERSION = 'v16' // v16: Logan Express + Massport shuttle chips
+export const REACH_ROW_VERSION = 'v17' // v17: MBTA two-hour transfer pilot fares
 
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
 
@@ -325,6 +327,9 @@ async function queryTransit(
     // into a single re-encoded polyline so the payload stays compact.
     const steps: ReachStep[] = []
     const segments: ReachSegment[] = []
+    // Every transit leg's line, uncollapsed and uncapped — the fare rule needs
+    // the agency, which the chips drop.
+    const fareLines: GoogleTransitLine[] = []
     let walkBuf: [number, number][] = []
     let walkSecs = 0
     let totalWalkSecs = 0
@@ -345,6 +350,7 @@ async function queryTransit(
     for (const s of allSteps) {
       if (s.transitDetails) {
         const td = s.transitDetails
+        fareLines.push(td.transitLine ?? {})
         const chip: ReachStep = {
           ...toStep(td.transitLine ?? {}),
           boardStop: td.stopDetails?.departureStop?.name,
@@ -387,9 +393,18 @@ async function queryTransit(
     // "$4.10" is one number and it's our whole argument — we were silent on
     // the cheapest thing about not driving.
     const f = route.travelAdvisory?.transitFare
-    const fare = f && f.units !== undefined
-      ? { currency: f.currencyCode ?? 'USD', amount: Number(f.units) + (f.nanos ?? 0) / 1e9 }
-      : null
+    // Google adds MBTA legs up; during the transfer pilot a card or phone pays
+    // only the highest single fare. Google also sometimes returns no fare.
+    const pilotFare = mbtaPilotFare(fareLines, new Date(departureTime), {
+      subwaySingle: PRICES.mbta.subwaySingle,
+      busSingle: PRICES.mbta.busSingle,
+      pilotEnds: PRICES.mbta.transferPilotEnds,
+    })
+    const fare = pilotFare !== null
+      ? { currency: 'USD', amount: pilotFare }
+      : f && f.units !== undefined
+        ? { currency: f.currencyCode ?? 'USD', amount: Number(f.units) + (f.nanos ?? 0) / 1e9 }
+        : null
 
     return {
       minutes,
