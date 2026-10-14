@@ -75,10 +75,13 @@ export interface TownDirectoryRow {
   active_trips_month: number
   active_miles_month: number
   active_users_month: number
-  /** Active trips as % of all confirmed trips this month, rounded for display */
+  /** Trips not driven alone as % of all confirmed trips this month, rounded for display */
   shift_rate: number
   /** All confirmed trips this month (active + drive/carpool/other) */
   total_trips_month: number
+  /** Trips not driven alone this month (carpools count; Shift migration 01160).
+   *  Trailing column, absent until that migration is applied. */
+  shifted_trips_month?: number
 }
 
 export interface TownSummary extends TownDirectoryRow {
@@ -209,12 +212,16 @@ export function townSlug(name: string, state: string): string {
 }
 
 /**
- * Exact active-trip share. Ranking must NOT use `shift_rate`, which the RPC
- * rounds to whole percent for display: that ties Boston (85.1), Watertown
- * (84.7) and Cambridge (84.7) at "85" and hands three different towns #1.
+ * Exact Shift Rate: trips not driven alone over all trips (carpools count once
+ * Shift migration 01160 sends shifted_trips_month; active trips until then).
+ * Ranking must NOT use `shift_rate`, which the RPC rounds to whole percent for
+ * display: that ties Boston (85.1), Watertown (84.7) and Cambridge (84.7) at
+ * "85" and hands three different towns #1.
  */
 const exactRate = (t: TownDirectoryRow) =>
-  t.total_trips_month > 0 ? t.active_trips_month / t.total_trips_month : 0
+  t.total_trips_month > 0
+    ? (t.shifted_trips_month ?? t.active_trips_month) / t.total_trips_month
+    : 0
 
 export async function getTownDirectory(): Promise<TownSummary[]> {
   const supabase = createServerSupabaseClient()

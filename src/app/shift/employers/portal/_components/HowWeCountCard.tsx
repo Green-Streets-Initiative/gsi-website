@@ -20,7 +20,7 @@ export const HOW_WE_COUNT: HowWeCountItem[] = [
   },
   {
     title: 'Shift Rate',
-    body: 'The share of recorded trips made by walking, biking, scooter or transit instead of driving. A carpool counts as a shared car trip: it lowers emissions but is not an active trip.',
+    body: 'The share of recorded trips made without driving alone: walking, biking, scooter, transit or a carpool. A carpool counts toward Shift Rate because nobody drove alone; it is not an active trip, so it stays out of active trips and active miles.',
   },
   {
     title: 'Drive-alone share',

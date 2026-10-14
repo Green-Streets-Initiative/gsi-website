@@ -46,7 +46,7 @@ const HELP_CONTENT: Record<string, HelpItem[]> = {
     },
     {
       title: 'How the shift rate is worked out',
-      body: 'Shift Rate is the share of your team\'s trips made by walking, biking, rolling or transit instead of driving. A higher Shift Rate means your team is choosing those options more often.',
+      body: 'Shift Rate is the share of your team\'s trips made without driving alone: walking, biking, rolling, transit or a carpool. A higher Shift Rate means your team is choosing those options more often.',
     },
   ],
   setup: [
