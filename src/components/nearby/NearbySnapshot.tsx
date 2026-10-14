@@ -430,7 +430,8 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
         // route's own max-age=86400 keeps serving arrow-only chains for a day
         // v14: comfort rows own their segments, so the remainder is real
         // v15: rows carry the quicker alternate route
-        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=15`)
+        // v18: transfer-pilot fares; transit route picked among Google's alternatives
+        const res = await fetch(`/api/nearby/reach?lat=${lat}&lng=${lng}&v=18`)
         if (!res.ok) throw new Error(`reach ${res.status}`)
         const data = await res.json()
         setReach({ status: 'ready', data: data.destinations ?? [] })

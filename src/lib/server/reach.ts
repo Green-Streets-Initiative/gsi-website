@@ -8,6 +8,8 @@ import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 import { getCrashClusters, type CrashCluster } from './crash-clusters'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { mbtaPilotFare } from '@/lib/nearby/mbta-fare'
+import { chooseTransitRoute, mbtaRouteId, transitShortlist } from '@/lib/nearby/transit-choice'
+import { getPeakHeadway } from './route-headway'
 import { PRICES } from '@/lib/facts/prices'
 
 /**
@@ -35,7 +37,7 @@ import { PRICES } from '@/lib/facts/prices'
  * while local testing (which deletes .next and varies coordinates) missed
  * both stale layers entirely. One constant, four call sites, no drift.
  */
-export const REACH_ROW_VERSION = 'v17' // v17: MBTA two-hour transfer pilot fares
+export const REACH_ROW_VERSION = 'v18' // v18: pick among Google's transit alternatives (transit-choice)
 
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
 
@@ -254,6 +256,12 @@ interface GoogleTransitLine {
   agencies?: Array<{ name?: string }>
 }
 
+interface GoogleRoute {
+  duration?: string
+  legs?: { steps?: GoogleStep[] }[]
+  travelAdvisory?: { transitFare?: { currencyCode?: string; units?: string; nanos?: number } }
+}
+
 interface GoogleStep {
   polyline?: { encodedPolyline?: string }
   staticDuration?: string
@@ -310,109 +318,134 @@ async function queryTransit(
         destination: { location: { latLng: { latitude: dest.lat, longitude: dest.lng } } },
         travelMode: 'TRANSIT',
         departureTime,
-        computeAlternativeRoutes: false,
+        // Alternatives are the same request and SKU (Google's SKU list names no
+        // price change for them); transit-choice picks among them.
+        computeAlternativeRoutes: true,
       }),
       signal: AbortSignal.timeout(10000),
     })
     if (!resp.ok) return null
     const data = await resp.json()
-    const route = data.routes?.[0]
-    if (!route) return null
+    const routes: GoogleRoute[] = data.routes ?? []
+    if (routes.length === 0) return null
 
-    const minutes = Math.round(parseInt(route.duration?.replace('s', '') ?? '0') / 60)
-    const allSteps: GoogleStep[] = (route.legs ?? []).flatMap((leg: { steps?: GoogleStep[] }) => leg.steps ?? [])
+    const parseRoute = (route: GoogleRoute) => {
+      const minutes = Math.round(parseInt(route.duration?.replace('s', '') ?? '0') / 60)
+      const allSteps: GoogleStep[] = (route.legs ?? []).flatMap((leg: { steps?: GoogleStep[] }) => leg.steps ?? [])
 
-    // One pass builds both the chip chain and the drawable segments. Google
-    // returns every walking turn as its own step — merge consecutive walks
-    // into a single re-encoded polyline so the payload stays compact.
-    const steps: ReachStep[] = []
-    const segments: ReachSegment[] = []
-    // Every transit leg's line, uncollapsed and uncapped — the fare rule needs
-    // the agency, which the chips drop.
-    const fareLines: GoogleTransitLine[] = []
-    let walkBuf: [number, number][] = []
-    let walkSecs = 0
-    let totalWalkSecs = 0
-    const secs = (d?: string) => parseInt(d?.replace('s', '') ?? '0') || 0
-    const flushWalk = () => {
-      if (walkBuf.length >= 2) {
-        segments.push({
-          mode: 'walk',
-          polyline: encodePolyline(walkBuf),
-          color: WALK_SEGMENT_COLOR,
-          label: null,
-          minutes: Math.max(1, Math.round(walkSecs / 60)),
-        })
-      }
-      walkBuf = []
-      walkSecs = 0
-    }
-    for (const s of allSteps) {
-      if (s.transitDetails) {
-        const td = s.transitDetails
-        fareLines.push(td.transitLine ?? {})
-        const chip: ReachStep = {
-          ...toStep(td.transitLine ?? {}),
-          boardStop: td.stopDetails?.departureStop?.name,
-          alightStop: td.stopDetails?.arrivalStop?.name,
-          headsign: td.headsign,
-          numStops: td.stopCount,
-        }
-        const prev = steps[steps.length - 1]
-        // Collapse repeats in the chip chain (a transfer within the same
-        // line) — but carry the later leg's alight stop forward, so the
-        // chain still ends where the rider actually gets off.
-        if (prev?.label !== chip.label) steps.push(chip)
-        else prev.alightStop = chip.alightStop ?? prev.alightStop
-        flushWalk()
-        if (s.polyline?.encodedPolyline) {
+      // One pass builds both the chip chain and the drawable segments. Google
+      // returns every walking turn as its own step — merge consecutive walks
+      // into a single re-encoded polyline so the payload stays compact.
+      const steps: ReachStep[] = []
+      const segments: ReachSegment[] = []
+      // Every transit leg's line, uncollapsed and uncapped — the fare rule needs
+      // the agency, which the chips drop.
+      const fareLines: GoogleTransitLine[] = []
+      let walkBuf: [number, number][] = []
+      let walkSecs = 0
+      let totalWalkSecs = 0
+      const secs = (d?: string) => parseInt(d?.replace('s', '') ?? '0') || 0
+      const flushWalk = () => {
+        if (walkBuf.length >= 2) {
           segments.push({
-            mode: 'transit',
-            polyline: s.polyline.encodedPolyline,
-            color: chip.color,
-            label: chip.label,
-            minutes: Math.max(1, Math.round(secs(s.staticDuration) / 60)),
+            mode: 'walk',
+            polyline: encodePolyline(walkBuf),
+            color: WALK_SEGMENT_COLOR,
+            label: null,
+            minutes: Math.max(1, Math.round(walkSecs / 60)),
           })
         }
-      } else {
-        // Every walking turn is its own step; sum their durations across the
-        // run so the merged segment carries the walk a rider actually feels.
-        walkSecs += secs(s.staticDuration)
-        totalWalkSecs += secs(s.staticDuration)
-        if (s.polyline?.encodedPolyline) {
-          const pts = decodePolyline(s.polyline.encodedPolyline)
-          // Steps share their junction point — drop the duplicate
-          const last = walkBuf[walkBuf.length - 1]
-          if (last && pts.length && last[0] === pts[0][0] && last[1] === pts[0][1]) pts.shift()
-          walkBuf.push(...pts)
+        walkBuf = []
+        walkSecs = 0
+      }
+      for (const s of allSteps) {
+        if (s.transitDetails) {
+          const td = s.transitDetails
+          fareLines.push(td.transitLine ?? {})
+          const chip: ReachStep = {
+            ...toStep(td.transitLine ?? {}),
+            boardStop: td.stopDetails?.departureStop?.name,
+            alightStop: td.stopDetails?.arrivalStop?.name,
+            headsign: td.headsign,
+            numStops: td.stopCount,
+          }
+          const prev = steps[steps.length - 1]
+          // Collapse repeats in the chip chain (a transfer within the same
+          // line) — but carry the later leg's alight stop forward, so the
+          // chain still ends where the rider actually gets off.
+          if (prev?.label !== chip.label) steps.push(chip)
+          else prev.alightStop = chip.alightStop ?? prev.alightStop
+          flushWalk()
+          if (s.polyline?.encodedPolyline) {
+            segments.push({
+              mode: 'transit',
+              polyline: s.polyline.encodedPolyline,
+              color: chip.color,
+              label: chip.label,
+              minutes: Math.max(1, Math.round(secs(s.staticDuration) / 60)),
+            })
+          }
+        } else {
+          // Every walking turn is its own step; sum their durations across the
+          // run so the merged segment carries the walk a rider actually feels.
+          walkSecs += secs(s.staticDuration)
+          totalWalkSecs += secs(s.staticDuration)
+          if (s.polyline?.encodedPolyline) {
+            const pts = decodePolyline(s.polyline.encodedPolyline)
+            // Steps share their junction point — drop the duplicate
+            const last = walkBuf[walkBuf.length - 1]
+            if (last && pts.length && last[0] === pts[0][0] && last[1] === pts[0][1]) pts.shift()
+            walkBuf.push(...pts)
+          }
         }
       }
-    }
-    flushWalk()
+      flushWalk()
 
-    // "$4.10" is one number and it's our whole argument — we were silent on
-    // the cheapest thing about not driving.
-    const f = route.travelAdvisory?.transitFare
-    // Google adds MBTA legs up; during the transfer pilot a card or phone pays
-    // only the highest single fare. Google also sometimes returns no fare.
-    const pilotFare = mbtaPilotFare(fareLines, new Date(departureTime), {
-      subwaySingle: PRICES.mbta.subwaySingle,
-      busSingle: PRICES.mbta.busSingle,
-      pilotEnds: PRICES.mbta.transferPilotEnds,
-    })
-    const fare = pilotFare !== null
-      ? { currency: 'USD', amount: pilotFare }
-      : f && f.units !== undefined
-        ? { currency: f.currencyCode ?? 'USD', amount: Number(f.units) + (f.nanos ?? 0) / 1e9 }
-        : null
+      // "$4.10" is one number and it's our whole argument — we were silent on
+      // the cheapest thing about not driving.
+      const f = route.travelAdvisory?.transitFare
+      // Google adds MBTA legs up; during the transfer pilot a card or phone pays
+      // only the highest single fare. Google also sometimes returns no fare.
+      const pilotFare = mbtaPilotFare(fareLines, new Date(departureTime), {
+        subwaySingle: PRICES.mbta.subwaySingle,
+        busSingle: PRICES.mbta.busSingle,
+        pilotEnds: PRICES.mbta.transferPilotEnds,
+      })
+      const fare = pilotFare !== null
+        ? { currency: 'USD', amount: pilotFare }
+        : f && f.units !== undefined
+          ? { currency: f.currencyCode ?? 'USD', amount: Number(f.units) + (f.nanos ?? 0) / 1e9 }
+          : null
 
-    return {
-      minutes,
-      steps: steps.slice(0, 4),
-      segments,
-      walkMinutes: totalWalkSecs > 0 ? Math.max(1, Math.round(totalWalkSecs / 60)) : null,
-      fare,
+      return {
+        minutes,
+        steps: steps.slice(0, 4),
+        segments,
+        walkMinutes: totalWalkSecs > 0 ? Math.max(1, Math.round(totalWalkSecs / 60)) : null,
+        fare,
+        fareLines,
+      }
     }
+
+    // Google's first route isn't always the one to show a newcomer (see
+    // lib/nearby/transit-choice): shortlist the near-fastest routes that cost
+    // no more than Google's pick, then prefer more frequent service. MBTA
+    // headways are looked up only when there is a choice to make.
+    const parsed = routes.map(parseRoute)
+    const candidates = parsed.map((r) => ({ minutes: r.minutes, walkMinutes: r.walkMinutes ?? 0, fare: r.fare?.amount ?? null }))
+    const shortlist = transitShortlist(candidates, PRICES.mbta.subwaySingle)
+    const worstHeadway: (number | null)[] = []
+    if (shortlist.length > 1) {
+      await Promise.all(shortlist.map(async (i) => {
+        const ids = parsed[i].fareLines.map(mbtaRouteId)
+        if (ids.length === 0 || ids.some((id) => id === null)) { worstHeadway[i] = null; return }
+        const hs = await Promise.all((ids as string[]).map((id) => getPeakHeadway(id, departureTime)))
+        worstHeadway[i] = hs.some((h) => h === null) ? null : Math.max(...(hs as number[]))
+      }))
+    }
+    const pick = chooseTransitRoute(candidates, shortlist, worstHeadway)
+    const c = parsed[pick === -1 ? 0 : pick]
+    return { minutes: c.minutes, steps: c.steps, segments: c.segments, walkMinutes: c.walkMinutes, fare: c.fare }
   } catch {
     return null
   }
