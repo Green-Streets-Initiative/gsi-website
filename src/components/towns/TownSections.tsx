@@ -319,6 +319,7 @@ const DRAWER_CATEGORY_META: Record<string, string> = {
   commuter_services: 'Commuter perks & fare help',
   bike_share: 'Bike share',
   bike_repair: 'Fix your own bike',
+  community_group: 'Clubs & ride groups',
   construction_info: 'Construction & closures',
   get_updates: 'Get updates',
   report_issue: 'Report an issue',
@@ -326,6 +327,7 @@ const DRAWER_CATEGORY_META: Record<string, string> = {
 const DRAWER_CATEGORY_ORDER = [
   'bike_ped_committee',
   'advocacy_group',
+  'community_group',
   'commuter_services',
   'bike_share',
   'bike_repair',
