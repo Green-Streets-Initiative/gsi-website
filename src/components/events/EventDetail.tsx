@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import posthog from 'posthog-js'
+import { gaEvent } from '@/lib/ga'
 import StoreButtons from '@/components/StoreButtons'
 import { withUtm as appUtm } from '@/lib/utm'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
@@ -175,7 +176,26 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
     }
   }
 
-  const handleDownloadIcs = () => {
+  // The three things a visitor can do here that mean "I intend to go": leave
+  // for the organizer's registration or event page, save the date, or get
+  // directions. Each fires a GA4 event (Google Ads imports GA4 key events as
+  // conversions; the Ad Grant needs at least one a month) and a PostHog copy.
+  const eventProps = (extra: Record<string, unknown>) => ({
+    event_id: event.id, event_type: event.event_type, is_past: isPast, ...extra,
+  })
+  const trackCalendar = (method: 'google' | 'ics', surface: 'details' | 'phone_bar') => {
+    const props = eventProps({ method, surface })
+    gaEvent('event_calendar_save', props)
+    posthog.capture('event_calendar_save', props)
+  }
+  const trackDirections = (surface: 'map_card' | 'details' | 'phone_bar') => {
+    const props = eventProps({ surface })
+    gaEvent('event_directions_click', props)
+    posthog.capture('event_directions_click', props)
+  }
+
+  const handleDownloadIcs = (surface: 'details' | 'phone_bar') => {
+    trackCalendar('ics', surface)
     const ics = buildIcs(event)
     const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -192,7 +212,9 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
   // had no measurable outcome at all. `event_outbound_click` counts as an
   // activation in scripts/seo/pull-posthog.mjs.
   const trackOutbound = (kind: 'register' | 'info', surface: 'details' | 'phone_bar') => {
-    posthog.capture('event_outbound_click', { kind, surface, event_id: event.id, event_type: event.event_type, is_past: isPast })
+    const props = eventProps({ kind, surface })
+    posthog.capture('event_outbound_click', props)
+    gaEvent(kind === 'register' ? 'event_register_click' : 'event_info_click', props)
   }
 
   const timeStr = event.event_time ? formatTime(event.event_time) : null
@@ -237,6 +259,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                       target="_blank"
                       rel="noopener noreferrer"
                       className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-4 py-2 text-[13px] font-medium text-(--ev-ink-75) transition-colors hover:bg-(--ev-panel)"
+                      onClick={() => trackDirections('map_card')}
                     >
                       <MapPin size={14} />
                       Directions
@@ -331,6 +354,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-[10px] bg-(--ev-accent-fill) px-5 py-2.5 text-[13px] font-bold text-(--ev-on-accent-fill) transition-opacity hover:opacity-85"
+                  onClick={() => trackDirections('details')}
                 >
                   <MapPin size={15} />
                   Getting there
@@ -353,20 +377,20 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
-                      onClick={() => setCalMenuOpen(false)}
+                      onClick={() => { trackCalendar('google', 'details'); setCalMenuOpen(false) }}
                     >
                       <Globe size={14} />
                       Google Calendar
                     </a>
                     <button
-                      onClick={handleDownloadIcs}
+                      onClick={() => handleDownloadIcs('details')}
                       className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
                     >
                       <Calendar size={14} />
                       Apple Calendar (.ics)
                     </button>
                     <button
-                      onClick={handleDownloadIcs}
+                      onClick={() => handleDownloadIcs('details')}
                       className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
                     >
                       <ExternalLink size={14} />
@@ -552,6 +576,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-(--ev-accent-fill) px-4 text-[14px] font-bold text-(--ev-on-accent-fill)"
+            onClick={() => trackDirections('phone_bar')}
           >
             <MapPin size={16} />
             Getting there
@@ -574,13 +599,13 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
-                onClick={() => setBarMenuOpen(false)}
+                onClick={() => { trackCalendar('google', 'phone_bar'); setBarMenuOpen(false) }}
               >
                 <Globe size={14} />
                 Google Calendar
               </a>
               <button
-                onClick={() => { handleDownloadIcs(); setBarMenuOpen(false) }}
+                onClick={() => { handleDownloadIcs('phone_bar'); setBarMenuOpen(false) }}
                 className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
               >
                 <Calendar size={14} />
