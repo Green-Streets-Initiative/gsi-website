@@ -208,6 +208,7 @@ export default async function ShiftEmployersPage() {
                 {
                   title: 'Numbers for whatever you report',
                   body: 'Participation, trips by mode and CO₂ avoided, in an impact report you can drop into a wellness update, a sustainability or ESG report, or a MassDEP, Cambridge PTDM or Boston commute filing.',
+                  link: { href: '/shift/employers/commute-survey', label: 'Commute survey and emissions number' },
                 },
                 {
                   title: 'Private by design',
@@ -217,7 +218,7 @@ export default async function ShiftEmployersPage() {
                   title: 'Built by a Massachusetts nonprofit',
                   body: 'Green Streets Initiative has run Walk/Ride Day since 2006 and built Shift in Somerville. One flat price, no per-user meter, and a team that knows your transit map.',
                 },
-              ].map((card) => (
+              ].map((card: { title: string; body: string; link?: { href: string; label: string } }) => (
                 <div
                   key={card.title}
                   className="rounded-[14px] border border-navy/10 bg-cream p-8"
@@ -228,6 +229,11 @@ export default async function ShiftEmployersPage() {
                   <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
                     {card.body}
                   </p>
+                  {card.link ? (
+                    <Link href={card.link.href} className="mt-4 inline-block text-[15px] font-semibold text-forest underline-offset-4 hover:underline">
+                      {card.link.label} &rarr;
+                    </Link>
+                  ) : null}
                 </div>
               ))}
             </div>
