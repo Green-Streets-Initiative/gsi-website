@@ -18,6 +18,9 @@ export type Placement =
   | 'town_page'
   | 'towns_hub'
   | 'roam_top'
+  // 2026-10-15: the roam page's app box moved from above the facts to below
+  // the map; a new tag so the before/after is readable in PostHog.
+  | 'roam_after_map'
   | 'roam_bottom'
   | 'event_detail'
 
