@@ -67,22 +67,32 @@ export default function ResponsesTab({ status, onGoToSending, onGoToPeople }: { 
       <div className="grid gap-6 px-6 py-5">
         {isMassdep && (
           <section>
-            <div className="flex items-center justify-between text-[12.5px] font-semibold text-ink-muted">
-              <span>MassDEP response bands</span>
-              <span>{ratePct != null ? massdepBandShort(ratePct) : 'Needs a headcount'}</span>
-            </div>
+            <div className="text-[12.5px] font-semibold text-ink-muted">MassDEP response bands</div>
+            <p className="mt-0.5 text-[13.5px] leading-[1.5] text-ink">
+              {ratePct != null && headcount
+                ? `${pct(responded, headcount)} of ${headcount.toLocaleString()} answered. ${massdepBandShort(ratePct)}.`
+                : 'Add a headcount under Setup to see where you stand.'}
+            </p>
             <div className="relative mt-2 h-2 w-full rounded-full bg-accent-softer">
               <div className="h-full rounded-full bg-accent transition-all duration-[420ms]" style={{ width: `${ratePct ?? 0}%` }} />
               {MASSDEP_BANDS.map((b) => (
                 <div key={b.at} className="absolute top-[-3px] h-[14px] w-[2px] bg-ink/60" style={{ left: `${b.at}%` }} aria-hidden />
               ))}
             </div>
-            <div className="relative mt-1 h-8 text-[12px] leading-[1.3] text-ink-muted">
+            {/* Wide: labels sit under their tick. Phone: 75% and 90% are too close, so list them in a row instead. */}
+            <div className="relative mt-1 hidden h-8 text-[12px] leading-[1.3] text-ink-muted sm:block">
               {MASSDEP_BANDS.map((b) => (
-                <div key={b.at} className="absolute text-center" style={{ left: `${b.at}%`, transform: b.at >= 90 ? 'translateX(-100%)' : 'translateX(-50%)' }}>
+                <div key={b.at} className="absolute whitespace-nowrap text-center" style={{ left: `${b.at}%`, transform: b.at >= 90 ? 'translateX(-100%)' : 'translateX(-50%)' }}>
                   <div className="font-semibold text-ink">{b.label}</div>
                   <div>{b.form}</div>
                 </div>
+              ))}
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[12px] leading-[1.3] text-ink-muted sm:hidden">
+              {MASSDEP_BANDS.map((b) => (
+                <span key={b.at} className="whitespace-nowrap">
+                  <span className="font-semibold text-ink">{b.label}</span> {b.form}
+                </span>
               ))}
             </div>
             <p className="mt-1 text-[12.5px] leading-[1.55] text-ink-muted">{MASSDEP_GLOSS}</p>
