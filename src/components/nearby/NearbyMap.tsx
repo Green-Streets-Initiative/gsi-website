@@ -44,7 +44,7 @@ export interface LaneTapInfo {
 /** A tapped stretch of a drawn destination route (reach:* features). */
 export interface RouteLegTapInfo {
   corridorId: string
-  leg: 'walk' | 'transit' | 'bike'
+  leg: 'walk' | 'transit' | 'bike' | 'drive' | 'shuttle'
   /** Transit line name for riding legs, when known */
   legLabel: string | null
   /** Bike comfort tier for bike legs */
@@ -53,6 +53,10 @@ export interface RouteLegTapInfo {
   /** The street this bike stretch rides ("Webster Avenue"), when the lane
    *  network names it — shared-road stretches have none */
   legStreet: string | null
+  /** The stretch's owner key ("bike:3", "transit:0", "walk:1") when the
+   *  route carries one — the same key a leg chip lights, so a tap on the
+   *  map can select the chip. */
+  legOwner: string | null
 }
 
 interface Props {
@@ -782,8 +786,8 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
       if (evt.__nearbyHandled) return
       evt.__nearbyHandled = true
       const props = e.features?.[0]?.properties as {
-        corridorId?: string; leg?: 'walk' | 'transit' | 'bike'
-        legLabel?: string; legRating?: string; legMiles?: number; legStreet?: string
+        corridorId?: string; leg?: RouteLegTapInfo['leg']
+        legLabel?: string; legRating?: string; legMiles?: number; legStreet?: string; legOwner?: string
       } | undefined
       const id = props?.corridorId
       if (!id) return
@@ -799,6 +803,7 @@ function applyCorridors(map: maplibregl.Map, corridors: GeoJSON.FeatureCollectio
             legRating: props.legRating ?? null,
             legMiles: props.legMiles ?? null,
             legStreet: props.legStreet ?? null,
+            legOwner: props.legOwner ?? null,
           })
         }
         return

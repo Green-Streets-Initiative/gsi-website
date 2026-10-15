@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
-
   Copy,
   ExternalLink,
   MapPin,
@@ -14,6 +13,8 @@ import {
   Leaf,
   Car,
   Plus,
+  Eye,
+  Lightbulb,
 } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
 import PortalSectionNav, { PortalSectionedPage, SECTION_SCROLL_MT } from '../_components/PortalSectionNav'
@@ -22,10 +23,13 @@ import { usePortal } from '../_lib/portal-context'
 import { Card, CardHead } from '@/components/employer/Card'
 import Button from '@/components/employer/Button'
 import Toggle from '@/components/employer/Toggle'
+import SegmentedControl from '@/components/employer/SegmentedControl'
 import { useToast } from '@/components/employer/Toast'
 import { supabase } from '@/lib/supabase'
 import LocationsCard from './LocationsCard'
 import AdvisorUsageCard from './AdvisorUsageCard'
+import AdvisorVisibilityCard from './AdvisorVisibilityCard'
+import { advisorDraftPath, encodeAdvisorDraft } from './advisor-draft'
 import LivePagePreview from '@/components/employer/LivePagePreview'
 import { useEmployerLocations, locationTitle, type LocationDraft } from '../_lib/use-employer-locations'
 import { employerAdvisorUrl, onThisSite } from '@/lib/employer/office-links'
@@ -69,8 +73,24 @@ const SUBSIDY_TYPES = [
   { value: 'direct', label: 'Employer-paid' },
 ]
 
+/** Anything on the page beyond an address: a subsidy, a perk, a shuttle, parking info or a contact. */
+function hasAnyBenefit(b: EmployerBenefits): boolean {
+  return (
+    (b.transit_subsidy_monthly ?? 0) > 0 ||
+    !!b.bluebikes_subsidized ||
+    !!b.bike_parking ||
+    !!b.showers ||
+    !!b.free_parking ||
+    b.parking_cost_monthly != null ||
+    (b.shuttle_routes?.length ?? 0) > 0 ||
+    !!b.hr_contact_name?.trim() ||
+    !!b.hr_contact_email?.trim() ||
+    !!b.other_benefits?.trim()
+  )
+}
+
 export default function AdvisorPage() {
-  const { group, benefitsForm, setBenefitsForm, canEditAdvisor } = usePortal()
+  const { group, benefitsForm, setBenefitsForm, canEditAdvisor, isGsiAdmin } = usePortal()
   const toast = useToast()
   // Admins, managers and GSI staff edit and publish; viewers read (S3).
   // The database refuses a viewer's write too; this keeps the form honest.
@@ -93,7 +113,7 @@ export default function AdvisorPage() {
   // keeps destination_* equal to location 1); mirror that here so the next
   // benefits save doesn't write the old address back.
   async function saveLocations(drafts: LocationDraft[]) {
-    const err = await saveLocationList(drafts)
+    const err = await saveLocationList(drafts, { onWarning: (m) => toast(m, { type: 'error' }) })
     if (err) return err
     const main = drafts[0]
     const dest: Partial<EmployerBenefits> = main
@@ -120,6 +140,48 @@ export default function AdvisorPage() {
     navigator.clipboard.writeText(`https://${advisorUrl}`)
     setLinkCopied(true)
     setTimeout(() => setLinkCopied(false), 2000)
+  }
+
+  // Which location the preview (and "Preview unsaved changes") opens on.
+  // Defaults to the main one; a picker appears with two or more.
+  const [previewLocationId, setPreviewLocationId] = useState<string | null>(null)
+  const previewLocation = locations.find((l) => l.id === previewLocationId) ?? locations[0] ?? null
+  const slugOrCode = group?.slug ?? group?.invite_code ?? ''
+  const savedPreviewPath = slugOrCode
+    ? `/commute-advisor/${encodeURIComponent(slugOrCode)}${previewLocation && locations.length > 1 ? `?location=${encodeURIComponent(previewLocation.id)}` : ''}`
+    : ''
+
+  // The draft the public page renders under its "Preview of unsaved changes"
+  // ribbon: the benefits form as it stands plus the saved locations (those
+  // save on their own, from their card). Debounced so typing does not reload
+  // the frame on every keystroke.
+  const draftPayload = useMemo(
+    () =>
+      encodeAdvisorDraft({
+        benefits: form,
+        locations: locations.map((l) => ({
+          id: l.id,
+          name: l.name,
+          address: l.address,
+          lat: l.lat,
+          lng: l.lng,
+          typical_start_time: l.typical_start_time,
+        })),
+      }),
+    [form, locations],
+  )
+  const [debouncedDraft, setDebouncedDraft] = useState(draftPayload)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedDraft(draftPayload), 800)
+    return () => clearTimeout(t)
+  }, [draftPayload])
+  const [previewMode, setPreviewMode] = useState<'saved' | 'draft'>('saved')
+  const showDraftInFrame = dirty && previewMode === 'draft'
+  const draftPreviewPath = slugOrCode ? advisorDraftPath(slugOrCode, locations.length > 1 ? previewLocation?.id : null, debouncedDraft) : ''
+
+  function previewUnsaved() {
+    if (!slugOrCode) return
+    window.open(advisorDraftPath(slugOrCode, locations.length > 1 ? previewLocation?.id : null, draftPayload), '_blank', 'noopener')
   }
 
   // With more than one location, each gets its own link that opens the
@@ -174,6 +236,7 @@ export default function AdvisorPage() {
   const activeBenefits = BENEFITS_CONFIG.filter(
     (b) => form[b.key as keyof EmployerBenefits],
   )
+  const needsOneBenefit = locations.length > 0 && !hasAnyBenefit(form)
 
   // The hand-built summary: what the frame falls back to when the page
   // can't load. Kept in step with the real page's header and benefit list.
@@ -309,6 +372,30 @@ export default function AdvisorPage() {
           <p className="text-[13.5px] leading-[1.55] text-ink">
             You can see this page but not change it. Ask an admin or manager on your team to make changes.
           </p>
+        </Card>
+      )}
+
+      {/* An address alone makes an empty page. Gone once any benefit is on it. */}
+      {needsOneBenefit && (
+        <Card pad className="border-ep-warning/40 bg-[#FFF8EE]">
+          <div className="flex items-start gap-3">
+            <div className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[9px] bg-ep-warning/15 text-ep-warning-ink">
+              <Lightbulb size={18} strokeWidth={1.75} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[14px] font-semibold leading-[1.45] text-ink">
+                Your page shows the office address.
+              </p>
+              <p className="mt-1 text-[13.5px] leading-[1.55] text-ink">
+                Adding a benefit, even &ldquo;bike parking in the garage,&rdquo; gives employees more to plan around.
+              </p>
+              <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-semibold">
+                <a href="#adv-subsidy" className="text-accent hover:underline">Transit subsidy</a>
+                <a href="#adv-perks" className="text-accent hover:underline">Facilities &amp; perks</a>
+                <a href="#adv-contact" className="text-accent hover:underline">HR contact</a>
+              </p>
+            </div>
+          </div>
         </Card>
       )}
 
@@ -666,26 +753,60 @@ export default function AdvisorPage() {
             The real page, scaled down; the hand-built summary is only the
             fallback when the page can't load in the frame. */}
         <div className={`sticky top-[60px] min-[1200px]:top-6 ${SECTION_SCROLL_MT}`} id="adv-preview">
-          <div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em] text-ink-tertiary">
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em] text-ink-tertiary">
             <ExternalLink size={13} strokeWidth={1.75} />
             Employee preview
+            {dirty && canEdit && (
+              <SegmentedControl
+                className="ml-auto normal-case tracking-normal"
+                options={[
+                  { value: 'saved', label: 'Saved' },
+                  { value: 'draft', label: 'Unsaved changes' },
+                ]}
+                value={previewMode}
+                onChange={setPreviewMode}
+              />
+            )}
           </div>
+          {locations.length > 1 && (
+            <label className="mb-2 block">
+              <span className="sr-only">Preview location</span>
+              <select
+                className="w-full rounded-[10px] border border-line bg-surface px-3 py-2 text-[13px] text-ink outline-none focus:border-accent"
+                value={previewLocation?.id ?? ''}
+                onChange={(e) => setPreviewLocationId(e.target.value || null)}
+              >
+                {locations.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {locationTitle(l)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {group && (
             <LivePagePreview
-              src={`/commute-advisor/${group.slug ?? group.invite_code}`}
-              title="Your Commute Advisor page"
+              src={showDraftInFrame ? draftPreviewPath : savedPreviewPath}
+              title={showDraftInFrame ? 'Preview of unsaved changes' : 'Your Commute Advisor page'}
               pageWidth={1280}
               pageHeight={900}
-              openHref={onThisSite(advisorUrl)}
+              openHref={showDraftInFrame ? draftPreviewPath : onThisSite(advisorUrl)}
               fallback={previewSummary}
             />
           )}
           <p className="mt-2 text-[12.5px] leading-[1.5] text-ink-muted">
-            Shows what&apos;s saved. Unsaved changes appear after you publish.
+            {showDraftInFrame
+              ? 'Shows your unsaved changes. Nothing is published until you save.'
+              : "Shows what's saved. Pick \"Unsaved changes\" or use Preview unsaved changes below to see edits first."}
           </p>
           {group && (
             <div className="mt-4">
-              <AdvisorUsageCard groupId={group.id} locations={locations} />
+              <AdvisorVisibilityCard groupId={group.id} canEdit={canEdit} isGsiAdmin={isGsiAdmin} />
+            </div>
+          )}
+          {group && (
+            <div className="mt-4">
+              <AdvisorUsageCard groupId={group.id} locations={locations} fileLabel={group.slug ?? 'commute-advisor'} />
             </div>
           )}
         </div>
@@ -709,6 +830,15 @@ export default function AdvisorPage() {
         )}
         <Button variant="ghost" onClick={handleDiscard}>
           Discard
+        </Button>
+        <Button
+          variant="secondary"
+          icon={Eye}
+          onClick={previewUnsaved}
+          disabled={!dirty || !slugOrCode}
+          title={dirty ? 'Opens your page in a new tab with these changes, before they are published' : 'Make a change first'}
+        >
+          Preview unsaved changes
         </Button>
         <Button
           variant="primary"

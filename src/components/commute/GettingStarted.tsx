@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { eventPath } from '@/lib/events-url'
 import { supabase } from '@/lib/supabase'
+import { formatEventDate } from '@/lib/employer/commute-costs'
 import type { ContentItem, EventWithDetails, Mode, BarrierCode } from '@/lib/types/commute'
 
 // Map recommendation modes to content_items primary_mode values
@@ -180,7 +181,7 @@ export default function GettingStarted({ modes, barriers, event }: GettingStarte
             {event.content_items.title}
           </h5>
           <div className="mb-2 text-[0.8125rem] text-[#5A5C6E]">
-            {new Date(`${event.event_date}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            {formatEventDate(event.event_date, { year: true })}
             {event.location_name && ` · ${event.location_name}`}
           </div>
           <p className="mb-4 line-clamp-2 text-[0.875rem] leading-relaxed text-[#5A5C6E]">

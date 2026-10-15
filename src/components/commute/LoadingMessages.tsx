@@ -2,16 +2,15 @@
 
 import { useEffect, useState } from 'react'
 
-// Staged messages while the recommendation engine runs its (real) checks —
-// routes, MBTA, Bluebikes, bike comfort. Advances every 2.5s and holds on
-// the last message rather than looping, so a long wait never reads as stuck
-// in a cycle.
+// Short staged messages while the engine routes the trip. Advances every
+// 2.5s and holds on the last one rather than looping, so a long wait never
+// reads as stuck in a cycle.
 const MESSAGES = [
-  'Finding your routes…',
-  'Checking MBTA schedules…',
-  'Checking Bluebikes stations…',
-  'Scoring bike comfort…',
-  'Comparing costs…',
+  'Routing your trip…',
+  'Checking bus and train times…',
+  'Checking Bluebikes…',
+  'Working out costs…',
+  'Almost there…',
 ]
 
 export default function LoadingMessages({ theme = 'dark' }: { theme?: 'dark' | 'light' }) {

@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import type { EmployerGroup, EmployerBenefits, EmployerAdvisorLocation } from '@/lib/types/commute'
 import EmployerCommuteAdvisor from '@/components/commute/EmployerCommuteAdvisor'
+import { decodeAdvisorDraft } from '@/app/shift/employers/portal/advisor/advisor-draft'
 
 type AdvisorGroupRow = {
   id: string
@@ -38,6 +39,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
+/** "09:00:00" or "09:00" -> "09:00"; anything else -> null. */
+function clockOrNull(v: unknown): string | null {
+  return typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d/.test(v) ? v.slice(0, 5) : null
+}
+
 export default async function EmployerAdvisorPage({
   params,
   searchParams,
@@ -48,6 +54,9 @@ export default async function EmployerAdvisorPage({
   const { slug } = await params
   const sp = await searchParams
   const locationParam = typeof sp.location === 'string' ? sp.location : null
+  // Portal "Preview unsaved changes": the benefits and offices as the admin
+  // has them now, rendered instead of the saved ones. Nothing is logged.
+  const draft = decodeAdvisorDraft(typeof sp.draft === 'string' ? sp.draft : null)
 
   // Demo page is handled by /commute-advisor/demo/page.tsx. This route
   // shouldn't match 'demo' while that static sibling exists, but if it ever
@@ -60,13 +69,29 @@ export default async function EmployerAdvisorPage({
 
   const supabase = createServerSupabaseClient()
 
-  // Offices/branches (item 7). Two or more and staff choose theirs.
-  const { data: locationRows } = await supabase
-    .from('employer_locations')
-    .select('id, name, address, lat, lng')
-    .eq('group_id', group.id)
-    .order('sort_order', { ascending: true })
-    .limit(100)
+  // Offices/branches (item 7). Two or more and staff choose theirs. The
+  // office's usual start time is read on its own: until its held migration
+  // (Shift 01131) lands the column does not exist, and that must not fail
+  // the page.
+  const [{ data: locationRows }, startTimeRows] = await Promise.all([
+    supabase
+      .from('employer_locations')
+      .select('id, name, address, lat, lng')
+      .eq('group_id', group.id)
+      .order('sort_order', { ascending: true })
+      .limit(100),
+    supabase
+      .from('employer_locations')
+      .select('id, typical_start_time')
+      .eq('group_id', group.id)
+      .limit(100)
+      .then(({ data, error }) => (error ? null : (data as { id: string; typical_start_time: unknown }[] | null))),
+  ])
+  const startTimes: Record<string, string> = {}
+  for (const row of startTimeRows ?? []) {
+    const clock = clockOrNull(row.typical_start_time)
+    if (clock) startTimes[row.id] = clock
+  }
 
   const employerGroup: EmployerGroup = {
     locations: (locationRows ?? []) as EmployerAdvisorLocation[],
@@ -79,5 +104,5 @@ export default async function EmployerAdvisorPage({
     invite_code: group.invite_code ?? undefined,
   }
 
-  return <EmployerCommuteAdvisor group={employerGroup} initialLocationId={locationParam} />
+  return <EmployerCommuteAdvisor group={employerGroup} initialLocationId={locationParam} startTimes={startTimes} draft={draft} />
 }

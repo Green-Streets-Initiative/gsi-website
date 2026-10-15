@@ -57,6 +57,12 @@ export type Group = {
   agreement_version?: string | null
   agreement_accepted_at?: string | null
   agreement_accepted_by_email?: string | null
+  /**
+   * Whether the public Commute Advisor page answers at /commute-advisor/<slug>
+   * (get_advisor_group_by_slug serves enabled groups only). Not part of the
+   * portal context's group load; the Advisor page reads it on its own.
+   */
+  commute_advisor_enabled?: boolean
   /** GSI switched the yearly commute survey on for this workplace (Shift 01170). */
   commute_survey_enabled?: boolean
 }
@@ -343,6 +349,45 @@ export type GroupAdmin = {
   notification_prefs: NotificationPrefs | null
   /** The account owner (01081). Undefined until that migration is applied; see isOwnerRow(). */
   is_owner?: boolean
+}
+
+/**
+ * get_advisor_usage (Shift 01048). Everything after `by_location` is what the
+ * held advisor v2 migration may add; each is optional so the card renders
+ * against the function as it is today and simply shows less.
+ */
+export type AdvisorUsage = {
+  ok: boolean
+  reason?: string
+  days: number
+  runs: number
+  prior_runs: number
+  by_mode: { mode: string; runs: number }[]
+  by_location: { location_id: string | null; runs: number }[]
+  /** Held 01131: runs in the window whose join link was clicked (advisor_runs.cta_clicked). */
+  cta_clicks?: number
+  /** Held 01131: runs whose arrive-by differs from the office's typical start time. */
+  arrive_by_changed?: number
+  /** Held 01131: the "what matters most" chip picked per run; 'none' when none. */
+  by_motivation?: { motivation: string; runs: number }[]
+  /** Not returned by any migration yet; the card falls back to eight windowed calls. */
+  by_week?: { week_start: string; runs: number }[]
+  /** Not returned yet: sum of the recommended modes' yearly saving against driving, in dollars. Shown only when present. */
+  estimated_annual_savings_usd?: number | null
+  /** Not returned yet: the per-run rows behind the figures. The CSV button appears only when present. */
+  rows?: AdvisorUsageRow[]
+}
+
+export type AdvisorUsageRow = {
+  created_at: string
+  /** The mode the engine recommended ('walk', 'bike', 'transit', ...). */
+  mode: string | null
+  /** Distance band ('short', 'medium', 'long', ...). */
+  distance_category: string | null
+  location_id: string | null
+  arrive_by?: string | null
+  motivation?: string | null
+  cta_clicked?: boolean | null
 }
 
 export type { EmployerBenefits }

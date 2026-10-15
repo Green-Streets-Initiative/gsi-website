@@ -1,75 +1,44 @@
 'use client'
 
-import { Compass } from '@phosphor-icons/react'
+import { Bicycle, Bus, Car, CircleIcon, Compass, PersonSimpleWalk, Taxi, Train, TrainRegional, UsersThree, Van, type Icon } from '@phosphor-icons/react'
 import type { Mode } from '@/lib/types/commute'
 
-type IconMode = Mode | 'drive' | 'carpool' | 'rideshare' | 'commuter_rail' | 'new'
+type IconMode = Mode | 'drive' | 'carpool' | 'rideshare' | 'commuter_rail' | 'shuttle' | 'new'
 
-export default function ModeIcon({ mode, size = 28, className = '' }: { mode: IconMode; size?: number; className?: string }) {
-  const base = `inline-block shrink-0 ${className}`
-  switch (mode) {
-    case 'drive':
-      return (
-        <svg className={base} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
-          <path d="M240,112H229.2L201.42,49.5A16,16,0,0,0,186.8,40H69.2a16,16,0,0,0-14.62,9.5L26.8,112H16a8,8,0,0,0,0,16h8v80a16,16,0,0,0,16,16H64a16,16,0,0,0,16-16V192h96v16a16,16,0,0,0,16,16h24a16,16,0,0,0,16-16V128h8a8,8,0,0,0,0-16ZM69.2,56H186.8l24.89,56H44.31ZM80,160a12,12,0,1,1,12-12A12,12,0,0,1,80,160Zm96,0a12,12,0,1,1,12-12A12,12,0,0,1,176,160Z" />
-        </svg>
-      )
-    case 'carpool':
-      // Phosphor UsersThree (bold) — signals "shared ride"
-      return (
-        <svg className={base} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
-          <path d="M164.38,181.1a52,52,0,1,0-72.76,0,75.89,75.89,0,0,0-30,28.89,12,12,0,0,0,20.78,12,53,53,0,0,1,91.22,0,12,12,0,1,0,20.78-12A75.89,75.89,0,0,0,164.38,181.1ZM100,144a28,28,0,1,1,28,28A28,28,0,0,1,100,144Zm147.21,9.59a12,12,0,0,1-16.81-2.39c-8.33-11.09-19.85-19.59-29.33-21.64a12,12,0,0,1-1.82-22.91,20,20,0,1,0-24.78-28.3,12,12,0,1,1-21-11.6,44,44,0,1,1,73.28,48.35,92.18,92.18,0,0,1,22.85,21.69A12,12,0,0,1,247.21,153.59Zm-192.28-24c-9.48,2.05-21,10.55-29.33,21.65A12,12,0,0,1,6.41,136.79,92.37,92.37,0,0,1,29.26,115.1a44,44,0,1,1,73.28-48.35,12,12,0,1,1-21,11.6,20,20,0,1,0-24.78,28.3,12,12,0,0,1-1.82,22.91Z" />
-        </svg>
-      )
-    case 'rideshare':
-      // Phosphor Taxi (bold) — distinct cab silhouette from private drive
-      return (
-        <svg className={base} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
-          <path d="M240,100h-9L204.72,54.08A20,20,0,0,0,187.36,44H168.12l-11-27.43A19.9,19.9,0,0,0,138.58,4H117.42A19.9,19.9,0,0,0,98.85,16.57L87.88,44H68.64A20,20,0,0,0,51.28,54.08L25,100H16a12,12,0,0,0,0,24h4v76a20,20,0,0,0,20,20H68a20,20,0,0,0,20-20V180h80v20a20,20,0,0,0,20,20h28a20,20,0,0,0,20-20V124h4a12,12,0,0,0,0-24ZM120.12,28h15.76l6.4,16H113.72ZM71,68H185l18.28,32H52.68ZM64,196H44V180H64Zm148,0H192V180h20Zm0-40H44V124H212Z" />
-        </svg>
-      )
-    case 'walk':
-      // Phosphor PersonSimpleWalk (bold) — matches Shift app
-      return (
-        <svg className={base} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
-          <path d="M152,84a36,36,0,1,0-36-36A36,36,0,0,0,152,84Zm0-48a12,12,0,1,1-12,12A12,12,0,0,1,152,36Zm68,112a12,12,0,0,1-12,12c-37,0-55.27-18.47-70-33.3-1.71-1.72-3.36-3.4-5-5l-8.63,19.85L159,166.23a12,12,0,0,1,5,9.77v56a12,12,0,0,1-24,0V182.17l-25.37-18.12L83,236.78a12,12,0,1,1-22-9.57l50.06-115.13q-10.64.75-25,8.4a159.78,159.78,0,0,0-29.83,21.23,12,12,0,0,1-16.43-17.5c2.61-2.45,64.36-59.67,104.09-25.18,3.94,3.42,7.64,7.16,11.22,10.78C168.43,123.28,181,136,208,136A12,12,0,0,1,220,148Z" />
-        </svg>
-      )
-    case 'bike':
-    case 'ebike':
-      return (
-        <svg className={base} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
-          <path d="M208,112a47.81,47.81,0,0,0-16.93,3.09L165.93,72H192a8,8,0,0,1,8,8,8,8,0,0,0,16,0,24,24,0,0,0-24-24H152a8,8,0,0,0-6.91,12l11.65,20H99.26L82.91,60A8,8,0,0,0,76,56H48a8,8,0,0,0,0,16H71.41l13.71,23.51L62.87,127.9A48,48,0,1,0,79,138.63l17.41-23.11,38.68,66.31A8,8,0,0,0,142,184a7.9,7.9,0,0,0,4-1.08,8,8,0,0,0,2.88-10.94l-38.15-65.42h57.55l11.06,19A48.09,48.09,0,1,0,208,112ZM80,160a32,32,0,1,1-7.34-20.42L55.08,161.84A8,8,0,0,0,61,175.16l17.58-22.26A31.84,31.84,0,0,1,80,160Zm128,32a32,32,0,0,1-21.64-55.64l14.91,25.62a8,8,0,0,0,13.82-8l-14.91-25.62A32,32,0,1,1,208,192Z" />
-        </svg>
-      )
-    case 'transit':
-      return (
-        <svg className={base} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
-          <path d="M184,32H72A32,32,0,0,0,40,64V208a16,16,0,0,0,16,16H80a16,16,0,0,0,16-16V192h64v16a16,16,0,0,0,16,16h24a16,16,0,0,0,16-16V64A32,32,0,0,0,184,32ZM72,48H184a16,16,0,0,1,16,16v48H56V64A16,16,0,0,1,72,48ZM56,176V128H200v48Zm144,32H176V192h24Zm-120,0H56V192H80ZM92,160a12,12,0,1,1-12-12A12,12,0,0,1,92,160Zm96,0a12,12,0,1,1-12-12A12,12,0,0,1,188,160Z" />
-        </svg>
-      )
-    case 'bus':
-      // Phosphor Bus (bold) — distinct from transit/tram
-      return (
-        <svg className={base} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
-          <path d="M184,28H72A36,36,0,0,0,36,64V208a20,20,0,0,0,20,20H84a20,20,0,0,0,20-20V192h48v16a20,20,0,0,0,20,20h28a20,20,0,0,0,20-20V64A36,36,0,0,0,184,28ZM60,168V112H196v56ZM72,52H184a12,12,0,0,1,12,12V88H60V64A12,12,0,0,1,72,52Zm8,152H60V192H80Zm96,0V192h20v12Zm-68-64a16,16,0,1,1-16-16A16,16,0,0,1,108,140Zm72,0a16,16,0,1,1-16-16A16,16,0,0,1,180,140Zm76-60v24a12,12,0,0,1-24,0V80a12,12,0,0,1,24,0ZM24,80v24a12,12,0,0,1-24,0V80a12,12,0,0,1,24,0Z" />
-        </svg>
-      )
-    case 'commuter_rail':
-      // Train icon — Phosphor Train
-      return (
-        <svg className={base} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
-          <path d="M200,48H56A24,24,0,0,0,32,72V200a24,24,0,0,0,24,24h8.11l-10.5,14A8,8,0,0,0,60,248H68a8,8,0,0,0,6.4-3.2L93.33,224h69.34l18.93,20.8A8,8,0,0,0,188,248h8a8,8,0,0,0,6.4-10L191.89,224H200a24,24,0,0,0,24-24V72A24,24,0,0,0,200,48ZM56,64H200a8,8,0,0,1,8,8v48H48V72A8,8,0,0,1,56,64Zm144,144H56a8,8,0,0,1-8-8V136H208v64A8,8,0,0,1,200,208ZM96,176a12,12,0,1,1-12-12A12,12,0,0,1,96,176Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,176Z" />
-        </svg>
-      )
-    case 'new':
-      // Phosphor Compass (bold) — "still finding my way"
-      return <Compass size={size} weight="bold" className={base} />
-    default:
-      return (
-        <svg className={base} width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
-          <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Z" />
-        </svg>
-      )
+const ICONS: Record<IconMode, Icon> = {
+  drive: Car,
+  carpool: UsersThree,
+  rideshare: Taxi,
+  walk: PersonSimpleWalk,
+  bike: Bicycle,
+  ebike: Bicycle,
+  transit: Train,
+  bus: Bus,
+  commuter_rail: TrainRegional,
+  shuttle: Van,
+  new: Compass,
+}
+
+/**
+ * The shared mode glyph, from Phosphor at the house weight: regular at
+ * 15dp and up, bold at 14dp and below (reference_icon_weight_system).
+ * Never fill: a filled Bicycle plugs both wheels into discs and reads as
+ * two dots.
+ */
+export default function ModeIcon({ mode, size = 28, className = '' }: { mode: IconMode | string; size?: number; className?: string }) {
+  const weight = size <= 14 ? 'bold' : 'regular'
+  // Two-leg ways in: the first leg's glyph, then the train, composed at the
+  // same weight (Car+Train for park-and-ride, Bicycle+Train for bike-to-train).
+  if (mode === 'park_ride' || mode === 'bike_ride') {
+    const First = mode === 'park_ride' ? Car : Bicycle
+    const part = Math.round(size * 0.72)
+    return (
+      <span className={`inline-flex shrink-0 items-end ${className}`} style={{ width: size, height: size }} aria-hidden>
+        <First size={part} weight={weight} className="shrink-0 self-start" />
+        <Train size={part} weight={weight} className="-ml-[0.2em] shrink-0" />
+      </span>
+    )
   }
+  const I = ICONS[mode as IconMode] ?? CircleIcon
+  return <I size={size} weight={weight} className={`inline-block shrink-0 ${className}`} aria-hidden />
 }
