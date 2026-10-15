@@ -109,7 +109,8 @@ function trailFacts(roam: RoamDetail, start: string | null, end: string | null):
   if (roam.surface) rows.push({ label: 'Surface', value: roam.surface })
   if (roam.access_note) rows.push({ label: 'Get there', value: roam.access_note })
   if (roam.parking_note) rows.push({ label: 'Parking', value: roam.parking_note })
-  return rows
+  // Each value is a sentence: "about 42 min" becomes "About 42 min".
+  return rows.map((r) => ({ ...r, value: r.value.charAt(0).toUpperCase() + r.value.slice(1) }))
 }
 
 /**
