@@ -96,6 +96,15 @@ export interface RoamDetail extends RoamSummary {
   hero_image_attribution_url: string | null
   route_url: string | null
   completion_threshold: number
+  /** Trail facts for the public page's "Know before you go" box (01193). */
+  full_trail_miles: number | null
+  surface: string | null
+  access_note: string | null
+  parking_note: string | null
+  /** A creator's video about the trail, shown with credit instead of a stock photo. */
+  hero_video_url: string | null
+  hero_video_credit: string | null
+  hero_video_credit_url: string | null
   collection: RoamCollection | null
   /** GeoJSON-order coordinates for the full route, or null if unusable */
   route_coordinates: [number, number][] | null
@@ -159,7 +168,7 @@ export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
     supabase
       .from('roams')
       .select(
-        'id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, featured, description, tagline, badge_name, xp_bonus, hero_image_attribution, hero_image_attribution_url, route_url, route_geometry, completion_count, vibe_tags, collection_id, completion_threshold',
+        'id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, featured, description, tagline, badge_name, xp_bonus, hero_image_attribution, hero_image_attribution_url, route_url, route_geometry, completion_count, vibe_tags, collection_id, completion_threshold, full_trail_miles, surface, access_note, parking_note, hero_video_url, hero_video_credit, hero_video_credit_url',
       )
       .eq('id', id)
       .eq('active', true)
@@ -289,6 +298,13 @@ export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
     hero_image_attribution: (roam.hero_image_attribution as string) ?? null,
     hero_image_attribution_url: (roam.hero_image_attribution_url as string) ?? null,
     route_url: (roam.route_url as string) ?? null,
+    full_trail_miles: roam.full_trail_miles != null ? Number(roam.full_trail_miles) : null,
+    surface: (roam.surface as string) ?? null,
+    access_note: (roam.access_note as string) ?? null,
+    parking_note: (roam.parking_note as string) ?? null,
+    hero_video_url: (roam.hero_video_url as string) ?? null,
+    hero_video_credit: (roam.hero_video_credit as string) ?? null,
+    hero_video_credit_url: (roam.hero_video_credit_url as string) ?? null,
     completion_threshold: (roam.completion_threshold as number) ?? 1.0,
     collection,
     route_coordinates: normalizeRouteGeometry(roam.route_geometry),
