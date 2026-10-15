@@ -54,7 +54,7 @@ export default function AdvisorVisibilityCard({
     }
   }, [groupId])
 
-  // Shift 01202 (was held 01131): the row guard lets portal admins flip the switch.
+  // Shift 01204 (was held 01131): the row guard lets portal admins flip the switch.
   const canWrite = canEdit
 
   async function change(next: boolean) {
