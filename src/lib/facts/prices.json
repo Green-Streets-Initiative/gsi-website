@@ -12,7 +12,13 @@
     "commuterRailMin": 2.4,
     "commuterRailMax": 13.25,
     "_transferPilot": "Sept 1, 2026 for six months: unlimited subway/bus/ferry transfers within 2 hours on one card or phone, pay the highest single fare (https://www.mbta.com/fares/transfers). transferPilotEnds = first day it no longer applies; update if the MBTA extends or makes it permanent.",
-    "transferPilotEnds": "2027-03-01"
+    "transferPilotEnds": "2027-03-01",
+    "reducedSubway": 1.1,
+    "reducedBus": 0.85,
+    "reducedLinkPass": 30,
+    "crZoneTwoMonthly": 232,
+    "crZoneFiveMonthly": 311,
+    "_answerPagesSources": "Reduced fares: mbta.com/fares/reduced; commuter rail monthly passes (CharlieTicket): mbta.com/fares/commuter-rail-fares/zones. Read 2026-10-16."
   },
   "bluebikes": {
     "sourceUrl": "https://bluebikes.com/pricing",
@@ -23,12 +29,24 @@
     "annualPerMonth": 11.13,
     "ebikePerMinMember": 0.1,
     "ebikePerMinNonMember": 0.33,
-    "ebikePerMinIncomeEligible": 0.07
+    "ebikePerMinIncomeEligible": 0.07,
+    "incomeEligibleMonthly": 5,
+    "_incomeEligibleSource": "bluebikes.com/pricing, read 2026-10-16: $5 a month or $50 a year."
   },
   "driving": {
     "gasPerGallonMa": 3.59,
     "maintPerMile": 0.109,
-    "parkingDailyBoston": 18
+    "parkingDailyBoston": 18,
+    "aaaAnnualOwnership": 12863,
+    "aaaFixedAnnual": 7704,
+    "maExcisePerThousand": 25,
+    "maRegistrationTwoYears": 60,
+    "maInspection": 35,
+    "cambridgePermitNow": 25,
+    "cambridgePermitDecember": 75,
+    "zipcarStandardMonthly": 9,
+    "_parkingDailyBostonNote": "parkingDailyBoston is a Boston-metro average (SpotAngels) used by the cost calculators. For downtown garages use parking.bostonCommonDay to parking.prudentialDay.",
+    "_answerPagesSources": "AAA Your Driving Costs 2026 fact sheet (own and operate a new car, 15,000 mi/yr; fixed = depreciation 4,422 + insurance 2,098 + finance 1,184); excise mass.gov DLS; registration mass.gov RMV fees; inspection mass.gov; Cambridge permit cambridgema.gov/rpp ($75 from Dec 1, 2026); Zipcar Standard plan zipcar.com/pricing. Read 2026-10-16."
   },
   "effort": {
     "_comment": "Shared by both Commute Advisors (public and employer). MET values from the ACSM compendium; speeds are typical urban door-to-door.",
@@ -39,5 +57,27 @@
     "bikeMph": 11,
     "ebikeMph": 15,
     "driveMph": 14
+  },
+  "parking": {
+    "_comment": "Posted rates read 2026-10-16. Garages: massconvention.com (Boston Common Garage, weekday 3-10 hrs and weekday monthly), posquare.com (full weekday), prudentialcenter.com (2-24 hrs). MBTA: mbta.com/parking/stations-and-rates. Meters and fines: boston.gov parking clerk. Tax: IRS Rev. Proc. 2025-32; mass.gov commuter deduction. Schools: bu.edu, simmons.edu, umb.edu transportation pages.",
+    "bostonCommonDay": 30,
+    "bostonCommonMonthly": 395,
+    "poSquareDay": 42,
+    "prudentialDay": 47,
+    "mbtaGarageDay": 9,
+    "riversideDay": 6,
+    "riversideMonthly": 105,
+    "routeOneTwentyEightDay": 7,
+    "framinghamDay": 4,
+    "framinghamMonthly": 70,
+    "meterBackBay": 3.75,
+    "meterStandard": 2,
+    "meterTicket": 40,
+    "irsTransitMonthly": 340,
+    "maDeductionCap": 750,
+    "buPermitFall": 900,
+    "buSemesterLinkPass": 320,
+    "simmonsPermitSemester": 515,
+    "umbPermitSemester": 576
   }
 }

@@ -1080,7 +1080,7 @@ Roughly 25 to 30 minutes riding, or 20 on an e-bike. Five miles is also comforta
 
 Each of those estimates measures a different slice of the trip. Here's what to add back for a real one.
 
-**Parking, if you drive.** The estimate stops at the destination address. The trip you actually take includes finding a space and walking in from it — around a hospital, a campus, the Seaport, or downtown, that's regularly another 5 to 15 minutes at the destination and a few more back at the start. Paying is its own step: a day in a Boston garage runs about {{price:driving.parkingDailyBoston}}, and metered spots want a minute at the kiosk or in the app. On a short errand that overhead can be most of the trip.
+**Parking, if you drive.** The estimate stops at the destination address. The trip you actually take includes finding a space and walking in from it — around a hospital, a campus, the Seaport, or downtown, that's regularly another 5 to 15 minutes at the destination and a few more back at the start. Paying is its own step: a full day in a downtown Boston garage runs {{price:parking.bostonCommonDay}} to {{price:parking.prudentialDay}}, and metered spots want a minute at the kiosk or in the app. On a short errand that overhead can be most of the trip.
 
 **Locking up, if you bike.** Add a minute or two at each end. On Bluebikes, add the walk to a dock, and at rush hour the occasional extra block to reach one with a free spot — a single ride is {{price:bluebikes.singleRide}}, or {{price:bluebikes.annualPerMonth}} a month on an annual pass.
 

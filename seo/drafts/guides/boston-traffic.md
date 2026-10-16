@@ -60,7 +60,7 @@ Boston's traffic is among the worst in the country. The average driver here lost
 
 Not by much. On weekday rush-hour trips of 3 to 8 miles in Boston, Cambridge, Somerville, Brookline and nearby, people using Shift typically went 8.4 mph by car, 8.6 mph by bike and 8.8 mph on the subway. Outside rush hour, drives of that length typically went 10.3 mph.
 
-_From 1,078 rush-hour trips of 3 to 8 miles by car, bike and subway recorded by people using Shift, July 18 to October 16, 2026 (weekdays 7 to 9:30 a.m. and 4 to 7 p.m.). Typical means the middle trip._
+**About these numbers:** From 1,078 rush-hour trips of 3 to 8 miles by car, bike and subway recorded by people using Shift, July 18 to October 16, 2026 (weekdays 7 to 9:30 a.m. and 4 to 7 p.m.). Typical means the middle trip.
 
 ### When should I leave to miss it?
 
@@ -72,7 +72,7 @@ Timing still matters. At 6 a.m., 15% of the roads inside Route 128 are congested
 - **The South Shore and the Braintree Split.** Park at the Braintree or Quincy Adams garage for {{price:parking.mbtaGarageDay}} and the Red Line reaches Park Street in under half an hour. From farther out, the Kingston and Greenbush trains take about an hour to South Station, and the Hingham ferry reaches Rowes Wharf in 30 to 40 minutes.
 - **Route 128 and Burlington.** Bus 350 runs from Alewife to Burlington Mall Road in about 30 to 40 minutes. Many employers along 128 belong to a transportation management association that runs shuttles and carpool matching for their staff. [Find yours through MassCommute](https://www.masscommute.com/find-your-tma).
 
-Trains run late sometimes too, so check [T-Alerts](https://alerts.mbta.com) before you leave. They do skip the Braintree Split and the Pike, and the ride is time you can use.
+The trains can run late too, so check [T-Alerts](https://alerts.mbta.com) before you leave. But they skip the Braintree Split and the Pike, and you can read or rest on the way.
 
 ### Try this first
 

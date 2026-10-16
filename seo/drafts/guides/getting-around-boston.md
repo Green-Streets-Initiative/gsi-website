@@ -48,13 +48,13 @@ related: [mg_pay_for_t, mg_bluebikes, mg_cargo_bike]
 
 For most people who live in Boston, Cambridge or Somerville, a car is optional. About a third of households in Boston and Cambridge don't own one ([Census, 2020 to 2024](https://censusreporter.org/data/table/?table=B25044&geo_ids=16000US2507000,16000US2511000,16000US2562535)). The neighborhoods are close together, and walking, the T and Bluebikes cover most everyday trips. For the few trips that need a car, you can rent one by the hour.
 
-### How people here get to work
+### How do people here get to work?
 
 In Boston, about a third of workers drive alone to work. About 1 in 5 takes transit, and about 1 in 7 walks. In Cambridge, walking (19%) and transit (18%) are each about as common as driving alone (20%), and nearly 1 in 12 bikes. These are U.S. Census figures for 2020 to 2024 ([Census Reporter](https://censusreporter.org/data/table/?table=B08301&geo_ids=16000US2507000,16000US2511000,16000US2562535)).
 
-People using Shift who live in these cities show the same thing for every kind of trip, not only the commute. About 7 in 10 of their trips were on foot, by bike or by transit, and walking alone was more than 4 in 10.
+People using Shift who live in these cities show the same thing for every kind of trip, not only the commute. About 7 in 10 of their trips were on foot, by bike or by transit, and more than 4 in 10 were walks.
 
-_From 12,256 trips recorded by 65 people using Shift who live in Boston, Cambridge, Somerville or Brookline, August 21 to October 16, 2026._
+**About these numbers:** From 12,256 trips recorded by 65 people using Shift who live in Boston, Cambridge, Somerville or Brookline, August 21 to October 16, 2026.
 
 ### What's the cheapest way to get around?
 

@@ -53,7 +53,7 @@ related: [mg_walking_vs_driving, mg_bluebikes, mg_pay_for_t]
 
 It depends on how often you drive. If you use the car a few times a month, owning one in Boston usually costs far more than renting or sharing a car for those trips. If you drive most days, or your work, your kids' activities or your family live where the T doesn't reach, keeping it often makes sense.
 
-### What a car costs to keep here
+### What does a car cost to keep here?
 
 AAA puts the cost of owning and running a new car 15,000 miles a year at {{price:driving.aaaAnnualOwnership}} ([AAA, 2026](https://newsroom.aaa.com/wp-content/uploads/2026/09/AAA_YDC-Fact-Sheet_2026.pdf)). About {{price:driving.aaaFixedAnnual}} of that is depreciation, insurance and loan interest, which you pay whether the car moves or not. An older car that's paid off costs much less.
 
@@ -65,13 +65,13 @@ Massachusetts adds a few costs of its own:
 
 ### How often do people here actually drive?
 
-About two days a week. People using Shift who live in Boston, Cambridge, Somerville or Brookline drove on about two days a week, and about 1 in 4 of their drives was under 2 miles. Many of those short trips are an easy walk or bike ride.
+About two days a week, among people using Shift who live in Boston, Cambridge, Somerville or Brookline. About 1 in 4 of their drives was under 2 miles. Many of those short trips are an easy walk or bike ride.
 
-_From 3,263 drives recorded by 65 people using Shift who live in those four cities, August 21 to October 16, 2026. Driving here includes rides in a taxi or ride-hail car._
+**About these numbers:** From 3,263 drives recorded by 65 people using Shift who live in those four cities, August 21 to October 16, 2026. Driving here includes rides in a taxi or ride-hail car.
 
 The City of Boston found something similar: a privately owned car is driven about an hour a day, while each car in its car-share pilot was used about seven ([City of Boston](https://www.boston.gov/departments/transportation/car-share-boston)).
 
-### Work it out for yourself
+### How do I work out what's right for me?
 
 1. For two weeks, write down each day you drive and where you went.
 2. Mark the trips under 2 miles. Those are the easiest to walk, bike or take the T.
@@ -79,11 +79,11 @@ The City of Boston found something similar: a privately owned car is driven abou
 
 If only a few trips a month really need a car, sharing or renting will cost much less than keeping one. If most of them do, keeping the car makes sense.
 
-### What to use on the days you need a car
+### What do I use on the days I need a car?
 
 Car-share services rent cars by the hour from lots across the city, with gas and insurance included. Zipcar's standard plan is {{price:driving.zipcarStandardMonthly}} a month plus the hourly or daily rate. A regular rental works for weekends away. Ride-hail fills the gaps. If you have kids under 8, bring a car seat: state law requires one in an Uber or Lyft unless the child is over 57 inches tall.
 
-### If you decide to sell
+### How do I sell a car in Massachusetts?
 
 Cancel the registration online with your MyMassGov account, which is free, and send the receipt to your insurer. You don't return the plates: cut them in half and recycle them where your town accepts them, or throw them away. Once the car is sold, ask your town's assessor for an excise refund for the months you no longer owned it ([Mass.gov](https://www.mass.gov/how-to/cancel-your-vehicle-registration-license-plates)).
 

@@ -67,7 +67,7 @@ Posted weekday rates, October 2026:
 - **Post Office Square:** {{price:parking.poSquareDay}} for a full day.
 - **Prudential Center:** {{price:parking.prudentialDay}} for 2 to 24 hours.
 
-Street meters downtown are {{price:parking.meterStandard}} an hour ({{price:parking.meterBackBay}} in Back Bay and the Seaport), and Sundays are free. ([City of Boston](https://www.boston.gov/departments/parking-clerk/how-do-parking-meters-work)). An expired meter is a {{price:parking.meterTicket}} ticket ([fines](https://www.boston.gov/departments/parking-clerk/parking-ticket-fines-and-codes)).
+Street meters downtown are {{price:parking.meterStandard}} an hour ({{price:parking.meterBackBay}} in Back Bay and the Seaport), and Sundays are free ([City of Boston](https://www.boston.gov/departments/parking-clerk/how-do-parking-meters-work)). An expired meter is a {{price:parking.meterTicket}} ticket ([Boston parking fines](https://www.boston.gov/departments/parking-clerk/parking-ticket-fines-and-codes)).
 
 ### Is it cheaper to park at a T station?
 
@@ -82,7 +82,7 @@ Add the fare: {{price:mbta.subwaySingle}} each way on the subway, or {{price:mbt
 
 Of all weekday trips into downtown by people using Shift, about 1 in 9 was a drive. Of the 99 people using Shift who drove downtown on a weekday, 90 also came in by T, bike, ferry or on foot at least once. The typical drive in was 3.4 miles.
 
-_From weekday trips into downtown Boston recorded by people using Shift, June to October 2026, including 363 drives by 99 people._
+**About these numbers:** From weekday trips into downtown Boston recorded by people using Shift, June to October 2026, including 363 drives by 99 people.
 
 ### Can my employer help pay?
 
