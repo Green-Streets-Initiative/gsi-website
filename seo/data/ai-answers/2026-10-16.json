@@ -1,0 +1,2980 @@
+{
+ "_comment": "AI answer sample 2026-10-16. One logged-out run per question per assistant from a Boston-area browser (Arlington IP; ChatGPT localizes to it). Google = AI Overview on google.com/search (hl=en, gl=us); ChatGPT = chatgpt.com logged out, default web search; Gemini = gemini.google.com logged out (Flash-Lite). srcs = source chips shown in the answer; gsi = Green Streets / gogreenstreets / Walk Ride Day named anywhere in the answer. Answers vary run to run: treat as a sample, not a score.",
+ "date": "2026-10-16",
+ "answers": [
+  {
+   "e": "google",
+   "q": "Is it safe to bike commute in Boston?",
+   "aio": true,
+   "gsi": true,
+   "gsi_page": true,
+   "rank": 6,
+   "srcs": [
+    "Green Streets Initiative",
+    "Matt Ognibene",
+    "Caught In Southie",
+    "Boston University",
+    "www.masspaths.net"
+   ],
+   "orgs": [
+    "GSI",
+    "MBTA"
+   ],
+   "top": [
+    "reddit",
+    "bwglaw.com",
+    "bu.edu",
+    "thebostonsun.com",
+    "4"
+   ],
+   "first": "Bike commuting in Boston is a mix of fast, competitive travel times and real traffic risks, and it requires careful route planning.",
+   "id": "c01"
+  },
+  {
+   "e": "google",
+   "q": "Do you need a car to live in Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "YPC Real Estate",
+    "Commonwealth Standard Realty Advisors",
+    "Quora",
+    "A&S Realty",
+    "The Rivers Group | Boston Real Estate",
+    "r/boston",
+    "Boston Pads",
+    "Movoto"
+   ],
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "movoto.com",
+    "reddit",
+    "reddit",
+    "reddit"
+   ],
+   "first": "No, you do not need a car to live in Boston.",
+   "id": "c11"
+  },
+  {
+   "e": "google",
+   "q": "Why is Boston traffic so bad?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "CBS News",
+    "Boston Pro Car Service",
+    "Jiarui Liu",
+    "r/boston",
+    "CBS Boston"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "dibellalawoffice.com",
+    "patriotledger.com",
+    "bostonprocarservice.com",
+    "reddit"
+   ],
+   "first": "Boston traffic is consistently ranked among the worst in the United States due to a mix of historic geography, outdated road designs, heavy",
+   "id": "f01"
+  },
+  {
+   "e": "google",
+   "q": "What is the cheapest way to get around Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "MBTA",
+    "Boston Hidden Gems",
+    "Meet Boston",
+    "GetYourGuide",
+    "r/boston"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "boston.gov",
+    "reddit",
+    "mbta.com",
+    "trolleytours.com",
+    "bostonhiddengems.com"
+   ],
+   "first": "The cheapest and easiest way to get around Boston is walking for short central trips, paired with the MBTA (the T) public transit system",
+   "id": "c13"
+  },
+  {
+   "e": "google",
+   "q": "Can you bike through a Boston winter?",
+   "aio": true,
+   "gsi": true,
+   "gsi_page": true,
+   "rank": 3,
+   "srcs": [
+    "Boston.gov",
+    "r/bikeboston"
+   ],
+   "orgs": [
+    "GSI",
+    "BCU",
+    "Bluebikes",
+    "BostonGov",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "boston.gov",
+    "gogreenstreets.org",
+    "bostoncyclistsunion.org",
+    "bluebikes.com"
+   ],
+   "first": "Yes, you can bike through a Boston winter. Many commuters and enthusiasts ride year-round across Boston, Cambridge, and Somerville.",
+   "id": "c04"
+  },
+  {
+   "e": "google",
+   "q": "What's the best way to get around Boston without a car?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "GetYourGuide",
+    "MBTA",
+    "Old Town Trolley Tours",
+    "Boston Discovery Guide"
+   ],
+   "orgs": [
+    "Bluebikes",
+    "MBTA"
+   ],
+   "top": [
+    "mbta.com",
+    "reddit",
+    "boston.gov",
+    "trolleytours.com",
+    "reddit"
+   ],
+   "first": "The best way to get around Boston without a car is to combine walking for short downtown trips with the MBTA (the T) subway and bus network",
+   "id": "c12"
+  },
+  {
+   "e": "google",
+   "q": "How much money do you save biking to work?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Shifter"
+   ],
+   "orgs": [],
+   "top": [
+    "reddit",
+    "thebicyclecellar.com",
+    "cnbc.com",
+    "10",
+    "aventon.com"
+   ],
+   "first": "Biking to work saves the average commuter between $1,000 and $3,000+ per year if replacing a car commute",
+   "id": "c10"
+  },
+  {
+   "e": "google",
+   "q": "Can you commute by bike with kids in Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Bunch Bikes",
+    "Facebook"
+   ],
+   "orgs": [
+    "Bluebikes",
+    "MassDOT",
+    "BostonGov",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "boston.gov",
+    "reddit",
+    "bunchbike.com",
+    "boston.gov"
+   ],
+   "first": "Yes, you can commute by bike with kids in Boston, and the city supports family biking through dedicated cargo bike rentals",
+   "id": "c18"
+  },
+  {
+   "e": "google",
+   "q": "Is there an e-bike rebate in Massachusetts?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "MassCEC",
+    "Boston.gov"
+   ],
+   "orgs": [
+    "BostonGov",
+    "EbikeRebate"
+   ],
+   "top": [
+    "goclean.masscec.com",
+    "boston.gov",
+    "arielrider.com",
+    "wheelworks.com",
+    "reddit"
+   ],
+   "first": "The 2025 statewide e-bike rebate program run by the Massachusetts Clean Energy Center is currently closed and will not reopen in 2026.",
+   "id": "c08"
+  },
+  {
+   "e": "google",
+   "q": "How can I avoid traffic on my commute into Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "r/boston",
+    "Tripadvisor",
+    "Lifetime Moving Co"
+   ],
+   "orgs": [
+    "MBTA",
+    "GoogleMaps",
+    "Reddit",
+    "Waze"
+   ],
+   "top": [
+    "bostonprocarservice.com",
+    "reddit",
+    "savoya.com",
+    "bostontaxicab.com",
+    "shark1053.com"
+   ],
+   "first": "You can avoid Boston traffic by using public transit, shifting your work hours outside of peak rush times, or using alternative surface streets",
+   "id": "f02"
+  },
+  {
+   "e": "google",
+   "q": "How much does it cost to park in downtown Boston for work?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Boston Common Garage",
+    "Garage At Post Office Square",
+    "governmentcentergarage.com",
+    "SpotAngels",
+    "r/boston"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "meetboston.com",
+    "spothero.com",
+    "reddit",
+    "parkmobile.io",
+    "spotangels.com"
+   ],
+   "first": "Parking in downtown Boston for work typically costs $30 to $48 per day for standard drive-up garage rates",
+   "id": "f08"
+  },
+  {
+   "e": "google",
+   "q": "How much does it really cost to own a car in Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "CBS News",
+    "Aftermarket Matters"
+   ],
+   "orgs": [
+    "BostonGov"
+   ],
+   "top": [
+    "reddit",
+    "cbsnews.com",
+    "axios.com",
+    "motivegrid.com",
+    "boston25news.com"
+   ],
+   "first": "The real cost to own a car in Boston ranges between $1,100 and $1,600+ per month",
+   "id": "f11"
+  },
+  {
+   "e": "google",
+   "q": "The MBTA is always late, what are my other options for getting to work?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [],
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "MassCommute"
+   ],
+   "top": [
+    "reddit",
+    "masslive.com",
+    "reddit",
+    "mbta.com",
+    "boston.com"
+   ],
+   "first": "Alternative commuting options around the Boston and Somerville area include active transportation, private vehicles, ride-hailing services",
+   "id": "f13"
+  },
+  {
+   "e": "google",
+   "q": "Is the commuter rail worth it compared to driving into Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Kimberlee Meserve - Selling Greater Boston",
+    "Street Property Team",
+    "Boston 25 News"
+   ],
+   "orgs": [
+    "MBTA"
+   ],
+   "top": [
+    "reddit",
+    "boston25news.com",
+    "reddit",
+    "matownfinder.com",
+    "reddit"
+   ],
+   "first": "Whether the MBTA Commuter Rail is worth it compared to driving into Boston depends on your specific origin point, traffic conditions",
+   "id": "f07"
+  },
+  {
+   "e": "google",
+   "q": "What are the safest bike routes into downtown Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Boston Café Bikers",
+    "A Better City TMA"
+   ],
+   "orgs": [
+    "Bluebikes",
+    "TMA",
+    "ABetterCity"
+   ],
+   "top": [
+    "reddit",
+    "brakeaway.bike",
+    "wbur.org",
+    "boston.gov",
+    "robertpaul.com"
+   ],
+   "first": "The safest and most relaxed bike routes into downtown Boston rely on dedicated, car-free multi-use paths and protected cycle tracks",
+   "id": "c02"
+  },
+  {
+   "e": "google",
+   "q": "What are environmentally friendly ways to commute to downtown Boston besides driving?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "r/bikeboston",
+    "MBTA",
+    "Boston.gov",
+    "Old Town Trolley Tours",
+    "Patriots Limousine Service",
+    "massbytrain.com"
+   ],
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "BostonGov",
+    "Reddit"
+   ],
+   "top": [
+    "cityofboston.gov",
+    "reddit",
+    "citypass.com",
+    "meetboston.com",
+    "reddit"
+   ],
+   "first": "Commuting to downtown Boston without a car is highly accessible, as the city ranks as one of the most eco-friendly regions for car-free transit",
+   "id": "c24"
+  },
+  {
+   "e": "google",
+   "q": "Is an e-bike worth it for commuting in Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "r/boston",
+    "CommonWealth Beacon",
+    "eunorau-ebike.com"
+   ],
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "spadalawgroup.com",
+    "abctma.com",
+    "wallkeebike.com",
+    "commonwealthbeacon.org"
+   ],
+   "first": "An e-bike is well worth it for commuting in Boston, offering a faster and less sweaty alternative to traditional bicycles",
+   "id": "c07"
+  },
+  {
+   "e": "google",
+   "q": "How do people put up with a 90-minute rush-hour drive from MetroWest into Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Moving to Boston, Mass - Greater Boston Area Group",
+    "Reddit"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "jamiegrossmanrealestate.com",
+    "parknboston.com",
+    "3",
+    "reddit"
+   ],
+   "first": "Commuters survive a 90-minute rush-hour drive from MetroWest into Boston by shifting their schedules",
+   "id": "f03"
+  },
+  {
+   "e": "google",
+   "q": "How do people get from the South Shore into Boston without sitting in Braintree Split traffic?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "YouTube"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "townivo.com",
+    "facebook.com",
+    "city-data.com",
+    "blog.irentcapecod.com",
+    "8"
+   ],
+   "first": "Commuters from the South Shore bypass the Braintree Split by switching to public transit",
+   "id": "f04"
+  },
+  {
+   "e": "google",
+   "q": "Is there a better way to get to work in Burlington than sitting in Route 128 traffic?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Bring Me To Burlington",
+    "r/boston",
+    "Reddit"
+   ],
+   "orgs": [
+    "MBTA",
+    "TMA",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "bringmetoburlington.com",
+    "reddit",
+    "realestatewithhunter.com",
+    "mapc.org"
+   ],
+   "first": "Yes, you have several alternatives to driving straight down Route 128/I-95",
+   "id": "f05"
+  },
+  {
+   "e": "google",
+   "q": "How bad is Mass Pike traffic into Boston, and is the Worcester Line train better?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "NBC Boston",
+    "WGBH",
+    "Reddit"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "masslive.com",
+    "nbcboston.com",
+    "facebook.com",
+    "reddit",
+    "telegram.com"
+   ],
+   "first": "Mass Pike traffic into Boston during morning and evening rush hours is heavy, slow",
+   "id": "f06"
+  },
+  {
+   "e": "google",
+   "q": "Is there a park-and-ride that's cheaper than parking in downtown Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Facebook",
+    "r/boston"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "yelp.com",
+    "reddit",
+    "9",
+    "mass.gov",
+    "tripadvisor.co.uk"
+   ],
+   "first": "Yes, MBTA rapid transit and commuter rail stations serve as official and informal park-and-ride lots",
+   "id": "f09"
+  },
+  {
+   "e": "google",
+   "q": "Is it worth keeping a car in Boston if I only drive once a week?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Reddit",
+    "r/boston",
+    "Consumer Reports",
+    "www.fishbowlapp.com"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "fishbowlapp.com",
+    "6",
+    "roamingboston.com",
+    "5"
+   ],
+   "first": "Keeping a car in Boston just to drive once a week is usually not worth the high cost and hassle",
+   "id": "f10"
+  },
+  {
+   "e": "google",
+   "q": "Why did my Massachusetts car insurance go up so much, and how can I lower it?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Vargas & Vargas Insurance",
+    "Humphrey, Covill & Coleman Insurance Agency",
+    "Progressive",
+    "r/massachusetts",
+    "NBC Boston"
+   ],
+   "orgs": [
+    "Reddit"
+   ],
+   "top": [
+    "woopinsuranceagency.com",
+    "hcandcinsurance.com",
+    "oneilinsurance.com",
+    "vargasinsurance.com",
+    "nbcboston.com"
+   ],
+   "first": "Massachusetts car insurance rates have surged due to industry-wide economic pressures, rising repair and medical costs",
+   "id": "f12"
+  },
+  {
+   "e": "google",
+   "q": "The Red Line is shut down again, what's the fastest way to get to work?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "MBTA",
+    "the City of Cambridge (.gov)"
+   ],
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "wbur.org",
+    "reddit",
+    "mbta.com",
+    "cambridgema.gov",
+    "cbsnews.com"
+   ],
+   "first": "The July 2026 Red Line closure between Alewife and Park Street has ended",
+   "id": "f14"
+  },
+  {
+   "e": "google",
+   "q": "Is the Green Line slower than walking?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "The Boston Globe",
+    "Boston Trackside"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "boston25news.com",
+    "cbsnews.com",
+    "reddit",
+    "walkingbostonian.blogspot",
+    "boston.com"
+   ],
+   "first": "Yes, on certain stretches or during temporary slow zones, the MBTA Green Line can be as slow as or slower than walking.",
+   "id": "f15"
+  },
+  {
+   "e": "google",
+   "q": "I'm sick of the T, should I get an e-bike or a scooter to get around Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Boston Magazine",
+    "Harper",
+    "NextJen",
+    "Alexis Hale"
+   ],
+   "orgs": [
+    "MBTA"
+   ],
+   "top": [
+    "reddit",
+    "4",
+    "reddit",
+    "sierraclub.org",
+    "boston.gov"
+   ],
+   "first": "Choose an e-bike if your commute is over 2 miles or you want a safer, more stable ride on Boston's streets",
+   "id": "f16"
+  },
+  {
+   "e": "google",
+   "q": "Are Worcester's WRTA buses reliable enough to commute without a car?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Reddit",
+    "r/WorcesterMA",
+    "Worcester Political Dialogue"
+   ],
+   "orgs": [
+    "MBTA",
+    "TransitApp",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "nerealtyco.com",
+    "reddit",
+    "thescarlet.org",
+    "worcestermag.com"
+   ],
+   "first": "Worcester's WRTA buses are fare-free through June 2027, and generally functional",
+   "id": "f17"
+  },
+  {
+   "e": "google",
+   "q": "I circle for 30 minutes to find parking in Boston at night, is it time to give up my car?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "New England Passport",
+    "Boston Pro Car Service"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "wbur.org",
+    "reddit",
+    "boston.gov",
+    "spacer.com",
+    "spotangels.com"
+   ],
+   "first": "Yes, spending 30 minutes every night looking for parking is a clear sign that keeping a car in Boston is costing you significant time",
+   "id": "f18"
+  },
+  {
+   "e": "google",
+   "q": "Is a cheaper house farther out worth the longer commute into Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "r/massachusetts",
+    "Reddit",
+    "Piper Partners"
+   ],
+   "orgs": [
+    "Reddit"
+   ],
+   "top": [
+    "chinattirealty.com",
+    "reddit",
+    "streetpropertyteam.com",
+    "reddit",
+    "bogleheads.org"
+   ],
+   "first": "Whether a cheaper, distant home is worth a longer Boston commute depends on hidden costs, time loss, and your lifestyle priorities.",
+   "id": "f19"
+  },
+  {
+   "e": "google",
+   "q": "Is a student parking pass worth it at a Boston college?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Boston College"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "bc.edu",
+    "2",
+    "talk.collegeconfidential.com",
+    "bcheights.com"
+   ],
+   "first": "A student parking pass at a Boston college is generally not worth it for most undergraduates.",
+   "id": "f20"
+  },
+  {
+   "e": "google",
+   "q": "I've never ridden in city traffic, how do I start bike commuting in Boston?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Boston.gov",
+    "r/bikeboston",
+    "Bluebikes Boston",
+    "Breakstone, White & Gluck",
+    "Caught In Southie",
+    "Bike Shop Girl"
+   ],
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "GoogleMaps",
+    "BostonGov",
+    "Reddit",
+    "ABetterCity"
+   ],
+   "top": [
+    "reddit",
+    "caughtinsouthie.com",
+    "boston.gov",
+    "mass.streetsblog.org",
+    "bwglaw.com"
+   ],
+   "first": "Starting bike commuting in Boston safely requires planning low-stress routes, practicing off-peak, and following local traffic laws.",
+   "id": "c03"
+  },
+  {
+   "e": "google",
+   "q": "Do Boston's bike paths get plowed in winter?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Reddit",
+    "Neponset River Greenway Council",
+    "r/bikeboston"
+   ],
+   "orgs": [
+    "BCU",
+    "BostonGov",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "masspaths.net",
+    "mass.streetsblog.org",
+    "bikeforums.net",
+    "masspaths.org"
+   ],
+   "first": "Yes, Boston's bike paths and protected lanes are plowed, but the service is often inconsistent, delayed, or spotty.",
+   "id": "c05"
+  },
+  {
+   "e": "google",
+   "q": "Can you ride an e-bike to work through a New England winter?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Electroheads",
+    "Miss GoElectric Ride Reviews",
+    "Electric Bike Forums",
+    "eBike Inspection"
+   ],
+   "orgs": [],
+   "top": [
+    "reddit",
+    "reddit",
+    "treehugger.com",
+    "rydybikes.com",
+    "forums.electricbikereview.com"
+   ],
+   "first": "Yes, you can ride an e-bike to work through a New England winter, provided you plan for cold weather, ice, and salt.",
+   "id": "c06"
+  },
+  {
+   "e": "google",
+   "q": "What are the e-bike rules in Massachusetts, and can I ride one on bike paths?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "MassBike",
+    "Velosurance",
+    "letrigo",
+    "Bolton Police Department"
+   ],
+   "orgs": [
+    "MassBike"
+   ],
+   "top": [
+    "massbike.org",
+    "mass.gov",
+    "reddit",
+    "letrigo.com",
+    "wellesleyma.gov"
+   ],
+   "first": "Yes, you can ride an e-bike on most paved bike paths and shared-use trails in Massachusetts, provided it falls under the state's recognized classes",
+   "id": "c09"
+  },
+  {
+   "e": "google",
+   "q": "Do I need a car if I live in Somerville or Cambridge?",
+   "aio": true,
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "r/Somerville",
+    "Boston Street Pulse",
+    "Street Property Team",
+    "Lifetime Moving Co",
+    "Lauren Holleran",
+    "Encompass Property Solutions"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "bostonrealestatepro.com",
+    "reddit",
+    "cambridgema.gov",
+    "laurenholleran.com"
+   ],
+   "first": "No, you do not need a car if you live in Somerville or Cambridge.",
+   "id": "c14"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Why is Boston traffic so bad?",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "MassDOT"
+   ],
+   "srcs": [
+    "Massachusetts Government"
+   ],
+   "links": [],
+   "first": "Boston traffic is bad because the city is basically trying to run a modern, car-heavy metropolitan area on a street network designed centuries ago",
+   "id": "f01"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Is it safe to bike commute in Boston?",
+   "gsi": false,
+   "orgs": [
+    "BostonGov"
+   ],
+   "srcs": [
+    "Boston.gov"
+   ],
+   "links": [
+    "boston.gov"
+   ],
+   "first": "Yes, bike commuting in Boston can be reasonably safe, but it depends a lot on your route, your experience, and the time of day.",
+   "id": "c01"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How can I avoid traffic on my commute into Boston?",
+   "gsi": false,
+   "orgs": [
+    "GoogleMaps",
+    "Waze"
+   ],
+   "srcs": [],
+   "links": [],
+   "first": "The best way to avoid traffic on your commute into Boston is to change when you travel, choose the right approach into the city",
+   "id": "f02"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How do people put up with a 90-minute rush-hour drive from MetroWest into Boston?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [],
+   "links": [],
+   "first": "Honestly? A lot of people don't really put up with it so much as gradually reorganize their lives around it.",
+   "id": "f03"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How do people get from the South Shore into Boston without sitting in Braintree Split traffic?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [],
+   "links": [],
+   "first": "The trick is that people who commute from the South Shore to Boston generally try to avoid making the Braintree Split their bottleneck",
+   "id": "f04"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Is there a better way to get to work in Burlington than sitting in Route 128 traffic?",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "MassCommute"
+   ],
+   "srcs": [
+    "Burlington, MA",
+    "MassCommute"
+   ],
+   "links": [
+    "mbta.com",
+    "middlesex3.com",
+    "burlington.org"
+   ],
+   "first": "Yes, and if you're commuting to Burlington, MA, you may have better options than crawling along Route 128/I-95.",
+   "id": "f05"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How bad is Mass Pike traffic into Boston, and is the Worcester Line train better?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "MBTA",
+    "Boston 25 News"
+   ],
+   "links": [
+    "mass511.com",
+    "mbta.com"
+   ],
+   "first": "If you're commuting from Worcester into Boston, the Worcester Line train is often the less stressful choice, especially during rush hour.",
+   "id": "f06"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Is the commuter rail worth it compared to driving into Boston?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "Rome2Rio"
+   ],
+   "links": [],
+   "first": "If you're coming from Arlington into Boston, the commuter rail can be worth it, but it depends on where you're going",
+   "id": "f07"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How much does it cost to park in downtown Boston for work?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "Downtown Boston's Most Convenient Parking"
+   ],
+   "links": [],
+   "first": "Parking in downtown Boston for work can get expensive, especially if you're driving in five days a week.",
+   "id": "f08"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Is there a park-and-ride that's cheaper than parking in downtown Boston?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "MBTA",
+    "Downtown Boston's Most Convenient Parking"
+   ],
+   "links": [
+    "mbta.com"
+   ],
+   "first": "Yes, and if you're coming from the Arlington area, parking at an MBTA station and taking the T into downtown Boston is usually much cheaper",
+   "id": "f09"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Is it worth keeping a car in Boston if I only drive once a week?",
+   "gsi": false,
+   "orgs": [
+    "BostonGov"
+   ],
+   "srcs": [],
+   "links": [],
+   "first": "If you only drive once a week in Boston, I'd lean toward getting rid of the car, unless that weekly trip is difficult to make without one.",
+   "id": "f10"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How much does it really cost to own a car in Boston?",
+   "gsi": false,
+   "orgs": [
+    "BostonGov"
+   ],
+   "srcs": [
+    "Massachusetts Government",
+    "Boston.gov"
+   ],
+   "links": [],
+   "first": "Owning a car in Boston is often much more expensive than people expect.",
+   "id": "f11"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Why did my Massachusetts car insurance go up so much, and how can I lower it?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "Massachusetts Government"
+   ],
+   "links": [
+    "mass.gov"
+   ],
+   "first": "If your Massachusetts car insurance premium suddenly jumped, you're not necessarily doing anything wrong.",
+   "id": "f12"
+  },
+  {
+   "e": "chatgpt",
+   "q": "The MBTA is always late, what are my other options for getting to work?",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "BostonGov"
+   ],
+   "srcs": [
+    "Boston.gov"
+   ],
+   "links": [
+    "bluebikes.com",
+    "quadcycles.com",
+    "mbta.com"
+   ],
+   "first": "If the MBTA keeps making you late, you have a few alternatives around the Boston area that could make your commute much more predictable.",
+   "id": "f13"
+  },
+  {
+   "e": "chatgpt",
+   "q": "The Red Line is shut down again, what's the fastest way to get to work?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "MBTA"
+   ],
+   "links": [],
+   "first": "I can help you find the fastest way around the Red Line shutdown, including bus connections, alternate T routes",
+   "id": "f14"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Is the Green Line slower than walking?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [],
+   "links": [],
+   "first": "Sometimes, yes! The MBTA Green Line in Boston can be slower than walking for short trips",
+   "id": "f15"
+  },
+  {
+   "e": "chatgpt",
+   "q": "I'm sick of the T, should I get an e-bike or a scooter to get around Boston?",
+   "gsi": false,
+   "orgs": [
+    "BostonGov"
+   ],
+   "srcs": [
+    "Boston.gov"
+   ],
+   "links": [
+    "retrospec.com",
+    "bestbuy.com"
+   ],
+   "first": "Honestly? If you're sick of the T in Boston, I'd lean toward an e-bike over a scooter",
+   "id": "f16"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Are Worcester's WRTA buses reliable enough to commute without a car?",
+   "gsi": false,
+   "orgs": [
+    "TransitApp"
+   ],
+   "srcs": [
+    "WRTA"
+   ],
+   "links": [
+    "therta.com"
+   ],
+   "first": "Yes, you can commute around Worcester without a car using WRTA buses, but whether it's reliable enough depends heavily on your route",
+   "id": "f17"
+  },
+  {
+   "e": "chatgpt",
+   "q": "I circle for 30 minutes to find parking in Boston at night, is it time to give up my car?",
+   "gsi": false,
+   "orgs": [
+    "BostonGov"
+   ],
+   "srcs": [
+    "Boston.gov"
+   ],
+   "links": [],
+   "first": "Honestly? If you're regularly spending 30 minutes circling Boston at night just to park, it's absolutely worth reconsidering",
+   "id": "f18"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Is a cheaper house farther out worth the longer commute into Boston?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "MBTA"
+   ],
+   "links": [
+    "mbta.com"
+   ],
+   "first": "It can absolutely be worth it to buy a cheaper house farther outside Boston, but the key is whether the money you save buys you a better life",
+   "id": "f19"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Is a student parking pass worth it at a Boston college?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "Boston College"
+   ],
+   "links": [],
+   "first": "A student parking pass at a Boston college is worth it if you commute several days a week, but usually not if you live on campus",
+   "id": "f20"
+  },
+  {
+   "e": "chatgpt",
+   "q": "What are the safest bike routes into downtown Boston?",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "BostonGov"
+   ],
+   "srcs": [
+    "Boston.gov"
+   ],
+   "links": [
+    "boston.gov",
+    "search.boston.gov"
+   ],
+   "first": "The safest bike routes into downtown Boston are generally the ones that use separated bike lanes, protected paths, and the Charles River paths",
+   "id": "c02"
+  },
+  {
+   "e": "chatgpt",
+   "q": "I've never ridden in city traffic, how do I start bike commuting in Boston?",
+   "gsi": false,
+   "orgs": [
+    "MassBike",
+    "BostonGov"
+   ],
+   "srcs": [
+    "Boston.gov"
+   ],
+   "links": [
+    "boston.gov",
+    "massbike.org",
+    "content.boston.gov"
+   ],
+   "first": "If you've never ridden in city traffic, the best way to start bike commuting in Boston is to build up gradually, choose a low-stress route",
+   "id": "c03"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Can you bike through a Boston winter?",
+   "gsi": false,
+   "orgs": [
+    "BostonGov"
+   ],
+   "srcs": [
+    "Boston.gov"
+   ],
+   "links": [],
+   "first": "Yes, you can absolutely bike through a Boston winter, and plenty of people do.",
+   "id": "c04"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Do Boston's bike paths get plowed in winter?",
+   "gsi": false,
+   "orgs": [
+    "BostonGov"
+   ],
+   "srcs": [
+    "Boston.gov"
+   ],
+   "links": [
+    "boston.gov",
+    "311.boston.gov"
+   ],
+   "first": "Yes, some of Boston's bike paths are plowed in winter, but snow clearance is inconsistent.",
+   "id": "c05"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Can you ride an e-bike to work through a New England winter?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "Electric Bike Explorer",
+    "EbikeSheet"
+   ],
+   "links": [],
+   "first": "Yes, you absolutely can commute by e-bike through a New England winter, especially if your commute is on roads that get plowed regularly.",
+   "id": "c06"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Is an e-bike worth it for commuting in Boston?",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "BostonGov",
+    "EbikeRebate"
+   ],
+   "srcs": [
+    "Boston.gov",
+    "eBikes Boston"
+   ],
+   "links": [
+    "ebikes.boston.gov"
+   ],
+   "first": "Yes, an e-bike is often worth it for commuting in Boston, especially if your trip is 3-10 miles each way",
+   "id": "c07"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Is there an e-bike rebate in Massachusetts?",
+   "gsi": false,
+   "orgs": [
+    "EbikeRebate"
+   ],
+   "srcs": [
+    "Massachusetts Clean Energy Center"
+   ],
+   "links": [
+    "goclean.masscec.com"
+   ],
+   "first": "Yes, Massachusetts has had e-bike incentive programs, but whether you can get a rebate depends on the specific program",
+   "id": "c08"
+  },
+  {
+   "e": "chatgpt",
+   "q": "What are the e-bike rules in Massachusetts, and can I ride one on bike paths?",
+   "gsi": false,
+   "orgs": [
+    "MassBike"
+   ],
+   "srcs": [
+    "Massachusetts General Court",
+    "Massachusetts Government"
+   ],
+   "links": [
+    "mass.gov",
+    "malegislature.gov",
+    "massbike.org"
+   ],
+   "first": "In Massachusetts, you can ride many electric bikes on bike paths, but the answer depends on the type of e-bike",
+   "id": "c09"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How much money do you save biking to work?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "AAA"
+   ],
+   "links": [],
+   "first": "Biking to work can save you hundreds to several thousand dollars a year, depending on how far you commute",
+   "id": "c10"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Do you need a car to live in Boston?",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes"
+   ],
+   "srcs": [
+    "Trulia"
+   ],
+   "links": [],
+   "first": "No, you generally don't need a car to live in Boston.",
+   "id": "c11"
+  },
+  {
+   "e": "chatgpt",
+   "q": "What is the cheapest way to get around Boston?",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "BostonGov"
+   ],
+   "srcs": [
+    "MBTA"
+   ],
+   "links": [
+    "mbta.com"
+   ],
+   "first": "The cheapest way to get around Boston is usually to walk for short trips and use the MBTA subway or buses for longer distances.",
+   "id": "c13"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Do I need a car if I live in Somerville or Cambridge?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "City of Cambridge, Massachusetts"
+   ],
+   "links": [
+    "cambridgema.gov"
+   ],
+   "first": "No, you can absolutely live in Somerville or Cambridge without owning a car.",
+   "id": "c14"
+  },
+  {
+   "e": "chatgpt",
+   "q": "What's the best way to get around Boston without a car?",
+   "gsi": false,
+   "orgs": [
+    "WalkBoston",
+    "Bluebikes",
+    "MBTA",
+    "GoogleMaps"
+   ],
+   "srcs": [
+    "MBTA"
+   ],
+   "links": [
+    "mbta.com",
+    "boston.gov"
+   ],
+   "first": "The best way to get around Boston without a car is to combine the MBTA subway, walking, and occasional rideshares.",
+   "id": "c12"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Which Boston neighborhoods are walkable enough to live without a car?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "Redfin",
+    "Boston.com",
+    "Trulia",
+    "Southern Afro"
+   ],
+   "links": [],
+   "first": "Boston is one of the easier U.S. cities to live in without a car, especially if you choose a neighborhood where you can walk to groceries",
+   "id": "c15"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Should I sell my car before moving to Boston?",
+   "gsi": false,
+   "orgs": [
+    "BostonGov"
+   ],
+   "srcs": [
+    "Boston.gov"
+   ],
+   "links": [],
+   "first": "If you're moving to Boston proper and don't have a guaranteed parking spot, I'd seriously consider selling your car.",
+   "id": "c16"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Can a family with young kids live without a car in Boston?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "Children's Hospital",
+    "Local Logic"
+   ],
+   "links": [],
+   "first": "Yes, a family with young kids can absolutely live in Boston without a car",
+   "id": "c17"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Can you commute by bike with kids in Boston?",
+   "gsi": false,
+   "orgs": [
+    "BostonGov"
+   ],
+   "srcs": [
+    "Boston.gov"
+   ],
+   "links": [
+    "boston.gov",
+    "content.boston.gov"
+   ],
+   "first": "Yes, you absolutely can commute by bike with kids in Boston, and for some families it can be a practical alternative to driving.",
+   "id": "c18"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Can you live in Worcester without a car?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "City of Worcester",
+    "Worcester, Massachusetts"
+   ],
+   "links": [],
+   "first": "Yes, you can live in Worcester without a car, but how easy it is depends heavily on which neighborhood you choose",
+   "id": "c19"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Can you live without a car in Northampton or Amherst?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "University of Massachusetts Amherst"
+   ],
+   "links": [],
+   "first": "Yes, you can live without a car in both Northampton and Amherst, especially if you live near downtown",
+   "id": "c20"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Can you get around Springfield, Massachusetts without a car?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "Pioneer Valley Transit Authority",
+    "Springfield Bostonlines"
+   ],
+   "links": [
+    "pvta.com"
+   ],
+   "first": "Yes, you can get around Springfield without a car, especially if you stay near downtown or along major bus routes.",
+   "id": "c21"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Which Massachusetts towns have commuter rail to Boston and cheaper rent?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "Move and Care"
+   ],
+   "links": [],
+   "first": "If you want to live outside Boston and save on rent while keeping a manageable commute by MBTA Commuter Rail, I'd start by looking at Worcester",
+   "id": "c22"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Can I bike commute from Arlington or Lexington to Cambridge on the Minuteman?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "City of Cambridge, Massachusetts",
+    "Lexington, MA"
+   ],
+   "links": [
+    "minutemanbikeway.org",
+    "cambridgema.gov"
+   ],
+   "first": "Yes, both Arlington and Lexington are very practical starting points for a bike commute to Cambridge",
+   "id": "c23"
+  },
+  {
+   "e": "chatgpt",
+   "q": "What are environmentally friendly ways to commute to downtown Boston besides driving?",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA"
+   ],
+   "srcs": [
+    "MBTA"
+   ],
+   "links": [
+    "mbta.com",
+    "boston.gov"
+   ],
+   "first": "If you're commuting to downtown Boston, you have several environmentally friendly alternatives to driving alone.",
+   "id": "c24"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How do college students in Boston get a discounted MBTA pass?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "MBTA",
+    "Transportation Services"
+   ],
+   "links": [
+    "mbta.com"
+   ],
+   "first": "College students in Boston can get discounted MBTA fares in a few ways, but the main option is usually through their college or university.",
+   "id": "c25"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Do grad students in Boston need a car?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "Graduate Education"
+   ],
+   "links": [],
+   "first": "For most grad students in Boston, no, you probably don't need a car.",
+   "id": "c26"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Is a Bluebikes membership worth it for commuting?",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes"
+   ],
+   "srcs": [
+    "Blue Bikes Boston"
+   ],
+   "links": [],
+   "first": "Yes, a Bluebikes membership can be well worth it for commuting around Greater Boston, especially if you ride several days a week",
+   "id": "c27"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How do I find a carpool to work in Massachusetts?",
+   "gsi": false,
+   "orgs": [
+    "MassCommute"
+   ],
+   "srcs": [
+    "Massachusetts Government"
+   ],
+   "links": [
+    "mass.gov",
+    "rideamigos.com",
+    "scoopcommute.com",
+    "alewifetma.org"
+   ],
+   "first": "Finding a carpool to work in Massachusetts is fairly straightforward, especially if you commute to Boston, Cambridge, or another major employment center",
+   "id": "c28"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How long does a 10-minute drive take to walk?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [],
+   "links": [],
+   "first": "A 10-minute drive usually takes about 30-45 minutes to walk, depending on traffic, road layout, and how fast you walk.",
+   "id": "c29"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How do I plan a trip that combines the bus, the train and walking?",
+   "gsi": false,
+   "orgs": [
+    "TransitApp",
+    "GoogleMaps"
+   ],
+   "srcs": [],
+   "links": [],
+   "first": "The easiest way to plan a trip using the bus, train, and walking is to use a journey planner that combines different types of transport",
+   "id": "c30"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How should I compare commute options when choosing an apartment in Boston?",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "MBTA"
+   ],
+   "links": [
+    "mbta.com"
+   ],
+   "first": "Choosing an apartment in Boston is about more than finding the closest T stop.",
+   "id": "c31"
+  },
+  {
+   "e": "chatgpt",
+   "q": "How do I start a walking school bus?",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "Massachusetts Government"
+   ],
+   "links": [
+    "walkingschoolbus.org",
+    "nhtsa.gov",
+    "mass.gov",
+    "arlington.k12.ma.us"
+   ],
+   "first": "A walking school bus is a group of children who walk to school together along a planned route",
+   "id": "c32"
+  },
+  {
+   "e": "chatgpt",
+   "q": "Where can I find group bike rides or people to ride with in Boston?",
+   "gsi": false,
+   "orgs": [
+    "BCU",
+    "Strava",
+    "BostonGov",
+    "Reddit"
+   ],
+   "srcs": [
+    "Home"
+   ],
+   "links": [
+    "meetup.com",
+    "crw.org",
+    "greenlinevelo.com",
+    "linktr.ee",
+    "strava.com",
+    "bostoncyclistsunion.org",
+    "boston.gov",
+    "landrys.com"
+   ],
+   "first": "Boston is a great place to find people to ride with, whether you want a relaxed weekend ride along the Charles River",
+   "id": "c33"
+  },
+  {
+   "e": "gemini",
+   "id": "f01",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "Stark Moving and Storage",
+    "DiBella Law Injury and Accident Lawyers",
+    "Reddit"
+   ],
+   "links": [],
+   "first": "Boston consistently ranks as one of the most congested cities in the United States"
+  },
+  {
+   "e": "gemini",
+   "id": "f02",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "GoogleMaps",
+    "Reddit",
+    "Waze"
+   ],
+   "srcs": [
+    "Savoya",
+    "102.1 & 105.3 The Shark",
+    "Reddit",
+    "Boston Pro Car Service"
+   ],
+   "links": [],
+   "first": "Beating traffic on a commute into Boston requires strategic timing, alternative routes, or ditching the car altogether."
+  },
+  {
+   "e": "gemini",
+   "id": "f03",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [],
+   "links": [],
+   "first": "Surviving a 90-minute commute from MetroWest into Boston is less about..."
+  },
+  {
+   "e": "gemini",
+   "id": "f04",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "MICHELLE SYLVIA",
+    "Reddit"
+   ],
+   "links": [],
+   "first": "Getting past the notorious Braintree Split is a daily puzzle for South Shore commuters"
+  },
+  {
+   "e": "gemini",
+   "id": "f05",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "TMA",
+    "Reddit"
+   ],
+   "srcs": [
+    "Metropolitan Area Planning Council",
+    "Reddit"
+   ],
+   "links": [
+    "minutemanbikeway.org"
+   ],
+   "first": "If you are trying to avoid the crawl on Route 128 during peak hours, you do have a few alternatives"
+  },
+  {
+   "e": "gemini",
+   "id": "f06",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "WGBH",
+    "Reddit",
+    "The Verdict"
+   ],
+   "links": [],
+   "first": "During peak rush hours, commuting inbound on the Mass Pike toward Boston is..."
+  },
+  {
+   "e": "gemini",
+   "id": "f07",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "links": [],
+   "first": "Whether the MBTA Commuter Rail is worth it compared to driving depends heavily on where you are starting from"
+  },
+  {
+   "e": "gemini",
+   "id": "f08",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "bostoncommongarage.com",
+    "Meet Boston"
+   ],
+   "links": [],
+   "first": "Parking in downtown Boston for work is notoriously expensive"
+  },
+  {
+   "e": "gemini",
+   "id": "f09",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "MBTA"
+   ],
+   "links": [],
+   "first": "Yes, absolutely. Parking in downtown Boston typically costs $40 to $50+ per day, whereas MBTA lots..."
+  },
+  {
+   "e": "gemini",
+   "id": "f10",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "Reddit",
+    "Roaming Boston"
+   ],
+   "links": [],
+   "first": "For most people in Boston who only drive once a week, keeping a car is hard to justify financially"
+  },
+  {
+   "e": "gemini",
+   "id": "f11",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "Reddit"
+   ],
+   "links": [],
+   "first": "Owning a car in Boston goes far beyond a standard monthly car payment and gas."
+  },
+  {
+   "e": "gemini",
+   "id": "f12",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "NavSav Insurance",
+    "Berry Insurance",
+    "Insuranceopedia"
+   ],
+   "links": [],
+   "first": "If your Massachusetts car insurance premium spiked significantly, you are far from alone"
+  },
+  {
+   "e": "gemini",
+   "id": "f13",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "MassCommute",
+    "Reddit"
+   ],
+   "srcs": [
+    "Reddit"
+   ],
+   "links": [],
+   "first": "Dealing with chronic MBTA delays can turn a standard morning commute into a daily source of frustration."
+  },
+  {
+   "e": "gemini",
+   "id": "f14",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "TMA"
+   ],
+   "srcs": [
+    "Cambridge, MA",
+    "Alewife TMA"
+   ],
+   "links": [],
+   "first": "When the Red Line goes down, figuring out the fastest workaround depends entirely on where your commute starts and ends."
+  },
+  {
+   "e": "gemini",
+   "id": "f15",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "CBS News",
+    "The Walking Bostonian"
+   ],
+   "links": [],
+   "first": "Historically and during periods of heavy slow zones, yes, portions of the Green Line can be slower than walking"
+  },
+  {
+   "e": "gemini",
+   "id": "f16",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "Reddit",
+    "Gyroor",
+    "Medium"
+   ],
+   "links": [],
+   "first": "Getting sick of the MBTA is practically a rite of passage in Boston"
+  },
+  {
+   "e": "gemini",
+   "id": "f17",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "TransitApp",
+    "Reddit"
+   ],
+   "srcs": [
+    "Reddit"
+   ],
+   "links": [],
+   "first": "Commuting without a car using WRTA buses is entirely possible, but it requires careful planning"
+  },
+  {
+   "e": "gemini",
+   "id": "f18",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [],
+   "links": [],
+   "first": "Spending 30 minutes every single night hunting for a parking spot is a classic sign that your car is becoming more of an anchor"
+  },
+  {
+   "e": "gemini",
+   "id": "f19",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [],
+   "links": [],
+   "first": "Deciding whether a cheaper house farther out is worth a longer commute is one of the biggest financial and lifestyle decisions"
+  },
+  {
+   "e": "gemini",
+   "id": "f20",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "Reddit"
+   ],
+   "links": [],
+   "first": "In most cases, no, a student parking pass at a Boston college is generally not worth it."
+  },
+  {
+   "e": "gemini",
+   "id": "c01",
+   "gsi": false,
+   "orgs": [
+    "GoogleMaps",
+    "Reddit"
+   ],
+   "srcs": [
+    "Reddit",
+    "Brakeaway Bike",
+    "Boston University"
+   ],
+   "links": [],
+   "first": "Yes, bike commuting in Boston is manageable and increasingly popular, but it requires high vigilance"
+  },
+  {
+   "e": "gemini",
+   "id": "c02",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "Brakeaway Bike",
+    "Robert Paul Properties",
+    "Visit Massachusetts",
+    "Bike Streets"
+   ],
+   "links": [],
+   "first": "Navigating into downtown Boston safely means prioritizing fully separated multi-use paths, greenways, and protected bike lanes"
+  },
+  {
+   "e": "gemini",
+   "id": "c03",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "GoogleMaps",
+    "BostonGov",
+    "Reddit"
+   ],
+   "srcs": [
+    "Reddit",
+    "Boston.gov",
+    "Caught In Southie",
+    "Breakstone, White & Gluck"
+   ],
+   "links": [],
+   "first": "Transitioning to bike commuting in Boston when you have zero city traffic experience can feel intimidating"
+  },
+  {
+   "e": "gemini",
+   "id": "c04",
+   "gsi": true,
+   "orgs": [
+    "GSI",
+    "Bluebikes",
+    "MBTA",
+    "BostonGov",
+    "Reddit"
+   ],
+   "srcs": [
+    "Green Streets Initiative",
+    "Boston.gov",
+    "Urban AdvenTours"
+   ],
+   "links": [],
+   "first": "Yes, you absolutely can. A dedicated community of commuters bikes through Boston, Cambridge, and Somerville year-round."
+  },
+  {
+   "e": "gemini",
+   "id": "c05",
+   "gsi": false,
+   "orgs": [
+    "BCU",
+    "BostonGov",
+    "Reddit"
+   ],
+   "srcs": [
+    "Reddit",
+    "MassPaths",
+    "Boston.gov"
+   ],
+   "links": [],
+   "first": "Yes, but how, when, and whether Boston's bike infrastructure gets plowed depends heavily on..."
+  },
+  {
+   "e": "gemini",
+   "id": "c06",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [],
+   "links": [],
+   "first": "Yes, you can absolutely ride an e-bike to work through a New England winter, but it requires the right gear"
+  },
+  {
+   "e": "gemini",
+   "id": "c07",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "BostonGov"
+   ],
+   "srcs": [
+    "Mihogo USA"
+   ],
+   "links": [],
+   "first": "Deciding if an e-bike is worth it for commuting in Boston comes down to how it handles the city's mix of gridlocked traffic"
+  },
+  {
+   "e": "gemini",
+   "id": "c08",
+   "gsi": false,
+   "orgs": [
+    "BostonGov",
+    "EbikeRebate"
+   ],
+   "srcs": [
+    "Ariel Rider Ebikes",
+    "Energy New England",
+    "Massachusetts Clean Energy Center",
+    "Boston.gov"
+   ],
+   "links": [
+    "goclean.masscec.com"
+   ],
+   "first": "Yes, Massachusetts has explored and implemented e-bike rebate initiatives, but availability depends heavily on your location"
+  },
+  {
+   "e": "gemini",
+   "id": "c09",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "Himiway",
+    "Velosurance",
+    "Ebike Oracle"
+   ],
+   "links": [],
+   "first": "In Massachusetts, e-bike regulations are structured around a two-tier system"
+  },
+  {
+   "e": "gemini",
+   "id": "c10",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "Aventon",
+    "Velotric"
+   ],
+   "links": [],
+   "first": "How much money you save by biking to work depends heavily on what your commute looks like"
+  },
+  {
+   "e": "gemini",
+   "id": "c11",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "Boston Pads",
+    "Reddit",
+    "YPC Real Estate",
+    "A&S Realty"
+   ],
+   "links": [],
+   "first": "No, you do not need a car to live in Boston."
+  },
+  {
+   "e": "gemini",
+   "id": "c12",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA"
+   ],
+   "srcs": [
+    "Compass Furnished Apartments",
+    "Keolis massAdventures",
+    "Boston Hidden Gems",
+    "MBTA"
+   ],
+   "links": [],
+   "first": "Boston is widely considered one of the best cities in the U.S. to navigate without a car."
+  },
+  {
+   "e": "gemini",
+   "id": "c13",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA"
+   ],
+   "srcs": [
+    "MBTA",
+    "Meet Boston"
+   ],
+   "links": [
+    "mywanderlustylife.com"
+   ],
+   "first": "The absolute cheapest way to get around Boston is walking"
+  },
+  {
+   "e": "gemini",
+   "id": "c14",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "Reddit",
+    "Street Property Team",
+    "Lifetime Moving Co"
+   ],
+   "links": [],
+   "first": "No, you do not need a car if you live in Somerville or Cambridge."
+  },
+  {
+   "e": "gemini",
+   "id": "c15",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [],
+   "links": [],
+   "first": "Boston is widely recognized as one of the most walkable and transit-friendly cities in the United States."
+  },
+  {
+   "e": "gemini",
+   "id": "c16",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [],
+   "links": [],
+   "first": "Deciding whether to sell your car before moving to Boston is one of the biggest logistical questions newcomers face."
+  },
+  {
+   "e": "gemini",
+   "id": "c17",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "YPC Real Estate",
+    "Boston Pads",
+    "A Boston Family",
+    "Reddit",
+    "NoTimeMover"
+   ],
+   "links": [],
+   "first": "Yes, a family with young kids can live without a car in Boston, and many do."
+  },
+  {
+   "e": "gemini",
+   "id": "c18",
+   "gsi": false,
+   "orgs": [
+    "MassBike",
+    "MBTA",
+    "BostonGov"
+   ],
+   "srcs": [
+    "Family Bike Ride",
+    "Boston.gov"
+   ],
+   "links": [],
+   "first": "Yes, you can commute by bike with kids in Boston, and a growing community of families do it daily"
+  },
+  {
+   "e": "gemini",
+   "id": "c19",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "Reddit",
+    "WorcesterMA.gov"
+   ],
+   "links": [],
+   "first": "Yes, you can live in Worcester without a car, but it is best described as a car-light city"
+  },
+  {
+   "e": "gemini",
+   "id": "c20",
+   "gsi": false,
+   "orgs": [
+    "Reddit"
+   ],
+   "srcs": [
+    "A to Z Moving and Storage",
+    "Reddit",
+    "The Boulders"
+   ],
+   "links": [],
+   "first": "Yes, you can live without a car in Northampton and Amherst, but your success will depend heavily on where you live"
+  },
+  {
+   "e": "gemini",
+   "id": "c21",
+   "gsi": false,
+   "orgs": [
+    "Reddit"
+   ],
+   "srcs": [
+    "Reddit",
+    "Springfield Union Station",
+    "Explore Western Mass",
+    "Exploring Springfield, Massachusetts"
+   ],
+   "links": [],
+   "first": "Yes, you can get around Springfield without a car, but it requires patience and planning."
+  },
+  {
+   "e": "gemini",
+   "id": "c22",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "Move and Care Moving Company",
+    "Crawford Realty Team"
+   ],
+   "links": [],
+   "first": "When looking for Massachusetts towns with Commuter Rail access and significantly cheaper rent..."
+  },
+  {
+   "e": "gemini",
+   "id": "c23",
+   "gsi": false,
+   "orgs": [
+    "MBTA"
+   ],
+   "srcs": [
+    "Lexington Visitors Center",
+    "RailTrailWx",
+    "TrailLink"
+   ],
+   "links": [],
+   "first": "Yes, absolutely. Commuting by bike from Arlington or Lexington to Cambridge on the Minuteman is not only possible"
+  },
+  {
+   "e": "gemini",
+   "id": "c24",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA"
+   ],
+   "srcs": [
+    "Boston Hidden Gems",
+    "MBTA"
+   ],
+   "links": [],
+   "first": "Commuting to downtown Boston without driving offers several efficient, environmentally friendly options"
+  },
+  {
+   "e": "gemini",
+   "id": "c25",
+   "gsi": false,
+   "orgs": [
+    "MBTA",
+    "TMA"
+   ],
+   "srcs": [
+    "MBTA"
+   ],
+   "links": [
+    "mbta.com"
+   ],
+   "first": "College students in Greater Boston can get discounted MBTA passes primarily through the Semester Pass Program"
+  },
+  {
+   "e": "gemini",
+   "id": "c26",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "Reddit"
+   ],
+   "srcs": [
+    "Graduate School - Tufts University",
+    "NU Mutual Aid",
+    "Reddit",
+    "Harvard GSD - Harvard University"
+   ],
+   "links": [],
+   "first": "The short answer is no, graduate students in Boston generally do not need a car."
+  },
+  {
+   "e": "gemini",
+   "id": "c27",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA"
+   ],
+   "srcs": [
+    "Bluebikes"
+   ],
+   "links": [],
+   "first": "Whether a Bluebikes annual membership is worth it for your commute depends on how frequently you ride"
+  },
+  {
+   "e": "gemini",
+   "id": "c28",
+   "gsi": false,
+   "orgs": [
+    "MassCommute",
+    "TMA",
+    "Reddit",
+    "ABetterCity"
+   ],
+   "srcs": [
+    "Alewife TMA",
+    "Boston University",
+    "128 Business Council",
+    "gomasscommute.com"
+   ],
+   "links": [],
+   "first": "Finding a carpool to work in Massachusetts is well-supported by state-wide matching tools, regional organizations"
+  },
+  {
+   "e": "gemini",
+   "id": "c29",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [],
+   "links": [],
+   "first": "Walking a route that takes 10 minutes by car typically takes about 40 to 50 minutes."
+  },
+  {
+   "e": "gemini",
+   "id": "c30",
+   "gsi": false,
+   "orgs": [
+    "TransitApp",
+    "GoogleMaps",
+    "Citymapper"
+   ],
+   "srcs": [],
+   "links": [],
+   "first": "Planning a multi-modal trip, combining buses, trains, and walking, is one of the best ways to explore a destination affordably"
+  },
+  {
+   "e": "gemini",
+   "id": "c31",
+   "gsi": false,
+   "orgs": [
+    "Bluebikes",
+    "MBTA"
+   ],
+   "srcs": [
+    "Prism Real Estate Group"
+   ],
+   "links": [],
+   "first": "When choosing an apartment in Boston, evaluating commute options requires looking past straight-line map distances."
+  },
+  {
+   "e": "gemini",
+   "id": "c32",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "Walk San Francisco",
+    "Walking School Bus",
+    "Safe Routes Partnership",
+    "Your AAA Network - AAA"
+   ],
+   "links": [],
+   "first": "Starting a Walking School Bus is a fantastic way to..."
+  },
+  {
+   "e": "gemini",
+   "id": "c33",
+   "gsi": false,
+   "orgs": [],
+   "srcs": [
+    "Boston.Bike",
+    "Blue Hills Cycling Club",
+    "Green Line Velo",
+    "Meetup"
+   ],
+   "links": [],
+   "first": "Boston has an active cycling community with plenty of options"
+  },
+  {
+   "e": "google",
+   "id": "c15",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "The Rivers Group | Boston Real Estate",
+    "Boston Travel Tips (by Tours by Foot)",
+    "Movoto",
+    "Boston.com",
+    "YPC Real Estate"
+   ],
+   "orgs": [
+    "MBTA"
+   ],
+   "top": [
+    "ypcrealestate.com",
+    "julianasafar.com",
+    "reddit",
+    "movoto.com",
+    "boston.com"
+   ],
+   "first": "Boston has several highly walkable neighborhoods where you can easily live a car-free or car-light lifestyle."
+  },
+  {
+   "e": "google",
+   "id": "c16",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "r/boston",
+    "Give Me The VIN",
+    "Mass.gov",
+    "A&S Realty"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "city-data.com",
+    "highriseboston.com",
+    "bostonmove.com",
+    "givemethevin.com"
+   ],
+   "first": "Yes, you should strongly consider selling your car before moving to Boston if you plan to live in Boston proper"
+  },
+  {
+   "e": "google",
+   "id": "c17",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "r/boston",
+    "The Rivers Group | Boston Real Estate",
+    "Reddit",
+    "Boston.com"
+   ],
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "bostonpads.com",
+    "abostonfamily.com",
+    "7",
+    "ypcrealestate.com"
+   ],
+   "first": "Yes, a family with young kids can live without a car in Boston, though it requires careful neighborhood selection"
+  },
+  {
+   "e": "google",
+   "id": "c19",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "r/WorcesterMA",
+    "Northeast Realty + Co.",
+    "Livability.com"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "nerealtyco.com",
+    "reddit",
+    "telegram.com",
+    "livability.com"
+   ],
+   "first": "Yes, you can live in Worcester without a car, though it works best as a car-light city"
+  },
+  {
+   "e": "google",
+   "id": "c20",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Reddit",
+    "College Confidential Forums",
+    "r/northampton"
+   ],
+   "orgs": [
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "re413.com",
+    "shellyhardyrealtor.com",
+    "umass.edu",
+    "a-zmovers.net"
+   ],
+   "first": "Yes, you can live without a car in Northampton or Amherst, especially if you live near downtown areas or major bus lines."
+  },
+  {
+   "e": "google",
+   "id": "c21",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Springfield Union Station",
+    "Uber",
+    "VisitMA",
+    "trainsinthevalley.org"
+   ],
+   "orgs": [
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "reddit",
+    "visitma.com",
+    "uber.com",
+    "explorewesternmass.com"
+   ],
+   "first": "Yes, you can get around Springfield without a car, though public transit is best suited for downtown and major corridors"
+  },
+  {
+   "e": "google",
+   "id": "c22",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "r/massachusetts"
+   ],
+   "orgs": [
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "rentluna.com",
+    "reddit",
+    "move-and-care.com",
+    "reddit",
+    "massbaymovers.com"
+   ],
+   "first": "Several Massachusetts towns offer MBTA Commuter Rail access to Boston combined with more affordable rent"
+  },
+  {
+   "e": "google",
+   "id": "c23",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "TrailLink",
+    "Things to Do in Arlington MA",
+    "Lexington, MA (.gov)",
+    "Minuteman Bikeway"
+   ],
+   "orgs": [
+    "MBTA"
+   ],
+   "top": [
+    "minutemanbikeway.org",
+    "tourlexington.us",
+    "visitarlingtonma.org",
+    "reddit",
+    "traillink.com"
+   ],
+   "first": "Yes, you can bike commute from Lexington or Arlington directly to Cambridge using the Minuteman Commuter Bikeway."
+  },
+  {
+   "e": "google",
+   "id": "c25",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "MBTA",
+    "Boston College"
+   ],
+   "orgs": [
+    "MBTA"
+   ],
+   "top": [
+    "mbta.com",
+    "mbta.com",
+    "mbta.com",
+    "bc.edu",
+    "the-bac.edu"
+   ],
+   "first": "College students in Greater Boston get a discounted MBTA pass primarily through the MBTA Semester Pass Program"
+  },
+  {
+   "e": "google",
+   "id": "c26",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Tufts University",
+    "MIT Office of Graduate Education",
+    "r/mit",
+    "Quora"
+   ],
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "asegrad.tufts.edu",
+    "bu.edu",
+    "reddit",
+    "bu.edu"
+   ],
+   "first": "No, graduate students in Boston generally do not need a car."
+  },
+  {
+   "e": "google",
+   "id": "c27",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Boston University",
+    "Cambridge Bicycle Safety",
+    "Bluebikes Boston"
+   ],
+   "orgs": [
+    "Bluebikes",
+    "MBTA",
+    "BostonGov",
+    "Reddit"
+   ],
+   "top": [
+    "reddit",
+    "explore.com",
+    "bluebikes.com",
+    "reddit",
+    "cambridgebikesafety.org"
+   ],
+   "first": "A Bluebikes annual membership is worth it for commuting if your ride is under 45 minutes"
+  },
+  {
+   "e": "google",
+   "id": "c28",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Mass.gov",
+    "GoMassCommute",
+    "the City of Cambridge (.gov)",
+    "Boston University"
+   ],
+   "orgs": [
+    "MassCommute",
+    "TMA",
+    "ABetterCity"
+   ],
+   "top": [
+    "mass.gov",
+    "carpoolworld.com",
+    "massridematch.org",
+    "gomasscommute.com",
+    "alewifetma.org"
+   ],
+   "first": "You can find a work carpool or vanpool in Massachusetts using GoMassCommute or regional matching tools."
+  },
+  {
+   "e": "google",
+   "id": "c29",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [],
+   "orgs": [],
+   "top": [
+    "reddit",
+    "relive.com",
+    "radiusmapper.com",
+    "facebook.com",
+    "app.traveltime.com"
+   ],
+   "first": "A 10-minute drive typically takes about 40 to 50 minutes to walk."
+  },
+  {
+   "e": "google",
+   "id": "c30",
+   "gsi": true,
+   "gsi_page": true,
+   "rank": 1,
+   "srcs": [
+    "Transit",
+    "Green Streets Initiative",
+    "Car Free America"
+   ],
+   "orgs": [
+    "GSI",
+    "MBTA",
+    "TransitApp",
+    "GoogleMaps",
+    "Citymapper",
+    "Strava"
+   ],
+   "top": [
+    "gogreenstreets.org",
+    "mbta.com",
+    "reddit",
+    "mashable.com",
+    "linkedin.com"
+   ],
+   "first": "To plan a trip combining a bus, train, and walking, use a multimodal navigation app to map your route"
+  },
+  {
+   "e": "google",
+   "id": "c31",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Fairfield",
+    "Prism Real Estate Group"
+   ],
+   "orgs": [
+    "Bluebikes",
+    "MBTA"
+   ],
+   "top": [
+    "rentluna.com",
+    "reddit",
+    "juansellsboston.com",
+    "prismrealestategrp.com",
+    "mrhomeguyusa.com"
+   ],
+   "first": "To compare commute options when choosing an apartment in Boston, focus on real travel time, transit line reliability"
+  },
+  {
+   "e": "google",
+   "id": "c32",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Greater Greater Washington",
+    "Walking School Bus",
+    "Streetsblog USA",
+    "Your Move",
+    "City of Portland, Oregon (.gov)"
+   ],
+   "orgs": [],
+   "top": [
+    "walkingschoolbus.org",
+    "saferoutespartnership.org",
+    "nhtsa.gov",
+    "mass.gov",
+    "walksf.org"
+   ],
+   "first": "To start a walking school bus, follow these practical steps"
+  },
+  {
+   "e": "google",
+   "id": "c33",
+   "gsi": false,
+   "gsi_page": false,
+   "rank": 0,
+   "srcs": [
+    "Landry's Bicycles",
+    "Dedham Bike"
+   ],
+   "orgs": [
+    "MassBike",
+    "Strava"
+   ],
+   "top": [
+    "boston.bike",
+    "reddit",
+    "landrys.com",
+    "crw.org",
+    "hlc.harvard.edu"
+   ],
+   "first": "You can find group bike rides and cycling communities in the Boston area through social rides, local bike shops, and organized clubs."
+  }
+ ]
+}

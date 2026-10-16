@@ -275,7 +275,8 @@ Everything in the weekly pulse, plus:
 4. **AEO health:** validate the JSON-LD on 5 key pages (curl + parse the
    `application/ld+json` blocks, check required fields); confirm llms.txt covers
    every indexable page class in the sitemap; run each cluster's `aeo_questions`
-   through `WebSearch` and record whether GSI is cited/surfaced.
+   through `WebSearch` and record whether GSI is cited/surfaced. Then run the
+   **AI answer sample** (below) on the full question bank.
 5. **Experiment proposals:** append 1–3 entries to `experiments.md` as
    `proposed` — hypothesis, exact change, success metric + cluster,
    `verdict-by` (≈ +6 weeks).
@@ -300,6 +301,7 @@ Everything in the weekly pulse, plus:
 | Sessions by channel + app-intent rate (PostHog `channels_by_week`) | | | |
 | Ad Grants: clicks, CTR vs 5% floor (month to date), conversions — snapshot date | | | |
 | AEO sentinel citations (n of 6) | | | |
+| AI answer sample (monthly): GSI named, n of 53, per assistant (Google AI Overview / ChatGPT / Gemini) | | | |
 
 Baselines are trailing means recomputed each run from the committed
 `seo/data/gsc/weekly-*.json` files — git history is the time series; state only
@@ -348,13 +350,47 @@ IA change — not another tweak), and open the email with
 "Organic traffic has been flat for N weeks. Here is the revised plan."
 Never report flat traffic as "steady."
 
+## AI answer sample (monthly, added 2026-10-16)
+
+Ask the assistants the questions directly and record what a logged-out person
+sees. The questions are `seo/question-bank.json` (53 questions from people who
+are fed up with how they get around or curious about another way, each tied to
+a real search query or forum thread, with our best page and how well it fits).
+
+1. In the Browser pane, logged out, one fresh chat per question:
+   - **Google AI Overview**: `google.com/search?q=<question>&hl=en&gl=us`, take
+     a small screenshot so the Overview renders, then run `google()`.
+   - **ChatGPT**: `chatgpt.com`, type the question, Return, run `chatgpt()`.
+   - **Gemini**: `gemini.google.com/app`, click the prompt box, type, Return,
+     run `gemini()`.
+   The extractors are in `scripts/seo/ai-answers-extractors.js` (paste the
+   function body into javascript_tool). Perplexity, Copilot and Claude need a
+   sign-in, so they are out of scope; never create an account for this.
+2. **Pacing:** about 15 s between Google queries. If Google shows its "unusual
+   traffic" page, stop Google, run the other two, and come back after ~40 min.
+   Never solve or route around a CAPTCHA.
+3. Write `seo/data/ai-answers/YYYY-MM-DD.json` (same shape as 2026-10-16) and
+   update each question's `baseline_*` block only on the first run; later runs
+   live in the dated files.
+4. Report: GSI named n of 53 per assistant, split fed-up vs curious; which
+   questions gained or lost us; who gets cited instead (by type: Reddit and
+   forums, real estate, government, car services, law firms, advocacy).
+5. If this run has no Browser pane, skip the sample and say so in one line.
+   Keith can say "run the AI answer sample" in a chat.
+
+Answers change from run to run and ChatGPT tailors them to the browser's
+location (Arlington on 2026-10-16). Read month-over-month movement across the
+whole bank; a single question flipping is noise.
+
 ## AEO honesty
 
 State the limits in the first email and whenever asked. We measure GSC data,
 live-search presence for question-shaped queries, citation presence in
-search-grounded answers, and structured-data/llms.txt health. We do **not** see
-inside ChatGPT / Perplexity / Claude or Google AI Overviews, and we never
-fabricate an "AI visibility" score.
+search-grounded answers, structured-data/llms.txt health, and, monthly, a
+logged-out sample of what Google's AI Overview, ChatGPT and Gemini actually
+say to the question bank. That sample is a count of answers that name GSI, with
+its method stated; it is a sample, and we never present it as a ranking or
+blend it into an "AI visibility" score.
 
 ## Draft-and-approve delivery
 

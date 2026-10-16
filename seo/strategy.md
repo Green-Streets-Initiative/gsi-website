@@ -25,6 +25,14 @@ change who could be won over to active transportation:
    how families here actually do it.
 4. **Year-round weather worriers** — people who assume New England weather
    rules it out. We normalize and equip.
+5. **The fed up** (added 2026-10-16, Keith's direction) — people frustrated
+   with how they get around now: stuck in traffic, paying a lot to park, tired
+   of T delays, hit by insurance or car costs. They ask "why is Boston traffic
+   so bad?" and "is it worth keeping my car?" We acknowledge the frustration and
+   name the specific trips where another way works, with honest times and
+   costs. On the 2026-10-16 sample no assistant named GSI on any of the 20
+   fed-up questions; Reddit, car services, law firms and realtors answer them.
+   The questions live in `seo/question-bank.json` (`kind: fed_up`).
 
 Plus our existing audiences: town-level commuters (our strongest asset),
 employers, schools, and local businesses.
@@ -168,7 +176,10 @@ and must re-strategize (not just report) when it flattens.
   including some AI-surface referrals in aggregate), presence and rough
   position in live web search for question-shaped queries, whether GSI is cited
   in search-grounded answers, structured-data validity, and llms.txt health.
-- **We cannot measure:** rankings _inside_ ChatGPT / Perplexity / Claude, or
-  Google AI Overview inclusion specifically. No tool in this stack sees those.
-  The routine will never fabricate an "AI visibility" number. Our AEO strategy
-  is input-optimized and proxy-measured.
+- **We sample directly, monthly (since 2026-10-16):** what a logged-out person
+  sees from Google's AI Overview, ChatGPT and Gemini for the 53 questions in
+  `seo/question-bank.json`, counted as "answers that name GSI". It is a sample
+  with its method stated (see methodology.md, "AI answer sample").
+- **We cannot measure:** rankings _inside_ these assistants, what signed-in or
+  personalized users see, or Perplexity / Copilot / Claude (all need a sign-in).
+  The routine will never fabricate an "AI visibility" score.
