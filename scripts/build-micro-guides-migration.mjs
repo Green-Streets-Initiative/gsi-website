@@ -282,8 +282,8 @@ const priceFacts = JSON.parse(
   readFileSync(resolve(repoRoot, 'src/lib/facts/prices.json'), 'utf8'),
 )
 function formatPrice(value, forceCents) {
-  if (!forceCents && Number.isInteger(value)) return `$${value}`
-  return `$${value.toFixed(2)}`
+  if (!forceCents && Number.isInteger(value)) return `$${value.toLocaleString('en-US')}`
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 function interpolatePrices(text) {
   return text.replace(/\{\{price:([a-zA-Z.]+)(\|cents)?\}\}/g, (_, path, cents) => {

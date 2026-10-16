@@ -32,7 +32,8 @@ change who could be won over to active transportation:
    name the specific trips where another way works, with honest times and
    costs. On the 2026-10-16 sample no assistant named GSI on any of the 20
    fed-up questions; Reddit, car services, law firms and realtors answer them.
-   The questions live in `seo/question-bank.json` (`kind: fed_up`).
+   The questions live in `seo/question-bank.json` (`kind: fed_up`); the pages
+   that answer them follow `seo/answer-pages.md`.
 
 Plus our existing audiences: town-level commuters (our strongest asset),
 employers, schools, and local businesses.

@@ -280,7 +280,9 @@ Everything in the weekly pulse, plus:
 5. **Experiment proposals:** append 1–3 entries to `experiments.md` as
    `proposed` — hypothesis, exact change, success metric + cluster,
    `verdict-by` (≈ +6 weeks).
-6. **Content drafting:** up to 2 new micro-guide drafts into
+6. **Content drafting:** answer pages for `question-bank.json` gaps follow
+   `seo/answer-pages.md` (query our own data first; evidence in
+   `seo/data/answer-evidence/`). Up to 2 new micro-guide drafts into
    `seo/drafts/guides/<slug>.md` (full YAML + body, library voice, messaging
    policy), and/or one page-edit branch `seo/YYYY-MM-<slug>` (pushed, never
    merged). Self-check every drafted word against `seo/strategy.md`.

@@ -472,18 +472,24 @@ function splitSections(md: string): { heading: string | null; body: string }[] {
   return out
 }
 
-/** Simple markdown to HTML — handles headings, bold, lists, links, paragraphs */
+/** Simple markdown to HTML — handles headings, bold, lists, links, paragraphs.
+ *  The body is escaped first, so raw HTML in a guide shows as text, and links
+ *  only render for https:// and site-relative URLs (seo/answer-pages.md §6). */
 function renderMarkdown(md: string): string {
   if (!md) return ''
 
   return md
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
     // Headings
     .replace(/^### (.+)$/gm, '<h3 class="mt-8 mb-3 font-serif text-[1.25rem] leading-tight text-navy">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 class="mt-10 mb-4 font-serif text-[1.5rem] leading-tight text-navy">$1</h2>')
     // Bold
     .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-navy">$1</strong>')
     // Links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="font-semibold text-forest underline underline-offset-4 hover:opacity-80" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/\[([^\]]+)\]\(((?:https:\/\/|\/(?!\/))[^)\s]+)\)/g, '<a href="$2" class="font-semibold text-forest underline underline-offset-4 hover:opacity-80" target="_blank" rel="noopener noreferrer">$1</a>')
     // Unordered list items
     .replace(/^- (.+)$/gm, '<li class="ml-4 mb-1.5 list-disc text-ink-soft">$1</li>')
     // Wrap consecutive <li> in <ul>
