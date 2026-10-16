@@ -27,7 +27,7 @@ export const RULE_SET_LABEL: Record<RuleSet, string> = {
 
 export const RULE_SET_HELP: Record<RuleSet, string> = {
   massdep:
-    'Sites with 1,000 or more applicable commuters (250 with an air permit). Report due December 31. A census needs 50% of applicable commuters to answer; 75% and 90% allow shorter summary forms.',
+    'MassDEP, the state environmental agency, requires sites where 1,000 or more people commute (250 if the site has a state air permit) to survey how staff get to work and report every year by December 31. At least half of the regular daytime commuters have to answer; the more who do, the shorter the form.',
   cambridge:
     'Properties with a Parking and Transportation Demand Management plan. The City runs the employee survey in its own tool (60% of employees must answer); report due November 30 or June 30.',
   boston:

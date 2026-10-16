@@ -21,7 +21,7 @@ export const FILINGS: Filing[] = [
     id: 'massdep',
     title: 'MassDEP Rideshare',
     due: 'Report due December 31',
-    who: 'Sites with 1,000 or more applicable commuters (250 with an air permit). At least half of them have to answer.',
+    who: 'MassDEP is the state environmental agency. If 1,000 or more people commute to your site (250 if the site has a state air permit), state air-quality rules say you must survey how they get to work and send MassDEP a report every year by December 31. At least half of your regular daytime commuters have to answer.',
     whatToDo:
       'One PDF per site, signed by a vice president or higher, emailed to MassDEP.RideshareReg@mass.gov by December 31. Because this is not MassDEP’s own form, the PDF includes a copy of the survey questions.',
   },
@@ -29,7 +29,7 @@ export const FILINGS: Filing[] = [
     id: 'cambridge',
     title: 'Cambridge PTDM',
     due: 'Report due November 30 or June 30',
-    who: 'Properties with a Parking and Transportation Demand Management plan. The City runs the employee survey itself in its monitoring tool (60% of employees, Monday to Sunday); this survey adds the year-round numbers and the raffle sign-up for your report.',
+    who: 'The City of Cambridge requires large parking lots and garages to have a plan for cutting drive-alone trips. If your property has one, the City surveys your employees itself in its own online tool (60% of employees must answer). This survey adds the year-round numbers and the raffle sign-up for your report.',
     whatToDo:
       'Cambridge requires its own online survey, taken in the City\u2019s Transportation Monitoring Tool, with 60% of employees answering. Use what is here for the rest of the report: list the Shift program under TDM Implementation, and paste the year-round numbers into the Annual Review. If you run a raffle, the City redirects its survey to a sign-up form; Shift can host that form.',
   },
@@ -37,7 +37,7 @@ export const FILINGS: Filing[] = [
     id: 'boston',
     title: 'Boston TAPA',
     due: 'Annual report due November 30',
-    who: 'Projects with a Transportation Access Plan Agreement. The survey gives the mode-share paragraph.',
+    who: 'Boston requires new buildings of 50,000 square feet and up to sign a Transportation Access Plan Agreement and report every year on how people get there. If your building has one, this survey gives you the paragraph on how staff commute.',
     whatToDo: 'Paste the paragraph into your TAPA annual report, due November 30. The City has no template.',
   },
   {
@@ -59,7 +59,7 @@ export const SURVEY_HINTS = {
   ofList: 'People on your staff list who answered through their own link or the app.',
   headcount: 'How many people you are asking, per site. The response rate is measured against it.',
   applicable:
-    'The staff MassDEP counts: 17 or more hours a week, start and end between 6 AM and 8 PM, and their own car used for work fewer than five times a month.',
+    'The people MassDEP counts: regular daytime commuters who work 17 or more hours a week, start and end between 6 AM and 8 PM, and do not need their own car for work.',
   daysLeft: 'Until the last day to answer. Reminders stop then; the survey stays open until you close it.',
   onList: 'People you added under People. Each gets a personal link when the survey opens.',
   openLink: 'Answers through the open link or QR, for staff without a work email. They count in the totals and are not tied to a name.',
@@ -67,22 +67,31 @@ export const SURVEY_HINTS = {
   lastDay: 'Reminders stop on this day. Answers are accepted until you close the survey.',
 } as const
 
-/** MassDEP's response bands and the summary form each allows, in one line each. */
+/** MassDEP's response bands and what each one gets you, as the tick labels under the bar. */
 export const MASSDEP_BANDS = [
-  { at: 50, label: '50%', form: 'Floor' },
-  { at: 75, label: '75%', form: 'SCD 2' },
-  { at: 90, label: '90%', form: 'SCD 1' },
+  { at: 50, label: '50%', form: 'Minimum' },
+  { at: 75, label: '75%', form: 'Medium form' },
+  { at: 90, label: '90%', form: 'Shortest form' },
 ] as const
 
-export const MASSDEP_GLOSS =
-  'MassDEP counts applicable commuters: staff who work 17 or more hours a week, start and end between 6 AM and 8 PM, and use their own car for work fewer than five times a month. Half of them answering makes a census, a survey of everyone rather than a sample. The rate also picks MassDEP’s summary form: 90% or more allows SCD 1, the shortest; 75% to 90% SCD 2; 50% to 75% SCD 2 if you add one more trip-reduction incentive, otherwise SCD 3.'
+/**
+ * The lines under the MassDEP bar (Keith 2026-10-15: plain words, bullets so it
+ * skims; MassDEP's own names for the forms, SCD 1 to 3, appear only in the help
+ * drawer, where the filer meets them once).
+ */
+export const MASSDEP_GLOSS_LINES = [
+  'MassDEP only counts regular daytime commuters: people who work at least 17 hours a week, start and end between 6 AM and 8 PM, and do not need their own car for work.',
+  'At least half of them have to answer.',
+  'The more who answer, the shorter the form you file: 9 in 10 gets the shortest form, 3 in 4 the medium one.',
+  'Between half and three quarters, you file the medium form only if you add one more commuter incentive.',
+] as const
 
 export const CAMBRIDGE_FLOOR_LINE = 'Cambridge requires 60% of employees to answer its own online survey (City of Cambridge, October 2026); this survey does not replace it.'
 
-/** "Allows SCD 2", "Below the 50% floor": the short form of the band for a sub line. */
+/** The sub line after "N of M answered.": what the current rate gets you with MassDEP. */
 export function massdepBandShort(ratePct: number): string {
-  if (ratePct >= 90) return 'Allows SCD 1, the shortest form'
-  if (ratePct >= 75) return 'Allows SCD 2'
-  if (ratePct >= 50) return 'Allows SCD 2 with one more incentive'
-  return 'Below the 50% floor'
+  if (ratePct >= 90) return 'Enough for the shortest MassDEP form'
+  if (ratePct >= 75) return 'Enough for the medium MassDEP form'
+  if (ratePct >= 50) return 'Enough for the medium MassDEP form if you add one more commuter incentive'
+  return 'Below the half MassDEP needs'
 }

@@ -2,7 +2,7 @@
 
 import Button from '@/components/employer/Button'
 import { pct } from '@/lib/employer/survey-exports'
-import { CAMBRIDGE_FLOOR_LINE, MASSDEP_BANDS, MASSDEP_GLOSS, massdepBandShort } from './survey-copy'
+import { CAMBRIDGE_FLOOR_LINE, MASSDEP_BANDS, MASSDEP_GLOSS_LINES, massdepBandShort } from './survey-copy'
 import { ruleSetsOf, type SurveyStatus } from './survey-types'
 
 function fewer(n: number | null, few: boolean): string {
@@ -95,7 +95,11 @@ export default function ResponsesTab({ status, onGoToSending, onGoToPeople }: { 
                 </span>
               ))}
             </div>
-            <p className="mt-1 text-[12.5px] leading-[1.55] text-ink-muted">{MASSDEP_GLOSS}</p>
+            <ul className="mt-1.5 flex list-disc flex-col gap-1 pl-4 text-[12.5px] leading-[1.55] text-ink-muted">
+              {MASSDEP_GLOSS_LINES.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
             {sets.includes('cambridge') && <p className="mt-1 text-[12.5px] leading-[1.55] text-ink-muted">{CAMBRIDGE_FLOOR_LINE}</p>}
           </section>
         )}

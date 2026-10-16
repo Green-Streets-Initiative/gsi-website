@@ -163,12 +163,17 @@ const HELP_CONTENT: Record<string, HelpItem[]> = {
       ],
     },
     {
-      title: 'What "applicable commuters" means',
-      body: 'The staff MassDEP counts: 17 or more hours a week, start and end between 6 AM and 8 PM, and their own car used for work fewer than five times a month. The survey asks those three questions first and the MassDEP summary counts only people who said yes to all three.',
+      title: 'Who MassDEP counts',
+      body: 'Not everyone on payroll. MassDEP counts regular daytime commuters: people who work at least 17 hours a week, start and end between 6 AM and 8 PM, and do not need their own car for work. The survey asks those three questions first, and the MassDEP summary counts only people who said yes to all three. MassDEP calls them "applicable commuters."',
     },
     {
       title: 'Which MassDEP form you will file',
-      body: 'Your response rate picks it: 90% or more allows the short SCD 1; 75% to 90% the SCD 2; 50% to 75% the SCD 2 if you add one more trip-reduction incentive, otherwise SCD 3. Half of applicable commuters is the floor for a census.',
+      body: [
+        'At least half of the people MassDEP counts have to answer, or MassDEP will not accept the survey.',
+        'The more who answer, the shorter the form. 9 in 10 gets the shortest form (MassDEP calls it SCD 1).',
+        '3 in 4 gets the medium form (SCD 2).',
+        'Between half and three quarters, you file the medium form only if you add one more commuter incentive, such as a bike rack or a transit pass. Otherwise you file the longest form (SCD 3).',
+      ],
     },
     {
       title: 'Who sees what',
