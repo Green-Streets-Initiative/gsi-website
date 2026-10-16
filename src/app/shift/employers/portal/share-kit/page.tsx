@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import QRCode from 'qrcode'
 import {
   Copy,
@@ -18,6 +18,7 @@ import { usePortal } from '../_lib/portal-context'
 import { employerAdvisorUrl, employerNearbyUrl, locationAsOffice, onThisSite } from '@/lib/employer/office-links'
 import { useEmployerLocations, locationTitle } from '../_lib/use-employer-locations'
 import { formatDateShort } from '../_lib/portal-utils'
+import { useModalFocus } from '@/lib/employer/use-modal-focus'
 import { useObservances } from '../_lib/use-observances'
 import { observanceMessage, upcomingObservances, longDay } from '@/lib/employer/observances'
 import PortalPageHead from '../_components/PortalPageHead'
@@ -65,7 +66,10 @@ export default function ShareKitPage() {
     observances,
     new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }),
   ).slice(0, 3)
-  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
+  // The enlarged step screenshot, with its alt text and a dialog name.
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string; label: string } | null>(null)
+  const lightboxRef = useRef<HTMLDivElement>(null)
+  useModalFocus(lightboxRef, { open: !!lightbox, onClose: () => setLightbox(null) })
 
   const joinUrl = group
     ? `https://shift.gogreenstreets.org/join/${group.invite_code}`
@@ -391,7 +395,13 @@ export default function ShareKitPage() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setLightboxSrc('/images/shift-app/shift-join-step1.png')}
+                  onClick={() =>
+                    setLightbox({
+                      src: '/images/shift-app/shift-join-step1.png',
+                      alt: 'Tap Join a workplace',
+                      label: 'Step 2: Tap Join a workplace',
+                    })
+                  }
                   className="group relative cursor-pointer rounded-lg transition-shadow hover:shadow-md"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -417,7 +427,13 @@ export default function ShareKitPage() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setLightboxSrc('/images/shift-app/shift-join-step2.png')}
+                  onClick={() =>
+                    setLightbox({
+                      src: '/images/shift-app/shift-join-step2.png',
+                      alt: 'Enter your invite code',
+                      label: 'Step 3: Enter your invite code',
+                    })
+                  }
                   className="group relative cursor-pointer rounded-lg transition-shadow hover:shadow-md"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -767,23 +783,31 @@ export default function ShareKitPage() {
         </div>
       </div>
 
-      {lightboxSrc && (
+      {lightbox && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-          onClick={() => setLightboxSrc(null)}
+          onClick={() => setLightbox(null)}
         >
-          <div className="relative mx-4" onClick={(e) => e.stopPropagation()}>
+          <div
+            ref={lightboxRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={lightbox.label}
+            className="relative mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
-              onClick={() => setLightboxSrc(null)}
-              className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md transition-colors hover:bg-surface-2"
+              onClick={() => setLightbox(null)}
+              aria-label="Close"
+              className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md outline-none transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
               <X size={16} className="text-ink" />
             </button>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={lightboxSrc}
-              alt="Step detail"
+              src={lightbox.src}
+              alt={lightbox.alt}
               className="max-h-[80vh] max-w-[360px] rounded-xl shadow-2xl"
             />
           </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { X } from 'lucide-react'
+import { useModalFocus } from '@/lib/employer/use-modal-focus'
 
 /**
  * The left-hand drawer that carries the sidebar below 980px. Closes on
@@ -20,6 +21,7 @@ export default function MobileNav({
 }) {
   const pathname = usePathname()
   const closeRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const lastPath = useRef(pathname)
 
   useEffect(() => {
@@ -29,15 +31,8 @@ export default function MobileNav({
     }
   }, [pathname, open, onClose])
 
-  useEffect(() => {
-    if (!open) return
-    closeRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  // Tab stays in the drawer; focus returns to the Menu button on close.
+  useModalFocus(panelRef, { open, onClose, initialFocus: () => closeRef.current })
 
   if (!open) return null
 
@@ -46,6 +41,7 @@ export default function MobileNav({
       <style>{`@keyframes portal-drawer-in { from { transform: translateX(-100%); } to { transform: translateX(0); } }`}</style>
       <div className="fixed inset-0 z-40 bg-ink/40" onClick={onClose} aria-hidden />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label="Menu"

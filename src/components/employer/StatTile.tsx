@@ -3,10 +3,11 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { TrendingUp, Info } from 'lucide-react'
+import { SHIFT_RATE_DEF } from '@/lib/employer/definitions'
 
 /** Plain words for the portal numbers (Keith 2026-09-30: say what each one means). */
 export const STAT_HINTS = {
-  activeTrips: 'Walks, bike rides, scooter rides and transit trips recorded by Shift',
+  activeTrips: 'Walks, bike and scooter rides, and bus, train or ferry trips recorded by Shift. Carpools count toward Shift Rate instead.',
   miles: 'Miles travelled on those trips',
   /** The legacy kg figure (Home, the weekly email): every mile not driven × 0.404 kg. */
   co2: 'Compared with driving alone the same distance',
@@ -17,7 +18,7 @@ export const STAT_HINTS = {
   /** The tonnes figure on the printed report. */
   co2Tonnes:
     'Tonnes of CO₂-equivalent your team avoided compared with driving alone the same distance, using EPA 2025 emission factors and net of the bus or train they took instead',
-  shiftRate: 'Share of recorded trips made by walking, biking, scooter or transit instead of driving',
+  shiftRate: SHIFT_RATE_DEF,
   driveAlone: 'Share of recorded trips that were driving alone. The number MassDEP and commuter programs ask employers to bring down.',
   participation: 'Employees who joined your workplace on Shift, as a share of the headcount you gave on Setup',
   emissionsShifted:

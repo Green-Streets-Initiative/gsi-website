@@ -280,7 +280,7 @@ function tripsSummary(r: CountingRules | null): string {
   const e = effectiveRules(r)
   if (isStandardRules(r)) return 'Walks of half a mile or more, bike and e-scooter rides, transit, and carpools. Up to 2 a day.'
   const bits: string[] = []
-  bits.push(e.modes.length === STANDARD_MODES.length ? 'All active trips' : e.modes.length === 1 ? `${modeWord(e.modes[0])} only` : `${e.modes.length} kinds of trips`)
+  bits.push(e.modes.length === STANDARD_MODES.length ? 'Every trip except driving alone' : e.modes.length === 1 ? `${modeWord(e.modes[0])} only` : `${e.modes.length} kinds of trips`)
   if (e.min_walk_miles > 0) bits.push(`walks from ${e.min_walk_miles} mi`)
   bits.push(e.max_trips_per_day == null ? 'no daily limit' : `up to ${e.max_trips_per_day} a day`)
   if (e.commute_only) bits.push('only to or from your office')
@@ -998,8 +998,14 @@ export default function ChallengeWizard({
                 <div>
                   <div className={label}>Who answers questions</div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <input className={input} placeholder="Name" value={form.contact_name} onChange={(e) => set('contact_name', e.target.value)} />
-                    <input className={input} type="email" placeholder="Email" value={form.contact_email} onChange={(e) => set('contact_email', e.target.value)} />
+                    <div>
+                      <label className={label} htmlFor="cw-contact-name">Contact name</label>
+                      <input id="cw-contact-name" className={input} placeholder="Name" value={form.contact_name} onChange={(e) => set('contact_name', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={label} htmlFor="cw-contact-email">Contact email</label>
+                      <input id="cw-contact-email" className={input} type="email" placeholder="Email" value={form.contact_email} onChange={(e) => set('contact_email', e.target.value)} />
+                    </div>
                   </div>
                   <p className="mt-1.5 text-[12.5px] text-ink-muted">Shown with the rules in the app and in your announcement.</p>
                 </div>
@@ -1190,10 +1196,12 @@ function ReviewRow({ term, value, onChange }: { term: string; value: string; onC
   )
 }
 
-function Num({ value, onChange, disabled, id }: { value: string; onChange: (v: string) => void; disabled?: boolean; id: string }) {
+// The numbers sit inside a sentence, so each one carries its own name (portal review A11Y-4).
+function Num({ value, onChange, disabled, id, label: name }: { value: string; onChange: (v: string) => void; disabled?: boolean; id: string; label: string }) {
   return (
     <input
       id={id}
+      aria-label={name}
       inputMode="numeric"
       disabled={disabled}
       className={numInput}
@@ -1219,22 +1227,22 @@ function PrizeSentence({
   if (kind === 'goal') {
     return (
       <div className={row}>
-        The first <Num id="cw-spots" value={p.winner_count} disabled={live} onChange={(v) => onChange({ winner_count: v })} /> people to reach
-        <Num id="cw-goal" value={p.min_threshold} disabled={live} onChange={(v) => onChange({ min_threshold: v })} /> trips win.
+        The first <Num id="cw-spots" label="Number of winners" value={p.winner_count} disabled={live} onChange={(v) => onChange({ winner_count: v })} /> people to reach
+        <Num id="cw-goal" label="Trips needed to win" value={p.min_threshold} disabled={live} onChange={(v) => onChange({ min_threshold: v })} /> trips win.
       </div>
     )
   }
   if (kind === 'drawing') {
     return (
       <div className={row}>
-        Everyone with <Num id="cw-min" value={p.min_threshold} onChange={(v) => onChange({ min_threshold: v })} /> {drawUnit(p.metric)} is entered. We draw
-        <Num id="cw-winners" value={p.winner_count} onChange={(v) => onChange({ winner_count: v })} /> winners at the end.
+        Everyone with <Num id="cw-min" label="Minimum to enter the drawing" value={p.min_threshold} onChange={(v) => onChange({ min_threshold: v })} /> {drawUnit(p.metric)} is entered. We draw
+        <Num id="cw-winners" label="Number of winners" value={p.winner_count} onChange={(v) => onChange({ winner_count: v })} /> winners at the end.
       </div>
     )
   }
   return (
     <div className={row}>
-      The top <Num id="cw-top" value={p.winner_count} onChange={(v) => onChange({ winner_count: v })} /> by
+      The top <Num id="cw-top" label="Number of winners" value={p.winner_count} onChange={(v) => onChange({ winner_count: v })} /> by
       <select
         aria-label="Ranked by"
         className="rounded-[10px] border border-line bg-surface px-2.5 py-2 text-[15px] font-semibold text-ink outline-none focus:border-accent"
@@ -1285,7 +1293,7 @@ function RewardChoice({
         <div className="grid gap-3">
           <div className="flex items-center gap-2 text-[15px] text-ink">
             Worth $
-            <Num id="cw-amount" value={p.amount_dollars} disabled={live} onChange={(v) => onChange({ amount_dollars: v })} />
+            <Num id="cw-amount" label="Gift card amount in dollars" value={p.amount_dollars} disabled={live} onChange={(v) => onChange({ amount_dollars: v })} />
             each
           </div>
           <p className="text-[12.5px] text-ink-muted">
@@ -1437,7 +1445,7 @@ function VerifiedToggle({
       {p.requires_work_email && domains.length === 0 && !live && canManageAccount && (
         <div className="mt-3 ml-6">
           <div className="flex gap-2">
-            <input className={input} placeholder="yourcompany.com" value={draft} onChange={(e) => setDraft(e.target.value)} />
+            <input aria-label="Company email domain" className={input} placeholder="yourcompany.com" value={draft} onChange={(e) => setDraft(e.target.value)} />
             <Button variant="secondary" disabled={busy || !draft.trim()} onClick={add}>
               Add
             </Button>
@@ -1519,7 +1527,8 @@ function OfficeToggle({
             <AddressAutocomplete
               value={addr}
               onChange={setAddr}
-              label={null}
+              label="Office address"
+              hideLabel
               placeholder="Office address"
               onPlaceSelected={(place) => {
                 onChange(true, [...offices, { address: place.address, lat: place.lat, lng: place.lng, radius_m: 250 }])

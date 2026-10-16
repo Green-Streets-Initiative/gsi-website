@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
@@ -57,7 +58,11 @@ export default async function SeasonalBoardPage({ params }: { params: Promise<{ 
       <div className="rounded-2xl bg-white p-6 shadow-lg sm:p-10">
         <p className="text-sm font-semibold text-emerald-700">Shift for Employers · {b.run.label}</p>
         <h1 className="mt-3 text-3xl font-bold text-gray-900">{b.run.title}</h1>
-        <p className="mt-1 text-[15px] text-gray-700">
+        <p className="mt-2 text-[16px] text-gray-900">
+          A commuter challenge for Massachusetts workplaces, run on Shift by Green Streets Initiative. Employees log
+          their walks, bike rides, transit trips and carpools in the free Shift app.
+        </p>
+        <p className="mt-2 text-[15px] text-gray-700">
           {day(b.run.starts_on)} to {day(b.run.ends_on)}. Workplaces are ranked by the share of their team who logged at
           least one trip that counts, and grouped by size so a small office can top its group.
         </p>
@@ -91,9 +96,16 @@ export default async function SeasonalBoardPage({ params }: { params: Promise<{ 
           ))
         )}
 
-        <p className="mt-10 text-[13px] text-gray-600">
+        <Link
+          href="/shift/employers"
+          className="mt-8 block rounded-xl bg-emerald-50 p-4 text-[15px] font-semibold text-emerald-800 hover:bg-emerald-100"
+        >
+          {`Want your workplace on this board? Run ${b.run.title} on Shift →`}
+        </Link>
+
+        <p className="mt-6 text-[13px] text-gray-600">
           Only workplaces that chose to appear on public leaderboards are listed. Shift is a free app from Green Streets
-          Initiative that records walks, bike rides and transit trips on its own.
+          Initiative that records walks, bike rides and transit trips on its own; people mark carpools themselves.
         </p>
       </div>
     </main>

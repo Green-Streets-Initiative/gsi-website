@@ -14,7 +14,7 @@ export default function EmployerInquiry({ nextDate }: { nextDate: string | null 
             Get a free commuter challenge, or book a demo
           </h2>
           <p className="mb-6 text-[1.0625rem] leading-[1.65] text-ink-soft">
-            Tell us your company and roughly how many people work at your Massachusetts office, and pick what you would like. We reply within two business days: a private team code for the next Walk/Ride Day
+            Tell us your company and roughly how many people work at your Massachusetts office, and pick what you would like. We reply within two business days: a private invite code for the next Walk/Ride Day
             {nextDate ? <> (<span className="font-semibold text-navy">{nextDate}</span>)</> : null} with a note you can forward to staff, or a time for a 20-minute walkthrough, or both.
           </p>
           <ul className="flex flex-col gap-3 text-[0.9375rem] leading-[1.6] text-ink-soft">

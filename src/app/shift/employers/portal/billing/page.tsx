@@ -237,8 +237,8 @@ export default function BillingPage() {
                     Add to your rewards balance
                   </label>
                   <div className="grid gap-2.5 sm:flex sm:flex-wrap sm:items-center">
-                    <div className="flex w-full items-center rounded-[10px] border border-line bg-surface sm:w-[160px]">
-                      <span className="pl-3 text-[14px] text-ink-muted">$</span>
+                    <div className="flex w-full items-center rounded-[10px] border border-line bg-surface focus-within:border-accent focus-within:ring-2 focus-within:ring-accent-soft sm:w-[160px]">
+                      <span aria-hidden="true" className="pl-3 text-[14px] text-ink-muted">$</span>
                       <input
                         id="topup-amount"
                         type="number"

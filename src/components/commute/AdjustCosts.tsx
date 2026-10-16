@@ -55,8 +55,8 @@ export default function AdjustCosts({
       {open && (
         <div id={id} className="space-y-5 border-t border-[rgba(25,26,46,0.09)] px-4 py-4">
           <div>
-            <div className="mb-2 text-[0.75rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">Your car</div>
-            <div className="flex flex-wrap gap-2">
+            <div id={`${id}-car`} className="mb-2 text-[0.75rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">Your car</div>
+            <div className="flex flex-wrap gap-2" role="group" aria-labelledby={`${id}-car`}>
               {(['gas', 'hybrid', 'ev'] as Vehicle[]).map((v) => (
                 <button
                   key={v}
@@ -78,7 +78,7 @@ export default function AdjustCosts({
               Parking per day
             </label>
             <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-[#2D6A4F]">$</span>
+              <span aria-hidden className="text-lg font-bold text-[#2D6A4F]">$</span>
               <input
                 id={`${id}-parking`}
                 type="number"
@@ -107,8 +107,9 @@ export default function AdjustCosts({
                 max={7}
                 step={1}
                 value={daysPerWeek}
+                aria-valuetext={`${daysPerWeek} day${daysPerWeek === 1 ? '' : 's'} a week`}
                 onChange={(e) => onDaysPerWeek(parseInt(e.target.value, 10))}
-                className="w-full max-w-[260px] cursor-pointer appearance-none rounded-full bg-[rgba(25,26,46,0.12)] outline-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[#2D6A4F] [&::-webkit-slider-thumb]:shadow-[0_0_0_1.5px_#2D6A4F]"
+                className="w-full max-w-[260px] cursor-pointer appearance-none rounded-full bg-[rgba(25,26,46,0.12)] outline-none focus-visible:ring-2 focus-visible:ring-[#2D6A4F] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FAFBF8] [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[#2D6A4F] [&::-webkit-slider-thumb]:shadow-[0_0_0_1.5px_#2D6A4F]"
                 style={{ height: '6px' }}
               />
               <span className="w-16 text-[0.9375rem] font-bold text-[#191A2E]">{daysPerWeek} day{daysPerWeek === 1 ? '' : 's'}</span>

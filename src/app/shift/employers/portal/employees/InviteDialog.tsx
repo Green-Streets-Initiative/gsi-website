@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, Copy, Download, ExternalLink, Link as LinkIcon,
 import QRCode from 'qrcode'
 import posthog from 'posthog-js'
 import { supabase } from '@/lib/supabase'
+import { useModalFocus } from '@/lib/employer/use-modal-focus'
 import Button from '@/components/employer/Button'
 import CodeChip from '@/components/employer/CodeChip'
 import { useToast } from '@/components/employer/Toast'
@@ -20,6 +21,9 @@ export const INVITE_BATCH_CAP = 500
 /** What the invite dialog tells the employee, in words. Also shown on InvitedCard. */
 export const INVITE_NOTE =
   'We send one invitation now and one reminder a week later. Employees who join disappear from the list. Nobody gets a third email.'
+
+/** The address invitations are sent from (the RESEND_FROM_EMAIL secret). */
+const INVITE_FROM_ADDRESS = 'keith@gogreenstreets.org'
 
 const SHARE_KIT = '/shift/employers/portal/share-kit'
 
@@ -98,9 +102,6 @@ export function summarize(r: AddResult, sentNow: boolean): string {
   if (r.invalid) parts.push(`${r.invalid} ${r.invalid === 1 ? 'was not' : 'were not'} a valid address.`)
   return parts.join(' ')
 }
-
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 export type InviteTab = 'email' | 'share'
 
@@ -425,6 +426,10 @@ export function InvitePanel({
           <Mail size={15} strokeWidth={1.75} className="mt-[2px] shrink-0 text-ink-icon" />
           <span>{INVITE_NOTE}</span>
         </p>
+        <p className="mt-2 pl-[23px] text-[12.5px] leading-[1.55] text-ink-muted">
+          It comes from &ldquo;{groupName} via Shift&rdquo; ({INVITE_FROM_ADDRESS}), and replies come to you. If your
+          company holds email from outside senders, ask IT to allow that address.
+        </p>
 
         {/* What the employee receives */}
         <div className="mt-3 rounded-[10px] border border-line">
@@ -557,44 +562,11 @@ export default function InviteDialog({
   ...panel
 }: Omit<InvitePanelProps, 'cancel' | 'onDone' | 'prefix'> & { onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null)
-  const onCloseRef = useRef(onClose)
-  useEffect(() => {
-    onCloseRef.current = onClose
+  useModalFocus(panelRef, {
+    onClose,
+    initialFocus: () =>
+      panelRef.current?.querySelector<HTMLElement>('textarea:not([disabled]), [role="tab"][aria-selected="true"]'),
   })
-
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null
-    const first =
-      panelRef.current?.querySelector<HTMLElement>('textarea:not([disabled]), [role="tab"][aria-selected="true"]') ??
-      panelRef.current?.querySelector<HTMLElement>(FOCUSABLE)
-    first?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onCloseRef.current()
-        return
-      }
-      if (e.key !== 'Tab' || !panelRef.current) return
-      const items = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        (el) => !el.closest('[hidden]'),
-      )
-      if (items.length === 0) return
-      const firstItem = items[0]
-      const last = items[items.length - 1]
-      if (e.shiftKey && document.activeElement === firstItem) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        firstItem.focus()
-      }
-    }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      opener?.focus?.()
-    }
-  }, [])
 
   return (
     <div

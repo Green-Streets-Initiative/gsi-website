@@ -7,6 +7,7 @@ import { usePortal } from '../_lib/portal-context'
 import { computeSetupSteps, nextSetupStep } from '../_lib/setup-steps'
 import { visibleNav, isNavItem } from './Sidebar'
 import Avatar from '@/components/employer/Avatar'
+import { useModalFocus } from '@/lib/employer/use-modal-focus'
 
 type ResultItem = {
   id: string
@@ -25,12 +26,13 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
   const { members, role, isAdmin, isGsiAdmin, group, benefitsForm, memberCount, challenges, loading, signOut } =
     usePortal()
   const inputRef = useRef<HTMLInputElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const [query, setQuery] = useState('')
   const [activeIdx, setActiveIdx] = useState(0)
 
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+  // Tab stays in the palette and focus returns to the search pill on close.
+  // Escape is handled with the arrow keys below.
+  useModalFocus(panelRef, { initialFocus: () => inputRef.current })
 
   const setupIncomplete =
     !loading && !!group && !!nextSetupStep(computeSetupSteps({ group, benefitsForm, memberCount, challenges }))
@@ -59,7 +61,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
       ...(isAdmin || isGsiAdmin
         ? [{ id: 'a-topup', type: 'action' as const, label: 'Top up rewards balance', icon: Wallet, href: '/shift/employers/portal/billing' }]
         : []),
-      { id: 'a-print', type: 'action', label: 'Print impact report', icon: Printer, href: '/shift/employers/portal/impact' },
+      { id: 'a-print', type: 'action', label: 'Impact report', icon: Printer, href: '/shift/employers/portal/impact' },
       { id: 'a-signout', type: 'action', label: 'Sign out', icon: LogOut, run: () => signOut() },
     ]
 
@@ -137,6 +139,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
       <div className="fixed inset-0 z-50 bg-ink/30" onClick={onClose} aria-hidden />
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-[min(20vh,160px)]" onClick={onClose}>
         <div
+          ref={panelRef}
           role="dialog"
           aria-modal="true"
           aria-label="Search"

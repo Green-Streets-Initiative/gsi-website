@@ -176,7 +176,7 @@ export default async function CorporateSharePage({ params }: Props) {
 
               {/* Invite code */}
               <div className="mb-6 flex flex-wrap items-center gap-3 rounded-[12px] border border-navy/10 bg-cream px-5 py-4">
-                <span className="text-[15px] font-medium text-ink-soft">Your team code:</span>
+                <span className="text-[15px] font-medium text-ink-soft">Your invite code:</span>
                 <span className="font-mono text-2xl font-extrabold tracking-[0.2em] text-forest">
                   {group.invite_code}
                 </span>
@@ -186,7 +186,7 @@ export default async function CorporateSharePage({ params }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/shift-app/shift-join-sequence.png"
-                alt="How to enter your team code in the Shift app: tap the + button on the Groups tab, then enter your invite code and tap Join."
+                alt="How to enter your invite code in the Shift app: tap the + button on the Groups tab, then enter your invite code and tap Join."
                 className="mx-auto max-w-[340px] rounded-xl"
               />
             </div>
@@ -232,7 +232,7 @@ export default async function CorporateSharePage({ params }: Props) {
                 Print or post the flyer
               </p>
               <p className="mb-4 text-[15px] leading-relaxed text-ink-soft">
-                A branded one-page flyer with your team code. Print it for the office, post it on a bulletin board, or attach it to an email.
+                A branded one-page flyer with your invite code. Print it for the office, post it on a bulletin board, or attach it to an email.
               </p>
               <Link
                 href={`/events/shift-your-summer/flyer?group=${clean}`}

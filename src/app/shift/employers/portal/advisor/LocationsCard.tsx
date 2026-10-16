@@ -141,6 +141,7 @@ export default function LocationsCard({
             </div>
             <input
               id={`location-name-${i}`}
+              aria-label={`Location ${i + 1} name`}
               className="rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
               placeholder="Name (optional), e.g. Harvard Square branch"
               value={r.name}
@@ -150,6 +151,8 @@ export default function LocationsCard({
               value={r.address}
               onChange={(v) => edit(i, { address: v, lat: null, lng: null })}
               onPlaceSelected={(place) => edit(i, { lat: place.lat, lng: place.lng })}
+              label={`Location ${i + 1} address`}
+              hideLabel
               variant="light"
               placeholder="Start typing an address..."
             />

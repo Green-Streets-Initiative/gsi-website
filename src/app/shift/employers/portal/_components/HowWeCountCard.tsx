@@ -1,6 +1,7 @@
 // No 'use client': HOW_WE_COUNT is also printed by the report page on the
 // server. The card itself only renders Card.
 import { Card, CardHead, CardBody } from '@/components/employer/Card'
+import { ACTIVE_TRIP_DEF, CARPOOL_NOTE, SHIFT_RATE_DEF } from '@/lib/employer/definitions'
 
 export type HowWeCountItem = { title: string; body: string }
 
@@ -20,7 +21,11 @@ export const HOW_WE_COUNT: HowWeCountItem[] = [
   },
   {
     title: 'Shift Rate',
-    body: 'The share of recorded trips made without driving alone: walking, biking, scooter, transit or a carpool. A carpool counts toward Shift Rate because nobody drove alone; it is not an active trip, so it stays out of active trips and active miles.',
+    body: `${SHIFT_RATE_DEF} ${CARPOOL_NOTE}`,
+  },
+  {
+    title: 'Active trips',
+    body: ACTIVE_TRIP_DEF,
   },
   {
     title: 'Drive-alone share',

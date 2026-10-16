@@ -837,8 +837,8 @@ export default function AdvisorFlow({
                     {joinLink && group ? (
                       <>
                         <a href={joinLink} target="_blank" rel="noopener" onClick={() => track('advisor_app_cta_clicked', { has_invite_code: true })} className="font-semibold text-[#2D6A4F]">Join {group.name} in the Shift app</a>
-                        {' '}(free) with code{' '}
-                        <button type="button" onClick={copyCode} aria-label="Copy the team code" className="inline-flex items-center gap-1 rounded border border-[rgba(25,26,46,0.15)] bg-[#FAFBF8] px-1.5 py-px font-mono text-[0.78rem] font-bold tracking-wide text-[#191A2E]">
+                        {' '}(free) with invite code{' '}
+                        <button type="button" onClick={copyCode} aria-label="Copy the invite code" className="inline-flex items-center gap-1 rounded border border-[rgba(25,26,46,0.15)] bg-[#FAFBF8] px-1.5 py-px font-mono text-[0.78rem] font-bold tracking-wide text-[#191A2E]">
                           {group.invite_code}
                           {codeCopied ? <Check size={12} weight="bold" className="text-[#2D6A4F]" aria-hidden /> : <Copy size={12} weight="bold" aria-hidden />}
                         </button>

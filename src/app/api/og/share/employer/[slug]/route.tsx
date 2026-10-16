@@ -209,7 +209,7 @@ export async function GET(
             }}
           >
             <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>
-              Team code
+              Invite code
             </span>
             <span
               style={{

@@ -20,6 +20,7 @@ import {
   type GoalType,
 } from '@/lib/employer/goal-pace'
 import type { DashboardData, EmployerMember, Group } from '../_lib/portal-types'
+import { ACTIVE_TRIP_DEF } from '@/lib/employer/definitions'
 
 const PORTAL = '/shift/employers/portal'
 
@@ -266,7 +267,7 @@ function proxyFigure(
     const pct = Math.round((active / members.length) * 100)
     return {
       figure: `${active} of ${members.length} people who joined logged an active trip (${pct}%)`,
-      caption: 'Last 30 days. An active trip is one on foot, by bike or scooter, or by transit.',
+      caption: `Last 30 days. ${ACTIVE_TRIP_DEF}`,
     }
   }
   if (type === 'benefit_uptake') {

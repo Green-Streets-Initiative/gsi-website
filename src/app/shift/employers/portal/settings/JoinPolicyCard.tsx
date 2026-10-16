@@ -144,7 +144,7 @@ export default function JoinPolicyCard({
               return (
                 <label
                   key={opt.value}
-                  className={`flex cursor-pointer items-start gap-3 rounded-[12px] border px-4 py-3 transition-colors ${
+                  className={`flex cursor-pointer items-start gap-3 rounded-[12px] border px-4 py-3 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent ${
                     selected ? 'border-accent bg-accent-softer' : 'border-line bg-surface hover:bg-surface-2'
                   } ${blocked || !canManage ? 'cursor-default' : ''} ${blocked ? 'border-dashed bg-surface-2' : ''}`}
                 >

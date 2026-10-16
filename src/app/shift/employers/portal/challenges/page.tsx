@@ -212,7 +212,7 @@ export default function ChallengesPage() {
     accessActive && form.name.trim() && form.starts_at && form.ends_at && !dateError && !contactError
   )
 
-  const openEditor = (c?: Challenge, source: 'button' | 'empty_state' | 'year_plan' | 'edit' | 'draft_row' = 'button') => {
+  const openEditor = (c?: Challenge, source: 'button' | 'empty_state' | 'year_plan' | 'edit' | 'draft_row' | 'shortcut' = 'button') => {
     // A year-plan launch sets launchOption right after this call; every
     // other way in starts clean so a past launch can't leak into Edit or
     // the next Create.
@@ -282,6 +282,23 @@ export default function ChallengesPage() {
     }
     setBuilderOpen(true)
   }
+
+  // Arriving with ?new=1 (Home's "Create a challenge", the search palette,
+  // the goal card's "Start a challenge"): open the builder, then drop the
+  // parameter so a reload doesn't open it again (UX-5). Waits for the
+  // portal to load so the contact fields fill from the signed-in admin.
+  const newFromUrl = useRef(false)
+  useEffect(() => {
+    if (loading || !group || newFromUrl.current) return
+    newFromUrl.current = true
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('new') !== '1') return
+    if (canManage && accessActive) openEditor(undefined, 'shortcut')
+    params.delete('new')
+    const qs = params.toString()
+    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, [loading, group, canManage, accessActive])
 
   // A started challenge with a live guaranteed reward keeps its start date
   // and counting rules (the database refuses changes); the form says so.

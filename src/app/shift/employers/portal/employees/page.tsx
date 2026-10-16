@@ -17,6 +17,7 @@ import {
   Check,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useModalFocus } from '@/lib/employer/use-modal-focus'
 import { usePortal } from '../_lib/portal-context'
 import { formatDateShort } from '../_lib/portal-utils'
 import PortalPageHead from '../_components/PortalPageHead'
@@ -574,9 +575,6 @@ export default function EmployeesPage() {
   )
 }
 
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-
 function EmployeeDrawer({
   member,
   rangePhrase,
@@ -606,39 +604,9 @@ function EmployeeDrawer({
 
   const panelRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
-  const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
-
   // Focus moves into the drawer, Tab stays inside it, Escape closes it,
   // and focus returns to whatever opened it. Runs once per open.
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null
-    closeRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onCloseRef.current()
-        return
-      }
-      if (e.key !== 'Tab' || !panelRef.current) return
-      const items = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE))
-      if (items.length === 0) return
-      const first = items[0]
-      const last = items[items.length - 1]
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
-    }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      opener?.focus?.()
-    }
-  }, [])
+  useModalFocus(panelRef, { onClose, initialFocus: () => closeRef.current })
 
   // "Last nudged" when the database lets us read it; otherwise it is left out.
   useEffect(() => {

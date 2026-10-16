@@ -38,6 +38,7 @@ export default function StageStrip({ stages, open = false }: {
   return (
     <div
       className={`flex flex-wrap justify-center border-t border-dashed border-[rgba(25,26,46,0.12)] px-3 py-3 min-[560px]:grid min-[560px]:grid-cols-[repeat(6,minmax(0,1fr))] ${open ? 'bg-[#E7F0EA]' : ''}`}
+      role="group"
       aria-label="The trip, stage by stage"
     >
       {stages.map((s) => {
@@ -45,11 +46,13 @@ export default function StageStrip({ stages, open = false }: {
         return (
           <div
             key={s.label}
-            className={`flex min-w-0 basis-1/3 flex-col items-center px-1 text-center min-[560px]:basis-auto ${s.muted ? 'opacity-45' : ''}`}
+            className="flex min-w-0 basis-1/3 flex-col items-center px-1 text-center min-[560px]:basis-auto"
             title={`${s.label}: ${s.fact}`}
           >
-            <I size={18} weight="regular" className="mb-1 shrink-0 text-[#2D6A4F]" aria-hidden />
-            <span className="text-[0.66rem] font-bold leading-[1.3] text-[#191A2E]">{s.label}</span>
+            {/* A muted stage fades its icon and softens its label; the text
+                itself stays at full contrast (portal review A11Y-10). */}
+            <I size={18} weight="regular" className={`mb-1 shrink-0 text-[#2D6A4F] ${s.muted ? 'opacity-45' : ''}`} aria-hidden />
+            <span className={`text-[0.66rem] font-bold leading-[1.3] ${s.muted ? 'text-[#4A4D68]' : 'text-[#191A2E]'}`}>{s.label}</span>
             <span className="min-h-[calc(2*1.3*0.66rem)] text-[0.66rem] leading-[1.3] text-[#4A4D68]">{s.fact}</span>
           </div>
         )

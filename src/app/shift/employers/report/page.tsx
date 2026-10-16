@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Metadata } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import PrintButton from '@/app/events/shift-your-summer/flyer/PrintButton'
@@ -45,7 +46,21 @@ function requestTime(): number {
 
 const TONE_CLASS = { good: 'text-forest', bad: 'text-[#B3361F]', flat: 'text-ink-soft' } as const
 
-function Notice({ title, body }: { title: string; body: string }) {
+/**
+ * What to do about a dead link, for the person who made it and for a manager
+ * it was forwarded to, who has no portal (UX-P6).
+ */
+const FRESH_LINK = (
+  <>
+    If someone sent you this link, ask them for the PDF. If you manage your workplace on Shift,{' '}
+    <a href="/shift/employers/login" className="font-semibold text-navy underline underline-offset-2">
+      sign in to your portal
+    </a>{' '}
+    and choose Print or save as PDF on the Impact page.
+  </>
+)
+
+function Notice({ title, body }: { title: string; body: ReactNode }) {
   return (
     <main className="street flex min-h-screen items-center justify-center bg-cream px-6 text-navy" style={{ fontFamily: 'var(--font-gsi)' }}>
       <div className="max-w-[480px] text-center">
@@ -70,7 +85,7 @@ export default async function EmployerReportPage({
     return (
       <Notice
         title="This report link isn't complete"
-        body="Open the Impact page in your workplace portal and choose Print or save as PDF to get a fresh link."
+        body={FRESH_LINK}
       />
     )
   }
@@ -81,7 +96,7 @@ export default async function EmployerReportPage({
     return (
       <Notice
         title={verified.error === 'expired' ? 'This report link has expired' : "This report link isn't valid"}
-        body="Report links work for one hour. Open the Impact page in your workplace portal and choose Print or save as PDF to get a fresh one."
+        body={<>Report links work for one hour. {FRESH_LINK}</>}
       />
     )
   }
@@ -89,7 +104,7 @@ export default async function EmployerReportPage({
     return (
       <Notice
         title="This report link isn't valid"
-        body="The link was changed after it was made. Open the Impact page in your workplace portal and choose Print or save as PDF to get a fresh one."
+        body={<>The link was changed after it was made. {FRESH_LINK}</>}
       />
     )
   }
@@ -245,7 +260,7 @@ export default async function EmployerReportPage({
         <div className="mx-auto flex max-w-[8.5in] flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm font-bold">Impact report</p>
-            <p className="text-xs text-white/85">Use Cmd/Ctrl-P or the button to print or save as PDF. This link works for one hour.</p>
+            <p className="text-xs text-white/85">Save it as a PDF to share it. This page&apos;s link stops working after one hour.</p>
           </div>
           <PrintButton />
         </div>

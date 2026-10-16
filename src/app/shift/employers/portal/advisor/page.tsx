@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useId } from 'react'
 import {
   Copy,
   ExternalLink,
@@ -95,6 +95,8 @@ export default function AdvisorPage() {
   // Admins, managers and GSI staff edit and publish; viewers read (S3).
   // The database refuses a viewer's write too; this keeps the form honest.
   const canEdit = canEditAdvisor
+  // Label/field ids (portal review A11Y-3).
+  const fid = useId()
 
   const [form, setForm] = useState<EmployerBenefits>({})
   const [dirty, setDirty] = useState(false)
@@ -495,12 +497,13 @@ export default function AdvisorPage() {
             <div className="grid gap-4 px-6 py-5">
               <div className="grid grid-cols-[160px_1fr] gap-4">
                 <div>
-                  <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                  <label htmlFor={`${fid}-subsidy`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
                     Monthly transit subsidy
                   </label>
-                  <div className="flex items-center rounded-[10px] border border-line bg-surface">
-                    <span className="pl-3 text-[14px] text-ink-tertiary">$</span>
+                  <div className="flex items-center rounded-[10px] border border-line bg-surface focus-within:border-accent focus-within:ring-2 focus-within:ring-accent-soft">
+                    <span aria-hidden="true" className="pl-3 text-[14px] text-ink-tertiary">$</span>
                     <input
+                      id={`${fid}-subsidy`}
                       type="number"
                       className="w-full border-0 bg-transparent px-2 py-2.5 text-[14px] text-ink outline-none"
                       value={form.transit_subsidy_monthly ?? ''}
@@ -515,10 +518,11 @@ export default function AdvisorPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                  <label htmlFor={`${fid}-subsidy-type`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
                     Subsidy type
                   </label>
                   <select
+                    id={`${fid}-subsidy-type`}
                     className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
                     value={form.transit_subsidy_type ?? 'pre_tax'}
                     onChange={(e) =>
@@ -539,10 +543,11 @@ export default function AdvisorPage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                <label htmlFor={`${fid}-subsidy-label`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
                   Subsidy display label
                 </label>
                 <input
+                  id={`${fid}-subsidy-label`}
                   className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
                   placeholder="Shown to employees in plain language"
                   value={form.transit_subsidy_label ?? ''}
@@ -575,6 +580,7 @@ export default function AdvisorPage() {
                   />
                   {form[b.key as keyof EmployerBenefits] && b.noteKey && (
                     <input
+                      aria-label={`${b.title}: details`}
                       className="ml-[52px] w-[calc(100%-52px)] rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
                       placeholder={b.placeholder}
                       value={
@@ -627,6 +633,7 @@ export default function AdvisorPage() {
                   >
                     <div className="grid grid-cols-2 gap-2.5">
                       <input
+                        aria-label={`Shuttle ${i + 1} route name`}
                         className="rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
                         placeholder="Route name (e.g. North Station shuttle)"
                         value={route.name}
@@ -639,6 +646,7 @@ export default function AdvisorPage() {
                         }
                       />
                       <input
+                        aria-label={`Shuttle ${i + 1} departs from`}
                         className="rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
                         placeholder="Departs from (e.g. North Station)"
                         value={route.from_stop}
@@ -652,6 +660,7 @@ export default function AdvisorPage() {
                       />
                     </div>
                     <input
+                      aria-label={`Shuttle ${i + 1} schedule`}
                       className="rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
                       placeholder="Schedule (e.g. Every 20 min, 7–10am and 4–7pm)"
                       value={route.schedule}
@@ -665,6 +674,7 @@ export default function AdvisorPage() {
                     />
                     <div className="flex items-center gap-2.5">
                       <input
+                        aria-label={`Shuttle ${i + 1} details`}
                         className="flex-1 rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
                         placeholder="Details (optional — boarding notes, badge required, etc.)"
                         value={route.details}
@@ -685,6 +695,7 @@ export default function AdvisorPage() {
                             ),
                           })
                         }
+                        aria-label={`Remove shuttle ${i + 1}`}
                         className="shrink-0 text-[12.5px] font-semibold text-ep-danger hover:underline"
                       >
                         Remove
@@ -702,10 +713,11 @@ export default function AdvisorPage() {
             <div className="grid gap-4 px-6 py-5">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                  <label htmlFor={`${fid}-hr-name`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
                     HR contact name
                   </label>
                   <input
+                    id={`${fid}-hr-name`}
                     className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
                     value={form.hr_contact_name ?? ''}
                     onChange={(e) =>
@@ -714,14 +726,15 @@ export default function AdvisorPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                  <label htmlFor={`${fid}-hr-email`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
                     HR contact email
                   </label>
-                  <div className="flex items-center rounded-[10px] border border-line bg-surface">
+                  <div className="flex items-center rounded-[10px] border border-line bg-surface focus-within:border-accent focus-within:ring-2 focus-within:ring-accent-soft">
                     <span className="pl-3 text-ink-tertiary">
                       <Mail size={16} strokeWidth={1.75} />
                     </span>
                     <input
+                      id={`${fid}-hr-email`}
                       className="w-full border-0 bg-transparent px-2 py-2.5 text-[14px] text-ink outline-none"
                       value={form.hr_contact_email ?? ''}
                       onChange={(e) =>
@@ -732,11 +745,12 @@ export default function AdvisorPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                <label htmlFor={`${fid}-other`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
                   Other benefits{' '}
                   <span className="font-normal text-ink-tertiary">· optional</span>
                 </label>
                 <textarea
+                  id={`${fid}-other`}
                   className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
                   rows={3}
                   value={form.other_benefits ?? ''}

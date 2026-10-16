@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { X, ChevronDown, Mail, ExternalLink } from 'lucide-react'
 import { MANAGER_ROLE_ENABLED } from '../_lib/portal-roles'
+import { CARPOOL_NOTE, SHIFT_RATE_DEF } from '@/lib/employer/definitions'
+import { useModalFocus } from '@/lib/employer/use-modal-focus'
 
 /** `body` as a list renders one paragraph each. */
 type HelpItem = { title: string; body: string | string[] }
@@ -42,11 +44,11 @@ const HELP_CONTENT: Record<string, HelpItem[]> = {
   dashboard: [
     {
       title: 'What the numbers on Home mean',
-      body: 'Home shows the last 30 days of your team\'s commuting: total trips, active trips (anything but driving alone), miles and the share of driving avoided. They update on their own as employees log trips in the Shift app.',
+      body: 'Home shows the last 30 days of your team\'s commuting: total trips, active trips (walks, bike and scooter rides, and transit trips), miles and Shift Rate. They update on their own as employees log trips in the Shift app.',
     },
     {
       title: 'How the shift rate is worked out',
-      body: 'Shift Rate is the share of your team\'s trips made without driving alone: walking, biking, rolling, transit or a carpool. A higher Shift Rate means your team is choosing those options more often.',
+      body: `Shift Rate is ${SHIFT_RATE_DEF.charAt(0).toLowerCase()}${SHIFT_RATE_DEF.slice(1)} ${CARPOOL_NOTE} A higher Shift Rate means your team is choosing those options more often.`,
     },
   ],
   setup: [
@@ -186,20 +188,15 @@ export default function HelpDrawer({ onClose, topic }: { onClose: () => void; to
   const routeKey = getRouteKey(pathname)
   const items = HELP_CONTENT[routeKey] || HELP_CONTENT.dashboard
   const closeRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    closeRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  const panelRef = useRef<HTMLElement>(null)
+  // Tab stays in the drawer; focus returns to the Help button on close.
+  useModalFocus(panelRef, { onClose, initialFocus: () => closeRef.current })
 
   return (
     <>
       <div className="fixed inset-0 z-40 bg-ink/30 transition-opacity" onClick={onClose} aria-hidden />
       <aside
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label="Help"

@@ -122,7 +122,7 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
           <button
             type="button"
             onClick={() => setActivePanel((p) => (p === 'search' ? null : 'search'))}
-            className="relative hidden h-[38px] w-[220px] items-center gap-2 rounded-full border-0 bg-surface-2 pl-9 pr-12 text-left text-[13px] text-ink-tertiary outline-none transition-shadow hover:ring-1 hover:ring-line sm:flex lg:w-[280px]"
+            className="relative hidden h-[38px] w-[220px] items-center gap-2 rounded-full border-0 bg-surface-2 pl-9 pr-12 text-left text-[13px] text-ink-tertiary outline-none transition-shadow hover:ring-1 hover:ring-line focus-visible:ring-2 focus-visible:ring-accent sm:flex lg:w-[280px]"
           >
             <Search
               size={16}

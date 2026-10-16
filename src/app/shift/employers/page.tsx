@@ -21,7 +21,7 @@ export const revalidate = 3600
 const CHALLENGE_STEPS = [
   {
     title: 'Tell us you are in',
-    body: 'A short note is enough. We send back a free private team code and an invite you can forward to your staff.',
+    body: 'A short note is enough. We send back a free private invite code and a note you can forward to your staff.',
   },
   {
     title: 'Your team makes a trip',
@@ -78,7 +78,7 @@ const employerFaqItems = [
   {
     question: 'We\'re interested. How do we get started?',
     answer:
-      'Use the form at the bottom of this page. We reply within two business days with a free team code for the next Walk/Ride Day, or set up a 20-minute call about your goals, team size and timeline. A paid group is ready within a week; plan two to four weeks to tell staff before your launch day so people have time to join.',
+      'Use the form at the bottom of this page. We reply within two business days with a free invite code for the next Walk/Ride Day, or set up a 20-minute call about your goals, team size and timeline. A paid group is ready within a week; plan two to four weeks to tell staff before your launch day so people have time to join.',
   },
 ]
 

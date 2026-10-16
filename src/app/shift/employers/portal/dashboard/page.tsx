@@ -226,10 +226,10 @@ export default function DashboardPage() {
   // funds only for admins whose plan has a rewards balance.
   const canAddFunds = (isAdmin || isGsiAdmin) && tierAtLeast('standard')
   const quickActions: { label: string; icon: typeof Trophy; href: string }[] = [
-    { label: 'Create a challenge', icon: Trophy, href: `${PORTAL}/challenges?new=1` },
+    ...(portal.canManageChallenges ? [{ label: 'Create a challenge', icon: Trophy, href: `${PORTAL}/challenges?new=1` }] : []),
     { label: 'Invite employees', icon: UserPlus, href: `${PORTAL}/employees?invite=1` },
     ...(canAddFunds ? [{ label: 'Add funds', icon: Wallet, href: `${PORTAL}/billing` }] : []),
-    { label: 'Print impact report', icon: Printer, href: `${PORTAL}/impact` },
+    { label: 'Impact report', icon: Printer, href: `${PORTAL}/impact` },
   ]
 
   // The goal card reads 30-day figures; while another page's window is still

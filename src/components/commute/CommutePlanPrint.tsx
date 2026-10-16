@@ -175,7 +175,7 @@ export default function CommutePlanPrint({
     steps.push(`Try it with others on ${formatEventDate(event.event_date)}: ${event.content_items.title}${event.location_name ? `, ${event.location_name}` : ''}.`)
   }
   if (group.invite_code) {
-    steps.push(`Join ${group.name} on Shift with team code ${group.invite_code} so every trip counts toward the team challenge.`)
+    steps.push(`Join ${group.name} on Shift with invite code ${group.invite_code} so every trip counts toward the team challenge.`)
   }
   const firstWeek = steps.slice(0, 3)
 
@@ -328,7 +328,7 @@ export default function CommutePlanPrint({
             {group.invite_code && joinLink ? (
               <>
                 <p className="mt-0.5">
-                  Team code <span className="font-mono font-bold tracking-wide">{group.invite_code}</span>
+                  Invite code <span className="font-mono font-bold tracking-wide">{group.invite_code}</span>
                 </p>
                 <p className="text-[#4A4D68]">{joinLink.replace(/^https?:\/\//, '')}</p>
               </>

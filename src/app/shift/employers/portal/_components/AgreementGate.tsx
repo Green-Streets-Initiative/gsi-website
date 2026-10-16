@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState, type ReactNode } from 'react'
+import { useCallback, useId, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
 import { Card } from '@/components/employer/Card'
@@ -39,6 +39,26 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
     check()
     el.addEventListener('scroll', check, { passive: true })
   }, [])
+
+  // Also counts as read once the end of the terms has been in view, so a
+  // keyboard or screen-reader user who never fires a scroll event inside
+  // the box isn't locked out (portal review A11Y-9).
+  const endRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setScrolledToEnd(true)
+          io.disconnect()
+        }
+      },
+      { root: el.parentElement },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  const fid = useId()
 
   if (!agreementGated) return <>{children}</>
 
@@ -117,7 +137,13 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
           </p>
         </div>
 
-        <div ref={termsRef} className="max-h-[46vh] overflow-y-auto px-5 py-5 sm:px-7">
+        <div
+          ref={termsRef}
+          tabIndex={0}
+          role="region"
+          aria-label="Agreement terms"
+          className="max-h-[46vh] overflow-y-auto px-5 py-5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent sm:px-7"
+        >
           <p className="text-[13.5px] leading-relaxed text-ink-muted">
             {AGREEMENT_PREAMBLE}
           </p>
@@ -129,25 +155,30 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
               </p>
             </div>
           ))}
+          <div ref={endRef} aria-hidden="true" className="h-px" />
         </div>
 
         <div className="border-t border-line bg-surface-2 px-5 py-5 sm:px-7">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+              <label htmlFor={`${fid}-name`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
                 Your full name
               </label>
               <input
+                id={`${fid}-name`}
+                autoComplete="name"
                 className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+              <label htmlFor={`${fid}-title`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
                 Your title
               </label>
               <input
+                id={`${fid}-title`}
+                autoComplete="organization-title"
                 className="w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
                 placeholder="e.g. Director of Sustainability"
                 value={title}
@@ -174,6 +205,7 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
             <Button
               variant="primary"
               onClick={accept}
+              aria-describedby={!scrolledToEnd ? `${fid}-hint` : undefined}
               disabled={
                 submitting || !checked || !name.trim() || !title.trim() || !scrolledToEnd
               }
@@ -181,7 +213,7 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
               {submitting ? 'Recording…' : 'Accept and continue'}
             </Button>
             {!scrolledToEnd && (
-              <span className="text-[12.5px] text-ink-tertiary">
+              <span id={`${fid}-hint`} className="text-[12.5px] text-ink-tertiary">
                 Scroll through the agreement to enable Accept
               </span>
             )}

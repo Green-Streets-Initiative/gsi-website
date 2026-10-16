@@ -12,7 +12,7 @@ type Props = {
   inviteCode: string
   /** `light` is the cream campaign pages; `dark` (default) keeps the share pages byte-identical. */
   tone?: Tone
-  /** Label over the code: "Team code" on the workplace share page, "Campaign code" on a school page. */
+  /** Label over the code: "Invite code" on the workplace share page, "Campaign code" on a school page. */
   codeLabel?: string
 }
 
@@ -48,7 +48,7 @@ export default function CorporateShareKit({
   emailBody,
   inviteCode,
   tone = 'dark',
-  codeLabel = 'Team code',
+  codeLabel = 'Invite code',
 }: Props) {
   const [copiedField, setCopiedField] = useState<'link' | 'blurb' | 'code' | null>(null)
   const t = THEME[tone]

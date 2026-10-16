@@ -28,6 +28,8 @@ type Props = {
   onPlaceSelected?: (place: PlaceData) => void
   onAddressParsed?: (parsed: ParsedAddress) => void
   label?: string | null
+  /** Keep the label for screen readers but don't show it (the row already says what it is). */
+  hideLabel?: boolean
   variant?: 'light' | 'dark'
   placeholder?: string
   /** Focus the box on mount (a page opened specifically to type here). */
@@ -41,6 +43,7 @@ export default function AddressAutocomplete({
   onPlaceSelected,
   onAddressParsed,
   label,
+  hideLabel = false,
   variant = 'light',
   placeholder = 'Start typing an address…',
   autoFocus = false,
@@ -211,7 +214,7 @@ export default function AddressAutocomplete({
   return (
     <div ref={containerRef} className="relative">
       {label !== null && (
-        <label htmlFor={inputId} className={`mb-1.5 block text-sm font-medium ${isDark ? 'text-white' : 'text-[#191A2E]'}`}>
+        <label htmlFor={inputId} className={hideLabel ? 'sr-only' : `mb-1.5 block text-sm font-medium ${isDark ? 'text-white' : 'text-[#191A2E]'}`}>
           {label || <>Address <span aria-hidden="true" className={isDark ? 'text-lime' : 'text-[#E05252]'}>*</span></>}
         </label>
       )}

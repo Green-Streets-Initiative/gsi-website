@@ -88,12 +88,20 @@ function delta(current: number, prior: number): string {
   return '— same'
 }
 
+/** A rate's change in percentage points, as the portal shows it: 20% to 25% is "▲ 5 pts", not "▲ 25%" (UX-E2). */
+function deltaPts(current: number, prior: number): string {
+  const pts = Math.round(current - prior)
+  if (pts > 0) return `<span style="color:#2D6A4F;">&#9650; ${pts} pts</span>`
+  if (pts < 0) return `<span style="color:#C0392B;">&#9660; ${Math.abs(pts)} pts</span>`
+  return '— same'
+}
+
 function statCell(label: string, value: string, change: string): string {
   return `
     <td style="padding:12px 8px;text-align:center;vertical-align:top;">
       <div style="font-size:24px;font-weight:700;color:#191A2E;">${value}</div>
       <div style="font-size:12px;color:#5A5C6E;margin-top:4px;">${label}</div>
-      <div style="font-size:11px;margin-top:4px;">${change}</div>
+      <div style="font-size:12px;color:#4A4D68;margin-top:4px;">${change}</div>
     </td>`
 }
 
@@ -277,8 +285,8 @@ function buildDigestHtml(opts: {
   const milestoneSection = showMilestone && milestone
     ? `<tr><td style="padding:0 32px 24px;">
         <div style="background:#FFF8E1;border-radius:10px;padding:16px 20px;border:1px solid #FFE082;">
-          <span style="font-size:14px;color:#F57F17;font-weight:600;">&#127942; Your team is now ${milestone} strong!</span>
-          <div style="font-size:13px;color:#795548;margin-top:4px;">${milestone} teammates have joined Shift. Keep the momentum going.</div>
+          <span style="font-size:14px;color:#191A2E;font-weight:600;">Your team is now ${milestone} strong!</span>
+          <div style="font-size:13px;color:#4A4D68;margin-top:4px;">${milestone} teammates have joined Shift. Keep the momentum going.</div>
         </div>
       </td></tr>`
     : ''
@@ -323,7 +331,7 @@ function buildDigestHtml(opts: {
             co2Kg(thisWeek) == null ? '—' : formatCo2(co2Kg(thisWeek)!),
             co2Kg(thisWeek) == null || priorWeek.co2 == null ? '—' : delta(co2Kg(thisWeek)!, priorWeek.co2),
           )}
-          ${statCell('Shift Rate', Math.round(thisWeek.shift_rate_trip_pct) + '%', delta(thisWeek.shift_rate_trip_pct, priorWeek.shift_rate))}
+          ${statCell('Shift Rate', Math.round(thisWeek.shift_rate_trip_pct) + '%', deltaPts(thisWeek.shift_rate_trip_pct, priorWeek.shift_rate))}
         </tr>
       </table>
     </td>
@@ -349,11 +357,11 @@ function buildDigestHtml(opts: {
   <!-- Footer -->
   <tr>
     <td style="background:#f9fafb;padding:16px 32px;text-align:center;">
-      <p style="margin:0;font-size:11px;color:#9CA3AF;">
-        <a href="https://gogreenstreets.org" style="color:#9CA3AF;text-decoration:none;">Green Streets Initiative</a> &middot; Shift Employer Platform
+      <p style="margin:0;font-size:13px;color:#4A4D68;">
+        <a href="https://gogreenstreets.org" style="color:#4A4D68;text-decoration:none;">Green Streets Initiative</a> &middot; Shift Employer Platform
       </p>
-      <p style="margin:4px 0 0;font-size:11px;color:#9CA3AF;">
-        Manage your notification preferences in <a href="${PORTAL_URL}/settings" style="color:#9CA3AF;">Settings</a>.
+      <p style="margin:4px 0 0;font-size:13px;color:#4A4D68;">
+        Manage your notification preferences in <a href="${PORTAL_URL}/settings" style="color:#4A4D68;">Settings</a>.
       </p>
     </td>
   </tr>
@@ -388,7 +396,7 @@ function buildLaunchProgressHtml(opts: {
 
   const steps = [
     inviteCode
-      ? `Share your join code <span style="font-family:monospace;font-weight:700;">${escapeHtml(inviteCode)}</span> — the <a href="${PORTAL_URL}/share-kit" style="color:#2D6A4F;">Share Kit</a> has a QR poster, email templates, and a printable flyer.`
+      ? `Share your invite code <span style="font-family:monospace;font-weight:700;">${escapeHtml(inviteCode)}</span> — the <a href="${PORTAL_URL}/share-kit" style="color:#2D6A4F;">Share Kit</a> has a QR poster, email templates, and a printable flyer.`
       : `Open the <a href="${PORTAL_URL}/share-kit" style="color:#2D6A4F;">Share Kit</a> for a QR poster, email templates, and a printable flyer.`,
     `Ask a leader (not HR) to send the announcement email — it's the single biggest driver of sign-ups.`,
     `Line up a launch challenge with weekly prize drawings in <a href="${PORTAL_URL}/challenges" style="color:#2D6A4F;">Challenges</a>.`,
@@ -450,11 +458,11 @@ function buildLaunchProgressHtml(opts: {
   </tr>
   <tr>
     <td style="background:#f9fafb;padding:16px 32px;text-align:center;">
-      <p style="margin:0;font-size:11px;color:#9CA3AF;">
-        <a href="https://gogreenstreets.org" style="color:#9CA3AF;text-decoration:none;">Green Streets Initiative</a> &middot; Shift Employer Platform
+      <p style="margin:0;font-size:13px;color:#4A4D68;">
+        <a href="https://gogreenstreets.org" style="color:#4A4D68;text-decoration:none;">Green Streets Initiative</a> &middot; Shift Employer Platform
       </p>
-      <p style="margin:4px 0 0;font-size:11px;color:#9CA3AF;">
-        Manage your notification preferences in <a href="${PORTAL_URL}/settings" style="color:#9CA3AF;">Settings</a>.
+      <p style="margin:4px 0 0;font-size:13px;color:#4A4D68;">
+        Manage your notification preferences in <a href="${PORTAL_URL}/settings" style="color:#4A4D68;">Settings</a>.
       </p>
     </td>
   </tr>
@@ -512,8 +520,8 @@ function buildRenewalReminderHtml(opts: {
   </tr>
   <tr>
     <td style="background:#f9fafb;padding:16px 32px;text-align:center;">
-      <p style="margin:0;font-size:11px;color:#9CA3AF;">
-        <a href="https://gogreenstreets.org" style="color:#9CA3AF;text-decoration:none;">Green Streets Initiative</a> &middot; Shift Employer Platform &middot; info@gogreenstreets.org
+      <p style="margin:0;font-size:13px;color:#4A4D68;">
+        <a href="https://gogreenstreets.org" style="color:#4A4D68;text-decoration:none;">Green Streets Initiative</a> &middot; Shift Employer Platform &middot; info@gogreenstreets.org
       </p>
     </td>
   </tr>

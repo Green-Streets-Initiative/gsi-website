@@ -1,7 +1,8 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
 import Button from './Button'
+import { useModalFocus } from '@/lib/employer/use-modal-focus'
 
 /**
  * The portal's one confirmation dialog, replacing window.confirm / prompt
@@ -47,17 +48,16 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     setPending(null)
   }
 
-  useEffect(() => {
-    if (!pending) return
-    const el = pending.input ? inputRef.current : panelRef.current?.querySelector<HTMLButtonElement>('[data-confirm]')
-    el?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close(pending.input ? null : false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pending])
+  // Focus stays in the dialog and returns to the button that asked. A
+  // destructive confirm starts on Cancel, so Enter right away is safe.
+  useModalFocus(panelRef, {
+    open: !!pending,
+    onClose: () => close(pending?.input ? null : false),
+    initialFocus: () =>
+      pending?.input
+        ? inputRef.current
+        : panelRef.current?.querySelector<HTMLButtonElement>(pending?.tone === 'danger' ? '[data-cancel]' : '[data-confirm]'),
+  })
 
   return (
     <ConfirmContext.Provider value={ask}>
@@ -71,6 +71,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="confirm-title"
+            aria-describedby={pending.body ? 'confirm-body' : undefined}
             ref={panelRef}
             className="w-full max-w-[440px] rounded-[16px] bg-surface p-6 shadow-lg"
             onClick={(e) => e.stopPropagation()}
@@ -78,7 +79,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             <h2 id="confirm-title" className="text-[17px] font-bold text-ink">
               {pending.title}
             </h2>
-            {pending.body && <div className="mt-2 text-[14px] leading-[1.55] text-ink-muted">{pending.body}</div>}
+            {pending.body && (
+              <div id="confirm-body" className="mt-2 text-[14px] leading-[1.55] text-ink-muted">
+                {pending.body}
+              </div>
+            )}
             {pending.input && (
               <label className="mt-4 block">
                 <span className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">{pending.input.label}</span>
@@ -97,7 +102,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               </label>
             )}
             <div className="mt-5 flex flex-wrap justify-end gap-2">
-              <Button variant="ghost" onClick={() => close(pending.input ? null : false)}>
+              <Button data-cancel variant="ghost" onClick={() => close(pending.input ? null : false)}>
                 {pending.cancelLabel ?? 'Cancel'}
               </Button>
               <Button
