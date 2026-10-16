@@ -266,6 +266,26 @@
       "month_end_math": "pace ~90 impr/day -> ~2,800 impr in October -> ~140 clicks needed for 5%; 46 more over 16 days (~2.9/day) vs ~6.3/day so far",
       "alerts": ["GOOD NEWS (emailed once): first-ever conversion, cheat_sheet_download via How-to Guides, 1 day after the 10-14 import; campaigns no longer 'Limited: conversion tracking setup is incomplete'"],
       "emailed": true
+    },
+    {
+      "date": "2026-10-16",
+      "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-16",
+      "mtd": { "window": "2026-10-01..2026-10-16", "impressions": 1526, "clicks": 109, "ctr_pct": 7.14, "cost": 721.96, "conversions": 1 },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 1364, "clicks": 105, "conversions": 1 },
+        "Town Walking & Biking": { "impressions": 121, "clicks": 3 },
+        "GSI — Brand": { "impressions": 8, "clicks": 1 },
+        "New Routes — Movers": { "impressions": 27, "clicks": 0 },
+        "Shift App — Massachusetts": { "impressions": 6, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+      },
+      "campaign_status": "all 6 Eligible; Brand 'Eligible (Limited) Limited by search volume' (unchanged). Budgets unchanged ($449.50/day).",
+      "banners": ["Apply for financial products & services certification (since 10-12; no ad limited by policy; do not apply)", "Protect your account from unauthorized activity", "Recommendation card: Add broad match keywords (not applied)"],
+      "ads": { "total": 36, "all_eligible": true, "disapproved_seen": 0, "limited_by_policy": 0, "strength": "28 Average, 6 Good, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known), 0 Pending" },
+      "search_terms": "Top 25 by impressions all How-to Guides / Paying for the T transit lookups (boston public transportation 3/29, boston t 2/16, how to pay for the t in boston 1/14 exact + 1/5, how to take the t in boston 1/12, the t in boston 0/12, boston transit 3/11, what is the t in boston 0/11). Only non-How-to term at 3+ impr: 'boston bike paths' 0/4 (Town, keyword already paused 10-14). Nothing off-target; no negatives proposed. New Routes flat at 27 impr since 10-07 (judge 10-21); Semester still 1 impr (student keywords added 10-14, judge 10-28).",
+      "month_end_math": "pace ~95 impr/day -> ~2,950 impr in October -> ~148 clicks needed for 5%; 39 more over 15 days (~2.6/day) vs ~6.8/day so far",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
