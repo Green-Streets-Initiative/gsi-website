@@ -346,7 +346,8 @@ export default function GuideView({
   const guideSlug = g.slug ?? slug
   const cheatSheet = L === 'en' ? cheatSheets[guideSlug] : undefined
   const quickAnswer = L === 'en' ? quickAnswers[guideSlug] : undefined
-  const heading = searchMeta[guideSlug]?.heading ?? g.title
+  // The search heading is English wording; a translated page keeps its own title.
+  const heading = (L === 'en' ? searchMeta[guideSlug]?.heading : undefined) ?? g.title
   const strip =
     L === 'es'
       ? appStripBySlugEs[guideSlug] ?? appStripDefaultEs
