@@ -50,6 +50,18 @@ show what Green Streets and Shift know that nobody else does.
   trip or part of it (a park-and-ride, a carpool, one day a week).
 - **End with one first step** the reader can take this week ("Try this
   first").
+- **Clear, and the next step is one tap away** (Keith, 2026-10-17: "everything
+  we build should be clear and make it easy to take the next best action").
+  Every time a page asks the reader to do something, the words that ask link
+  to the place that does it: our tool on the page, Nearby, T-Alerts, the
+  agency's own page. No unlinked instructions ("look it up in the trip
+  planner"). Keep "Try this first" to one or two steps, numbered when there
+  are two, and make sure each tool we name actually does what we say (the
+  MBTA trip planner does not show Bluebikes docks; Nearby does).
+- **Linking to a tool on the same page:** write the full URL with the tool's
+  anchor, e.g. `https://www.gogreenstreets.org/guides/<slug>#trip-planner`.
+  The page turns it into a jump; the app's guide reader opens the web page at
+  the tool. Anchors: `#trip-planner`, `#station-parking`, `#closures`.
 - **Statewide by default.** Boston examples plus at least one from elsewhere in
   Massachusetts wherever the question applies.
 

@@ -297,7 +297,7 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
         {section.heading && (
           <h3 className="mt-8 mb-3 font-serif text-[1.25rem] leading-tight text-navy">{section.heading}</h3>
         )}
-        {swap ?? <div dangerouslySetInnerHTML={{ __html: renderMarkdown(section.body) }} />}
+        {swap ?? <div dangerouslySetInnerHTML={{ __html: renderMarkdown(samePageLinks(section.body, guideSlug)) }} />}
         {toolsAfter[guideSlug]?.[section.heading ?? '']?.(guideSlug)}
         {after && cheatSheet && (
           <CheatSheetDownload
@@ -522,6 +522,15 @@ function splitSections(md: string): { heading: string | null; body: string }[] {
   return out
 }
 
+/** Guide text links to a tool on its own page with the full URL
+ *  (https://www.gogreenstreets.org/guides/<slug>#trip-planner), which also works
+ *  from the app's guide reader. On the page itself that becomes "#trip-planner". */
+function samePageLinks(md: string, slug: string): string {
+  return md
+    .split(`https://www.gogreenstreets.org/guides/${slug}#`).join('#')
+    .split(`https://www.gogreenstreets.org/preview/guides/${slug}#`).join('#')
+}
+
 /** Simple markdown to HTML — handles headings, bold, lists, links, paragraphs.
  *  The body is escaped first, so raw HTML in a guide shows as text, and links
  *  only render for https:// and site-relative URLs (seo/answer-pages.md §6). */
@@ -539,6 +548,8 @@ function renderMarkdown(md: string): string {
     // Bold
     .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-navy">$1</strong>')
     // Links
+    // Same-page links to a tool on the guide ("#trip-planner") open in place
+    .replace(/\[([^\]]+)\]\((#[a-z0-9-]+)\)/g, '<a href="$2" class="font-semibold text-forest underline underline-offset-4 hover:opacity-80">$1</a>')
     .replace(/\[([^\]]+)\]\(((?:https:\/\/|\/(?!\/))[^)\s]+)\)/g, '<a href="$2" class="font-semibold text-forest underline underline-offset-4 hover:opacity-80" target="_blank" rel="noopener noreferrer">$1</a>')
     // Numbered and unordered list items
     .replace(/^\d+\. (.+)$/gm, '<li class="ml-5 mb-1.5 list-decimal text-ink-soft">$1</li>')

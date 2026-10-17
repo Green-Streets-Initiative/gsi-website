@@ -106,7 +106,8 @@ export default function TransitDisruptions({
 
   return (
     <div
-      className={compact ? 'rounded-[10px] border border-navy/10 bg-white px-4 py-3' : 'my-8 rounded-[14px] border border-navy/15 bg-white p-5 sm:p-6'}
+      id={compact ? undefined : 'closures'}
+      className={compact ? 'rounded-[10px] border border-navy/10 bg-white px-4 py-3' : 'my-8 scroll-mt-24 rounded-[14px] border border-navy/15 bg-white p-5 sm:p-6'}
       aria-live="polite"
     >
       <p className={compact ? 'mb-2 text-[0.8125rem] font-semibold text-forest' : 'mb-3 text-[1.0625rem] font-semibold leading-snug text-navy'}>

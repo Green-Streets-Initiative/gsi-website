@@ -100,4 +100,5 @@ Many schools sell the T pass at 11% off through the [MBTA Semester Pass](https:/
 
 ### Try this first
 
-Look up the T station with parking that's closest to your drive in. Try parking there and riding in one day next week, and compare the cost and time with your usual day.
+1. [Find the T station parking](https://www.gogreenstreets.org/guides/boston-parking-costs#station-parking) closest to where your drive starts.
+2. One day next week, park there and ride in. Compare the cost and time with your usual day.

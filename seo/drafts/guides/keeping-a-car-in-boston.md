@@ -75,7 +75,7 @@ The City of Boston found something similar: a privately owned car is driven abou
 
 1. For two weeks, write down each day you drive and where you went.
 2. Mark the trips under 2 miles. Those are the easiest to walk, bike or take the T.
-3. For the rest, ask how else you could make the trip: the T, a Bluebike, a car share, or a ride with someone.
+3. For the rest, [check how else you could make the trip](https://www.gogreenstreets.org/guides/keeping-a-car-in-boston#trip-planner): the T, a Bluebike, a car share, or a ride with someone.
 
 If only a few trips a month really need a car, sharing or renting will cost much less than keeping one. If most of them do, keeping the car makes sense.
 
@@ -89,4 +89,5 @@ Cancel the registration online with your MyMassGov account, which is free, and s
 
 ### Try this first
 
-Pick one short trip you usually drive, like groceries or the gym, and do it on foot, by bike or by T for the next two weeks. See how often you miss the car.
+1. Pick one short trip you usually drive, like groceries or the gym, and [see how long it takes by T or by bike](https://www.gogreenstreets.org/guides/keeping-a-car-in-boston#trip-planner).
+2. Make that trip without the car for the next two weeks, and see how often you miss it.

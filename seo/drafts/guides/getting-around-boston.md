@@ -82,4 +82,4 @@ Car-share services like Zipcar rent cars by the hour from lots across the city, 
 
 ### Try this first
 
-Before you sign a lease, check the address against the three places you go most: work or school, groceries, and one place you love. See how long each trip takes on foot, by bike and by T.
+Before you sign a lease, [put the address into our trip planner](https://www.gogreenstreets.org/guides/getting-around-boston#trip-planner) with the three places you go most: work or school, groceries, and one place you love. It shows how long each trip takes by T and by bike.

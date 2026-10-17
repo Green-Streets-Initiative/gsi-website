@@ -126,7 +126,7 @@ export default function GuideTripPlanner({
       : '/nearby?plan=1'
 
   return (
-    <div className="my-8 rounded-[14px] border border-navy/15 bg-white p-5 sm:p-6">
+    <div id="trip-planner" className="my-8 scroll-mt-24 rounded-[14px] border border-navy/15 bg-white p-5 sm:p-6">
       <p className="mb-1 text-[1.0625rem] font-semibold leading-snug text-navy">{heading}</p>
       <p className="mb-4 text-[0.9375rem] leading-relaxed text-ink-soft">{intro}</p>
 

@@ -47,7 +47,7 @@ topics: [mbta-basics, planning, bike-share, multimodal]
 related: [mg_bluebikes, mg_subway_vs_bus, mg_transit_planning]
 ```
 
-When the T is late or a line is closed, your best backup is usually a bus that runs near your line, a Bluebike, or the commuter rail. Pick one the night before a planned closure, check the alerts before you leave, and give yourself extra time if you take the shuttle.
+When the T is late or a line is closed, your best backup is usually a bus that runs near your line, a Bluebike, or the commuter rail. Pick one the night before a planned closure, [check the MBTA's alerts](https://www.mbta.com/alerts) before you leave, and give yourself extra time if you take the shuttle.
 
 ### Is the T really less reliable than it used to be?
 
@@ -65,12 +65,12 @@ Among people using Shift who rode the Red Line regularly, driving went from abou
 
 ### What are my backup options?
 
-- **A bus near your line.** For the Red Line, route 77 runs from Arlington Heights to Harvard about every 10 to 15 minutes at rush hour, and route 96 runs from Medford Square to Harvard. The [MBTA trip planner](https://www.mbta.com/trip-planner) shows the bus options for your own trip. A bus ride is {{price:mbta.busSingle}}. Through February 2027, if you switch to the subway within two hours on the same card or phone, you pay only the higher fare.
+- **A bus near your line.** For the Red Line, route 77 runs from Arlington Heights to Harvard about every 10 to 15 minutes at rush hour, and route 96 runs from Medford Square to Harvard. [Our trip planner](https://www.gogreenstreets.org/guides/backup-plans-for-the-t#trip-planner) shows the bus options for your own trip. A bus ride is {{price:mbta.busSingle}}. Through February 2027, if you switch to the subway within two hours on the same card or phone, you pay only the higher fare.
 - **Bluebikes.** Nearly 600 stations in 13 cities and towns. A single ride is {{price:bluebikes.singleRide}} and a day pass is {{price:bluebikes.dayPass}}. Members get 45 minutes per ride on a classic bike, and people who qualify by income can join for {{price:bluebikes.incomeEligibleMonthly}} a month.
 - **The commuter rail.** If you live near a station, it can skip the closed stretch. During some closures the MBTA makes it free on the affected stretch: in July 2026 it was free between Porter and North Station.
 - **The free shuttle.** Shuttles are free and accessible, but slow. In July the MBTA told riders to allow at least 70 minutes from Alewife to Park Street.
 
-Around You in the Shift app shows the next buses and the bikes free at nearby docks.
+[Nearby](https://www.gogreenstreets.org/nearby) on our website, and Around You in the Shift app, show the next buses and the bikes free at the closest Bluebikes docks.
 
 ### Is the Green Line slower than walking?
 
@@ -80,8 +80,11 @@ No, for most trips. On trips of 0.75 to 2 miles, Green Line rides recorded by pe
 
 ### Should I get an e-bike or a scooter?
 
-In Massachusetts, e-bikes that stop helping at 20 mph need no license. You can ride them on roads, in bike lanes and on most paved paths, but not on sidewalks ([MassBike's e-bike guide](https://www.massbike.org/ebikesfaq)). Motorized scooters need a driver's license or learner's permit and a helmet, and can't be ridden between sunset and sunrise ([state law](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). A bill that would update these rules is still being worked out at the State House, so check before you buy. The state's e-bike rebate is closed for 2026.
+In Massachusetts, e-bikes that stop helping at 20 mph need no license. You can ride them on roads, in bike lanes and on most paved paths, but not on sidewalks ([MassBike's e-bike guide](https://www.massbike.org/ebikesfaq)). Motorized scooters need a driver's license or learner's permit and a helmet, and can't be ridden between sunset and sunrise ([state law](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). A bill that would update these rules is still being worked out at the State House. The state's e-bike rebate is closed for 2026.
 
 ### Try this first
 
-Plan your backup tonight. Look up your usual trip in the MBTA trip planner, note one bus and the nearest Bluebikes dock, and sign up for [T-Alerts](https://alerts.mbta.com) for your line.
+Set up your backup now, before you need it.
+
+1. [Plan your usual trip](https://www.gogreenstreets.org/guides/backup-plans-for-the-t#trip-planner). You'll see the bus or train and the bike route, and the map shows live arrivals and the closest Bluebikes docks.
+2. [Sign up for T-Alerts](https://alerts.mbta.com/) for your line, so you hear about a closure before you leave home.
