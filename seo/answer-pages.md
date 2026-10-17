@@ -181,11 +181,21 @@ Each answer page gets a version in the Shift app's languages, Spanish first,
 then Portuguese (Brazil) and Chinese (Simplified). Haitian Creole is a
 candidate once the app supports it.
 
-**Where they live.** `seo/drafts/guides/es/<slug>.md`, same YAML block plus
-`lang: es`, same slug as the English page. Preview at
-`/preview/es/guides/<slug>`; on ship, `/es/guides/<slug>` with hreflang links
-both ways, and the app's guide reader shows the version in the reader's
-language.
+**Where they live.** A draft answer page's translation sits next to it in
+`seo/drafts/guides/<lang>/<slug>.md` (preview `/preview/<lang>/guides/<slug>`).
+A shipped guide's translation is `content/translations/<lang>/<slug>.md`: the
+English block's YAML plus `lang:`, same slug. `node
+scripts/build-guide-translations-migration.mjs` turns those into rows in
+`content_item_translations` (Shift migration 01212), served at
+`/<lang>/guides/<slug>` with hreflang links both ways and in the sitemap; the
+Shift app shows the guide in the reader's language. When a draft ships, its
+translation moves to `content/translations/` with it.
+
+**AI note.** Until a person who speaks the language has read a page, it says
+"Traducido del inglés con ayuda de inteligencia artificial. Si algo no está
+claro, escríbenos a info@gogreenstreets.org." (Keith, 2026-10-17: publish with
+the note, don't wait). A reviewer adds `human_reviewed: YYYY-MM-DD` to the
+YAML, and the note goes away on the next build.
 
 **Same page, same structure.** The same sections, in the same order, and the
 same facts, numbers, price tokens (`{{price:...}}`), tools and links. The
