@@ -9,6 +9,7 @@ import PassGrid from '@/components/guides/PassGrid'
 import GuideTripPlanner from '@/components/guides/GuideTripPlanner'
 import ParkAndRideFinder from '@/components/guides/ParkAndRideFinder'
 import GuideOffer from '@/components/guides/GuideOffer'
+import TransitDisruptions from '@/components/guides/TransitDisruptions'
 import { PRICES, usd } from '@/lib/facts/prices'
 import { guideArticleSchema, breadcrumbSchema } from '@/lib/structured-data'
 
@@ -168,6 +169,13 @@ const appStripBySlug: Record<string, { headline: string; line: string }> = {
 const LEAD = '__lead__'
 const toolsAfter: Record<string, Record<string, (slug: string) => ReactNode>> = {
   'backup-plans-for-the-t': {
+    'Is the T really less reliable than it used to be?': () => (
+      <TransitDisruptions
+        routeTypes={[0, 1, 2]}
+        heading="What's closed now and coming up"
+        emptyText="No subway or commuter rail closures are planned in the next 30 days."
+      />
+    ),
     [LEAD]: (slug) => (
       <GuideTripPlanner
         slug={slug}

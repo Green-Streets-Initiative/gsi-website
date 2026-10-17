@@ -34,6 +34,9 @@ type Props = {
   placeholder?: string
   /** Focus the box on mount (a page opened specifically to type here). */
   autoFocus?: boolean
+  /** Also suggest neighborhoods, squares and towns, not only addresses and
+   *  businesses (trip planning, where "Davis Square" is a fine answer). */
+  includeAreas?: boolean
 }
 
 export default function AddressAutocomplete({
@@ -46,7 +49,8 @@ export default function AddressAutocomplete({
   hideLabel = false,
   variant = 'light',
   placeholder = 'Start typing an address…',
-  autoFocus = false,
+  autoFocus,
+  includeAreas = false,
 }: Props) {
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [open, setOpen] = useState(false)
@@ -82,7 +86,8 @@ export default function AddressAutocomplete({
       const res = await fetch('/api/places/autocomplete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input }),
+        // An empty type list asks for every kind of place (see the route).
+        body: JSON.stringify(includeAreas ? { input, types: [] } : { input }),
       })
 
       const data = await res.json()
@@ -97,7 +102,7 @@ export default function AddressAutocomplete({
     } catch {
       if (req === requestRef.current) setPredictions([])
     }
-  }, [])
+  }, [includeAreas])
 
   function handleInput(val: string) {
     onChange(val)

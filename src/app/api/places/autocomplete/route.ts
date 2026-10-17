@@ -18,7 +18,10 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       input,
       includedRegionCodes: ['us'],
-      includedPrimaryTypes: types ?? ['street_address', 'premise', 'subpremise', 'establishment'],
+      // types: [] = no type filter, so neighborhoods and towns come back too.
+      ...(Array.isArray(types) && types.length === 0
+        ? {}
+        : { includedPrimaryTypes: types ?? ['street_address', 'premise', 'subpremise', 'establishment'] }),
       locationBias: {
         circle: {
           center: { latitude: 42.3736, longitude: -71.1097 },

@@ -5,6 +5,8 @@ import posthog from 'posthog-js'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { gaEvent } from '@/lib/ga'
 import type { ReachRow } from '@/components/nearby/types'
+import TransitDisruptions from '@/components/guides/TransitDisruptions'
+import { routeIdsForLabels } from '@/lib/nearby/disruptions'
 
 /*
  * A small trip planner that sits inside a guide: from, to, and the transit and
@@ -27,7 +29,7 @@ const comfortWords: Record<string, string> = {
 function lineName(label: string): string {
   if (/^\d+[A-Z]?$|^SL\d$|^CT\d$/.test(label)) return `bus ${label}`
   if (/^(Red|Orange|Blue|Mattapan)$/.test(label)) return `the ${label} Line`
-  const g = /^Green-([A-E])$/.exec(label)
+  const g = /^Green(?:[- ]Line)?[- ]\(?([A-E])\)?$/.exec(label)
   if (g) return `the Green Line (${g[1]})`
   return label
 }
@@ -61,6 +63,7 @@ export default function GuideTripPlanner({
   const [locating, setLocating] = useState(false)
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'outside'>('idle')
   const [row, setRow] = useState<ReachRow | null>(null)
+  const [lineIds, setLineIds] = useState<string[]>([])
 
   const plan = (f: Place | null, t: Place | null) => {
     if (!f || !t) return
@@ -75,6 +78,11 @@ export default function GuideTripPlanner({
         if (!data.row) return setStatus('error')
         setRow(data.row)
         setStatus('done')
+        setLineIds([])
+        const labels = (data.row.transit_segments ?? [])
+          .filter((seg) => seg.mode === 'transit' && seg.label)
+          .map((seg) => seg.label as string)
+        routeIdsForLabels(labels).then(setLineIds)
         track('guide_tool_used', { tool: 'trip_planner', slug, placement })
       })
       .catch(() => setStatus('error'))
@@ -125,6 +133,7 @@ export default function GuideTripPlanner({
       <div className="grid gap-3">
         <div>
           <AddressAutocomplete
+            includeAreas
             value={fromText}
             onChange={(v) => {
               setFromText(v)
@@ -143,6 +152,7 @@ export default function GuideTripPlanner({
           </button>
         </div>
         <AddressAutocomplete
+            includeAreas
           value={toText}
           onChange={(v) => {
             setToText(v)
@@ -185,6 +195,14 @@ export default function GuideTripPlanner({
                 <p className="text-[1rem] leading-relaxed text-navy">No transit route found for this trip.</p>
               )}
             </div>
+            {lineIds.length > 0 && (
+              <TransitDisruptions
+                compact
+                routeIds={lineIds}
+                heading="Service changes on these lines"
+                emptyText="No closures are planned on these lines in the next 30 days."
+              />
+            )}
             <div className="rounded-[10px] bg-cream px-4 py-3">
               <p className="text-[0.8125rem] font-semibold text-forest">By bike</p>
               <p className="text-[1rem] leading-relaxed text-navy">

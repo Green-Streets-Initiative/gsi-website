@@ -72,6 +72,7 @@ export default function ParkAndRideFinder({
       <p className="mb-4 text-[0.9375rem] leading-relaxed text-ink-soft">{intro}</p>
 
       <AddressAutocomplete
+            includeAreas
         value={text}
         onChange={setText}
         onPlaceSelected={(p) => search(p.lat, p.lng)}
