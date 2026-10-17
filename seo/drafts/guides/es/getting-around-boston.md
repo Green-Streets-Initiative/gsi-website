@@ -9,7 +9,7 @@ slug: getting-around-boston
 lang: es
 mode: multimodal
 barrier: planning
-status: draft
+status: approved
 content_type: micro_guide
 surfaces: [guide_library]
 topics: [getting-started, planning, mbta-basics, bike-share, family]

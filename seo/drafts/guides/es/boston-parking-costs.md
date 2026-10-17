@@ -9,7 +9,7 @@ slug: boston-parking-costs
 lang: es
 mode: multimodal
 barrier: cost
-status: draft
+status: approved
 content_type: micro_guide
 surfaces: [guide_library]
 topics: [parking, fares, planning, mbta-basics]

@@ -9,7 +9,7 @@ slug: keeping-a-car-in-boston
 lang: es
 mode: multimodal
 barrier: cost
-status: draft
+status: approved
 content_type: micro_guide
 surfaces: [guide_library]
 topics: [planning, parking, getting-started]

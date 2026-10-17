@@ -44,7 +44,7 @@ summary: "It depends on how often you drive and where you park it. What owning a
 slug: keeping-a-car-in-boston
 mode: multimodal
 barrier: cost
-status: draft
+status: approved
 content_type: micro_guide
 surfaces: [guide_library]
 topics: [planning, parking, getting-started]

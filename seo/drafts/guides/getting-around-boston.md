@@ -39,7 +39,7 @@ summary: "Do you need a car to live in Boston, Cambridge or Somerville? For most
 slug: getting-around-boston
 mode: multimodal
 barrier: planning
-status: draft
+status: approved
 content_type: micro_guide
 surfaces: [guide_library]
 topics: [getting-started, planning, mbta-basics, bike-share, family]

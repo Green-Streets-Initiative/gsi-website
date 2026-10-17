@@ -50,7 +50,7 @@ summary: "A workday in a downtown garage costs $30 to $47. What parking at a T s
 slug: boston-parking-costs
 mode: multimodal
 barrier: cost
-status: draft
+status: approved
 content_type: micro_guide
 surfaces: [guide_library]
 topics: [parking, fares, planning, mbta-basics]

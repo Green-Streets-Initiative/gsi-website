@@ -9,7 +9,7 @@ slug: boston-traffic
 lang: es
 mode: multimodal
 barrier: time
-status: draft
+status: approved
 content_type: micro_guide
 surfaces: [guide_library]
 topics: [planning, mbta-basics, multimodal, short-trips]

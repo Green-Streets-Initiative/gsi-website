@@ -40,7 +40,7 @@ summary: "The T runs on time far more often than it did two years ago, but closu
 slug: backup-plans-for-the-t
 mode: multimodal
 barrier: planning
-status: draft
+status: approved
 content_type: micro_guide
 surfaces: [guide_library]
 topics: [mbta-basics, planning, bike-share, multimodal]

@@ -40,7 +40,7 @@ summary: "Boston drivers lose about 83 hours a year to traffic. Why it happens, 
 slug: boston-traffic
 mode: multimodal
 barrier: time
-status: draft
+status: approved
 content_type: micro_guide
 surfaces: [guide_library]
 topics: [planning, mbta-basics, multimodal, short-trips]

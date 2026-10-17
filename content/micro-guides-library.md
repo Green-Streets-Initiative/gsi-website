@@ -1165,6 +1165,303 @@ And if you want to know what those trips would look like, the [Commute Advisor](
 
 ---
 
+## Getting around (5 answer pages, shipped 2026-10-17)
+
+Answer pages for people searching about traffic, parking, car costs and T reliability. Standard: seo/answer-pages.md.
+
+### `mg_boston_traffic`
+
+```yaml
+id: mg_boston_traffic
+reviewed: 2026-10-17
+title: "Why Boston traffic is so bad, and how to get around it"
+summary: "Boston drivers lose about 83 hours a year to traffic. Why it happens, how to time your trip, and the trains, buses and ferries that skip the worst of it."
+slug: boston-traffic
+mode: multimodal
+barrier: time
+status: approved
+content_type: micro_guide
+surfaces: [guide_library]
+topics: [planning, mbta-basics, multimodal, short-trips]
+related: [mg_transit_time, mg_bike_time, mg_transit_planning]
+```
+
+Boston's traffic is among the worst in the country. The average driver here lost 83 hours to it in 2025, the fifth most of any U.S. city ([INRIX](https://inrix.com/press-releases/2025-global-traffic-scorecard-us/)). Many of the state's jobs are in the Boston area, reached by a few bridges, tunnels and highways, and those roads are so full that one crash or storm backs everything up. You can't fix the traffic, but on many trips you can get around it.
+
+### Why is it so bad?
+
+- **Lots of jobs, few ways in.** The Boston region had 44% of the state's jobs in 2019 ([MassDOT](https://www.mass.gov/doc/congestion-in-the-commonwealth/download)).
+- **The roads are full, so small problems spread.** When a road has no spare room, a single crash or work zone slows traffic for miles. MassDOT says the bigger problem is how unpredictable the trip is, more than the average delay.
+- **A few choke points carry everyone.** The worst are the Tobin Bridge, the Zakim Bridge and the tunnels, the Southeast Expressway, the Leverett Connector, and Alewife Brook Parkway near Route 2. Seven of the state's ten worst spots are on I-93 ([MassDOT, 2025 update](https://web.archive.org/web/20251206011247/https://www.mass.gov/doc/congestion-in-the-commonwealth-2025-data-update/download)).
+- **Rush hour is getting longer.** By 5 p.m. on a weekday, almost every major road inside Route 128 has some delay, and nearly half are congested as early as 2 p.m. Tuesday to Thursday is worse than Monday or Friday.
+
+### Is driving faster in the city at rush hour?
+
+Not by much. On weekday rush-hour trips of 3 to 8 miles in Boston, Cambridge, Somerville, Brookline and nearby, people using Shift typically went 8.4 mph by car, 8.6 mph by bike and 8.8 mph on the subway. Outside rush hour, drives of that length typically went 10.3 mph.
+
+**About these numbers:** From 1,078 rush-hour trips of 3 to 8 miles by car, bike and subway recorded by people using Shift, July 18 to October 16, 2026 (weekdays 7 to 9:30 a.m. and 4 to 7 p.m.). Typical means half the trips were faster and half were slower.
+
+### When should I leave to miss it?
+
+Timing still matters. At 6 a.m., 15% of the roads inside Route 128 are congested. By 8 a.m., it's 45% ([MassDOT, 2024 data](https://web.archive.org/web/20251206011247/https://www.mass.gov/doc/congestion-in-the-commonwealth-2025-data-update/download)).
+
+### How do I get around it from where I live?
+
+- **MetroWest and the Mass Pike.** The commuter rail from Framingham reaches Back Bay in 35 to 56 minutes on weekday mornings. Parking at the Framingham station is {{price:parking.framinghamDay}} a day. From Worcester, the fastest morning train takes 70 minutes to South Station ([Framingham/Worcester Line schedule](https://www.mbta.com/schedules/CR-Worcester/timetable)).
+- **The South Shore and the Braintree Split.** Park at the Braintree or Quincy Adams garage for {{price:parking.mbtaGarageDay}} and the Red Line reaches Park Street in under half an hour. From farther out, the Kingston and Greenbush trains take about an hour to South Station, and the Hingham ferry reaches Rowes Wharf in 30 to 40 minutes.
+- **Route 128 and Burlington.** Bus 350 runs from Alewife to Burlington Mall Road in about 30 to 40 minutes. Many employers along 128 belong to a transportation management association that runs shuttles and carpool matching for their staff. [Find yours through MassCommute](https://www.masscommute.com/find-your-tma).
+
+The trains can run late too, so check [T-Alerts](https://alerts.mbta.com) before you leave. But they skip the Braintree Split and the Pike, and you can read or rest on the way.
+
+### Try this first
+
+Pick one day next week to make your usual trip a different way: [park at a T station](https://www.gogreenstreets.org/guides/boston-traffic#station-parking) and ride in, or [plan it by train](https://www.gogreenstreets.org/nearby?plan=1). Time it door to door and compare it with a normal day.
+
+---
+
+### `mg_boston_parking_costs`
+
+```yaml
+id: mg_boston_parking_costs
+reviewed: 2026-10-17
+title: "What parking costs in Boston, and cheaper ways in"
+summary: "A workday in a downtown garage costs $30 to $47. What parking at a T station costs instead, how your employer can help, and whether a campus permit is worth it."
+slug: boston-parking-costs
+mode: multimodal
+barrier: cost
+status: approved
+content_type: micro_guide
+surfaces: [guide_library]
+topics: [parking, fares, planning, mbta-basics]
+related: [mg_pay_for_t, mg_transit_time, mg_bluebikes]
+```
+
+A full workday in a downtown Boston garage costs {{price:parking.bostonCommonDay}} to {{price:parking.prudentialDay}} at posted drive-up rates, and a monthly space starts at about {{price:parking.bostonCommonMonthly}}. Parking at a T station is {{price:parking.mbtaGarageDay}} a day or less, plus your fare, and your employer may be able to pay for the T with money that isn't taxed.
+
+### What do downtown garages charge?
+
+Posted weekday rates, October 2026:
+
+- **Boston Common Garage:** {{price:parking.bostonCommonDay}} for 3 to 10 hours, or {{price:parking.bostonCommonMonthly}} a month.
+- **Post Office Square:** {{price:parking.poSquareDay}} for a full day.
+- **Prudential Center:** {{price:parking.prudentialDay}} for 2 to 24 hours.
+
+Street meters downtown are {{price:parking.meterStandard}} an hour ({{price:parking.meterBackBay}} in Back Bay and the Seaport), and Sundays are free ([City of Boston](https://www.boston.gov/departments/parking-clerk/how-do-parking-meters-work)). An expired meter is a {{price:parking.meterTicket}} ticket ([Boston parking fines](https://www.boston.gov/departments/parking-clerk/parking-ticket-fines-and-codes)).
+
+### Is it cheaper to park at a T station?
+
+Yes. The MBTA's garages and lots are paid by phone, and most cost less than an hour downtown ([MBTA parking rates](https://www.mbta.com/parking/stations-and-rates)):
+
+- **Alewife, Braintree, Quincy Adams, Oak Grove:** {{price:parking.mbtaGarageDay}} a weekday.
+- **Riverside (Green Line):** {{price:parking.riversideDay}} a weekday, or {{price:parking.riversideMonthly}} a month.
+- **Route 128 station (commuter rail):** {{price:parking.routeOneTwentyEightDay}} a weekday.
+- **Framingham (commuter rail):** {{price:parking.framinghamDay}} a weekday, or {{price:parking.framinghamMonthly}} a month.
+
+Add the fare: {{price:mbta.subwaySingle}} each way on the subway, or {{price:mbta.linkPassMonthly}} a month. A monthly commuter rail pass is {{price:mbta.crZoneTwoMonthly}} from Route 128 and {{price:mbta.crZoneFiveMonthly}} from Framingham.
+
+Of all weekday trips into downtown by people using Shift, about 1 in 9 was a drive. Of the 99 people using Shift who drove downtown on a weekday, 90 also came in by T, bike, ferry or on foot at least once. Half of those drives were shorter than 3.4 miles.
+
+**About these numbers:** From weekday trips into downtown Boston recorded by people using Shift, June to October 2026, including 363 drives by 99 people.
+
+### Can my employer help pay?
+
+Employers can let you pay for the T with up to {{price:parking.irsTransitMonthly}} a month taken out before taxes, and many pay for part of the pass outright ([IRS, 2026 limits](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)). Massachusetts also lets you deduct T fares and bike-share costs you paid yourself, up to {{price:parking.maDeductionCap}} a year, for the part above $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
+
+### Is a student parking permit worth it?
+
+For most students, a T pass costs less:
+
+- **Boston University:** a commuter permit is {{price:parking.buPermitFall}} for the fall semester; a semester T pass is {{price:parking.buSemesterLinkPass}}.
+- **Simmons:** {{price:parking.simmonsPermitSemester}} a semester for a permit.
+- **UMass Boston:** {{price:parking.umbPermitSemester}} a semester for a permit.
+
+Many schools sell the T pass at 11% off through the [MBTA Semester Pass](https://www.mbta.com/fares/college-student-semester-passes), and some pay more of it. MIT pays half for all degree students. A permit can still make sense if you commute from somewhere the T doesn't reach well, or have a job or family trips after class.
+
+### Try this first
+
+1. [Find the T station parking](https://www.gogreenstreets.org/guides/boston-parking-costs#station-parking) closest to where your drive starts.
+2. One day next week, park there and ride in. Compare the cost and time with your usual day.
+
+---
+
+### `mg_keeping_a_car`
+
+```yaml
+id: mg_keeping_a_car
+reviewed: 2026-10-17
+title: "Is it worth keeping a car in Boston?"
+summary: "It depends on how often you drive and where you park it. What owning a car costs here, how often people actually use theirs, and what to use on the days you need one."
+slug: keeping-a-car-in-boston
+mode: multimodal
+barrier: cost
+status: approved
+content_type: micro_guide
+surfaces: [guide_library]
+topics: [planning, parking, getting-started]
+related: [mg_walking_vs_driving, mg_bluebikes, mg_pay_for_t]
+```
+
+It depends on how often you drive. If you use the car a few times a month, owning one in Boston usually costs far more than renting or sharing a car for those trips. If you drive most days, or your work, your kids' activities or your family live where the T doesn't reach, keeping it often makes sense.
+
+### What does a car cost to keep here?
+
+AAA puts the cost of owning and running a new car 15,000 miles a year at {{price:driving.aaaAnnualOwnership}} ([AAA, 2026](https://newsroom.aaa.com/wp-content/uploads/2026/09/AAA_YDC-Fact-Sheet_2026.pdf)). About {{price:driving.aaaFixedAnnual}} of that is depreciation, insurance and loan interest, which you pay whether the car moves or not. An older car that's paid off costs much less.
+
+Massachusetts adds a few costs of its own:
+
+- **Excise tax:** {{price:driving.maExcisePerThousand}} for every $1,000 of the car's value, set by its age. A $30,000 car in its second year owes $450 ([Mass.gov](https://www.mass.gov/info-details/a-brief-introduction-to-motor-vehicle-excise)).
+- **Registration:** {{price:driving.maRegistrationTwoYears}} every two years ([RMV fees](https://www.mass.gov/info-details/massachusetts-registry-of-motor-vehicles-fees)). **Inspection:** {{price:driving.maInspection}} a year ([Mass.gov](https://www.mass.gov/info-details/vehicle-inspections)).
+- **Parking:** Boston's resident permit is free, but it doesn't promise a space. Cambridge's permit is {{price:driving.cambridgePermitNow}} and goes up to {{price:driving.cambridgePermitDecember}} on December 1, 2026, free for residents facing financial hardship ([City of Cambridge](https://www.cambridgema.gov/rpp)). A monthly garage space downtown starts at about {{price:parking.bostonCommonMonthly}}.
+
+### How often do people here actually drive?
+
+About two days a week, among people using Shift who live in Boston, Cambridge, Somerville or Brookline. About 1 in 4 of their drives was under 2 miles. Many of those short trips are an easy walk or bike ride.
+
+**About these numbers:** From 3,263 drives recorded by 65 people using Shift who live in those four cities, August 21 to October 16, 2026. Driving here includes rides in a taxi or ride-hail car.
+
+The City of Boston found something similar: a privately owned car is driven about one hour a day, while each car in the city's car-share pilot was used about seven hours a day ([City of Boston](https://www.boston.gov/departments/transportation/car-share-boston)).
+
+### How do I work out what's right for me?
+
+1. For two weeks, write down each day you drive and where you went.
+2. Mark the trips under 2 miles. Those are the easiest to walk, bike or take the T.
+3. For the rest, [check how else you could make the trip](https://www.gogreenstreets.org/guides/keeping-a-car-in-boston#trip-planner): the T, a Bluebike, a car share, or a ride with someone.
+
+If only a few trips a month really need a car, sharing or renting will cost much less than keeping one. If most of them do, keeping the car makes sense.
+
+### What do I use on the days I need a car?
+
+Car-share services rent cars by the hour from lots across the city, with gas and insurance included. Zipcar's standard plan is {{price:driving.zipcarStandardMonthly}} a month plus the hourly or daily rate. A regular rental works for weekends away. Ride-hail fills the gaps. If you have kids under 8, bring a car seat: state law requires one in an Uber or Lyft unless the child is over 57 inches tall.
+
+### How do I sell a car in Massachusetts?
+
+Cancel the registration online with your MyMassGov account, which is free, and send the receipt to your insurer. You don't return the plates: cut them in half and recycle them where your town accepts them, or throw them away. Once the car is sold, ask your town's assessor for an excise refund for the months you no longer owned it ([Mass.gov](https://www.mass.gov/how-to/cancel-your-vehicle-registration-license-plates)).
+
+### Try this first
+
+1. Pick one short trip you usually drive, like groceries or the gym, and [see how long it takes by T or by bike](https://www.gogreenstreets.org/guides/keeping-a-car-in-boston#trip-planner).
+2. Make that trip without the car for the next two weeks, and see how often you miss it.
+
+---
+
+### `mg_t_backup_plans`
+
+```yaml
+id: mg_t_backup_plans
+reviewed: 2026-10-17
+title: "Backup plans for when the T is late or closed"
+summary: "The T runs on time far more often than it did two years ago, but closures still happen. How to pick a backup before you need one."
+slug: backup-plans-for-the-t
+mode: multimodal
+barrier: planning
+status: approved
+content_type: micro_guide
+surfaces: [guide_library]
+topics: [mbta-basics, planning, bike-share, multimodal]
+related: [mg_bluebikes, mg_subway_vs_bus, mg_transit_planning]
+```
+
+When the T is late or a line is closed, your best backup is usually a bus that runs near your line, a Bluebike, or the commuter rail. Pick one the night before a planned closure, [check the MBTA's alerts](https://www.mbta.com/alerts) before you leave, and give yourself extra time if you take the shuttle.
+
+### Is the T really less reliable than it used to be?
+
+No. It's more reliable than it was a few years ago. The MBTA counts a Red, Orange or Blue Line trip as on time when it arrives within five minutes of the expected time. By late 2025 about 92% of trips met that bar, up from about 25% in late 2023 ([Christian Science Monitor](https://www.csmonitor.com/Business/2025/1115/boston-mbta-phillip-eng)). Current numbers are on the [MBTA's reliability page](https://www.mbta.com/performance-metrics/service-reliability).
+
+In December 2024 the MBTA cleared more than 220 slow zones, stretches where trains must go slower for safety ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Short ones for repairs have come and gone since. In the last published data, from May 2026, there were a few, including a 10 mph zone at Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
+
+Planned repair closures still happen, like the Red Line's closure from Alewife to Park Street on July 21 to 30, 2026.
+
+### What did riders do during the July 2026 Red Line closure?
+
+Among people using Shift who rode the Red Line regularly, driving went from about a quarter of their trips to about a third during the closure. Biking went up too, from 15% to 18% of trips. Yet at rush hour, drives of 3 to 8 miles in Boston, Cambridge, Somerville, Brookline and nearby were no faster than biking or the subway: typically 8.4 mph by car, 8.6 by bike and 8.8 on the subway.
+
+**About these numbers:** From trips recorded by 17 to 22 regular Red Line riders using Shift, June 22 to July 30, 2026 (a small group, in midsummer), and 1,078 rush-hour trips by people using Shift, July 18 to October 16, 2026. Typical means half the trips were faster and half were slower.
+
+### What are my backup options?
+
+- **A bus near your line.** For the Red Line, route 77 runs from Arlington Heights to Harvard about every 10 to 15 minutes at rush hour, and route 96 runs from Medford Square to Harvard. [Our trip planner](https://www.gogreenstreets.org/guides/backup-plans-for-the-t#trip-planner) shows the bus options for your own trip. A bus ride is {{price:mbta.busSingle}}. Through February 2027, if you switch to the subway within two hours on the same card or phone, you pay only the higher fare.
+- **Bluebikes.** Nearly 600 stations in 13 cities and towns. A single ride is {{price:bluebikes.singleRide}} and a day pass is {{price:bluebikes.dayPass}}. Members get 45 minutes per ride on a classic bike, and people who qualify by income can join for {{price:bluebikes.incomeEligibleMonthly}} a month.
+- **The commuter rail.** If you live near a station, it can skip the closed stretch. During some closures the MBTA makes it free on the affected stretch: in July 2026 it was free between Porter and North Station.
+- **The free shuttle.** Shuttles are free and accessible, but slow. In July the MBTA told riders to allow at least 70 minutes from Alewife to Park Street.
+
+[Nearby](https://www.gogreenstreets.org/nearby) on our website, and Around You in the Shift app, show the next buses and the bikes free at the closest Bluebikes docks.
+
+### Is the Green Line slower than walking?
+
+No, for most trips. On trips of 0.75 to 2 miles, Green Line rides recorded by people using Shift typically went 6.4 mph, more than twice their typical walking speed of 2.8 mph. Those times may leave out some platform waiting, so for one or two stops downtown, where stations are a quarter mile apart, walking can come close.
+
+**About these numbers:** From 324 Green Line trips and 3,111 walks of 0.75 to 2 miles recorded by people using Shift, June to October 2026. Typical means half were faster and half were slower.
+
+### Should I get an e-bike or a scooter?
+
+In Massachusetts, e-bikes that stop helping at 20 mph need no license. You can ride them on roads, in bike lanes and on most paved paths, but not on sidewalks ([MassBike's e-bike guide](https://www.massbike.org/ebikesfaq)). Motorized scooters need a driver's license or learner's permit and a helmet, and can't be ridden between sunset and sunrise ([state law](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). A bill that would update these rules is still being worked out at the State House. The state's e-bike rebate is closed for 2026.
+
+### Try this first
+
+Set up your backup now, before you need it.
+
+1. [Plan your usual trip](https://www.gogreenstreets.org/guides/backup-plans-for-the-t#trip-planner). You'll see the bus or train and the bike route, and the map shows live arrivals and the closest Bluebikes docks.
+2. [Sign up for T-Alerts](https://alerts.mbta.com/) for your line, so you hear about a closure before you leave home.
+
+---
+
+### `mg_getting_around_boston`
+
+```yaml
+id: mg_getting_around_boston
+reviewed: 2026-10-17
+title: "Getting around Boston by T, bike and foot"
+summary: "Do you need a car to live in Boston, Cambridge or Somerville? For most people, no. How people here get around, what it costs, and the neighborhoods where it's easiest."
+slug: getting-around-boston
+mode: multimodal
+barrier: planning
+status: approved
+content_type: micro_guide
+surfaces: [guide_library]
+topics: [getting-started, planning, mbta-basics, bike-share, family]
+related: [mg_pay_for_t, mg_bluebikes, mg_cargo_bike]
+```
+
+For most people who live in Boston, Cambridge or Somerville, a car is optional. About a third of households in Boston and Cambridge don't own one ([Census, 2020 to 2024](https://censusreporter.org/data/table/?table=B25044&geo_ids=16000US2507000,16000US2511000,16000US2562535)). The neighborhoods are close together, and walking, the T and Bluebikes cover most everyday trips. For the few trips that need a car, you can rent one by the hour.
+
+### How do people here get to work?
+
+In Boston, about a third of workers drive alone to work. About 1 in 5 takes transit, and about 1 in 7 walks. In Cambridge, walking (19%) and transit (18%) are each about as common as driving alone (20%), and nearly 1 in 12 bikes. These are U.S. Census figures for 2020 to 2024 ([Census Reporter](https://censusreporter.org/data/table/?table=B08301&geo_ids=16000US2507000,16000US2511000,16000US2562535)).
+
+People using Shift who live in these cities show the same thing for every kind of trip, not only the commute. About 7 in 10 of their trips were on foot, by bike or by transit, and more than 4 in 10 were walks.
+
+**About these numbers:** From 12,256 trips recorded by 65 people using Shift who live in Boston, Cambridge, Somerville or Brookline, August 21 to October 16, 2026.
+
+### What's the cheapest way to get around?
+
+Walking, for anything under a mile or so. After that:
+
+- **The T:** {{price:mbta.subwaySingle}} on the subway, {{price:mbta.busSingle}} on the bus, or {{price:mbta.linkPassMonthly}} a month for unlimited subway and bus rides. Through February 2027, if you switch between the bus and subway within two hours on the same card or phone, you pay only the higher of the two fares.
+- **Reduced fares:** people 65 and older, people with disabilities, and people on SNAP, MassHealth and some other programs pay {{price:mbta.reducedSubway}} on the subway, {{price:mbta.reducedBus}} on the bus, or {{price:mbta.reducedLinkPass}} a month ([how to apply](https://www.mbta.com/fares/reduced)). Children 11 and under ride free, and so do riders 75 and older who no longer drive.
+- **Bluebikes:** {{price:bluebikes.singleRide}} a ride, or {{price:bluebikes.annual}} a year with 45 minutes per ride, at nearly 600 stations in 13 cities and towns.
+
+### Which neighborhoods are easiest?
+
+The ones where shops, a T stop and a Bluebikes dock are all a short walk away. On walkscore.com's 100-point scale, Beacon Hill, Back Bay, the South End and Fenway-Kenmore score 95 or higher for walking and over 90 for transit. Davis Square in Somerville scores 97 for walking, and Cambridge as a whole scores 96 for biking. Central Maverick Square in East Boston and Uphams Corner in Dorchester both score 90 or higher for walking. (Scores as listed in October 2026.)
+
+The same pattern holds beyond Boston. Town centers with a commuter rail station and Bluebikes, like Salem, work much the same way at a smaller scale.
+
+### Can a family with young kids do it?
+
+Many do. Children 11 and under ride the T free, strollers are welcome on the subway, and most stations have elevators. For daycare drop-offs and groceries, many parents use a cargo bike ([how families use them](/guides/what-you-can-do-with-an-e-cargo-bike)).
+
+One thing to know before you rely on ride-hail: Massachusetts law requires a car seat for children under 8 unless they're over 57 inches tall, and that applies in an Uber or Lyft ([state law](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Taxis without child seats are exempt.
+
+### What about the trips that need a car?
+
+Car-share services like Zipcar rent cars by the hour from lots across the city, with gas and insurance included. A regular rental works for weekend trips.
+
+### Try this first
+
+Before you sign a lease, [put the address into our trip planner](https://www.gogreenstreets.org/guides/getting-around-boston#trip-planner) with the three places you go most: work or school, groceries, and one place you love. It shows how long each trip takes by T and by bike.
+
+---
+
 ## End of library
 
 **Total: 22 guides** (11 cycling, 7 transit, 4 walking) plus 2 deprecations (`mg_blue_bikes`, `mg_return_bluebike`).

@@ -13,8 +13,8 @@
         "source": "keith",
         "url": null
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/boston-traffic",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -53,8 +53,8 @@
         "source": "gsc:boston commute / commute traffic",
         "url": null
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/boston-traffic",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -90,8 +90,8 @@
         "source": "forum",
         "url": "https://www.reddit.com/comments/1s8rlsb"
       },
-      "our_page": "/shift/towns/framingham-ma",
-      "our_page_fit": "partial",
+      "our_page": "/guides/boston-traffic",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -121,8 +121,8 @@
         "source": "forum",
         "url": "https://www.city-data.com/forum/massachusetts/2120230-commuting-south-shore-towns-into-boston.html"
       },
-      "our_page": "/shift/towns/braintree-ma",
-      "our_page_fit": "partial",
+      "our_page": "/guides/boston-traffic",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -154,8 +154,8 @@
         "source": "forum",
         "url": "https://www.city-data.com/forum/massachusetts/1552681-i-95-route-128-woes.html"
       },
-      "our_page": "/shift/towns/burlington-ma",
-      "our_page_fit": "partial",
+      "our_page": "/guides/boston-traffic",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -192,8 +192,8 @@
         "source": "forum",
         "url": "https://www.city-data.com/forum/massachusetts/994006-commuting-mass-pike-morning-traffic-2.html"
       },
-      "our_page": "/guides/when-transit-is-faster",
-      "our_page_fit": "partial",
+      "our_page": "/guides/boston-traffic",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -268,8 +268,8 @@
         "source": "forum",
         "url": "https://forums.anandtech.com/threads/parking-in-boston.1828936/post-19554574"
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/boston-parking-costs",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -307,8 +307,8 @@
         "source": "forum",
         "url": "https://www.fodors.com/community/united-states/another-boston-question-54738"
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/boston-parking-costs",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -343,8 +343,8 @@
         "source": "forum",
         "url": "https://forums.studentdoctor.net/threads/boston.259979/"
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/keeping-a-car-in-boston",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -379,8 +379,8 @@
         "source": "keith",
         "url": null
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/keeping-a-car-in-boston",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -455,8 +455,8 @@
         "source": "keith",
         "url": null
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/backup-plans-for-the-t",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -487,8 +487,8 @@
         "source": "forum",
         "url": "https://www.boston.com/community/readers-say/how-commuters-getting-around-red-line-mbta-closure/"
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/backup-plans-for-the-t",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -523,8 +523,8 @@
         "source": "forum",
         "url": "https://www.universalhub.com/node/21530"
       },
-      "our_page": "/guides/when-walking-is-faster",
-      "our_page_fit": "partial",
+      "our_page": "/guides/backup-plans-for-the-t",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -557,8 +557,8 @@
         "source": "forum",
         "url": "https://www.reddit.com/comments/1tmq9qg"
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/backup-plans-for-the-t",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -632,8 +632,8 @@
         "source": "forum",
         "url": "https://universalhub.com/node/93737"
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/keeping-a-car-in-boston",
+      "our_page_fit": "partial",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -699,8 +699,8 @@
         "source": "gsc:simmons parking pass / bu student parking",
         "url": null
       },
-      "our_page": "/shift-your-semester/simmons",
-      "our_page_fit": "partial",
+      "our_page": "/guides/boston-parking-costs",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -1114,8 +1114,8 @@
         "source": "seo-sentinel",
         "url": null
       },
-      "our_page": "/commute-advisor",
-      "our_page_fit": "partial",
+      "our_page": "/guides/getting-around-boston",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -1156,8 +1156,8 @@
         "source": "seo-sentinel; gsc:getting around boston without a car",
         "url": null
       },
-      "our_page": "/commute-advisor",
-      "our_page_fit": "partial",
+      "our_page": "/guides/getting-around-boston",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -1196,8 +1196,8 @@
         "source": "seo-sentinel",
         "url": null
       },
-      "our_page": "/guides/how-to-pay-for-the-t",
-      "our_page_fit": "partial",
+      "our_page": "/guides/getting-around-boston",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -1235,8 +1235,8 @@
         "source": "forum",
         "url": "https://www.lesswrong.com/posts/tuNK3zLAvKmmJNfu8/transportation-tracking"
       },
-      "our_page": "/shift/towns/somerville-ma",
-      "our_page_fit": "partial",
+      "our_page": "/guides/getting-around-boston",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -1276,8 +1276,8 @@
         "source": "forum",
         "url": "https://www.reddit.com/r/boston/comments/1jebbf6/boston_walkability_and_transit/"
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/getting-around-boston",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -1315,8 +1315,8 @@
         "source": "forum",
         "url": "https://www.city-data.com/forum/boston/1275755-should-i-sell-my-car-before.html"
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/keeping-a-car-in-boston",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,
@@ -1350,8 +1350,8 @@
         "source": "forum",
         "url": "https://www.city-data.com/forum/massachusetts/980710-living-massachusetts-without-car.html"
       },
-      "our_page": null,
-      "our_page_fit": "none",
+      "our_page": "/guides/getting-around-boston",
+      "our_page_fit": "strong",
       "baseline_2026_10_16": {
         "google": {
           "gsi_cited": false,

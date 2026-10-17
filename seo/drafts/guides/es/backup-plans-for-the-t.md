@@ -9,7 +9,7 @@ slug: backup-plans-for-the-t
 lang: es
 mode: multimodal
 barrier: planning
-status: draft
+status: approved
 content_type: micro_guide
 surfaces: [guide_library]
 topics: [mbta-basics, planning, bike-share, multimodal]

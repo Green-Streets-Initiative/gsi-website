@@ -21,12 +21,15 @@ const MODES: { value: string; label: string }[] = [
   { value: 'cycling', label: 'Biking' },
   { value: 'transit', label: 'Transit' },
   { value: 'walking', label: 'Walking' },
+  { value: 'multimodal', label: 'Getting around' },
 ]
 
 const MODE_LABEL: Record<string, string> = {
   cycling: 'Biking',
+  biking: 'Biking',
   transit: 'Transit',
   walking: 'Walking',
+  multimodal: 'Getting around',
 }
 
 // Friendly labels for known topics; unknowns fall through to title-cased raw value.
