@@ -232,6 +232,30 @@ export async function applyPriceChanges(
         }
       }
     }
+
+    // Translations carry the same price tokens; keep them in step.
+    const { data: translations, error: tErr } = await sb
+      .from('content_item_translations')
+      .select('content_item_id, locale, body_template')
+      .in('content_item_id', affectedGuideIds)
+      .not('body_template', 'is', null)
+    if (tErr) {
+      report.errors.push(`Translation template fetch: ${tErr.message}`)
+    } else if (translations) {
+      for (const t of translations) {
+        const resolved = resolveTemplate(t.body_template as string, merged)
+        const { error: updateErr } = await sb
+          .from('content_item_translations')
+          .update({ body: resolved, updated_at: new Date().toISOString() })
+          .eq('content_item_id', t.content_item_id)
+          .eq('locale', t.locale)
+        if (updateErr) {
+          report.errors.push(`Translation body update ${t.content_item_id}/${t.locale}: ${updateErr.message}`)
+        } else {
+          report.guideBodiesUpdated.push(`${t.content_item_id} (${t.locale})`)
+        }
+      }
+    }
   }
 
   return report

@@ -327,6 +327,7 @@ export default function GuideView({
   locale: L = 'en',
   sectionKeys,
   alternate,
+  aiTranslated = false,
 }: {
   g: GuideRow
   related: RelatedGuide[]
@@ -338,6 +339,9 @@ export default function GuideView({
   sectionKeys?: (string | null)[]
   /** The same guide in the other language, when it exists. */
   alternate?: { href: string; label: string; lang: string }
+  /** A machine translation no person who speaks the language has read yet:
+   *  the page says so and asks readers to write in (Keith, 2026-10-17). */
+  aiTranslated?: boolean
 }) {
   const guideSlug = g.slug ?? slug
   const cheatSheet = L === 'en' ? cheatSheets[guideSlug] : undefined
@@ -463,6 +467,19 @@ export default function GuideView({
             {heading}
           </h1>
 
+          {aiTranslated && (
+            <p className="-mt-3 mb-6 text-[0.875rem] leading-relaxed text-ink-soft">
+              {gt(L, 'meta.aiNote')}{' '}
+              <a
+                href="mailto:info@gogreenstreets.org"
+                className="font-semibold text-forest underline underline-offset-4 hover:opacity-80"
+              >
+                {gt(L, 'meta.aiNoteLink')}
+              </a>
+              .
+            </p>
+          )}
+
           {/* The answer, before anything is asked of the visitor. */}
           {quickAnswer && (
             <dl className="mb-6 divide-y divide-navy/10 rounded-[14px] border border-navy/10 bg-white px-5">
@@ -538,19 +555,19 @@ export default function GuideView({
           </div>
 
           {/* Related guides */}
-          {/* Related guides are English-only for now, so a translated page leaves them out. */}
-          {L === 'en' && related.length > 0 && (
+          {/* A translated page lists only related guides that exist in its language. */}
+          {related.length > 0 && (
             <div className="mt-12 border-t border-navy/10 pt-8">
               <h2 className="mb-4 font-serif text-[1.25rem] leading-tight text-navy">{gt(L, 'related.heading')}</h2>
               <div className="space-y-3">
                 {related.map((r) => (
                   <Link
                     key={r.id}
-                    href={`/guides/${r.slug ?? r.id}`}
+                    href={`${L === 'en' ? '' : `/${L}`}/guides/${r.slug ?? r.id}`}
                     className="block rounded-[14px] border border-navy/10 bg-white p-5 transition-colors hover:border-navy/30"
                   >
                     <div className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-widest text-forest">
-                      {modeLabel(r.primary_mode)}
+                      {modeLabel(r.primary_mode, L)}
                     </div>
                     <h3 className="mb-1 font-serif text-[1.25rem] leading-tight text-navy">{r.title}</h3>
                     <p className="line-clamp-2 text-[0.875rem] leading-relaxed text-ink-soft">
@@ -581,6 +598,13 @@ export default function GuideView({
   )
 }
 
+
+/** Each section's heading in page order (null for the lead), split the way the
+ *  page splits them. A translation whose list is the same length as its English
+ *  guide's maps onto the English headings by position (sectionKeys). */
+export function sectionHeadings(md: string): (string | null)[] {
+  return splitSections(md).map((s) => s.heading)
+}
 
 /** "Reduced fares" -> "reduced-fares": an anchor an ad's final URL can use. */
 function slugify(text: string): string {

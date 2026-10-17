@@ -182,7 +182,10 @@ function reviewedSql(y) {
   if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) {
     throw new Error(`Guide ${y.id} needs "reviewed: YYYY-MM-DD" in its YAML block`)
   }
-  return `${sqlString(v)}::timestamptz`
+  // Noon Boston time, not a bare date: the database session runs in UTC, so
+  // '2026-10-01'::timestamptz is 8 PM the evening before in Boston and the
+  // website's "Reviewed <month>" line would name the wrong month on the 1st.
+  return `timezone('America/New_York', ${sqlString(`${v} 12:00`)}::timestamp)`
 }
 function rowSql(guide) {
   const y = guide.yaml

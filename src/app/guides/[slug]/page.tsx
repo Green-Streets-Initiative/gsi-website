@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { notFound, permanentRedirect } from 'next/navigation'
 import GuideView, { searchMeta, type GuideRow, type RelatedGuide } from '@/components/guides/GuideView'
 import { pageMetadata } from '@/lib/seo'
+import { getGuideLocales } from '@/lib/guides/translations'
 
 // Fetch the guide once per request. React's cache() dedupes the call so
 // generateMetadata and the page component share a single database round-trip.
@@ -31,10 +32,15 @@ export async function generateMetadata({
   // fall back to a generic title rather than the inherited root title.
   if (!guide) return { title: 'Guides — Green Streets Initiative' }
   const override = guide.slug ? searchMeta[guide.slug] : undefined
+  const path = `/guides/${guide.slug ?? slug}`
+  const locales = await getGuideLocales(guide.id)
   return pageMetadata({
     title: override?.title ?? `${guide.title} — Green Streets Initiative`,
     description: override?.description ?? guide.summary,
-    path: `/guides/${guide.slug ?? slug}`,
+    path,
+    languages: locales.length
+      ? Object.fromEntries([['en', path], ...locales.map((l) => [l, `/${l}${path}`])])
+      : undefined,
   })
 }
 
@@ -74,5 +80,13 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     related.sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999))
   }
 
-  return <GuideView g={g} related={related} slug={slug} />
+  const hasSpanish = (await getGuideLocales(g.id)).includes('es')
+  return (
+    <GuideView
+      g={g}
+      related={related}
+      slug={slug}
+      alternate={hasSpanish ? { href: `/es/guides/${g.slug ?? slug}`, label: 'Leer en español', lang: 'es' } : undefined}
+    />
+  )
 }

@@ -28,6 +28,7 @@ export default async function SpanishDraftGuidePage({ params }: { params: Promis
       locale="es"
       sectionKeys={g.section_keys}
       alternate={{ href: `/preview/guides/${slug}`, label: 'Read in English', lang: 'en' }}
+      aiTranslated
     />
   )
 }

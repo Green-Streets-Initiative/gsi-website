@@ -27,6 +27,11 @@ interface PageMetaInput {
   path: string
   /** Optional share image (absolute path or full URL). */
   ogImage?: string
+  /** The same page in other languages, as paths: { en: '/guides/x', es: '/es/guides/x' }.
+   *  Becomes hreflang links; 'x-default' points at the English page. */
+  languages?: Record<string, string>
+  /** OpenGraph locale, e.g. 'es_US'. Defaults to en_US. */
+  ogLocale?: string
 }
 
 /**
@@ -34,7 +39,7 @@ interface PageMetaInput {
  * Twitter card. Use for any new page or any `'use client'` page that needs
  * metadata via a sibling `layout.tsx`.
  */
-export function pageMetadata({ title, description, path, ogImage }: PageMetaInput): Metadata {
+export function pageMetadata({ title, description, path, ogImage, languages, ogLocale }: PageMetaInput): Metadata {
   const url = `${SITE_URL}${path}`
   const images = ogImage
     ? [{ url: ogImage, width: 1200, height: 630, alt: title }]
@@ -43,13 +48,23 @@ export function pageMetadata({ title, description, path, ogImage }: PageMetaInpu
   return {
     title,
     description,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      ...(languages
+        ? {
+            languages: Object.fromEntries([
+              ...Object.entries(languages).map(([lang, p]) => [lang, `${SITE_URL}${p}`]),
+              ...(languages.en ? [['x-default', `${SITE_URL}${languages.en}`]] : []),
+            ]),
+          }
+        : {}),
+    },
     openGraph: {
       title,
       description,
       url,
       siteName: SITE_NAME,
-      locale: 'en_US',
+      locale: ogLocale ?? 'en_US',
       type: 'website',
       ...(images ? { images } : {}),
     },

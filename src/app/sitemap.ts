@@ -100,20 +100,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let guideEntries: MetadataRoute.Sitemap = []
   try {
     const supabase = createServerSupabaseClient()
-    const { data } = await supabase
-      .from('content_items')
-      .select('slug, last_reviewed_at')
-      .eq('content_type', 'micro_guide')
-      .eq('status', 'approved')
-      .contains('surfaces', ['guide_library'])
-      .not('slug', 'is', null)
+    const [{ data }, { data: translations }] = await Promise.all([
+      supabase
+        .from('content_items')
+        .select('id, slug, last_reviewed_at')
+        .eq('content_type', 'micro_guide')
+        .eq('status', 'approved')
+        .contains('surfaces', ['guide_library'])
+        .not('slug', 'is', null),
+      supabase.from('content_item_translations').select('content_item_id, locale, updated_at'),
+    ])
 
-    guideEntries = (data ?? []).map((row) => ({
-      url: `${SITE_URL}/guides/${row.slug}`,
-      lastModified: row.last_reviewed_at ? new Date(row.last_reviewed_at) : now,
-      changeFrequency: 'monthly' as const,
-      priority: 0.7,
-    }))
+    // Each guide and its translations list one another, so search engines
+    // show a reader the version in their language (seo/answer-pages.md §10).
+    const byGuide = new Map<string, { locale: string; updated_at: string }[]>()
+    for (const t of (translations ?? []) as { content_item_id: string; locale: string; updated_at: string }[]) {
+      byGuide.set(t.content_item_id, [...(byGuide.get(t.content_item_id) ?? []), t])
+    }
+    guideEntries = (data ?? []).flatMap((row) => {
+      const path = `/guides/${row.slug}`
+      const others = byGuide.get(row.id) ?? []
+      const languages = others.length
+        ? Object.fromEntries([['en', `${SITE_URL}${path}`], ...others.map((t) => [t.locale, `${SITE_URL}/${t.locale}${path}`])])
+        : undefined
+      return [
+        {
+          url: `${SITE_URL}${path}`,
+          lastModified: row.last_reviewed_at ? new Date(row.last_reviewed_at) : now,
+          changeFrequency: 'monthly' as const,
+          priority: 0.7,
+          ...(languages ? { alternates: { languages } } : {}),
+        },
+        ...others.map((t) => ({
+          url: `${SITE_URL}/${t.locale}${path}`,
+          lastModified: new Date(t.updated_at),
+          changeFrequency: 'monthly' as const,
+          priority: 0.6,
+          alternates: { languages },
+        })),
+      ]
+    })
   } catch {
     // If the DB is unreachable at build/regeneration time, return static entries
     // rather than failing the whole sitemap.

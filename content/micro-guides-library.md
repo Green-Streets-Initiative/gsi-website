@@ -610,7 +610,7 @@ Winter is when bike shops are quietest, so it's a great time for a tune-up — a
 
 ```yaml
 id: mg_subway_vs_bus
-reviewed: 2026-05-08
+reviewed: 2026-10-17
 title: "Subway vs. bus — what's different"
 summary: "Bus, subway, Green Line — three modes, one fare. What to expect the first time you ride each."
 slug: subway-vs-bus
@@ -637,9 +637,9 @@ Runs underground on its own tracks, so it's generally faster and more predictabl
 
 The weird one. Parts run underground like a subway (downtown). Other parts run above ground at street level like a trolley (the B, C, and E branches). When it's above ground, you board at small platform stops on the street — look for the green signs. It can feel unfamiliar, but it works the same way: tap on, ride, get off at your stop.
 
-### Free transfers
+### Transfers
 
-If you pay with a Charlie Card or phone, a single bus-to-subway transfer is free within two hours. So a trip that mixes buses and trains often costs just a single fare.
+If you pay with a CharlieCard or your phone, you can switch between buses and the subway within two hours and pay only the highest fare on the trip. Subway to bus is free; bus to subway costs the $0.70 difference. So a trip that mixes buses and trains costs about the same as one subway ride.
 
 ---
 

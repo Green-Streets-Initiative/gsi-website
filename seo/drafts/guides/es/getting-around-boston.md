@@ -42,7 +42,7 @@ Lo mismo pasa fuera de Boston. Los centros de los pueblos con estación del tren
 
 ### ¿Lo puede hacer una familia con niños pequeños?
 
-Muchas lo hacen. Los niños de 11 años o menos viajan gratis en el T, los cochecitos son bienvenidos en el metro y la mayoría de las estaciones tiene ascensor. Para llevar a los niños a la guardería y hacer las compras, muchos padres usan una bici de carga ([cómo las usan las familias](/guides/what-you-can-do-with-an-e-cargo-bike), en inglés).
+Muchas lo hacen. Los niños de 11 años o menos viajan gratis en el T, los cochecitos son bienvenidos en el metro y la mayoría de las estaciones tiene ascensor. Para llevar a los niños a la guardería y hacer las compras, muchos padres usan una bici de carga ([cómo las usan las familias](/es/guides/what-you-can-do-with-an-e-cargo-bike)).
 
 Algo que debes saber antes de contar con autos pedidos por aplicación: la ley de Massachusetts exige una silla de auto para niños menores de 8 años, a menos que midan más de 57 pulgadas, y eso también vale en un Uber o Lyft ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Los taxis sin sillas para niños no tienen que cumplir esta regla.
 

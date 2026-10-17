@@ -88,7 +88,7 @@ Pick the place you go most and compare the calmest route with the fastest. The d
     ARRAY['mg_first_bike_lane', 'mg_bike_commute_gear']::text[],
     true,
     2,
-    '2026-10-06'::timestamptz
+    timezone('America/New_York', '2026-10-06 12:00'::timestamp)
   ),
   (
     'mg_first_bike_lane',
@@ -146,7 +146,7 @@ Look behind you before changing your position in the lane. A quick shoulder chec
     ARRAY['mg_low_stress_routes', 'mg_bike_commute_gear']::text[],
     true,
     2,
-    '2026-05-08'::timestamptz
+    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
   ),
   (
     'mg_bike_commute_gear',
@@ -222,7 +222,7 @@ If you only buy two things, make them lights and a U-lock. Everything else can w
     ARRAY['mg_bike_lock', 'mg_bike_sweat', 'mg_biking_in_rain']::text[],
     true,
     2,
-    '2026-10-01'::timestamptz
+    timezone('America/New_York', '2026-10-01 12:00'::timestamp)
   ),
   (
     'mg_bike_time',
@@ -280,7 +280,7 @@ An e-cargo bike (a long-tail or front-bucket frame with pedal-assist) can carry 
     ARRAY['mg_low_stress_routes', 'mg_cargo_bike', 'mg_bike_commute_gear']::text[],
     false,
     2,
-    '2026-05-08'::timestamptz
+    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
   ),
   (
     'mg_bike_sweat',
@@ -354,7 +354,7 @@ August humidity is real. On the worst handful of days, take the T or work from h
     ARRAY['mg_bike_commute_gear', 'mg_cargo_bike']::text[],
     false,
     2,
-    '2026-05-08'::timestamptz
+    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
   ),
   (
     'mg_cargo_bike',
@@ -430,7 +430,7 @@ Borrow one from Community Pedal Power for a weekend. Use it for one school picku
     ARRAY['mg_bike_sweat', 'mg_bike_commute_gear', 'mg_bike_time', 'mg_walking_carrying']::text[],
     false,
     2,
-    '2026-05-08'::timestamptz
+    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
   ),
   (
     'mg_bluebikes',
@@ -502,7 +502,7 @@ Dock at any station along the way, wait a minute, and undock a new bike. The clo
     ARRAY['mg_bike_lock', 'mg_low_stress_routes']::text[],
     false,
     2,
-    '2026-05-08'::timestamptz
+    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
   ),
   (
     'mg_bike_lock',
@@ -568,7 +568,7 @@ Register your bike at [bikeindex.org](https://bikeindex.org) (free, helps recove
     ARRAY['mg_bike_commute_gear', 'mg_bluebikes']::text[],
     false,
     2,
-    '2026-10-01'::timestamptz
+    timezone('America/New_York', '2026-10-01 12:00'::timestamp)
   ),
   (
     'mg_biking_in_rain',
@@ -644,7 +644,7 @@ Most "rain rides" are light drizzle or brief showers. Truly heavy rain during co
     ARRAY['mg_cold_weather', 'mg_boston_winter', 'mg_bike_commute_gear']::text[],
     false,
     2,
-    '2026-10-01'::timestamptz
+    timezone('America/New_York', '2026-10-01 12:00'::timestamp)
   ),
   (
     'mg_cold_weather',
@@ -724,7 +724,7 @@ Winter biking has real advantages once you're set up: lighter traffic, no overhe
     ARRAY['mg_boston_winter', 'mg_biking_in_rain', 'mg_bike_commute_gear']::text[],
     false,
     2,
-    '2026-10-01'::timestamptz
+    timezone('America/New_York', '2026-10-01 12:00'::timestamp)
   ),
   (
     'mg_boston_winter',
@@ -836,7 +836,7 @@ Winter is when bike shops are quietest, so it's a great time for a tune-up — a
     ARRAY['mg_cold_weather', 'mg_biking_in_rain', 'mg_walking_weather']::text[],
     false,
     4,
-    '2026-10-05'::timestamptz
+    timezone('America/New_York', '2026-10-05 12:00'::timestamp)
   ),
   (
     'mg_subway_vs_bus',
@@ -857,9 +857,9 @@ Runs underground on its own tracks, so it's generally faster and more predictabl
 
 The weird one. Parts run underground like a subway (downtown). Other parts run above ground at street level like a trolley (the B, C, and E branches). When it's above ground, you board at small platform stops on the street — look for the green signs. It can feel unfamiliar, but it works the same way: tap on, ride, get off at your stop.
 
-### Free transfers
+### Transfers
 
-If you pay with a Charlie Card or phone, a single bus-to-subway transfer is free within two hours. So a trip that mixes buses and trains often costs just a single fare.$guidebody$,
+If you pay with a CharlieCard or your phone, you can switch between buses and the subway within two hours and pay only the highest fare on the trip. Subway to bus is free; bus to subway costs the $0.70 difference. So a trip that mixes buses and trains costs about the same as one subway ride.$guidebody$,
     $guidebody$The MBTA runs buses, subway lines, and the Green Line (which acts like a streetcar in some places and a subway in others). They're all part of the same system, but the experience is different enough that it helps to know what you're walking into.
 
 ### Buses
@@ -874,9 +874,9 @@ Runs underground on its own tracks, so it's generally faster and more predictabl
 
 The weird one. Parts run underground like a subway (downtown). Other parts run above ground at street level like a trolley (the B, C, and E branches). When it's above ground, you board at small platform stops on the street — look for the green signs. It can feel unfamiliar, but it works the same way: tap on, ride, get off at your stop.
 
-### Free transfers
+### Transfers
 
-If you pay with a Charlie Card or phone, a single bus-to-subway transfer is free within two hours. So a trip that mixes buses and trains often costs just a single fare.$guidebody$,
+If you pay with a CharlieCard or your phone, you can switch between buses and the subway within two hours and pay only the highest fare on the trip. Subway to bus is free; bus to subway costs the $0.70 difference. So a trip that mixes buses and trains costs about the same as one subway ride.$guidebody$,
     'transit',
     'routes',
     'approved',
@@ -886,7 +886,7 @@ If you pay with a Charlie Card or phone, a single bus-to-subway transfer is free
     ARRAY['mg_first_bus_ride', 'mg_pay_for_t']::text[],
     true,
     2,
-    '2026-05-08'::timestamptz
+    timezone('America/New_York', '2026-10-17 12:00'::timestamp)
   ),
   (
     'mg_bus_transfers',
@@ -916,7 +916,7 @@ If you pay with a Charlie Card or phone, a single bus-to-subway transfer is free
     ARRAY['mg_pay_for_t', 'mg_subway_vs_bus']::text[],
     false,
     1,
-    '2026-05-08'::timestamptz
+    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
   ),
   (
     'mg_pay_for_t',
@@ -1000,7 +1000,7 @@ If you ride a few times a week, just tap. If you ride the subway round trip almo
     ARRAY['mg_bus_transfers', 'mg_first_bus_ride']::text[],
     true,
     2,
-    '2026-10-01'::timestamptz
+    timezone('America/New_York', '2026-10-01 12:00'::timestamp)
   ),
   (
     'mg_first_bus_ride',
@@ -1066,7 +1066,7 @@ Move toward the back to make room. Hold a pole or strap if you're standing. Stop
     ARRAY['mg_pay_for_t', 'mg_subway_vs_bus']::text[],
     false,
     2,
-    '2026-10-01'::timestamptz
+    timezone('America/New_York', '2026-10-01 12:00'::timestamp)
   ),
   (
     'mg_transit_plus_walking',
@@ -1140,7 +1140,7 @@ About 35 minutes, {{price:mbta.subwaySingle}}, and 18 minutes of walking built i
     ARRAY['mg_transit_planning', 'mg_subway_vs_bus']::text[],
     false,
     2,
-    '2026-10-01'::timestamptz
+    timezone('America/New_York', '2026-10-01 12:00'::timestamp)
   ),
   (
     'mg_transit_planning',
@@ -1214,7 +1214,7 @@ For first-time multi-leg trips, screenshot the directions in case signal drops o
     ARRAY['mg_subway_vs_bus', 'mg_transit_plus_walking']::text[],
     true,
     2,
-    '2026-05-08'::timestamptz
+    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
   ),
   (
     'mg_transit_time',
@@ -1272,7 +1272,7 @@ A 30-minute drive is 30 minutes of driving. A 30-minute train ride is 30 minutes
     ARRAY['mg_subway_vs_bus', 'mg_transit_plus_walking']::text[],
     false,
     2,
-    '2026-05-08'::timestamptz
+    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
   ),
   (
     'mg_walking_vs_driving',
@@ -1330,7 +1330,7 @@ A 15-minute walk lets you notice your neighborhood, and ends with you in a bette
     ARRAY['mg_walking_carrying']::text[],
     true,
     2,
-    '2026-10-01'::timestamptz
+    timezone('America/New_York', '2026-10-01 12:00'::timestamp)
   ),
   (
     'mg_walking_carrying',
@@ -1396,7 +1396,7 @@ A rolling cart, an e-cargo bike, and a delivery subscription cover almost any lo
     ARRAY['mg_cargo_bike', 'mg_walking_vs_driving']::text[],
     true,
     2,
-    '2026-05-08'::timestamptz
+    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
   ),
   (
     'mg_walking_weather',
@@ -1462,7 +1462,7 @@ Most "the weather is bad" conclusions are made by people standing inside dressed
     ARRAY['mg_biking_in_rain', 'mg_cold_weather', 'mg_boston_winter']::text[],
     true,
     2,
-    '2026-05-08'::timestamptz
+    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
   ),
   (
     'mg_drive_time_on_foot',
@@ -1491,7 +1491,7 @@ Roughly 25 to 30 minutes riding, or 20 on an e-bike. Five miles is also comforta
 
 Each of those estimates measures a different slice of the trip. Here's what to add back for a real one.
 
-**Parking, if you drive.** The estimate stops at the destination address. The trip you actually take includes finding a space and walking in from it — around a hospital, a campus, the Seaport, or downtown, that's regularly another 5 to 15 minutes at the destination and a few more back at the start. Paying is its own step: a day in a Boston garage runs about $18, and metered spots want a minute at the kiosk or in the app. On a short errand that overhead can be most of the trip.
+**Parking, if you drive.** The estimate stops at the destination address. The trip you actually take includes finding a space and walking in from it — around a hospital, a campus, the Seaport, or downtown, that's regularly another 5 to 15 minutes at the destination and a few more back at the start. Paying is its own step: a full day in a downtown Boston garage runs $30 to $47, and metered spots want a minute at the kiosk or in the app. On a short errand that overhead can be most of the trip.
 
 **Locking up, if you bike.** Add a minute or two at each end. On Bluebikes, add the walk to a dock, and at rush hour the occasional extra block to reach one with a free spot — a single ride is $3, or $11.13 a month on an annual pass.
 
@@ -1526,7 +1526,7 @@ Roughly 25 to 30 minutes riding, or 20 on an e-bike. Five miles is also comforta
 
 Each of those estimates measures a different slice of the trip. Here's what to add back for a real one.
 
-**Parking, if you drive.** The estimate stops at the destination address. The trip you actually take includes finding a space and walking in from it — around a hospital, a campus, the Seaport, or downtown, that's regularly another 5 to 15 minutes at the destination and a few more back at the start. Paying is its own step: a day in a Boston garage runs about {{price:driving.parkingDailyBoston}}, and metered spots want a minute at the kiosk or in the app. On a short errand that overhead can be most of the trip.
+**Parking, if you drive.** The estimate stops at the destination address. The trip you actually take includes finding a space and walking in from it — around a hospital, a campus, the Seaport, or downtown, that's regularly another 5 to 15 minutes at the destination and a few more back at the start. Paying is its own step: a full day in a downtown Boston garage runs {{price:parking.bostonCommonDay}} to {{price:parking.prudentialDay}}, and metered spots want a minute at the kiosk or in the app. On a short errand that overhead can be most of the trip.
 
 **Locking up, if you bike.** Add a minute or two at each end. On Bluebikes, add the walk to a dock, and at rush hour the occasional extra block to reach one with a free spot — a single ride is {{price:bluebikes.singleRide}}, or {{price:bluebikes.annualPerMonth}} a month on an annual pass.
 
@@ -1548,7 +1548,7 @@ Put your own trip into the [Commute Advisor](https://www.gogreenstreets.org/comm
     ARRAY['mg_walking_vs_driving', 'mg_bike_time', 'mg_transit_time']::text[],
     false,
     3,
-    '2026-08-31'::timestamptz
+    timezone('America/New_York', '2026-08-31 12:00'::timestamp)
   ),
   (
     'mg_cargo_bike_cost',
@@ -1662,7 +1662,7 @@ And if you want to know what those trips would look like, the [Commute Advisor](
     ARRAY['mg_cargo_bike', 'mg_bike_commute_gear', 'mg_bike_lock']::text[],
     false,
     5,
-    '2026-09-28'::timestamptz
+    timezone('America/New_York', '2026-09-28 12:00'::timestamp)
   )
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,
