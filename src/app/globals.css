@@ -5,6 +5,8 @@
   --font-sans: 'DM Sans', sans-serif;
   --font-mono: 'DM Mono', monospace;
   --font-serif: 'Instrument Serif', serif;
+  --font-headline: var(--font-overpass), 'Trebuchet MS', 'Lucida Grande', Verdana, sans-serif;
+  --font-gsi: 'Trebuchet MS', 'Lucida Grande', Verdana, sans-serif;
 
   --color-lime: #BAF14D;
   --color-blue: #2966E5;
@@ -93,6 +95,27 @@
       background-color: white;
     }
   }
+}
+
+/* ── Street-sign look (Keith, 2026-09-28) ─────────────────────────────────
+   Overpass ExtraBold headlines, Trebuchet MS (the wordmark face) for
+   everything else. A page opts in with class="street" on its outer wrapper;
+   the site-wide switch is moving that class to <body>. Inside the scope the
+   legacy serif token is remapped, so older components that say font-serif
+   follow along without edits as Overpass 800. font-mono and font-display
+   stay as they are: the Shift app mockups use them to look like the app,
+   so site-side mono dates and URLs are changed at their call sites. */
+@layer base {
+  .street {
+    --font-sans: var(--font-gsi);
+    --font-serif: var(--font-headline);
+    font-family: var(--font-gsi);
+  }
+}
+@layer utilities {
+  .street .font-serif { font-weight: 800; letter-spacing: -0.01em; }
+  /* No italic accent words in headlines: one tone, one style. */
+  .street :is(h1, h2, h3) em { font-style: normal; color: inherit; }
 }
 
 @keyframes animate-in {
