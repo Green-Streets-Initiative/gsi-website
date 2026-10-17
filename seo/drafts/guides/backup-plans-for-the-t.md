@@ -61,7 +61,7 @@ Planned repair closures still happen, like the Red Line's closure from Alewife t
 
 Among people using Shift who rode the Red Line regularly, driving went from about a quarter of their trips to about a third during the closure. Biking went up too, from 15% to 18% of trips. Yet at rush hour, drives of 3 to 8 miles in Boston, Cambridge, Somerville, Brookline and nearby were no faster than biking or the subway: typically 8.4 mph by car, 8.6 by bike and 8.8 on the subway.
 
-**About these numbers:** From trips recorded by 17 to 22 regular Red Line riders using Shift, June 22 to July 30, 2026 (a small group, in midsummer), and 1,078 rush-hour trips by people using Shift, July 18 to October 16, 2026.
+**About these numbers:** From trips recorded by 17 to 22 regular Red Line riders using Shift, June 22 to July 30, 2026 (a small group, in midsummer), and 1,078 rush-hour trips by people using Shift, July 18 to October 16, 2026. Typical means half the trips were faster and half were slower.
 
 ### What are my backup options?
 
@@ -76,7 +76,7 @@ Around You in the Shift app shows the next buses and the bikes free at nearby do
 
 No, for most trips. On trips of 0.75 to 2 miles, Green Line rides recorded by people using Shift typically went 6.4 mph, more than twice their typical walking speed of 2.8 mph. Those times may leave out some platform waiting, so for one or two stops downtown, where stations are a quarter mile apart, walking can come close.
 
-**About these numbers:** From 324 Green Line trips and 3,111 walks of 0.75 to 2 miles recorded by people using Shift, June to October 2026.
+**About these numbers:** From 324 Green Line trips and 3,111 walks of 0.75 to 2 miles recorded by people using Shift, June to October 2026. Typical means half were faster and half were slower.
 
 ### Should I get an e-bike or a scooter?
 

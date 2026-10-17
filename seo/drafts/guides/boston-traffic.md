@@ -60,7 +60,7 @@ Boston's traffic is among the worst in the country. The average driver here lost
 
 Not by much. On weekday rush-hour trips of 3 to 8 miles in Boston, Cambridge, Somerville, Brookline and nearby, people using Shift typically went 8.4 mph by car, 8.6 mph by bike and 8.8 mph on the subway. Outside rush hour, drives of that length typically went 10.3 mph.
 
-**About these numbers:** From 1,078 rush-hour trips of 3 to 8 miles by car, bike and subway recorded by people using Shift, July 18 to October 16, 2026 (weekdays 7 to 9:30 a.m. and 4 to 7 p.m.). Typical means the middle trip.
+**About these numbers:** From 1,078 rush-hour trips of 3 to 8 miles by car, bike and subway recorded by people using Shift, July 18 to October 16, 2026 (weekdays 7 to 9:30 a.m. and 4 to 7 p.m.). Typical means half the trips were faster and half were slower.
 
 ### When should I leave to miss it?
 

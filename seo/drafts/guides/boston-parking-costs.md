@@ -80,7 +80,7 @@ Yes. The MBTA's garages and lots are paid by phone, and most cost less than an h
 
 Add the fare: {{price:mbta.subwaySingle}} each way on the subway, or {{price:mbta.linkPassMonthly}} a month. A monthly commuter rail pass is {{price:mbta.crZoneTwoMonthly}} from Route 128 and {{price:mbta.crZoneFiveMonthly}} from Framingham.
 
-Of all weekday trips into downtown by people using Shift, about 1 in 9 was a drive. Of the 99 people using Shift who drove downtown on a weekday, 90 also came in by T, bike, ferry or on foot at least once. The typical drive in was 3.4 miles.
+Of all weekday trips into downtown by people using Shift, about 1 in 9 was a drive. Of the 99 people using Shift who drove downtown on a weekday, 90 also came in by T, bike, ferry or on foot at least once. Half of those drives were shorter than 3.4 miles.
 
 **About these numbers:** From weekday trips into downtown Boston recorded by people using Shift, June to October 2026, including 363 drives by 99 people.
 
