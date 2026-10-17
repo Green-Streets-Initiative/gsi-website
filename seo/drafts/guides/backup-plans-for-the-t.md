@@ -51,11 +51,13 @@ When the T is late or a line is closed, your best backup is usually a bus that r
 
 ### Is the T really less reliable than it used to be?
 
-No. It's more reliable than it was a few years ago. The MBTA counts a Red, Orange or Blue Line trip as on time when it arrives within five minutes of the expected time. By late 2025 about 92% of trips met that bar, up from about 25% in late 2023 ([Christian Science Monitor](https://www.csmonitor.com/Business/2025/1115/boston-mbta-phillip-eng)), and the last subway slow zones were removed in December 2024. Current numbers are on the [MBTA's reliability page](https://www.mbta.com/performance-metrics/service-reliability).
+No. It's more reliable than it was a few years ago. The MBTA counts a Red, Orange or Blue Line trip as on time when it arrives within five minutes of the expected time. By late 2025 about 92% of trips met that bar, up from about 25% in late 2023 ([Christian Science Monitor](https://www.csmonitor.com/Business/2025/1115/boston-mbta-phillip-eng)). Current numbers are on the [MBTA's reliability page](https://www.mbta.com/performance-metrics/service-reliability).
+
+In December 2024 the MBTA cleared more than 220 slow zones, stretches where trains must go slower for safety ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Short ones for repairs have come and gone since. In the last published data, from May 2026, there were a few, including a 10 mph zone at Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
 Planned repair closures still happen, like the Red Line's closure from Alewife to Park Street on July 21 to 30, 2026.
 
-### What did riders do during the July Red Line closure?
+### What did riders do during the July 2026 Red Line closure?
 
 Among people using Shift who rode the Red Line regularly, driving went from about a quarter of their trips to about a third during the closure. Biking went up too, from 15% to 18% of trips. Yet at rush hour, drives of 3 to 8 miles in Boston, Cambridge, Somerville, Brookline and nearby were no faster than biking or the subway: typically 8.4 mph by car, 8.6 by bike and 8.8 on the subway.
 

@@ -1,0 +1,49 @@
+{
+  "_comment": "When each fact on each answer page gets re-checked. Read by the SEO routine's monthly deep-dive (methodology.md, 'Answer-page refresh'); see seo/answer-pages.md section 9. cadence: monthly | quarterly | semester | annual | once. auto = already covered by the monthly price freshness check (src/lib/freshness). After a check: update the page (or prices.json), bump the guide's reviewed: date, and set next_check.",
+  "version": 1,
+  "pages": {
+    "boston-traffic": [
+      { "fact": "Our data: rush-hour speeds by mode (8.4 / 8.6 / 8.8 mph)", "source": "seo/data/answer-evidence/boston-traffic.md", "cadence": "quarterly", "next_check": "2027-01-15" },
+      { "fact": "INRIX hours lost and US rank (83 hours, 5th)", "source": "https://inrix.com/press-releases/2025-global-traffic-scorecard-us/", "cadence": "annual", "next_check": "2026-12-15", "note": "The 2026 scorecard usually comes out in early December." },
+      { "fact": "MassDOT congestion figures (6 a.m. 15%, 8 a.m. 45%, I-93 worst spots)", "source": "MassDOT Congestion in the Commonwealth, 2025 data update (archived copy)", "cadence": "annual", "next_check": "2027-06-01" },
+      { "fact": "Commuter rail and ferry ride times, bus 350 time", "source": "https://www.mbta.com/schedules", "cadence": "quarterly", "next_check": "2027-01-05", "note": "Check after each MBTA seasonal schedule change." },
+      { "fact": "Framingham and MBTA garage parking prices", "source": "prices.json parking.*", "cadence": "quarterly", "next_check": "2027-01-05" }
+    ],
+    "boston-parking-costs": [
+      { "fact": "Our data: weekday trips into downtown (1 in 9 drives; 90 of 99 drivers)", "source": "seo/data/answer-evidence/boston-parking-costs.md", "cadence": "quarterly", "next_check": "2027-01-15" },
+      { "fact": "Downtown garage rates (Boston Common, Post Office Square, Prudential)", "source": "operators' rate pages (see prices.json parking._comment)", "cadence": "quarterly", "next_check": "2027-01-05" },
+      { "fact": "MBTA garage and lot rates", "source": "https://www.mbta.com/parking/stations-and-rates", "cadence": "quarterly", "next_check": "2027-01-05" },
+      { "fact": "Meter rates and ticket fines", "source": "boston.gov parking clerk", "cadence": "annual", "next_check": "2027-07-01" },
+      { "fact": "IRS pre-tax transit limit ($340 for 2026)", "source": "IRS revenue procedure for the tax year", "cadence": "annual", "next_check": "2026-11-15", "note": "The 2027 limit is published each fall; change the page on January 1." },
+      { "fact": "Massachusetts commuter deduction ($750 cap, above $150)", "source": "mass.gov commuter deduction page", "cadence": "annual", "next_check": "2027-01-15" },
+      { "fact": "Student permit prices (BU, Simmons, UMass Boston) and the Semester Pass discount", "source": "school transportation pages; mbta.com semester passes", "cadence": "semester", "next_check": "2027-01-10" },
+      { "fact": "Commuter rail monthly pass prices (zones 2 and 5), subway fare, LinkPass", "source": "prices.json mbta.*", "cadence": "monthly", "next_check": "auto" }
+    ],
+    "keeping-a-car-in-boston": [
+      { "fact": "Our data: driving days and short drives (65 people, 2 days a week, 1 in 4 under 2 miles)", "source": "seo/data/answer-evidence/keeping-a-car-in-boston.md", "cadence": "quarterly", "next_check": "2027-01-15" },
+      { "fact": "AAA cost of owning and running a car ($12,863; fixed $7,704)", "source": "AAA Your Driving Costs fact sheet", "cadence": "annual", "next_check": "2027-09-15" },
+      { "fact": "Cambridge resident permit ($25, $75 from December 1, 2026)", "source": "https://www.cambridgema.gov/rpp", "cadence": "once", "next_check": "2026-12-02", "note": "On December 2, change the sentence to say the permit is $75." },
+      { "fact": "Excise, registration and inspection fees", "source": "mass.gov DLS and RMV pages", "cadence": "annual", "next_check": "2027-07-01" },
+      { "fact": "Zipcar plan price ($9 a month)", "source": "zipcar.com/pricing (Boston)", "cadence": "quarterly", "next_check": "2027-01-05" },
+      { "fact": "City of Boston car-share finding (1 hour vs 7 hours a day)", "source": "boston.gov Car Share Boston", "cadence": "annual", "next_check": "2027-10-01" },
+      { "fact": "Car seat law and registration-cancellation steps", "source": "malegislature.gov c.90 s.7AA; mass.gov cancel registration", "cadence": "annual", "next_check": "2027-10-01" }
+    ],
+    "backup-plans-for-the-t": [
+      { "fact": "Our data: Red Line riders during the July 2026 closure; Green Line vs walking speeds", "source": "seo/data/answer-evidence/backup-plans-for-the-t.md", "cadence": "quarterly", "next_check": "2027-01-15", "note": "Replace the July 2026 example when a newer major closure gives a larger sample." },
+      { "fact": "Subway reliability (92% on time)", "source": "mbta.com/performance-metrics/service-reliability", "cadence": "quarterly", "next_check": "2027-01-15" },
+      { "fact": "Slow zones (May 2026: a few, including 10 mph at Braintree)", "source": "TransitMatters slow zones (feed paused Oct 2026; data stale after May 31, 2026). The MBTA speed-restrictions dashboard was taken down in 2026.", "cadence": "monthly", "next_check": "2026-11-15", "note": "Look for a current public source each month (MBTA performance pages, TransitMatters). If none returns by spring 2027, ask MBTA OPMI or drop the May 2026 detail." },
+      { "fact": "Planned closures named on the page", "source": "mbta.com alerts; boston.gov MBTA shutdowns page", "cadence": "monthly", "next_check": "2026-11-15" },
+      { "fact": "Transfer pilot (pay only the higher fare within two hours)", "source": "https://www.mbta.com/fares/transfers; prices.json mbta.transferPilotEnds", "cadence": "once", "next_check": "2027-02-15", "note": "The pilot ends March 1, 2027 unless extended. Rewrite both pages that mention it." },
+      { "fact": "E-bike and scooter bill status; state e-bike rebate status", "source": "massbike.org; malegislature.gov; goclean.masscec.com", "cadence": "monthly", "next_check": "2026-11-15" },
+      { "fact": "Route 77 and 96 frequency", "source": "https://www.mbta.com/schedules", "cadence": "quarterly", "next_check": "2027-01-05" },
+      { "fact": "Bluebikes station count and prices", "source": "prices.json bluebikes.*; bluebikes.com", "cadence": "monthly", "next_check": "auto" }
+    ],
+    "getting-around-boston": [
+      { "fact": "Our data: trips by people living in Boston, Cambridge, Somerville, Brookline (71% walk, bike, transit)", "source": "seo/data/answer-evidence/getting-around-boston.md", "cadence": "quarterly", "next_check": "2027-01-15" },
+      { "fact": "Census: households with no vehicle; how people get to work", "source": "Census Reporter tables B25044, B08301", "cadence": "annual", "next_check": "2026-12-15", "note": "The 2021-2025 five-year release usually lands in December." },
+      { "fact": "Walk Score figures", "source": "walkscore.com city and neighborhood pages", "cadence": "annual", "next_check": "2027-10-01" },
+      { "fact": "Fares, reduced fares, children and seniors riding free", "source": "prices.json mbta.*; mbta.com/fares/reduced", "cadence": "monthly", "next_check": "auto" },
+      { "fact": "Car seat law in ride-hail", "source": "malegislature.gov c.90 s.7AA", "cadence": "annual", "next_check": "2027-10-01" }
+    ]
+  }
+}

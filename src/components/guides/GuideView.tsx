@@ -6,6 +6,9 @@ import JsonLd from '@/components/JsonLd'
 import StoreBadges from '@/components/StoreBadges'
 import CheatSheetDownload, { type CheatSheetTranslation } from '@/components/guides/CheatSheetDownload'
 import PassGrid from '@/components/guides/PassGrid'
+import GuideTripPlanner from '@/components/guides/GuideTripPlanner'
+import ParkAndRideFinder from '@/components/guides/ParkAndRideFinder'
+import GuideOffer from '@/components/guides/GuideOffer'
 import { PRICES, usd } from '@/lib/facts/prices'
 import { guideArticleSchema, breadcrumbSchema } from '@/lib/structured-data'
 
@@ -159,6 +162,66 @@ const appStripBySlug: Record<string, { headline: string; line: string }> = {
     line: 'Shift shows what you can reach on foot, the closest bus or train and low-stress bike routes. Make more trips this way and you can unlock gift cards from local shops. Free.',
   },
 }
+// Our own tools and live offers, placed after the section they serve
+// (seo/answer-pages.md). LEAD is the guide's opening answer. Offers render
+// only while their campaign is open (GuideOffer).
+const LEAD = '__lead__'
+const toolsAfter: Record<string, Record<string, (slug: string) => ReactNode>> = {
+  'backup-plans-for-the-t': {
+    [LEAD]: (slug) => (
+      <GuideTripPlanner
+        slug={slug}
+        placement="lead"
+        heading="Plan your backup now"
+        intro="Enter where you start and where you're going. You'll see the bus or train option and the bike option for that trip."
+      />
+    ),
+  },
+  'boston-parking-costs': {
+    'Is it cheaper to park at a T station?': (slug) => (
+      <ParkAndRideFinder
+        slug={slug}
+        placement="park_at_the_t"
+        heading="Find station parking near you"
+        intro="Enter where your drive starts. You'll see the nearest MBTA lots and garages, what they cost and how full they usually get."
+      />
+    ),
+    'Is a student parking permit worth it?': (slug) => <GuideOffer kind="semester" slug={slug} />,
+  },
+  'boston-traffic': {
+    'How do I get around it from where I live?': (slug) => (
+      <ParkAndRideFinder
+        slug={slug}
+        placement="corridors"
+        heading="Find station parking near you"
+        intro="Driving part of the way? Enter where you start to see the nearest MBTA lots and garages, what they cost and the lines they serve."
+      />
+    ),
+  },
+  'keeping-a-car-in-boston': {
+    "How do I work out what's right for me?": (slug) => (
+      <GuideTripPlanner
+        slug={slug}
+        placement="work_it_out"
+        heading="Check one of your trips"
+        intro="Pick a trip you usually drive. You'll see how long it takes by transit and by bike."
+      />
+    ),
+  },
+  'getting-around-boston': {
+    "What's the cheapest way to get around?": (slug) => <GuideOffer kind="newroutes" slug={slug} />,
+    'Try this first': (slug) => (
+      <GuideTripPlanner
+        slug={slug}
+        placement="try_this_first"
+        heading="Check an address"
+        intro="Enter the address you're considering and a place you go often. You'll see the trip by transit and by bike."
+        toPlaceholder="Work, school or a place you go often"
+      />
+    ),
+  },
+}
+
 const appStripDefault = {
   headline: 'Find the easy way there.',
   line: 'Shift shows live bus and train arrivals, low-stress bike routes and the nearest Bluebikes. Make more trips this way and you can unlock gift cards from local shops. Free.',
@@ -227,6 +290,7 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
           <h3 className="mt-8 mb-3 font-serif text-[1.25rem] leading-tight text-navy">{section.heading}</h3>
         )}
         {swap ?? <div dangerouslySetInnerHTML={{ __html: renderMarkdown(section.body) }} />}
+        {toolsAfter[guideSlug]?.[section.heading ?? '']?.(guideSlug)}
         {after && cheatSheet && (
           <CheatSheetDownload
             variant="inline"
@@ -333,8 +397,12 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
           {leadFirst && (
             <div className="guide-body text-[1.0625rem] leading-[1.75] text-navy">{renderSection(sections[0], 0)}</div>
           )}
+          {leadFirst && toolsAfter[guideSlug]?.[LEAD]?.(guideSlug)}
 
-          {appStripBlock}
+          {/* A page that opens with one of our tools already gives the reader
+              something to do; the app strip would stack a second box on it.
+              The "Try it" box at the end still points to the app. */}
+          {!(leadFirst && toolsAfter[guideSlug]?.[LEAD]) && appStripBlock}
 
           {/* Body — rendered from markdown.
               Summary is intentionally not rendered here. Summaries are

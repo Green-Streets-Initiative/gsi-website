@@ -138,3 +138,26 @@ to growth.
 - **Keep the query.** Each draft's evidence lives in
   `seo/data/answer-evidence/<slug>.md` with the SQL and the result, so the
   number can be re-run when the page is reviewed.
+
+## 9. Keeping pages current (added 2026-10-17)
+
+A page that answered a question well in October can mislead by spring.
+
+- **Every fact on a page is in `seo/answer-pages-refresh.json`**, with its
+  source, how often it changes (monthly, quarterly, each semester, yearly, or
+  one known date) and the next date to check it. A new page is not done until
+  its facts are listed there.
+- **Prices update themselves.** Anything in `prices.json` that the monthly
+  freshness check already tracks is marked `auto`; prices it doesn't track yet
+  (garages, campus permits) are checked on their own dates.
+- **Our data is re-run quarterly.** Re-run the saved query in
+  `seo/data/answer-evidence/<slug>.md`, update the numbers and the date line
+  if they moved, and replace a dated example (like the July 2026 Red Line
+  closure) when a newer one gives a better sample.
+- **Known dates get their own entry**, such as the end of the T's transfer
+  pilot or a permit price change, so the page is rewritten the day the fact
+  changes, not when someone notices.
+- **The SEO routine does the checks in its monthly deep-dive**: every entry
+  due that month, plus a live check of every outbound link. It updates the
+  page, bumps the guide's `reviewed:` date, sets the next check date, and
+  lists what changed in its report.

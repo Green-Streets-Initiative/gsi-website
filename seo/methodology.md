@@ -277,20 +277,25 @@ Everything in the weekly pulse, plus:
    every indexable page class in the sitemap; run each cluster's `aeo_questions`
    through `WebSearch` and record whether GSI is cited/surfaced. Then run the
    **AI answer sample** (below) on the full question bank.
-5. **Experiment proposals:** append 1–3 entries to `experiments.md` as
+5. **Answer-page refresh:** work every entry in `seo/answer-pages-refresh.json`
+   whose `next_check` has passed (re-run evidence queries quarterly), check every
+   outbound link on the answer pages live, update pages and `reviewed:` dates,
+   set the next dates, and list the changes in the report
+   (`seo/answer-pages.md` section 9).
+6. **Experiment proposals:** append 1–3 entries to `experiments.md` as
    `proposed` — hypothesis, exact change, success metric + cluster,
    `verdict-by` (≈ +6 weeks).
-6. **Content drafting:** answer pages for `question-bank.json` gaps follow
+7. **Content drafting:** answer pages for `question-bank.json` gaps follow
    `seo/answer-pages.md` (query our own data first; evidence in
    `seo/data/answer-evidence/`). Up to 2 new micro-guide drafts into
    `seo/drafts/guides/<slug>.md` (full YAML + body, library voice, messaging
    policy), and/or one page-edit branch `seo/YYYY-MM-<slug>` (pushed, never
    merged). Self-check every drafted word against `seo/strategy.md`.
-7. **Growth strategy review:** re-rank the hypothesis backlog end to end.
+8. **Growth strategy review:** re-rank the hypothesis backlog end to end.
    Check the channel mix (is organic's app-intent rate improving? what are
    paid search terms telling us about unmet demand?), and propose one change to
    `seo/strategy.md` if the learnings warrant it.
-8. **Email:** the growth format above, plus teardown highlights and portfolio
+9. **Email:** the growth format above, plus teardown highlights and portfolio
    changes in two lines each.
 
 ## The accountability ledger (top of every report and email)

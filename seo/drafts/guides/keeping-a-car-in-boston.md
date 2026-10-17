@@ -69,7 +69,7 @@ About two days a week, among people using Shift who live in Boston, Cambridge, S
 
 **About these numbers:** From 3,263 drives recorded by 65 people using Shift who live in those four cities, August 21 to October 16, 2026. Driving here includes rides in a taxi or ride-hail car.
 
-The City of Boston found something similar: a privately owned car is driven about an hour a day, while each car in its car-share pilot was used about seven ([City of Boston](https://www.boston.gov/departments/transportation/car-share-boston)).
+The City of Boston found something similar: a privately owned car is driven about one hour a day, while each car in the city's car-share pilot was used about seven hours a day ([City of Boston](https://www.boston.gov/departments/transportation/car-share-boston)).
 
 ### How do I work out what's right for me?
 
