@@ -20,11 +20,11 @@ O tempo é o que mais faz as pessoas desistirem de caminhar. Mas quase sempre d�
 
 ### 1. Os sapatos certos são o primeiro passo.
 
-Com sapatos impermeáveis (qualquer par razoável, não precisa de equipamento especial), a chuva deixa de ser problema. Com botas forradas, uma caminhada a 25°F fica bem confortável. Muitas vezes, o problema que as pessoas culpam no tempo é, na verdade, o sapato que não é impermeável.
+Com sapatos impermeáveis (qualquer par razoável, não precisa de equipamento especial), a chuva deixa de ser problema. Com botas forradas, uma caminhada a 25°F (−4 °C) fica bem confortável. Muitas vezes, o problema que as pessoas culpam no tempo é, na verdade, o sapato que não é impermeável.
 
 ### 2. No frio, o segredo são as camadas de roupa, mais do que a temperatura.
 
-Uma jaqueta leve por cima da sua roupa normal deixa você confortável num frio muito maior. A regra dos ciclistas, "vista-se como se estivesse 15°F mais quente", também vale aqui: você esquenta em poucos quarteirões. Cubra as orelhas e as mãos. O resto se resolve sozinho.
+Uma jaqueta leve por cima da sua roupa normal deixa você confortável num frio muito maior. A regra dos ciclistas, "vista-se como se estivesse 15°F mais quente (uns 8 °C)", também vale aqui: você esquenta em poucos quarteirões. Cubra as orelhas e as mãos. O resto se resolve sozinho.
 
 ### 3. Chuva fraca não é problema.
 
@@ -32,7 +32,7 @@ Uma jaqueta impermeável com capuz dá conta da garoa comum que faz as pessoas d
 
 ### 4. No calor, o que importa é o ritmo e beber água.
 
-Em dias de 90°F, caminhe mais devagar, leve uma garrafa de água, vá pelo lado da rua com mais sombra e pense em usar um chapéu ou boné. Antes das 9 da manhã e depois das 7 da noite, em geral dá para caminhar bem, mesmo no verão.
+Em dias de 90°F (32 °C), caminhe mais devagar, leve uma garrafa de água, vá pelo lado da rua com mais sombra e pense em usar um chapéu ou boné. Antes das 9 da manhã e depois das 7 da noite, em geral dá para caminhar bem, mesmo no verão.
 
 ### 5. Tenha um plano B.
 

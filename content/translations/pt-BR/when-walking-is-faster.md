@@ -4,7 +4,7 @@
 id: mg_walking_vs_driving
 reviewed: 2026-10-01
 title: "Quando caminhar é mesmo a opção mais rápida"
-summary: "Em trajetos de menos de uma milha, caminhar muitas vezes ganha do carro, quando você conta o tempo de ir até o carro. Cinco situações em que caminhar ganha com certeza."
+summary: "Em trajetos de menos de uma milha (1.6 km), caminhar muitas vezes ganha do carro, quando você conta o tempo de ir até o carro. Cinco situações em que caminhar ganha com certeza."
 slug: when-walking-is-faster
 lang: pt-BR
 mode: walking
@@ -18,9 +18,9 @@ related: [mg_walking_carrying]
 
 Caminhar é mais rápido que dirigir em mais trajetos curtos do que as pessoas imaginam, quando você conta o tempo de porta a porta. Veja quando caminhar ganha.
 
-### 1. Trajetos de menos de meia milha.
+### 1. Trajetos de menos de meia milha (800 m).
 
-Caminhar meia milha leva uns 10 minutos. Dirigir a mesma distância muitas vezes leva mais tempo, quando você conta a ida até o carro, o trânsito e a caminhada do estacionamento até a porta. Quanto mais curto o trajeto, maior a vantagem de ir a pé.
+Caminhar meia milha (800 m) leva uns 10 minutos. Dirigir a mesma distância muitas vezes leva mais tempo, quando você conta a ida até o carro, o trânsito e a caminhada do estacionamento até a porta. Quanto mais curto o trajeto, maior a vantagem de ir a pé.
 
 ### 2. Qualquer lugar onde é difícil estacionar.
 
@@ -32,7 +32,7 @@ Precisa tomar um café, deixar um pacote e pegar uma coisa na farmácia, tudo no
 
 ### 4. Na hora do rush, quando o trânsito está ruim.
 
-Dirigir 1 milha no anda e para do trânsito pode levar 10 a 15 minutos fácil. Caminhar 1 milha leva 20 minutos. Às vezes é mais rápido que o carro, e quase sempre é mais agradável.
+Dirigir 1 milha (1.6 km) no anda e para do trânsito pode levar 10 a 15 minutos fácil. Caminhar 1 milha leva 20 minutos. Às vezes é mais rápido que o carro, e quase sempre é mais agradável.
 
 ### 5. O que caminhar faz e o GPS não mede.
 

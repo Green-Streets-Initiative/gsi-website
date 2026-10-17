@@ -18,7 +18,7 @@ related: [mg_low_stress_routes, mg_cargo_bike, mg_bike_commute_gear]
 
 Ir en bici es más rápido que manejar en más viajes de lo que la gente cree, cuando cuentas el tiempo de puerta a puerta. Estos son los casos en que de verdad gana.
 
-### 1. Viajes de menos de tres millas, sobre todo en barrios con mucha gente.
+### 1. Viajes de menos de tres millas (4.8 km), sobre todo en barrios con mucha gente.
 
 Los viajes cortos en bici por la ciudad suelen tomar de 15 a 25 minutos de puerta a puerta. El mismo viaje en auto, contando el tiempo que pasas buscando estacionamiento, muchas veces toma más o menos lo mismo, y a veces más. La idea de que "manejar es más rápido" viene sobre todo de viajes en los suburbios, no en la ciudad.
 
@@ -32,7 +32,7 @@ Cuando el tráfico casi no avanza, las rutas que no dependen de los semáforos, 
 
 ### 4. Viajes más largos, en bici eléctrica.
 
-Un trayecto de 5 a 7 millas que se hace pesado en una bici normal es un viaje cómodo de 20 a 25 minutos en bici eléctrica, casi sin esfuerzo. Con una bici eléctrica, la bici compite en tiempo con el auto en viajes más largos, muchas veces de bastante más de cinco millas.
+Un trayecto de 5 a 7 millas (8 a 11 km) que se hace pesado en una bici normal es un viaje cómodo de 20 a 25 minutos en bici eléctrica, casi sin esfuerzo. Con una bici eléctrica, la bici compite en tiempo con el auto en viajes más largos, muchas veces de bastante más de cinco millas (8 km).
 
 ### 5. Mandados y viajes con niños, en bici de carga eléctrica.
 

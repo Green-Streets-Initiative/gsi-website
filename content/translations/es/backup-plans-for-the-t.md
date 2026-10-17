@@ -22,13 +22,13 @@ Cuando el T llega tarde o una línea está cerrada, tu mejor plan B suele ser un
 
 No. Es más confiable que hace unos años. La MBTA cuenta un viaje en la Línea Roja, Naranja o Azul como puntual cuando llega no más de cinco minutos después de la hora esperada. A fines de 2025, cerca del 92% de los viajes eran puntuales. A fines de 2023 eran cerca del 25% ([Christian Science Monitor](https://www.csmonitor.com/Business/2025/1115/boston-mbta-phillip-eng)). Las cifras de hoy están en la [página de puntualidad de la MBTA](https://www.mbta.com/performance-metrics/service-reliability) (en inglés).
 
-En diciembre de 2024, la MBTA quitó más de 220 zonas lentas, tramos donde los trenes tienen que ir más despacio por seguridad ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde entonces han aparecido y desaparecido algunas zonas cortas por reparaciones. En los últimos datos publicados, de mayo de 2026, había unas pocas, entre ellas una zona de 10 millas por hora (mph) en Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
+En diciembre de 2024, la MBTA quitó más de 220 zonas lentas, tramos donde los trenes tienen que ir más despacio por seguridad ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde entonces han aparecido y desaparecido algunas zonas cortas por reparaciones. En los últimos datos publicados, de mayo de 2026, había unas pocas, entre ellas una zona de 10 millas por hora (mph, o 16 km/h) en Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
 Todavía hay cierres programados para reparaciones, como el cierre de la Línea Roja entre Alewife y Park Street del 21 al 30 de julio de 2026.
 
 ### ¿Qué hicieron los pasajeros durante el cierre de la Línea Roja en julio de 2026?
 
-Entre las personas que usan Shift y viajaban seguido en la Línea Roja, manejar pasó de cerca de una cuarta parte de sus viajes a cerca de un tercio durante el cierre. Los viajes en bici también subieron, del 15% al 18%. Pero en hora pico, manejar 3 a 8 millas en Boston, Cambridge, Somerville, Brookline y ciudades cercanas no fue más rápido que ir en bici o en metro. Lo típico fue 8.4 mph en auto, 8.6 en bici y 8.8 en metro.
+Entre las personas que usan Shift y viajaban seguido en la Línea Roja, manejar pasó de cerca de una cuarta parte de sus viajes a cerca de un tercio durante el cierre. Los viajes en bici también subieron, del 15% al 18%. Pero en hora pico, manejar 3 a 8 millas (5 a 13 km) en Boston, Cambridge, Somerville, Brookline y ciudades cercanas no fue más rápido que ir en bici o en metro. Lo típico fue 8.4 mph en auto, 8.6 en bici y 8.8 en metro (13.5, 13.8 y 14.2 km/h).
 
 **Sobre estas cifras:** Vienen de los viajes registrados por 17 a 22 personas que usan Shift y viajaban seguido en la Línea Roja, del 22 de junio al 30 de julio de 2026 (un grupo pequeño, en pleno verano), y de 1,078 viajes en hora pico de personas que usan Shift, del 18 de julio al 16 de octubre de 2026. Típico quiere decir que la mitad de los viajes fueron más rápidos y la mitad más lentos.
 
@@ -43,13 +43,13 @@ Entre las personas que usan Shift y viajaban seguido en la Línea Roja, manejar 
 
 ### ¿La Línea Verde es más lenta que caminar?
 
-No, en la mayoría de los viajes. En viajes de 0.75 a 2 millas, la Línea Verde iba típicamente a 6.4 mph para las personas que usan Shift. Eso es más del doble de lo que suelen caminar, 2.8 mph. Puede que esos tiempos no incluyan toda la espera en el andén. Por eso, para una o dos paradas en el centro, donde las estaciones están a un cuarto de milla una de otra, caminar puede tomar casi lo mismo.
+No, en la mayoría de los viajes. En viajes de 0.75 a 2 millas (1.2 a 3.2 km), la Línea Verde iba típicamente a 6.4 mph (10.3 km/h) para las personas que usan Shift. Eso es más del doble de lo que suelen caminar, 2.8 mph (4.5 km/h). Puede que esos tiempos no incluyan toda la espera en el andén. Por eso, para una o dos paradas en el centro, donde las estaciones están a un cuarto de milla (400 m) una de otra, caminar puede tomar casi lo mismo.
 
 **Sobre estas cifras:** Vienen de 324 viajes en la Línea Verde y 3,111 caminatas de 0.75 a 2 millas registrados por personas que usan Shift, de junio a octubre de 2026. Típico quiere decir que la mitad de los viajes fueron más rápidos y la mitad más lentos.
 
 ### ¿Me conviene una bici eléctrica o un scooter?
 
-En Massachusetts, las bicis eléctricas que dejan de ayudarte al llegar a 20 mph no necesitan licencia. Puedes usarlas en la calle, en los carriles para bici y en la mayoría de los caminos pavimentados, pero no en las aceras ([guía de MassBike sobre bicis eléctricas](https://www.massbike.org/ebikesfaq)). Para un scooter con motor necesitas licencia de manejar o permiso de aprendiz, y casco. Además, no puedes usarlo entre la puesta del sol y el amanecer ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). En la Legislatura estatal todavía se está negociando un proyecto de ley que cambiaría estas reglas. El reembolso del estado para comprar una bici eléctrica está cerrado en 2026.
+En Massachusetts, las bicis eléctricas que dejan de ayudarte al llegar a 20 mph (32 km/h) no necesitan licencia. Puedes usarlas en la calle, en los carriles para bici y en la mayoría de los caminos pavimentados, pero no en las aceras ([guía de MassBike sobre bicis eléctricas](https://www.massbike.org/ebikesfaq)). Para un scooter con motor necesitas licencia de manejar o permiso de aprendiz, y casco. Además, no puedes usarlo entre la puesta del sol y el amanecer ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). En la Legislatura estatal todavía se está negociando un proyecto de ley que cambiaría estas reglas. El reembolso del estado para comprar una bici eléctrica está cerrado en 2026.
 
 ### Prueba esto primero
 

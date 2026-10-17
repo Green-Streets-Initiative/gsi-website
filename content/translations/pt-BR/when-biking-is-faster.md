@@ -18,7 +18,7 @@ related: [mg_low_stress_routes, mg_cargo_bike, mg_bike_commute_gear]
 
 A bicicleta é mais rápida que o carro em mais viagens do que as pessoas imaginam, quando você conta o tempo de porta a porta. Veja quando ela realmente vence.
 
-### 1. Viagens de menos de três milhas, principalmente em bairros onde tudo fica perto.
+### 1. Viagens de menos de três milhas (4.8 km), principalmente em bairros onde tudo fica perto.
 
 Na cidade, uma viagem curta de bicicleta costuma levar de 15 a 25 minutos de porta a porta. A mesma viagem de carro, contando o tempo para achar onde estacionar, muitas vezes leva mais ou menos o mesmo tempo, e às vezes mais. A ideia de que "de carro é mais rápido" vem mais de viagens no subúrbio do que de viagens na cidade.
 
@@ -32,7 +32,7 @@ Quando o trânsito anda devagar, as rotas que não dependem de semáforos, como 
 
 ### 4. Viagens mais longas, de bicicleta elétrica.
 
-Um trajeto de 5 a 7 milhas, que é lento e cansativo numa bicicleta comum, vira uma viagem confortável de 20 a 25 minutos numa bicicleta elétrica, com pouco esforço. A bicicleta elétrica aumenta a distância em que a bicicleta compete com o carro no tempo, muitas vezes bem além de cinco milhas.
+Um trajeto de 5 a 7 milhas (8 a 11 km), que é lento e cansativo numa bicicleta comum, vira uma viagem confortável de 20 a 25 minutos numa bicicleta elétrica, com pouco esforço. A bicicleta elétrica aumenta a distância em que a bicicleta compete com o carro no tempo, muitas vezes bem além de cinco milhas (8 km).
 
 ### 5. Compras e viagens com crianças, de bicicleta elétrica de carga.
 

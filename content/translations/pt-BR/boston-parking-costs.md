@@ -39,7 +39,7 @@ Sim. As garagens e os estacionamentos da MBTA são pagos pelo celular, e a maior
 
 Some a passagem: {{price:mbta.subwaySingle}} por trecho no metrô (na ida e na volta), ou {{price:mbta.linkPassMonthly}} por mês. O passe mensal do trem metropolitano custa {{price:mbta.crZoneTwoMonthly}} saindo da Route 128 e {{price:mbta.crZoneFiveMonthly}} saindo de Framingham.
 
-De todas as viagens ao centro em dias úteis feitas por pessoas que usam o Shift, cerca de 1 em cada 9 foi de carro. Das 99 pessoas que usam o Shift e foram de carro ao centro num dia útil, 90 também foram pelo menos uma vez de T, bicicleta, balsa ou a pé. Metade dessas viagens de carro teve menos de 3.4 milhas.
+De todas as viagens ao centro em dias úteis feitas por pessoas que usam o Shift, cerca de 1 em cada 9 foi de carro. Das 99 pessoas que usam o Shift e foram de carro ao centro num dia útil, 90 também foram pelo menos uma vez de T, bicicleta, balsa ou a pé. Metade dessas viagens de carro teve menos de 3.4 milhas (5.5 km).
 
 **Sobre estes números:** Vêm das viagens ao centro de Boston em dias úteis registradas por pessoas que usam o Shift, de junho a outubro de 2026, incluindo 363 viagens de carro feitas por 99 pessoas.
 

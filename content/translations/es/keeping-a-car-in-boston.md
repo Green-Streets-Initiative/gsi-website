@@ -20,7 +20,7 @@ Depende de cuánto manejes. Si usas el auto unas pocas veces al mes, tener uno e
 
 ### ¿Cuánto cuesta tener un auto aquí?
 
-Según AAA, tener y usar un auto nuevo que recorre 15,000 millas al año cuesta {{price:driving.aaaAnnualOwnership}} ([AAA, 2026](https://newsroom.aaa.com/wp-content/uploads/2026/09/AAA_YDC-Fact-Sheet_2026.pdf)). Unos {{price:driving.aaaFixedAnnual}} de eso son la depreciación (el valor que pierde el auto con el tiempo), el seguro y los intereses del préstamo. Eso lo pagas aunque el auto no se mueva. Un auto más viejo y ya pagado cuesta mucho menos.
+Según AAA, tener y usar un auto nuevo que recorre 15,000 millas (24,000 km) al año cuesta {{price:driving.aaaAnnualOwnership}} ([AAA, 2026](https://newsroom.aaa.com/wp-content/uploads/2026/09/AAA_YDC-Fact-Sheet_2026.pdf)). Unos {{price:driving.aaaFixedAnnual}} de eso son la depreciación (el valor que pierde el auto con el tiempo), el seguro y los intereses del préstamo. Eso lo pagas aunque el auto no se mueva. Un auto más viejo y ya pagado cuesta mucho menos.
 
 Massachusetts suma algunos costos propios:
 
@@ -30,7 +30,7 @@ Massachusetts suma algunos costos propios:
 
 ### ¿Cuánto manejan de verdad las personas aquí?
 
-Unos dos días por semana, entre las personas que usan Shift y viven en Boston, Cambridge, Somerville o Brookline. Cerca de 1 de cada 4 de sus viajes en auto fue de menos de 2 millas. Muchos de esos viajes cortos se pueden hacer fácilmente a pie o en bici.
+Unos dos días por semana, entre las personas que usan Shift y viven en Boston, Cambridge, Somerville o Brookline. Cerca de 1 de cada 4 de sus viajes en auto fue de menos de 2 millas (3.2 km). Muchos de esos viajes cortos se pueden hacer fácilmente a pie o en bici.
 
 **Sobre estas cifras:** Vienen de 3,263 viajes en auto registrados por 65 personas que usan Shift y viven en esas cuatro ciudades, del 21 de agosto al 16 de octubre de 2026. Aquí, manejar incluye los viajes en taxi o en un auto pedido por aplicación.
 
@@ -39,14 +39,14 @@ La Ciudad de Boston encontró algo parecido: un auto privado se usa cerca de una
 ### ¿Cómo sé qué me conviene?
 
 1. Durante dos semanas, anota cada día que manejas y a dónde fuiste.
-2. Marca los viajes de menos de 2 millas. Son los más fáciles de hacer a pie, en bici o en el T.
+2. Marca los viajes de menos de 2 millas (3.2 km). Son los más fáciles de hacer a pie, en bici o en el T.
 3. Para los demás, [mira de qué otra forma podrías hacer el viaje](https://www.gogreenstreets.org/es/guides/keeping-a-car-in-boston#trip-planner): el T, una Bluebike, un auto compartido o ir con alguien.
 
 Si solo unos pocos viajes al mes de verdad necesitan auto, compartir o alquilar te costará mucho menos que tener uno. Si la mayoría lo necesita, tiene sentido quedarte con el auto.
 
 ### ¿Qué uso los días que necesito un auto?
 
-Los servicios de auto compartido te alquilan un auto por hora en estacionamientos de toda la ciudad, con la gasolina y el seguro incluidos. El plan estándar de Zipcar cuesta {{price:driving.zipcarStandardMonthly}} al mes, más la tarifa por hora o por día. Un alquiler normal sirve para irte el fin de semana. Para lo demás, puedes pedir un auto por aplicación. Si tienes hijos menores de 8 años, lleva una silla de auto: la ley estatal exige una en un Uber o Lyft, a menos que el niño mida más de 57 pulgadas.
+Los servicios de auto compartido te alquilan un auto por hora en estacionamientos de toda la ciudad, con la gasolina y el seguro incluidos. El plan estándar de Zipcar cuesta {{price:driving.zipcarStandardMonthly}} al mes, más la tarifa por hora o por día. Un alquiler normal sirve para irte el fin de semana. Para lo demás, puedes pedir un auto por aplicación. Si tienes hijos menores de 8 años, lleva una silla de auto: la ley estatal exige una en un Uber o Lyft, a menos que el niño mida más de 57 pulgadas (1.45 m).
 
 ### ¿Cómo vendo un auto en Massachusetts?
 

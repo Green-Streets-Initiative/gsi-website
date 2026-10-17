@@ -27,7 +27,7 @@ El tráfico de Boston está entre los peores del país. En 2025, una persona que
 
 ### ¿Es más rápido manejar en la ciudad en hora pico?
 
-No mucho. En viajes de 3 a 8 millas en hora pico, de lunes a viernes, en Boston, Cambridge, Somerville, Brookline y ciudades cercanas, las personas que usan Shift iban típicamente a 8.4 millas por hora (mph) en auto, 8.6 mph en bici y 8.8 mph en metro. Fuera de la hora pico, los viajes en auto de esa distancia iban típicamente a 10.3 mph.
+No mucho. En viajes de 3 a 8 millas (5 a 13 km) en hora pico, de lunes a viernes, en Boston, Cambridge, Somerville, Brookline y ciudades cercanas, las personas que usan Shift iban típicamente a 8.4 millas por hora (mph) en auto, 8.6 mph en bici y 8.8 mph en metro (13.5, 13.8 y 14.2 km/h). Fuera de la hora pico, los viajes en auto de esa distancia iban típicamente a 10.3 mph (16.6 km/h).
 
 **Sobre estas cifras:** Vienen de 1,078 viajes en hora pico de 3 a 8 millas, en auto, bici y metro, registrados por personas que usan Shift del 18 de julio al 16 de octubre de 2026 (de lunes a viernes, de 7 a 9:30 a. m. y de 4 a 7 p. m.). Típico quiere decir que la mitad de los viajes fueron más rápidos y la mitad más lentos.
 

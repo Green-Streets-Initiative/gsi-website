@@ -4,7 +4,7 @@
 id: mg_walking_vs_driving
 reviewed: 2026-10-01
 title: "Cuándo caminar es más rápido de verdad"
-summary: "En viajes de menos de una milla, caminar muchas veces le gana al auto cuando cuentas el tiempo de llegar hasta el auto. Cinco casos en los que caminar gana seguro."
+summary: "En viajes de menos de una milla (1.6 km), caminar muchas veces le gana al auto cuando cuentas el tiempo de llegar hasta el auto. Cinco casos en los que caminar gana seguro."
 slug: when-walking-is-faster
 lang: es
 mode: walking
@@ -18,9 +18,9 @@ related: [mg_walking_carrying]
 
 Caminar es más rápido que manejar en más viajes cortos de lo que la gente cree, si cuentas el tiempo de puerta a puerta. Estos son los casos en que gana.
 
-### 1. Viajes de menos de media milla.
+### 1. Viajes de menos de media milla (800 m).
 
-Caminar 0.5 millas (media milla) toma unos 10 minutos. Manejar la misma distancia muchas veces toma más, si cuentas lo que tardas en llegar a tu auto, el tráfico y el camino desde el estacionamiento hasta la puerta. Cuanto más corto el viaje, más gana caminar.
+Caminar 0.5 millas (media milla, 800 m) toma unos 10 minutos. Manejar la misma distancia muchas veces toma más, si cuentas lo que tardas en llegar a tu auto, el tráfico y el camino desde el estacionamiento hasta la puerta. Cuanto más corto el viaje, más gana caminar.
 
 ### 2. Donde es difícil estacionar.
 
@@ -32,7 +32,7 @@ Cambridge, Somerville, el Seaport, el centro de Boston, cerca de un hospital o u
 
 ### 4. En hora pico, cuando hay mucho tráfico.
 
-Manejar 1 milla en un tráfico que avanza y se detiene puede tomar fácilmente 10 a 15 minutos. Caminar 1 milla toma 20 minutos. A veces es más rápido que el auto, y casi siempre es más agradable.
+Manejar 1 milla (1.6 km) en un tráfico que avanza y se detiene puede tomar fácilmente 10 a 15 minutos. Caminar 1 milla toma 20 minutos. A veces es más rápido que el auto, y casi siempre es más agradable.
 
 ### 5. Lo que caminar te da y el GPS no mide.
 

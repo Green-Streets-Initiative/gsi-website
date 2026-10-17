@@ -20,7 +20,7 @@ Carregar coisas é o obstáculo para caminhar que mais se exagera. Quase tudo qu
 
 ### 1. O carrinho de feira é o herói esquecido.
 
-Um carrinho dobrável com rodinhas, o famoso carrinho de feira, aguenta mais de 50 libras de compras, é fácil de puxar na calçada e fica dobrado em casa. Custa de $30 a $60 e facilitou muito a vida de várias famílias que fazem as compras a pé. A Ikea, a Amazon e a maioria das lojas de ferragens vendem.
+Um carrinho dobrável com rodinhas, o famoso carrinho de feira, aguenta mais de 50 libras (23 kg) de compras, é fácil de puxar na calçada e fica dobrado em casa. Custa de $30 a $60 e facilitou muito a vida de várias famílias que fazem as compras a pé. A Ikea, a Amazon e a maioria das lojas de ferragens vendem.
 
 ### 2. Uma mochila e algumas sacolas dobráveis dão conta de quase tudo do dia a dia.
 

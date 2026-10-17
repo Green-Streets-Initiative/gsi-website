@@ -17,13 +17,13 @@ values
 
 No. Es más confiable que hace unos años. La MBTA cuenta un viaje en la Línea Roja, Naranja o Azul como puntual cuando llega no más de cinco minutos después de la hora esperada. A fines de 2025, cerca del 92% de los viajes eran puntuales. A fines de 2023 eran cerca del 25% ([Christian Science Monitor](https://www.csmonitor.com/Business/2025/1115/boston-mbta-phillip-eng)). Las cifras de hoy están en la [página de puntualidad de la MBTA](https://www.mbta.com/performance-metrics/service-reliability) (en inglés).
 
-En diciembre de 2024, la MBTA quitó más de 220 zonas lentas, tramos donde los trenes tienen que ir más despacio por seguridad ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde entonces han aparecido y desaparecido algunas zonas cortas por reparaciones. En los últimos datos publicados, de mayo de 2026, había unas pocas, entre ellas una zona de 10 millas por hora (mph) en Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
+En diciembre de 2024, la MBTA quitó más de 220 zonas lentas, tramos donde los trenes tienen que ir más despacio por seguridad ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde entonces han aparecido y desaparecido algunas zonas cortas por reparaciones. En los últimos datos publicados, de mayo de 2026, había unas pocas, entre ellas una zona de 10 millas por hora (mph, o 16 km/h) en Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
 Todavía hay cierres programados para reparaciones, como el cierre de la Línea Roja entre Alewife y Park Street del 21 al 30 de julio de 2026.
 
 ### ¿Qué hicieron los pasajeros durante el cierre de la Línea Roja en julio de 2026?
 
-Entre las personas que usan Shift y viajaban seguido en la Línea Roja, manejar pasó de cerca de una cuarta parte de sus viajes a cerca de un tercio durante el cierre. Los viajes en bici también subieron, del 15% al 18%. Pero en hora pico, manejar 3 a 8 millas en Boston, Cambridge, Somerville, Brookline y ciudades cercanas no fue más rápido que ir en bici o en metro. Lo típico fue 8.4 mph en auto, 8.6 en bici y 8.8 en metro.
+Entre las personas que usan Shift y viajaban seguido en la Línea Roja, manejar pasó de cerca de una cuarta parte de sus viajes a cerca de un tercio durante el cierre. Los viajes en bici también subieron, del 15% al 18%. Pero en hora pico, manejar 3 a 8 millas (5 a 13 km) en Boston, Cambridge, Somerville, Brookline y ciudades cercanas no fue más rápido que ir en bici o en metro. Lo típico fue 8.4 mph en auto, 8.6 en bici y 8.8 en metro (13.5, 13.8 y 14.2 km/h).
 
 **Sobre estas cifras:** Vienen de los viajes registrados por 17 a 22 personas que usan Shift y viajaban seguido en la Línea Roja, del 22 de junio al 30 de julio de 2026 (un grupo pequeño, en pleno verano), y de 1,078 viajes en hora pico de personas que usan Shift, del 18 de julio al 16 de octubre de 2026. Típico quiere decir que la mitad de los viajes fueron más rápidos y la mitad más lentos.
 
@@ -38,13 +38,13 @@ Entre las personas que usan Shift y viajaban seguido en la Línea Roja, manejar 
 
 ### ¿La Línea Verde es más lenta que caminar?
 
-No, en la mayoría de los viajes. En viajes de 0.75 a 2 millas, la Línea Verde iba típicamente a 6.4 mph para las personas que usan Shift. Eso es más del doble de lo que suelen caminar, 2.8 mph. Puede que esos tiempos no incluyan toda la espera en el andén. Por eso, para una o dos paradas en el centro, donde las estaciones están a un cuarto de milla una de otra, caminar puede tomar casi lo mismo.
+No, en la mayoría de los viajes. En viajes de 0.75 a 2 millas (1.2 a 3.2 km), la Línea Verde iba típicamente a 6.4 mph (10.3 km/h) para las personas que usan Shift. Eso es más del doble de lo que suelen caminar, 2.8 mph (4.5 km/h). Puede que esos tiempos no incluyan toda la espera en el andén. Por eso, para una o dos paradas en el centro, donde las estaciones están a un cuarto de milla (400 m) una de otra, caminar puede tomar casi lo mismo.
 
 **Sobre estas cifras:** Vienen de 324 viajes en la Línea Verde y 3,111 caminatas de 0.75 a 2 millas registrados por personas que usan Shift, de junio a octubre de 2026. Típico quiere decir que la mitad de los viajes fueron más rápidos y la mitad más lentos.
 
 ### ¿Me conviene una bici eléctrica o un scooter?
 
-En Massachusetts, las bicis eléctricas que dejan de ayudarte al llegar a 20 mph no necesitan licencia. Puedes usarlas en la calle, en los carriles para bici y en la mayoría de los caminos pavimentados, pero no en las aceras ([guía de MassBike sobre bicis eléctricas](https://www.massbike.org/ebikesfaq)). Para un scooter con motor necesitas licencia de manejar o permiso de aprendiz, y casco. Además, no puedes usarlo entre la puesta del sol y el amanecer ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). En la Legislatura estatal todavía se está negociando un proyecto de ley que cambiaría estas reglas. El reembolso del estado para comprar una bici eléctrica está cerrado en 2026.
+En Massachusetts, las bicis eléctricas que dejan de ayudarte al llegar a 20 mph (32 km/h) no necesitan licencia. Puedes usarlas en la calle, en los carriles para bici y en la mayoría de los caminos pavimentados, pero no en las aceras ([guía de MassBike sobre bicis eléctricas](https://www.massbike.org/ebikesfaq)). Para un scooter con motor necesitas licencia de manejar o permiso de aprendiz, y casco. Además, no puedes usarlo entre la puesta del sol y el amanecer ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). En la Legislatura estatal todavía se está negociando un proyecto de ley que cambiaría estas reglas. El reembolso del estado para comprar una bici eléctrica está cerrado en 2026.
 
 ### Prueba esto primero
 
@@ -58,13 +58,13 @@ Prepara tu plan B ahora, antes de necesitarlo.
 
 No. Es más confiable que hace unos años. La MBTA cuenta un viaje en la Línea Roja, Naranja o Azul como puntual cuando llega no más de cinco minutos después de la hora esperada. A fines de 2025, cerca del 92% de los viajes eran puntuales. A fines de 2023 eran cerca del 25% ([Christian Science Monitor](https://www.csmonitor.com/Business/2025/1115/boston-mbta-phillip-eng)). Las cifras de hoy están en la [página de puntualidad de la MBTA](https://www.mbta.com/performance-metrics/service-reliability) (en inglés).
 
-En diciembre de 2024, la MBTA quitó más de 220 zonas lentas, tramos donde los trenes tienen que ir más despacio por seguridad ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde entonces han aparecido y desaparecido algunas zonas cortas por reparaciones. En los últimos datos publicados, de mayo de 2026, había unas pocas, entre ellas una zona de 10 millas por hora (mph) en Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
+En diciembre de 2024, la MBTA quitó más de 220 zonas lentas, tramos donde los trenes tienen que ir más despacio por seguridad ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde entonces han aparecido y desaparecido algunas zonas cortas por reparaciones. En los últimos datos publicados, de mayo de 2026, había unas pocas, entre ellas una zona de 10 millas por hora (mph, o 16 km/h) en Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
 Todavía hay cierres programados para reparaciones, como el cierre de la Línea Roja entre Alewife y Park Street del 21 al 30 de julio de 2026.
 
 ### ¿Qué hicieron los pasajeros durante el cierre de la Línea Roja en julio de 2026?
 
-Entre las personas que usan Shift y viajaban seguido en la Línea Roja, manejar pasó de cerca de una cuarta parte de sus viajes a cerca de un tercio durante el cierre. Los viajes en bici también subieron, del 15% al 18%. Pero en hora pico, manejar 3 a 8 millas en Boston, Cambridge, Somerville, Brookline y ciudades cercanas no fue más rápido que ir en bici o en metro. Lo típico fue 8.4 mph en auto, 8.6 en bici y 8.8 en metro.
+Entre las personas que usan Shift y viajaban seguido en la Línea Roja, manejar pasó de cerca de una cuarta parte de sus viajes a cerca de un tercio durante el cierre. Los viajes en bici también subieron, del 15% al 18%. Pero en hora pico, manejar 3 a 8 millas (5 a 13 km) en Boston, Cambridge, Somerville, Brookline y ciudades cercanas no fue más rápido que ir en bici o en metro. Lo típico fue 8.4 mph en auto, 8.6 en bici y 8.8 en metro (13.5, 13.8 y 14.2 km/h).
 
 **Sobre estas cifras:** Vienen de los viajes registrados por 17 a 22 personas que usan Shift y viajaban seguido en la Línea Roja, del 22 de junio al 30 de julio de 2026 (un grupo pequeño, en pleno verano), y de 1,078 viajes en hora pico de personas que usan Shift, del 18 de julio al 16 de octubre de 2026. Típico quiere decir que la mitad de los viajes fueron más rápidos y la mitad más lentos.
 
@@ -79,13 +79,13 @@ Entre las personas que usan Shift y viajaban seguido en la Línea Roja, manejar 
 
 ### ¿La Línea Verde es más lenta que caminar?
 
-No, en la mayoría de los viajes. En viajes de 0.75 a 2 millas, la Línea Verde iba típicamente a 6.4 mph para las personas que usan Shift. Eso es más del doble de lo que suelen caminar, 2.8 mph. Puede que esos tiempos no incluyan toda la espera en el andén. Por eso, para una o dos paradas en el centro, donde las estaciones están a un cuarto de milla una de otra, caminar puede tomar casi lo mismo.
+No, en la mayoría de los viajes. En viajes de 0.75 a 2 millas (1.2 a 3.2 km), la Línea Verde iba típicamente a 6.4 mph (10.3 km/h) para las personas que usan Shift. Eso es más del doble de lo que suelen caminar, 2.8 mph (4.5 km/h). Puede que esos tiempos no incluyan toda la espera en el andén. Por eso, para una o dos paradas en el centro, donde las estaciones están a un cuarto de milla (400 m) una de otra, caminar puede tomar casi lo mismo.
 
 **Sobre estas cifras:** Vienen de 324 viajes en la Línea Verde y 3,111 caminatas de 0.75 a 2 millas registrados por personas que usan Shift, de junio a octubre de 2026. Típico quiere decir que la mitad de los viajes fueron más rápidos y la mitad más lentos.
 
 ### ¿Me conviene una bici eléctrica o un scooter?
 
-En Massachusetts, las bicis eléctricas que dejan de ayudarte al llegar a 20 mph no necesitan licencia. Puedes usarlas en la calle, en los carriles para bici y en la mayoría de los caminos pavimentados, pero no en las aceras ([guía de MassBike sobre bicis eléctricas](https://www.massbike.org/ebikesfaq)). Para un scooter con motor necesitas licencia de manejar o permiso de aprendiz, y casco. Además, no puedes usarlo entre la puesta del sol y el amanecer ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). En la Legislatura estatal todavía se está negociando un proyecto de ley que cambiaría estas reglas. El reembolso del estado para comprar una bici eléctrica está cerrado en 2026.
+En Massachusetts, las bicis eléctricas que dejan de ayudarte al llegar a 20 mph (32 km/h) no necesitan licencia. Puedes usarlas en la calle, en los carriles para bici y en la mayoría de los caminos pavimentados, pero no en las aceras ([guía de MassBike sobre bicis eléctricas](https://www.massbike.org/ebikesfaq)). Para un scooter con motor necesitas licencia de manejar o permiso de aprendiz, y casco. Además, no puedes usarlo entre la puesta del sol y el amanecer ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). En la Legislatura estatal todavía se está negociando un proyecto de ley que cambiaría estas reglas. El reembolso del estado para comprar una bici eléctrica está cerrado en 2026.
 
 ### Prueba esto primero
 
@@ -175,7 +175,7 @@ Si solo vas a comprar dos cosas, que sean luces y un candado en U. Lo demás pue
 
 ### 1. Lo más sencillo: sudar menos desde el principio.
 
-Una bici eléctrica hace casi todo el trabajo por ti: después de 5 millas llegas más o menos como después de caminar 1 milla. Bluebikes tiene cada vez más bicis eléctricas. Con una membresía mensual o anual, pagas $0.10 por minuto, además de la membresía. Es un precio accesible para usarla todos los días para ir al trabajo.
+Una bici eléctrica hace casi todo el trabajo por ti: después de 5 millas (8 km) llegas más o menos como después de caminar 1 milla (1.6 km). Bluebikes tiene cada vez más bicis eléctricas. Con una membresía mensual o anual, pagas $0.10 por minuto, además de la membresía. Es un precio accesible para usarla todos los días para ir al trabajo.
 
 ### 2. Ve a tu ritmo en una bici normal.
 
@@ -183,7 +183,7 @@ Tú decides qué tan rápido vas. Si vas a "ritmo de conversación", o sea, lo b
 
 ### 3. Elige una ruta más plana.
 
-Una subida de 200 pies hace una gran diferencia en cuánto sudas. La capa de bicicleta de Google Maps muestra las subidas y bajadas del terreno. Una ruta media milla más larga muchas veces te deja mucho más fresco si evita una cuesta.
+Una subida de 200 pies (60 m) hace una gran diferencia en cuánto sudas. La capa de bicicleta de Google Maps muestra las subidas y bajadas del terreno. Una ruta media milla (800 m) más larga muchas veces te deja mucho más fresco si evita una cuesta.
 
 ### 4. Ponte la ropa adecuada para el viaje.
 
@@ -204,7 +204,7 @@ La humedad de agosto es fuerte. En esos pocos días que son los peores, toma el 
 
 ### 1. Lo más sencillo: sudar menos desde el principio.
 
-Una bici eléctrica hace casi todo el trabajo por ti: después de 5 millas llegas más o menos como después de caminar 1 milla. Bluebikes tiene cada vez más bicis eléctricas. Con una membresía mensual o anual, pagas {{price:bluebikes.ebikePerMinMember}} por minuto, además de la membresía. Es un precio accesible para usarla todos los días para ir al trabajo.
+Una bici eléctrica hace casi todo el trabajo por ti: después de 5 millas (8 km) llegas más o menos como después de caminar 1 milla (1.6 km). Bluebikes tiene cada vez más bicis eléctricas. Con una membresía mensual o anual, pagas {{price:bluebikes.ebikePerMinMember}} por minuto, además de la membresía. Es un precio accesible para usarla todos los días para ir al trabajo.
 
 ### 2. Ve a tu ritmo en una bici normal.
 
@@ -212,7 +212,7 @@ Tú decides qué tan rápido vas. Si vas a "ritmo de conversación", o sea, lo b
 
 ### 3. Elige una ruta más plana.
 
-Una subida de 200 pies hace una gran diferencia en cuánto sudas. La capa de bicicleta de Google Maps muestra las subidas y bajadas del terreno. Una ruta media milla más larga muchas veces te deja mucho más fresco si evita una cuesta.
+Una subida de 200 pies (60 m) hace una gran diferencia en cuánto sudas. La capa de bicicleta de Google Maps muestra las subidas y bajadas del terreno. Una ruta media milla (800 m) más larga muchas veces te deja mucho más fresco si evita una cuesta.
 
 ### 4. Ponte la ropa adecuada para el viaje.
 
@@ -435,7 +435,7 @@ Sí. Los garajes y estacionamientos de la MBTA se pagan con el teléfono, y la m
 
 Súmale el pasaje: $2.40 por cada viaje de ida o de vuelta en el metro, o $90 al mes. Un pase mensual del tren de cercanías cuesta $232 desde Route 128 y $311 desde Framingham.
 
-De todos los viajes al centro que hicieron de lunes a viernes las personas que usan Shift, cerca de 1 de cada 9 fue en auto. Hubo 99 personas que usan Shift que manejaron al centro un día de semana. De ellas, 90 también llegaron en T, bici, ferry o a pie al menos una vez. La mitad de esos viajes en auto fueron de menos de 3.4 millas.
+De todos los viajes al centro que hicieron de lunes a viernes las personas que usan Shift, cerca de 1 de cada 9 fue en auto. Hubo 99 personas que usan Shift que manejaron al centro un día de semana. De ellas, 90 también llegaron en T, bici, ferry o a pie al menos una vez. La mitad de esos viajes en auto fueron de menos de 3.4 millas (5.5 km).
 
 **Sobre estas cifras:** Vienen de los viajes de lunes a viernes al centro de Boston registrados por personas que usan Shift, de junio a octubre de 2026, entre ellos 363 viajes en auto de 99 personas.
 
@@ -480,7 +480,7 @@ Sí. Los garajes y estacionamientos de la MBTA se pagan con el teléfono, y la m
 
 Súmale el pasaje: {{price:mbta.subwaySingle}} por cada viaje de ida o de vuelta en el metro, o {{price:mbta.linkPassMonthly}} al mes. Un pase mensual del tren de cercanías cuesta {{price:mbta.crZoneTwoMonthly}} desde Route 128 y {{price:mbta.crZoneFiveMonthly}} desde Framingham.
 
-De todos los viajes al centro que hicieron de lunes a viernes las personas que usan Shift, cerca de 1 de cada 9 fue en auto. Hubo 99 personas que usan Shift que manejaron al centro un día de semana. De ellas, 90 también llegaron en T, bici, ferry o a pie al menos una vez. La mitad de esos viajes en auto fueron de menos de 3.4 millas.
+De todos los viajes al centro que hicieron de lunes a viernes las personas que usan Shift, cerca de 1 de cada 9 fue en auto. Hubo 99 personas que usan Shift que manejaron al centro un día de semana. De ellas, 90 también llegaron en T, bici, ferry o a pie al menos una vez. La mitad de esos viajes en auto fueron de menos de 3.4 millas (5.5 km).
 
 **Sobre estas cifras:** Vienen de los viajes de lunes a viernes al centro de Boston registrados por personas que usan Shift, de junio a octubre de 2026, entre ellos 363 viajes en auto de 99 personas.
 
@@ -522,7 +522,7 @@ Muchas universidades venden el pase del T con 11% de descuento a través del [MB
 
 ### ¿Es más rápido manejar en la ciudad en hora pico?
 
-No mucho. En viajes de 3 a 8 millas en hora pico, de lunes a viernes, en Boston, Cambridge, Somerville, Brookline y ciudades cercanas, las personas que usan Shift iban típicamente a 8.4 millas por hora (mph) en auto, 8.6 mph en bici y 8.8 mph en metro. Fuera de la hora pico, los viajes en auto de esa distancia iban típicamente a 10.3 mph.
+No mucho. En viajes de 3 a 8 millas (5 a 13 km) en hora pico, de lunes a viernes, en Boston, Cambridge, Somerville, Brookline y ciudades cercanas, las personas que usan Shift iban típicamente a 8.4 millas por hora (mph) en auto, 8.6 mph en bici y 8.8 mph en metro (13.5, 13.8 y 14.2 km/h). Fuera de la hora pico, los viajes en auto de esa distancia iban típicamente a 10.3 mph (16.6 km/h).
 
 **Sobre estas cifras:** Vienen de 1,078 viajes en hora pico de 3 a 8 millas, en auto, bici y metro, registrados por personas que usan Shift del 18 de julio al 16 de octubre de 2026 (de lunes a viernes, de 7 a 9:30 a. m. y de 4 a 7 p. m.). Típico quiere decir que la mitad de los viajes fueron más rápidos y la mitad más lentos.
 
@@ -552,7 +552,7 @@ Elige un día de la semana que viene para hacer tu viaje de siempre de otra form
 
 ### ¿Es más rápido manejar en la ciudad en hora pico?
 
-No mucho. En viajes de 3 a 8 millas en hora pico, de lunes a viernes, en Boston, Cambridge, Somerville, Brookline y ciudades cercanas, las personas que usan Shift iban típicamente a 8.4 millas por hora (mph) en auto, 8.6 mph en bici y 8.8 mph en metro. Fuera de la hora pico, los viajes en auto de esa distancia iban típicamente a 10.3 mph.
+No mucho. En viajes de 3 a 8 millas (5 a 13 km) en hora pico, de lunes a viernes, en Boston, Cambridge, Somerville, Brookline y ciudades cercanas, las personas que usan Shift iban típicamente a 8.4 millas por hora (mph) en auto, 8.6 mph en bici y 8.8 mph en metro (13.5, 13.8 y 14.2 km/h). Fuera de la hora pico, los viajes en auto de esa distancia iban típicamente a 10.3 mph (16.6 km/h).
 
 **Sobre estas cifras:** Vienen de 1,078 viajes en hora pico de 3 a 8 millas, en auto, bici y metro, registrados por personas que usan Shift del 18 de julio al 16 de octubre de 2026 (de lunes a viernes, de 7 a 9:30 a. m. y de 4 a 7 p. m.). Típico quiere decir que la mitad de los viajes fueron más rápidos y la mitad más lentos.
 
@@ -582,7 +582,7 @@ Elige un día de la semana que viene para hacer tu viaje de siempre de otra form
     'Vístete para tu cuerpo cuando pedalea, no para cuando está quieto. Cómo usar capas, cómo cuidar manos y pies, y lo que más importa cuando la temperatura baja de cero.',
     $guidebody$Andar en bici con frío es más cómodo de lo que la mayoría de la gente cree. Tu cuerpo produce mucho calor mientras pedaleas. El truco es vestirte para eso, no para estar quieto.
 
-### 1. Vístete como si hiciera 15 grados Fahrenheit más.
+### 1. Vístete como si hiciera 15 grados Fahrenheit más (unos 8 °C).
 
 Esta es la regla más importante. Si te vistes para estar cómodo parado afuera, vas a tener demasiado calor a los cinco minutos de pedalear. Busca sentir "un poquito de frío al salir". Vas a entrar en calor rápido.
 
@@ -596,12 +596,12 @@ Esta es la regla más importante. Si te vistes para estar cómodo parado afuera,
 
 Son lo que se enfría más rápido y lo que antes te arruina el viaje. Unos buenos guantes y calcetines abrigados son las compras que más mejoran tu comodidad.
 
-- Por debajo de 30°F: guantes térmicos y calcetines de lana.
-- Por debajo de 20°F: manoplas para el manubrio (fundas térmicas que van montadas en el manubrio) y cubrezapatos térmicos o botas de invierno. Las manoplas para el manubrio hacen una diferencia enorme si andas en bici todo el año.
+- Por debajo de 30°F (−1 °C): guantes térmicos y calcetines de lana.
+- Por debajo de 20°F (−7 °C): manoplas para el manubrio (fundas térmicas que van montadas en el manubrio) y cubrezapatos térmicos o botas de invierno. Las manoplas para el manubrio hacen una diferencia enorme si andas en bici todo el año.
 
 ### 4. Cúbrete la cara los días de mucho frío.
 
-Un cuello térmico (como los de la marca Buff) subido sobre la nariz y las mejillas te deja aguantar mucho más frío con comodidad. Mucha gente no lo usa y se arrepiente por debajo de 25°F.
+Un cuello térmico (como los de la marca Buff) subido sobre la nariz y las mejillas te deja aguantar mucho más frío con comodidad. Mucha gente no lo usa y se arrepiente por debajo de 25°F (−4 °C).
 
 ### 5. Ten en cuenta lo demás que trae la temporada.
 
@@ -614,7 +614,7 @@ Un cuello térmico (como los de la marca Buff) subido sobre la nariz y las mejil
 Andar en bici en invierno tiene ventajas reales cuando ya estás preparado: menos tráfico, no pasas calor y llegas con energía.$guidebody$,
     $guidebody$Andar en bici con frío es más cómodo de lo que la mayoría de la gente cree. Tu cuerpo produce mucho calor mientras pedaleas. El truco es vestirte para eso, no para estar quieto.
 
-### 1. Vístete como si hiciera 15 grados Fahrenheit más.
+### 1. Vístete como si hiciera 15 grados Fahrenheit más (unos 8 °C).
 
 Esta es la regla más importante. Si te vistes para estar cómodo parado afuera, vas a tener demasiado calor a los cinco minutos de pedalear. Busca sentir "un poquito de frío al salir". Vas a entrar en calor rápido.
 
@@ -628,12 +628,12 @@ Esta es la regla más importante. Si te vistes para estar cómodo parado afuera,
 
 Son lo que se enfría más rápido y lo que antes te arruina el viaje. Unos buenos guantes y calcetines abrigados son las compras que más mejoran tu comodidad.
 
-- Por debajo de 30°F: guantes térmicos y calcetines de lana.
-- Por debajo de 20°F: manoplas para el manubrio (fundas térmicas que van montadas en el manubrio) y cubrezapatos térmicos o botas de invierno. Las manoplas para el manubrio hacen una diferencia enorme si andas en bici todo el año.
+- Por debajo de 30°F (−1 °C): guantes térmicos y calcetines de lana.
+- Por debajo de 20°F (−7 °C): manoplas para el manubrio (fundas térmicas que van montadas en el manubrio) y cubrezapatos térmicos o botas de invierno. Las manoplas para el manubrio hacen una diferencia enorme si andas en bici todo el año.
 
 ### 4. Cúbrete la cara los días de mucho frío.
 
-Un cuello térmico (como los de la marca Buff) subido sobre la nariz y las mejillas te deja aguantar mucho más frío con comodidad. Mucha gente no lo usa y se arrepiente por debajo de 25°F.
+Un cuello térmico (como los de la marca Buff) subido sobre la nariz y las mejillas te deja aguantar mucho más frío con comodidad. Mucha gente no lo usa y se arrepiente por debajo de 25°F (−4 °C).
 
 ### 5. Ten en cuenta lo demás que trae la temporada.
 
@@ -665,7 +665,7 @@ Las personas que usan Shift y viven en estas ciudades muestran lo mismo en todo 
 
 ### ¿Cuál es la forma más barata de moverse?
 
-Caminar, para distancias de menos de una milla, más o menos. Para distancias más largas:
+Caminar, para distancias de menos de una milla (1.6 km), más o menos. Para distancias más largas:
 
 - **El T:** $2.40 en el metro, $1.70 en el autobús, o $90 al mes para viajar sin límite en metro y autobús. Hasta febrero de 2027, si cambias entre autobús y metro dentro de dos horas con la misma tarjeta o el mismo teléfono, pagas solo la más alta de las dos tarifas.
 - **Tarifas reducidas:** las personas de 65 años o más, las personas con discapacidad y las personas que reciben SNAP, MassHealth y algunos otros programas pagan $1.10 en el metro, $0.85 en el autobús, o $30 al mes ([cómo solicitarla](https://www.mbta.com/fares/reduced), en inglés). Los niños de 11 años o menos viajan gratis, y también los pasajeros de 75 años o más que ya no manejan.
@@ -681,7 +681,7 @@ Lo mismo pasa fuera de Boston. Los centros de los pueblos con estación del tren
 
 Muchas lo hacen. Los niños de 11 años o menos viajan gratis en el T, los cochecitos son bienvenidos en el metro y la mayoría de las estaciones tiene ascensor. Para llevar a los niños a la guardería y hacer las compras, muchos padres usan una bici de carga ([cómo las usan las familias](/es/guides/what-you-can-do-with-an-e-cargo-bike)).
 
-Algo que debes saber antes de contar con autos pedidos por aplicación: la ley de Massachusetts exige una silla de auto para niños menores de 8 años, a menos que midan más de 57 pulgadas, y eso también vale en un Uber o Lyft ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Los taxis sin sillas para niños no tienen que cumplir esta regla.
+Algo que debes saber antes de contar con autos pedidos por aplicación: la ley de Massachusetts exige una silla de auto para niños menores de 8 años, a menos que midan más de 57 pulgadas (1.45 m), y eso también vale en un Uber o Lyft ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Los taxis sin sillas para niños no tienen que cumplir esta regla.
 
 ### ¿Y los viajes que sí necesitan auto?
 
@@ -702,7 +702,7 @@ Las personas que usan Shift y viven en estas ciudades muestran lo mismo en todo 
 
 ### ¿Cuál es la forma más barata de moverse?
 
-Caminar, para distancias de menos de una milla, más o menos. Para distancias más largas:
+Caminar, para distancias de menos de una milla (1.6 km), más o menos. Para distancias más largas:
 
 - **El T:** {{price:mbta.subwaySingle}} en el metro, {{price:mbta.busSingle}} en el autobús, o {{price:mbta.linkPassMonthly}} al mes para viajar sin límite en metro y autobús. Hasta febrero de 2027, si cambias entre autobús y metro dentro de dos horas con la misma tarjeta o el mismo teléfono, pagas solo la más alta de las dos tarifas.
 - **Tarifas reducidas:** las personas de 65 años o más, las personas con discapacidad y las personas que reciben SNAP, MassHealth y algunos otros programas pagan {{price:mbta.reducedSubway}} en el metro, {{price:mbta.reducedBus}} en el autobús, o {{price:mbta.reducedLinkPass}} al mes ([cómo solicitarla](https://www.mbta.com/fares/reduced), en inglés). Los niños de 11 años o menos viajan gratis, y también los pasajeros de 75 años o más que ya no manejan.
@@ -718,7 +718,7 @@ Lo mismo pasa fuera de Boston. Los centros de los pueblos con estación del tren
 
 Muchas lo hacen. Los niños de 11 años o menos viajan gratis en el T, los cochecitos son bienvenidos en el metro y la mayoría de las estaciones tiene ascensor. Para llevar a los niños a la guardería y hacer las compras, muchos padres usan una bici de carga ([cómo las usan las familias](/es/guides/what-you-can-do-with-an-e-cargo-bike)).
 
-Algo que debes saber antes de contar con autos pedidos por aplicación: la ley de Massachusetts exige una silla de auto para niños menores de 8 años, a menos que midan más de 57 pulgadas, y eso también vale en un Uber o Lyft ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Los taxis sin sillas para niños no tienen que cumplir esta regla.
+Algo que debes saber antes de contar con autos pedidos por aplicación: la ley de Massachusetts exige una silla de auto para niños menores de 8 años, a menos que midan más de 57 pulgadas (1.45 m), y eso también vale en un Uber o Lyft ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Los taxis sin sillas para niños no tienen que cumplir esta regla.
 
 ### ¿Y los viajes que sí necesitan auto?
 
@@ -758,24 +758,24 @@ Antes de firmar un contrato de alquiler, [pon la dirección en nuestro planifica
     'mg_drive_time_on_foot',
     'es',
     '¿Cuánto es un viaje de 10 minutos en auto, a pie o en bici?',
-    'Un viaje de 10 minutos en auto en el área de Boston son unas dos millas y media, unos 12 minutos en bici. Aquí está la conversión completa, más los minutos de puerta a puerta que suma cada forma de moverte.',
-    $guidebody$La gente mide los viajes en minutos en auto. Así se ven esos minutos a pie y en bici, con las velocidades típicas del tráfico en el área de Boston: unas 12 a 15 millas por hora (mph) en calles locales y avenidas principales.
+    'Un viaje de 10 minutos en auto en el área de Boston son unas dos millas y media (4 km), unos 12 minutos en bici. Aquí está la conversión completa, más los minutos de puerta a puerta que suma cada forma de moverte.',
+    $guidebody$La gente mide los viajes en minutos en auto. Así se ven esos minutos a pie y en bici, con las velocidades típicas del tráfico en el área de Boston: unas 12 a 15 millas por hora (mph, o 19 a 24 km/h) en calles locales y avenidas principales.
 
-### 5 minutos en auto son más o menos una milla.
+### 5 minutos en auto son más o menos una milla (1.6 km).
 
 Eso es una caminata de 20 minutos, o 6 minutos en bici. A esta distancia, la bici suele ser lo más rápido que tienes, y la caminata es tan corta que mucha gente la hace sin pensar que está caminando.
 
-### 10 minutos en auto son de 2 a 2.5 millas.
+### 10 minutos en auto son de 2 a 2.5 millas (3.2 a 4 km).
 
 Digamos 45 minutos a pie y 12 minutos en bici. Esta es la distancia ideal para la bici por aquí: lo bastante lejos para que caminar tome bastante tiempo, y lo bastante cerca para que llegues antes de lo que tardarías en encontrar estacionamiento.
 
-### 15 minutos en auto son de 3 a 4 millas.
+### 15 minutos en auto son de 3 a 4 millas (4.8 a 6.4 km).
 
 Más o menos una hora caminando, y unos 20 minutos en bici. En una bici eléctrica son unos 15, a un ritmo que no te cansa mucho.
 
-### 20 minutos en auto son unas 5 millas.
+### 20 minutos en auto son unas 5 millas (8 km).
 
-Entre 25 y 30 minutos en bici, o 20 en una bici eléctrica. Cinco millas también es una buena distancia para combinar la bici con el T (el metro y los autobuses de Boston) si cambia el clima.
+Entre 25 y 30 minutos en bici, o 20 en una bici eléctrica. Cinco millas (8 km) también es una buena distancia para combinar la bici con el T (el metro y los autobuses de Boston) si cambia el clima.
 
 ### De puerta a puerta es lo que cuenta.
 
@@ -789,28 +789,28 @@ Cada uno de esos cálculos mide una parte distinta del viaje. Esto es lo que tie
 
 **Nada extra, si caminas.** El cálculo ya es de puerta a puerta. Lo que ves es lo que tardas, y esa es una gran razón por la que caminar gana más viajes cortos de lo que la gente cree.
 
-Si sumas todo eso, las diferencias en los viajes cortos se achican mucho. En viajes de menos de una milla, las distintas formas de moverte suelen estar mucho más parejas de lo que hace parecer el cálculo en auto.
+Si sumas todo eso, las diferencias en los viajes cortos se achican mucho. En viajes de menos de una milla (1.6 km), las distintas formas de moverte suelen estar mucho más parejas de lo que hace parecer el cálculo en auto.
 
 ### Prueba esto primero
 
 Pon tu propio viaje en el [Commute Advisor](https://www.gogreenstreets.org/commute-advisor) (en inglés), nuestra herramienta para comparar formas de viajar. Te da los tiempos reales a pie, en bici y en transporte público para tu ruta, y cuánto cuesta cada opción por día y por año.$guidebody$,
-    $guidebody$La gente mide los viajes en minutos en auto. Así se ven esos minutos a pie y en bici, con las velocidades típicas del tráfico en el área de Boston: unas 12 a 15 millas por hora (mph) en calles locales y avenidas principales.
+    $guidebody$La gente mide los viajes en minutos en auto. Así se ven esos minutos a pie y en bici, con las velocidades típicas del tráfico en el área de Boston: unas 12 a 15 millas por hora (mph, o 19 a 24 km/h) en calles locales y avenidas principales.
 
-### 5 minutos en auto son más o menos una milla.
+### 5 minutos en auto son más o menos una milla (1.6 km).
 
 Eso es una caminata de 20 minutos, o 6 minutos en bici. A esta distancia, la bici suele ser lo más rápido que tienes, y la caminata es tan corta que mucha gente la hace sin pensar que está caminando.
 
-### 10 minutos en auto son de 2 a 2.5 millas.
+### 10 minutos en auto son de 2 a 2.5 millas (3.2 a 4 km).
 
 Digamos 45 minutos a pie y 12 minutos en bici. Esta es la distancia ideal para la bici por aquí: lo bastante lejos para que caminar tome bastante tiempo, y lo bastante cerca para que llegues antes de lo que tardarías en encontrar estacionamiento.
 
-### 15 minutos en auto son de 3 a 4 millas.
+### 15 minutos en auto son de 3 a 4 millas (4.8 a 6.4 km).
 
 Más o menos una hora caminando, y unos 20 minutos en bici. En una bici eléctrica son unos 15, a un ritmo que no te cansa mucho.
 
-### 20 minutos en auto son unas 5 millas.
+### 20 minutos en auto son unas 5 millas (8 km).
 
-Entre 25 y 30 minutos en bici, o 20 en una bici eléctrica. Cinco millas también es una buena distancia para combinar la bici con el T (el metro y los autobuses de Boston) si cambia el clima.
+Entre 25 y 30 minutos en bici, o 20 en una bici eléctrica. Cinco millas (8 km) también es una buena distancia para combinar la bici con el T (el metro y los autobuses de Boston) si cambia el clima.
 
 ### De puerta a puerta es lo que cuenta.
 
@@ -824,7 +824,7 @@ Cada uno de esos cálculos mide una parte distinta del viaje. Esto es lo que tie
 
 **Nada extra, si caminas.** El cálculo ya es de puerta a puerta. Lo que ves es lo que tardas, y esa es una gran razón por la que caminar gana más viajes cortos de lo que la gente cree.
 
-Si sumas todo eso, las diferencias en los viajes cortos se achican mucho. En viajes de menos de una milla, las distintas formas de moverte suelen estar mucho más parejas de lo que hace parecer el cálculo en auto.
+Si sumas todo eso, las diferencias en los viajes cortos se achican mucho. En viajes de menos de una milla (1.6 km), las distintas formas de moverte suelen estar mucho más parejas de lo que hace parecer el cálculo en auto.
 
 ### Prueba esto primero
 
@@ -984,7 +984,7 @@ Deja la bici en cualquier estación del camino, espera un minuto y saca otra. El
 
 ### ¿Cuánto cuesta tener un auto aquí?
 
-Según AAA, tener y usar un auto nuevo que recorre 15,000 millas al año cuesta $12,863 ([AAA, 2026](https://newsroom.aaa.com/wp-content/uploads/2026/09/AAA_YDC-Fact-Sheet_2026.pdf)). Unos $7,704 de eso son la depreciación (el valor que pierde el auto con el tiempo), el seguro y los intereses del préstamo. Eso lo pagas aunque el auto no se mueva. Un auto más viejo y ya pagado cuesta mucho menos.
+Según AAA, tener y usar un auto nuevo que recorre 15,000 millas (24,000 km) al año cuesta $12,863 ([AAA, 2026](https://newsroom.aaa.com/wp-content/uploads/2026/09/AAA_YDC-Fact-Sheet_2026.pdf)). Unos $7,704 de eso son la depreciación (el valor que pierde el auto con el tiempo), el seguro y los intereses del préstamo. Eso lo pagas aunque el auto no se mueva. Un auto más viejo y ya pagado cuesta mucho menos.
 
 Massachusetts suma algunos costos propios:
 
@@ -994,7 +994,7 @@ Massachusetts suma algunos costos propios:
 
 ### ¿Cuánto manejan de verdad las personas aquí?
 
-Unos dos días por semana, entre las personas que usan Shift y viven en Boston, Cambridge, Somerville o Brookline. Cerca de 1 de cada 4 de sus viajes en auto fue de menos de 2 millas. Muchos de esos viajes cortos se pueden hacer fácilmente a pie o en bici.
+Unos dos días por semana, entre las personas que usan Shift y viven en Boston, Cambridge, Somerville o Brookline. Cerca de 1 de cada 4 de sus viajes en auto fue de menos de 2 millas (3.2 km). Muchos de esos viajes cortos se pueden hacer fácilmente a pie o en bici.
 
 **Sobre estas cifras:** Vienen de 3,263 viajes en auto registrados por 65 personas que usan Shift y viven en esas cuatro ciudades, del 21 de agosto al 16 de octubre de 2026. Aquí, manejar incluye los viajes en taxi o en un auto pedido por aplicación.
 
@@ -1003,14 +1003,14 @@ La Ciudad de Boston encontró algo parecido: un auto privado se usa cerca de una
 ### ¿Cómo sé qué me conviene?
 
 1. Durante dos semanas, anota cada día que manejas y a dónde fuiste.
-2. Marca los viajes de menos de 2 millas. Son los más fáciles de hacer a pie, en bici o en el T.
+2. Marca los viajes de menos de 2 millas (3.2 km). Son los más fáciles de hacer a pie, en bici o en el T.
 3. Para los demás, [mira de qué otra forma podrías hacer el viaje](https://www.gogreenstreets.org/es/guides/keeping-a-car-in-boston#trip-planner): el T, una Bluebike, un auto compartido o ir con alguien.
 
 Si solo unos pocos viajes al mes de verdad necesitan auto, compartir o alquilar te costará mucho menos que tener uno. Si la mayoría lo necesita, tiene sentido quedarte con el auto.
 
 ### ¿Qué uso los días que necesito un auto?
 
-Los servicios de auto compartido te alquilan un auto por hora en estacionamientos de toda la ciudad, con la gasolina y el seguro incluidos. El plan estándar de Zipcar cuesta $9 al mes, más la tarifa por hora o por día. Un alquiler normal sirve para irte el fin de semana. Para lo demás, puedes pedir un auto por aplicación. Si tienes hijos menores de 8 años, lleva una silla de auto: la ley estatal exige una en un Uber o Lyft, a menos que el niño mida más de 57 pulgadas.
+Los servicios de auto compartido te alquilan un auto por hora en estacionamientos de toda la ciudad, con la gasolina y el seguro incluidos. El plan estándar de Zipcar cuesta $9 al mes, más la tarifa por hora o por día. Un alquiler normal sirve para irte el fin de semana. Para lo demás, puedes pedir un auto por aplicación. Si tienes hijos menores de 8 años, lleva una silla de auto: la ley estatal exige una en un Uber o Lyft, a menos que el niño mida más de 57 pulgadas (1.45 m).
 
 ### ¿Cómo vendo un auto en Massachusetts?
 
@@ -1024,7 +1024,7 @@ Cancela el registro en línea con tu cuenta MyMassGov, que es gratis, y envía e
 
 ### ¿Cuánto cuesta tener un auto aquí?
 
-Según AAA, tener y usar un auto nuevo que recorre 15,000 millas al año cuesta {{price:driving.aaaAnnualOwnership}} ([AAA, 2026](https://newsroom.aaa.com/wp-content/uploads/2026/09/AAA_YDC-Fact-Sheet_2026.pdf)). Unos {{price:driving.aaaFixedAnnual}} de eso son la depreciación (el valor que pierde el auto con el tiempo), el seguro y los intereses del préstamo. Eso lo pagas aunque el auto no se mueva. Un auto más viejo y ya pagado cuesta mucho menos.
+Según AAA, tener y usar un auto nuevo que recorre 15,000 millas (24,000 km) al año cuesta {{price:driving.aaaAnnualOwnership}} ([AAA, 2026](https://newsroom.aaa.com/wp-content/uploads/2026/09/AAA_YDC-Fact-Sheet_2026.pdf)). Unos {{price:driving.aaaFixedAnnual}} de eso son la depreciación (el valor que pierde el auto con el tiempo), el seguro y los intereses del préstamo. Eso lo pagas aunque el auto no se mueva. Un auto más viejo y ya pagado cuesta mucho menos.
 
 Massachusetts suma algunos costos propios:
 
@@ -1034,7 +1034,7 @@ Massachusetts suma algunos costos propios:
 
 ### ¿Cuánto manejan de verdad las personas aquí?
 
-Unos dos días por semana, entre las personas que usan Shift y viven en Boston, Cambridge, Somerville o Brookline. Cerca de 1 de cada 4 de sus viajes en auto fue de menos de 2 millas. Muchos de esos viajes cortos se pueden hacer fácilmente a pie o en bici.
+Unos dos días por semana, entre las personas que usan Shift y viven en Boston, Cambridge, Somerville o Brookline. Cerca de 1 de cada 4 de sus viajes en auto fue de menos de 2 millas (3.2 km). Muchos de esos viajes cortos se pueden hacer fácilmente a pie o en bici.
 
 **Sobre estas cifras:** Vienen de 3,263 viajes en auto registrados por 65 personas que usan Shift y viven en esas cuatro ciudades, del 21 de agosto al 16 de octubre de 2026. Aquí, manejar incluye los viajes en taxi o en un auto pedido por aplicación.
 
@@ -1043,14 +1043,14 @@ La Ciudad de Boston encontró algo parecido: un auto privado se usa cerca de una
 ### ¿Cómo sé qué me conviene?
 
 1. Durante dos semanas, anota cada día que manejas y a dónde fuiste.
-2. Marca los viajes de menos de 2 millas. Son los más fáciles de hacer a pie, en bici o en el T.
+2. Marca los viajes de menos de 2 millas (3.2 km). Son los más fáciles de hacer a pie, en bici o en el T.
 3. Para los demás, [mira de qué otra forma podrías hacer el viaje](https://www.gogreenstreets.org/es/guides/keeping-a-car-in-boston#trip-planner): el T, una Bluebike, un auto compartido o ir con alguien.
 
 Si solo unos pocos viajes al mes de verdad necesitan auto, compartir o alquilar te costará mucho menos que tener uno. Si la mayoría lo necesita, tiene sentido quedarte con el auto.
 
 ### ¿Qué uso los días que necesito un auto?
 
-Los servicios de auto compartido te alquilan un auto por hora en estacionamientos de toda la ciudad, con la gasolina y el seguro incluidos. El plan estándar de Zipcar cuesta {{price:driving.zipcarStandardMonthly}} al mes, más la tarifa por hora o por día. Un alquiler normal sirve para irte el fin de semana. Para lo demás, puedes pedir un auto por aplicación. Si tienes hijos menores de 8 años, lleva una silla de auto: la ley estatal exige una en un Uber o Lyft, a menos que el niño mida más de 57 pulgadas.
+Los servicios de auto compartido te alquilan un auto por hora en estacionamientos de toda la ciudad, con la gasolina y el seguro incluidos. El plan estándar de Zipcar cuesta {{price:driving.zipcarStandardMonthly}} al mes, más la tarifa por hora o por día. Un alquiler normal sirve para irte el fin de semana. Para lo demás, puedes pedir un auto por aplicación. Si tienes hijos menores de 8 años, lleva una silla de auto: la ley estatal exige una en un Uber o Lyft, a menos que el niño mida más de 57 pulgadas (1.45 m).
 
 ### ¿Cómo vendo un auto en Massachusetts?
 
@@ -1238,7 +1238,7 @@ Un transbordo es cuando cambias de un autobús o tren a otro. Si pagas con una C
     'es',
     'Cómo combinar el transporte público con caminar o la bici',
     'En la mayoría de los viajes largos, el transporte público más una caminata corta o un tramo en bici en cada punta le gana a ir solo en transporte público o solo a pie.',
-    $guidebody$Para viajes de más de 3 o 4 millas, combinar el transporte público con una caminata o un tramo en bici en cada punta muchas veces es la forma más rápida y agradable de llegar. Te saltas las partes más lentas de un viaje solo en transporte público (las paradas locales, los transbordos), haces algo de ejercicio sin sumar mucho tiempo y llegas justo a la puerta.
+    $guidebody$Para viajes de más de 3 o 4 millas (4.8 o 6.4 km), combinar el transporte público con una caminata o un tramo en bici en cada punta muchas veces es la forma más rápida y agradable de llegar. Te saltas las partes más lentas de un viaje solo en transporte público (las paradas locales, los transbordos), haces algo de ejercicio sin sumar mucho tiempo y llegas justo a la puerta.
 
 ### Cómo funciona
 
@@ -1254,7 +1254,7 @@ Un transbordo es cuando cambias de un autobús o tren a otro. Si pagas con una C
 
 ### Un ejemplo
 
-De Somerville al Seaport hay unas 6 millas. Una forma de hacerlo:
+De Somerville al Seaport hay unas 6 millas (9.7 km). Una forma de hacerlo:
 
 - Camina 8 minutos hasta la estación Davis
 - Toma la Línea Roja hasta South Station (unos 17 minutos)
@@ -1267,7 +1267,7 @@ Unos 35 minutos, $2.40 y 18 minutos de caminata incluidos en tu día.
 - **Date tiempo extra.** Calcula 5 minutos más hasta que conozcas la rutina.
 - **Ten un plan B.** Conoce la ruta solo en transporte público para los días de mal tiempo.
 - **Se vuelve más fácil.** Cuando ya conoces los tiempos, casi no tienes que planear nada.$guidebody$,
-    $guidebody$Para viajes de más de 3 o 4 millas, combinar el transporte público con una caminata o un tramo en bici en cada punta muchas veces es la forma más rápida y agradable de llegar. Te saltas las partes más lentas de un viaje solo en transporte público (las paradas locales, los transbordos), haces algo de ejercicio sin sumar mucho tiempo y llegas justo a la puerta.
+    $guidebody$Para viajes de más de 3 o 4 millas (4.8 o 6.4 km), combinar el transporte público con una caminata o un tramo en bici en cada punta muchas veces es la forma más rápida y agradable de llegar. Te saltas las partes más lentas de un viaje solo en transporte público (las paradas locales, los transbordos), haces algo de ejercicio sin sumar mucho tiempo y llegas justo a la puerta.
 
 ### Cómo funciona
 
@@ -1283,7 +1283,7 @@ Unos 35 minutos, $2.40 y 18 minutos de caminata incluidos en tu día.
 
 ### Un ejemplo
 
-De Somerville al Seaport hay unas 6 millas. Una forma de hacerlo:
+De Somerville al Seaport hay unas 6 millas (9.7 km). Una forma de hacerlo:
 
 - Camina 8 minutos hasta la estación Davis
 - Toma la Línea Roja hasta South Station (unos 17 minutos)
@@ -1309,11 +1309,11 @@ Unos 35 minutos, {{price:mbta.subwaySingle}} y 18 minutos de caminata incluidos 
 
 ### 1. Los zapatos correctos son el primer paso.
 
-Con zapatos impermeables (cualquier par decente, no hace falta equipo especial), la lluvia deja de ser un problema. Con botas abrigadas, una caminata a 25°F es muy cómoda. Muchas veces, lo que la gente le echa al clima es en realidad culpa de unos zapatos que no son impermeables.
+Con zapatos impermeables (cualquier par decente, no hace falta equipo especial), la lluvia deja de ser un problema. Con botas abrigadas, una caminata a 25°F (−4 °C) es muy cómoda. Muchas veces, lo que la gente le echa al clima es en realidad culpa de unos zapatos que no son impermeables.
 
 ### 2. Con el frío, la clave son las capas de ropa, más que la temperatura.
 
-Una chaqueta ligera encima de tu ropa normal te deja estar cómodo con mucho más frío. La regla de los ciclistas, "vístete como si hiciera 15°F más de calor", también sirve aquí: vas a entrar en calor en unas pocas cuadras. Cúbrete las orejas y las manos. Lo demás se arregla solo.
+Una chaqueta ligera encima de tu ropa normal te deja estar cómodo con mucho más frío. La regla de los ciclistas, "vístete como si hiciera 15°F (unos 8 °C) más de calor", también sirve aquí: vas a entrar en calor en unas pocas cuadras. Cúbrete las orejas y las manos. Lo demás se arregla solo.
 
 ### 3. La lluvia ligera no es problema.
 
@@ -1321,7 +1321,7 @@ Una chaqueta impermeable con capucha basta para la llovizna típica que hace que
 
 ### 4. Con calor, lo importante es el ritmo y tomar agua.
 
-En días de 90°F, camina más despacio, lleva una botella de agua, ve por el lado de la calle con más sombra y piensa en usar sombrero. Antes de las 9 de la mañana y después de las 7 de la noche casi siempre se puede caminar bien, incluso en verano.
+En días de 90°F (32 °C), camina más despacio, lleva una botella de agua, ve por el lado de la calle con más sombra y piensa en usar sombrero. Antes de las 9 de la mañana y después de las 7 de la noche casi siempre se puede caminar bien, incluso en verano.
 
 ### 5. Ten un plan B.
 
@@ -1334,11 +1334,11 @@ Casi siempre, quien decide que "hace muy mal tiempo" está adentro y vestido par
 
 ### 1. Los zapatos correctos son el primer paso.
 
-Con zapatos impermeables (cualquier par decente, no hace falta equipo especial), la lluvia deja de ser un problema. Con botas abrigadas, una caminata a 25°F es muy cómoda. Muchas veces, lo que la gente le echa al clima es en realidad culpa de unos zapatos que no son impermeables.
+Con zapatos impermeables (cualquier par decente, no hace falta equipo especial), la lluvia deja de ser un problema. Con botas abrigadas, una caminata a 25°F (−4 °C) es muy cómoda. Muchas veces, lo que la gente le echa al clima es en realidad culpa de unos zapatos que no son impermeables.
 
 ### 2. Con el frío, la clave son las capas de ropa, más que la temperatura.
 
-Una chaqueta ligera encima de tu ropa normal te deja estar cómodo con mucho más frío. La regla de los ciclistas, "vístete como si hiciera 15°F más de calor", también sirve aquí: vas a entrar en calor en unas pocas cuadras. Cúbrete las orejas y las manos. Lo demás se arregla solo.
+Una chaqueta ligera encima de tu ropa normal te deja estar cómodo con mucho más frío. La regla de los ciclistas, "vístete como si hiciera 15°F (unos 8 °C) más de calor", también sirve aquí: vas a entrar en calor en unas pocas cuadras. Cúbrete las orejas y las manos. Lo demás se arregla solo.
 
 ### 3. La lluvia ligera no es problema.
 
@@ -1346,7 +1346,7 @@ Una chaqueta impermeable con capucha basta para la llovizna típica que hace que
 
 ### 4. Con calor, lo importante es el ritmo y tomar agua.
 
-En días de 90°F, camina más despacio, lleva una botella de agua, ve por el lado de la calle con más sombra y piensa en usar sombrero. Antes de las 9 de la mañana y después de las 7 de la noche casi siempre se puede caminar bien, incluso en verano.
+En días de 90°F (32 °C), camina más despacio, lleva una botella de agua, ve por el lado de la calle con más sombra y piensa en usar sombrero. Antes de las 9 de la mañana y después de las 7 de la noche casi siempre se puede caminar bien, incluso en verano.
 
 ### 5. Ten un plan B.
 
@@ -1368,7 +1368,7 @@ Casi siempre, quien decide que "hace muy mal tiempo" está adentro y vestido par
 
 ### 1. El carrito con ruedas es el héroe olvidado.
 
-Un carrito plegable para las compras (a veces le dicen "carrito de abuela") aguanta más de 50 libras de compras, se jala fácil por la acera y se dobla para guardarlo en casa. Cuestan de $30 a $60 y les han cambiado la vida a muchas familias que hacen sus mandados a pie. Los venden en Ikea, Amazon y la mayoría de las ferreterías.
+Un carrito plegable para las compras (a veces le dicen "carrito de abuela") aguanta más de 50 libras (23 kg) de compras, se jala fácil por la acera y se dobla para guardarlo en casa. Cuestan de $30 a $60 y les han cambiado la vida a muchas familias que hacen sus mandados a pie. Los venden en Ikea, Amazon y la mayoría de las ferreterías.
 
 ### 2. Una mochila y unas bolsas plegables cubren casi todo lo del día a día.
 
@@ -1393,7 +1393,7 @@ Un carrito con ruedas, una bici de carga eléctrica y un servicio de entrega a d
 
 ### 1. El carrito con ruedas es el héroe olvidado.
 
-Un carrito plegable para las compras (a veces le dicen "carrito de abuela") aguanta más de 50 libras de compras, se jala fácil por la acera y se dobla para guardarlo en casa. Cuestan de $30 a $60 y les han cambiado la vida a muchas familias que hacen sus mandados a pie. Los venden en Ikea, Amazon y la mayoría de las ferreterías.
+Un carrito plegable para las compras (a veces le dicen "carrito de abuela") aguanta más de 50 libras (23 kg) de compras, se jala fácil por la acera y se dobla para guardarlo en casa. Cuestan de $30 a $60 y les han cambiado la vida a muchas familias que hacen sus mandados a pie. Los venden en Ikea, Amazon y la mayoría de las ferreterías.
 
 ### 2. Una mochila y unas bolsas plegables cubren casi todo lo del día a día.
 
@@ -1540,9 +1540,9 @@ Y si quieres saber cómo serían esos viajes, el [Commute Advisor](https://www.g
 
 ### Lo que pueden hacer
 
-- Cargas de más de 100 libras (niños y compras) sin esfuerzo
+- Cargas de más de 100 libras (45 kg, entre niños y compras) sin esfuerzo
 - Subidas que serían durísimas en una bici normal
-- De 30 a 50 millas con una carga de batería
+- De 30 a 50 millas (48 a 80 km) con una carga de batería
 - La mayoría de los mandados cortos y medianos, de forma más agradable que en auto, porque no tienes que buscar estacionamiento
 
 ### Cómo probar una sin comprarla
@@ -1570,9 +1570,9 @@ Pide una prestada a Community Pedal Power para un fin de semana. Úsala una vez 
 
 ### Lo que pueden hacer
 
-- Cargas de más de 100 libras (niños y compras) sin esfuerzo
+- Cargas de más de 100 libras (45 kg, entre niños y compras) sin esfuerzo
 - Subidas que serían durísimas en una bici normal
-- De 30 a 50 millas con una carga de batería
+- De 30 a 50 millas (48 a 80 km) con una carga de batería
 - La mayoría de los mandados cortos y medianos, de forma más agradable que en auto, porque no tienes que buscar estacionamiento
 
 ### Cómo probar una sin comprarla
@@ -1601,7 +1601,7 @@ Pide una prestada a Community Pedal Power para un fin de semana. Úsala una vez 
     'De puerta a puerta, la bici le gana al auto en más viajes de lo que la gente cree. Las cinco situaciones donde gana seguro.',
     $guidebody$Ir en bici es más rápido que manejar en más viajes de lo que la gente cree, cuando cuentas el tiempo de puerta a puerta. Estos son los casos en que de verdad gana.
 
-### 1. Viajes de menos de tres millas, sobre todo en barrios con mucha gente.
+### 1. Viajes de menos de tres millas (4.8 km), sobre todo en barrios con mucha gente.
 
 Los viajes cortos en bici por la ciudad suelen tomar de 15 a 25 minutos de puerta a puerta. El mismo viaje en auto, contando el tiempo que pasas buscando estacionamiento, muchas veces toma más o menos lo mismo, y a veces más. La idea de que "manejar es más rápido" viene sobre todo de viajes en los suburbios, no en la ciudad.
 
@@ -1615,14 +1615,14 @@ Cuando el tráfico casi no avanza, las rutas que no dependen de los semáforos, 
 
 ### 4. Viajes más largos, en bici eléctrica.
 
-Un trayecto de 5 a 7 millas que se hace pesado en una bici normal es un viaje cómodo de 20 a 25 minutos en bici eléctrica, casi sin esfuerzo. Con una bici eléctrica, la bici compite en tiempo con el auto en viajes más largos, muchas veces de bastante más de cinco millas.
+Un trayecto de 5 a 7 millas (8 a 11 km) que se hace pesado en una bici normal es un viaje cómodo de 20 a 25 minutos en bici eléctrica, casi sin esfuerzo. Con una bici eléctrica, la bici compite en tiempo con el auto en viajes más largos, muchas veces de bastante más de cinco millas (8 km).
 
 ### 5. Mandados y viajes con niños, en bici de carga eléctrica.
 
 Una bici de carga eléctrica (con un marco largo atrás o una caja adelante, y un motor que te ayuda al pedalear) puede llevar a dos niños y las compras de toda una semana. Además usa los carriles para bici, así que te saltas por completo la fila de autos a la salida de la escuela. Sirve para la mayoría de las cosas que la gente cree que necesitan un auto. No tienes que comprar una para probar: [CargoB](https://www.ridecargob.com/) (en inglés) renta bicis de carga por minuto en la región, y [Community Pedal Power](https://communitypedalpower.org/) (en inglés), en Cambridge, tiene una biblioteca de bicis eléctricas donde puedes pedir una prestada gratis.$guidebody$,
     $guidebody$Ir en bici es más rápido que manejar en más viajes de lo que la gente cree, cuando cuentas el tiempo de puerta a puerta. Estos son los casos en que de verdad gana.
 
-### 1. Viajes de menos de tres millas, sobre todo en barrios con mucha gente.
+### 1. Viajes de menos de tres millas (4.8 km), sobre todo en barrios con mucha gente.
 
 Los viajes cortos en bici por la ciudad suelen tomar de 15 a 25 minutos de puerta a puerta. El mismo viaje en auto, contando el tiempo que pasas buscando estacionamiento, muchas veces toma más o menos lo mismo, y a veces más. La idea de que "manejar es más rápido" viene sobre todo de viajes en los suburbios, no en la ciudad.
 
@@ -1636,7 +1636,7 @@ Cuando el tráfico casi no avanza, las rutas que no dependen de los semáforos, 
 
 ### 4. Viajes más largos, en bici eléctrica.
 
-Un trayecto de 5 a 7 millas que se hace pesado en una bici normal es un viaje cómodo de 20 a 25 minutos en bici eléctrica, casi sin esfuerzo. Con una bici eléctrica, la bici compite en tiempo con el auto en viajes más largos, muchas veces de bastante más de cinco millas.
+Un trayecto de 5 a 7 millas (8 a 11 km) que se hace pesado en una bici normal es un viaje cómodo de 20 a 25 minutos en bici eléctrica, casi sin esfuerzo. Con una bici eléctrica, la bici compite en tiempo con el auto en viajes más largos, muchas veces de bastante más de cinco millas (8 km).
 
 ### 5. Mandados y viajes con niños, en bici de carga eléctrica.
 
@@ -1700,12 +1700,12 @@ Media hora manejando son 30 minutos de manejar. Media hora en tren son 30 minuto
     'mg_walking_vs_driving',
     'es',
     'Cuándo caminar es más rápido de verdad',
-    'En viajes de menos de una milla, caminar muchas veces le gana al auto cuando cuentas el tiempo de llegar hasta el auto. Cinco casos en los que caminar gana seguro.',
+    'En viajes de menos de una milla (1.6 km), caminar muchas veces le gana al auto cuando cuentas el tiempo de llegar hasta el auto. Cinco casos en los que caminar gana seguro.',
     $guidebody$Caminar es más rápido que manejar en más viajes cortos de lo que la gente cree, si cuentas el tiempo de puerta a puerta. Estos son los casos en que gana.
 
-### 1. Viajes de menos de media milla.
+### 1. Viajes de menos de media milla (800 m).
 
-Caminar 0.5 millas (media milla) toma unos 10 minutos. Manejar la misma distancia muchas veces toma más, si cuentas lo que tardas en llegar a tu auto, el tráfico y el camino desde el estacionamiento hasta la puerta. Cuanto más corto el viaje, más gana caminar.
+Caminar 0.5 millas (media milla, 800 m) toma unos 10 minutos. Manejar la misma distancia muchas veces toma más, si cuentas lo que tardas en llegar a tu auto, el tráfico y el camino desde el estacionamiento hasta la puerta. Cuanto más corto el viaje, más gana caminar.
 
 ### 2. Donde es difícil estacionar.
 
@@ -1717,16 +1717,16 @@ Cambridge, Somerville, el Seaport, el centro de Boston, cerca de un hospital o u
 
 ### 4. En hora pico, cuando hay mucho tráfico.
 
-Manejar 1 milla en un tráfico que avanza y se detiene puede tomar fácilmente 10 a 15 minutos. Caminar 1 milla toma 20 minutos. A veces es más rápido que el auto, y casi siempre es más agradable.
+Manejar 1 milla (1.6 km) en un tráfico que avanza y se detiene puede tomar fácilmente 10 a 15 minutos. Caminar 1 milla toma 20 minutos. A veces es más rápido que el auto, y casi siempre es más agradable.
 
 ### 5. Lo que caminar te da y el GPS no mide.
 
 Una caminata de 15 minutos te deja fijarte en tu barrio, y llegas de mejor humor que cuando saliste.$guidebody$,
     $guidebody$Caminar es más rápido que manejar en más viajes cortos de lo que la gente cree, si cuentas el tiempo de puerta a puerta. Estos son los casos en que gana.
 
-### 1. Viajes de menos de media milla.
+### 1. Viajes de menos de media milla (800 m).
 
-Caminar 0.5 millas (media milla) toma unos 10 minutos. Manejar la misma distancia muchas veces toma más, si cuentas lo que tardas en llegar a tu auto, el tráfico y el camino desde el estacionamiento hasta la puerta. Cuanto más corto el viaje, más gana caminar.
+Caminar 0.5 millas (media milla, 800 m) toma unos 10 minutos. Manejar la misma distancia muchas veces toma más, si cuentas lo que tardas en llegar a tu auto, el tráfico y el camino desde el estacionamiento hasta la puerta. Cuanto más corto el viaje, más gana caminar.
 
 ### 2. Donde es difícil estacionar.
 
@@ -1738,7 +1738,7 @@ Cambridge, Somerville, el Seaport, el centro de Boston, cerca de un hospital o u
 
 ### 4. En hora pico, cuando hay mucho tráfico.
 
-Manejar 1 milla en un tráfico que avanza y se detiene puede tomar fácilmente 10 a 15 minutos. Caminar 1 milla toma 20 minutos. A veces es más rápido que el auto, y casi siempre es más agradable.
+Manejar 1 milla (1.6 km) en un tráfico que avanza y se detiene puede tomar fácilmente 10 a 15 minutos. Caminar 1 milla toma 20 minutos. A veces es más rápido que el auto, y casi siempre es más agradable.
 
 ### 5. Lo que caminar te da y el GPS no mide.
 
@@ -1927,13 +1927,13 @@ Mira hacia atrás antes de cambiar tu posición en el carril. Echa un vistazo r�
 
 Não. Ele está mais confiável do que há alguns anos. A MBTA considera que uma viagem na Linha Vermelha, Laranja ou Azul foi no horário quando ela chega com no máximo cinco minutos de diferença do horário previsto. No fim de 2025, cerca de 92% das viagens chegavam no horário, contra cerca de 25% no fim de 2023 ([Christian Science Monitor](https://www.csmonitor.com/Business/2025/1115/boston-mbta-phillip-eng)). Os números atuais estão na [página de pontualidade da MBTA](https://www.mbta.com/performance-metrics/service-reliability) (em inglês).
 
-Em dezembro de 2024, a MBTA acabou com mais de 220 zonas de velocidade reduzida, trechos onde os trens precisam andar mais devagar por segurança ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde então, algumas zonas curtas para consertos apareceram e sumiram. Nos últimos dados publicados, de maio de 2026, havia poucas, entre elas uma zona de 10 milhas por hora (mph) em Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
+Em dezembro de 2024, a MBTA acabou com mais de 220 zonas de velocidade reduzida, trechos onde os trens precisam andar mais devagar por segurança ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde então, algumas zonas curtas para consertos apareceram e sumiram. Nos últimos dados publicados, de maio de 2026, havia poucas, entre elas uma zona de 10 milhas por hora (mph, ou 16 km/h) em Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
 Fechamentos programados para obras ainda acontecem, como o fechamento da Linha Vermelha entre Alewife e Park Street de 21 a 30 de julho de 2026.
 
 ### O que os passageiros fizeram durante o fechamento da Linha Vermelha em julho de 2026?
 
-Entre as pessoas que usam o Shift e andavam com frequência na Linha Vermelha, as viagens de carro passaram de cerca de um quarto para cerca de um terço do total durante o fechamento. As viagens de bicicleta também aumentaram, de 15% para 18%. Mas no horário de pico, viagens de carro de 3 a 8 milhas em Boston, Cambridge, Somerville, Brookline e arredores não foram mais rápidas do que de bicicleta ou de metrô. A velocidade típica foi de 8.4 mph de carro, 8.6 de bicicleta e 8.8 de metrô.
+Entre as pessoas que usam o Shift e andavam com frequência na Linha Vermelha, as viagens de carro passaram de cerca de um quarto para cerca de um terço do total durante o fechamento. As viagens de bicicleta também aumentaram, de 15% para 18%. Mas no horário de pico, viagens de carro de 3 a 8 milhas (5 a 13 km) em Boston, Cambridge, Somerville, Brookline e arredores não foram mais rápidas do que de bicicleta ou de metrô. A velocidade típica foi de 8.4 mph de carro, 8.6 de bicicleta e 8.8 de metrô (13.5, 13.8 e 14.2 km/h).
 
 **Sobre estes números:** Vêm das viagens registradas por 17 a 22 pessoas que usam o Shift e andavam com frequência na Linha Vermelha, de 22 de junho a 30 de julho de 2026 (um grupo pequeno, em pleno verão), e de 1,078 viagens no horário de pico feitas por pessoas que usam o Shift, de 18 de julho a 16 de outubro de 2026. Típico quer dizer que metade das viagens foi mais rápida e metade mais lenta.
 
@@ -1948,13 +1948,13 @@ Entre as pessoas que usam o Shift e andavam com frequência na Linha Vermelha, a
 
 ### A Linha Verde é mais lenta do que ir a pé?
 
-Não, na maioria das viagens. Em viagens de 0.75 a 2 milhas, a velocidade típica na Linha Verde das pessoas que usam o Shift foi de 6.4 mph. Isso é mais que o dobro da velocidade típica delas a pé, de 2.8 mph. Esses tempos podem não incluir parte da espera na plataforma. Por isso, para uma ou duas paradas no centro, onde as estações ficam a um quarto de milha uma da outra, ir a pé pode levar quase o mesmo tempo.
+Não, na maioria das viagens. Em viagens de 0.75 a 2 milhas (1.2 a 3.2 km), a velocidade típica na Linha Verde das pessoas que usam o Shift foi de 6.4 mph (10.3 km/h). Isso é mais que o dobro da velocidade típica delas a pé, de 2.8 mph (4.5 km/h). Esses tempos podem não incluir parte da espera na plataforma. Por isso, para uma ou duas paradas no centro, onde as estações ficam a um quarto de milha (400 m) uma da outra, ir a pé pode levar quase o mesmo tempo.
 
 **Sobre estes números:** Vêm de 324 viagens na Linha Verde e 3,111 caminhadas de 0.75 a 2 milhas registradas por pessoas que usam o Shift, de junho a outubro de 2026. Típico quer dizer que metade das viagens foi mais rápida e metade mais lenta.
 
 ### Vale a pena comprar uma bicicleta elétrica ou um patinete?
 
-Em Massachusetts, as bicicletas elétricas que param de ajudar no pedal quando chegam a 20 mph não exigem habilitação. Você pode andar com elas nas ruas, nas ciclofaixas e na maioria dos caminhos pavimentados, mas não nas calçadas ([guia de bicicletas elétricas da MassBike](https://www.massbike.org/ebikesfaq)). Patinetes e scooters motorizados exigem carteira de motorista ou permissão de aprendiz (learner's permit) e capacete, e não podem ser usados entre o pôr do sol e o nascer do sol ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Um projeto de lei que atualizaria essas regras ainda está em discussão na Assembleia Legislativa do estado. O programa estadual de reembolso para comprar bicicleta elétrica está fechado em 2026.
+Em Massachusetts, as bicicletas elétricas que param de ajudar no pedal quando chegam a 20 mph (32 km/h) não exigem habilitação. Você pode andar com elas nas ruas, nas ciclofaixas e na maioria dos caminhos pavimentados, mas não nas calçadas ([guia de bicicletas elétricas da MassBike](https://www.massbike.org/ebikesfaq)). Patinetes e scooters motorizados exigem carteira de motorista ou permissão de aprendiz (learner's permit) e capacete, e não podem ser usados entre o pôr do sol e o nascer do sol ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Um projeto de lei que atualizaria essas regras ainda está em discussão na Assembleia Legislativa do estado. O programa estadual de reembolso para comprar bicicleta elétrica está fechado em 2026.
 
 ### Experimente primeiro
 
@@ -1968,13 +1968,13 @@ Prepare o seu plano B agora, antes de precisar dele.
 
 Não. Ele está mais confiável do que há alguns anos. A MBTA considera que uma viagem na Linha Vermelha, Laranja ou Azul foi no horário quando ela chega com no máximo cinco minutos de diferença do horário previsto. No fim de 2025, cerca de 92% das viagens chegavam no horário, contra cerca de 25% no fim de 2023 ([Christian Science Monitor](https://www.csmonitor.com/Business/2025/1115/boston-mbta-phillip-eng)). Os números atuais estão na [página de pontualidade da MBTA](https://www.mbta.com/performance-metrics/service-reliability) (em inglês).
 
-Em dezembro de 2024, a MBTA acabou com mais de 220 zonas de velocidade reduzida, trechos onde os trens precisam andar mais devagar por segurança ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde então, algumas zonas curtas para consertos apareceram e sumiram. Nos últimos dados publicados, de maio de 2026, havia poucas, entre elas uma zona de 10 milhas por hora (mph) em Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
+Em dezembro de 2024, a MBTA acabou com mais de 220 zonas de velocidade reduzida, trechos onde os trens precisam andar mais devagar por segurança ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde então, algumas zonas curtas para consertos apareceram e sumiram. Nos últimos dados publicados, de maio de 2026, havia poucas, entre elas uma zona de 10 milhas por hora (mph, ou 16 km/h) em Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
 Fechamentos programados para obras ainda acontecem, como o fechamento da Linha Vermelha entre Alewife e Park Street de 21 a 30 de julho de 2026.
 
 ### O que os passageiros fizeram durante o fechamento da Linha Vermelha em julho de 2026?
 
-Entre as pessoas que usam o Shift e andavam com frequência na Linha Vermelha, as viagens de carro passaram de cerca de um quarto para cerca de um terço do total durante o fechamento. As viagens de bicicleta também aumentaram, de 15% para 18%. Mas no horário de pico, viagens de carro de 3 a 8 milhas em Boston, Cambridge, Somerville, Brookline e arredores não foram mais rápidas do que de bicicleta ou de metrô. A velocidade típica foi de 8.4 mph de carro, 8.6 de bicicleta e 8.8 de metrô.
+Entre as pessoas que usam o Shift e andavam com frequência na Linha Vermelha, as viagens de carro passaram de cerca de um quarto para cerca de um terço do total durante o fechamento. As viagens de bicicleta também aumentaram, de 15% para 18%. Mas no horário de pico, viagens de carro de 3 a 8 milhas (5 a 13 km) em Boston, Cambridge, Somerville, Brookline e arredores não foram mais rápidas do que de bicicleta ou de metrô. A velocidade típica foi de 8.4 mph de carro, 8.6 de bicicleta e 8.8 de metrô (13.5, 13.8 e 14.2 km/h).
 
 **Sobre estes números:** Vêm das viagens registradas por 17 a 22 pessoas que usam o Shift e andavam com frequência na Linha Vermelha, de 22 de junho a 30 de julho de 2026 (um grupo pequeno, em pleno verão), e de 1,078 viagens no horário de pico feitas por pessoas que usam o Shift, de 18 de julho a 16 de outubro de 2026. Típico quer dizer que metade das viagens foi mais rápida e metade mais lenta.
 
@@ -1989,13 +1989,13 @@ Entre as pessoas que usam o Shift e andavam com frequência na Linha Vermelha, a
 
 ### A Linha Verde é mais lenta do que ir a pé?
 
-Não, na maioria das viagens. Em viagens de 0.75 a 2 milhas, a velocidade típica na Linha Verde das pessoas que usam o Shift foi de 6.4 mph. Isso é mais que o dobro da velocidade típica delas a pé, de 2.8 mph. Esses tempos podem não incluir parte da espera na plataforma. Por isso, para uma ou duas paradas no centro, onde as estações ficam a um quarto de milha uma da outra, ir a pé pode levar quase o mesmo tempo.
+Não, na maioria das viagens. Em viagens de 0.75 a 2 milhas (1.2 a 3.2 km), a velocidade típica na Linha Verde das pessoas que usam o Shift foi de 6.4 mph (10.3 km/h). Isso é mais que o dobro da velocidade típica delas a pé, de 2.8 mph (4.5 km/h). Esses tempos podem não incluir parte da espera na plataforma. Por isso, para uma ou duas paradas no centro, onde as estações ficam a um quarto de milha (400 m) uma da outra, ir a pé pode levar quase o mesmo tempo.
 
 **Sobre estes números:** Vêm de 324 viagens na Linha Verde e 3,111 caminhadas de 0.75 a 2 milhas registradas por pessoas que usam o Shift, de junho a outubro de 2026. Típico quer dizer que metade das viagens foi mais rápida e metade mais lenta.
 
 ### Vale a pena comprar uma bicicleta elétrica ou um patinete?
 
-Em Massachusetts, as bicicletas elétricas que param de ajudar no pedal quando chegam a 20 mph não exigem habilitação. Você pode andar com elas nas ruas, nas ciclofaixas e na maioria dos caminhos pavimentados, mas não nas calçadas ([guia de bicicletas elétricas da MassBike](https://www.massbike.org/ebikesfaq)). Patinetes e scooters motorizados exigem carteira de motorista ou permissão de aprendiz (learner's permit) e capacete, e não podem ser usados entre o pôr do sol e o nascer do sol ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Um projeto de lei que atualizaria essas regras ainda está em discussão na Assembleia Legislativa do estado. O programa estadual de reembolso para comprar bicicleta elétrica está fechado em 2026.
+Em Massachusetts, as bicicletas elétricas que param de ajudar no pedal quando chegam a 20 mph (32 km/h) não exigem habilitação. Você pode andar com elas nas ruas, nas ciclofaixas e na maioria dos caminhos pavimentados, mas não nas calçadas ([guia de bicicletas elétricas da MassBike](https://www.massbike.org/ebikesfaq)). Patinetes e scooters motorizados exigem carteira de motorista ou permissão de aprendiz (learner's permit) e capacete, e não podem ser usados entre o pôr do sol e o nascer do sol ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Um projeto de lei que atualizaria essas regras ainda está em discussão na Assembleia Legislativa do estado. O programa estadual de reembolso para comprar bicicleta elétrica está fechado em 2026.
 
 ### Experimente primeiro
 
@@ -2085,7 +2085,7 @@ Se você for comprar só duas coisas, que sejam luzes e um cadeado em U. O resto
 
 ### 1. O jeito mais simples: suar menos desde o começo.
 
-Uma bicicleta elétrica faz a maior parte do trabalho por você: você chega a um lugar a 5 milhas de distância se sentindo mais ou menos como depois de caminhar 1 milha. A Bluebikes, o sistema de bicicletas compartilhadas da região de Boston, tem cada vez mais bicicletas elétricas. Com o plano mensal ou anual, o preço cai para $0.10 por minuto, além do valor do plano. É um preço que cabe no bolso para ir ao trabalho todo dia.
+Uma bicicleta elétrica faz a maior parte do trabalho por você: você chega a um lugar a 5 milhas (8 km) de distância se sentindo mais ou menos como depois de caminhar 1 milha (1.6 km). A Bluebikes, o sistema de bicicletas compartilhadas da região de Boston, tem cada vez mais bicicletas elétricas. Com o plano mensal ou anual, o preço cai para $0.10 por minuto, além do valor do plano. É um preço que cabe no bolso para ir ao trabalho todo dia.
 
 ### 2. Na bicicleta comum, controle o ritmo.
 
@@ -2093,7 +2093,7 @@ Quem decide o ritmo é você. Pedalar no "ritmo de conversa", devagar o bastante
 
 ### 3. Escolha uma rota mais plana.
 
-Uma subida de 200 pés já faz muita diferença no suor. A camada de bicicleta do Google Maps mostra a altitude. Uma rota meia milha mais longa muitas vezes deixa você bem mais fresco, se ela evitar uma ladeira.
+Uma subida de 200 pés (60 m) já faz muita diferença no suor. A camada de bicicleta do Google Maps mostra a altitude. Uma rota meia milha (800 m) mais longa muitas vezes deixa você bem mais fresco, se ela evitar uma ladeira.
 
 ### 4. Use a roupa certa para pedalar.
 
@@ -2114,7 +2114,7 @@ A umidade de agosto é forte. Nos poucos dias piores, pegue o T, o transporte p�
 
 ### 1. O jeito mais simples: suar menos desde o começo.
 
-Uma bicicleta elétrica faz a maior parte do trabalho por você: você chega a um lugar a 5 milhas de distância se sentindo mais ou menos como depois de caminhar 1 milha. A Bluebikes, o sistema de bicicletas compartilhadas da região de Boston, tem cada vez mais bicicletas elétricas. Com o plano mensal ou anual, o preço cai para {{price:bluebikes.ebikePerMinMember}} por minuto, além do valor do plano. É um preço que cabe no bolso para ir ao trabalho todo dia.
+Uma bicicleta elétrica faz a maior parte do trabalho por você: você chega a um lugar a 5 milhas (8 km) de distância se sentindo mais ou menos como depois de caminhar 1 milha (1.6 km). A Bluebikes, o sistema de bicicletas compartilhadas da região de Boston, tem cada vez mais bicicletas elétricas. Com o plano mensal ou anual, o preço cai para {{price:bluebikes.ebikePerMinMember}} por minuto, além do valor do plano. É um preço que cabe no bolso para ir ao trabalho todo dia.
 
 ### 2. Na bicicleta comum, controle o ritmo.
 
@@ -2122,7 +2122,7 @@ Quem decide o ritmo é você. Pedalar no "ritmo de conversa", devagar o bastante
 
 ### 3. Escolha uma rota mais plana.
 
-Uma subida de 200 pés já faz muita diferença no suor. A camada de bicicleta do Google Maps mostra a altitude. Uma rota meia milha mais longa muitas vezes deixa você bem mais fresco, se ela evitar uma ladeira.
+Uma subida de 200 pés (60 m) já faz muita diferença no suor. A camada de bicicleta do Google Maps mostra a altitude. Uma rota meia milha (800 m) mais longa muitas vezes deixa você bem mais fresco, se ela evitar uma ladeira.
 
 ### 4. Use a roupa certa para pedalar.
 
@@ -2345,7 +2345,7 @@ Sim. As garagens e os estacionamentos da MBTA são pagos pelo celular, e a maior
 
 Some a passagem: $2.40 por trecho no metrô (na ida e na volta), ou $90 por mês. O passe mensal do trem metropolitano custa $232 saindo da Route 128 e $311 saindo de Framingham.
 
-De todas as viagens ao centro em dias úteis feitas por pessoas que usam o Shift, cerca de 1 em cada 9 foi de carro. Das 99 pessoas que usam o Shift e foram de carro ao centro num dia útil, 90 também foram pelo menos uma vez de T, bicicleta, balsa ou a pé. Metade dessas viagens de carro teve menos de 3.4 milhas.
+De todas as viagens ao centro em dias úteis feitas por pessoas que usam o Shift, cerca de 1 em cada 9 foi de carro. Das 99 pessoas que usam o Shift e foram de carro ao centro num dia útil, 90 também foram pelo menos uma vez de T, bicicleta, balsa ou a pé. Metade dessas viagens de carro teve menos de 3.4 milhas (5.5 km).
 
 **Sobre estes números:** Vêm das viagens ao centro de Boston em dias úteis registradas por pessoas que usam o Shift, de junho a outubro de 2026, incluindo 363 viagens de carro feitas por 99 pessoas.
 
@@ -2390,7 +2390,7 @@ Sim. As garagens e os estacionamentos da MBTA são pagos pelo celular, e a maior
 
 Some a passagem: {{price:mbta.subwaySingle}} por trecho no metrô (na ida e na volta), ou {{price:mbta.linkPassMonthly}} por mês. O passe mensal do trem metropolitano custa {{price:mbta.crZoneTwoMonthly}} saindo da Route 128 e {{price:mbta.crZoneFiveMonthly}} saindo de Framingham.
 
-De todas as viagens ao centro em dias úteis feitas por pessoas que usam o Shift, cerca de 1 em cada 9 foi de carro. Das 99 pessoas que usam o Shift e foram de carro ao centro num dia útil, 90 também foram pelo menos uma vez de T, bicicleta, balsa ou a pé. Metade dessas viagens de carro teve menos de 3.4 milhas.
+De todas as viagens ao centro em dias úteis feitas por pessoas que usam o Shift, cerca de 1 em cada 9 foi de carro. Das 99 pessoas que usam o Shift e foram de carro ao centro num dia útil, 90 também foram pelo menos uma vez de T, bicicleta, balsa ou a pé. Metade dessas viagens de carro teve menos de 3.4 milhas (5.5 km).
 
 **Sobre estes números:** Vêm das viagens ao centro de Boston em dias úteis registradas por pessoas que usam o Shift, de junho a outubro de 2026, incluindo 363 viagens de carro feitas por 99 pessoas.
 
@@ -2432,7 +2432,7 @@ Muitas faculdades vendem o passe do T com 11% de desconto pelo [MBTA Semester Pa
 
 ### Dirigir na cidade é mais rápido no horário de pico?
 
-Não muito. Em viagens de 3 a 8 milhas no horário de pico dos dias úteis, em Boston, Cambridge, Somerville, Brookline e arredores, a velocidade típica das pessoas que usam o Shift foi de 8.4 milhas por hora (mph) de carro, 8.6 mph de bicicleta e 8.8 mph de metrô. Fora do horário de pico, a velocidade típica de carro nessa distância foi de 10.3 mph.
+Não muito. Em viagens de 3 a 8 milhas (5 a 13 km) no horário de pico dos dias úteis, em Boston, Cambridge, Somerville, Brookline e arredores, a velocidade típica das pessoas que usam o Shift foi de 8.4 milhas por hora (mph) de carro, 8.6 mph de bicicleta e 8.8 mph de metrô (13.5, 13.8 e 14.2 km/h). Fora do horário de pico, a velocidade típica de carro nessa distância foi de 10.3 mph (16.6 km/h).
 
 **Sobre estes números:** Vêm de 1,078 viagens de 3 a 8 milhas no horário de pico, de carro, bicicleta e metrô, registradas por pessoas que usam o Shift de 18 de julho a 16 de outubro de 2026 (dias úteis, das 7h às 9h30 e das 16h às 19h). Típico quer dizer que metade das viagens foi mais rápida e metade mais lenta.
 
@@ -2462,7 +2462,7 @@ Escolha um dia da semana que vem para fazer o seu trajeto de sempre de outro jei
 
 ### Dirigir na cidade é mais rápido no horário de pico?
 
-Não muito. Em viagens de 3 a 8 milhas no horário de pico dos dias úteis, em Boston, Cambridge, Somerville, Brookline e arredores, a velocidade típica das pessoas que usam o Shift foi de 8.4 milhas por hora (mph) de carro, 8.6 mph de bicicleta e 8.8 mph de metrô. Fora do horário de pico, a velocidade típica de carro nessa distância foi de 10.3 mph.
+Não muito. Em viagens de 3 a 8 milhas (5 a 13 km) no horário de pico dos dias úteis, em Boston, Cambridge, Somerville, Brookline e arredores, a velocidade típica das pessoas que usam o Shift foi de 8.4 milhas por hora (mph) de carro, 8.6 mph de bicicleta e 8.8 mph de metrô (13.5, 13.8 e 14.2 km/h). Fora do horário de pico, a velocidade típica de carro nessa distância foi de 10.3 mph (16.6 km/h).
 
 **Sobre estes números:** Vêm de 1,078 viagens de 3 a 8 milhas no horário de pico, de carro, bicicleta e metrô, registradas por pessoas que usam o Shift de 18 de julho a 16 de outubro de 2026 (dias úteis, das 7h às 9h30 e das 16h às 19h). Típico quer dizer que metade das viagens foi mais rápida e metade mais lenta.
 
@@ -2492,7 +2492,7 @@ Escolha um dia da semana que vem para fazer o seu trajeto de sempre de outro jei
     'Vista-se para o corpo que está pedalando, não para o corpo parado. Camadas de roupa, mãos e pés, e o que mais importa abaixo de zero.',
     $guidebody$Pedalar no frio é mais confortável do que a maioria das pessoas imagina. Seu corpo produz bastante calor enquanto você pedala. O segredo é se vestir pensando nisso, e não no frio que você sente parado.
 
-### 1. Vista-se como se estivesse 15°F mais quente.
+### 1. Vista-se como se estivesse 15°F mais quente (uns 8 °C).
 
 Esta é a regra mais importante. Se você se vestir para ficar confortável parado do lado de fora, vai sentir calor demais depois de cinco minutos pedalando. O ideal é sentir "um pouco de frio na saída". Você esquenta rápido.
 
@@ -2506,12 +2506,12 @@ Esta é a regra mais importante. Se você se vestir para ficar confortável para
 
 São as partes que esfriam mais rápido e estragam a pedalada mais depressa. Boas luvas e meias quentes são as melhorias que fazem mais diferença.
 
-- Abaixo de 30°F: luvas térmicas e meias de lã.
-- Abaixo de 20°F: bar mitts (capas térmicas presas ao guidão, onde você enfia as mãos) e capas térmicas para os sapatos ou botas de inverno. As bar mitts fazem muita diferença se você pedala o ano todo.
+- Abaixo de 30°F (−1 °C): luvas térmicas e meias de lã.
+- Abaixo de 20°F (−7 °C): bar mitts (capas térmicas presas ao guidão, onde você enfia as mãos) e capas térmicas para os sapatos ou botas de inverno. As bar mitts fazem muita diferença se você pedala o ano todo.
 
 ### 4. Cubra o rosto nos dias mais frios.
 
-Uma gola tubular (buff) puxada por cima do nariz e das bochechas aumenta muito o frio que você aguenta com conforto. Muita gente deixa isso de lado e se arrepende abaixo de 25°F.
+Uma gola tubular (buff) puxada por cima do nariz e das bochechas aumenta muito o frio que você aguenta com conforto. Muita gente deixa isso de lado e se arrepende abaixo de 25°F (−4 °C).
 
 ### 5. Leve em conta as outras coisas da estação.
 
@@ -2524,7 +2524,7 @@ Uma gola tubular (buff) puxada por cima do nariz e das bochechas aumenta muito o
 Pedalar no inverno tem vantagens de verdade quando você está bem equipado: menos trânsito, nada de calor demais, e você chega cheio de energia.$guidebody$,
     $guidebody$Pedalar no frio é mais confortável do que a maioria das pessoas imagina. Seu corpo produz bastante calor enquanto você pedala. O segredo é se vestir pensando nisso, e não no frio que você sente parado.
 
-### 1. Vista-se como se estivesse 15°F mais quente.
+### 1. Vista-se como se estivesse 15°F mais quente (uns 8 °C).
 
 Esta é a regra mais importante. Se você se vestir para ficar confortável parado do lado de fora, vai sentir calor demais depois de cinco minutos pedalando. O ideal é sentir "um pouco de frio na saída". Você esquenta rápido.
 
@@ -2538,12 +2538,12 @@ Esta é a regra mais importante. Se você se vestir para ficar confortável para
 
 São as partes que esfriam mais rápido e estragam a pedalada mais depressa. Boas luvas e meias quentes são as melhorias que fazem mais diferença.
 
-- Abaixo de 30°F: luvas térmicas e meias de lã.
-- Abaixo de 20°F: bar mitts (capas térmicas presas ao guidão, onde você enfia as mãos) e capas térmicas para os sapatos ou botas de inverno. As bar mitts fazem muita diferença se você pedala o ano todo.
+- Abaixo de 30°F (−1 °C): luvas térmicas e meias de lã.
+- Abaixo de 20°F (−7 °C): bar mitts (capas térmicas presas ao guidão, onde você enfia as mãos) e capas térmicas para os sapatos ou botas de inverno. As bar mitts fazem muita diferença se você pedala o ano todo.
 
 ### 4. Cubra o rosto nos dias mais frios.
 
-Uma gola tubular (buff) puxada por cima do nariz e das bochechas aumenta muito o frio que você aguenta com conforto. Muita gente deixa isso de lado e se arrepende abaixo de 25°F.
+Uma gola tubular (buff) puxada por cima do nariz e das bochechas aumenta muito o frio que você aguenta com conforto. Muita gente deixa isso de lado e se arrepende abaixo de 25°F (−4 °C).
 
 ### 5. Leve em conta as outras coisas da estação.
 
@@ -2575,7 +2575,7 @@ As pessoas que usam o Shift e moram nessas cidades mostram a mesma coisa em todo
 
 ### Qual é o jeito mais barato de andar pela cidade?
 
-Caminhar, para distâncias de até mais ou menos uma milha. Para distâncias maiores:
+Caminhar, para distâncias de até mais ou menos uma milha (1.6 km). Para distâncias maiores:
 
 - **O T:** $2.40 no metrô, $1.70 no ônibus, ou $90 por mês para andar à vontade de metrô e de ônibus. Até fevereiro de 2027, se você fizer baldeação entre ônibus e metrô em até duas horas, com o mesmo cartão ou celular, paga só a mais alta das duas tarifas.
 - **Tarifas reduzidas:** pessoas com 65 anos ou mais, pessoas com deficiência e pessoas que recebem SNAP (ajuda para comprar comida), MassHealth (o plano de saúde público do estado) e alguns outros programas pagam $1.10 no metrô, $0.85 no ônibus, ou $30 por mês ([como pedir](https://www.mbta.com/fares/reduced), em inglês). Crianças de até 11 anos não pagam, e passageiros com 75 anos ou mais que não dirigem mais também não pagam.
@@ -2591,7 +2591,7 @@ O mesmo vale fora de Boston. Centros de cidades com estação de trem metropolit
 
 Muitas conseguem. Crianças de até 11 anos andam de graça no T, carrinhos de bebê são bem-vindos no metrô e a maioria das estações tem elevador. Para levar as crianças à creche e fazer compras no mercado, muitos pais usam uma bicicleta de carga ([como as famílias usam](/pt-BR/guides/what-you-can-do-with-an-e-cargo-bike)).
 
-Uma coisa para saber antes de contar com carros de aplicativo: a lei de Massachusetts exige cadeirinha para crianças com menos de 8 anos, a não ser que tenham mais de 57 polegadas de altura, e isso vale também no Uber ou no Lyft ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Táxis sem cadeirinha ficam fora dessa regra.
+Uma coisa para saber antes de contar com carros de aplicativo: a lei de Massachusetts exige cadeirinha para crianças com menos de 8 anos, a não ser que tenham mais de 57 polegadas (1.45 m) de altura, e isso vale também no Uber ou no Lyft ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Táxis sem cadeirinha ficam fora dessa regra.
 
 ### E as viagens que precisam de carro?
 
@@ -2612,7 +2612,7 @@ As pessoas que usam o Shift e moram nessas cidades mostram a mesma coisa em todo
 
 ### Qual é o jeito mais barato de andar pela cidade?
 
-Caminhar, para distâncias de até mais ou menos uma milha. Para distâncias maiores:
+Caminhar, para distâncias de até mais ou menos uma milha (1.6 km). Para distâncias maiores:
 
 - **O T:** {{price:mbta.subwaySingle}} no metrô, {{price:mbta.busSingle}} no ônibus, ou {{price:mbta.linkPassMonthly}} por mês para andar à vontade de metrô e de ônibus. Até fevereiro de 2027, se você fizer baldeação entre ônibus e metrô em até duas horas, com o mesmo cartão ou celular, paga só a mais alta das duas tarifas.
 - **Tarifas reduzidas:** pessoas com 65 anos ou mais, pessoas com deficiência e pessoas que recebem SNAP (ajuda para comprar comida), MassHealth (o plano de saúde público do estado) e alguns outros programas pagam {{price:mbta.reducedSubway}} no metrô, {{price:mbta.reducedBus}} no ônibus, ou {{price:mbta.reducedLinkPass}} por mês ([como pedir](https://www.mbta.com/fares/reduced), em inglês). Crianças de até 11 anos não pagam, e passageiros com 75 anos ou mais que não dirigem mais também não pagam.
@@ -2628,7 +2628,7 @@ O mesmo vale fora de Boston. Centros de cidades com estação de trem metropolit
 
 Muitas conseguem. Crianças de até 11 anos andam de graça no T, carrinhos de bebê são bem-vindos no metrô e a maioria das estações tem elevador. Para levar as crianças à creche e fazer compras no mercado, muitos pais usam uma bicicleta de carga ([como as famílias usam](/pt-BR/guides/what-you-can-do-with-an-e-cargo-bike)).
 
-Uma coisa para saber antes de contar com carros de aplicativo: a lei de Massachusetts exige cadeirinha para crianças com menos de 8 anos, a não ser que tenham mais de 57 polegadas de altura, e isso vale também no Uber ou no Lyft ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Táxis sem cadeirinha ficam fora dessa regra.
+Uma coisa para saber antes de contar com carros de aplicativo: a lei de Massachusetts exige cadeirinha para crianças com menos de 8 anos, a não ser que tenham mais de 57 polegadas (1.45 m) de altura, e isso vale também no Uber ou no Lyft ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Táxis sem cadeirinha ficam fora dessa regra.
 
 ### E as viagens que precisam de carro?
 
@@ -2668,24 +2668,24 @@ Antes de assinar um contrato de aluguel, [coloque o endereço no nosso planejado
     'mg_drive_time_on_foot',
     'pt-BR',
     'Quanto dá 10 minutos de carro a pé ou de bicicleta?',
-    '10 minutos de carro na região de Boston são mais ou menos duas milhas e meia, ou uns 12 minutos de bicicleta. Veja a conversão completa e quantos minutos cada forma de se deslocar soma de porta a porta.',
-    $guidebody$As pessoas medem os trajetos em minutos de carro. Veja como esses minutos ficam a pé e de bicicleta, usando as velocidades típicas do trânsito na região de Boston: umas 12 a 15 milhas por hora (mph) nas ruas do bairro e nas avenidas principais.
+    '10 minutos de carro na região de Boston são mais ou menos duas milhas e meia (4 km), ou uns 12 minutos de bicicleta. Veja a conversão completa e quantos minutos cada forma de se deslocar soma de porta a porta.',
+    $guidebody$As pessoas medem os trajetos em minutos de carro. Veja como esses minutos ficam a pé e de bicicleta, usando as velocidades típicas do trânsito na região de Boston: umas 12 a 15 milhas por hora (mph, ou 19 a 24 km/h) nas ruas do bairro e nas avenidas principais.
 
-### 5 minutos de carro são mais ou menos uma milha.
+### 5 minutos de carro são mais ou menos uma milha (1.6 km).
 
 Isso dá uma caminhada de 20 minutos, ou 6 minutos de bicicleta. Nessa distância, a bicicleta costuma ser o meio mais rápido que você tem, e a caminhada é tão curta que muita gente faz sem nem pensar que está caminhando.
 
-### 10 minutos de carro são de 2 a 2.5 milhas.
+### 10 minutos de carro são de 2 a 2.5 milhas (3.2 a 4 km).
 
 Conte uns 45 minutos a pé e 12 minutos de bicicleta. Essa é a distância ideal para a bicicleta por aqui: longe o bastante para a caminhada levar um bom tempo, e perto o bastante para você chegar antes do tempo que levaria para achar onde estacionar.
 
-### 15 minutos de carro são de 3 a 4 milhas.
+### 15 minutos de carro são de 3 a 4 milhas (4.8 a 6.4 km).
 
 Mais ou menos uma hora a pé e uns 20 minutos de bicicleta. De bicicleta elétrica, são uns 15, num ritmo que não cansa muito.
 
-### 20 minutos de carro são umas 5 milhas.
+### 20 minutos de carro são umas 5 milhas (8 km).
 
-De 25 a 30 minutos de bicicleta, ou 20 de bicicleta elétrica. Cinco milhas também é uma boa distância para combinar a bicicleta com o T (o metrô e os ônibus da região de Boston) se o tempo mudar.
+De 25 a 30 minutos de bicicleta, ou 20 de bicicleta elétrica. Cinco milhas (8 km) também é uma boa distância para combinar a bicicleta com o T (o metrô e os ônibus da região de Boston) se o tempo mudar.
 
 ### De porta a porta é o que conta.
 
@@ -2699,28 +2699,28 @@ Cada uma dessas estimativas mede uma parte diferente da viagem. Veja o que você
 
 **Nada a mais, se você caminha.** A estimativa já é de porta a porta. O que você vê é o tempo que leva, e esse é um grande motivo para a caminhada ganhar mais trajetos curtos do que as pessoas imaginam.
 
-Somando tudo isso, a diferença nos trajetos curtos fica bem menor. Em trajetos de menos de uma milha, as formas de se deslocar costumam ficar muito mais próximas do que a estimativa de carro faz parecer.
+Somando tudo isso, a diferença nos trajetos curtos fica bem menor. Em trajetos de menos de uma milha (1.6 km), as formas de se deslocar costumam ficar muito mais próximas do que a estimativa de carro faz parecer.
 
 ### Experimente primeiro
 
 Coloque o seu próprio trajeto no [Commute Advisor](https://www.gogreenstreets.org/commute-advisor) (em inglês), a nossa ferramenta para comparar formas de se deslocar. Ele mostra os tempos reais a pé, de bicicleta e de transporte público para o seu caminho, e quanto cada opção custa por dia e por ano.$guidebody$,
-    $guidebody$As pessoas medem os trajetos em minutos de carro. Veja como esses minutos ficam a pé e de bicicleta, usando as velocidades típicas do trânsito na região de Boston: umas 12 a 15 milhas por hora (mph) nas ruas do bairro e nas avenidas principais.
+    $guidebody$As pessoas medem os trajetos em minutos de carro. Veja como esses minutos ficam a pé e de bicicleta, usando as velocidades típicas do trânsito na região de Boston: umas 12 a 15 milhas por hora (mph, ou 19 a 24 km/h) nas ruas do bairro e nas avenidas principais.
 
-### 5 minutos de carro são mais ou menos uma milha.
+### 5 minutos de carro são mais ou menos uma milha (1.6 km).
 
 Isso dá uma caminhada de 20 minutos, ou 6 minutos de bicicleta. Nessa distância, a bicicleta costuma ser o meio mais rápido que você tem, e a caminhada é tão curta que muita gente faz sem nem pensar que está caminhando.
 
-### 10 minutos de carro são de 2 a 2.5 milhas.
+### 10 minutos de carro são de 2 a 2.5 milhas (3.2 a 4 km).
 
 Conte uns 45 minutos a pé e 12 minutos de bicicleta. Essa é a distância ideal para a bicicleta por aqui: longe o bastante para a caminhada levar um bom tempo, e perto o bastante para você chegar antes do tempo que levaria para achar onde estacionar.
 
-### 15 minutos de carro são de 3 a 4 milhas.
+### 15 minutos de carro são de 3 a 4 milhas (4.8 a 6.4 km).
 
 Mais ou menos uma hora a pé e uns 20 minutos de bicicleta. De bicicleta elétrica, são uns 15, num ritmo que não cansa muito.
 
-### 20 minutos de carro são umas 5 milhas.
+### 20 minutos de carro são umas 5 milhas (8 km).
 
-De 25 a 30 minutos de bicicleta, ou 20 de bicicleta elétrica. Cinco milhas também é uma boa distância para combinar a bicicleta com o T (o metrô e os ônibus da região de Boston) se o tempo mudar.
+De 25 a 30 minutos de bicicleta, ou 20 de bicicleta elétrica. Cinco milhas (8 km) também é uma boa distância para combinar a bicicleta com o T (o metrô e os ônibus da região de Boston) se o tempo mudar.
 
 ### De porta a porta é o que conta.
 
@@ -2734,7 +2734,7 @@ Cada uma dessas estimativas mede uma parte diferente da viagem. Veja o que você
 
 **Nada a mais, se você caminha.** A estimativa já é de porta a porta. O que você vê é o tempo que leva, e esse é um grande motivo para a caminhada ganhar mais trajetos curtos do que as pessoas imaginam.
 
-Somando tudo isso, a diferença nos trajetos curtos fica bem menor. Em trajetos de menos de uma milha, as formas de se deslocar costumam ficar muito mais próximas do que a estimativa de carro faz parecer.
+Somando tudo isso, a diferença nos trajetos curtos fica bem menor. Em trajetos de menos de uma milha (1.6 km), as formas de se deslocar costumam ficar muito mais próximas do que a estimativa de carro faz parecer.
 
 ### Experimente primeiro
 
@@ -2894,7 +2894,7 @@ Devolva a bicicleta em qualquer estação no caminho, espere um minuto e pegue o
 
 ### Quanto custa manter um carro aqui?
 
-A AAA, uma associação de motoristas dos EUA, calcula que ter e usar um carro novo que roda 15,000 milhas por ano custa $12,863 ([AAA, 2026](https://newsroom.aaa.com/wp-content/uploads/2026/09/AAA_YDC-Fact-Sheet_2026.pdf)). Cerca de $7,704 disso são depreciação (o valor que o carro perde com o tempo), seguro e juros do financiamento. Você paga isso mesmo com o carro parado. Um carro mais velho e já quitado custa bem menos.
+A AAA, uma associação de motoristas dos EUA, calcula que ter e usar um carro novo que roda 15,000 milhas (24,000 km) por ano custa $12,863 ([AAA, 2026](https://newsroom.aaa.com/wp-content/uploads/2026/09/AAA_YDC-Fact-Sheet_2026.pdf)). Cerca de $7,704 disso são depreciação (o valor que o carro perde com o tempo), seguro e juros do financiamento. Você paga isso mesmo com o carro parado. Um carro mais velho e já quitado custa bem menos.
 
 Massachusetts tem alguns custos próprios:
 
@@ -2904,7 +2904,7 @@ Massachusetts tem alguns custos próprios:
 
 ### Quanto as pessoas daqui dirigem de verdade?
 
-Cerca de dois dias por semana, entre as pessoas que usam o Shift e moram em Boston, Cambridge, Somerville ou Brookline. Cerca de 1 em cada 4 das viagens de carro delas teve menos de 2 milhas. Muitas dessas viagens curtas são fáceis de fazer a pé ou de bicicleta.
+Cerca de dois dias por semana, entre as pessoas que usam o Shift e moram em Boston, Cambridge, Somerville ou Brookline. Cerca de 1 em cada 4 das viagens de carro delas teve menos de 2 milhas (3.2 km). Muitas dessas viagens curtas são fáceis de fazer a pé ou de bicicleta.
 
 **Sobre estes números:** Vêm de 3,263 viagens de carro registradas por 65 pessoas que usam o Shift e moram nessas quatro cidades, de 21 de agosto a 16 de outubro de 2026. Aqui, dirigir inclui viagens de táxi ou de carro de aplicativo.
 
@@ -2913,14 +2913,14 @@ A Prefeitura de Boston encontrou algo parecido: um carro particular roda cerca d
 ### Como descubro o que é melhor para mim?
 
 1. Durante duas semanas, anote cada dia em que você dirigiu e aonde foi.
-2. Marque as viagens com menos de 2 milhas. Essas são as mais fáceis de fazer a pé, de bicicleta ou de T.
+2. Marque as viagens com menos de 2 milhas (3.2 km). Essas são as mais fáceis de fazer a pé, de bicicleta ou de T.
 3. Para as outras, [veja de que outro jeito você poderia fazer a viagem](https://www.gogreenstreets.org/pt-BR/guides/keeping-a-car-in-boston#trip-planner): o T, uma Bluebike, um carro compartilhado ou uma carona com alguém.
 
 Se só algumas viagens por mês precisam mesmo de carro, usar um carro compartilhado ou alugar vai custar bem menos do que ter um. Se a maioria precisa, ficar com o carro faz sentido.
 
 ### O que eu uso nos dias em que preciso de carro?
 
-Os serviços de carro compartilhado alugam carros por hora em estacionamentos por toda a cidade, com gasolina e seguro incluídos. O plano padrão da Zipcar custa $9 por mês, mais a tarifa por hora ou por dia. Um aluguel comum resolve para viajar no fim de semana. Carros de aplicativo cobrem o resto. Se você tem filhos com menos de 8 anos, leve uma cadeirinha: a lei estadual exige uma no Uber ou no Lyft, a não ser que a criança tenha mais de 57 polegadas de altura.
+Os serviços de carro compartilhado alugam carros por hora em estacionamentos por toda a cidade, com gasolina e seguro incluídos. O plano padrão da Zipcar custa $9 por mês, mais a tarifa por hora ou por dia. Um aluguel comum resolve para viajar no fim de semana. Carros de aplicativo cobrem o resto. Se você tem filhos com menos de 8 anos, leve uma cadeirinha: a lei estadual exige uma no Uber ou no Lyft, a não ser que a criança tenha mais de 57 polegadas (1.45 m) de altura.
 
 ### Como vendo um carro em Massachusetts?
 
@@ -2934,7 +2934,7 @@ Cancele o registro pela internet com a sua conta MyMassGov, o que é grátis, e 
 
 ### Quanto custa manter um carro aqui?
 
-A AAA, uma associação de motoristas dos EUA, calcula que ter e usar um carro novo que roda 15,000 milhas por ano custa {{price:driving.aaaAnnualOwnership}} ([AAA, 2026](https://newsroom.aaa.com/wp-content/uploads/2026/09/AAA_YDC-Fact-Sheet_2026.pdf)). Cerca de {{price:driving.aaaFixedAnnual}} disso são depreciação (o valor que o carro perde com o tempo), seguro e juros do financiamento. Você paga isso mesmo com o carro parado. Um carro mais velho e já quitado custa bem menos.
+A AAA, uma associação de motoristas dos EUA, calcula que ter e usar um carro novo que roda 15,000 milhas (24,000 km) por ano custa {{price:driving.aaaAnnualOwnership}} ([AAA, 2026](https://newsroom.aaa.com/wp-content/uploads/2026/09/AAA_YDC-Fact-Sheet_2026.pdf)). Cerca de {{price:driving.aaaFixedAnnual}} disso são depreciação (o valor que o carro perde com o tempo), seguro e juros do financiamento. Você paga isso mesmo com o carro parado. Um carro mais velho e já quitado custa bem menos.
 
 Massachusetts tem alguns custos próprios:
 
@@ -2944,7 +2944,7 @@ Massachusetts tem alguns custos próprios:
 
 ### Quanto as pessoas daqui dirigem de verdade?
 
-Cerca de dois dias por semana, entre as pessoas que usam o Shift e moram em Boston, Cambridge, Somerville ou Brookline. Cerca de 1 em cada 4 das viagens de carro delas teve menos de 2 milhas. Muitas dessas viagens curtas são fáceis de fazer a pé ou de bicicleta.
+Cerca de dois dias por semana, entre as pessoas que usam o Shift e moram em Boston, Cambridge, Somerville ou Brookline. Cerca de 1 em cada 4 das viagens de carro delas teve menos de 2 milhas (3.2 km). Muitas dessas viagens curtas são fáceis de fazer a pé ou de bicicleta.
 
 **Sobre estes números:** Vêm de 3,263 viagens de carro registradas por 65 pessoas que usam o Shift e moram nessas quatro cidades, de 21 de agosto a 16 de outubro de 2026. Aqui, dirigir inclui viagens de táxi ou de carro de aplicativo.
 
@@ -2953,14 +2953,14 @@ A Prefeitura de Boston encontrou algo parecido: um carro particular roda cerca d
 ### Como descubro o que é melhor para mim?
 
 1. Durante duas semanas, anote cada dia em que você dirigiu e aonde foi.
-2. Marque as viagens com menos de 2 milhas. Essas são as mais fáceis de fazer a pé, de bicicleta ou de T.
+2. Marque as viagens com menos de 2 milhas (3.2 km). Essas são as mais fáceis de fazer a pé, de bicicleta ou de T.
 3. Para as outras, [veja de que outro jeito você poderia fazer a viagem](https://www.gogreenstreets.org/pt-BR/guides/keeping-a-car-in-boston#trip-planner): o T, uma Bluebike, um carro compartilhado ou uma carona com alguém.
 
 Se só algumas viagens por mês precisam mesmo de carro, usar um carro compartilhado ou alugar vai custar bem menos do que ter um. Se a maioria precisa, ficar com o carro faz sentido.
 
 ### O que eu uso nos dias em que preciso de carro?
 
-Os serviços de carro compartilhado alugam carros por hora em estacionamentos por toda a cidade, com gasolina e seguro incluídos. O plano padrão da Zipcar custa {{price:driving.zipcarStandardMonthly}} por mês, mais a tarifa por hora ou por dia. Um aluguel comum resolve para viajar no fim de semana. Carros de aplicativo cobrem o resto. Se você tem filhos com menos de 8 anos, leve uma cadeirinha: a lei estadual exige uma no Uber ou no Lyft, a não ser que a criança tenha mais de 57 polegadas de altura.
+Os serviços de carro compartilhado alugam carros por hora em estacionamentos por toda a cidade, com gasolina e seguro incluídos. O plano padrão da Zipcar custa {{price:driving.zipcarStandardMonthly}} por mês, mais a tarifa por hora ou por dia. Um aluguel comum resolve para viajar no fim de semana. Carros de aplicativo cobrem o resto. Se você tem filhos com menos de 8 anos, leve uma cadeirinha: a lei estadual exige uma no Uber ou no Lyft, a não ser que a criança tenha mais de 57 polegadas (1.45 m) de altura.
 
 ### Como vendo um carro em Massachusetts?
 
@@ -3148,7 +3148,7 @@ Baldeação é quando você troca de um ônibus ou trem para outro. Se você pag
     'pt-BR',
     'Como combinar transporte público com caminhada ou bicicleta',
     'Na maioria das viagens mais longas, transporte público com uma caminhada curta ou um trecho de bicicleta em cada ponta é melhor do que só transporte público ou só caminhada.',
-    $guidebody$Em viagens de mais de 3 ou 4 milhas, combinar o transporte público com uma caminhada ou um trecho de bicicleta em cada ponta muitas vezes é o jeito mais rápido e mais agradável de chegar. Você pula as partes mais lentas de uma viagem só de transporte público (as paradas locais e as baldeações, que é quando você troca de ônibus ou trem), faz um pouco de exercício sem perder muito tempo e chega bem na porta.
+    $guidebody$Em viagens de mais de 3 ou 4 milhas (4.8 ou 6.4 km), combinar o transporte público com uma caminhada ou um trecho de bicicleta em cada ponta muitas vezes é o jeito mais rápido e mais agradável de chegar. Você pula as partes mais lentas de uma viagem só de transporte público (as paradas locais e as baldeações, que é quando você troca de ônibus ou trem), faz um pouco de exercício sem perder muito tempo e chega bem na porta.
 
 ### Como funciona
 
@@ -3164,7 +3164,7 @@ Baldeação é quando você troca de um ônibus ou trem para outro. Se você pag
 
 ### Um exemplo
 
-De Somerville até o Seaport são umas 6 milhas. Um jeito de fazer:
+De Somerville até o Seaport são umas 6 milhas (9.7 km). Um jeito de fazer:
 
 - Caminhe 8 min até a estação Davis
 - Pegue a Linha Vermelha até a South Station (uns 17 min)
@@ -3177,7 +3177,7 @@ Mais ou menos 35 minutos, $2.40, e 18 minutos de caminhada no seu dia.
 - **Reserve um tempo a mais.** Deixe 5 minutos extras até pegar o jeito da rotina.
 - **Tenha um plano B.** Conheça o caminho só de transporte público para os dias de tempo ruim.
 - **Fica mais fácil.** Quando você já sabe os horários, quase não precisa mais planejar.$guidebody$,
-    $guidebody$Em viagens de mais de 3 ou 4 milhas, combinar o transporte público com uma caminhada ou um trecho de bicicleta em cada ponta muitas vezes é o jeito mais rápido e mais agradável de chegar. Você pula as partes mais lentas de uma viagem só de transporte público (as paradas locais e as baldeações, que é quando você troca de ônibus ou trem), faz um pouco de exercício sem perder muito tempo e chega bem na porta.
+    $guidebody$Em viagens de mais de 3 ou 4 milhas (4.8 ou 6.4 km), combinar o transporte público com uma caminhada ou um trecho de bicicleta em cada ponta muitas vezes é o jeito mais rápido e mais agradável de chegar. Você pula as partes mais lentas de uma viagem só de transporte público (as paradas locais e as baldeações, que é quando você troca de ônibus ou trem), faz um pouco de exercício sem perder muito tempo e chega bem na porta.
 
 ### Como funciona
 
@@ -3193,7 +3193,7 @@ Mais ou menos 35 minutos, $2.40, e 18 minutos de caminhada no seu dia.
 
 ### Um exemplo
 
-De Somerville até o Seaport são umas 6 milhas. Um jeito de fazer:
+De Somerville até o Seaport são umas 6 milhas (9.7 km). Um jeito de fazer:
 
 - Caminhe 8 min até a estação Davis
 - Pegue a Linha Vermelha até a South Station (uns 17 min)
@@ -3219,11 +3219,11 @@ Mais ou menos 35 minutos, {{price:mbta.subwaySingle}}, e 18 minutos de caminhada
 
 ### 1. Os sapatos certos são o primeiro passo.
 
-Com sapatos impermeáveis (qualquer par razoável, não precisa de equipamento especial), a chuva deixa de ser problema. Com botas forradas, uma caminhada a 25°F fica bem confortável. Muitas vezes, o problema que as pessoas culpam no tempo é, na verdade, o sapato que não é impermeável.
+Com sapatos impermeáveis (qualquer par razoável, não precisa de equipamento especial), a chuva deixa de ser problema. Com botas forradas, uma caminhada a 25°F (−4 °C) fica bem confortável. Muitas vezes, o problema que as pessoas culpam no tempo é, na verdade, o sapato que não é impermeável.
 
 ### 2. No frio, o segredo são as camadas de roupa, mais do que a temperatura.
 
-Uma jaqueta leve por cima da sua roupa normal deixa você confortável num frio muito maior. A regra dos ciclistas, "vista-se como se estivesse 15°F mais quente", também vale aqui: você esquenta em poucos quarteirões. Cubra as orelhas e as mãos. O resto se resolve sozinho.
+Uma jaqueta leve por cima da sua roupa normal deixa você confortável num frio muito maior. A regra dos ciclistas, "vista-se como se estivesse 15°F mais quente (uns 8 °C)", também vale aqui: você esquenta em poucos quarteirões. Cubra as orelhas e as mãos. O resto se resolve sozinho.
 
 ### 3. Chuva fraca não é problema.
 
@@ -3231,7 +3231,7 @@ Uma jaqueta impermeável com capuz dá conta da garoa comum que faz as pessoas d
 
 ### 4. No calor, o que importa é o ritmo e beber água.
 
-Em dias de 90°F, caminhe mais devagar, leve uma garrafa de água, vá pelo lado da rua com mais sombra e pense em usar um chapéu ou boné. Antes das 9 da manhã e depois das 7 da noite, em geral dá para caminhar bem, mesmo no verão.
+Em dias de 90°F (32 °C), caminhe mais devagar, leve uma garrafa de água, vá pelo lado da rua com mais sombra e pense em usar um chapéu ou boné. Antes das 9 da manhã e depois das 7 da noite, em geral dá para caminhar bem, mesmo no verão.
 
 ### 5. Tenha um plano B.
 
@@ -3244,11 +3244,11 @@ Quase sempre, quem decide que "o tempo está ruim" está dentro de casa, vestido
 
 ### 1. Os sapatos certos são o primeiro passo.
 
-Com sapatos impermeáveis (qualquer par razoável, não precisa de equipamento especial), a chuva deixa de ser problema. Com botas forradas, uma caminhada a 25°F fica bem confortável. Muitas vezes, o problema que as pessoas culpam no tempo é, na verdade, o sapato que não é impermeável.
+Com sapatos impermeáveis (qualquer par razoável, não precisa de equipamento especial), a chuva deixa de ser problema. Com botas forradas, uma caminhada a 25°F (−4 °C) fica bem confortável. Muitas vezes, o problema que as pessoas culpam no tempo é, na verdade, o sapato que não é impermeável.
 
 ### 2. No frio, o segredo são as camadas de roupa, mais do que a temperatura.
 
-Uma jaqueta leve por cima da sua roupa normal deixa você confortável num frio muito maior. A regra dos ciclistas, "vista-se como se estivesse 15°F mais quente", também vale aqui: você esquenta em poucos quarteirões. Cubra as orelhas e as mãos. O resto se resolve sozinho.
+Uma jaqueta leve por cima da sua roupa normal deixa você confortável num frio muito maior. A regra dos ciclistas, "vista-se como se estivesse 15°F mais quente (uns 8 °C)", também vale aqui: você esquenta em poucos quarteirões. Cubra as orelhas e as mãos. O resto se resolve sozinho.
 
 ### 3. Chuva fraca não é problema.
 
@@ -3256,7 +3256,7 @@ Uma jaqueta impermeável com capuz dá conta da garoa comum que faz as pessoas d
 
 ### 4. No calor, o que importa é o ritmo e beber água.
 
-Em dias de 90°F, caminhe mais devagar, leve uma garrafa de água, vá pelo lado da rua com mais sombra e pense em usar um chapéu ou boné. Antes das 9 da manhã e depois das 7 da noite, em geral dá para caminhar bem, mesmo no verão.
+Em dias de 90°F (32 °C), caminhe mais devagar, leve uma garrafa de água, vá pelo lado da rua com mais sombra e pense em usar um chapéu ou boné. Antes das 9 da manhã e depois das 7 da noite, em geral dá para caminhar bem, mesmo no verão.
 
 ### 5. Tenha um plano B.
 
@@ -3278,7 +3278,7 @@ Quase sempre, quem decide que "o tempo está ruim" está dentro de casa, vestido
 
 ### 1. O carrinho de feira é o herói esquecido.
 
-Um carrinho dobrável com rodinhas, o famoso carrinho de feira, aguenta mais de 50 libras de compras, é fácil de puxar na calçada e fica dobrado em casa. Custa de $30 a $60 e facilitou muito a vida de várias famílias que fazem as compras a pé. A Ikea, a Amazon e a maioria das lojas de ferragens vendem.
+Um carrinho dobrável com rodinhas, o famoso carrinho de feira, aguenta mais de 50 libras (23 kg) de compras, é fácil de puxar na calçada e fica dobrado em casa. Custa de $30 a $60 e facilitou muito a vida de várias famílias que fazem as compras a pé. A Ikea, a Amazon e a maioria das lojas de ferragens vendem.
 
 ### 2. Uma mochila e algumas sacolas dobráveis dão conta de quase tudo do dia a dia.
 
@@ -3303,7 +3303,7 @@ Um carrinho de feira, uma bicicleta de carga elétrica e um serviço de entrega 
 
 ### 1. O carrinho de feira é o herói esquecido.
 
-Um carrinho dobrável com rodinhas, o famoso carrinho de feira, aguenta mais de 50 libras de compras, é fácil de puxar na calçada e fica dobrado em casa. Custa de $30 a $60 e facilitou muito a vida de várias famílias que fazem as compras a pé. A Ikea, a Amazon e a maioria das lojas de ferragens vendem.
+Um carrinho dobrável com rodinhas, o famoso carrinho de feira, aguenta mais de 50 libras (23 kg) de compras, é fácil de puxar na calçada e fica dobrado em casa. Custa de $30 a $60 e facilitou muito a vida de várias famílias que fazem as compras a pé. A Ikea, a Amazon e a maioria das lojas de ferragens vendem.
 
 ### 2. Uma mochila e algumas sacolas dobráveis dão conta de quase tudo do dia a dia.
 
@@ -3450,9 +3450,9 @@ E se você quiser saber como essas viagens ficariam, o [Commute Advisor](https:/
 
 ### O que elas aguentam
 
-- Mais de 100 libras de carga (crianças e compras) sem esforço
+- Mais de 100 libras (45 kg) de carga (crianças e compras) sem esforço
 - Subidas que seriam pesadas numa bicicleta comum
-- Autonomia de 30 a 50 milhas com uma carga da bateria
+- Autonomia de 30 a 50 milhas (48 a 80 km) com uma carga da bateria
 - A maioria das tarefas do dia a dia, perto ou a uma distância média, com mais prazer do que de carro, já que você não precisa procurar estacionamento
 
 ### Como experimentar sem comprar
@@ -3480,9 +3480,9 @@ Pegue uma emprestada na Community Pedal Power por um fim de semana. Use para bus
 
 ### O que elas aguentam
 
-- Mais de 100 libras de carga (crianças e compras) sem esforço
+- Mais de 100 libras (45 kg) de carga (crianças e compras) sem esforço
 - Subidas que seriam pesadas numa bicicleta comum
-- Autonomia de 30 a 50 milhas com uma carga da bateria
+- Autonomia de 30 a 50 milhas (48 a 80 km) com uma carga da bateria
 - A maioria das tarefas do dia a dia, perto ou a uma distância média, com mais prazer do que de carro, já que você não precisa procurar estacionamento
 
 ### Como experimentar sem comprar
@@ -3511,7 +3511,7 @@ Pegue uma emprestada na Community Pedal Power por um fim de semana. Use para bus
     'De porta a porta, a bicicleta ganha do carro em mais viagens do que as pessoas imaginam. As cinco situações em que ela com certeza vence.',
     $guidebody$A bicicleta é mais rápida que o carro em mais viagens do que as pessoas imaginam, quando você conta o tempo de porta a porta. Veja quando ela realmente vence.
 
-### 1. Viagens de menos de três milhas, principalmente em bairros onde tudo fica perto.
+### 1. Viagens de menos de três milhas (4.8 km), principalmente em bairros onde tudo fica perto.
 
 Na cidade, uma viagem curta de bicicleta costuma levar de 15 a 25 minutos de porta a porta. A mesma viagem de carro, contando o tempo para achar onde estacionar, muitas vezes leva mais ou menos o mesmo tempo, e às vezes mais. A ideia de que "de carro é mais rápido" vem mais de viagens no subúrbio do que de viagens na cidade.
 
@@ -3525,14 +3525,14 @@ Quando o trânsito anda devagar, as rotas que não dependem de semáforos, como 
 
 ### 4. Viagens mais longas, de bicicleta elétrica.
 
-Um trajeto de 5 a 7 milhas, que é lento e cansativo numa bicicleta comum, vira uma viagem confortável de 20 a 25 minutos numa bicicleta elétrica, com pouco esforço. A bicicleta elétrica aumenta a distância em que a bicicleta compete com o carro no tempo, muitas vezes bem além de cinco milhas.
+Um trajeto de 5 a 7 milhas (8 a 11 km), que é lento e cansativo numa bicicleta comum, vira uma viagem confortável de 20 a 25 minutos numa bicicleta elétrica, com pouco esforço. A bicicleta elétrica aumenta a distância em que a bicicleta compete com o carro no tempo, muitas vezes bem além de cinco milhas (8 km).
 
 ### 5. Compras e viagens com crianças, de bicicleta elétrica de carga.
 
 Uma bicicleta elétrica de carga tem um quadro mais comprido atrás ou uma caixa na frente, e um motor de pedal assistido, que ajuda enquanto você pedala. Ela leva duas crianças e as compras da semana, e usa as ciclofaixas, sem pegar a fila de carros na saída da escola. Ela dá conta da maior parte do que as pessoas acham que só se faz de carro. Você não precisa comprar uma para descobrir: a [CargoB](https://www.ridecargob.com/) (em inglês) aluga bicicletas de carga por minuto em vários pontos da região, e a [Community Pedal Power](https://communitypedalpower.org/) (em inglês), em Cambridge, tem uma biblioteca de bicicletas elétricas onde você pode pegar uma emprestada de graça.$guidebody$,
     $guidebody$A bicicleta é mais rápida que o carro em mais viagens do que as pessoas imaginam, quando você conta o tempo de porta a porta. Veja quando ela realmente vence.
 
-### 1. Viagens de menos de três milhas, principalmente em bairros onde tudo fica perto.
+### 1. Viagens de menos de três milhas (4.8 km), principalmente em bairros onde tudo fica perto.
 
 Na cidade, uma viagem curta de bicicleta costuma levar de 15 a 25 minutos de porta a porta. A mesma viagem de carro, contando o tempo para achar onde estacionar, muitas vezes leva mais ou menos o mesmo tempo, e às vezes mais. A ideia de que "de carro é mais rápido" vem mais de viagens no subúrbio do que de viagens na cidade.
 
@@ -3546,7 +3546,7 @@ Quando o trânsito anda devagar, as rotas que não dependem de semáforos, como 
 
 ### 4. Viagens mais longas, de bicicleta elétrica.
 
-Um trajeto de 5 a 7 milhas, que é lento e cansativo numa bicicleta comum, vira uma viagem confortável de 20 a 25 minutos numa bicicleta elétrica, com pouco esforço. A bicicleta elétrica aumenta a distância em que a bicicleta compete com o carro no tempo, muitas vezes bem além de cinco milhas.
+Um trajeto de 5 a 7 milhas (8 a 11 km), que é lento e cansativo numa bicicleta comum, vira uma viagem confortável de 20 a 25 minutos numa bicicleta elétrica, com pouco esforço. A bicicleta elétrica aumenta a distância em que a bicicleta compete com o carro no tempo, muitas vezes bem além de cinco milhas (8 km).
 
 ### 5. Compras e viagens com crianças, de bicicleta elétrica de carga.
 
@@ -3610,12 +3610,12 @@ Meia hora dirigindo são 30 minutos de direção. Meia hora no trem são 30 minu
     'mg_walking_vs_driving',
     'pt-BR',
     'Quando caminhar é mesmo a opção mais rápida',
-    'Em trajetos de menos de uma milha, caminhar muitas vezes ganha do carro, quando você conta o tempo de ir até o carro. Cinco situações em que caminhar ganha com certeza.',
+    'Em trajetos de menos de uma milha (1.6 km), caminhar muitas vezes ganha do carro, quando você conta o tempo de ir até o carro. Cinco situações em que caminhar ganha com certeza.',
     $guidebody$Caminhar é mais rápido que dirigir em mais trajetos curtos do que as pessoas imaginam, quando você conta o tempo de porta a porta. Veja quando caminhar ganha.
 
-### 1. Trajetos de menos de meia milha.
+### 1. Trajetos de menos de meia milha (800 m).
 
-Caminhar meia milha leva uns 10 minutos. Dirigir a mesma distância muitas vezes leva mais tempo, quando você conta a ida até o carro, o trânsito e a caminhada do estacionamento até a porta. Quanto mais curto o trajeto, maior a vantagem de ir a pé.
+Caminhar meia milha (800 m) leva uns 10 minutos. Dirigir a mesma distância muitas vezes leva mais tempo, quando você conta a ida até o carro, o trânsito e a caminhada do estacionamento até a porta. Quanto mais curto o trajeto, maior a vantagem de ir a pé.
 
 ### 2. Qualquer lugar onde é difícil estacionar.
 
@@ -3627,16 +3627,16 @@ Precisa tomar um café, deixar um pacote e pegar uma coisa na farmácia, tudo no
 
 ### 4. Na hora do rush, quando o trânsito está ruim.
 
-Dirigir 1 milha no anda e para do trânsito pode levar 10 a 15 minutos fácil. Caminhar 1 milha leva 20 minutos. Às vezes é mais rápido que o carro, e quase sempre é mais agradável.
+Dirigir 1 milha (1.6 km) no anda e para do trânsito pode levar 10 a 15 minutos fácil. Caminhar 1 milha leva 20 minutos. Às vezes é mais rápido que o carro, e quase sempre é mais agradável.
 
 ### 5. O que caminhar faz e o GPS não mede.
 
 Uma caminhada de 15 minutos deixa você reparar no seu bairro, e você chega de melhor humor do que saiu.$guidebody$,
     $guidebody$Caminhar é mais rápido que dirigir em mais trajetos curtos do que as pessoas imaginam, quando você conta o tempo de porta a porta. Veja quando caminhar ganha.
 
-### 1. Trajetos de menos de meia milha.
+### 1. Trajetos de menos de meia milha (800 m).
 
-Caminhar meia milha leva uns 10 minutos. Dirigir a mesma distância muitas vezes leva mais tempo, quando você conta a ida até o carro, o trânsito e a caminhada do estacionamento até a porta. Quanto mais curto o trajeto, maior a vantagem de ir a pé.
+Caminhar meia milha (800 m) leva uns 10 minutos. Dirigir a mesma distância muitas vezes leva mais tempo, quando você conta a ida até o carro, o trânsito e a caminhada do estacionamento até a porta. Quanto mais curto o trajeto, maior a vantagem de ir a pé.
 
 ### 2. Qualquer lugar onde é difícil estacionar.
 
@@ -3648,7 +3648,7 @@ Precisa tomar um café, deixar um pacote e pegar uma coisa na farmácia, tudo no
 
 ### 4. Na hora do rush, quando o trânsito está ruim.
 
-Dirigir 1 milha no anda e para do trânsito pode levar 10 a 15 minutos fácil. Caminhar 1 milha leva 20 minutos. Às vezes é mais rápido que o carro, e quase sempre é mais agradável.
+Dirigir 1 milha (1.6 km) no anda e para do trânsito pode levar 10 a 15 minutos fácil. Caminhar 1 milha leva 20 minutos. Às vezes é mais rápido que o carro, e quase sempre é mais agradável.
 
 ### 5. O que caminhar faz e o GPS não mede.
 

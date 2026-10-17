@@ -20,7 +20,7 @@ El miedo a llegar sudado hace que mucha gente no vaya en bici al trabajo. Hay va
 
 ### 1. Lo más sencillo: sudar menos desde el principio.
 
-Una bici eléctrica hace casi todo el trabajo por ti: después de 5 millas llegas más o menos como después de caminar 1 milla. Bluebikes tiene cada vez más bicis eléctricas. Con una membresía mensual o anual, pagas {{price:bluebikes.ebikePerMinMember}} por minuto, además de la membresía. Es un precio accesible para usarla todos los días para ir al trabajo.
+Una bici eléctrica hace casi todo el trabajo por ti: después de 5 millas (8 km) llegas más o menos como después de caminar 1 milla (1.6 km). Bluebikes tiene cada vez más bicis eléctricas. Con una membresía mensual o anual, pagas {{price:bluebikes.ebikePerMinMember}} por minuto, además de la membresía. Es un precio accesible para usarla todos los días para ir al trabajo.
 
 ### 2. Ve a tu ritmo en una bici normal.
 
@@ -28,7 +28,7 @@ Tú decides qué tan rápido vas. Si vas a "ritmo de conversación", o sea, lo b
 
 ### 3. Elige una ruta más plana.
 
-Una subida de 200 pies hace una gran diferencia en cuánto sudas. La capa de bicicleta de Google Maps muestra las subidas y bajadas del terreno. Una ruta media milla más larga muchas veces te deja mucho más fresco si evita una cuesta.
+Una subida de 200 pies (60 m) hace una gran diferencia en cuánto sudas. La capa de bicicleta de Google Maps muestra las subidas y bajadas del terreno. Una ruta media milla (800 m) más larga muchas veces te deja mucho más fresco si evita una cuesta.
 
 ### 4. Ponte la ropa adecuada para el viaje.
 

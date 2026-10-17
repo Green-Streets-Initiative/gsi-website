@@ -26,9 +26,9 @@ Uma bicicleta elétrica de carga é uma bicicleta comum com duas mudanças: um q
 
 ### O que elas aguentam
 
-- Mais de 100 libras de carga (crianças e compras) sem esforço
+- Mais de 100 libras (45 kg) de carga (crianças e compras) sem esforço
 - Subidas que seriam pesadas numa bicicleta comum
-- Autonomia de 30 a 50 milhas com uma carga da bateria
+- Autonomia de 30 a 50 milhas (48 a 80 km) com uma carga da bateria
 - A maioria das tarefas do dia a dia, perto ou a uma distância média, com mais prazer do que de carro, já que você não precisa procurar estacionamento
 
 ### Como experimentar sem comprar

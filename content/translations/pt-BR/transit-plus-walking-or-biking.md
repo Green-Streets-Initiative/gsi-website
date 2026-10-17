@@ -16,7 +16,7 @@ topics: [routes, multimodal, getting-started]
 related: [mg_transit_planning, mg_subway_vs_bus]
 ```
 
-Em viagens de mais de 3 ou 4 milhas, combinar o transporte público com uma caminhada ou um trecho de bicicleta em cada ponta muitas vezes é o jeito mais rápido e mais agradável de chegar. Você pula as partes mais lentas de uma viagem só de transporte público (as paradas locais e as baldeações, que é quando você troca de ônibus ou trem), faz um pouco de exercício sem perder muito tempo e chega bem na porta.
+Em viagens de mais de 3 ou 4 milhas (4.8 ou 6.4 km), combinar o transporte público com uma caminhada ou um trecho de bicicleta em cada ponta muitas vezes é o jeito mais rápido e mais agradável de chegar. Você pula as partes mais lentas de uma viagem só de transporte público (as paradas locais e as baldeações, que é quando você troca de ônibus ou trem), faz um pouco de exercício sem perder muito tempo e chega bem na porta.
 
 ### Como funciona
 
@@ -32,7 +32,7 @@ Em viagens de mais de 3 ou 4 milhas, combinar o transporte público com uma cami
 
 ### Um exemplo
 
-De Somerville até o Seaport são umas 6 milhas. Um jeito de fazer:
+De Somerville até o Seaport são umas 6 milhas (9.7 km). Um jeito de fazer:
 
 - Caminhe 8 min até a estação Davis
 - Pegue a Linha Vermelha até a South Station (uns 17 min)

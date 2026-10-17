@@ -16,7 +16,7 @@ topics: [routes, multimodal, getting-started]
 related: [mg_transit_planning, mg_subway_vs_bus]
 ```
 
-Para viajes de más de 3 o 4 millas, combinar el transporte público con una caminata o un tramo en bici en cada punta muchas veces es la forma más rápida y agradable de llegar. Te saltas las partes más lentas de un viaje solo en transporte público (las paradas locales, los transbordos), haces algo de ejercicio sin sumar mucho tiempo y llegas justo a la puerta.
+Para viajes de más de 3 o 4 millas (4.8 o 6.4 km), combinar el transporte público con una caminata o un tramo en bici en cada punta muchas veces es la forma más rápida y agradable de llegar. Te saltas las partes más lentas de un viaje solo en transporte público (las paradas locales, los transbordos), haces algo de ejercicio sin sumar mucho tiempo y llegas justo a la puerta.
 
 ### Cómo funciona
 
@@ -32,7 +32,7 @@ Para viajes de más de 3 o 4 millas, combinar el transporte público con una cam
 
 ### Un ejemplo
 
-De Somerville al Seaport hay unas 6 millas. Una forma de hacerlo:
+De Somerville al Seaport hay unas 6 millas (9.7 km). Una forma de hacerlo:
 
 - Camina 8 minutos hasta la estación Davis
 - Toma la Línea Roja hasta South Station (unos 17 minutos)

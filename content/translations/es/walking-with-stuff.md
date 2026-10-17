@@ -20,7 +20,7 @@ Cargar cosas es el obstáculo para caminar que más se exagera. Casi todo lo que
 
 ### 1. El carrito con ruedas es el héroe olvidado.
 
-Un carrito plegable para las compras (a veces le dicen "carrito de abuela") aguanta más de 50 libras de compras, se jala fácil por la acera y se dobla para guardarlo en casa. Cuestan de $30 a $60 y les han cambiado la vida a muchas familias que hacen sus mandados a pie. Los venden en Ikea, Amazon y la mayoría de las ferreterías.
+Un carrito plegable para las compras (a veces le dicen "carrito de abuela") aguanta más de 50 libras (23 kg) de compras, se jala fácil por la acera y se dobla para guardarlo en casa. Cuestan de $30 a $60 y les han cambiado la vida a muchas familias que hacen sus mandados a pie. Los venden en Ikea, Amazon y la mayoría de las ferreterías.
 
 ### 2. Una mochila y unas bolsas plegables cubren casi todo lo del día a día.
 

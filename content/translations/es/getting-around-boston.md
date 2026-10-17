@@ -28,7 +28,7 @@ Las personas que usan Shift y viven en estas ciudades muestran lo mismo en todo 
 
 ### ¿Cuál es la forma más barata de moverse?
 
-Caminar, para distancias de menos de una milla, más o menos. Para distancias más largas:
+Caminar, para distancias de menos de una milla (1.6 km), más o menos. Para distancias más largas:
 
 - **El T:** {{price:mbta.subwaySingle}} en el metro, {{price:mbta.busSingle}} en el autobús, o {{price:mbta.linkPassMonthly}} al mes para viajar sin límite en metro y autobús. Hasta febrero de 2027, si cambias entre autobús y metro dentro de dos horas con la misma tarjeta o el mismo teléfono, pagas solo la más alta de las dos tarifas.
 - **Tarifas reducidas:** las personas de 65 años o más, las personas con discapacidad y las personas que reciben SNAP, MassHealth y algunos otros programas pagan {{price:mbta.reducedSubway}} en el metro, {{price:mbta.reducedBus}} en el autobús, o {{price:mbta.reducedLinkPass}} al mes ([cómo solicitarla](https://www.mbta.com/fares/reduced), en inglés). Los niños de 11 años o menos viajan gratis, y también los pasajeros de 75 años o más que ya no manejan.
@@ -44,7 +44,7 @@ Lo mismo pasa fuera de Boston. Los centros de los pueblos con estación del tren
 
 Muchas lo hacen. Los niños de 11 años o menos viajan gratis en el T, los cochecitos son bienvenidos en el metro y la mayoría de las estaciones tiene ascensor. Para llevar a los niños a la guardería y hacer las compras, muchos padres usan una bici de carga ([cómo las usan las familias](/es/guides/what-you-can-do-with-an-e-cargo-bike)).
 
-Algo que debes saber antes de contar con autos pedidos por aplicación: la ley de Massachusetts exige una silla de auto para niños menores de 8 años, a menos que midan más de 57 pulgadas, y eso también vale en un Uber o Lyft ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Los taxis sin sillas para niños no tienen que cumplir esta regla.
+Algo que debes saber antes de contar con autos pedidos por aplicación: la ley de Massachusetts exige una silla de auto para niños menores de 8 años, a menos que midan más de 57 pulgadas (1.45 m), y eso también vale en un Uber o Lyft ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Los taxis sin sillas para niños no tienen que cumplir esta regla.
 
 ### ¿Y los viajes que sí necesitan auto?
 

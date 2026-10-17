@@ -18,7 +18,7 @@ related: [mg_boston_winter, mg_biking_in_rain, mg_bike_commute_gear]
 
 Andar en bici con frío es más cómodo de lo que la mayoría de la gente cree. Tu cuerpo produce mucho calor mientras pedaleas. El truco es vestirte para eso, no para estar quieto.
 
-### 1. Vístete como si hiciera 15 grados Fahrenheit más.
+### 1. Vístete como si hiciera 15 grados Fahrenheit más (unos 8 °C).
 
 Esta es la regla más importante. Si te vistes para estar cómodo parado afuera, vas a tener demasiado calor a los cinco minutos de pedalear. Busca sentir "un poquito de frío al salir". Vas a entrar en calor rápido.
 
@@ -32,12 +32,12 @@ Esta es la regla más importante. Si te vistes para estar cómodo parado afuera,
 
 Son lo que se enfría más rápido y lo que antes te arruina el viaje. Unos buenos guantes y calcetines abrigados son las compras que más mejoran tu comodidad.
 
-- Por debajo de 30°F: guantes térmicos y calcetines de lana.
-- Por debajo de 20°F: manoplas para el manubrio (fundas térmicas que van montadas en el manubrio) y cubrezapatos térmicos o botas de invierno. Las manoplas para el manubrio hacen una diferencia enorme si andas en bici todo el año.
+- Por debajo de 30°F (−1 °C): guantes térmicos y calcetines de lana.
+- Por debajo de 20°F (−7 °C): manoplas para el manubrio (fundas térmicas que van montadas en el manubrio) y cubrezapatos térmicos o botas de invierno. Las manoplas para el manubrio hacen una diferencia enorme si andas en bici todo el año.
 
 ### 4. Cúbrete la cara los días de mucho frío.
 
-Un cuello térmico (como los de la marca Buff) subido sobre la nariz y las mejillas te deja aguantar mucho más frío con comodidad. Mucha gente no lo usa y se arrepiente por debajo de 25°F.
+Un cuello térmico (como los de la marca Buff) subido sobre la nariz y las mejillas te deja aguantar mucho más frío con comodidad. Mucha gente no lo usa y se arrepiente por debajo de 25°F (−4 °C).
 
 ### 5. Ten en cuenta lo demás que trae la temporada.
 

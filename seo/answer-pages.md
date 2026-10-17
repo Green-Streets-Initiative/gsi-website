@@ -251,6 +251,20 @@ and the web Nearby map):
 - English-only pages we ask the reader to act on get "(em inglês)".
 - Our own links: `/pt-BR/guides/<slug>`, `/nearby?lang=pt-BR`.
 
+**Metric in parentheses** (Keith, 2026-10-17). Translated pages keep the
+English measurement and add the metric one right after it, because readers
+from Latin America and Brazil think in Celsius and kilometers:
+- distance: "3 a 8 millas (5 a 13 km)", "200 pies (60 m)", "un cuarto de
+  milla (400 m)"; speed: "8.4 mph (13.5 km/h)"; temperature: "25°F (−4 °C)";
+  weight: "50 libras (23 kg)"; height: "57 pulgadas (1.45 m)".
+- A temperature difference converts as a difference: "15°F más caliente
+  (unos 8 °C)".
+- Round to what a person would say: km with one decimal under 10, whole
+  above; whole °C, kg, m and cm. Ranges convert both ends.
+- A series of the same unit in one sentence can carry one parenthesis:
+  "8.4, 8.6 y 8.8 mph (13.5, 13.8 y 14.2 km/h)".
+- Prices, times and dates don't change. English pages stay as they are.
+
 **Links.** Same targets as the English page. Links to our own pages use the
 Spanish version (`https://www.gogreenstreets.org/es/guides/<slug>#trip-planner`,
 `/nearby?lang=es`). When a link asks the reader to do something on a page

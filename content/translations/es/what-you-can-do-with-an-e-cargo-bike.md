@@ -26,9 +26,9 @@ Una bici de carga eléctrica es una bici normal con dos cambios: un marco más l
 
 ### Lo que pueden hacer
 
-- Cargas de más de 100 libras (niños y compras) sin esfuerzo
+- Cargas de más de 100 libras (45 kg, entre niños y compras) sin esfuerzo
 - Subidas que serían durísimas en una bici normal
-- De 30 a 50 millas con una carga de batería
+- De 30 a 50 millas (48 a 80 km) con una carga de batería
 - La mayoría de los mandados cortos y medianos, de forma más agradable que en auto, porque no tienes que buscar estacionamiento
 
 ### Cómo probar una sin comprarla

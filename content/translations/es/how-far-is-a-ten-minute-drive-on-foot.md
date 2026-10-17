@@ -4,7 +4,7 @@
 id: mg_drive_time_on_foot
 reviewed: 2026-08-31
 title: "¿Cuánto es un viaje de 10 minutos en auto, a pie o en bici?"
-summary: "Un viaje de 10 minutos en auto en el área de Boston son unas dos millas y media, unos 12 minutos en bici. Aquí está la conversión completa, más los minutos de puerta a puerta que suma cada forma de moverte."
+summary: "Un viaje de 10 minutos en auto en el área de Boston son unas dos millas y media (4 km), unos 12 minutos en bici. Aquí está la conversión completa, más los minutos de puerta a puerta que suma cada forma de moverte."
 slug: how-far-is-a-ten-minute-drive-on-foot
 lang: es
 mode: walking
@@ -16,23 +16,23 @@ topics: [planning, short-trips, motivation, routes]
 related: [mg_walking_vs_driving, mg_bike_time, mg_transit_time]
 ```
 
-La gente mide los viajes en minutos en auto. Así se ven esos minutos a pie y en bici, con las velocidades típicas del tráfico en el área de Boston: unas 12 a 15 millas por hora (mph) en calles locales y avenidas principales.
+La gente mide los viajes en minutos en auto. Así se ven esos minutos a pie y en bici, con las velocidades típicas del tráfico en el área de Boston: unas 12 a 15 millas por hora (mph, o 19 a 24 km/h) en calles locales y avenidas principales.
 
-### 5 minutos en auto son más o menos una milla.
+### 5 minutos en auto son más o menos una milla (1.6 km).
 
 Eso es una caminata de 20 minutos, o 6 minutos en bici. A esta distancia, la bici suele ser lo más rápido que tienes, y la caminata es tan corta que mucha gente la hace sin pensar que está caminando.
 
-### 10 minutos en auto son de 2 a 2.5 millas.
+### 10 minutos en auto son de 2 a 2.5 millas (3.2 a 4 km).
 
 Digamos 45 minutos a pie y 12 minutos en bici. Esta es la distancia ideal para la bici por aquí: lo bastante lejos para que caminar tome bastante tiempo, y lo bastante cerca para que llegues antes de lo que tardarías en encontrar estacionamiento.
 
-### 15 minutos en auto son de 3 a 4 millas.
+### 15 minutos en auto son de 3 a 4 millas (4.8 a 6.4 km).
 
 Más o menos una hora caminando, y unos 20 minutos en bici. En una bici eléctrica son unos 15, a un ritmo que no te cansa mucho.
 
-### 20 minutos en auto son unas 5 millas.
+### 20 minutos en auto son unas 5 millas (8 km).
 
-Entre 25 y 30 minutos en bici, o 20 en una bici eléctrica. Cinco millas también es una buena distancia para combinar la bici con el T (el metro y los autobuses de Boston) si cambia el clima.
+Entre 25 y 30 minutos en bici, o 20 en una bici eléctrica. Cinco millas (8 km) también es una buena distancia para combinar la bici con el T (el metro y los autobuses de Boston) si cambia el clima.
 
 ### De puerta a puerta es lo que cuenta.
 
@@ -46,7 +46,7 @@ Cada uno de esos cálculos mide una parte distinta del viaje. Esto es lo que tie
 
 **Nada extra, si caminas.** El cálculo ya es de puerta a puerta. Lo que ves es lo que tardas, y esa es una gran razón por la que caminar gana más viajes cortos de lo que la gente cree.
 
-Si sumas todo eso, las diferencias en los viajes cortos se achican mucho. En viajes de menos de una milla, las distintas formas de moverte suelen estar mucho más parejas de lo que hace parecer el cálculo en auto.
+Si sumas todo eso, las diferencias en los viajes cortos se achican mucho. En viajes de menos de una milla (1.6 km), las distintas formas de moverte suelen estar mucho más parejas de lo que hace parecer el cálculo en auto.
 
 ### Prueba esto primero
 

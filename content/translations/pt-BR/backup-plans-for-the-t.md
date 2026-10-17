@@ -22,13 +22,13 @@ Quando o T atrasa ou uma linha está fechada, o melhor plano B costuma ser um ô
 
 Não. Ele está mais confiável do que há alguns anos. A MBTA considera que uma viagem na Linha Vermelha, Laranja ou Azul foi no horário quando ela chega com no máximo cinco minutos de diferença do horário previsto. No fim de 2025, cerca de 92% das viagens chegavam no horário, contra cerca de 25% no fim de 2023 ([Christian Science Monitor](https://www.csmonitor.com/Business/2025/1115/boston-mbta-phillip-eng)). Os números atuais estão na [página de pontualidade da MBTA](https://www.mbta.com/performance-metrics/service-reliability) (em inglês).
 
-Em dezembro de 2024, a MBTA acabou com mais de 220 zonas de velocidade reduzida, trechos onde os trens precisam andar mais devagar por segurança ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde então, algumas zonas curtas para consertos apareceram e sumiram. Nos últimos dados publicados, de maio de 2026, havia poucas, entre elas uma zona de 10 milhas por hora (mph) em Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
+Em dezembro de 2024, a MBTA acabou com mais de 220 zonas de velocidade reduzida, trechos onde os trens precisam andar mais devagar por segurança ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde então, algumas zonas curtas para consertos apareceram e sumiram. Nos últimos dados publicados, de maio de 2026, havia poucas, entre elas uma zona de 10 milhas por hora (mph, ou 16 km/h) em Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
 Fechamentos programados para obras ainda acontecem, como o fechamento da Linha Vermelha entre Alewife e Park Street de 21 a 30 de julho de 2026.
 
 ### O que os passageiros fizeram durante o fechamento da Linha Vermelha em julho de 2026?
 
-Entre as pessoas que usam o Shift e andavam com frequência na Linha Vermelha, as viagens de carro passaram de cerca de um quarto para cerca de um terço do total durante o fechamento. As viagens de bicicleta também aumentaram, de 15% para 18%. Mas no horário de pico, viagens de carro de 3 a 8 milhas em Boston, Cambridge, Somerville, Brookline e arredores não foram mais rápidas do que de bicicleta ou de metrô. A velocidade típica foi de 8.4 mph de carro, 8.6 de bicicleta e 8.8 de metrô.
+Entre as pessoas que usam o Shift e andavam com frequência na Linha Vermelha, as viagens de carro passaram de cerca de um quarto para cerca de um terço do total durante o fechamento. As viagens de bicicleta também aumentaram, de 15% para 18%. Mas no horário de pico, viagens de carro de 3 a 8 milhas (5 a 13 km) em Boston, Cambridge, Somerville, Brookline e arredores não foram mais rápidas do que de bicicleta ou de metrô. A velocidade típica foi de 8.4 mph de carro, 8.6 de bicicleta e 8.8 de metrô (13.5, 13.8 e 14.2 km/h).
 
 **Sobre estes números:** Vêm das viagens registradas por 17 a 22 pessoas que usam o Shift e andavam com frequência na Linha Vermelha, de 22 de junho a 30 de julho de 2026 (um grupo pequeno, em pleno verão), e de 1,078 viagens no horário de pico feitas por pessoas que usam o Shift, de 18 de julho a 16 de outubro de 2026. Típico quer dizer que metade das viagens foi mais rápida e metade mais lenta.
 
@@ -43,13 +43,13 @@ Entre as pessoas que usam o Shift e andavam com frequência na Linha Vermelha, a
 
 ### A Linha Verde é mais lenta do que ir a pé?
 
-Não, na maioria das viagens. Em viagens de 0.75 a 2 milhas, a velocidade típica na Linha Verde das pessoas que usam o Shift foi de 6.4 mph. Isso é mais que o dobro da velocidade típica delas a pé, de 2.8 mph. Esses tempos podem não incluir parte da espera na plataforma. Por isso, para uma ou duas paradas no centro, onde as estações ficam a um quarto de milha uma da outra, ir a pé pode levar quase o mesmo tempo.
+Não, na maioria das viagens. Em viagens de 0.75 a 2 milhas (1.2 a 3.2 km), a velocidade típica na Linha Verde das pessoas que usam o Shift foi de 6.4 mph (10.3 km/h). Isso é mais que o dobro da velocidade típica delas a pé, de 2.8 mph (4.5 km/h). Esses tempos podem não incluir parte da espera na plataforma. Por isso, para uma ou duas paradas no centro, onde as estações ficam a um quarto de milha (400 m) uma da outra, ir a pé pode levar quase o mesmo tempo.
 
 **Sobre estes números:** Vêm de 324 viagens na Linha Verde e 3,111 caminhadas de 0.75 a 2 milhas registradas por pessoas que usam o Shift, de junho a outubro de 2026. Típico quer dizer que metade das viagens foi mais rápida e metade mais lenta.
 
 ### Vale a pena comprar uma bicicleta elétrica ou um patinete?
 
-Em Massachusetts, as bicicletas elétricas que param de ajudar no pedal quando chegam a 20 mph não exigem habilitação. Você pode andar com elas nas ruas, nas ciclofaixas e na maioria dos caminhos pavimentados, mas não nas calçadas ([guia de bicicletas elétricas da MassBike](https://www.massbike.org/ebikesfaq)). Patinetes e scooters motorizados exigem carteira de motorista ou permissão de aprendiz (learner's permit) e capacete, e não podem ser usados entre o pôr do sol e o nascer do sol ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Um projeto de lei que atualizaria essas regras ainda está em discussão na Assembleia Legislativa do estado. O programa estadual de reembolso para comprar bicicleta elétrica está fechado em 2026.
+Em Massachusetts, as bicicletas elétricas que param de ajudar no pedal quando chegam a 20 mph (32 km/h) não exigem habilitação. Você pode andar com elas nas ruas, nas ciclofaixas e na maioria dos caminhos pavimentados, mas não nas calçadas ([guia de bicicletas elétricas da MassBike](https://www.massbike.org/ebikesfaq)). Patinetes e scooters motorizados exigem carteira de motorista ou permissão de aprendiz (learner's permit) e capacete, e não podem ser usados entre o pôr do sol e o nascer do sol ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Um projeto de lei que atualizaria essas regras ainda está em discussão na Assembleia Legislativa do estado. O programa estadual de reembolso para comprar bicicleta elétrica está fechado em 2026.
 
 ### Experimente primeiro
 

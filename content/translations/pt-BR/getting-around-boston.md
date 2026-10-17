@@ -28,7 +28,7 @@ As pessoas que usam o Shift e moram nessas cidades mostram a mesma coisa em todo
 
 ### Qual é o jeito mais barato de andar pela cidade?
 
-Caminhar, para distâncias de até mais ou menos uma milha. Para distâncias maiores:
+Caminhar, para distâncias de até mais ou menos uma milha (1.6 km). Para distâncias maiores:
 
 - **O T:** {{price:mbta.subwaySingle}} no metrô, {{price:mbta.busSingle}} no ônibus, ou {{price:mbta.linkPassMonthly}} por mês para andar à vontade de metrô e de ônibus. Até fevereiro de 2027, se você fizer baldeação entre ônibus e metrô em até duas horas, com o mesmo cartão ou celular, paga só a mais alta das duas tarifas.
 - **Tarifas reduzidas:** pessoas com 65 anos ou mais, pessoas com deficiência e pessoas que recebem SNAP (ajuda para comprar comida), MassHealth (o plano de saúde público do estado) e alguns outros programas pagam {{price:mbta.reducedSubway}} no metrô, {{price:mbta.reducedBus}} no ônibus, ou {{price:mbta.reducedLinkPass}} por mês ([como pedir](https://www.mbta.com/fares/reduced), em inglês). Crianças de até 11 anos não pagam, e passageiros com 75 anos ou mais que não dirigem mais também não pagam.
@@ -44,7 +44,7 @@ O mesmo vale fora de Boston. Centros de cidades com estação de trem metropolit
 
 Muitas conseguem. Crianças de até 11 anos andam de graça no T, carrinhos de bebê são bem-vindos no metrô e a maioria das estações tem elevador. Para levar as crianças à creche e fazer compras no mercado, muitos pais usam uma bicicleta de carga ([como as famílias usam](/pt-BR/guides/what-you-can-do-with-an-e-cargo-bike)).
 
-Uma coisa para saber antes de contar com carros de aplicativo: a lei de Massachusetts exige cadeirinha para crianças com menos de 8 anos, a não ser que tenham mais de 57 polegadas de altura, e isso vale também no Uber ou no Lyft ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Táxis sem cadeirinha ficam fora dessa regra.
+Uma coisa para saber antes de contar com carros de aplicativo: a lei de Massachusetts exige cadeirinha para crianças com menos de 8 anos, a não ser que tenham mais de 57 polegadas (1.45 m) de altura, e isso vale também no Uber ou no Lyft ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section7AA)). Táxis sem cadeirinha ficam fora dessa regra.
 
 ### E as viagens que precisam de carro?
 

@@ -27,7 +27,7 @@ O trânsito de Boston está entre os piores do país. Em 2025, quem dirige aqui 
 
 ### Dirigir na cidade é mais rápido no horário de pico?
 
-Não muito. Em viagens de 3 a 8 milhas no horário de pico dos dias úteis, em Boston, Cambridge, Somerville, Brookline e arredores, a velocidade típica das pessoas que usam o Shift foi de 8.4 milhas por hora (mph) de carro, 8.6 mph de bicicleta e 8.8 mph de metrô. Fora do horário de pico, a velocidade típica de carro nessa distância foi de 10.3 mph.
+Não muito. Em viagens de 3 a 8 milhas (5 a 13 km) no horário de pico dos dias úteis, em Boston, Cambridge, Somerville, Brookline e arredores, a velocidade típica das pessoas que usam o Shift foi de 8.4 milhas por hora (mph) de carro, 8.6 mph de bicicleta e 8.8 mph de metrô (13.5, 13.8 e 14.2 km/h). Fora do horário de pico, a velocidade típica de carro nessa distância foi de 10.3 mph (16.6 km/h).
 
 **Sobre estes números:** Vêm de 1,078 viagens de 3 a 8 milhas no horário de pico, de carro, bicicleta e metrô, registradas por pessoas que usam o Shift de 18 de julho a 16 de outubro de 2026 (dias úteis, das 7h às 9h30 e das 16h às 19h). Típico quer dizer que metade das viagens foi mais rápida e metade mais lenta.
 

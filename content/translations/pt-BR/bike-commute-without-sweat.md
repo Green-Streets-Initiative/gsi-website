@@ -20,7 +20,7 @@ O medo de chegar suado impede muita gente de ir de bicicleta ao trabalho. Existe
 
 ### 1. O jeito mais simples: suar menos desde o começo.
 
-Uma bicicleta elétrica faz a maior parte do trabalho por você: você chega a um lugar a 5 milhas de distância se sentindo mais ou menos como depois de caminhar 1 milha. A Bluebikes, o sistema de bicicletas compartilhadas da região de Boston, tem cada vez mais bicicletas elétricas. Com o plano mensal ou anual, o preço cai para {{price:bluebikes.ebikePerMinMember}} por minuto, além do valor do plano. É um preço que cabe no bolso para ir ao trabalho todo dia.
+Uma bicicleta elétrica faz a maior parte do trabalho por você: você chega a um lugar a 5 milhas (8 km) de distância se sentindo mais ou menos como depois de caminhar 1 milha (1.6 km). A Bluebikes, o sistema de bicicletas compartilhadas da região de Boston, tem cada vez mais bicicletas elétricas. Com o plano mensal ou anual, o preço cai para {{price:bluebikes.ebikePerMinMember}} por minuto, além do valor do plano. É um preço que cabe no bolso para ir ao trabalho todo dia.
 
 ### 2. Na bicicleta comum, controle o ritmo.
 
@@ -28,7 +28,7 @@ Quem decide o ritmo é você. Pedalar no "ritmo de conversa", devagar o bastante
 
 ### 3. Escolha uma rota mais plana.
 
-Uma subida de 200 pés já faz muita diferença no suor. A camada de bicicleta do Google Maps mostra a altitude. Uma rota meia milha mais longa muitas vezes deixa você bem mais fresco, se ela evitar uma ladeira.
+Uma subida de 200 pés (60 m) já faz muita diferença no suor. A camada de bicicleta do Google Maps mostra a altitude. Uma rota meia milha (800 m) mais longa muitas vezes deixa você bem mais fresco, se ela evitar uma ladeira.
 
 ### 4. Use a roupa certa para pedalar.
 

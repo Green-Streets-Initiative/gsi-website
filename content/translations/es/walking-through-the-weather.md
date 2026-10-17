@@ -20,11 +20,11 @@ El clima es lo que más frena a la gente para caminar. Pero casi siempre se pued
 
 ### 1. Los zapatos correctos son el primer paso.
 
-Con zapatos impermeables (cualquier par decente, no hace falta equipo especial), la lluvia deja de ser un problema. Con botas abrigadas, una caminata a 25°F es muy cómoda. Muchas veces, lo que la gente le echa al clima es en realidad culpa de unos zapatos que no son impermeables.
+Con zapatos impermeables (cualquier par decente, no hace falta equipo especial), la lluvia deja de ser un problema. Con botas abrigadas, una caminata a 25°F (−4 °C) es muy cómoda. Muchas veces, lo que la gente le echa al clima es en realidad culpa de unos zapatos que no son impermeables.
 
 ### 2. Con el frío, la clave son las capas de ropa, más que la temperatura.
 
-Una chaqueta ligera encima de tu ropa normal te deja estar cómodo con mucho más frío. La regla de los ciclistas, "vístete como si hiciera 15°F más de calor", también sirve aquí: vas a entrar en calor en unas pocas cuadras. Cúbrete las orejas y las manos. Lo demás se arregla solo.
+Una chaqueta ligera encima de tu ropa normal te deja estar cómodo con mucho más frío. La regla de los ciclistas, "vístete como si hiciera 15°F (unos 8 °C) más de calor", también sirve aquí: vas a entrar en calor en unas pocas cuadras. Cúbrete las orejas y las manos. Lo demás se arregla solo.
 
 ### 3. La lluvia ligera no es problema.
 
@@ -32,7 +32,7 @@ Una chaqueta impermeable con capucha basta para la llovizna típica que hace que
 
 ### 4. Con calor, lo importante es el ritmo y tomar agua.
 
-En días de 90°F, camina más despacio, lleva una botella de agua, ve por el lado de la calle con más sombra y piensa en usar sombrero. Antes de las 9 de la mañana y después de las 7 de la noche casi siempre se puede caminar bien, incluso en verano.
+En días de 90°F (32 °C), camina más despacio, lleva una botella de agua, ve por el lado de la calle con más sombra y piensa en usar sombrero. Antes de las 9 de la mañana y después de las 7 de la noche casi siempre se puede caminar bien, incluso en verano.
 
 ### 5. Ten un plan B.
 

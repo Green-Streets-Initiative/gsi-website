@@ -39,7 +39,7 @@ Sí. Los garajes y estacionamientos de la MBTA se pagan con el teléfono, y la m
 
 Súmale el pasaje: {{price:mbta.subwaySingle}} por cada viaje de ida o de vuelta en el metro, o {{price:mbta.linkPassMonthly}} al mes. Un pase mensual del tren de cercanías cuesta {{price:mbta.crZoneTwoMonthly}} desde Route 128 y {{price:mbta.crZoneFiveMonthly}} desde Framingham.
 
-De todos los viajes al centro que hicieron de lunes a viernes las personas que usan Shift, cerca de 1 de cada 9 fue en auto. Hubo 99 personas que usan Shift que manejaron al centro un día de semana. De ellas, 90 también llegaron en T, bici, ferry o a pie al menos una vez. La mitad de esos viajes en auto fueron de menos de 3.4 millas.
+De todos los viajes al centro que hicieron de lunes a viernes las personas que usan Shift, cerca de 1 de cada 9 fue en auto. Hubo 99 personas que usan Shift que manejaron al centro un día de semana. De ellas, 90 también llegaron en T, bici, ferry o a pie al menos una vez. La mitad de esos viajes en auto fueron de menos de 3.4 millas (5.5 km).
 
 **Sobre estas cifras:** Vienen de los viajes de lunes a viernes al centro de Boston registrados por personas que usan Shift, de junio a octubre de 2026, entre ellos 363 viajes en auto de 99 personas.
 
