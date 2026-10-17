@@ -19,6 +19,9 @@ export interface Disruption {
   header: string
   url: string | null
   routeIds: string[]
+  /** One badge per line: Green branches collapse to "Green Line" when an
+   *  alert names all four. Filled in by fetchDisruptions. */
+  lines: LineBadge[]
   status: 'now' | 'upcoming'
   /** The period that is happening now, or the next one coming up (ISO). */
   start: string
@@ -26,6 +29,56 @@ export interface Disruption {
 }
 
 type Period = { start: string; end: string | null }
+
+export interface LineBadge {
+  /** Route id used for the color (lineColor): "Red", "Green", "CR-Worcester", "67". */
+  id: string
+  name: string
+  mode: 'subway' | 'commuter_rail' | 'bus' | 'ferry'
+}
+
+const GREEN = ['Green-B', 'Green-C', 'Green-D', 'Green-E']
+
+/** Route names for the badges, from the MBTA. */
+async function routeInfo(ids: string[]): Promise<Map<string, { name: string; type: number }>> {
+  if (!ids.length) return new Map()
+  try {
+    const res = await fetch(
+      `https://api-v3.mbta.com/routes?filter[id]=${[...new Set(ids)].join(',')}&fields[route]=short_name,long_name,type`,
+    )
+    if (!res.ok) return new Map()
+    const j = (await res.json()) as { data: { id: string; attributes: { short_name: string; long_name: string; type: number } }[] }
+    return new Map(
+      j.data.map((r) => [
+        r.id,
+        { name: r.attributes.type === 3 ? `Bus ${r.attributes.short_name}` : r.attributes.long_name, type: r.attributes.type },
+      ]),
+    )
+  } catch {
+    return new Map()
+  }
+}
+
+function badgesFor(routeIds: string[], info: Map<string, { name: string; type: number }>): LineBadge[] {
+  const ids = [...new Set(routeIds)]
+  const out: LineBadge[] = []
+  const allGreen = GREEN.every((g) => ids.includes(g))
+  if (allGreen) out.push({ id: 'Green', name: 'Green Line', mode: 'subway' })
+  for (const id of ids) {
+    if (allGreen && GREEN.includes(id)) continue
+    const r = info.get(id)
+    if (!r) continue
+    const mode = r.type === 2 ? 'commuter_rail' : r.type === 3 ? 'bus' : r.type === 4 ? 'ferry' : 'subway'
+    out.push({ id, name: r.name, mode })
+  }
+  return out
+}
+
+/** "Green Line C Branch: Trains will…" -> "Trains will…": the badge already names the line. */
+function stripLinePrefix(header: string): string {
+  const m = /^([A-Z][A-Za-z/ ]{2,40}(?:Line|Branch|Lines))\s*:\s+/.exec(header)
+  return m ? header.slice(m[0].length) : header
+}
 
 export async function fetchDisruptions(opts: {
   routeIds?: string[]
@@ -71,7 +124,7 @@ export async function fetchDisruptions(opts: {
       out.push({
         id: String(a.id),
         effect: at.effect,
-        header,
+        header: stripLinePrefix(header),
         url: typeof at.url === 'string' && at.url ? at.url : null,
         routeIds: [
           ...new Set(
@@ -80,11 +133,14 @@ export async function fetchDisruptions(opts: {
               .filter((r): r is string => typeof r === 'string'),
           ),
         ],
+        lines: [],
         status,
         start: period.start,
         end: period.end ?? null,
       })
     }
+    const info = await routeInfo(out.flatMap((d) => d.routeIds))
+    for (const d of out) d.lines = badgesFor(d.routeIds, info)
     return out.sort((x, y) =>
       x.status === y.status ? x.start.localeCompare(y.start) : x.status === 'now' ? -1 : 1,
     )
