@@ -210,7 +210,11 @@ all, which is how the 2026-09-14 run ended up prompting 15+ times against a
 6. **Health checks (curl only):** sitemap.xml returns 200 and its `<loc>` count
    vs the state fingerprint (a drop = a DB blip dropped a section — flag it);
    robots.txt and llms.txt return 200 and hash vs fingerprint; 2 key pages
-   still emit their expected `<title>` and canonical.
+   still emit their expected `<title>` and canonical. Then tell Bing and the
+   other IndexNow engines about anything new or changed:
+   `node scripts/seo/indexnow.mjs <paths>` after shipping pages, and the whole
+   sitemap once a week (`node scripts/seo/indexnow.mjs`). ChatGPT's web answers
+   lean on Bing's index (baseline 2026-10-16: ChatGPT cited us 0 of 53).
 7. **Analysis:** `node scripts/seo/analyze.mjs` (all sections, including
    `cohort`, `trigger` and `growth`). Per cluster, clicks / impressions /
    avg-position vs the 4-week and 12-week baselines. Flag movers (±20% clicks
