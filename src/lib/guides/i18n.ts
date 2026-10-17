@@ -6,7 +6,7 @@
  * T", Línea Roja, tren de cercanías, autobús, Cerca de ti.
  */
 
-export type GuideLocale = 'en' | 'es' | 'pt-BR'
+export type GuideLocale = 'en' | 'es' | 'pt-BR' | 'zh-Hans'
 
 const en = {
   'nav.home': 'Home',
@@ -44,6 +44,8 @@ const en = {
   'planner.error': "We couldn't plan that trip right now. Try a nearby street address, or plan it on the",
   'planner.errorLink': 'Nearby page',
   'planner.byTransit': 'By transit',
+  'planner.min': '{n} min',
+  'planner.sep': ', ',
   'planner.onLines': ' on {lines}',
   'planner.then': ', then ',
   'planner.walking': ', with {n} min of walking',
@@ -140,6 +142,8 @@ const es: Record<GuideKey, string> = {
   'planner.error': 'No pudimos planear ese viaje en este momento. Prueba con una dirección cercana, o planéalo en el',
   'planner.errorLink': 'mapa Cerca de ti',
   'planner.byTransit': 'En transporte público',
+  'planner.min': '{n} min',
+  'planner.sep': ', ',
   'planner.onLines': ' en {lines}',
   'planner.then': ', luego ',
   'planner.walking': ', con {n} min a pie',
@@ -231,6 +235,8 @@ const ptBR: Record<GuideKey, string> = {
   'planner.error': 'Não conseguimos planejar essa viagem agora. Tente um endereço próximo ou planeje no',
   'planner.errorLink': 'mapa Perto de você',
   'planner.byTransit': 'De transporte público',
+  'planner.min': '{n} min',
+  'planner.sep': ', ',
   'planner.onLines': ' usando {lines}',
   'planner.then': ', depois ',
   'planner.walking': ', com {n} min a pé',
@@ -287,7 +293,98 @@ const ptBR: Record<GuideKey, string> = {
   'offer.semester.cta': 'Veja como funciona (em inglês)',
 }
 
-const DICTS: Record<GuideLocale, Record<GuideKey, string>> = { en, es, 'pt-BR': ptBR }
+const zhHans: Record<GuideKey, string> = {
+  'nav.home': '首页',
+  'nav.guides': '指南',
+  'nav.breadcrumb': '导航路径',
+  'meta.minRead': '阅读约 {n} 分钟',
+  'meta.reviewed': '审核于 {date}',
+  'meta.otherLanguage': 'Read in English',
+  'meta.aiNote': '本文借助人工智能从英文翻译。如有不清楚的地方，请写信至',
+  'meta.aiNoteLink': 'info@gogreenstreets.org',
+  'mode.cycling': '骑行',
+  'mode.walking': '步行',
+  'mode.transit': '公共交通',
+  'mode.multimodal': '出行方式',
+  'tryIt.heading': '试一试',
+  'tryIt.body': 'Shift 帮你找到去目的地最轻松的方式，无论骑行、步行还是乘坐公共交通，每次改变出行方式都会为你记上一笔。',
+  'tryIt.notReady': '还不想下载应用？',
+  'tryIt.nearbyLink': '在「您的周边」地图上规划路线',
+  'tryIt.inBrowser': '，直接在浏览器中使用。',
+  'related.heading': '相关指南',
+  'browseAll': '浏览全部指南（英文）',
+  'appStrip.howItWorks': '了解 Shift 如何运作（英文）',
+
+  'planner.from': '出发地',
+  'planner.fromPlaceholder': '你从哪里出发？',
+  'planner.to': '目的地',
+  'planner.toPlaceholder': '你要去哪里？',
+  'planner.useMyLocation': '使用我的位置',
+  'planner.finding': '正在定位…',
+  'planner.yourLocation': '你的位置',
+  'planner.loading': '正在规划行程…',
+  'planner.outside': '其中一个地址不在规划工具覆盖的范围内。请换一个马萨诸塞州的地址试试。',
+  'planner.error': '暂时无法规划这段行程。请换一个附近的街道地址，或者在',
+  'planner.errorLink': '「您的周边」地图上规划',
+  'planner.byTransit': '公共交通',
+  'planner.min': '{n} 分钟',
+  'planner.sep': '，',
+  'planner.onLines': '，乘坐{lines}',
+  'planner.then': '，再换乘',
+  'planner.walking': '，其中步行 {n} 分钟',
+  'planner.noTransit': '没有找到这段行程的公共交通路线。',
+  'planner.byBike': '骑行',
+  'planner.seeOnMap': '在地图上查看这段行程和实时到站信息',
+  'planner.changesHeading': '这些线路的服务变动',
+  'planner.changesEmpty': '未来 30 天内这些线路没有计划停运。',
+  'comfort.path': '大部分走远离汽车的步道',
+  'comfort.protected': '大部分走有隔离的自行车道',
+  'comfort.bike_lane': '大部分走画线的自行车道',
+  'comfort.shared_road': '大部分走没有自行车道的街道',
+  'comfort.mixed': '自行车道和普通街道各有一部分',
+
+  'parking.label': '你开车从哪里出发？',
+  'parking.placeholder': '你的住址或所在城镇',
+  'parking.loading': '正在查找车站停车场…',
+  'parking.outside': '这个地址不在我们覆盖的范围内。请换一个马萨诸塞州的地址试试。',
+  'parking.none': '这个地址 25 英里（40 公里）内没有 MBTA 车站停车场。很多地区公交公司有自己的停车换乘停车场，请咨询当地的公交机构。',
+  'parking.error': '暂时无法加载车站停车场信息。MBTA 在它的',
+  'parking.errorLink': '停车页面（英文）',
+  'parking.away': '距离 {miles} 英里',
+  'parking.spaces': '{n} 个车位',
+  'parking.fills': '工作日通常会停满',
+  'parking.full': '工作日通常有 {pct}% 的车位被占用',
+  'parking.planFrom': '规划从 {station} 出发的行程',
+  'parking.note': '收费和车位数来自 MBTA 的官方信息。大多数停车场用手机付费。',
+
+  'closures.checking': '正在查询 MBTA 服务变动…',
+  'closures.changesOn': '有变动：',
+  'closures.clearOn': '没有停运：',
+  'closures.nowThrough': '现在起至 {day}',
+  'closures.now': '正在进行',
+  'closures.range': '{first} 至 {last}',
+  'closures.starts': '{day} 开始',
+  'closures.shuttle': '由替代接驳巴士代替列车',
+  'closures.noBuses': '公交车停运',
+  'closures.noTrains': '列车停运',
+  'closures.station': '车站关闭或列车不停靠',
+  'closures.details': 'MBTA 详细信息（英文）',
+  'closures.more': '另外还有 {n} 条，见',
+  'closures.moreLink': 'MBTA 服务提醒页面（英文）',
+  'closures.footnote': '来自 MBTA 的实时信息：替代接驳巴士、停运和车站关闭，包括现在和未来 30 天。',
+
+  'offer.newroutes.heading': '刚搬家？出行就能解锁 {dollars}。',
+  'offer.newroutes.body':
+    '在 Shift 上的头 {days} 天里完成 {trips} 次步行、骑行或公共交通出行，即可解锁 {dollars} 奖励：本地商家礼品卡，或由你挑选的电子礼品卡。请在 {deadline} 前报名。',
+  'offer.newroutes.code': '安装应用后，输入代码 {code}，奖励就会和你的账户关联。',
+  'offer.newroutes.cta': '下载 Shift',
+  'offer.semester.heading': '在读大学？上学出行就能解锁 {dollars}。',
+  'offer.semester.body':
+    '用学校邮箱注册 Shift，在 {days} 天内完成 {trips} 次步行、骑行或公共交通出行，即可解锁 {dollars} 奖励。请在 {deadline} 前报名。',
+  'offer.semester.cta': '了解详情（英文）',
+}
+
+const DICTS: Record<GuideLocale, Record<GuideKey, string>> = { en, es, 'pt-BR': ptBR, 'zh-Hans': zhHans }
 
 export function gt(locale: GuideLocale, key: GuideKey, repl?: Record<string, string | number>): string {
   let s = DICTS[locale][key] ?? en[key]
@@ -296,13 +393,14 @@ export function gt(locale: GuideLocale, key: GuideKey, repl?: Record<string, str
 }
 
 /** BCP 47 tag for dates and numbers. */
-export const DATE_LOCALE: Record<GuideLocale, string> = { en: 'en-US', es: 'es-US', 'pt-BR': 'pt-BR' }
+export const DATE_LOCALE: Record<GuideLocale, string> = { en: 'en-US', es: 'es-US', 'pt-BR': 'pt-BR', 'zh-Hans': 'zh-CN' }
 
 /** Every language a guide can be shown in, and the link to it, written in that language. */
 export const GUIDE_LANGUAGES: { locale: GuideLocale; label: string }[] = [
   { locale: 'en', label: 'Read in English' },
   { locale: 'es', label: 'Leer en español' },
   { locale: 'pt-BR', label: 'Ler em português' },
+  { locale: 'zh-Hans', label: '阅读中文版' },
 ]
 
 /** Path prefix for a language's guide pages: '' for English, '/es', '/pt-BR'. */
@@ -336,6 +434,7 @@ const SUBWAY_ES: Record<string, string> = {
   Green: 'Verde',
   Mattapan: 'Mattapan',
 }
+const SUBWAY_ZH: Record<string, string> = { Red: '红线', Orange: '橙线', Blue: '蓝线', Green: '绿线' }
 const SUBWAY_PT: Record<string, string> = {
   Red: 'Vermelha',
   Orange: 'Laranja',
@@ -348,10 +447,22 @@ const SUBWAY_PT: Record<string, string> = {
  * An MBTA line name as the reader's language says it. MBTA names arrive in
  * English ("Red Line", "Green Line B", "Framingham/Worcester Line", "Bus 67").
  * Spanish: Línea Roja, Línea Verde B, Autobús 67, Ferry de Hingham. Portuguese:
- * Linha Vermelha, Linha Verde B, Ônibus 67, Balsa de Hingham (answer-pages.md §10).
+ * Linha Vermelha, Linha Verde B, Ônibus 67, Balsa de Hingham. Chinese: 红线, 绿线 B 支线,
+ * 67 路公交车, Hingham 渡轮 (answer-pages.md §10).
  */
 export function lineLabel(name: string, locale: GuideLocale): string {
   if (locale === 'en') return name
+  if (locale === 'zh-Hans') {
+    const subway = /^(Red|Orange|Blue|Green|Mattapan) Line(?: ([A-E]))?$/.exec(name)
+    if (subway) return subway[1] === 'Mattapan' ? 'Mattapan 线' : `${SUBWAY_ZH[subway[1]]}${subway[2] ? ` ${subway[2]} 支线` : ''}`
+    const bus = /^Bus (.+)$/.exec(name)
+    if (bus) return `${bus[1]} 路公交车`
+    const ferry = /^(.+) Ferry$/.exec(name)
+    if (ferry) return `${ferry[1]} 渡轮`
+    const line = /^(.+) Line$/.exec(name)
+    if (line) return `${line[1]} 线`
+    return name
+  }
   if (locale === 'pt-BR') {
     const subway = /^(Red|Orange|Blue|Green|Mattapan) Line(?: ([A-E]))?$/.exec(name)
     if (subway) return `Linha ${SUBWAY_PT[subway[1]]}${subway[2] ? ` ${subway[2]}` : ''}`

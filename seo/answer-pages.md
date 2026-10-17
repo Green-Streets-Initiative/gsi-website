@@ -251,6 +251,30 @@ and the web Nearby map):
 - English-only pages we ask the reader to act on get "(em inglês)".
 - Our own links: `/pt-BR/guides/<slug>`, `/nearby?lang=pt-BR`.
 
+**Chinese (Simplified) house style** (matches the Shift app's
+`locales/zh-Hans.json` and the web Nearby map):
+- Address the reader as **你** (the app's usual form). Plain, everyday
+  Mainland Simplified Chinese; short sentences.
+- the T: **T**, explained once as "T（波士顿的地铁和公交系统）"; MBTA stays
+  **MBTA**. Subway: **地铁**; lines: **红线、橙线、蓝线、绿线**（"绿线 C 支线"）,
+  Mattapan stays **Mattapan 线**.
+- commuter rail: **通勤铁路**; bus: **公交车** (route 77: "77 路公交车");
+  shuttle: **替代接驳巴士** (free: "免费"); ferry: **渡轮**; transfer: **换乘**.
+- bike: **自行车** / riding: **骑行**; bike share: **共享单车** (Bluebikes by
+  name); e-bike: **电动自行车**; cargo bike: **载货自行车**; car: **汽车**;
+  to drive: **开车**; parking: **停车**; car share: **汽车共享**.
+- Around You (app) and the web Nearby page: **「您的周边」**（our website's
+  map, linked with `?lang=zh-Hans`).
+- Chinese punctuation（，。：；（））, no em dashes（——）. Leave a space
+  around Latin words and numbers only where the app does ("Bluebikes 站点").
+- Prices as written ($1.70); dates "2026年7月21日至30日"; times "下午5点".
+  Metric in parentheses as below: "3 到 8 英里（5 到 13 公里）",
+  "25°F（−4°C）", "8.4 英里/小时（13.5 公里/小时）".
+- "Try this first": **先试试这个**. "About these numbers:" **关于这些数字：**.
+  Typical: "“典型”指一半的行程更快，一半更慢。"
+- English-only pages we ask the reader to act on get "（英文）".
+- Our own links: `/zh-Hans/guides/<slug>`, `/nearby?lang=zh-Hans`.
+
 **Metric in parentheses** (Keith, 2026-10-17). Translated pages keep the
 English measurement and add the metric one right after it, because readers
 from Latin America and Brazil think in Celsius and kilometers:

@@ -25,11 +25,20 @@ function comfortWords(rating: string, L: GuideLocale): string {
 
 const SUBWAY_ES: Record<string, string> = { Red: 'Roja', Orange: 'Naranja', Blue: 'Azul', Mattapan: 'Mattapan' }
 const SUBWAY_PT: Record<string, string> = { Red: 'Vermelha', Orange: 'Laranja', Blue: 'Azul', Mattapan: 'Mattapan' }
+const SUBWAY_ZH: Record<string, string> = { Red: '红线', Orange: '橙线', Blue: '蓝线', Mattapan: 'Mattapan 线' }
 
 /** "67" -> "bus 67", "Red" -> "the Red Line", "Green-B" -> "the Green Line (B)";
  *  in Spanish "el autobús 67", "la Línea Roja", "la Línea Verde (B)"; in Portuguese
  *  "o ônibus 67", "a Linha Vermelha", "a Linha Verde (B)". */
 function lineName(label: string, L: GuideLocale): string {
+  if (L === 'zh-Hans') {
+    if (/^\d+[A-Z]?$|^SL\d$|^CT\d$/.test(label)) return `${label} 路公交车`
+    if (/^(Red|Orange|Blue|Mattapan)$/.test(label)) return SUBWAY_ZH[label]
+    const gz = /^Green(?:[- ]Line)?[- ]\(?([A-E])\)?$/.exec(label)
+    if (gz) return `绿线 ${gz[1]} 支线`
+    if (/ Line$/.test(label)) return `${label.replace(/ Line$/, '')} 通勤铁路`
+    return label
+  }
   if (L === 'pt-BR') {
     if (/^\d+[A-Z]?$|^SL\d$|^CT\d$/.test(label)) return `o ônibus ${label}`
     if (/^(Red|Orange|Blue|Mattapan)$/.test(label)) return `a Linha ${SUBWAY_PT[label]}`
@@ -204,8 +213,8 @@ export default function GuideTripPlanner({
               <p className="text-[0.8125rem] font-semibold text-forest">{gt(L, 'planner.byTransit')}</p>
               {row.transit_minutes != null ? (
                 <p className="text-[1rem] leading-relaxed text-navy">
-                  <strong className="font-semibold">{row.transit_minutes} min</strong>
-                  {row.transit_fare ? `, $${row.transit_fare.amount.toFixed(2)}` : ''}
+                  <strong className="font-semibold">{gt(L, 'planner.min', { n: row.transit_minutes })}</strong>
+                  {row.transit_fare ? `${gt(L, 'planner.sep')}$${row.transit_fare.amount.toFixed(2)}` : ''}
                   {transitLines.length > 0 ? gt(L, 'planner.onLines', { lines: transitLines.join(gt(L, 'planner.then')) }) : ''}
                   {row.transit_walk_minutes ? gt(L, 'planner.walking', { n: row.transit_walk_minutes }) : ''}
                 </p>
@@ -225,8 +234,10 @@ export default function GuideTripPlanner({
             <div className="rounded-[10px] bg-cream px-4 py-3">
               <p className="text-[0.8125rem] font-semibold text-forest">{gt(L, 'planner.byBike')}</p>
               <p className="text-[1rem] leading-relaxed text-navy">
-                <strong className="font-semibold">{row.bike_minutes} min</strong>
-                {row.bike_comfort?.rating && comfortWords(row.bike_comfort.rating, L) ? `, ${comfortWords(row.bike_comfort.rating, L)}` : ''}
+                <strong className="font-semibold">{gt(L, 'planner.min', { n: row.bike_minutes })}</strong>
+                {row.bike_comfort?.rating && comfortWords(row.bike_comfort.rating, L)
+                  ? `${gt(L, 'planner.sep')}${comfortWords(row.bike_comfort.rating, L)}`
+                  : ''}
               </p>
             </div>
             <a

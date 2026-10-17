@@ -30,8 +30,8 @@ function reviewedLabel(iso: string | null, L: GuideLocale = 'en'): string | null
 }
 
 /** English on English pages, the translation elsewhere (tool copy below). */
-function pick(L: GuideLocale, en: string, es: string, pt: string): string {
-  return L === 'es' ? es : L === 'pt-BR' ? pt : en
+function pick(L: GuideLocale, en: string, es: string, pt: string, zh: string): string {
+  return L === 'es' ? es : L === 'pt-BR' ? pt : L === 'zh-Hans' ? zh : en
 }
 
 export interface GuideRow {
@@ -201,12 +201,13 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
       <TransitDisruptions
         routeTypes={[0, 1, 2]}
         locale={L}
-        heading={pick(L, "What's closed now and coming up", 'Qué está cerrado ahora y qué viene', 'O que está fechado agora e o que vem por aí')}
+        heading={pick(L, "What's closed now and coming up", 'Qué está cerrado ahora y qué viene', 'O que está fechado agora e o que vem por aí', '现在停运的线路和即将到来的变动')}
         emptyText={pick(
           L,
           'No subway or commuter rail closures are planned in the next 30 days.',
           'No hay cierres del metro ni del tren de cercanías planeados en los próximos 30 días.',
           'Não há interrupções planejadas no metrô nem no trem metropolitano nos próximos 30 dias.',
+          '未来 30 天内地铁和通勤铁路没有计划停运。',
         )}
       />
     ),
@@ -215,12 +216,13 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
         slug={slug}
         locale={L}
         placement="lead"
-        heading={pick(L, 'Plan your backup now', 'Planea tu plan B ahora', 'Planeje seu plano B agora')}
+        heading={pick(L, 'Plan your backup now', 'Planea tu plan B ahora', 'Planeje seu plano B agora', '现在就规划你的备用方案')}
         intro={pick(
           L,
           "Enter where you start and where you're going. You'll see the bus or train option and the bike option for that trip.",
           'Escribe desde dónde sales y a dónde vas. Verás la opción en autobús o tren y la opción en bici para ese viaje.',
           'Digite de onde você sai e para onde vai. Você verá a opção de ônibus ou trem e a opção de bicicleta para essa viagem.',
+          '输入出发地和目的地，就能看到这段行程的公交车或列车方案，以及骑行方案。',
         )}
       />
     ),
@@ -231,12 +233,13 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
         slug={slug}
         locale={L}
         placement="park_at_the_t"
-        heading={pick(L, 'Find station parking near you', 'Encuentra estacionamiento en una estación cerca de ti', 'Encontre estacionamento em uma estação perto de você')}
+        heading={pick(L, 'Find station parking near you', 'Encuentra estacionamiento en una estación cerca de ti', 'Encontre estacionamento em uma estação perto de você', '查找附近的车站停车场')}
         intro={pick(
           L,
           'Enter where your drive starts. You\'ll see the nearest MBTA lots and garages, what they cost and how full they usually get.',
           'Escribe desde dónde sales en auto. Verás los estacionamientos de la MBTA más cercanos, cuánto cuestan y qué tan llenos suelen estar.',
           'Digite de onde você sai de carro. Você verá os estacionamentos da MBTA mais próximos, quanto custam e o quanto costumam lotar.',
+          '输入你开车出发的地点，就能看到最近的 MBTA 停车场和停车楼、收费，以及平时有多满。',
         )}
       />
     ),
@@ -248,12 +251,13 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
         slug={slug}
         locale={L}
         placement="corridors"
-        heading={pick(L, 'Find station parking near you', 'Encuentra estacionamiento en una estación cerca de ti', 'Encontre estacionamento em uma estação perto de você')}
+        heading={pick(L, 'Find station parking near you', 'Encuentra estacionamiento en una estación cerca de ti', 'Encontre estacionamento em uma estação perto de você', '查找附近的车站停车场')}
         intro={pick(
           L,
           'Driving part of the way? Enter where you start to see the nearest MBTA lots and garages, what they cost and the lines they serve.',
           '¿Vas a manejar parte del camino? Escribe desde dónde sales para ver los estacionamientos de la MBTA más cercanos, cuánto cuestan y qué líneas pasan por ahí.',
           'Vai dirigir parte do caminho? Digite de onde você sai para ver os estacionamentos da MBTA mais próximos, quanto custam e quais linhas passam por lá.',
+          '要开一段路再换乘吗？输入出发地，就能看到最近的 MBTA 停车场和停车楼、收费，以及经过的线路。',
         )}
       />
     ),
@@ -264,12 +268,13 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
         slug={slug}
         locale={L}
         placement="work_it_out"
-        heading={pick(L, 'Check one of your trips', 'Revisa uno de tus viajes', 'Confira uma das suas viagens')}
+        heading={pick(L, 'Check one of your trips', 'Revisa uno de tus viajes', 'Confira uma das suas viagens', '查一查你的一段行程')}
         intro={pick(
           L,
           "Pick a trip you usually drive. You'll see how long it takes by transit and by bike.",
           'Elige un viaje que sueles hacer en auto. Verás cuánto tarda en transporte público y en bici.',
           'Escolha uma viagem que você costuma fazer de carro. Você verá quanto tempo leva de transporte público e de bicicleta.',
+          '选一段你平时开车的行程，就能看到坐公共交通和骑自行车各需要多长时间。',
         )}
       />
     ),
@@ -281,14 +286,15 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
         slug={slug}
         locale={L}
         placement="try_this_first"
-        heading={pick(L, 'Check an address', 'Revisa una dirección', 'Confira um endereço')}
+        heading={pick(L, 'Check an address', 'Revisa una dirección', 'Confira um endereço', '查一查某个地址')}
         intro={pick(
           L,
           "Enter the address you're considering and a place you go often. You'll see the trip by transit and by bike.",
           'Escribe la dirección que estás considerando y un lugar al que vas seguido. Verás el viaje en transporte público y en bici.',
           'Digite o endereço que você está considerando e um lugar aonde você vai sempre. Você verá a viagem de transporte público e de bicicleta.',
+          '输入你在考虑的地址和一个你常去的地方，就能看到坐公共交通和骑自行车的行程。',
         )}
-        toPlaceholder={pick(L, 'Work, school or a place you go often', 'Trabajo, escuela o un lugar al que vas seguido', 'Trabalho, escola ou um lugar aonde você vai sempre')}
+        toPlaceholder={pick(L, 'Work, school or a place you go often', 'Trabajo, escuela o un lugar al que vas seguido', 'Trabalho, escola ou um lugar aonde você vai sempre', '公司、学校或你常去的地方')}
       />
     ),
   },
@@ -319,6 +325,32 @@ const appStripBySlugPt: Record<string, { headline: string; line: string }> = {
     headline: 'Planeje suas primeiras viagens a partir de um endereço novo.',
     line: 'O Shift mostra aonde você chega a pé, o ônibus ou trem mais próximo e rotas de bicicleta tranquilas. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
   },
+}
+const appStripBySlugZh: Record<string, { headline: string; line: string }> = {
+  'boston-traffic': {
+    headline: '看看下一班列车或公交车什么时候到。',
+    line: 'Shift 显示你附近站点的实时到站信息和最轻松的骑行路线，帮你避开拥堵来安排出行。这样出行的次数多了，还能解锁本地商家的礼品卡。免费。',
+  },
+  'boston-parking-costs': {
+    headline: '找到离你最近的车站和骑行路线。',
+    line: 'Shift 显示最近的车站、实时到站信息，以及现在有车可借的 Bluebikes 站点。这样出行的次数多了，还能解锁本地商家的礼品卡。免费。',
+  },
+  'keeping-a-car-in-boston': {
+    headline: '看看你到底多常开车。',
+    line: 'Shift 会自动记录你的行程，帮你算出开车的天数，并显示你附近的公交车、列车和骑行选择。这样出行的次数多了，还能解锁本地商家的礼品卡。免费。',
+  },
+  'backup-plans-for-the-t': {
+    headline: '提前准备好你的备用方案。',
+    line: 'Shift 显示你附近的公交车实时到站信息和有车可借的 Bluebikes 站点，线路停运时你能马上换方式。这样出行的次数多了，还能解锁本地商家的礼品卡。免费。',
+  },
+  'getting-around-boston': {
+    headline: '从新住址规划你的头几次出行。',
+    line: 'Shift 显示步行能到哪里、最近的公交车或列车，以及轻松的骑行路线。这样出行的次数多了，还能解锁本地商家的礼品卡。免费。',
+  },
+}
+const appStripDefaultZh = {
+  headline: '找到最轻松的出行方式。',
+  line: 'Shift 显示公交车和列车的实时到站信息、轻松的骑行路线和最近的 Bluebikes。这样出行的次数多了，还能解锁本地商家的礼品卡。免费。',
 }
 const appStripDefaultPt = {
   headline: 'Encontre o jeito fácil de chegar.',
@@ -385,6 +417,8 @@ export default function GuideView({
       ? appStripBySlugEs[guideSlug] ?? appStripDefaultEs
       : L === 'pt-BR'
         ? appStripBySlugPt[guideSlug] ?? appStripDefaultPt
+        : L === 'zh-Hans'
+          ? appStripBySlugZh[guideSlug] ?? appStripDefaultZh
       : appStripBySlug[guideSlug] ?? appStrip[g.primary_mode ?? ''] ?? appStripDefault
 
   // The app strip sits under the answer and the download, not above them: the
@@ -679,7 +713,7 @@ function splitSections(md: string): { heading: string | null; body: string }[] {
  *  from the app's guide reader. On the page itself that becomes "#trip-planner". */
 function samePageLinks(md: string, slug: string): string {
   let out = md
-  for (const prefix of ['', '/es', '/pt-BR', '/preview', '/preview/es', '/preview/pt-BR']) {
+  for (const prefix of ['', '/es', '/pt-BR', '/zh-Hans', '/preview', '/preview/es', '/preview/pt-BR', '/preview/zh-Hans']) {
     out = out.split(`https://www.gogreenstreets.org${prefix}/guides/${slug}#`).join('#')
   }
   return out

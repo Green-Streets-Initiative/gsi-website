@@ -15,11 +15,18 @@ import { pageMetadata } from '@/lib/seo'
  * land where they do on the English page.
  */
 
-const OG_LOCALE: Record<GuideLocale, string> = { en: 'en_US', es: 'es_US', 'pt-BR': 'pt_BR' }
+const OG_LOCALE: Record<GuideLocale, string> = { en: 'en_US', es: 'es_US', 'pt-BR': 'pt_BR', 'zh-Hans': 'zh_CN' }
 const FALLBACK_TITLE: Record<GuideLocale, string> = {
   en: 'Guides — Green Streets Initiative',
   es: 'Guías — Green Streets Initiative',
   'pt-BR': 'Guias — Green Streets Initiative',
+  'zh-Hans': '指南 — Green Streets Initiative',
+}
+
+/** Minutes to read: words at 200 a minute, or Chinese characters at about 300. */
+function readMinutes(body: string, locale: GuideLocale): number {
+  if (locale === 'zh-Hans') return Math.max(1, Math.ceil((body.match(/[\u4e00-\u9fff]/g) ?? []).length / 300))
+  return Math.max(1, Math.ceil(body.split(/\s+/).filter(Boolean).length / 200))
 }
 
 const getGuide = cache(async (slug: string): Promise<GuideRow | null> => {
@@ -70,7 +77,7 @@ export async function TranslatedGuidePage({ slug, locale }: { slug: string; loca
     title: t.title,
     summary: t.summary ?? g.summary,
     body: t.body,
-    read_time_minutes: Math.max(1, Math.ceil(t.body.split(/\s+/).filter(Boolean).length / 200)),
+    read_time_minutes: readMinutes(t.body, locale),
   }
 
   // Related guides that exist in this language, in the English page's order.
