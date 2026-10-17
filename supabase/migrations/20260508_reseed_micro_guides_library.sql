@@ -437,7 +437,7 @@ Borrow one from Community Pedal Power for a weekend. Use it for one school picku
     'Bluebikes from start to finish',
     'how-to-use-bluebikes',
     'How to unlock, ride, dock, and avoid surprise charges with Greater Boston''s bike-share. First-trip jitters, sorted.',
-    $guidebody$Bluebikes is Greater Boston's bike-share system, with 400+ stations across Boston, Brookline, Cambridge, Somerville, Everett, Chelsea, Revere, and beyond. Once you've used it once, it's simple. Here's everything you need for the first time.
+    $guidebody$Bluebikes is Greater Boston's bike-share system, with nearly 600 stations in 13 cities and towns, including Boston, Brookline, Cambridge, Somerville, Everett, Chelsea and Revere. Once you've used it once, it's simple. Here's everything you need for the first time.
 
 ### Getting started
 
@@ -465,7 +465,7 @@ Dock at any station along the way, wait a minute, and undock a new bike. The clo
 
 - **Station full?** The app shows real-time dock availability — there's almost always one within a block or two.
 - **App still shows your ride active after docking?** Take a screenshot of the green light. Contact Bluebikes through the app; they resolve these quickly and won't charge you for a properly returned bike.$guidebody$,
-    $guidebody$Bluebikes is Greater Boston's bike-share system, with 400+ stations across Boston, Brookline, Cambridge, Somerville, Everett, Chelsea, Revere, and beyond. Once you've used it once, it's simple. Here's everything you need for the first time.
+    $guidebody$Bluebikes is Greater Boston's bike-share system, with nearly 600 stations in 13 cities and towns, including Boston, Brookline, Cambridge, Somerville, Everett, Chelsea and Revere. Once you've used it once, it's simple. Here's everything you need for the first time.
 
 ### Getting started
 
@@ -502,7 +502,7 @@ Dock at any station along the way, wait a minute, and undock a new bike. The clo
     ARRAY['mg_bike_lock', 'mg_low_stress_routes']::text[],
     false,
     2,
-    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
+    timezone('America/New_York', '2026-10-17 12:00'::timestamp)
   ),
   (
     'mg_bike_lock',
@@ -892,17 +892,17 @@ If you pay with a CharlieCard or your phone, you can switch between buses and th
     'mg_bus_transfers',
     'How bus transfers work',
     'how-bus-transfers-work',
-    'Two-hour free transfers are the MBTA''s quietest perk. The basic rule and the gotchas.',
+    'Two-hour transfers are the MBTA''s quietest perk. The basic rule and the gotchas.',
     $guidebody$If your trip involves more than one bus or train, you're probably paying less than you think.
 
-**The basic rule:** When you pay with a Charlie Card or phone tap, your first transfer within two hours is free. Bus to bus, bus to subway, subway to bus — all free. That two-hour window starts from your first tap.
+**The basic rule:** When you pay with a CharlieCard or by tapping your phone or bank card, you can change buses and trains as many times as you need within two hours and pay only the highest fare on the trip. Bus to bus and subway to bus are free; bus to subway costs the $0.70 difference. The two hours start from your first tap.
 
 **What counts:** The transfer has to be between different routes. Riding the same bus back doesn't count. And the free transfer only covers the base fare — if you're transferring to an express bus or commuter rail, you pay the difference.
 
 **What doesn't work:** Cash on the bus doesn't get you a free transfer. Neither do single-ride tickets from the machines. If you're going to ride transit more than once, a Charlie Card (or just your phone) pays for itself immediately.$guidebody$,
     $guidebody$If your trip involves more than one bus or train, you're probably paying less than you think.
 
-**The basic rule:** When you pay with a Charlie Card or phone tap, your first transfer within two hours is free. Bus to bus, bus to subway, subway to bus — all free. That two-hour window starts from your first tap.
+**The basic rule:** When you pay with a CharlieCard or by tapping your phone or bank card, you can change buses and trains as many times as you need within two hours and pay only the highest fare on the trip. Bus to bus and subway to bus are free; bus to subway costs the $0.70 difference. The two hours start from your first tap.
 
 **What counts:** The transfer has to be between different routes. Riding the same bus back doesn't count. And the free transfer only covers the base fare — if you're transferring to an express bus or commuter rail, you pay the difference.
 
@@ -916,7 +916,7 @@ If you pay with a CharlieCard or your phone, you can switch between buses and th
     ARRAY['mg_pay_for_t', 'mg_subway_vs_bus']::text[],
     false,
     1,
-    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
+    timezone('America/New_York', '2026-10-17 12:00'::timestamp)
   ),
   (
     'mg_pay_for_t',

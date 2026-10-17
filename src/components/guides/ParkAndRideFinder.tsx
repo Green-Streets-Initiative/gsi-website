@@ -15,6 +15,7 @@ import { gt, lineLabel, type GuideLocale } from '@/lib/guides/i18n'
 
 /** The MBTA fee comes back as "$4 on weekdays, $2 on weekends". */
 function feeLabel(fee: string, L: GuideLocale): string {
+  if (L === 'pt-BR') return fee.replace(/ on weekdays/g, ' nos dias úteis').replace(/ on weekends/g, ' nos fins de semana')
   if (L !== 'es') return fee
   return fee.replace(/ on weekdays/g, ' entre semana').replace(/ on weekends/g, ' los fines de semana')
 }

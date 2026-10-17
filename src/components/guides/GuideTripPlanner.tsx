@@ -24,10 +24,20 @@ function comfortWords(rating: string, L: GuideLocale): string {
 }
 
 const SUBWAY_ES: Record<string, string> = { Red: 'Roja', Orange: 'Naranja', Blue: 'Azul', Mattapan: 'Mattapan' }
+const SUBWAY_PT: Record<string, string> = { Red: 'Vermelha', Orange: 'Laranja', Blue: 'Azul', Mattapan: 'Mattapan' }
 
 /** "67" -> "bus 67", "Red" -> "the Red Line", "Green-B" -> "the Green Line (B)";
- *  in Spanish "el autobús 67", "la Línea Roja", "la Línea Verde (B)". */
+ *  in Spanish "el autobús 67", "la Línea Roja", "la Línea Verde (B)"; in Portuguese
+ *  "o ônibus 67", "a Linha Vermelha", "a Linha Verde (B)". */
 function lineName(label: string, L: GuideLocale): string {
+  if (L === 'pt-BR') {
+    if (/^\d+[A-Z]?$|^SL\d$|^CT\d$/.test(label)) return `o ônibus ${label}`
+    if (/^(Red|Orange|Blue|Mattapan)$/.test(label)) return `a Linha ${SUBWAY_PT[label]}`
+    const gp = /^Green(?:[- ]Line)?[- ]\(?([A-E])\)?$/.exec(label)
+    if (gp) return `a Linha Verde (${gp[1]})`
+    if (/ Line$/.test(label)) return `o trem metropolitano ${label.replace(/ Line$/, '')}`
+    return label
+  }
   const es = L === 'es'
   if (/^\d+[A-Z]?$|^SL\d$|^CT\d$/.test(label)) return es ? `el autobús ${label}` : `bus ${label}`
   if (/^(Red|Orange|Blue|Mattapan)$/.test(label)) return es ? `la Línea ${SUBWAY_ES[label]}` : `the ${label} Line`

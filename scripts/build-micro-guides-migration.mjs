@@ -311,8 +311,9 @@ const guides = rawGuides.map((g) => ({
 }))
 
 // Sanity checks
-if (guides.length !== 23) {
-  console.warn(`WARNING: expected 23 guides, found ${guides.length}`)
+// 28 since the five answer pages shipped (2026-10-17). Bump when a guide ships.
+if (guides.length !== 28) {
+  console.warn(`WARNING: expected 28 guides, found ${guides.length}`)
 }
 const ids = guides.map((g) => g.yaml.id)
 const dupeIds = ids.filter((id, i) => ids.indexOf(id) !== i)

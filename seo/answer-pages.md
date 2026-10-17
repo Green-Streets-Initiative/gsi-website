@@ -229,6 +229,28 @@ Nearby map, `src/lib/nearby/i18n.ts`):
   estas cifras:**. "typical": "Típico quiere decir que la mitad de los viajes
   fueron más rápidos y la mitad más lentos."
 
+**Portuguese (Brazil) house style** (matches the Shift app's `locales/pt-BR.json`
+and the web Nearby map):
+- Address the reader as **você**. Brazilian Portuguese spelling and words.
+- the T: **o T**; subway: **metrô**; lines: **Linha Vermelha, Linha Laranja,
+  Linha Azul, Linha Verde** ("o ramal C da Linha Verde"), Mattapan stays.
+- commuter rail: **trem metropolitano**; bus: **ônibus**; route 77: **a linha
+  77 de ônibus** (or "o ônibus 77"); shuttle: **ônibus de substituição**
+  (free: "gratuitos"); ferry: **balsa**; transfer: **baldeação**.
+- bike: **bicicleta** (**bike** is fine in casual lines, as the app does);
+  e-bike: **bicicleta elétrica**; cargo bike: **bicicleta de carga**; car:
+  **carro**; to drive: **dirigir**; parking: **estacionamento**; car share:
+  **carro compartilhado**.
+- Around You (app) and the web Nearby page: **Perto de você** ("o mapa Perto
+  de você" on our website, linked with `?lang=pt-BR`).
+- Same units and formats as English: miles, mph ("milhas por hora" the first
+  time), $1.70, 8.4, "21 a 30 de julho de 2026".
+- "Try this first": **Experimente primeiro**. "About these numbers:" **Sobre
+  estes números:**. Typical: "Típico quer dizer que metade das viagens foi
+  mais rápida e metade mais lenta."
+- English-only pages we ask the reader to act on get "(em inglês)".
+- Our own links: `/pt-BR/guides/<slug>`, `/nearby?lang=pt-BR`.
+
 **Links.** Same targets as the English page. Links to our own pages use the
 Spanish version (`https://www.gogreenstreets.org/es/guides/<slug>#trip-planner`,
 `/nearby?lang=es`). When a link asks the reader to do something on a page

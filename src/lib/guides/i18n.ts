@@ -6,7 +6,7 @@
  * T", Línea Roja, tren de cercanías, autobús, Cerca de ti.
  */
 
-export type GuideLocale = 'en' | 'es'
+export type GuideLocale = 'en' | 'es' | 'pt-BR'
 
 const en = {
   'nav.home': 'Home',
@@ -196,7 +196,98 @@ const es: Record<GuideKey, string> = {
   'offer.semester.cta': 'Mira cómo funciona (en inglés)',
 }
 
-const DICTS: Record<GuideLocale, Record<GuideKey, string>> = { en, es }
+const ptBR: Record<GuideKey, string> = {
+  'nav.home': 'Início',
+  'nav.guides': 'Guias',
+  'nav.breadcrumb': 'Caminho de navegação',
+  'meta.minRead': '{n} min de leitura',
+  'meta.reviewed': 'Revisado em {date}',
+  'meta.otherLanguage': 'Read in English',
+  'meta.aiNote': 'Traduzido do inglês com a ajuda de inteligência artificial. Se algo não estiver claro, escreva para',
+  'meta.aiNoteLink': 'info@gogreenstreets.org',
+  'mode.cycling': 'De bicicleta',
+  'mode.walking': 'A pé',
+  'mode.transit': 'Transporte público',
+  'mode.multimodal': 'Como se locomover',
+  'tryIt.heading': 'Experimente',
+  'tryIt.body':
+    'O Shift encontra o jeito mais tranquilo de chegar aonde você vai, de bicicleta, a pé ou de transporte público, e dá crédito por cada viagem que você muda.',
+  'tryIt.notReady': 'Ainda não quer o app?',
+  'tryIt.nearbyLink': 'Planeje uma rota no mapa Perto de você',
+  'tryIt.inBrowser': 'pelo navegador.',
+  'related.heading': 'Guias relacionados',
+  'browseAll': 'Ver todos os guias (em inglês)',
+  'appStrip.howItWorks': 'Veja como o Shift funciona (em inglês)',
+
+  'planner.from': 'De',
+  'planner.fromPlaceholder': 'De onde você sai?',
+  'planner.to': 'Para',
+  'planner.toPlaceholder': 'Para onde você vai?',
+  'planner.useMyLocation': 'Usar minha localização',
+  'planner.finding': 'Encontrando você…',
+  'planner.yourLocation': 'Sua localização',
+  'planner.loading': 'Planejando sua viagem…',
+  'planner.outside': 'Um desses endereços fica fora da área que o planejador cobre. Tente um endereço em Massachusetts.',
+  'planner.error': 'Não conseguimos planejar essa viagem agora. Tente um endereço próximo ou planeje no',
+  'planner.errorLink': 'mapa Perto de você',
+  'planner.byTransit': 'De transporte público',
+  'planner.onLines': ' usando {lines}',
+  'planner.then': ', depois ',
+  'planner.walking': ', com {n} min a pé',
+  'planner.noTransit': 'Não encontramos uma rota de transporte público para essa viagem.',
+  'planner.byBike': 'De bicicleta',
+  'planner.seeOnMap': 'Ver essa viagem no mapa, com chegadas ao vivo',
+  'planner.changesHeading': 'Mudanças no serviço nessas linhas',
+  'planner.changesEmpty': 'Não há interrupções planejadas nessas linhas nos próximos 30 dias.',
+  'comfort.path': 'quase tudo por ciclovias longe dos carros',
+  'comfort.protected': 'quase tudo por ciclovias protegidas',
+  'comfort.bike_lane': 'quase tudo por ciclofaixas pintadas',
+  'comfort.shared_road': 'quase tudo por ruas sem ciclofaixa',
+  'comfort.mixed': 'uma mistura de ciclofaixas e ruas',
+
+  'parking.label': 'De onde você sai de carro?',
+  'parking.placeholder': 'Seu endereço ou sua cidade',
+  'parking.loading': 'Procurando estacionamento nas estações…',
+  'parking.outside': 'Esse endereço fica fora da área que cobrimos. Tente um em Massachusetts.',
+  'parking.none':
+    'Não há estacionamento da MBTA a 25 milhas desse endereço. Muitas empresas regionais de ônibus têm seus próprios estacionamentos; consulte a da sua região.',
+  'parking.error': 'Não conseguimos carregar os estacionamentos agora. A MBTA tem a lista completa na',
+  'parking.errorLink': 'página de estacionamento (em inglês)',
+  'parking.away': 'a {miles} mi',
+  'parking.spaces': '{n} vagas',
+  'parking.fills': 'costuma lotar nos dias úteis',
+  'parking.full': 'costuma ficar {pct}% cheio nos dias úteis',
+  'parking.planFrom': 'Planeje a viagem a partir de {station}',
+  'parking.note': 'Tarifas e vagas segundo a própria MBTA. Na maioria, o pagamento é pelo celular.',
+
+  'closures.checking': 'Verificando mudanças no serviço da MBTA…',
+  'closures.changesOn': 'Mudanças na',
+  'closures.clearOn': 'Sem interrupções na',
+  'closures.nowThrough': 'Agora, até {day}',
+  'closures.now': 'Agora',
+  'closures.range': 'De {first} a {last}',
+  'closures.starts': 'Começa em {day}',
+  'closures.shuttle': 'Ônibus de substituição no lugar dos trens',
+  'closures.noBuses': 'Sem ônibus',
+  'closures.noTrains': 'Sem trens',
+  'closures.station': 'Estação fechada ou sem parada',
+  'closures.details': 'Detalhes da MBTA (em inglês)',
+  'closures.more': 'E mais {n} na',
+  'closures.moreLink': 'página de alertas da MBTA (em inglês)',
+  'closures.footnote': 'Ao vivo da MBTA: ônibus de substituição, suspensões e estações fechadas, agora e nos próximos 30 dias.',
+
+  'offer.newroutes.heading': 'Acabou de se mudar? Desbloqueie {dollars} para se locomover.',
+  'offer.newroutes.body':
+    'Faça {trips} viagens a pé, de bicicleta ou de transporte público nos seus primeiros {days} dias no Shift e desbloqueie uma recompensa de {dollars}: um vale-presente de um comércio local ou um vale-presente digital que você escolhe. Inscreva-se até {deadline}.',
+  'offer.newroutes.code': 'Depois de instalar o app, digite o código {code} para vincular sua recompensa.',
+  'offer.newroutes.cta': 'Baixe o Shift',
+  'offer.semester.heading': 'Está na faculdade? Desbloqueie {dollars} para ir às aulas.',
+  'offer.semester.body':
+    'Cadastre-se no Shift com o email da sua faculdade, faça {trips} viagens a pé, de bicicleta ou de transporte público em {days} dias e desbloqueie uma recompensa de {dollars}. Inscreva-se até {deadline}.',
+  'offer.semester.cta': 'Veja como funciona (em inglês)',
+}
+
+const DICTS: Record<GuideLocale, Record<GuideKey, string>> = { en, es, 'pt-BR': ptBR }
 
 export function gt(locale: GuideLocale, key: GuideKey, repl?: Record<string, string | number>): string {
   let s = DICTS[locale][key] ?? en[key]
@@ -205,7 +296,19 @@ export function gt(locale: GuideLocale, key: GuideKey, repl?: Record<string, str
 }
 
 /** BCP 47 tag for dates and numbers. */
-export const DATE_LOCALE: Record<GuideLocale, string> = { en: 'en-US', es: 'es-US' }
+export const DATE_LOCALE: Record<GuideLocale, string> = { en: 'en-US', es: 'es-US', 'pt-BR': 'pt-BR' }
+
+/** Every language a guide can be shown in, and the link to it, written in that language. */
+export const GUIDE_LANGUAGES: { locale: GuideLocale; label: string }[] = [
+  { locale: 'en', label: 'Read in English' },
+  { locale: 'es', label: 'Leer en español' },
+  { locale: 'pt-BR', label: 'Ler em português' },
+]
+
+/** Path prefix for a language's guide pages: '' for English, '/es', '/pt-BR'. */
+export function localePrefix(locale: GuideLocale): string {
+  return locale === 'en' ? '' : `/${locale}`
+}
 
 /** "Sat, Oct 31" / "sáb, 31 oct" in Boston time. */
 export function guideDay(iso: string, locale: GuideLocale): string {
@@ -233,14 +336,33 @@ const SUBWAY_ES: Record<string, string> = {
   Green: 'Verde',
   Mattapan: 'Mattapan',
 }
+const SUBWAY_PT: Record<string, string> = {
+  Red: 'Vermelha',
+  Orange: 'Laranja',
+  Blue: 'Azul',
+  Green: 'Verde',
+  Mattapan: 'Mattapan',
+}
 
 /**
  * An MBTA line name as the reader's language says it. MBTA names arrive in
  * English ("Red Line", "Green Line B", "Framingham/Worcester Line", "Bus 67").
- * Spanish follows the house style: Línea Roja, Línea Verde B, Autobús 67, Ferry de Hingham.
+ * Spanish: Línea Roja, Línea Verde B, Autobús 67, Ferry de Hingham. Portuguese:
+ * Linha Vermelha, Linha Verde B, Ônibus 67, Balsa de Hingham (answer-pages.md §10).
  */
 export function lineLabel(name: string, locale: GuideLocale): string {
   if (locale === 'en') return name
+  if (locale === 'pt-BR') {
+    const subway = /^(Red|Orange|Blue|Green|Mattapan) Line(?: ([A-E]))?$/.exec(name)
+    if (subway) return `Linha ${SUBWAY_PT[subway[1]]}${subway[2] ? ` ${subway[2]}` : ''}`
+    const bus = /^Bus (.+)$/.exec(name)
+    if (bus) return `Ônibus ${bus[1]}`
+    const ferry = /^(.+) Ferry$/.exec(name)
+    if (ferry) return `Balsa de ${ferry[1]}`
+    const line = /^(.+) Line$/.exec(name)
+    if (line) return `Linha ${line[1]}`
+    return name
+  }
   const subway = /^(Red|Orange|Blue|Green|Mattapan) Line(?: ([A-E]))?$/.exec(name)
   if (subway) return `Línea ${SUBWAY_ES[subway[1]]}${subway[2] ? ` ${subway[2]}` : ''}`
   const bus = /^Bus (.+)$/.exec(name)

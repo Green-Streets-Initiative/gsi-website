@@ -17,7 +17,7 @@ related: [mg_bike_lock, mg_low_stress_routes]
 supersedes: [mg_blue_bikes, mg_return_bluebike]
 ```
 
-Bluebikes es el sistema de bicis compartidas del área de Boston: sacas una bici en una estación y la devuelves en otra. Tiene más de 400 estaciones en Boston, Brookline, Cambridge, Somerville, Everett, Chelsea, Revere y otros lugares. Después de usarlo una vez, es fácil. Aquí tienes todo lo que necesitas para la primera vez.
+Bluebikes es el sistema de bicis compartidas del área de Boston: sacas una bici en una estación y la devuelves en otra. Tiene casi 600 estaciones en 13 ciudades y pueblos, entre ellos Boston, Brookline, Cambridge, Somerville, Everett, Chelsea y Revere. Después de usarlo una vez, es fácil. Aquí tienes todo lo que necesitas para la primera vez.
 
 ### Para empezar
 

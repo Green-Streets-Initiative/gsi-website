@@ -342,7 +342,7 @@ Borrow one from Community Pedal Power for a weekend. Use it for one school picku
 
 ```yaml
 id: mg_bluebikes
-reviewed: 2026-05-08
+reviewed: 2026-10-17
 title: "Bluebikes from start to finish"
 summary: "How to unlock, ride, dock, and avoid surprise charges with Greater Boston's bike-share. First-trip jitters, sorted."
 slug: how-to-use-bluebikes
@@ -356,7 +356,7 @@ related: [mg_bike_lock, mg_low_stress_routes]
 supersedes: [mg_blue_bikes, mg_return_bluebike]
 ```
 
-Bluebikes is Greater Boston's bike-share system, with 400+ stations across Boston, Brookline, Cambridge, Somerville, Everett, Chelsea, Revere, and beyond. Once you've used it once, it's simple. Here's everything you need for the first time.
+Bluebikes is Greater Boston's bike-share system, with nearly 600 stations in 13 cities and towns, including Boston, Brookline, Cambridge, Somerville, Everett, Chelsea and Revere. Once you've used it once, it's simple. Here's everything you need for the first time.
 
 ### Getting started
 
@@ -647,9 +647,9 @@ If you pay with a CharlieCard or your phone, you can switch between buses and th
 
 ```yaml
 id: mg_bus_transfers
-reviewed: 2026-05-08
+reviewed: 2026-10-17
 title: "How bus transfers work"
-summary: "Two-hour free transfers are the MBTA's quietest perk. The basic rule and the gotchas."
+summary: "Two-hour transfers are the MBTA's quietest perk. The basic rule and the gotchas."
 slug: how-bus-transfers-work
 mode: transit
 barrier: planning
@@ -662,7 +662,7 @@ related: [mg_pay_for_t, mg_subway_vs_bus]
 
 If your trip involves more than one bus or train, you're probably paying less than you think.
 
-**The basic rule:** When you pay with a Charlie Card or phone tap, your first transfer within two hours is free. Bus to bus, bus to subway, subway to bus — all free. That two-hour window starts from your first tap.
+**The basic rule:** When you pay with a CharlieCard or by tapping your phone or bank card, you can change buses and trains as many times as you need within two hours and pay only the highest fare on the trip. Bus to bus and subway to bus are free; bus to subway costs the $0.70 difference. The two hours start from your first tap.
 
 **What counts:** The transfer has to be between different routes. Riding the same bus back doesn't count. And the free transfer only covers the base fare — if you're transferring to an express bus or commuter rail, you pay the difference.
 

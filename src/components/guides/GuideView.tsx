@@ -30,8 +30,8 @@ function reviewedLabel(iso: string | null, L: GuideLocale = 'en'): string | null
 }
 
 /** English on English pages, the translation elsewhere (tool copy below). */
-function pick(L: GuideLocale, en: string, es: string): string {
-  return L === 'es' ? es : en
+function pick(L: GuideLocale, en: string, es: string, pt: string): string {
+  return L === 'es' ? es : L === 'pt-BR' ? pt : en
 }
 
 export interface GuideRow {
@@ -201,11 +201,12 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
       <TransitDisruptions
         routeTypes={[0, 1, 2]}
         locale={L}
-        heading={pick(L, "What's closed now and coming up", 'Qué está cerrado ahora y qué viene')}
+        heading={pick(L, "What's closed now and coming up", 'Qué está cerrado ahora y qué viene', 'O que está fechado agora e o que vem por aí')}
         emptyText={pick(
           L,
           'No subway or commuter rail closures are planned in the next 30 days.',
           'No hay cierres del metro ni del tren de cercanías planeados en los próximos 30 días.',
+          'Não há interrupções planejadas no metrô nem no trem metropolitano nos próximos 30 dias.',
         )}
       />
     ),
@@ -214,11 +215,12 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
         slug={slug}
         locale={L}
         placement="lead"
-        heading={pick(L, 'Plan your backup now', 'Planea tu plan B ahora')}
+        heading={pick(L, 'Plan your backup now', 'Planea tu plan B ahora', 'Planeje seu plano B agora')}
         intro={pick(
           L,
           "Enter where you start and where you're going. You'll see the bus or train option and the bike option for that trip.",
           'Escribe desde dónde sales y a dónde vas. Verás la opción en autobús o tren y la opción en bici para ese viaje.',
+          'Digite de onde você sai e para onde vai. Você verá a opção de ônibus ou trem e a opção de bicicleta para essa viagem.',
         )}
       />
     ),
@@ -229,11 +231,12 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
         slug={slug}
         locale={L}
         placement="park_at_the_t"
-        heading={pick(L, 'Find station parking near you', 'Encuentra estacionamiento en una estación cerca de ti')}
+        heading={pick(L, 'Find station parking near you', 'Encuentra estacionamiento en una estación cerca de ti', 'Encontre estacionamento em uma estação perto de você')}
         intro={pick(
           L,
           'Enter where your drive starts. You\'ll see the nearest MBTA lots and garages, what they cost and how full they usually get.',
           'Escribe desde dónde sales en auto. Verás los estacionamientos de la MBTA más cercanos, cuánto cuestan y qué tan llenos suelen estar.',
+          'Digite de onde você sai de carro. Você verá os estacionamentos da MBTA mais próximos, quanto custam e o quanto costumam lotar.',
         )}
       />
     ),
@@ -245,11 +248,12 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
         slug={slug}
         locale={L}
         placement="corridors"
-        heading={pick(L, 'Find station parking near you', 'Encuentra estacionamiento en una estación cerca de ti')}
+        heading={pick(L, 'Find station parking near you', 'Encuentra estacionamiento en una estación cerca de ti', 'Encontre estacionamento em uma estação perto de você')}
         intro={pick(
           L,
           'Driving part of the way? Enter where you start to see the nearest MBTA lots and garages, what they cost and the lines they serve.',
           '¿Vas a manejar parte del camino? Escribe desde dónde sales para ver los estacionamientos de la MBTA más cercanos, cuánto cuestan y qué líneas pasan por ahí.',
+          'Vai dirigir parte do caminho? Digite de onde você sai para ver os estacionamentos da MBTA mais próximos, quanto custam e quais linhas passam por lá.',
         )}
       />
     ),
@@ -260,11 +264,12 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
         slug={slug}
         locale={L}
         placement="work_it_out"
-        heading={pick(L, 'Check one of your trips', 'Revisa uno de tus viajes')}
+        heading={pick(L, 'Check one of your trips', 'Revisa uno de tus viajes', 'Confira uma das suas viagens')}
         intro={pick(
           L,
           "Pick a trip you usually drive. You'll see how long it takes by transit and by bike.",
           'Elige un viaje que sueles hacer en auto. Verás cuánto tarda en transporte público y en bici.',
+          'Escolha uma viagem que você costuma fazer de carro. Você verá quanto tempo leva de transporte público e de bicicleta.',
         )}
       />
     ),
@@ -276,13 +281,14 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
         slug={slug}
         locale={L}
         placement="try_this_first"
-        heading={pick(L, 'Check an address', 'Revisa una dirección')}
+        heading={pick(L, 'Check an address', 'Revisa una dirección', 'Confira um endereço')}
         intro={pick(
           L,
           "Enter the address you're considering and a place you go often. You'll see the trip by transit and by bike.",
           'Escribe la dirección que estás considerando y un lugar al que vas seguido. Verás el viaje en transporte público y en bici.',
+          'Digite o endereço que você está considerando e um lugar aonde você vai sempre. Você verá a viagem de transporte público e de bicicleta.',
         )}
-        toPlaceholder={pick(L, 'Work, school or a place you go often', 'Trabajo, escuela o un lugar al que vas seguido')}
+        toPlaceholder={pick(L, 'Work, school or a place you go often', 'Trabajo, escuela o un lugar al que vas seguido', 'Trabalho, escola ou um lugar aonde você vai sempre')}
       />
     ),
   },
@@ -291,6 +297,32 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
 const appStripDefault = {
   headline: 'Find the easy way there.',
   line: 'Shift shows live bus and train arrivals, low-stress bike routes and the nearest Bluebikes. Make more trips this way and you can unlock gift cards from local shops. Free.',
+}
+const appStripBySlugPt: Record<string, { headline: string; line: string }> = {
+  'boston-traffic': {
+    headline: 'Veja quando chega o próximo trem ou ônibus.',
+    line: 'O Shift mostra as chegadas ao vivo nas paradas perto de você e as rotas de bicicleta mais tranquilas, para você se planejar sem o trânsito. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
+  },
+  'boston-parking-costs': {
+    headline: 'Encontre a estação e a rota de bicicleta mais perto de você.',
+    line: 'O Shift mostra as estações mais próximas, as chegadas ao vivo e as estações da Bluebikes com bicicletas disponíveis agora. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
+  },
+  'keeping-a-car-in-boston': {
+    headline: 'Veja quantas vezes você realmente dirige.',
+    line: 'O Shift registra suas viagens sozinho, para você contar seus dias de carro, e mostra as opções de ônibus, trem e bicicleta perto de você. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
+  },
+  'backup-plans-for-the-t': {
+    headline: 'Tenha seu plano B pronto antes de precisar.',
+    line: 'O Shift mostra as chegadas de ônibus ao vivo e as estações da Bluebikes com bicicletas perto de você, para você trocar rápido quando uma linha para. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
+  },
+  'getting-around-boston': {
+    headline: 'Planeje suas primeiras viagens a partir de um endereço novo.',
+    line: 'O Shift mostra aonde você chega a pé, o ônibus ou trem mais próximo e rotas de bicicleta tranquilas. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
+  },
+}
+const appStripDefaultPt = {
+  headline: 'Encontre o jeito fácil de chegar.',
+  line: 'O Shift mostra as chegadas de ônibus e trens ao vivo, rotas de bicicleta tranquilas e as Bluebikes mais próximas. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
 }
 const appStripDefaultEs = {
   headline: 'Encuentra la forma fácil de llegar.',
@@ -326,7 +358,7 @@ export default function GuideView({
   slug,
   locale: L = 'en',
   sectionKeys,
-  alternate,
+  alternates = [],
   aiTranslated = false,
 }: {
   g: GuideRow
@@ -337,8 +369,8 @@ export default function GuideView({
   /** For a translated page: the English heading of each section, by position, so the
    *  tools, anchors and swaps keyed by English headings still find their place. */
   sectionKeys?: (string | null)[]
-  /** The same guide in the other language, when it exists. */
-  alternate?: { href: string; label: string; lang: string }
+  /** The same guide in the other languages it exists in. */
+  alternates?: { href: string; label: string; lang: string }[]
   /** A machine translation no person who speaks the language has read yet:
    *  the page says so and asks readers to write in (Keith, 2026-10-17). */
   aiTranslated?: boolean
@@ -351,6 +383,8 @@ export default function GuideView({
   const strip =
     L === 'es'
       ? appStripBySlugEs[guideSlug] ?? appStripDefaultEs
+      : L === 'pt-BR'
+        ? appStripBySlugPt[guideSlug] ?? appStripDefaultPt
       : appStripBySlug[guideSlug] ?? appStrip[g.primary_mode ?? ''] ?? appStripDefault
 
   // The app strip sits under the answer and the download, not above them: the
@@ -451,16 +485,17 @@ export default function GuideView({
                 {gt(L, 'meta.reviewed', { date: reviewedLabel(g.last_reviewed_at, L) ?? '' })}
               </span>
             )}
-            {alternate && (
+            {alternates.map((a) => (
               <a
-                href={alternate.href}
-                lang={alternate.lang}
-                hrefLang={alternate.lang}
+                key={a.lang}
+                href={a.href}
+                lang={a.lang}
+                hrefLang={a.lang}
                 className="text-[0.875rem] font-semibold text-forest underline underline-offset-4 hover:opacity-80"
               >
-                {alternate.label}
+                {a.label}
               </a>
-            )}
+            ))}
           </div>
 
           {/* Title */}
@@ -644,7 +679,7 @@ function splitSections(md: string): { heading: string | null; body: string }[] {
  *  from the app's guide reader. On the page itself that becomes "#trip-planner". */
 function samePageLinks(md: string, slug: string): string {
   let out = md
-  for (const prefix of ['', '/es', '/preview', '/preview/es']) {
+  for (const prefix of ['', '/es', '/pt-BR', '/preview', '/preview/es', '/preview/pt-BR']) {
     out = out.split(`https://www.gogreenstreets.org${prefix}/guides/${slug}#`).join('#')
   }
   return out

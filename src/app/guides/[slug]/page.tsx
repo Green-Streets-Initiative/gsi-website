@@ -5,6 +5,7 @@ import { notFound, permanentRedirect } from 'next/navigation'
 import GuideView, { searchMeta, type GuideRow, type RelatedGuide } from '@/components/guides/GuideView'
 import { pageMetadata } from '@/lib/seo'
 import { getGuideLocales } from '@/lib/guides/translations'
+import { GUIDE_LANGUAGES, localePrefix } from '@/lib/guides/i18n'
 
 // Fetch the guide once per request. React's cache() dedupes the call so
 // generateMetadata and the page component share a single database round-trip.
@@ -80,13 +81,11 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     related.sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999))
   }
 
-  const hasSpanish = (await getGuideLocales(g.id)).includes('es')
-  return (
-    <GuideView
-      g={g}
-      related={related}
-      slug={slug}
-      alternate={hasSpanish ? { href: `/es/guides/${g.slug ?? slug}`, label: 'Leer en español', lang: 'es' } : undefined}
-    />
-  )
+  const locales = await getGuideLocales(g.id)
+  const alternates = GUIDE_LANGUAGES.filter((l) => locales.includes(l.locale)).map((l) => ({
+    href: `${localePrefix(l.locale)}/guides/${g.slug ?? slug}`,
+    label: l.label,
+    lang: l.locale,
+  }))
+  return <GuideView g={g} related={related} slug={slug} alternates={alternates} />
 }

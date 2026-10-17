@@ -40,7 +40,7 @@ export default async function DraftGuidePage({ params }: { params: Promise<{ slu
       g={g}
       related={related}
       slug={slug}
-      alternate={es ? { href: `/preview/es/guides/${slug}`, label: 'Leer en español', lang: 'es' } : undefined}
+      alternates={es ? [{ href: `/preview/es/guides/${slug}`, label: 'Leer en español', lang: 'es' }] : []}
     />
   )
 }
