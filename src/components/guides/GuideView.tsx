@@ -12,6 +12,7 @@ import GuideOffer from '@/components/guides/GuideOffer'
 import TransitDisruptions from '@/components/guides/TransitDisruptions'
 import { PRICES, usd } from '@/lib/facts/prices'
 import { guideArticleSchema, breadcrumbSchema } from '@/lib/structured-data'
+import { gt, DATE_LOCALE, type GuideLocale, type GuideKey } from '@/lib/guides/i18n'
 
 /*
  * The guide page itself, shared by /guides/[slug] (approved rows from the
@@ -21,11 +22,16 @@ import { guideArticleSchema, breadcrumbSchema } from '@/lib/structured-data'
  */
 
 /** "October 2026" — month granularity: a review is a pass, not a timestamp. */
-function reviewedLabel(iso: string | null): string | null {
+function reviewedLabel(iso: string | null, L: GuideLocale = 'en'): string | null {
   if (!iso) return null
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'America/New_York' })
+  return d.toLocaleDateString(DATE_LOCALE[L], { month: 'long', year: 'numeric', timeZone: 'America/New_York' })
+}
+
+/** English on English pages, the translation elsewhere (tool copy below). */
+function pick(L: GuideLocale, en: string, es: string): string {
+  return L === 'es' ? es : en
 }
 
 export interface GuideRow {
@@ -116,11 +122,9 @@ export interface RelatedGuide {
   primary_mode: string
 }
 
-const modeLabel: Record<string, string> = {
-  cycling: 'Biking',
-  walking: 'Walking',
-  transit: 'Transit',
-  multimodal: 'Getting around',
+const MODES = ['cycling', 'walking', 'transit', 'multimodal']
+function modeLabel(mode: string, L: GuideLocale = 'en'): string {
+  return MODES.includes(mode) ? gt(L, `mode.${mode}` as GuideKey) : mode
 }
 
 // App strip under the title, matched to what the reader needs next. Every
@@ -163,68 +167,122 @@ const appStripBySlug: Record<string, { headline: string; line: string }> = {
     line: 'Shift shows what you can reach on foot, the closest bus or train and low-stress bike routes. Make more trips this way and you can unlock gift cards from local shops. Free.',
   },
 }
+const appStripBySlugEs: Record<string, { headline: string; line: string }> = {
+  'boston-traffic': {
+    headline: 'Mira cuándo llega el próximo tren o autobús.',
+    line: 'Shift te muestra las llegadas en vivo en las paradas cerca de ti y las rutas en bici más tranquilas, para que planees sin el tráfico. Haz más viajes así y puedes desbloquear tarjetas de regalo de comercios locales. Gratis.',
+  },
+  'boston-parking-costs': {
+    headline: 'Encuentra la estación y la ruta en bici más cercanas.',
+    line: 'Shift te muestra las estaciones más cercanas, las llegadas en vivo y las estaciones de Bluebikes con bicis disponibles ahora. Haz más viajes así y puedes desbloquear tarjetas de regalo de comercios locales. Gratis.',
+  },
+  'keeping-a-car-in-boston': {
+    headline: 'Mira cuántas veces manejas de verdad.',
+    line: 'Shift registra tus viajes solo, para que cuentes tus días en auto, y te muestra las opciones de autobús, tren y bici cerca de ti. Haz más viajes así y puedes desbloquear tarjetas de regalo de comercios locales. Gratis.',
+  },
+  'backup-plans-for-the-t': {
+    headline: 'Ten tu plan B listo antes de necesitarlo.',
+    line: 'Shift te muestra las llegadas de autobuses en vivo y las estaciones de Bluebikes con bicis cerca de ti, para que cambies rápido cuando una línea no funciona. Haz más viajes así y puedes desbloquear tarjetas de regalo de comercios locales. Gratis.',
+  },
+  'getting-around-boston': {
+    headline: 'Planea tus primeros viajes desde una dirección nueva.',
+    line: 'Shift te muestra a dónde puedes llegar a pie, el autobús o tren más cercano y rutas en bici tranquilas. Haz más viajes así y puedes desbloquear tarjetas de regalo de comercios locales. Gratis.',
+  },
+}
 // Our own tools and live offers, placed after the section they serve
 // (seo/answer-pages.md). LEAD is the guide's opening answer. Offers render
 // only while their campaign is open (GuideOffer).
 const LEAD = '__lead__'
-const toolsAfter: Record<string, Record<string, (slug: string) => ReactNode>> = {
+// Keys are the English section headings; a translated page maps its own
+// headings onto them by position (sectionKeys), so tools land in the same place.
+const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) => ReactNode>> = {
   'backup-plans-for-the-t': {
-    'Is the T really less reliable than it used to be?': () => (
+    'Is the T really less reliable than it used to be?': (_slug, L) => (
       <TransitDisruptions
         routeTypes={[0, 1, 2]}
-        heading="What's closed now and coming up"
-        emptyText="No subway or commuter rail closures are planned in the next 30 days."
+        locale={L}
+        heading={pick(L, "What's closed now and coming up", 'Qué está cerrado ahora y qué viene')}
+        emptyText={pick(
+          L,
+          'No subway or commuter rail closures are planned in the next 30 days.',
+          'No hay cierres del metro ni del tren de cercanías planeados en los próximos 30 días.',
+        )}
       />
     ),
-    [LEAD]: (slug) => (
+    [LEAD]: (slug, L) => (
       <GuideTripPlanner
         slug={slug}
+        locale={L}
         placement="lead"
-        heading="Plan your backup now"
-        intro="Enter where you start and where you're going. You'll see the bus or train option and the bike option for that trip."
+        heading={pick(L, 'Plan your backup now', 'Planea tu plan B ahora')}
+        intro={pick(
+          L,
+          "Enter where you start and where you're going. You'll see the bus or train option and the bike option for that trip.",
+          'Escribe desde dónde sales y a dónde vas. Verás la opción en autobús o tren y la opción en bici para ese viaje.',
+        )}
       />
     ),
   },
   'boston-parking-costs': {
-    'Is it cheaper to park at a T station?': (slug) => (
+    'Is it cheaper to park at a T station?': (slug, L) => (
       <ParkAndRideFinder
         slug={slug}
+        locale={L}
         placement="park_at_the_t"
-        heading="Find station parking near you"
-        intro="Enter where your drive starts. You'll see the nearest MBTA lots and garages, what they cost and how full they usually get."
+        heading={pick(L, 'Find station parking near you', 'Encuentra estacionamiento en una estación cerca de ti')}
+        intro={pick(
+          L,
+          'Enter where your drive starts. You\'ll see the nearest MBTA lots and garages, what they cost and how full they usually get.',
+          'Escribe desde dónde sales en auto. Verás los estacionamientos de la MBTA más cercanos, cuánto cuestan y qué tan llenos suelen estar.',
+        )}
       />
     ),
-    'Is a student parking permit worth it?': (slug) => <GuideOffer kind="semester" slug={slug} />,
+    'Is a student parking permit worth it?': (slug, L) => <GuideOffer kind="semester" slug={slug} locale={L} />,
   },
   'boston-traffic': {
-    'How do I get around it from where I live?': (slug) => (
+    'How do I get around it from where I live?': (slug, L) => (
       <ParkAndRideFinder
         slug={slug}
+        locale={L}
         placement="corridors"
-        heading="Find station parking near you"
-        intro="Driving part of the way? Enter where you start to see the nearest MBTA lots and garages, what they cost and the lines they serve."
+        heading={pick(L, 'Find station parking near you', 'Encuentra estacionamiento en una estación cerca de ti')}
+        intro={pick(
+          L,
+          'Driving part of the way? Enter where you start to see the nearest MBTA lots and garages, what they cost and the lines they serve.',
+          '¿Vas a manejar parte del camino? Escribe desde dónde sales para ver los estacionamientos de la MBTA más cercanos, cuánto cuestan y qué líneas pasan por ahí.',
+        )}
       />
     ),
   },
   'keeping-a-car-in-boston': {
-    "How do I work out what's right for me?": (slug) => (
+    "How do I work out what's right for me?": (slug, L) => (
       <GuideTripPlanner
         slug={slug}
+        locale={L}
         placement="work_it_out"
-        heading="Check one of your trips"
-        intro="Pick a trip you usually drive. You'll see how long it takes by transit and by bike."
+        heading={pick(L, 'Check one of your trips', 'Revisa uno de tus viajes')}
+        intro={pick(
+          L,
+          "Pick a trip you usually drive. You'll see how long it takes by transit and by bike.",
+          'Elige un viaje que sueles hacer en auto. Verás cuánto tarda en transporte público y en bici.',
+        )}
       />
     ),
   },
   'getting-around-boston': {
-    "What's the cheapest way to get around?": (slug) => <GuideOffer kind="newroutes" slug={slug} />,
-    'Try this first': (slug) => (
+    "What's the cheapest way to get around?": (slug, L) => <GuideOffer kind="newroutes" slug={slug} locale={L} />,
+    'Try this first': (slug, L) => (
       <GuideTripPlanner
         slug={slug}
+        locale={L}
         placement="try_this_first"
-        heading="Check an address"
-        intro="Enter the address you're considering and a place you go often. You'll see the trip by transit and by bike."
-        toPlaceholder="Work, school or a place you go often"
+        heading={pick(L, 'Check an address', 'Revisa una dirección')}
+        intro={pick(
+          L,
+          "Enter the address you're considering and a place you go often. You'll see the trip by transit and by bike.",
+          'Escribe la dirección que estás considerando y un lugar al que vas seguido. Verás el viaje en transporte público y en bici.',
+        )}
+        toPlaceholder={pick(L, 'Work, school or a place you go often', 'Trabajo, escuela o un lugar al que vas seguido')}
       />
     ),
   },
@@ -233,6 +291,10 @@ const toolsAfter: Record<string, Record<string, (slug: string) => ReactNode>> = 
 const appStripDefault = {
   headline: 'Find the easy way there.',
   line: 'Shift shows live bus and train arrivals, low-stress bike routes and the nearest Bluebikes. Make more trips this way and you can unlock gift cards from local shops. Free.',
+}
+const appStripDefaultEs = {
+  headline: 'Encuentra la forma fácil de llegar.',
+  line: 'Shift te muestra las llegadas de autobuses y trenes en vivo, rutas en bici tranquilas y las Bluebikes más cercanas. Haz más viajes así y puedes desbloquear tarjetas de regalo de comercios locales. Gratis.',
 }
 
 // Printable one-page sheets, offered right under the app strip. A download
@@ -258,12 +320,33 @@ const cheatSheets: Record<
   },
 }
 
-export default function GuideView({ g, related, slug }: { g: GuideRow; related: RelatedGuide[]; slug: string }) {
+export default function GuideView({
+  g,
+  related,
+  slug,
+  locale: L = 'en',
+  sectionKeys,
+  alternate,
+}: {
+  g: GuideRow
+  related: RelatedGuide[]
+  slug: string
+  /** The page's language. Guide text arrives translated; this sets the frame and tools. */
+  locale?: GuideLocale
+  /** For a translated page: the English heading of each section, by position, so the
+   *  tools, anchors and swaps keyed by English headings still find their place. */
+  sectionKeys?: (string | null)[]
+  /** The same guide in the other language, when it exists. */
+  alternate?: { href: string; label: string; lang: string }
+}) {
   const guideSlug = g.slug ?? slug
-  const cheatSheet = cheatSheets[guideSlug]
-  const quickAnswer = quickAnswers[guideSlug]
+  const cheatSheet = L === 'en' ? cheatSheets[guideSlug] : undefined
+  const quickAnswer = L === 'en' ? quickAnswers[guideSlug] : undefined
   const heading = searchMeta[guideSlug]?.heading ?? g.title
-  const strip = appStripBySlug[guideSlug] ?? appStrip[g.primary_mode ?? ''] ?? appStripDefault
+  const strip =
+    L === 'es'
+      ? appStripBySlugEs[guideSlug] ?? appStripDefaultEs
+      : appStripBySlug[guideSlug] ?? appStrip[g.primary_mode ?? ''] ?? appStripDefault
 
   // The app strip sits under the answer and the download, not above them: the
   // visitor came with a question, and the page answers it before it asks for
@@ -278,7 +361,7 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
         href="/shift"
         className="mt-3 inline-block text-[0.875rem] font-semibold text-forest underline underline-offset-4 hover:opacity-80"
       >
-        See how Shift works
+        {gt(L, 'appStrip.howItWorks')}
       </Link>
     </div>
   )
@@ -289,16 +372,18 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
   const leadFirst = !!appStripBySlug[guideSlug] && !quickAnswer && sections.length > 1 && sections[0].heading === null
   const renderSection = (section: { heading: string | null; body: string }, i: number) => {
     const ids = sectionIds[guideSlug] ?? {}
-    const swap = sectionSwaps[guideSlug]?.[section.heading ?? '']
-    const after = sectionAfter[guideSlug]?.[section.heading ?? '']
-    const id = section.heading ? ids[section.heading] ?? slugify(section.heading) : undefined
+    // The English heading this section stands for (itself on an English page).
+    const key = sectionKeys ? sectionKeys[i] ?? null : section.heading
+    const swap = L === 'en' ? sectionSwaps[guideSlug]?.[key ?? ''] : undefined
+    const after = L === 'en' ? sectionAfter[guideSlug]?.[key ?? ''] : undefined
+    const id = key ? ids[key] ?? slugify(key) : undefined
     return (
       <section key={i} id={id} className={id ? 'scroll-mt-20' : undefined}>
         {section.heading && (
           <h2 className="mt-10 mb-3 font-serif text-[1.375rem] leading-tight text-navy">{section.heading}</h2>
         )}
         {swap ?? <div dangerouslySetInnerHTML={{ __html: renderMarkdown(samePageLinks(section.body, guideSlug)) }} />}
-        {toolsAfter[guideSlug]?.[section.heading ?? '']?.(guideSlug)}
+        {toolsAfter[guideSlug]?.[key ?? '']?.(guideSlug, L)}
         {after && cheatSheet && (
           <CheatSheetDownload
             variant="inline"
@@ -335,31 +420,41 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
       />
       {/* Street-sign fonts for legibility (Keith, 2026-10-17). Guides only for
           now; the look is not yet approved site-wide. */}
-      <main className="street bg-cream" style={{ paddingTop: '60px' }}>
+      <main lang={L} className="street bg-cream" style={{ paddingTop: '60px' }}>
         <article className="mx-auto max-w-[680px] px-6 pb-20 pt-12 lg:px-8 lg:pb-24">
           {/* Breadcrumb */}
-          <nav aria-label="Breadcrumb" className="mb-6 text-[0.8125rem] font-semibold text-ink-soft">
-            <Link href="/" className="text-forest no-underline underline-offset-4 hover:underline">Home</Link>
+          <nav aria-label={gt(L, 'nav.breadcrumb')} className="mb-6 text-[0.8125rem] font-semibold text-ink-soft">
+            <Link href="/" className="text-forest no-underline underline-offset-4 hover:underline">{gt(L, 'nav.home')}</Link>
             {' / '}
-            <Link href="/guides" className="text-forest no-underline underline-offset-4 hover:underline">Guides</Link>
+            <Link href="/guides" className="text-forest no-underline underline-offset-4 hover:underline">{gt(L, 'nav.guides')}</Link>
           </nav>
 
           {/* Meta */}
           <div className="mb-4 flex flex-wrap items-center gap-3">
             {g.primary_mode && (
               <span className="rounded-full bg-forest/10 px-3 py-1 text-[0.75rem] font-semibold text-forest">
-                {modeLabel[g.primary_mode] || g.primary_mode}
+                {modeLabel(g.primary_mode, L)}
               </span>
             )}
             {g.read_time_minutes && (
               <span className="text-[0.75rem] text-ink-soft">
-                {g.read_time_minutes} min read
+                {gt(L, 'meta.minRead', { n: g.read_time_minutes })}
               </span>
             )}
-            {reviewedLabel(g.last_reviewed_at) && (
+            {reviewedLabel(g.last_reviewed_at, L) && (
               <span className="text-[0.75rem] text-ink-soft">
-                Reviewed {reviewedLabel(g.last_reviewed_at)}
+                {gt(L, 'meta.reviewed', { date: reviewedLabel(g.last_reviewed_at, L) ?? '' })}
               </span>
+            )}
+            {alternate && (
+              <a
+                href={alternate.href}
+                lang={alternate.lang}
+                hrefLang={alternate.lang}
+                className="text-[0.875rem] font-semibold text-forest underline underline-offset-4 hover:opacity-80"
+              >
+                {alternate.label}
+              </a>
             )}
           </div>
 
@@ -407,7 +502,7 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
           {leadFirst && (
             <div className="guide-body text-[1.1875rem] leading-[1.7] text-navy">{renderSection(sections[0], 0)}</div>
           )}
-          {leadFirst && toolsAfter[guideSlug]?.[LEAD]?.(guideSlug)}
+          {leadFirst && toolsAfter[guideSlug]?.[LEAD]?.(guideSlug, L)}
 
           {/* A page that opens with one of our tools already gives the reader
               something to do; the app strip would stack a second box on it.
@@ -427,25 +522,26 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
               thing it just explained. The app first; the web Nearby page for
               a reader who isn't ready to install anything. */}
           <div className="mt-12 rounded-[14px] border border-navy/10 bg-white p-6">
-            <h2 className="mb-2 font-serif text-[1.25rem] leading-tight text-navy">Try it</h2>
-            <p className="mb-4 text-[1rem] leading-relaxed text-navy">
-              Shift finds the calmest way to wherever you&apos;re headed, by bike, on foot or on
-              transit, and gives you credit for every trip you shift.
-            </p>
+            <h2 className="mb-2 font-serif text-[1.25rem] leading-tight text-navy">{gt(L, 'tryIt.heading')}</h2>
+            <p className="mb-4 text-[1rem] leading-relaxed text-navy">{gt(L, 'tryIt.body')}</p>
             <StoreBadges height={40} placement="guide" />
             <p className="mt-4 text-[0.875rem] leading-relaxed text-ink-soft">
-              Not ready for the app?{' '}
-              <Link href="/nearby" className="font-semibold text-forest underline underline-offset-4 hover:opacity-80">
-                Plan a route on the Nearby page
+              {gt(L, 'tryIt.notReady')}{' '}
+              <Link
+                href={L === 'en' ? '/nearby' : `/nearby?lang=${L}`}
+                className="font-semibold text-forest underline underline-offset-4 hover:opacity-80"
+              >
+                {gt(L, 'tryIt.nearbyLink')}
               </Link>{' '}
-              in your browser.
+              {gt(L, 'tryIt.inBrowser')}
             </p>
           </div>
 
           {/* Related guides */}
-          {related.length > 0 && (
+          {/* Related guides are English-only for now, so a translated page leaves them out. */}
+          {L === 'en' && related.length > 0 && (
             <div className="mt-12 border-t border-navy/10 pt-8">
-              <h2 className="mb-4 font-serif text-[1.25rem] leading-tight text-navy">Related guides</h2>
+              <h2 className="mb-4 font-serif text-[1.25rem] leading-tight text-navy">{gt(L, 'related.heading')}</h2>
               <div className="space-y-3">
                 {related.map((r) => (
                   <Link
@@ -454,7 +550,7 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
                     className="block rounded-[14px] border border-navy/10 bg-white p-5 transition-colors hover:border-navy/30"
                   >
                     <div className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-widest text-forest">
-                      {modeLabel[r.primary_mode] || r.primary_mode}
+                      {modeLabel(r.primary_mode)}
                     </div>
                     <h3 className="mb-1 font-serif text-[1.25rem] leading-tight text-navy">{r.title}</h3>
                     <p className="line-clamp-2 text-[0.875rem] leading-relaxed text-ink-soft">
@@ -475,7 +571,7 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
               <svg className="h-3.5 w-3.5 rotate-180" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" />
               </svg>
-              Browse all guides
+              {gt(L, 'browseAll')}
             </Link>
           </div>
         </article>
@@ -522,9 +618,11 @@ function splitSections(md: string): { heading: string | null; body: string }[] {
  *  (https://www.gogreenstreets.org/guides/<slug>#trip-planner), which also works
  *  from the app's guide reader. On the page itself that becomes "#trip-planner". */
 function samePageLinks(md: string, slug: string): string {
-  return md
-    .split(`https://www.gogreenstreets.org/guides/${slug}#`).join('#')
-    .split(`https://www.gogreenstreets.org/preview/guides/${slug}#`).join('#')
+  let out = md
+  for (const prefix of ['', '/es', '/preview', '/preview/es']) {
+    out = out.split(`https://www.gogreenstreets.org${prefix}/guides/${slug}#`).join('#')
+  }
+  return out
 }
 
 /** Simple markdown to HTML — handles headings, bold, lists, links, paragraphs.

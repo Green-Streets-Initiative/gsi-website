@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import GuideView, { type GuideRow, type RelatedGuide } from '@/components/guides/GuideView'
 import drafts from '../drafts.generated.json'
+import draftsEs from '../drafts-es.generated.json'
 
 // A draft guide in the real guide template, for review before it ships.
 // Content comes from seo/drafts/guides via scripts/seo/build-draft-previews.mjs.
@@ -33,5 +34,13 @@ export default async function DraftGuidePage({ params }: { params: Promise<{ slu
     related.sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999))
   }
 
-  return <GuideView g={g} related={related} slug={slug} />
+  const es = (draftsEs as Record<string, unknown>)[slug]
+  return (
+    <GuideView
+      g={g}
+      related={related}
+      slug={slug}
+      alternate={es ? { href: `/preview/es/guides/${slug}`, label: 'Leer en español', lang: 'es' } : undefined}
+    />
+  )
 }

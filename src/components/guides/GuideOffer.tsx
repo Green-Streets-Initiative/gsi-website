@@ -1,5 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { longDateET } from '@/lib/campaigns/format'
+import { gt, guideLongDate, type GuideLocale } from '@/lib/guides/i18n'
 
 /*
  * A live offer placed inside a guide where it fits the reader (a mover reading
@@ -36,34 +36,43 @@ async function load(kind: 'newroutes' | 'semester'): Promise<Row | null> {
   }
 }
 
-export default async function GuideOffer({ kind, slug }: { kind: 'newroutes' | 'semester'; slug: string }) {
+export default async function GuideOffer({
+  kind,
+  slug,
+  locale: L = 'en',
+}: {
+  kind: 'newroutes' | 'semester'
+  slug: string
+  locale?: GuideLocale
+}) {
   const row = await load(kind)
   if (!row) return null
   const dollars = `$${Math.round(row.value_cents / 100)}`
-  const deadline = longDateET(row.signup_end)
+  const deadline = guideLongDate(row.signup_end, L)
+  const vars = { dollars, trips: row.trips_required, days: row.window_days, deadline }
   const utm = new URLSearchParams({ utm_source: 'guide', utm_medium: 'offer', utm_content: slug })
 
   if (kind === 'newroutes') {
     utm.set('utm_campaign', 'newroutes')
+    const [codeBefore, codeAfter] = gt(L, 'offer.newroutes.code').split('{code}')
     return (
       <div className="my-8 rounded-[14px] border border-forest/30 bg-forest/5 p-5 sm:p-6">
         <h2 className="mb-1 font-serif text-[1.25rem] leading-tight text-navy">
-          Just moved? Unlock {dollars} for getting around.
+          {gt(L, 'offer.newroutes.heading', vars)}
         </h2>
         <p className="mb-3 text-[0.9375rem] leading-relaxed text-navy">
-          Take {row.trips_required} walking, biking or transit trips in your first {row.window_days} days on Shift and
-          unlock a {dollars} reward: a gift card at a local shop, or a digital gift card you choose. Sign up by{' '}
-          {deadline}.
+          {gt(L, 'offer.newroutes.body', vars)}
         </p>
         <p className="mb-4 text-[0.875rem] leading-relaxed text-ink-soft">
-          After you install, enter the code <strong className="font-semibold text-navy">NEWROUTES</strong> in the app
-          so your reward is linked.
+          {codeBefore}
+          <strong className="font-semibold text-navy">NEWROUTES</strong>
+          {codeAfter}
         </p>
         <a
           href={`https://shift.gogreenstreets.org/go/newroutes?${utm}`}
           className="inline-block rounded-full bg-forest px-5 py-2.5 text-[0.9375rem] font-semibold text-white hover:opacity-90"
         >
-          Get Shift
+          {gt(L, 'offer.newroutes.cta')}
         </a>
       </div>
     )
@@ -73,17 +82,16 @@ export default async function GuideOffer({ kind, slug }: { kind: 'newroutes' | '
   return (
     <div className="my-8 rounded-[14px] border border-forest/30 bg-forest/5 p-5 sm:p-6">
       <h2 className="mb-1 font-serif text-[1.25rem] leading-tight text-navy">
-        In college? Unlock {dollars} for getting to class.
+        {gt(L, 'offer.semester.heading', vars)}
       </h2>
       <p className="mb-4 text-[0.9375rem] leading-relaxed text-navy">
-        Sign up for Shift with your school email, take {row.trips_required} walking, biking or transit trips in{' '}
-        {row.window_days} days, and unlock a {dollars} reward. Sign up by {deadline}.
+        {gt(L, 'offer.semester.body', vars)}
       </p>
       <a
         href={`/shift-your-semester?${utm}`}
         className="inline-block rounded-full bg-forest px-5 py-2.5 text-[0.9375rem] font-semibold text-white hover:opacity-90"
       >
-        See how it works
+        {gt(L, 'offer.semester.cta')}
       </a>
     </div>
   )

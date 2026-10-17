@@ -6,11 +6,17 @@
 // {{price:...}} tokens from src/lib/facts/prices.json (same rules as
 // scripts/build-micro-guides-migration.mjs), and writes
 // src/app/preview/guides/drafts.generated.json. The preview route renders each
-// draft in the real guide template, never indexed. Rerun after editing a draft:
+// draft in the real guide template, never indexed.
+//
+// Translations (seo/answer-pages.md §10) live in seo/drafts/guides/<lang>/ and
+// go to src/app/preview/guides/drafts-<lang>.generated.json, served at
+// /preview/<lang>/guides/<slug>. Each must have the same sections, in the same
+// order, as its English draft; the build stops if not, because tools are
+// placed by section. Rerun after editing a draft:
 //
 //   node scripts/seo/build-draft-previews.mjs
 
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -43,31 +49,67 @@ function list(yaml, key) {
   return v ? v.replace(/^\[|\]$/g, '').split(',').map((s) => s.trim()).filter(Boolean) : []
 }
 
-const drafts = {}
-for (const file of readdirSync(draftsDir).filter((f) => f.endsWith('.md')).sort()) {
-  const src = readFileSync(resolve(draftsDir, file), 'utf8')
-  const m = /```yaml\n([\s\S]*?)\n```\n([\s\S]*)$/.exec(src)
-  if (!m) continue
-  const [, yaml, rawBody] = m
-  const slug = field(yaml, 'slug')
-  if (field(yaml, 'status') !== 'draft' || !slug || shippedSlugs.has(slug)) continue
-  const body = interpolatePrices(rawBody.trim(), file)
-  const reviewed = field(yaml, 'reviewed')
-  drafts[slug] = {
-    id: field(yaml, 'id'),
-    slug,
-    title: field(yaml, 'title'),
-    summary: field(yaml, 'summary'),
-    body,
-    primary_mode: field(yaml, 'mode'),
-    primary_barrier: field(yaml, 'barrier'),
-    read_time_minutes: Math.max(1, Math.ceil(body.split(/\s+/).filter(Boolean).length / 200)),
-    related_guides: list(yaml, 'related'),
-    created_at: reviewed ? `${reviewed}T16:00:00Z` : new Date().toISOString(),
-    last_reviewed_at: reviewed ? `${reviewed}T16:00:00Z` : null,
-  }
+/** Section headings in body order; null for the lead. Same split as GuideView. */
+function headings(body) {
+  const out = [null]
+  for (const m of body.matchAll(/^### (.+)$/gm)) out.push(m[1].trim())
+  return out
 }
 
+function readDrafts(dir) {
+  const drafts = {}
+  if (!existsSync(dir)) return drafts
+  for (const file of readdirSync(dir).filter((f) => f.endsWith('.md')).sort()) {
+    const src = readFileSync(resolve(dir, file), 'utf8')
+    const m = /```yaml\n([\s\S]*?)\n```\n([\s\S]*)$/.exec(src)
+    if (!m) continue
+    const [, yaml, rawBody] = m
+    const slug = field(yaml, 'slug')
+    if (field(yaml, 'status') !== 'draft' || !slug || shippedSlugs.has(slug)) continue
+    const body = interpolatePrices(rawBody.trim(), file)
+    const reviewed = field(yaml, 'reviewed')
+    drafts[slug] = {
+      id: field(yaml, 'id'),
+      slug,
+      title: field(yaml, 'title'),
+      summary: field(yaml, 'summary'),
+      body,
+      primary_mode: field(yaml, 'mode'),
+      primary_barrier: field(yaml, 'barrier'),
+      read_time_minutes: Math.max(1, Math.ceil(body.split(/\s+/).filter(Boolean).length / 200)),
+      related_guides: list(yaml, 'related'),
+      created_at: reviewed ? `${reviewed}T16:00:00Z` : new Date().toISOString(),
+      last_reviewed_at: reviewed ? `${reviewed}T16:00:00Z` : null,
+    }
+  }
+  return drafts
+}
+
+const drafts = readDrafts(draftsDir)
 const out = resolve(repoRoot, 'src/app/preview/guides/drafts.generated.json')
 writeFileSync(out, JSON.stringify(drafts, null, 2) + '\n')
 console.log(`Wrote ${Object.keys(drafts).length} draft previews: ${Object.keys(drafts).join(', ')}`)
+
+for (const lang of readdirSync(draftsDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name)) {
+  const translated = readDrafts(resolve(draftsDir, lang))
+  for (const [slug, t] of Object.entries(translated)) {
+    const en = drafts[slug]
+    if (!en) {
+      // The English page shipped or was dropped; the translation ships with it.
+      delete translated[slug]
+      continue
+    }
+    const enHeads = headings(en.body)
+    const tHeads = headings(t.body)
+    if (enHeads.length !== tHeads.length) {
+      throw new Error(
+        `${lang}/${slug}: ${tHeads.length - 1} sections, English has ${enHeads.length - 1}. Keep the same sections in the same order.`,
+      )
+    }
+    t.lang = lang
+    t.section_keys = enHeads
+  }
+  const outLang = resolve(repoRoot, `src/app/preview/guides/drafts-${lang}.generated.json`)
+  writeFileSync(outLang, JSON.stringify(translated, null, 2) + '\n')
+  console.log(`Wrote ${Object.keys(translated).length} ${lang} previews: ${Object.keys(translated).join(', ')}`)
+}

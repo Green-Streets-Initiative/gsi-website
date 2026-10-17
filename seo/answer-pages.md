@@ -173,3 +173,59 @@ A page that answered a question well in October can mislead by spring.
   due that month, plus a live check of every outbound link. It updates the
   page, bumps the guide's `reviewed:` date, sets the next check date, and
   lists what changed in its report.
+
+## 10. Translations (added 2026-10-17; Spanish first)
+
+Keith (2026-10-17): these pages "could be very helpful to ESL populations."
+Each answer page gets a version in the Shift app's languages, Spanish first,
+then Portuguese (Brazil) and Chinese (Simplified). Haitian Creole is a
+candidate once the app supports it.
+
+**Where they live.** `seo/drafts/guides/es/<slug>.md`, same YAML block plus
+`lang: es`, same slug as the English page. Preview at
+`/preview/es/guides/<slug>`; on ship, `/es/guides/<slug>` with hreflang links
+both ways, and the app's guide reader shows the version in the reader's
+language.
+
+**Same page, same structure.** The same sections, in the same order, and the
+same facts, numbers, price tokens (`{{price:...}}`), tools and links. The
+preview builder refuses a translation whose section count differs from the
+English page, because tools are placed by section. When the English page
+changes, its translations change in the same commit (§9).
+
+**Written for the reader, not word for word.** The same plain-language rules
+(§1, the 2nd-grader test). Short sentences. Explain a term the first time it
+appears.
+
+**Spanish house style** (matches the Shift app, `locales/es.json`, and the web
+Nearby map, `src/lib/nearby/i18n.ts`):
+- Address the reader as **tú**.
+- the T: **el T**; subway lines: **Línea Roja, Línea Naranja, Línea Azul,
+  Línea Verde** (ramal B, C, D, E: "el ramal C de la Línea Verde"), Mattapan
+  stays **Mattapan**.
+- commuter rail: **tren de cercanías**; bus: **autobús**; bus route 77:
+  **la ruta 77**; shuttle: **autobuses de reemplazo** (free ones: "autobuses
+  de reemplazo gratuitos").
+- bike / Bluebike: **bici** / **una Bluebike** (Bluebikes is a proper name);
+  e-bike: **bici eléctrica**; car: **auto**; to drive: **manejar**; parking:
+  **estacionamiento**; car share: **auto compartido** (Zipcar by name).
+- Around You (app): **Cerca de ti**. The web Nearby page: **el mapa Cerca de
+  ti** on our website, linked with `?lang=es`.
+- Shift, Bluebikes, T-Alerts, Zipcar, CharlieCard, place names and street
+  names stay as they are.
+- US units and formats: miles, mph ("millas por hora" the first time), $1.70,
+  8.4 (decimal point), "21 al 30 de julio de 2026".
+- "Try this first": **Prueba esto primero**. "About these numbers:" **Sobre
+  estas cifras:**. "typical": "Típico quiere decir que la mitad de los viajes
+  fueron más rápidos y la mitad más lentos."
+
+**Links.** Same targets as the English page. Links to our own pages use the
+Spanish version (`https://www.gogreenstreets.org/es/guides/<slug>#trip-planner`,
+`/nearby?lang=es`). When a link asks the reader to do something on a page
+that is only in English (T-Alerts, most of mbta.com, mass.gov forms), add
+"(en inglés)" after it, so the reader isn't surprised. Source citations don't
+need the note.
+
+**Review.** The first Spanish pages are read by a native speaker before they
+ship (§7); after that the routine publishes within this standard, and the
+monthly refresh checks both languages.

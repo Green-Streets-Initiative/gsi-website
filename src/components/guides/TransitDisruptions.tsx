@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle, Warning } from '@phosphor-icons/react'
 import ModeIcon from '@/components/commute/ModeIcon'
-import { dayLabel, fetchDisruptions, type Disruption, type LineBadge } from '@/lib/nearby/disruptions'
+import { fetchDisruptions, type Disruption, type LineBadge } from '@/lib/nearby/disruptions'
+import { gt, guideDay, lineLabel, type GuideLocale } from '@/lib/guides/i18n'
 import { lineColor, lineTextColor } from '@/lib/nearby/transit-ui'
 
 /*
@@ -26,25 +27,25 @@ const SUBWAY: LineBadge[] = [
 
 /** The MBTA ends a service day around 3 AM, so an end at 3 AM Monday means
  *  "through Sunday". Step back five hours before naming the last day. */
-function lastDay(endIso: string): string {
-  return dayLabel(new Date(new Date(endIso).getTime() - 5 * 3_600_000).toISOString())
+function lastDay(endIso: string, L: GuideLocale): string {
+  return guideDay(new Date(new Date(endIso).getTime() - 5 * 3_600_000).toISOString(), L)
 }
 
-function when(d: Disruption): string {
-  if (d.status === 'now') return d.end ? `Now through ${lastDay(d.end)}` : 'Happening now'
+function when(d: Disruption, L: GuideLocale): string {
+  if (d.status === 'now') return d.end ? gt(L, 'closures.nowThrough', { day: lastDay(d.end, L) }) : gt(L, 'closures.now')
   if (d.end) {
-    const first = dayLabel(d.start)
-    const last = lastDay(d.end)
-    return first === last ? first : `${first} to ${last}`
+    const first = guideDay(d.start, L)
+    const last = lastDay(d.end, L)
+    return first === last ? first : gt(L, 'closures.range', { first, last })
   }
-  return `Starts ${dayLabel(d.start)}`
+  return gt(L, 'closures.starts', { day: guideDay(d.start, L) })
 }
 
-function what(d: Disruption): string {
+function what(d: Disruption, L: GuideLocale): string {
   const bus = d.lines.length > 0 && d.lines.every((l) => l.mode === 'bus')
-  if (d.effect === 'SHUTTLE') return 'Shuttle buses replace trains'
-  if (d.effect === 'SUSPENSION') return bus ? 'No buses' : 'No trains'
-  return 'Station closed or skipped'
+  if (d.effect === 'SHUTTLE') return gt(L, 'closures.shuttle')
+  if (d.effect === 'SUSPENSION') return gt(L, bus ? 'closures.noBuses' : 'closures.noTrains')
+  return gt(L, 'closures.station')
 }
 
 function modeIcon(lines: LineBadge[]): string {
@@ -52,13 +53,13 @@ function modeIcon(lines: LineBadge[]): string {
   return m === 'commuter_rail' ? 'commuter_rail' : m === 'bus' ? 'bus' : 'transit'
 }
 
-function Badge({ line, muted = false }: { line: LineBadge; muted?: boolean }) {
+function Badge({ line, muted = false, L }: { line: LineBadge; muted?: boolean; L: GuideLocale }) {
   return (
     <span
       className={`inline-flex items-center rounded px-1.5 py-0.5 text-[0.75rem] font-bold ${muted ? 'border bg-white text-navy' : ''}`}
       style={muted ? { borderColor: lineColor(line.id) } : { backgroundColor: lineColor(line.id), color: lineTextColor(line.id) }}
     >
-      {line.name}
+      {lineLabel(line.name, L)}
     </span>
   )
 }
@@ -69,12 +70,14 @@ export default function TransitDisruptions({
   heading,
   emptyText,
   compact = false,
+  locale: L = 'en',
 }: {
   routeIds?: string[]
   routeTypes?: number[]
   heading: string
   emptyText: string
   compact?: boolean
+  locale?: GuideLocale
 }) {
   const [items, setItems] = useState<Disruption[] | null>(null)
   const key = `${(routeIds ?? []).join(',')}|${(routeTypes ?? []).join(',')}`
@@ -116,24 +119,24 @@ export default function TransitDisruptions({
         <h2 className="mb-3 font-serif text-[1.25rem] leading-tight text-navy">{heading}</h2>
       )}
 
-      {items === null && <p className="text-[0.9375rem] text-ink-soft">Checking MBTA service changes…</p>}
+      {items === null && <p className="text-[0.9375rem] text-ink-soft">{gt(L, 'closures.checking')}</p>}
       {items !== null && items.length === 0 && <p className="text-[0.9375rem] leading-relaxed text-ink-soft">{emptyText}</p>}
 
       {items !== null && items.length > 0 && !compact && (
         <div className="mb-4 grid gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
             <Warning size={16} weight="fill" className="shrink-0 text-ep-warning-ink" aria-hidden />
-            <span className="mr-1 text-[0.875rem] font-semibold text-navy">Changes on</span>
+            <span className="mr-1 text-[0.875rem] font-semibold text-navy">{gt(L, 'closures.changesOn')}</span>
             {affected.map((l) => (
-              <Badge key={l.id} line={l} />
+              <Badge key={l.id} line={l} L={L} />
             ))}
           </div>
           {showSubwayClear && clear.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
               <CheckCircle size={16} weight="fill" className="shrink-0 text-forest" aria-hidden />
-              <span className="mr-1 text-[0.875rem] font-semibold text-navy">No closures on</span>
+              <span className="mr-1 text-[0.875rem] font-semibold text-navy">{gt(L, 'closures.clearOn')}</span>
               {clear.map((l) => (
-                <Badge key={l.id} line={l} muted />
+                <Badge key={l.id} line={l} muted L={L} />
               ))}
             </div>
           )}
@@ -150,14 +153,16 @@ export default function TransitDisruptions({
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-1.5">
                   {d.lines.map((l) => (
-                    <Badge key={l.id} line={l} />
+                    <Badge key={l.id} line={l} L={L} />
                   ))}
                   <span className={`text-[0.8125rem] font-semibold ${d.status === 'now' ? 'text-ep-warning-ink' : 'text-forest'}`}>
-                    {when(d)}
+                    {when(d, L)}
                   </span>
                 </span>
-                <span className="mt-1 block text-[0.9375rem] font-semibold leading-snug text-navy">{what(d)}</span>
-                <span className="mt-0.5 text-[0.875rem] leading-relaxed text-ink-soft line-clamp-2">{d.header}</span>
+                <span className="mt-1 block text-[0.9375rem] font-semibold leading-snug text-navy">{what(d, L)}</span>
+                {L === 'en' && (
+                  <span className="mt-0.5 text-[0.875rem] leading-relaxed text-ink-soft line-clamp-2">{d.header}</span>
+                )}
                 {!compact && (
                   <a
                     href={d.url ?? 'https://www.mbta.com/alerts'}
@@ -165,7 +170,7 @@ export default function TransitDisruptions({
                     rel="noopener noreferrer"
                     className="mt-1 inline-block text-[0.8125rem] font-semibold text-forest underline underline-offset-4 hover:opacity-80"
                   >
-                    Details from the MBTA
+                    {gt(L, 'closures.details')}
                   </a>
                 )}
               </span>
@@ -176,16 +181,16 @@ export default function TransitDisruptions({
 
       {!compact && items !== null && items.length > MAX_ROWS && (
         <p className="mt-3 text-[0.9375rem] text-navy">
-          And {items.length - MAX_ROWS} more on the{' '}
+          {gt(L, 'closures.more', { n: items.length - MAX_ROWS })}{' '}
           <a href="https://www.mbta.com/alerts" target="_blank" rel="noopener noreferrer" className="font-semibold text-forest underline underline-offset-4">
-            MBTA&apos;s alerts page
+            {gt(L, 'closures.moreLink')}
           </a>
           .
         </p>
       )}
       {!compact && (
         <p className="mt-3 text-[0.8125rem] leading-relaxed text-ink-soft">
-          Live from the MBTA: shuttles, suspensions and station closures, now and in the next 30 days.
+          {gt(L, 'closures.footnote')}
         </p>
       )}
     </div>

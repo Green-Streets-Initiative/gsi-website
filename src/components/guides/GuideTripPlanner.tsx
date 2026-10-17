@@ -7,6 +7,7 @@ import { gaEvent } from '@/lib/ga'
 import type { ReachRow } from '@/components/nearby/types'
 import TransitDisruptions from '@/components/guides/TransitDisruptions'
 import { routeIdsForLabels } from '@/lib/nearby/disruptions'
+import { gt, type GuideLocale, type GuideKey } from '@/lib/guides/i18n'
 
 /*
  * A small trip planner that sits inside a guide: from, to, and the transit and
@@ -17,20 +18,22 @@ import { routeIdsForLabels } from '@/lib/nearby/disruptions'
 
 type Place = { lat: number; lng: number; label: string }
 
-const comfortWords: Record<string, string> = {
-  path: 'mostly on paths away from cars',
-  protected: 'mostly in protected bike lanes',
-  bike_lane: 'mostly in painted bike lanes',
-  shared_road: 'mostly on streets without bike lanes',
-  mixed: 'a mix of bike lanes and streets',
+const COMFORT = ['path', 'protected', 'bike_lane', 'shared_road', 'mixed']
+function comfortWords(rating: string, L: GuideLocale): string {
+  return COMFORT.includes(rating) ? gt(L, `comfort.${rating}` as GuideKey) : ''
 }
 
-/** "67" -> "bus 67", "Red" -> "the Red Line", "Green-B" -> "the Green Line (B)". */
-function lineName(label: string): string {
-  if (/^\d+[A-Z]?$|^SL\d$|^CT\d$/.test(label)) return `bus ${label}`
-  if (/^(Red|Orange|Blue|Mattapan)$/.test(label)) return `the ${label} Line`
+const SUBWAY_ES: Record<string, string> = { Red: 'Roja', Orange: 'Naranja', Blue: 'Azul', Mattapan: 'Mattapan' }
+
+/** "67" -> "bus 67", "Red" -> "the Red Line", "Green-B" -> "the Green Line (B)";
+ *  in Spanish "el autobús 67", "la Línea Roja", "la Línea Verde (B)". */
+function lineName(label: string, L: GuideLocale): string {
+  const es = L === 'es'
+  if (/^\d+[A-Z]?$|^SL\d$|^CT\d$/.test(label)) return es ? `el autobús ${label}` : `bus ${label}`
+  if (/^(Red|Orange|Blue|Mattapan)$/.test(label)) return es ? `la Línea ${SUBWAY_ES[label]}` : `the ${label} Line`
   const g = /^Green(?:[- ]Line)?[- ]\(?([A-E])\)?$/.exec(label)
-  if (g) return `the Green Line (${g[1]})`
+  if (g) return es ? `la Línea Verde (${g[1]})` : `the Green Line (${g[1]})`
+  if (es && / Line$/.test(label)) return `el tren de cercanías ${label.replace(/ Line$/, '')}`
   return label
 }
 
@@ -48,13 +51,15 @@ export default function GuideTripPlanner({
   placement,
   heading,
   intro,
-  toPlaceholder = 'Where are you going?',
+  toPlaceholder,
+  locale: L = 'en',
 }: {
   slug: string
   placement: string
   heading: string
   intro: string
   toPlaceholder?: string
+  locale?: GuideLocale
 }) {
   const [fromText, setFromText] = useState('')
   const [toText, setToText] = useState('')
@@ -102,8 +107,8 @@ export default function GuideTripPlanner({
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false)
-        setFromText('Your location')
-        chooseFrom({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: 'Your location' })
+        setFromText(gt(L, 'planner.yourLocation'))
+        chooseFrom({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: gt(L, 'planner.yourLocation') })
       },
       () => setLocating(false),
       { timeout: 10000, maximumAge: 60000 },
@@ -112,7 +117,7 @@ export default function GuideTripPlanner({
 
   const transitLines = (row?.transit_segments ?? [])
     .filter((s) => s.mode === 'transit' && s.label)
-    .map((s) => lineName(s.label as string))
+    .map((s) => lineName(s.label as string, L))
   const mapHref =
     from && to
       ? `/nearby?${new URLSearchParams({
@@ -122,8 +127,11 @@ export default function GuideTripPlanner({
           to: `${to.lat.toFixed(5)},${to.lng.toFixed(5)}`,
           toName: to.label,
           toMode: 'transit',
+          ...(L === 'en' ? {} : { lang: L }),
         })}`
-      : '/nearby?plan=1'
+      : L === 'en'
+        ? '/nearby?plan=1'
+        : `/nearby?plan=1&lang=${L}`
 
   return (
     <div id="trip-planner" className="my-8 scroll-mt-24 rounded-[14px] border border-navy/15 bg-white p-5 sm:p-6">
@@ -140,15 +148,15 @@ export default function GuideTripPlanner({
               setFrom(null)
             }}
             onPlaceSelected={(p) => chooseFrom({ lat: p.lat, lng: p.lng, label: p.address })}
-            label="From"
-            placeholder="Where are you starting?"
+            label={gt(L, 'planner.from')}
+            placeholder={gt(L, 'planner.fromPlaceholder')}
           />
           <button
             type="button"
             onClick={useMyLocation}
             className="mt-2 text-[0.875rem] font-semibold text-forest underline underline-offset-4 hover:opacity-80"
           >
-            {locating ? 'Finding you…' : 'Use my location'}
+            {locating ? gt(L, 'planner.finding') : gt(L, 'planner.useMyLocation')}
           </button>
         </div>
         <AddressAutocomplete
@@ -159,23 +167,23 @@ export default function GuideTripPlanner({
             setTo(null)
           }}
           onPlaceSelected={(p) => chooseTo({ lat: p.lat, lng: p.lng, label: p.address })}
-          label="To"
-          placeholder={toPlaceholder}
+          label={gt(L, 'planner.to')}
+          placeholder={toPlaceholder ?? gt(L, 'planner.toPlaceholder')}
         />
       </div>
 
       <div aria-live="polite" className="mt-4">
-        {status === 'loading' && <p className="text-[0.9375rem] text-ink-soft">Planning your trip…</p>}
+        {status === 'loading' && <p className="text-[0.9375rem] text-ink-soft">{gt(L, 'planner.loading')}</p>}
         {status === 'outside' && (
           <p className="text-[0.9375rem] text-ink-soft">
-            One of those addresses is outside the area our planner covers. Try an address in Massachusetts.
+            {gt(L, 'planner.outside')}
           </p>
         )}
         {status === 'error' && (
           <p className="text-[0.9375rem] text-ink-soft">
-            We couldn&apos;t plan that trip right now. Try a nearby street address, or plan it on the{' '}
-            <a href="/nearby?plan=1" className="font-semibold text-forest underline underline-offset-4">
-              Nearby page
+            {gt(L, 'planner.error')}{' '}
+            <a href={mapHref} className="font-semibold text-forest underline underline-offset-4">
+              {gt(L, 'planner.errorLink')}
             </a>
             .
           </p>
@@ -183,31 +191,32 @@ export default function GuideTripPlanner({
         {status === 'done' && row && (
           <div className="grid gap-3">
             <div className="rounded-[10px] bg-cream px-4 py-3">
-              <p className="text-[0.8125rem] font-semibold text-forest">By transit</p>
+              <p className="text-[0.8125rem] font-semibold text-forest">{gt(L, 'planner.byTransit')}</p>
               {row.transit_minutes != null ? (
                 <p className="text-[1rem] leading-relaxed text-navy">
                   <strong className="font-semibold">{row.transit_minutes} min</strong>
                   {row.transit_fare ? `, $${row.transit_fare.amount.toFixed(2)}` : ''}
-                  {transitLines.length > 0 ? ` on ${transitLines.join(', then ')}` : ''}
-                  {row.transit_walk_minutes ? `, with ${row.transit_walk_minutes} min of walking` : ''}
+                  {transitLines.length > 0 ? gt(L, 'planner.onLines', { lines: transitLines.join(gt(L, 'planner.then')) }) : ''}
+                  {row.transit_walk_minutes ? gt(L, 'planner.walking', { n: row.transit_walk_minutes }) : ''}
                 </p>
               ) : (
-                <p className="text-[1rem] leading-relaxed text-navy">No transit route found for this trip.</p>
+                <p className="text-[1rem] leading-relaxed text-navy">{gt(L, 'planner.noTransit')}</p>
               )}
             </div>
             {lineIds.length > 0 && (
               <TransitDisruptions
                 compact
                 routeIds={lineIds}
-                heading="Service changes on these lines"
-                emptyText="No closures are planned on these lines in the next 30 days."
+                heading={gt(L, 'planner.changesHeading')}
+                emptyText={gt(L, 'planner.changesEmpty')}
+                locale={L}
               />
             )}
             <div className="rounded-[10px] bg-cream px-4 py-3">
-              <p className="text-[0.8125rem] font-semibold text-forest">By bike</p>
+              <p className="text-[0.8125rem] font-semibold text-forest">{gt(L, 'planner.byBike')}</p>
               <p className="text-[1rem] leading-relaxed text-navy">
                 <strong className="font-semibold">{row.bike_minutes} min</strong>
-                {row.bike_comfort?.rating ? `, ${comfortWords[row.bike_comfort.rating] ?? ''}` : ''}
+                {row.bike_comfort?.rating && comfortWords(row.bike_comfort.rating, L) ? `, ${comfortWords(row.bike_comfort.rating, L)}` : ''}
               </p>
             </div>
             <a
@@ -215,7 +224,7 @@ export default function GuideTripPlanner({
               onClick={() => track('guide_tool_open_map', { tool: 'trip_planner', slug, placement })}
               className="inline-block text-[0.9375rem] font-semibold text-forest underline underline-offset-4 hover:opacity-80"
             >
-              See this trip on the map, with live arrivals
+              {gt(L, 'planner.seeOnMap')}
             </a>
           </div>
         )}
