@@ -47,9 +47,9 @@ export default async function GuideOffer({ kind, slug }: { kind: 'newroutes' | '
     utm.set('utm_campaign', 'newroutes')
     return (
       <div className="my-8 rounded-[14px] border border-forest/30 bg-forest/5 p-5 sm:p-6">
-        <p className="mb-1 text-[1.0625rem] font-semibold leading-snug text-navy">
+        <h2 className="mb-1 font-serif text-[1.25rem] leading-tight text-navy">
           Just moved? Unlock {dollars} for getting around.
-        </p>
+        </h2>
         <p className="mb-3 text-[0.9375rem] leading-relaxed text-navy">
           Take {row.trips_required} walking, biking or transit trips in your first {row.window_days} days on Shift and
           unlock a {dollars} reward: a gift card at a local shop, or a digital gift card you choose. Sign up by{' '}
@@ -72,9 +72,9 @@ export default async function GuideOffer({ kind, slug }: { kind: 'newroutes' | '
   utm.set('utm_campaign', 'semester')
   return (
     <div className="my-8 rounded-[14px] border border-forest/30 bg-forest/5 p-5 sm:p-6">
-      <p className="mb-1 text-[1.0625rem] font-semibold leading-snug text-navy">
+      <h2 className="mb-1 font-serif text-[1.25rem] leading-tight text-navy">
         In college? Unlock {dollars} for getting to class.
-      </p>
+      </h2>
       <p className="mb-4 text-[0.9375rem] leading-relaxed text-navy">
         Sign up for Shift with your school email, take {row.trips_required} walking, biking or transit trips in{' '}
         {row.window_days} days, and unlock a {dollars} reward. Sign up by {deadline}.

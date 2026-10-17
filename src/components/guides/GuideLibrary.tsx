@@ -195,10 +195,10 @@ export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
                   </span>
                 )}
               </div>
-              <h3 className="mb-2 font-serif text-[1.375rem] leading-tight text-navy">
+              <h2 className="mb-2 font-serif text-[1.375rem] leading-tight text-navy">
                 {g.title}
-              </h3>
-              <p className="line-clamp-3 text-[0.875rem] leading-relaxed text-ink-soft">
+              </h2>
+              <p className="line-clamp-3 text-[1rem] leading-relaxed text-navy">
                 {g.summary}
               </p>
             </Link>

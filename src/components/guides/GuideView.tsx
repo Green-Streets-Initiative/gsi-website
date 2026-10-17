@@ -295,7 +295,7 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
     return (
       <section key={i} id={id} className={id ? 'scroll-mt-20' : undefined}>
         {section.heading && (
-          <h3 className="mt-8 mb-3 font-serif text-[1.25rem] leading-tight text-navy">{section.heading}</h3>
+          <h2 className="mt-10 mb-3 font-serif text-[1.375rem] leading-tight text-navy">{section.heading}</h2>
         )}
         {swap ?? <div dangerouslySetInnerHTML={{ __html: renderMarkdown(samePageLinks(section.body, guideSlug)) }} />}
         {toolsAfter[guideSlug]?.[section.heading ?? '']?.(guideSlug)}
@@ -333,14 +333,16 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
           ]),
         ]}
       />
-      <main className="bg-cream" style={{ paddingTop: '60px' }}>
+      {/* Street-sign fonts for legibility (Keith, 2026-10-17). Guides only for
+          now; the look is not yet approved site-wide. */}
+      <main className="street bg-cream" style={{ paddingTop: '60px' }}>
         <article className="mx-auto max-w-[680px] px-6 pb-20 pt-12 lg:px-8 lg:pb-24">
           {/* Breadcrumb */}
-          <div className="mb-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
+          <nav aria-label="Breadcrumb" className="mb-6 text-[0.8125rem] font-semibold text-ink-soft">
             <Link href="/" className="text-forest no-underline underline-offset-4 hover:underline">Home</Link>
             {' / '}
             <Link href="/guides" className="text-forest no-underline underline-offset-4 hover:underline">Guides</Link>
-          </div>
+          </nav>
 
           {/* Meta */}
           <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -403,7 +405,7 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
               strip: the page answers the question before it asks for anything.
               A guide with a quick-answer block already answered above. */}
           {leadFirst && (
-            <div className="guide-body text-[1.0625rem] leading-[1.75] text-navy">{renderSection(sections[0], 0)}</div>
+            <div className="guide-body text-[1.1875rem] leading-[1.7] text-navy">{renderSection(sections[0], 0)}</div>
           )}
           {leadFirst && toolsAfter[guideSlug]?.[LEAD]?.(guideSlug)}
 
@@ -417,7 +419,7 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
               hand-authored hooks (used on /guides cards and the Shift app
               cover); the body's lead paragraph already serves as the
               article's opener. Rendering both would feel magazine-y. */}
-          <div className="guide-body text-[1.0625rem] leading-[1.75] text-navy">
+          <div className="guide-body text-[1.1875rem] leading-[1.7] text-navy">
             {sections.map((section, i) => (leadFirst && i === 0 ? null : renderSection(section, i)))}
           </div>
 
@@ -425,10 +427,8 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
               thing it just explained. The app first; the web Nearby page for
               a reader who isn't ready to install anything. */}
           <div className="mt-12 rounded-[14px] border border-navy/10 bg-white p-6">
-            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
-              Try it
-            </div>
-            <p className="mb-4 text-[0.9375rem] leading-relaxed text-navy">
+            <h2 className="mb-2 font-serif text-[1.25rem] leading-tight text-navy">Try it</h2>
+            <p className="mb-4 text-[1rem] leading-relaxed text-navy">
               Shift finds the calmest way to wherever you&apos;re headed, by bike, on foot or on
               transit, and gives you credit for every trip you shift.
             </p>
@@ -445,9 +445,7 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
           {/* Related guides */}
           {related.length > 0 && (
             <div className="mt-12 border-t border-navy/10 pt-8">
-              <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
-                Related guides
-              </div>
+              <h2 className="mb-4 font-serif text-[1.25rem] leading-tight text-navy">Related guides</h2>
               <div className="space-y-3">
                 {related.map((r) => (
                   <Link
@@ -458,9 +456,7 @@ export default function GuideView({ g, related, slug }: { g: GuideRow; related: 
                     <div className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-widest text-forest">
                       {modeLabel[r.primary_mode] || r.primary_mode}
                     </div>
-                    <div className="mb-1 font-serif text-[1.25rem] leading-tight text-navy">
-                      {r.title}
-                    </div>
+                    <h3 className="mb-1 font-serif text-[1.25rem] leading-tight text-navy">{r.title}</h3>
                     <p className="line-clamp-2 text-[0.875rem] leading-relaxed text-ink-soft">
                       {r.summary}
                     </p>
@@ -543,8 +539,7 @@ function renderMarkdown(md: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     // Headings
-    .replace(/^### (.+)$/gm, '<h3 class="mt-8 mb-3 font-serif text-[1.25rem] leading-tight text-navy">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="mt-10 mb-4 font-serif text-[1.5rem] leading-tight text-navy">$1</h2>')
+    .replace(/^#{2,3} (.+)$/gm, '<h2 class="mt-10 mb-3 font-serif text-[1.375rem] leading-tight text-navy">$1</h2>')
     // Bold
     .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-navy">$1</strong>')
     // Links
@@ -552,13 +547,13 @@ function renderMarkdown(md: string): string {
     .replace(/\[([^\]]+)\]\((#[a-z0-9-]+)\)/g, '<a href="$2" class="font-semibold text-forest underline underline-offset-4 hover:opacity-80">$1</a>')
     .replace(/\[([^\]]+)\]\(((?:https:\/\/|\/(?!\/))[^)\s]+)\)/g, '<a href="$2" class="font-semibold text-forest underline underline-offset-4 hover:opacity-80" target="_blank" rel="noopener noreferrer">$1</a>')
     // Numbered and unordered list items
-    .replace(/^\d+\. (.+)$/gm, '<li class="ml-5 mb-1.5 list-decimal text-ink-soft">$1</li>')
-    .replace(/^- (.+)$/gm, '<li class="ml-4 mb-1.5 list-disc text-ink-soft">$1</li>')
+    .replace(/^\d+\. (.+)$/gm, '<li class="ml-5 mb-2 list-decimal text-navy">$1</li>')
+    .replace(/^- (.+)$/gm, '<li class="ml-4 mb-2 list-disc text-navy">$1</li>')
     // Wrap consecutive items of each kind in <ol> / <ul>
-    .replace(/((?:<li class="ml-5 mb-1\.5 list-decimal[^>]*>.*<\/li>\n?)+)/g, '<ol class="my-4">$1</ol>')
-    .replace(/((?:<li class="ml-4 mb-1\.5 list-disc[^>]*>.*<\/li>\n?)+)/g, '<ul class="my-4">$1</ul>')
+    .replace(/((?:<li class="ml-5 mb-2 list-decimal[^>]*>.*<\/li>\n?)+)/g, '<ol class="my-4">$1</ol>')
+    .replace(/((?:<li class="ml-4 mb-2 list-disc[^>]*>.*<\/li>\n?)+)/g, '<ul class="my-4">$1</ul>')
     // Paragraphs — lines that aren't already HTML tags
-    .replace(/^(?!<\/?[hulao]|$)(.+)$/gm, '<p class="mb-4 text-ink-soft">$1</p>')
+    .replace(/^(?!<\/?[hulao]|$)(.+)$/gm, '<p class="mb-5 text-navy">$1</p>')
     // Clean up extra newlines
     .replace(/\n{2,}/g, '\n')
 }

@@ -42,7 +42,8 @@ export default async function GuidesLibraryPage() {
   return (
     <>
       <Nav variant="light" />
-      <main className="bg-cream" style={{ paddingTop: '60px' }}>
+      {/* Street-sign fonts for legibility, guides only (Keith, 2026-10-17). */}
+      <main className="street bg-cream" style={{ paddingTop: '60px' }}>
         {/* Hero */}
         <section className="px-6 pb-8 pt-12 md:pt-16 lg:px-8">
           <div className="mx-auto max-w-[1120px]">
@@ -52,7 +53,7 @@ export default async function GuidesLibraryPage() {
             <h1 className="mb-5 max-w-[780px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
               Real answers to the things that hold people back.
             </h1>
-            <p className="max-w-[620px] text-[1.0625rem] leading-[1.65] text-ink-soft">
+            <p className="max-w-[620px] text-[1.1875rem] leading-[1.65] text-navy">
               Short, practical guides on biking, transit, and walking — written for people who
               want to try a different way of getting around but aren&apos;t sure where to start.
               Pick a mode or topic below.
