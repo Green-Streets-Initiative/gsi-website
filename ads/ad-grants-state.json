@@ -55,6 +55,10 @@
     {
       "date": "2026-10-16",
       "what": "Claude, event-conversions task (scheduled 11:00 run hit a Chrome disconnect; finished ~11:20 ET once Keith confirmed Chrome was connected). GA4 (walkrideday, authuser=5, property 551486918) Admin > Data display > Events > Recent events now lists all four event_* events; starred event_register_click and event_calendar_save, both now in the Key events list (event_info_click and event_directions_click left unstarred on purpose). Ads > Create conversion action wizard, same as 10-14: website via GA4 551486918, phone calls unticked; 'Create multiple conversion actions from a linked account' > gogreenstreets.org > ticked the two events, category Engagement, both Primary > Save and continue > Finish (Google-tag instructions skipped). All conversions now lists 6 actions: event_register_click and event_calendar_save under Engagements, Primary, Every, 90 days, included in account-level goals Yes, 'Awaiting conversions'. No campaigns, keywords, bids or budgets touched."
+    },
+    {
+      "date": "2026-10-17",
+      "what": "Claude, from an interactive chat with Keith's go ('start with 1', signal-driven growth lever: show up during MBTA closures). Bulk upload ad-grants-t-closures.csv (scratchpad) into How-to Guides (24306480410): new ad group 'T closures', 22 PHRASE keywords (red/orange/green/blue line shutdown|closure|shuttle, mbta shutdown(s)|closures|closures this weekend|shuttle buses|diversions|service changes, commuter rail shutdown|shuttle, is the red/green/orange line running, t shutdown boston) and one RSA (15 headlines, 4 descriptions, path T-closures/backup) to /guides/backup-plans-for-the-t, which lists live and upcoming closures and has the trip planner. Preview 24/24, applied 'Finished successfully'; Undo is on the Uploads page. Watch: CTR (5% rule), search terms. Expect volume to spike around closures (Green Line Oct 31 and Nov 7)."
     }
   ],
   "open_items": [
@@ -129,65 +133,189 @@
       "status": "IMPORTED 2026-10-16: event_register_click and event_calendar_save starred as GA4 key events (property 551486918) and imported into Google Ads as Primary conversion actions under Engagement, included in account-level goals; the Ads All conversions table shows both as 'Awaiting conversions' (6 actions total). event_info_click and event_directions_click deliberately not starred or imported. Daily task ad-grants-event-import disabled. NEXT: 'do ad grants: events sitelink', then keyword planner on event terms before any Local Events campaign. HISTORY: SHIPPED 2026-10-15 (gsi-website, src/components/events/EventDetail.tsx): GA4 events event_register_click, event_info_click, event_calendar_save (method google|ics, surface details|phone_bar) and event_directions_click (surface map_card|details|phone_bar), each with event_id, event_type, is_past; PostHog copies too. VERIFIED LIVE 2026-10-15 ~10:45 ET (Vercel deployment 7095455154) on /events/tour-de-streets-2026-2026-10-24: all four fired through gtag to analytics.google.com (G-6HQWGDZ6RH) and Google's rmkt/collect with en=event_calendar_save etc. Those 4 test hits (is_past false, event_type festival) are what will make the events appear in GA4 Admin > Events; one each, from Claude's browser, not real visitors. SCHEDULED: Keith 2026-10-15 ('check and proceed when it's there'): task ad-grants-event-import runs daily at 11:00 from 10-16, checks GA4, stars + imports when listed, records IMPORTED here, emails Keith, disables itself; if a click is refused unattended it emails the one-line unblock instead. NEXT (that task, or interactive Chrome, from 2026-10-16 once GA4 lists the events): GA4 walkrideday authuser=5 property 551486918 Admin > Events > star event_register_click and event_calendar_save as key events (event_directions_click optional, event_info_click no); then Ads Goals > Conversions > Create conversion action > GA4 import, category Engagement, Primary, include in account-level goals. Keith says 'do ad grants: import event conversions'. After that: 'do ad grants: events sitelink', then keyword planner on event terms before any campaign. 2026-10-15: GA4 does not list the events yet (scheduled check 11:06 ET; Recent events shows 19 names, none of the four event_* ones; test hits were sent ~10:45 ET, so not expected until ~10-16). 2026-10-16: scheduled check could not run, Claude in Chrome was not connected (11:03 ET); retries tomorrow."
     },
     {
-     "id": "t-cheat-sheet",
-     "what": "Free one-page printable T cheat sheet PDF (public/downloads/t-cheat-sheet.pdf, source scripts/t-cheat-sheet/) with a download button under the app strip on /guides/how-to-pay-for-the-t, firing GA4 + PostHog event cheat_sheet_download {sheet, placement:'guide_top'}. Goal: a no-email, no-app meaningful action so ad visitors can convert (Oct had 0 conversions on ~60 clicks).",
-     "status": "SHIPPED 2026-10-13 after Keith's review (3 rounds: pass table, less text, 'Ride free or pay less' box, employer/college line, plastic CharlieCard vs paper CharlieTicket). English live at /downloads/t-cheat-sheet.pdf (commit 717c56d); Spanish, Portuguese, Haitian Creole, Simplified Chinese and Vietnamese PDFs + 'Also in' links (commit 4273943), translated by Claude, not native-reviewed. Event cheat_sheet_download now carries lang. STILL TO DO: mark cheat_sheet_download as a GA4 key event and import it into Ads as a conversion goal (Chrome; blocked 10-13 behind Google's 'Confirm it's you' dialog, which Keith must click). Win: >= 1 ad-click conversion by Oct 31; if no ad visitor downloads by Oct 24, add an 'email me the cheat sheet' option. Note: one localhost test event reached GA4 on 10-13. 2026-10-13 afternoon: GA4 Admin > Events (walkrideday, authuser=5) does not list cheat_sheet_download yet (new events take up to ~24h to appear; GA4 here has no way to mark a key event by name before it shows). Next interactive session from 10-14: star cheat_sheet_download under Recent events, then Ads > Goals > Conversions > New > Import > GA4 > cheat_sheet_download, include in account-default goals. 10-14 weekly: recommended as item 2. DONE 2026-10-14 (same day, Claude): cheat_sheet_download starred as a GA4 key event and imported into Ads as a Primary conversion action under Engagement, included in account-level goals (details in the 10-14 change entry). Ads shows 'Awaiting conversions'. Watch: first ad-click download should appear as a conversion on the Goals page; if none by 10-24, add the 'email me the cheat sheet' option. Note: the account-level goal set is now Sign-ups + Engagements + Outbound clicks; Maximize conversions will optimize toward all three. 10-15 quick check: FIRST CONVERSION recorded (cheat_sheet_download 1.00, Active, How-to Guides); the 'email me' fallback is not needed. October now meets the 1-conversion rule."
+      "id": "t-cheat-sheet",
+      "what": "Free one-page printable T cheat sheet PDF (public/downloads/t-cheat-sheet.pdf, source scripts/t-cheat-sheet/) with a download button under the app strip on /guides/how-to-pay-for-the-t, firing GA4 + PostHog event cheat_sheet_download {sheet, placement:'guide_top'}. Goal: a no-email, no-app meaningful action so ad visitors can convert (Oct had 0 conversions on ~60 clicks).",
+      "status": "SHIPPED 2026-10-13 after Keith's review (3 rounds: pass table, less text, 'Ride free or pay less' box, employer/college line, plastic CharlieCard vs paper CharlieTicket). English live at /downloads/t-cheat-sheet.pdf (commit 717c56d); Spanish, Portuguese, Haitian Creole, Simplified Chinese and Vietnamese PDFs + 'Also in' links (commit 4273943), translated by Claude, not native-reviewed. Event cheat_sheet_download now carries lang. STILL TO DO: mark cheat_sheet_download as a GA4 key event and import it into Ads as a conversion goal (Chrome; blocked 10-13 behind Google's 'Confirm it's you' dialog, which Keith must click). Win: >= 1 ad-click conversion by Oct 31; if no ad visitor downloads by Oct 24, add an 'email me the cheat sheet' option. Note: one localhost test event reached GA4 on 10-13. 2026-10-13 afternoon: GA4 Admin > Events (walkrideday, authuser=5) does not list cheat_sheet_download yet (new events take up to ~24h to appear; GA4 here has no way to mark a key event by name before it shows). Next interactive session from 10-14: star cheat_sheet_download under Recent events, then Ads > Goals > Conversions > New > Import > GA4 > cheat_sheet_download, include in account-default goals. 10-14 weekly: recommended as item 2. DONE 2026-10-14 (same day, Claude): cheat_sheet_download starred as a GA4 key event and imported into Ads as a Primary conversion action under Engagement, included in account-level goals (details in the 10-14 change entry). Ads shows 'Awaiting conversions'. Watch: first ad-click download should appear as a conversion on the Goals page; if none by 10-24, add the 'email me the cheat sheet' option. Note: the account-level goal set is now Sign-ups + Engagements + Outbound clicks; Maximize conversions will optimize toward all three. 10-15 quick check: FIRST CONVERSION recorded (cheat_sheet_download 1.00, Active, How-to Guides); the 'email me' fallback is not needed. October now meets the 1-conversion rule."
+    },
+    {
+      "id": "t-closures-adgroup",
+      "status": "LIVE 2026-10-17, read after the Oct 31 Green Line closure",
+      "what": "Check impressions/CTR/search terms of How-to Guides > T closures after the Oct 31 and Nov 7 Green Line suspensions. Pause any keyword under 5% CTR after 300 impressions. Consider a conversion for guide_tool_used (trip planner use) if volume is real."
     }
   ],
   "pulse_log": [
     {
       "date": "2026-10-05",
       "source": "first quick check, run live in chat at Keith's request (not emailed)",
-      "mtd": { "window": "2026-10-01..2026-10-05", "impressions": 68, "clicks": 5, "ctr_pct": 7.35, "cost": 30.07, "conversions": 0 },
-      "by_campaign": {
-        "How-to Guides": { "impressions": 31, "clicks": 4 },
-        "GSI — Brand": { "impressions": 4, "clicks": 1 },
-        "New Routes — Movers": { "impressions": 15, "clicks": 0 },
-        "Town Walking & Biking": { "impressions": 18, "clicks": 0 },
-        "Shift App — Massachusetts": { "impressions": 0, "clicks": 0 },
-        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 }
+      "mtd": {
+        "window": "2026-10-01..2026-10-05",
+        "impressions": 68,
+        "clicks": 5,
+        "ctr_pct": 7.35,
+        "cost": 30.07,
+        "conversions": 0
       },
-      "keywords": { "total": 102, "low_search_volume": 35, "note": "about 25 of the 30 Town Walking & Biking town keywords plus 6 How-to Guides and 3 Brand keywords are 'Not eligible: Low search volume'" },
-      "ads": { "total": 28, "checked": 10, "disapproved_seen": 0, "poor": ["How-to Guides / Paying for the T: 'Paying for the MBTA | New to the T?' (6 headlines)"] },
+      "by_campaign": {
+        "How-to Guides": {
+          "impressions": 31,
+          "clicks": 4
+        },
+        "GSI — Brand": {
+          "impressions": 4,
+          "clicks": 1
+        },
+        "New Routes — Movers": {
+          "impressions": 15,
+          "clicks": 0
+        },
+        "Town Walking & Biking": {
+          "impressions": 18,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 0,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 0,
+          "clicks": 0
+        }
+      },
+      "keywords": {
+        "total": 102,
+        "low_search_volume": 35,
+        "note": "about 25 of the 30 Town Walking & Biking town keywords plus 6 How-to Guides and 3 Brand keywords are 'Not eligible: Low search volume'"
+      },
+      "ads": {
+        "total": 28,
+        "checked": 10,
+        "disapproved_seen": 0,
+        "poor": [
+          "How-to Guides / Paying for the T: 'Paying for the MBTA | New to the T?' (6 headlines)"
+        ]
+      },
       "search_terms": "all visible terms on target (paying for the T, 'go green streets' brand); no negatives needed",
       "banner": "Improve account security (not serving-related)",
-      "alerts": ["Shift App and Shift Your Semester at 0 impressions for all of September and October", "Town campaign keywords mostly low search volume"],
+      "alerts": [
+        "Shift App and Shift Your Semester at 0 impressions for all of September and October",
+        "Town campaign keywords mostly low search volume"
+      ],
       "emailed": false
     },
     {
       "date": "2026-10-06",
       "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-6",
-      "mtd": { "window": "2026-10-01..2026-10-06", "impressions": 125, "clicks": 7, "ctr_pct": 5.6, "cost": 38.51, "conversions": 0 },
+      "mtd": {
+        "window": "2026-10-01..2026-10-06",
+        "impressions": 125,
+        "clicks": 7,
+        "ctr_pct": 5.6,
+        "cost": 38.51,
+        "conversions": 0
+      },
       "by_campaign": {
-        "How-to Guides": { "impressions": 79, "clicks": 6 },
-        "GSI — Brand": { "impressions": 4, "clicks": 1 },
-        "New Routes — Movers": { "impressions": 23, "clicks": 0 },
-        "Town Walking & Biking": { "impressions": 19, "clicks": 0 },
-        "Shift App — Massachusetts": { "impressions": 0, "clicks": 0 },
-        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 }
+        "How-to Guides": {
+          "impressions": 79,
+          "clicks": 6
+        },
+        "GSI — Brand": {
+          "impressions": 4,
+          "clicks": 1
+        },
+        "New Routes — Movers": {
+          "impressions": 23,
+          "clicks": 0
+        },
+        "Town Walking & Biking": {
+          "impressions": 19,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 0,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 0,
+          "clicks": 0
+        }
       },
       "campaign_status": "all 6 Eligible (Limited): conversion tracking setup is incomplete (unchanged)",
-      "banners": ["Set up conversion tracking", "Add Dynamic Image Assets"],
-      "ads": { "total": 36, "checked": 34, "disapproved_seen": 0, "strength": "15 Average, 1 Excellent, 9 Poor, 9 Pending", "poor": ["GSI — Brand: Green Streets Initiative", "GSI — Brand: Shift by Green Streets", "How-to Guides: Bluebikes, Explained", "How-to Guides: Your First Bus Ride", "How-to Guides: Bike Commuting Tips", "How-to Guides: Bike to Work With Ease", "Town Walking & Biking: Walking School Bus Ideas", "Town Walking & Biking: Walking and Biking Near You", "Town Walking & Biking: Your Town, On Foot and Bike"], "pending": "the 8 RSAs uploaded 10-05 plus the strengthened Paying for the MBTA" },
+      "banners": [
+        "Set up conversion tracking",
+        "Add Dynamic Image Assets"
+      ],
+      "ads": {
+        "total": 36,
+        "checked": 34,
+        "disapproved_seen": 0,
+        "strength": "15 Average, 1 Excellent, 9 Poor, 9 Pending",
+        "poor": [
+          "GSI — Brand: Green Streets Initiative",
+          "GSI — Brand: Shift by Green Streets",
+          "How-to Guides: Bluebikes, Explained",
+          "How-to Guides: Your First Bus Ride",
+          "How-to Guides: Bike Commuting Tips",
+          "How-to Guides: Bike to Work With Ease",
+          "Town Walking & Biking: Walking School Bus Ideas",
+          "Town Walking & Biking: Walking and Biking Near You",
+          "Town Walking & Biking: Your Town, On Foot and Bike"
+        ],
+        "pending": "the 8 RSAs uploaded 10-05 plus the strengthened Paying for the MBTA"
+      },
       "search_terms": "39 named terms, none with 3+ impressions; top: how to pay for the t in boston 1/3, boston t passes 1/2, go green streets 1/2; all on target, no negatives proposed",
-      "alerts": ["9 of 36 ads rated Poor after Google rated the 09-30 upload (emailed as a Suggest item: add headlines)"],
+      "alerts": [
+        "9 of 36 ads rated Poor after Google rated the 09-30 upload (emailed as a Suggest item: add headlines)"
+      ],
       "emailed": true
     },
     {
       "date": "2026-10-08",
       "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-8",
-      "mtd": { "window": "2026-10-01..2026-10-08", "impressions": 441, "clicks": 31, "ctr_pct": 7.03, "cost": 203.73, "conversions": 0 },
+      "mtd": {
+        "window": "2026-10-01..2026-10-08",
+        "impressions": 441,
+        "clicks": 31,
+        "ctr_pct": 7.03,
+        "cost": 203.73,
+        "conversions": 0
+      },
       "by_campaign": {
-        "How-to Guides": { "impressions": 357, "clicks": 30 },
-        "GSI — Brand": { "impressions": 4, "clicks": 1 },
-        "Town Walking & Biking": { "impressions": 48, "clicks": 0 },
-        "New Routes — Movers": { "impressions": 27, "clicks": 0 },
-        "Shift App — Massachusetts": { "impressions": 4, "clicks": 0 },
-        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+        "How-to Guides": {
+          "impressions": 357,
+          "clicks": 30
+        },
+        "GSI — Brand": {
+          "impressions": 4,
+          "clicks": 1
+        },
+        "Town Walking & Biking": {
+          "impressions": 48,
+          "clicks": 0
+        },
+        "New Routes — Movers": {
+          "impressions": 27,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 4,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 0
+        }
       },
       "campaign_status": "status column did not render text; all 6 serving (impressions this month); no Paused/Removed/Not eligible text on the page",
-      "banners": ["Set up conversion tracking", "Add Dynamic Image Assets"],
-      "ads": { "total": 36, "disapproved_seen": 0, "strength": "17 Average, 13+ Pending, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known)", "note": "Paying for the MBTA RSA 283 impr / 23 clicks (8.1%), still Pending re-rating" },
+      "banners": [
+        "Set up conversion tracking",
+        "Add Dynamic Image Assets"
+      ],
+      "ads": {
+        "total": 36,
+        "disapproved_seen": 0,
+        "strength": "17 Average, 13+ Pending, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known)",
+        "note": "Paying for the MBTA RSA 283 impr / 23 clicks (8.1%), still Pending re-rating"
+      },
       "search_terms": "93 named terms read; all transit how-to lookups in How-to Guides plus a few New Routes map/bike-share terms at 2 impr (bike trail map, blue bike) and 'boston bike paths' 4/0 in Town. None off-target at 3+ impr; 'mapa metro boston pdf' 3/0 is transit-related and Paying for the T changed 10-05 (<14 days), so no negatives proposed",
       "alerts": [],
       "emailed": false
@@ -195,18 +323,51 @@
     {
       "date": "2026-10-09",
       "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-9",
-      "mtd": { "window": "2026-10-01..2026-10-09", "impressions": 552, "clicks": 38, "ctr_pct": 6.88, "cost": 245.02, "conversions": 0 },
+      "mtd": {
+        "window": "2026-10-01..2026-10-09",
+        "impressions": 552,
+        "clicks": 38,
+        "ctr_pct": 6.88,
+        "cost": 245.02,
+        "conversions": 0
+      },
       "by_campaign": {
-        "How-to Guides": { "impressions": 472, "clicks": 37 },
-        "GSI — Brand": { "impressions": 4, "clicks": 1 },
-        "Town Walking & Biking": { "impressions": 62, "clicks": 0 },
-        "New Routes — Movers": { "impressions": 27, "clicks": 0 },
-        "Shift App — Massachusetts": { "impressions": 4, "clicks": 0 },
-        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+        "How-to Guides": {
+          "impressions": 472,
+          "clicks": 37
+        },
+        "GSI — Brand": {
+          "impressions": 4,
+          "clicks": 1
+        },
+        "Town Walking & Biking": {
+          "impressions": 62,
+          "clicks": 0
+        },
+        "New Routes — Movers": {
+          "impressions": 27,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 4,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 0
+        }
       },
       "campaign_status": "status column did not render text again; all 6 serving; no Paused/Removed/Not eligible text",
-      "banners": ["Set up conversion tracking", "Add Dynamic Image Assets"],
-      "ads": { "total": 36, "all_eligible": true, "disapproved_seen": 0, "strength": "17 Average, 17 Pending, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known)" },
+      "banners": [
+        "Set up conversion tracking",
+        "Add Dynamic Image Assets"
+      ],
+      "ads": {
+        "total": 36,
+        "all_eligible": true,
+        "disapproved_seen": 0,
+        "strength": "17 Average, 17 Pending, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known)"
+      },
       "search_terms": "139 terms this month; top 30 by impressions read: all transit how-to lookups in How-to Guides / Paying for the T (boston public transportation 1/16, how to ride the t in boston 0/7, the t in boston 0/6, how to pay for the t in boston 0/6) plus 'boston bike paths' 0/4 in Town. Nothing off-target; Paying for the T changed 10-05 (<14 days), so no negatives proposed. New Routes still flat at 27 impr since the 10-07 negatives (judge 10-21).",
       "alerts": [],
       "emailed": false
@@ -214,19 +375,55 @@
     {
       "date": "2026-10-12",
       "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-12",
-      "mtd": { "window": "2026-10-01..2026-10-12", "impressions": 859, "clicks": 56, "ctr_pct": 6.52, "cost": 351.13, "conversions": 0 },
+      "mtd": {
+        "window": "2026-10-01..2026-10-12",
+        "impressions": 859,
+        "clicks": 56,
+        "ctr_pct": 6.52,
+        "cost": 351.13,
+        "conversions": 0
+      },
       "by_campaign": {
-        "How-to Guides": { "impressions": 738, "clicks": 54 },
-        "GSI — Brand": { "impressions": 4, "clicks": 1 },
-        "Town Walking & Biking": { "impressions": 88, "clicks": 1 },
-        "New Routes — Movers": { "impressions": 27, "clicks": 0 },
-        "Shift App — Massachusetts": { "impressions": 6, "clicks": 0 },
-        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+        "How-to Guides": {
+          "impressions": 738,
+          "clicks": 54
+        },
+        "GSI — Brand": {
+          "impressions": 4,
+          "clicks": 1
+        },
+        "Town Walking & Biking": {
+          "impressions": 88,
+          "clicks": 1
+        },
+        "New Routes — Movers": {
+          "impressions": 27,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 6,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 0
+        }
       },
       "campaign_status": "all 6 Eligible (Limited): conversion tracking setup is incomplete; Brand also Limited by search volume (unchanged). Header chart said 864 impr; campaign table total 859 (used).",
-      "banners": ["NEW: Apply for financial products & services certification ('To run financial products & services ads, you'll need to submit an application')", "Add image assets to your ads", "Set up conversion tracking", "Protect your account from unauthorized activity"],
+      "banners": [
+        "NEW: Apply for financial products & services certification ('To run financial products & services ads, you'll need to submit an application')",
+        "Add image assets to your ads",
+        "Set up conversion tracking",
+        "Protect your account from unauthorized activity"
+      ],
       "banner_note": "Financial-services certification prompt is new but not serving-threatening today: all 36 ads Eligible, none Limited by policy. GSI does not advertise financial products, so do not apply. Likely triggered by fare/payment wording (Paying for the T) or gift-card offers. Watch in the Wednesday review: act only if an ad shows 'Limited by policy' / financial services.",
-      "ads": { "total": 36, "all_eligible": true, "disapproved_seen": 0, "strength": "18 Average, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known), 16 Pending", "note": "Paying for the MBTA RSA 575 impr / 43 clicks (7.48%), still Pending re-rating" },
+      "ads": {
+        "total": 36,
+        "all_eligible": true,
+        "disapproved_seen": 0,
+        "strength": "18 Average, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known), 16 Pending",
+        "note": "Paying for the MBTA RSA 575 impr / 43 clicks (7.48%), still Pending re-rating"
+      },
       "search_terms": "198 terms this month (416 impr / 28 clicks named). Top 25 by impressions all transit how-to lookups in How-to Guides / Paying for the T (boston public transportation 1/17, the t in boston 0/10, boston t 2/9, how to ride the t in boston 0/9, what is the t in boston 0/8) plus 'boston bike paths' 0/4 (Town, exact, added keyword). Nothing off-target at 3+ impr; Paying for the T changed 10-05 (<14 days), so no negatives proposed. New Routes still 27 impr since the 10-07 negatives (judge 10-21).",
       "alerts": [],
       "emailed": false
@@ -234,18 +431,52 @@
     {
       "date": "2026-10-13",
       "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-13",
-      "mtd": { "window": "2026-10-01..2026-10-13", "impressions": 958, "clicks": 62, "ctr_pct": 6.47, "cost": 393.18, "conversions": 0 },
+      "mtd": {
+        "window": "2026-10-01..2026-10-13",
+        "impressions": 958,
+        "clicks": 62,
+        "ctr_pct": 6.47,
+        "cost": 393.18,
+        "conversions": 0
+      },
       "by_campaign": {
-        "How-to Guides": { "impressions": 841, "clicks": 60 },
-        "GSI — Brand": { "impressions": 4, "clicks": 1 },
-        "Town Walking & Biking": { "impressions": 93, "clicks": 1 },
-        "New Routes — Movers": { "impressions": 27, "clicks": 0 },
-        "Shift App — Massachusetts": { "impressions": 6, "clicks": 0 },
-        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+        "How-to Guides": {
+          "impressions": 841,
+          "clicks": 60
+        },
+        "GSI — Brand": {
+          "impressions": 4,
+          "clicks": 1
+        },
+        "Town Walking & Biking": {
+          "impressions": 93,
+          "clicks": 1
+        },
+        "New Routes — Movers": {
+          "impressions": 27,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 6,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 0
+        }
       },
       "campaign_status": "all 6 Eligible (Limited): conversion tracking setup is incomplete; Brand also Limited by search volume (unchanged). Header chart said 972 impr; campaign table total 958 (used). Budgets as shown: How-to $50, Brand $30, Town $40, New Routes $109.50, Shift App $110, Semester $110 (account $449.50/day).",
-      "banners": ["Apply for financial products & services certification (known since 10-12; all ads still Eligible, none Limited by policy)", "Protect your account from unauthorized activity", "Recommendation card: Add broad match keywords (not applied)"],
-      "ads": { "total": 36, "disapproved_seen": 0, "limited_by_policy": 0, "strength": "25 Average, 1 Good, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known), 8 Pending" },
+      "banners": [
+        "Apply for financial products & services certification (known since 10-12; all ads still Eligible, none Limited by policy)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "ads": {
+        "total": 36,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "strength": "25 Average, 1 Good, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known), 8 Pending"
+      },
       "search_terms": "227 terms this month (top 100 read: 474 impr / 33 clicks). Top 25 by impressions all transit how-to lookups in How-to Guides / Paying for the T (boston public transportation 2/20, the t in boston 0/10, how to pay for the t in boston 0/10, boston t 2/9, how to ride the t in boston 0/9, what is the t in boston 0/9) plus 'boston bike paths' 0/4 (Town). Nothing off-target at 3+ impr; no negatives proposed. New Routes flat at 27 impr since 10-07 (judge 10-21).",
       "alerts": [],
       "emailed": false
@@ -253,39 +484,113 @@
     {
       "date": "2026-10-15",
       "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-15",
-      "mtd": { "window": "2026-10-01..2026-10-15", "impressions": 1353, "clicks": 94, "ctr_pct": 6.95, "cost": 607.42, "conversions": 1 },
+      "mtd": {
+        "window": "2026-10-01..2026-10-15",
+        "impressions": 1353,
+        "clicks": 94,
+        "ctr_pct": 6.95,
+        "cost": 607.42,
+        "conversions": 1
+      },
       "by_campaign": {
-        "How-to Guides": { "impressions": 1216, "clicks": 92, "conversions": 1 },
-        "Town Walking & Biking": { "impressions": 105, "clicks": 2 },
-        "GSI — Brand": { "impressions": 8, "clicks": 1 },
-        "New Routes — Movers": { "impressions": 27, "clicks": 0 },
-        "Shift App — Massachusetts": { "impressions": 6, "clicks": 0 },
-        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+        "How-to Guides": {
+          "impressions": 1216,
+          "clicks": 92,
+          "conversions": 1
+        },
+        "Town Walking & Biking": {
+          "impressions": 105,
+          "clicks": 2
+        },
+        "GSI — Brand": {
+          "impressions": 8,
+          "clicks": 1
+        },
+        "New Routes — Movers": {
+          "impressions": 27,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 6,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 0
+        }
       },
       "campaign_status": "CHANGED: all 6 now plain 'Eligible'; the '(Limited): conversion tracking setup is incomplete' note is gone from every campaign. Brand still 'Eligible (Limited) Limited by search volume'. Header chart said 1,363 impr / 95 clicks; campaign table total 1,353 / 94 (used).",
       "conversion": "FIRST EVER: cheat_sheet_download 1.00, Tracking status Active (was 'Awaiting conversions' at the 10-14 import), campaign How-to Guides, sits under 'Other search terms' on the search-terms report (no named term). newsletter_signup, shift_store_click, donate_page_view still Awaiting conversions. Campaigns page card: 'Your campaign How-to Guides generated 1.00 conversions this week'.",
-      "banners": ["Apply for financial products & services certification (since 10-12; no ad limited by policy; do not apply)", "Protect your account from unauthorized activity", "Recommendation card: Add broad match keywords (not applied)"],
-      "ads": { "total": 36, "all_eligible": true, "disapproved_seen": 0, "limited_by_policy": 0, "strength": "26 Average, 6 Good, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known), 2 Pending (New Routes / Just moved)" },
+      "banners": [
+        "Apply for financial products & services certification (since 10-12; no ad limited by policy; do not apply)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "ads": {
+        "total": 36,
+        "all_eligible": true,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "strength": "26 Average, 6 Good, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known), 2 Pending (New Routes / Just moved)"
+      },
       "search_terms": "Page 1 of the report (50 named rows, sorted by impressions) read: all How-to Guides / Paying for the T transit lookups (boston public transportation 3/27, boston t 2/14, how to pay for the t in boston 1/14 exact + 1/5 phrase, the t in boston 0/12, how to take the t in boston 1/10, charlie card 0/4) plus 'boston bike paths' 0/4 (Town, keyword paused 10-14). Named rows 51 clicks / 663 impr; 'Other search terms' 44 clicks incl. the conversion. Nothing off-target; no negatives proposed. New Routes flat at 27 impr since 10-07 (judge 10-21).",
       "month_end_math": "pace ~90 impr/day -> ~2,800 impr in October -> ~140 clicks needed for 5%; 46 more over 16 days (~2.9/day) vs ~6.3/day so far",
-      "alerts": ["GOOD NEWS (emailed once): first-ever conversion, cheat_sheet_download via How-to Guides, 1 day after the 10-14 import; campaigns no longer 'Limited: conversion tracking setup is incomplete'"],
+      "alerts": [
+        "GOOD NEWS (emailed once): first-ever conversion, cheat_sheet_download via How-to Guides, 1 day after the 10-14 import; campaigns no longer 'Limited: conversion tracking setup is incomplete'"
+      ],
       "emailed": true
     },
     {
       "date": "2026-10-16",
       "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-16",
-      "mtd": { "window": "2026-10-01..2026-10-16", "impressions": 1526, "clicks": 109, "ctr_pct": 7.14, "cost": 721.96, "conversions": 1 },
+      "mtd": {
+        "window": "2026-10-01..2026-10-16",
+        "impressions": 1526,
+        "clicks": 109,
+        "ctr_pct": 7.14,
+        "cost": 721.96,
+        "conversions": 1
+      },
       "by_campaign": {
-        "How-to Guides": { "impressions": 1364, "clicks": 105, "conversions": 1 },
-        "Town Walking & Biking": { "impressions": 121, "clicks": 3 },
-        "GSI — Brand": { "impressions": 8, "clicks": 1 },
-        "New Routes — Movers": { "impressions": 27, "clicks": 0 },
-        "Shift App — Massachusetts": { "impressions": 6, "clicks": 0 },
-        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+        "How-to Guides": {
+          "impressions": 1364,
+          "clicks": 105,
+          "conversions": 1
+        },
+        "Town Walking & Biking": {
+          "impressions": 121,
+          "clicks": 3
+        },
+        "GSI — Brand": {
+          "impressions": 8,
+          "clicks": 1
+        },
+        "New Routes — Movers": {
+          "impressions": 27,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 6,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 0
+        }
       },
       "campaign_status": "all 6 Eligible; Brand 'Eligible (Limited) Limited by search volume' (unchanged). Budgets unchanged ($449.50/day).",
-      "banners": ["Apply for financial products & services certification (since 10-12; no ad limited by policy; do not apply)", "Protect your account from unauthorized activity", "Recommendation card: Add broad match keywords (not applied)"],
-      "ads": { "total": 36, "all_eligible": true, "disapproved_seen": 0, "limited_by_policy": 0, "strength": "28 Average, 6 Good, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known), 0 Pending" },
+      "banners": [
+        "Apply for financial products & services certification (since 10-12; no ad limited by policy; do not apply)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "ads": {
+        "total": 36,
+        "all_eligible": true,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "strength": "28 Average, 6 Good, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known), 0 Pending"
+      },
       "search_terms": "Top 25 by impressions all How-to Guides / Paying for the T transit lookups (boston public transportation 3/29, boston t 2/16, how to pay for the t in boston 1/14 exact + 1/5, how to take the t in boston 1/12, the t in boston 0/12, boston transit 3/11, what is the t in boston 0/11). Only non-How-to term at 3+ impr: 'boston bike paths' 0/4 (Town, keyword already paused 10-14). Nothing off-target; no negatives proposed. New Routes flat at 27 impr since 10-07 (judge 10-21); Semester still 1 impr (student keywords added 10-14, judge 10-28).",
       "month_end_math": "pace ~95 impr/day -> ~2,950 impr in October -> ~148 clicks needed for 5%; 39 more over 15 days (~2.6/day) vs ~6.8/day so far",
       "alerts": [],
@@ -339,55 +644,195 @@
       "date": "2026-09-24",
       "source": "scheduled weekly run: live account (calendar month) + 09-23 script email + GSC weekly-2026-09-18",
       "window": "2026-09-01..2026-09-24",
-      "impressions": 16, "clicks": 1, "ctr_pct": 6.25, "cost": 11.52, "conversions": 0,
+      "impressions": 16,
+      "clicks": 1,
+      "ctr_pct": 6.25,
+      "cost": 11.52,
+      "conversions": 0,
       "by_campaign": {
-        "New Routes — Movers": { "impressions": 16, "clicks": 1 },
-        "Shift App — Massachusetts": { "impressions": 0, "clicks": 0 },
-        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 }
+        "New Routes — Movers": {
+          "impressions": 16,
+          "clicks": 1
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 0,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 0,
+          "clicks": 0
+        }
       },
-      "top_keyword": { "keyword": "biking in boston", "impressions": 8, "clicks": 1 },
-      "keywords": { "total": 37, "match": "broad", "low_search_volume": 2, "single_word": 0 },
-      "ads": { "total": 12, "all_eligible": true, "strength": "10 Average, 2 Poor" },
+      "top_keyword": {
+        "keyword": "biking in boston",
+        "impressions": 8,
+        "clicks": 1
+      },
+      "keywords": {
+        "total": 37,
+        "match": "broad",
+        "low_search_volume": 2,
+        "single_word": 0
+      },
+      "ads": {
+        "total": 12,
+        "all_eligible": true,
+        "strength": "10 Average, 2 Poor"
+      },
       "sitelinks": 15,
       "campaign_status": "Eligible (Limited): conversion tracking setup is incomplete (all 3)",
       "conversion_tracking_status": "Sign-up and Outbound click goals Needs attention; newsletter_signup Awaiting conversions",
-      "brand_search_gsc_week": { "range": "2026-09-12..2026-09-18", "impressions": 46, "clicks": 3, "note": "greenstreets 27, green streets 13, green streets initiative 6 (3 clicks)" },
+      "brand_search_gsc_week": {
+        "range": "2026-09-12..2026-09-18",
+        "impressions": 46,
+        "clicks": 3,
+        "note": "greenstreets 27, green streets 13, green streets initiative 6 (3 clicks)"
+      },
       "verdict": "Act this week: first click landed, MTD CTR 6.25% on 16 impr (too little to judge; Sept likely closes above 5%), 0 conversions in Sept."
     },
     {
       "date": "2026-09-30",
       "source": "scheduled weekly run: live account (calendar month Sep 1-30) + 09-30 script email + GSC weekly-2026-09-25. Search terms page is /aw/keywords/searchterms (/aw/searchterms 404s); 15 named terms shown, 13 impressions incl. the 1 click are under 'Other search terms'",
       "window": "2026-09-01..2026-09-30",
-      "impressions": 33, "clicks": 1, "ctr_pct": 3.03, "cost": 11.52, "conversions": 0,
-      "august": { "impressions": 0, "clicks": 0, "note": "no CTR in August; September is the first month under 5%" },
-      "by_campaign": {
-        "New Routes — Movers": { "impressions": 33, "clicks": 1 },
-        "Shift App — Massachusetts": { "impressions": 0, "clicks": 0 },
-        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 }
+      "impressions": 33,
+      "clicks": 1,
+      "ctr_pct": 3.03,
+      "cost": 11.52,
+      "conversions": 0,
+      "august": {
+        "impressions": 0,
+        "clicks": 0,
+        "note": "no CTR in August; September is the first month under 5%"
       },
-      "keywords": { "total": 37, "match": "broad", "low_search_volume": 2, "single_word": 0 },
-      "ads": { "total": 12, "all_eligible": true, "strength": "mostly Average; at least 1 Poor (New Routes / Just moved) still" },
+      "by_campaign": {
+        "New Routes — Movers": {
+          "impressions": 33,
+          "clicks": 1
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 0,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 0,
+          "clicks": 0
+        }
+      },
+      "keywords": {
+        "total": 37,
+        "match": "broad",
+        "low_search_volume": 2,
+        "single_word": 0
+      },
+      "ads": {
+        "total": 12,
+        "all_eligible": true,
+        "strength": "mostly Average; at least 1 Poor (New Routes / Just moved) still"
+      },
       "sitelinks": 15,
       "campaign_status": "Eligible (Limited): conversion tracking setup is incomplete (all 3); Maximize conversions",
       "conversion_tracking_status": "Sign-up, Outbound click, Page view goals Needs attention; all 3 actions Awaiting conversions",
-      "account_banners": ["Complete advertiser verification - To keep running ads, complete advertiser verification", "Improve account security"],
-      "brand_search_gsc_week": { "range": "2026-09-19..2026-09-25", "impressions": 18, "clicks": 2, "note": "greenstreets 8, green streets initiative 7 (2 clicks), green streets 2, go shift app 1" },
+      "account_banners": [
+        "Complete advertiser verification - To keep running ads, complete advertiser verification",
+        "Improve account security"
+      ],
+      "brand_search_gsc_week": {
+        "range": "2026-09-19..2026-09-25",
+        "impressions": 18,
+        "clicks": 2,
+        "note": "greenstreets 8, green streets initiative 7 (2 clicks), green streets 2, go shift app 1"
+      },
       "search_terms": [
-        { "term": "blue bikes", "impressions": 2, "clicks": 0, "conversions": 0 },
-        { "term": "bluebike", "impressions": 2, "clicks": 0, "conversions": 0 },
-        { "term": "bluebikes", "impressions": 2, "clicks": 0, "conversions": 0 },
-        { "term": "bluebikes map", "impressions": 2, "clicks": 0, "conversions": 0 },
-        { "term": "bike paths in boston", "impressions": 2, "clicks": 0, "conversions": 0 },
-        { "term": "bike lane", "impressions": 1, "clicks": 0, "conversions": 0 },
-        { "term": "boston t", "impressions": 1, "clicks": 0, "conversions": 0 },
-        { "term": "great places to bike near me", "impressions": 1, "clicks": 0, "conversions": 0 },
-        { "term": "public transportation boston", "impressions": 1, "clicks": 0, "conversions": 0 },
-        { "term": "transit", "impressions": 1, "clicks": 0, "conversions": 0 },
-        { "term": "bike trails boston", "impressions": 1, "clicks": 0, "conversions": 0 },
-        { "term": "bike trails boston ma", "impressions": 1, "clicks": 0, "conversions": 0 },
-        { "term": "bike lane map boston", "impressions": 1, "clicks": 0, "conversions": 0 },
-        { "term": "bike path boston", "impressions": 1, "clicks": 0, "conversions": 0 },
-        { "term": "bluebikes boston", "impressions": 1, "clicks": 0, "conversions": 0 }
+        {
+          "term": "blue bikes",
+          "impressions": 2,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "bluebike",
+          "impressions": 2,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "bluebikes",
+          "impressions": 2,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "bluebikes map",
+          "impressions": 2,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "bike paths in boston",
+          "impressions": 2,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "bike lane",
+          "impressions": 1,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston t",
+          "impressions": 1,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "great places to bike near me",
+          "impressions": 1,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "public transportation boston",
+          "impressions": 1,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "transit",
+          "impressions": 1,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "bike trails boston",
+          "impressions": 1,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "bike trails boston ma",
+          "impressions": 1,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "bike lane map boston",
+          "impressions": 1,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "bike path boston",
+          "impressions": 1,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "bluebikes boston",
+          "impressions": 1,
+          "clicks": 0,
+          "conversions": 0
+        }
       ],
       "verdict": "Act this week: September closes at 3.03% (1/33), first month under 5%; October must reach 5%. Approved new campaigns still not uploaded; advertiser verification banner new; 0 conversions."
     },
@@ -395,54 +840,242 @@
       "date": "2026-10-07",
       "source": "scheduled weekly run: live account (This month = Oct 1-7; keyword, ad and search-term views; campaign table lagged by ~1 click while refreshing) + 10-07 script email (rolling 30d: 304 impr, 20 clicks, 6.6%, $113.61, 0 conv; flagged QS<3 on 'biking in worcester') + GSC weekly-2026-10-02. Conversions/goals page loads at /aw/conversions (the /aw/conversions/goals URL shows an ad-blocker notice). Search terms at /aw/keywords/searchterms, 89 rows.",
       "window": "2026-10-01..2026-10-07",
-      "impressions": 350, "clicks": 24, "ctr_pct": 6.86, "cost": 142.94, "conversions": 0,
+      "impressions": 350,
+      "clicks": 24,
+      "ctr_pct": 6.86,
+      "cost": 142.94,
+      "conversions": 0,
       "avg_cpc": 5.96,
       "by_campaign": {
-        "How-to Guides": { "impressions": 281, "clicks": 23 },
-        "GSI — Brand": { "impressions": 4, "clicks": 1 },
-        "Town Walking & Biking": { "impressions": 34, "clicks": 0 },
-        "New Routes — Movers": { "impressions": 27, "clicks": 0 },
-        "Shift App — Massachusetts": { "impressions": 3, "clicks": 0 },
-        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 }
+        "How-to Guides": {
+          "impressions": 281,
+          "clicks": 23
+        },
+        "GSI — Brand": {
+          "impressions": 4,
+          "clicks": 1
+        },
+        "Town Walking & Biking": {
+          "impressions": 34,
+          "clicks": 0
+        },
+        "New Routes — Movers": {
+          "impressions": 27,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 3,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 0,
+          "clicks": 0
+        }
       },
       "concentration": "23 of 24 clicks from one keyword, 'how to pay for the t' (How-to Guides / Paying for the T). Strengthened RSA 'Paying for the MBTA' 212 impr / 18 clicks (8.5%); sibling RSA 70 / 5.",
-      "keywords": { "total": 186, "match": "175 broad, 9 phrase, 2 exact", "eligible": 125, "low_search_volume": 60, "low_search_volume_by_campaign": { "GSI — Brand": "3 of 11", "How-to Guides": "7 of 20", "New Routes — Movers": "0 of 14", "Shift App — Massachusetts": "6 of 31", "Shift Your Semester — Students": "15 of 42", "Town Walking & Biking": "29 of 68" }, "single_word": ["\"gogreenstreets\" (brand, allowed)"], "low_quality_score": ["biking in worcester (Town / Town routes): QS 1, 'Rarely shown (low Quality Score)', 4 impr 0 clicks"], "duplicate": "'biking in boston' in both New Routes (27 impr) and Town (22 impr), 0 clicks" },
-      "ads": { "total": 36, "ad_groups": 18, "per_ad_group": 2, "all_eligible": true, "strength": "17 Average, 17 Pending, 1 Excellent, 1 Poor", "poor": ["Town Walking & Biking / Walk and bike to school: Walking School Bus Ideas"] },
+      "keywords": {
+        "total": 186,
+        "match": "175 broad, 9 phrase, 2 exact",
+        "eligible": 125,
+        "low_search_volume": 60,
+        "low_search_volume_by_campaign": {
+          "GSI — Brand": "3 of 11",
+          "How-to Guides": "7 of 20",
+          "New Routes — Movers": "0 of 14",
+          "Shift App — Massachusetts": "6 of 31",
+          "Shift Your Semester — Students": "15 of 42",
+          "Town Walking & Biking": "29 of 68"
+        },
+        "single_word": [
+          "\"gogreenstreets\" (brand, allowed)"
+        ],
+        "low_quality_score": [
+          "biking in worcester (Town / Town routes): QS 1, 'Rarely shown (low Quality Score)', 4 impr 0 clicks"
+        ],
+        "duplicate": "'biking in boston' in both New Routes (27 impr) and Town (22 impr), 0 clicks"
+      },
+      "ads": {
+        "total": 36,
+        "ad_groups": 18,
+        "per_ad_group": 2,
+        "all_eligible": true,
+        "strength": "17 Average, 17 Pending, 1 Excellent, 1 Poor",
+        "poor": [
+          "Town Walking & Biking / Walk and bike to school: Walking School Bus Ideas"
+        ]
+      },
       "sitelinks": 15,
       "campaign_status": "all 6 Eligible (Limited): conversion tracking setup is incomplete; Brand also Limited by search volume; all Maximize conversions",
       "conversion_tracking_status": "Sign-up and Outbound click goals (6 of 6 campaigns) Needs attention; Page view goal 0 of 6. 0 conversions on 24 clicks. Fares-guide landing page has StoreBadges (fires shift_store_click) only in the bottom 'Try it' box plus footer newsletter form.",
-      "account_banners": ["Set up conversion tracking", "Add Dynamic Image Assets"],
-      "brand_search_gsc_week": { "range": "2026-09-26..2026-10-02", "impressions": 28, "clicks": 13, "note": "green streets initiative 19 (13 clicks), green streets 7, greenstreets 2" },
+      "account_banners": [
+        "Set up conversion tracking",
+        "Add Dynamic Image Assets"
+      ],
+      "brand_search_gsc_week": {
+        "range": "2026-09-26..2026-10-02",
+        "impressions": 28,
+        "clicks": 13,
+        "note": "green streets initiative 19 (13 clicks), green streets 7, greenstreets 2"
+      },
       "month_end_math": "pace ~50 impr/day -> ~1,550 impr in October -> ~78 clicks needed for 5%; 54 more needed over 24 days (~2.3/day) vs ~3.4/day now",
       "search_terms": [
-        { "term": "boston public transportation", "impressions": 9, "clicks": 0, "conversions": 0 },
-        { "term": "how to pay for the t in boston", "impressions": 7, "clicks": 1, "conversions": 0 },
-        { "term": "how to ride the t in boston", "impressions": 5, "clicks": 0, "conversions": 0 },
-        { "term": "boston transit system", "impressions": 4, "clicks": 1, "conversions": 0 },
-        { "term": "the t in boston", "impressions": 4, "clicks": 0, "conversions": 0 },
-        { "term": "how do you pay for the t in boston", "impressions": 4, "clicks": 0, "conversions": 0 },
-        { "term": "boston mass transit", "impressions": 3, "clicks": 0, "conversions": 0 },
-        { "term": "boston train", "impressions": 3, "clicks": 0, "conversions": 0 },
-        { "term": "mapa metro boston pdf", "impressions": 3, "clicks": 0, "conversions": 0 },
-        { "term": "boston metro pass", "impressions": 2, "clicks": 2, "conversions": 0 },
-        { "term": "boston subway", "impressions": 2, "clicks": 1, "conversions": 0 },
-        { "term": "how to take the t into boston", "impressions": 2, "clicks": 1, "conversions": 0 },
-        { "term": "mass transit", "impressions": 2, "clicks": 1, "conversions": 0 },
-        { "term": "public transportation boston ma", "impressions": 2, "clicks": 1, "conversions": 0 },
-        { "term": "boston t pass", "impressions": 2, "clicks": 1, "conversions": 0 },
-        { "term": "boston t passes", "impressions": 2, "clicks": 1, "conversions": 0 },
-        { "term": "paying for the t in boston", "impressions": 2, "clicks": 1, "conversions": 0 },
-        { "term": "go green streets", "impressions": 2, "clicks": 1, "conversions": 0 },
-        { "term": "boston subway fares", "impressions": 2, "clicks": 0, "conversions": 0 },
-        { "term": "boston the t", "impressions": 2, "clicks": 0, "conversions": 0 },
-        { "term": "boston train pass", "impressions": 2, "clicks": 0, "conversions": 0 },
-        { "term": "boston transit", "impressions": 2, "clicks": 0, "conversions": 0 },
-        { "term": "boston transit day pass", "impressions": 2, "clicks": 0, "conversions": 0 },
-        { "term": "commuter trains into boston", "impressions": 2, "clicks": 0, "conversions": 0 },
-        { "term": "blue bike", "impressions": 2, "clicks": 0, "conversions": 0 }
+        {
+          "term": "boston public transportation",
+          "impressions": 9,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "how to pay for the t in boston",
+          "impressions": 7,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "how to ride the t in boston",
+          "impressions": 5,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston transit system",
+          "impressions": 4,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "the t in boston",
+          "impressions": 4,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "how do you pay for the t in boston",
+          "impressions": 4,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston mass transit",
+          "impressions": 3,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston train",
+          "impressions": 3,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "mapa metro boston pdf",
+          "impressions": 3,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston metro pass",
+          "impressions": 2,
+          "clicks": 2,
+          "conversions": 0
+        },
+        {
+          "term": "boston subway",
+          "impressions": 2,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "how to take the t into boston",
+          "impressions": 2,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "mass transit",
+          "impressions": 2,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "public transportation boston ma",
+          "impressions": 2,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "boston t pass",
+          "impressions": 2,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "boston t passes",
+          "impressions": 2,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "paying for the t in boston",
+          "impressions": 2,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "go green streets",
+          "impressions": 2,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "boston subway fares",
+          "impressions": 2,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston the t",
+          "impressions": 2,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston train pass",
+          "impressions": 2,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston transit",
+          "impressions": 2,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston transit day pass",
+          "impressions": 2,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "commuter trains into boston",
+          "impressions": 2,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "blue bike",
+          "impressions": 2,
+          "clicks": 0,
+          "conversions": 0
+        }
       ],
       "search_terms_note": "89 named terms (160 impr, 12 clicks); 190 impr / 12 clicks under 'Other search terms'. 'how to pay for the t in boston' appears twice (phrase and exact rows), merged above. Non-transit terms: New Routes got bike-share/map lookups (blue bike, bluebikes boston, bike rental cambridge, bike trail map); Town got event/trail names (biketothesea, hub on wheels, rail trail, ride for your life boston).",
-      "recommended": ["1 pause 'biking in worcester' (QS 1; rule breach, exception to 14-day rule)", "2 prove conversion chain on the fares guide; move Try-it store badges higher if nobody reaches them; goal 1 conversion by Oct 31", "3 New Routes: negatives bluebikes / blue bike / bike rental; pause duplicate 'biking in boston' there"],
+      "recommended": [
+        "1 pause 'biking in worcester' (QS 1; rule breach, exception to 14-day rule)",
+        "2 prove conversion chain on the fares guide; move Try-it store badges higher if nobody reaches them; goal 1 conversion by Oct 31",
+        "3 New Routes: negatives bluebikes / blue bike / bike rental; pause duplicate 'biking in boston' there"
+      ],
       "emailed": true,
       "verdict": "Act this week (two small fixes): October 6.86% (24/350), on pace above 5%; fails: QS-1 keyword and 0 conversions."
     },
@@ -450,56 +1083,264 @@
       "date": "2026-10-14",
       "source": "scheduled weekly run: live account (This month = Oct 1-14; campaigns, keywords (2 pages of 100), ads, conversions/all, search terms sorted by impressions, read via page scripts because the tables virtualize rows) + 10-14 script email (rolling 30d: 1,154 impr, 76 clicks, 6.6%, $482.38, 0 conv; flagged QS<3 on 'boston bike paths' and 0 conversions) + GSC weekly-2026-10-09 (clusters file; brand totals are a lower bound since only top queries per cluster are stored).",
       "window": "2026-10-01..2026-10-14",
-      "impressions": 1205, "clicks": 82, "ctr_pct": 6.80, "cost": 506.99, "conversions": 0,
+      "impressions": 1205,
+      "clicks": 82,
+      "ctr_pct": 6.8,
+      "cost": 506.99,
+      "conversions": 0,
       "avg_cpc": 6.18,
-      "week": { "window": "2026-10-08..2026-10-14", "impressions": 855, "clicks": 58, "ctr_pct": 6.78 },
+      "week": {
+        "window": "2026-10-08..2026-10-14",
+        "impressions": 855,
+        "clicks": 58,
+        "ctr_pct": 6.78
+      },
       "by_campaign": {
-        "How-to Guides": { "impressions": 1082, "clicks": 79, "cost": 493.86 },
-        "Town Walking & Biking": { "impressions": 99, "clicks": 2, "cost": 5.32 },
-        "GSI — Brand": { "impressions": 8, "clicks": 1, "cost": 7.81 },
-        "New Routes — Movers": { "impressions": 27, "clicks": 0, "cost": 0 },
-        "Shift App — Massachusetts": { "impressions": 6, "clicks": 0, "cost": 0 },
-        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0, "cost": 0 }
+        "How-to Guides": {
+          "impressions": 1082,
+          "clicks": 79,
+          "cost": 493.86
+        },
+        "Town Walking & Biking": {
+          "impressions": 99,
+          "clicks": 2,
+          "cost": 5.32
+        },
+        "GSI — Brand": {
+          "impressions": 8,
+          "clicks": 1,
+          "cost": 7.81
+        },
+        "New Routes — Movers": {
+          "impressions": 27,
+          "clicks": 0,
+          "cost": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 6,
+          "clicks": 0,
+          "cost": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 0,
+          "cost": 0
+        }
       },
       "concentration": "74 of 82 clicks from 'how to pay for the t' (How-to Guides / Paying for the T, 1,033 impr, 7.16%); 'how to pay mbta fare' 4/44; Town 2 clicks (walking trails quincy 1/4, biking in boston 1/60); Brand 'go green streets' 1/2; 'how does bluebikes work' 1/4. Top RSA 'How to Pay for the T | MBTA Fares, Explained' 242 impr / 15 clicks on the ads view.",
-      "keywords": { "total": 186, "match": "175 broad, 9 phrase, 2 exact", "eligible": 126, "low_search_volume": 57, "paused": 2, "low_search_volume_by_campaign": { "GSI — Brand": "3 of 11", "How-to Guides": "7 of 20", "New Routes — Movers": "0 of 14", "Shift App — Massachusetts": "5 of 31", "Shift Your Semester — Students": "15 of 42", "Town Walking & Biking": "27 of 68" }, "single_word": ["\"gogreenstreets\" (brand, allowed)"], "low_quality_score": ["boston bike paths (Town / Town routes): 'Rarely shown (low Quality Score)', script says QS < 3; 12 impr 0 clicks"], "paused_list": ["biking in worcester (Town, QS 1, paused 10-07)", "biking in boston (New Routes, paused 10-07)"] },
-      "ads": { "total": 36, "ad_groups": 18, "per_ad_group": 2, "all_eligible": true, "disapproved_seen": 0, "limited_by_policy": 0, "strength": "26 Average, 6 Good, 1 Excellent, 1 Poor, 2 Pending", "poor": ["Town Walking & Biking / Walk and bike to school: Walking School Bus Ideas"], "pending": ["New Routes / Just moved: both RSAs (landing page changed 10-13)"] },
+      "keywords": {
+        "total": 186,
+        "match": "175 broad, 9 phrase, 2 exact",
+        "eligible": 126,
+        "low_search_volume": 57,
+        "paused": 2,
+        "low_search_volume_by_campaign": {
+          "GSI — Brand": "3 of 11",
+          "How-to Guides": "7 of 20",
+          "New Routes — Movers": "0 of 14",
+          "Shift App — Massachusetts": "5 of 31",
+          "Shift Your Semester — Students": "15 of 42",
+          "Town Walking & Biking": "27 of 68"
+        },
+        "single_word": [
+          "\"gogreenstreets\" (brand, allowed)"
+        ],
+        "low_quality_score": [
+          "boston bike paths (Town / Town routes): 'Rarely shown (low Quality Score)', script says QS < 3; 12 impr 0 clicks"
+        ],
+        "paused_list": [
+          "biking in worcester (Town, QS 1, paused 10-07)",
+          "biking in boston (New Routes, paused 10-07)"
+        ]
+      },
+      "ads": {
+        "total": 36,
+        "ad_groups": 18,
+        "per_ad_group": 2,
+        "all_eligible": true,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "strength": "26 Average, 6 Good, 1 Excellent, 1 Poor, 2 Pending",
+        "poor": [
+          "Town Walking & Biking / Walk and bike to school: Walking School Bus Ideas"
+        ],
+        "pending": [
+          "New Routes / Just moved: both RSAs (landing page changed 10-13)"
+        ]
+      },
       "sitelinks": 15,
       "sitelinks_source": "script email; not recounted in the UI this run",
       "campaign_status": "all 6 Eligible (Limited): conversion tracking setup is incomplete; Brand also Limited by search volume; all Maximize conversions. Budgets How-to $50, Town $40, Brand $30, New Routes $109.50, Shift App $110, Semester $110 (account $449.50/day).",
       "conversion_tracking_status": "Sign-up and Outbound click goals Needs attention (6 of 6 campaigns); Page view 0 of 6. Conversion actions: newsletter_signup, shift_store_click, donate_page_view all 'Awaiting conversions'. cheat_sheet_download not imported yet. 0 conversions on 82 clicks.",
-      "account_banners": ["Apply for financial products & services certification (since 10-12; no ad limited by policy; do not apply)", "Protect your account from unauthorized activity"],
-      "brand_search_gsc_week": { "range": "2026-10-03..2026-10-09", "impressions": 27, "clicks": 12, "note": "green streets initiative 16 (11 clicks), green streets 11 (1 click); 'green street' 11 and 'greenstreet' 8 excluded as ambiguous street names" },
+      "account_banners": [
+        "Apply for financial products & services certification (since 10-12; no ad limited by policy; do not apply)",
+        "Protect your account from unauthorized activity"
+      ],
+      "brand_search_gsc_week": {
+        "range": "2026-10-03..2026-10-09",
+        "impressions": 27,
+        "clicks": 12,
+        "note": "green streets initiative 16 (11 clicks), green streets 11 (1 click); 'green street' 11 and 'greenstreet' 8 excluded as ambiguous street names"
+      },
       "month_end_math": "last-7-day pace ~122 impr/day -> ~3,280 impr in October -> ~164 clicks needed for 5%; 82 more over 17 days (~4.8/day) vs ~8.3/day last week; the remaining days only need ~4% CTR to hold October over 5%",
       "search_terms": [
-        { "term": "boston public transportation", "impressions": 26, "clicks": 3, "conversions": 0 },
-        { "term": "how to pay for the t in boston", "impressions": 19, "clicks": 2, "conversions": 0 },
-        { "term": "boston t", "impressions": 12, "clicks": 2, "conversions": 0 },
-        { "term": "the t in boston", "impressions": 12, "clicks": 0, "conversions": 0 },
-        { "term": "how to take the t in boston", "impressions": 10, "clicks": 1, "conversions": 0 },
-        { "term": "how to ride the t in boston", "impressions": 9, "clicks": 0, "conversions": 0 },
-        { "term": "what is the t in boston", "impressions": 9, "clicks": 0, "conversions": 0 },
-        { "term": "boston subway", "impressions": 8, "clicks": 1, "conversions": 0 },
-        { "term": "how much is the t in boston", "impressions": 8, "clicks": 1, "conversions": 0 },
-        { "term": "public transportation in boston", "impressions": 6, "clicks": 0, "conversions": 0 },
-        { "term": "t pass boston", "impressions": 6, "clicks": 0, "conversions": 0 },
-        { "term": "boston public transportation pass", "impressions": 5, "clicks": 1, "conversions": 0 },
-        { "term": "how to pay for the bus in boston", "impressions": 5, "clicks": 0, "conversions": 0 },
-        { "term": "boston the t", "impressions": 4, "clicks": 1, "conversions": 0 },
-        { "term": "boston transit system", "impressions": 4, "clicks": 1, "conversions": 0 },
-        { "term": "how does the boston subway work", "impressions": 4, "clicks": 0, "conversions": 0 },
-        { "term": "public transportation boston", "impressions": 4, "clicks": 0, "conversions": 0 },
-        { "term": "t train boston", "impressions": 4, "clicks": 0, "conversions": 0 },
-        { "term": "taking the t in boston", "impressions": 4, "clicks": 0, "conversions": 0 },
-        { "term": "the t boston", "impressions": 4, "clicks": 0, "conversions": 0 },
-        { "term": "how do you pay for the t in boston", "impressions": 4, "clicks": 0, "conversions": 0 },
-        { "term": "boston t line tickets", "impressions": 4, "clicks": 1, "conversions": 0 },
-        { "term": "boston t pass", "impressions": 4, "clicks": 1, "conversions": 0 },
-        { "term": "boston t payment methods", "impressions": 4, "clicks": 0, "conversions": 0 },
-        { "term": "boston t tickets", "impressions": 4, "clicks": 1, "conversions": 0 }
+        {
+          "term": "boston public transportation",
+          "impressions": 26,
+          "clicks": 3,
+          "conversions": 0
+        },
+        {
+          "term": "how to pay for the t in boston",
+          "impressions": 19,
+          "clicks": 2,
+          "conversions": 0
+        },
+        {
+          "term": "boston t",
+          "impressions": 12,
+          "clicks": 2,
+          "conversions": 0
+        },
+        {
+          "term": "the t in boston",
+          "impressions": 12,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "how to take the t in boston",
+          "impressions": 10,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "how to ride the t in boston",
+          "impressions": 9,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "what is the t in boston",
+          "impressions": 9,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston subway",
+          "impressions": 8,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "how much is the t in boston",
+          "impressions": 8,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "public transportation in boston",
+          "impressions": 6,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "t pass boston",
+          "impressions": 6,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston public transportation pass",
+          "impressions": 5,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "how to pay for the bus in boston",
+          "impressions": 5,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston the t",
+          "impressions": 4,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "boston transit system",
+          "impressions": 4,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "how does the boston subway work",
+          "impressions": 4,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "public transportation boston",
+          "impressions": 4,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "t train boston",
+          "impressions": 4,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "taking the t in boston",
+          "impressions": 4,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "the t boston",
+          "impressions": 4,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "how do you pay for the t in boston",
+          "impressions": 4,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston t line tickets",
+          "impressions": 4,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "boston t pass",
+          "impressions": 4,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "boston t payment methods",
+          "impressions": 4,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston t tickets",
+          "impressions": 4,
+          "clicks": 1,
+          "conversions": 0
+        }
       ],
       "search_terms_note": "276 terms this month. 'how to pay for the t in boston' appears as exact (14/1) and phrase (5/1) rows, merged above. Rows 26-40 by impressions: how much does the t cost in boston 4/0, how to pay for bus in boston 4/1, how to pay on boston subway 4/0, paying for the t in boston 4/1, t tickets boston 4/1, boston bike paths 4/0 (Town, the QS-flagged keyword), boston mass transit 3/0, boston train 3/0, boston transit 3/1, how does the t work in boston 3/0, how to use public transportation in boston 3/0, mapa metro boston pdf 3/0, t subway boston 3/0, the ride 3/0. All How-to Guides / Paying for the T except 'boston bike paths'. Nothing off-target; no negatives proposed.",
-      "recommended": ["1 pause 'boston bike paths' (QS < 3; rule breach, exception to 14-day rule)", "2 mark cheat_sheet_download as a GA4 key event and import it into Ads as a conversion; goal 1 conversion by Oct 31", "3 add the 10 approved student keywords to Shift Your Semester / Students (Semester 1 impr in 14 days)"],
+      "recommended": [
+        "1 pause 'boston bike paths' (QS < 3; rule breach, exception to 14-day rule)",
+        "2 mark cheat_sheet_download as a GA4 key event and import it into Ads as a conversion; goal 1 conversion by Oct 31",
+        "3 add the 10 approved student keywords to Shift Your Semester / Students (Semester 1 impr in 14 days)"
+      ],
       "recommended_outcome": "all 3 DONE the same day by Claude on Keith's 'Please do items 1-3' (see the 2026-10-14 change entry)",
       "emailed": true,
       "verdict": "Act this week (one rule fix, one conversion step): October 6.80% (82/1,205), on pace above 5%; fails: QS<3 keyword 'boston bike paths' and 0 conversions."
