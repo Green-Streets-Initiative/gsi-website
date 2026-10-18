@@ -43,6 +43,13 @@ export const BIO_LINKS: BioLink[] = [
     until: '2026-10-25T13:00:00-04:00',
   },
   {
+    slug: 'fallcolors',
+    label: 'Fall Colors Ride: register (free)',
+    sublabel: 'Sun Oct 25, Everett. Bike to the Sea, about 15 miles',
+    url: 'https://forms.gle/j2bxXt2BAMJF3Heo9',
+    until: '2026-10-25T11:00:00-04:00',
+  },
+  {
     slug: 'winthrop-parade',
     label: "Kids' Costume Bike Parade, Winthrop",
     sublabel: 'Sat Oct 24, 10 AM to 1 PM, Ingleside Park',
