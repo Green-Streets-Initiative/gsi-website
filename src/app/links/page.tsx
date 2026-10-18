@@ -25,9 +25,10 @@ export default function LinksPage() {
         {/* Green street-sign header, like the social cards */}
         <header className="rounded-2xl bg-forest px-6 pb-6 pt-5 text-white shadow-md ring-2 ring-white ring-inset">
           {/* GSI wordmark, same markup as the site Nav/Footer: Trebuchet MS,
-              "Green Streets" bold + "Initiative" regular. Full white on the green. */}
+              "Green Streets" bold + "Initiative" regular. Full white on the green. Sized to the
+              viewport so it stays on one line on phones down to 320px. */}
           <h1
-            className="text-[30px] leading-[1.1] tracking-[0.3px] text-white sm:text-[34px]"
+            className="text-[clamp(20px,6.6vw,30px)] leading-[1.1] tracking-[0.3px] text-white sm:text-[34px]"
             style={{ fontFamily: "'Trebuchet MS', 'Lucida Grande', Verdana, sans-serif" }}
           >
             <span className="font-bold">Green Streets</span>{' '}
