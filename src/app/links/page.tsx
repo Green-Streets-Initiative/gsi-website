@@ -24,8 +24,14 @@ export default function LinksPage() {
       <div className="mx-auto w-full max-w-[560px]">
         {/* Green street-sign header, like the social cards */}
         <header className="rounded-2xl bg-forest px-6 pb-6 pt-5 text-white shadow-md ring-2 ring-white ring-inset">
-          <h1 className="font-headline text-[30px] font-extrabold leading-[1.05] tracking-[-0.01em] sm:text-[34px]">
-            Green Streets Initiative
+          {/* GSI wordmark, same markup as the site Nav/Footer: Trebuchet MS,
+              "Green Streets" bold + "Initiative" regular. Full white on the green. */}
+          <h1
+            className="text-[30px] leading-[1.1] tracking-[0.3px] text-white sm:text-[34px]"
+            style={{ fontFamily: "'Trebuchet MS', 'Lucida Grande', Verdana, sans-serif" }}
+          >
+            <span className="font-bold">Green Streets</span>{' '}
+            <span className="font-normal">Initiative</span>
           </h1>
           <p className="mt-2 text-[16px] leading-snug text-white/90">
             Helping people across Massachusetts walk, bike, and take transit more often.

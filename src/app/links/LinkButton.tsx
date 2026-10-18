@@ -1,12 +1,12 @@
 'use client'
 
 import { gaEvent } from '@/lib/ga'
-import type { BioLink } from '@/content/bio-links'
+import { taggedBioLinkUrl, type BioLink } from '@/content/bio-links'
 
 export default function LinkButton({ link, section }: { link: BioLink; section: 'week' | 'always' }) {
   return (
     <a
-      href={link.url}
+      href={taggedBioLinkUrl(link)}
       onClick={() => gaEvent('links_page_click', { slug: link.slug, section })}
       className="group flex min-h-[56px] w-full items-center gap-3 rounded-xl border border-line bg-white px-5 py-3.5 text-navy shadow-sm transition-colors hover:border-forest hover:bg-accent-softer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
     >

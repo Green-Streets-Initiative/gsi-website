@@ -15,6 +15,8 @@
 // Old entries can be deleted any time, but keep a slug if it was printed on a
 // post, so the short address keeps working.
 
+import { withUtm } from '@/lib/utm'
+
 export type BioLink = {
   slug: string
   label: string
@@ -111,4 +113,50 @@ export function pinnedLinks(): BioLink[] {
 export function findBioLink(slug: string): BioLink | undefined {
   const s = slug.toLowerCase()
   return BIO_LINKS.find((l) => l.slug === s)
+}
+
+// UTM tags for links that leave gogreenstreets.org, so partners (and our own
+// Shift web/app split on shift.gogreenstreets.org) can see the traffic came
+// from the bio links. Internal gogreenstreets.org links stay untagged: UTMs on
+// an internal link restart the GA4 session and wipe its real source.
+const INTERNAL_HOSTS = new Set(['gogreenstreets.org', 'www.gogreenstreets.org'])
+
+export const BIO_LINKS_UTM = { source: 'gsi_links', medium: 'social', campaign: 'bio_links' } as const
+
+const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const
+
+function isInternal(url: string): boolean {
+  try {
+    return INTERNAL_HOSTS.has(new URL(url).hostname.toLowerCase())
+  } catch {
+    return true
+  }
+}
+
+/** Where a button on /links sends people, with our UTM tags when it leaves the site. */
+export function taggedBioLinkUrl(link: BioLink): string {
+  if (isInternal(link.url)) return link.url
+  return withUtm(link.url, { ...BIO_LINKS_UTM, content: link.slug }) ?? link.url
+}
+
+/**
+ * Where /links/<slug> redirects. If the incoming request carries its own utm_*
+ * (e.g. a Facebook post tagged utm_source=facebook), those pass through in
+ * place of our defaults so the channel survives the redirect. That applies to
+ * internal destinations too, since the destination page is the first hit GA4
+ * sees. With no incoming utm_*, internal destinations stay untagged.
+ * Tags already on the destination url are never overwritten.
+ */
+export function bioLinkRedirectUrl(link: BioLink, incoming: URLSearchParams): string {
+  const passed = UTM_KEYS.filter((k) => incoming.get(k))
+  if (passed.length === 0) return taggedBioLinkUrl(link)
+  let dest: URL
+  try {
+    dest = new URL(link.url)
+  } catch {
+    return link.url
+  }
+  if (UTM_KEYS.some((k) => dest.searchParams.has(k))) return link.url
+  for (const k of passed) dest.searchParams.set(k, incoming.get(k)!)
+  return dest.toString()
 }
