@@ -36,6 +36,8 @@ export default function AdPixels() {
 
   useEffect(() => {
     if (!enabled || !pathname) return
+    // /email/* pages are opened from personal links (Shift item 19): no ad pixels there.
+    if (pathname.startsWith('/email/')) return
     if (META_PIXEL_ID) ensureFbq()('track', 'PageView')
     if (REDDIT_PIXEL_ID) ensureRdt()('track', 'PageVisit')
   }, [enabled, pathname])

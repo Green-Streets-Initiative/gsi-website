@@ -27,10 +27,12 @@ interface AgendaProps {
   emptyMessage: string
   emptyAction?: ReactNode
   showCount?: boolean
+  /** Beside the phone count line (the "Get these by email" jump). */
+  countAction?: ReactNode
 }
 
 export default function Agenda({
-  events, limit, onShowMore, paged, userLoc, saved, onToggleSave, emptyMessage, emptyAction, showCount,
+  events, limit, onShowMore, paged, userLoc, saved, onToggleSave, emptyMessage, emptyAction, showCount, countAction,
 }: AgendaProps) {
   const { hrefBase } = useEventsTone()
   const shown = paged ? events.slice(0, limit) : events
@@ -67,9 +69,12 @@ export default function Agenda({
   return (
     <div>
       {showCount && (
-        <p className="mb-4 text-[13px] text-(--ev-ink-75) lg:hidden">
-          {events.length} event{events.length !== 1 ? 's' : ''}
-        </p>
+        <div className="mb-4 flex items-center justify-between gap-3 lg:hidden">
+          <p className="text-[13px] text-(--ev-ink-75)">
+            {events.length} event{events.length !== 1 ? 's' : ''}
+          </p>
+          {countAction}
+        </div>
       )}
       <div className="flex flex-col gap-7">
         {groups.map((group) => (

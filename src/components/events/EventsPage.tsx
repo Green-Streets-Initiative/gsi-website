@@ -348,9 +348,16 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                       : 'No events match your filters.'
                 }
                 showCount
+                countAction={
+                  f.filtered.length > 0 && (
+                    <a href="#event-alerts" className="flex min-h-[44px] items-center text-[13px] font-semibold text-(--ev-accent) hover:underline">
+                      Get these by email
+                    </a>
+                  )
+                }
               />
-              {/* Phone: after the list. Desktop has it in the sidebar. */}
-              <EventAlertSignup filters={f} className="mt-6 lg:hidden" />
+              {/* Phone: after the list (the count line jumps here). Desktop has it in the sidebar. */}
+              <EventAlertSignup filters={f} id="event-alerts" className="mt-6 scroll-mt-[140px] lg:hidden" />
             </div>
 
             <aside className="sticky top-[132px] hidden self-start lg:block">

@@ -148,11 +148,12 @@ export async function POST(req: Request) {
     if (subErr) console.error('email_subscriptions town digest mirror failed:', subErr.message)
 
     // A hard bounce or a spam complaint means no Shift email to this address
-    // at all (sending reputation): the system's "everything off" list.
+    // at all (sending reputation): the system's "everything off" list. It
+    // replaces an "unsubscribe from all" row, so Undo can't lift it.
     if (HARD_REASONS.has(reason)) {
       const { error: supErr } = await sb
         .from('email_suppressions')
-        .upsert({ email, reason }, { onConflict: 'email', ignoreDuplicates: true })
+        .upsert({ email, reason, undo: {} }, { onConflict: 'email' })
       if (supErr) console.error('email_suppressions webhook mirror failed:', supErr.message)
     }
   }

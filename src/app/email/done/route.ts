@@ -50,10 +50,10 @@ const SUBS: Record<string, Record<Lang, { title: string; body: string }>> = {
     'zh-Hans': { title: '订阅成功', body: '你将通过邮件收到{topic}。每封邮件都附有退订或管理邮件的链接。' },
   },
   unsubscribed: {
-    en: { title: 'You’re unsubscribed', body: 'You won’t get {topic} anymore. Other emails you get from Shift are not affected.' },
-    es: { title: 'Cancelaste la suscripción', body: 'Ya no recibirás {topic}. Los demás correos de Shift no cambian.' },
-    'pt-BR': { title: 'Inscrição cancelada', body: 'Você não vai mais receber {topic}. Os outros emails do Shift continuam iguais.' },
-    'zh-Hans': { title: '已退订', body: '你将不再收到{topic}。你收到的其他 Shift 邮件不受影响。' },
+    en: { title: 'You’re unsubscribed', body: 'You won’t get {topic} anymore. Your other emails from Shift keep coming as before.' },
+    es: { title: 'Cancelaste la suscripción', body: 'Ya no recibirás {topic}. Tus otros correos de Shift siguen llegando como antes.' },
+    'pt-BR': { title: 'Inscrição cancelada', body: 'Você não vai mais receber {topic}. Seus outros emails do Shift continuam chegando como antes.' },
+    'zh-Hans': { title: '已退订', body: '你将不再收到{topic}。你的其他 Shift 邮件照常发送。' },
   },
   'link-problem': {
     en: { title: 'That link didn’t work', body: 'This link looks incomplete or expired. Email info@gogreenstreets.org and we’ll help.' },
@@ -68,6 +68,21 @@ const SUBS: Record<string, Record<Lang, { title: string; body: string }>> = {
     'zh-Hans': { title: '出了点问题', body: '暂时无法保存。请过几分钟再试一次此链接。' },
   },
 }
+/**
+ * After a confirm, the way forward: back to what they signed up for (the
+ * polish pass found the page a dead end).
+ */
+const NEXT: Record<string, { href: string; label: Record<Lang, string> }> = {
+  event_alerts: {
+    href: '/events',
+    label: { en: 'See upcoming events', es: 'Ver los próximos eventos', 'pt-BR': 'Ver os próximos eventos', 'zh-Hans': '查看即将举行的活动' },
+  },
+  lesson_alerts: {
+    href: '/events?type=class',
+    label: { en: 'See classes coming up', es: 'Ver las próximas clases', 'pt-BR': 'Ver as próximas aulas', 'zh-Hans': '查看即将开设的课程' },
+  },
+}
+
 const SOME_EMAILS: Record<Lang, string> = { en: 'these emails', es: 'estos correos', 'pt-BR': 'estes emails', 'zh-Hans': '这些邮件' }
 
 async function subsMessage(kind: string, topic: string, lang: string): Promise<Message> {
@@ -84,7 +99,11 @@ async function subsMessage(kind: string, topic: string, lang: string): Promise<M
     }
   }
   const m = (SUBS[kind] ?? SUBS.error)[L]
-  return { title: esc(m.title), body: para(esc(m.body.replace('{topic}', name))), lang: L }
+  const next = kind === 'confirmed' ? NEXT[topic] : undefined
+  const button = next
+    ? `<a href="${next.href}" style="display:inline-block;margin:8px 0 0;padding:12px 22px;border-radius:12px;background:#BAF14D;color:#191A2E;font-size:15px;font-weight:bold;text-decoration:none;">${esc(next.label[L])}</a>`
+    : ''
+  return { title: esc(m.title), body: para(esc(m.body.replace('{topic}', name))) + button, lang: L }
 }
 
 function messageFor(list: string, kind: string, org: string): Message {

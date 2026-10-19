@@ -257,7 +257,7 @@ export async function GET(req: Request) {
         const sig = sigs.get(r.id)
         if (!sig?.stop_sig || !sig.manage_sig) throw new Error('missing link signature')
         const unsubUrl = `${FUNCTIONS}/email-subscriptions?a=stop&id=${r.id}&s=${sig.stop_sig}`
-        const manageUrl = `${SITE}/email/manage?id=${r.id}&s=${sig.manage_sig}`
+        const manageUrl = `${SITE}/email/manage#id=${r.id}&s=${sig.manage_sig}`
         const home = r.user_id ? homeByUser.get(r.user_id) : undefined
         const miles = home && content.featuredLat != null && content.featuredLng != null
           ? haversineMiles(home.lat, home.lng, content.featuredLat, content.featuredLng)

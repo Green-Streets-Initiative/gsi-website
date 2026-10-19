@@ -72,7 +72,8 @@ function PageviewTracker() {
 
     let url = window.origin + pathname
     const qs = searchParams?.toString()
-    if (qs) url += `?${qs}`
+    // /email/* links carry a personal key (Shift item 19): never record it.
+    if (qs && !pathname.startsWith('/email/')) url += `?${qs}`
     posthog.capture('$pageview', { $current_url: url })
   }, [pathname, searchParams])
 

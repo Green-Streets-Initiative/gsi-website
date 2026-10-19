@@ -44,7 +44,7 @@ function payload(f: Filters) {
   }
 }
 
-export default function EventAlertSignup({ filters: f, className = '' }: { filters: Filters; className?: string }) {
+export default function EventAlertSignup({ filters: f, className = '', id }: { filters: Filters; className?: string; id?: string }) {
   const [email, setEmail] = useState('')
   const [website, setWebsite] = useState('')
   const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
@@ -79,7 +79,7 @@ export default function EventAlertSignup({ filters: f, className = '' }: { filte
   }
 
   return (
-    <div className={`rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4 ${className}`}>
+    <div id={id} className={`rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4 ${className}`}>
       <p className="text-[14px] font-bold text-(--ev-ink)">Get these by email</p>
       {status === 'done' ? (
         <p className="mt-2 text-[14px] font-semibold leading-relaxed text-(--ev-accent)" role="status">

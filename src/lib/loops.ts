@@ -201,10 +201,11 @@ export async function subscribeTownDigest(
   email: string,
   townSlug: string,
 ): Promise<{ ok: boolean; status?: number }> {
+  // No `subscribed: true`: a contact who unsubscribed in Loops stays
+  // unsubscribed (a new contact starts subscribed, Loops' default).
   const body: Record<string, unknown> = {
     email,
     source: 'town_page',
-    subscribed: true,
     townDigest: townSlug,
   }
   if (LOOPS_LIST_IDS.newsletter) {

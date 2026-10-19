@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { takeLinkKey } from '@/lib/email-link-key'
 import { gaEvent } from '@/lib/ga'
 
 /*
@@ -78,9 +78,9 @@ const T: Record<string, Record<Lang, string>> = {
 }
 
 export default function ManageEmails() {
-  const q = useSearchParams()
-  const id = q.get('id') ?? ''
-  const s = q.get('s') ?? ''
+  const [key, setKey] = useState<{ id: string; s: string } | null>(null)
+  const id = key?.id ?? ''
+  const s = key?.s ?? ''
   const [state, setState] = useState<State | null>(null)
   const [bad, setBad] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
@@ -108,6 +108,12 @@ export default function ManageEmails() {
   }
 
   useEffect(() => {
+    const k = takeLinkKey()
+    setKey({ id: k.get('id') ?? '', s: k.get('s') ?? '' })
+  }, [])
+
+  useEffect(() => {
+    if (!key) return
     if (!id || !s) {
       setBad(true)
       return
@@ -115,7 +121,7 @@ export default function ManageEmails() {
     void load()
     gaEvent('email_manage_viewed')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, s])
+  }, [key])
 
   async function save(key: string, body: Record<string, unknown>, optimistic: (st: State) => State) {
     if (!state) return
@@ -179,7 +185,7 @@ export default function ManageEmails() {
                 <p className="text-[1.0625rem] font-semibold leading-snug text-navy">{x.names[L] ?? x.names.en}</p>
                 <p className="mt-1 text-[0.9375rem] leading-snug text-navy/80">{x.descriptions[L] ?? x.descriptions.en}</p>
                 {x.near && (
-                  <p className="mt-1 text-[0.9375rem] leading-snug text-navy/80">
+                  <p className="mt-1 text-[0.9375rem] font-semibold leading-snug text-navy">
                     {t('near')} {x.near}
                   </p>
                 )}

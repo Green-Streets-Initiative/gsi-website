@@ -24,6 +24,8 @@ export async function POST(req: Request) {
         topic: body.topic,
         email: body.email,
         place: body.place,
+        filters: body.filters,
+        town: body.town,
         locale: body.locale,
         website: body.website,
       }),

@@ -36,19 +36,19 @@ export default function TownDigestSignup({ townName, townSlug, variant = 'card' 
       {inline ? (
         <p className="text-[15px] leading-relaxed text-ink-soft">
           <span className="font-semibold text-navy">Keep a pulse on {townName}.</span>{' '}
-          New street projects, meetings worth your voice, and how {townName} is moving — 1–2 emails a month.
+          New street projects, meetings worth your voice, and how {townName} is moving. One or two emails a month.
         </p>
       ) : (
         <>
           <h2 className="font-serif text-[clamp(1.5rem,3vw,1.875rem)] leading-tight text-navy">Keep a pulse on {townName}</h2>
           <p className="mt-2 max-w-[460px] text-[15px] leading-relaxed text-ink-soft">
-            New street projects, meetings worth your voice, and how {townName} is moving — 1–2 emails a month.
+            New street projects, meetings worth your voice, and how {townName} is moving. One or two emails a month.
           </p>
         </>
       )}
       {state === 'done' ? (
         <p className="mt-4 text-[15px] font-semibold text-green-deep">
-          You&apos;re in — we&apos;ll be in touch when something&apos;s happening in {townName}.
+          You&apos;re signed up. We&apos;ll email you when something&apos;s happening in {townName}.
         </p>
       ) : (
         <form onSubmit={submit} className={`${inline ? 'mt-3' : 'mt-5'} flex max-w-[440px] gap-2`} data-ph-capture-attribute-entry="town_digest_signup">
@@ -69,7 +69,7 @@ export default function TownDigestSignup({ townName, townSlug, variant = 'card' 
           </button>
         </form>
       )}
-      {state === 'error' && <p className="mt-2 text-[13px] text-red-700">Something went wrong — try again in a moment.</p>}
+      {state === 'error' && <p className="mt-2 text-[13px] text-red-700">Something went wrong. Please try again in a moment.</p>}
     </div>
   )
 }
