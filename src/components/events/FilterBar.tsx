@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Bookmark, Search } from 'lucide-react'
 import { getTagMeta } from '@/lib/events'
 import FilterPill from './FilterPill'
-import { WhenList, LocationControl, DistancePills, TypeList, TagToggles } from './FilterControls'
+import { WhenList, LocationControl, DistancePills, TypeList, TagToggles, AudienceToggles, hasAudienceChoices } from './FilterControls'
 import { WHEN_OPTIONS, typeFilterLabel, type EventFilters } from './useEventFilters'
 
 /**
@@ -34,8 +34,10 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
         ? `Within ${f.distance} mi`
         : 'Near'
   const typeLabel = f.typeFilter === 'All' ? 'Type' : typeFilterLabel(f.typeFilter)
+  // One pill holds Good for and Rides for, so the bar doesn't grow.
+  const picked = [...f.tags, ...f.audience]
   const tagLabel =
-    f.tags.length === 0 ? 'Good for' : f.tags.length === 1 ? getTagMeta(f.tags[0]).label : `Good for · ${f.tags.length}`
+    picked.length === 0 ? 'Good for' : picked.length === 1 ? getTagMeta(picked[0]).label : `Good for · ${picked.length}`
 
   return (
     <section className="sticky top-[60px] z-30 hidden border-b border-(--ev-line) bg-(--ev-bar) px-8 backdrop-blur lg:block">
@@ -80,8 +82,14 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
           />
         </FilterPill>
 
-        <FilterPill label={tagLabel} active={f.tags.length > 0} open={open === 'tags'} onOpen={() => setOpen('tags')} onClose={close} panelClassName="w-[320px]">
+        <FilterPill label={tagLabel} active={picked.length > 0} open={open === 'tags'} onOpen={() => setOpen('tags')} onClose={close} panelClassName="w-[340px]">
           <TagToggles selected={f.tags} counts={f.tagCounts} onToggle={f.toggleTag} />
+          {hasAudienceChoices(f.audience, f.audienceCounts) && (
+            <>
+              <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Rides for</p>
+              <AudienceToggles selected={f.audience} counts={f.audienceCounts} onToggle={f.toggleAudience} />
+            </>
+          )}
         </FilterPill>
 
         {(savedCount > 0 || f.savedOnly) && (

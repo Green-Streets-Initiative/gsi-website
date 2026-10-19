@@ -32,6 +32,8 @@ export type WhenValue = (typeof WHEN_OPTIONS)[number]['value']
 
 /** The "Good for" toggles: the tags with real coverage in the data. */
 export const GOOD_FOR_TAGS = ['free', 'beginner_friendly', 'family_friendly'] as const
+/** "Rides for" groups. Unlike Good for, an event matches ANY picked group. */
+export const AUDIENCE_TAGS = ['women', 'lgbtq', 'seniors', 'students'] as const
 
 export interface UserLoc { lat: number; lng: number; label: string }
 export type GeoStatus = 'idle' | 'locating' | 'active'
@@ -40,7 +42,7 @@ export interface ActiveFilter { key: string; label: string; clear: () => void }
 
 const DISTANCE_VALUES: readonly string[] = DISTANCE_OPTIONS.map((o) => o.value)
 const WHEN_VALUES: readonly string[] = WHEN_OPTIONS.map((o) => o.value)
-const URL_KEYS = ['q', 'when', 'type', 'level', 'day', 'near', 'dist', 'tags', 'saved']
+const URL_KEYS = ['q', 'when', 'type', 'level', 'day', 'near', 'dist', 'tags', 'for', 'saved']
 
 /**
  * The "type" filter is one radio group holding either an event type or a
@@ -85,7 +87,7 @@ function inDateRange(evDate: Date, range: WhenValue, today: Date): boolean {
   return evDate <= end
 }
 
-type Ignore = 'type' | 'tags' | 'day'
+type Ignore = 'type' | 'tags' | 'audience' | 'day'
 
 interface Options {
   saved: Record<string, boolean>
@@ -126,6 +128,9 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
   const [tags, setTags] = useState<string[]>(() =>
     (params.get('tags') ?? '').split(',').filter((t) => t in TAG_META),
   )
+  const [audience, setAudience] = useState<string[]>(() =>
+    (params.get('for') ?? '').split(',').filter((t) => (AUDIENCE_TAGS as readonly string[]).includes(t)),
+  )
   const [savedOnly, setSavedOnlyState] = useState(() => params.get('saved') === '1')
   const [initialNear] = useState(() => parseNear(params.get('near')))
   const [userLoc, setUserLoc] = useState<UserLoc>(initialNear ?? DEFAULT_LOCATION)
@@ -161,6 +166,11 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
   const toggleTag = useCallback((t: string) => {
     setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]))
     trackEvents('events_filter_changed', { dimension: 'tag', value: t })
+  }, [])
+
+  const toggleAudience = useCallback((t: string) => {
+    setAudience((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]))
+    trackEvents('events_filter_changed', { dimension: 'audience', value: t })
   }, [])
 
   const setSavedOnly = useCallback((v: boolean) => {
@@ -216,6 +226,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
       if (level ? eventRideStyle(ev) !== level : ev.event_type !== typeFilter) return false
     }
     if (ignore !== 'tags' && tags.length > 0 && !tags.every((t) => ev.tags.includes(t))) return false
+    if (ignore !== 'audience' && audience.length > 0 && !audience.some((t) => ev.tags.includes(t))) return false
     if (savedOnly && !saved[ev.id]) return false
     if (q) {
       const level = eventRideStyle(ev)
@@ -230,7 +241,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
     if (ignore !== 'day' && selectedDay) return ev.event_date === selectedDay
     if (applyDateRange && !inDateRange(parseEventDate(ev.event_date), dateRange, todayDate)) return false
     return true
-  }, [today, typeFilter, tags, savedOnly, saved, q, distance, userLoc, selectedDay, applyDateRange, dateRange, todayDate])
+  }, [today, typeFilter, tags, audience, savedOnly, saved, q, distance, userLoc, selectedDay, applyDateRange, dateRange, todayDate])
 
   const sortEvents = (list: CommunityEvent[]) =>
     list.sort((a, b) => a.event_date.localeCompare(b.event_date) || (a.event_time ?? '').localeCompare(b.event_time ?? ''))
@@ -274,6 +285,12 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
     return counts
   }, [events, matches, tags])
 
+  const audienceCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const t of AUDIENCE_TAGS) counts[t] = events.filter((ev) => matches(ev, 'audience') && ev.tags.includes(t)).length
+    return counts
+  }, [events, matches])
+
   // --- Applied filters (for chips, the phone badge, and Clear all) ---
 
   const activeFilters = useMemo<ActiveFilter[]>(() => {
@@ -285,10 +302,11 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
     if (distance !== 'all') list.push({ key: 'distance', label: `Within ${distance} mi of ${userLoc.label}`, clear: () => setDistance('all') })
     if (typeFilter !== 'All') list.push({ key: 'type', label: typeFilterLabel(typeFilter), clear: () => setTypeFilter('All') })
     for (const t of tags) list.push({ key: `tag:${t}`, label: getTagMeta(t).label, clear: () => toggleTag(t) })
+    for (const t of audience) list.push({ key: `for:${t}`, label: getTagMeta(t).label, clear: () => toggleAudience(t) })
     if (savedOnly) list.push({ key: 'saved', label: 'Saved', clear: () => setSavedOnly(false) })
     return list
-  }, [selectedDay, applyDateRange, dateRange, distance, userLoc.label, typeFilter, tags, savedOnly,
-      setSelectedDay, setDateRange, setDistance, setTypeFilter, toggleTag, setSavedOnly])
+  }, [selectedDay, applyDateRange, dateRange, distance, userLoc.label, typeFilter, tags, audience, savedOnly,
+      setSelectedDay, setDateRange, setDistance, setTypeFilter, toggleTag, toggleAudience, setSavedOnly])
 
   // The picked day is its own control on phones, so it stays out of the badge count.
   const activeFilterCount = activeFilters.filter((f) => f.key !== 'day').length
@@ -299,11 +317,12 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
     setDistanceState('all')
     setTypeState('All')
     setTags([])
+    setAudience([])
     setSavedOnlyState(false)
     trackEvents('events_filter_changed', { dimension: 'all', value: 'clear' })
   }, [])
 
-  const pageKey = [query, distance, typeFilter, dateRange, selectedDay ?? '', tags.join(','), savedOnly, applyDateRange].join('|')
+  const pageKey = [query, distance, typeFilter, dateRange, selectedDay ?? '', tags.join(','), audience.join(','), savedOnly, applyDateRange].join('|')
 
   // --- URL sync: replaceState keeps the page's RSC payload untouched ---
 
@@ -320,6 +339,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
       if (geoStatus === 'active') next.set('near', `${userLoc.lat.toFixed(4)},${userLoc.lng.toFixed(4)},${userLoc.label}`)
       if (distance !== 'all') next.set('dist', distance)
       if (tags.length) next.set('tags', tags.join(','))
+      if (audience.length) next.set('for', audience.join(','))
       if (savedOnly) next.set('saved', '1')
       const qs = next.toString()
       const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname
@@ -328,17 +348,17 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
       }
     }, 250)
     return () => clearTimeout(t)
-  }, [query, dateRange, typeFilter, selectedDay, geoStatus, userLoc, distance, tags, savedOnly])
+  }, [query, dateRange, typeFilter, selectedDay, geoStatus, userLoc, distance, tags, audience, savedOnly])
 
   return {
     // state
-    query, distance, typeFilter, dateRange, selectedDay, tags, savedOnly, userLoc, geoStatus,
+    query, distance, typeFilter, dateRange, selectedDay, tags, audience, savedOnly, userLoc, geoStatus,
     initialCity: initialNear?.label ?? '',
     // setters
-    setQuery, setDistance, setTypeFilter, setDateRange, setSelectedDay, toggleTag, setSavedOnly,
+    setQuery, setDistance, setTypeFilter, setDateRange, setSelectedDay, toggleTag, toggleAudience, setSavedOnly,
     useMyLocation, selectCity,
     // derived
-    filtered, filteredNoDay, typeCounts, typesByCount, tagCounts,
+    filtered, filteredNoDay, typeCounts, typesByCount, tagCounts, audienceCounts,
     activeFilters, activeFilterCount, clearAll, pageKey,
   }
 }

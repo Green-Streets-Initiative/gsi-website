@@ -28,6 +28,8 @@ export interface CommunityEvent {
   /** "Free. Register once per year." Loaded on the event page, for the calendar entry. */
   registration_notes?: string | null
   image_url: string | null
+  /** Extra flyer pages or an event map, shown after image_url in order (Shift 01243). Loaded on the event page only. */
+  extra_image_urls?: string[]
   source_id: string | null
   tags: string[]
   featured: boolean
@@ -140,6 +142,16 @@ export function isNoDrop(ev: Pick<CommunityEvent, 'title' | 'body' | 'no_drop' |
  * The ride's own distance, spelled out ("20 miles", "30 and 40 miles") so it
  * never reads like the distance-from-you ("7.9 mi") that shares a card line.
  */
+/** Every image an event has, flyer front first, then extra pages or a map. */
+export function eventImages(ev: Pick<CommunityEvent, 'image_url' | 'extra_image_urls'>): string[] {
+  const out: string[] = []
+  if (ev.image_url) out.push(ev.image_url)
+  for (const url of ev.extra_image_urls ?? []) {
+    if (url && !out.includes(url)) out.push(url)
+  }
+  return out
+}
+
 export function formatDistanceText(text: string | null | undefined): string | null {
   if (!text) return null
   return text.replace(/\s*-\s*/g, '–')
@@ -202,9 +214,9 @@ export const TAG_META: Record<string, { label: string; color: string; bg: string
   beginner_friendly:     { label: 'Beginner-friendly',    color: '#60A5FA', bg: '#60A5FA20', ink: '#2456C4', inkBg: '#2456C41F' },
   registration_required: { label: 'Registration req’d', color: '#F97316', bg: '#F9731620', ink: '#9A4B00', inkBg: '#9A4B001F' },
   family_friendly:       { label: 'Family-friendly',      color: '#F472B6', bg: '#F472B620', ink: '#B0246E', inkBg: '#B0246E1F' },
-  seniors:               { label: 'Seniors',              color: '#A78BFA', bg: '#A78BFA20', ink: '#5B3FC4', inkBg: '#5B3FC41F' },
+  seniors:               { label: 'Older adults',              color: '#A78BFA', bg: '#A78BFA20', ink: '#5B3FC4', inkBg: '#5B3FC41F' },
   lgbtq:                 { label: 'LGBTQ+',               color: '#E879F9', bg: '#E879F920', ink: '#9D2BB0', inkBg: '#9D2BB01F' },
-  women:                 { label: 'Women',                color: '#FB7185', bg: '#FB718520', ink: '#B3263F', inkBg: '#B3263F1F' },
+  women:                 { label: 'Women and nonbinary',              color: '#FB7185', bg: '#FB718520', ink: '#B3263F', inkBg: '#B3263F1F' },
   spanish:               { label: 'En español',           color: '#FCD34D', bg: '#FCD34D20', ink: '#7A5200', inkBg: '#7A52001F' },
   bilingual:             { label: 'Bilingual',            color: '#FCD34D', bg: '#FCD34D20', ink: '#7A5200', inkBg: '#7A52001F' },
   students:              { label: 'Students',             color: '#2DD4BF', bg: '#2DD4BF20', ink: '#0B6B75', inkBg: '#0B6B751F' },

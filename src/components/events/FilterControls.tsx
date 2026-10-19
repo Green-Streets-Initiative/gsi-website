@@ -9,7 +9,7 @@ import { typeInk, rideStyleInk } from '@/lib/events-tone'
 import { useEventsTone } from './EventsTone'
 import CityAutocomplete from './CityAutocomplete'
 import {
-  DISTANCE_OPTIONS, WHEN_OPTIONS, GOOD_FOR_TAGS,
+  DISTANCE_OPTIONS, WHEN_OPTIONS, GOOD_FOR_TAGS, AUDIENCE_TAGS,
   type DistanceValue, type WhenValue, type GeoStatus, type UserLoc,
 } from './useEventFilters'
 
@@ -255,4 +255,31 @@ export function TagToggles({ selected, counts, onToggle }: TagProps) {
       })}
     </div>
   )
+}
+
+// --- Rides for ---
+
+/** Groups with events under the current filters (and any picked one). A
+ *  group with nothing is left out: "LGBTQ+ 0" reads as "nothing for you". */
+export function AudienceToggles({ selected, counts, onToggle }: TagProps) {
+  const shown = AUDIENCE_TAGS.filter((t) => (counts[t] ?? 0) > 0 || selected.includes(t))
+  if (shown.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {shown.map((t) => {
+        const active = selected.includes(t)
+        const n = counts[t] ?? 0
+        return (
+          <button key={t} onClick={() => onToggle(t)} aria-pressed={active} className={pillClass(active)}>
+            {getTagMeta(t).label}
+            <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{n}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+export function hasAudienceChoices(selected: string[], counts: Record<string, number>): boolean {
+  return AUDIENCE_TAGS.some((t) => (counts[t] ?? 0) > 0 || selected.includes(t))
 }

@@ -19,7 +19,7 @@ import FilterBar from './FilterBar'
 import AppliedFilters from './AppliedFilters'
 import MiniMonth from './MiniMonth'
 import Agenda, { AGENDA_PAGE } from './Agenda'
-import { TypePills, LevelPills, LocationControl, DistancePills, WhenPills, TagToggles } from './FilterControls'
+import { TypePills, LevelPills, LocationControl, DistancePills, WhenPills, TagToggles, AudienceToggles, hasAudienceChoices } from './FilterControls'
 import { useEventFilters } from './useEventFilters'
 import { useSavedEvents } from './useSavedEvents'
 
@@ -407,6 +407,12 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Good for</p>
             <TagToggles selected={f.tags} counts={f.tagCounts} onToggle={f.toggleTag} />
           </div>
+          {hasAudienceChoices(f.audience, f.audienceCounts) && (
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Rides for</p>
+              <AudienceToggles selected={f.audience} counts={f.audienceCounts} onToggle={f.toggleAudience} />
+            </div>
+          )}
           {savedCount > 0 && (
             <div>
               <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Saved</p>
