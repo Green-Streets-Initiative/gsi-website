@@ -20,6 +20,7 @@ type Instructor = {
   kind: string
   details: Record<string, string>
   price: Record<string, string> | null
+  season: Record<string, string> | null
   phone: string | null
 }
 
@@ -61,7 +62,8 @@ const T = {
   ],
   all: ['See all events', 'Ver todos los eventos', 'Ver todos os eventos', '查看全部活动'],
   anyTime: ['Lessons you can book any time', 'Clases que puedes reservar cuando quieras', 'Aulas que você pode agendar quando quiser', '随时可预约的课程'],
-  phone: ['Phone', 'Teléfono', 'Telefone', '电话'],
+  seasonal: ['Classes that run in season', 'Clases por temporada', 'Aulas que acontecem na temporada', '季节性课程'],
+  adaptive: ['Adaptive cycling', 'Ciclismo adaptado', 'Ciclismo adaptado', '无障碍骑行'],
 }
 const IDX: Record<GuideLocale, number> = { en: 0, es: 1, 'pt-BR': 2, 'zh-Hans': 3 }
 const LANG: Record<GuideLocale, string> = { en: 'en-US', es: 'es-US', 'pt-BR': 'pt-BR', 'zh-Hans': 'zh-CN' }
@@ -137,36 +139,39 @@ export default async function BikeLessons({ locale: L = 'en' }: { locale?: Guide
           )}
         </>
       )}
-      {d.instructors.length > 0 && (
-        <>
-          <h3 className="mt-6 mb-3 text-[1rem] font-semibold text-navy">{t('anyTime')}</h3>
-          <ul className="space-y-2">
-            {d.instructors.map((x) => {
-              const lang = L === 'en' ? 'en' : L
-              const price = x.price?.[lang] ?? x.price?.en
-              return (
-                <li key={x.id}>
-                  <a
-                    href={x.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block rounded-[10px] border border-navy/10 bg-white px-4 py-3 hover:border-forest/40"
-                  >
-                    <span className="block text-[1rem] font-semibold leading-snug text-navy">{x.name}</span>
-                    <span className="block text-[0.9375rem] leading-snug text-navy/80">{x.details[lang] ?? x.details.en}</span>
-                    {price && <span className="mt-1 block text-[0.9375rem] font-semibold leading-snug text-navy">{price}</span>}
-                    {x.phone && (
-                      <span className="block text-[0.875rem] text-navy/75">
-                        {t('phone')}: {x.phone}
-                      </span>
-                    )}
-                  </a>
-                </li>
-              )
-            })}
-          </ul>
-        </>
-      )}
+      {(['seasonal', 'anyTime', 'adaptive'] as const).map((group) => {
+        const list = d.instructors.filter((x) =>
+          group === 'seasonal' ? x.kind === 'seasonal' : group === 'adaptive' ? x.kind === 'adaptive' : x.kind === 'school' || x.kind === 'referral',
+        )
+        if (!list.length) return null
+        const lang = L === 'en' ? 'en' : L
+        return (
+          <div key={group}>
+            <h3 className="mt-6 mb-3 text-[1rem] font-semibold text-navy">{t(group)}</h3>
+            <ul className="space-y-2">
+              {list.map((x) => {
+                const price = x.price?.[lang] ?? x.price?.en
+                const season = x.season?.[lang] ?? x.season?.en
+                const meta = [price, season].filter(Boolean).join(' · ')
+                return (
+                  <li key={x.id}>
+                    <a
+                      href={x.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block rounded-[10px] border border-navy/10 bg-white px-4 py-3 hover:border-forest/40"
+                    >
+                      <span className="block text-[1rem] font-semibold leading-snug text-navy">{x.name}</span>
+                      <span className="block text-[0.9375rem] leading-snug text-navy/80">{x.details[lang] ?? x.details.en}</span>
+                      {meta && <span className="mt-1 block text-[0.9375rem] font-semibold leading-snug text-navy">{meta}</span>}
+                    </a>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )
+      })}
       <Link href="/events" className="mt-4 inline-block text-[0.9375rem] font-semibold text-forest underline underline-offset-4 hover:opacity-80">
         {t('all')}
       </Link>
