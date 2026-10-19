@@ -17,7 +17,10 @@ type Sub = {
   topic: string
   names: Record<Lang, string>
   descriptions: Record<Lang, string>
+  /** Event alerts: the filters in one line. */
   detail: string | null
+  /** Lesson alerts: the town. */
+  near: string | null
   on: boolean
 }
 type State = { locale: Lang; email: string; all_off: boolean; subscriptions: Sub[] }
@@ -175,11 +178,12 @@ export default function ManageEmails() {
               <div className="min-w-0 flex-1">
                 <p className="text-[1.0625rem] font-semibold leading-snug text-navy">{x.names[L] ?? x.names.en}</p>
                 <p className="mt-1 text-[0.9375rem] leading-snug text-navy/80">{x.descriptions[L] ?? x.descriptions.en}</p>
-                {x.detail && (
+                {x.near && (
                   <p className="mt-1 text-[0.9375rem] leading-snug text-navy/80">
-                    {t('near')} {x.detail}
+                    {t('near')} {x.near}
                   </p>
                 )}
+                {x.detail && <p className="mt-1 text-[0.9375rem] font-semibold leading-snug text-navy">{x.detail}</p>}
               </div>
               <button
                 type="button"
