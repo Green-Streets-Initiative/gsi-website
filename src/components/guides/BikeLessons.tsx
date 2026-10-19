@@ -13,6 +13,16 @@ import type { GuideLocale } from '@/lib/guides/i18n'
  * and lists easy-pace group rides open to beginners.
  */
 
+type Instructor = {
+  id: string
+  name: string
+  url: string
+  kind: string
+  details: Record<string, string>
+  price: Record<string, string> | null
+  phone: string | null
+}
+
 type Ev = {
   id: string
   title: string
@@ -31,10 +41,10 @@ const T = {
     '面向成人的课程，教授基础知识和如何在街上骑车。很多是免费的。',
   ],
   none: [
-    'No lessons are posted right now. They mostly run spring through fall.',
-    'Ahora mismo no hay clases publicadas. Se dan sobre todo de primavera a otoño.',
-    'No momento não há aulas publicadas. Elas acontecem principalmente da primavera ao outono.',
-    '目前没有已发布的课程。课程大多在春季到秋季开设。',
+    'No group classes are posted right now. City classes mostly run spring through fall.',
+    'Ahora mismo no hay clases en grupo publicadas. Las clases municipales se dan sobre todo de primavera a otoño.',
+    'No momento não há aulas em grupo publicadas. As aulas municipais acontecem principalmente da primavera ao outono.',
+    '目前没有已发布的小班课。市政课程大多在春季到秋季开设。',
   ],
   app: [
     'In the Shift app, tap "Tell me when one is posted" under bike lessons and you\'ll hear when one near you is.',
@@ -50,6 +60,8 @@ const T = {
     '更轻松的下一步：欢迎新手参加的骑行团活动，即将举行。',
   ],
   all: ['See all events', 'Ver todos los eventos', 'Ver todos os eventos', '查看全部活动'],
+  anyTime: ['Lessons you can book any time', 'Clases que puedes reservar cuando quieras', 'Aulas que você pode agendar quando quiser', '随时可预约的课程'],
+  phone: ['Phone', 'Teléfono', 'Telefone', '电话'],
 }
 const IDX: Record<GuideLocale, number> = { en: 0, es: 1, 'pt-BR': 2, 'zh-Hans': 3 }
 const LANG: Record<GuideLocale, string> = { en: 'en-US', es: 'es-US', 'pt-BR': 'pt-BR', 'zh-Hans': 'zh-CN' }
@@ -66,20 +78,21 @@ function when(e: Ev, L: GuideLocale): string {
   return date.toLocaleString(LANG[L], opts)
 }
 
-async function load(): Promise<{ lessons: Ev[]; rides: Ev[]; slugs: Map<string, string | null> } | null> {
+async function load(): Promise<{ lessons: Ev[]; rides: Ev[]; instructors: Instructor[]; slugs: Map<string, string | null> } | null> {
   try {
     const supabase = createServerSupabaseClient()
     const { data, error } = await supabase.rpc('get_bike_lessons')
     if (error || !data) return null
     const lessons = (data.lessons ?? []) as Ev[]
     const rides = (data.easy_rides ?? []) as Ev[]
+    const instructors = (data.instructors ?? []) as Instructor[]
     const ids = [...lessons, ...rides].map((e) => e.id)
     const slugs = new Map<string, string | null>()
     if (ids.length) {
       const { data: rows } = await supabase.from('content_items').select('id, slug').in('id', ids)
       for (const r of (rows ?? []) as { id: string; slug: string | null }[]) slugs.set(r.id, r.slug)
     }
-    return { lessons, rides, slugs }
+    return { lessons, rides, instructors, slugs }
   } catch {
     return null
   }
@@ -122,6 +135,36 @@ export default async function BikeLessons({ locale: L = 'en' }: { locale?: Guide
               <ul className="space-y-2">{d.rides.map(row)}</ul>
             </>
           )}
+        </>
+      )}
+      {d.instructors.length > 0 && (
+        <>
+          <h3 className="mt-6 mb-3 text-[1rem] font-semibold text-navy">{t('anyTime')}</h3>
+          <ul className="space-y-2">
+            {d.instructors.map((x) => {
+              const lang = L === 'en' ? 'en' : L
+              const price = x.price?.[lang] ?? x.price?.en
+              return (
+                <li key={x.id}>
+                  <a
+                    href={x.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block rounded-[10px] border border-navy/10 bg-white px-4 py-3 hover:border-forest/40"
+                  >
+                    <span className="block text-[1rem] font-semibold leading-snug text-navy">{x.name}</span>
+                    <span className="block text-[0.9375rem] leading-snug text-navy/80">{x.details[lang] ?? x.details.en}</span>
+                    {price && <span className="mt-1 block text-[0.9375rem] font-semibold leading-snug text-navy">{price}</span>}
+                    {x.phone && (
+                      <span className="block text-[0.875rem] text-navy/75">
+                        {t('phone')}: {x.phone}
+                      </span>
+                    )}
+                  </a>
+                </li>
+              )
+            })}
+          </ul>
         </>
       )}
       <Link href="/events" className="mt-4 inline-block text-[0.9375rem] font-semibold text-forest underline underline-offset-4 hover:opacity-80">
