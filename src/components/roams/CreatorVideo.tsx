@@ -66,6 +66,9 @@ export default function CreatorVideo({
           className="h-full w-full border-0"
         />
       </div>
+      {/* Credit the creator by name and send people to their account: the
+          embed is the platform's own player, and the follow is the thanks. No
+          claim of permission unless the creator has given it. */}
       <figcaption className="mt-2 text-[0.875rem] leading-snug text-ink-muted">
         Video by{' '}
         {creditUrl ? (
@@ -75,10 +78,19 @@ export default function CreatorVideo({
         ) : (
           <span className="font-semibold text-navy">{credit ?? embed.platform}</span>
         )}
-        {credit ? ` on ${embed.platform}` : ''}, shared with permission.{' '}
+        {credit ? ` on ${embed.platform}` : ''}.{' '}
+        {creditUrl ? (
+          <>
+            <a href={creditUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+              Follow them
+            </a>{' '}
+            for more rides like this, or{' '}
+          </>
+        ) : null}
         <a href={url ?? '#'} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
-          Watch on {embed.platform}
+          {creditUrl ? `watch on ${embed.platform}` : `Watch on ${embed.platform}`}
         </a>
+        .
       </figcaption>
     </figure>
   )
