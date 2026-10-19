@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { SHIFT_WORDMARK_WHITE_URL } from '@/app/shift/employers/portal/_lib/portal-constants'
 
 export const runtime = 'nodejs'
@@ -11,7 +12,11 @@ export const dynamic = 'force-dynamic'
  * text, so those functions do their work and then redirect here to show the
  * outcome.
  *
- *   /email/done?list=<campaign|contact|invites|champions|reward>&kind=<...>[&org=<employer name>]
+ *   /email/done?list=<campaign|contact|invites|champions|reward|subs>&kind=<...>[&org=<employer name>][&topic=<id>][&lang=<en|es|pt-BR|zh-Hans>]
+ *
+ * list=subs is the one email subscription system (Shift product item 19,
+ * email-subscriptions function): &topic=<email_topics id>, and its messages
+ * follow lang (four languages).
  *
  * This page only displays a message. It does no writes and takes nothing
  * sensitive: no signatures, ids or email addresses.
@@ -27,7 +32,60 @@ function esc(s: string): string {
 const para = (html: string) =>
   `<p style="font-size:14px;line-height:1.6;color:rgba(255,255,255,0.75);margin:0 0 12px;">${html}</p>`
 
-type Message = { title: string; body: string }
+type Message = { title: string; body: string; lang?: string }
+
+type Lang = 'en' | 'es' | 'pt-BR' | 'zh-Hans'
+const LANGS: Lang[] = ['en', 'es', 'pt-BR', 'zh-Hans']
+
+/**
+ * The one email subscription system (list=subs, Shift product item 19): the
+ * confirm and stop links in any topic's email land here, in the language the
+ * person signed up in. {topic} is the topic's name from email_topics.
+ */
+const SUBS: Record<string, Record<Lang, { title: string; body: string }>> = {
+  confirmed: {
+    en: { title: 'You’re signed up', body: 'You’ll get {topic} by email. Every email has a link to stop them or manage your emails.' },
+    es: { title: 'Listo, ya te inscribiste', body: 'Recibirás {topic} por correo. Cada correo trae un enlace para dejar de recibirlos o administrar tus correos.' },
+    'pt-BR': { title: 'Pronto, inscrição feita', body: 'Você vai receber {topic} por email. Cada email traz um link para parar de receber ou gerenciar seus emails.' },
+    'zh-Hans': { title: '订阅成功', body: '你将通过邮件收到{topic}。每封邮件都附有退订或管理邮件的链接。' },
+  },
+  unsubscribed: {
+    en: { title: 'You’re unsubscribed', body: 'You won’t get {topic} anymore. Other emails you get from Shift are not affected.' },
+    es: { title: 'Cancelaste la suscripción', body: 'Ya no recibirás {topic}. Los demás correos de Shift no cambian.' },
+    'pt-BR': { title: 'Inscrição cancelada', body: 'Você não vai mais receber {topic}. Os outros emails do Shift continuam iguais.' },
+    'zh-Hans': { title: '已退订', body: '你将不再收到{topic}。你收到的其他 Shift 邮件不受影响。' },
+  },
+  'link-problem': {
+    en: { title: 'That link didn’t work', body: 'This link looks incomplete or expired. Email info@gogreenstreets.org and we’ll help.' },
+    es: { title: 'Ese enlace no funcionó', body: 'El enlace parece incompleto o vencido. Escribe a info@gogreenstreets.org y te ayudamos.' },
+    'pt-BR': { title: 'Esse link não funcionou', body: 'O link parece incompleto ou expirado. Escreva para info@gogreenstreets.org e ajudamos.' },
+    'zh-Hans': { title: '链接无效', body: '此链接不完整或已过期。请发邮件至 info@gogreenstreets.org，我们会帮助你。' },
+  },
+  error: {
+    en: { title: 'Something went wrong', body: 'We couldn’t save that just now. Please try the link again in a few minutes.' },
+    es: { title: 'Algo salió mal', body: 'No pudimos guardarlo ahora. Prueba el enlace de nuevo en unos minutos.' },
+    'pt-BR': { title: 'Algo deu errado', body: 'Não conseguimos salvar agora. Tente o link de novo em alguns minutos.' },
+    'zh-Hans': { title: '出了点问题', body: '暂时无法保存。请过几分钟再试一次此链接。' },
+  },
+}
+const SOME_EMAILS: Record<Lang, string> = { en: 'these emails', es: 'estos correos', 'pt-BR': 'estes emails', 'zh-Hans': '这些邮件' }
+
+async function subsMessage(kind: string, topic: string, lang: string): Promise<Message> {
+  const L: Lang = (LANGS as string[]).includes(lang) ? (lang as Lang) : 'en'
+  let name = SOME_EMAILS[L]
+  if (/^[a-z_]{2,40}$/.test(topic)) {
+    try {
+      const { data } = await createServerSupabaseClient().from('email_topics').select('names').eq('id', topic).maybeSingle()
+      const n = (data?.names as Record<string, string> | undefined)?.[L]
+      // Mid-sentence: "bike lesson alerts", but "Shift updates" keeps its capital.
+      if (n) name = /^Shift\b/.test(n) ? n : n.charAt(0).toLowerCase() + n.slice(1)
+    } catch {
+      // The generic wording reads fine.
+    }
+  }
+  const m = (SUBS[kind] ?? SUBS.error)[L]
+  return { title: esc(m.title), body: para(esc(m.body.replace('{topic}', name))), lang: L }
+}
 
 function messageFor(list: string, kind: string, org: string): Message {
   const company = org ? esc(org) : 'this employer'
@@ -101,9 +159,9 @@ function messageFor(list: string, kind: string, org: string): Message {
   }
 }
 
-function pageHtml({ title, body }: Message): string {
+function pageHtml({ title, body, lang = 'en' }: Message): string {
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex">
@@ -125,7 +183,10 @@ export async function GET(req: Request) {
   const list = (url.searchParams.get('list') ?? '').slice(0, 20)
   const kind = (url.searchParams.get('kind') ?? '').slice(0, 20)
   const org = (url.searchParams.get('org') ?? '').trim().slice(0, 80)
-  return new NextResponse(pageHtml(messageFor(list, kind, org)), {
+  const lang = (url.searchParams.get('lang') ?? '').slice(0, 10)
+  const topic = (url.searchParams.get('topic') ?? '').slice(0, 40)
+  const message = list === 'subs' ? await subsMessage(kind, topic, lang) : messageFor(list, kind, org)
+  return new NextResponse(pageHtml(message), {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
