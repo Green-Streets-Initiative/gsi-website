@@ -59,7 +59,12 @@ export default function TrainsHome({ stopId, routeId, directionId }: { stopId: s
       ? `No trains from ${answer.stop_name} take bikes in the next few days.`
       : answer.day === 'today'
         ? `Next trains from ${answer.stop_name}${to} that take bikes:`
-        : `No trains from ${answer.stop_name}${to} take bikes for the rest of today. The next ones that do, ${answer.day_date ? weekday(answer.day_date) : 'soon'}:`
+        : `No trains from ${answer.stop_name}${to} take bikes for the rest of today. The next ones that do:`
+  // The service date sits right above the times, so readers can see the list is fresh.
+  const dateLine =
+    answer.trains.length > 0 && answer.day_date
+      ? answer.day === 'today' ? `Today, ${weekday(answer.day_date)}` : weekday(answer.day_date)
+      : null
 
   return (
     <section aria-labelledby="trains-home" className="mb-5 rounded-[14px] border border-navy/10 bg-white px-5 py-4">
@@ -67,8 +72,9 @@ export default function TrainsHome({ stopId, routeId, directionId }: { stopId: s
         Trains home that take bikes
       </h2>
       <p className="mt-2 text-[0.9375rem] leading-relaxed text-navy">{lead}</p>
+      {dateLine && <p className="mt-2 text-[0.875rem] font-semibold text-ink-soft">{dateLine}</p>}
       {answer.trains.length > 0 && (
-        <ul className="mt-2 divide-y divide-navy/10">
+        <ul className="mt-1 divide-y divide-navy/10">
           {answer.trains.map((t) => (
             <li key={`${t.departs_at}-${t.train}`} className="flex items-center gap-3 py-2">
               <Train size={16} className="shrink-0 text-forest" aria-hidden />
