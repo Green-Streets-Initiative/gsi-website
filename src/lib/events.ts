@@ -25,6 +25,8 @@ export interface CommunityEvent {
   sponsors: string[] | null
   event_url: string | null
   registration_url: string | null
+  /** "Free. Register once per year." Loaded on the event page, for the calendar entry. */
+  registration_notes?: string | null
   image_url: string | null
   source_id: string | null
   tags: string[]
@@ -268,51 +270,8 @@ export function todayKey(): string {
 // .ics / Google Calendar builders
 // ---------------------------------------------------------------------------
 
-function icsStamp(date: string, time: string | null): string {
-  return date.replace(/-/g, '') + 'T' + (time ?? '09:00').replace(/:/g, '').slice(0, 4) + '00'
-}
-
-function icsEscape(text: string): string {
-  return String(text).replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n')
-}
-
-export function buildIcs(ev: CommunityEvent): string {
-  const s = icsStamp(ev.event_date, ev.event_time)
-  const e = icsStamp(ev.event_date, ev.event_end_time ?? ev.event_time)
-  const location = [ev.location_name, ev.location_address].filter(Boolean).join(', ') + ', MA'
-  const desc = (ev.body ?? ev.title) + ' — via Green Streets Initiative'
-
-  return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Green Streets Initiative//Events//EN',
-    'BEGIN:VEVENT',
-    `UID:${ev.id}@gogreenstreets.org`,
-    `DTSTART:${s}`,
-    `DTEND:${e}`,
-    `SUMMARY:${icsEscape(ev.title)}`,
-    `DESCRIPTION:${icsEscape(desc)}`,
-    `LOCATION:${icsEscape(location)}`,
-    ...(ev.location_lat && ev.location_lng ? [`GEO:${ev.location_lat};${ev.location_lng}`] : []),
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\r\n')
-}
-
-export function gcalUrl(ev: CommunityEvent): string {
-  const s = icsStamp(ev.event_date, ev.event_time)
-  const e = icsStamp(ev.event_date, ev.event_end_time ?? ev.event_time)
-  const location = [ev.location_name, ev.location_address].filter(Boolean).join(', ') + ', MA'
-  const desc = (ev.body ?? '') + '\n\nvia Green Streets Initiative'
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: ev.title,
-    dates: `${s}/${e}`,
-    details: desc,
-    location,
-  })
-  return `https://calendar.google.com/calendar/render?${params}`
-}
+// Built in event-calendar.ts, which the Node test runner can load on its own.
+export { buildIcs, gcalUrl } from './event-calendar'
 
 export function directionsUrl(ev: CommunityEvent): string {
   if (ev.location_lat && ev.location_lng) {
