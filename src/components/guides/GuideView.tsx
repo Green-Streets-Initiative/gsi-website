@@ -10,6 +10,7 @@ import GuideTripPlanner from '@/components/guides/GuideTripPlanner'
 import ParkAndRideFinder from '@/components/guides/ParkAndRideFinder'
 import GuideOffer from '@/components/guides/GuideOffer'
 import TransitDisruptions from '@/components/guides/TransitDisruptions'
+import BikeLessons from '@/components/guides/BikeLessons'
 import { PRICES, usd } from '@/lib/facts/prices'
 import { guideArticleSchema, breadcrumbSchema } from '@/lib/structured-data'
 import { gt, DATE_LOCALE, type GuideLocale, type GuideKey } from '@/lib/guides/i18n'
@@ -196,6 +197,13 @@ const LEAD = '__lead__'
 // Keys are the English section headings; a translated page maps its own
 // headings onto them by position (sectionKeys), so tools land in the same place.
 const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) => ReactNode>> = {
+  // Live bike lessons for readers building confidence (Keith, 2026-10-19).
+  'your-first-ride-in-a-bike-lane': {
+    'The one habit that matters most': (_slug, L) => <BikeLessons locale={L} />,
+  },
+  'picking-a-bike-route': {
+    'Try this first': (_slug, L) => <BikeLessons locale={L} />,
+  },
   'backup-plans-for-the-t': {
     'Is the T really less reliable than it used to be?': (_slug, L) => (
       <TransitDisruptions
