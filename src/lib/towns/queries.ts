@@ -455,6 +455,7 @@ export async function getTownRoams(
       .from('roams')
       .select('id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, completion_count, vibe_tags')
       .eq('active', true)
+      .is('preview_user_ids', null)
       // Hide event-bound roams once their window ends (matches roams/queries.ts).
       .or(`event_end.is.null,event_end.gte.${today}`),
     supabase

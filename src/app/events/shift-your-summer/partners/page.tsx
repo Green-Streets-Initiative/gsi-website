@@ -56,6 +56,7 @@ export default async function PartnersPage() {
        checkpoints:roam_checkpoints(id)`
     )
     .eq('active', true)
+    .is('preview_user_ids', null)
     .not('name', 'ilike', '%Test Roam%')
     .order('featured', { ascending: false })
     .order('sort_order', { ascending: true })

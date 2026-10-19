@@ -7,6 +7,7 @@ import Footer from '@/components/Footer'
 import StoreButtons from '@/components/StoreButtons'
 import RoamMap from '@/components/roams/RoamMap'
 import CreatorVideo, { parseVideoEmbed } from '@/components/roams/CreatorVideo'
+import TrainsHome from '@/components/roams/TrainsHome'
 import { roamMetaLine } from '@/components/roams/RoamCard'
 import { withUtm } from '@/lib/utm'
 import { PRICES } from '@/lib/facts/prices'
@@ -528,6 +529,14 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               </div>
             )}
 
+            {roam.rail_home && (
+              <TrainsHome
+                stopId={roam.rail_home.stop_id}
+                routeId={roam.rail_home.route_id}
+                directionId={roam.rail_home.direction_id}
+              />
+            )}
+
             <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
               <span className="rounded-full border border-navy/10 bg-white px-3.5 py-1.5 font-semibold text-navy">
                 {roamMetaLine(roam)}
@@ -561,6 +570,11 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
 
             {roam.description && (
               <p className="max-w-[720px] text-[1.0625rem] leading-[1.65] text-ink-soft">{roam.description}</p>
+            )}
+            {roam.credit_role && roam.credit_name && (
+              <p className="mt-2 text-[0.9375rem] text-ink-soft">
+                {roam.credit_role === 'suggested' ? 'Suggested by' : 'Designed by'} {roam.credit_name}
+              </p>
             )}
             {roam.route_url && (
               <p className="mt-3">

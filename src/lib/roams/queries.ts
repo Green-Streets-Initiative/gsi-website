@@ -105,6 +105,11 @@ export interface RoamDetail extends RoamSummary {
   hero_video_url: string | null
   hero_video_credit: string | null
   hero_video_credit_url: string | null
+  /** "Suggested by" / "Designed by" credit (Shift 01214). */
+  credit_role: 'suggested' | 'designed' | null
+  credit_name: string | null
+  /** MBTA stop/route/direction for the train home; drives "Trains home that take bikes". */
+  rail_home: { stop_id: string; route_id: string; direction_id: 0 | 1 } | null
   collection: RoamCollection | null
   /** GeoJSON-order coordinates for the full route, or null if unusable */
   route_coordinates: [number, number][] | null
@@ -148,6 +153,8 @@ export async function getActiveRoams(): Promise<RoamSummary[]> {
     .from('roams')
     .select('id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, featured, completion_count, vibe_tags')
     .eq('active', true)
+    // Preview roams (preview_user_ids set) are for their testers in the app only (Shift 01214).
+    .is('preview_user_ids', null)
     // Event-bound roams (e.g. World Cup trains, tall ships) disappear from the
     // public site once their window ends, even if still flagged active.
     .or(`event_end.is.null,event_end.gte.${today}`)
@@ -168,10 +175,11 @@ export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
     supabase
       .from('roams')
       .select(
-        'id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, featured, description, tagline, badge_name, xp_bonus, hero_image_attribution, hero_image_attribution_url, route_url, route_geometry, completion_count, vibe_tags, collection_id, completion_threshold, full_trail_miles, surface, access_note, parking_note, hero_video_url, hero_video_credit, hero_video_credit_url',
+        'id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, featured, description, tagline, badge_name, xp_bonus, hero_image_attribution, hero_image_attribution_url, route_url, route_geometry, completion_count, vibe_tags, collection_id, completion_threshold, full_trail_miles, surface, access_note, parking_note, hero_video_url, hero_video_credit, hero_video_credit_url, credit_role, credit_name, rail_home_stop_id, rail_home_route_id, rail_home_direction_id',
       )
       .eq('id', id)
       .eq('active', true)
+      .is('preview_user_ids', null)
       .or(`event_end.is.null,event_end.gte.${today}`)
       .maybeSingle(),
     supabase
@@ -305,6 +313,16 @@ export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
     hero_video_url: (roam.hero_video_url as string) ?? null,
     hero_video_credit: (roam.hero_video_credit as string) ?? null,
     hero_video_credit_url: (roam.hero_video_credit_url as string) ?? null,
+    credit_role: roam.credit_role === 'suggested' || roam.credit_role === 'designed' ? roam.credit_role : null,
+    credit_name: (roam.credit_name as string) ?? null,
+    rail_home:
+      roam.rail_home_stop_id && roam.rail_home_route_id && (roam.rail_home_direction_id === 0 || roam.rail_home_direction_id === 1)
+        ? {
+            stop_id: roam.rail_home_stop_id as string,
+            route_id: roam.rail_home_route_id as string,
+            direction_id: roam.rail_home_direction_id as 0 | 1,
+          }
+        : null,
     completion_threshold: (roam.completion_threshold as number) ?? 1.0,
     collection,
     route_coordinates: normalizeRouteGeometry(roam.route_geometry),
