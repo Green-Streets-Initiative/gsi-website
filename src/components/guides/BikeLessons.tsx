@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { eventPath } from '@/lib/events-url'
 import type { GuideLocale } from '@/lib/guides/i18n'
+import LessonAlertForm from './LessonAlertForm'
 
 /*
  * "Bike lessons coming up" in the two bike-confidence guides (Keith,
@@ -9,8 +10,9 @@ import type { GuideLocale } from '@/lib/guides/i18n'
  * coming up). Live from the events calendar through get_bike_lessons
  * (Shift migration 01218), which spots learn-to-ride classes by title. The
  * website has no location, so it lists the soonest anywhere. With none
- * posted it says so, points to the Shift app's "tell me when one is posted",
- * and lists easy-pace group rides open to beginners.
+ * posted it says so and lists easy-pace group rides open to beginners. Either
+ * way, "Get an email when a lesson is posted near you" (LessonAlertForm,
+ * Shift email subscriptions, topic lesson_alerts) follows the list.
  */
 
 type Instructor = {
@@ -47,12 +49,6 @@ const T = {
     'No momento não há aulas em grupo publicadas. As aulas municipais acontecem principalmente da primavera ao outono.',
     '目前没有已发布的小班课。市政课程大多在春季到秋季开设。',
   ],
-  app: [
-    'In the Shift app, tap "Tell me when one is posted" under bike lessons and you\'ll hear when one near you is.',
-    'En la app Shift, toca "Avísame cuando publiquen una" en las clases de bicicleta y te avisaremos cuando haya una cerca de ti.',
-    'No app Shift, toque em "Me avise quando publicarem uma" nas aulas de bicicleta e você saberá quando houver uma perto de você.',
-    '在 Shift 应用的自行车课部分点击"有课程发布时通知我"，你附近有课程时就会收到通知。',
-  ],
   easy: ['Easy-pace group rides', 'Paseos en grupo a ritmo tranquilo', 'Passeios em grupo em ritmo tranquilo', '慢速骑行团'],
   easyIntro: [
     'A gentler next step: group rides open to beginners, coming up soon.',
@@ -73,6 +69,10 @@ function when(e: Ev, L: GuideLocale): string {
   const [hh, mm] = (e.event_time ?? '').split(':').map(Number)
   const date = new Date(Date.UTC(y, m - 1, d, Number.isFinite(hh) ? hh : 12, Number.isFinite(mm) ? mm : 0))
   const opts: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }
+  // Portuguese writes the hour as "12h" or "12h30"; Intl gives a bare "12".
+  if (L === 'pt-BR' && e.event_time && Number.isFinite(hh)) {
+    return `${date.toLocaleString(LANG[L], opts)}, ${hh}h${mm ? String(mm).padStart(2, '0') : ''}`
+  }
   if (e.event_time) {
     opts.hour = 'numeric'
     if (mm) opts.minute = '2-digit'
@@ -128,8 +128,7 @@ export default async function BikeLessons({ locale: L = 'en' }: { locale?: Guide
         </>
       ) : (
         <>
-          <p className="mb-2 text-[1rem] leading-relaxed text-navy">{t('none')}</p>
-          <p className="mb-4 text-[1rem] leading-relaxed text-navy">{t('app')}</p>
+          <p className="mb-4 text-[1rem] leading-relaxed text-navy">{t('none')}</p>
           {d.rides.length > 0 && (
             <>
               <h3 className="mb-1 text-[1rem] font-semibold text-navy">{t('easy')}</h3>
@@ -139,6 +138,7 @@ export default async function BikeLessons({ locale: L = 'en' }: { locale?: Guide
           )}
         </>
       )}
+      <LessonAlertForm locale={L} />
       {(['seasonal', 'anyTime', 'adaptive'] as const).map((group) => {
         const list = d.instructors.filter((x) =>
           group === 'seasonal' ? x.kind === 'seasonal' : group === 'adaptive' ? x.kind === 'adaptive' : x.kind === 'school' || x.kind === 'referral',
