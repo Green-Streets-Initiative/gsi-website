@@ -632,8 +632,8 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               <div className="max-w-[46ch]">
                 <p className="text-[0.9375rem] font-semibold text-navy">{verb} it with Shift, free</p>
                 <p className="mt-1 text-[0.875rem] leading-relaxed text-ink-soft">
-                  Turn-by-turn guidance along this route, automatic check-in at each stop
-                  {roam.badge_name ? `, and the ${roam.badge_name} badge when you finish.` : ', and the roam marked complete when you finish.'}
+                  A map of the route, directions to each stop in your maps app, and automatic check-in when you arrive
+                  {roam.badge_name ? `. Finish to unlock the ${roam.badge_name} badge.` : '.'}
                 </p>
               </div>
               <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="roam_after_map" tone="light" className="shrink-0 [&>a]:max-[420px]:basis-full" />
@@ -722,7 +722,7 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
                 </div>
                 <p className="mb-1.5 text-sm font-semibold text-navy">Follow the route</p>
                 <p className="text-[0.8125rem] leading-relaxed text-ink-soft">
-                  Open this roam in the Shift app and follow the turn-by-turn route at your own pace.
+                  Open this roam in the Shift app and follow it at your own pace.
                 </p>
               </div>
               <div className="rounded-[14px] border border-navy/10 bg-white px-5 py-6 text-center">
