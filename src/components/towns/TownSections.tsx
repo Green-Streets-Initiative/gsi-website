@@ -278,8 +278,8 @@ export function EventsRoamsPanels({
               Roams to try
             </h3>
             <p className={t.sub}>
-              Guided routes — preview the full route here, then check in at each stop in the Shift
-              app to earn the badge.
+              Self-guided routes. Preview the full route here, then check in at each stop in the
+              Shift app to unlock the badge.
             </p>
             <div className="space-y-3">
               {roams.map((r) => (

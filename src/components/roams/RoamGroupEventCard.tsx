@@ -13,13 +13,14 @@ function when(e: RoamGroupEvent): string {
   return `${day} · ${clock}`
 }
 
-/** "Ride it with a group": the next calendar ride or walk on this roam's route. */
+/** "A group ride on part of this route": the next calendar ride or walk that
+ *  shares part of this roam's route (its own route is the organizer's). */
 export default function RoamGroupEventCard({ event }: { event: RoamGroupEvent }) {
   return (
     <section aria-labelledby="group-ride" className="px-6 pt-8 lg:px-8">
       <div className="mx-auto max-w-[860px] rounded-[14px] border border-forest/30 bg-white px-5 py-5">
         <h2 id="group-ride" className="flex items-center gap-2 text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-forest">
-          <Users size={15} aria-hidden /> Ride it with a group
+          <Users size={15} aria-hidden /> A group ride on part of this route
         </h2>
         <p className="mt-2 text-[1.125rem] font-semibold leading-snug text-navy">{event.title}</p>
         <p className="mt-1 text-[0.9375rem] text-ink-soft">{when(event)}</p>

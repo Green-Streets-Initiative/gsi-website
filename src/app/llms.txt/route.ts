@@ -71,7 +71,7 @@ export async function GET() {
   L.push(`- [What's near you](${SITE_URL}/nearby): A live snapshot of the T stops, buses, and Bluebikes docks near any Greater Boston address, with bike-lane comfort and nearby destinations.`)
   L.push(`- [Guides](${SITE_URL}/guides): Practical how-to guides for getting around by bike, on foot, and by transit in the Boston area.`)
   L.push(`- [Town pages](${SITE_URL}/shift/towns): Live community stats on how each town walks, bikes, and rides transit.`)
-  L.push(`- [Roams](${SITE_URL}/shift/roams): Guided walking and biking routes around Greater Boston, each with its distance, time, and stops.`)
+  L.push(`- [Roams](${SITE_URL}/shift/roams): Self-guided walking, biking and transit routes around Massachusetts, each with its distance, time, and stops.`)
   L.push('')
 
   if (guides.length > 0) {

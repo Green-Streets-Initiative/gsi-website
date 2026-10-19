@@ -713,7 +713,7 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               How it works
             </h2>
             <p className="mx-auto mb-10 max-w-[520px] text-center text-[0.9375rem] leading-relaxed text-ink-soft">
-              A roam is a guided, self-paced adventure you follow in the free Shift app.
+              A roam is a self-guided route you follow at your own pace in the free Shift app.
             </p>
             <div className="mb-12 grid gap-6 md:grid-cols-3">
               <div className="rounded-[14px] border border-navy/10 bg-white px-5 py-6 text-center">

@@ -239,7 +239,7 @@ function RoamsSection({ roams }: { roams: RoamCard[] }) {
           </h3>
           <p className="text-[15px] leading-relaxed text-ink-soft max-w-[640px]">
             Roams are curated, multi-stop active transportation adventures built into the
-            Shift app — guided explorations by foot, by bike, or by transit. Each Roam
+            Shift app: self-guided routes on foot, by bike, or by transit. Each Roam
             includes a map, turn-by-turn stops, terrain details, and contextual information
             like nearby Bluebikes docks (with real-time availability), transit boarding
             points (with next arrival times), and tips for people trying a mode for the

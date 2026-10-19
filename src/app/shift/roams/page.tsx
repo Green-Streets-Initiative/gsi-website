@@ -9,14 +9,14 @@ export const revalidate = 3600
 const SITE_URL = 'https://www.gogreenstreets.org'
 
 export const metadata: Metadata = {
-  title: 'Shift Roams — Guided Walking, Biking & Transit Routes | Green Streets Initiative',
+  title: 'Shift Roams — Self-Guided Walking, Biking & Transit Routes | Green Streets Initiative',
   description:
-    'Guided routes to explore on foot, by bike, or by transit — rail trails, greenways, harbor loops, and neighborhood food crawls. Follow along in the free Shift app and earn badges.',
+    'Self-guided routes to explore on foot, by bike, or by transit — rail trails, greenways, harbor loops, and neighborhood food crawls. Follow along in the free Shift app and unlock badges.',
   alternates: { canonical: `${SITE_URL}/shift/roams` },
   openGraph: {
-    title: 'Shift Roams — Guided Walking, Biking & Transit Routes',
+    title: 'Shift Roams — Self-Guided Walking, Biking & Transit Routes',
     description:
-      'Guided routes to explore on foot, by bike, or by transit. Follow along in the free Shift app and earn badges.',
+      'Self-guided routes to explore on foot, by bike, or by transit. Follow along in the free Shift app and unlock badges.',
     url: `${SITE_URL}/shift/roams`,
     siteName: 'Green Streets Initiative',
     type: 'website',

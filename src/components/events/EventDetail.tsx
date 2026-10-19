@@ -419,7 +419,8 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               </div>
             )}
 
-            {/* Roams this ride or walk travels */}
+            {/* Roams this ride or walk shares part of its route with. The
+                organizer's route is their own, so never "follows". */}
             {roamLinks.length > 0 && (
               <div className="mb-8 flex flex-col gap-2">
                 {roamLinks.map((r) => (
@@ -428,7 +429,8 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                     href={`/shift/roams/${encodeURIComponent(r.id)}`}
                     className="flex min-h-[44px] flex-col justify-center rounded-[12px] border border-(--ev-line) px-4 py-3 text-[15px] font-semibold text-(--ev-ink-80) hover:border-(--ev-ink-40)"
                   >
-                    <span>This ride follows the {r.name} roam &rarr;</span>
+                    <span>Part of this ride uses the {r.name}</span>
+                    <span className="mt-0.5 text-[14px] text-(--ev-ink-75)">See the roam &rarr;</span>
                     {r.reward_note && <span className="mt-1 text-[14px] font-normal text-(--ev-ink-75)">{r.reward_note}</span>}
                   </a>
                 ))}
