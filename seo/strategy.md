@@ -120,6 +120,21 @@ bed.
 One line per verdict or hard-won observation, newest first. Next hypotheses
 come from here.
 
+- 2026-10-19 (verdict, campus titles, won small): retitling pages from the
+  campaign name to the campus fact took /shift-your-semester from 0 clicks on
+  917 impressions to 0.78% CTR. The September volume was seasonal; what lasts is
+  a specific, recurring local question (Brandeis shuttle to Boston).
+- 2026-10-19 (verdict, campus in llms.txt, lost): listing a page class in
+  llms.txt produced no answer-engine traffic in five weeks. Treat llms.txt as
+  hygiene. Reaching ChatGPT runs through Bing's index (IndexNow, from 10-17).
+- 2026-10-19 (verdict, advisor FAQ schema, lost): valid FAQPage markup left
+  /commute-advisor's CTR flat (0.19% → ~0.23%). Google gave the same queries to
+  a guide instead. Markup doesn't buy clicks here; matching the question in the
+  title and answering it on the ranking page might.
+- 2026-10-19 (observed): city-run open-streets days have now repeated
+  (Allston 28 clicks, Roslindale 437 impressions at position 5.1 a week ahead,
+  SomerStreets Monster Mash 397). They are a seasonal series we can plan for,
+  not luck.
 - 2026-10-12 (verdict, drive-time guide, lost): a standalone guide on a
   question one of our stronger pages already answers in its title gets no
   foothold. Six weeks, 0 impressions, while `/commute-advisor` kept ~100/wk.

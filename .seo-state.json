@@ -1,14 +1,24 @@
 {
   "_comment": "Run state for the SEO/AEO routine. Updated each run. Baselines are a cache; the authoritative time series is the committed seo/data/gsc/ files.",
-  "last_run": "2026-10-12",
+  "last_run": "2026-10-19",
   "last_deep_dive": "2026-10",
-  "serp_rotation_index": 12,
+  "serp_rotation_index": 15,
+  "_serp_rotation_note_2026_10_19": "Index 12 selected local-business-partners / brand-navigational / used-car-to-ebike (query 0). Index 15 next = new-to-boston / family-logistics / year-round-weather (1, 2, 3 mod 14), query index floor(15/14)=1.",
   "_serp_rotation_note_2026_10_12": "Index 9 selected ebike-curious / employers-rto / schools-wellness (query 0 each). Index 12 next = local-business-partners / brand-navigational / used-car-to-ebike (12, 13, 0 mod 14), query index floor(12/14)=0.",
   "_serp_rotation_note_2026_10_05": "Index 6 selected events-programs / town-commuters / drive-time-conversion (first query of each). Index 9 next = ebike-curious / employers-rto / schools-wellness.",
   "_serp_rotation_note_2026_09_28": "n is now 14 non-sentinel clusters (events-programs added 2026-09-22). Index 3 selected year-round-weather / students-campus / roams-trails on 2026-09-28 (the cycle shifted as predicted; no hand-correction — coverage over time is the point). Index 6 next = events-programs / town-commuters / drive-time-conversion, which usefully lines up with the 2026-10-12 drive-time call.",
   "_serp_rotation_note": "Index selects clusters (excluding aeo-sentinels) in portfolio order: for k in 0..2, cluster[(index+k) % n], query[floor(index/n) % len]. History: 0 = used-car-to-ebike / new-to-boston / family-logistics; 3 = year-round-weather / town-commuters / ebike-curious; 6 = employers-rto / schools-wellness / local-business-partners; 9-11 hand-advanced on 2026-09-14 to students-campus / drive-time-conversion / brand-navigational and the index parked at 12. On 2026-09-21 n was 13 (roams-trails shipped), so 12 wrapped to 0 on its own and the hand-correction that note predicted was NOT needed — the cycle restarted cleanly at used-car-to-ebike / new-to-boston / family-logistics. Index now 3. NOTE: if item 3 of 2026-09-21 ships, events-programs takes n from 13 to 14 and the cycle shifts again; the point is coverage over time, not a fixed cycle, so hand-correct and say so.",
   "stagnant_weeks": 0,
   "north_star": {
+    "week_of_2026_10_12": 12,
+    "by_channel_week_of_2026_10_12": {
+      "organic_search": { "sessions": 142, "activated": 15, "app_intent": 2 },
+      "paid_search": { "sessions": 95, "activated": 7, "app_intent": 0 },
+      "paid_other": { "sessions": 396, "activated": 136, "app_intent": 10 },
+      "answer_engine": { "sessions": 0, "activated": 0, "app_intent": 0 }
+    },
+    "organic_intent_rate_tracked_2026_10_19": "10 / 443 = 2.3% (4 tracked weeks); this week 2/142 = 1.4%. Organic /events landings since 09-14: 3/290 (1.0%); towns 2/43; home 3/79; roams 0/43.",
+    "_note_2026_10_19": "North star 21 -> 12 (-25% vs prior mean 16.0). Organic sessions record 142 but intent 2. PostHog week holds Sat 10-18 (Roslindale Open Streets, Monster Mash), GSC week ends 10-16: ratio 2.0 is a window artifact. gclid 97 vs grant 82 clicks Oct 1-14: ~2x/week gap persists. PostHog pull needed 4 attempts (504, 503 capacity, fetch failed).",
     "week_of_2026_10_05": 21,
     "by_channel_week_of_2026_10_05": {
       "organic_search": { "sessions": 96, "activated": 10, "app_intent": 4 },
@@ -56,10 +66,16 @@
     "_note": "paid_other is almost entirely the Reddit 'semester' campaign (rdt_cid, 393 landings in 7d, mostly /shift-your-semester/<school>). paid_search (gclid) shows 9-11 sessions/wk while the Ad Grants snapshot shows 1 click MTD at 2026-09-24 — unreconciled; gclid may include Google Ads traffic outside the grant account. Report the gap, don't pick a side."
   },
   "baselines": {
-    "clicks_4wk": 59.25,
-    "clicks_12wk": 29.83,
-    "impressions_4wk": 3875.8,
-    "impressions_12wk": 2399.3,
+    "clicks_4wk": 68.25,
+    "clicks_12wk": 35.0,
+    "impressions_4wk": 4273.3,
+    "impressions_12wk": 2734.0,
+    "_cache_2026_10_19": "Week to 2026-10-16: clicks 70, impressions 4881, CTR 1.43%, pos 7.1. Cache INCLUDES this week. Comparison baselines excluding it: 59.25 / 29.83 clicks, 3875.8 / 2399.3 impr. Non-brand 1138 (held after September rolled out; ~2/3 events incl. ~300 unmatched event-name impressions), trailing-4 817.5 vs prior-4 330.5 (+147%), stagnant_weeks 0. Coverage 69% (Monster Mash et al. unmatched). PostHog organic 142 vs prior-4 93.0.",
+    "nonbrand_discovery_impressions_wk_2026_10_16": 1138,
+    "nonbrand_4wk_2026_10_16": 817.5,
+    "nonbrand_prior_4wk_2026_10_16": 330.5,
+    "posthog_organic_sessions_wk_2026_10_12": 142,
+    "posthog_organic_sessions_prior4_2026_10_12": 93.0,
     "_cache_2026_10_12": "Week to 2026-10-09: clicks 103 (record), impressions 5348, CTR 1.93%, pos 7.2. Allston Open Streets page 1522 impr / 28 clicks; ex-Allston 3826 / 75 (still a record). Cache INCLUDES this week (59.25 / 29.83 clicks, 3875.8 / 2399.3 impr). Comparison baselines excluding it: 38.75 / 22.00 clicks, 3530.3 / 2019.5 impr. Non-brand 1131 (ex-Allston ~537), trailing-4 649.5 vs prior-4 238.0 (+173%), stagnant_weeks 0. PostHog organic 96 vs prior-4 76.3.",
     "nonbrand_discovery_impressions_wk_2026_10_09": 1131,
     "nonbrand_4wk_2026_10_09": 649.5,
@@ -91,16 +107,17 @@
     "_aeo_referral_note": "THREE answer-engine referral sessions in the 7 days to 2026-09-21 — chatgpt.com 1, www.perplexity.ai 1, gemini.google.com 1 — against 0 for the two prior runs. n=3 is noise and must not be reported as a trend. What is new is the SHAPE: one session each from three different engines, where every previous answer-engine referral came from one engine pointing at one contest-rules page and stopped when the contest ended. First weekly pulse after the Roams and Campus sections landed in llms.txt (79 -> 122 links); both facts are true and neither proves the other. Watch whether it persists."
   },
   "health": {
-    "sitemap_loc_count": 264,
-    "sitemap_non_event_loc_count": 145,
+    "sitemap_loc_count": 349,
+    "sitemap_non_event_loc_count": 243,
+    "_sitemap_2026_10_19": "349 = 106 events + 243 non-event. +98 non-event is deliberate: 84 translated guides (/es, /pt-BR, /zh-Hans x 28, shipped 10-17) + five answer pages + guides. NEW FINGERPRINT ~243. llms.txt 200 links / 8 sections; health check flags the three locale classes as missing from llms.txt (minor; hreflang alternates present). Robots unchanged. IndexNow weekly sitemap: 200 OK, 349 URLs.",
     "_sitemap_2026_10_12": "264 = 119 events + 145 non-event (+2 incl. the winter guide). llms.txt 188 links / 8 sections. Robots unchanged. Winter + cargo guides verified in sitemap, llms.txt and /guides (inspect.mjs listed).",
     "_sitemap_2026_10_05": "261 = 118 events + 143 non-event (+2: cargo guide, Brandeis page). llms.txt 184 links / 8 sections. Robots unchanged. Event URLs now readable slugs (b2efdef/111f37c, 2026-09-30); legacy ids 308.",
     "_sitemap_2026_09_28": "293 = 152 events + 141 non-event. Non-event is the stable fingerprint (was ~142). llms.txt 182 links / 8 sections unchanged; robots hash unchanged.",
-    "llms_txt_link_count": 188,
+    "llms_txt_link_count": 200,
     "llms_txt_section_count": 8,
     "_llms_note": "/llms.txt is generated per request, so its hash changes whenever content is published — treat hash drift as expected; link and section counts are the meaningful signals. 2026-09-22 after SEO item 2: 8 sections, 182 links (60 of them the capped 'What is on' event list). The sitemap count is now EVENT-DRIVEN and will swing week to week as events are added and pass — a fall is not automatically a regression. Read the non-event portion (~142) as the stable fingerprint and treat a drop THERE as the DB-blip signal.",
     "robots_hash": "87554763188151d8aea395e9a6b2129c6b5597a3aacad864f06e58293cf3586c",
-    "_last_fingerprint_update": "2026-10-12",
+    "_last_fingerprint_update": "2026-10-19",
     "_llms_gap_note": "The 2026-09-14 Roams gap is CLOSED — health-check.mjs now groups two segments deep under /shift and reports no missing class. A residual blind spot remains and is item 2: the check is satisfied at CLASS level by the single /events hub line in llms.txt, while 33 individual event pages — the best-converting class on the site — are listed in neither llms.txt nor the sitemap.",
     "_robots_note": "Hash changed 2026-09-21 and the cause is benign: commit 228e503 ('Challenges goes live') added `Disallow: /preview` for the review harnesses, which also carry noindex. Not a regression.",
     "llms_txt_hash": null,
@@ -109,6 +126,21 @@
   "blockers": [],
   "carryover_serp_checks": [],
   "watch_list": [
+    {
+      "since": "2026-10-19",
+      "what": "COVERAGE 88% -> 69% FROM EVENT NAMES. SomerStreets Monster Mash (~240 impr) and 'moving together 2026', 'ride and chill boston', 'tour de streets' match no event-shape pattern. Trigger unaffected (unmatched counts as non-brand).",
+      "action": "November deep-dive portfolio pass: add somerstreets / named city-series patterns to events-programs. Don't fit to one-off names."
+    },
+    {
+      "since": "2026-10-19",
+      "what": "NEW PAGE CLASSES FROM 10-17: five answer pages (EN + ES) and 84 translated guides (/es, /pt-BR, /zh-Hans). Sitemap non-event fingerprint 145 -> 243. llms.txt has no locale sections.",
+      "action": "From 10-26 report them as their own classes in the cohort table. Add locale sections to llms.txt at the next llms.txt touch (not its own item)."
+    },
+    {
+      "since": "2026-10-19",
+      "what": "SITE CHANGES CONFOUND RUNNING EXPERIMENTS: Roam rebuild 10-15 (48d8e20: titles, facts box, app box -> roam_after_map), fares guide rebuild 10-14 (ebdc5d2), Commute Advisor v2 10-15 (049eea0).",
+      "action": "Read exp-2026-09-5 and exp-2026-09-7 on 09-14/09-28 -> 10-14 only; treat roam_after_map as a fresh baseline. Read exp-2026-10-2 together with the 10-14 rebuild."
+    },
     {
       "since": "2026-10-05",
       "what": "ROAM COHORT CTR HALVED: 26 pages, impressions 959 -> 855 (-11%), clicks 12 -> 5, CTR 1.25% -> 0.58% (week to 10-02). SERP teardown: every Fresh Pond result already states the distance, so distance-in-title is table stakes.",
@@ -121,6 +153,7 @@
     },
     {
       "since": "2026-09-28",
+      "retired": "2026-10-19 — the 10-16 read passed: non-brand 1,138 with September out of the window (held vs 1,131).",
       "what": "DISCOVERY AFTER THE SPIKE. Non-brand discovery impressions 479 -> 455, the first w/w fall on this basis, and ~80 of the 455 is Fluff Fest queries (ex-festival ~375, -22%). The trailing-4 mean (416) is carried by September's campus weeks.",
       "action": "Report non-brand both with and without one-off festival queries until the September weeks roll out. Week ending 2026-10-16 is the real read: below ~300 there means the September growth was seasonal, and the stagnation logic should be read with that in mind rather than on the +332% headline."
     },
@@ -268,7 +301,28 @@
       "do_not": "Do not assume a guide is discoverable just because its own /guides/<slug> URL returns 200. After shipping a guide, check the /guides index, sitemap.xml and llms.txt too — the slug route is dynamic and will 200 well before the index catches up."
     }
   ],
-  "pending": [],
+  "pending": [
+    {
+      "report_date": "2026-10-19",
+      "item_n": 1,
+      "type": "guide content + page edit",
+      "experiment_id": "exp-2026-10-3",
+      "title": "Put the drive-time answer on /guides/when-walking-is-faster",
+      "ref": "not yet built (proposed with exact text to avoid an unattended worktree build)",
+      "ship_steps": "1) In content/micro-guides-library.md, add the 5/10/15/20-minute sections + 'Door to door is the comparison that counts' (from seo/drafts/guides/how-far-is-a-ten-minute-drive-on-foot.md) into the when-walking-is-faster block; run node scripts/build-micro-guides-migration.mjs; apply the migration. 2) Branch via branch.mjs: add searchMeta['when-walking-is-faster'] in src/components/guides/GuideView.tsx = title 'How long is a 5-minute drive on foot? When walking is faster', description 'A 5-minute drive is about a mile: a 20-minute walk or a 6-minute bike ride. The quick conversion for 5, 10, 15 and 20-minute drives, and the short trips where walking wins.'; add a permanent redirect /guides/how-far-is-a-ten-minute-drive-on-foot -> /guides/when-walking-is-faster in next.config.ts (and drop the old guide from the sitemap/llms by setting its row status off approved, or leave the redirect to handle it). Check translations of the old slug (/es etc.) and redirect those too. 3) inspect.mjs meta --expect; record ship date in experiments.md.",
+      "base": "334 impr / 0 clicks, pos 8.3, week to 2026-10-16"
+    },
+    {
+      "report_date": "2026-10-19",
+      "item_n": 2,
+      "type": "page edit",
+      "experiment_id": "exp-2026-10-4",
+      "title": "Title the /shift/roams hub for trail searches + ItemList",
+      "ref": "not yet built",
+      "ship_steps": "Branch via branch.mjs: in the /shift/roams index page metadata set title 'Bike paths, rail trails and walking loops around Boston' and a description naming the live count of mapped routes (from getActiveRoams); emit ItemList JSON-LD of the routes (name + url). Hub only; do not touch /shift/roams/[id]. check, finish, ship, inspect.mjs meta --expect.",
+      "base": "hub ~0 impressions (absent from 271-row page table, floor 1), week to 2026-10-16"
+    }
+  ],
   "declined": [
     {
       "report_date": "2026-09-21",

@@ -1,0 +1,46 @@
+SEO weekly, 2026-10-19
+
+HEADLINE
+Search discovery held up after the September campus season, with 1,138 non-brand impressions against 1,131 last week, and events again carried half of it. App intent fell to 12. Item 1 fixes the biggest open leak: about 330 searches a week asking how long a short drive takes on foot land on a guide that never says, and get no clicks.
+
+SCOREBOARD (vs 4-week average)
+- North star, app-intent sessions: 12 (16.0, -25%). Organic reached the app 2 of 142 times (1.4%).
+- Organic search: 70 clicks (+18%), 4,881 impressions (+26%), CTR 1.43%, position 7.1.
+- Sessions by channel: organic 142 (+53%); Ad Grants 95 (0 app intent, 7 used a tool); other paid 396 (2.5% app intent); answer engines 0.
+- Ad Grants Oct 1-14 (snapshot 10-14): CTR 6.8%, above the 5% floor. The snapshot shows 0 conversions; the 10-15 ads note records the first (a cheat-sheet download). Wednesday's snapshot confirms.
+- Non-brand discovery impressions: 1,138 (4-week trend +147%, not stagnant).
+
+DECISIONS FOR KEITH
+
+1. Put the drive-time answer on the guide Google already ranks. Recommendation: ship.
+Searches like "5 minute drive to walk" now land on "When walking is actually the faster option": 334 impressions a week, 0 clicks. That guide never states the conversion. Our guide that does has had 0 impressions for seven weeks. The current results are spam pages with a wrong answer. The change moves the 5/10/15/20-minute conversion into the guide that ranks and gives it the search title "How long is a 5-minute drive on foot? When walking is faster". The zero-impression guide redirects to it.
+Cost of waiting: about 330 impressions a week at 0 clicks, and every week of delay pushes the result back.
+To ship: open Claude Code and say "ship SEO item 1" (or "decline SEO item 1").
+
+2. Title the Roams hub for the trail searches people make. Recommendation: ship.
+The /shift/roams hub is titled "Shift Roams — Guided Walking, Biking & Transit Routes" and gets 0 impressions. Paid search and last week's keyword analysis show about 19.7k trail searches a month. The new title would be "Bike paths, rail trails and walking loops around Boston", with a list of the routes for search engines. The hub only; the Roam pages you rebuilt on 10-15 stay as they are.
+Cost of waiting: about four weeks of foliage-season trail searches.
+To ship: open Claude Code and say "ship SEO item 2" (or "decline SEO item 2").
+
+EXPERIMENT BOARD
+Verdicts this week (due 10-20, called on the last full week of data):
+- Campus page titles: won, small. 0 clicks before, 0.78% CTR after. September's volume was seasonal, and the Brandeis shuttle question is what lasts.
+- Campus pages in llms.txt: lost. No answer-engine visits came from it. Leaving it up.
+- FAQ markup on the Commute Advisor: lost. CTR stayed flat (0.19% to about 0.23%). The demand moved to a guide (item 1).
+Running:
+- Roam distance titles (10-26): click-through 0.93% to 0.41%, leaning lost. Your 10-15 Roam rebuild changed these pages mid-test, so I'll read only the weeks before it.
+- Roam app invite (10-26): 0 of 43 organic visitors reached the app. Leaning lost; replaced by the new app box after the map.
+- Event app invite (10-26): 3 of 290 (1.0%), leaning lost.
+- Events in sitemap and llms.txt (11-02): new event pages 544 impressions, 7 clicks.
+- Cargo e-bike cost guide (11-09): 0 impressions at 3 weeks.
+- "How to pay for the T" title (11-23): 0 at 1 week, and the page was also rebuilt 10-14.
+- Boston winter guide (12-14): 83 impressions, 2 clicks, position 4.6 in week 2. Already above its 50/week target.
+
+NEXT HYPOTHESES
+1. List each city-run open-streets day when the city announces it, with the streets and how to get there. Roslindale was at position 5.1 a week out; its event week reads 10-26.
+2. A Brandeis shuttle-to-Boston answer on the campus page: year-round demand at position ~8.
+3. If the event invite loses on 10-26, send event visitors to their neighbourhood's town page instead of the app stores. Town pages convert at 4.7%, events at 1.0%.
+
+HEALTH
+All 200. The sitemap grew from 264 to 349 URLs on purpose: the translated guides and answer pages from 10-17. The translations aren't in llms.txt yet (minor). IndexNow accepted all 349 URLs. PostHog needed four tries this week; that was PostHog's capacity, not our setup.
+Full report: https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-10-19.md
