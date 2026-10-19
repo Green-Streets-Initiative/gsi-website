@@ -19,6 +19,7 @@ import FilterBar from './FilterBar'
 import AppliedFilters from './AppliedFilters'
 import MiniMonth from './MiniMonth'
 import Agenda, { AGENDA_PAGE } from './Agenda'
+import EventAlertSignup from './EventAlertSignup'
 import { TypePills, LevelPills, LocationControl, DistancePills, WhenPills, TagToggles, AudienceToggles, hasAudienceChoices } from './FilterControls'
 import { useEventFilters } from './useEventFilters'
 import { useSavedEvents } from './useSavedEvents'
@@ -348,10 +349,13 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                 }
                 showCount
               />
+              {/* Phone: after the list. Desktop has it in the sidebar. */}
+              <EventAlertSignup filters={f} className="mt-6 lg:hidden" />
             </div>
 
             <aside className="sticky top-[132px] hidden self-start lg:block">
               <MiniMonth events={f.filteredNoDay} selectedDay={f.selectedDay} onSelectDay={f.setSelectedDay} />
+              <EventAlertSignup filters={f} className="mt-4" />
               <div className="mt-4 rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
                 <p className="text-[14px] font-bold text-(--ev-ink)">Hosting a ride, walk, or workshop?</p>
                 <p className="mt-1 text-[13px] leading-relaxed text-(--ev-ink-75)">
