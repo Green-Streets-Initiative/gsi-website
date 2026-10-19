@@ -11,7 +11,8 @@ import TrainsHome from '@/components/roams/TrainsHome'
 import { roamDuration } from '@/components/roams/RoamCard'
 import { withUtm } from '@/lib/utm'
 import { PRICES } from '@/lib/facts/prices'
-import { getRoamDetail, type RoamLeg, type RoamCheckpoint, type RoamDetail } from '@/lib/roams/queries'
+import { getRoamDetail, getNextRoamEvent, type RoamLeg, type RoamCheckpoint, type RoamDetail } from '@/lib/roams/queries'
+import RoamGroupEventCard from '@/components/roams/RoamGroupEventCard'
 
 export const revalidate = 3600
 
@@ -375,6 +376,7 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
   const { id } = await params
   const roam = await getRoamDetail(decodeURIComponent(id))
   if (!roam) notFound()
+  const groupEvent = await getNextRoamEvent(roam.id)
 
   const requiredStops = roam.checkpoints.filter((c) => c.required)
   const bonusStops = roam.checkpoints.filter((c) => !c.required)
@@ -638,6 +640,10 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
             </div>
           </div>
         </section>
+
+        {/* The next group ride or walk on this route, 14 days out until it ends (Shift 01229).
+            Sits after the app box so that box keeps its place (exp-2026-09-7). */}
+        {groupEvent && <RoamGroupEventCard event={groupEvent} />}
 
         {/* The route — unified timeline of stops + legs */}
         {hasRouteContent && (

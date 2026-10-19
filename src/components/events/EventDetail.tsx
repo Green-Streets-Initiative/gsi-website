@@ -129,9 +129,11 @@ interface EventDetailProps {
   hrefBase?: string
   /** Sponsor name → website, from the organizer directory (see loadEvent). */
   sponsorLinks?: Record<string, string>
+  /** Roams whose route this event travels (Shift roam_events), public roams only. */
+  roamLinks?: Array<{ id: string; name: string; reward_note: string | null }>
 }
 
-export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {} }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [] }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
   // The type's color for this surface: the navy-tuned one, or its ink on cream.
@@ -414,6 +416,22 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             {event.body && (
               <div className="mb-8 text-[15px] leading-relaxed text-(--ev-ink-75) whitespace-pre-line">
                 {event.body}
+              </div>
+            )}
+
+            {/* Roams this ride or walk travels */}
+            {roamLinks.length > 0 && (
+              <div className="mb-8 flex flex-col gap-2">
+                {roamLinks.map((r) => (
+                  <a
+                    key={r.id}
+                    href={`/shift/roams/${encodeURIComponent(r.id)}`}
+                    className="flex min-h-[44px] flex-col justify-center rounded-[12px] border border-(--ev-line) px-4 py-3 text-[15px] font-semibold text-(--ev-ink-80) hover:border-(--ev-ink-40)"
+                  >
+                    <span>This ride follows the {r.name} roam &rarr;</span>
+                    {r.reward_note && <span className="mt-1 text-[14px] font-normal text-(--ev-ink-75)">{r.reward_note}</span>}
+                  </a>
+                ))}
               </div>
             )}
 

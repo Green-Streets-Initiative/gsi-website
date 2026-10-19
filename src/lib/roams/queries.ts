@@ -332,3 +332,88 @@ export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
     legs,
   }
 }
+
+/* ── Roam events (Shift 01229): calendar rides and walks on a roam's route ── */
+
+export interface RoamGroupEvent {
+  id: string
+  slug: string | null
+  title: string
+  event_date: string
+  event_time: string | null
+  location_name: string | null
+  organizer_name: string | null
+  registration_url: string | null
+  reward_note: string | null
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** Boston-time instant for an event's start (noon when no time is set). */
+function eventStartMs(date: string, time: string | null): number {
+  // Eastern offset is -04:00 in DST and -05:00 otherwise; a one-hour error is
+  // irrelevant to a 14-day window, and the end check below uses a full day.
+  return new Date(`${date}T${time ?? '12:00:00'}-04:00`).getTime()
+}
+
+/** The soonest linked event inside its show window that hasn't ended. */
+export async function getNextRoamEvent(roamId: string): Promise<RoamGroupEvent | null> {
+  const supabase = createServerSupabaseClient()
+  const { data: links } = await supabase
+    .from('roam_events')
+    .select('content_id, show_days_before, reward_note')
+    .eq('roam_id', roamId)
+  if (!links || links.length === 0) return null
+
+  const { data } = await supabase
+    .from('content_items')
+    .select('id, slug, title, status, event_details!inner(event_date, event_time, event_end_time, location_name, organizer_name, registration_url, event_url)')
+    .in('id', links.map((l) => l.content_id as string))
+    .eq('status', 'approved')
+  const now = Date.now()
+  const rows = ((data ?? []) as Array<Record<string, unknown>>)
+    .map((c) => {
+      const d = (Array.isArray(c.event_details) ? c.event_details[0] : c.event_details) as Record<string, string | null> | null
+      const link = links.find((l) => l.content_id === c.id)
+      if (!d || !link) return null
+      const start = eventStartMs(d.event_date as string, d.event_time)
+      const end = d.event_end_time ? eventStartMs(d.event_date as string, d.event_end_time) : start + 3 * 60 * 60 * 1000
+      const showFrom = start - ((link.show_days_before as number) ?? 14) * DAY_MS
+      if (now < showFrom || now > end) return null
+      return {
+        start,
+        ev: {
+          id: c.id as string,
+          slug: (c.slug as string) ?? null,
+          title: c.title as string,
+          event_date: d.event_date as string,
+          event_time: d.event_time ?? null,
+          location_name: d.location_name ?? null,
+          organizer_name: d.organizer_name ?? null,
+          registration_url: d.registration_url ?? d.event_url ?? null,
+          reward_note: (link.reward_note as string) ?? null,
+        },
+      }
+    })
+    .flatMap((x) => (x ? [x as { start: number; ev: RoamGroupEvent }] : []))
+    .sort((a, b) => a.start - b.start)
+  return rows[0]?.ev ?? null
+}
+
+/** Public roams an event travels (preview roams excluded), for the event page. */
+export async function getEventRoams(contentId: string): Promise<Array<{ id: string; name: string; reward_note: string | null }>> {
+  const supabase = createServerSupabaseClient()
+  const { data: links } = await supabase.from('roam_events').select('roam_id, reward_note').eq('content_id', contentId)
+  if (!links || links.length === 0) return []
+  const { data: roams } = await supabase
+    .from('roams')
+    .select('id, name')
+    .in('id', links.map((l) => l.roam_id as string))
+    .eq('active', true)
+    .is('preview_user_ids', null)
+  return ((roams ?? []) as Array<{ id: string; name: string }>).map((r) => ({
+    id: r.id,
+    name: r.name,
+    reward_note: (links.find((l) => l.roam_id === r.id)?.reward_note as string) ?? null,
+  }))
+}
