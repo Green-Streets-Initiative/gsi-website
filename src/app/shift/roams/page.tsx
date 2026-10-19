@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import RoamCard from '@/components/roams/RoamCard'
-import { getActiveRoams } from '@/lib/roams/queries'
+import RoamHubFilters from '@/components/roams/RoamHubFilters'
+import { getActiveRoams, getUpcomingRoamEvents } from '@/lib/roams/queries'
 
 export const revalidate = 3600
 
@@ -32,7 +33,7 @@ const GROUPS = [
 ] as const
 
 export default async function RoamsIndexPage() {
-  const roams = await getActiveRoams()
+  const [roams, upcoming] = await Promise.all([getActiveRoams(), getUpcomingRoamEvents()])
   const known = new Set<string>(GROUPS.flatMap((g) => [...g.modes]))
   const groups = GROUPS.map((g, i) => ({
     ...g,
@@ -68,23 +69,31 @@ export default async function RoamsIndexPage() {
                   className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-navy/15 bg-white px-4 text-[15px] font-semibold text-navy transition-colors hover:border-navy/40"
                 >
                   {g.label}
-                  <span className="text-[13px] font-medium text-ink-soft">{g.roams.length}</span>
+                  <span data-roam-group-count={g.id} className="text-[13px] font-medium text-ink-soft">{g.roams.length}</span>
                 </a>
               ))}
             </nav>
+            <RoamHubFilters total={roams.length} />
           </div>
         </section>
 
         <div className="space-y-14 px-6 pb-20 pt-6 lg:px-8 lg:pb-24">
           {groups.map((g) => (
-            <section key={g.id} id={g.id} aria-labelledby={`${g.id}-h`} className="mx-auto max-w-[1120px] scroll-mt-24">
+            <section key={g.id} id={g.id} data-roam-group={g.id} aria-labelledby={`${g.id}-h`} className="mx-auto max-w-[1120px] scroll-mt-24">
               <h2 id={`${g.id}-h`} className="font-serif text-[clamp(1.75rem,3.6vw,2.375rem)] font-normal leading-[1.1] text-navy">
                 {g.label}
               </h2>
               <p className="mb-6 mt-2 max-w-[640px] text-[0.9375rem] leading-relaxed text-ink-soft">{g.blurb}</p>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {g.roams.map((r) => (
-                  <RoamCard key={r.id} roam={r} tone="light" />
+                  <RoamCard
+                    key={r.id}
+                    roam={r}
+                    tone="light"
+                    filterable
+                    // upcoming covers preview roams too (service role); r is public by construction.
+                    nextGroupDate={upcoming.get(r.id)?.event_date ?? null}
+                  />
                 ))}
               </div>
             </section>

@@ -29,6 +29,9 @@ export interface RoamSummary {
   featured: boolean
   completion_count: number
   vibe_tags: string[]
+  /** First stop, for "near me" sorting on the hub (filled by getActiveRoams). */
+  start_lat?: number | null
+  start_lng?: number | null
 }
 
 export interface RoamCheckpoint {
@@ -162,10 +165,20 @@ export async function getActiveRoams(): Promise<RoamSummary[]> {
     .or(`event_end.is.null,event_end.gte.${today}`)
     .order('featured', { ascending: false })
     .order('sort_order', { ascending: true })
-  return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+  const rows = (data ?? []) as Array<Record<string, unknown>>
+  // First stop per roam, for the hub's "near me" sort. ~30 rows.
+  const { data: starts } = await supabase
+    .from('roam_checkpoints')
+    .select('roam_id, lat, lng')
+    .eq('sequence_order', 1)
+    .in('roam_id', rows.map((r) => r.id as string))
+  const startById = new Map(((starts ?? []) as Array<{ roam_id: string; lat: number; lng: number }>).map((c) => [c.roam_id, c]))
+  return rows.map((r) => ({
     ...r,
     completion_count: (r.completion_count as number) ?? 0,
     vibe_tags: (r.vibe_tags as string[]) ?? [],
+    start_lat: startById.get(r.id as string)?.lat ?? null,
+    start_lng: startById.get(r.id as string)?.lng ?? null,
   })) as RoamSummary[]
 }
 
@@ -416,4 +429,36 @@ export async function getEventRoams(contentId: string): Promise<Array<{ id: stri
     name: r.name,
     reward_note: (links.find((l) => l.roam_id === r.id)?.reward_note as string) ?? null,
   }))
+}
+
+/** Departing events (rides, walks) drop off at their start; others at day's end. */
+const DEPARTING_TYPES = new Set(['group_ride', 'guided_ride', 'bike_bus', 'walking_tour', 'transit_buddy'])
+
+export interface UpcomingRoamEvent {
+  roam_id: string
+  title: string
+  event_date: string
+  event_time: string | null
+}
+
+/** The next group ride or walk on each roam (Shift get_upcoming_roam_events,
+ *  01234). The server client uses the service role, which skips roams RLS, so
+ *  callers must keep only roams they already show (preview roams excluded). */
+export async function getUpcomingRoamEvents(): Promise<Map<string, UpcomingRoamEvent>> {
+  const supabase = createServerSupabaseClient()
+  const { data, error } = await supabase.rpc('get_upcoming_roam_events')
+  const byRoam = new Map<string, UpcomingRoamEvent>()
+  if (error || !data) return byRoam
+  const now = Date.now()
+  for (const r of data as Array<Record<string, string | null>>) {
+    const date = r.event_date as string
+    const end = r.event_time && DEPARTING_TYPES.has(r.event_type ?? '')
+      ? eventStartMs(date, r.event_time)
+      : eventStartMs(date, '23:59:59')
+    if (end < now) continue
+    const roamId = r.roam_id as string
+    if (byRoam.has(roamId)) continue // rows come soonest first
+    byRoam.set(roamId, { roam_id: roamId, title: r.title as string, event_date: date, event_time: r.event_time ?? null })
+  }
+  return byRoam
 }

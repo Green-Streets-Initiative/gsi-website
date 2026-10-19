@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MapPin } from 'lucide-react'
+import { MapPin, UsersRound } from 'lucide-react'
 import type { RoamSummary } from '@/lib/roams/queries'
 
 /** Minimum shape the card needs — TownRoam (towns/queries) also satisfies it. */
@@ -43,7 +43,7 @@ type Tone = 'dark' | 'light' | 'nearby'
 // caller byte-identical. `nearby` paints from the /nearby --nb-* variables, so
 // it matches whichever surface that page is on — on the cream surface the
 // `dark` card put white text on near-white.
-const THEME: Record<Tone, { card: string; name: string; meta: string; start: string; hook: string; done: string }> = {
+const THEME: Record<Tone, { card: string; name: string; meta: string; start: string; hook: string; done: string; group: string }> = {
   dark: {
     card: 'block overflow-hidden rounded-[14px] border border-white/[0.08] bg-white/[0.04] transition-colors hover:bg-white/[0.07]',
     name: 'text-sm font-semibold leading-snug text-white',
@@ -51,6 +51,7 @@ const THEME: Record<Tone, { card: string; name: string; meta: string; start: str
     start: 'font-semibold text-white',
     hook: 'mt-1.5 text-xs leading-snug text-white/75',
     done: 'mt-2 flex items-center gap-1 text-[10px] text-white/70',
+    group: 'mt-2 flex items-center gap-1.5 text-xs font-semibold text-gold',
   },
   light: {
     card: 'block overflow-hidden rounded-[14px] border border-navy/10 bg-white transition-colors hover:border-navy/30',
@@ -59,6 +60,7 @@ const THEME: Record<Tone, { card: string; name: string; meta: string; start: str
     start: 'font-semibold text-forest',
     hook: 'mt-1.5 text-[13px] leading-snug text-ink-soft',
     done: 'mt-2 flex items-center gap-1 text-[11px] text-ink-soft',
+    group: 'mt-2 flex items-center gap-1.5 text-[13px] font-semibold text-forest',
   },
   nearby: {
     card: 'block overflow-hidden rounded-[14px] border border-(--nb-line-mid) bg-(--nb-card) transition-colors hover:border-(--nb-line-strong)',
@@ -67,7 +69,18 @@ const THEME: Record<Tone, { card: string; name: string; meta: string; start: str
     start: 'font-semibold text-(--nb-ink)',
     hook: 'mt-1.5 text-xs leading-snug text-(--nb-ink-80)',
     done: 'mt-2 flex items-center gap-1 text-[10px] text-(--nb-ink-70)',
+    group: 'mt-2 flex items-center gap-1.5 text-xs font-semibold text-(--nb-ink)',
   },
+}
+
+/** "Sun, Oct 25" in Boston time. */
+export function shortEventDay(date: string): string {
+  return new Date(`${date}T12:00:00-04:00`).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'America/New_York',
+  })
 }
 
 /** Where a roam starts relative to the page it's listed on. `near` reads
@@ -85,13 +98,37 @@ function startLine(s: RoamStart): string {
 /** Hero-image roam card, shared by the roams index, the town pages, and the school pages.
  *  With `start`, the meta line leads with where it starts and calls the
  *  length the route's — "7.3 mi" alone read as "7.3 mi away" on school pages. */
-export default function RoamCard({ roam, tone = 'dark', start }: { roam: RoamCardData; tone?: Tone; start?: RoamStart }) {
+export default function RoamCard({
+  roam,
+  tone = 'dark',
+  start,
+  nextGroupDate,
+  filterable = false,
+}: {
+  roam: RoamCardData
+  tone?: Tone
+  start?: RoamStart
+  /** YYYY-MM-DD of the next group ride or walk on this roam. */
+  nextGroupDate?: string | null
+  /** Adds the data the roams hub filters read (RoamHubFilters). */
+  filterable?: boolean
+}) {
   const t = THEME[tone]
   const meta = roamMetaLine(roam)
+  const data = filterable
+    ? {
+        'data-roam-card': '',
+        'data-minutes': roam.estimated_minutes ?? '',
+        'data-lat': roam.start_lat ?? '',
+        'data-lng': roam.start_lng ?? '',
+        'data-group': nextGroupDate ? '1' : '0',
+      }
+    : {}
   return (
     <Link
       href={`/shift/roams/${encodeURIComponent(roam.id)}`}
-      className={t.card}
+      className={`${t.card} h-full`}
+      {...data}
     >
       {roam.hero_image_url && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -105,12 +142,19 @@ export default function RoamCard({ roam, tone = 'dark', start }: { roam: RoamCar
       <div className="p-4">
         <p className={t.name}>{roam.name}</p>
         <p className={`mt-0.5 ${t.meta}`}>
+          {filterable && <span data-roam-distance hidden className={t.start} />}
           {start && <span className={t.start}>{startLine(start)} · </span>}
           {start && roam.distance_miles != null ? meta.replace(`${roam.distance_miles} mi`, `${roam.distance_miles} mi route`) : meta}
           {roam.region ? ` · ${roam.region}` : ''}
         </p>
         {/* Every card gets its one line: the hook, or the tagline when there's no hook. */}
         {(roam.hook || roam.tagline) && <p className={t.hook}>{roam.hook || roam.tagline}</p>}
+        {nextGroupDate && (
+          <p className={t.group}>
+            <UsersRound size={13} aria-hidden />
+            Next group ride: {shortEventDay(nextGroupDate)}
+          </p>
+        )}
         {roam.completion_count >= MIN_COMPLETIONS_TO_SHOW && (
           <p className={t.done}>
             <MapPin size={9} />
