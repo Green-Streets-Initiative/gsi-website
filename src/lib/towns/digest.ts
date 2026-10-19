@@ -357,7 +357,20 @@ export function buildTownDigest(opts: {
   // Pulse — self-explaining, rank included when the town has one.
   const trips = Math.round(town.active_trips_month).toLocaleString('en-US')
   const stateName = STATE_NAMES[town.state] ?? town.state
-  const rankClause = town.rank > 0 ? ` — ranked #${town.rank} of ${qualifyingCount} ${stateName} towns` : ''
+  // The rank is by Shift Rate, not by the trip count, so the sentence says the
+  // rate it ranks (Keith 2026-10-19: the count beside "#1 of 25" read as a rank
+  // by trips, while the app showed Somerville #3 by trips). Shift Rate counts
+  // carpools too, so it's "without driving alone", not "walking, biking, and
+  // transit".
+  // One decimal from the exact counts, as the ranking and the app use it (the
+  // directory's shift_rate is rounded: Somerville and Boston both read "92").
+  const exact = town.total_trips_month > 0
+    ? (100 * (town.shifted_trips_month ?? town.active_trips_month)) / town.total_trips_month
+    : Number(town.shift_rate)
+  const rate = exact.toFixed(1).replace(/\.0$/, '')
+  const rankSentence = town.rank > 0
+    ? ` ${rate}% of their trips were made without driving alone, ${town.rank === 1 ? `the highest share of ${qualifyingCount}` : `#${town.rank} of ${qualifyingCount}`} ${stateName} towns.`
+    : ''
 
   const preheaderBits: string[] = []
   if (eventPicks[0]) preheaderBits.push(truncate(eventPicks[0].title, 44))
@@ -487,7 +500,7 @@ export function buildTownDigest(opts: {
   <!-- Pulse -->
   <tr>
     <td style="padding:0 32px 26px;">
-      <p style="margin:0;font-size:14px;line-height:1.6;color:#3A3C4E;border-top:1px solid #E5E7EB;padding-top:16px;">${escapeHtml(townName)} neighbors on Shift have logged <b style="color:#191A2E;">${trips} walking, biking, and transit trips</b> so far this month${escapeHtml(rankClause)}. <a href="${townUrl('pulse')}" style="color:#2966E5;font-weight:700;text-decoration:none;">See how ${escapeHtml(townName)} moves &rarr;</a></p>
+      <p style="margin:0;font-size:14px;line-height:1.6;color:#3A3C4E;border-top:1px solid #E5E7EB;padding-top:16px;">${escapeHtml(townName)} neighbors on Shift have logged <b style="color:#191A2E;">${trips} walking, biking, and transit trips</b> so far this month.${escapeHtml(rankSentence)} <a href="${townUrl('pulse')}" style="color:#2966E5;font-weight:700;text-decoration:none;">See how ${escapeHtml(townName)} moves &rarr;</a></p>
     </td>
   </tr>
   <!-- Forward nudge — the digest's growth loop -->
