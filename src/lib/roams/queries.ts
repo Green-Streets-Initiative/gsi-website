@@ -22,6 +22,8 @@ export interface RoamSummary {
   distance_miles: number | null
   estimated_minutes: number | null
   hook: string | null
+  /** One-line fallback for cards when there's no hook. */
+  tagline: string | null
   hero_image_url: string | null
   region: string | null
   featured: boolean
@@ -151,7 +153,7 @@ export async function getActiveRoams(): Promise<RoamSummary[]> {
   const today = new Date().toISOString().slice(0, 10)
   const { data } = await supabase
     .from('roams')
-    .select('id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, featured, completion_count, vibe_tags')
+    .select('id, name, mode, distance_miles, estimated_minutes, hook, tagline, hero_image_url, region, featured, completion_count, vibe_tags')
     .eq('active', true)
     // Preview roams (preview_user_ids set) are for their testers in the app only (Shift 01214).
     .is('preview_user_ids', null)

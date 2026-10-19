@@ -3,21 +3,35 @@ import { MapPin } from 'lucide-react'
 import type { RoamSummary } from '@/lib/roams/queries'
 
 /** Minimum shape the card needs — TownRoam (towns/queries) also satisfies it. */
-export type RoamCardData = Omit<RoamSummary, 'featured'>
+export type RoamCardData = Omit<RoamSummary, 'featured' | 'tagline'> & { tagline?: string | null }
 
 const MIN_COMPLETIONS_TO_SHOW = 10
+
+const MODE_LABEL: Record<string, string> = {
+  bike: 'Bike',
+  walk: 'Walk',
+  transit: 'Transit',
+  multi: 'Walk + transit',
+}
+
+/** "27 min", "1 hr 30 min", "7 hr" — minutes past an hour round to 5. */
+export function roamDuration(min: number): string {
+  const m = Math.round(min)
+  if (m < 60) return `${m} min`
+  const h = Math.floor(m / 60)
+  const rest = Math.round((m % 60) / 5) * 5
+  return rest === 60 ? `${h + 1} hr` : rest ? `${h} hr ${rest} min` : `${h} hr`
+}
 
 export function roamMetaLine(r: {
   mode: string
   distance_miles: number | null
   estimated_minutes: number | null
 }): string {
-  const modeLabel =
-    r.mode === 'multi' ? 'walk + transit' : r.mode === 'transit' ? 'transit' : r.mode
   return [
-    modeLabel,
+    MODE_LABEL[r.mode] ?? r.mode,
     r.distance_miles != null ? `${r.distance_miles} mi` : null,
-    r.estimated_minutes != null ? `~${r.estimated_minutes} min` : null,
+    r.estimated_minutes != null ? roamDuration(r.estimated_minutes) : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -95,7 +109,8 @@ export default function RoamCard({ roam, tone = 'dark', start }: { roam: RoamCar
           {start && roam.distance_miles != null ? meta.replace(`${roam.distance_miles} mi`, `${roam.distance_miles} mi route`) : meta}
           {roam.region ? ` · ${roam.region}` : ''}
         </p>
-        {roam.hook && <p className={t.hook}>{roam.hook}</p>}
+        {/* Every card gets its one line: the hook, or the tagline when there's no hook. */}
+        {(roam.hook || roam.tagline) && <p className={t.hook}>{roam.hook || roam.tagline}</p>}
         {roam.completion_count >= MIN_COMPLETIONS_TO_SHOW && (
           <p className={t.done}>
             <MapPin size={9} />

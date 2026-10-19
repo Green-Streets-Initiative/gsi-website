@@ -8,7 +8,7 @@ import StoreButtons from '@/components/StoreButtons'
 import RoamMap from '@/components/roams/RoamMap'
 import CreatorVideo, { parseVideoEmbed } from '@/components/roams/CreatorVideo'
 import TrainsHome from '@/components/roams/TrainsHome'
-import { roamMetaLine } from '@/components/roams/RoamCard'
+import { roamDuration } from '@/components/roams/RoamCard'
 import { withUtm } from '@/lib/utm'
 import { PRICES } from '@/lib/facts/prices'
 import { getRoamDetail, type RoamLeg, type RoamCheckpoint, type RoamDetail } from '@/lib/roams/queries'
@@ -118,11 +118,17 @@ function trailFacts(roam: RoamDetail, start: string | null, end: string | null):
  * Leg route summaries come from the route scorer as "Name — type (d mi)" lists,
  * where an unnamed segment is literally "Route". "Route — shared road (0.1 mi)"
  * means nothing to a reader, so it becomes "a short shared road link (0.1 mi)".
+ * A named one reads "Fitchburg Cutoff (bike lane, 0.1 mi)", without the dash.
  */
 function readableSegments(summary: string): string {
   return summary
     .split(/,\s+(?=[^()]*(?:\(|$))/)
-    .map((seg) => seg.replace(/^Route\s+—\s+(.+?)\s+\(([^)]+)\)$/, 'a short $1 link ($2)').replace(/^LOVEJOY WHARF/, 'Lovejoy Wharf'))
+    .map((seg) =>
+      seg
+        .replace(/^Route\s+—\s+(.+?)\s+\(([^)]+)\)$/, 'a short $1 link ($2)')
+        .replace(/^(.+?)\s+—\s+(.+?)\s+\(([^)]+)\)$/, '$1 ($2, $3)')
+        .replace(/^LOVEJOY WHARF/, 'Lovejoy Wharf'),
+    )
     .join(', ')
 }
 
@@ -332,8 +338,8 @@ function StopRow({ stop, stopNumber, isStart, isFinal }: { stop: RoamCheckpoint;
 function LegRow({ leg }: { leg: RoamLeg }) {
   const Icon = MODE_ICON[leg.leg_type] ?? Footprints
   const meta = [
-    leg.distance_miles != null ? `${leg.distance_miles} mi` : null,
-    leg.estimated_minutes != null ? `~${leg.estimated_minutes} min` : null,
+    leg.distance_miles != null ? `${Math.round(Number(leg.distance_miles) * 10) / 10} mi` : null,
+    leg.estimated_minutes != null ? roamDuration(leg.estimated_minutes) : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -383,7 +389,7 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
   const completionHint = roam.completion_threshold < 1.0
     ? `Visit ${thresholdStops} of the ${requiredCount} stops and the roam is complete.`
     : requiredCount > 0
-      ? `Visit all ${requiredCount} stops and the roam is complete.`
+      ? `Visit ${requiredCount === 2 ? 'both' : `all ${requiredCount}`} stops and the roam is complete.`
       : null
 
   const timeline = buildTimeline(requiredStops, roam.legs)
@@ -537,17 +543,15 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               />
             )}
 
-            <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
-              <span className="rounded-full border border-navy/10 bg-white px-3.5 py-1.5 font-semibold text-navy">
-                {roamMetaLine(roam)}
-              </span>
-              {roam.badge_name && (
+            {/* Length and time live in Know before you go; only the badge chip stays here. */}
+            {roam.badge_name && (
+              <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EDB93C]/40 bg-[#EDB93C]/10 px-3.5 py-1.5 font-semibold text-[#8A6D1F]">
                   <Award size={14} />
                   Unlock the {roam.badge_name} badge in the Shift app
                 </span>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Social proof + collection */}
             {roam.completion_count >= MIN_COMPLETIONS_TO_SHOW && (
@@ -741,7 +745,7 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               </div>
             </div>
             <div className="text-center">
-              <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="roam_bottom" tone="light" className="justify-center" />
+              <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="roam_bottom" tone="light" className="[&>div]:justify-center" />
             </div>
           </div>
         </section>
