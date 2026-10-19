@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
 import { subscribeTownDigest } from '@/lib/loops'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 /**
  * Town-digest email capture (paths Phase 1 / E19 front door).
  * Body: { email, town } — town is the page slug ("somerville-ma").
  *
- * Writes two places: town_digest_subscribers (source of truth for the
- * town-digest edge function's sender) first, then the Loops contact upsert
- * (CRM mirror). A Loops hiccup must not lose the subscriber, so the DB row
- * is written before — and independently of — the Loops call.
+ * The subscription lives in Shift's one email subscription system (topic
+ * town_digest, product item 19 step 2), written through the
+ * email-subscriptions function so the town page uses the same rules as every
+ * other sign-up. Single opt-in, as this sign-up has always been. Then the
+ * Loops contact upsert (CRM mirror); a Loops hiccup must not lose the
+ * subscriber, so the subscription is written first and independently.
  */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -28,19 +29,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'invalid email or town' }, { status: 400 })
   }
 
-  // Signing up again re-activates an unsubscribed row.
-  const sb = createServerSupabaseClient()
-  const { error: dbError } = await sb.from('town_digest_subscribers').upsert(
-    {
-      email,
-      town_slug: town,
-      source: 'town_page',
-      subscribed_at: new Date().toISOString(),
-      unsubscribed_at: null,
-      unsubscribe_reason: null,
-    },
-    { onConflict: 'email,town_slug' },
-  )
+  // Signing up again re-activates an unsubscribed town.
+  let dbError: { message: string } | null = null
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/email-subscriptions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'signup', topic: 'town_digest', email, town, locale: 'en' }),
+    })
+    if (!res.ok) dbError = { message: `email-subscriptions ${res.status}` }
+  } catch (e) {
+    dbError = { message: (e as Error).message }
+  }
 
   const loops = await subscribeTownDigest(email, town)
 

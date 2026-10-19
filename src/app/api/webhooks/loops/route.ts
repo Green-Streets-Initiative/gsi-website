@@ -135,6 +135,26 @@ export async function POST(req: Request) {
       .eq('email', email)
       .is('unsubscribed_at', null)
     if (tdError) console.error('town_digest_subscribers webhook mirror failed:', tdError.message)
+
+    // Since Shift 01252 town digests live in email_subscriptions (topic
+    // town_digest): silence them there too, which is what the sender reads.
+    const now = new Date().toISOString()
+    const { error: subErr } = await sb
+      .from('email_subscriptions')
+      .update({ status: 'unsubscribed', unsubscribed_at: now, unsubscribe_reason: 'admin', updated_at: now })
+      .eq('email', email)
+      .eq('topic', 'town_digest')
+      .neq('status', 'unsubscribed')
+    if (subErr) console.error('email_subscriptions town digest mirror failed:', subErr.message)
+
+    // A hard bounce or a spam complaint means no Shift email to this address
+    // at all (sending reputation): the system's "everything off" list.
+    if (HARD_REASONS.has(reason)) {
+      const { error: supErr } = await sb
+        .from('email_suppressions')
+        .upsert({ email, reason }, { onConflict: 'email', ignoreDuplicates: true })
+      if (supErr) console.error('email_suppressions webhook mirror failed:', supErr.message)
+    }
   }
 
   // Always log (success path or log-only events).

@@ -1,7 +1,6 @@
 import { Resend } from 'resend'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { buildTownDigest, PROXIMITY_PLACEHOLDER, UNSUB_PLACEHOLDER } from '@/lib/towns/digest'
-import { signTownDigestUnsubToken } from '@/lib/town-digest-token'
+import { buildTownDigest, MANAGE_PLACEHOLDER, PROXIMITY_PLACEHOLDER, UNSUB_PLACEHOLDER } from '@/lib/towns/digest'
 import {
   getTownCentroid,
   getTownCivicEvents,
@@ -32,6 +31,19 @@ const FROM = 'Green Streets Initiative <noreply@gogreenstreets.org>'
 const REPLY_TO = 'info@gogreenstreets.org'
 const ADMIN_EMAIL = 'keith@gogreenstreets.org'
 const SITE = 'https://www.gogreenstreets.org'
+const FUNCTIONS = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1`
+
+/**
+ * Subscribers come from Shift's one email subscription system (topic
+ * town_digest, one row per address and town; product item 19 step 2): the
+ * shared check email_recipients() decides who may get it (active, not
+ * unsubscribed from everything), and email_link_sigs() signs each person's
+ * "Stop … emails" and "Manage your emails" links exactly as Shift's own
+ * emails are signed.
+ */
+type DigestSub = { id: string; email: string; user_id: string | null; source: string | null; params: { town_slug?: string } | null }
+/** A made-up subscription for preview links: they land on "That link didn't work". */
+const PREVIEW_SUB = '00000000-0000-4000-8000-000000000000'
 // Announcements + reminders share this budget (raised 2 → 3 when reminders
 // landed, Keith 2026-08-04).
 const MAX_SENDS_PER_30D = 3
@@ -89,12 +101,9 @@ export async function GET(req: Request) {
   if (onlyTown) {
     slugs = [onlyTown]
   } else {
-    const { data: subTowns, error } = await sb
-      .from('town_digest_subscribers')
-      .select('town_slug')
-      .is('unsubscribed_at', null)
+    const { data: subTowns, error } = await sb.rpc('email_recipients', { p_topic: 'town_digest' })
     if (error) return Response.json({ error: error.message }, { status: 500 })
-    slugs = [...new Set((subTowns ?? []).map((r) => r.town_slug as string))]
+    slugs = [...new Set(((subTowns ?? []) as DigestSub[]).map((r) => r.params?.town_slug).filter((x): x is string => !!x))]
   }
 
   const cutoff30 = new Date(Date.now() - 30 * 86400000).toISOString()
@@ -202,26 +211,18 @@ export async function GET(req: Request) {
         continue
       }
 
-      let recipients: Array<{ email: string; user_id: string | null; source: string }>
+      const { data: allSubs, error: subsErr } = await sb.rpc('email_recipients', { p_topic: 'town_digest' })
+      if (subsErr) throw new Error(subsErr.message)
+      const townSubs = ((allSubs ?? []) as DigestSub[]).filter((r) => r.params?.town_slug === slug)
+      let recipients: Array<{ id: string; email: string; user_id: string | null; source: string }>
       if (dryRun) {
         // Preview carries a real proximity line: borrow the town's first
-        // app-linked subscriber (usually Keith's own account).
-        const { data: demoSub } = await sb
-          .from('town_digest_subscribers')
-          .select('user_id')
-          .eq('town_slug', slug)
-          .is('unsubscribed_at', null)
-          .not('user_id', 'is', null)
-          .limit(1)
-        recipients = [{ email: ADMIN_EMAIL, user_id: demoSub?.[0]?.user_id ?? null, source: 'town_page' }]
+        // app-linked subscriber (usually Keith's own account). Its links are
+        // made-up, so clicking them in the preview can't touch that person.
+        const demo = townSubs.find((r) => r.user_id)
+        recipients = [{ id: PREVIEW_SUB, email: ADMIN_EMAIL, user_id: demo?.user_id ?? null, source: 'town_page' }]
       } else {
-        const { data: subs, error: subsErr } = await sb
-          .from('town_digest_subscribers')
-          .select('email, user_id, source')
-          .eq('town_slug', slug)
-          .is('unsubscribed_at', null)
-        if (subsErr) throw new Error(subsErr.message)
-        recipients = subs ?? []
+        recipients = townSubs.map((r) => ({ id: r.id, email: r.email, user_id: r.user_id, source: r.source ?? 'town_page' }))
         if (recipients.length === 0) {
           results.push({ town: slug, skipped: 'no active subscribers' })
           continue
@@ -246,17 +247,24 @@ export async function GET(req: Request) {
         }
       }
 
+      const { data: sigRows, error: sigErr } = await sb.rpc('email_link_sigs', { p_subs: recipients.map((r) => r.id) })
+      if (sigErr) throw new Error(`email_link_sigs: ${sigErr.message}`)
+      const sigs = new Map(((sigRows ?? []) as { id: string; stop_sig: string; manage_sig: string }[]).map((x) => [x.id, x]))
+
       let sent = 0
       let errors = 0
       for (const r of recipients) {
-        const token = signTownDigestUnsubToken(r.email.toLowerCase(), slug)
-        const unsubUrl = `${SITE}/api/towns/unsubscribe?token=${token}`
+        const sig = sigs.get(r.id)
+        if (!sig?.stop_sig || !sig.manage_sig) throw new Error('missing link signature')
+        const unsubUrl = `${FUNCTIONS}/email-subscriptions?a=stop&id=${r.id}&s=${sig.stop_sig}`
+        const manageUrl = `${SITE}/email/manage?id=${r.id}&s=${sig.manage_sig}`
         const home = r.user_id ? homeByUser.get(r.user_id) : undefined
         const miles = home && content.featuredLat != null && content.featuredLng != null
           ? haversineMiles(home.lat, home.lng, content.featuredLat, content.featuredLng)
           : null
         let html = (r.source === 'app_auto' ? content.htmlAppAuto : content.html)
           .replaceAll(UNSUB_PLACEHOLDER, unsubUrl)
+          .replaceAll(MANAGE_PLACEHOLDER, manageUrl)
           .replace(PROXIMITY_PLACEHOLDER, proximityLine(miles))
         for (const [itemId, loc] of Object.entries(content.itemLocations)) {
           const d = home ? haversineMiles(home.lat, home.lng, loc.lat, loc.lng) : null

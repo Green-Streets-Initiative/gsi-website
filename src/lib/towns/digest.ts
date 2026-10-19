@@ -40,6 +40,8 @@ const SITE = 'https://www.gogreenstreets.org'
 // where it's relevant in the body (pulse, perk, footer).
 const GSI_WORDMARK_URL = `${SITE}/assets/email/gsi-wordmark-dark.png`
 export const UNSUB_PLACEHOLDER = '%%UNSUB_URL%%'
+/** "Manage your emails" (Shift item 19): the person's own signed manage-page link. */
+export const MANAGE_PLACEHOLDER = '%%MANAGE_URL%%'
 /** Replaced per recipient: '' for web subscribers, a proximity line for app users near the project. */
 export const PROXIMITY_PLACEHOLDER = '%%PROXIMITY_LINE%%'
 
@@ -498,7 +500,7 @@ export function buildTownDigest(opts: {
   <tr>
     <td style="background:#191A2E;padding:18px 32px;text-align:center;">
       <p style="margin:0 0 5px;font-size:12px;color:rgba(255,255,255,0.78);">${footerWhyFor(src)}</p>
-      <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.78);"><a href="${UNSUB_PLACEHOLDER}" style="color:rgba(255,255,255,0.78);">Unsubscribe</a> &nbsp;&middot;&nbsp; <a href="${SITE}" style="color:rgba(255,255,255,0.78);text-decoration:none;">Green Streets Initiative</a>${installTailFor(src)}</p>
+      <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.78);"><a href="${UNSUB_PLACEHOLDER}" style="color:rgba(255,255,255,0.78);">Stop ${escapeHtml(townName)} emails</a> &nbsp;&middot;&nbsp; <a href="${MANAGE_PLACEHOLDER}" style="color:rgba(255,255,255,0.78);">Manage your emails</a> &nbsp;&middot;&nbsp; <a href="${SITE}" style="color:rgba(255,255,255,0.78);text-decoration:none;">Green Streets Initiative</a>${installTailFor(src)}</p>
     </td>
   </tr>
 </table>

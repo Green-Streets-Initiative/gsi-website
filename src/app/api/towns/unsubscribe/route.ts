@@ -52,6 +52,21 @@ async function unsubscribe(token: string | null): Promise<
     console.error('town unsubscribe DB update failed:', error.message)
     return { ok: false, error: 'Something went wrong' }
   }
+  // Since Shift 01252 the digest's subscribers live in email_subscriptions
+  // (topic town_digest, one row per town). Links in digests sent before then
+  // carry this token; they stop that town there too.
+  const now = new Date().toISOString()
+  const { error: subErr } = await sb
+    .from('email_subscriptions')
+    .update({ status: 'unsubscribed', unsubscribed_at: now, unsubscribe_reason: 'link', updated_at: now })
+    .eq('email', email.toLowerCase())
+    .eq('topic', 'town_digest')
+    .eq('param_key', town_slug)
+    .neq('status', 'unsubscribed')
+  if (subErr) {
+    console.error('town unsubscribe email_subscriptions update failed:', subErr.message)
+    return { ok: false, error: 'Something went wrong' }
+  }
 
   // CRM mirror — best-effort; the DB row above is what the sender honors.
   const loops = await unsubscribeTownDigestContact(email, 'link')
