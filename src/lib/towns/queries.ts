@@ -359,6 +359,10 @@ export async function fetchEventPool(
     // the public events calendar. qc_passed_at is NOT required (most approved
     // events don't carry it; filtering on it silently hid Open Streets,
     // festivals, and most group rides — caught by Keith 2026-07-09).
+    // Club mileage rides (Charles River Wheelers, Landry's, a shop's road
+    // ride) carry surfaces without home_feed since the 2026-10-19 calendar
+    // policy: listed on /events, left out of picks, digests and /nearby.
+    .contains('content_items.surfaces', ['home_feed'])
     .gte('event_date', todayStr)
     .lte('event_date', horizon)
     .order('event_date', { ascending: true })

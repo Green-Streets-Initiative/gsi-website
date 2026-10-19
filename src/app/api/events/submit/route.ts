@@ -267,7 +267,10 @@ export async function POST(request: Request) {
     primary_barrier: 'awareness',
     primary_mode: 'mixed',
     benefit_tags: [],
-    surfaces: ['community_calendar'],
+    // Same surfaces as every synced event; the home feed reads this column
+    // since the 2026-10-19 calendar policy ('community_calendar' meant nothing
+    // to it). Keith's approval is still the gate.
+    surfaces: ['home_feed', 'event_library'],
     status: 'draft',
   })
 
