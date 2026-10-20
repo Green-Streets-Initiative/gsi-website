@@ -572,7 +572,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                   )}
                   {it.card.confirmText && (
                     <label className="mt-3 block text-[13px] text-ink">
-                      This can&apos;t be undone. Type <strong>{it.card.confirmText}</strong> to confirm.
+                      To confirm, type <strong>{it.card.confirmText}</strong>.
                       <input
                         value={typed[it.tool_use_id] ?? ''}
                         onChange={(e) => setTyped((t) => ({ ...t, [it.tool_use_id]: e.target.value }))}

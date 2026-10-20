@@ -586,7 +586,26 @@ export async function adminApprovalCard(ctx: ToolCtx, name: string, input: Recor
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('that email address does not look right')
       input.email = email
       const role = String(input.role)
-      return { card: { title: `Add ${email} as ${role === 'admin' ? 'an admin' : `a ${role}`}?`, lines: [ROLE_WORDS[role] ?? role, 'They get a sign-in link by email. The account owner is told.'], cta: 'Add them', tone: 'primary' } }
+      // An address outside the company's domains is said plainly on the card,
+      // and an admin (who can do everything) needs the address typed: a line
+      // planted in a pasted list can't become a one-click admin.
+      const { data: doms } = await ctx.admin.from('employer_email_domains').select('domain').eq('group_id', ctx.groupId)
+      const domains = ((doms ?? []) as { domain: string }[]).map((d) => d.domain.toLowerCase())
+      const domain = email.split('@')[1]
+      const outside = domains.length > 0 && !domains.some((d) => domain === d || domain.endsWith(`.${d}`))
+      return {
+        card: {
+          title: `Add ${email} as ${role === 'admin' ? 'an admin' : `a ${role}`}?`,
+          lines: [
+            ...(outside ? [`This address isn't at ${domains.map((d) => `@${d}`).join(' or ')}. Check you know this person.`] : []),
+            ROLE_WORDS[role] ?? role,
+            'They get a sign-in link by email. The account owner is told.',
+          ],
+          ...(role === 'admin' ? { confirmText: email } : {}),
+          cta: 'Add them',
+          tone: outside || role === 'admin' ? 'danger' : 'primary',
+        },
+      }
     }
     case 'change_team_role': {
       const r = await teamRow(ctx, String(input.member_id ?? ''))
