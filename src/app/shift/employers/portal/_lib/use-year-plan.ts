@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import type { ChallengeBody } from '../challenges/challenge-actions'
 import { supabase } from '@/lib/supabase'
 import type { ChallengeTemplate, TemplateRun } from './use-challenge-templates'
 
@@ -14,6 +15,9 @@ export type YearPlanDraft = {
   id: string
   status: 'drafted' | 'launched' | 'skipped'
   run: TemplateRun & { template: ChallengeTemplate }
+  /** Filled in once an admin opens it in the builder (Shift 01291). */
+  body?: ChallengeBody | null
+  version?: number
 }
 
 export function useYearPlan(groupId: string | undefined) {
@@ -34,7 +38,7 @@ export function useYearPlan(groupId: string | undefined) {
       supabase
         .from('employer_challenge_drafts')
         .select(
-          'id, status, run:challenge_template_runs(id, template_id, label, starts_on, ends_on, template:challenge_templates(id, slug, title, season, line, pitch, pairs_with, pairs_with_line, duration_days, counting_rules, prize, tips, sort_order))',
+          'id, status, body, version, run:challenge_template_runs(id, template_id, label, starts_on, ends_on, template:challenge_templates(id, slug, title, season, line, pitch, pairs_with, pairs_with_line, duration_days, counting_rules, prize, tips, sort_order))',
         )
         .eq('group_id', groupId)
         .limit(40),

@@ -32,6 +32,18 @@
  *
  * Request body: { amount_cents: number, origin?: string }
  * Response:     { url: string }  Stripe-hosted checkout URL
+ *
+ * Funding one challenge (Shift 01291, Keith 2026-10-20): pass draft_id and
+ * confirm_cents (the "sets aside now" amount the admin was shown) instead of
+ * amount_cents. begin_employer_challenge_payment re-runs the pre-flight check
+ * with the caller's identity and returns the amount to charge: exactly the
+ * shortfall, $25 at least. The webhook launches the challenge when the money
+ * lands. mode:
+ *   'checkout'     (default) Stripe page; card or bank payment; the card is
+ *                  saved for next time. Response { url }.
+ *   'card_on_file' Response { card: { brand, last4 } | null }. Charges nothing.
+ *   'saved_card'   Charges the saved card now and launches. Response
+ *                  { launched, competition_id } or { needs_checkout, reason }.
  */
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -73,18 +85,20 @@ serve(async (req: Request) => {
     return jsonResponse({ error: "Missing bearer token" }, 401);
   }
 
-  let body: { amount_cents?: unknown; origin?: unknown };
+  let body: { amount_cents?: unknown; origin?: unknown; draft_id?: unknown; confirm_cents?: unknown; mode?: unknown };
   try {
     body = await req.json();
   } catch {
     return jsonResponse({ error: "Invalid JSON" }, 400);
   }
 
-  const amountCents =
+  const draftId = typeof body.draft_id === "string" && body.draft_id ? body.draft_id : null;
+  const mode = body.mode === "saved_card" || body.mode === "card_on_file" ? body.mode : "checkout";
+  let amountCents =
     typeof body.amount_cents === "number"
       ? Math.round(body.amount_cents)
       : Number(body.amount_cents);
-  if (!Number.isFinite(amountCents) || amountCents < MIN_CENTS || amountCents > MAX_CENTS) {
+  if (!draftId && (!Number.isFinite(amountCents) || amountCents < MIN_CENTS || amountCents > MAX_CENTS)) {
     return jsonResponse(
       {
         error: `amount_cents must be between ${MIN_CENTS} and ${MAX_CENTS}`,
@@ -105,12 +119,43 @@ serve(async (req: Request) => {
   }
   const email = userData.user.email.toLowerCase();
 
-  const { data: adminRow, error: adminErr } = await userSupabase
+  // Funding a challenge: the database re-checks it as this admin and says
+  // which workplace it belongs to and what to charge.
+  let draftGroupId: string | null = null;
+  if (draftId) {
+    if (mode === "card_on_file") {
+      const { data: d } = await userSupabase
+        .from("employer_challenge_drafts")
+        .select("group_id")
+        .eq("id", draftId)
+        .maybeSingle();
+      draftGroupId = d?.group_id ?? null;
+      amountCents = 0;
+    } else {
+      const { data: begun, error: beginErr } = await userSupabase.rpc("begin_employer_challenge_payment", {
+        p_draft_id: draftId,
+        p_confirm_cents: Number(body.confirm_cents),
+        p_method: mode,
+      });
+      const b = begun as { ok?: boolean; reason?: string; group_id?: string; topup_cents?: number; check?: unknown } | null;
+      if (beginErr || !b?.ok) {
+        return jsonResponse({ error: b?.reason ?? beginErr?.message ?? "Could not start the payment", reason: b?.reason, check: b?.check }, 409);
+      }
+      draftGroupId = b.group_id ?? null;
+      amountCents = Number(b.topup_cents);
+      if (!Number.isFinite(amountCents) || amountCents < MIN_CENTS || amountCents > MAX_CENTS) {
+        return jsonResponse({ error: `The amount to add has to be between $${MIN_CENTS / 100} and $${MAX_CENTS / 100}.` }, 400);
+      }
+    }
+    if (!draftGroupId) return jsonResponse({ error: "Draft not found" }, 404);
+  }
+
+  let adminQuery = userSupabase
     .from("group_admins")
     .select("group_id, role, groups!inner(id, name, tier, stripe_customer_id, admin_email)")
-    .eq("email", email)
-    .limit(1)
-    .maybeSingle();
+    .eq("email", email);
+  if (draftGroupId) adminQuery = adminQuery.eq("group_id", draftGroupId);
+  const { data: adminRow, error: adminErr } = await adminQuery.limit(1).maybeSingle();
   if (adminErr) {
     console.error("[TopUpCheckout] group lookup failed:", adminErr);
     return jsonResponse({ error: "Lookup failed" }, 500);
@@ -121,7 +166,7 @@ serve(async (req: Request) => {
   if (adminRow.role !== "admin") {
     return jsonResponse({ error: "Admin role required for billing" }, 403);
   }
-  const group = adminRow.groups as { id: string; name: string; tier: string; stripe_customer_id: string | null; admin_email: string | null };
+  const group = adminRow.groups as unknown as { id: string; name: string; tier: string; stripe_customer_id: string | null; admin_email: string | null };
   if (group.tier !== "standard" && group.tier !== "premium") {
     return jsonResponse(
       { error: "Reward pool funding requires the Standard plan or above" },
@@ -211,6 +256,98 @@ serve(async (req: Request) => {
     }
   }
 
+  const metadata: Record<string, string> = {
+    type: "reward_pool_topup",
+    pool_id: poolId,
+    group_id: group.id,
+    amount_cents: String(amountCents),
+  };
+  if (draftId) metadata.draft_id = draftId;
+
+  // The card on file: the subscription's default, else the newest card.
+  async function cardOnFile(): Promise<{ id: string; brand: string; last4: string } | null> {
+    const customer = await stripe.customers.retrieve(customerId, { expand: ["invoice_settings.default_payment_method"] });
+    if (!("deleted" in customer && customer.deleted)) {
+      const def = (customer as { invoice_settings?: { default_payment_method?: unknown } }).invoice_settings?.default_payment_method as
+        | { id: string; type: string; card?: { brand: string; last4: string } }
+        | null
+        | undefined;
+      if (def && typeof def === "object" && def.type === "card" && def.card) {
+        return { id: def.id, brand: def.card.brand, last4: def.card.last4 };
+      }
+    }
+    const list = await stripe.paymentMethods.list({ customer: customerId, type: "card", limit: 1 });
+    const pm = list.data[0];
+    return pm?.card ? { id: pm.id, brand: pm.card.brand, last4: pm.card.last4 } : null;
+  }
+
+  if (draftId && mode === "card_on_file") {
+    try {
+      const card = await cardOnFile();
+      return jsonResponse({ card: card ? { brand: card.brand, last4: card.last4 } : null });
+    } catch (err) {
+      console.error("[TopUpCheckout] card lookup failed:", err);
+      return jsonResponse({ card: null });
+    }
+  }
+
+  if (draftId && mode === "saved_card") {
+    const card = await cardOnFile().catch(() => null);
+    if (!card) {
+      await admin.rpc("fail_employer_challenge_payment", { p_draft_id: draftId, p_payment_ref: null, p_reason: "no_saved_card" });
+      return jsonResponse({ needs_checkout: true, reason: "no_saved_card" });
+    }
+    let intent;
+    try {
+      intent = await stripe.paymentIntents.create(
+        {
+          amount: amountCents,
+          currency: "usd",
+          customer: customerId,
+          payment_method: card.id,
+          off_session: true,
+          confirm: true,
+          description: `Shift reward pool top-up — ${group.name}`,
+          metadata: { ...metadata, saved_card: "1" },
+        },
+        // One charge per agreement: a double click reuses the first attempt.
+        { idempotencyKey: `draft-topup-${draftId}-${amountCents}-${Math.floor(Date.now() / 600000)}` },
+      );
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? "card_error";
+      console.error("[TopUpCheckout] saved card charge failed:", code);
+      await admin.rpc("fail_employer_challenge_payment", { p_draft_id: draftId, p_payment_ref: null, p_reason: code });
+      return jsonResponse({ needs_checkout: true, reason: code });
+    }
+    if (intent.status !== "succeeded") {
+      await admin.rpc("fail_employer_challenge_payment", { p_draft_id: draftId, p_payment_ref: null, p_reason: intent.status });
+      return jsonResponse({ needs_checkout: true, reason: intent.status });
+    }
+    await admin.rpc("attach_employer_challenge_payment", { p_draft_id: draftId, p_payment_ref: intent.id, p_method: "saved_card" });
+    const { data: credited, error: creditErr } = await admin.rpc("credit_reward_pool_topup", {
+      p_pool_id: poolId,
+      p_group_id: group.id,
+      p_amount_cents: amountCents,
+      p_stripe_session_id: intent.id,
+    });
+    if (creditErr || (credited !== "credited" && credited !== "duplicate")) {
+      // Charged but not credited: the webhook's payment_intent.succeeded
+      // retries the credit; leave a trail either way.
+      console.error("[TopUpCheckout] saved card credit failed:", creditErr ?? credited);
+      await admin.from("admin_notifications").insert({
+        level: "critical",
+        source: "rewards",
+        title: "Top-up charged but not credited",
+        body: `Saved-card charge ${intent.id} for ${amountCents} cents (pool ${poolId}) was not credited: ${creditErr?.message ?? credited}.`,
+        context: { kind: "topup_credit_failed", pool_id: poolId, group_id: group.id, stripe_payment_intent: intent.id, amount_cents: amountCents },
+      });
+      return jsonResponse({ error: "Your card was charged, but the balance didn't update. GSI has been alerted and will fix it." }, 500);
+    }
+    const { data: launched } = await admin.rpc("complete_employer_challenge_payment", { p_draft_id: draftId, p_payment_ref: intent.id });
+    const l = launched as { ok?: boolean; reason?: string; competition_id?: string; check?: unknown } | null;
+    return jsonResponse({ launched: !!l?.ok, competition_id: l?.competition_id ?? null, reason: l?.reason ?? null, charged_cents: amountCents });
+  }
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -229,18 +366,21 @@ serve(async (req: Request) => {
           quantity: 1,
         },
       ],
-      metadata: {
-        type: "reward_pool_topup",
-        pool_id: poolId,
-        group_id: group.id,
-        amount_cents: String(amountCents),
-      },
+      metadata,
+      // Funding a challenge saves the card, so the next shortfall is one
+      // click ("Charge $X to the Visa ending 4242 and launch").
+      ...(draftId ? { payment_intent_data: { setup_future_usage: "off_session" as const, metadata } } : {}),
       // Come back to the Billing page with a flag so it can show a
       // confirmation banner and refresh the balance (the portal root only
       // redirected to the dashboard and dropped the flag). Webhook has
-      // already credited by then.
-      success_url: `${resolvedOrigin}/shift/employers/portal/billing?topup=success`,
-      cancel_url: `${resolvedOrigin}/shift/employers/portal/billing?topup=canceled`,
+      // already credited by then. A challenge's top-up comes back to the
+      // Challenges page, which waits for the launch.
+      success_url: draftId
+        ? `${resolvedOrigin}/shift/employers/portal/challenges?draft=${draftId}&paid=1`
+        : `${resolvedOrigin}/shift/employers/portal/billing?topup=success`,
+      cancel_url: draftId
+        ? `${resolvedOrigin}/shift/employers/portal/challenges?draft=${draftId}&paid=0`
+        : `${resolvedOrigin}/shift/employers/portal/billing?topup=canceled`,
       expires_at: Math.floor(Date.now() / 1000) + 60 * 60 * 2,
     });
 
@@ -249,8 +389,11 @@ serve(async (req: Request) => {
       return jsonResponse({ error: "Checkout URL unavailable" }, 502);
     }
 
+    if (draftId) {
+      await admin.rpc("attach_employer_challenge_payment", { p_draft_id: draftId, p_payment_ref: session.id, p_method: "checkout" });
+    }
     console.log(
-      `[TopUpCheckout] Session ${session.id} for pool ${poolId} ($${amountCents / 100})`,
+      `[TopUpCheckout] Session ${session.id} for pool ${poolId} ($${amountCents / 100})${draftId ? ` draft ${draftId}` : ""}`,
     );
     return jsonResponse({ url: session.url });
   } catch (err) {

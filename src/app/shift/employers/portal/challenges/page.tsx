@@ -27,10 +27,30 @@ import posthog from 'posthog-js'
 import { PRIZE_METRIC_LABELS } from '../_lib/portal-constants'
 import { useToast } from '@/components/employer/Toast'
 import { useConfirm } from '@/components/employer/ConfirmDialog'
-import { formatDate, etDateInput, etStartOfDayIso, etEndOfDayIso } from '../_lib/portal-utils'
+import { formatDate, etDateInput, etStartOfDayIso } from '../_lib/portal-utils'
 import { dollars, type CountingRules } from '@/lib/challenge-rules'
 import GuaranteedChallengeSection, { prizeActionText, friendlyDbError, linkify, GENERIC_ERROR } from './GuaranteedChallengeSection'
-import ChallengeWizard, { draftStorageKey, readStoredDraft, prizeSummary as formPrizeSummary, type StoredDraft, type WizardForm } from './ChallengeWizard'
+import ChallengeWizard, { draftStorageKey, readStoredDraft, prizeSummary as formPrizeSummary, type Step as WizardStep, type WizardForm } from './ChallengeWizard'
+import {
+  bodyHasContent,
+  bodyToForm,
+  cardOnFile,
+  chargeSavedCard,
+  checkChallenge,
+  discardDraft as discardServerDraft,
+  formToBody,
+  launchDraft,
+  loadBuilderDrafts,
+  loadDraft,
+  reasonText,
+  saveChanges,
+  saveDraft as saveServerDraft,
+  startTopUpCheckout,
+  type ChallengeBody,
+  type CheckResult,
+  type LaunchResult,
+  type ServerDraft,
+} from './challenge-actions'
 import TellYourTeam, { type TeamPrize } from './TellYourTeam'
 import { useEmployerLocations } from '../_lib/use-employer-locations'
 import { useChallengeTemplates, type SeasonalOption } from '../_lib/use-challenge-templates'
@@ -40,7 +60,7 @@ import TeamHearsPanel from './TeamHearsPanel'
 import { useYearPlan, runRange, templatePrizeLine } from '../_lib/use-year-plan'
 import { rulesPageUrl } from './TellYourTeam'
 import { onThisSite } from '@/lib/employer/office-links'
-import { availableCents, formPrizeCostCents, formsFundingGap, rowsFundingGap, shortSentence } from './funding'
+import { rowsFundingGap, shortSentence } from './funding'
 import type {
   Challenge,
   PrizeFormState,
@@ -105,6 +125,7 @@ export default function ChallengesPage() {
     accessActive,
     canManageChallenges,
     isGsiAdmin,
+    isAdmin,
     refreshPool,
     admins,
     sessionEmail,
@@ -116,15 +137,16 @@ export default function ChallengesPage() {
   const yearPlan = useYearPlan(group?.id)
   const [launchOption, setLaunchOption] = useState<SeasonalOption | null>(null)
   const [view, setView] = useState<'all' | 'active' | 'scheduled' | 'drafts' | 'past'>('all')
-  // The unfinished challenge this tab is holding (Keith 2026-10-05 funding
-  // gate): a new challenge the balance can't cover is never created, it
-  // waits here. Nothing is in the database and employees see nothing.
-  const [storedDraft, setStoredDraft] = useState<StoredDraft | null>(null)
+  // Challenges waiting to launch, saved on the server (Shift 01291): made in
+  // the builder, or carried over from a browser tab. Never in the challenge
+  // list employees read, so nothing shows until it launches. Year-plan
+  // drafts are listed by the year plan.
+  const [builderDrafts, setBuilderDrafts] = useState<ServerDraft[]>([])
   const counts = {
     active: challenges.filter((c) => statusOf(c).label === 'Active').length,
     scheduled: challenges.filter((c) => statusOf(c).label === 'Scheduled').length,
     past: challenges.filter((c) => statusOf(c).label === 'Ended').length,
-    drafts: yearPlan.drafts.length + (storedDraft ? 1 : 0),
+    drafts: yearPlan.drafts.length + builderDrafts.length,
   }
   const visibleChallenges =
     view === 'all'
@@ -138,14 +160,31 @@ export default function ChallengesPage() {
   const confirm = useConfirm()
 
   const [builderOpen, setBuilderOpen] = useState(false)
-  const [resumeDraft, setResumeDraft] = useState(false)
   const [saveProblems, setSaveProblems] = useState<string[]>([])
-  // The tab's draft is read whenever the builder is closed: it is written
-  // while the builder is open, and goes when the challenge is created.
+  const canUsePrizes = tierAtLeast('standard') || isGsiAdmin
+  // Drafts are read whenever the builder is closed. A draft a browser tab was
+  // still holding from before drafts moved to the server is saved there once.
   useEffect(() => {
     if (!group || builderOpen) return
-    setStoredDraft(readStoredDraft(group.id))
-  }, [group, builderOpen])
+    let cancelled = false
+    void (async () => {
+      const legacy = canManage ? readStoredDraft(group.id) : null
+      if (legacy) {
+        const { data } = await saveServerDraft(group.id, formToBody(legacy.form, legacy.prizeForms, canUsePrizes, legacy.step), null, null, 'import')
+        if (data?.ok) {
+          try {
+            sessionStorage.removeItem(draftStorageKey(group.id))
+          } catch {}
+        }
+      }
+      const list = await loadBuilderDrafts(group.id)
+      if (!cancelled) setBuilderDrafts(list)
+    })()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- on load and each time the builder closes
+  }, [group, builderOpen, canManage])
   const [tellTeamFor, setTellTeamFor] = useState<string | null>(null)
   // Rows start collapsed (Keith 2026-09-30: "a TON of info that's tough to
   // parse"). Active challenges, and a lone visible row, open by default;
@@ -176,9 +215,17 @@ export default function ChallengesPage() {
   const [saving, setSaving] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [drawingPrizeId, setDrawingPrizeId] = useState<string | null>(null)
-  // True once this opening of the builder has created the challenge row: the
-  // tab's draft is then stale and goes when the builder closes (C2).
-  const createdThisOpen = useRef(false)
+  // The draft this opening of the builder writes to, and where it reopens.
+  const draftRef = useRef<{ id: string | null; version: number | null }>({ id: null, version: null })
+  const lastSavedBody = useRef<string | null>(null)
+  const stepRef = useRef<WizardStep>('start')
+  const [initialStep, setInitialStep] = useState<WizardStep | undefined>(undefined)
+  const [draftNote, setDraftNote] = useState<string | null>(null)
+  const [check, setCheck] = useState<CheckResult | null>(null)
+  const [checking, setChecking] = useState(false)
+  const [card, setCard] = useState<{ brand: string; last4: string } | null>(null)
+  const cardLooked = useRef(false)
+  const [payBusy, setPayBusy] = useState<'checkout' | 'card' | null>(null)
 
   useEffect(() => {
     if (!group) return
@@ -212,14 +259,25 @@ export default function ChallengesPage() {
     accessActive && form.name.trim() && form.starts_at && form.ends_at && !dateError && !contactError
   )
 
-  const openEditor = (c?: Challenge, source: 'button' | 'empty_state' | 'year_plan' | 'edit' | 'draft_row' | 'shortcut' = 'button') => {
-    // A year-plan launch sets launchOption right after this call; every
-    // other way in starts clean so a past launch can't leak into Edit or
-    // the next Create.
+  const openEditor = (
+    c?: Challenge,
+    source: 'button' | 'empty_state' | 'year_plan' | 'edit' | 'draft_row' | 'shortcut' = 'button',
+    resume?: { id: string; version: number | null; body: ChallengeBody | null } | null,
+  ) => {
+    // A year-plan launch sets launchOption right after this call (when its
+    // draft hasn't been filled in yet); every other way in starts clean so
+    // a past launch can't leak into Edit or the next Create.
     setLaunchOption(null)
     setSaveProblems([])
-    setResumeDraft(source === 'draft_row')
-    createdThisOpen.current = false
+    setCheck(null)
+    setCard(null)
+    cardLooked.current = false
+    setPayBusy(null)
+    setDraftNote(null)
+    draftRef.current = resume ? { id: resume.id, version: resume.version } : { id: null, version: null }
+    lastSavedBody.current = resume?.body ? JSON.stringify(resume.body) : null
+    stepRef.current = c ? 'review' : 'start'
+    setInitialStep(undefined)
     posthog.capture('portal_challenge_builder_opened', {
       mode: c ? 'edit' : 'create',
       source: c ? 'edit' : source,
@@ -263,6 +321,16 @@ export default function ChallengesPage() {
         })),
       )
       setEditMode(true)
+    } else if (resume?.body) {
+      const restored = bodyToForm(resume.body)
+      setEditingChallenge(null)
+      setForm(restored.form)
+      setPrizeForms(restored.prizeForms)
+      setEditMode(false)
+      const at = (resume.body.ui?.step as WizardStep | undefined) ?? 'review'
+      stepRef.current = at === 'start' ? 'basics' : at
+      setInitialStep(stepRef.current)
+      setDraftNote('Draft saved')
     } else {
       setEditingChallenge(null)
       setForm({
@@ -323,359 +391,366 @@ export default function ChallengesPage() {
     [setChallengePrizes],
   )
 
-  const save = useCallback(async () => {
-    if (!group || !canSave) return
-    const canWritePrizes = tierAtLeast('standard') || isGsiAdmin
+  // ── Drafts: saved on the server as the builder is filled in ──
+  // One save at a time (a slow save must not race the next one into a
+  // version conflict with itself), a second or so after the last change.
+  const saveChain = useRef<Promise<string | null>>(Promise.resolve(null))
+  const persistDraft = useCallback((): Promise<string | null> => {
+    const run = async (): Promise<string | null> => {
+      if (!group || editMode) return null
+      const body = formToBody(form, prizeForms, canUsePrizes, stepRef.current)
+      const json = JSON.stringify(body)
+      if (!draftRef.current.id && !bodyHasContent(body)) return null
+      if (draftRef.current.id && json === lastSavedBody.current) return draftRef.current.id
+      setDraftNote('Saving...')
+      const { data, error } = await saveServerDraft(group.id, body, draftRef.current.id, draftRef.current.version)
+      if (error || !data) {
+        setDraftNote('Not saved yet. Check your connection.')
+        return draftRef.current.id
+      }
+      if (data.ok) {
+        draftRef.current = { id: data.draft_id, version: data.version }
+        lastSavedBody.current = json
+        setDraftNote('Draft saved')
+        return data.draft_id
+      }
+      if (data.reason === 'conflict' && 'body' in data) {
+        const keepMine = await confirm({
+          title: 'Someone else changed this draft',
+          body: `${data.updated_by_email ?? 'Another admin'} saved changes to it${
+            data.updated_at ? ` at ${new Date(data.updated_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : ''
+          }. Keep your version, or switch to theirs?`,
+          confirmLabel: 'Keep my version',
+          cancelLabel: 'Use their version',
+          tone: 'primary',
+        })
+        draftRef.current = { id: draftRef.current.id, version: data.version }
+        if (keepMine) {
+          lastSavedBody.current = null
+          const again = await saveServerDraft(group.id, body, draftRef.current.id, data.version)
+          if (again.data?.ok) {
+            draftRef.current = { id: again.data.draft_id, version: again.data.version }
+            lastSavedBody.current = json
+            setDraftNote('Draft saved')
+          }
+        } else {
+          const theirs = bodyToForm(data.body)
+          lastSavedBody.current = JSON.stringify(data.body)
+          setForm(theirs.form)
+          setPrizeForms(theirs.prizeForms)
+          setDraftNote('Draft saved')
+        }
+        return draftRef.current.id
+      }
+      if (data.reason === 'awaiting_payment') setDraftNote('Waiting for your bank payment')
+      else if (data.reason === 'not_open') setDraftNote('Already launched')
+      else setDraftNote(null)
+      return draftRef.current.id
+    }
+    saveChain.current = saveChain.current.then(run, run)
+    return saveChain.current
+  }, [group, editMode, form, prizeForms, canUsePrizes, confirm])
 
-    // A pool-funded prize with no amount would be written as amount_cents
-    // NULL, which the database refuses. The builder checks this on the
-    // Rewards step; this keeps every way into save() honest (edits too).
-    const noAmount = prizeForms.find(
-      (p) => p.funded_from_pool && !(p.award_mode === 'guaranteed' && p.published_at) && formPrizeCostCents({ ...p, winner_count: '1' }) < 500,
+  useEffect(() => {
+    if (!builderOpen || editMode) return
+    const t = setTimeout(() => void persistDraft(), 1200)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- on each change to the form
+  }, [form, prizeForms, builderOpen, editMode])
+
+  // ── Pre-flight check: the database's answer on the form as it stands ──
+  const checkSeq = useRef(0)
+  const runCheck = useCallback(async () => {
+    if (!group) return
+    const seq = ++checkSeq.current
+    setChecking(true)
+    const { data, error } = await checkChallenge(
+      group.id,
+      formToBody(form, prizeForms, canUsePrizes),
+      editMode ? (editingChallenge?.id ?? null) : null,
     )
-    if (canWritePrizes && noAmount) {
-      const msg = prizeForms.length > 1 ? `${noAmount.name.trim() || 'A reward'}: gift cards start at $5.` : 'Gift cards start at $5.'
-      setSaveProblems([msg])
-      toast(msg, { type: 'error' })
-      return
-    }
-
-    // Saving a funded goal prize takes it live and sets the money aside the
-    // moment it is saved, so ask first, before anything is written (UX-28).
-    // When the balance is short there is nothing to confirm: the database
-    // refuses, and the prize stays saved with its "Go live" button.
-    const goingLive = canWritePrizes ? prizeForms.filter((p) => p.award_mode === 'guaranteed' && !p.published_at) : []
-    const setAside = goingLive.filter((p) => p.funded_from_pool).reduce((sum, p) => sum + formPrizeCostCents(p), 0)
-    const available = availableCents(rewardPool)
-    if (setAside > 0 && setAside <= available) {
-      const names = goingLive.filter((p) => p.funded_from_pool).map((p) => p.name.trim() || 'the goal prize').join(' and ')
-      const ok = await confirm({
-        title: `Set aside ${dollars(setAside)} for ${names}?`,
-        body: `${dollars(setAside)} comes out of your rewards balance now, ${dollars(Math.max(0, available - setAside))} stays available. Money for spots nobody wins comes back when the challenge ends. This can't be undone until the challenge ends.`,
-        confirmLabel: editMode ? 'Save and go live' : 'Create and go live',
-        tone: 'primary',
+    if (seq !== checkSeq.current) return
+    setChecking(false)
+    if (data && !data.reason) {
+      setCheck(data)
+    } else {
+      const code = data?.reason ?? 'error'
+      setCheck({
+        ok: false,
+        blockers: [{ code, message: error ? friendlyDbError(error) : reasonText(code) }],
+        notes: [],
+        summary: {},
+        money: { set_aside_now_cents: 0, paid_at_draw_cents: 0, needed_cents: 0, available_cents: 0, short_by_cents: 0, topup_cents: 0 },
       })
-      if (!ok) return
     }
+  }, [group, form, prizeForms, canUsePrizes, editMode, editingChallenge])
+
+  useEffect(() => {
+    if (!builderOpen) return
+    setChecking(true)
+    const t = setTimeout(() => void runCheck(), 700)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- on each change to the form
+  }, [form, prizeForms, builderOpen])
+
+  // The card on file, once a shortfall shows: the next top-up is one click.
+  useEffect(() => {
+    if (!builderOpen || editMode || !isAdmin || cardLooked.current) return
+    if (!check || check.money.short_by_cents <= 0) return
+    cardLooked.current = true
+    void (async () => {
+      const id = await persistDraft()
+      if (!id) return
+      const r = await cardOnFile(id)
+      if (r.card) setCard(r.card)
+    })()
+  }, [builderOpen, editMode, isAdmin, check, persistDraft])
+
+  /** Bring a launched or changed challenge (and its prizes) into the page. */
+  const reloadChallenge = useCallback(
+    async (competitionId: string) => {
+      const { data } = await supabase
+        .from('competitions')
+        .select('id, name, metric, starts_at, ends_at, prize_description, counting_rules, contact_name, contact_email')
+        .eq('id', competitionId)
+        .maybeSingle()
+      if (data) {
+        const existing = challenges.find((c) => c.id === competitionId)
+        const row = { ...(data as Challenge), public_leaderboard: existing?.public_leaderboard ?? false }
+        setChallenges(existing ? challenges.map((c) => (c.id === competitionId ? row : c)) : [row, ...challenges])
+      }
+      await refreshPrizesFor(competitionId)
+      await refreshPool()
+    },
+    [challenges, setChallenges, refreshPrizesFor, refreshPool],
+  )
+
+  const closeBuilder = useCallback(() => {
+    setBuilderOpen(false)
+    setLaunchOption(null)
+    setSaveProblems([])
+    setCheck(null)
+  }, [])
+
+  /** What went wrong, said once: the checklist refreshes, the reason shows. */
+  const showFailure = (data: LaunchResult | null, error: string | null) => {
+    if (data?.check) setCheck(data.check)
+    if (error) setSaveProblems([friendlyDbError(error)])
+    else if (data?.reason === 'check_failed') setSaveProblems([])
+    else setSaveProblems([reasonText(data?.reason)])
+  }
+
+  /** Launch (new) or save changes (edit). The pre-flight check has passed;
+   *  the database runs it again and takes the amount the admin agreed to. */
+  const save = useCallback(async () => {
+    if (!group || !check?.ok) return
+    setSaveProblems([])
+    const setAside = check.money.set_aside_now_cents
+    const name = form.name.trim() || 'this challenge'
+    // Money moving, or a launch: say so first. A plain edit just saves.
+    const ok = !(setAside > 0) && editMode ? true : await confirm(
+      setAside > 0
+        ? {
+            title: `Set aside ${dollars(setAside)} and ${editMode ? 'save' : 'launch'}?`,
+            body: `${dollars(setAside)} comes out of your rewards balance now, ${dollars(Math.max(0, check.money.available_cents - setAside))} stays available. Money for spots nobody wins comes back when the challenge ends.${
+              editMode ? '' : ` "${name}" shows in the Shift app for your team right away.`
+            }`,
+            confirmLabel: editMode ? 'Save and set it aside' : 'Launch',
+            tone: 'primary',
+          }
+        : { title: `Launch "${name}"?`, body: 'It shows in the Shift app for your team right away, and counts trips from the start date.', confirmLabel: 'Launch', tone: 'primary' },
+    )
+    if (!ok) return
 
     setSaving(true)
-    setSaveProblems([])
     try {
-      // Challenge days are Eastern days: midnight on the start date through
-      // 11:59:59 pm on the end date. On edit, only send a date the admin
-      // actually changed, so older rows (stored at noon UTC) aren't moved and
-      // a started guaranteed challenge isn't refused for a no-op re-save.
-      const startIso = etStartOfDayIso(form.starts_at)
-      const endIso = etEndOfDayIso(form.ends_at)
-      const rulesChanged =
-        JSON.stringify(form.counting_rules ?? null) !==
-        JSON.stringify(editingChallenge?.counting_rules ?? null)
-      const payload: Record<string, unknown> = {
-        group_id: group.id,
-        name: form.name.trim(),
-        metric: 'pct_non_car',
-        duration_type: 'fixed' as const,
-        is_public: false,
-        event_type: 'employer',
-        prize_description: form.prize_description.trim() || null,
-        contact_name: form.contact_name.trim() || null,
-        contact_email: form.contact_email.trim().toLowerCase() || null,
-      }
-      if (!editingChallenge || etDateInput(editingChallenge.starts_at) !== form.starts_at) {
-        payload.starts_at = startIso
-      }
-      if (!editingChallenge || etDateInput(editingChallenge.ends_at) !== form.ends_at) {
-        payload.ends_at = endIso
-      }
-      if (!editingChallenge || rulesChanged) payload.counting_rules = form.counting_rules
-      // Started from a GSI seasonal template (Shift 01024): keep the words for
-      // staff and which template and run it came from.
-      if (!editingChallenge && form.template_slug) {
-        payload.template_slug = form.template_slug
-        payload.template_run_id = form.template_run_id ?? null
-        if (form.description) payload.description = form.description
-      }
-
-      let competitionId: string | null = null
-      let savedChallenge: Challenge | null = null
-
-      if (editingChallenge && editMode) {
-        const { error: updErr } = await supabase
-          .from('competitions')
-          .update(payload)
-          .eq('id', editingChallenge.id)
-        if (updErr) {
-          const msg = friendlyDbError(updErr.message)
-          setSaveProblems([msg])
-          toast(msg, { type: 'error' })
+      if (editMode && editingChallenge) {
+        const { data, error } = await saveChanges(editingChallenge.id, formToBody(form, prizeForms, canUsePrizes), setAside)
+        if (error || !data?.ok) {
+          showFailure(data, error)
           return
         }
-        savedChallenge = {
-          ...editingChallenge,
-          name: payload.name as string,
-          starts_at: (payload.starts_at as string | undefined) ?? editingChallenge.starts_at,
-          ends_at: (payload.ends_at as string | undefined) ?? editingChallenge.ends_at,
-          prize_description: payload.prize_description as string | null,
-          counting_rules: form.counting_rules,
-          contact_name: payload.contact_name as string | null,
-          contact_email: payload.contact_email as string | null,
-        }
-        setChallenges(challenges.map((c) => (c.id === savedChallenge!.id ? savedChallenge! : c)))
-        competitionId = editingChallenge.id
-      } else {
-        const { data, error: insertErr } = await supabase
-          .from('competitions')
-          .insert(payload)
-          .select('id, name, metric, starts_at, ends_at, prize_description, counting_rules, contact_name, contact_email')
-          .single()
-        if (insertErr || !data) {
-          console.error('Challenge insert failed:', insertErr ?? 'data was null')
-          const msg = friendlyDbError(insertErr?.message)
-          setSaveProblems([msg])
-          toast(msg, { type: 'error' })
-          return
-        }
-        savedChallenge = { ...data, public_leaderboard: false }
-        setChallenges([savedChallenge, ...challenges])
-        competitionId = data.id
-        // The challenge now exists: from here on the builder edits it, so a
-        // retry after a prize problem never creates a second copy. The tab's
-        // draft goes now, not at the end: a prize problem after this point
-        // must not leave a draft that would create the challenge again (C2).
-        setEditingChallenge(savedChallenge)
-        setEditMode(true)
-        createdThisOpen.current = true
-        try {
-          sessionStorage.removeItem(draftStorageKey(group.id))
-        } catch {}
-        setStoredDraft(null)
-      }
-
-      // Save prizes
-      const publishProblems: string[] = []
-      const nextPrizeForms = [...prizeForms]
-      if (competitionId && canWritePrizes && prizeForms.length > 0) {
-        for (let i = 0; i < prizeForms.length; i++) {
-          const pf = prizeForms[i]
-          const existing = pf.id ? challengePrizes.find((cp) => cp.id === pf.id) : null
-          const isGuaranteed = pf.award_mode === 'guaranteed'
-
-          // A live guaranteed reward: only its name and order are edited
-          // here. Spots go through set_guaranteed_prize_spots (it adjusts
-          // the money set aside); goal, reward and eligibility are fixed.
-          if (isGuaranteed && existing?.published_at) {
-            const { error: nErr } = await supabase
-              .from('employer_challenge_prizes')
-              .update({ name: pf.name.trim(), display_order: i })
-              .eq('id', pf.id!)
-            if (nErr) publishProblems.push(`${pf.name}: ${friendlyDbError(nErr.message)}`)
-            const spots = parseInt(pf.winner_count, 10) || existing.winner_count
-            if (spots !== existing.winner_count) {
-              const { data: r, error: sErr } = await supabase.rpc('set_guaranteed_prize_spots', {
-                p_prize_id: pf.id,
-                p_spots: spots,
-              })
-              if (sErr) publishProblems.push(`${pf.name}: ${friendlyDbError(sErr.message)}`)
-              else if (r && r.ok === false) publishProblems.push(`${pf.name}: ${prizeActionText(r)}`)
-            }
-            continue
-          }
-
-          const prizePayload = {
-            competition_id: competitionId,
-            group_id: group.id,
-            name: pf.name.trim(),
-            award_mode: pf.award_mode,
-            metric: pf.metric,
-            min_threshold:
-              pf.min_threshold
-                ? parseFloat(pf.min_threshold)
-                : null,
-            winner_count: parseInt(pf.winner_count, 10) || 1,
-            funded_from_pool: pf.funded_from_pool,
-            amount_cents:
-              pf.funded_from_pool && pf.amount_dollars
-                ? Math.round(parseFloat(pf.amount_dollars) * 100)
-                : null,
-            // No gift-card product any more: winners pick in the app. A row
-            // saved before that change keeps its product so its pending
-            // winners can still be sent their cards.
-            tremendous_product_id: existing?.tremendous_product_id ?? null,
-            prize_description: !pf.funded_from_pool
-              ? pf.prize_description.trim() || null
-              : null,
-            auto_draw: isGuaranteed ? false : pf.auto_draw,
-            requires_work_email: isGuaranteed ? pf.requires_work_email : false,
-            budget_cap_cents:
-              pf.funded_from_pool && pf.budget_cap_dollars
-                ? Math.round(parseFloat(pf.budget_cap_dollars) * 100)
-                : null,
-            display_order: i,
-          }
-          let prizeId = pf.id
-          if (pf.id) {
-            const { error: pErr } = await supabase
-              .from('employer_challenge_prizes')
-              .update(prizePayload)
-              .eq('id', pf.id)
-            if (pErr) publishProblems.push(`${pf.name}: ${friendlyDbError(pErr.message)}`)
-          } else {
-            const { data, error: pErr } = await supabase
-              .from('employer_challenge_prizes')
-              .insert(prizePayload)
-              .select('id')
-              .single()
-            if (pErr) publishProblems.push(`${pf.name}: ${friendlyDbError(pErr.message)}`)
-            if (data) {
-              nextPrizeForms[i] = { ...pf, id: data.id }
-              prizeId = data.id
-            }
-          }
-
-          // Saving a guaranteed reward takes it live: funded ones set aside
-          // spots x value from the rewards balance. If that fails (not enough
-          // balance, no email domain) it stays saved with a "Go live" button.
-          if (isGuaranteed && prizeId) {
-            const { data: r, error: rErr } = await supabase.rpc('publish_guaranteed_prize', {
-              p_prize_id: prizeId,
-            })
-            if (rErr) publishProblems.push(`${pf.name}: ${friendlyDbError(rErr.message)}`)
-            else if (r && r.ok === false) publishProblems.push(`${pf.name} is saved but not live yet. ${prizeActionText(r)}`)
-            else nextPrizeForms[i] = { ...nextPrizeForms[i], published_at: new Date().toISOString() }
-          }
-        }
-      }
-      // Delete removed prizes. This runs for every edit of an existing
-      // challenge, including when every prize was removed: a prize left in
-      // the database would still draw and pay after the end (C1).
-      const editingExisting = !!editingChallenge && editMode
-      if (competitionId && editingExisting) {
-        const formIds = new Set(
-          prizeForms.filter((f) => f.id).map((f) => f.id),
-        )
-        const existingPrizes = challengePrizes.filter((cp) => cp.competition_id === competitionId)
-        for (const existing of existingPrizes) {
-          if (!formIds.has(existing.id)) {
-            const { error: dErr } = await supabase
-              .from('employer_challenge_prizes')
-              .delete()
-              .eq('id', existing.id)
-            if (dErr) {
-              publishProblems.push(
-                dErr.message.includes('guaranteed_prize_in_use')
-                  ? `${existing.name} is live, so it wasn't removed. Use "Cancel the prize" on the challenge page instead.`
-                  : `${existing.name}: ${friendlyDbError(dErr.message)}`,
-              )
-            }
-          }
-        }
-      }
-      // Refresh
-      if (competitionId && (editingExisting || (canWritePrizes && prizeForms.length > 0))) {
-        const { data: refreshed } = await supabase
-          .from('employer_challenge_prizes')
-          .select('*')
-          .eq('competition_id', competitionId)
-          .order('display_order')
-        if (refreshed) {
-          const otherPrizes = challengePrizes.filter((p) => p.competition_id !== competitionId)
-          setChallengePrizes([...otherPrizes, ...(refreshed as ChallengePrize[])])
-        }
-      }
-      setPrizeForms(nextPrizeForms)
-
-      const guaranteedWentLive =
-        publishProblems.length === 0 &&
-        prizeForms.some((p) => p.award_mode === 'guaranteed' && !p.published_at)
-      await refreshPool()
-
-      if (competitionId) {
-        const days =
-          Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 86400000)
-        posthog.capture(editMode ? 'portal_challenge_saved' : 'portal_challenge_created', {
-          competition_id: competitionId,
+        await reloadChallenge(editingChallenge.id)
+        posthog.capture('portal_challenge_saved', {
+          competition_id: editingChallenge.id,
           employer_group_id: group.id,
-          template: form.template_slug ?? null,
-          template_run_id: form.template_run_id ?? null,
-          prize_kinds: Array.from(new Set(prizeForms.map((p) => p.award_mode))),
           prize_count: prizeForms.length,
-          funded: prizeForms.some((p) => p.funded_from_pool),
-          guaranteed_published: guaranteedWentLive,
-          commute_only: !!form.counting_rules?.commute_only,
-          days,
-          source: form.template_slug ? (form.template_run_id ? 'year_plan_or_seasonal' : 'template') : 'blank',
-          had_problems: publishProblems.length > 0,
+          set_aside_cents: setAside,
         })
-      }
-
-      if (publishProblems.length > 0) {
-        // Stay open on Review with the notes; the challenge itself is saved.
-        setSaveProblems(publishProblems)
-        toast(
-          editMode
-            ? "Some of that didn't save. See the notes on the Review step."
-            : 'The challenge is saved, but a prize needs attention. See the notes on the Review step.',
-          { type: 'error' },
-        )
+        toast(setAside > 0 ? `Changes saved. ${dollars(setAside)} set aside.` : 'Changes saved.', { type: 'success' })
+        closeBuilder()
         return
       }
 
-      toast(
-        guaranteedWentLive
-          ? editMode
-            ? 'Challenge saved. The prize is live.'
-            : 'Challenge created. The prize is live.'
-          : editMode
-            ? 'Challenge saved.'
-            : 'Challenge created.',
-        { type: 'success' },
-      )
-      try {
-        sessionStorage.removeItem(draftStorageKey(group.id))
-      } catch {}
-      setLaunchOption(null)
-      setBuilderOpen(false)
-    } catch (err) {
-      console.error('Challenge save error:', err)
-      const msg = friendlyDbError(err instanceof Error ? err.message : null)
-      setSaveProblems([msg])
-      toast(msg, { type: 'error' })
+      const draftId = await persistDraft()
+      if (!draftId) {
+        setSaveProblems(['The draft could not be saved. Check your connection and try again.'])
+        return
+      }
+      const { data, error } = await launchDraft(draftId, setAside)
+      if (error || !data?.ok || !data.competition_id) {
+        showFailure(data, error)
+        return
+      }
+      await reloadChallenge(data.competition_id)
+      posthog.capture('portal_challenge_created', {
+        competition_id: data.competition_id,
+        employer_group_id: group.id,
+        template: form.template_slug ?? null,
+        template_run_id: form.template_run_id ?? null,
+        prize_kinds: Array.from(new Set(prizeForms.map((p) => p.award_mode))),
+        prize_count: prizeForms.length,
+        funded: prizeForms.some((p) => p.funded_from_pool),
+        set_aside_cents: setAside,
+        commute_only: !!form.counting_rules?.commute_only,
+        source: form.template_slug ? (form.template_run_id ? 'year_plan_or_seasonal' : 'template') : 'blank',
+        path: 'launch_employer_challenge',
+      })
+      toast(setAside > 0 ? 'Challenge launched. The prize is live.' : 'Challenge launched.', { type: 'success' })
+      if (form.template_run_id) void yearPlan.refresh()
+      closeBuilder()
+      setTellTeamFor(data.competition_id)
     } finally {
       setSaving(false)
     }
-  }, [
-    group,
-    canSave,
-    form,
-    editingChallenge,
-    editMode,
-    prizeForms,
-    challenges,
-    challengePrizes,
-    tierAtLeast,
-    setChallenges,
-    setChallengePrizes,
-    isGsiAdmin,
-    refreshPool,
-    rewardPool,
-    confirm,
-    toast,
-  ])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group, check, form, prizeForms, editMode, editingChallenge, canUsePrizes, persistDraft, reloadChallenge, closeBuilder, confirm, toast])
 
-  /** The draft row's Discard: the tab forgets it; there was never a row to delete. */
-  async function discardDraft() {
-    if (!group || !storedDraft) return
+  // ── Paying exactly the shortfall, then launching ──
+  const onPay = useCallback(async () => {
+    if (!check) return
+    setSaveProblems([])
+    setPayBusy('checkout')
+    const draftId = await persistDraft()
+    if (!draftId) {
+      setPayBusy(null)
+      setSaveProblems(['The draft could not be saved. Check your connection and try again.'])
+      return
+    }
+    const r = await startTopUpCheckout(draftId, check.money.set_aside_now_cents)
+    if (r.url) {
+      posthog.capture('portal_challenge_topup_started', { draft_id: draftId, topup_cents: check.money.topup_cents, method: 'checkout' })
+      window.location.href = r.url
+      return
+    }
+    setPayBusy(null)
+    if (r.check) setCheck(r.check)
+    setSaveProblems([r.reason ? reasonText(r.reason) : (r.error ?? GENERIC_ERROR)])
+  }, [check, persistDraft])
+
+  const onChargeCard = useCallback(async () => {
+    if (!check || !card) return
+    const topup = check.money.topup_cents
+    const brand = card.brand.charAt(0).toUpperCase() + card.brand.slice(1)
     const ok = await confirm({
-      title: `Discard "${storedDraft.form.name.trim() || 'this draft'}"?`,
-      body: "It was never created, so nothing changes for your team. This can't be undone.",
+      title: `Charge ${dollars(topup)} to the ${brand} ending ${card.last4}?`,
+      body: `It goes into your rewards balance and "${form.name.trim() || 'this challenge'}" launches right away${
+        check.money.set_aside_now_cents > 0 ? `, setting aside ${dollars(check.money.set_aside_now_cents)} for its prizes` : ''
+      }. Money for spots nobody wins comes back to your balance when it ends.`,
+      confirmLabel: `Charge ${dollars(topup)} and launch`,
+      tone: 'primary',
+    })
+    if (!ok) return
+    setSaveProblems([])
+    setPayBusy('card')
+    try {
+      const draftId = await persistDraft()
+      if (!draftId) {
+        setSaveProblems(['The draft could not be saved. Check your connection and try again.'])
+        return
+      }
+      const r = await chargeSavedCard(draftId, check.money.set_aside_now_cents)
+      if (r.launched && r.competition_id) {
+        await reloadChallenge(r.competition_id)
+        posthog.capture('portal_challenge_topup_started', { draft_id: draftId, topup_cents: topup, method: 'saved_card' })
+        toast(`Paid ${dollars(topup)} and launched.`, { type: 'success' })
+        closeBuilder()
+        setTellTeamFor(r.competition_id)
+        return
+      }
+      if (r.needs_checkout) {
+        setCard(null)
+        setSaveProblems([reasonText(r.reason)])
+        return
+      }
+      if (r.error) {
+        setSaveProblems([r.error])
+        return
+      }
+      // Charged and credited, but it didn't launch: the money is in the balance.
+      await refreshPool()
+      void runCheck()
+      setSaveProblems([`The money is in your balance, but the challenge didn't launch. ${reasonText(r.reason)}`])
+    } finally {
+      setPayBusy(null)
+    }
+  }, [check, card, form.name, persistDraft, reloadChallenge, refreshPool, runCheck, closeBuilder, confirm, toast])
+
+  // ── Back from Stripe: wait for the launch ──
+  const [paidReturn, setPaidReturn] = useState<{ id: string; name: string; state: 'waiting' | 'bank' | 'failed' | 'slow'; reason?: string } | null>(null)
+  const returnHandled = useRef(false)
+  useEffect(() => {
+    if (loading || !group || returnHandled.current) return
+    returnHandled.current = true
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get('draft')
+    const paid = params.get('paid')
+    if (!id) return
+    params.delete('draft')
+    params.delete('paid')
+    const qs = params.toString()
+    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash)
+    if (paid !== '1') {
+      toast('Nothing was charged. Your draft is saved.')
+      return
+    }
+    let stopped = false
+    void (async () => {
+      setPaidReturn({ id, name: 'Your challenge', state: 'waiting' })
+      for (let i = 0; i < 30 && !stopped; i++) {
+        const d = await loadDraft(id)
+        const name = d?.body?.name?.trim() || 'Your challenge'
+        if (d?.status === 'launched' && d.competition_id) {
+          await reloadChallenge(d.competition_id)
+          setPaidReturn(null)
+          toast(`Payment received. "${name}" is live.`, { type: 'success' })
+          setTellTeamFor(d.competition_id)
+          return
+        }
+        if (d?.pending_launch?.status === 'awaiting_payment') {
+          setPaidReturn({ id, name, state: 'bank' })
+          return
+        }
+        if (d?.pending_launch?.status === 'failed') {
+          await refreshPool()
+          setPaidReturn({ id, name, state: 'failed', reason: d.pending_launch.reason })
+          return
+        }
+        await new Promise((r) => setTimeout(r, 2000))
+      }
+      if (!stopped) setPaidReturn((p) => (p ? { ...p, state: 'slow' } : p))
+    })()
+    return () => {
+      stopped = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, [loading, group])
+
+  /** A draft row's Discard. Nothing was ever launched, so employees see no change. */
+  async function discardDraft(d: ServerDraft) {
+    const ok = await confirm({
+      title: `Discard "${d.body?.name?.trim() || 'this draft'}"?`,
+      body: "It was never launched, so nothing changes for your team. This can't be undone.",
       confirmLabel: 'Discard the draft',
       tone: 'danger',
     })
     if (!ok) return
-    try {
-      sessionStorage.removeItem(draftStorageKey(group.id))
-    } catch {}
-    setStoredDraft(null)
+    const { data, error } = await discardServerDraft(d.id)
+    if (error || !data?.ok) {
+      toast(error ? friendlyDbError(error) : reasonText(data?.reason), { type: 'error' })
+      return
+    }
+    setBuilderDrafts((prev) => prev.filter((x) => x.id !== d.id))
     toast('Draft discarded', { type: 'success' })
   }
 
@@ -800,7 +875,7 @@ export default function ChallengesPage() {
 
       {/* Status strip: everything on the page in one glance. A tile filters
           the list; the current tile again shows all (Keith 2026-09-30). */}
-      {!builderOpen && (challenges.length > 0 || yearPlan.drafts.length > 0 || storedDraft) && (
+      {!builderOpen && (challenges.length > 0 || yearPlan.drafts.length > 0 || builderDrafts.length > 0) && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {(
             [
@@ -836,7 +911,7 @@ export default function ChallengesPage() {
 
       {/* Empty state: a new employer reads "No challenges yet" before the
           year plan offers to fill the calendar. */}
-      {!builderOpen && challenges.length === 0 && yearPlan.drafts.length === 0 && !storedDraft && (
+      {!builderOpen && challenges.length === 0 && yearPlan.drafts.length === 0 && builderDrafts.length === 0 && (
         <Card pad className="py-16 text-center">
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-accent-soft text-accent">
             <Trophy size={28} strokeWidth={1.75} />
@@ -862,66 +937,119 @@ export default function ChallengesPage() {
           canManage={canManage}
           upcoming={challengeTemplates.calendar}
           onLaunch={(o) => {
-            openEditor(undefined, 'year_plan')
-            setLaunchOption(o)
+            // A run the year plan already drafted fills in that draft.
+            const d = yearPlan.drafts.find((x) => x.run.id === o.run?.id)
+            openEditor(undefined, 'year_plan', d ? { id: d.id, version: d.version ?? null, body: d.body ?? null } : null)
+            if (!d?.body) setLaunchOption(o)
           }}
         />
       )}
 
-      {/* The draft this tab is holding (funding gate): never created, so
-          nothing for employees to see. Finishing the wizard creates it; the
-          Review step decides between "Create challenge" and "Add funds". */}
-      {!builderOpen && (view === 'all' || view === 'drafts') && storedDraft && (() => {
-        const gap = formsFundingGap(storedDraft.prizeForms, rewardPool)
-        const name = storedDraft.form.name.trim() || 'Untitled challenge'
-        const { starts_at, ends_at } = storedDraft.form
-        return (
-          <Card pad className="border-ep-warning/40">
-            <div className="flex flex-wrap items-start justify-between gap-3.5">
-              <div className="min-w-0">
-                <div className="mb-1 flex flex-wrap items-center gap-2.5">
-                  <strong className="text-[16px] text-ink">{name}</strong>
-                  <Badge tone="warn" dot={false}>{gap.shortBy > 0 ? 'Draft, needs funding' : 'Draft'}</Badge>
-                </div>
-                <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-ink-muted">
-                  {starts_at && ends_at && (
-                    <span className="flex items-center gap-1.5">
-                      <Calendar size={14} strokeWidth={1.75} />
-                      {formatDate(etStartOfDayIso(starts_at))} to {formatDate(etStartOfDayIso(ends_at))}
-                    </span>
+      {/* Back from paying for a challenge: the webhook launches it. */}
+      {!builderOpen && paidReturn && (
+        <Card pad className={paidReturn.state === 'failed' ? 'border-ep-danger/40' : 'border-accent/40'}>
+          <div role="status" aria-live="polite" className="text-[14px] leading-[1.55] text-ink">
+            {paidReturn.state === 'waiting' && (
+              <span className="flex items-center gap-2">
+                <Clock size={16} strokeWidth={1.75} className="text-accent" />
+                Payment received. Launching {paidReturn.name}...
+              </span>
+            )}
+            {paidReturn.state === 'slow' && (
+              <>
+                <strong>Your payment went through.</strong> The launch is taking longer than usual. Reload this page in a minute; if it still
+                hasn&apos;t launched, the draft below has the details.
+              </>
+            )}
+            {paidReturn.state === 'bank' && (
+              <>
+                <strong>Your bank payment is on its way.</strong> &ldquo;{paidReturn.name}&rdquo; launches by itself when it clears, usually in 3 to 5
+                business days. Nothing is visible to your team until then.
+              </>
+            )}
+            {paidReturn.state === 'failed' && (
+              <>
+                <strong>The money is in your rewards balance, but &ldquo;{paidReturn.name}&rdquo; didn&apos;t launch.</strong>{' '}
+                {reasonText(paidReturn.reason)} Open the draft below to fix it and launch.
+              </>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* Drafts saved on the server: never launched, so nothing for
+          employees to see. Continue reopens the builder where it was left. */}
+      {!builderOpen && (view === 'all' || view === 'drafts') && builderDrafts.length > 0 && (
+        <div className="grid grid-cols-1 gap-4">
+          {builderDrafts.map((d) => {
+            const body = d.body!
+            const restored = bodyToForm(body)
+            const pl = d.pending_launch
+            const waitingBank = pl?.status === 'awaiting_payment'
+            // An unpaid Stripe page that timed out is just a draft again.
+            const failed = pl?.status === 'failed' && pl.reason !== 'checkout_expired'
+            const by = d.updated_by_email ?? d.created_by_email
+            return (
+              <Card pad key={d.id} className={failed ? 'border-ep-danger/40' : 'border-ep-warning/40'}>
+                <div className="flex flex-wrap items-start justify-between gap-3.5">
+                  <div className="min-w-0">
+                    <div className="mb-1 flex flex-wrap items-center gap-2.5">
+                      <strong className="text-[16px] text-ink">{body.name?.trim() || 'Untitled challenge'}</strong>
+                      <Badge tone="warn" dot={false}>
+                        {waitingBank ? 'Waiting for bank payment' : failed ? 'Needs attention' : 'Draft'}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-ink-muted">
+                      {body.starts_on && body.ends_on && (
+                        <span className="flex items-center gap-1.5">
+                          <Calendar size={14} strokeWidth={1.75} />
+                          {formatDate(etStartOfDayIso(body.starts_on))} to {formatDate(etStartOfDayIso(body.ends_on))}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1.5">
+                        <Gift size={14} strokeWidth={1.75} />
+                        {formPrizeSummary(restored.prizeForms[0])}
+                      </span>
+                    </div>
+                    {waitingBank ? (
+                      <p className="mt-2 text-[13px] leading-[1.5] text-ink">
+                        It launches by itself when the bank payment clears, usually in 3 to 5 business days.
+                      </p>
+                    ) : failed ? (
+                      <p className="mt-2 text-[13px] font-semibold leading-[1.5] text-ep-danger">{reasonText(pl?.reason)}</p>
+                    ) : (
+                      <p className="mt-2 text-[12.5px] leading-[1.5] text-ink-muted">
+                        Nothing is visible to your team until it launches. Continue to run the pre-flight check and launch it.
+                      </p>
+                    )}
+                    {by && (
+                      <p className="mt-1 text-[12.5px] leading-[1.5] text-ink-muted">
+                        {d.source === 'import' ? 'Moved here from your browser' : `Last saved by ${by}`}
+                        {d.updated_at ? `, ${formatDate(d.updated_at)}` : ''}
+                      </p>
+                    )}
+                  </div>
+                  {canManage && !waitingBank && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        icon={FileEdit}
+                        onClick={() => openEditor(undefined, 'draft_row', { id: d.id, version: d.version, body })}
+                      >
+                        Continue
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => discardDraft(d)}>
+                        Discard
+                      </Button>
+                    </div>
                   )}
-                  <span className="flex items-center gap-1.5">
-                    <Gift size={14} strokeWidth={1.75} />
-                    {formPrizeSummary(storedDraft.prizeForms[0])}
-                  </span>
                 </div>
-                {gap.shortBy > 0 ? (
-                  <p className="mt-2 text-[12.5px] font-semibold leading-[1.5] text-ep-danger">
-                    {linkify(shortSentence(gap, dollars, 'on the Billing page'))}
-                  </p>
-                ) : (
-                  <p className="mt-2 text-[12.5px] leading-[1.5] text-ink-muted">
-                    Your rewards balance covers it now. Continue to the Review step to create it.
-                  </p>
-                )}
-                <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-muted">
-                  Kept in this browser only. Nothing is visible to employees until you launch it.
-                </p>
-              </div>
-              {canManage && (
-                <div className="flex gap-2">
-                  <Button variant="primary" size="sm" icon={FileEdit} onClick={() => openEditor(undefined, 'draft_row')}>
-                    Continue
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={discardDraft}>
-                    Discard
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
-        )
-      })()}
+              </Card>
+            )
+          })}
+        </div>
+      )}
 
       {/* Drafts the year plan prepared: listed with the challenges, since
           they are challenges waiting for a yes. */}
@@ -958,8 +1086,8 @@ export default function ChallengesPage() {
                       variant="primary"
                       size="sm"
                       onClick={() => {
-                        openEditor(undefined, 'year_plan')
-                        setLaunchOption({ template: d.run.template, run: d.run })
+                        openEditor(undefined, 'year_plan', { id: d.id, version: d.version ?? null, body: d.body ?? null })
+                        if (!d.body) setLaunchOption({ template: d.run.template, run: d.run })
                       }}
                     >
                       Review and launch
@@ -1215,24 +1343,23 @@ export default function ChallengesPage() {
           canSave={canSave}
           problems={saveProblems}
           onSave={save}
-          resumeDraft={resumeDraft}
-          onSaveDraft={() => {
-            toast('Saved as a draft in this browser. Nothing is visible to employees until you launch it.', { type: 'success' })
-            setBuilderOpen(false)
-            setLaunchOption(null)
-            setSaveProblems([])
+          initialStep={initialStep}
+          onStepChange={(st) => {
+            stepRef.current = st
           }}
-          onCancel={() => {
-            // The row was created during this opening: the tab's draft
-            // would only create it again (C2).
-            if (createdThisOpen.current) {
-              try {
-                sessionStorage.removeItem(draftStorageKey(group.id))
-              } catch {}
-            }
-            setBuilderOpen(false)
-            setLaunchOption(null)
-            setSaveProblems([])
+          draftNote={editMode ? null : draftNote}
+          check={check}
+          checking={checking}
+          onRunCheck={() => void runCheck()}
+          canPay={isAdmin}
+          card={card}
+          payBusy={payBusy}
+          onPay={onPay}
+          onChargeCard={onChargeCard}
+          onCancel={async () => {
+            // The draft is on the server; make sure the last change got there.
+            if (!editMode) await persistDraft()
+            closeBuilder()
           }}
         />
       )}

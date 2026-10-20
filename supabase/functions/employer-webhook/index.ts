@@ -517,13 +517,28 @@ async function handleRewardPoolTopup(
     return;
   }
 
+  // A top-up for one challenge (Shift 01291): the challenge launches as soon
+  // as the money is in.
+  const draftId = session.metadata?.draft_id ?? "";
+
   // Session.payment_status must be 'paid' — Stripe occasionally fires
   // completed events on sessions that later bounce (rare, but possible
   // with BNPL). Filter here so a failed-payment session can't credit.
+  // A bank payment (ACH) completes the session 'unpaid' and settles days
+  // later: checkout.session.async_payment_succeeded brings it back here,
+  // paid. Until then its challenge shows "waiting for your bank payment".
   if (session.payment_status !== "paid") {
     console.log(
       `[EmployerWebhook] reward_pool_topup session ${session.id} payment_status=${session.payment_status}, skipping`,
     );
+    if (draftId && session.payment_status === "unpaid") {
+      const { error } = await supabase.rpc("attach_employer_challenge_payment", {
+        p_draft_id: draftId,
+        p_payment_ref: session.id,
+        p_method: "bank",
+      });
+      if (error) console.error("[EmployerWebhook] marking bank payment pending failed:", error);
+    }
     return;
   }
 
@@ -562,6 +577,9 @@ async function handleRewardPoolTopup(
     console.log(
       `[EmployerWebhook] session ${session.id} already credited to pool ${poolId}, skipping`,
     );
+    // A replay after a launch that failed for a transient reason gets a
+    // second try; a launched draft just answers "already".
+    if (draftId) await launchPaidChallenge(supabase, draftId, session.id, groupId);
     return;
   }
   if (outcome === "inactive") {
@@ -608,6 +626,86 @@ async function handleRewardPoolTopup(
   console.log(
     `[EmployerWebhook] pool ${poolId} credited +${amountCents} cents (session ${session.id})`,
   );
+
+  if (draftId) await launchPaidChallenge(supabase, draftId, session.id, groupId);
+}
+
+/**
+ * The money for one challenge is in: launch it with the amount the admin
+ * agreed to before paying (complete_employer_challenge_payment re-runs the
+ * pre-flight check). If it can't launch (a date passed, someone changed the
+ * balance), the draft keeps the reason and the portal shows it; the money
+ * stays in the balance.
+ */
+async function launchPaidChallenge(
+  supabase: ReturnType<typeof createAdminClient>,
+  draftId: string,
+  paymentRef: string,
+  groupId: string,
+): Promise<void> {
+  const { data, error } = await supabase.rpc("complete_employer_challenge_payment", {
+    p_draft_id: draftId,
+    p_payment_ref: paymentRef,
+  });
+  const result = data as { ok?: boolean; reason?: string; competition_id?: string } | null;
+  if (error || !result?.ok) {
+    console.error("[EmployerWebhook] paid challenge did not launch:", error ?? result);
+    await supabase.from("admin_notifications").insert({
+      level: "warning",
+      source: "rewards",
+      title: "Paid challenge didn't launch",
+      body: `Draft ${draftId} was paid (${paymentRef}) but didn't launch: ${error?.message ?? result?.reason ?? "unknown"}. The money is in the employer's balance; the portal shows them why.`,
+      context: { kind: "paid_launch_failed", draft_id: draftId, group_id: groupId, payment_ref: paymentRef },
+    });
+    return;
+  }
+  console.log(`[EmployerWebhook] draft ${draftId} launched as ${result.competition_id} after payment ${paymentRef}`);
+}
+
+/**
+ * Backup for the portal's one-click saved-card charge: the top-up function
+ * credits and launches inline; if it died between the charge and the credit,
+ * this credits it (idempotent on the PaymentIntent id) and launches.
+ */
+async function handleSavedCardTopup(event: Stripe.Event): Promise<void> {
+  const intent = event.data.object as Stripe.PaymentIntent;
+  const m = intent.metadata ?? {};
+  if (m.type !== "reward_pool_topup" || m.saved_card !== "1") return;
+  const amountCents = Number(m.amount_cents);
+  if (!m.pool_id || !m.group_id || !Number.isFinite(amountCents) || amountCents <= 0) return;
+  const supabase = createAdminClient();
+  const { data: outcome, error } = await supabase.rpc("credit_reward_pool_topup", {
+    p_pool_id: m.pool_id,
+    p_group_id: m.group_id,
+    p_amount_cents: amountCents,
+    p_stripe_session_id: intent.id,
+  });
+  if (error || (outcome !== "credited" && outcome !== "duplicate")) {
+    console.error("[EmployerWebhook] saved-card top-up credit failed:", error ?? outcome);
+    await supabase.from("admin_notifications").insert({
+      level: "critical",
+      source: "rewards",
+      title: "Top-up charged but not credited",
+      body: `Saved-card charge ${intent.id} for ${amountCents} cents (pool ${m.pool_id}) was not credited: ${error?.message ?? outcome}.`,
+      context: { kind: "topup_credit_failed", pool_id: m.pool_id, group_id: m.group_id, stripe_payment_intent: intent.id, amount_cents: amountCents },
+    });
+    return;
+  }
+  if (m.draft_id) await launchPaidChallenge(supabase, m.draft_id, intent.id, m.group_id);
+}
+
+/** A bank payment that bounced, or a checkout left unpaid: the draft is free to edit again. */
+async function handleTopupNotPaid(event: Stripe.Event, reason: string): Promise<void> {
+  const session = event.data.object as Stripe.Checkout.Session;
+  const draftId = session.metadata?.draft_id ?? "";
+  if (session.metadata?.type !== "reward_pool_topup" || !draftId) return;
+  const supabase = createAdminClient();
+  const { error } = await supabase.rpc("fail_employer_challenge_payment", {
+    p_draft_id: draftId,
+    p_payment_ref: session.id,
+    p_reason: reason,
+  });
+  if (error) console.error(`[EmployerWebhook] marking draft ${draftId} ${reason} failed:`, error);
 }
 
 async function handleSubscriptionDeleted(
@@ -811,6 +909,20 @@ serve(async (req: Request) => {
     switch (event.type) {
       case "checkout.session.completed":
         await handleCheckoutCompleted(stripe, event);
+        break;
+      // Bank (ACH) top-ups settle days after checkout. The endpoint has to
+      // be subscribed to these three in the Stripe dashboard.
+      case "checkout.session.async_payment_succeeded":
+        await handleCheckoutCompleted(stripe, event);
+        break;
+      case "checkout.session.async_payment_failed":
+        await handleTopupNotPaid(event, "bank_payment_failed");
+        break;
+      case "checkout.session.expired":
+        await handleTopupNotPaid(event, "checkout_expired");
+        break;
+      case "payment_intent.succeeded":
+        await handleSavedCardTopup(event);
         break;
       case "customer.subscription.created":
         await handleSubscriptionCreated(stripe, event);

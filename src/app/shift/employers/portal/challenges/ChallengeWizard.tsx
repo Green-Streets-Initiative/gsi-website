@@ -5,8 +5,9 @@
 // steps with a live preview of what employees see:
 //   Basics -> Which trips count -> Rewards -> Review & create
 // Editing an existing challenge opens straight on Review, with a Change link
-// per section. Saving still goes through the page's save() (publishing,
-// money set aside, locks), so this file only changes how the form is asked.
+// per section. Drafts are saved on the server as you go and Review runs the
+// database's pre-flight check (Shift 01291); the page launches or saves
+// through check/launch/save_changes, so this file only asks and shows.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -51,6 +52,8 @@ import type { SeasonalOption } from '../_lib/use-challenge-templates'
 import { useObservances } from '../_lib/use-observances'
 import { observancesInRange, shortDay } from '@/lib/employer/observances'
 import { formPrizeCostCents, fundingGapFor, shortSentence, type FundingGap } from './funding'
+import PreflightPanel, { ShortfallPanel } from './PreflightPanel'
+import type { CheckResult } from './challenge-actions'
 
 export type { ChallengeOffice }
 
@@ -69,7 +72,7 @@ export type WizardForm = {
   template_run_id?: string | null
 }
 
-type Step = 'start' | 'basics' | 'trips' | 'prize' | 'review'
+export type Step = 'start' | 'basics' | 'trips' | 'prize' | 'review'
 const STEPS: { id: Exclude<Step, 'start'>; label: string }[] = [
   { id: 'basics', label: 'Basics' },
   { id: 'trips', label: 'Which trips count' },
@@ -139,7 +142,8 @@ type Template = {
 /** Where the plans are compared, on the public page. */
 const PLANS_URL = 'https://www.gogreenstreets.org/shift/employers#plans'
 
-/** Where an unfinished challenge waits, per employer, until it is created. */
+/** Where an unfinished challenge used to wait, per employer, in the browser
+ *  tab (before Shift 01291). Read once and moved to the server. */
 export function draftStorageKey(groupId: string): string {
   return `portal.challenge.draft.${groupId}`
 }
@@ -310,9 +314,18 @@ export default function ChallengeWizard({
   canSave,
   problems,
   onSave,
-  onSaveDraft,
-  resumeDraft = false,
   onCancel,
+  initialStep,
+  onStepChange,
+  draftNote,
+  check,
+  checking,
+  onRunCheck,
+  canPay,
+  card,
+  payBusy,
+  onPay,
+  onChargeCard,
 }: {
   group: { id: string; name: string }
   editMode: boolean
@@ -339,116 +352,64 @@ export default function ChallengeWizard({
   canSave: boolean
   /** What went wrong on the last save; the builder stays open on Review. */
   problems: string[]
+  /** Launch (new) or save changes (edit), after the pre-flight check passes. */
   onSave: () => void
-  /**
-   * Keith 2026-10-05: a new challenge the balance can't cover is never
-   * created. It stays in this tab's draft (nothing in the database, nothing
-   * employees can see) and the Challenges list shows it as a draft row.
-   */
-  onSaveDraft: () => void
-  /** From the draft row's Continue: restore the tab's draft without asking. */
-  resumeDraft?: boolean
+  /** Close the builder. A new challenge's draft is already saved. */
   onCancel: () => void
+  /** A saved draft reopens on the step it was left on. */
+  initialStep?: Step
+  onStepChange?: (s: Step) => void
+  /** "Draft saved", "Saving...", shown by the step list. */
+  draftNote?: string | null
+  /** check_employer_challenge on the form as it stands. */
+  check: CheckResult | null
+  checking: boolean
+  onRunCheck: () => void
+  /** Admins add money (the Billing rule). */
+  canPay: boolean
+  card: { brand: string; last4: string } | null
+  payBusy: 'checkout' | 'card' | null
+  onPay: () => void
+  onChargeCard: () => void
 }) {
   const confirm = useConfirm()
   const { refreshPool } = usePortal()
-  const [step, setStep] = useState<Step>(editMode ? 'review' : 'start')
+  const [step, setStepState] = useState<Step>(initialStep ?? (editMode ? 'review' : 'start'))
+  const setStep = (s: Step) => {
+    setStepState(s)
+    onStepChange?.(s)
+  }
   const [showMoreRules, setShowMoreRules] = useState(!isStandardRules({ ...form.counting_rules, commute_only: false }))
   const [nameTouched, setNameTouched] = useState(false)
   const set = <K extends keyof WizardForm>(k: K, v: WizardForm[K]) => setForm((p) => ({ ...p, [k]: v }))
 
-  // ── Draft: kept in this tab until the challenge is created ──
-  // Every change (form, prizes, step) is written to sessionStorage; opening
-  // the builder again for a new challenge offers to continue it. Nothing is
-  // written until the restore check has run, so an empty form never
-  // overwrites a real draft. Editing never touches the draft.
-  const draftReady = useRef(editMode || !!initialSeasonal)
+  // A new challenge is saved as a draft on the server as it's filled in (the
+  // page does that); closing only needs a warning when editing an existing one.
   const initialSnapshot = useRef<string | null>(null)
   const snapshot = (f: WizardForm, p: PrizeFormState[]) => JSON.stringify({ f, p })
   useEffect(() => {
-    if (editMode) {
-      initialSnapshot.current = snapshot(form, prizeForms)
-      return
-    }
-    if (initialSeasonal) {
-      // A year-plan launch is a deliberate start; it replaces any old draft.
-      initialSnapshot.current = snapshot(form, prizeForms)
-      return
-    }
-    const d = readDraft(group.id)
-    if (!d || !draftHasContent(d)) {
-      initialSnapshot.current = snapshot(form, prizeForms)
-      draftReady.current = true
-      return
-    }
-    const restore = () => {
-      setForm(() => d.form)
-      setPrizeForms(d.prizeForms)
-      setStep(d.step === 'start' ? 'basics' : d.step)
-      setShowMoreRules(!isStandardRules({ ...(d.form.counting_rules ?? {}), commute_only: false, offices: [] }))
-      initialSnapshot.current = snapshot(d.form, d.prizeForms)
-    }
-    if (resumeDraft) {
-      restore()
-      draftReady.current = true
-      return
-    }
-    let cancelled = false
-    confirm({
-      title: 'Continue your draft?',
-      body: `You started "${d.form.name.trim() || 'a challenge'}" earlier and didn't finish. Pick up where you left off, or start over.`,
-      confirmLabel: 'Continue your draft',
-      cancelLabel: 'Start over',
-      tone: 'primary',
-    }).then((keep) => {
-      if (cancelled) return
-      if (keep) {
-        restore()
-      } else {
-        try {
-          sessionStorage.removeItem(draftStorageKey(group.id))
-        } catch {}
-        initialSnapshot.current = snapshot(form, prizeForms)
-      }
-      draftReady.current = true
-    })
-    return () => {
-      cancelled = true
-    }
+    initialSnapshot.current = snapshot(form, prizeForms)
     // Once, when the builder opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  useEffect(() => {
-    if (editMode || !draftReady.current) return
-    try {
-      const d: StoredDraft = { form, prizeForms, step, savedAt: new Date().toISOString() }
-      if (draftHasContent(d)) sessionStorage.setItem(draftStorageKey(group.id), JSON.stringify(d))
-    } catch {}
-  }, [form, prizeForms, step, editMode, group.id])
-
   const dirty = initialSnapshot.current !== null && initialSnapshot.current !== snapshot(form, prizeForms)
 
   // Review is where the money is checked: read the balance again here so a
-  // top-up made in another tab counts.
+  // top-up made in another tab counts, and run the pre-flight check.
   useEffect(() => {
-    if (step === 'review') void refreshPool()
+    if (step === 'review') {
+      void refreshPool()
+      onRunCheck()
+    }
     // Once per arrival on Review: refreshPool's identity changes with every
     // balance update, so listing it here would refetch without end.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
 
-  /** Save as draft: this tab keeps it; the database never sees it. */
-  const saveDraft = () => {
-    try {
-      const d: StoredDraft = { form, prizeForms, step: 'review', savedAt: new Date().toISOString() }
-      sessionStorage.setItem(draftStorageKey(group.id), JSON.stringify(d))
-    } catch {}
-    onSaveDraft()
-  }
-
   // A save that hit a problem lands the admin on Review with the notes.
   useEffect(() => {
     if (problems.length > 0) setStep('review')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [problems])
 
   /** The X on every screen: asks first when there is something to lose. */
@@ -457,21 +418,18 @@ export default function ChallengeWizard({
       onCancel()
       return
     }
-    const ok = editMode
-      ? await confirm({
-          title: 'Discard your changes?',
-          body: `Changes to "${form.name.trim() || 'this challenge'}" haven't been saved.`,
-          confirmLabel: 'Discard changes',
-          cancelLabel: 'Keep editing',
-          tone: 'danger',
-        })
-      : await confirm({
-          title: 'Close without creating?',
-          body: 'Your draft is kept in this tab. Open the builder again to pick it up where you left off.',
-          confirmLabel: 'Close',
-          cancelLabel: 'Keep going',
-          tone: 'primary',
-        })
+    if (!editMode) {
+      // Nothing to lose: the draft is on the server and listed on the page.
+      onCancel()
+      return
+    }
+    const ok = await confirm({
+      title: 'Discard your changes?',
+      body: `Changes to "${form.name.trim() || 'this challenge'}" haven't been saved.`,
+      confirmLabel: 'Discard changes',
+      cancelLabel: 'Keep editing',
+      tone: 'danger',
+    })
     if (ok) onCancel()
   }
 
@@ -584,7 +542,6 @@ export default function ChallengeWizard({
     ? prizeForms.filter((p) => p.award_mode !== 'guaranteed').reduce((sum, p) => sum + formPrizeCostCents(p), 0)
     : 0
   const funding = fundingGapFor(goalCost + drawCost, pool)
-  const { shortBy } = funding
   const problemFor = (p: PrizeFormState): string | null => {
     const k = kindOf(p)
     if (!(parseInt(p.winner_count, 10) > 0)) return 'Say how many people win.'
@@ -599,9 +556,6 @@ export default function ChallengeWizard({
     .filter((x) => x.m)
     .map((x) => (prizeForms.length > 1 ? `Reward ${x.i + 1}: ${x.m}` : (x.m as string)))
   const prizeProblem = prizeProblems[0] ?? null
-  const contactProblem =
-    firstGoal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contact_email.trim()) ? 'Add an email your team can write to with questions.' : null
-
   const rulesLines = useMemo(() => {
     const g = firstGoal
     if (!g || !form.starts_at || !form.ends_at) return []
@@ -621,6 +575,75 @@ export default function ChallengeWizard({
       contactEmail: form.contact_email,
     })
   }, [firstGoal, form, domains, group.name])
+
+  // ── The money gap and its quick fixes (Keith 2026-10-20) ──
+  const serverShort = (check?.money.short_by_cents ?? 0) > 0
+  const onlyMoneyBlocks = !!check && check.blockers.length > 0 && check.blockers.every((b) => b.code === 'balance_short')
+  const fundedIndex = prizeForms.findIndex((p) => p.funded_from_pool && !p.published_at && cents(p.amount_dollars) > 0)
+  const funded = fundedIndex >= 0 ? prizeForms[fundedIndex] : null
+  const promise = prizeForms
+    .filter((p) => p.funded_from_pool && cents(p.amount_dollars) > 0)
+    .map((p) => `${parseInt(p.winner_count, 10) || 0} × ${dollars(cents(p.amount_dollars))}`)
+    .join(' plus ')
+  // The most spots the balance covers, when only one gift-card reward is asking.
+  const fewerSpots = (() => {
+    if (!check || !funded || prizeForms.filter((p) => p.funded_from_pool && !p.published_at).length !== 1) return null
+    const spots = parseInt(funded.winner_count, 10) || 0
+    const per = cents(funded.amount_dollars)
+    const otherCost = check.money.needed_cents - spots * per
+    const n = Math.floor((check.money.available_cents - otherCost) / per)
+    return n >= 1 && n < spots ? n : null
+  })()
+  const applyFewerSpots = () => {
+    if (fundedIndex < 0 || fewerSpots == null) return
+    updatePrize(fundedIndex, { winner_count: String(fewerSpots) })
+  }
+  const applyOwnPrizes = () => {
+    if (fundedIndex < 0) return
+    updatePrize(fundedIndex, { funded_from_pool: false, prize_description: '' })
+    setStep('prize')
+  }
+  const shortfall = check && serverShort && (
+    <ShortfallPanel
+      check={check}
+      promise={promise}
+      canPay={canPay}
+      card={card}
+      busy={payBusy}
+      onPay={onPay}
+      fewerSpots={fewerSpots}
+      onFewerSpots={applyFewerSpots}
+      onOwnPrizes={applyOwnPrizes}
+      compact={step !== 'review'}
+      editing={editMode}
+    />
+  )
+  const preflightLines = [
+    {
+      section: 'basics' as const,
+      label: 'Name and dates',
+      value: `${form.name.trim() || 'Not named yet'} · ${
+        form.starts_at && form.ends_at
+          ? form.starts_at === form.ends_at
+            ? shortDate(form.starts_at)
+            : `${shortDate(form.starts_at)} to ${shortDate(form.ends_at)}`
+          : 'No dates yet'
+      }`,
+    },
+    {
+      section: 'trips' as const,
+      label: 'Which trips count',
+      value: `${tripsSummary({ ...form.counting_rules, commute_only: false })}${
+        commuteOnly ? ` Only trips to or from ${offices.map((o) => o.address.split(',')[0]).join(' or ') || 'your office'}.` : ''
+      }`,
+    },
+    {
+      section: 'rewards' as const,
+      label: prizeForms.length > 1 ? 'Rewards' : 'Reward',
+      value: prizeForms.length === 0 ? prizeSummary(undefined) : prizeForms.map((p) => prizeSummary(p)).join(' · '),
+    },
+  ]
+  const brand = card ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : ''
 
   const stepIndex = STEPS.findIndex((s) => s.id === step)
   const next = () => {
@@ -747,7 +770,10 @@ export default function ChallengeWizard({
             )
           })}
         </ol>
-        {closeButton}
+        <div className="flex items-center gap-3">
+          {draftNote && <span className="text-[12.5px] text-ink-muted" aria-live="polite">{draftNote}</span>}
+          {closeButton}
+        </div>
         </div>
 
         <div className="grid gap-5 px-6 py-6">
@@ -952,7 +978,7 @@ export default function ChallengeWizard({
                     )
                   })}
 
-                  {funding.cost > 0 && <FundingLine goalCost={goalCost} drawCost={drawCost} gap={funding} />}
+                  {shortfall || (funding.cost > 0 && <FundingLine goalCost={goalCost} drawCost={drawCost} gap={funding} />)}
 
                   {prizeForms.length > 0 && <AddPrizeMenu onPick={addPrize} />}
                 </>
@@ -963,36 +989,10 @@ export default function ChallengeWizard({
           {step === 'review' && (
             <>
               <StepTitle
-                title={editMode ? 'Your challenge' : 'Check and create'}
-                hint={editMode ? 'Change anything, then save.' : 'Change anything before you create it.'}
+                title={editMode ? 'Your challenge' : 'Check and launch'}
+                hint={editMode ? 'Change anything, then save.' : 'Nothing is visible to your team until you launch it.'}
               />
-              <dl className="divide-y divide-line-2 rounded-xl border border-line">
-                <ReviewRow term="Name" value={form.name || 'Not set'} onChange={() => setStep('basics')} />
-                <ReviewRow
-                  term="Dates"
-                  value={form.starts_at && form.ends_at ? `${shortDate(form.starts_at)} to ${shortDate(form.ends_at)}` : 'Not set'}
-                  onChange={() => setStep('basics')}
-                />
-                <ReviewRow
-                  term="Which trips count"
-                  value={`${tripsSummary({ ...form.counting_rules, commute_only: false })}${
-                    commuteOnly ? ` Only trips to or from ${offices.map((o) => o.address.split(',')[0]).join(' or ') || 'your office'}.` : ''
-                  }`}
-                  onChange={() => setStep('trips')}
-                />
-                {prizeForms.length === 0 ? (
-                  <ReviewRow term="Reward" value={prizeSummary(undefined)} onChange={() => setStep('prize')} />
-                ) : (
-                  prizeForms.map((p, i) => (
-                    <ReviewRow
-                      key={p.id ?? `r-${i}`}
-                      term={prizeForms.length > 1 ? `Reward ${i + 1}` : 'Reward'}
-                      value={prizeSummary(p)}
-                      onChange={() => setStep('prize')}
-                    />
-                  ))
-                )}
-              </dl>
+              <PreflightPanel check={check} checking={checking} onRerun={onRunCheck} onFix={(st) => setStep(st)} lines={preflightLines} editing={editMode} />
 
               {firstGoal && (
                 <div>
@@ -1011,19 +1011,15 @@ export default function ChallengeWizard({
                 </div>
               )}
 
-              {funding.cost > 0 && <FundingLine goalCost={goalCost} drawCost={drawCost} gap={funding} />}
-
-              {[nameProblem, datesProblem, tripsProblem, ...prizeProblems, contactProblem].filter(Boolean).map((m) => (
-                <p key={m as string} className="text-[13px] font-semibold text-ep-danger">{m}</p>
-              ))}
+              {shortfall}
 
               {problems.length > 0 && (
                 <div className="grid gap-1.5 rounded-xl border border-ep-danger/30 bg-ep-danger/5 px-4 py-3.5" role="alert">
-                  <div className="text-[13.5px] font-bold text-ink">{editMode ? "Some of this didn't save" : 'The challenge is saved, but not everything went through'}</div>
+                  <div className="text-[13.5px] font-bold text-ink">{editMode ? 'Nothing was changed' : 'It wasn\'t launched'}</div>
                   {problems.map((m) => (
                     <p key={m} className="text-[13px] leading-[1.5] text-ink">{linkify(m)}</p>
                   ))}
-                  <p className="text-[12.5px] text-ink-muted">Fix what you can here and save again, or close and sort it out on the challenge page.</p>
+                  <p className="text-[12.5px] text-ink-muted">{editMode ? 'Fix it here and save again.' : 'Your draft is saved. Fix it here and launch again.'}</p>
                 </div>
               )}
 
@@ -1084,30 +1080,34 @@ export default function ChallengeWizard({
           >
             Continue to {STEPS[stepIndex + 1]?.label.toLowerCase()}
           </Button>
-        ) : shortBy > 0 && !editMode ? (
-          // A new challenge the balance can't cover is not created. It waits
-          // in this tab as a draft until the money is in. An existing
-          // challenge always saves; its row carries the warning instead.
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" disabled={saving || !basicsDone || !!tripsProblem || !!prizeProblem} onClick={saveDraft}>
-              Save as draft
-            </Button>
-            <Link
-              href="/shift/employers/portal/billing"
-              className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-accent px-4 py-[10px] text-[14px] font-semibold leading-none text-white shadow-sm transition-all hover:bg-accent-dark"
-            >
-              Add funds to launch
-            </Link>
-          </div>
         ) : (
-          <Button
-            variant="primary"
-            icon={Trophy}
-            disabled={!canSave || saving || !basicsDone || !!tripsProblem || !!prizeProblem || !!contactProblem || !accessActive}
-            onClick={onSave}
-          >
-            {saving ? 'Saving...' : editMode ? 'Save changes' : 'Create challenge'}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {!editMode && (
+              <Button variant="secondary" onClick={onCancel}>
+                Save draft and close
+              </Button>
+            )}
+            {!editMode && onlyMoneyBlocks && canPay ? (
+              card ? (
+                <Button variant="primary" icon={Trophy} disabled={!!payBusy || checking} onClick={onChargeCard}>
+                  {payBusy === 'card' ? 'Charging...' : `Charge ${dollars(check!.money.topup_cents)} to ${brand} ${card.last4} and launch`}
+                </Button>
+              ) : (
+                <Button variant="primary" icon={Trophy} disabled={!!payBusy || checking} onClick={onPay}>
+                  {payBusy === 'checkout' ? 'Opening the payment page...' : `Add ${dollars(check!.money.topup_cents)} and launch`}
+                </Button>
+              )
+            ) : (
+              <Button
+                variant="primary"
+                icon={Trophy}
+                disabled={!canSave || saving || checking || !check?.ok || !accessActive}
+                onClick={onSave}
+              >
+                {saving ? (editMode ? 'Saving...' : 'Launching...') : checking ? 'Checking...' : editMode ? 'Save changes' : 'Launch challenge'}
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -1180,23 +1180,6 @@ function Locked({ text }: { text: string }) {
   )
 }
 
-function ReviewRow({ term, value, onChange }: { term: string; value: string; onChange?: () => void }) {
-  return (
-    <div className="flex items-start justify-between gap-4 px-4 py-3.5">
-      <div className="min-w-0">
-        <dt className="text-[12.5px] font-semibold text-ink-muted">{term}</dt>
-        <dd className="mt-0.5 text-[14px] leading-[1.5] text-ink">{value}</dd>
-      </div>
-      {onChange && (
-        <button type="button" onClick={onChange} className="shrink-0 text-[13px] font-semibold text-accent hover:underline">
-          Change
-        </button>
-      )}
-    </div>
-  )
-}
-
-// The numbers sit inside a sentence, so each one carries its own name (portal review A11Y-4).
 function Num({ value, onChange, disabled, id, label: name }: { value: string; onChange: (v: string) => void; disabled?: boolean; id: string; label: string }) {
   return (
     <input
