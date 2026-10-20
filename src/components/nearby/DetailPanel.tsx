@@ -158,7 +158,18 @@ export function PanelPhoto({ spec, alt }: { spec: PhotoSpec; alt: string }) {
         }}
       />
       {!useSv && meta?.attribution && (
-        meta.attributionUrl ? (
+        unsplashCredit(meta.attribution, meta.attributionUrl) ? (
+          <span className="mt-0.5 block text-[0.65rem] text-(--nb-ink-70)">
+            Photo by{' '}
+            <a href={withUnsplashUtm(meta.attributionUrl!)} target="_blank" rel="noopener noreferrer" className="underline hover:text-(--nb-ink)">
+              {unsplashCredit(meta.attribution, meta.attributionUrl)}
+            </a>{' '}
+            on{' '}
+            <a href={withUnsplashUtm('https://unsplash.com')} target="_blank" rel="noopener noreferrer" className="underline hover:text-(--nb-ink)">
+              Unsplash
+            </a>
+          </span>
+        ) : meta.attributionUrl ? (
           <a href={meta.attributionUrl} target="_blank" rel="noopener noreferrer" className="mt-0.5 block text-[0.65rem] text-(--nb-ink-70) hover:text-(--nb-ink)">
             {meta.attribution}
           </a>
@@ -168,6 +179,17 @@ export function PanelPhoto({ spec, alt }: { spec: PhotoSpec; alt: string }) {
       )}
     </div>
   )
+}
+
+/** Unsplash's API guidelines: link the photographer and Unsplash, with their referral tags. */
+function withUnsplashUtm(url: string): string {
+  return /[?&]utm_source=/.test(url) ? url : `${url}${url.includes('?') ? '&' : '?'}utm_source=shift&utm_medium=referral`
+}
+
+/** The photographer's name when a credit is an Unsplash one, else null. */
+function unsplashCredit(attribution: string, url: string | null | undefined): string | null {
+  if (!url || !/unsplash\.com/.test(url)) return null
+  return attribution.match(/^Photo by (.+) on Unsplash$/)?.[1] ?? null
 }
 
 /* ── Detail content per selection type ── */

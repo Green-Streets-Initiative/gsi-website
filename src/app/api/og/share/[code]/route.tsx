@@ -208,7 +208,7 @@ function FallbackCard() {
     >
       <Wordmark />
       <div style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 36, fontWeight: 400, marginTop: 24 }}>
-        Walk, bike, ride — and get rewarded for it.
+        A free app that rewards walking, biking and taking transit.
       </div>
       <div style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 24, marginTop: 24 }}>
         shift.gogreenstreets.org
@@ -407,9 +407,9 @@ export async function GET(
     return new ImageResponse(<FallbackCard />, imgOpts)
   }
 
-  const neighborhoodLine = data.town
-    ? `Join ${data.neighborhood}, ${data.town}`
-    : `Join ${data.neighborhood}`
+  // The page this link opens says "Join <name> on Shift"; the preview says
+  // the same, so the friend sees one invitation, from one person.
+  const headline = data.firstName && data.firstName !== 'A friend' ? `Join ${data.firstName} on Shift` : 'Join me on Shift'
 
   const hasCompetition = !!data.competitionName
 
@@ -455,34 +455,20 @@ export async function GET(
 
         {/* Center content */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-          {/* Headline — neighborhood on first line, "on Shift" on second */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <span
-              style={{
-                display: 'flex',
-                color: '#fff',
-                fontSize: 52,
-                fontWeight: 800,
-                letterSpacing: -1.5,
-                lineHeight: 1.1,
-                textAlign: 'center',
-              }}
-            >
-              {neighborhoodLine}
-            </span>
-            <span
-              style={{
-                display: 'flex',
-                color: '#fff',
-                fontSize: 52,
-                fontWeight: 800,
-                letterSpacing: -1.5,
-                lineHeight: 1.1,
-              }}
-            >
-              on Shift
-            </span>
-          </div>
+          {/* Headline: who is inviting */}
+          <span
+            style={{
+              display: 'flex',
+              color: '#fff',
+              fontSize: 60,
+              fontWeight: 800,
+              letterSpacing: -1.5,
+              lineHeight: 1.1,
+              textAlign: 'center',
+            }}
+          >
+            {headline}
+          </span>
 
           {/* Description — what this is and why they should care */}
           {hasCompetition ? (
@@ -509,7 +495,7 @@ export async function GET(
                 marginTop: 16,
               }}
             >
-              Walk, bike, ride — and get rewarded for it.
+              A free app that rewards walking, biking and taking transit.
             </span>
           )}
 
@@ -545,7 +531,7 @@ export async function GET(
                 {data.memberCount.toLocaleString()}
               </span>
               <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: 500, marginTop: 2 }}>
-                {data.memberCount === 1 ? 'member' : 'members'}
+                {data.memberCount === 1 ? 'member' : 'members'} in {data.neighborhood}
               </span>
             </div>
 
@@ -564,16 +550,6 @@ export async function GET(
               </>
             )}
 
-            {/* Invited by */}
-            <div style={{ display: 'flex', alignSelf: 'center', width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '14px 36px' }}>
-              <span style={{ display: 'flex', color: '#fff', fontSize: 28, fontWeight: 800 }}>
-                {data.firstName}
-              </span>
-              <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: 500, marginTop: 2 }}>
-                Invited by
-              </span>
-            </div>
           </div>
         </div>
 
