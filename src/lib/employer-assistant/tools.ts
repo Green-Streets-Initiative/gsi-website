@@ -260,7 +260,7 @@ export const ACTIVITY: Record<string, string> = {
   launch_challenge: 'Launching',
   fund_and_launch: 'Adding funds',
   save_challenge_changes: 'Saving the changes',
-  discard_draft: 'Discarding the draft',
+  discard_draft: 'Removing the draft',
   invite_employees: 'Sending invitations',
   set_email_domains: 'Updating email domains',
   set_join_policy: 'Updating who can join',

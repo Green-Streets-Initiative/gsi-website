@@ -22,7 +22,7 @@ export function openAssistant(prompt?: string) {
 }
 
 const STARTERS = ['Help me set up my first challenge', 'What should I do next?', 'How do rewards work?']
-const CHANGES = new Set(['Saving the draft', 'Launching', 'Adding funds', 'Saving the changes', 'Discarding the draft', 'Sending invitations', 'Updating email domains', 'Updating who can join', 'Updating the year plan'])
+const CHANGES = new Set(['Saving the draft', 'Launching', 'Adding funds', 'Saving the changes', 'Removing the draft', 'Sending invitations', 'Updating email domains', 'Updating who can join', 'Updating the year plan'])
 
 type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger' }
 type LinkT = { href: string; label: string; external?: boolean }
@@ -60,6 +60,7 @@ function Rich({ text }: { text: string }) {
   return (
     <>
       {blocks.map((b, i) => {
+        if (/^\s*-{3,}\s*$/.test(b)) return <hr key={i} className="my-3 border-line" />
         const lines = b.split('\n')
         if (lines.every((l) => /^\s*[-•]\s+/.test(l))) {
           return (
