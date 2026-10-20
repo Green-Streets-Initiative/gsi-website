@@ -11,6 +11,7 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import { SURVEY_ACTIVITY, SURVEY_NEEDS_APPROVAL, SURVEY_TOOLS, runSurveyApproved, runSurveyRead, surveyApprovalCard } from './survey-tools'
 import { ADMIN_ACTIVITY, ADMIN_NEEDS_APPROVAL, ADMIN_ONLY, ADMIN_TOOLS, adminApprovalCard, runAdminApproved, runAdminRead } from './admin-tools'
 
 export type ToolCtx = {
@@ -210,7 +211,7 @@ const BASE_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'open_page',
-    description: 'Give the admin a button to a portal page, for things you cannot do yourself (logo upload, the survey, billing details, the team list).',
+    description: 'Give the admin a button to a portal page, for things you cannot do yourself (logo upload, the office address, billing details).',
     input_schema: {
       type: 'object',
       properties: {
@@ -238,10 +239,11 @@ const BASE_TOOLS: Anthropic.Tool[] = [
   },
 ]
 
-export const TOOLS: Anthropic.Tool[] = [...BASE_TOOLS, ...ADMIN_TOOLS]
+export const TOOLS: Anthropic.Tool[] = [...BASE_TOOLS, ...ADMIN_TOOLS, ...SURVEY_TOOLS]
 
 export const NEEDS_APPROVAL = new Set([
   ...ADMIN_NEEDS_APPROVAL,
+  ...SURVEY_NEEDS_APPROVAL,
   'launch_challenge',
   'fund_and_launch',
   'save_challenge_changes',
@@ -256,6 +258,7 @@ export const NEEDS_APPROVAL = new Set([
 /** Short "what I'm doing" lines for the conversation. */
 export const ACTIVITY: Record<string, string> = {
   ...ADMIN_ACTIVITY,
+  ...SURVEY_ACTIVITY,
   get_account_overview: 'Looking over your account',
   list_seasonal_templates: 'Looking at the seasonal challenges',
   get_challenge: 'Reading the challenge',
@@ -518,7 +521,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (ADMIN_ONLY.includes(name) && ctx.role !== 'admin' && ctx.role !== 'gsi') {
           return { content: { error: 'only_admins', message: 'Only an admin on this account can do this.' }, isError: true }
         }
-        return (await runAdminRead(ctx, name, input)) ?? { content: { error: `unknown tool ${name}` }, isError: true }
+        return (await runSurveyRead(ctx, name, input)) ?? (await runAdminRead(ctx, name, input)) ?? { content: { error: `unknown tool ${name}` }, isError: true }
       }
     }
   } catch (e) {
@@ -673,7 +676,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         },
       }
     default:
-      return (await adminApprovalCard(ctx, name, input)) ?? { result: { content: { error: `unknown tool ${name}` }, isError: true } }
+      return (await surveyApprovalCard(ctx, name, input)) ?? (await adminApprovalCard(ctx, name, input)) ?? { result: { content: { error: `unknown tool ${name}` }, isError: true } }
   }
 }
 
@@ -784,7 +787,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
         return { content: { sent: true } }
       }
       default:
-        return (await runAdminApproved(ctx, name, input)) ?? { content: { error: `unknown tool ${name}` }, isError: true }
+        return (await runSurveyApproved(ctx, name, input)) ?? (await runAdminApproved(ctx, name, input)) ?? { content: { error: `unknown tool ${name}` }, isError: true }
     }
   } catch (e) {
     return { content: { error: e instanceof Error ? e.message : 'action failed' }, isError: true }
