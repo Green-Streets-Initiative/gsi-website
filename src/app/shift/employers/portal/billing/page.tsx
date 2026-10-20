@@ -302,7 +302,7 @@ export default function BillingPage() {
                   </div>
                   {topUpError && <p className="mt-2 text-[13px] font-semibold text-ep-danger">{topUpError}</p>}
                   <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-muted">
-                    You pay by card or bank transfer on Stripe's secure page. $25 minimum, $10,000 maximum at a time. A prize sets
+                    You pay by card or bank transfer on Stripe&apos;s secure page. $25 minimum, $10,000 maximum at a time. A prize sets
                     aside its full cost from this balance when it goes live; money for spots nobody wins comes back
                     when the challenge ends.
                   </p>
