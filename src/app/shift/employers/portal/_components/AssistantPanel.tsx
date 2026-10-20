@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowUp, Check, ExternalLink, Loader2, MessageSquarePlus, Sparkles, X } from 'lucide-react'
+import { ArrowUp, Check, ExternalLink, Loader2, Maximize2, MessageSquarePlus, Minimize2, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
 
@@ -43,8 +43,19 @@ export function AssistantDock() {
       setOpen(true)
       setSeed((e as CustomEvent<{ prompt?: string }>).detail?.prompt ?? null)
     }
+    // ⌘J / Ctrl+J opens and closes it from anywhere in the portal.
+    const k = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'j') {
+        e.preventDefault()
+        setOpen((o) => !o)
+      }
+    }
     window.addEventListener(OPEN_EVENT, h)
-    return () => window.removeEventListener(OPEN_EVENT, h)
+    window.addEventListener('keydown', k)
+    return () => {
+      window.removeEventListener(OPEN_EVENT, h)
+      window.removeEventListener('keydown', k)
+    }
   }, [])
   if (!open || !group || !(group.assistant_enabled || isGsiAdmin)) return null
   return <AssistantPanel groupId={group.id} seed={seed} onSeedUsed={() => setSeed(null)} onClose={() => setOpen(false)} />
@@ -112,6 +123,52 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
   const [fresh, setFresh] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLTextAreaElement>(null)
+
+  // Width: drag the left edge (the page beside it keeps at least 560px), or
+  // expand to fill the page area as a focused view. Kept per browser as a
+  // convenience (it renders fine without storage).
+  const WIDTH_KEY = 'portal.assistant.width'
+  const SIDEBAR = 256
+  const maxWidth = () => Math.max(360, Math.min(900, window.innerWidth - SIDEBAR - 560))
+  const [width, setWidth] = useState(440)
+  const [wide, setWide] = useState(false)
+  useEffect(() => {
+    try {
+      const w = Number(localStorage.getItem(WIDTH_KEY))
+      if (w >= 360) setWidth(Math.min(w, maxWidth()))
+    } catch {}
+  }, [])
+  const effectiveWidth = width
+  const startDrag = (e: React.PointerEvent) => {
+    e.preventDefault()
+    const startX = e.clientX
+    const startW = effectiveWidth
+    setWide(false)
+    let last = startW
+    const move = (ev: PointerEvent) => {
+      last = Math.max(360, Math.min(maxWidth(), startW + (startX - ev.clientX)))
+      setWidth(last)
+    }
+    const up = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      document.body.style.userSelect = ''
+      try {
+        localStorage.setItem(WIDTH_KEY, String(last))
+      } catch {}
+    }
+    document.body.style.userSelect = 'none'
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+  }
+
+  // The message box grows with what is typed, up to about 40% of the screen.
+  useEffect(() => {
+    const el = input.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, Math.round(window.innerHeight * 0.4))}px`
+  }, [draft])
 
   const authHeader = async (): Promise<Record<string, string> | null> => {
     const { data } = await supabase.auth.getSession()
@@ -238,20 +295,38 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
 
   return (
     <aside
-      aria-label="Setup assistant"
-      className="fixed inset-0 z-50 flex flex-col bg-surface lg:static lg:inset-auto lg:z-auto lg:h-full lg:w-[400px] lg:shrink-0 lg:border-l lg:border-line"
+      aria-label="Assistant"
+      style={{ ['--assistant-w' as string]: `${effectiveWidth}px` }}
+      className={`fixed inset-0 z-50 flex flex-col bg-surface ${
+        wide
+          ? 'min-[980px]:left-[256px]'
+          : 'lg:relative lg:inset-auto lg:z-auto lg:h-full lg:w-[var(--assistant-w)] lg:shrink-0 lg:border-l lg:border-line'
+      }`}
     >
+      {/* Drag to resize (wide screens) */}
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize the assistant"
+        onPointerDown={startDrag}
+        onDoubleClick={() => setWide((w) => !w)}
+        className={`absolute inset-y-0 -left-1 z-10 hidden w-2 cursor-col-resize hover:bg-accent/20 ${wide ? '' : 'lg:block'}`}
+      />
       <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-soft text-accent">
-            <Sparkles size={16} strokeWidth={1.75} />
-          </span>
-          <div>
-            <h2 className="text-[14.5px] font-bold text-ink">Setup assistant</h2>
-            <p className="text-[12px] text-ink-muted">Asks first before anything your team sees</p>
-          </div>
+        <div>
+          <h2 className="text-[15px] font-bold text-ink">Assistant</h2>
+          <p className="text-[12.5px] text-ink-muted">Sets things up with you. Asks before anything your team sees.</p>
         </div>
         <div className="flex items-center gap-1">
+          <button
+            type="button"
+            title={wide ? 'Back to the side' : 'Expand'}
+            aria-label={wide ? 'Put the assistant back at the side' : 'Expand the assistant'}
+            onClick={() => setWide((w) => !w)}
+            className="hidden h-9 w-9 place-items-center rounded-lg text-ink-muted hover:bg-surface-2 lg:grid"
+          >
+            {wide ? <Minimize2 size={16} strokeWidth={1.75} /> : <Maximize2 size={16} strokeWidth={1.75} />}
+          </button>
           <button
             type="button"
             title="Start a new conversation"
@@ -271,7 +346,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
         </div>
       </div>
 
-      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-4 py-4" aria-live="polite">
+      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 [&>*]:mx-auto [&>*]:max-w-[720px]" aria-live="polite">
         {!loaded && <Loader2 size={18} className="mx-auto mt-8 animate-spin text-ink-muted" aria-label="Loading" />}
         {empty && (
           <div className="mt-2">
@@ -391,7 +466,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
       </div>
 
       <form
-        className="border-t border-line p-3"
+        className="border-t border-line p-3 [&>*]:mx-auto [&>*]:max-w-[720px]"
         onSubmit={(e) => {
           e.preventDefault()
           submit()
@@ -400,7 +475,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
         <div className="flex items-end gap-2 rounded-xl border border-line bg-surface px-3 py-2 focus-within:border-accent">
           <textarea
             ref={input}
-            rows={1}
+            rows={3}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -411,7 +486,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
             }}
             placeholder="Ask or answer here"
             aria-label="Message the assistant"
-            className="max-h-32 min-h-[24px] flex-1 resize-none bg-transparent text-[14px] text-ink outline-none placeholder:text-ink-tertiary"
+            className="min-h-[66px] flex-1 resize-none bg-transparent text-[14px] leading-[1.45] text-ink outline-none placeholder:text-ink-tertiary"
           />
           <button
             type="submit"

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, Search, Bell, HelpCircle, Sparkles } from 'lucide-react'
+import { Menu, Search, Bell, HelpCircle, MessageSquareText } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
 import CommandPalette from './CommandPalette'
 import NotificationsDropdown, { hasUnreadNotifications, prefsForCurrentAdmin } from './NotificationsDropdown'
@@ -163,15 +163,15 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
             )}
           </div>
 
-          {/* Setup assistant (Shift 01298): on per workplace */}
+          {/* The assistant on a phone, where the sidebar is tucked away */}
           {group && (group.assistant_enabled || isGsiAdmin) && (
             <button
               type="button"
               onClick={() => openAssistant()}
-              className="flex h-[38px] items-center gap-1.5 rounded-[10px] px-2.5 text-[13.5px] font-semibold text-accent transition-colors hover:bg-accent-softer"
+              aria-label="Ask the assistant"
+              className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] text-ink-muted transition-colors hover:bg-surface-2 min-[980px]:hidden"
             >
-              <Sparkles size={17} strokeWidth={1.75} />
-              <span className="hidden sm:inline">Assistant</span>
+              <MessageSquareText size={18} strokeWidth={1.75} />
             </button>
           )}
 

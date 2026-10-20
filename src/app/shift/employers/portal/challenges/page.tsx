@@ -16,7 +16,7 @@ import {
   Megaphone,
   Clock,
   FileEdit,
-  Sparkles,
+  MessageSquareText,
 } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
 import { usePortal } from '../_lib/portal-context'
@@ -917,7 +917,7 @@ export default function ChallengesPage() {
           !builderOpen && canManage && (
             <div className="flex flex-wrap gap-2">
               {assistantOn && (
-                <Button variant="secondary" icon={Sparkles} onClick={() => openAssistant('Help me set up a challenge')}>
+                <Button variant="secondary" icon={MessageSquareText} onClick={() => openAssistant('Help me set up a challenge')}>
                   Set it up with the assistant
                 </Button>
               )}
@@ -982,7 +982,7 @@ export default function ChallengesPage() {
           {canManage && (
             <div className="flex flex-wrap justify-center gap-2">
               {assistantOn && (
-                <Button variant="secondary" icon={Sparkles} onClick={() => openAssistant('Help me set up my first challenge')}>
+                <Button variant="secondary" icon={MessageSquareText} onClick={() => openAssistant('Help me set up my first challenge')}>
                   Set it up with the assistant
                 </Button>
               )}

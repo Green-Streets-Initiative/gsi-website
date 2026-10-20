@@ -372,34 +372,26 @@ export default function ShareKitPage() {
               </div>
               <StoreBadges height={36} layout="row" placement="employer_share_kit" />
             </div>
-            <div className="mb-6 grid gap-5 sm:grid-cols-3">
+            {/* Two steps, each with its screen, matching the app (Keith
+                2026-10-20: step 1 had no screenshot, and "Join a workplace"
+                isn't what the app says; it's the + on Community). */}
+            <div className="mx-auto mb-6 grid max-w-[640px] gap-5 sm:grid-cols-2">
               {/* Step 1 */}
               <div className="flex flex-col items-center text-center">
                 <span className="mb-4 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[14px] font-bold text-white">
                   1
                 </span>
-                <p className="mb-1 text-[14px] font-semibold text-ink">Open Shift and go to Community</p>
+                <p className="mb-1 text-[14px] font-semibold text-ink">Open Community and tap +</p>
                 <p className="mb-3 text-[13px] text-ink-muted">
-                  Community is in the tab bar at the bottom of the app
-                </p>
-              </div>
-
-              {/* Step 2 */}
-              <div className="flex flex-col items-center text-center">
-                <span className="mb-4 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[14px] font-bold text-white">
-                  2
-                </span>
-                <p className="mb-1 text-[14px] font-semibold text-ink">Tap Join a workplace</p>
-                <p className="mb-3 text-[13px] text-ink-muted">
-                  It asks for the code your employer gave you
+                  The + is at the top right of Community
                 </p>
                 <button
                   type="button"
                   onClick={() =>
                     setLightbox({
                       src: '/images/shift-app/shift-join-step1.png',
-                      alt: 'Tap Join a workplace',
-                      label: 'Step 2: Tap Join a workplace',
+                      alt: 'Community, with the + at the top right',
+                      label: 'Step 1: Open Community and tap +',
                     })
                   }
                   className="group relative cursor-pointer rounded-lg transition-shadow hover:shadow-md"
@@ -407,7 +399,7 @@ export default function ShareKitPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/images/shift-app/shift-join-step1.png"
-                    alt="Tap Join a workplace"
+                    alt="Community, with the + at the top right"
                     className="w-[120px] rounded-lg shadow-sm ring-1 ring-line"
                   />
                   <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-ink/0 transition-colors group-hover:bg-ink/15">
@@ -416,12 +408,12 @@ export default function ShareKitPage() {
                 </button>
               </div>
 
-              {/* Step 3 */}
+              {/* Step 2 */}
               <div className="flex flex-col items-center text-center">
                 <span className="mb-4 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[14px] font-bold text-white">
-                  3
+                  2
                 </span>
-                <p className="mb-1 text-[14px] font-semibold text-ink">Enter your invite code</p>
+                <p className="mb-1 text-[14px] font-semibold text-ink">Enter your code and tap Join</p>
                 <p className="mb-3 text-[13px] text-ink-muted">
                   Type <strong className="font-headline font-extrabold tracking-[0.08em] text-ink">{group.invite_code}</strong> and tap Join
                 </p>
@@ -431,7 +423,7 @@ export default function ShareKitPage() {
                     setLightbox({
                       src: '/images/shift-app/shift-join-step2.png',
                       alt: 'Enter your invite code',
-                      label: 'Step 3: Enter your invite code',
+                      label: 'Step 2: Enter your code and tap Join',
                     })
                   }
                   className="group relative cursor-pointer rounded-lg transition-shadow hover:shadow-md"

@@ -13,11 +13,13 @@ import {
   Wallet,
   Settings,
   ClipboardList,
+  MessageSquareText,
   type LucideIcon,
 } from 'lucide-react'
 import { usePortal, type PortalRole } from '../_lib/portal-context'
 import { computeSetupSteps, nextSetupStep } from '../_lib/setup-steps'
 import MobileNav from './MobileNav'
+import { openAssistant } from './AssistantPanel'
 
 export type PortalNavItem = {
   key: string
@@ -143,6 +145,21 @@ function SidebarContent() {
           </div>
         </div>
       </div>
+
+      {/* The assistant (Shift 01298): one quiet field at the top, ⌘J anywhere */}
+      {group && (group.assistant_enabled || isGsiAdmin) && (
+        <div className="px-2 pb-2">
+          <button
+            type="button"
+            onClick={() => openAssistant()}
+            className="flex w-full items-center gap-[11px] rounded-[9px] border border-white/[0.14] bg-white/[0.06] px-[11px] py-[9px] text-left text-[14px] font-medium text-white/80 transition-colors hover:bg-white/[0.1] hover:text-white"
+          >
+            <MessageSquareText size={18} strokeWidth={1.75} className="shrink-0" />
+            <span className="flex-1 truncate">Ask the assistant</span>
+            <kbd className="rounded border border-white/[0.18] px-1.5 text-[11px] font-medium text-white/75">⌘J</kbd>
+          </button>
+        </div>
+      )}
 
       {/* Nav */}
       <nav
