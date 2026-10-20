@@ -59,6 +59,10 @@
     {
       "date": "2026-10-17",
       "what": "Claude, from an interactive chat with Keith's go ('start with 1', signal-driven growth lever: show up during MBTA closures). Bulk upload ad-grants-t-closures.csv (scratchpad) into How-to Guides (24306480410): new ad group 'T closures', 22 PHRASE keywords (red/orange/green/blue line shutdown|closure|shuttle, mbta shutdown(s)|closures|closures this weekend|shuttle buses|diversions|service changes, commuter rail shutdown|shuttle, is the red/green/orange line running, t shutdown boston) and one RSA (15 headlines, 4 descriptions, path T-closures/backup) to /guides/backup-plans-for-the-t, which lists live and upcoming closures and has the trip planner. Preview 24/24, applied 'Finished successfully'; Undo is on the Uploads page. Watch: CTR (5% rule), search terms. Expect volume to spike around closures (Green Line Oct 31 and Nov 7)."
+    },
+    {
+      "date": "2026-10-20",
+      "what": "Claude, on Keith's 'do ad grants item 1' in an interactive chat (Claude in Chrome, no upload). Added campaign-level negative keyword 'paybyplatema' (broad match) to How-to Guides (24306480410), the campaign's first negative, via Keywords > Negative keywords > + > Add to: Campaign. Verified: list shows 1 row, paybyplatema / How-to Guides / Campaign / Broad match; toast 'Your negative keywords were created.' Blocks the off-target MA toll-billing lookup 'www paybyplatema com' (6 impr, 0 clicks Oct 1-20). Nothing else touched."
     }
   ],
   "open_items": [
@@ -708,7 +712,8 @@
       "alerts": [
         "SUGGEST (emailed as item 1): add negative 'paybyplatema' to How-to Guides (search term 'www paybyplatema com' 6 impr, 0 clicks)"
       ],
-      "emailed": true
+      "emailed": true,
+      "alerts_outcome": "item 1 DONE the same day by Claude on Keith's 'do ad grants item 1' (see the 2026-10-20 change entry)"
     }
   ],
   "snapshots": [
