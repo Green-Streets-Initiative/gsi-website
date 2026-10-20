@@ -75,7 +75,7 @@ async function loadShareData(code: string): Promise<ShareData | null> {
   const competition =
     competitions.find(c => new Date(c.starts_at).getTime() <= now && new Date(c.ends_at).getTime() >= now) ??
     competitions.find(c => new Date(c.starts_at).getTime() > now) ??
-    competitions[0] ?? null
+    null // never a past one: an ended campaign on a link preview reads as current
 
   // Find neighborhood from home coordinates
   let neighborhood: string | null = null
@@ -210,7 +210,7 @@ function FallbackCard() {
       <div style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 36, fontWeight: 400, marginTop: 24 }}>
         Walk, bike, ride — and get rewarded for it.
       </div>
-      <div style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 24, marginTop: 24 }}>
+      <div style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 24, marginTop: 24 }}>
         shift.gogreenstreets.org
       </div>
     </div>
@@ -265,9 +265,9 @@ function InviteCard({ firstName, referralCode }: { firstName: string; referralCo
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 500 }}>Use code</span>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>Use code</span>
         <span style={{ display: 'flex', fontFamily: 'monospace', fontSize: 24, fontWeight: 800, letterSpacing: 4, color: LIME }}>{referralCode}</span>
-        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 500 }}>to join</span>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>to join</span>
       </div>
     </div>
   )
@@ -336,9 +336,9 @@ function CampaignCard({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 500 }}>Use code</span>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>Use code</span>
         <span style={{ display: 'flex', fontFamily: 'monospace', fontSize: 24, fontWeight: 800, letterSpacing: 4, color: LIME }}>{referralCode}</span>
-        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 500 }}>to join</span>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>to join</span>
       </div>
     </div>
   )
@@ -382,13 +382,21 @@ export async function GET(
     )
   }
 
-  if (ctx === 'campaign' && data) {
-    const name = data.competitionName || 'Shift Your Summer 2026'
+  // A campaign link with no current or upcoming campaign: the plain invite
+  // card, never a stale campaign name.
+  if (ctx === 'campaign' && data && !data.competitionName) {
+    return new ImageResponse(
+      <InviteCard firstName={data.firstName} referralCode={data.referralCode} />,
+      imgOpts,
+    )
+  }
+
+  if (ctx === 'campaign' && data && data.competitionName) {
     return new ImageResponse(
       <CampaignCard
         firstName={data.firstName}
         referralCode={data.referralCode}
-        competitionName={name}
+        competitionName={data.competitionName}
         competitionDates={data.competitionDates}
       />,
       imgOpts,
@@ -571,7 +579,7 @@ export async function GET(
 
         {/* Footer — referral code */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 500 }}>
+          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>
             Use code
           </span>
           <span
@@ -586,7 +594,7 @@ export async function GET(
           >
             {data.referralCode}
           </span>
-          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.65)', fontSize: 20, fontWeight: 500 }}>
+          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>
             to join
           </span>
         </div>
