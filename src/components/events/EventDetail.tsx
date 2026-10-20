@@ -131,9 +131,11 @@ interface EventDetailProps {
   sponsorLinks?: Record<string, string>
   /** Roams whose route this event travels (Shift roam_events), public roams only. */
   roamLinks?: Array<{ id: string; name: string; reward_note: string | null }>
+  /** Invite code of the Shift ride this listing comes from; its page takes RSVPs. */
+  rideCode?: string | null
 }
 
-export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [] }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
   // The type's color for this surface: the navy-tuned one, or its ink on cream.
@@ -527,6 +529,16 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   Event info
                 </a>
               )}
+              {rideCode && !isPast && (
+                <Link
+                  href={`/rides/${rideCode}`}
+                  className="inline-flex items-center gap-2 rounded-[10px] bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-85"
+                  onClick={() => posthog.capture('ride_page_open', { from: 'event_detail', surface: 'details' })}
+                >
+                  <Users size={15} />
+                  RSVP
+                </Link>
+              )}
               {event.registration_url && (
                 <a
                   href={withUtm(event.registration_url)}
@@ -571,7 +583,16 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
         className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t border-(--ev-line-10) bg-(--ev-bar-deep) px-4 pt-3 backdrop-blur lg:hidden"
         style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
       >
-        {event.registration_url ? (
+        {rideCode && !isPast ? (
+          <Link
+            href={`/rides/${rideCode}`}
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-blue px-4 text-[14px] font-bold text-white"
+            onClick={() => posthog.capture('ride_page_open', { from: 'event_detail', surface: 'phone_bar' })}
+          >
+            <Users size={16} />
+            RSVP
+          </Link>
+        ) : event.registration_url ? (
           <a
             href={withUtm(event.registration_url)}
             target="_blank"
