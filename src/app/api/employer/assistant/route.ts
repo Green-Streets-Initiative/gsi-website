@@ -72,8 +72,14 @@ async function authorize(request: Request, groupId: string | null | undefined) {
   return { token, user, admin, userClient, group: g, role }
 }
 
-async function loadThread(admin: SupabaseClient, groupId: string, threadId?: string | null): Promise<Thread | null> {
-  let q = admin.from('employer_assistant_threads').select('id, group_id, pending').eq('group_id', groupId).is('archived_at', null)
+/** The signed-in person's own conversation (Shift 01301: private to them). */
+async function loadThread(admin: SupabaseClient, groupId: string, userId: string, threadId?: string | null): Promise<Thread | null> {
+  let q = admin
+    .from('employer_assistant_threads')
+    .select('id, group_id, pending')
+    .eq('group_id', groupId)
+    .eq('created_by', userId)
+    .is('archived_at', null)
   q = threadId ? q.eq('id', threadId) : q.order('updated_at', { ascending: false }).limit(1)
   const { data } = await q.maybeSingle()
   return (data as Thread | null) ?? null
@@ -88,6 +94,7 @@ async function loadMessages(admin: SupabaseClient, threadId: string): Promise<{ 
 
 type Item =
   | { kind: 'user'; text: string }
+  | { kind: 'user_image'; url: string }
   | { kind: 'assistant'; text: string }
   | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
@@ -99,7 +106,12 @@ function transcript(messages: { role: string; content: unknown }[], pending: Pen
   for (const m of messages) {
     const blocks = (Array.isArray(m.content) ? m.content : [{ type: 'text', text: String(m.content) }]) as Record<string, unknown>[]
     for (const b of blocks) {
-      if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) {
+      if (b.type === 'image' && m.role === 'user') {
+        const src = b.source as { type?: string; url?: string } | undefined
+        if (src?.url) items.push({ kind: 'user_image', url: src.url })
+      } else if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) {
+        // The note that travels with an attachment is for the model only.
+        if (m.role === 'user' && b.text.startsWith('[Attached image')) continue
         items.push({ kind: m.role === 'user' ? 'user' : 'assistant', text: b.text })
       } else if (b.type === 'tool_use') {
         const name = String(b.name)
@@ -161,10 +173,46 @@ export async function GET(request: Request) {
   const url = new URL(request.url)
   const auth = await authorize(request, url.searchParams.get('group_id'))
   if ('error' in auth) return auth.error
-  const thread = await loadThread(auth.admin, auth.group.id, url.searchParams.get('thread_id'))
+  if (url.searchParams.get('list') === '1') {
+    const { data } = await auth.admin
+      .from('employer_assistant_threads')
+      .select('id, title, updated_at, pending')
+      .eq('group_id', auth.group.id)
+      .eq('created_by', auth.user.id)
+      .is('archived_at', null)
+      .order('updated_at', { ascending: false })
+      .limit(50)
+    return Response.json({
+      threads: ((data ?? []) as { id: string; title: string | null; updated_at: string; pending: Pending | null }[]).map((t) => ({
+        id: t.id,
+        title: t.title || 'Conversation',
+        updated_at: t.updated_at,
+        waiting: !!t.pending?.cards?.some((c) => !c.decided),
+      })),
+    })
+  }
+  const thread = await loadThread(auth.admin, auth.group.id, auth.user.id, url.searchParams.get('thread_id'))
   if (!thread) return Response.json({ thread_id: null, items: [], role: auth.role })
   const messages = await loadMessages(auth.admin, thread.id)
   return Response.json({ thread_id: thread.id, items: transcript(messages, thread.pending), role: auth.role })
+}
+
+// ── DELETE ?group_id=&thread_id=: forget one of your conversations ──
+
+export async function DELETE(request: Request) {
+  const url = new URL(request.url)
+  const auth = await authorize(request, url.searchParams.get('group_id'))
+  if ('error' in auth) return auth.error
+  const id = url.searchParams.get('thread_id')
+  if (!id) return Response.json({ error: 'thread_id required' }, { status: 400 })
+  const { error } = await auth.admin
+    .from('employer_assistant_threads')
+    .delete()
+    .eq('id', id)
+    .eq('group_id', auth.group.id)
+    .eq('created_by', auth.user.id)
+  if (error) return Response.json({ error: 'Could not delete it.' }, { status: 500 })
+  return Response.json({ ok: true })
 }
 
 // ── POST: say something, or decide on an approval card ──
@@ -176,12 +224,24 @@ export async function POST(request: Request) {
     message?: string
     decision?: { tool_use_id: string; approve: boolean }
     new_thread?: boolean
+    /** Images the admin attached (uploaded to employer-logos first). */
+    attachments?: { url: string; name?: string }[]
   } | null
   const auth = await authorize(request, body?.group_id)
   if ('error' in auth) return auth.error
   const { admin, userClient, group, role, user, token } = auth
   const text = (body?.message ?? '').trim().slice(0, 4000)
-  if (!text && !body?.decision) return Response.json({ error: 'Say something first.' }, { status: 400 })
+  // Only our own logo bucket: the model never fetches an arbitrary URL.
+  const logoPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/employer-logos/`
+  const attachments = (body?.attachments ?? []).filter((a) => typeof a?.url === 'string' && a.url.startsWith(logoPrefix)).slice(0, 3)
+  if (!text && !body?.decision && attachments.length === 0) return Response.json({ error: 'Say something first.' }, { status: 400 })
+  const userBlocks = (): unknown[] => [
+    ...attachments.flatMap((a) => [
+      { type: 'image', source: { type: 'url', url: a.url } },
+      { type: 'text', text: `[Attached image${a.name ? ` "${a.name}"` : ''}: ${a.url}]` },
+    ]),
+    ...(text ? [{ type: 'text', text }] : []),
+  ]
 
   // Monthly cap per workplace.
   const monthStart = new Date()
@@ -201,11 +261,11 @@ export async function POST(request: Request) {
     }
   }
 
-  let thread = body?.new_thread ? null : await loadThread(admin, group.id, body?.thread_id)
+  let thread = body?.new_thread ? null : await loadThread(admin, group.id, user.id, body?.thread_id)
   if (!thread) {
     const { data, error } = await admin
       .from('employer_assistant_threads')
-      .insert({ group_id: group.id, title: text.slice(0, 80) || 'Setup', created_by: user.id, created_by_email: user.email })
+      .insert({ group_id: group.id, title: text.slice(0, 80) || (attachments.length ? 'Logo' : 'Setup'), created_by: user.id, created_by_email: user.email })
       .select('id, group_id, pending')
       .single()
     if (error || !data) return Response.json({ error: 'Could not start a conversation.' }, { status: 500 })
@@ -278,17 +338,17 @@ export async function POST(request: Request) {
             return
           }
           const content: unknown[] = pending.order.map((id) => pending!.results[id])
-          if (text) content.push({ type: 'text', text })
+          content.push(...userBlocks())
           await append('user', content)
           await setPending(null)
           pending = null
         } else {
-          if (!text) {
+          if (!text && attachments.length === 0) {
             emit({ type: 'done' })
             controller.close()
             return
           }
-          await append('user', [{ type: 'text', text }])
+          await append('user', userBlocks())
         }
 
         // 2. The model's turn, with tools, until it finishes or waits on a card.

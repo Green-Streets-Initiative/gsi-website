@@ -31,6 +31,37 @@ const BENEFIT_FIELDS: Record<string, string> = {
 
 export const ADMIN_TOOLS: Anthropic.Tool[] = [
   {
+    name: 'set_office',
+    description:
+      'Add an office (or change the main one) from an address in plain words. It is looked up on the map, and the approval card shows exactly what was found. The main office (first) is where the Commute Advisor opens and what office-only challenges use. Needs approval.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        address: { type: 'string', description: 'Street address, as the admin gave it' },
+        name: { type: ['string', 'null'], description: 'Short name, e.g. "Back Bay office"' },
+        replace_location_id: { type: ['string', 'null'], description: 'An existing office to replace (from get_account_overview offices); omit to add a new one' },
+        make_main: { type: 'boolean', description: 'Make it the main office' },
+        arrive_by: { type: ['string', 'null'], description: 'When people usually need to be in, HH:MM 24h' },
+      },
+      required: ['address'],
+    },
+  },
+  {
+    name: 'remove_office',
+    description: 'Remove an office from the list (not the only one). Needs approval.',
+    input_schema: { type: 'object', properties: { location_id: { type: 'string' } }, required: ['location_id'] },
+  },
+  {
+    name: 'set_logo',
+    description: "Make an image the admin attached in this conversation the company logo (shown on the join page, the Commute Advisor and in the app). Use the URL from their attachment. Needs approval.",
+    input_schema: { type: 'object', properties: { image_url: { type: 'string' } }, required: ['image_url'] },
+  },
+  {
+    name: 'remove_logo',
+    description: 'Remove the company logo. Needs approval.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
     name: 'get_plans',
     description: "Shift's plans and prices, what each adds, the nonprofit rate, this workplace's plan, and how to change it. Use for any plan or pricing question.",
     input_schema: { type: 'object', properties: {} },
@@ -186,6 +217,10 @@ export const ADMIN_TOOLS: Anthropic.Tool[] = [
 ]
 
 export const ADMIN_NEEDS_APPROVAL = [
+  'set_office',
+  'remove_office',
+  'set_logo',
+  'remove_logo',
   'decide_join_request',
   'remove_invitation',
   'nudge_employee',
@@ -202,9 +237,13 @@ export const ADMIN_NEEDS_APPROVAL = [
   'set_public_listing',
 ]
 
-export const ADMIN_ONLY = ['open_plan_change', 'add_team_member', 'change_team_role', 'remove_team_member', 'update_company_profile', 'set_public_listing']
+export const ADMIN_ONLY = ['set_logo', 'remove_logo', 'open_plan_change', 'add_team_member', 'change_team_role', 'remove_team_member', 'update_company_profile', 'set_public_listing']
 
 export const ADMIN_ACTIVITY: Record<string, string> = {
+  set_office: 'Saving the office',
+  remove_office: 'Removing the office',
+  set_logo: 'Setting your logo',
+  remove_logo: 'Removing your logo',
   get_plans: 'Looking at the plans',
   open_plan_change: 'Opening plan changes',
   get_employees: 'Looking at your employees',
@@ -227,6 +266,48 @@ export const ADMIN_ACTIVITY: Record<string, string> = {
 }
 
 // ── Lookups (scoped to the workplace) ──────────────────────────────────
+
+/** Google Places text search, biased to Greater Boston (as the portal's address picker). */
+async function geocode(address: string): Promise<{ formatted: string; lat: number; lng: number } | null> {
+  const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY
+  if (!key) return null
+  try {
+    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'places.formattedAddress,places.location' },
+      body: JSON.stringify({
+        textQuery: address,
+        maxResultCount: 1,
+        locationBias: { circle: { center: { latitude: 42.36, longitude: -71.06 }, radius: 50000 } },
+      }),
+    })
+    if (!res.ok) return null
+    const j = (await res.json()) as { places?: { formattedAddress?: string; location?: { latitude: number; longitude: number } }[] }
+    const p = j.places?.[0]
+    if (!p?.location || !p.formattedAddress) return null
+    return { formatted: p.formattedAddress, lat: p.location.latitude, lng: p.location.longitude }
+  } catch {
+    return null
+  }
+}
+
+type Office = { id: string; name: string | null; address: string; lat: number; lng: number; radius_m: number; sort_order: number; typical_start_time?: string | null }
+
+async function offices(ctx: ToolCtx): Promise<Office[]> {
+  const { data } = await ctx.admin.from('employer_locations').select('*').eq('group_id', ctx.groupId).order('sort_order')
+  return (data ?? []) as Office[]
+}
+
+const officePayload = (o: Pick<Office, 'name' | 'address' | 'lat' | 'lng'> & { id?: string | null; typical_start_time?: string | null }) => ({
+  id: o.id ?? null,
+  name: o.name ?? null,
+  address: o.address,
+  lat: o.lat,
+  lng: o.lng,
+  typical_start_time: o.typical_start_time ?? '09:00',
+})
+
+const logoPrefix = () => `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/employer-logos/`
 
 async function prize(ctx: ToolCtx, id: string) {
   const { data } = await ctx.admin
@@ -374,6 +455,52 @@ export async function runAdminRead(ctx: ToolCtx, name: string, input: Record<str
 export async function adminApprovalCard(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<{ card: ApprovalCard } | { result: ToolResult } | null> {
   const fail = (message: string) => ({ result: { content: { error: message }, isError: true } as ToolResult })
   switch (name) {
+    case 'set_office': {
+      const found = await geocode(String(input.address ?? ''))
+      if (!found) return fail("That address couldn't be found on the map. Ask for the full street address, or add it on the Commute Advisor page.")
+      input._lat = found.lat
+      input._lng = found.lng
+      input._formatted = found.formatted
+      const list = await offices(ctx)
+      const replacing = input.replace_location_id ? list.find((o) => o.id === input.replace_location_id) : null
+      if (input.replace_location_id && !replacing) return fail('that office is not on this account')
+      const main = !!input.make_main || list.length === 0 || (replacing && replacing.sort_order === 0)
+      return {
+        card: {
+          title: replacing ? `Change "${replacing.name || replacing.address}" to this address?` : 'Add this office?',
+          lines: [
+            `${input.name ? `${input.name}: ` : ''}${found.formatted}`,
+            main ? 'This is your main office: the Commute Advisor opens here, and office-only challenges count trips to it.' : 'Added to your offices; trips to it count in office-only challenges.',
+            ...(input.arrive_by ? [`People usually need to be in by ${input.arrive_by}.`] : []),
+          ],
+          mapUrl: `https://www.google.com/maps/search/?api=1&query=${found.lat},${found.lng}`,
+          cta: 'Save the office',
+          tone: 'primary',
+        },
+      }
+    }
+    case 'remove_office': {
+      const list = await offices(ctx)
+      const o = list.find((x) => x.id === input.location_id)
+      if (!o) return fail('that office is not on this account')
+      if (list.length === 1) return fail('it is the only office; change it instead of removing it')
+      return { card: { title: `Remove "${o.name || o.address}"?`, lines: [o.address, ...(o.sort_order === 0 ? ['The next office becomes the main one.'] : [])], cta: 'Remove', tone: 'danger' } }
+    }
+    case 'set_logo': {
+      const url = String(input.image_url ?? '')
+      if (!url.startsWith(logoPrefix())) return fail('Use an image the admin attached in this conversation (the paperclip next to the message box).')
+      return {
+        card: {
+          title: 'Use this as your company logo?',
+          lines: ['It shows on your join page, the Commute Advisor, and in the Shift app for your team.'],
+          image: url,
+          cta: 'Use this logo',
+          tone: 'primary',
+        },
+      }
+    }
+    case 'remove_logo':
+      return { card: { title: 'Remove your logo?', lines: ['Employees see your company name without a logo in the app and on your join page.'], cta: 'Remove logo', tone: 'danger' } }
     case 'decide_join_request': {
       const r = (await joinRequests(ctx)).find((x) => String(x.id) === String(input.request_id))
       if (!r) return fail('join request not found')
@@ -545,6 +672,37 @@ export async function runAdminApproved(ctx: ToolCtx, name: string, input: Record
     return { content: { done: true, ...ok, ...(d ?? {}) } } as ToolResult
   }
   switch (name) {
+    case 'set_office': {
+      const list = await offices(ctx)
+      const entry = {
+        id: (input.replace_location_id as string | null) ?? null,
+        name: (input.name as string | null)?.trim() || null,
+        address: String(input._formatted),
+        lat: Number(input._lat),
+        lng: Number(input._lng),
+        typical_start_time: (input.arrive_by as string | null) ?? list.find((o) => o.id === input.replace_location_id)?.typical_start_time ?? '09:00',
+      }
+      let next = list.map((o) => (o.id === entry.id ? { ...o, ...entry } : o)).map(officePayload)
+      if (!entry.id) next = [...next, officePayload(entry)]
+      if (input.make_main) {
+        const i = next.findIndex((o) => (entry.id ? o.id === entry.id : o.address === entry.address && o.id == null))
+        if (i > 0) next = [next[i], ...next.slice(0, i), ...next.slice(i + 1)]
+      }
+      const r = await viaRpc('set_employer_locations', { p_group_id: ctx.groupId, p_locations: next }, { saved: true, address: entry.address })
+      return r.isError ? r : { ...r, link: { href: '/shift/employers/portal/advisor', label: 'See the Commute Advisor page' } }
+    }
+    case 'remove_office': {
+      const next = (await offices(ctx)).filter((o) => o.id !== input.location_id).map(officePayload)
+      return viaRpc('set_employer_locations', { p_group_id: ctx.groupId, p_locations: next }, { removed: true })
+    }
+    case 'set_logo': {
+      const { error } = await ctx.user.from('groups').update({ logo_url: input.image_url }).eq('id', ctx.groupId)
+      return error ? { content: { saved: false, error: error.message }, isError: true } : { content: { saved: true }, link: { href: '/shift/employers/portal/settings', label: 'See it in Settings' } }
+    }
+    case 'remove_logo': {
+      const { error } = await ctx.user.from('groups').update({ logo_url: null }).eq('id', ctx.groupId)
+      return error ? { content: { removed: false, error: error.message }, isError: true } : { content: { removed: true } }
+    }
     case 'decide_join_request':
       return viaRpc('decide_group_join_request', { p_request_id: input.request_id, p_approve: !!input.approve }, { approved: !!input.approve })
     case 'remove_invitation':

@@ -43,6 +43,10 @@ export type ApprovalCard = {
   /** The pre-flight checklist and money, for launches. */
   check?: unknown
   confirmCents?: number
+  /** An image to look at before approving (a logo). */
+  image?: string
+  /** Where the looked-up place is, to check it. */
+  mapUrl?: string
   cta: string
   tone: 'primary' | 'danger'
 }
@@ -211,7 +215,7 @@ const BASE_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'open_page',
-    description: 'Give the admin a button to a portal page, for things you cannot do yourself (logo upload, the office address, billing details).',
+    description: 'Give the admin a button to a portal page, for things you cannot do yourself (billing details, the full team list, anything not covered by your tools).',
     input_schema: {
       type: 'object',
       properties: {
@@ -340,7 +344,7 @@ async function accountOverview(ctx: ToolCtx) {
     a.from('group_members').select('*', { count: 'exact', head: true }).eq('group_id', ctx.groupId),
     a.from('employer_invitations').select('status', { count: 'exact' }).eq('group_id', ctx.groupId).is('joined_at', null),
     a.from('employer_email_domains').select('domain').eq('group_id', ctx.groupId),
-    a.from('employer_locations').select('name, address, lat, lng, radius_m').eq('group_id', ctx.groupId).order('sort_order'),
+    a.from('employer_locations').select('id, name, address, sort_order').eq('group_id', ctx.groupId).order('sort_order'),
     a.from('reward_pools').select('balance_cents, held_cents, active').eq('owner_type', 'employer').eq('owner_group_id', ctx.groupId).maybeSingle(),
     a.from('competitions').select('id, name, starts_at, ends_at, counting_rules, employer_challenge_prizes(name, award_mode, min_threshold, winner_count, funded_from_pool, amount_cents, prize_description, published_at, cancelled_at, draw_status)').eq('group_id', ctx.groupId).order('starts_at', { ascending: false }).limit(12),
     a.from('employer_challenge_drafts').select('id, source, status, version, body, updated_at, updated_by_email, pending_launch, run:challenge_template_runs(starts_on, ends_on, template:challenge_templates(title, slug))').eq('group_id', ctx.groupId).eq('status', 'drafted').limit(20),
@@ -391,7 +395,8 @@ async function accountOverview(ctx: ToolCtx) {
     },
     employees: { joined: members.count ?? 0, invited_not_joined: invites.count ?? 0 },
     email_domains: ((domains.data ?? []) as { domain: string }[]).map((d) => d.domain),
-    offices: (locations.data ?? []) as unknown[],
+    offices: ((locations.data ?? []) as { id: string; name: string | null; address: string; sort_order: number }[]).map((o, i) => ({ location_id: o.id, name: o.name, address: o.address, main: i === 0 })),
+    has_logo: !!g.logo_url,
     rewards_balance: canRewards ? { available: money(p ? p.balance_cents - p.held_cents : 0), set_aside_for_live_prizes: money(p?.held_cents ?? 0) } : 'not on this plan',
     challenges,
     drafts: draftList,

@@ -144,6 +144,9 @@ export default function ChallengesPage() {
   // list employees read, so nothing shows until it launches. Year-plan
   // drafts are listed by the year plan.
   const [builderDrafts, setBuilderDrafts] = useState<ServerDraft[]>([])
+  // Challenges the setup assistant launched, and for whom (its conversations
+  // are private; the work it does says so on the page).
+  const [byAssistant, setByAssistant] = useState<Record<string, string>>({})
   const counts = {
     active: challenges.filter((c) => statusOf(c).label === 'Active').length,
     scheduled: challenges.filter((c) => statusOf(c).label === 'Scheduled').length,
@@ -179,8 +182,21 @@ export default function ChallengesPage() {
           } catch {}
         }
       }
-      const list = await loadBuilderDrafts(group.id)
-      if (!cancelled) setBuilderDrafts(list)
+      const [list, launched] = await Promise.all([
+        loadBuilderDrafts(group.id),
+        supabase
+          .from('employer_challenge_drafts')
+          .select('competition_id, created_by_email')
+          .eq('group_id', group.id)
+          .eq('source', 'assistant')
+          .eq('status', 'launched')
+          .not('competition_id', 'is', null),
+      ])
+      if (cancelled) return
+      setBuilderDrafts(list)
+      setByAssistant(
+        Object.fromEntries(((launched.data ?? []) as { competition_id: string; created_by_email: string | null }[]).map((r) => [r.competition_id, r.created_by_email ?? 'a teammate'])),
+      )
     })()
     return () => {
       cancelled = true
@@ -1087,7 +1103,11 @@ export default function ChallengesPage() {
                     )}
                     {by && (
                       <p className="mt-1 text-[12.5px] leading-[1.5] text-ink-muted">
-                        {d.source === 'import' ? 'Moved here from your browser' : `Last saved by ${by}`}
+                        {d.source === 'import'
+                          ? 'Moved here from your browser'
+                          : d.source === 'assistant'
+                            ? `Set up with the assistant by ${d.created_by_email ?? by}`
+                            : `Last saved by ${by}`}
                         {d.updated_at ? `, ${formatDate(d.updated_at)}` : ''}
                       </p>
                     )}
@@ -1251,6 +1271,9 @@ export default function ChallengesPage() {
                         </span>
                       )}
                     </div>
+                    {byAssistant[c.id] && (
+                      <p className="mt-1.5 text-[12.5px] text-ink-muted">Set up with the assistant by {byAssistant[c.id]}</p>
+                    )}
                     {c.is_flagship && (
                       <p className="mt-1.5 text-[12.5px] text-ink-muted">
                         A citywide challenge run by Green Streets. Your team takes part automatically; you can&apos;t edit it here.

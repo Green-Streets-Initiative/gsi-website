@@ -9,7 +9,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowUp, Check, ExternalLink, Loader2, Maximize2, MessageSquarePlus, Minimize2, X } from 'lucide-react'
+import { ArrowLeft, ArrowUp, Check, ExternalLink, History, Loader2, Maximize2, MapPin, MessageSquarePlus, Minimize2, Paperclip, Trash2, X } from 'lucide-react'
+import { useConfirm } from '@/components/employer/ConfirmDialog'
 import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
 
@@ -24,10 +25,12 @@ export function openAssistant(prompt?: string) {
 const STARTERS = ['Help me set up my first challenge', 'What should I do next?', 'How do rewards work?']
 const CHANGES = new Set(['Saving the draft', 'Launching', 'Adding funds', 'Saving the changes', 'Removing the draft', 'Sending invitations', 'Updating email domains', 'Updating who can join', 'Updating the year plan'])
 
-type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger' }
+type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger'; image?: string; mapUrl?: string }
+type ThreadSummary = { id: string; title: string; updated_at: string; waiting: boolean }
 type LinkT = { href: string; label: string; external?: boolean }
 type Item =
   | { kind: 'user'; text: string }
+  | { kind: 'user_image'; url: string }
   | { kind: 'assistant'; text: string }
   | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: LinkT; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
@@ -121,6 +124,11 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
   const [busy, setBusy] = useState(false)
   const [draft, setDraft] = useState('')
   const [fresh, setFresh] = useState(false)
+  const [view, setView] = useState<'chat' | 'history'>('chat')
+  const [threads, setThreads] = useState<ThreadSummary[] | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const confirm = useConfirm()
   const scroller = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLTextAreaElement>(null)
 
@@ -200,7 +208,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
   }, [items, busy])
 
   const send = useCallback(
-    async (payload: { message?: string; decision?: { tool_use_id: string; approve: boolean } }) => {
+    async (payload: { message?: string; decision?: { tool_use_id: string; approve: boolean }; attachments?: { url: string; name: string }[] }) => {
       if (busy) return
       const h = await authHeader()
       if (!h) {
@@ -211,7 +219,9 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
       setItems((p) => {
         // Answered cards and choices leave the list; the reload restores the record.
         const kept = p.filter((i) => i.kind !== 'choices' && (i.kind !== 'approval' || (payload.decision && i.tool_use_id !== payload.decision.tool_use_id)))
-        return payload.message ? [...kept, { kind: 'user', text: payload.message }] : kept
+        const shown: Item[] = [...(payload.attachments ?? []).map((a) => ({ kind: 'user_image' as const, url: a.url }))]
+        if (payload.message) shown.push({ kind: 'user', text: payload.message })
+        return [...kept, ...shown]
       })
       let changed = false
       let currentThread = threadId
@@ -284,6 +294,69 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, seed])
 
+  const openHistory = async () => {
+    setView('history')
+    setThreads(null)
+    const h = await authHeader()
+    if (!h) return
+    const res = await fetch(`/api/employer/assistant?${new URLSearchParams({ group_id: groupId, list: '1' })}`, { headers: h })
+    const j = (await res.json().catch(() => ({}))) as { threads?: ThreadSummary[] }
+    setThreads(j.threads ?? [])
+  }
+
+  const openThread = async (id: string) => {
+    setFresh(false)
+    setView('chat')
+    setLoaded(false)
+    await load(id)
+  }
+
+  const deleteThread = async (t: ThreadSummary) => {
+    const ok = await confirm({
+      title: 'Delete this conversation?',
+      body: `"${t.title}" goes for good. Anything it set up (drafts, challenges, invitations) stays.`,
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    })
+    if (!ok) return
+    const h = await authHeader()
+    if (!h) return
+    await fetch(`/api/employer/assistant?${new URLSearchParams({ group_id: groupId, thread_id: t.id })}`, { method: 'DELETE', headers: h })
+    setThreads((p) => (p ?? []).filter((x) => x.id !== t.id))
+    if (t.id === threadId) {
+      setThreadId(null)
+      setItems([])
+      setFresh(true)
+    }
+  }
+
+  // An image for the assistant (a logo): uploaded to the logo bucket, then
+  // sent with whatever is in the box. Nothing changes until the admin
+  // approves it on a card.
+  const attach = async (file: File) => {
+    const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' } as Record<string, string>)[file.type]
+    if (!ext) {
+      setItems((p) => [...p, { kind: 'error', text: 'Attach a PNG, JPG or WebP image.' }])
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setItems((p) => [...p, { kind: 'error', text: 'That image is over 2 MB. Try a smaller version.' }])
+      return
+    }
+    setUploading(true)
+    const path = `logos/assistant-${Date.now()}-${groupId.slice(0, 8)}.${ext}`
+    const { error } = await supabase.storage.from('employer-logos').upload(path, file, { contentType: file.type })
+    setUploading(false)
+    if (error) {
+      setItems((p) => [...p, { kind: 'error', text: "That image didn't upload. Try again." }])
+      return
+    }
+    const url = supabase.storage.from('employer-logos').getPublicUrl(path).data.publicUrl
+    const message = draft.trim()
+    setDraft('')
+    void send({ attachments: [{ url, name: file.name }], message: message || undefined })
+  }
+
   const submit = () => {
     const t = draft.trim()
     if (!t) return
@@ -320,6 +393,16 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
         <div className="flex items-center gap-1">
           <button
             type="button"
+            title="Your past conversations"
+            aria-label="Your past conversations"
+            disabled={busy}
+            onClick={() => (view === 'history' ? setView('chat') : void openHistory())}
+            className={`grid h-9 w-9 place-items-center rounded-lg hover:bg-surface-2 disabled:opacity-50 ${view === 'history' ? 'bg-surface-2 text-ink' : 'text-ink-muted'}`}
+          >
+            <History size={17} strokeWidth={1.75} />
+          </button>
+          <button
+            type="button"
             title={wide ? 'Back to the side' : 'Expand'}
             aria-label={wide ? 'Put the assistant back at the side' : 'Expand the assistant'}
             onClick={() => setWide((w) => !w)}
@@ -335,6 +418,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
             onClick={() => {
               setFresh(true)
               setItems([])
+              setView('chat')
             }}
             className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted hover:bg-surface-2 disabled:opacity-50"
           >
@@ -346,7 +430,46 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
         </div>
       </div>
 
-      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 [&>*]:mx-auto [&>*]:max-w-[720px]" aria-live="polite">
+      {view === 'history' && (
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 [&>*]:mx-auto [&>*]:max-w-[720px]">
+          <div>
+            <button type="button" onClick={() => setView('chat')} className="mb-3 flex items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline">
+              <ArrowLeft size={14} /> Back to the conversation
+            </button>
+            <h3 className="text-[14px] font-bold text-ink">Your conversations</h3>
+            <p className="mb-3 text-[12.5px] text-ink-muted">Only you can see these. Anything they set up is on its page for your whole team.</p>
+            {threads === null ? (
+              <Loader2 size={16} className="animate-spin text-ink-muted" aria-label="Loading" />
+            ) : threads.length === 0 ? (
+              <p className="text-[13.5px] text-ink-muted">No conversations yet.</p>
+            ) : (
+              <ul className="divide-y divide-line-2 rounded-xl border border-line">
+                {threads.map((t) => (
+                  <li key={t.id} className="flex items-center gap-2 px-3 py-2.5">
+                    <button type="button" onClick={() => void openThread(t.id)} className="min-w-0 flex-1 text-left">
+                      <span className={`block truncate text-[13.5px] font-semibold ${t.id === threadId ? 'text-accent' : 'text-ink'}`}>{t.title}</span>
+                      <span className="block text-[12px] text-ink-muted">
+                        {new Date(t.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                        {t.waiting ? ' · waiting for your OK' : ''}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Delete "${t.title}"`}
+                      onClick={() => void deleteThread(t)}
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-muted hover:bg-surface-2 hover:text-ep-danger"
+                    >
+                      <Trash2 size={15} strokeWidth={1.75} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div ref={scroller} className={`min-h-0 flex-1 overflow-y-auto px-4 py-4 [&>*]:mx-auto [&>*]:max-w-[720px] ${view === 'history' ? 'hidden' : ''}`} aria-live="polite">
         {!loaded && <Loader2 size={18} className="mx-auto mt-8 animate-spin text-ink-muted" aria-label="Loading" />}
         {empty && (
           <div className="mt-2">
@@ -376,6 +499,11 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                 <div key={i} className="ml-8 self-end rounded-2xl rounded-br-md bg-accent px-3.5 py-2 text-[14px] leading-[1.5] text-white">
                   {it.text}
                 </div>
+              )
+            if (it.kind === 'user_image')
+              return (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={i} src={it.url} alt="Attached image" className="ml-8 max-h-32 self-end rounded-xl border border-line bg-white object-contain p-1.5" />
               )
             if (it.kind === 'assistant')
               return (
@@ -423,6 +551,10 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
               return (
                 <div key={i} className="rounded-xl border border-accent/40 bg-surface p-4 shadow-sm" role="group" aria-label={it.card.title}>
                   <div className="text-[14.5px] font-bold text-ink">{it.card.title}</div>
+                  {it.card.image && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={it.card.image} alt="The image to use" className="mt-2.5 max-h-28 rounded-lg border border-line bg-white object-contain p-2" />
+                  )}
                   <ul className="mt-2 space-y-1.5 text-[13.5px] leading-[1.5] text-ink">
                     {it.card.lines.map((l) => (
                       <li key={l} className="flex gap-2">
@@ -431,6 +563,11 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                       </li>
                     ))}
                   </ul>
+                  {it.card.mapUrl && (
+                    <a href={it.card.mapUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline">
+                      <MapPin size={14} /> Check it on the map
+                    </a>
+                  )}
                   <div className="mt-3.5 flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -466,13 +603,34 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
       </div>
 
       <form
-        className="border-t border-line p-3 [&>*]:mx-auto [&>*]:max-w-[720px]"
+        className={`border-t border-line p-3 [&>*]:mx-auto [&>*]:max-w-[720px] ${view === 'history' ? 'hidden' : ''}`}
         onSubmit={(e) => {
           e.preventDefault()
           submit()
         }}
       >
         <div className="flex items-end gap-2 rounded-xl border border-line bg-surface px-3 py-2 focus-within:border-accent">
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              e.target.value = ''
+              if (f) void attach(f)
+            }}
+          />
+          <button
+            type="button"
+            aria-label="Attach an image, like your logo"
+            title="Attach an image, like your logo"
+            disabled={busy || uploading}
+            onClick={() => fileInput.current?.click()}
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-muted hover:bg-surface-2 disabled:opacity-40"
+          >
+            {uploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} strokeWidth={1.75} />}
+          </button>
           <textarea
             ref={input}
             rows={3}
@@ -497,6 +655,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
             <ArrowUp size={16} />
           </button>
         </div>
+        <p className="mt-1.5 text-center text-[11.5px] text-ink-muted">Private to you. GSI may review conversations to improve the assistant.</p>
       </form>
     </aside>
   )
