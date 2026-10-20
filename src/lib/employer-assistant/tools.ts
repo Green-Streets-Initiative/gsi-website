@@ -151,7 +151,7 @@ const BASE_TOOLS: Anthropic.Tool[] = [
   {
     name: 'fund_and_launch',
     description:
-      "When the only thing stopping a launch is the rewards balance: add exactly the missing amount ($25 at least) and launch. Charges the card on file in one step if there is one; otherwise gives the admin Stripe's secure page (card or bank transfer). Needs approval. Admins only.",
+      "When the only thing stopping a launch is the rewards balance: give the admin a button to Stripe's secure page for exactly the missing amount ($25 at least). They enter and confirm the payment there themselves (card or bank transfer); the challenge launches when the money arrives. You never charge anything. Admins only.",
     input_schema: { type: 'object', properties: { draft_id: { type: 'string' } }, required: ['draft_id'] },
   },
   {
@@ -270,7 +270,7 @@ export const ACTIVITY: Record<string, string> = {
   save_challenge_draft: 'Saving the draft',
   check_challenge: 'Running the pre-flight check',
   launch_challenge: 'Launching',
-  fund_and_launch: 'Adding funds',
+  fund_and_launch: 'Getting the payment page',
   save_challenge_changes: 'Saving the changes',
   discard_draft: 'Removing the draft',
   invite_employees: 'Sending invitations',
@@ -569,23 +569,18 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         lines.push('Your team sees it in the Shift app right away.')
         return { card: { title: `Launch "${b.name}"?`, lines, check: c, confirmCents: c.money.set_aside_now_cents, cta: 'Launch', tone: 'primary' } }
       }
-      const card = await edgeTopUp(ctx, { draft_id: d.id, mode: 'card_on_file' })
-      const onFile = card.card as { brand: string; last4: string } | null | undefined
-      const brand = onFile ? onFile.brand.charAt(0).toUpperCase() + onFile.brand.slice(1) : ''
+      // The assistant never moves money (Keith 2026-10-20): it hands the admin
+      // Stripe's page for the exact amount, and they pay there themselves.
       lines.push(`Your balance has ${money(c.money.available_cents)} available; this needs ${money(c.money.needed_cents)}.`)
-      lines.push(
-        onFile
-          ? `Charges ${money(c.money.topup_cents)} to the ${brand} ending ${onFile.last4} and launches right away.`
-          : `Opens Stripe's secure page for ${money(c.money.topup_cents)} (card or bank transfer). It launches as soon as the money arrives.`,
-      )
+      lines.push(`Opens Stripe's secure page for ${money(c.money.topup_cents)}. You enter and confirm the payment there (card or bank transfer); the challenge launches as soon as the money arrives.`)
       if (c.money.topup_cents > c.money.short_by_cents) lines.push(`Top-ups start at $25, so ${money(c.money.topup_cents - c.money.short_by_cents)} extra stays in your balance.`)
       return {
         card: {
-          title: onFile ? `Charge ${money(c.money.topup_cents)} and launch?` : `Add ${money(c.money.topup_cents)} and launch?`,
+          title: `Get the payment page for ${money(c.money.topup_cents)}?`,
           lines,
           check: c,
           confirmCents: c.money.set_aside_now_cents,
-          cta: onFile ? `Charge ${money(c.money.topup_cents)} and launch` : `Open the payment page`,
+          cta: 'Get the payment page',
           tone: 'primary',
         },
       }
@@ -695,12 +690,6 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
         return { content: { launched: true, ...data }, link: { href: '/shift/employers/portal/challenges', label: 'See it on the Challenges page' } }
       }
       case 'fund_and_launch': {
-        const onCard = card.cta.startsWith('Charge')
-        if (onCard) {
-          const r = await edgeTopUp(ctx, { draft_id: input.draft_id, confirm_cents: card.confirmCents ?? 0, mode: 'saved_card' })
-          if (r.launched) return { content: { launched: true, charged: r.charged_cents, competition_id: r.competition_id }, link: { href: '/shift/employers/portal/challenges', label: 'See it on the Challenges page' } }
-          return { content: { launched: false, ...r }, isError: true }
-        }
         const r = await edgeTopUp(ctx, { draft_id: input.draft_id, confirm_cents: card.confirmCents ?? 0, mode: 'checkout' })
         if (typeof r.url === 'string') {
           return {

@@ -23,7 +23,7 @@ export function openAssistant(prompt?: string) {
 }
 
 const STARTERS = ['Help me set up my first challenge', 'What should I do next?', 'How do rewards work?']
-const CHANGES = new Set(['Saving the draft', 'Launching', 'Adding funds', 'Saving the changes', 'Removing the draft', 'Sending invitations', 'Updating email domains', 'Updating who can join', 'Updating the year plan'])
+const CHANGES = new Set(['Saving the draft', 'Launching', 'Saving the changes', 'Removing the draft', 'Sending invitations', 'Updating email domains', 'Updating who can join', 'Updating the year plan'])
 
 type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger'; image?: string; mapUrl?: string }
 type ThreadSummary = { id: string; title: string; updated_at: string; waiting: boolean }

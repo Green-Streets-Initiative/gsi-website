@@ -31,6 +31,15 @@ const BENEFIT_FIELDS: Record<string, string> = {
 
 export const ADMIN_TOOLS: Anthropic.Tool[] = [
   {
+    name: 'guide_top_up',
+    description:
+      "Help an admin add money to the rewards balance outside of launching a challenge. You never add money yourself: this gives them a button to the Billing page with the amount filled in, and they choose and pay there. Explain what the money is for first.",
+    input_schema: {
+      type: 'object',
+      properties: { amount_dollars: { type: ['integer', 'null'], description: 'A suggested amount, $25 to $10,000, from what their rewards need' } },
+    },
+  },
+  {
     name: 'set_office',
     description:
       'Add an office (or change the main one) from an address in plain words. It is looked up on the map, and the approval card shows exactly what was found. The main office (first) is where the Commute Advisor opens and what office-only challenges use. Needs approval.',
@@ -244,6 +253,7 @@ export const ADMIN_ACTIVITY: Record<string, string> = {
   remove_office: 'Removing the office',
   set_logo: 'Setting your logo',
   remove_logo: 'Removing your logo',
+  guide_top_up: 'Getting the Billing page ready',
   get_plans: 'Looking at the plans',
   open_plan_change: 'Opening plan changes',
   get_employees: 'Looking at your employees',
@@ -345,6 +355,26 @@ async function joinRequests(ctx: ToolCtx): Promise<Record<string, unknown>[]> {
 
 export async function runAdminRead(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult | null> {
   switch (name) {
+    case 'guide_top_up': {
+      if (ctx.role !== 'admin' && ctx.role !== 'gsi') {
+        return { content: { error: 'only_admins', message: 'Only an admin can add money; suggest they ask one.' }, isError: true }
+      }
+      const n = Number(input.amount_dollars)
+      const amount = Number.isFinite(n) && n >= 25 && n <= 10000 ? Math.round(n) : null
+      const { data: pool } = await ctx.admin.from('reward_pools').select('balance_cents, held_cents').eq('owner_type', 'employer').eq('owner_group_id', ctx.groupId).maybeSingle()
+      const p = pool as { balance_cents: number; held_cents: number } | null
+      return {
+        content: {
+          shown: true,
+          available_now: money(p ? p.balance_cents - p.held_cents : 0),
+          set_aside_for_live_rewards: money(p?.held_cents ?? 0),
+          steps:
+            "On the Billing page: check the amount (filled in), click 'Add funds', and pay on Stripe's secure page by card or bank transfer. A card shows up right away; a bank payment takes 3 to 5 business days. $25 to $10,000 per top-up.",
+          note: 'Money is only spent when someone wins; unused money set aside for a goal reward comes back when the challenge ends.',
+        },
+        link: { href: `/shift/employers/portal/billing${amount ? `?amount=${amount}` : ''}`, label: amount ? `Add $${amount.toLocaleString('en-US')} on the Billing page` : 'Add funds on the Billing page' },
+      }
+    }
     case 'get_plans': {
       const { data: g } = await ctx.admin.from('groups').select('tier, access_ends_at, status, stripe_subscription_id').eq('id', ctx.groupId).maybeSingle()
       const row = g as { tier?: string; access_ends_at?: string | null; status?: string; stripe_subscription_id?: string | null } | null

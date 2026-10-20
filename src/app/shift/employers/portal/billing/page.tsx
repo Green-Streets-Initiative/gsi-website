@@ -57,6 +57,26 @@ export default function BillingPage() {
   // Back from checkout: ?topup=success|canceled. Read it once, drop it from
   // the address bar so a reload doesn't repeat the banner, and pull the
   // fresh balance (the webhook credits it within seconds).
+  // ?amount=<dollars> (the assistant's "Add funds" button): fill in the
+  // amount and put the cursor there. The admin still chooses and pays.
+  const amountParam = searchParams.get('amount')
+  useEffect(() => {
+    const n = Number(amountParam)
+    if (!amountParam || !Number.isFinite(n) || n < 25 || n > 10000) return
+    setTopUpAmount(String(Math.round(n)))
+    window.history.replaceState({}, '', window.location.pathname)
+    // The form appears once the portal has loaded: wait for it (up to 8s).
+    let tries = 0
+    const t = setInterval(() => {
+      const el = document.getElementById('topup-amount') as HTMLInputElement | null
+      if (el || ++tries > 40) clearInterval(t)
+      if (!el) return
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.focus()
+    }, 200)
+    return () => clearInterval(t)
+  }, [amountParam])
+
   const topupParam = searchParams.get('topup')
   useEffect(() => {
     if (topupParam !== 'success' && topupParam !== 'canceled') return
@@ -282,7 +302,7 @@ export default function BillingPage() {
                   </div>
                   {topUpError && <p className="mt-2 text-[13px] font-semibold text-ep-danger">{topUpError}</p>}
                   <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-muted">
-                    You pay by card on a secure checkout page. $25 minimum, $10,000 maximum at a time. A prize sets
+                    You pay by card or bank transfer on Stripe's secure page. $25 minimum, $10,000 maximum at a time. A prize sets
                     aside its full cost from this balance when it goes live; money for spots nobody wins comes back
                     when the challenge ends.
                   </p>
