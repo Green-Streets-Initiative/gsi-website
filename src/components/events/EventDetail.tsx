@@ -213,6 +213,9 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
   // Register / Event info clicks leave the site, so without this an event page
   // had no measurable outcome at all. `event_outbound_click` counts as an
   // activation in scripts/seo/pull-posthog.mjs.
+  // A sold-out listing stays up because organizers' pages take a notify-me
+  // list and spots reopen; the button says what the click will get.
+  const registerLabel = event.tags.includes('sold_out') ? 'Join the waitlist' : 'Register'
   const trackOutbound = (kind: 'register' | 'info', surface: 'details' | 'phone_bar') => {
     const props = eventProps({ kind, surface })
     posthog.capture('event_outbound_click', props)
@@ -533,7 +536,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   onClick={() => trackOutbound('register', 'details')}
                 >
                   <Ticket size={15} />
-                  Register
+                  {registerLabel}
                 </a>
               )}
             </div>
@@ -577,7 +580,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             onClick={() => trackOutbound('register', 'phone_bar')}
           >
             <Ticket size={16} />
-            Register
+            {registerLabel}
           </a>
         ) : event.event_url ? (
           <a
