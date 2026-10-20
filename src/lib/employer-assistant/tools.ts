@@ -159,7 +159,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'discard_draft',
-    description: 'Delete a draft (a year-plan suggestion goes back to being a suggestion). Needs approval.',
+    description: 'Delete a draft, or skip a year-plan suggestion (it won\'t come back; the rest of the plan is unchanged). Needs approval.',
     input_schema: { type: 'object', properties: { draft_id: { type: 'string' } }, required: ['draft_id'] },
   },
   {
@@ -281,7 +281,8 @@ type Body = Record<string, unknown> & { name?: string; starts_on?: string; ends_
 function prizeLine(p: Record<string, unknown>): string {
   const n = Number(p.winner_count ?? 0)
   const goal = p.min_threshold != null ? Number(p.min_threshold) : null
-  const reward = p.funded_from_pool && p.amount_cents ? `a ${money(Number(p.amount_cents))} gift card` : (p.prize_description as string) || 'a prize you hand out'
+  const own = String(p.prize_description ?? '').trim()
+  const reward = p.funded_from_pool && p.amount_cents ? `a ${money(Number(p.amount_cents))} gift card` : own ? own.replace(/^(A|An|The) /, (m) => m.toLowerCase()) : 'a prize you hand out'
   if (p.award_mode === 'guaranteed') return `The first ${n} to log ${goal ?? '?'} trips each win ${reward}`
   if (p.award_mode === 'merit') return `The top ${n} win ${reward}`
   return `${n} ${n === 1 ? 'winner' : 'winners'} drawn from everyone who logs ${goal ?? '?'} trips, each wins ${reward}`
@@ -325,7 +326,7 @@ async function draftRow(ctx: ToolCtx, draftId: string) {
 async function accountOverview(ctx: ToolCtx) {
   const a = ctx.admin
   const today = etToday()
-  const horizon = new Date(Date.now() + 150 * DAY).toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+  const horizon = new Date(Date.now() + 400 * DAY).toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
   const [group, members, invites, domains, locations, pool, comps, drafts, yp, obs, wrd, runs] = await Promise.all([
     a.from('groups').select('name, tier, status, access_ends_at, admin_name, admin_phone, website_url, logo_url, invite_code, onboarding, employer_benefits, join_policy').eq('id', ctx.groupId).maybeSingle(),
     a.from('group_members').select('*', { count: 'exact', head: true }).eq('group_id', ctx.groupId),
@@ -336,8 +337,8 @@ async function accountOverview(ctx: ToolCtx) {
     a.from('competitions').select('id, name, starts_at, ends_at, counting_rules, employer_challenge_prizes(name, award_mode, min_threshold, winner_count, funded_from_pool, amount_cents, prize_description, published_at, cancelled_at, draw_status)').eq('group_id', ctx.groupId).order('starts_at', { ascending: false }).limit(12),
     a.from('employer_challenge_drafts').select('id, source, status, version, body, updated_at, updated_by_email, pending_launch, run:challenge_template_runs(starts_on, ends_on, template:challenge_templates(title, slug))').eq('group_id', ctx.groupId).eq('status', 'drafted').limit(20),
     a.from('employer_year_plans').select('enabled').eq('group_id', ctx.groupId).maybeSingle(),
-    a.from('challenge_observance_dates').select('on_date, observance:challenge_observances!inner(name, active)').eq('observance.active', true).gte('on_date', today).lte('on_date', horizon).order('on_date').limit(12),
-    a.from('competitions').select('name, starts_at').eq('series', 'walk_ride_day').eq('is_public', true).gte('starts_at', new Date().toISOString()).order('starts_at').limit(3),
+    a.from('challenge_observance_dates').select('on_date, observance:challenge_observances!inner(name, active)').eq('observance.active', true).gte('on_date', today).lte('on_date', horizon).order('on_date').limit(30),
+    a.from('competitions').select('name, starts_at').eq('series', 'walk_ride_day').eq('is_public', true).gte('starts_at', new Date().toISOString()).order('starts_at').limit(12),
     a.from('challenge_template_runs').select('starts_on, ends_on, template:challenge_templates!inner(title, slug, active)').eq('template.active', true).gte('starts_on', today).lte('starts_on', horizon).order('starts_on').limit(8),
   ])
   const g = group.data as Record<string, unknown> | null
@@ -581,7 +582,8 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
       const old = (before as { challenge?: Body }).challenge
       const lines: string[] = []
       if (old && old.name !== body.name) lines.push(`Name: "${old.name}" → "${body.name}"`)
-      if (old && (old.starts_on !== body.starts_on || old.ends_on !== body.ends_on)) lines.push(`Dates: ${old.starts_on} to ${old.ends_on} → ${body.starts_on} to ${body.ends_on}`)
+      if (old && (old.starts_on !== body.starts_on || old.ends_on !== body.ends_on))
+        lines.push(`Dates: ${shortDate(old.starts_on!)} to ${shortDate(old.ends_on!)} → ${shortDate(body.starts_on!)} to ${shortDate(body.ends_on!)}`)
       if (old && JSON.stringify(old.counting_rules ?? null) !== JSON.stringify(body.counting_rules ?? null)) lines.push('Which trips count changes.')
       for (const p of body.prizes ?? []) lines.push(prizeLine(p))
       if (c.money.set_aside_now_cents > 0) lines.push(`Sets aside ${money(c.money.set_aside_now_cents)} more from your rewards balance.`)
@@ -591,6 +593,18 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
     case 'discard_draft': {
       const d = await draftRow(ctx, String(input.draft_id ?? ''))
       if (!d) return { result: { content: { error: 'draft not found' }, isError: true } }
+      if (d.source === 'year_plan') {
+        const { data: run } = await ctx.admin.from('employer_challenge_drafts').select('run:challenge_template_runs(starts_on, ends_on, template:challenge_templates(title))').eq('id', d.id).maybeSingle()
+        const r = (run as unknown as { run?: { starts_on: string; ends_on: string; template?: { title: string } } } | null)?.run
+        return {
+          card: {
+            title: `Skip "${d.body?.name ?? r?.template?.title ?? 'this season'}"${r ? ` (${shortDate(r.starts_on)} to ${shortDate(r.ends_on)})` : ''}?`,
+            lines: ['It was never launched, so nothing changes for your team. The rest of the year plan stays as it is.'],
+            cta: 'Skip it',
+            tone: 'danger',
+          },
+        }
+      }
       return { card: { title: `Discard "${d.body?.name ?? 'this draft'}"?`, lines: ['It was never launched, so nothing changes for your team.'], cta: 'Discard', tone: 'danger' } }
     }
     case 'invite_employees': {
@@ -644,7 +658,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
       return {
         card: {
           title: 'Send this question to the GSI team?',
-          lines: [`"${String(input.question ?? '').slice(0, 600)}"`, `They reply by email to ${ctx.email}, usually within a business day.`],
+          lines: [`"${String(input.question ?? '').slice(0, 600)}"`, `The GSI team replies by email to ${ctx.email}.`],
           cta: 'Send it',
           tone: 'primary',
         },
@@ -689,6 +703,12 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
         return { content: { saved: true, ...data } }
       }
       case 'discard_draft': {
+        const d = await draftRow(ctx, String(input.draft_id ?? ''))
+        if (d?.source === 'year_plan') {
+          const { data, error } = await rpc(ctx, 'skip_employer_challenge_draft', { p_draft_id: input.draft_id })
+          if (error || (data && data.ok === false)) return { content: { skipped: false, ...(data ?? {}), error }, isError: true }
+          return { content: { skipped: true } }
+        }
         const { data, error } = await rpc(ctx, 'discard_employer_challenge_draft', { p_draft_id: input.draft_id })
         if (error || !data?.ok) return { content: { discarded: false, ...(data ?? {}), error }, isError: true }
         return { content: { discarded: true } }
