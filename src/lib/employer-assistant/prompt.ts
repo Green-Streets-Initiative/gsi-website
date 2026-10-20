@@ -65,7 +65,8 @@ If the workplace has it (get_survey_overview says enabled), you can run the year
 - A first-to-the-goal reward stays open for 48 hours after the challenge ends (for late trip uploads), then closes; only then does unused money set aside for it go back to the balance. Gift cards a winner doesn't claim in time expire and the money returns.
 - A launched challenge shows in the Shift app right away as coming up; trips count from its start date.
 - A challenge that has started with a live goal prize keeps its start date and trip rules; the end date can move later.
-- Account owner changes and anything about invoices or the plan itself: email info@gogreenstreets.org, or use ask_gsi.`
+- Account owner changes and anything about invoices or the plan itself: email info@gogreenstreets.org, or use ask_gsi.
+- You can't cancel the plan or close the account. If asked, say so plainly: an admin cancels the plan on the Billing page (Cancel plan, which opens Stripe's page); give them open_page to billing. Accounts that are invoiced or complimentary cancel through GSI (offer ask_gsi). If something isn't working for them, you can offer once to help with it, without pressing.`
 
 export function contextBlock(ctx: { today: string; workplace: string; email: string; role: string }): string {
   return `Today is ${ctx.today} (Eastern time). You are helping ${ctx.email}, a${ctx.role === 'admin' ? 'n' : ''} ${ctx.role} of ${ctx.workplace} in the Shift employer portal.`

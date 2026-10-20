@@ -300,12 +300,15 @@ async function cleanup(runStart, yearPlanBefore) {
     await admin.from('employer_assistant_threads').delete().in('id', threads)
   }
   const testEmails = Object.values(LOGINS)
-  const { data: drafts } = await admin
+  const { data: drafts, error: dErr } = await admin
     .from('employer_challenge_drafts')
     .select('id, body, source, created_by_email')
     .eq('group_id', GROUP_ID)
-    .gte('created_at', runStart)
-  const ours = (drafts ?? []).filter((d) => created.drafts.has(d.id) || (d.source === 'assistant' && testEmails.includes(d.created_by_email)))
+    .gte('drafted_at', runStart)
+  if (dErr) notes.push(`WARNING: could not list drafts to clean up: ${dErr.message}`)
+  const ours = (drafts ?? []).filter(
+    (d) => created.drafts.has(d.id) || String(d.body?.name ?? '').startsWith('EVAL') || (d.source === 'assistant' && testEmails.includes(d.created_by_email)),
+  )
   if (ours.length) await admin.from('employer_challenge_drafts').delete().in('id', ours.map((d) => d.id))
   notes.push(`removed ${threads.length} conversations and ${ours.length} drafts`)
   const { data: surveys } = await admin.from('employer_surveys').select('id').eq('group_id', GROUP_ID).ilike('title', 'EVAL%')
