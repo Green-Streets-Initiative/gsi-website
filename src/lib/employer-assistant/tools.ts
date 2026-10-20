@@ -234,11 +234,11 @@ const BASE_TOOLS: Anthropic.Tool[] = [
   {
     name: 'offer_choices',
     description:
-      'Ask the admin a question with 2 to 5 short answers they can tap. `message` is what they read (a sentence of context, then the question); it is shown as your reply, so do not repeat it elsewhere. Put your recommendation first in options. Then end your turn without further text.',
+      'Ask the admin a question with 2 to 5 short answers they can tap. `message` is your whole reply for this turn: anything you wrote before calling this is not shown, so if you are answering a question or reporting figures, put the answer in `message` first, then the question. Put your recommendation first in options. Then end your turn without further text.',
     input_schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', description: 'Your message to the admin, ending with the question.' },
+        message: { type: 'string', description: 'Your complete reply to the admin (any answer or figures first), ending with the question.' },
         options: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 5 },
       },
       required: ['message', 'options'],

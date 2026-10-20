@@ -271,7 +271,7 @@ async function runScenario(sc) {
 async function judge(sc, transcript, toolData) {
   const msg = await anthropic.messages.create({
     model: JUDGE_MODEL,
-    max_tokens: 800,
+    max_tokens: 4000,
     messages: [
       {
         role: 'user',
@@ -296,7 +296,8 @@ Judge only against the rubric and the rules above; don't penalize style that's f
       },
     ],
   })
-  const text = msg.content.find((b) => b.type === 'text')?.text ?? ''
+  const text = msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
+  if (!text) return { pass: false, notes: `grader gave no answer (stop: ${msg.stop_reason})` }
   try {
     return JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1))
   } catch {
