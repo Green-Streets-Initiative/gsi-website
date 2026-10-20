@@ -56,9 +56,17 @@ export interface RoamLegTransit {
   boarding_tip: string | null
 }
 
+export interface RoamComfortSegment {
+  label: string | null
+  rating: string
+  distance_mi: number
+}
+
 export interface RoamLegBike {
   comfort_rating: string | null
   comfort_summary: string | null
+  /** Named stretches in order, with their comfort rating (protected | bike_lane | shared_road). */
+  comfort_segments: RoamComfortSegment[] | null
   elevation_summary: string | null
   bike_parking_note: string | null
 }
@@ -205,7 +213,7 @@ export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
     supabase
       .from('roam_legs')
       .select(
-        'id, sequence_order, leg_type, estimated_minutes, distance_miles, narrative_snippet, from_checkpoint_id, to_checkpoint_id, roam_leg_transit(route_name, board_stop_name, alight_stop_name, direction, num_stops, fare_note, transfer_note, boarding_tip), roam_leg_bike(comfort_rating, comfort_summary, elevation_summary, bike_parking_note), roam_leg_walk(terrain_note, waypoint_note)',
+        'id, sequence_order, leg_type, estimated_minutes, distance_miles, narrative_snippet, from_checkpoint_id, to_checkpoint_id, roam_leg_transit(route_name, board_stop_name, alight_stop_name, direction, num_stops, fare_note, transfer_note, boarding_tip), roam_leg_bike(comfort_rating, comfort_summary, comfort_segments, elevation_summary, bike_parking_note), roam_leg_walk(terrain_note, waypoint_note)',
       )
       .eq('roam_id', id)
       .order('sequence_order', { ascending: true }),
@@ -264,6 +272,7 @@ export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
       bike: hasContent(b) ? {
         comfort_rating: (b!.comfort_rating as string) ?? null,
         comfort_summary: (b!.comfort_summary as string) ?? null,
+        comfort_segments: Array.isArray(b!.comfort_segments) ? (b!.comfort_segments as RoamComfortSegment[]) : null,
         elevation_summary: (b!.elevation_summary as string) ?? null,
         bike_parking_note: (b!.bike_parking_note as string) ?? null,
       } : null,
@@ -461,4 +470,89 @@ export async function getUpcomingRoamEvents(): Promise<Map<string, UpcomingRoamE
     byRoam.set(roamId, { roam_id: roamId, title: r.title as string, event_date: date, event_time: r.event_time ?? null })
   }
   return byRoam
+}
+
+export interface TrailDetour {
+  label: string | null
+  steps: string[]
+  /** [lat, lng][] turns, in order */
+  waypoints: [number, number][] | null
+  /** [lng, lat][] */
+  geometry: [number, number][] | null
+  note: string | null
+}
+
+export interface RoamDisruption {
+  id: string
+  trail_id: string
+  trail_name: string
+  /** route = a trail this roam uses; access = one it connects to. */
+  affects: 'route' | 'access'
+  title: string
+  summary: string
+  detours: TrailDetour[] | null
+  closed_geometry: [number, number][] | null
+  source_name: string
+  source_url: string
+  starts_on: string | null
+  ends_on: string | null
+  ends_note: string | null
+  checked_on: string
+}
+
+export interface RoamTrailRef {
+  id: string
+  name: string
+  relation: 'uses' | 'connects'
+  miles: number | null
+  is_tour: boolean
+  closed: boolean
+}
+
+/** Trails this roam uses/connects to and live closures on them (Shift 01263). */
+export async function getRoamTrailInfo(roamId: string): Promise<{ trails: RoamTrailRef[]; disruptions: RoamDisruption[] }> {
+  const supabase = createServerSupabaseClient()
+  const { data, error } = await supabase.rpc('get_roam_trail_info', { p_roam_id: roamId })
+  if (error || !data) return { trails: [], disruptions: [] }
+  const d = data as { trails?: RoamTrailRef[]; disruptions?: RoamDisruption[] }
+  return { trails: d.trails ?? [], disruptions: d.disruptions ?? [] }
+}
+
+/** "Keep going" (Shift 01289): where you can keep riding from each end of a
+ *  roam, one row per destination, with the line to highlight. */
+export interface KeepGoingStep {
+  kind?: 'here' | 'closed'
+  title: string
+  note?: string
+}
+
+export interface KeepGoingRow {
+  key: string
+  title: string
+  start_label: string
+  start_note: string | null
+  length_label: string
+  protected_pct: number | null
+  bar: Array<{ kind: 'protected' | 'street' | 'closed'; share: number }>
+  bar_note: string | null
+  steps: KeepGoingStep[]
+  linked_roam_id: string | null
+  link_label: string | null
+  /** For rows with no roam to ride: directions in Google Maps. */
+  action_url: string | null
+  action_label: string | null
+  /** [[[lng, lat], ...], ...] */
+  lines: [number, number][][] | null
+}
+
+export async function getRoamKeepGoing(roamId: string): Promise<KeepGoingRow[]> {
+  const supabase = createServerSupabaseClient()
+  const { data, error } = await supabase
+    .from('roam_keep_going')
+    .select('key, title, start_label, start_note, length_label, protected_pct, bar, bar_note, steps, linked_roam_id, link_label, action_url, action_label, lines')
+    .eq('roam_id', roamId)
+    .order('sort')
+    .limit(12)
+  if (error || !data) return []
+  return data as KeepGoingRow[]
 }

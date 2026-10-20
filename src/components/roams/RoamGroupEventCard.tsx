@@ -15,11 +15,11 @@ function when(e: RoamGroupEvent): string {
 
 /** "A group ride on part of this route": the next calendar ride or walk that
  *  shares part of this roam's route (its own route is the organizer's). */
-export default function RoamGroupEventCard({ event }: { event: RoamGroupEvent }) {
+export default function RoamGroupEventCard({ event, bare = false }: { event: RoamGroupEvent; bare?: boolean }) {
   return (
-    <section aria-labelledby="group-ride" className="px-6 pt-8 lg:px-8">
-      <div className="mx-auto max-w-[860px] rounded-[14px] border border-forest/30 bg-white px-5 py-5">
-        <h2 id="group-ride" className="flex items-center gap-2 text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-forest">
+    <section aria-labelledby="group-ride" className={bare ? '' : 'px-6 pt-8 lg:px-8'}>
+      <div className={`${bare ? '' : 'mx-auto max-w-[860px] '}rounded-[16px] bg-white px-5 py-5 shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)]`}>
+        <h2 id="group-ride" className="flex items-center gap-2 text-[0.875rem] font-semibold text-forest">
           <Users size={15} aria-hidden /> A group ride on part of this route
         </h2>
         <p className="mt-2 text-[1.125rem] font-semibold leading-snug text-navy">{event.title}</p>

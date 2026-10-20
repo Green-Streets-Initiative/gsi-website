@@ -61,9 +61,17 @@ export default function RoamMap({ routeCoordinates, checkpoints }: Props) {
       map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
       mapRef.current = map
-      requestAnimationFrame(() => map.resize())
+      // The constructor fits the bounds to whatever size the box had at that
+      // instant (often before layout settles), which left whole-metro zooms on
+      // a 6-mile route. Fit again once the map has its real size.
+      const fit = () => {
+        map.resize()
+        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 48, maxZoom: 15, animate: false })
+      }
+      requestAnimationFrame(fit)
 
       map.on('load', () => {
+        fit()
         if (routeCoordinates && routeCoordinates.length >= 2) {
           map.addSource('roam-route', {
             type: 'geojson',
