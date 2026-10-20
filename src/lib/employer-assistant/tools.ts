@@ -12,6 +12,7 @@ import type Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { SURVEY_ACTIVITY, SURVEY_NEEDS_APPROVAL, SURVEY_TOOLS, runSurveyApproved, runSurveyRead, surveyApprovalCard } from './survey-tools'
+import { RESULTS_ACTIVITY, RESULTS_TOOLS, runResultsRead } from './results-tools'
 import { ADMIN_ACTIVITY, ADMIN_NEEDS_APPROVAL, ADMIN_ONLY, ADMIN_TOOLS, adminApprovalCard, runAdminApproved, runAdminRead } from './admin-tools'
 
 export type ToolCtx = {
@@ -245,7 +246,7 @@ const BASE_TOOLS: Anthropic.Tool[] = [
   },
 ]
 
-export const TOOLS: Anthropic.Tool[] = [...BASE_TOOLS, ...ADMIN_TOOLS, ...SURVEY_TOOLS]
+export const TOOLS: Anthropic.Tool[] = [...BASE_TOOLS, ...RESULTS_TOOLS, ...ADMIN_TOOLS, ...SURVEY_TOOLS]
 
 export const NEEDS_APPROVAL = new Set([
   ...ADMIN_NEEDS_APPROVAL,
@@ -265,6 +266,7 @@ export const NEEDS_APPROVAL = new Set([
 export const ACTIVITY: Record<string, string> = {
   ...ADMIN_ACTIVITY,
   ...SURVEY_ACTIVITY,
+  ...RESULTS_ACTIVITY,
   get_account_overview: 'Looking over your account',
   list_seasonal_templates: 'Looking at the seasonal challenges',
   get_challenge: 'Reading the challenge',
@@ -528,7 +530,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (ADMIN_ONLY.includes(name) && ctx.role !== 'admin' && ctx.role !== 'gsi') {
           return { content: { error: 'only_admins', message: 'Only an admin on this account can do this.' }, isError: true }
         }
-        return (await runSurveyRead(ctx, name, input)) ?? (await runAdminRead(ctx, name, input)) ?? { content: { error: `unknown tool ${name}` }, isError: true }
+        return (await runResultsRead(ctx, name, input)) ?? (await runSurveyRead(ctx, name, input)) ?? (await runAdminRead(ctx, name, input)) ?? { content: { error: `unknown tool ${name}` }, isError: true }
       }
     }
   } catch (e) {

@@ -223,9 +223,17 @@ async function runScenario(sc) {
 
   // Which tools the model actually called (from the stored conversation).
   if (threadId) {
-    const { data: msgs } = await admin.from('employer_assistant_messages').select('content').eq('thread_id', threadId).eq('role', 'assistant').order('created_at')
+    const { data: msgs } = await admin.from('employer_assistant_messages').select('role, content').eq('thread_id', threadId).order('created_at')
     const idToName = {}
     for (const m of msgs ?? []) for (const b of Array.isArray(m.content) ? m.content : []) if (b.type === 'tool_use') idToName[b.id] = b.name
+    // What the tools returned, so the grader can check the numbers.
+    out.toolData = []
+    for (const m of msgs ?? [])
+      for (const b of Array.isArray(m.content) ? m.content : [])
+        if (b.type === 'tool_result') {
+          const text = typeof b.content === 'string' ? b.content : (b.content ?? []).map((x) => x.text ?? '').join('')
+          out.toolData.push(`${idToName[b.tool_use_id] ?? 'tool'}: ${text.slice(0, 6000)}`)
+        }
     out.tools = Object.values(idToName)
     for (const c of out.cards) c.name = idToName[c.tool_use_id] ?? '?'
   }
@@ -255,12 +263,12 @@ async function runScenario(sc) {
     if (re.test(said)) out.failures.push(`copy rule: ${why}`)
 
   // The grader reads the whole thing against the rubric.
-  out.grade = await judge(sc, out.transcript.join('\n\n'))
+  out.grade = await judge(sc, out.transcript.join('\n\n'), out.toolData ?? [])
   if (!out.grade.pass) out.failures.push(`grader: ${out.grade.notes}`)
   return out
 }
 
-async function judge(sc, transcript) {
+async function judge(sc, transcript, toolData) {
   const msg = await anthropic.messages.create({
     model: JUDGE_MODEL,
     max_tokens: 800,
@@ -278,6 +286,11 @@ Conversation (bracketed lines are what the portal showed or did):
 <conversation>
 ${transcript}
 </conversation>
+
+What the assistant's tools returned (the only source of facts about this account; any account figure not here is invented):
+<tool_data>
+${toolData.join('\n\n') || '(none)'}
+</tool_data>
 
 Judge only against the rubric and the rules above; don't penalize style that's fine. Reply with JSON only: {"pass": true|false, "notes": "one or two sentences on what was good or what went wrong"}`,
       },

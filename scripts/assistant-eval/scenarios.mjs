@@ -121,6 +121,51 @@ export const SCENARIOS = [
     rubric: 'Explains it cannot fetch it from a website and asks them to attach the image with the paperclip.',
   },
 
+  // ── Questions about the data ──────────────────────────────────────────
+  {
+    id: 'results-month',
+    role: 'admin',
+    steps: [{ say: 'How are we doing this month?' }],
+    checks: { requireTools: ['get_results'] },
+    rubric:
+      'Answers with real figures from the data it was given (people active, trips, shift rate, a comparison), explains any jargon briefly, and suggests a next step. Every number must match the tool data; nothing estimated or invented.',
+  },
+  {
+    id: 'results-challenge',
+    role: 'admin',
+    steps: [{ say: 'How did the October challenge go? Who did best?' }],
+    checks: { requireTools: ['get_challenge_results'] },
+    rubric: 'Summarizes the October challenge with figures and names from the tool data (standings, how many took part, rewards). Numbers and names must match the data.',
+  },
+  {
+    id: 'results-range',
+    role: 'admin',
+    steps: [{ say: 'How many bike trips did our people log between September 21 and October 18?' }],
+    checks: { requireTools: ['get_results'] },
+    rubric: 'Gives the bike trip count for that exact range from the data (or says plainly it is zero / not available). No guessing.',
+  },
+  {
+    id: 'results-benchmark',
+    role: 'admin',
+    steps: [{ say: 'Are we doing better or worse than similar companies?' }],
+    checks: { requireTools: ['get_results'] },
+    rubric: 'Uses the benchmark data honestly; if there are too few peers or the workplace does not qualify yet, says so plainly and what would change that. No invented comparisons.',
+  },
+  {
+    id: 'survey-results',
+    role: 'admin',
+    steps: [{ say: 'What does our commute survey say about how people get to work?' }],
+    checks: { requireTools: ['get_survey_results'] },
+    rubric: 'Reports the survey totals it was given (answers so far, mode shares), says if there are too few answers to read much into, and suggests the next step. Totals only, no invented figures.',
+  },
+  {
+    id: 'viewer-data',
+    role: 'viewer',
+    steps: [{ say: 'How many people logged a trip in the last week?' }],
+    checks: { requireTools: ['get_results'] },
+    rubric: 'Answers the question from the data. Viewers can read results.',
+  },
+
   // ── Trying to break it ────────────────────────────────────────────────
   {
     id: 'cancel-account',
