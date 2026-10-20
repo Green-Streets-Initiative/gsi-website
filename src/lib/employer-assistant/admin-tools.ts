@@ -124,11 +124,6 @@ export const ADMIN_TOOLS: Anthropic.Tool[] = [
     input_schema: { type: 'object', properties: { prize_id: { type: 'string' } }, required: ['prize_id'] },
   },
   {
-    name: 'draw_winners',
-    description: 'Draw the winners of a drawing or leaderboard reward after the challenge has ended (they are also drawn automatically). Gift cards are paid from the balance. Needs approval.',
-    input_schema: { type: 'object', properties: { prize_id: { type: 'string' } }, required: ['prize_id'] },
-  },
-  {
     name: 'mark_prize_handed_out',
     description: "Record that a winner of a prize the employer hands out (not a gift card) got it, or undo that. Needs approval.",
     input_schema: {
@@ -235,7 +230,6 @@ export const ADMIN_NEEDS_APPROVAL = [
   'nudge_employee',
   'add_prize_spots',
   'cancel_prize',
-  'draw_winners',
   'mark_prize_handed_out',
   'add_team_member',
   'change_team_role',
@@ -263,7 +257,6 @@ export const ADMIN_ACTIVITY: Record<string, string> = {
   get_prize_winners: 'Looking at the winners',
   add_prize_spots: 'Changing the spots',
   cancel_prize: 'Cancelling the reward',
-  draw_winners: 'Drawing winners',
   mark_prize_handed_out: 'Recording the hand-out',
   get_team: 'Looking at your team',
   add_team_member: 'Adding to your team',
@@ -571,26 +564,9 @@ export async function adminApprovalCard(ctx: ToolCtx, name: string, input: Recor
             p.hold_cents > 0 ? `${money(p.hold_cents)} set aside for it goes back to your rewards balance.` : 'No money is set aside for it.',
             "This can't be undone.",
           ],
+          confirmText: p.name,
           cta: 'Cancel the reward',
           tone: 'danger',
-        },
-      }
-    }
-    case 'draw_winners': {
-      const p = await prize(ctx, String(input.prize_id ?? ''))
-      if (!p || p.award_mode === 'guaranteed') return fail('that is not a drawing or leaderboard reward on this account')
-      if (p.draw_status !== 'pending') return fail('winners have already been drawn')
-      if (p.competition && Date.parse(p.competition.ends_at) > Date.now()) return fail('the challenge has not ended yet; winners are drawn after it ends')
-      const most = p.funded_from_pool && p.amount_cents ? Math.min(p.winner_count * p.amount_cents, p.budget_cap_cents ?? Infinity) : 0
-      return {
-        card: {
-          title: `Draw the winners of "${p.name}"?`,
-          lines: [
-            p.award_mode === 'merit' ? `The top ${p.winner_count} win.` : `${p.winner_count} drawn at random from everyone who reached the goal.`,
-            most > 0 ? `Up to ${money(most)} in gift cards is paid from your rewards balance; winners pick their card in the app.` : 'Winners get the prize you hand out.',
-          ],
-          cta: 'Draw winners',
-          tone: 'primary',
         },
       }
     }
@@ -623,7 +599,7 @@ export async function adminApprovalCard(ctx: ToolCtx, name: string, input: Recor
       const r = await teamRow(ctx, String(input.member_id ?? ''))
       if (!r) return fail('team member not found')
       if (r.is_owner) return fail('the account owner cannot be removed')
-      return { card: { title: `Remove ${r.name || r.email} from the team?`, lines: ['They lose access to this portal. Their own Shift app account is not affected.'], cta: 'Remove', tone: 'danger' } }
+      return { card: { title: `Remove ${r.name || r.email} from the team?`, lines: ['They lose access to this portal. Their own Shift app account is not affected.'], confirmText: r.email, cta: 'Remove', tone: 'danger' } }
     }
     case 'update_company_profile': {
       const keys = ['name', 'admin_name', 'admin_phone', 'website_url'].filter((k) => typeof input[k] === 'string' && String(input[k]).trim())
@@ -754,8 +730,6 @@ export async function runAdminApproved(ctx: ToolCtx, name: string, input: Record
       return viaRpc('set_guaranteed_prize_spots', { p_prize_id: input.prize_id, p_spots: input.spots }, { spots: input.spots })
     case 'cancel_prize':
       return viaRpc('cancel_guaranteed_prize', { p_prize_id: input.prize_id }, { cancelled: true })
-    case 'draw_winners':
-      return viaRpc('draw_employer_challenge_prizes', { p_prize_id: input.prize_id }, { drawn: true })
     case 'mark_prize_handed_out':
       return viaRpc('mark_employer_prize_handed_out', { p_winner_id: input.winner_id, p_handed_out: !!input.handed_out }, { handed_out: !!input.handed_out })
     case 'add_team_member': {

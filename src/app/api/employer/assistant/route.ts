@@ -33,11 +33,15 @@ export const maxDuration = 300
 
 const MODEL = 'claude-opus-5-5'
 const MAX_STEPS = 14
-/** Model calls per workplace per calendar month. */
-const MONTHLY_CAP = 1500
+/** Model calls per workplace per calendar month (about 2 cents each, so
+ *  roughly $12 at most), and per person per day (Keith 2026-10-20: keep a
+ *  runaway user or a loop from running costs up). */
+const MONTHLY_CAP = 600
+const DAILY_PERSON_CAP = 150
 
 type Role = ToolCtx['role']
 type PendingCard = { tool_use_id: string; name: string; input: Record<string, unknown>; card: ApprovalCard; decided?: boolean }
+const sameText = (a: unknown, b: unknown) => String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase()
 type Pending = { results: Record<string, Anthropic.Beta.BetaToolResultBlockParam>; order: string[]; cards: PendingCard[] }
 type Thread = { id: string; group_id: string; pending: Pending | null }
 
@@ -222,7 +226,7 @@ export async function POST(request: Request) {
     group_id?: string
     thread_id?: string | null
     message?: string
-    decision?: { tool_use_id: string; approve: boolean }
+    decision?: { tool_use_id: string; approve: boolean; confirm_text?: string }
     new_thread?: boolean
     /** Images the admin attached (uploaded to employer-logos first). */
     attachments?: { url: string; name?: string }[]
@@ -247,7 +251,7 @@ export async function POST(request: Request) {
   const monthStart = new Date()
   monthStart.setUTCDate(1)
   monthStart.setUTCHours(0, 0, 0, 0)
-  const { data: threadIds } = await admin.from('employer_assistant_threads').select('id').eq('group_id', group.id)
+  const { data: threadIds } = await admin.from('employer_assistant_threads').select('id, created_by').eq('group_id', group.id)
   const ids = ((threadIds ?? []) as { id: string }[]).map((t) => t.id)
   if (ids.length) {
     const { count } = await admin
@@ -259,13 +263,38 @@ export async function POST(request: Request) {
     if ((count ?? 0) >= MONTHLY_CAP) {
       return Response.json({ error: 'The assistant has reached this month\'s limit for your workplace. Email info@gogreenstreets.org and we\'ll sort it out.' }, { status: 429 })
     }
+    const mine = ((threadIds ?? []) as { id: string; created_by?: string }[]).filter((t) => t.created_by === user.id).map((t) => t.id)
+    if (mine.length) {
+      const { count: today } = await admin
+        .from('employer_assistant_messages')
+        .select('id', { count: 'exact', head: true })
+        .in('thread_id', mine)
+        .eq('role', 'assistant')
+        .gte('created_at', new Date(Date.now() - 86_400_000).toISOString())
+      if ((today ?? 0) >= DAILY_PERSON_CAP) {
+        return Response.json({ error: "You've used the assistant a lot today. It'll be ready again tomorrow; the portal's pages work as usual." }, { status: 429 })
+      }
+    }
   }
 
+  // One request at a time per conversation (Shift 01303): claim it, so two
+  // Approve clicks that land together can't both run the action.
+  const lockUntil = new Date(Date.now() + 3 * 60_000).toISOString()
   let thread = body?.new_thread ? null : await loadThread(admin, group.id, user.id, body?.thread_id)
-  if (!thread) {
+  if (thread) {
+    const { data: claimed } = await admin
+      .from('employer_assistant_threads')
+      .update({ busy_until: lockUntil })
+      .eq('id', thread.id)
+      .or(`busy_until.is.null,busy_until.lt."${new Date().toISOString()}"`)
+      .select('id, group_id, pending')
+      .maybeSingle()
+    if (!claimed) return Response.json({ error: "I'm still working on your last request. Give it a moment." }, { status: 409 })
+    thread = claimed as Thread
+  } else {
     const { data, error } = await admin
       .from('employer_assistant_threads')
-      .insert({ group_id: group.id, title: text.slice(0, 80) || (attachments.length ? 'Logo' : 'Setup'), created_by: user.id, created_by_email: user.email })
+      .insert({ group_id: group.id, title: text.slice(0, 80) || (attachments.length ? 'Logo' : 'Setup'), created_by: user.id, created_by_email: user.email, busy_until: lockUntil })
       .select('id, group_id, pending')
       .single()
     if (error || !data) return Response.json({ error: 'Could not start a conversation.' }, { status: 500 })
@@ -307,6 +336,13 @@ export async function POST(request: Request) {
         if (pending) {
           if (body?.decision) {
             const c = pending.cards.find((x) => x.tool_use_id === body.decision!.tool_use_id && !x.decided)
+            // Irreversible actions need the name typed (checked here too, not
+            // only in the panel).
+            if (c && body.decision.approve && c.card.confirmText && !sameText(body.decision.confirm_text, c.card.confirmText)) {
+              emit({ type: 'error', message: `Type "${c.card.confirmText}" to confirm.` })
+              emit({ type: 'done' })
+              return
+            }
             if (c) {
               c.decided = true
               let r: ToolResult
@@ -314,6 +350,14 @@ export async function POST(request: Request) {
                 emit({ type: 'tool', id: c.tool_use_id, label: ACTIVITY[c.name] ?? c.name })
                 r = await runApproved(ctx, c.name, c.input, c.card)
                 emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: r.link })
+                // What changed, for the whole team (Settings), not the chat.
+                await admin.from('employer_activity_log').insert({
+                  group_id: group.id,
+                  actor_email: user.email,
+                  action: c.name,
+                  summary: c.card.title.replace(/\?$/, ''),
+                  ok: !r.isError,
+                })
               } else {
                 r = { content: { declined: true, note: 'The admin chose not to do this. Ask what they would like instead.' } }
               }
@@ -434,6 +478,7 @@ export async function POST(request: Request) {
               : 'Something went wrong. Try again in a moment.'
         emit({ type: 'error', message })
       } finally {
+        await admin.from('employer_assistant_threads').update({ busy_until: null }).eq('id', threadId)
         try {
           controller.close()
         } catch {}

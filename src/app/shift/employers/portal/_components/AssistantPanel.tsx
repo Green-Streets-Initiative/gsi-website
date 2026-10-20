@@ -25,7 +25,7 @@ export function openAssistant(prompt?: string) {
 const STARTERS = ['Help me set up my first challenge', 'What should I do next?', 'How do rewards work?']
 const CHANGES = new Set(['Saving the draft', 'Launching', 'Saving the changes', 'Removing the draft', 'Sending invitations', 'Updating email domains', 'Updating who can join', 'Updating the year plan'])
 
-type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger'; image?: string; mapUrl?: string }
+type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger'; image?: string; mapUrl?: string; confirmText?: string }
 type ThreadSummary = { id: string; title: string; updated_at: string; waiting: boolean }
 type LinkT = { href: string; label: string; external?: boolean }
 type Item =
@@ -127,6 +127,8 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
   const [view, setView] = useState<'chat' | 'history'>('chat')
   const [threads, setThreads] = useState<ThreadSummary[] | null>(null)
   const [uploading, setUploading] = useState(false)
+  /** What was typed into each irreversible card's confirm box. */
+  const [typed, setTyped] = useState<Record<string, string>>({})
   const fileInput = useRef<HTMLInputElement>(null)
   const confirm = useConfirm()
   const scroller = useRef<HTMLDivElement>(null)
@@ -208,7 +210,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
   }, [items, busy])
 
   const send = useCallback(
-    async (payload: { message?: string; decision?: { tool_use_id: string; approve: boolean }; attachments?: { url: string; name: string }[] }) => {
+    async (payload: { message?: string; decision?: { tool_use_id: string; approve: boolean; confirm_text?: string }; attachments?: { url: string; name: string }[] }) => {
       if (busy) return
       const h = await authHeader()
       if (!h) {
@@ -568,11 +570,29 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                       <MapPin size={14} /> Check it on the map
                     </a>
                   )}
+                  {it.card.confirmText && (
+                    <label className="mt-3 block text-[13px] text-ink">
+                      This can&apos;t be undone. Type <strong>{it.card.confirmText}</strong> to confirm.
+                      <input
+                        value={typed[it.tool_use_id] ?? ''}
+                        onChange={(e) => setTyped((t) => ({ ...t, [it.tool_use_id]: e.target.value }))}
+                        aria-label={`Type ${it.card.confirmText} to confirm`}
+                        autoComplete="off"
+                        className="mt-1.5 w-full rounded-[10px] border border-line bg-surface px-3 py-2 text-[14px] text-ink outline-none focus:border-ep-danger"
+                      />
+                    </label>
+                  )}
                   <div className="mt-3.5 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      disabled={busy}
-                      onClick={() => void send({ decision: { tool_use_id: it.tool_use_id, approve: true } })}
+                      disabled={
+                        busy ||
+                        (!!it.card.confirmText &&
+                          (typed[it.tool_use_id] ?? '').trim().toLowerCase() !== it.card.confirmText.trim().toLowerCase())
+                      }
+                      onClick={() =>
+                        void send({ decision: { tool_use_id: it.tool_use_id, approve: true, confirm_text: typed[it.tool_use_id] } })
+                      }
                       className={`rounded-[10px] px-4 py-2 text-[14px] font-semibold text-white shadow-sm disabled:opacity-60 ${
                         it.card.tone === 'danger' ? 'bg-ep-danger hover:opacity-90' : 'bg-accent hover:bg-accent-dark'
                       }`}

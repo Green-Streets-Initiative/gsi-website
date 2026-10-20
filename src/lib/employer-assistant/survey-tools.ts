@@ -322,7 +322,7 @@ export async function surveyApprovalCard(ctx: ToolCtx, name: string, input: Reco
       if (s.status !== 'open') return fail('the survey is not open')
       return { card: { title: `Close "${s.title}"?`, lines: [`${st?.responded_total ?? 0} answered so far.`, 'Answers stop and no more reminders go out. You can reopen it.'], cta: 'Close it', tone: 'primary' } }
     case 'delete_survey':
-      return { card: { title: `Delete "${s.title}"?`, lines: ['The staff list goes with it. Only possible before anyone has answered.', "This can't be undone."], cta: 'Delete', tone: 'danger' } }
+      return { card: { title: `Delete "${s.title}"?`, lines: ['The staff list goes with it. Only possible before anyone has answered.', "This can't be undone."], confirmText: s.title, cta: 'Delete', tone: 'danger' } }
     default:
       return null
   }

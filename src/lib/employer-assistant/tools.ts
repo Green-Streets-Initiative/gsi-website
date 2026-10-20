@@ -47,6 +47,8 @@ export type ApprovalCard = {
   image?: string
   /** Where the looked-up place is, to check it. */
   mapUrl?: string
+  /** Irreversible: the admin types this (a name) to confirm. */
+  confirmText?: string
   cta: string
   tone: 'primary' | 'danger'
 }
