@@ -16,6 +16,7 @@ import {
   Megaphone,
   Clock,
   FileEdit,
+  Sparkles,
 } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
 import { usePortal } from '../_lib/portal-context'
@@ -55,6 +56,7 @@ import TellYourTeam, { type TeamPrize } from './TellYourTeam'
 import { useEmployerLocations } from '../_lib/use-employer-locations'
 import { useChallengeTemplates, type SeasonalOption } from '../_lib/use-challenge-templates'
 import YearPlanCard from './YearPlanCard'
+import { ASSISTANT_CHANGED_EVENT, openAssistant } from '../_components/AssistantPanel'
 import AwardsRecap from './AwardsRecap'
 import TeamHearsPanel from './TeamHearsPanel'
 import { useYearPlan, runRange, templatePrizeLine } from '../_lib/use-year-plan'
@@ -686,6 +688,53 @@ export default function ChallengesPage() {
     }
   }, [check, card, form.name, persistDraft, reloadChallenge, refreshPool, runCheck, closeBuilder, confirm, toast])
 
+  // ── The setup assistant changed something: bring the page up to date ──
+  const assistantOn = !!group && (!!group.assistant_enabled || isGsiAdmin)
+  useEffect(() => {
+    if (!group) return
+    const reload = async () => {
+      const [comps, prizes] = await Promise.all([
+        supabase
+          .from('competitions')
+          .select('id, name, metric, starts_at, ends_at, prize_description, counting_rules, contact_name, contact_email')
+          .eq('group_id', group.id)
+          .order('starts_at', { ascending: false }),
+        supabase.from('employer_challenge_prizes').select('*').eq('group_id', group.id).order('display_order'),
+      ])
+      if (comps.data) {
+        setChallenges(
+          (comps.data as Challenge[]).map((c) => ({ ...c, public_leaderboard: challenges.find((x) => x.id === c.id)?.public_leaderboard ?? false })),
+        )
+      }
+      if (prizes.data) setChallengePrizes(prizes.data as ChallengePrize[])
+      setBuilderDrafts(await loadBuilderDrafts(group.id))
+      void yearPlan.refresh()
+      void refreshPool()
+    }
+    const h = () => void reload()
+    window.addEventListener(ASSISTANT_CHANGED_EVENT, h)
+    return () => window.removeEventListener(ASSISTANT_CHANGED_EVENT, h)
+  }, [group, challenges, setChallenges, setChallengePrizes, yearPlan, refreshPool])
+
+  // ?draft_open=<id> (the assistant's "Open the draft in the builder").
+  const draftOpenHandled = useRef<string | null>(null)
+  useEffect(() => {
+    if (loading || !group) return
+    const id = new URLSearchParams(window.location.search).get('draft_open')
+    if (!id || draftOpenHandled.current === id) return
+    draftOpenHandled.current = id
+    const params = new URLSearchParams(window.location.search)
+    params.delete('draft_open')
+    const qs = params.toString()
+    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash)
+    void (async () => {
+      const d = await loadDraft(id)
+      if (d?.body && d.status === 'drafted' && canManage) openEditor(undefined, 'draft_row', { id: d.id, version: d.version, body: d.body })
+      else if (d?.status === 'launched') toast('That draft has already launched.')
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- on arrival with the parameter
+  }, [loading, group])
+
   // ── Back from Stripe: wait for the launch ──
   const [paidReturn, setPaidReturn] = useState<{ id: string; name: string; state: 'waiting' | 'bank' | 'failed' | 'slow'; reason?: string } | null>(null)
   const returnHandled = useRef(false)
@@ -866,9 +915,16 @@ export default function ChallengesPage() {
         subtitle="Create friendly competitions to spark participation"
         actions={
           !builderOpen && canManage && (
-            <Button variant="primary" icon={Plus} onClick={() => openEditor()}>
-              Create a challenge
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {assistantOn && (
+                <Button variant="secondary" icon={Sparkles} onClick={() => openAssistant('Help me set up a challenge')}>
+                  Set it up with the assistant
+                </Button>
+              )}
+              <Button variant="primary" icon={Plus} onClick={() => openEditor()}>
+                Create a challenge
+              </Button>
+            </div>
           )
         }
       />
@@ -924,9 +980,16 @@ export default function ChallengesPage() {
             Set a date range and add optional prizes.
           </p>
           {canManage && (
-            <Button variant="primary" icon={Plus} onClick={() => openEditor(undefined, 'empty_state')}>
-              Create a challenge
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              {assistantOn && (
+                <Button variant="secondary" icon={Sparkles} onClick={() => openAssistant('Help me set up my first challenge')}>
+                  Set it up with the assistant
+                </Button>
+              )}
+              <Button variant="primary" icon={Plus} onClick={() => openEditor(undefined, 'empty_state')}>
+                Create a challenge
+              </Button>
+            </div>
           )}
         </Card>
       )}

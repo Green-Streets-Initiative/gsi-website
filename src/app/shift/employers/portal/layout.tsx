@@ -12,6 +12,7 @@ import AccessLapsedNotice from './_components/AccessLapsedNotice'
 import PortalTracking from './_components/PortalTracking'
 import ScrollReset from './_components/ScrollReset'
 import PortalLoadError from './_components/PortalLoadError'
+import { AssistantDock } from './_components/AssistantPanel'
 import NoWorkplace from './_components/NoWorkplace'
 import { PortalContentSkeleton, PortalShellSkeleton } from './_components/PortalSkeleton'
 import './portal.css'
@@ -68,7 +69,8 @@ function PortalFrame({ children }: { children: React.ReactNode }) {
           those boxes belong to the viewport, escape <main>'s overflow clip
           and stretch the window itself, which showed as blank canvas
           under the portal on long pages (Keith 2026-09-30). */}
-      <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
+      <div className="flex h-dvh min-h-0 overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onMenu={openNav} />
         <SetupProgressBanner />
         <main data-portal-main className="relative min-h-0 flex-1 overflow-y-auto">
@@ -84,6 +86,9 @@ function PortalFrame({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </main>
+      </div>
+      {/* The setup assistant docks here on wide screens (full screen on a phone). */}
+      <AssistantDock />
       </div>
     </div>
   )

@@ -57,6 +57,8 @@ export type Group = {
   agreement_version?: string | null
   agreement_accepted_at?: string | null
   agreement_accepted_by_email?: string | null
+  /** The setup assistant is on for this workplace (Shift 01298). */
+  assistant_enabled?: boolean
   /**
    * Whether the public Commute Advisor page answers at /commute-advisor/<slug>
    * (get_advisor_group_by_slug serves enabled groups only). Not part of the

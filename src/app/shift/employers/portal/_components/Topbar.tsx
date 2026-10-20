@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, Search, Bell, HelpCircle } from 'lucide-react'
+import { Menu, Search, Bell, HelpCircle, Sparkles } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
 import CommandPalette from './CommandPalette'
 import NotificationsDropdown, { hasUnreadNotifications, prefsForCurrentAdmin } from './NotificationsDropdown'
 import HelpDrawer, { onPortalHelpRequest } from './HelpDrawer'
 import AccountMenu from './AccountMenu'
+import { openAssistant } from './AssistantPanel'
 
 const ROUTE_META: { prefix: string; label: string }[] = [
   { prefix: '/shift/employers/portal/dashboard', label: 'Home' },
@@ -31,7 +32,7 @@ type Panel = 'search' | 'notifications' | 'help' | null
 export default function Topbar({ onMenu }: { onMenu: () => void }) {
   const pathname = usePathname()
   const title = pageTitleFor(pathname)
-  const { group, members, challenges, admins, sessionEmail } = usePortal()
+  const { group, members, challenges, admins, sessionEmail, isGsiAdmin } = usePortal()
 
   const [activePanel, setActivePanel] = useState<Panel>(null)
   const [helpTopic, setHelpTopic] = useState<string | null>(null)
@@ -161,6 +162,18 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
               <NotificationsDropdown onClose={closePanel} />
             )}
           </div>
+
+          {/* Setup assistant (Shift 01298): on per workplace */}
+          {group && (group.assistant_enabled || isGsiAdmin) && (
+            <button
+              type="button"
+              onClick={() => openAssistant()}
+              className="flex h-[38px] items-center gap-1.5 rounded-[10px] px-2.5 text-[13.5px] font-semibold text-accent transition-colors hover:bg-accent-softer"
+            >
+              <Sparkles size={17} strokeWidth={1.75} />
+              <span className="hidden sm:inline">Assistant</span>
+            </button>
+          )}
 
           {/* Help */}
           <button
