@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { Check } from '@phosphor-icons/react'
+import { PLANS, priceLabel, type PlanId } from '@/lib/employer/plans'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
-type Tier = 'starter' | 'basic' | 'standard' | 'premium'
+type Tier = PlanId
 
 type PricingCard = {
   id: Tier
@@ -21,67 +22,23 @@ type PricingCard = {
   highlight?: boolean
 }
 
-const CARDS: PricingCard[] = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: '$500',
-    tagline: 'For small teams who want to track and celebrate progress.',
-    features: [
-      'Private invite code & team leaderboard',
-      'Team name + logo on public leaderboard',
-      'Aggregate dashboard (trips, miles, CO₂, mode mix, Shift Rate)',
-      'Downloadable impact report',
-      'Weekly email report on your team',
-      'Branded Commute Advisor page for your office',
-      'Branded Nearby page: live transit, Bluebikes and bike paths around your office',
-      'Optional public leaderboard for flagship events',
-    ],
-    accent: '#2D6A4F',
-    accentText: '#FFFFFF',
-  },
-  {
-    id: 'basic',
-    name: 'Basic',
-    price: '$1,000',
-    tagline: 'Everything you need to launch a workplace challenge.',
-    features: [
-      'Everything in Starter',
-      'Your company logo in the Shift app',
-      'Downloadable impact reports for any date range',
-      'Opt-in to regional public leaderboards',
-    ],
-    accent: '#2966E5',
-    accentText: '#FFFFFF',
-    highlight: true,
-  },
-  {
-    id: 'standard',
-    name: 'Standard',
-    price: '$3,000',
-    tagline: 'For employers ready to actively drive participation.',
-    features: [
-      'Everything in Basic',
-      'Create your own branded team challenges',
-      'Join flagship events like Shift Your Summer',
-      'Company-funded rewards pool — gift cards for challenge winners',
-    ],
-    accent: '#1B4332',
-    accentText: '#FFFFFF',
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: '$5,000',
-    tagline: 'Put your company name on the rewards you fund.',
-    features: [
-      'Everything in Standard',
-      '"Sponsored by [Company]" attribution on the rewards you fund',
-    ],
-    accent: '#8A6D1F',
-    accentText: '#FFFFFF',
-  },
-]
+// Names, prices and features come from the one plan list (also read by the
+// portal and the setup assistant); only the colors live here.
+const LOOK: Record<Tier, Pick<PricingCard, 'accent' | 'accentText' | 'highlight'>> = {
+  starter: { accent: '#2D6A4F', accentText: '#FFFFFF' },
+  basic: { accent: '#2966E5', accentText: '#FFFFFF', highlight: true },
+  standard: { accent: '#1B4332', accentText: '#FFFFFF' },
+  premium: { accent: '#8A6D1F', accentText: '#FFFFFF' },
+}
+
+const CARDS: PricingCard[] = PLANS.map((p) => ({
+  id: p.id,
+  name: p.name,
+  price: priceLabel(p),
+  tagline: p.tagline,
+  features: p.features,
+  ...LOOK[p.id],
+}))
 
 export default function EmployerPricing() {
   const [loadingTier, setLoadingTier] = useState<Tier | null>(null)

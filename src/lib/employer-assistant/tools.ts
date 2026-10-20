@@ -11,6 +11,7 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import { ADMIN_ACTIVITY, ADMIN_NEEDS_APPROVAL, ADMIN_ONLY, ADMIN_TOOLS, adminApprovalCard, runAdminApproved, runAdminRead } from './admin-tools'
 
 export type ToolCtx = {
   user: SupabaseClient
@@ -89,7 +90,7 @@ const challengeSchema = {
   required: ['name', 'starts_on', 'ends_on', 'prizes'],
 } as const
 
-export const TOOLS: Anthropic.Tool[] = [
+const BASE_TOOLS: Anthropic.Tool[] = [
   {
     name: 'get_account_overview',
     description:
@@ -237,7 +238,10 @@ export const TOOLS: Anthropic.Tool[] = [
   },
 ]
 
+export const TOOLS: Anthropic.Tool[] = [...BASE_TOOLS, ...ADMIN_TOOLS]
+
 export const NEEDS_APPROVAL = new Set([
+  ...ADMIN_NEEDS_APPROVAL,
   'launch_challenge',
   'fund_and_launch',
   'save_challenge_changes',
@@ -251,6 +255,7 @@ export const NEEDS_APPROVAL = new Set([
 
 /** Short "what I'm doing" lines for the conversation. */
 export const ACTIVITY: Record<string, string> = {
+  ...ADMIN_ACTIVITY,
   get_account_overview: 'Looking over your account',
   list_seasonal_templates: 'Looking at the seasonal challenges',
   get_challenge: 'Reading the challenge',
@@ -509,8 +514,12 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           content: { shown: true, note: 'The admin sees your message and these buttons. End your turn now with no more text.' },
           choices: { question: String(input.message ?? ''), options: ((input.options as string[]) ?? []).slice(0, 5) },
         }
-      default:
-        return { content: { error: `unknown tool ${name}` }, isError: true }
+      default: {
+        if (ADMIN_ONLY.includes(name) && ctx.role !== 'admin' && ctx.role !== 'gsi') {
+          return { content: { error: 'only_admins', message: 'Only an admin on this account can do this.' }, isError: true }
+        }
+        return (await runAdminRead(ctx, name, input)) ?? { content: { error: `unknown tool ${name}` }, isError: true }
+      }
     }
   } catch (e) {
     return { content: { error: e instanceof Error ? e.message : 'tool failed' }, isError: true }
@@ -523,7 +532,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
  * action can't go ahead (the pre-flight check fails, no permission).
  */
 export async function approvalCard(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<{ card: ApprovalCard } | { result: ToolResult }> {
-  const adminOnly = new Set(['fund_and_launch', 'set_email_domains', 'set_join_policy'])
+  const adminOnly = new Set(['fund_and_launch', 'set_email_domains', 'set_join_policy', ...ADMIN_ONLY])
   if (adminOnly.has(name) && ctx.role !== 'admin' && ctx.role !== 'gsi') {
     return { result: { content: { error: 'only_admins', message: 'Only an admin on this account can do this. Suggest they ask an admin.' }, isError: true } }
   }
@@ -664,7 +673,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         },
       }
     default:
-      return { result: { content: { error: `unknown tool ${name}` }, isError: true } }
+      return (await adminApprovalCard(ctx, name, input)) ?? { result: { content: { error: `unknown tool ${name}` }, isError: true } }
   }
 }
 
@@ -775,7 +784,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
         return { content: { sent: true } }
       }
       default:
-        return { content: { error: `unknown tool ${name}` }, isError: true }
+        return (await runAdminApproved(ctx, name, input)) ?? { content: { error: `unknown tool ${name}` }, isError: true }
     }
   } catch (e) {
     return { content: { error: e instanceof Error ? e.message : 'action failed' }, isError: true }

@@ -1,3 +1,4 @@
+import { PLANS } from '@/lib/employer/plans'
 import type { PrizeFormState } from './portal-types'
 
 export const BRAND_ASSETS_BASE =
@@ -94,12 +95,7 @@ export const TIER_LABEL: Record<string, string> = {
   premium: 'Premium',
 }
 
-export const TIER_ANNUAL_PRICE: Record<string, number> = {
-  starter: 500,
-  basic: 1000,
-  standard: 3000,
-  premium: 5000,
-}
+export const TIER_ANNUAL_PRICE: Record<string, number> = Object.fromEntries(PLANS.map((p) => [p.id, p.annualPrice]))
 
 export const TIER_ORDER: Record<string, number> = {
   free: 0,
