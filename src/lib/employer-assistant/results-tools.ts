@@ -67,7 +67,7 @@ function summarize(d: Record<string, unknown> | null) {
   return {
     from: d.window_start ? etDate(String(d.window_start)) : null,
     to: d.window_end ? etDate(String(d.window_end)) : null,
-    people_joined: d.member_count,
+    people_signed_up_in_total: d.member_count,
     headcount: d.headcount ?? null,
     participation_pct: round(d.participation_pct),
     trips: d.trips_this_period,
@@ -85,7 +85,7 @@ function summarize(d: Record<string, unknown> | null) {
       ? {
           from: etDate(String(prior.window_start)),
           to: etDate(String(prior.window_end)),
-          people_joined: prior.member_count,
+          people_signed_up_in_total: prior.member_count,
           trips: prior.trips,
           trips_on_foot_bike_transit_or_carpool: prior.active_trips,
           shift_rate_pct: round(prior.shift_rate_trip_pct),
@@ -112,12 +112,15 @@ export async function runResultsRead(ctx: ToolCtx, name: string, input: Record<s
         days = [7, 30, 90, 365].includes(Number(input.days)) ? Number(input.days) : 30
         params = { p_group_id: ctx.groupId, p_days: days }
       }
+      const perPerson = !custom || String(input.end_date) >= new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
       const [dash, bench, locs, members, advisor] = await Promise.all([
         ctx.user.rpc('get_employer_dashboard_data', params),
         ctx.user.rpc('get_employer_peer_benchmark', { p_group_id: ctx.groupId, p_days: days }),
         ctx.user.rpc('get_employer_location_breakdown', { p_group_id: ctx.groupId, p_days: days }),
-        // Per-person totals only come as rolling windows (as on the Employees page).
-        custom ? Promise.resolve({ data: null }) : ctx.user.rpc('get_employer_members', { p_group_id: ctx.groupId, p_days: days }),
+        // Per-person totals only come as rolling windows back from today (as
+        // on the Employees page), so a range that ends today ("this month")
+        // gets them and an older range doesn't.
+        perPerson ? ctx.user.rpc('get_employer_members', { p_group_id: ctx.groupId, p_days: days }) : Promise.resolve({ data: null }),
         ctx.user.rpc('get_advisor_usage', { p_group_id: ctx.groupId, p_days: Math.min(days, 365) }),
       ])
       if (dash.error) return { content: { error: dash.error.message }, isError: true }
@@ -127,9 +130,9 @@ export async function runResultsRead(ctx: ToolCtx, name: string, input: Record<s
         content: {
           period: custom ? `${input.start_date} to ${input.end_date}` : `last ${days} days`,
           results: summarize(dash.data as Record<string, unknown>),
-          people_who_logged_a_trip: custom ? null : active.length,
-          most_active: custom
-            ? 'Per-person totals are only for the last 7, 30, 90 or 365 days.'
+          ...(perPerson ? { people_who_logged_a_trip: active.length } : {}),
+          most_active: !perPerson
+            ? 'Per-person figures are only available for ranges that end today.'
             : [...active]
                 .sort((a, b) => (b.active_trips_in_period ?? 0) - (a.active_trips_in_period ?? 0))
                 .slice(0, 10)
@@ -138,7 +141,7 @@ export async function runResultsRead(ctx: ToolCtx, name: string, input: Record<s
           by_office: locs.data ?? null,
           commute_advisor: advisor.data ?? null,
           notes:
-            'Shift rate = share of recorded trips on foot, by bike, scooter, transit or carpool. Offices with fewer than 5 people are folded into "everyone else". Individual trips are private.',
+            'Shift rate = share of recorded trips on foot, by bike, scooter, transit or carpool. people_signed_up_in_total is everyone on the team in Shift, not new sign-ups. In the benchmark, active_trips_per_member is trips on foot, by bike, transit or carpool per person signed up. Offices with fewer than 5 people are folded into "everyone else". Individual trips are private.',
         },
         link: { href: '/shift/employers/portal/impact', label: 'Open the Impact page' },
       }
