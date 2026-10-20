@@ -11,10 +11,14 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
  * API:
  *   GET ?action=photo&id={photoId}
  *   GET ?action=search&query={q}&per_page=1&orientation=landscape&...
+ *   GET ?action=download&id={photoId}[&ixid={ixid}]
+ *     Unsplash's download-tracking ping. Their API guidelines require it
+ *     whenever a photo is actually used (the app calls it when a member
+ *     puts their stats on an Unsplash photo). Returns {url}.
  *
  * Returns the raw Unsplash JSON response (status forwarded).
  *
- * Whitelist limits the proxy to the two endpoints we actually use.
+ * Whitelist limits the proxy to the three endpoints we actually use.
  */
 
 const UNSPLASH_ACCESS_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY") ?? "";
@@ -48,12 +52,20 @@ serve(async (req) => {
   const action = url.searchParams.get("action");
 
   let upstream: string;
-  if (action === "photo") {
+  if (action === "photo" || action === "download") {
     const id = url.searchParams.get("id");
     if (!id || !/^[\w-]+$/.test(id)) {
       return json({ error: "invalid_id" }, 400);
     }
-    upstream = `https://api.unsplash.com/photos/${id}`;
+    if (action === "photo") {
+      upstream = `https://api.unsplash.com/photos/${id}`;
+    } else {
+      // links.download_location carries an ixid; pass it through when the
+      // caller has it so Unsplash attributes the download to the right hit.
+      const ixid = url.searchParams.get("ixid");
+      const qs = ixid && /^[\w-]+$/.test(ixid) ? `?ixid=${ixid}` : "";
+      upstream = `https://api.unsplash.com/photos/${id}/download${qs}`;
+    }
   } else if (action === "search") {
     const query = url.searchParams.get("query");
     if (!query) return json({ error: "missing_query" }, 400);
