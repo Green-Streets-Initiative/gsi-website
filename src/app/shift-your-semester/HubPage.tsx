@@ -117,7 +117,7 @@ export default function HubPage({ codeLive, standings, boardLive }: HubData & { 
             ))}
           </ol>
           <p className="mt-6 max-w-[640px] text-[13px] leading-relaxed text-ink-soft">
-            Active trips are walks, bike rides, and transit or ferry trips the app detects automatically. If you already used NEWROUTES,
+            Active trips are walks, bike and scooter rides, and transit or ferry trips the app detects automatically. If you already used NEWROUTES,
             you&rsquo;re covered by that one.
             {!codeLive && (
               <>

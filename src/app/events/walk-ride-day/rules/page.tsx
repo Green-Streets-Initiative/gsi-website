@@ -294,8 +294,8 @@ export default async function WalkRideDayRulesPage() {
               <SubSection title="What counts as a qualifying trip">
                 <Ul>
                   <li>
-                    A trip taken on foot, by bicycle, by bus, by subway or light rail, by commuter
-                    rail, or by ferry.
+                    A trip taken on foot, by bicycle, by e-scooter, by bus, by subway or light
+                    rail, by commuter rail, or by ferry.
                   </li>
                   <li>
                     The trip must be recorded and location-verified by the Shift app. Trips that
