@@ -230,6 +230,20 @@ const TEMPLATES: Template[] = [
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
+/**
+ * Ready-made rewards carry their goal in the name ("First to 10 trips",
+ * "First to 10 transit trips"). When the goal changes, the number in the name
+ * follows (even after the field was cleared mid-edit), so the app never
+ * shows "First to 10 trips" on a 12-trip goal. Other names are left alone.
+ */
+function renamedFor(p: PrizeFormState, patch: Partial<PrizeFormState>): Partial<PrizeFormState> {
+  if (patch.min_threshold === undefined || patch.name !== undefined) return {}
+  const to = patch.min_threshold.trim()
+  if (!/^\d+$/.test(to)) return {}
+  const re = /^First to \d+(?= )/
+  return re.test(p.name) ? { name: p.name.replace(re, `First to ${to}`) } : {}
+}
+
 function kindOf(p: PrizeFormState | undefined): PrizeKind {
   if (!p) return 'none'
   if (p.award_mode === 'guaranteed') return 'goal'
@@ -440,7 +454,7 @@ export default function ChallengeWizard({
   // Prizes: any number, each one of three kinds. The first is the headline
   // shown in the preview.
   const updatePrize = (i: number, patch: Partial<PrizeFormState>) =>
-    setPrizeForms(prizeForms.map((p, j) => (j === i ? { ...p, ...patch } : p)))
+    setPrizeForms(prizeForms.map((p, j) => (j === i ? { ...p, ...patch, ...renamedFor(p, patch) } : p)))
   const removePrize = (i: number) => setPrizeForms(prizeForms.filter((_, j) => j !== i))
   const blankPrize = (k: Exclude<PrizeKind, 'none'>): PrizeFormState =>
     k === 'goal'
