@@ -17,7 +17,7 @@
 const nextMonday = (weeksAhead = 1) => {
   const d = new Date()
   d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7) + 7 * (weeksAhead - 1))
-  return d.toISOString().slice(0, 10)
+  return d.toLocaleDateString('en-CA')
 }
 
 const DRAFT_BODY = (name, extra = {}) => ({

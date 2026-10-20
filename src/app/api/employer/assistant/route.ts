@@ -94,6 +94,60 @@ async function loadMessages(admin: SupabaseClient, threadId: string): Promise<{ 
   return (data ?? []) as { role: 'user' | 'assistant'; content: unknown }[]
 }
 
+// ── Answers to tap: the reply ends with <choices>one per line</choices> ──
+
+const OPEN = '<choices>'
+const CLOSE = '</choices>'
+
+/** Splits a reply into what the admin reads and the answers to tap. */
+function splitChoices(text: string): { text: string; options: string[] } {
+  const i = text.indexOf(OPEN)
+  if (i < 0) return { text, options: [] }
+  const j = text.indexOf(CLOSE, i)
+  const inner = text.slice(i + OPEN.length, j < 0 ? undefined : j)
+  const options = inner
+    .split('\n')
+    .map((l) => l.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').trim())
+    .filter(Boolean)
+    .slice(0, 5)
+  return { text: (text.slice(0, i) + (j < 0 ? '' : text.slice(j + CLOSE.length))).trim(), options }
+}
+
+/**
+ * Streams reply text to the panel without the <choices> block: holds back a
+ * tail that could still turn into the tag, and stops at the tag.
+ */
+function choicesFilter(send: (delta: string) => void) {
+  let held = ''
+  let hiding = false
+  return {
+    push(delta: string) {
+      if (hiding) return
+      held += delta
+      const i = held.indexOf(OPEN)
+      if (i >= 0) {
+        if (i > 0) send(held.slice(0, i))
+        held = ''
+        hiding = true
+        return
+      }
+      let keep = 0
+      for (let k = Math.min(OPEN.length - 1, held.length); k > 0; k--) {
+        if (OPEN.startsWith(held.slice(-k))) {
+          keep = k
+          break
+        }
+      }
+      if (held.length > keep) send(held.slice(0, held.length - keep))
+      held = held.slice(held.length - keep)
+    },
+    flush() {
+      if (!hiding && held) send(held)
+      held = ''
+    },
+  }
+}
+
 // ── The transcript, as the panel shows it ──
 
 type Item =
@@ -116,7 +170,13 @@ function transcript(messages: { role: string; content: unknown }[], pending: Pen
       } else if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) {
         // The note that travels with an attachment is for the model only.
         if (m.role === 'user' && b.text.startsWith('[Attached image')) continue
-        items.push({ kind: m.role === 'user' ? 'user' : 'assistant', text: b.text })
+        if (m.role === 'user') {
+          items.push({ kind: 'user', text: b.text })
+        } else {
+          const sp = splitChoices(b.text)
+          if (sp.text) items.push({ kind: 'assistant', text: sp.text })
+          if (sp.options.length) items.push({ kind: 'choices', options: sp.options })
+        }
       } else if (b.type === 'tool_use') {
         const name = String(b.name)
         if (name === 'offer_choices') {
@@ -415,10 +475,19 @@ export async function POST(request: Request) {
             cache_control: { type: 'ephemeral' },
             messages: history as Anthropic.Beta.BetaMessageParam[],
           } as Anthropic.Beta.MessageCreateParamsStreaming)
-          s.on('text', (delta) => emit({ type: 'text', delta }))
+          const visible = choicesFilter((delta) => emit({ type: 'text', delta }))
+          s.on('text', (delta) => visible.push(delta))
           const msg = await s.finalMessage()
-          // An empty reply (it said everything in offer_choices) ends the
-          // turn; the API refuses empty assistant messages on replay.
+          visible.flush()
+          const options = splitChoices(
+            msg.content
+              .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text')
+              .map((b) => b.text)
+              .join(''),
+          ).options
+          if (options.length) emit({ type: 'choices', options })
+          // An empty reply ends the turn; the API refuses empty assistant
+          // messages on replay.
           if (msg.content.length === 0) break
           await append('assistant', msg.content, { model: msg.model, usage: msg.usage })
 

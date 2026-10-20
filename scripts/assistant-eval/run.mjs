@@ -139,7 +139,8 @@ function world(role) {
 function mondayIn(weeks) {
   const d = new Date()
   d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7) + 7 * (weeks - 1))
-  return d.toISOString().slice(0, 10)
+  // The local calendar day (toISOString would roll to tomorrow after 8pm ET).
+  return d.toLocaleDateString('en-CA')
 }
 function sundayIn(weeks) {
   const d = new Date(mondayIn(weeks) + 'T12:00:00Z')
@@ -292,6 +293,8 @@ What the assistant's tools returned (the only source of facts about this account
 ${toolData.join('\n\n') || '(none)'}
 </tool_data>
 
+Product facts the assistant was told in its instructions (true, not invented): survey links go out by email within the hour of being added to an open survey (or when it opens), with one reminder three days later; links should go out the Friday before or the Monday of survey week; drafts are invisible to employees; a first-to-the-goal reward stays open 48 hours after a challenge ends.
+
 Judge only against the rubric and the rules above; don't penalize style that's fine. Reply with JSON only: {"pass": true|false, "notes": "one or two sentences on what was good or what went wrong"}`,
       },
     ],
@@ -309,7 +312,7 @@ Judge only against the rubric and the rules above; don't penalize style that's f
 async function cleanup(runStart, yearPlanBefore) {
   const notes = []
   const threads = [...created.threads]
-  if (threads.length) {
+  if (threads.length && !process.env.EVAL_KEEP_THREADS) {
     await admin.from('employer_assistant_messages').delete().in('thread_id', threads)
     await admin.from('employer_assistant_threads').delete().in('id', threads)
   }

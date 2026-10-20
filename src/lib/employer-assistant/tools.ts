@@ -231,21 +231,12 @@ const BASE_TOOLS: Anthropic.Tool[] = [
       required: ['page', 'label'],
     },
   },
-  {
-    name: 'offer_choices',
-    description:
-      'Ask the admin a question with 2 to 5 short answers they can tap. `message` is your whole reply for this turn: anything you wrote before calling this is not shown, so if you are answering a question or reporting figures, put the answer in `message` first, then the question. Put your recommendation first in options. Then end your turn without further text.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'Your complete reply to the admin (any answer or figures first), ending with the question.' },
-        options: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 5 },
-      },
-      required: ['message', 'options'],
-    },
-  },
 ]
 
+// Answers to tap now come at the end of the reply (<choices>, parsed by the
+// route): a reply written before a tool call is hidden on Opus 5.5, so an
+// answer followed by offer_choices sometimes never reached the admin. The
+// tool stays runnable for conversations that already used it.
 export const TOOLS: Anthropic.Tool[] = [...BASE_TOOLS, ...RESULTS_TOOLS, ...ADMIN_TOOLS, ...SURVEY_TOOLS]
 
 export const NEEDS_APPROVAL = new Set([
