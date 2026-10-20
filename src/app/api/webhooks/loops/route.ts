@@ -122,40 +122,18 @@ export async function POST(req: Request) {
     }
   }
 
-  // Town-digest mirror: a Loops-side unsubscribe/bounce/complaint must also
-  // silence every town digest for that email (town_digest_subscribers is the
-  // sender's source of truth; it has no contactId — match by email).
-  // Best-effort: contact.unsubscribed also arrives via our own unsubscribe
-  // mirror call, so rows may already be marked; the IS NULL guard keeps the
-  // earliest reason.
-  if (reason && reason !== 'deleted_in_loops' && email) {
-    const { error: tdError } = await sb
-      .from('town_digest_subscribers')
-      .update({ unsubscribed_at: new Date().toISOString(), unsubscribe_reason: reason })
-      .eq('email', email)
-      .is('unsubscribed_at', null)
-    if (tdError) console.error('town_digest_subscribers webhook mirror failed:', tdError.message)
-
-    // Since Shift 01252 town digests live in email_subscriptions (topic
-    // town_digest): silence them there too, which is what the sender reads.
-    const now = new Date().toISOString()
-    const { error: subErr } = await sb
-      .from('email_subscriptions')
-      .update({ status: 'unsubscribed', unsubscribed_at: now, unsubscribe_reason: 'admin', updated_at: now })
-      .eq('email', email)
-      .eq('topic', 'town_digest')
-      .neq('status', 'unsubscribed')
-    if (subErr) console.error('email_subscriptions town digest mirror failed:', subErr.message)
-
-    // A hard bounce or a spam complaint means no Shift email to this address
-    // at all (sending reputation): the system's "everything off" list. It
-    // replaces an "unsubscribe from all" row, so Undo can't lift it.
-    if (HARD_REASONS.has(reason)) {
-      const { error: supErr } = await sb
-        .from('email_suppressions')
-        .upsert({ email, reason, undo: {} }, { onConflict: 'email' })
-      if (supErr) console.error('email_suppressions webhook mirror failed:', supErr.message)
-    }
+  // Loops sends the GSI newsletter only. Unsubscribing there stops the
+  // newsletter and nothing else: town emails and Shift emails each have their
+  // own stop link (Keith, 2026-10-19). A hard bounce or a spam complaint is
+  // different: no email of any kind goes to that address again (sending
+  // reputation), through the system's "everything off" list, which every
+  // sender checks. It replaces an "unsubscribe from all" row, so Undo can't
+  // lift it.
+  if (reason && HARD_REASONS.has(reason) && email) {
+    const { error: supErr } = await sb
+      .from('email_suppressions')
+      .upsert({ email, reason, undo: {} }, { onConflict: 'email' })
+    if (supErr) console.error('email_suppressions webhook mirror failed:', supErr.message)
   }
 
   // Always log (success path or log-only events).

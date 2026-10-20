@@ -192,24 +192,21 @@ export async function unsubscribeContact(args: {
 
 
 /**
- * Town-digest signup (E19's front door — town pages' email capture).
- * Anonymous web visitors: no userId; Loops upserts by email. The contact
- * lands on the newsletter list with townDigest carrying the town slug so
- * the future digest can segment per town.
+ * Town-digest signup (town pages' email capture). Anonymous web visitors: no
+ * userId; Loops upserts by email, with townDigest carrying the town slug for
+ * the CRM. It does not join the newsletter list: town emails and the GSI
+ * newsletter are separate, each with its own sign-up and its own stop link
+ * (Keith, 2026-10-19). The digest itself is sent from the website (Resend).
  */
 export async function subscribeTownDigest(
   email: string,
   townSlug: string,
 ): Promise<{ ok: boolean; status?: number }> {
-  // No `subscribed: true`: a contact who unsubscribed in Loops stays
-  // unsubscribed (a new contact starts subscribed, Loops' default).
+  // No `subscribed`: a contact keeps whatever newsletter choice they made.
   const body: Record<string, unknown> = {
     email,
     source: 'town_page',
     townDigest: townSlug,
-  }
-  if (LOOPS_LIST_IDS.newsletter) {
-    body.mailingLists = { [LOOPS_LIST_IDS.newsletter]: true }
   }
   const res = await loopsFetch('/contacts/update', {
     method: 'PUT',

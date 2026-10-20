@@ -50,10 +50,10 @@ const SUBS: Record<string, Record<Lang, { title: string; body: string }>> = {
     'zh-Hans': { title: '订阅成功', body: '你将通过邮件收到{topic}。每封邮件都附有退订或管理邮件的链接。' },
   },
   unsubscribed: {
-    en: { title: 'You’re unsubscribed', body: 'You won’t get {topic} anymore. Your other emails from Shift keep coming as before.' },
-    es: { title: 'Cancelaste la suscripción', body: 'Ya no recibirás {topic}. Tus otros correos de Shift siguen llegando como antes.' },
-    'pt-BR': { title: 'Inscrição cancelada', body: 'Você não vai mais receber {topic}. Seus outros emails do Shift continuam chegando como antes.' },
-    'zh-Hans': { title: '已退订', body: '你将不再收到{topic}。你的其他 Shift 邮件照常发送。' },
+    en: { title: 'You’re unsubscribed', body: 'You won’t get {topic} anymore. Your other emails from us keep coming, and each one has its own link to stop it.' },
+    es: { title: 'Cancelaste la suscripción', body: 'Ya no recibirás {topic}. Tus otros correos nuestros siguen llegando, y cada uno trae su propio enlace para dejar de recibirlo.' },
+    'pt-BR': { title: 'Inscrição cancelada', body: 'Você não vai mais receber {topic}. Seus outros emails nossos continuam chegando, e cada um traz o próprio link para parar de receber.' },
+    'zh-Hans': { title: '已退订', body: '你将不再收到{topic}。你的其他邮件照常发送，每封都附有各自的退订链接。' },
   },
   'link-problem': {
     en: { title: 'That link didn’t work', body: 'This link looks incomplete or expired. Email info@gogreenstreets.org and we’ll help.' },
@@ -83,12 +83,18 @@ const NEXT: Record<string, { href: string; label: Record<Lang, string> }> = {
   },
 }
 
+/** Topic names that need a word around them mid-sentence ("town digest emails"). */
+const MID_SENTENCE: Record<string, Record<Lang, string>> = {
+  town_digest: { en: 'town digest emails', es: 'los correos del resumen de tu ciudad', 'pt-BR': 'os emails do resumo da sua cidade', 'zh-Hans': '城镇动态摘要邮件' },
+}
+
 const SOME_EMAILS: Record<Lang, string> = { en: 'these emails', es: 'estos correos', 'pt-BR': 'estes emails', 'zh-Hans': '这些邮件' }
 
 async function subsMessage(kind: string, topic: string, lang: string): Promise<Message> {
   const L: Lang = (LANGS as string[]).includes(lang) ? (lang as Lang) : 'en'
   let name = SOME_EMAILS[L]
-  if (/^[a-z_]{2,40}$/.test(topic)) {
+  if (MID_SENTENCE[topic]) name = MID_SENTENCE[topic][L]
+  else if (/^[a-z_]{2,40}$/.test(topic)) {
     try {
       const { data } = await createServerSupabaseClient().from('email_topics').select('names').eq('id', topic).maybeSingle()
       const n = (data?.names as Record<string, string> | undefined)?.[L]

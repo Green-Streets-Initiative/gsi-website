@@ -6,7 +6,8 @@ import { gaEvent } from '@/lib/ga'
 
 /*
  * The manage page's body: each email topic the person has, with a switch
- * that saves on tap, and "Unsubscribe from all Shift email" with an undo.
+ * that saves on tap, and "Unsubscribe from all of these" with an undo. The
+ * GSI newsletter (Loops) is separate and keeps its own unsubscribe link.
  * Talks to /api/email-manage, which passes the link's signed id on to
  * Shift's email-subscriptions function.
  */
@@ -38,16 +39,16 @@ const T: Record<string, Record<Lang, string>> = {
   on: { en: 'On', es: 'Activado', 'pt-BR': 'Ligado', 'zh-Hans': '开启' },
   off: { en: 'Off', es: 'Desactivado', 'pt-BR': 'Desligado', 'zh-Hans': '关闭' },
   allOff: {
-    en: 'Unsubscribe from all Shift email',
-    es: 'Cancelar todos los correos de Shift',
-    'pt-BR': 'Cancelar todos os emails do Shift',
-    'zh-Hans': '退订所有 Shift 邮件',
+    en: 'Unsubscribe from all of these',
+    es: 'Cancelar todos estos correos',
+    'pt-BR': 'Cancelar todos estes emails',
+    'zh-Hans': '退订以上全部邮件',
   },
   allOffDone: {
-    en: 'You’re unsubscribed from all Shift email.',
-    es: 'Cancelaste todos los correos de Shift.',
-    'pt-BR': 'Você cancelou todos os emails do Shift.',
-    'zh-Hans': '你已退订所有 Shift 邮件。',
+    en: 'You’re unsubscribed from all of these emails.',
+    es: 'Cancelaste todos estos correos.',
+    'pt-BR': 'Você cancelou todos estes emails.',
+    'zh-Hans': '你已退订以上全部邮件。',
   },
   undo: { en: 'Undo', es: 'Deshacer', 'pt-BR': 'Desfazer', 'zh-Hans': '撤销' },
   account: {

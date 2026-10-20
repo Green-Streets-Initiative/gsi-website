@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { unsubscribeTownDigestContact } from '@/lib/loops'
 import { verifyTownDigestUnsubToken } from '@/lib/town-digest-token'
 import { SHIFT_WORDMARK_WHITE_URL } from '@/app/shift/employers/portal/_lib/portal-constants'
 
@@ -68,9 +67,8 @@ async function unsubscribe(token: string | null): Promise<
     return { ok: false, error: 'Something went wrong' }
   }
 
-  // CRM mirror — best-effort; the DB row above is what the sender honors.
-  const loops = await unsubscribeTownDigestContact(email, 'link')
-  if (!loops.ok) console.error(`town unsubscribe Loops mirror failed: status ${loops.status}`)
+  // Loops is left alone: stopping a town's emails doesn't touch the GSI
+  // newsletter, which has its own unsubscribe link (Keith, 2026-10-19).
 
   return { ok: true, townSlug: town_slug }
 }
@@ -96,7 +94,7 @@ export async function GET(req: Request) {
   return new NextResponse(
     pageHtml(
       'You’re unsubscribed',
-      `No more ${town} digest emails. If you change your mind, the signup is right where you left it — on the ${town} page at gogreenstreets.org.`,
+      `You won’t get ${town} town emails anymore. Your other emails from us keep coming, and each one has its own link to stop it. To sign up again, visit the ${town} page at gogreenstreets.org.`,
     ),
     { headers: { 'Content-Type': 'text/html; charset=utf-8' } },
   )

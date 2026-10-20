@@ -33,12 +33,14 @@ const T = {
     'zh-Hans': '不再接收{topic}？',
   },
   stopBody: {
-    en: 'You’ll stop getting {topic}. Your other emails from Shift keep coming as before.',
-    es: 'Dejarás de recibir {topic}. Tus otros correos de Shift siguen llegando como antes.',
-    'pt-BR': 'Você vai parar de receber {topic}. Seus outros emails do Shift continuam chegando como antes.',
-    'zh-Hans': '你将不再收到{topic}。你的其他 Shift 邮件照常发送。',
+    en: 'You’ll stop getting {topic}. Your other emails from us keep coming, and each one has its own link to stop it.',
+    es: 'Dejarás de recibir {topic}. Tus otros correos nuestros siguen llegando, y cada uno trae su propio enlace para dejar de recibirlo.',
+    'pt-BR': 'Você vai parar de receber {topic}. Seus outros emails nossos continuam chegando, e cada um traz o próprio link para parar de receber.',
+    'zh-Hans': '你将不再收到{topic}。你的其他邮件照常发送，每封都附有各自的退订链接。',
   },
   stopCta: { en: 'Stop these emails', es: 'Dejar de recibirlos', 'pt-BR': 'Parar de receber', 'zh-Hans': '停止接收' },
+  /** Topic names that need a word around them mid-sentence. */
+  townDigest: { en: 'town digest emails', es: 'los correos del resumen de tu ciudad', 'pt-BR': 'os emails do resumo da sua cidade', 'zh-Hans': '城镇动态摘要邮件' },
   someEmails: { en: 'these emails', es: 'estos correos', 'pt-BR': 'estes emails', 'zh-Hans': '这些邮件' },
   badLink: {
     en: 'This link looks incomplete or expired. Write to info@gogreenstreets.org and we’ll help.',
@@ -86,7 +88,9 @@ export default function ConfirmLink() {
         const lang: Lang = d.locale === 'es' || d.locale === 'pt-BR' || d.locale === 'zh-Hans' ? d.locale : 'en'
         const n = d.names?.[lang]
         // Mid-sentence: "event alerts", but "Shift updates" keeps its capital.
-        const topic = n ? (/^Shift\b/.test(n) ? n : n.charAt(0).toLowerCase() + n.slice(1)) : T.someEmails[lang]
+        const topic = d.topic === 'town_digest'
+          ? T.townDigest[lang]
+          : n ? (/^Shift\b/.test(n) ? n : n.charAt(0).toLowerCase() + n.slice(1)) : T.someEmails[lang]
         setInfo({ topic, lang })
       })
       .catch(() => setBad(true))
