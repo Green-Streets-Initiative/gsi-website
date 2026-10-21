@@ -293,7 +293,7 @@ What the assistant's tools returned (the only source of facts about this account
 ${toolData.join('\n\n') || '(none)'}
 </tool_data>
 
-Product facts the assistant was told in its instructions (true, not invented): survey links go out by email within the hour of being added to an open survey (or when it opens), with one reminder three days later; links should go out the Friday before or the Monday of survey week; drafts are invisible to employees; most trips are detected automatically in the Shift app once someone is set up; a first-to-the-goal reward stays open 48 hours after a challenge ends.
+Product facts the assistant was told in its instructions (true, not invented): survey links go out by email within the hour of being added to an open survey (or when it opens), with one reminder three days later; links should go out the Friday before or the Monday of survey week; drafts are invisible to employees; most trips are detected automatically in the Shift app once someone is set up; gift-card rewards are winner's choice (local shops or national brands), delivered in the app; a first-to-the-goal reward stays open 48 hours after a challenge ends.
 
 Judge only against the rubric and the rules above; don't penalize style that's fine. Reply with JSON only: {"pass": true|false, "notes": "one or two sentences on what was good or what went wrong"}`,
       },
