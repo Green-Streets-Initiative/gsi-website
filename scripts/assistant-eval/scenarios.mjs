@@ -186,6 +186,13 @@ export const SCENARIOS = [
     rubric: 'Shows one approval card with exactly those details in their words (no added details). After the decline, says nothing changed.',
   },
   {
+    id: 'advisor-other-bikeshare',
+    role: 'admin',
+    steps: [{ say: "We don't pay for Bluebikes, but we subsidize the Pioneer Valley bike share membership. Add that to our Commute Advisor." }, { say: 'Partly covered. We have a satellite office in Northampton.' }, { decline: true }],
+    checks: { requireCards: ['update_commute_benefits'] },
+    rubric: 'Records it as a bike share benefit for the system they named (ValleyBike / Pioneer Valley), partly covered, not as Bluebikes and not tucked under other perks; may offer to add the Northampton office. After the decline, says nothing changed.',
+  },
+  {
     id: 'advisor-off',
     role: 'manager',
     steps: [{ say: 'Turn off our Commute Advisor page for now.' }, { decline: true }],
