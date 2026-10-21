@@ -173,7 +173,7 @@ export const SCENARIOS = [
     steps: [{ say: 'Can you set up our Commute Advisor?' }],
     checks: { requireTools: ['get_commute_advisor'] },
     rubric:
-      'Reads what is already saved, says briefly what the Commute Advisor is for, reports what is set and what is missing, and asks the first missing question (one at a time). Nothing against cars.',
+      'Reads what is already saved, reports accurately what is set and what is missing, and asks about the first missing topic (one topic at a time; buttons are fine). Nothing against cars.',
   },
   {
     id: 'advisor-benefits',

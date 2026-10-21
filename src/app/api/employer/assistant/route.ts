@@ -126,7 +126,8 @@ function choicesFilter(send: (delta: string) => void) {
       held += delta
       const i = held.indexOf(OPEN)
       if (i >= 0) {
-        if (i > 0) send(held.slice(0, i))
+        const before = held.slice(0, i).trimEnd()
+        if (before) send(before)
         held = ''
         hiding = true
         return
@@ -138,6 +139,9 @@ function choicesFilter(send: (delta: string) => void) {
           break
         }
       }
+      // Trailing blank lines wait too: they'd sit above the buttons.
+      const rest = held.slice(0, held.length - keep)
+      keep += rest.length - rest.trimEnd().length
       if (held.length > keep) send(held.slice(0, held.length - keep))
       held = held.slice(held.length - keep)
     },
