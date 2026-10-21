@@ -3,7 +3,8 @@
 import { useId, type ReactNode } from 'react'
 import ModeIcon from '@/components/commute/ModeIcon'
 import StageStrip from '@/components/commute/StageStrip'
-import type { TripStage } from '@/components/commute/trip-stages'
+import type { StageLabel, TripStage } from '@/components/commute/trip-stages'
+import type { GuideGroup } from '@/components/commute/guide-topics'
 
 /**
  * The decision grid: one row per way in, the same columns for every row
@@ -37,6 +38,10 @@ export interface PlanGridRow {
   /** Share of commute emissions shifted; null (under 10%, or driving) draws a dash. */
   emissionsPct: number | null
   stages: TripStage[]
+  /** This way in's guides, by the stage they open from; none for driving. */
+  stageGuides?: Partial<Record<StageLabel, GuideGroup[]>>
+  /** "All biking guides", under an open stage's guides. */
+  guidesMore?: { href: string; label: string } | null
   drawer: ReactNode
 }
 
@@ -56,10 +61,11 @@ const DRAWER_INDENT = 'min-[560px]:pl-[50px]'
 /** The site nav is fixed at 60px; the header sticks right under it. */
 const STICKY_TOP = 'top-[60px]'
 
-export default function PlanGrid({ rows, expanded, onToggle, stickyTopClass = STICKY_TOP }: {
+export default function PlanGrid({ rows, expanded, onToggle, stickyTopClass = STICKY_TOP, onGuideEvent }: {
   rows: PlanGridRow[]
   expanded: string | null
   onToggle: (key: string) => void
+  onGuideEvent?: (name: 'advisor_stage_guides_opened' | 'advisor_guide_clicked', props: Record<string, unknown>) => void
   /** Where the header sticks: under the site nav on the page, at the top inside the phone sheet. */
   stickyTopClass?: string
 }) {
@@ -68,7 +74,7 @@ export default function PlanGrid({ rows, expanded, onToggle, stickyTopClass = ST
     // overflow-clip, not overflow-hidden: hidden would make this box the
     // header's scroll container and the sticky header would never stick.
     <div className="min-w-0 overflow-clip rounded-[12px] border border-[rgba(25,26,46,0.12)] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
-      <div className={`sticky ${stickyTopClass} z-[5] grid ${GRID_CLASS} items-center border-b border-[rgba(25,26,46,0.12)] bg-[#FAFBF8] py-2 text-[0.66rem] font-bold uppercase leading-[1.3] tracking-[0.06em] text-[#4A4D68]`} role="row" aria-hidden>
+      <div className={`sticky ${stickyTopClass} z-[5] grid ${GRID_CLASS} items-center border-b border-[rgba(25,26,46,0.12)] bg-[#FAFBF8] py-2.5 text-[0.8125rem] font-bold uppercase leading-[1.3] tracking-[0.05em] text-[#4A4D68]`} role="row" aria-hidden>
         <span />
         <span>Way in</span>
         <span>Leave by</span>
@@ -90,31 +96,31 @@ export default function PlanGrid({ rows, expanded, onToggle, stickyTopClass = ST
               aria-expanded={open}
               aria-controls={panelId}
               onClick={() => onToggle(r.key)}
-              className={`grid ${GRID_CLASS} w-full cursor-pointer items-center py-2.5 text-left transition-colors ${open ? 'bg-[#E7F0EA]' : 'hover:bg-[#FAFBF8]'}`}
+              className={`grid ${GRID_CLASS} w-full cursor-pointer items-center py-3 text-left transition-colors ${open ? 'bg-[#E7F0EA]' : 'hover:bg-[#FAFBF8]'}`}
             >
               <span className="flex items-center self-center text-[#2D6A4F]"><ModeIcon mode={r.mode} size={24} /></span>
               <span className="min-w-0 self-center">
                 <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                  <span className="text-[0.95rem] font-extrabold leading-tight text-[#191A2E]">{r.name}</span>
+                  <span className="text-[1.0625rem] font-extrabold leading-tight text-[#191A2E]">{r.name}</span>
                   {r.recommended && (
-                    <span className="rounded-full bg-[#BAF14D] px-1.5 py-px text-[0.6rem] font-extrabold uppercase tracking-[0.06em] text-[#191A2E]">Our pick</span>
+                    <span className="rounded-full bg-[#BAF14D] px-2 py-0.5 text-[0.8125rem] font-extrabold uppercase tracking-[0.04em] text-[#191A2E]">Our pick</span>
                   )}
                   {r.today && !r.recommended && (
-                    <span className="rounded-full bg-[rgba(25,26,46,0.08)] px-1.5 py-px text-[0.6rem] font-extrabold uppercase tracking-[0.06em] text-[#4A4D68]">Today</span>
+                    <span className="rounded-full bg-[rgba(25,26,46,0.08)] px-2 py-0.5 text-[0.8125rem] font-extrabold uppercase tracking-[0.04em] text-[#4A4D68]">Today</span>
                   )}
                 </span>
-                {r.sub && <span className="block truncate text-[0.76rem] leading-snug text-[#4A4D68]">{r.sub}</span>}
+                {r.sub && <span className="mt-0.5 block truncate text-[0.875rem] leading-snug text-[#4A4D68]">{r.sub}</span>}
               </span>
-              <span className="self-center text-[0.9rem] font-bold leading-tight tabular-nums text-[#191A2E]">
+              <span className="self-center text-[1rem] font-bold leading-tight tabular-nums text-[#191A2E]">
                 {r.leaveBy ?? '—'}
                 {r.leaveBy && r.leaveByTraffic && r.leaveByTraffic !== r.leaveBy && (
-                  <small className="block text-[0.72rem] font-normal leading-tight text-[#4A4D68]">{r.leaveByTraffic} in traffic</small>
+                  <small className="block text-[0.8125rem] font-normal leading-tight text-[#4A4D68]">{r.leaveByTraffic} in traffic</small>
                 )}
               </span>
-              <span className="self-center text-[0.9rem] font-bold leading-tight tabular-nums text-[#191A2E]">{time}</span>
-              <span className="hidden self-center text-[0.9rem] font-bold leading-tight tabular-nums text-[#191A2E] min-[560px]:block">
+              <span className="self-center text-[1rem] font-bold leading-tight tabular-nums text-[#191A2E]">{time}</span>
+              <span className="hidden self-center text-[1rem] font-bold leading-tight tabular-nums text-[#191A2E] min-[560px]:block">
                 {cost}
-                {r.costPerDay != null && r.costPerDay > 0 && !r.costLabel && <small className="block text-[0.72rem] font-normal leading-tight text-[#4A4D68]">a day</small>}
+                {r.costPerDay != null && r.costPerDay > 0 && !r.costLabel && <small className="block text-[0.8125rem] font-normal leading-tight text-[#4A4D68]">a day</small>}
               </span>
               <span className="hidden min-w-0 self-center min-[560px]:block">
                 {pct != null ? (
@@ -122,10 +128,10 @@ export default function PlanGrid({ rows, expanded, onToggle, stickyTopClass = ST
                     <span className="block h-1.5 overflow-hidden rounded-full bg-[rgba(25,26,46,0.12)]" aria-hidden>
                       <span className="block h-full rounded-full bg-[#2D6A4F]" style={{ width: `${Math.max(4, Math.min(100, pct))}%` }} />
                     </span>
-                    <small className="mt-0.5 block text-[0.72rem] leading-tight text-[#4A4D68]">{pct >= 98 ? 'all of it' : `${pct}%`}</small>
+                    <small className="mt-0.5 block text-[0.8125rem] leading-tight text-[#4A4D68]">{pct >= 98 ? 'all of it' : `${pct}%`}</small>
                   </>
                 ) : (
-                  <small className="text-[0.72rem] leading-tight text-[#4A4D68]">—</small>
+                  <small className="text-[0.8125rem] leading-tight text-[#4A4D68]">—</small>
                 )}
               </span>
             </button>
@@ -133,13 +139,13 @@ export default function PlanGrid({ rows, expanded, onToggle, stickyTopClass = ST
             {/* The stage strip belongs to the open row only: under every
                 row it was 24 mostly generic cells and three phone screens
                 before the map (journey pass, 2026-10-15). */}
-            {open && <StageStrip stages={r.stages} open />}
+            {open && <StageStrip key={r.key} stages={r.stages} open guides={r.stageGuides} more={r.guidesMore} onGuideEvent={onGuideEvent} />}
 
             {open && (
-              <div id={panelId} className={`space-y-2 border-t border-[rgba(25,26,46,0.12)] bg-[#E7F0EA] px-3 py-3 ${DRAWER_INDENT}`}>
+              <div id={panelId} className={`space-y-3 border-t border-[rgba(25,26,46,0.12)] bg-[#E7F0EA] px-3 py-3.5 ${DRAWER_INDENT}`}>
                 {/* On a phone the two folded columns lead the drawer. */}
                 {(r.costPerDay != null || pct != null) && (
-                  <p className="text-[0.8rem] font-semibold text-[#191A2E] min-[560px]:hidden">
+                  <p className="text-[0.9375rem] font-semibold text-[#191A2E] min-[560px]:hidden">
                     {r.costPerDay != null ? `${cost}${r.costPerDay > 0 && !r.costLabel ? ' a day' : ''}` : ''}
                     {r.costPerDay != null && pct != null ? ' · ' : ''}
                     {pct != null ? (pct >= 98 ? 'shifts all of your commute emissions' : `shifts ${pct}% of your commute emissions`) : ''}

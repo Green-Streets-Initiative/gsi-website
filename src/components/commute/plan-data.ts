@@ -278,44 +278,34 @@ export function legRideName(leg: TransitLeg): string {
   return /line$/i.test(name) ? `the ${name}` : name
 }
 
-export interface TransitSentence {
-  text: string
-  /** Minutes on foot at each end; "about" when derived from the total rather than measured. */
-  walkTo: { minutes: number; about: boolean } | null
-  walkFrom: { minutes: number; about: boolean } | null
-}
+/** One step of a transit trip: a walk, or a ride on one line. */
+export type ItineraryStep =
+  | {
+      kind: 'walk'
+      /** The map stretch it lights: 'walk:0' to the first stop, 'walk:1' to the door; a transfer walk has none. */
+      key: 'walk:0' | 'walk:1' | null
+      minutes: number
+      /** Where the walk ends: the stop, the next line's stop, or the door. */
+      to: string
+    }
+  | { kind: 'ride'; key: string; index: number; leg: TransitLeg; minutes: number | null; to: string }
 
 /**
- * The transit row as walk, ride, walk with minutes for each: "Walk 4 min to
- * Washington St @ Ross, 19 min on Route 85, walk 1 min to the office." The
- * ride minutes are the engine's per-leg minutes. The walks are the door-to-
- * door total minus the minutes on board, split across the two ends by their
- * straight-line distances; that remainder also holds the wait, so it is
- * said as "about". With no total to split, the measured walks stand alone.
+ * The transit row as steps, a minute count on each: walk to the first
+ * stop, each ride, the walk between lines at a transfer, the walk to the
+ * door. The walks are Google's own walking steps (engine 2026-10-21);
+ * before that build, or where a leg lacks them, the straight-line distance
+ * stands in. Waiting is in no step: until 2026-10-21 the door-to-door
+ * remainder (waits, the transfer) was split into the two end walks, and a
+ * stop around the corner read as a 9-minute walk.
  */
-export function transitSentence(plan: AdvisorResult, home: LatLng, office: LatLng, officeName: string): TransitSentence | null {
+export function transitItinerary(plan: AdvisorResult, home: LatLng, office: LatLng, officeName: string): ItineraryStep[] {
   const legs = plan.transit_legs
-  if (legs.length === 0) return null
+  if (legs.length === 0) return []
   const t = plan.modes.transit ?? plan.modes.bus
-  const legSum = legs.reduce((sum, l) => sum + (l.minutes ?? 0), 0)
-  const ride = t?.ride_minutes ?? (legSum > 0 ? legSum : null)
-  const walks = transitWalkLegs(plan, home, office, officeName)
-  const toStop = walks.find((w) => w.key === 'walk:0') ?? null
-  const fromStop = walks.find((w) => w.key === 'walk:1') ?? null
-  let walkTo: TransitSentence['walkTo'] = toStop ? { minutes: toStop.minutes, about: false } : null
-  let walkFrom: TransitSentence['walkFrom'] = fromStop ? { minutes: fromStop.minutes, about: false } : null
-  if (t?.minutes != null && ride != null && t.minutes > ride) {
-    const remainder = t.minutes - ride
-    const a = toStop?.minutes ?? 1
-    const b = fromStop?.minutes ?? 1
-    const toShare = Math.max(1, Math.round((remainder * a) / (a + b)))
-    const fromShare = Math.max(1, remainder - toShare)
-    walkTo = { minutes: toShare, about: true }
-    walkFrom = { minutes: fromShare, about: true }
-  }
-  // Minutes on board each leg: the engine's per-leg minutes; until its
-  // 2026-10-05 build is deployed only the total ride is known, which a
-  // one-leg trip is all of, and a transfer trip splits by stop count.
+  const ride = t?.ride_minutes ?? null
+  // Minutes on board each leg: the engine's per-leg minutes; a one-leg trip
+  // is all of the ride, a transfer trip splits it by stop count.
   const stopsTotal = legs.reduce((sum, l) => sum + (l.num_stops ?? 0), 0)
   const legMinutes = (leg: TransitLeg): number | null => {
     if (leg.minutes != null) return leg.minutes
@@ -324,20 +314,23 @@ export function transitSentence(plan: AdvisorResult, home: LatLng, office: LatLn
     if (stopsTotal > 0 && leg.num_stops) return Math.max(1, Math.round((ride * leg.num_stops) / stopsTotal))
     return null
   }
-  const parts: string[] = []
-  const first = legs[0]
-  const aboutWord = (w: { about: boolean }) => (w.about ? 'about ' : '')
+  const walks = transitWalkLegs(plan, home, office, officeName)
   const officeWord = officeName === 'Work' || /^\d/.test(officeName) ? 'the office' : officeName
-  if (walkTo) parts.push(`Walk ${aboutWord(walkTo)}${walkTo.minutes} min to ${first.departure_stop_name}`)
+  const out: ItineraryStep[] = []
   legs.forEach((leg, i) => {
-    const mins = legMinutes(leg)
-    const ride = mins != null ? `${mins} min on ${legRideName(leg)}` : `ride ${legRideName(leg)}`
-    const next = legs[i + 1]
-    parts.push(next ? `${ride} to ${leg.arrival_stop_name}` : ride)
+    let walk: number | null = leg.walk_before_minutes ?? null
+    if (walk == null && i === 0) walk = walks.find((w) => w.key === 'walk:0')?.minutes ?? null
+    if (walk == null && i > 0) {
+      const a = stopPoint(plan, legs[i - 1].arrival_stop_name)
+      const b = stopPoint(plan, leg.departure_stop_name, leg.departure_stop_lat, leg.departure_stop_lng)
+      walk = a && b && norm(legs[i - 1].arrival_stop_name) !== norm(leg.departure_stop_name) ? walkMinutes(a, b) : 0
+    }
+    if (walk != null && walk > 0) out.push({ kind: 'walk', key: i === 0 ? 'walk:0' : null, minutes: walk, to: leg.departure_stop_name })
+    out.push({ kind: 'ride', key: `transit:${i}`, index: i, leg, minutes: legMinutes(leg), to: leg.arrival_stop_name })
   })
-  if (walkFrom) parts.push(`walk ${aboutWord(walkFrom)}${walkFrom.minutes} min to ${officeWord}`)
-  const text = `${parts.join(', ')}.`
-  return { text: text.charAt(0).toUpperCase() + text.slice(1), walkTo, walkFrom }
+  const after = plan.transit_walk_after_minutes ?? walks.find((w) => w.key === 'walk:1')?.minutes ?? null
+  if (after != null && after > 0) out.push({ kind: 'walk', key: 'walk:1', minutes: after, to: officeWord })
+  return out
 }
 
 /* ── Shuttles at the office ── */

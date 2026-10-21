@@ -66,13 +66,13 @@ export default function BarrierSelector({ modes, selected, onSelect }: BarrierSe
 
   return (
     <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-7 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
-      <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
+      <div className="mb-1 text-[0.8125rem] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
         One more thing
       </div>
       <h4 className="mb-1 text-[1.125rem] font-bold text-[#191A2E]">
         Any hesitations?
       </h4>
-      <p className="mb-5 text-[0.8125rem] text-[#5A5C6E]">Select all that apply</p>
+      <p className="mb-5 text-[0.9375rem] text-[#5A5C6E]">Select all that apply</p>
 
       <div className="flex flex-col gap-2.5">
         {barriers.map((b) => {

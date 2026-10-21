@@ -44,14 +44,19 @@ export const QUESTION_ORDER: GuideQuestion[] = [
   'Locking up and parking',
 ]
 
-/** The stage each question belongs to; the card draws that stage's icon (StageStrip). */
+/**
+ * The stage each question belongs to: its guides open from that stage of
+ * the open row's strip (StageStrip, Keith 2026-10-21). The Seat stage left
+ * the strip on 2026-10-15, so riding with traffic and taking the bus are
+ * part of the route.
+ */
 export const QUESTION_STAGE: Record<GuideQuestion, StageLabel> = {
   'What to wear': 'Wear',
   'Getting a bike': 'Vehicle',
   'Carrying things': 'Cargo',
   'Planning the route': 'Route',
-  'Riding with traffic': 'Seat',
-  'Taking the bus': 'Seat',
+  'Riding with traffic': 'Route',
+  'Taking the bus': 'Route',
   'Locking up and parking': 'Store',
 }
 
@@ -201,6 +206,34 @@ export function groupGuides(guides: GuideLink[], contentMode: string, max = 6): 
   return present
     .map((q) => ({ question: q, guides: picked.get(q) ?? [] }))
     .filter((grp) => grp.guides.length > 0)
+}
+
+/**
+ * A mode's guides filed by the stage of the strip they open from, each
+ * stage's questions in trip order, at most `perStage` guides a stage
+ * (rounding through its questions, as groupGuides does).
+ */
+export function guidesByStage(guides: GuideLink[], contentMode: string, perStage = 3): Partial<Record<StageLabel, GuideGroup[]>> {
+  const all = groupGuides(guides, contentMode, Number.POSITIVE_INFINITY)
+  const out: Partial<Record<StageLabel, GuideGroup[]>> = {}
+  const stages = [...new Set(all.map((g) => QUESTION_STAGE[g.question]))]
+  for (const stage of stages) {
+    const groups = all.filter((g) => QUESTION_STAGE[g.question] === stage)
+    const picked = groups.map((g) => ({ question: g.question, guides: [] as GuideLink[] }))
+    let count = 0
+    for (let round = 0; count < perStage; round++) {
+      let added = false
+      groups.forEach((g, i) => {
+        if (count >= perStage || !g.guides[round]) return
+        picked[i].guides.push(g.guides[round])
+        count++
+        added = true
+      })
+      if (!added) break
+    }
+    out[stage] = picked.filter((g) => g.guides.length > 0)
+  }
+  return out
 }
 
 export function guideHref(g: Pick<GuideLink, 'id' | 'slug'>): string {

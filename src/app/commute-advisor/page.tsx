@@ -111,8 +111,8 @@ export default function CommuteAdvisorPage() {
         {/* Methodology */}
         <div className="mx-auto mt-8 max-w-[860px] px-6 lg:px-8">
           <div className="rounded-xl border border-navy/10 bg-navy/[0.04] px-5 py-4">
-            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">How this is calculated</div>
-            <div className="text-[0.8125rem] leading-[1.65] text-ink-soft">
+            <div className="mb-2 text-[0.8125rem] font-semibold uppercase tracking-[0.14em] text-forest">How this is calculated</div>
+            <div className="text-[0.9375rem] leading-[1.65] text-ink-soft">
               Door-to-door times come from Google Maps for a weekday morning, with parking and the walk in added to driving and a minute to lock up added to biking. Driving costs use the current Massachusetts gas price (or home charging for an electric car) plus the AAA rate for maintenance, repairs and tires, about 12 cents a mile (AAA Your Driving Costs 2026). <strong className="font-semibold text-navy">Fixed costs like insurance, depreciation and registration are left out</strong>, since they do not change with how many days you drive. MBTA fares come from{' '}
               <a href="https://www.mbta.com/fares" target="_blank" rel="noopener noreferrer" className="text-forest underline">mbta.com/fares</a>, counting a monthly pass when it works out cheaper than paying per ride. Bike upkeep is counted at about 10 cents a mile. Emissions are shown as the share of your own commute emissions each way in shifts, from EPA figures per mile. Gas prices, fares and parking costs are updated regularly from public sources.
             </div>

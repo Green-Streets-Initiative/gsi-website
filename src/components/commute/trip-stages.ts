@@ -62,8 +62,9 @@ export function routeSummaryWord(calm: CalmRoute | null | undefined): string | n
   return words[top.rating] ?? 'Mixed streets'
 }
 
-/** Minutes on foot from the alighting stop to the door, from the stop's distance to the office. */
+/** Minutes on foot from the alighting stop to the door: Google's walking steps, else the stop's distance to the office. */
 function walkFromStopMinutes(result: AdvisorResult): number | null {
+  if (result.transit_walk_after_minutes != null) return result.transit_walk_after_minutes > 0 ? result.transit_walk_after_minutes : null
   const last = result.transit_legs[result.transit_legs.length - 1]
   if (!last) return null
   const norm = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
@@ -203,13 +204,17 @@ export function stagesFor(mode: string, result: AdvisorResult, benefits: Employe
     }
     default: {
       // transit, bus
-      const first = result.transit_legs[0]
       const last = result.transit_legs[result.transit_legs.length - 1]
-      const line = extras.lineName ?? first?.route_name ?? null
-      const stops = first?.num_stops
-      const route = line
-        ? stops ? `${line}, ${stops} stops` : line
-        : result.transit_summary ?? 'Bus or train'
+      // The row's own name already says the lines ("Route 85, then Red
+      // Line"); the strip says the shape of the ride in two or three words.
+      const legs = result.transit_legs
+      const changes = legs.length - 1
+      const stops = legs.reduce((n, l) => n + (l.num_stops ?? 0), 0)
+      const route = legs.length === 0
+        ? result.transit_summary ?? 'Bus or train'
+        : changes > 0
+          ? `${changes} change${changes === 1 ? '' : 's'}`
+          : stops > 0 ? `${stops} stops, no change` : 'No change'
       const walk = walkFromStopMinutes(result)
       // The stop is named in the row ("Davis → Downtown Crossing") and the
       // leg chips; the strip only has room for the walk.

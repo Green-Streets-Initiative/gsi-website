@@ -47,7 +47,7 @@ export default function AdjustCosts({
         className="flex w-full items-center justify-between px-4 py-3 text-left text-[0.875rem] font-semibold text-[#191A2E]"
       >
         <span className="shrink-0 whitespace-nowrap">Adjust costs</span>
-        <span className="flex min-w-0 items-center gap-2 text-right text-[0.8125rem] font-normal text-[#5A5C6E]">
+        <span className="flex min-w-0 items-center gap-2 text-right text-[0.9375rem] font-normal text-[#5A5C6E]">
           {!open && `${vehicleLabel(vehicle)} · parking ${parkingPerDay > 0 ? `$${parkingPerDay} a day` : parkingKnownFree ? 'free' : 'not counted'} · ${daysPerWeek} day${daysPerWeek === 1 ? '' : 's'} a week`}
           <CaretDown size={16} weight="regular" className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
         </span>
@@ -55,7 +55,7 @@ export default function AdjustCosts({
       {open && (
         <div id={id} className="space-y-5 border-t border-[rgba(25,26,46,0.09)] px-4 py-4">
           <div>
-            <div id={`${id}-car`} className="mb-2 text-[0.75rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">Your car</div>
+            <div id={`${id}-car`} className="mb-2 text-[0.8125rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">Your car</div>
             <div className="flex flex-wrap gap-2" role="group" aria-labelledby={`${id}-car`}>
               {(['gas', 'hybrid', 'ev'] as Vehicle[]).map((v) => (
                 <button
@@ -63,7 +63,7 @@ export default function AdjustCosts({
                   type="button"
                   aria-pressed={vehicle === v}
                   onClick={() => onVehicle(v)}
-                  className={`min-h-[40px] rounded-full border-[1.5px] px-4 text-[0.8125rem] font-semibold transition-colors ${
+                  className={`min-h-[40px] rounded-full border-[1.5px] px-4 text-[0.9375rem] font-semibold transition-colors ${
                     vehicle === v ? 'border-[#2D6A4F] bg-[#2D6A4F] text-white' : 'border-[rgba(25,26,46,0.15)] bg-white text-[#191A2E] hover:border-[rgba(25,26,46,0.3)]'
                   }`}
                 >
@@ -74,7 +74,7 @@ export default function AdjustCosts({
           </div>
 
           <div>
-            <label htmlFor={`${id}-parking`} className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">
+            <label htmlFor={`${id}-parking`} className="mb-2 block text-[0.8125rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">
               Parking per day
             </label>
             <div className="flex items-center gap-2">
@@ -90,13 +90,13 @@ export default function AdjustCosts({
                 onChange={(e) => onParkingPerDay(Math.max(0, Math.min(80, parseFloat(e.target.value) || 0)))}
                 className="w-[88px] rounded-[10px] border-[1.5px] border-[rgba(25,26,46,0.15)] bg-white px-3 py-2.5 text-center text-[1rem] font-bold text-[#191A2E] outline-none focus:border-[#2D6A4F] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
               />
-              <span className="text-[0.8125rem] text-[#191A2E]">a day{parkingPerDay === 0 ? (parkingKnownFree ? ', free' : ', not counted') : ''}</span>
+              <span className="text-[0.9375rem] text-[#191A2E]">a day{parkingPerDay === 0 ? (parkingKnownFree ? ', free' : ', not counted') : ''}</span>
             </div>
-            {parkingHint && <p className="mt-1.5 text-[0.75rem] leading-snug text-[#5A5C6E]">{parkingHint}</p>}
+            {parkingHint && <p className="mt-1.5 text-[0.875rem] leading-snug text-[#5A5C6E]">{parkingHint}</p>}
           </div>
 
           <div>
-            <label htmlFor={`${id}-days`} className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">
+            <label htmlFor={`${id}-days`} className="mb-2 block text-[0.8125rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">
               Days a week
             </label>
             <div className="flex items-center gap-3">

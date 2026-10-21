@@ -54,7 +54,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo, initialLocationI
   )
 
   const afterPlan = benefits.hr_contact_name && benefits.hr_contact_email ? (
-    <div className="text-center text-[0.8125rem] text-[#5A5C6E]">
+    <div className="text-center text-[0.9375rem] text-[#5A5C6E]">
       Questions about your commute benefits? Contact {benefits.hr_contact_name} at{' '}
       <a href={`mailto:${benefits.hr_contact_email}`} className="text-[#2D6A4F] underline">{benefits.hr_contact_email}</a>
     </div>
@@ -65,15 +65,15 @@ export default function EmployerCommuteAdvisor({ group, isDemo, initialLocationI
       <Nav />
       <main className="bg-[#F4F6F1]" style={{ paddingTop: '60px' }}>
         {draft && (
-          <div className="bg-[#8A5A00] px-6 py-2.5 text-center text-[0.8125rem] font-semibold text-white">
+          <div className="bg-[#8A5A00] px-6 py-2.5 text-center text-[0.9375rem] font-semibold text-white">
             Preview of unsaved changes. Nothing here is published.
           </div>
         )}
         {isDemo && (
           <div className="bg-[#2D6A4F] px-6 py-2.5 text-center">
-            <span className="text-[0.8125rem] font-semibold text-white">This is a personalized preview for {group.name}</span>
+            <span className="text-[0.9375rem] font-semibold text-white">This is a personalized preview for {group.name}</span>
             <span className="mx-2 text-white/75">·</span>
-            <Link href="/contact?inquiry=employer" className="text-[0.8125rem] font-semibold text-white underline">Contact us to get started</Link>
+            <Link href="/contact?inquiry=employer" className="text-[0.9375rem] font-semibold text-white underline">Contact us to get started</Link>
           </div>
         )}
 
@@ -81,7 +81,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo, initialLocationI
         {onPlan ? (
           <div className="mx-auto flex max-w-[1080px] flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-3 pt-4 sm:px-8">
             {logo}
-            <span className="text-[0.8125rem] text-[#5A5C6E]">
+            <span className="text-[0.9375rem] text-[#5A5C6E]">
               Commute Advisor · powered by <span className="font-semibold text-[#2D6A4F]">Green Streets</span> Initiative
             </span>
             <h1 className="sr-only">Find your best commute</h1>
@@ -90,7 +90,7 @@ export default function EmployerCommuteAdvisor({ group, isDemo, initialLocationI
           <div className="mx-auto max-w-[640px] px-4 pb-4 pt-7 text-center sm:px-8">
             <div className="mb-3">
               {logo}
-              <div className="mt-1.5 text-[0.75rem] tracking-[0.3px] text-[#5A5C6E]">
+              <div className="mt-1.5 text-[0.875rem] tracking-[0.3px] text-[#5A5C6E]">
                 powered by <span className="font-semibold text-[#2D6A4F]">Green Streets</span> Initiative
               </div>
             </div>

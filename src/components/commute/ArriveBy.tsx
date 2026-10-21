@@ -38,7 +38,7 @@ export default function ArriveBy({ value, onChange }: { value: string; onChange:
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') setEditing(false) }}
         className="rounded-[10px] border-[1.5px] border-[rgba(25,26,46,0.15)] bg-white px-3 py-2 text-[0.9375rem] font-bold text-[#191A2E] outline-none focus:border-[#2D6A4F]"
       />
-      <button type="button" onClick={() => setEditing(false)} className="text-[0.8125rem] font-semibold text-[#2D6A4F]">
+      <button type="button" onClick={() => setEditing(false)} className="text-[0.9375rem] font-semibold text-[#2D6A4F]">
         Done
       </button>
     </div>

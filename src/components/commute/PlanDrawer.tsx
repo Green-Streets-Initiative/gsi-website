@@ -12,9 +12,9 @@ import {
   lineColorFor,
   liveDeparturesUrl,
   mergeRacks,
+  legRideName,
   shuttleAccessNote,
-  transitSentence,
-  transitWalkLegs,
+  transitItinerary,
   type LatLng,
   type LegLive,
   type ShuttleLine,
@@ -24,10 +24,12 @@ import type { AdvisorCombo, AdvisorResult, BikeParkingSpot, EmployerBenefits, Sh
 
 /*
  * The one drawer that opens under a plan row. Each way in has its own
- * body, built from the same pieces: a line or two of fact, the legs as
- * chips (tap one and the map lights that stretch; a bike stretch also
- * shows the Street View preview Nearby uses), and the actions. No
- * calories, no raw CO2, nothing "vs driving".
+ * body, built from the same pieces: the trip as steps (tap one and the map
+ * lights that stretch; a bike stretch also shows the Street View preview
+ * Nearby uses), a line or two of fact, and the actions. No calories, no
+ * raw CO2, nothing "vs driving". Text stays at reading size (Keith
+ * 2026-10-21: no walls of tiny text); the steps carry the trip, so no
+ * sentence repeats them.
  */
 
 const WALK_COLOR = '#4C9A6A'
@@ -50,14 +52,14 @@ export function LegChip({ color, label, detail, on = false, onClick, dashed = fa
     <>
       <span
         aria-hidden
-        className="inline-block h-2.5 w-2.5 shrink-0 rounded-[3px]"
+        className="inline-block h-3 w-3 shrink-0 rounded-[3px]"
         style={dashed ? { border: `2px dashed ${color}` } : { backgroundColor: color }}
       />
       <span className="min-w-0 truncate font-semibold text-[#191A2E]">{label}</span>
       {detail && <span className="shrink-0 text-[#4A4D68]">{detail}</span>}
     </>
   )
-  const cls = `inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[0.8rem] leading-tight ${
+  const cls = `inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[0.9375rem] leading-tight ${
     on ? 'border-[#2D6A4F] bg-[#E7F0EA]' : 'border-[rgba(25,26,46,0.12)] bg-white'
   }`
   // A chip lit from the map (a stretch tapped there) may sit out of view in
@@ -75,8 +77,70 @@ export function LegChip({ color, label, detail, on = false, onClick, dashed = fa
   )
 }
 
+export interface StepRow {
+  id: string
+  /** The map stretch this step lights; null for one the map does not draw (a transfer walk). */
+  mapKey: string | null
+  color: string
+  dashed?: boolean
+  minutes: number | null
+  /** "about" before the minutes: an estimate from distance, not a timetable. */
+  about?: boolean
+  /** "Walk", "Route 85", "Red Line", "Drive". */
+  what: string
+  /** Where the step ends. */
+  to: string
+}
+
+/**
+ * The trip as a column of steps, like a transit app's itinerary: a
+ * coloured rail (dashed for a walk), the minutes, what and to where. One
+ * glance gives the whole trip; tapping a step lights it on the map.
+ */
+export function Itinerary({ steps, highlightedLeg, onLegTap }: {
+  steps: StepRow[]
+  highlightedLeg: string | null
+  onLegTap: (key: string) => void
+}) {
+  return (
+    <ol className="m-0 list-none overflow-hidden rounded-xl border border-[rgba(25,26,46,0.12)] bg-white p-0" aria-label="The trip, step by step">
+      {steps.map((st, i) => {
+        const on = st.mapKey != null && highlightedLeg === st.mapKey
+        const body = (
+          <>
+            <span aria-hidden className="relative flex w-3 justify-center self-stretch">
+              <span
+                className="absolute inset-y-0 w-[5px] rounded-full"
+                style={st.dashed ? { backgroundImage: `repeating-linear-gradient(${st.color} 0 5px, transparent 5px 9px)` } : { backgroundColor: st.color }}
+              />
+            </span>
+            <span className="w-[4.25rem] shrink-0 text-[1rem] font-extrabold tabular-nums leading-snug text-[#191A2E]">
+              {st.minutes != null ? `${st.about ? '~' : ''}${st.minutes} min` : '—'}
+            </span>
+            <span className="min-w-0 text-[0.9375rem] leading-snug text-[#191A2E]">
+              <b>{st.what}</b> <span className="text-[#4A4D68]">to</span> {st.to}
+            </span>
+          </>
+        )
+        const cls = `flex w-full items-stretch gap-3 px-3 py-2.5 text-left ${i > 0 ? 'border-t border-[rgba(25,26,46,0.08)]' : ''} ${on ? 'bg-[#E7F0EA]' : ''}`
+        return (
+          <li key={st.id}>
+            {st.mapKey ? (
+              <button type="button" aria-pressed={on} onClick={() => onLegTap(st.mapKey!)} className={`${cls} cursor-pointer transition-colors hover:bg-[#F4F8EE]`}>
+                {body}
+              </button>
+            ) : (
+              <div className={cls}>{body}</div>
+            )}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
 export function DrawerActions({ children }: { children: ReactNode }) {
-  return <div className="mt-2.5 flex flex-wrap gap-2">{children}</div>
+  return <div className="mt-3 flex flex-wrap gap-2">{children}</div>
 }
 
 export function ActionLink({ href, onClick, primary = false, children }: { href: string; onClick?: () => void; primary?: boolean; children: ReactNode }) {
@@ -86,12 +150,12 @@ export function ActionLink({ href, onClick, primary = false, children }: { href:
       target="_blank"
       rel="noopener noreferrer"
       onClick={onClick}
-      className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3.5 text-[0.8125rem] font-bold transition-colors ${
+      className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-full border px-4 text-[0.9375rem] font-bold transition-colors ${
         primary ? 'border-[#2D6A4F] bg-[#2D6A4F] text-white hover:bg-[#1F4D3A]' : 'border-[#2D6A4F] bg-white text-[#2D6A4F] hover:bg-[#E7F0EA]'
       }`}
     >
       {children}
-      <ArrowSquareOut size={13} weight="bold" aria-hidden />
+      <ArrowSquareOut size={15} weight="bold" aria-hidden />
     </a>
   )
 }
@@ -101,7 +165,7 @@ export function ActionButton({ onClick, children }: { onClick: () => void; child
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-[#2D6A4F] bg-white px-3.5 text-[0.8125rem] font-bold text-[#2D6A4F] transition-colors hover:bg-[#E7F0EA]"
+      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full border border-[#2D6A4F] bg-white px-4 text-[0.9375rem] font-bold text-[#2D6A4F] transition-colors hover:bg-[#E7F0EA]"
     >
       {children}
     </button>
@@ -109,7 +173,7 @@ export function ActionButton({ onClick, children }: { onClick: () => void; child
 }
 
 const P = ({ children, muted = false }: { children: ReactNode; muted?: boolean }) => (
-  <p className={`text-[0.875rem] leading-snug ${muted ? 'text-[#4A4D68]' : 'text-[#191A2E]'}`}>{children}</p>
+  <p className={`text-[0.9375rem] leading-normal ${muted ? 'text-[#4A4D68]' : 'text-[#191A2E]'}`}>{children}</p>
 )
 
 /* ── Transit ── */
@@ -139,61 +203,43 @@ export function TransitDrawer({
       </>
     )
   }
-  const walks = transitWalkLegs(plan, home, office, officeName)
-  const toStop = walks.find((w) => w.key === 'walk:0')
-  const fromStop = walks.find((w) => w.key === 'walk:1')
-  const sentence = transitSentence(plan, home, office, officeName)
   const first = legs[0]
   const live0 = legsLive[0]
   const headway = headwayPhrase(live0)
   const subsidy = benefits.transit_subsidy_monthly && benefits.transit_subsidy_monthly > 0
     ? benefits.transit_subsidy_label || `${companyName ?? 'Your employer'} covers $${benefits.transit_subsidy_monthly} a month toward transit`
     : null
-  const walkChip = (w: { minutes: number; placeName: string }, derived: { minutes: number; about: boolean } | null) =>
-    `Walk ${derived?.about ? 'about ' : ''}${derived?.minutes ?? w.minutes} min to ${w.placeName}`
+  const steps: StepRow[] = transitItinerary(plan, home, office, officeName).map((st, i) =>
+    st.kind === 'walk'
+      ? { id: `w${i}`, mapKey: st.key, color: WALK_COLOR, dashed: true, minutes: st.minutes, what: 'Walk', to: st.to }
+      : {
+          id: `r${i}`,
+          mapKey: st.key,
+          color: legsLive[st.index]?.color ?? lineColorFor(st.leg, plan.nearby.stops),
+          minutes: st.minutes,
+          what: legRideName(st.leg).replace(/^the /, ''),
+          to: st.to,
+        },
+  )
+  const fare = t?.fare_per_trip != null && t.fare_per_trip > 0 ? `$${t.fare_per_trip.toFixed(2)} a ride` : null
 
   return (
     <>
-      {/* The trip as walk, ride, walk, a minute count on each (Keith 2026-10-05). */}
-      {sentence && <P><b>{sentence.text}</b></P>}
+      <Itinerary steps={steps} highlightedLeg={highlightedLeg} onLegTap={onLegTap} />
       <P>
         {live0 === null ? (
-          <span className="text-[#4A4D68]">Checking next departures from {first.departure_stop_name}…</span>
+          <span className="text-[#4A4D68]">Checking the next {legRideName(first).replace(/^the /, '')}…</span>
         ) : live0 && live0.nextMinutes.length > 0 ? (
           <>
-            Next from {first.departure_stop_name}: <b>{live0.nextMinutes.map((m) => (m <= 0 ? 'now' : `${m} min`)).join(', ')}</b>
-            {headway ? ` · ${headway}` : ''}
+            Next {legRideName(first).replace(/^the /, '')}: <b>{live0.nextMinutes.map((m) => (m <= 0 ? 'now' : `${m} min`)).join(', ')}</b>
+            {headway ? `, then ${headway}` : ''}
           </>
         ) : headway ? (
-          <>Runs {headway}.</>
+          <>Runs {headway}</>
         ) : null}
-        {t?.fare_per_trip != null && t.fare_per_trip > 0 && (
-          <>{live0 === null || (live0 && live0.nextMinutes.length > 0) || headway ? ' · ' : ''}${t.fare_per_trip.toFixed(2)} a ride, monthly pass counted when cheaper.</>
-        )}
+        {fare && <>{live0 === null || (live0 && live0.nextMinutes.length > 0) || headway ? ' · ' : ''}{fare}</>}
       </P>
       {subsidy && <P>{subsidy}.</P>}
-      <div className="flex flex-wrap gap-1.5">
-        {toStop && (
-          <LegChip color={WALK_COLOR} dashed label={walkChip(toStop, sentence?.walkTo ?? null)} on={highlightedLeg === 'walk:0'} onClick={() => onLegTap('walk:0')} />
-        )}
-        {legs.map((leg, i) => {
-          const name = /^\d+$/.test(leg.route_name) ? `${leg.route_name} bus` : leg.route_name
-          const detail = leg.minutes ? `${leg.minutes} min` : leg.num_stops ? `${leg.num_stops} stops` : null
-          return (
-            <LegChip
-              key={`${leg.route_id ?? leg.route_name}-${i}`}
-              color={legsLive[i]?.color ?? lineColorFor(leg, plan.nearby.stops)}
-              label={`${name}, ${leg.departure_stop_name} to ${leg.arrival_stop_name}`}
-              detail={detail}
-              on={highlightedLeg === `transit:${i}`}
-              onClick={() => onLegTap(`transit:${i}`)}
-            />
-          )
-        })}
-        {fromStop && (
-          <LegChip color={WALK_COLOR} dashed label={walkChip(fromStop, sentence?.walkFrom ?? null)} on={highlightedLeg === 'walk:1'} onClick={() => onLegTap('walk:1')} />
-        )}
-      </div>
       <DrawerActions>
         <ActionLink href={directionsHref} onClick={onDirections} primary>Directions</ActionLink>
         <ActionLink href={liveDeparturesUrl(first)}>Live departures</ActionLink>
@@ -267,7 +313,7 @@ export function BikeDrawer({
           {photo && selectedStretch ? (
             <figure className="m-0 max-w-[420px]">
               <PanelPhoto spec={{ kind: 'sv', ...photo }} alt={selectedStretch.label} />
-              <figcaption className="mt-1 text-[0.75rem] text-[#4A4D68]">
+              <figcaption className="mt-1 text-[0.875rem] text-[#4A4D68]">
                 {selectedStretch.label}, {formatStretchMiles(selectedStretch.distanceMi)}, {(COMFORT_LABELS[selectedStretch.rating] ?? selectedStretch.rating).toLowerCase()}. Street View.
               </figcaption>
             </figure>
@@ -390,10 +436,24 @@ export function ComboDrawer({ plan, mode, legsLive, officeName, benefits, compan
   const subsidy = benefits.transit_subsidy_monthly && benefits.transit_subsidy_monthly > 0
     ? benefits.transit_subsidy_label || `${companyName ?? 'Your employer'} covers $${benefits.transit_subsidy_monthly} a month toward transit`
     : null
+  const comboSteps: StepRow[] = [
+    { id: 'first', mapKey: 'first:0', color: c.kind === 'park_ride' ? DRIVE_COLOR : BIKE_LEG_COLOR, minutes: c.first_leg.minutes, what: firstWord, to: station.name },
+    ...c.transit_legs.map((leg, i): StepRow => ({
+      id: `r${i}`,
+      mapKey: `transit:${i}`,
+      color: legsLive[i]?.color ?? lineColorFor(leg, plan.nearby.stops),
+      minutes: leg.minutes,
+      what: legRideName(leg).replace(/^the /, ''),
+      to: leg.arrival_stop_name,
+    })),
+    ...(c.walk_from_minutes != null && c.walk_from_minutes > 0
+      ? [{ id: 'walk', mapKey: 'walk:1', color: WALK_COLOR, dashed: true, minutes: c.walk_from_minutes, what: 'Walk', to: office }]
+      : []),
+  ]
 
   return (
     <>
-      <P><b>{c.summary.replace(/\.?$/, '.')}</b></P>
+      <Itinerary steps={comboSteps} highlightedLeg={highlightedLeg} onLegTap={onLegTap} />
       <P>
         Leave home by <b>{formatClock(c.leave_by)}</b>, be at {station.name} by <b>{formatClock(c.transit_depart_at)}</b>.
         {first && (
@@ -416,32 +476,6 @@ export function ComboDrawer({ plan, mode, legsLive, officeName, benefits, compan
       {lotLine && <P>{lotLine}</P>}
       {c.kind === 'bike_ride' && <P>Lock up at the station rack; the bike stays there for the day.</P>}
       {subsidy && <P>{subsidy}.</P>}
-      <div className="flex flex-wrap gap-1.5">
-        <LegChip
-          color={c.kind === 'park_ride' ? DRIVE_COLOR : BIKE_LEG_COLOR}
-          label={`${firstWord} ${c.first_leg.minutes} min to ${station.name}`}
-          detail={`${c.first_leg.miles.toFixed(1)} mi`}
-          on={highlightedLeg === 'first:0'}
-          onClick={() => onLegTap('first:0')}
-        />
-        {c.transit_legs.map((leg, i) => {
-          const name = /^\d+$/.test(leg.route_name) ? `${leg.route_name} bus` : leg.route_name
-          const detail = leg.minutes ? `${leg.minutes} min` : leg.num_stops ? `${leg.num_stops} stops` : null
-          return (
-            <LegChip
-              key={`${leg.route_id ?? leg.route_name}-${i}`}
-              color={legsLive[i]?.color ?? lineColorFor(leg, plan.nearby.stops)}
-              label={`${name}, ${leg.departure_stop_name} to ${leg.arrival_stop_name}`}
-              detail={detail}
-              on={highlightedLeg === `transit:${i}`}
-              onClick={() => onLegTap(`transit:${i}`)}
-            />
-          )
-        })}
-        {c.walk_from_minutes != null && c.walk_from_minutes > 0 && (
-          <LegChip color={WALK_COLOR} dashed label={`Walk ${c.walk_from_minutes} min to ${office}`} on={highlightedLeg === 'walk:1'} onClick={() => onLegTap('walk:1')} />
-        )}
-      </div>
       <DrawerActions>
         <ActionLink href={directionsHref} onClick={onDirections} primary>Directions to {station.name}</ActionLink>
         {first && <ActionLink href={liveDeparturesUrl(first)}>Live departures</ActionLink>}
@@ -468,11 +502,15 @@ export function ShuttleDrawer({ line, officeName, highlightedLeg, onLegTap }: {
   const office = officeName === 'Work' || /^\d/.test(officeName) ? 'the office' : officeName
   return (
     <>
-      <P>
-        <b>
-          Walk {line.walkToMinutes} min to {line.homeStopName}, {line.rideEstimated ? 'about ' : ''}{line.rideMinutes} min on the {line.agencyLabel} {line.routeName} to {line.stopName}, walk {line.walkFromMinutes} min to {office}.
-        </b>
-      </P>
+      <Itinerary
+        steps={[
+          { id: 'w0', mapKey: 'walk:0', color: WALK_COLOR, dashed: true, minutes: line.walkToMinutes, what: 'Walk', to: line.homeStopName },
+          { id: 'ride', mapKey: 'ride:0', color: SHUTTLE_COLOR, minutes: line.rideMinutes, about: line.rideEstimated, what: `${line.agencyLabel} ${line.routeName}`.trim(), to: line.stopName },
+          { id: 'w1', mapKey: 'walk:1', color: WALK_COLOR, dashed: true, minutes: line.walkFromMinutes, what: 'Walk', to: office },
+        ]}
+        highlightedLeg={highlightedLeg}
+        onLegTap={onLegTap}
+      />
       <P>
         {times.length > 0 ? (
           <>
@@ -485,11 +523,6 @@ export function ShuttleDrawer({ line, officeName, highlightedLeg, onLegTap }: {
         )}
         {' '}{shuttleAccessNote(line)}
       </P>
-      <div className="flex flex-wrap gap-1.5">
-        <LegChip color={WALK_COLOR} dashed label={`Walk ${line.walkToMinutes} min to ${line.homeStopName}`} on={highlightedLeg === 'walk:0'} onClick={() => onLegTap('walk:0')} />
-        <LegChip color={SHUTTLE_COLOR} label={`${line.agencyLabel} ${line.routeName}, ${line.homeStopName} to ${line.stopName}`} detail={`${line.rideEstimated ? '~' : ''}${line.rideMinutes} min`} on={highlightedLeg === 'ride:0'} onClick={() => onLegTap('ride:0')} />
-        <LegChip color={WALK_COLOR} dashed label={`Walk ${line.walkFromMinutes} min to ${office}`} on={highlightedLeg === 'walk:1'} onClick={() => onLegTap('walk:1')} />
-      </div>
       {line.url && (
         <DrawerActions><ActionLink href={line.url}>{line.agencyName} schedule</ActionLink></DrawerActions>
       )}

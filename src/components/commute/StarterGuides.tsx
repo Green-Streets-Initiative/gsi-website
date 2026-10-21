@@ -69,7 +69,7 @@ export default function StarterGuides({ modes, event }: StarterGuidesProps) {
   return (
     <div className="space-y-4">
       <div>
-        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
+        <div className="mb-3 text-[0.8125rem] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
           Start here
         </div>
         {guides.length > 0 ? (
@@ -118,13 +118,13 @@ export default function StarterGuides({ modes, event }: StarterGuidesProps) {
       {/* Event card */}
       {event ? (
         <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
-          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
+          <div className="mb-3 text-[0.8125rem] font-bold uppercase tracking-[0.14em] text-[#5A5C6E]">
             Try it with others
           </div>
           <h5 className="mb-2 text-[1rem] font-bold text-[#191A2E]">
             {event.content_items.title}
           </h5>
-          <div className="mb-2 text-[0.8125rem] text-[#5A5C6E]">
+          <div className="mb-2 text-[0.9375rem] text-[#5A5C6E]">
             {formatEventDate(event.event_date, { year: true })}
             {event.location_name && ` · ${event.location_name}`}
           </div>

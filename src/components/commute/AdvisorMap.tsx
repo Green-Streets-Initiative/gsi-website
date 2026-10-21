@@ -434,13 +434,13 @@ export default function AdvisorMap({
         <NearbyToneProvider tone="light">
           <div className="absolute inset-0 [&_.maplibregl-ctrl-bottom-right]:!bottom-[88px]">{map}</div>
           <div className="absolute left-3 right-3 top-3 z-10 flex items-center gap-2 rounded-full border border-[rgba(25,26,46,0.12)] bg-white/90 py-1.5 pl-3.5 pr-1.5 backdrop-blur">
-            <div className="flex min-w-0 flex-1 items-center gap-x-3 overflow-x-auto whitespace-nowrap text-[0.72rem] font-semibold text-[#4A4D68] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex min-w-0 flex-1 items-center gap-x-3 overflow-x-auto whitespace-nowrap text-[0.9375rem] font-semibold text-[#4A4D68] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {legend}
             </div>
             <TrafficToggle on={trafficOn} onToggle={toggleTraffic} />
           </div>
           {trafficOn && trafficAvailable === false && (
-            <p className="absolute left-3 top-14 z-10 rounded-full bg-white/90 px-3 py-1 text-[0.72rem] font-semibold text-[#8A5A00]">Traffic not available right now.</p>
+            <p className="absolute left-3 top-14 z-10 rounded-full bg-white/90 px-3 py-1 text-[0.9375rem] font-semibold text-[#8A5A00]">Traffic not available right now.</p>
           )}
         </NearbyToneProvider>
       </div>
@@ -451,13 +451,13 @@ export default function AdvisorMap({
     <div className="nearby-tone nearby-tone-light overflow-hidden rounded-[12px] border border-[rgba(25,26,46,0.12)] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
       <NearbyToneProvider tone="light">
         <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.72rem] font-semibold text-[#4A4D68]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.9375rem] font-semibold text-[#4A4D68]">
             {legend}
           </div>
           <TrafficToggle on={trafficOn} onToggle={toggleTraffic} />
         </div>
         {trafficOn && trafficAvailable === false && (
-          <p className="px-3 pb-2 text-[0.72rem] font-semibold text-[#8A5A00]">Traffic not available right now.</p>
+          <p className="px-3 pb-2 text-[0.9375rem] font-semibold text-[#8A5A00]">Traffic not available right now.</p>
         )}
         {trafficOn && trafficAvailable !== false && <TrafficLegend className="px-3 pb-2" />}
         <div className="relative">

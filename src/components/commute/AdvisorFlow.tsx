@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
-import { ArrowSquareOut, Check, Copy, FilePdf, MapPin } from '@phosphor-icons/react'
+import { ArrowSquareOut, BookmarkSimple, CaretDown, Check, Copy, DeviceMobile, FilePdf, MapPin, PencilSimple } from '@phosphor-icons/react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import ArriveBy from '@/components/commute/ArriveBy'
 import MotivationChips from '@/components/commute/MotivationChips'
@@ -19,9 +19,8 @@ import { useIsWide } from '@/components/commute/useIsWide'
 import LoadingMessages from '@/components/commute/LoadingMessages'
 import CommutePlanPrint from '@/components/commute/CommutePlanPrint'
 import TagAlong from '@/components/commute/TagAlong'
-import { STAGE_ICONS } from '@/components/commute/StageStrip'
 import { fetchCalmRoute, type CalmRoute } from '@/components/commute/calm-route'
-import { QUESTION_STAGE, contentModeFor, contentModeWord, groupGuides, guideHref } from '@/components/commute/guide-topics'
+import { contentModeFor, contentModeWord, guidesByStage } from '@/components/commute/guide-topics'
 import { eventKindLine, eventModeForRow, eventWhenLine, eventWhereLine, walkRideDayWhen } from '@/components/commute/event-card'
 import {
   directionsUrl,
@@ -140,6 +139,8 @@ type Session = {
   homePlaceData?: PlaceData | null
   workAddress?: string
   workPlaceData?: PlaceData | null
+  /** The employer office picked; before 2026-10-21 it was not kept and a reload named the first office. */
+  locationId?: string | null
   step?: number
   arriveBy?: string
   motivation?: Motivation | null
@@ -323,6 +324,11 @@ export default function AdvisorFlow({
     if (s.homePlaceData && typeof s.homePlaceData.lat === 'number') setHomePlaceData(s.homePlaceData)
     if (typeof s.workAddress === 'string') setWorkAddress(s.workAddress)
     if (s.workPlaceData && typeof s.workPlaceData.lat === 'number') setWorkPlaceData(s.workPlaceData)
+    // The office at the saved spot is the one (a plan saved before the id
+    // was kept can carry the first office's id); the id is the fallback.
+    const savedOffice = (s.workPlaceData ? officeOptions.find((l) => Math.abs(l.lat - s.workPlaceData!.lat) < 1e-5 && Math.abs(l.lng - s.workPlaceData!.lng) < 1e-5) : undefined)
+      ?? officeOptions.find((l) => l.id === s.locationId)
+    if (savedOffice) setLocationId(savedOffice.id)
     const clock = asClock(s.arriveBy)
     if (clock) { setArriveBy(clock); arriveTouched.current = true }
     if (s.motivation === 'time' || s.motivation === 'money' || s.motivation === 'health' || s.motivation === 'climate') setMotivation(s.motivation)
@@ -348,9 +354,9 @@ export default function AdvisorFlow({
     // never overwrite a saved plan.
     if (!result && !homePlaceData && step === 1) return
     writeSession(storageKey(variant, group?.slug), {
-      homeAddress, homePlaceData, workAddress, workPlaceData, step, arriveBy, motivation, vehicle, parkingPerDay, daysPerWeek, commuteMode, result,
+      homeAddress, homePlaceData, workAddress, workPlaceData, locationId, step, arriveBy, motivation, vehicle, parkingPerDay, daysPerWeek, commuteMode, result,
     } satisfies Session)
-  }, [persistSession, variant, group?.slug, homeAddress, homePlaceData, workAddress, workPlaceData, step, arriveBy, motivation, vehicle, parkingPerDay, daysPerWeek, commuteMode, result])
+  }, [persistSession, variant, group?.slug, homeAddress, homePlaceData, workAddress, workPlaceData, locationId, step, arriveBy, motivation, vehicle, parkingPerDay, daysPerWeek, commuteMode, result])
 
   const pickLocation = (id: string) => {
     const l = officeOptions.find((x) => x.id === id)
@@ -598,6 +604,7 @@ export default function AdvisorFlow({
   const printGroup = group ?? PUBLIC_GROUP
   const joinLink = group?.invite_code ? `https://shift.gogreenstreets.org/join/${group.invite_code}` : null
   const [codeCopied, setCodeCopied] = useState(false)
+  const [saveOpen, setSaveOpen] = useState(false)
   const copyCode = () => {
     if (!group?.invite_code) return
     navigator.clipboard?.writeText(group.invite_code).catch(() => {})
@@ -609,6 +616,12 @@ export default function AdvisorFlow({
   /* ── The grid's rows ── */
   const rows = useMemo<PlanGridRow[]>(() => {
     if (!plan || !home || !office || !office4Links) return []
+    // Each way in's guides open from the stages of its strip (StageStrip).
+    const stageGuidesFor = (mode: string): Pick<PlanGridRow, 'stageGuides' | 'guidesMore'> => {
+      const cm = contentModeFor(mode)
+      if (!cm || !plan.guides) return {}
+      return { stageGuides: guidesByStage(plan.guides, cm), guidesMore: { href: `/guides?mode=${cm}`, label: `All guides for ${contentModeWord(cm)}` } }
+    }
     const officeLabel = office4Links.label
     const out: PlanGridRow[] = []
     for (const mode of order) {
@@ -658,6 +671,7 @@ export default function AdvisorFlow({
         costPerDay: m.cost_per_day,
         emissionsPct: m.emissions_share_pct,
         stages: stagesFor(mode, plan, benefits, { calm, bikeParking, lineName, combo: m.combo ?? null }),
+        ...stageGuidesFor(mode),
         drawer,
       })
     }
@@ -699,16 +713,6 @@ export default function AdvisorFlow({
   /* ── The picked way in: the open row, else our pick ── */
   const pickedKey = expanded ?? plan?.recommended_mode ?? null
   const pickedMode = pickedKey?.startsWith('shuttle:') || pickedKey?.startsWith('employer-shuttle-') ? 'shuttle' : pickedKey
-  // Guides exist for biking, walking and transit; with driving open (or
-  // picked) the card shows the guides for our best non-driving row.
-  const guideMode = useMemo(() => {
-    if (!plan) return null
-    const direct = contentModeFor(pickedMode)
-    if (direct) return direct
-    const fallback = [plan.recommended_mode, ...order].map(contentModeFor).find(Boolean)
-    return fallback ?? null
-  }, [plan, pickedMode, order])
-  const guideGroups = useMemo(() => (plan?.guides && guideMode ? groupGuides(plan.guides, guideMode) : []), [plan?.guides, guideMode])
 
   /* ── "Try it with others" follows the OPEN row's way in (Keith 2026-10-06:
    * a walker or a transit rider was being shown a bike ride). The plan
@@ -755,7 +759,7 @@ export default function AdvisorFlow({
               {/* Headline: the winner and the tradeoff, arrive-by, the chips */}
               <div className="mb-3">
                 {/* The host page's header already names the company on the plan; this says what the block is. */}
-                {!inSheet && <div className="mb-1 text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-[#2D6A4F]">Your plan</div>}
+                {!inSheet && <div className="mb-1 text-[0.8125rem] font-bold uppercase tracking-[0.14em] text-[#2D6A4F]">Your plan</div>}
                 <h2 ref={headlineRef} tabIndex={-1} className="text-[1.25rem] font-extrabold leading-snug tracking-tight text-[#191A2E] outline-none sm:text-[1.5rem]">{headline}</h2>
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.875rem] text-[#191A2E]">
                   <ArriveBy value={arriveBy} onChange={(v) => { changeArriveBy(v, 'plan'); run({ arriveBy: v, motivation }) }} />
@@ -763,17 +767,76 @@ export default function AdvisorFlow({
                 </div>
                 {/* The plan's own miles live on each row (the crow-flies figure contradicted them). */}
                 <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-                  <span className="text-[0.8125rem] font-semibold text-[#191A2E]">Put first:</span>
+                  <span className="text-[0.9375rem] font-semibold text-[#191A2E]">Put first:</span>
                   <MotivationChips value={motivation} onChange={(m) => { setMotivation(m); track('advisor_motivation_changed', { motivation: m }) }} compact />
                 </div>
+                {/* What a reader wants once the plan is up: keep it, or change
+                    something (Keith 2026-10-21: "Keep this plan" sat under the
+                    grid and was easy to miss). */}
+                <div className="mt-3.5 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    aria-expanded={saveOpen}
+                    aria-controls="advisor-save-panel"
+                    onClick={() => { setSaveOpen((v) => !v); if (!saveOpen) track('advisor_save_opened') }}
+                    className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-[#2D6A4F] px-5 text-[1rem] font-bold text-white transition-colors hover:bg-[#1F4D3A]"
+                  >
+                    <BookmarkSimple size={18} weight="bold" aria-hidden />
+                    Save this plan
+                    <CaretDown size={14} weight="bold" className={`transition-transform ${saveOpen ? 'rotate-180' : ''}`} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { track('advisor_change_clicked'); setStep(1) }}
+                    className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-[#2D6A4F] bg-white px-5 text-[1rem] font-bold text-[#2D6A4F] transition-colors hover:bg-[#E7F0EA]"
+                  >
+                    <PencilSimple size={18} weight="bold" aria-hidden />
+                    Change something
+                  </button>
+                </div>
+                {saveOpen && (
+                  <div id="advisor-save-panel" className="mt-2.5 grid gap-2.5 rounded-[12px] border border-[rgba(25,26,46,0.12)] bg-white p-3.5 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => { track('advisor_plan_printed', { primary_mode: plan.recommended_mode }); window.print() }}
+                      className="flex items-start gap-3 rounded-[10px] border border-[rgba(25,26,46,0.12)] px-3.5 py-3 text-left transition-colors hover:border-[#2D6A4F] hover:bg-[#F4F8EE]"
+                    >
+                      <FilePdf size={26} weight="regular" className="mt-0.5 shrink-0 text-[#2D6A4F]" aria-hidden />
+                      <span>
+                        <span className="block text-[1rem] font-bold text-[#191A2E]">Save as PDF</span>
+                        <span className="block text-[0.9375rem] leading-snug text-[#4A4D68]">One page to print or keep on your phone</span>
+                      </span>
+                    </button>
+                    <div className="flex items-start gap-3 rounded-[10px] border border-[rgba(25,26,46,0.12)] px-3.5 py-3">
+                      <DeviceMobile size={26} weight="regular" className="mt-0.5 shrink-0 text-[#2D6A4F]" aria-hidden />
+                      <div className="min-w-0 text-[0.9375rem] leading-snug text-[#191A2E]">
+                        {joinLink && group ? (
+                          <>
+                            <a href={joinLink} target="_blank" rel="noopener" onClick={() => track('advisor_app_cta_clicked', { has_invite_code: true })} className="block text-[1rem] font-bold text-[#2D6A4F] hover:underline">Join {group.name} in the Shift app</a>
+                            <span className="text-[#4A4D68]">Free, with the code </span>
+                            <button type="button" onClick={copyCode} aria-label="Copy the invite code" className="inline-flex items-center gap-1 rounded border border-[rgba(25,26,46,0.15)] bg-[#FAFBF8] px-1.5 py-px font-mono text-[0.9375rem] font-bold tracking-wide text-[#191A2E]">
+                              {group.invite_code}
+                              {codeCopied ? <Check size={14} weight="bold" className="text-[#2D6A4F]" aria-hidden /> : <Copy size={14} weight="bold" aria-hidden />}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <Link href="/shift" target="_blank" rel="noopener" onClick={() => track('advisor_app_cta_clicked', { has_invite_code: false })} className="block text-[1rem] font-bold text-[#2D6A4F] hover:underline">Try it in the Shift app</Link>
+                            <span className="text-[#4A4D68]">Free. See every walk, ride and transit trip add up.</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* The grid; on a wide screen the map beside it, on a phone the map is the stage behind this sheet */}
               {inSheet ? (
-                <PlanGrid rows={rows} expanded={expanded} onToggle={toggleRow} stickyTopClass="top-0" />
+                <PlanGrid rows={rows} expanded={expanded} onToggle={toggleRow} stickyTopClass="top-0" onGuideEvent={track} />
               ) : (
               <div className="grid items-start gap-3.5 min-[900px]:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-                  <PlanGrid rows={rows} expanded={expanded} onToggle={toggleRow} />
+                  <PlanGrid rows={rows} expanded={expanded} onToggle={toggleRow} onGuideEvent={track} />
                   <div className="min-w-0 min-[900px]:sticky min-[900px]:top-[72px]">
                     <AdvisorMap
                       key={`${home.lat},${home.lng}-${office.lat},${office.lng}`}
@@ -795,119 +858,34 @@ export default function AdvisorFlow({
                 </div>
               )}
 
-              {/* Next steps: one row of three. Keep this plan leads (it holds the
-                  hand-off: Directions, the PDF, the app), then the guides, then
-                  the invitation to try it with others. */}
-              <div className="mt-3.5 grid gap-2.5 sm:grid-cols-3">
+              {/* After the plan: trying it with others. Saving and changing the
+                  plan sit under the headline; the guides open from each row's
+                  stages. */}
+              <div className="mt-3.5">
                 <div className="min-w-0 rounded-[12px] border border-[rgba(25,26,46,0.12)] bg-white px-3.5 py-3">
-                  <div className="mb-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-[#4A4D68]">Keep this plan</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <a
-                      href={plan.modes[plan.recommended_mode]?.combo
-                        ? directionsUrl(home, { lat: plan.modes[plan.recommended_mode].combo!.station.lat, lng: plan.modes[plan.recommended_mode].combo!.station.lng }, plan.modes[plan.recommended_mode].combo!.first_leg.mode)
-                        : directionsUrl(home, office, plan.recommended_mode, plan.recommended_mode === 'bike' && calm ? calm.calm.viaWaypoints : undefined)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => track('advisor_directions_clicked', { mode: plan.recommended_mode, source: 'links' })}
-                      className="inline-flex min-h-[34px] items-center gap-1 rounded-full bg-[#191A2E] px-3 text-[0.78rem] font-semibold text-white transition-opacity hover:opacity-90"
-                    >
-                      Directions <ArrowSquareOut size={13} weight="bold" aria-hidden />
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => { track('advisor_plan_printed', { primary_mode: plan.recommended_mode }); window.print() }}
-                      className="inline-flex min-h-[34px] items-center gap-1.5 rounded-full border border-[rgba(25,26,46,0.15)] bg-white px-3 text-[0.78rem] font-semibold text-[#191A2E] transition-colors hover:border-[#2D6A4F] hover:text-[#2D6A4F]"
-                    >
-                      <FilePdf size={15} weight="regular" aria-hidden />
-                      Save as PDF
-                    </button>
-                    {nearbyUrl && (
-                      <a
-                        href={nearbyUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => track('advisor_nearby_clicked')}
-                        className="inline-flex min-h-[34px] items-center gap-1 rounded-full border border-[rgba(25,26,46,0.15)] bg-white px-3 text-[0.78rem] font-semibold text-[#191A2E] transition-colors hover:border-[#2D6A4F] hover:text-[#2D6A4F]"
-                      >
-                        Transit, bike lanes and docks around this office <ArrowSquareOut size={13} weight="bold" aria-hidden />
-                      </a>
-                    )}
-                  </div>
-                  <p className="mt-2 text-[0.8rem] leading-snug text-[#4A4D68]">
-                    {joinLink && group ? (
-                      <>
-                        <a href={joinLink} target="_blank" rel="noopener" onClick={() => track('advisor_app_cta_clicked', { has_invite_code: true })} className="font-semibold text-[#2D6A4F]">Join {group.name} in the Shift app</a>
-                        {' '}(free) with invite code{' '}
-                        <button type="button" onClick={copyCode} aria-label="Copy the invite code" className="inline-flex items-center gap-1 rounded border border-[rgba(25,26,46,0.15)] bg-[#FAFBF8] px-1.5 py-px font-mono text-[0.78rem] font-bold tracking-wide text-[#191A2E]">
-                          {group.invite_code}
-                          {codeCopied ? <Check size={12} weight="bold" className="text-[#2D6A4F]" aria-hidden /> : <Copy size={12} weight="bold" aria-hidden />}
-                        </button>
-                        , and every walk, ride and transit trip counts for the team.
-                      </>
-                    ) : (
-                      <>
-                        <Link href="/shift" target="_blank" rel="noopener" onClick={() => track('advisor_app_cta_clicked', { has_invite_code: false })} className="font-semibold text-[#2D6A4F]">Try the plan in the Shift app</Link>
-                        {' '}(free), and see every walk, ride and transit trip add up.
-                      </>
-                    )}
-                  </p>
-                </div>
-                <div className="min-w-0 rounded-[12px] border border-[rgba(25,26,46,0.12)] bg-white px-3.5 py-3">
-                  <div className="mb-1 text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-[#4A4D68]">
-                    {guideMode ? `Guides for ${contentModeWord(guideMode)}` : 'Guides'}
-                  </div>
-                  {guideGroups.length > 0 ? (
-                    <div className="space-y-1.5">
-                      {guideGroups.map((grp) => {
-                        const QuestionIcon = STAGE_ICONS[QUESTION_STAGE[grp.question]]
-                        return (
-                        <div key={grp.question}>
-                          <div className="flex items-center gap-1 text-[0.72rem] font-semibold text-[#4A4D68]">
-                            <QuestionIcon size={15} weight="regular" className="shrink-0 text-[#2D6A4F]" aria-hidden />
-                            {grp.question}
-                          </div>
-                          <ul className="m-0 list-none p-0">
-                            {grp.guides.map((g) => (
-                              <li key={g.id}>
-                                <Link href={guideHref(g)} target="_blank" rel="noopener" onClick={() => track('advisor_guide_clicked', { guide_id: g.id, question: grp.question })} className="text-[0.8rem] font-semibold leading-snug text-[#191A2E] hover:text-[#2D6A4F]">{g.title}</Link>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-[0.8rem] leading-snug text-[#4A4D68]">
-                      Short guides to the first week by bike, on foot and on transit.
-                    </p>
-                  )}
-                  <Link href="/guides" target="_blank" rel="noopener" className="mt-1.5 inline-block text-[0.8rem] font-semibold text-[#2D6A4F] hover:underline">All guides</Link>
-                </div>
-                <div className="min-w-0 rounded-[12px] border border-[rgba(25,26,46,0.12)] bg-white px-3.5 py-3">
-                  <div className="mb-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-[#4A4D68]">Try it with others</div>
+                  <div className="mb-0.5 text-[0.8125rem] font-bold uppercase tracking-[0.12em] text-[#4A4D68]">Try it with others</div>
                   {tryItCard === 'loading' ? (
-                    <p className="text-[0.8rem] leading-snug text-[#4A4D68]" aria-live="polite">Finding one near the office…</p>
+                    <p className="text-[0.9375rem] leading-snug text-[#4A4D68]" aria-live="polite">Finding one near the office…</p>
                   ) : tryItCard?.event ? (
                     <>
                       {/* The plan is the work in progress; everything that leaves it opens in a new tab. */}
-                      <Link href={eventPath(tryItCard.event)} target="_blank" rel="noopener" className="block text-[0.9rem] font-bold leading-snug text-[#191A2E] hover:text-[#2D6A4F]">{tryItCard.event.content_items.title}</Link>
-                      {tryItCard.event.organizer_name && <p className="mt-0.5 text-[0.8rem] leading-snug text-[#4A4D68]">{tryItCard.event.organizer_name}</p>}
-                      <p className="mt-1 text-[0.8rem] leading-snug text-[#191A2E]">{eventKindLine(tryItCard.event)}</p>
-                      <p className="text-[0.8rem] leading-snug text-[#191A2E]">{eventWhenLine(tryItCard.event)}</p>
-                      {eventWhereLine(tryItCard.event) && <p className="text-[0.8rem] leading-snug text-[#191A2E]">{eventWhereLine(tryItCard.event)}</p>}
-                      {tryItCard.event.excerpt && <p className="mt-1 text-[0.8rem] leading-snug text-[#4A4D68]">{tryItCard.event.excerpt}</p>}
-                      <Link href={eventPath(tryItCard.event)} target="_blank" rel="noopener" onClick={() => track('advisor_event_clicked', { event_id: tryItCard.event?.id, event_mode: tryItCard.mode })} className="mt-1 inline-block text-[0.8rem] font-semibold text-[#2D6A4F] hover:underline">Event details</Link>
+                      <Link href={eventPath(tryItCard.event)} target="_blank" rel="noopener" className="block text-[1rem] font-bold leading-snug text-[#191A2E] hover:text-[#2D6A4F]">{tryItCard.event.content_items.title}</Link>
+                      {tryItCard.event.organizer_name && <p className="mt-0.5 text-[0.9375rem] leading-snug text-[#4A4D68]">{tryItCard.event.organizer_name}</p>}
+                      <p className="mt-1 text-[0.9375rem] leading-snug text-[#191A2E]">{eventKindLine(tryItCard.event)}</p>
+                      <p className="text-[0.9375rem] leading-snug text-[#191A2E]">{eventWhenLine(tryItCard.event)}</p>
+                      {eventWhereLine(tryItCard.event) && <p className="text-[0.9375rem] leading-snug text-[#191A2E]">{eventWhereLine(tryItCard.event)}</p>}
+                      {tryItCard.event.excerpt && <p className="mt-1 text-[0.9375rem] leading-snug text-[#4A4D68]">{tryItCard.event.excerpt}</p>}
+                      <Link href={eventPath(tryItCard.event)} target="_blank" rel="noopener" onClick={() => track('advisor_event_clicked', { event_id: tryItCard.event?.id, event_mode: tryItCard.mode })} className="mt-1 inline-block text-[0.9375rem] font-semibold text-[#2D6A4F] hover:underline">Event details</Link>
                     </>
                   ) : tryItCard?.walk_ride_day ? (
                     <>
-                      <Link href={tryItCard.walk_ride_day.href} target="_blank" rel="noopener" className="block text-[0.9rem] font-bold leading-snug text-[#191A2E] hover:text-[#2D6A4F]">{tryItCard.walk_ride_day.title}</Link>
-                      <p className="mt-1 text-[0.8rem] leading-snug text-[#191A2E]">{walkRideDayWhen(tryItCard.walk_ride_day.date)}</p>
-                      <p className="mt-1 text-[0.8rem] leading-snug text-[#4A4D68]">{tryItCard.walk_ride_day.blurb}</p>
-                      <Link href={tryItCard.walk_ride_day.href} target="_blank" rel="noopener" onClick={() => track('advisor_event_clicked', { event_id: 'walk-ride-day', event_mode: tryItCard.mode })} className="mt-1 inline-block text-[0.8rem] font-semibold text-[#2D6A4F] hover:underline">About Walk/Ride Day</Link>
+                      <Link href={tryItCard.walk_ride_day.href} target="_blank" rel="noopener" className="block text-[1rem] font-bold leading-snug text-[#191A2E] hover:text-[#2D6A4F]">{tryItCard.walk_ride_day.title}</Link>
+                      <p className="mt-1 text-[0.9375rem] leading-snug text-[#191A2E]">{walkRideDayWhen(tryItCard.walk_ride_day.date)}</p>
+                      <p className="mt-1 text-[0.9375rem] leading-snug text-[#4A4D68]">{tryItCard.walk_ride_day.blurb}</p>
+                      <Link href={tryItCard.walk_ride_day.href} target="_blank" rel="noopener" onClick={() => track('advisor_event_clicked', { event_id: 'walk-ride-day', event_mode: tryItCard.mode })} className="mt-1 inline-block text-[0.9375rem] font-semibold text-[#2D6A4F] hover:underline">About Walk/Ride Day</Link>
                     </>
                   ) : (
-                    <p className="text-[0.8rem] leading-snug text-[#4A4D68]">
+                    <p className="text-[0.9375rem] leading-snug text-[#4A4D68]">
                       Walks, rides and transit meetups near you are on the{' '}
                       <Link href="/events" target="_blank" rel="noopener" className="font-semibold text-[#2D6A4F]">events calendar</Link>.
                     </p>
@@ -927,8 +905,12 @@ export default function AdvisorFlow({
 
               {afterPlan && <div className="mt-3">{afterPlan}</div>}
 
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[0.8125rem]">
-                <button type="button" onClick={() => setStep(1)} className="font-semibold text-[#2D6A4F] hover:underline">Change addresses or costs</button>
+              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[0.9375rem]">
+                {nearbyUrl && (
+                  <a href={nearbyUrl} target="_blank" rel="noopener noreferrer" onClick={() => track('advisor_nearby_clicked')} className="inline-flex items-center gap-1 font-semibold text-[#2D6A4F] hover:underline">
+                    Transit, bike lanes and docks around this office <ArrowSquareOut size={15} weight="bold" aria-hidden />
+                  </a>
+                )}
                 {/* The plan is kept in this browser for a week; on a shared computer this is the way to leave nothing behind. */}
                 <button type="button" onClick={startOver} className="font-semibold text-[#4A4D68] hover:underline">Start over and forget my addresses</button>
               </div>
@@ -948,7 +930,7 @@ export default function AdvisorFlow({
               onClick={() => s < step && setStep(s)}
               disabled={s > step}
               aria-label={`Step ${s}`}
-              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+              className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold transition-colors ${
                 s === step ? 'bg-[#2D6A4F] text-white' : s < step ? 'bg-[#E7F0EA] text-[#2D6A4F] hover:bg-[#d5e5d9]' : 'bg-[rgba(25,26,46,0.06)] text-[#5A5C6E]'
               }`}
             >
@@ -976,7 +958,7 @@ export default function AdvisorFlow({
 
               {variant === 'employer' && officeOptions.length > 1 && (
                 <div>
-                  <label htmlFor="advisor-location" className="mb-1.5 block text-[0.8125rem] font-semibold text-[#191A2E]">
+                  <label htmlFor="advisor-location" className="mb-1.5 block text-[0.9375rem] font-semibold text-[#191A2E]">
                     Which {companyName ?? 'office'} location?
                   </label>
                   <select
@@ -996,7 +978,7 @@ export default function AdvisorFlow({
                 <div className="flex items-start gap-2.5 rounded-[10px] border border-[rgba(25,26,46,0.09)] bg-[#FAFBF8] px-3.5 py-3">
                   <MapPin size={18} weight="fill" className="mt-0.5 shrink-0 text-[#2D6A4F]" aria-hidden />
                   <div>
-                    <div className="text-[0.75rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">Work</div>
+                    <div className="text-[0.8125rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">Work</div>
                     <div className="text-[0.9375rem] text-[#191A2E]">{officeOptions[0].name ? `${officeOptions[0].name}, ` : ''}{officeOptions[0].address}</div>
                   </div>
                 </div>
@@ -1030,7 +1012,7 @@ export default function AdvisorFlow({
                 onDaysPerWeek={setDaysPerWeek}
               />
 
-              <p className="text-[0.75rem] leading-snug text-[#5A5C6E]">
+              <p className="text-[0.875rem] leading-snug text-[#5A5C6E]">
                 Addresses are only used to look up routes. They are never saved to a profile or shared.
               </p>
             </div>
@@ -1123,8 +1105,8 @@ export default function AdvisorFlow({
                 const pick = rows.find((r) => r.key === pickedKey) ?? rows[0]
                 return (
                   <div className="px-4 pb-2.5">
-                    <div className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#2D6A4F]">Your plan</div>
-                    <div className="truncate text-[0.95rem] font-extrabold leading-snug text-[#191A2E]">
+                    <div className="text-[0.8125rem] font-bold uppercase tracking-[0.14em] text-[#2D6A4F]">Your plan</div>
+                    <div className="truncate text-[1.0625rem] font-extrabold leading-snug text-[#191A2E]">
                       {pick ? `${pick.name}${pick.leaveBy ? `, leave by ${pick.leaveBy}` : ''}` : headline}
                     </div>
                   </div>
@@ -1137,7 +1119,7 @@ export default function AdvisorFlow({
                 if (!liveDocks.some((d) => d.station_id === selectedDock)) return null
                 return (
                   <div className="mb-3 rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-3.5 py-3">
-                    <button type="button" onClick={() => tapDock(null)} className="mb-1.5 text-[0.8rem] font-semibold text-[#2D6A4F]">Back to the plan</button>
+                    <button type="button" onClick={() => tapDock(null)} className="mb-1.5 text-[0.9375rem] font-semibold text-[#2D6A4F]">Back to the plan</button>
                     <DetailContent
                       selection={{ type: 'dock', id: selectedDock }}
                       stationByKey={new Map()}

@@ -222,6 +222,9 @@ export interface TransitLeg {
   arrival_stop_name: string
   /** Minutes on board this leg; null until the engine reports it. */
   minutes: number | null
+  /** Minutes on foot before boarding: from the door for the first leg, the
+   *  transfer walk after that. Google's walking steps; waiting not included. */
+  walk_before_minutes?: number | null
   num_stops?: number | null
   direction_id?: 0 | 1 | null
 }
@@ -374,6 +377,8 @@ export interface AdvisorResult {
   /** Every two-leg way in the combos function returned, shown or not (the shown ones are also rows in `modes`). */
   combos?: AdvisorCombo[]
   transit_summary: string | null
+  /** Minutes on foot from the last stop to the door (Google's walking steps); null before the 2026-10-21 engine. */
+  transit_walk_after_minutes?: number | null
   recommended_mode: string
   /** The plan headline for the motivation asked for (headlineFor). */
   headline: string

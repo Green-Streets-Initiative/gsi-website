@@ -106,6 +106,7 @@ interface EngineTransitLeg {
   direction_id?: 0 | 1 | null
   num_stops?: number | null
   minutes?: number | null
+  walk_before_minutes?: number | null
 }
 
 interface EngineBikeParking {
@@ -150,6 +151,8 @@ interface EngineResponse {
   walk_route_polyline?: string | null
   /** Minutes on board across the transit legs (no walking or waiting). */
   transit_ride_minutes?: number | null
+  /** Minutes on foot from the last stop to the door, from Google's walking steps (engine 2026-10-21). */
+  transit_walk_after_minutes?: number | null
   parking_monthly?: number
   [key: string]: unknown
 }
@@ -209,6 +212,7 @@ function mapLegs(legs: EngineTransitLeg[] | undefined): TransitLeg[] {
     arrival_stop_id: l.arrival_stop_id ?? null,
     arrival_stop_name: (l.arrival_stop_name ?? l.arrival_stop ?? '').trim(),
     minutes: l.minutes ?? null,
+    walk_before_minutes: l.walk_before_minutes ?? null,
     num_stops: l.num_stops ?? null,
     direction_id: l.direction_id ?? null,
   }))
@@ -776,6 +780,7 @@ export async function GET(req: NextRequest) {
       mode_order: modeOrder,
       combos,
       transit_summary: edge.transit_route_summary ?? null,
+      transit_walk_after_minutes: edge.transit_walk_after_minutes ?? null,
       headline: headlineFor(partial, motivation),
       reasons: reasonLinesFor(partial, recommendedMode),
       motivation,

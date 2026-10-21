@@ -35,7 +35,7 @@ export default function MotivationChips({
             aria-pressed={on}
             onClick={() => onChange(on ? null : v)}
             className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-full border-[1.5px] font-semibold transition-colors ${
-              compact ? 'px-3 text-[0.8125rem]' : 'px-4 text-[0.875rem]'
+              compact ? 'px-3 text-[0.9375rem]' : 'px-4 text-[0.875rem]'
             } ${on ? 'border-[#2D6A4F] bg-[#2D6A4F] text-white' : 'border-[rgba(25,26,46,0.15)] bg-white text-[#191A2E] hover:border-[rgba(25,26,46,0.3)]'}`}
           >
             <Icon size={16} weight="regular" aria-hidden />

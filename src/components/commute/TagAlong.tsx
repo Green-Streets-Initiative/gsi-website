@@ -56,23 +56,23 @@ export default function TagAlong({ groupId, locationId, mode, distanceCategory, 
   return (
     <div className="mt-2.5 border-t border-dashed border-[rgba(25,26,46,0.12)] pt-2.5">
       {state === 'done' ? (
-        <p className="text-[0.8rem] leading-snug text-[#191A2E]">
+        <p className="text-[0.9375rem] leading-snug text-[#191A2E]">
           Noted. We&rsquo;ll reach out through {through} when a partner is ready.
         </p>
       ) : (
         <>
-          <p className="text-[0.8rem] leading-snug text-[#191A2E]">Want a commute partner for this trip?</p>
+          <p className="text-[0.9375rem] leading-snug text-[#191A2E]">Want a commute partner for this trip?</p>
           <button
             type="button"
             onClick={send}
             disabled={state === 'sending'}
-            className="mt-1.5 inline-flex min-h-[34px] items-center gap-1.5 rounded-full border border-[#2D6A4F] bg-white px-3 text-[0.78rem] font-bold text-[#2D6A4F] transition-colors hover:bg-[#E7F0EA] disabled:opacity-60"
+            className="mt-1.5 inline-flex min-h-[40px] items-center gap-1.5 rounded-full border border-[#2D6A4F] bg-white px-3 text-[0.875rem] font-bold text-[#2D6A4F] transition-colors hover:bg-[#E7F0EA] disabled:opacity-60"
           >
             <UsersThree size={15} weight="regular" aria-hidden />
             {state === 'sending' ? 'Noting…' : 'Ask for a commute partner'}
           </button>
           {state === 'failed' && (
-            <p className="mt-1.5 text-[0.75rem] leading-snug text-[#8A5A00]">We could not note that just now. Try again in a moment.</p>
+            <p className="mt-1.5 text-[0.875rem] leading-snug text-[#8A5A00]">We could not note that just now. Try again in a moment.</p>
           )}
         </>
       )}
