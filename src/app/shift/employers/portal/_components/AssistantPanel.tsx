@@ -412,7 +412,10 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
       className={`fixed inset-0 z-50 flex flex-col bg-surface ${
         wide
           ? 'min-[980px]:left-[256px]'
-          : 'lg:relative lg:inset-auto lg:z-auto lg:h-full lg:w-[var(--assistant-w)] lg:shrink-0 lg:border-l lg:border-line'
+          : // Phones: full screen. Tablets and narrow laptops: a drawer over the
+            // page (beside it, the page got squeezed under 500px and its top
+            // bar spilled into the panel). From 1280px: docked beside the page.
+            'sm:left-auto sm:w-[440px] sm:border-l sm:border-line sm:shadow-2xl xl:relative xl:inset-auto xl:z-auto xl:h-full xl:w-[var(--assistant-w)] xl:shrink-0 xl:shadow-none'
       }`}
     >
       {/* Drag to resize (wide screens) */}
@@ -422,7 +425,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
         aria-label="Resize the assistant"
         onPointerDown={startDrag}
         onDoubleClick={() => setWide((w) => !w)}
-        className={`absolute inset-y-0 -left-1 z-10 hidden w-2 cursor-col-resize hover:bg-accent/20 ${wide ? '' : 'lg:block'}`}
+        className={`absolute inset-y-0 -left-1 z-10 hidden w-2 cursor-col-resize hover:bg-accent/20 ${wide ? '' : 'xl:block'}`}
       />
       <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
         <div>
@@ -445,7 +448,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
             title={wide ? 'Back to the side' : 'Expand'}
             aria-label={wide ? 'Put the assistant back at the side' : 'Expand the assistant'}
             onClick={() => setWide((w) => !w)}
-            className="hidden h-9 w-9 place-items-center rounded-lg text-ink-muted hover:bg-surface-2 lg:grid"
+            className="hidden h-9 w-9 place-items-center rounded-lg text-ink-muted hover:bg-surface-2 xl:grid"
           >
             {wide ? <Minimize2 size={16} strokeWidth={1.75} /> : <Maximize2 size={16} strokeWidth={1.75} />}
           </button>
@@ -575,7 +578,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                       {it.card ? `${it.card.decision === 'approved' ? 'Approved' : 'Not approved'}: ${it.card.title.replace(/\?$/, '')}` : it.label}
                     </span>
                   )}
-                  {it.link && <LinkButton link={it.link} onNavigate={() => window.innerWidth < 1024 && onClose()} />}
+                  {it.link && <LinkButton link={it.link} onNavigate={() => window.innerWidth < 1280 && onClose()} />}
                 </div>
               )
             if (it.kind === 'choices')
