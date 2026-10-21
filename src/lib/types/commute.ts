@@ -322,7 +322,7 @@ export interface AdvisorCombo {
   /** "HH:MM" to be leaving the lot or rack for the platform. */
   transit_depart_at: string
   fare_per_trip: number
-  /** The engine's cost, priced as a gas car; the route re-prices for the person's car. */
+  /** The engine's cost, the drive to the lot priced for the person's car (engine 2026-10-21). */
   cost_per_day: number
   cost_breakdown: {
     /** Gas and wear (or bike upkeep) for one trip to the station. */

@@ -18,9 +18,6 @@ import {
   headlineSubject,
   reasonLinesFor,
   transitKgPerMile,
-  comboQualifies,
-  recommendWithCombos,
-  comboEmissionsSharePct,
   modeName,
   modePhrase,
   withoutCar,
@@ -276,48 +273,6 @@ const wellington = {
   summary: 'Drive 54 min to Wellington, Orange Line 13 min to Downtown Crossing, walk 9 min',
 }
 
-describe('comboQualifies', () => {
-  const northShore = {
-    drive: mode({ minutes: 48, minutes_max: 70, cost_per_day: 20.72 }),
-    transit: mode({ minutes: 116, cost_per_day: 27.04 }),
-  }
-  it('shows a park-and-ride that beats the train by 5 minutes even when the car is faster (Newburyport)', () => {
-    assert.equal(comboQualifies(83, northShore), true)
-    assert.equal(comboQualifies(112, northShore), false, 'only 4 minutes better than the train')
-  })
-  it('hides a bike-to-train that is no better than the plain Red Line (Central Square)', () => {
-    const central = {
-      transit: mode({ minutes: 9, cost_per_day: 4.16 }),
-      drive: mode({ minutes: 16, minutes_max: 22, cost_per_day: 2.92 }),
-      bike: mode({ minutes: 21, cost_per_day: 0.64 }),
-      walk: mode({ minutes: 66, cost_per_day: 0 }),
-    }
-    assert.equal(comboQualifies(17, central), false)
-  })
-  it('shows the fastest non-driving way when it is within 10 minutes of the car', () => {
-    const m = { drive: mode({ minutes: 30, cost_per_day: 10 }), transit: mode({ minutes: 41, cost_per_day: 5 }) }
-    assert.equal(comboQualifies(38, m), true)
-    assert.equal(comboQualifies(38, m, [36]), false, 'another combo is faster')
-    assert.equal(comboQualifies(null, m), false)
-  })
-})
-
-describe('recommendWithCombos', () => {
-  it('moves the pick to a combo that beats the engine pick by 5 minutes', () => {
-    const modes = { transit: mode({ minutes: 116, cost_per_day: 27 }), drive: mode({ minutes: 48, cost_per_day: 20 }), park_ride: mode({ minutes: 83, cost_per_day: 33, combo: wellington }) }
-    assert.equal(recommendWithCombos('transit', modes), 'park_ride')
-    assert.equal(recommendWithCombos('transit', { ...modes, park_ride: mode({ minutes: 113, cost_per_day: 33 }) }), 'transit')
-  })
-  it('takes the pick from driving only within 10 minutes of it', () => {
-    const modes = { drive: mode({ minutes: 30, cost_per_day: 10 }), park_ride: mode({ minutes: 38, cost_per_day: 12 }) }
-    assert.equal(recommendWithCombos('drive', modes), 'park_ride')
-    assert.equal(recommendWithCombos('drive', { ...modes, park_ride: mode({ minutes: 45, cost_per_day: 12 }) }), 'drive')
-  })
-  it('leaves the pick alone with no combo rows', () => {
-    assert.equal(recommendWithCombos('transit', sample().modes), 'transit')
-  })
-})
-
 describe('combo words', () => {
   it('names the rows and phrases the way in by station and line', () => {
     assert.equal(modeName('park_ride'), 'Drive, then train')
@@ -334,14 +289,6 @@ describe('combo words', () => {
   })
 })
 
-describe('comboEmissionsSharePct', () => {
-  it('is nothing for a 33-mile drive to the Orange Line, most of it for a mile by bike to the train', () => {
-    assert.equal(comboEmissionsSharePct(wellington, 36.9, 'gas', { lat: 42.3525, lng: -71.0558 }), null)
-    const kendall = { ...wellington, kind: 'bike_ride' as const, first_leg: { ...wellington.first_leg, mode: 'bike' as const, miles: 1.1 }, station: { ...wellington.station, name: 'Kendall/MIT', lat: 42.36249, lng: -71.086176 } }
-    const pct = comboEmissionsSharePct(kendall, 3.4, 'gas', { lat: 42.3525, lng: -71.0558 })
-    assert.ok(pct != null && pct >= 70 && pct <= 95, String(pct))
-  })
-})
 
 describe('withoutCar (No car, product item 17)', () => {
   const full = (rec: string) => ({ ...sample(), recommended_mode: rec, mode_order: ['drive', 'transit', 'bike', 'walk'], motivation: null, headline: 'x', reasons: [] }) as unknown as AdvisorResult

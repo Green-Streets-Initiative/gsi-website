@@ -196,94 +196,15 @@ export function emissionsSharePct(
   return pct >= 10 ? pct : null
 }
 
-/**
- * The share for a two-leg way in: the drive to the lot in their own car
- * (nothing for the bike) plus the rail leg at the line's factor, against
- * driving the whole way. The rail miles are the straight line from the
- * station to the office at the track factor the engine uses (1.2).
- */
-export function comboEmissionsSharePct(
-  combo: Pick<AdvisorCombo, 'kind' | 'first_leg' | 'transit_legs' | 'station'>,
-  driveMiles: number | null | undefined,
-  vehicle: Vehicle = 'gas',
-  officeLatLng?: { lat: number; lng: number } | null,
-): number | null {
-  if (!driveMiles || driveMiles <= 0) return null
-  const full = driveMiles * EPA_KG_PER_MILE.drive[vehicle]
-  const first = combo.kind === 'park_ride' ? combo.first_leg.miles * EPA_KG_PER_MILE.drive[vehicle] : 0
-  const railMiles = officeLatLng
-    ? straightMiles(combo.station, officeLatLng) * 1.2
-    : Math.max(0, driveMiles - combo.first_leg.miles)
-  const used = first + railMiles * transitKgPerMile(combo.transit_legs)
-  if (full <= 0) return null
-  const pct = Math.round(Math.max(0, Math.min(1, (full - used) / full)) * 100)
-  return pct >= 10 ? pct : null
-}
+/* ── Two-leg rows ── */
 
-function straightMiles(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
-  const R = 3958.8
-  const dLat = ((b.lat - a.lat) * Math.PI) / 180
-  const dLng = ((b.lng - a.lng) * Math.PI) / 180
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
-}
-
-/* ── Two-leg rows: when a combo earns a row, and whether it is the pick ── */
-
-/** A combo must beat every single mode that avoids driving the whole way by this much... */
-export const COMBO_BEATS_BY_MINUTES = 5
-/** ...or be the fastest such way and this close to driving. */
-export const COMBO_WITHIN_DRIVE_MINUTES = 10
+/* Which combos earn a row, whether one takes the pick, their costs and
+   their emissions share are the engine's call since 2026-10-21 (Shift
+   supabase/functions/_shared/advisor-combos-rank.ts, through
+   commute-advisor-compare's include_combos), so the website and the app
+   show one answer. */
 export const COMBO_KEYS: readonly string[] = ['park_ride', 'bike_ride']
 export const isComboKey = (k: string | null | undefined): boolean => k != null && COMBO_KEYS.includes(k)
-
-/**
- * Whether a two-leg way in earns a row next to the single modes. Only when
- * it is meaningfully better: it beats every single mode that avoids driving
- * the whole way (transit, bike, walk) by at least 5 minutes, or it is the
- * fastest way in that avoids driving the whole way (other combos counted)
- * and within 10 minutes of driving. Driving the whole way is the benchmark,
- * never a bar: a park-and-ride that is slower than the car but 30 minutes
- * faster than the train is the row a North Shore commuter needs.
- */
-export function comboQualifies(
-  minutes: number | null | undefined,
-  singles: Record<string, AdvisorMode>,
-  otherComboMinutes: (number | null)[] = [],
-): boolean {
-  if (minutes == null) return false
-  const nonDrive = Object.entries(singles)
-    .filter(([k, m]) => k !== 'drive' && !isComboKey(k) && m.viable && m.minutes != null)
-    .map(([, m]) => m.minutes as number)
-  const beatsSingles = nonDrive.every((m) => minutes + COMBO_BEATS_BY_MINUTES <= m)
-  if (beatsSingles && nonDrive.length > 0) return true
-  const fastestOther = Math.min(...nonDrive, ...otherComboMinutes.filter((m): m is number => m != null))
-  const drive = singles.drive?.minutes
-  const withinDrive = drive == null || minutes <= drive + COMBO_WITHIN_DRIVE_MINUTES
-  return minutes < fastestOther && withinDrive
-}
-
-/**
- * The pick once combos are rows: the engine's rule (the fastest way that
- * avoids driving the whole way, within 10 minutes of driving; else the
- * engine's own pick) with the combo rows in the running. A combo takes the
- * pick from a single mode only when it is faster by the same 5 minutes
- * that earned it a row.
- */
-export function recommendWithCombos(recommended: string, modes: Record<string, AdvisorMode>): string {
-  const combos = Object.entries(modes).filter(([k, m]) => isComboKey(k) && m.minutes != null)
-  if (combos.length === 0) return recommended
-  const fastestCombo = combos.sort((a, b) => (a[1].minutes as number) - (b[1].minutes as number))[0]
-  const [key, combo] = fastestCombo
-  const cm = combo.minutes as number
-  const rec = modes[recommended]
-  if (recommended === 'drive' || !rec) {
-    const drive = modes.drive?.minutes
-    return drive == null || cm <= drive + COMBO_WITHIN_DRIVE_MINUTES ? key : recommended
-  }
-  if (rec.minutes == null || cm + COMBO_BEATS_BY_MINUTES <= rec.minutes) return key
-  return recommended
-}
 
 /** "shifts about 85% of your commute emissions"; '' when there is nothing worth saying. */
 export function formatCo2Share(pct: number | null | undefined): string {

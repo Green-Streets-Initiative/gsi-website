@@ -16,9 +16,6 @@ import {
   driveCostPerMile,
   dailyCost,
   emissionsSharePct,
-  comboEmissionsSharePct,
-  comboQualifies,
-  recommendWithCombos,
   shiftClock,
   headlineFor,
   reasonLinesFor,
@@ -154,6 +151,12 @@ interface EngineResponse {
   /** Minutes on foot from the last stop to the door, from Google's walking steps (engine 2026-10-21). */
   transit_walk_after_minutes?: number | null
   parking_monthly?: number
+  /* include_combos (Shift commute-advisor-compare, 2026-10-21): the two-leg
+     ways in and the one ranking the website and the app both show. */
+  combos?: EngineCombo[]
+  combos_status?: string
+  recommended_with_combos?: string
+  mode_order?: string[]
   [key: string]: unknown
 }
 
@@ -366,108 +369,48 @@ function buildModes(
   return modes
 }
 
-/* ── Two-leg ways in (Shift commute-advisor-combos) ── */
+/* ── Two-leg ways in (Shift commute-advisor-combos, through compare) ── */
 
-/** The combos function's answer; its transit legs are the engine's shape. */
+/** A combo as compare returns it with include_combos: its transit legs are
+ *  the engine's shape, and `qualifies` says whether it earns a row. */
 interface EngineCombo extends Omit<AdvisorCombo, 'transit_legs'> {
   transit_legs: EngineTransitLeg[]
+  qualifies?: boolean
 }
 
 /**
- * Where the combos function lives: ADVISOR_COMBOS_URL when set (a local
- * `deno run` of the function while it is not deployed), else beside
- * compare under the project's functions base. Null when neither resolves.
+ * The engine's combos as plan rows. Which combos earn a row, the pick and
+ * the row order are the engine's call (Shift _shared/advisor-combos-rank.ts,
+ * the rules this route used to apply itself), and so are the costs (the
+ * drive to the lot priced for the person's car) and the emissions share
+ * (against compare's road miles), so the website and the app show one
+ * answer. Returns every combo as the page's shape, shown or not.
  */
-function combosUrl(): string | null {
-  const direct = process.env.ADVISOR_COMBOS_URL?.trim()
-  if (direct) return direct
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
-  return base ? `${base}/functions/v1/commute-advisor-combos` : null
-}
-
-/**
- * Park-and-ride and bike-to-train from the combos function, in parallel
- * with compare. Never blocks the plan: a 404 (not deployed yet), a timeout
- * or a bad answer is simply no rows.
- */
-async function fetchCombos(
-  origin: { lat: number; lng: number },
-  dest: { lat: number; lng: number },
-  arriveBy: string | null,
-  vehicle: Vehicle,
-): Promise<EngineCombo[]> {
-  const url = combosUrl()
-  if (!url) return []
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ origin, destination: dest, ...(arriveBy ? { arrive_by: arriveBy } : {}), vehicle }),
-      signal: AbortSignal.timeout(10000),
-    })
-    if (!res.ok) {
-      if (res.status !== 404) console.warn('combos function:', res.status, (await res.text().catch(() => '')).slice(0, 200))
-      return []
-    }
-    const data = (await res.json()) as { combos?: EngineCombo[] }
-    return Array.isArray(data.combos) ? data.combos.filter((c) => c && (c.kind === 'park_ride' || c.kind === 'bike_ride') && c.station && c.first_leg) : []
-  } catch (err) {
-    console.warn('combos function unreachable:', err instanceof DOMException && err.name === 'TimeoutError' ? 'timeout (10s)' : err)
-    return []
-  }
-}
-
-/**
- * Turn each combo into a plan row when it earns one (comboQualifies) and
- * slot it into the engine's order by door-to-door time. Costs are re-priced
- * for the person's car the way the drive row is; the emissions share is
- * against compare's road miles. Returns the combos as the page's shape,
- * shown or not.
- */
-function addComboRows(
-  raw: EngineCombo[],
-  modes: Record<string, AdvisorMode>,
-  modeOrder: string[],
-  vehicle: Vehicle,
-  gasPrice: number,
-  driveMiles: number,
-  dest: { lat: number; lng: number },
-): AdvisorCombo[] {
-  const combos: AdvisorCombo[] = raw.map((c) => ({ ...c, transit_legs: mapLegs(c.transit_legs) }))
-  const perMile = driveCostPerMile(vehicle, gasPrice)
-  const candidates = combos.map((c) => {
-    const firstLegCost = c.kind === 'park_ride' ? round2(c.first_leg.miles * perMile) : round2(c.first_leg.miles * BIKE_UPKEEP_PER_MILE)
-    const lot = c.kind === 'park_ride' ? c.station.lot_fee_per_day : 0
-    const trip = round2(firstLegCost + c.fare_per_trip)
-    const combo: AdvisorCombo = { ...c, cost_breakdown: { ...c.cost_breakdown, first_leg: firstLegCost, lot } }
-    const row: AdvisorMode = {
+function addComboRows(raw: EngineCombo[] | undefined, modes: Record<string, AdvisorMode>): AdvisorCombo[] {
+  const combos = (raw ?? []).filter((c) => c && (c.kind === 'park_ride' || c.kind === 'bike_ride') && c.station && c.first_leg)
+  for (const c of combos) {
+    if (!c.qualifies) continue
+    const trip = round2(c.cost_breakdown.first_leg + c.fare_per_trip)
+    modes[c.kind] = {
       minutes: c.minutes_total,
       leave_by: clockOrNull(c.leave_by),
       cost_per_trip: trip,
-      cost_per_day: dailyCost(trip, 2, lot ?? 0),
+      cost_per_day: c.cost_per_day,
       fare_per_trip: c.fare_per_trip,
       miles: round2(c.first_leg.miles),
-      emissions_share_pct: comboEmissionsSharePct(combo, driveMiles, vehicle, dest),
+      emissions_share_pct: c.emissions_share_pct ?? null,
       polyline: c.first_leg.polyline ?? null,
       detail: c.summary,
       viable: true,
-      combo,
+      combo: { ...c, transit_legs: mapLegs(c.transit_legs) },
     }
-    return { combo, row }
-  })
-  for (const { combo, row } of candidates) {
-    const others = candidates.filter((x) => x.combo.kind !== combo.kind).map((x) => x.row.minutes)
-    if (!comboQualifies(row.minutes, modes, others)) continue
-    modes[combo.kind] = row
-    // By time among the rows after the engine's pick (index 0 stays the pick until recommendWithCombos runs).
-    const at = modeOrder.findIndex((k, i) => i > 0 && (modes[k]?.minutes ?? Number.POSITIVE_INFINITY) > (row.minutes ?? 0))
-    if (at === -1) modeOrder.push(combo.kind)
-    else modeOrder.splice(at, 0, combo.kind)
   }
-  return candidates.map((x) => x.combo)
+  return combos.map((c) => ({ ...c, transit_legs: mapLegs(c.transit_legs) }))
+}
+
+/** The visitor's IP, for the engine's per-visitor budget on two-leg trips. */
+function clientIp(req: NextRequest): string {
+  return (req.headers.get('x-real-ip') ?? req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim()
 }
 
 /* ── Content queries (website-only features) ── */
@@ -659,9 +602,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'outside_ma' }, { status: 200 })
   }
 
-  // Call the shared Edge Function (the combos function runs alongside it;
-  // its answer is read after compare's, and is simply no rows on failure)
-  const combosPromise = fetchCombos({ lat: originLat, lng: originLng }, { lat: destLat, lng: destLng }, arriveBy, vehicle)
+  // Call the shared Edge Function. include_combos has it route park-and-ride
+  // and bike-to-train too; those spend Google Routes money, so it routes
+  // them only for a caller holding the server key (sent from here, never
+  // the browser), counted against the visitor's IP. A failure there is
+  // simply no combo rows.
   let edgeRes: Response
   try {
     const edgeFnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/commute-advisor-compare`
@@ -670,6 +615,8 @@ export async function GET(req: NextRequest) {
       headers: {
         'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json',
+        ...(process.env.SUPABASE_SERVICE_ROLE_KEY ? { 'x-advisor-key': process.env.SUPABASE_SERVICE_ROLE_KEY } : {}),
+        ...(clientIp(req) ? { 'x-advisor-client-ip': clientIp(req) } : {}),
       },
       body: JSON.stringify({
         origin: { lat: originLat, lng: originLng },
@@ -677,6 +624,7 @@ export async function GET(req: NextRequest) {
         parking_monthly: parkingMonthly,
         ...(arriveBy ? { arrive_by: arriveBy } : {}),
         vehicle,
+        include_combos: true,
       }),
       signal: AbortSignal.timeout(15000),
     })
@@ -710,18 +658,14 @@ export async function GET(req: NextRequest) {
     const gasPrice = edge.gas_price && edge.gas_price > 0 ? edge.gas_price : PRICES.driving.gasPerGallonMa
     const legs = mapLegs(edge.transit_legs)
     const modes = buildModes(edge, legs, vehicle, gasPrice, parkingPerDay)
-    const modeOrder = edge.modes.map((m) => m.mode).filter((k) => modes[k])
-    // Park-and-ride and bike-to-train rows, when they earn one; the pick
-    // is re-made with them in the running.
-    const combos = addComboRows(await combosPromise, modes, modeOrder, vehicle, gasPrice, edge.drive_miles ?? edge.distance_miles, { lat: destLat, lng: destLng })
-    const engineRecommended = modes[edge.recommended_mode] ? edge.recommended_mode : modeOrder[0]
-    const recommendedMode = recommendWithCombos(engineRecommended, modes)
-    if (combos.length > 0) {
-      // The engine's order, re-made with the new rows: the pick first, then by time.
-      const rest = modeOrder.filter((k) => k !== recommendedMode)
-        .sort((a, b) => (modes[a].minutes ?? Number.POSITIVE_INFINITY) - (modes[b].minutes ?? Number.POSITIVE_INFINITY))
-      modeOrder.splice(0, modeOrder.length, recommendedMode, ...rest)
-    }
+    // Park-and-ride and bike-to-train rows when they earn one, and the
+    // pick and order with them in the running: all the engine's answer.
+    const combos = addComboRows(edge.combos, modes)
+    const engineOrder = (Array.isArray(edge.mode_order) ? edge.mode_order : edge.modes.map((m) => m.mode)).filter((k) => modes[k])
+    const modeOrder = [...engineOrder, ...Object.keys(modes).filter((k) => !engineOrder.includes(k))]
+    const recommendedMode = edge.recommended_with_combos && modes[edge.recommended_with_combos]
+      ? edge.recommended_with_combos
+      : modes[edge.recommended_mode] ? edge.recommended_mode : modeOrder[0]
 
     // Website additions, all at once: guide (by mode and barrier), the
     // "Try it with others" card for the recommended way in (the page
