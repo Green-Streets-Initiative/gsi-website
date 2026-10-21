@@ -239,7 +239,8 @@ async function runScenario(sc) {
     out.toolData = []
     for (const m of msgs ?? [])
       for (const b of Array.isArray(m.content) ? m.content : [])
-        if (b.type === 'tool_result') {
+        if (m.role === 'user' && b.type === 'text' && b.text.startsWith('[Attached list')) out.toolData.push(`attached file summary: ${b.text}`)
+        else if (b.type === 'tool_result') {
           const text = typeof b.content === 'string' ? b.content : (b.content ?? []).map((x) => x.text ?? '').join('')
           out.toolData.push(`${idToName[b.tool_use_id] ?? 'tool'}: ${text.slice(0, 6000)}`)
         }

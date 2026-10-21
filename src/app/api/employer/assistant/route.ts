@@ -481,7 +481,7 @@ export async function POST(request: Request) {
           await setPending(null)
           pending = null
         } else {
-          if (!text && attachments.length === 0) {
+          if (!text && attachments.length === 0 && !listNote) {
             emit({ type: 'done' })
             controller.close()
             return

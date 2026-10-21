@@ -181,6 +181,7 @@ const BASE_TOOLS: Anthropic.Tool[] = [
       properties: {
         emails: { type: 'array', items: { type: 'string' }, maxItems: 500 },
         list_id: { type: 'string', description: 'From an [Attached list ...] note.' },
+        company_addresses_only: { type: 'boolean', description: "Leave out addresses that aren't at the company's email domains." },
       },
     },
   },
@@ -622,20 +623,25 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
       const list = input.list_id ? await loadList(ctx.admin, ctx.groupId, ctx.threadId, String(input.list_id)) : null
       if (input.list_id && !list) return { result: { content: { error: 'list not found in this conversation; ask them to attach it again' }, isError: true } }
       const typed = list ? list.rows.map((r) => r.email) : ((input.emails as string[]) ?? [])
-      const emails = Array.from(new Set(typed.map((e) => e.trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))))
-      if (emails.length === 0) return { result: { content: { error: 'no valid email addresses' }, isError: true } }
+      const { data: doms } = await ctx.admin.from('employer_email_domains').select('domain').eq('group_id', ctx.groupId)
+      const ours = ((doms ?? []) as { domain: string }[]).map((d) => d.domain.toLowerCase())
+      const atCompany = (e: string) => ours.some((d) => e.endsWith(`@${d}`) || e.endsWith(`.${d}`))
+      const valid = Array.from(new Set(typed.map((e) => e.trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))))
+      const onlyOurs = !!input.company_addresses_only && ours.length > 0
+      const emails = onlyOurs ? valid.filter(atCompany) : valid
+      if (emails.length === 0) return { result: { content: { error: onlyOurs ? "none of these addresses are at the company's email domains" : 'no valid email addresses' }, isError: true } }
       // The card carries the addresses (approval runs exactly these); the
       // model's own call only ever held the list's id.
       input.emails = emails
       const shown = emails.slice(0, 8).join(', ') + (emails.length > 8 ? `, and ${emails.length - 8} more` : '')
-      const { data: doms } = await ctx.admin.from('employer_email_domains').select('domain').eq('group_id', ctx.groupId)
-      const ours = ((doms ?? []) as { domain: string }[]).map((d) => d.domain.toLowerCase())
-      const outside = ours.length ? emails.filter((e) => !ours.some((d) => e.endsWith(`@${d}`) || e.endsWith(`.${d}`))) : []
+      const outside = ours.length ? emails.filter((e) => !atCompany(e)) : []
+      const skipped = valid.length - emails.length
       return {
         card: {
           title: `Email Shift invitations to ${emails.length.toLocaleString('en-US')} ${emails.length === 1 ? 'person' : 'people'}?`,
           lines: [
             ...(list ? [`From ${list.file_name}${list.wrong.length ? ` (${list.wrong.length} entries that look wrong are left out)` : ''}.`] : []),
+            ...(skipped ? [`Only addresses at ${ours.map((d) => `@${d}`).join(' or ')}: ${skipped} others are left out.`] : []),
             shown,
             ...(outside.length
               ? [`${outside.length} ${outside.length === 1 ? "isn't" : "aren't"} at ${ours.map((d) => `@${d}`).join(' or ')} (${domainCounts(outside.map((email) => ({ email }))).slice(0, 3).map(([d, c]) => `${c} at ${d}`).join(', ')}). Only people who confirm a company address can join, so check these.`]
