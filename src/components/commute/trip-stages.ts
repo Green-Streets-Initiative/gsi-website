@@ -45,6 +45,18 @@ const mi = (n: number | null | undefined) => (n == null ? null : n < 10 ? n.toFi
 
 const stage = (label: StageLabel, fact: string, muted = false): TripStage => ({ label, fact, muted })
 
+/**
+ * What to wear for a way in that waits outside (a bus stop, a platform, a
+ * shuttle stop). Keith 2026-10-21: a bus can mean 15-20 minutes standing in
+ * the cold, so layering is key and a jacket may not cut it. The website has
+ * no forecast yet (product item 17), so the Boston cold months stand in:
+ * November through March.
+ */
+function waitWear(now: Date = new Date()): string {
+  const m = now.getMonth()
+  return m >= 10 || m <= 2 ? 'Layers for the wait' : 'Anything'
+}
+
 /** "Mostly protected lane" / "Mostly quiet streets" / "Mixed streets" from the calm route's tiers. */
 export function routeSummaryWord(calm: CalmRoute | null | undefined): string | null {
   if (!calm) return null
@@ -172,7 +184,7 @@ export function stagesFor(mode: string, result: AdvisorResult, benefits: Employe
             ? spaces ? `Free lot, ${spaces}` : 'Free lot'
             : spaces ? `Lot at ${station}, ${spaces}` : `Lot at ${station}`
         return [
-          stage('Wear', 'Anything'),
+          stage('Wear', waitWear()),
           stage('Vehicle', `Your car to ${station}`),
           stage('Cargo', 'Bag or tote'),
           stage('Route', firstMiles ? `${firstMiles} mi, then ${line}` : `Then ${line}`),
@@ -194,7 +206,7 @@ export function stagesFor(mode: string, result: AdvisorResult, benefits: Employe
       const s = extras.shuttle
       const walk = s ? Math.max(1, Math.round(s.distanceMiles * WALK_MINUTES_PER_MILE)) : null
       return [
-        stage('Wear', 'Anything'),
+        stage('Wear', waitWear()),
         stage('Vehicle', 'None needed', true),
         stage('Cargo', 'Bag or tote'),
         stage('Route', s ? `Stops at ${s.stopName}` : 'Shuttle'),
@@ -223,7 +235,7 @@ export function stagesFor(mode: string, result: AdvisorResult, benefits: Employe
         ? walk != null ? `Walk ${walk} min from ${place}` : `From the ${place}`
         : 'Walk from the stop'
       return [
-        stage('Wear', 'Anything'),
+        stage('Wear', waitWear()),
         stage('Vehicle', 'None needed', true),
         stage('Cargo', 'Bag or tote'),
         stage('Route', route),
