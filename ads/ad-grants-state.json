@@ -63,6 +63,10 @@
     {
       "date": "2026-10-20",
       "what": "Claude, on Keith's 'do ad grants item 1' in an interactive chat (Claude in Chrome, no upload). Added campaign-level negative keyword 'paybyplatema' (broad match) to How-to Guides (24306480410), the campaign's first negative, via Keywords > Negative keywords > + > Add to: Campaign. Verified: list shows 1 row, paybyplatema / How-to Guides / Campaign / Broad match; toast 'Your negative keywords were created.' Blocks the off-target MA toll-billing lookup 'www paybyplatema com' (6 impr, 0 clicks Oct 1-20). Nothing else touched."
+    },
+    {
+      "date": "2026-10-21",
+      "what": "Claude, on Keith's 'handle the items from this afternoon's Ad Grants compliance email' (interactive chat, Claude in Chrome, no upload). The 10-21 script email flagged (a) Town Walking & Biking CTR 3.9% (7/180, rolling 30d) and (b) 1 keyword with QS < 3. Both were the same keyword: 'biking in boston' (Town Walking & Biking / Town routes, broad), 'Eligible (Limited) Rarely shown (low Quality Score)', Oct 1-21 140 impr / 6 clicks / 4.29% / $23.72, i.e. ~78% of the campaign's impressions. Paused it via Keywords > tick row > Edit > Pause; row reads 'Paused'. Scrolled all ~226 account keywords afterwards: no enabled keyword shows a low-Quality-Score status (the 3 flagged are all paused: biking in boston, boston bike paths, biking in worcester). The New Routes copy of 'biking in boston' was already paused 10-07. Expect Town Walking & Biking volume to drop to a few impressions a day; account CTR is unaffected or slightly up (Oct MTD 7.0%). Nothing else touched."
     }
   ],
   "open_items": [
@@ -119,7 +123,7 @@
     {
       "id": "boston-bike-paths-qs",
       "what": "Keyword 'boston bike paths' (Town Walking & Biking / Town routes, added 10-05) is 'Eligible (Limited) Rarely shown (low Quality Score)'; the 10-14 script email reports its QS below 3. 12 impr, 0 clicks MTD. Grant forbids QS 1-2.",
-      "status": "DONE 2026-10-14 (same day): Claude paused it in the Ads UI on Keith's 'do items 1-3'; row reads Paused. Town / Town routes now has 2 paused QS keywords (worcester, boston bike paths). If a third town keyword goes 'Rarely shown', the Town routes ad copy or landing pages (/shift/towns/*) are the problem, not the keywords; rewrite the two RSAs around the town-page content before pausing more."
+      "status": "DONE 2026-10-14 (same day): Claude paused it in the Ads UI on Keith's 'do items 1-3'; row reads Paused. Town / Town routes now has 2 paused QS keywords (worcester, boston bike paths). If a third town keyword goes 'Rarely shown', the Town routes ad copy or landing pages (/shift/towns/*) are the problem, not the keywords; rewrite the two RSAs around the town-page content before pausing more. 2026-10-21: third Town routes keyword hit low QS ('biking in boston', paused by Claude). All three are generic 'biking/bike paths in <city>' terms landing on /shift/towns/<city>; the town pages read as Shift app pages, not bike-path guides, so Google rates them weak for those searches. Next step if Town is to grow: a Town routes ad + landing that answers 'where can I bike in Boston' (e.g. a bike-paths section or guide), not more town keywords. Needs Keith's go."
     },
     {
       "id": "offer-landing-pages",
