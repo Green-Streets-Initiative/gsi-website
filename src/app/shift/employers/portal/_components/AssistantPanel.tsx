@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ArrowUp, Check, ExternalLink, History, Loader2, Maximize2, MapPin, MessageSquarePlus, Minimize2, Paperclip, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowUp, Check, ExternalLink, FileSpreadsheet, History, Loader2, Maximize2, MapPin, MessageSquarePlus, Minimize2, Paperclip, Trash2, X } from 'lucide-react'
 import { useConfirm } from '@/components/employer/ConfirmDialog'
 import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
@@ -31,6 +31,7 @@ type LinkT = { href: string; label: string; external?: boolean }
 type Item =
   | { kind: 'user'; text: string }
   | { kind: 'user_image'; url: string }
+  | { kind: 'user_file'; name: string; count?: number }
   | { kind: 'assistant'; text: string }
   | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: LinkT; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
@@ -210,7 +211,12 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
   }, [items, busy])
 
   const send = useCallback(
-    async (payload: { message?: string; decision?: { tool_use_id: string; approve: boolean; confirm_text?: string }; attachments?: { url: string; name: string }[] }) => {
+    async (payload: {
+      message?: string
+      decision?: { tool_use_id: string; approve: boolean; confirm_text?: string }
+      attachments?: { url: string; name: string }[]
+      list_file?: { name: string; data: string }
+    }) => {
       if (busy) return
       const h = await authHeader()
       if (!h) {
@@ -222,6 +228,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
         // Answered cards and choices leave the list; the reload restores the record.
         const kept = p.filter((i) => i.kind !== 'choices' && (i.kind !== 'approval' || (payload.decision && i.tool_use_id !== payload.decision.tool_use_id)))
         const shown: Item[] = [...(payload.attachments ?? []).map((a) => ({ kind: 'user_image' as const, url: a.url }))]
+        if (payload.list_file) shown.push({ kind: 'user_file', name: payload.list_file.name })
         if (payload.message) shown.push({ kind: 'user', text: payload.message })
         return [...kept, ...shown]
       })
@@ -332,13 +339,43 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
     }
   }
 
+  // A staff list (spreadsheet, CSV or text): sent with whatever is in the
+  // box and read on the server, which keeps it with this conversation. The
+  // assistant works from a summary; invitations wait for a card.
+  const attachList = async (file: File) => {
+    if (/\.xls$/i.test(file.name)) {
+      setItems((p) => [...p, { kind: 'error', text: 'That is an older Excel file (.xls). Save it as .xlsx or CSV and attach it again.' }])
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setItems((p) => [...p, { kind: 'error', text: 'That file is over 2 MB. Save just the columns with names and email addresses and try again.' }])
+      return
+    }
+    setUploading(true)
+    const data = await new Promise<string | null>((resolve) => {
+      const r = new FileReader()
+      r.onload = () => resolve(String(r.result ?? '').replace(/^data:[^,]*,/, ''))
+      r.onerror = () => resolve(null)
+      r.readAsDataURL(file)
+    })
+    setUploading(false)
+    if (data == null) {
+      setItems((p) => [...p, { kind: 'error', text: "That file couldn't be read. Try again." }])
+      return
+    }
+    const message = draft.trim()
+    setDraft('')
+    void send({ list_file: { name: file.name, data }, message: message || undefined })
+  }
+
   // An image for the assistant (a logo): uploaded to the logo bucket, then
   // sent with whatever is in the box. Nothing changes until the admin
   // approves it on a card.
   const attach = async (file: File) => {
+    if (/\.(csv|tsv|txt|xlsx?)$/i.test(file.name)) return attachList(file)
     const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' } as Record<string, string>)[file.type]
     if (!ext) {
-      setItems((p) => [...p, { kind: 'error', text: 'Attach a PNG, JPG or WebP image.' }])
+      setItems((p) => [...p, { kind: 'error', text: 'Attach an image (PNG, JPG or WebP) or a staff list (.xlsx, .csv or .txt).' }])
       return
     }
     if (file.size > 2 * 1024 * 1024) {
@@ -502,6 +539,14 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                   {it.text}
                 </div>
               )
+            if (it.kind === 'user_file')
+              return (
+                <div key={i} className="ml-8 flex items-center gap-2 self-end rounded-xl border border-line bg-surface px-3 py-2 text-[13.5px] text-ink">
+                  <FileSpreadsheet size={16} strokeWidth={1.75} className="shrink-0 text-accent" />
+                  <span className="truncate">{it.name}</span>
+                  {it.count != null && <span className="shrink-0 text-ink-muted">· {it.count.toLocaleString('en-US')} {it.count === 1 ? 'person' : 'people'}</span>}
+                </div>
+              )
             if (it.kind === 'user_image')
               return (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -633,7 +678,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
           <input
             ref={fileInput}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/png,image/jpeg,image/webp,.csv,.tsv,.txt,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0]
@@ -643,8 +688,8 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
           />
           <button
             type="button"
-            aria-label="Attach an image, like your logo"
-            title="Attach an image, like your logo"
+            aria-label="Attach your logo or a staff list (spreadsheet or CSV)"
+            title="Attach your logo or a staff list (spreadsheet or CSV)"
             disabled={busy || uploading}
             onClick={() => fileInput.current?.click()}
             className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-muted hover:bg-surface-2 disabled:opacity-40"

@@ -1,7 +1,7 @@
 // The employer setup assistant (Keith 2026-10-20).
 //
 // GET  ?group_id=&thread_id=   the conversation so far (latest thread if no id)
-// POST { group_id, thread_id?, message?, decision?: { tool_use_id, approve } , new_thread? }
+// POST { group_id, thread_id?, message?, decision?: { tool_use_id, approve } , new_thread?, attachments?, list_file? }
 //      streams newline-delimited JSON events while the assistant works:
 //      {type:'thread', id} {type:'text', delta} {type:'tool', id, label}
 //      {type:'tool_done', id, ok, link?} {type:'choices', options}
@@ -12,6 +12,7 @@
 // Actions that need approval pause the turn: the card waits in
 // thread.pending until the admin clicks, then the turn carries on.
 
+import { fileText, parseList, saveList, type ParsedList } from '@/lib/employer-assistant/lists'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
@@ -157,6 +158,7 @@ function choicesFilter(send: (delta: string) => void) {
 type Item =
   | { kind: 'user'; text: string }
   | { kind: 'user_image'; url: string }
+  | { kind: 'user_file'; name: string; count: number }
   | { kind: 'assistant'; text: string }
   | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
@@ -174,6 +176,11 @@ function transcript(messages: { role: string; content: unknown }[], pending: Pen
       } else if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) {
         // The note that travels with an attachment is for the model only.
         if (m.role === 'user' && b.text.startsWith('[Attached image')) continue
+        if (m.role === 'user' && b.text.startsWith('[Attached list')) {
+          const f = b.text.match(/^\[Attached list "(.*?)", list_id \S+: (\d+)/)
+          if (f) items.push({ kind: 'user_file', name: f[1], count: Number(f[2]) })
+          continue
+        }
         if (m.role === 'user') {
           items.push({ kind: 'user', text: b.text })
         } else {
@@ -294,6 +301,8 @@ export async function POST(request: Request) {
     new_thread?: boolean
     /** Images the admin attached (uploaded to employer-logos first). */
     attachments?: { url: string; name?: string }[]
+    /** A staff list (spreadsheet or text file), sent with the message, base64. */
+    list_file?: { name: string; data: string }
   } | null
   const auth = await authorize(request, body?.group_id)
   if ('error' in auth) return auth.error
@@ -302,12 +311,25 @@ export async function POST(request: Request) {
   // Only our own logo bucket: the model never fetches an arbitrary URL.
   const logoPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/employer-logos/`
   const attachments = (body?.attachments ?? []).filter((a) => typeof a?.url === 'string' && a.url.startsWith(logoPrefix)).slice(0, 3)
-  if (!text && !body?.decision && attachments.length === 0) return Response.json({ error: 'Say something first.' }, { status: 400 })
+  // A staff list is read here, before anything is stored, so a bad file
+  // is turned away with a reason and no conversation is left behind.
+  let staffList: ParsedList | null = null
+  if (body?.list_file && !body.decision) {
+    const name = String(body.list_file.name ?? 'list').slice(0, 200)
+    const read = fileText(name, Buffer.from(String(body.list_file.data ?? ''), 'base64'))
+    if ('error' in read) return Response.json({ error: read.error }, { status: 400 })
+    const parsed = await parseList(admin, group.id, name, read.text)
+    if ('error' in parsed) return Response.json({ error: parsed.error }, { status: 400 })
+    staffList = parsed
+  }
+  if (!text && !body?.decision && attachments.length === 0 && !staffList) return Response.json({ error: 'Say something first.' }, { status: 400 })
+  let listNote: string | null = null
   const userBlocks = (): unknown[] => [
     ...attachments.flatMap((a) => [
       { type: 'image', source: { type: 'url', url: a.url } },
       { type: 'text', text: `[Attached image${a.name ? ` "${a.name}"` : ''}: ${a.url}]` },
     ]),
+    ...(listNote ? [{ type: 'text', text: listNote }] : []),
     ...(text ? [{ type: 'text', text }] : []),
   ]
 
@@ -358,13 +380,21 @@ export async function POST(request: Request) {
   } else {
     const { data, error } = await admin
       .from('employer_assistant_threads')
-      .insert({ group_id: group.id, title: text.slice(0, 80) || (attachments.length ? 'Logo' : 'Setup'), created_by: user.id, created_by_email: user.email, busy_until: lockUntil })
+      .insert({ group_id: group.id, title: text.slice(0, 80) || (staffList ? staffList.name : attachments.length ? 'Logo' : 'Setup'), created_by: user.id, created_by_email: user.email, busy_until: lockUntil })
       .select('id, group_id, pending')
       .single()
     if (error || !data) return Response.json({ error: 'Could not start a conversation.' }, { status: 500 })
     thread = data as Thread
   }
   const threadId = thread.id
+  if (staffList) {
+    const saved = await saveList(admin, { threadId, groupId: group.id, email: user.email!, list: staffList })
+    if (!saved) {
+      await admin.from('employer_assistant_threads').update({ busy_until: null }).eq('id', threadId)
+      return Response.json({ error: "That list couldn't be saved. Try again." }, { status: 500 })
+    }
+    listNote = saved.summary
+  }
 
   const origin = new URL(request.url).origin
   const ctx: ToolCtx = {

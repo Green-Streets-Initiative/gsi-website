@@ -7,6 +7,7 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { RULE_SET_HELP, RULE_SET_LABEL, type RuleSet } from '@/lib/employer/survey-instrument'
 import { massdepBand } from '@/lib/employer/survey-exports'
+import { loadList } from './lists'
 import type { ApprovalCard, ToolCtx, ToolResult } from './tools'
 
 const SURVEY_LINK_BASE = 'https://www.gogreenstreets.org/survey'
@@ -53,11 +54,12 @@ export const SURVEY_TOOLS: Anthropic.Tool[] = [
   {
     name: 'add_survey_people',
     description:
-      "Add staff to a survey's list (email required; name, department and site optional, site by the office name). Each person gets their own link by email when the survey opens, or within the hour if it is open. Paste-ins of up to 2,000. Needs approval.",
+      "Add staff to a survey's list (email required; name, department and site optional, site by the office name). Each person gets their own link by email when the survey opens, or within the hour if it is open. Pass people for a typed list, or list_id for an attached spreadsheet (the whole list, up to 5,000). Needs approval.",
     input_schema: {
       type: 'object',
       properties: {
         survey_id: { type: 'string' },
+        list_id: { type: 'string', description: 'From an [Attached list ...] note.' },
         people: {
           type: 'array',
           maxItems: 2000,
@@ -68,7 +70,7 @@ export const SURVEY_TOOLS: Anthropic.Tool[] = [
           },
         },
       },
-      required: ['survey_id', 'people'],
+      required: ['survey_id'],
     },
   },
   {
@@ -264,7 +266,16 @@ export async function surveyApprovalCard(ctx: ToolCtx, name: string, input: Reco
   const people = st?.people ?? []
   switch (name) {
     case 'add_survey_people': {
-      const raw = (input.people as { email?: string; name?: string; department?: string; site?: string }[]) ?? []
+      const list = input.list_id ? await loadList(ctx.admin, ctx.groupId, ctx.threadId, String(input.list_id)) : null
+      if (input.list_id && !list) return fail('list not found in this conversation; ask them to attach it again')
+      // An attached list's rows already carry the matched office (location_id).
+      const raw = (list ? list.rows : (input.people as { email?: string; name?: string; department?: string; site?: string; location_id?: string }[]) ?? []) as {
+        email?: string
+        name?: string
+        department?: string
+        site?: string
+        location_id?: string
+      }[]
       const valid = raw
         .map((p) => ({ ...p, email: String(p.email ?? '').trim().toLowerCase() }))
         .filter((p) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))
@@ -276,6 +287,7 @@ export async function surveyApprovalCard(ctx: ToolCtx, name: string, input: Reco
           title: `Add ${valid.length} ${valid.length === 1 ? 'person' : 'people'} to the survey list?`,
           lines: [
             label,
+            ...(list ? [`From ${list.file_name}${list.wrong.length ? ` (${list.wrong.length} entries that look wrong are left out)` : ''}.`] : []),
             shown + (valid.length > 6 ? `, and ${valid.length - 6} more` : ''),
             s.status === 'open' ? 'The survey is open, so their links go out by email within the hour, in your name.' : 'Nobody is emailed until you open the survey.',
           ],
@@ -345,15 +357,21 @@ export async function runSurveyApproved(ctx: ToolCtx, name: string, input: Recor
         const t = x.trim().toLowerCase()
         return sites.find((l) => (l.name ?? '').toLowerCase() === t || l.address.toLowerCase().startsWith(t))?.id
       }
-      const rows = ((input.people as { email: string; name?: string; department?: string; site?: string }[]) ?? []).map((p) => {
+      const rows = ((input.people as { email: string; name?: string; department?: string; site?: string; location_id?: string }[]) ?? []).map((p) => {
         const row: Record<string, string> = { email: p.email }
         if (p.name?.trim()) row.name = p.name.trim().slice(0, 120)
         if (p.department?.trim()) row.department = p.department.trim().slice(0, 80)
-        const loc = findSite(p.site)
+        const loc = p.location_id ?? findSite(p.site)
         if (loc) row.location_id = loc
         return row
       })
-      return rpcResult('add_employer_survey_recipients', { p_survey_id: input.survey_id, p_rows: rows }, {})
+      // The database takes 2,000 at a time.
+      let last: ToolResult | null = null
+      for (let i = 0; i < rows.length; i += 2000) {
+        last = await rpcResult('add_employer_survey_recipients', { p_survey_id: input.survey_id, p_rows: rows.slice(i, i + 2000) }, { added_so_far: Math.min(i + 2000, rows.length) })
+        if (last.isError) return last
+      }
+      return last ?? rpcResult('add_employer_survey_recipients', { p_survey_id: input.survey_id, p_rows: [] }, {})
     }
     case 'open_survey':
       return rpcResult('set_employer_survey_status', { p_id: input.survey_id, p_status: 'open' }, { opened: true, note: 'Links go out within the hour.' })

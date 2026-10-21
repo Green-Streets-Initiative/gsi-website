@@ -11,6 +11,7 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import { domainCounts, loadList } from './lists'
 import { SURVEY_ACTIVITY, SURVEY_NEEDS_APPROVAL, SURVEY_TOOLS, runSurveyApproved, runSurveyRead, surveyApprovalCard } from './survey-tools'
 import { RESULTS_ACTIVITY, RESULTS_TOOLS, runResultsRead } from './results-tools'
 import { ADMIN_ACTIVITY, ADMIN_NEEDS_APPROVAL, ADMIN_ONLY, ADMIN_TOOLS, adminApprovalCard, runAdminApproved, runAdminRead } from './admin-tools'
@@ -173,11 +174,14 @@ const BASE_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'invite_employees',
-    description: 'Email Shift invitations to employees on the workplace\'s behalf (with a reminder a few days later). Needs approval.',
+    description:
+      "Email Shift invitations to employees on the workplace's behalf (with a reminder a few days later). Pass emails for a few typed addresses, or list_id for an attached spreadsheet (the whole list, any size up to 5,000). Needs approval.",
     input_schema: {
       type: 'object',
-      properties: { emails: { type: 'array', items: { type: 'string' }, maxItems: 500 } },
-      required: ['emails'],
+      properties: {
+        emails: { type: 'array', items: { type: 'string' }, maxItems: 500 },
+        list_id: { type: 'string', description: 'From an [Attached list ...] note.' },
+      },
     },
   },
   {
@@ -615,14 +619,29 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
       return { card: { title: `Discard "${d.body?.name ?? 'this draft'}"?`, lines: ['It was never launched, so nothing changes for your team.'], cta: 'Discard', tone: 'danger' } }
     }
     case 'invite_employees': {
-      const emails = Array.from(new Set(((input.emails as string[]) ?? []).map((e) => e.trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))))
+      const list = input.list_id ? await loadList(ctx.admin, ctx.groupId, ctx.threadId, String(input.list_id)) : null
+      if (input.list_id && !list) return { result: { content: { error: 'list not found in this conversation; ask them to attach it again' }, isError: true } }
+      const typed = list ? list.rows.map((r) => r.email) : ((input.emails as string[]) ?? [])
+      const emails = Array.from(new Set(typed.map((e) => e.trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))))
       if (emails.length === 0) return { result: { content: { error: 'no valid email addresses' }, isError: true } }
+      // The card carries the addresses (approval runs exactly these); the
+      // model's own call only ever held the list's id.
       input.emails = emails
       const shown = emails.slice(0, 8).join(', ') + (emails.length > 8 ? `, and ${emails.length - 8} more` : '')
+      const { data: doms } = await ctx.admin.from('employer_email_domains').select('domain').eq('group_id', ctx.groupId)
+      const ours = ((doms ?? []) as { domain: string }[]).map((d) => d.domain.toLowerCase())
+      const outside = ours.length ? emails.filter((e) => !ours.some((d) => e.endsWith(`@${d}`) || e.endsWith(`.${d}`))) : []
       return {
         card: {
-          title: `Email Shift invitations to ${emails.length} ${emails.length === 1 ? 'person' : 'people'}?`,
-          lines: [shown, `Sent from Shift on behalf of ${ctx.groupName}, with your join code, and one reminder a few days later to anyone who hasn't joined.`],
+          title: `Email Shift invitations to ${emails.length.toLocaleString('en-US')} ${emails.length === 1 ? 'person' : 'people'}?`,
+          lines: [
+            ...(list ? [`From ${list.file_name}${list.wrong.length ? ` (${list.wrong.length} entries that look wrong are left out)` : ''}.`] : []),
+            shown,
+            ...(outside.length
+              ? [`${outside.length} ${outside.length === 1 ? "isn't" : "aren't"} at ${ours.map((d) => `@${d}`).join(' or ')} (${domainCounts(outside.map((email) => ({ email }))).slice(0, 3).map(([d, c]) => `${c} at ${d}`).join(', ')}). Only people who confirm a company address can join, so check these.`]
+              : []),
+            `Sent from Shift on behalf of ${ctx.groupName}, with your join code, and one reminder a few days later to anyone who hasn't joined.`,
+          ],
           cta: `Send ${emails.length} ${emails.length === 1 ? 'invitation' : 'invitations'}`,
           tone: 'primary',
         },
@@ -715,8 +734,17 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
         return { content: { discarded: true } }
       }
       case 'invite_employees': {
-        const { data, error } = await rpc(ctx, 'add_employer_invitations', { p_group_id: ctx.groupId, p_emails: input.emails, p_invited_by: ctx.email })
-        if (error || !data?.ok) return { content: { sent: false, ...(data ?? {}), error }, isError: true }
+        // The database takes 500 at a time; a long list goes in batches.
+        const all = input.emails as string[]
+        let data: Record<string, unknown> | null = null
+        const totals: Record<string, number> = {}
+        for (let i = 0; i < all.length; i += 500) {
+          const r = await rpc(ctx, 'add_employer_invitations', { p_group_id: ctx.groupId, p_emails: all.slice(i, i + 500), p_invited_by: ctx.email })
+          if (r.error || !r.data?.ok) return { content: { sent: false, sent_before_the_error: totals, ...(r.data ?? {}), error: r.error }, isError: true }
+          data = r.data
+          for (const [k, v] of Object.entries(r.data)) if (typeof v === 'number') totals[k] = (totals[k] ?? 0) + v
+        }
+        if (data) Object.assign(data, totals)
         // Ask the sender to run now; the hourly run picks them up otherwise.
         try {
           await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/employer-invites`, {

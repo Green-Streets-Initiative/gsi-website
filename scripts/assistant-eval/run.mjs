@@ -199,7 +199,15 @@ async function runScenario(sc) {
   }
 
   for (const step of sc.steps) {
-    if (step.say) {
+    if (step.attach) {
+      // A staff list from fixtures/, sent the way the panel's paperclip sends it.
+      const file = path.join('scripts', 'assistant-eval', 'fixtures', step.attach)
+      out.transcript.push(`${sc.role.toUpperCase()}: [attaches ${step.attach}]${step.say ? ` ${step.say}` : ''}`)
+      absorb(
+        await call(token, { message: step.say, list_file: { name: step.attach, data: fs.readFileSync(file).toString('base64') }, thread_id: threadId, new_thread: !threadId }),
+        'attach',
+      )
+    } else if (step.say) {
       out.transcript.push(`${sc.role.toUpperCase()}: ${step.say}`)
       absorb(await call(token, { message: step.say, thread_id: threadId, new_thread: !threadId }), 'say')
     } else if (step.sql) {
@@ -247,6 +255,7 @@ async function runScenario(sc) {
   for (const t of ck.requireCards ?? []) if (!cardNames.includes(t)) out.failures.push(`no ${t} approval card`)
   for (const t of ck.forbidCards ?? []) if (cardNames.includes(t)) out.failures.push(`showed a ${t} approval card`)
   if (ck.requireConfirmText && !out.cards.some((c) => c.card.confirmText)) out.failures.push('card did not ask for a typed name')
+  for (const t of ck.cardMentions ?? []) if (!out.cards.some((c) => JSON.stringify(c.card).includes(t))) out.failures.push(`no card mentions "${t}"`)
   if (ck.expectError && !out.errors.some((e) => e.toLowerCase().includes(ck.expectError))) out.failures.push(`expected a refusal mentioning "${ck.expectError}"`)
   if (ck.after) {
     const f = await ck.after(w)
