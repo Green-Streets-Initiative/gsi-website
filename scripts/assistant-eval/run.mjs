@@ -279,6 +279,14 @@ async function runScenario(sc) {
   return out
 }
 
+// The assistant's system prompt, read from the source, so the grader knows
+// what it was told (the portal map, the rules) and doesn't mark it invented.
+const INSTRUCTIONS = (() => {
+  const src = fs.readFileSync('src/lib/employer-assistant/prompt.ts', 'utf8')
+  const start = src.indexOf('export const SYSTEM_PROMPT = `')
+  return src.slice(start + 'export const SYSTEM_PROMPT = `'.length, src.indexOf('`\n\nexport function', start))
+})()
+
 async function judge(sc, transcript, toolData) {
   const msg = await anthropic.messages.create({
     model: JUDGE_MODEL,
@@ -303,7 +311,12 @@ What the assistant's tools returned (the only source of facts about this account
 ${toolData.join('\n\n') || '(none)'}
 </tool_data>
 
-Product facts the assistant was told in its instructions (true, not invented): survey links go out by email within the hour of being added to an open survey (or when it opens), with one reminder three days later; links should go out the Friday before or the Monday of survey week; drafts are invisible to employees; the Shift standard counts walks of half a mile or more, bike and e-scooter rides, transit and carpools, up to 2 trips a day; the GSI team uses passed-on feedback to decide what to build next; the portal's challenge builder has four steps: Basics, Which trips count, Rewards (prizes), Review; scheduled challenges have an Edit button; most trips are detected automatically in the Shift app once someone is set up; gift-card rewards are winner's choice (local shops or national brands), delivered in the app; a first-to-the-goal reward stays open 48 hours after a challenge ends.
+The assistant's own instructions (anything stated here is true, not invented):
+<instructions>
+${INSTRUCTIONS}
+</instructions>
+
+More product facts (true, not invented): survey links go out by email within the hour of being added to an open survey (or when it opens), with one reminder three days later; links should go out the Friday before or the Monday of survey week; drafts are invisible to employees; the Shift standard counts walks of half a mile or more, bike and e-scooter rides, transit and carpools, up to 2 trips a day; the GSI team uses passed-on feedback to decide what to build next; the portal's challenge builder has four steps: Basics, Which trips count, Rewards (prizes), Review; scheduled challenges have an Edit button; most trips are detected automatically in the Shift app once someone is set up; gift-card rewards are winner's choice (local shops or national brands), delivered in the app; a first-to-the-goal reward stays open 48 hours after a challenge ends.
 
 Judge only against the rubric and the rules above; don't penalize style that's fine. Reply with JSON only: {"pass": true|false, "notes": "one or two sentences on what was good or what went wrong"}`,
       },
