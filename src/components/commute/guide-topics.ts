@@ -2,7 +2,7 @@
  * The "Guides" card: every guide for the picked way in, filed under the
  * question a first-week commuter asks, in the order of the trip's stages
  * (what to wear, getting a bike, carrying things, planning the route,
- * riding with traffic or taking the bus, locking up).
+ * riding with traffic or taking the bus, arriving at work, locking up).
  *
  * content_items carries three things worth reading for this: primary_mode
  * (cycling | transit | walking), primary_barrier (weather, gear, routes,
@@ -26,6 +26,7 @@ export type GuideQuestion =
   | 'Planning the route'
   | 'Riding with traffic'
   | 'Taking the bus'
+  | 'Arriving at work'
   | 'Locking up and parking'
 
 export interface GuideGroup {
@@ -41,6 +42,7 @@ export const QUESTION_ORDER: GuideQuestion[] = [
   'Planning the route',
   'Riding with traffic',
   'Taking the bus',
+  'Arriving at work',
   'Locking up and parking',
 ]
 
@@ -57,6 +59,7 @@ export const QUESTION_STAGE: Record<GuideQuestion, StageLabel> = {
   'Planning the route': 'Route',
   'Riding with traffic': 'Route',
   'Taking the bus': 'Route',
+  'Arriving at work': 'Arrive',
   'Locking up and parking': 'Store',
 }
 
@@ -87,7 +90,8 @@ export function contentModeWord(contentMode: string): string {
 
 const BARRIER_QUESTION: Record<string, GuideQuestion> = {
   weather: 'What to wear',
-  sweating: 'What to wear',
+  // Arriving fresh is the Arrive stage's question (Keith 2026-10-21).
+  sweating: 'Arriving at work',
   gear: 'What to wear',
   carrying: 'Carrying things',
   routes: 'Planning the route',
@@ -101,6 +105,7 @@ const BARRIER_QUESTION: Record<string, GuideQuestion> = {
 
 /** Topics, in the order they are tried when the barrier decides nothing. */
 const TOPIC_QUESTION: [string, GuideQuestion][] = [
+  ['arriving', 'Arriving at work'],
   ['weather', 'What to wear'],
   ['year-round', 'What to wear'],
   ['carrying', 'Carrying things'],
@@ -130,6 +135,9 @@ export function questionFor(guide: Pick<GuideLink, 'primary_mode' | 'primary_bar
   // On transit, "how to pay" and "your first bus ride" are the bus question
   // even when the editor filed them under planning.
   if (transit && guide.topics.some((t) => t === 'mbta-basics' || t === 'fares')) return 'Taking the bus'
+  // A guide about getting to your desk (parking at the building, freshening
+  // up) is the arrival, whatever barrier the editor picked.
+  if (guide.topics.includes('arriving')) return fitForMode('Arriving at work', guide.primary_mode)
   const byBarrier = guide.primary_barrier ? BARRIER_QUESTION[guide.primary_barrier] : undefined
   if (byBarrier) return fitForMode(byBarrier, guide.primary_mode)
   // With no barrier set, a bike-share or borrowing walkthrough ("Bluebikes
