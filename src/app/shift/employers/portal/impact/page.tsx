@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useMemo, type ReactNode } from 'react'
-import { FileText } from 'lucide-react'
+import { FileText, MessageSquare } from 'lucide-react'
 import { PersonSimpleWalk, Bicycle, Car, Bus, Train, Scooter, UsersThree, Sailboat, MapPin } from '@phosphor-icons/react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import PortalPageHead from '../_components/PortalPageHead'
+import { assistantAvailable, openAssistant } from '../_components/AssistantPanel'
 import PortalHeroPanel from '../_components/PortalHeroPanel'
 import ChangeStrip from '../_components/ChangeStrip'
 import PeerBenchmarkCard from '../_components/PeerBenchmarkCard'
@@ -100,7 +101,7 @@ function formatGoalDate(iso: string): string {
 }
 
 export default function ImpactPage() {
-  const { group, memberCount, loading } = usePortal()
+  const { group, memberCount, loading, isGsiAdmin } = usePortal()
 
   // This page owns its numbers. Home keeps the shared 30-day figures in the
   // context; nothing here writes to them (Keith 2026-09-30).
@@ -354,7 +355,21 @@ export default function ImpactPage() {
 
   return (
     <div className="grid gap-6">
-      <PortalPageHead title="Impact" subtitle="What your team's trips add up to" />
+      <PortalPageHead
+        title="Impact"
+        subtitle="What your team's trips add up to"
+        actions={
+          assistantAvailable(group, isGsiAdmin) ? (
+            <Button
+              variant="secondary"
+              icon={MessageSquare}
+              onClick={() => openAssistant(`Explain our results for ${rangeLabel.toLowerCase()}: what stands out, and what should we do about it?`)}
+            >
+              Ask about these numbers
+            </Button>
+          ) : undefined
+        }
+      />
 
       {dashboardError && (
         <Card pad>

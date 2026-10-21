@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
-import { Compass, Megaphone, Printer, Share2, Trophy, UserPlus, type LucideIcon } from 'lucide-react'
+import { Compass, Megaphone, MessageSquare, Printer, Share2, Trophy, UserPlus, type LucideIcon } from 'lucide-react'
 import { Card, CardHead, CardBody } from '@/components/employer/Card'
 import ProgressBar from '@/components/employer/ProgressBar'
 import Badge from '@/components/employer/Badge'
@@ -58,6 +58,7 @@ export default function GoalProgressCard({
   dashboard,
   canEdit,
   setupNagging,
+  onAsk,
 }: {
   group: Group
   memberCount: number
@@ -66,6 +67,8 @@ export default function GoalProgressCard({
   canEdit: boolean
   /** True when the hero is already asking them to set a goal; the no-goal prompt stays out of its way. */
   setupNagging: boolean
+  /** With the assistant: "Ask how to get there" next to the steps. */
+  onAsk?: () => void
 }) {
   const router = useRouter()
 
@@ -217,6 +220,11 @@ export default function GoalProgressCard({
                   {s.label}
                 </Button>
               ))}
+              {onAsk && (
+                <Button variant="secondary" size="sm" icon={MessageSquare} onClick={onAsk}>
+                  Ask how to get there
+                </Button>
+              )}
             </div>
           </div>
         )}

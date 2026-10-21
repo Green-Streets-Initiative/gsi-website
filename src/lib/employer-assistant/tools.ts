@@ -415,6 +415,24 @@ async function accountOverview(ctx: ToolCtx) {
       employees_joined: (members.count ?? 0) > 0,
       challenge_scheduled: hasChallenge,
     },
+    // The goal from Setup, and the figure Home's goal card reads it against.
+    success_plan: onboarding.goal_type
+      ? {
+          goal: onboarding.goal_type,
+          measured_by: ({
+            participation: 'share of the headcount signed up to Shift',
+            mode_shift: 'Shift Rate (share of trips on foot, by bike, transit or carpool)',
+            parking: 'share of trips driving alone (lower is better)',
+            wellness: 'share of employees active each month',
+            benefit_uptake: 'share of employees active each month',
+          } as Record<string, string>)[String(onboarding.goal_type)] ?? null,
+          target_pct: onboarding.goal_target_pct ?? null,
+          by: onboarding.goal_target_date ?? null,
+          launch_date: onboarding.launch_date ?? null,
+          headcount: onboarding.headcount ?? null,
+          notes: onboarding.success_definition ?? null,
+        }
+      : null,
     employees: { joined: members.count ?? 0, invited_not_joined: invites.count ?? 0 },
     email_domains: ((domains.data ?? []) as { domain: string }[]).map((d) => d.domain),
     offices: ((locations.data ?? []) as { id: string; name: string | null; address: string; sort_order: number }[]).map((o, i) => ({ location_id: o.id, name: o.name, address: o.address, main: i === 0 })),

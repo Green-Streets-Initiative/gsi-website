@@ -15,12 +15,14 @@ import {
   ArrowDown,
   Send,
   Check,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useModalFocus } from '@/lib/employer/use-modal-focus'
 import { usePortal } from '../_lib/portal-context'
 import { formatDateShort } from '../_lib/portal-utils'
 import PortalPageHead from '../_components/PortalPageHead'
+import { assistantAvailable, openAssistant } from '../_components/AssistantPanel'
 import { Card, CardHead, CardBody } from '@/components/employer/Card'
 import StatTile from '@/components/employer/StatTile'
 import Badge from '@/components/employer/Badge'
@@ -112,7 +114,12 @@ function isRangeId(v: string | null): v is RangeId {
 export default function EmployeesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { group, memberCount, members: contextMembers, loading, canInviteEmployees, canManageAccount, sessionEmail } = usePortal()
+  const { group, memberCount, members: contextMembers, loading, canInviteEmployees, canManageAccount, sessionEmail, isGsiAdmin } = usePortal()
+  // With the assistant: attach the staff spreadsheet and it sends the invitations.
+  const inviteWithAssistant =
+    assistantAvailable(group, isGsiAdmin) && canInviteEmployees
+      ? () => openAssistant('Help me invite our staff to Shift. I can attach our staff list.')
+      : null
   // Invitations and join requests: admins, managers and GSI staff. Who can
   // join is an account setting (admins only).
   const canManage = canInviteEmployees
@@ -330,9 +337,16 @@ export default function EmployeesPage() {
         subtitle="Who has joined and how they're getting around"
         actions={
           effectiveCount > 0 ? (
-            <Button variant="primary" icon={Mail} onClick={() => setInviteOpen(true)}>
-              Invite
-            </Button>
+            <>
+              {inviteWithAssistant && (
+                <Button variant="secondary" icon={FileSpreadsheet} onClick={inviteWithAssistant}>
+                  Invite from a spreadsheet
+                </Button>
+              )}
+              <Button variant="primary" icon={Mail} onClick={() => setInviteOpen(true)}>
+                Invite
+              </Button>
+            </>
           ) : undefined
         }
       />
@@ -352,6 +366,13 @@ export default function EmployeesPage() {
             <CardHead
               title="Invite your first employees"
               sub="Give us a list and we send the invitations, or share the link, code or a flyer yourself."
+              action={
+                inviteWithAssistant ? (
+                  <Button variant="secondary" size="sm" icon={FileSpreadsheet} onClick={inviteWithAssistant}>
+                    Invite from a spreadsheet
+                  </Button>
+                ) : undefined
+              }
             />
             <CardBody>
               <InvitePanel {...invitePanelProps} prefix="invite-inline" />

@@ -24,6 +24,8 @@ import PortalPageHead from '../_components/PortalPageHead'
 import PortalHeroPanel from '../_components/PortalHeroPanel'
 import LocationBreakdownCard from '../_components/LocationBreakdownCard'
 import GoalProgressCard from '../_components/GoalProgressCard'
+import { assistantAvailable, openAssistant } from '../_components/AssistantPanel'
+import AssistantHome, { homeSuggestions } from './AssistantHome'
 import { Card, CardHead, CardBody } from '@/components/employer/Card'
 import StatTile, { STAT_HINTS, StatHint } from '@/components/employer/StatTile'
 import Badge from '@/components/employer/Badge'
@@ -169,6 +171,12 @@ export default function DashboardPage() {
     challenges,
   })
   const next = nextSetupStep(setupSteps)
+  // With the assistant, Home leads with it (AssistantHome); without, the
+  // next-step or results hero as before.
+  const withAssistant = assistantAvailable(group, isGsiAdmin)
+  const suggestions = withAssistant
+    ? homeSuggestions({ group, steps: setupSteps, challenges, memberCount, canAct: isAdmin || isGsiAdmin || portal.canManageChallenges, nowMs: now() })
+    : null
   const hasOwnChallengeAhead = challenges.some((c) => !c.is_flagship && new Date(c.ends_at).getTime() >= nowMs)
 
   const updated = [fetchedAt, homeFetchedAt]
@@ -252,7 +260,9 @@ export default function DashboardPage() {
       )}
 
       <div className="mb-6">
-        {next ? (
+        {suggestions ? (
+          <AssistantHome steps={suggestions.steps} starters={suggestions.starters} />
+        ) : next ? (
           <PortalHeroPanel
             title={`Next step: ${next.label}`}
             lede={
@@ -325,6 +335,7 @@ export default function DashboardPage() {
           dashboard={dashboard30}
           canEdit={isAdmin || isGsiAdmin}
           setupNagging={next?.id === 'success'}
+          onAsk={withAssistant ? () => openAssistant('How are we tracking against our goal, and what would help us reach it?') : undefined}
         />
       </div>
 
@@ -333,16 +344,27 @@ export default function DashboardPage() {
         <div className="min-w-0 space-y-6">
           {/* The four numbers, with what each one means. Once setup is done
               they live in the hero instead, so they appear once. */}
-          {next && (
+          {(next || withAssistant) && (
             <div>
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
                 <span className="text-[14px] font-semibold text-ink">Last 30 days</span>
-                <Link
-                  href={`${PORTAL}/impact`}
-                  className="text-[13px] font-medium text-accent no-underline hover:underline"
-                >
-                  Full impact report →
-                </Link>
+                <span className="flex items-center gap-4">
+                  {withAssistant && (
+                    <button
+                      type="button"
+                      onClick={() => openAssistant('Explain our results for the last 30 days: what stands out, and what should we do about it?')}
+                      className="text-[13px] font-medium text-accent hover:underline"
+                    >
+                      Ask about these numbers
+                    </button>
+                  )}
+                  <Link
+                    href={`${PORTAL}/impact`}
+                    className="text-[13px] font-medium text-accent no-underline hover:underline"
+                  >
+                    Full impact report →
+                  </Link>
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
                 <Card pad>

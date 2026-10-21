@@ -18,8 +18,14 @@ const OPEN_EVENT = 'portal:open-assistant'
 /** Fired after the assistant changes something, so pages can reload. */
 export const ASSISTANT_CHANGED_EVENT = 'portal:assistant-changed'
 
+/** Open the assistant; with a prompt, it starts on that task in a new conversation. */
 export function openAssistant(prompt?: string) {
   window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: { prompt } }))
+}
+
+/** Whether this workplace has the assistant (GSI staff always do). */
+export function assistantAvailable(group: { assistant_enabled?: boolean | null } | null, isGsiAdmin: boolean): boolean {
+  return !!group && (!!group.assistant_enabled || isGsiAdmin)
 }
 
 const STARTERS = ['Help me set up my first challenge', 'What should I do next?', 'How do rewards work?']
@@ -41,11 +47,13 @@ type Item =
 export function AssistantDock() {
   const { group, isGsiAdmin } = usePortal()
   const [open, setOpen] = useState(false)
-  const [seed, setSeed] = useState<string | null>(null)
+  const [seed, setSeed] = useState<{ prompt: string } | null>(null)
   useEffect(() => {
     const h = (e: Event) => {
       setOpen(true)
-      setSeed((e as CustomEvent<{ prompt?: string }>).detail?.prompt ?? null)
+      const prompt = (e as CustomEvent<{ prompt?: string }>).detail?.prompt
+      // A fresh object each time, so asking for the same task twice still runs.
+      setSeed(prompt ? { prompt } : null)
     }
     // ⌘J / Ctrl+J opens and closes it from anywhere in the portal.
     const k = (e: KeyboardEvent) => {
@@ -61,8 +69,8 @@ export function AssistantDock() {
       window.removeEventListener('keydown', k)
     }
   }, [])
-  if (!open || !group || !(group.assistant_enabled || isGsiAdmin)) return null
-  return <AssistantPanel groupId={group.id} seed={seed} onSeedUsed={() => setSeed(null)} onClose={() => setOpen(false)} />
+  if (!open || !assistantAvailable(group, isGsiAdmin)) return null
+  return <AssistantPanel groupId={group!.id} seed={seed} onSeedUsed={() => setSeed(null)} onClose={() => setOpen(false)} />
 }
 
 /** Short paragraphs, "- " lists and **bold**: all the assistant writes. */
@@ -118,7 +126,7 @@ function LinkButton({ link, onNavigate }: { link: LinkT; onNavigate: () => void 
   )
 }
 
-function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: string; seed: string | null; onSeedUsed: () => void; onClose: () => void }) {
+function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: string; seed: { prompt: string } | null; onSeedUsed: () => void; onClose: () => void }) {
   const [items, setItems] = useState<Item[]>([])
   const [threadId, setThreadId] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
@@ -202,7 +210,15 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
     setLoaded(true)
   }, [groupId])
 
+  // Opened with a task: straight to a new conversation, without showing the
+  // last one first. Otherwise pick up where they left off.
+  const openedWithTask = useRef(!!seed)
   useEffect(() => {
+    if (openedWithTask.current) {
+      setFresh(true)
+      setLoaded(true)
+      return
+    }
     void load()
   }, [load])
 
@@ -216,6 +232,9 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
       decision?: { tool_use_id: string; approve: boolean; confirm_text?: string }
       attachments?: { url: string; name: string }[]
       list_file?: { name: string; data: string }
+      /** Always a new conversation (a task opened from a button). */
+      new_thread?: boolean
+      thread_id?: null
     }) => {
       if (busy) return
       const h = await authHeader()
@@ -294,14 +313,19 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
     [busy, groupId, threadId, fresh, load],
   )
 
-  // Opened with a request ("Set it up with the assistant"): ask it, unless a
-  // conversation is already under way.
+  // Opened with a task ("Do it with the assistant" on Home, Setup and other
+  // pages): it gets its own conversation, always. One already under way stays
+  // in History.
   useEffect(() => {
-    if (!loaded || !seed) return
+    if (!loaded || !seed || busy) return
     onSeedUsed()
-    if (items.length === 0) void send({ message: seed })
+    setView('chat')
+    setThreadId(null)
+    setItems([])
+    setFresh(true)
+    void send({ message: seed.prompt, thread_id: null, new_thread: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded, seed])
+  }, [loaded, seed, busy])
 
   const openHistory = async () => {
     setView('history')

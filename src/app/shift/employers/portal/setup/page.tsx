@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, Sparkles, HelpCircle, Mail, ChevronRight, Plus } from 'lucide-react'
+import { Check, ChevronDown, Sparkles, HelpCircle, Mail, ChevronRight, MessageSquare, Plus } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
 import { usePortal } from '../_lib/portal-context'
+import { assistantAvailable, openAssistant } from '../_components/AssistantPanel'
+import { SETUP_PROMPTS } from '../_lib/assistant-prompts'
 import { supabase } from '@/lib/supabase'
 import type { EmployerOnboarding, EmployerChampion, EmployerGoalType } from '../_lib/portal-types'
 import { computeSetupSteps, nextSetupStep, type SetupStepDef } from '../_lib/setup-steps'
@@ -29,7 +31,8 @@ const STEP_BUTTON: Record<string, { todo: string; done: string }> = {
 }
 
 export default function SetupPage() {
-  const { group, challenges, memberCount, benefitsForm, loading, admins } = usePortal()
+  const { group, challenges, memberCount, benefitsForm, loading, admins, isGsiAdmin } = usePortal()
+  const withAssistant = assistantAvailable(group, isGsiAdmin)
   const router = useRouter()
 
   const steps = computeSetupSteps({ group, benefitsForm, memberCount, challenges })
@@ -111,6 +114,7 @@ export default function SetupPage() {
                   onGo={() => s.route && router.push(s.route)}
                   onSaved={() => advanceFrom(s.id)}
                   adminNames={adminNames}
+                  onAsk={withAssistant && !s.done && SETUP_PROMPTS[s.id] ? () => openAssistant(SETUP_PROMPTS[s.id]) : undefined}
                 />
               ))}
             </>
@@ -166,6 +170,7 @@ function StepRow({
   onGo,
   onSaved,
   adminNames,
+  onAsk,
 }: {
   step: SetupStepDef
   isOpen: boolean
@@ -174,6 +179,8 @@ function StepRow({
   onGo: () => void
   onSaved: () => void
   adminNames: string
+  /** With the assistant: "Do it with the assistant" beside the step's own button. */
+  onAsk?: () => void
 }) {
   const panelId = `setup-step-${s.id}`
   const buttonCopy = STEP_BUTTON[s.id]
@@ -221,16 +228,31 @@ function StepRow({
         <div id={panelId} className="border-t border-line-2">
           {s.id === 'success' ? (
             <CardBody>
+              {onAsk && (
+                <p className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[14px] text-ink-muted">
+                  Fill it in below, or answer a few questions instead.
+                  <Button variant="secondary" size="sm" icon={MessageSquare} onClick={onAsk}>
+                    Do it with the assistant
+                  </Button>
+                </p>
+              )}
               <SuccessPlanForm adminNames={adminNames} onSaved={onSaved} />
             </CardBody>
           ) : (
             <CardBody className="flex flex-wrap items-center justify-between gap-3.5">
               <p className="max-w-[48ch] text-[14px] leading-[1.5] text-ink-muted">{s.desc}</p>
-              {s.route && (
-                <Button variant="secondary" size="sm" iconRight={ChevronRight} onClick={onGo}>
-                  {s.done ? buttonCopy?.done : buttonCopy?.todo}
-                </Button>
-              )}
+              <span className="flex flex-wrap gap-2">
+                {onAsk && (
+                  <Button variant="secondary" size="sm" icon={MessageSquare} onClick={onAsk}>
+                    Do it with the assistant
+                  </Button>
+                )}
+                {s.route && (
+                  <Button variant="secondary" size="sm" iconRight={ChevronRight} onClick={onGo}>
+                    {s.done ? buttonCopy?.done : buttonCopy?.todo}
+                  </Button>
+                )}
+              </span>
             </CardBody>
           )}
         </div>

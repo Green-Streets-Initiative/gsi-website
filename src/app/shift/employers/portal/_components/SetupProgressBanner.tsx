@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
 import { computeSetupSteps, nextSetupStep } from '../_lib/setup-steps'
+import { assistantAvailable } from './AssistantPanel'
 
 // Portal-wide onboarding thread: while setup is incomplete, a slim bar under
 // the Topbar keeps the next task present wherever the person is. It stays
@@ -19,6 +20,8 @@ export default function SetupProgressBanner() {
   if (agreementGated) return null
   if (!isAdmin && !isGsiAdmin) return null
   if (pathname.startsWith('/shift/employers/portal/setup')) return null
+  // Home with the assistant lists the next steps itself.
+  if (pathname.startsWith('/shift/employers/portal/dashboard') && assistantAvailable(group, isGsiAdmin)) return null
 
   const steps = computeSetupSteps({ group, benefitsForm, memberCount, challenges })
   const next = nextSetupStep(steps)

@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Trophy, UserPlus, Wallet, Printer, LogOut, ShieldCheck, type LucideIcon } from 'lucide-react'
+import { MessageSquare, Search, Trophy, UserPlus, Wallet, Printer, LogOut, ShieldCheck, type LucideIcon } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
 import { computeSetupSteps, nextSetupStep } from '../_lib/setup-steps'
 import { visibleNav, isNavItem } from './Sidebar'
+import { assistantAvailable, openAssistant } from './AssistantPanel'
 import Avatar from '@/components/employer/Avatar'
 import { useModalFocus } from '@/lib/employer/use-modal-focus'
 
@@ -28,6 +29,14 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const [query, setQuery] = useState('')
+  // Nothing matches: hand the words to the assistant instead.
+  const canAsk = assistantAvailable(group, isGsiAdmin)
+  const askAssistant = useCallback(() => {
+    const q = query.trim()
+    if (!q) return
+    onClose()
+    openAssistant(q)
+  }, [query, onClose])
   const [activeIdx, setActiveIdx] = useState(0)
 
   // Tab stays in the palette and focus returns to the search pill on close.
@@ -120,11 +129,14 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
       if (e.key === 'Enter' && results[activeIdx]) {
         e.preventDefault()
         choose(results[activeIdx])
+      } else if (e.key === 'Enter' && results.length === 0 && canAsk) {
+        e.preventDefault()
+        askAssistant()
       }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [results, activeIdx, choose, onClose])
+  }, [results, activeIdx, choose, onClose, canAsk, askAssistant])
 
   const groups: { key: ResultItem['type']; heading: string }[] = [
     { key: 'page', heading: 'Pages' },
@@ -136,8 +148,8 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-ink/30" onClick={onClose} aria-hidden />
-      <div className="fixed inset-0 z-50 flex items-start justify-center pt-[min(20vh,160px)]" onClick={onClose}>
+      <div className="fixed inset-0 z-[60] bg-ink/30" onClick={onClose} aria-hidden />
+      <div className="fixed inset-0 z-[60] flex items-start justify-center pt-[min(20vh,160px)]" onClick={onClose}>
         <div
           ref={panelRef}
           role="dialog"
@@ -165,11 +177,24 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
 
           {/* Results */}
           <div className="max-h-[360px] overflow-y-auto py-2">
-            {results.length === 0 && (
-              <div className="px-4 py-8 text-center text-[13.5px] text-ink-muted">
-                Nothing matches &ldquo;{query}&rdquo;
-              </div>
-            )}
+            {results.length === 0 &&
+              (canAsk && query.trim() ? (
+                <button
+                  type="button"
+                  onClick={askAssistant}
+                  className="flex w-full items-center gap-3 bg-accent-softer px-4 py-3 text-left text-[14px] text-ink"
+                >
+                  <MessageSquare size={16} strokeWidth={1.75} className="shrink-0 text-accent" aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    Ask the assistant: <span className="font-semibold">&ldquo;{query.trim()}&rdquo;</span>
+                  </span>
+                  <kbd className="rounded-[5px] border border-line bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-ink-tertiary">↵</kbd>
+                </button>
+              ) : (
+                <div className="px-4 py-8 text-center text-[13.5px] text-ink-muted">
+                  Nothing matches &ldquo;{query}&rdquo;
+                </div>
+              ))}
 
             {groups.map((g) => {
               const rows = results.filter((r) => r.type === g.key)
