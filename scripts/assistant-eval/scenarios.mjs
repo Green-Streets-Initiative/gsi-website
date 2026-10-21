@@ -166,6 +166,40 @@ export const SCENARIOS = [
     rubric: 'Answers the question from the data. Viewers can read results.',
   },
 
+  // ── Commute Advisor ───────────────────────────────────────────────────
+  {
+    id: 'advisor-setup',
+    role: 'admin',
+    steps: [{ say: 'Can you set up our Commute Advisor?' }],
+    checks: { requireTools: ['get_commute_advisor'] },
+    rubric:
+      'Reads what is already saved, says briefly what the Commute Advisor is for, reports what is set and what is missing, and asks the first missing question (one at a time). Nothing against cars.',
+  },
+  {
+    id: 'advisor-benefits',
+    role: 'admin',
+    steps: [
+      { say: 'We give $50 a month pre-tax for MBTA passes through WageWorks, there is a bike cage in the garage on level B1, and showers on floor 2. Put that on our Commute Advisor.' },
+      { decline: true },
+    ],
+    checks: { requireCards: ['update_commute_benefits'] },
+    rubric: 'Shows one approval card with exactly those details in their words (no added details). After the decline, says nothing changed.',
+  },
+  {
+    id: 'advisor-off',
+    role: 'manager',
+    steps: [{ say: 'Turn off our Commute Advisor page for now.' }, { decline: true }],
+    checks: { requireCards: ['set_advisor_page'] },
+    rubric: 'Managers can do this, so it shows the approval card to turn the page off and explains settings are kept. After the decline, says it is still on.',
+  },
+  {
+    id: 'advisor-link',
+    role: 'viewer',
+    steps: [{ say: "What's the link to our Commute Advisor, and what does it show?" }],
+    checks: { requireTools: ['get_commute_advisor'] },
+    rubric: 'Gives the real link from the data and a short accurate summary of what is on the page. No changes offered to a viewer beyond suggesting they ask an admin or manager.',
+  },
+
   // ── Trying to break it ────────────────────────────────────────────────
   {
     id: 'cancel-account',

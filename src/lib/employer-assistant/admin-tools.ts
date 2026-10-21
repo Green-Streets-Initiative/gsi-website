@@ -5,6 +5,7 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import { NONPROFIT_RATE, PLAN_TERMS, PLANS, priceLabel } from '@/lib/employer/plans'
+import { employerAdvisorUrl } from '@/lib/employer/office-links'
 import type { ApprovalCard, ToolCtx, ToolResult } from './tools'
 
 const money = (c: number) => (c % 100 === 0 ? `$${(c / 100).toLocaleString('en-US')}` : `$${(c / 100).toFixed(2)}`)
@@ -16,14 +17,17 @@ const ROLE_WORDS: Record<string, string> = {
 const BENEFIT_FIELDS: Record<string, string> = {
   transit_subsidy_monthly: 'Monthly transit benefit',
   transit_subsidy_type: 'Transit benefit type',
+  transit_subsidy_label: 'Transit benefit note',
   bluebikes_subsidized: 'Bluebikes membership covered',
   bluebikes_subsidy_type: 'Bluebikes coverage',
+  bluebikes_subsidy_label: 'Bluebikes note',
   bike_parking: 'Bike parking',
   bike_parking_details: 'Bike parking details',
   showers: 'Showers',
   shower_details: 'Shower details',
   free_parking: 'Free car parking',
   parking_cost_monthly: 'Monthly parking cost',
+  shuttle_routes: 'Shuttle routes',
   other_benefits: 'Other benefits',
   hr_contact_name: 'Benefits contact name',
   hr_contact_email: 'Benefits contact email',
@@ -176,25 +180,46 @@ export const ADMIN_TOOLS: Anthropic.Tool[] = [
   {
     name: 'update_commute_benefits',
     description:
-      "Set the commute benefits and facilities the Commute Advisor page shows employees. Only pass fields that change. The office address is set on the Commute Advisor page (it needs the map). Needs approval.",
+      "Set the commute benefits and facilities the Commute Advisor page shows employees. Only pass fields that change; null removes one. Notes are a short line in the employer's words (\"Pre-tax MBTA pass through WageWorks\"). shuttle_routes replaces the whole list. Offices are set with set_office. Needs approval.",
     input_schema: {
       type: 'object',
       properties: {
         transit_subsidy_monthly: { type: ['number', 'null'] },
         transit_subsidy_type: { type: ['string', 'null'], enum: ['pre_tax', 'direct', null] },
+        transit_subsidy_label: { type: ['string', 'null'] },
         bluebikes_subsidized: { type: 'boolean' },
         bluebikes_subsidy_type: { type: ['string', 'null'], enum: ['full', 'partial', null] },
+        bluebikes_subsidy_label: { type: ['string', 'null'] },
         bike_parking: { type: 'boolean' },
         bike_parking_details: { type: ['string', 'null'] },
         showers: { type: 'boolean' },
         shower_details: { type: ['string', 'null'] },
         free_parking: { type: 'boolean' },
         parking_cost_monthly: { type: ['number', 'null'] },
+        shuttle_routes: {
+          type: ['array', 'null'],
+          items: {
+            type: 'object',
+            properties: { name: { type: 'string' }, from_stop: { type: 'string' }, schedule: { type: 'string' }, details: { type: 'string' } },
+            required: ['name'],
+          },
+        },
         other_benefits: { type: ['string', 'null'] },
         hr_contact_name: { type: ['string', 'null'] },
         hr_contact_email: { type: ['string', 'null'] },
       },
     },
+  },
+  {
+    name: 'get_commute_advisor',
+    description:
+      "The Commute Advisor as it stands: whether the public page is on, its link (and one per office), the offices with their arrive-by times, the benefits and facilities saved, and what is still missing. Read it before setting the Advisor up or changing it.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'set_advisor_page',
+    description: 'Turn the public Commute Advisor page on or off. Off, employees who open the link see that it is off; settings stay. Needs approval.',
+    input_schema: { type: 'object', properties: { on: { type: 'boolean' } }, required: ['on'] },
   },
   {
     name: 'set_success_plan',
@@ -236,6 +261,7 @@ export const ADMIN_NEEDS_APPROVAL = [
   'remove_team_member',
   'update_company_profile',
   'update_commute_benefits',
+  'set_advisor_page',
   'set_success_plan',
   'set_public_listing',
 ]
@@ -244,6 +270,8 @@ export const ADMIN_ONLY = ['set_logo', 'remove_logo', 'open_plan_change', 'add_t
 
 export const ADMIN_ACTIVITY: Record<string, string> = {
   set_office: 'Saving the office',
+  get_commute_advisor: 'Looking at your Commute Advisor',
+  set_advisor_page: 'Switching the Commute Advisor page',
   remove_office: 'Removing the office',
   set_logo: 'Setting your logo',
   remove_logo: 'Removing your logo',
@@ -468,6 +496,40 @@ export async function runAdminRead(ctx: ToolCtx, name: string, input: Record<str
       const { data } = await ctx.admin.from('group_admins').select('id, email, name, role, is_owner, created_at').eq('group_id', ctx.groupId).order('created_at')
       return { content: { team: (data ?? []).map((r) => ({ member_id: r.id, email: r.email, name: r.name, role: r.role, owner: !!r.is_owner })), roles: ROLE_WORDS } }
     }
+    case 'get_commute_advisor': {
+      const [{ data: g }, { data: locs }] = await Promise.all([
+        ctx.admin.from('groups').select('slug, commute_advisor_enabled, employer_benefits').eq('id', ctx.groupId).maybeSingle(),
+        ctx.admin.from('employer_locations').select('id, name, address, typical_start_time').eq('group_id', ctx.groupId).order('sort_order'),
+      ])
+      const row = g as { slug: string | null; commute_advisor_enabled: boolean | null; employer_benefits: Record<string, unknown> | null } | null
+      const b = row?.employer_benefits ?? {}
+      const offices = (locs ?? []) as { id: string; name: string | null; address: string; typical_start_time: string | null }[]
+      const saved = Object.fromEntries(Object.entries(b).filter(([k, v]) => k in BENEFIT_FIELDS && v != null && v !== '' && !(Array.isArray(v) && !v.length)))
+      const missing = [
+        ...(offices.length ? [] : ['an office address (set_office)']),
+        ...(Object.keys(saved).some((k) => !['hr_contact_name', 'hr_contact_email'].includes(k)) ? [] : ['at least one benefit or facility']),
+        ...(b.hr_contact_email ? [] : ['who to ask about benefits (optional)']),
+      ]
+      return {
+        content: {
+          public_page_on: !!row?.commute_advisor_enabled,
+          link: row?.slug ? employerAdvisorUrl(row.slug) : null,
+          offices: offices.map((o, i) => ({
+            location_id: o.id,
+            name: o.name,
+            address: o.address,
+            main: i === 0,
+            arrive_by: o.typical_start_time?.slice(0, 5) ?? null,
+            link: row?.slug && offices.length > 1 ? employerAdvisorUrl(row.slug, o.id) : null,
+          })),
+          benefits: saved,
+          still_missing: missing,
+          what_it_is:
+            "A public page for employees: they enter where they live and see their options to the office on foot, by bike, transit or carpool, with the employer's benefits and facilities. Visits show in get_results (commute_advisor).",
+        },
+        link: { href: '/shift/employers/portal/advisor', label: 'Open the Commute Advisor page' },
+      }
+    }
     default:
       return null
   }
@@ -642,6 +704,11 @@ export async function adminApprovalCard(ctx: ToolCtx, name: string, input: Recor
             return `Transit benefit is ${x === 'pre_tax' ? 'pre-tax' : 'paid directly'}`
           case 'bluebikes_subsidy_type':
             return `Bluebikes membership: ${x === 'full' ? 'fully' : 'partly'} covered`
+          case 'shuttle_routes': {
+            const routes = (Array.isArray(x) ? x : []) as { name?: string; from_stop?: string; schedule?: string }[]
+            if (!routes.length) return 'Shuttle routes: removed'
+            return `Shuttle routes: ${routes.map((r) => [r.name, r.from_stop && `from ${r.from_stop}`, r.schedule].filter(Boolean).join(', ')).join('; ')}`
+          }
           case 'bluebikes_subsidized':
           case 'bike_parking':
           case 'showers':
@@ -675,6 +742,20 @@ export async function adminApprovalCard(ctx: ToolCtx, name: string, input: Recor
       if (input.success_definition) lines.push(`Notes: ${input.success_definition}`)
       lines.push('Only your team sees this; it sets the target on the Impact page.')
       return { card: { title: 'Save your success plan?', lines, cta: 'Save', tone: 'primary' } }
+    }
+    case 'set_advisor_page': {
+      if (!input.on)
+        return {
+          card: {
+            title: 'Turn the Commute Advisor page off?',
+            lines: ['Employees who open the link see that the page is off. Your settings stay as they are, and you can turn it back on any time.'],
+            cta: 'Turn off',
+            tone: 'danger',
+          },
+        }
+      const { count } = await ctx.admin.from('employer_locations').select('id', { count: 'exact', head: true }).eq('group_id', ctx.groupId)
+      if (!count) return fail('add an office first (set_office): the page plans routes to it')
+      return { card: { title: 'Turn the Commute Advisor page on?', lines: ['Anyone with the link can see it: your offices, benefits and facilities, and their options to get there.'], cta: 'Turn on', tone: 'primary' } }
     }
     case 'set_public_listing':
       return {
@@ -801,6 +882,12 @@ export async function runAdminApproved(ctx: ToolCtx, name: string, input: Record
       next.target_signup_pct = next.goal_type === 'participation' ? (next.goal_target_pct ?? null) : null
       const { error } = await ctx.user.from('groups').update({ onboarding: next }).eq('id', ctx.groupId)
       return error ? { content: { saved: false, error: error.message }, isError: true } : { content: { saved: true } }
+    }
+    case 'set_advisor_page': {
+      const { error } = await ctx.user.from('groups').update({ commute_advisor_enabled: !!input.on }).eq('id', ctx.groupId)
+      return error
+        ? { content: { done: false, error: error.message }, isError: true }
+        : { content: { done: true, on: !!input.on }, link: { href: '/shift/employers/portal/advisor', label: 'See the Commute Advisor page' } }
     }
     case 'set_public_listing':
       return viaRpc('sync_group_public_leaderboard', { p_group_id: ctx.groupId, p_wants_public: !!input.public }, { public: !!input.public })
