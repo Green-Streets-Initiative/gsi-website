@@ -156,9 +156,12 @@ export interface EmployerBenefits {
   transit_subsidy_monthly?: number | null
   transit_subsidy_type?: 'pre_tax' | 'direct' | null
   transit_subsidy_label?: string | null
-  bluebikes_subsidized?: boolean
-  bluebikes_subsidy_type?: 'full' | 'partial' | null
-  bluebikes_subsidy_label?: string | null
+  /** A bike share membership benefit; see lib/employer/bike-share.ts. */
+  bikeshare_subsidized?: boolean
+  /** The system, in the employer's words ("Bluebikes", "ValleyBike"). */
+  bikeshare_system?: string | null
+  bikeshare_subsidy_type?: 'full' | 'partial' | null
+  bikeshare_subsidy_label?: string | null
   bike_parking?: boolean
   bike_parking_details?: string | null
   showers?: boolean

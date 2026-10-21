@@ -67,7 +67,7 @@ export function computeSetupSteps(args: {
       done: !!(
         benefitsForm.destination_address &&
         (benefitsForm.transit_subsidy_monthly ||
-          benefitsForm.bluebikes_subsidized ||
+          benefitsForm.bikeshare_subsidized ||
           benefitsForm.bike_parking ||
           benefitsForm.showers ||
           benefitsForm.free_parking ||

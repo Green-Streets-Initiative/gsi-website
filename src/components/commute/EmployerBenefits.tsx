@@ -1,5 +1,6 @@
 'use client'
 
+import { bikeShareBenefitLine } from '@/lib/employer/bike-share'
 import type { EmployerBenefits as Benefits } from '@/lib/types/commute'
 
 interface EmployerBenefitsProps {
@@ -13,8 +14,8 @@ export default function EmployerBenefits({ companyName, benefits }: EmployerBene
   if (benefits.transit_subsidy_monthly && benefits.transit_subsidy_monthly > 0) {
     items.push(benefits.transit_subsidy_label || `$${benefits.transit_subsidy_monthly}/month transit benefit`)
   }
-  if (benefits.bluebikes_subsidized) {
-    items.push(benefits.bluebikes_subsidy_label || 'Subsidized Bluebikes membership')
+  if (benefits.bikeshare_subsidized) {
+    items.push(bikeShareBenefitLine(benefits, companyName))
   }
   if (benefits.bike_parking) {
     items.push(benefits.bike_parking_details ? `Bike parking: ${benefits.bike_parking_details}` : 'Bike parking available')

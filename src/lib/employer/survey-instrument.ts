@@ -97,12 +97,12 @@ export type DayModeOption = {
 export const DAY_MODE_OPTIONS: DayModeOption[] = [
   { code: 'walk', label: 'Walked the whole way', group: 'active' },
   { code: 'bike', label: 'Rode my own bike the whole way', group: 'active' },
-  { code: 'bikeshare', label: 'Rode a Bluebike the whole way', hint: 'Or another bike share', group: 'active' },
+  { code: 'bikeshare', label: 'Rode a shared bike the whole way', hint: 'Bluebikes, ValleyBike or another bike share', group: 'active' },
   { code: 'drive_alone', label: 'Drove alone the whole way', group: 'car' },
   { code: 'drive_bike', label: 'Drove, then biked', hint: 'Park and pedal', group: 'car', legs: ['drive', 'bike'] },
   { code: 'transit_walk', label: 'Transit, plus walking', hint: 'Bus, subway, commuter rail or ferry', group: 'transit' },
   { code: 'transit_bike', label: 'Transit, plus my own bike', group: 'transit', legs: ['transit', 'bike'] },
-  { code: 'transit_bikeshare', label: 'Transit, plus a Bluebike', group: 'transit', legs: ['transit', 'bike'] },
+  { code: 'transit_bikeshare', label: 'Transit, plus a shared bike', group: 'transit', legs: ['transit', 'bike'] },
   { code: 'transit_drive', label: 'Transit, plus a car or shuttle', hint: 'Drove, carpooled or took a shuttle to the station', group: 'transit', legs: ['transit', 'drive'] },
   { code: 'shuttle', label: 'Company or private shuttle', group: 'shared' },
   { code: 'carpool', label: 'Carpool or vanpool', hint: "We'll ask how many people", group: 'shared' },
@@ -284,8 +284,8 @@ export const WHY_DRIVE: Choice[] = [
 /** Cambridge question 14: one rating each. */
 export const INCENTIVES: Choice[] = [
   { code: 'emergency_ride', label: 'A guaranteed ride home in an emergency or unplanned overtime' },
-  { code: 'bikeshare_station', label: 'A Bluebikes station near work or home' },
-  { code: 'bikeshare_membership', label: 'A free Bluebikes membership' },
+  { code: 'bikeshare_station', label: 'A bike share station near work or home' },
+  { code: 'bikeshare_membership', label: 'A free bike share membership' },
   { code: 'transit_info', label: 'Transit routes and schedules posted at work' },
   { code: 'station_shuttle', label: 'A shuttle to the train or bus station' },
   { code: 'transit_subsidy', label: 'Help paying for transit fares' },

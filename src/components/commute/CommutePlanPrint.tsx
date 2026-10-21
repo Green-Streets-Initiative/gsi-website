@@ -2,6 +2,7 @@
 
 import type { EmployerGroup, EmployerBenefits, AdvisorResult, Motivation } from '@/lib/types/commute'
 import { PRICES } from '@/lib/facts/prices'
+import { bikeShareBenefitLine } from '@/lib/employer/bike-share'
 import {
   WORKDAYS,
   fmtMoney,
@@ -109,7 +110,7 @@ export default function CommutePlanPrint({
   function dayWithBenefits(mode: string, costPerDay: number): number {
     let day = costPerDay
     if ((mode === 'transit' || mode === 'bus') && subsidyMonthly > 0) day = Math.max(0, day - subsidyMonthly / WORKDAYS_PER_MONTH)
-    if ((mode === 'bike' || mode === 'ebike') && benefits.bluebikes_subsidized) day = 0
+    if ((mode === 'bike' || mode === 'ebike') && benefits.bikeshare_subsidized) day = 0
     return Math.round(day * 100) / 100
   }
 
@@ -134,7 +135,7 @@ export default function CommutePlanPrint({
   if (benefits.transit_subsidy_monthly && benefits.transit_subsidy_monthly > 0) {
     perks.push(benefits.transit_subsidy_label || `$${benefits.transit_subsidy_monthly} a month toward transit`)
   }
-  if (benefits.bluebikes_subsidized) perks.push(benefits.bluebikes_subsidy_label || 'Bluebikes membership covered')
+  if (benefits.bikeshare_subsidized) perks.push(bikeShareBenefitLine(benefits, group.name))
   if (benefits.bike_parking) perks.push(benefits.bike_parking_details ? `Bike parking: ${benefits.bike_parking_details}` : 'Bike parking at the office')
   if (benefits.showers) perks.push(benefits.shower_details ? `Showers: ${benefits.shower_details}` : 'Showers at the office')
   for (const r of benefits.shuttle_routes ?? []) {

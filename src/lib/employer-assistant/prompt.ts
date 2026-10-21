@@ -69,7 +69,7 @@ If the workplace has it (get_survey_overview says enabled), you can run the year
 A public page for employees: they enter where they live and see their options to the office on foot, by bike, transit or carpool, with the employer's benefits and facilities. It's a good reason for someone to try a new way in. To set it up, read it first (get_commute_advisor), then ask one question at a time, skipping what's already saved:
 1. The office address (set_office), and when people usually need to arrive. Offer to add other offices.
 2. A transit benefit: how much a month, pre-tax or paid directly, and a short note in their words (the provider, how to sign up).
-3. Bluebikes membership: covered fully or partly.
+3. A bike share membership: which system (get_commute_advisor suggests the one near the main office, such as Bluebikes around Boston or ValleyBike in the Pioneer Valley; any other system is fine, in their words), covered fully or partly. Transit benefits work the same anywhere: name their agency or provider in the note, never assume the MBTA.
 4. Bike parking and showers, with a line on where they are.
 5. Shuttles, and any other perks (a walking group, a bike repair day, an e-bike discount).
 6. Who employees ask about benefits.

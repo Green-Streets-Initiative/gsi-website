@@ -33,15 +33,15 @@ import { advisorDraftPath, encodeAdvisorDraft } from './advisor-draft'
 import LivePagePreview from '@/components/employer/LivePagePreview'
 import { useEmployerLocations, locationTitle, type LocationDraft } from '../_lib/use-employer-locations'
 import { employerAdvisorUrl, onThisSite } from '@/lib/employer/office-links'
+import { bikeShareMembership, bikeShareSystemNear } from '@/lib/employer/bike-share'
 import type { EmployerBenefits } from '@/lib/types/commute'
 
 const BENEFITS_CONFIG = [
   {
-    key: 'bluebikes_subsidized' as const,
-    noteKey: 'bluebikes_subsidy_label' as const,
-    title: 'Bluebikes membership subsidized',
-    placeholder:
-      'e.g. Annual Bluebikes membership covered for all employees',
+    key: 'bikeshare_subsidized' as const,
+    noteKey: 'bikeshare_subsidy_label' as const,
+    title: 'Bike share membership subsidized',
+    placeholder: 'e.g. Annual membership covered for all employees',
     icon: Bike,
   },
   {
@@ -77,7 +77,7 @@ const SUBSIDY_TYPES = [
 function hasAnyBenefit(b: EmployerBenefits): boolean {
   return (
     (b.transit_subsidy_monthly ?? 0) > 0 ||
-    !!b.bluebikes_subsidized ||
+    !!b.bikeshare_subsidized ||
     !!b.bike_parking ||
     !!b.showers ||
     !!b.free_parking ||
@@ -322,10 +322,12 @@ export default function AdvisorPage() {
                       />
                       <div className="text-[13px]">
                         <span className="font-semibold">
-                          {b.title
-                            .replace(' available', '')
-                            .replace(' offered', '')
-                            .replace(' subsidized', '')}
+                          {b.key === 'bikeshare_subsidized'
+                            ? bikeShareMembership(form)
+                            : b.title
+                                .replace(' available', '')
+                                .replace(' offered', '')
+                                .replace(' subsidized', '')}
                         </span>
                         {b.noteKey &&
                           form[b.noteKey as keyof EmployerBenefits] && (
@@ -574,10 +576,32 @@ export default function AdvisorPage() {
                   <Toggle
                     on={!!form[b.key as keyof EmployerBenefits]}
                     onChange={(v) =>
-                      update({ [b.key]: v } as Partial<EmployerBenefits>)
+                      update(
+                        // Turning bike share on names the system that
+                        // serves the main office, when we know one.
+                        b.key === 'bikeshare_subsidized' && v && !form.bikeshare_system
+                          ? { bikeshare_subsidized: true, bikeshare_system: bikeShareSystemNear(locations[0]?.lat, locations[0]?.lng) }
+                          : ({ [b.key]: v } as Partial<EmployerBenefits>),
+                      )
                     }
                     title={b.title}
                   />
+                  {b.key === 'bikeshare_subsidized' && form.bikeshare_subsidized && (
+                    <>
+                      <input
+                        aria-label="Which bike share"
+                        list={`${fid}-bikeshare-systems`}
+                        className="ml-[52px] w-[calc(100%-52px)] rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent"
+                        placeholder="Which bike share (e.g. Bluebikes, ValleyBike)"
+                        value={form.bikeshare_system ?? ''}
+                        onChange={(e) => update({ bikeshare_system: e.target.value })}
+                      />
+                      <datalist id={`${fid}-bikeshare-systems`}>
+                        <option value="Bluebikes" />
+                        <option value="ValleyBike" />
+                      </datalist>
+                    </>
+                  )}
                   {form[b.key as keyof EmployerBenefits] && b.noteKey && (
                     <input
                       aria-label={`${b.title}: details`}

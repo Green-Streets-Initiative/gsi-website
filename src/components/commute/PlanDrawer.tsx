@@ -1,5 +1,6 @@
 'use client'
 
+import { bikeShareBenefitLine } from '@/lib/employer/bike-share'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { ArrowSquareOut } from '@phosphor-icons/react'
 import { PanelPhoto } from '@/components/nearby/DetailPanel'
@@ -285,7 +286,7 @@ export function BikeDrawer({
           {homeDock ? `${homeDock.num_bikes_available} bike${homeDock.num_bikes_available === 1 ? '' : 's'} at ${homeDock.name} near home` : ''}
           {homeDock && docks.length > 0 ? '; ' : ''}
           {docks.length > 0 ? `by the office, ${docks.map((d) => `${d.name} (${d.num_docks_available} open dock${d.num_docks_available === 1 ? '' : 's'})`).join(', ')}` : ''}.
-          {benefits.bluebikes_subsidized ? ` ${benefits.bluebikes_subsidy_label || `${companyName ?? 'Your employer'} covers the membership.`}` : ''}
+          {benefits.bikeshare_subsidized ? ` ${bikeShareBenefitLine(benefits, companyName)}.` : ''}
         </P>
       )}
       {benefits.showers && <P>{benefits.shower_details ? `Showers at the office: ${benefits.shower_details}.` : 'Showers at the office.'}</P>}

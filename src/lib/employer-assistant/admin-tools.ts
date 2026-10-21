@@ -5,6 +5,7 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import { NONPROFIT_RATE, PLAN_TERMS, PLANS, priceLabel } from '@/lib/employer/plans'
+import { bikeShareSystemNear } from '@/lib/employer/bike-share'
 import { employerAdvisorUrl } from '@/lib/employer/office-links'
 import type { ApprovalCard, ToolCtx, ToolResult } from './tools'
 
@@ -18,9 +19,10 @@ const BENEFIT_FIELDS: Record<string, string> = {
   transit_subsidy_monthly: 'Monthly transit benefit',
   transit_subsidy_type: 'Transit benefit type',
   transit_subsidy_label: 'Transit benefit note',
-  bluebikes_subsidized: 'Bluebikes membership covered',
-  bluebikes_subsidy_type: 'Bluebikes coverage',
-  bluebikes_subsidy_label: 'Bluebikes note',
+  bikeshare_subsidized: 'Bike share membership covered',
+  bikeshare_system: 'Bike share system',
+  bikeshare_subsidy_type: 'Bike share coverage',
+  bikeshare_subsidy_label: 'Bike share note',
   bike_parking: 'Bike parking',
   bike_parking_details: 'Bike parking details',
   showers: 'Showers',
@@ -187,9 +189,10 @@ export const ADMIN_TOOLS: Anthropic.Tool[] = [
         transit_subsidy_monthly: { type: ['number', 'null'] },
         transit_subsidy_type: { type: ['string', 'null'], enum: ['pre_tax', 'direct', null] },
         transit_subsidy_label: { type: ['string', 'null'] },
-        bluebikes_subsidized: { type: 'boolean' },
-        bluebikes_subsidy_type: { type: ['string', 'null'], enum: ['full', 'partial', null] },
-        bluebikes_subsidy_label: { type: ['string', 'null'] },
+        bikeshare_subsidized: { type: 'boolean' },
+        bikeshare_system: { type: ['string', 'null'], description: 'Which bike share, in their words: "Bluebikes", "ValleyBike", or another name. get_commute_advisor suggests one from the office.' },
+        bikeshare_subsidy_type: { type: ['string', 'null'], enum: ['full', 'partial', null] },
+        bikeshare_subsidy_label: { type: ['string', 'null'] },
         bike_parking: { type: 'boolean' },
         bike_parking_details: { type: ['string', 'null'] },
         showers: { type: 'boolean' },
@@ -499,11 +502,11 @@ export async function runAdminRead(ctx: ToolCtx, name: string, input: Record<str
     case 'get_commute_advisor': {
       const [{ data: g }, { data: locs }] = await Promise.all([
         ctx.admin.from('groups').select('slug, commute_advisor_enabled, employer_benefits').eq('id', ctx.groupId).maybeSingle(),
-        ctx.admin.from('employer_locations').select('id, name, address, typical_start_time').eq('group_id', ctx.groupId).order('sort_order'),
+        ctx.admin.from('employer_locations').select('id, name, address, lat, lng, typical_start_time').eq('group_id', ctx.groupId).order('sort_order'),
       ])
       const row = g as { slug: string | null; commute_advisor_enabled: boolean | null; employer_benefits: Record<string, unknown> | null } | null
       const b = row?.employer_benefits ?? {}
-      const offices = (locs ?? []) as { id: string; name: string | null; address: string; typical_start_time: string | null }[]
+      const offices = (locs ?? []) as { id: string; name: string | null; address: string; lat: number | null; lng: number | null; typical_start_time: string | null }[]
       const saved = Object.fromEntries(Object.entries(b).filter(([k, v]) => k in BENEFIT_FIELDS && v != null && v !== '' && !(Array.isArray(v) && !v.length)))
       const missing = [
         ...(offices.length ? [] : ['an office address (set_office)']),
@@ -523,6 +526,7 @@ export async function runAdminRead(ctx: ToolCtx, name: string, input: Record<str
             link: row?.slug && offices.length > 1 ? employerAdvisorUrl(row.slug, o.id) : null,
           })),
           benefits: saved,
+          bike_share_system_near_main_office: bikeShareSystemNear(offices[0]?.lat, offices[0]?.lng),
           still_missing: missing,
           what_it_is:
             "A public page for employees: they enter where they live and see their options to the office on foot, by bike, transit or carpool, with the employer's benefits and facilities. Visits show in get_results (commute_advisor).",
@@ -702,14 +706,14 @@ export async function adminApprovalCard(ctx: ToolCtx, name: string, input: Recor
             return `Parking: $${x} a month`
           case 'transit_subsidy_type':
             return `Transit benefit is ${x === 'pre_tax' ? 'pre-tax' : 'paid directly'}`
-          case 'bluebikes_subsidy_type':
-            return `Bluebikes membership: ${x === 'full' ? 'fully' : 'partly'} covered`
+          case 'bikeshare_subsidy_type':
+            return `Bike share membership: ${x === 'full' ? 'fully' : 'partly'} covered`
           case 'shuttle_routes': {
             const routes = (Array.isArray(x) ? x : []) as { name?: string; from_stop?: string; schedule?: string }[]
             if (!routes.length) return 'Shuttle routes: removed'
             return `Shuttle routes: ${routes.map((r) => [r.name, r.from_stop && `from ${r.from_stop}`, r.schedule].filter(Boolean).join(', ')).join('; ')}`
           }
-          case 'bluebikes_subsidized':
+          case 'bikeshare_subsidized':
           case 'bike_parking':
           case 'showers':
           case 'free_parking':
