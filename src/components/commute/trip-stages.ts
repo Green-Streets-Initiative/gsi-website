@@ -11,6 +11,7 @@
 import type { AdvisorCombo, AdvisorResult, BikeParkingSpot, EmployerBenefits } from '@/lib/types/commute'
 import { comfortBreakdown, type CalmRoute } from './calm-route'
 import { RACK_AT_DOOR_MILES, mergeRacks } from './plan-data'
+import { wearFor, type MorningWeather } from '@/lib/commute/weather'
 
 export type StageLabel = 'Wear' | 'Vehicle' | 'Cargo' | 'Route' | 'Seat' | 'Arrive' | 'Store'
 
@@ -32,6 +33,8 @@ export interface StageExtras {
   shuttle?: { stopName: string; distanceMiles: number } | null
   /** A park-and-ride or bike-to-train row: its two legs, station and lot. */
   combo?: AdvisorCombo | null
+  /** The forecast for this way in's leave-by (src/lib/commute/weather.ts); the Wear stage reads it. */
+  weather?: MorningWeather | null
 }
 
 /** Over this, a ride or a walk is long enough that the weather matters. */
@@ -48,13 +51,22 @@ const stage = (label: StageLabel, fact: string, muted = false): TripStage => ({ 
 /**
  * What to wear for a way in that waits outside (a bus stop, a platform, a
  * shuttle stop). Keith 2026-10-21: a bus can mean 15-20 minutes standing in
- * the cold, so layering is key and a jacket may not cut it. The website has
- * no forecast yet (product item 17), so the Boston cold months stand in:
+ * the cold, so layering is key and a jacket may not cut it. The forecast
+ * for the leave-by hour decides (product item 17): cold says layers for the
+ * wait, rain says an umbrella or a rain jacket. Until the forecast loads, or
+ * when the Weather Service can't answer, the Boston cold months stand in:
  * November through March.
  */
-function waitWear(now: Date = new Date()): string {
+function waitWear(mode: string, weather: MorningWeather | null | undefined, now: Date = new Date()): string {
+  const forecast = wearFor(weather, mode)
+  if (forecast) return forecast
   const m = now.getMonth()
   return m >= 10 || m <= 2 ? 'Layers for the wait' : 'Anything'
+}
+
+/** What to wear for a ride or a walk: the forecast, else layers and rain gear on a long one. */
+function activeWear(mode: string, weather: MorningWeather | null | undefined, long: boolean): string {
+  return wearFor(weather, mode) ?? (long ? 'Layers; rain gear' : 'Anything')
 }
 
 /** "Mostly protected lane" / "Mostly quiet streets" / "Mixed streets" from the calm route's tiers. */
@@ -130,7 +142,7 @@ export function stagesFor(mode: string, result: AdvisorResult, benefits: Employe
         ? benefits.bike_parking_details ? short(benefits.bike_parking_details) : 'Lock inside'
         : racks.some((r) => r.covered) ? 'Lock inside' : 'U-lock outside'
       return [
-        stage('Wear', longEnough ? 'Layers; rain gear' : 'Anything'),
+        stage('Wear', activeWear(mode, extras.weather, longEnough)),
         stage('Vehicle', result.nearby.docks_home.length > 0 ? 'Your bike or Bluebikes' : 'Your bike'),
         stage('Cargo', 'Pannier or basket'),
         stage('Route', routeSummaryWord(extras.calm) ?? (mi(miles) ? `${mi(miles)} mi` : 'Calm route')),
@@ -140,7 +152,7 @@ export function stagesFor(mode: string, result: AdvisorResult, benefits: Employe
     }
     case 'walk':
       return [
-        stage('Wear', longEnough ? 'Layers; rain gear' : 'Anything'),
+        stage('Wear', activeWear('walk', extras.weather, longEnough)),
         stage('Vehicle', 'None needed', true),
         stage('Cargo', 'Backpack'),
         stage('Route', mi(miles) ? `${mi(miles)} mi` : 'On foot'),
@@ -184,7 +196,7 @@ export function stagesFor(mode: string, result: AdvisorResult, benefits: Employe
             ? spaces ? `Free lot, ${spaces}` : 'Free lot'
             : spaces ? `Lot at ${station}, ${spaces}` : `Lot at ${station}`
         return [
-          stage('Wear', waitWear()),
+          stage('Wear', waitWear('park_ride', extras.weather)),
           stage('Vehicle', `Your car to ${station}`),
           stage('Cargo', 'Bag or tote'),
           stage('Route', firstMiles ? `${firstMiles} mi, then ${line}` : `Then ${line}`),
@@ -194,7 +206,7 @@ export function stagesFor(mode: string, result: AdvisorResult, benefits: Employe
       }
       const bikeLong = c != null && c.first_leg.miles > LAYERS_OVER_MILES
       return [
-        stage('Wear', bikeLong ? 'Layers; rain gear' : 'Anything'),
+        stage('Wear', activeWear('bike_ride', extras.weather, bikeLong)),
         stage('Vehicle', `Your bike to ${station}`),
         stage('Cargo', 'Pannier or backpack'),
         stage('Route', firstMiles ? `${firstMiles} mi, then ${line}` : `Then ${line}`),
@@ -206,7 +218,7 @@ export function stagesFor(mode: string, result: AdvisorResult, benefits: Employe
       const s = extras.shuttle
       const walk = s ? Math.max(1, Math.round(s.distanceMiles * WALK_MINUTES_PER_MILE)) : null
       return [
-        stage('Wear', waitWear()),
+        stage('Wear', waitWear('shuttle', extras.weather)),
         stage('Vehicle', 'None needed', true),
         stage('Cargo', 'Bag or tote'),
         stage('Route', s ? `Stops at ${s.stopName}` : 'Shuttle'),
@@ -235,7 +247,7 @@ export function stagesFor(mode: string, result: AdvisorResult, benefits: Employe
         ? walk != null ? `Walk ${walk} min from ${place}` : `From the ${place}`
         : 'Walk from the stop'
       return [
-        stage('Wear', waitWear()),
+        stage('Wear', waitWear('transit', extras.weather)),
         stage('Vehicle', 'None needed', true),
         stage('Cargo', 'Bag or tote'),
         stage('Route', route),

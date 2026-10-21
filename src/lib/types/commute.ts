@@ -206,6 +206,13 @@ export type Motivation = 'time' | 'money' | 'health' | 'climate'
 /** The car the drive is priced for (users.vehicle_type on the app side). */
 export type Vehicle = 'gas' | 'hybrid' | 'ev'
 
+/** The car choice on the advisor's costs: a car the drive is priced for, or
+ *  none (product item 17). With 'none' the plan drops the rows that need a
+ *  car (drive, park-and-ride) and the headline compares the rest among
+ *  themselves. The engine is still asked as for a gas car; nothing it
+ *  returns for a car is shown. */
+export type CarChoice = Vehicle | 'none'
+
 /** One transit leg of the routed trip, ids included so a map can draw the line shape and a row can show next departures. */
 export interface TransitLeg {
   route_id: string | null

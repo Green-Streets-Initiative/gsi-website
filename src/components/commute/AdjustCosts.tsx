@@ -2,13 +2,14 @@
 
 import { useId, useState } from 'react'
 import { CaretDown } from '@phosphor-icons/react'
-import type { Vehicle } from '@/lib/types/commute'
+import type { CarChoice } from '@/lib/types/commute'
 
 /**
  * "Adjust costs": collapsed by default so the plan never starts from an
  * invented number. Holds the three inputs that change the driving row:
- * the car (gas, hybrid, electric), parking per day (prefilled from the
- * employer's benefit or 0, never a guess) and days a week.
+ * the car (gas, hybrid, electric, or no car, which takes the rows that
+ * need one off the plan), parking per day (prefilled from the employer's
+ * benefit or 0, never a guess; hidden with no car) and days a week.
  */
 export default function AdjustCosts({
   vehicle,
@@ -20,8 +21,8 @@ export default function AdjustCosts({
   onDaysPerWeek,
   defaultOpen = false,
 }: {
-  vehicle: Vehicle
-  onVehicle: (v: Vehicle) => void
+  vehicle: CarChoice
+  onVehicle: (v: CarChoice) => void
   parkingPerDay: number
   onParkingPerDay: (n: number) => void
   /** Where the parking figure came from ("From Acme's benefits: free parking"). */
@@ -48,7 +49,7 @@ export default function AdjustCosts({
       >
         <span className="shrink-0 whitespace-nowrap">Adjust costs</span>
         <span className="flex min-w-0 items-center gap-2 text-right text-[0.9375rem] font-normal text-[#5A5C6E]">
-          {!open && `${vehicleLabel(vehicle)} · parking ${parkingPerDay > 0 ? `$${parkingPerDay} a day` : parkingKnownFree ? 'free' : 'not counted'} · ${daysPerWeek} day${daysPerWeek === 1 ? '' : 's'} a week`}
+          {!open && `${vehicleLabel(vehicle)}${vehicle === 'none' ? '' : ` · parking ${parkingPerDay > 0 ? `$${parkingPerDay} a day` : parkingKnownFree ? 'free' : 'not counted'}`} · ${daysPerWeek} day${daysPerWeek === 1 ? '' : 's'} a week`}
           <CaretDown size={16} weight="regular" className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
         </span>
       </button>
@@ -57,7 +58,7 @@ export default function AdjustCosts({
           <div>
             <div id={`${id}-car`} className="mb-2 text-[0.8125rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">Your car</div>
             <div className="flex flex-wrap gap-2" role="group" aria-labelledby={`${id}-car`}>
-              {(['gas', 'hybrid', 'ev'] as Vehicle[]).map((v) => (
+              {(['gas', 'hybrid', 'ev', 'none'] as CarChoice[]).map((v) => (
                 <button
                   key={v}
                   type="button"
@@ -73,7 +74,7 @@ export default function AdjustCosts({
             </div>
           </div>
 
-          <div>
+          {vehicle !== 'none' && <div>
             <label htmlFor={`${id}-parking`} className="mb-2 block text-[0.8125rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">
               Parking per day
             </label>
@@ -93,7 +94,7 @@ export default function AdjustCosts({
               <span className="text-[0.9375rem] text-[#191A2E]">a day{parkingPerDay === 0 ? (parkingKnownFree ? ', free' : ', not counted') : ''}</span>
             </div>
             {parkingHint && <p className="mt-1.5 text-[0.875rem] leading-snug text-[#5A5C6E]">{parkingHint}</p>}
-          </div>
+          </div>}
 
           <div>
             <label htmlFor={`${id}-days`} className="mb-2 block text-[0.8125rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">
@@ -121,6 +122,6 @@ export default function AdjustCosts({
   )
 }
 
-export function vehicleLabel(v: Vehicle): string {
-  return v === 'ev' ? 'Electric car' : v === 'hybrid' ? 'Hybrid' : 'Gas car'
+export function vehicleLabel(v: CarChoice): string {
+  return v === 'none' ? 'No car' : v === 'ev' ? 'Electric car' : v === 'hybrid' ? 'Hybrid' : 'Gas car'
 }

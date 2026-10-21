@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
-import { ArrowSquareOut, BookmarkSimple, CaretDown, Check, Copy, DeviceMobile, FilePdf, MapPin, PencilSimple } from '@phosphor-icons/react'
+import { ArrowSquareOut, BookmarkSimple, CaretDown, Check, CloudRain, CloudSun, Copy, DeviceMobile, FilePdf, MapPin, PencilSimple, Snowflake, ThermometerCold, ThermometerHot, Warning } from '@phosphor-icons/react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import ArriveBy from '@/components/commute/ArriveBy'
 import MotivationChips from '@/components/commute/MotivationChips'
@@ -34,18 +34,19 @@ import {
   type ShuttleLine,
 } from '@/components/commute/plan-data'
 import { stagesFor } from '@/components/commute/trip-stages'
-import { WORKDAYS, formatClock, headlineFor, isComboKey, modeName, modeOrderFor } from '@/lib/employer/commute-costs'
+import { CAR_MODES, WORKDAYS, asCarChoice, asVehicle, formatClock, headlineFor, isComboKey, modeName, modeOrderFor, withoutCar } from '@/lib/employer/commute-costs'
+import { chipFor, flagsForMode, morningWeather, summaryFor, type MorningWeather, type WeatherHour } from '@/lib/commute/weather'
 import { employerNearbyUrl, locationAsOffice } from '@/lib/employer/office-links'
 import { eventPath } from '@/lib/events-url'
 import type {
   AdvisorResult,
   BikeParkingSpot,
+  CarChoice,
   CurrentCommuteMode,
   EmployerBenefits,
   EmployerGroup,
   Motivation,
   TryItCard,
-  Vehicle,
 } from '@/lib/types/commute'
 
 /*
@@ -144,7 +145,8 @@ type Session = {
   step?: number
   arriveBy?: string
   motivation?: Motivation | null
-  vehicle?: Vehicle
+  /** The car the drive is priced for, or 'none' (no car: the car rows are hidden). */
+  vehicle?: CarChoice
   parkingPerDay?: number
   daysPerWeek?: number
   commuteMode?: CurrentCommuteMode
@@ -241,7 +243,8 @@ export default function AdvisorFlow({
   const arriveTouched = useRef(false)
   const [commuteMode, setCommuteMode] = useState<CurrentCommuteMode>('new')
   const [motivation, setMotivation] = useState<Motivation | null>(null)
-  const [vehicle, setVehicle] = useState<Vehicle>('gas')
+  const [vehicle, setVehicle] = useState<CarChoice>('gas')
+  const noCar = vehicle === 'none'
   const parkingDefault = useMemo(() => parkingFromBenefits(benefits), [benefits])
   const [parkingPerDay, setParkingPerDay] = useState(parkingDefault.perDay)
   const [daysPerWeek, setDaysPerWeek] = useState(5)
@@ -332,7 +335,8 @@ export default function AdvisorFlow({
     const clock = asClock(s.arriveBy)
     if (clock) { setArriveBy(clock); arriveTouched.current = true }
     if (s.motivation === 'time' || s.motivation === 'money' || s.motivation === 'health' || s.motivation === 'climate') setMotivation(s.motivation)
-    if (s.vehicle === 'gas' || s.vehicle === 'hybrid' || s.vehicle === 'ev') setVehicle(s.vehicle)
+    const car = asCarChoice(s.vehicle)
+    if (car) setVehicle(car)
     if (typeof s.parkingPerDay === 'number' && s.parkingPerDay >= 0) setParkingPerDay(s.parkingPerDay)
     if (typeof s.daysPerWeek === 'number' && s.daysPerWeek >= 1 && s.daysPerWeek <= 7) setDaysPerWeek(s.daysPerWeek)
     if (s.commuteMode && JOIN_MODES.some((m) => m.value === s.commuteMode)) setCommuteMode(s.commuteMode)
@@ -340,7 +344,7 @@ export default function AdvisorFlow({
       // A plan stored before the engine filled leave-by still gets one.
       const restored = fillLeaveBy(s.result, clock ?? DEFAULT_ARRIVE_BY)
       setResult(restored)
-      setExpanded(restored.recommended_mode)
+      setExpanded((car === 'none' ? withoutCar(restored) : restored).recommended_mode)
     }
     // Sessions saved by the three-step flow stored 3 for the plan.
     if (s.result && (s.step === 2 || s.step === 3)) setStep(PLAN_STEP)
@@ -375,6 +379,13 @@ export default function AdvisorFlow({
     track('advisor_arrive_by_changed', { arrive_by: hhmm, source })
   }
 
+  /** The car choice, from the costs on step 1 or "I don't have a car" in the drive drawer. */
+  const chooseCar = (v: CarChoice, source: 'step1' | 'plan') => {
+    if (v === vehicle) return
+    if ((v === 'none') !== (vehicle === 'none')) track('advisor_no_car_toggled', { no_car: v === 'none', source })
+    setVehicle(v)
+  }
+
   /* ── The main call ── */
   const run = useCallback(async (opts: { arriveBy: string; motivation: Motivation | null }) => {
     if (!homePlaceData || !workPlaceData) return
@@ -386,7 +397,8 @@ export default function AdvisorFlow({
         origin_lat: String(homePlaceData.lat), origin_lng: String(homePlaceData.lng),
         dest_lat: String(workPlaceData.lat), dest_lng: String(workPlaceData.lng),
         arrive_by: opts.arriveBy,
-        vehicle,
+        // No car prices as gas; the car rows are hidden on the page, not repriced.
+        vehicle: asVehicle(vehicle),
         days_per_week: String(daysPerWeek),
         parking_daily: String(parkingPerDay),
       })
@@ -414,21 +426,23 @@ export default function AdvisorFlow({
       const raw = data as AdvisorResult
       const hadLeaveBy = Object.values(raw.modes).some((m) => !!m.leave_by)
       const plan = fillLeaveBy(raw, opts.arriveBy)
+      const shown = vehicle === 'none' ? withoutCar(plan) : plan
       setEngineLeaveBy(hadLeaveBy)
       setResult(plan)
-      setExpanded(plan.recommended_mode)
+      setExpanded(shown.recommended_mode)
       setHighlightedLeg(null)
       setSelectedDock(null)
       track('advisor_results_shown', {
-        recommended_mode: plan.recommended_mode,
-        leave_by: plan.modes[plan.recommended_mode]?.leave_by ?? null,
+        recommended_mode: shown.recommended_mode,
+        leave_by: shown.modes[shown.recommended_mode]?.leave_by ?? null,
+        no_car: vehicle === 'none',
         arrive_by: opts.arriveBy,
         motivation: opts.motivation,
         distance_miles: plan.distance_miles,
         commute_mode: commuteMode,
         has_addresses: true,
         // The two-leg rows that earned a place (park_ride, bike_ride), if any
-        combos_shown: Object.keys(plan.modes).filter(isComboKey),
+        combos_shown: Object.keys(shown.modes).filter(isComboKey),
       })
     } catch {
       setError('We could not build your plan just now. Try again in a moment.')
@@ -497,9 +511,39 @@ export default function AdvisorFlow({
     return () => ctrl.abort()
   }, [result, home, office, benefits.shuttle_routes])
 
+  /* ── The forecast near home for the plan's morning (product item 17) ──
+   * The point is rounded to about 1 km before it is sent. Optional: without
+   * it the rows carry no weather chip and the Wear stage falls back. */
+  const [weatherHours, setWeatherHours] = useState<WeatherHour[]>([])
+  const weatherLat = home ? Math.round(home.lat * 100) / 100 : null
+  const weatherLng = home ? Math.round(home.lng * 100) / 100 : null
+  const hasPlan = !!result
+  useEffect(() => {
+    if (!hasPlan || weatherLat == null || weatherLng == null) return
+    const ctrl = new AbortController()
+    fetch(`/api/commute/weather?lat=${weatherLat}&lng=${weatherLng}`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { hours?: WeatherHour[] } | null) => { if (!ctrl.signal.aborted) setWeatherHours(d?.hours ?? []) })
+      .catch(() => { /* optional */ })
+    return () => ctrl.abort()
+  }, [hasPlan, weatherLat, weatherLng])
+
   /* ── Derived ── */
-  const plan = result
+  // With no car the rows that need one go and the headline is rebuilt
+  // without them (withoutCar); the engine's answer is kept whole, so
+  // switching back needs no new request.
+  const plan = useMemo(() => (result && noCar ? withoutCar(result) : result), [result, noCar])
+  // No car switched on with a car row open: open the new pick instead.
+  useEffect(() => {
+    if (plan && noCar && expanded && CAR_MODES.includes(expanded)) setExpanded(plan.recommended_mode)
+  }, [plan, noCar, expanded])
   const order = useMemo(() => (plan ? modeOrderFor(motivation, plan.modes) : []), [plan, motivation])
+  /** The forecast for a leave-by on the plan's morning; rows without one (a shuttle) use the pick's. */
+  const pickLeave = plan ? plan.modes[plan.recommended_mode]?.leave_by ?? null : null
+  const weatherAt = useCallback(
+    (leaveBy: string | null | undefined): MorningWeather | null => (plan && weatherHours.length > 0 ? morningWeather(weatherHours, leaveBy ?? pickLeave ?? arriveBy, plan.route_date) : null),
+    [plan, weatherHours, pickLeave, arriveBy],
+  )
   const headline = useMemo(() => {
     if (!plan) return ''
     // The route built its headline for the motivation it was sent; it is
@@ -653,10 +697,11 @@ export default function AdvisorFlow({
       ) : mode === 'bike' || mode === 'ebike' ? (
         <BikeDrawer plan={plan} calm={calm} calmLoading={calmLoading} bikeParking={bikeParking} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} />
       ) : mode === 'drive' ? (
-        <DriveDrawer plan={plan} benefits={benefits} onAddParking={openCosts} directionsHref={href} onDirections={onDirections} />
+        <DriveDrawer plan={plan} benefits={benefits} onAddParking={openCosts} onNoCar={() => chooseCar('none', 'plan')} directionsHref={href} onDirections={onDirections} />
       ) : (
         <WalkDrawer plan={plan} benefits={benefits} directionsHref={href} onDirections={onDirections} />
       )
+      const w = weatherAt(m.leave_by)
       out.push({
         key: mode,
         mode,
@@ -670,12 +715,15 @@ export default function AdvisorFlow({
         minutesMax: mode === 'drive' ? m.minutes_max ?? null : null,
         costPerDay: m.cost_per_day,
         emissionsPct: m.emissions_share_pct,
-        stages: stagesFor(mode, plan, benefits, { calm, bikeParking, lineName, combo: m.combo ?? null }),
+        weather: chipFor(w, mode),
+        stages: stagesFor(mode, plan, benefits, { calm, bikeParking, lineName, combo: m.combo ?? null, weather: w }),
         ...stageGuidesFor(mode),
         drawer,
       })
     }
-    // Shuttles: the employer's own, then the public operators with a stop at the office
+    // Shuttles: the employer's own, then the public operators with a stop at the office.
+    // Their morning times aren't known here, so they take the pick's leave-by forecast.
+    const shuttleWeather = weatherAt(null)
     employerShuttles.forEach((s, i) => {
       const key = `employer-shuttle-${i}`
       out.push({
@@ -687,7 +735,8 @@ export default function AdvisorFlow({
         minutes: null,
         costPerDay: 0,
         emissionsPct: null,
-        stages: stagesFor('shuttle', plan, benefits, { shuttle: s.from_stop ? { stopName: s.from_stop, distanceMiles: 0 } : null }),
+        weather: chipFor(shuttleWeather, 'shuttle'),
+        stages: stagesFor('shuttle', plan, benefits, { shuttle: s.from_stop ? { stopName: s.from_stop, distanceMiles: 0 } : null, weather: shuttleWeather }),
         drawer: <EmployerShuttleDrawer route={s} companyName={companyName} />,
       })
     })
@@ -702,17 +751,38 @@ export default function AdvisorFlow({
         costPerDay: s.access === 'public-fare' ? null : 0,
         costLabel: s.access === 'public-fare' ? 'Fare' : null,
         emissionsPct: null,
-        stages: stagesFor('shuttle', plan, benefits, { shuttle: { stopName: s.stopName, distanceMiles: s.distanceMiles } }),
+        weather: chipFor(shuttleWeather, 'shuttle'),
+        stages: stagesFor('shuttle', plan, benefits, { shuttle: { stopName: s.stopName, distanceMiles: s.distanceMiles }, weather: shuttleWeather }),
         drawer: <ShuttleDrawer line={s} officeName={officeLabel} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(s.key, leg)} />,
       })
     }
     return out
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, home, office, office4Links, order, calm, calmLoading, legsLive, comboLegsLive, bikeParking, benefits, companyName, highlightedLeg, commuteMode, employerShuttles, shuttleLines])
+  }, [plan, home, office, office4Links, order, calm, calmLoading, legsLive, comboLegsLive, bikeParking, benefits, companyName, highlightedLeg, commuteMode, employerShuttles, shuttleLines, weatherAt])
 
   /* ── The picked way in: the open row, else our pick ── */
   const pickedKey = expanded ?? plan?.recommended_mode ?? null
   const pickedMode = pickedKey?.startsWith('shuttle:') || pickedKey?.startsWith('employer-shuttle-') ? 'shuttle' : pickedKey
+
+  /* ── The morning's weather under the headline, for the picked way in's leave-by ── */
+  const headWeather = plan && pickedKey ? weatherAt(plan.modes[pickedKey]?.leave_by) : null
+  // Logged once per plan and forecast: the flags and the rows they touch, never a place.
+  const weatherLoggedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!plan || !headWeather) return
+    const key = `${plan.route_date}|${plan.distance_miles}|${weatherHours[0]?.start}|${noCar}`
+    if (weatherLoggedRef.current === key) return
+    weatherLoggedRef.current = key
+    const flagged = rows.filter((r) => r.weather).map((r) => r.mode)
+    track('advisor_weather_shown', {
+      day: headWeather.dayLabel,
+      temp_f: headWeather.hour.tempF,
+      precip_pct: headWeather.hour.precipPct,
+      flags: headWeather.flags,
+      pick_flags: flagsForMode(headWeather, pickedMode ?? plan.recommended_mode),
+      flagged_modes: [...new Set(flagged)],
+    })
+  }, [plan, headWeather, weatherHours, noCar, rows, pickedMode, track])
 
   /* ── "Try it with others" follows the OPEN row's way in (Keith 2026-10-06:
    * a walker or a transit rider was being shown a bike ride). The plan
@@ -764,7 +834,15 @@ export default function AdvisorFlow({
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.875rem] text-[#191A2E]">
                   <ArriveBy value={arriveBy} onChange={(v) => { changeArriveBy(v, 'plan'); run({ arriveBy: v, motivation }) }} />
                   {loading && <span className="text-[#4A4D68]">Updating…</span>}
+                  {/* The rows that need a car are off the plan; say so, with the way back. */}
+                  {noCar && (
+                    <span className="text-[#191A2E]">
+                      <span aria-hidden className="mr-3 text-[#4A4D68]">·</span>No car{' '}
+                      <button type="button" onClick={() => chooseCar('gas', 'plan')} className="font-semibold text-[#2D6A4F] hover:underline">show driving</button>
+                    </span>
+                  )}
                 </div>
+                {headWeather && <WeatherLine weather={headWeather} leaveBy={pickedKey ? plan.modes[pickedKey]?.leave_by ?? pickLeave : pickLeave} />}
                 {/* The plan's own miles live on each row (the crow-flies figure contradicted them). */}
                 <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
                   <span className="text-[0.9375rem] font-semibold text-[#191A2E]">Put first:</span>
@@ -1004,7 +1082,7 @@ export default function AdvisorFlow({
                 key={costsOpen ? 'open' : 'closed'}
                 defaultOpen={costsOpen}
                 vehicle={vehicle}
-                onVehicle={setVehicle}
+                onVehicle={(v) => chooseCar(v, 'step1')}
                 parkingPerDay={parkingPerDay}
                 onParkingPerDay={setParkingPerDay}
                 parkingHint={parkingDefault.hint}
@@ -1154,5 +1232,17 @@ export default function AdvisorFlow({
         />
       )}
     </div>
+  )
+}
+
+/** "Tomorrow at 8:12 AM: 41°F, light rain" with an icon for the worst of it. */
+function WeatherLine({ weather, leaveBy }: { weather: MorningWeather; leaveBy: string | null }) {
+  const f = weather.flags
+  const I = f.includes('severe') ? Warning : f.includes('snow') ? Snowflake : f.includes('rain') ? CloudRain : f.includes('cold') ? ThermometerCold : f.includes('heat') ? ThermometerHot : CloudSun
+  return (
+    <p className="mt-2 flex items-center gap-2 text-[0.9375rem] leading-snug text-[#191A2E]">
+      <I size={20} weight="regular" className="shrink-0 text-[#2D6A4F]" aria-hidden />
+      <span><span className="font-bold">{leaveBy ? `${weather.dayLabel === 'This morning' ? 'Today' : weather.dayLabel.replace(/ morning$/, '')} at ${formatClock(leaveBy)}` : weather.dayLabel}:</span> {summaryFor(weather)}</span>
+    </p>
   )
 }

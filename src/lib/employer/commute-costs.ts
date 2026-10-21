@@ -14,7 +14,7 @@
  *  - "Arrive by", not "leave at": the engine says when to leave.
  */
 
-import type { AdvisorCombo, AdvisorMode, AdvisorResult, Motivation, TransitLeg, Vehicle } from '../types/commute'
+import type { AdvisorCombo, AdvisorMode, AdvisorResult, CarChoice, Motivation, TransitLeg, Vehicle } from '../types/commute'
 
 /** Commuting days in a year; the same figure the employer dashboard uses. */
 export const WORKDAYS = 260
@@ -79,8 +79,45 @@ export function driveCostPerMile(vehicle: string | null | undefined, gasPrice: n
   return gas / FLEET_AVG_MPG + AAA_VARIABLE_RATE
 }
 
+/** The car the drive is priced for. 'none' (no car) and anything unknown price as gas: those rows are hidden, not repriced. */
 export function asVehicle(v: string | null | undefined): Vehicle {
   return v === 'ev' || v === 'hybrid' ? v : 'gas'
+}
+
+export function asCarChoice(v: unknown): CarChoice | null {
+  return v === 'gas' || v === 'hybrid' || v === 'ev' || v === 'none' ? v : null
+}
+
+/** The rows that need the person's own car. */
+export const CAR_MODES: readonly string[] = ['drive', 'park_ride', 'rideshare']
+
+/**
+ * The plan for someone with no car (product item 17): the drive and the
+ * park-and-ride rows go, the pick moves to the fastest way left when it was
+ * one of them, and the headline and reasons are rebuilt so nothing compares
+ * against a car they don't have. Everything else is the engine's answer as
+ * it came. Returns the same object when there is nothing to drop.
+ */
+export function withoutCar(result: AdvisorResult): AdvisorResult {
+  const dropped = Object.keys(result.modes).filter((k) => CAR_MODES.includes(k))
+  if (dropped.length === 0) return result
+  const modes = Object.fromEntries(Object.entries(result.modes).filter(([k]) => !CAR_MODES.includes(k)))
+  const keys = Object.keys(modes)
+  const viable = keys.filter((k) => modes[k].viable !== false)
+  const recommended = modes[result.recommended_mode]
+    ? result.recommended_mode
+    : fastestOf(modes, viable) ?? fastestOf(modes, keys) ?? keys[0] ?? result.recommended_mode
+  const out: AdvisorResult = {
+    ...result,
+    modes,
+    mode_order: result.mode_order.filter((k) => !CAR_MODES.includes(k)),
+    recommended_mode: recommended,
+    headline: '',
+    reasons: [],
+  }
+  out.headline = keys.length > 0 ? headlineFor(out, result.motivation) : ''
+  out.reasons = keys.length > 0 ? reasonLinesFor(out, recommended) : []
+  return out
 }
 
 /** Google's drive time stops at the address: parking and walking in from the spot, on every drive. */
@@ -337,11 +374,17 @@ export function modeOrderFor(motivation: Motivation | null | undefined, modes: R
   }
 }
 
+/** "the Red Line", "the 77 bus"; a bus named "Route 85" is "the 85 bus", never "the Route 85". */
+function lineNoun(name: string): string {
+  const bus = name.match(/^(?:route\s+)?(\d+[a-z]?)$/i)
+  return bus ? `the ${bus[1]} bus` : `the ${name}`
+}
+
 /** "the Orange Line" for a combo's rail leg (the first one), "the 77 bus" for a bus. */
 export function comboLineName(combo: Pick<AdvisorCombo, 'transit_legs'> | null | undefined): string {
   const name = combo?.transit_legs?.[0]?.route_name?.trim()
   if (!name) return 'the train'
-  return /^\d+$/.test(name) ? `the ${name} bus` : `the ${name}`
+  return lineNoun(name)
 }
 
 /** "on the Red Line", "by bike", "on foot", "by car", "driving to Oak Grove and the Orange Line". */
@@ -354,7 +397,7 @@ export function modePhrase(mode: string, legs?: TransitLeg[] | null, combo?: Adv
     case 'transit': {
       const first = legs?.[0]
       const name = first?.route_name?.trim()
-      if (name) return /^\d+$/.test(name) ? `on the ${name} bus` : `on the ${name}`
+      if (name) return `on ${lineNoun(name)}`
       return 'by bus or train'
     }
     case 'bus':
@@ -385,7 +428,7 @@ export function modeNoun(mode: string, legs?: TransitLeg[] | null, combo?: Advis
       return 'driving'
     case 'transit': {
       const name = legs?.[0]?.route_name?.trim()
-      if (name) return /^\d+$/.test(name) ? `the ${name} bus` : `the ${name}`
+      if (name) return lineNoun(name)
       return 'the bus or train'
     }
     case 'bus':
@@ -457,14 +500,17 @@ function timeClause(result: HeadlineInput, subject: string, fastest: string | nu
   return `${diff} minutes slower than ${bench}`
 }
 
-function costClause(result: HeadlineInput, subject: string, benchmark: string | null): string {
+function costClause(result: HeadlineInput, subject: string, benchmark: string | null, nameIt = false): string {
   if (benchmark == null) return ''
   const s = result.modes[subject]
   const b = result.modes[benchmark]
   const delta = b.cost_per_day - s.cost_per_day
   const parking = benchmark === 'drive' && (result.costs.parking_per_day ?? 0) > 0 ? ' with parking' : ''
-  if (delta >= 1) return `${fmtMoney(delta)} a day cheaper${parking}`
-  if (delta <= -1) return `${fmtMoney(-delta)} a day more`
+  // Driving is the comparison a reader assumes; any other benchmark is named
+  // unless the time clause just named it (a plan with no car, item 17).
+  const than = nameIt && benchmark !== 'drive' ? ` than ${modeNoun(benchmark, result.transit_legs, b.combo)}` : ''
+  if (delta >= 1) return `${fmtMoney(delta)} a day cheaper${parking}${than}`
+  if (delta <= -1) return `${fmtMoney(-delta)} a day more${than}`
   return `about the same cost as ${modeNoun(benchmark, result.transit_legs, b.combo)}`
 }
 
@@ -511,7 +557,11 @@ export function headlineFor(result: HeadlineInput, motivation: Motivation | null
   }
 
   const time = timeClause(result, subject, fastest)
-  const cost = costClause(result, subject, benchmark)
+  // The time clause names the fastest way in when it isn't the subject
+  // ("$3 a day cheaper and 5 minutes slower than the Red Line"); otherwise
+  // the cost clause names its own benchmark.
+  const timeNamesBenchmark = fastest === benchmark && fastest !== subject && !!time
+  const cost = costClause(result, subject, benchmark, !timeNamesBenchmark)
   const climate = formatCo2Share(s.emissions_share_pct)
   const health = healthClause(result, subject)
 

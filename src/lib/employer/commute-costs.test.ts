@@ -23,8 +23,10 @@ import {
   comboEmissionsSharePct,
   modeName,
   modePhrase,
+  withoutCar,
+  asCarChoice,
 } from './commute-costs.ts'
-import type { AdvisorMode, TransitLeg } from '../types/commute.ts'
+import type { AdvisorMode, AdvisorResult, TransitLeg } from '../types/commute.ts'
 
 const mode = (over: Partial<AdvisorMode> & { minutes: number | null; cost_per_day: number }): AdvisorMode => ({
   leave_by: null,
@@ -338,5 +340,32 @@ describe('comboEmissionsSharePct', () => {
     const kendall = { ...wellington, kind: 'bike_ride' as const, first_leg: { ...wellington.first_leg, mode: 'bike' as const, miles: 1.1 }, station: { ...wellington.station, name: 'Kendall/MIT', lat: 42.36249, lng: -71.086176 } }
     const pct = comboEmissionsSharePct(kendall, 3.4, 'gas', { lat: 42.3525, lng: -71.0558 })
     assert.ok(pct != null && pct >= 70 && pct <= 95, String(pct))
+  })
+})
+
+describe('withoutCar (No car, product item 17)', () => {
+  const full = (rec: string) => ({ ...sample(), recommended_mode: rec, mode_order: ['drive', 'transit', 'bike', 'walk'], motivation: null, headline: 'x', reasons: [] }) as unknown as AdvisorResult
+  it('drops the car rows and moves the pick to the fastest way left', () => {
+    const r = withoutCar(full('drive'))
+    assert.deepEqual(Object.keys(r.modes), ['transit', 'bike', 'walk'])
+    assert.deepEqual(r.mode_order, ['transit', 'bike', 'walk'])
+    assert.equal(r.recommended_mode, 'transit')
+  })
+  it('never compares against driving in the headline, and names what it compares against', () => {
+    const r = withoutCar(full('transit'))
+    assert.equal(r.headline, 'Leave by 8:12 AM on the Red Line, the fastest way in and $2 a day more than biking.')
+    assert.doesNotMatch(r.headline, /driv|parking/)
+    const bike = withoutCar(full('bike'))
+    assert.equal(bike.headline, 'Leave by 8:29 AM on a bike, 4 minutes slower than the Red Line and $2 a day cheaper.')
+  })
+  it('keeps the pick when it needs no car, and leaves a car-free plan untouched', () => {
+    assert.equal(withoutCar(full('bike')).recommended_mode, 'bike')
+    const noDrive = withoutCar(full('bike'))
+    assert.equal(withoutCar(noDrive), noDrive)
+  })
+  it('reads the saved choice', () => {
+    assert.equal(asCarChoice('none'), 'none')
+    assert.equal(asCarChoice('ev'), 'ev')
+    assert.equal(asCarChoice('diesel'), null)
   })
 })

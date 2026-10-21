@@ -1,7 +1,9 @@
 'use client'
 
 import { useId, type ReactNode } from 'react'
+import { CloudRain, Snowflake, ThermometerCold, ThermometerHot, Warning, type Icon } from '@phosphor-icons/react'
 import ModeIcon from '@/components/commute/ModeIcon'
+import type { WeatherFlag } from '@/lib/commute/weather'
 import StageStrip from '@/components/commute/StageStrip'
 import type { StageLabel, TripStage } from '@/components/commute/trip-stages'
 import type { GuideGroup } from '@/components/commute/guide-topics'
@@ -37,12 +39,34 @@ export interface PlanGridRow {
   costLabel?: string | null
   /** Share of commute emissions shifted; null (under 10%, or driving) draws a dash. */
   emissionsPct: number | null
+  /** The forecast for this way in's leave-by, when it matters to it (rain on a bike, cold at a bus stop). */
+  weather?: { flag: WeatherFlag; label: string } | null
   stages: TripStage[]
   /** This way in's guides, by the stage they open from; none for driving. */
   stageGuides?: Partial<Record<StageLabel, GuideGroup[]>>
   /** "All biking guides", under an open stage's guides. */
   guidesMore?: { href: string; label: string } | null
   drawer: ReactNode
+}
+
+const WEATHER_ICONS: Record<WeatherFlag, Icon> = {
+  rain: CloudRain,
+  snow: Snowflake,
+  cold: ThermometerCold,
+  heat: ThermometerHot,
+  severe: Warning,
+}
+
+/** The forecast chip beside a row's name: an icon and a word or a temperature. */
+function WeatherChip({ flag, label }: { flag: WeatherFlag; label: string }) {
+  const I = WEATHER_ICONS[flag]
+  const tone = flag === 'severe' || flag === 'heat' ? 'bg-[#FFF1D6] text-[#6B4200]' : 'bg-[#E3EDF7] text-[#1B4870]'
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.875rem] font-bold leading-tight ${tone}`}>
+      <I size={15} weight="bold" aria-hidden />
+      {label}
+    </span>
+  )
 }
 
 const fmtDay = (n: number) => (n <= 0 ? 'Free' : `$${n.toFixed(2).replace(/\.00$/, '')}`)
@@ -108,6 +132,7 @@ export default function PlanGrid({ rows, expanded, onToggle, stickyTopClass = ST
                   {r.today && !r.recommended && (
                     <span className="rounded-full bg-[rgba(25,26,46,0.08)] px-2 py-0.5 text-[0.8125rem] font-extrabold uppercase tracking-[0.04em] text-[#4A4D68]">Today</span>
                   )}
+                  {r.weather && <WeatherChip flag={r.weather.flag} label={r.weather.label} />}
                 </span>
                 {r.sub && <span className="mt-0.5 block truncate text-[0.875rem] leading-snug text-[#4A4D68]">{r.sub}</span>}
               </span>

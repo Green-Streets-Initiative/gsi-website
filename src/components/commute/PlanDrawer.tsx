@@ -345,10 +345,12 @@ export function BikeDrawer({
 
 /* ── Drive ── */
 
-export function DriveDrawer({ plan, benefits, onAddParking, directionsHref, onDirections }: {
+export function DriveDrawer({ plan, benefits, onAddParking, onNoCar, directionsHref, onDirections }: {
   plan: AdvisorResult
   benefits: EmployerBenefits
   onAddParking: () => void
+  /** "No car": take the rows that need one off the plan (product item 17). */
+  onNoCar?: () => void
   directionsHref: string
   onDirections: () => void
 }) {
@@ -370,6 +372,7 @@ export function DriveDrawer({ plan, benefits, onAddParking, directionsHref, onDi
       <DrawerActions>
         <ActionLink href={directionsHref} onClick={onDirections} primary>Directions</ActionLink>
         {parking <= 0 && !benefits.free_parking && <ActionButton onClick={onAddParking}>Add a parking cost</ActionButton>}
+        {onNoCar && <ActionButton onClick={onNoCar}>I don't have a car</ActionButton>}
       </DrawerActions>
     </>
   )
