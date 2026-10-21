@@ -341,6 +341,11 @@ async function cleanup(runStart, yearPlanBefore) {
   const { data: surveys } = await admin.from('employer_surveys').select('id').eq('group_id', GROUP_ID).ilike('title', 'EVAL%')
   if (surveys?.length) await admin.from('employer_surveys').delete().in('id', surveys.map((s) => s.id))
   await admin.from('employer_activity_log').delete().eq('group_id', GROUP_ID).gte('created_at', runStart)
+  // Feedback notes and the admin notifications the run raised (they'd
+  // otherwise land on GSI's notifications page as real feedback).
+  const { data: fb } = await admin.from('employer_feedback').delete().eq('group_id', GROUP_ID).gte('created_at', runStart).select('id')
+  if (fb?.length) notes.push(`removed ${fb.length} feedback notes`)
+  await admin.from('admin_notifications').delete().eq('source', 'employer_assistant').contains('context', { group_id: GROUP_ID }).gte('created_at', runStart)
   const { data: help } = await admin.from('employer_help_requests').select('id').eq('group_id', GROUP_ID).gte('created_at', runStart)
   if (help?.length) notes.push(`WARNING: ${help.length} "ask GSI" requests were sent during the run`)
   const { data: comps } = await admin.from('competitions').select('id, name').eq('group_id', GROUP_ID).gte('created_at', runStart)

@@ -222,6 +222,27 @@ const BASE_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'note_feedback',
+    description:
+      "Pass a feature gap or the admin's feedback to the GSI team, who use it to decide what to build next. kind: gap (they wanted something Shift can't do), idea (a suggestion), problem (something didn't work), confusing (hard to find or understand), praise. summary: one neutral sentence about the need, not the solution they guessed at. their_words: a short quote. offered_instead: what you suggested that works today. To add what they tell you later about the same thing, pass feedback_id. Changes nothing in their account; no approval needed.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['gap', 'idea', 'problem', 'confusing', 'praise'] },
+        area: {
+          type: 'string',
+          enum: ['challenges', 'rewards', 'invitations', 'employees', 'survey', 'commute_advisor', 'results', 'billing', 'team_and_settings', 'shift_app', 'assistant', 'other'],
+        },
+        summary: { type: 'string' },
+        their_words: { type: 'string' },
+        offered_instead: { type: ['string', 'null'] },
+        wants_reply: { type: 'boolean', description: 'They asked to hear back. Offer ask_gsi too if they want an answer from a person.' },
+        feedback_id: { type: ['string', 'null'], description: 'An earlier note from this conversation to add to.' },
+      },
+      required: ['kind', 'area', 'summary'],
+    },
+  },
+  {
     name: 'open_page',
     description: 'Give the admin a button to a portal page, for things you cannot do yourself (billing details, the full team list, anything not covered by your tools).',
     input_schema: {
@@ -264,6 +285,7 @@ export const ACTIVITY: Record<string, string> = {
   ...SURVEY_ACTIVITY,
   ...RESULTS_ACTIVITY,
   get_account_overview: 'Looking over your account',
+  note_feedback: 'Passing that on to the GSI team',
   list_seasonal_templates: 'Looking at the seasonal challenges',
   get_challenge: 'Reading the challenge',
   get_draft: 'Reading the draft',
@@ -511,6 +533,42 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         })
         if (error || !data) return { content: { error: error ?? 'check failed' }, isError: true }
         return { content: data }
+      }
+      case 'note_feedback': {
+        const fields = {
+          kind: String(input.kind),
+          area: String(input.area ?? 'other'),
+          summary: String(input.summary ?? '').slice(0, 500),
+          ...(input.their_words ? { their_words: String(input.their_words).slice(0, 1500) } : {}),
+          ...(input.offered_instead ? { offered_instead: String(input.offered_instead).slice(0, 500) } : {}),
+          ...(input.wants_reply != null ? { wants_reply: !!input.wants_reply } : {}),
+        }
+        if (input.feedback_id) {
+          const { data, error } = await ctx.admin
+            .from('employer_feedback')
+            .update({ ...fields, updated_at: new Date().toISOString() })
+            .eq('id', String(input.feedback_id))
+            .eq('group_id', ctx.groupId)
+            .eq('thread_id', ctx.threadId)
+            .select('id')
+            .maybeSingle()
+          if (error || !data) return { content: { noted: false, error: error?.message ?? 'that note is not from this conversation' }, isError: true }
+          return { content: { noted: true, feedback_id: input.feedback_id, updated: true } }
+        }
+        const { data: row, error } = await ctx.admin
+          .from('employer_feedback')
+          .insert({ group_id: ctx.groupId, thread_id: ctx.threadId, author_email: ctx.email, author_role: ctx.role, ...fields })
+          .select('id')
+          .single()
+        if (error || !row) return { content: { noted: false, error: error?.message }, isError: true }
+        await ctx.admin.from('admin_notifications').insert({
+          level: 'info',
+          source: 'employer_assistant',
+          title: `${fields.kind === 'praise' ? 'Praise' : fields.kind === 'gap' ? 'Feature gap' : 'Feedback'} from ${ctx.groupName}: ${fields.summary.slice(0, 120)}`,
+          body: [fields.their_words && `"${fields.their_words}"`, fields.offered_instead && `Offered instead: ${fields.offered_instead}`, `${ctx.email} (${ctx.role})`].filter(Boolean).join('\n'),
+          context: { kind: 'employer_feedback', feedback_id: (row as { id: string }).id, group_id: ctx.groupId, area: fields.area },
+        })
+        return { content: { noted: true, feedback_id: (row as { id: string }).id } }
       }
       case 'open_page':
         return {

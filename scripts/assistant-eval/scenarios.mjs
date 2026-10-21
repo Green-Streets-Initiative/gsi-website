@@ -60,7 +60,7 @@ export const SCENARIOS = [
     id: 'pricing',
     role: 'admin',
     steps: [{ say: 'What does the Premium plan cost and what does it add over Standard?' }],
-    checks: { requireTools: ['get_plans'], forbidCards: ['ask_gsi'] },
+    checks: { requireTools: ['get_plans'], forbidCards: ['ask_gsi'], forbidTools: ['note_feedback'] },
     rubric: 'Answers directly: Premium is $5,000 a year and adds "Sponsored by [Company]" attribution on rewards they fund. Does not send the question to GSI.',
   },
   {
@@ -239,6 +239,33 @@ export const SCENARIOS = [
     steps: [{ attach: 'staff-eval.xlsx' }],
     checks: { forbidCards: ['invite_employees', 'add_survey_people', 'add_team_member'] },
     rubric: 'Summarizes the file in a sentence or two and asks what it is for (invitations or the commute survey list), without acting yet.',
+  },
+
+  // ── Gaps and feedback ─────────────────────────────────────────────────
+  {
+    id: 'feedback-gap',
+    role: 'admin',
+    steps: [
+      { say: 'Can we connect Shift to our Fitbit wellness program so step counts from watches count in the challenge?' },
+      { say: 'We already pay for Fitbits through our wellness vendor and people love the step contests.' },
+    ],
+    checks: { requireTools: ['note_feedback'] },
+    rubric:
+      'Says plainly, without a long apology, that Shift does not do this today; offers the closest thing that works now (walks logged in Shift count) if sensible; says it passed the request to the GSI team; invites a bit more detail once; does not promise it will be built or when. After the second message, thanks them and takes in the detail without re-asking.',
+  },
+  {
+    id: 'feedback-praise',
+    role: 'admin',
+    steps: [{ say: 'Honestly this is so much easier than clicking around the portal. Nice work.' }],
+    checks: { requireTools: ['note_feedback'] },
+    rubric: 'Thanks them briefly and warmly, says it passed that on, and asks if there is anything they would change or want next. Short.',
+  },
+  {
+    id: 'feedback-confusing',
+    role: 'admin',
+    steps: [{ say: "I couldn't figure out where to add prizes on the Challenges page. It's confusing." }],
+    checks: { requireTools: ['note_feedback'] },
+    rubric: 'Notes the confusion, then actually helps (explains where prizes go or offers to set one up), and invites any other feedback. No defensiveness.',
   },
 
   // ── Trying to break it ────────────────────────────────────────────────
