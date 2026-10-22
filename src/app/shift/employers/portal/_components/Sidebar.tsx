@@ -51,8 +51,6 @@ export const PORTAL_NAV: PortalNavEntry[] = [
   { key: 'setup', label: 'Setup', icon: ListChecks, href: '/shift/employers/portal/setup', setupOnly: true, showDot: true },
   { divider: true },
   { key: 'employees', label: 'Employees', icon: Users, href: '/shift/employers/portal/employees', showCount: true },
-  // The code, link, QR, messages and flyers. Inviting by email lives on
-  // Employees (Keith 2026-10-05: "Invite employees" here was this page).
   { key: 'challenges', label: 'Challenges', icon: Trophy, href: '/shift/employers/portal/challenges' },
   { key: 'impact', label: 'Impact', icon: ChartBar, href: '/shift/employers/portal/impact' },
   // Survey week: the yearly commute survey (Shift 01170), per workplace switch.
