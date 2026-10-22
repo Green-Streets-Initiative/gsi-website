@@ -86,7 +86,7 @@ const input =
   'w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none placeholder:text-ink-tertiary focus:border-accent disabled:bg-surface-2 disabled:text-ink-muted'
 const numInput =
   'w-[76px] rounded-[10px] border border-line bg-surface px-2.5 py-2 text-center text-[15px] font-semibold text-ink outline-none focus:border-accent disabled:bg-surface-2 disabled:text-ink-muted'
-const label = 'mb-1.5 block text-[12.5px] font-semibold text-ink-muted'
+const label = 'mb-1.5 block text-[14px] font-semibold text-ink-muted'
 
 // ── Dates ────────────────────────────────────────────────────────────────
 
@@ -688,13 +688,13 @@ export default function ChallengeWizard({
         <div className="flex items-start justify-between gap-3 border-b border-line px-6 py-[18px]">
           <div>
             <h3 className="text-[16px] font-bold text-ink">Start with a ready-made challenge</h3>
-            <p className="mt-0.5 text-[13px] text-ink-muted">Everything is filled in. You can change any of it on the next screens.</p>
+            <p className="mt-0.5 text-[15px] text-ink-muted">Pick one. You can change anything after.</p>
           </div>
           {closeButton}
         </div>
         {(seasonal.upcoming.length > 0 || seasonal.anytime.length > 0) && (
           <div className="grid gap-3 px-6 pt-6">
-            <div className="flex items-center gap-2 text-[13px] font-semibold text-ink-muted">
+            <div className="flex items-center gap-2 text-[14px] font-semibold text-ink-muted">
               <Sun size={15} strokeWidth={1.75} className="text-accent" />
               Coming up this year
             </div>
@@ -706,7 +706,7 @@ export default function ChallengeWizard({
                   onClick={() => applySeasonal(o)}
                   className="flex flex-col items-start gap-1.5 rounded-xl border border-line p-4 text-left transition-colors hover:border-accent hover:bg-accent-softer"
                 >
-                  <span className="text-[12px] font-semibold text-accent">
+                  <span className="text-[14px] font-semibold text-accent">
                     {o.run
                       ? o.run.starts_on === o.run.ends_on
                         ? shortDate(o.run.starts_on)
@@ -714,14 +714,11 @@ export default function ChallengeWizard({
                       : 'Any time'}
                   </span>
                   <span className="text-[15px] font-bold text-ink">{o.template.title}</span>
-                  <span className="text-[13.5px] leading-[1.5] text-ink">{o.template.line}</span>
-                  {o.template.pairs_with_line && (
-                    <span className="text-[12.5px] leading-[1.5] text-ink-muted">{o.template.pairs_with_line}</span>
-                  )}
+                  <span className="line-clamp-2 text-[15px] leading-[1.5] text-ink">{o.template.line}</span>
                 </button>
               ))}
             </div>
-            <div className="pt-2 text-[13px] font-semibold text-ink-muted">Or pick a prize style</div>
+            <div className="pt-2 text-[14px] font-semibold text-ink-muted">Or pick a prize style</div>
           </div>
         )}
         <div className="grid gap-3 p-6 md:grid-cols-3">
@@ -736,13 +733,13 @@ export default function ChallengeWizard({
                 <t.icon size={20} strokeWidth={1.75} />
               </span>
               <span className="text-[15px] font-bold text-ink">{canUsePrizes ? t.title : (t.freeTitle ?? t.title)}</span>
-              <span className="text-[13.5px] leading-[1.5] text-ink">{canUsePrizes ? t.line : t.freeLine}</span>
-              <span className="mt-auto text-[12.5px] text-ink-muted">{t.best}</span>
+              <span className="text-[15px] leading-[1.5] text-ink">{canUsePrizes ? t.line : t.freeLine}</span>
+              <span className="mt-auto text-[14px] text-ink-muted">{t.best}</span>
             </button>
           ))}
         </div>
         <div className="border-t border-line-2 px-6 py-4">
-          <button type="button" onClick={() => applyTemplate(null)} className="text-[13.5px] font-semibold text-accent hover:underline">
+          <button type="button" onClick={() => applyTemplate(null)} className="text-[15px] font-semibold text-accent hover:underline">
             Start from scratch instead
           </button>
         </div>
@@ -769,10 +766,10 @@ export default function ChallengeWizard({
                 <button
                   type="button"
                   onClick={() => (done || editMode ? setStep(s.id) : undefined)}
-                  className={`flex items-center gap-2 text-[13px] font-semibold ${here ? 'text-ink' : done || editMode ? 'text-ink-muted hover:text-accent' : 'text-ink-tertiary'}`}
+                  className={`flex items-center gap-2 text-[14px] font-semibold ${here ? 'text-ink' : done || editMode ? 'text-ink-muted hover:text-accent' : 'text-ink-tertiary'}`}
                 >
                   <span
-                    className={`grid h-6 w-6 place-items-center rounded-full text-[12px] ${
+                    className={`grid h-6 w-6 place-items-center rounded-full text-[14px] ${
                       here ? 'bg-accent text-white' : done ? 'bg-accent-soft text-accent' : 'bg-surface-2 text-ink-tertiary'
                     }`}
                   >
@@ -785,7 +782,7 @@ export default function ChallengeWizard({
           })}
         </ol>
         <div className="flex items-center gap-3">
-          {draftNote && <span className="text-[12.5px] text-ink-muted" aria-live="polite">{draftNote}</span>}
+          {draftNote && <span className="text-[14px] text-ink-muted" aria-live="polite">{draftNote}</span>}
           {closeButton}
         </div>
         </div>
@@ -805,7 +802,7 @@ export default function ChallengeWizard({
                   onBlur={() => setNameTouched(true)}
                   onChange={(e) => set('name', e.target.value)}
                 />
-                {nameTouched && nameProblem && <p className="mt-1.5 text-[12.5px] font-semibold text-ep-danger">{nameProblem}</p>}
+                {nameTouched && nameProblem && <p className="mt-1.5 text-[14px] font-semibold text-ep-danger">{nameProblem}</p>}
               </div>
               <div>
                 <div className={label}>When</div>
@@ -824,7 +821,7 @@ export default function ChallengeWizard({
                           key={p.label}
                           type="button"
                           onClick={() => setForm((f) => ({ ...f, starts_at: p.start, ends_at: end }))}
-                          className={`rounded-full border px-3.5 py-1.5 text-[13px] font-medium ${on ? 'border-accent bg-accent-soft text-accent-ink' : 'border-line text-ink-muted hover:border-accent'}`}
+                          className={`rounded-full border px-3.5 py-1.5 text-[14px] font-medium ${on ? 'border-accent bg-accent-soft text-accent-ink' : 'border-line text-ink-muted hover:border-accent'}`}
                         >
                           {p.label}
                         </button>
@@ -852,14 +849,14 @@ export default function ChallengeWizard({
                     <input id="cw-end" type="date" className={input} value={form.ends_at} onChange={(e) => set('ends_at', e.target.value)} />
                   </div>
                 </div>
-                {dateError && <p className="mt-2 text-[12.5px] font-semibold text-ep-danger">{dateError}</p>}
+                {dateError && <p className="mt-2 text-[14px] font-semibold text-ep-danger">{dateError}</p>}
                 {!dateError && nameTouched && datesProblem && (
-                  <p className="mt-2 text-[12.5px] font-semibold text-ep-danger">{datesProblem}</p>
+                  <p className="mt-2 text-[14px] font-semibold text-ep-danger">{datesProblem}</p>
                 )}
                 {observanceNotes.map((n) => (
                   <div
                     key={n.observance.slug + n.observance.on_date}
-                    className="mt-3 flex gap-2.5 rounded-xl border border-line bg-surface-2 px-4 py-3 text-[13.5px] leading-[1.5] text-ink"
+                    className="mt-3 flex gap-2.5 rounded-xl border border-line bg-surface-2 px-4 py-3 text-[15px] leading-[1.5] text-ink"
                   >
                     <Flag size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-accent" />
                     <div>
@@ -908,7 +905,7 @@ export default function ChallengeWizard({
                 onChange={(on, list) => set('counting_rules', { ...(form.counting_rules ?? {}), commute_only: on, offices: list })}
               />
 
-              {tripsProblem && <p className="text-[13px] font-semibold text-ep-danger">{tripsProblem}</p>}
+              {tripsProblem && <p className="text-[14px] font-semibold text-ep-danger">{tripsProblem}</p>}
 
               {rulesLocked ? (
                 <Locked text="This challenge has started with a live prize, so what counts stays as your team was told." />
@@ -917,7 +914,7 @@ export default function ChallengeWizard({
                   <button
                     type="button"
                     onClick={() => setShowMoreRules((v) => !v)}
-                    className="flex items-center gap-1.5 text-[13.5px] font-semibold text-accent hover:underline"
+                    className="flex items-center gap-1.5 text-[15px] font-semibold text-accent hover:underline"
                   >
                     <ChevronDown size={15} strokeWidth={2} className={showMoreRules ? 'rotate-180' : ''} />
                     Change which trips count
@@ -934,7 +931,7 @@ export default function ChallengeWizard({
             <>
               <StepTitle title="What do people win?" hint="Add one reward or several. For example, a gift card for everyone who reaches the goal, plus a drawing." />
               {!canUsePrizes ? (
-                <div className="rounded-xl border border-line bg-surface-2 p-4 text-[13.5px] leading-[1.55] text-ink">
+                <div className="rounded-xl border border-line bg-surface-2 p-4 text-[15px] leading-[1.55] text-ink">
                   Your team competes on the leaderboard. Rewards, including gift cards winners pick in the app, come with the
                   Standard plan.{' '}
                   <a href={PLANS_URL} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent hover:underline">
@@ -959,7 +956,7 @@ export default function ChallengeWizard({
                                 type="button"
                                 disabled={live}
                                 onClick={() => k !== c.k && setKind(i, c.k)}
-                                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-semibold disabled:opacity-60 ${
+                                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[14px] font-semibold disabled:opacity-60 ${
                                   k === c.k ? 'border-accent bg-accent-soft text-accent-ink' : 'border-line text-ink-muted hover:border-accent'
                                 }`}
                               >
@@ -969,7 +966,7 @@ export default function ChallengeWizard({
                             ))}
                           </div>
                           {!live && (
-                            <button type="button" onClick={() => removePrize(i)} className="flex items-center gap-1 text-[13px] font-semibold text-ink-muted hover:text-ep-danger">
+                            <button type="button" onClick={() => removePrize(i)} className="flex items-center gap-1 text-[14px] font-semibold text-ink-muted hover:text-ep-danger">
                               <X size={14} /> Remove
                             </button>
                           )}
@@ -987,7 +984,7 @@ export default function ChallengeWizard({
                             onDomainsChanged={onDomainsChanged}
                           />
                         )}
-                        {problemFor(p) && <p className="text-[12.5px] font-semibold text-ep-danger">{problemFor(p)}</p>}
+                        {problemFor(p) && <p className="text-[14px] font-semibold text-ep-danger">{problemFor(p)}</p>}
                       </div>
                     )
                   })}
@@ -1021,7 +1018,7 @@ export default function ChallengeWizard({
                       <input id="cw-contact-email" className={input} type="email" placeholder="Email" value={form.contact_email} onChange={(e) => set('contact_email', e.target.value)} />
                     </div>
                   </div>
-                  <p className="mt-1.5 text-[12.5px] text-ink-muted">Shown with the rules in the app and in your announcement.</p>
+                  <p className="mt-1.5 text-[14px] text-ink-muted">Shown with the rules in the app and in your announcement.</p>
                 </div>
               )}
 
@@ -1029,16 +1026,16 @@ export default function ChallengeWizard({
 
               {problems.length > 0 && (
                 <div className="grid gap-1.5 rounded-xl border border-ep-danger/30 bg-ep-danger/5 px-4 py-3.5" role="alert">
-                  <div className="text-[13.5px] font-bold text-ink">{editMode ? 'Nothing was changed' : 'It wasn\'t launched'}</div>
+                  <div className="text-[15px] font-bold text-ink">{editMode ? 'Nothing was changed' : 'It wasn\'t launched'}</div>
                   {problems.map((m) => (
-                    <p key={m} className="text-[13px] leading-[1.5] text-ink">{linkify(m)}</p>
+                    <p key={m} className="text-[14px] leading-[1.5] text-ink">{linkify(m)}</p>
                   ))}
-                  <p className="text-[12.5px] text-ink-muted">{editMode ? 'Fix it here and save again.' : 'Your draft is saved. Fix it here and launch again.'}</p>
+                  <p className="text-[14px] text-ink-muted">{editMode ? 'Fix it here and save again.' : 'Your draft is saved. Fix it here and launch again.'}</p>
                 </div>
               )}
 
               {!accessActive && (
-                <p className="text-[13px] font-semibold leading-[1.5] text-ep-danger">
+                <p className="text-[14px] font-semibold leading-[1.5] text-ep-danger">
                   {linkify('Your access has ended. Renew on the Billing page to create challenges.')}
                 </p>
               )}
@@ -1049,12 +1046,12 @@ export default function ChallengeWizard({
 
       {/* Live preview */}
       <aside className="min-w-0 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:row-span-2">
-        <div className="mb-2 text-[13px] font-semibold text-ink-muted">What employees see</div>
+        <div className="mb-2 text-[14px] font-semibold text-ink-muted">What employees see</div>
         <PhonePreview employer={group.name} challengeName={form.name} startsAt={form.starts_at} prize={headline} kind={headlineKind} />
         {rulesLines.length > 0 && (
           <details className="mt-3 rounded-xl border border-line bg-surface p-4">
-            <summary className="cursor-pointer text-[13px] font-semibold text-ink">The rules, as shown in the app</summary>
-            <ul className="mt-2.5 grid list-disc gap-1.5 pl-5 text-[12.5px] leading-[1.5] text-ink">
+            <summary className="cursor-pointer text-[14px] font-semibold text-ink">The rules, as shown in the app</summary>
+            <ul className="mt-2.5 grid list-disc gap-1.5 pl-5 text-[14px] leading-[1.5] text-ink">
               {rulesLines.map((l) => (
                 <li key={l}>{l}</li>
               ))}
@@ -1064,12 +1061,12 @@ export default function ChallengeWizard({
         {(form.description || seasonalTips.length > 0) && (
           <div className="mt-3 grid gap-2.5 rounded-xl border border-line bg-surface p-4">
             {form.description && (
-              <p className="text-[12.5px] leading-[1.5] text-ink">{form.description}</p>
+              <p className="text-[14px] leading-[1.5] text-ink">{form.description}</p>
             )}
             {seasonalTips.length > 0 && (
               <>
-                <div className="text-[13px] font-semibold text-ink">Tips to share with your team</div>
-                <ul className="grid list-disc gap-1.5 pl-5 text-[12.5px] leading-[1.5] text-ink">
+                <div className="text-[14px] font-semibold text-ink">Tips to share with your team</div>
+                <ul className="grid list-disc gap-1.5 pl-5 text-[14px] leading-[1.5] text-ink">
                   {seasonalTips.map((t) => (
                     <li key={t}>{t}</li>
                   ))}
@@ -1146,9 +1143,9 @@ function KindCards({ onPick }: { onPick: (k: Exclude<PrizeKind, 'none'>) => void
         >
           <c.icon size={18} strokeWidth={1.75} className="text-accent" />
           <span className="text-[14px] font-semibold text-ink">{c.title}</span>
-          <span className="text-[13px] leading-[1.45] text-ink-muted">{c.line}</span>
+          <span className="text-[14px] leading-[1.45] text-ink-muted">{c.line}</span>
           {'tag' in c && c.tag && (
-            <span className="mt-1 rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-semibold text-accent-ink">{c.tag}</span>
+            <span className="mt-1 rounded-full bg-accent-soft px-2 py-0.5 text-[13px] font-semibold text-accent-ink">{c.tag}</span>
           )}
         </button>
       ))}
@@ -1160,16 +1157,16 @@ function AddPrizeMenu({ onPick }: { onPick: (k: Exclude<PrizeKind, 'none'>) => v
   const [open, setOpen] = useState(false)
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="flex items-center gap-1.5 justify-self-start text-[13.5px] font-semibold text-accent hover:underline">
+      <button type="button" onClick={() => setOpen(true)} className="flex items-center gap-1.5 justify-self-start text-[15px] font-semibold text-accent hover:underline">
         <Plus size={15} /> Add another reward
       </button>
     )
   }
   return (
     <div className="grid gap-2">
-      <div className="text-[13px] font-semibold text-ink-muted">Add another reward</div>
+      <div className="text-[14px] font-semibold text-ink-muted">Add another reward</div>
       <KindCards onPick={(k) => { onPick(k); setOpen(false) }} />
-      <button type="button" onClick={() => setOpen(false)} className="justify-self-start text-[13px] text-ink-muted hover:underline">Cancel</button>
+      <button type="button" onClick={() => setOpen(false)} className="justify-self-start text-[14px] text-ink-muted hover:underline">Cancel</button>
     </div>
   )
 }
@@ -1180,14 +1177,14 @@ function StepTitle({ title, hint }: { title: string; hint?: string }) {
   return (
     <div>
       <h3 className="text-[18px] font-bold tracking-[-0.01em] text-ink">{title}</h3>
-      {hint && <p className="mt-1 text-[13.5px] text-ink-muted">{hint}</p>}
+      {hint && <p className="mt-1 text-[15px] text-ink-muted">{hint}</p>}
     </div>
   )
 }
 
 function Locked({ text }: { text: string }) {
   return (
-    <p className="flex gap-2 rounded-lg bg-surface-2 px-3 py-2.5 text-[13px] leading-[1.5] text-ink">
+    <p className="flex gap-2 rounded-lg bg-surface-2 px-3 py-2.5 text-[14px] leading-[1.5] text-ink">
       <Lock size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-ink-muted" />
       {text}
     </p>
@@ -1267,7 +1264,7 @@ function RewardChoice({
 }) {
   return (
     <div className="grid gap-3">
-      <div className="text-[13px] font-semibold text-ink-muted">Each winner gets</div>
+      <div className="text-[14px] font-semibold text-ink-muted">Each winner gets</div>
       <div className="flex flex-wrap gap-2">
         {([
           { v: true, t: "A gift card, winner's choice" },
@@ -1278,7 +1275,7 @@ function RewardChoice({
             type="button"
             disabled={live}
             onClick={() => onChange({ funded_from_pool: o.v })}
-            className={`rounded-[10px] border px-4 py-2.5 text-[13.5px] font-semibold disabled:opacity-60 ${
+            className={`rounded-[10px] border px-4 py-2.5 text-[15px] font-semibold disabled:opacity-60 ${
               p.funded_from_pool === o.v ? 'border-accent bg-accent-soft text-accent-ink' : 'border-line text-ink-muted hover:border-accent'
             }`}
           >
@@ -1293,7 +1290,7 @@ function RewardChoice({
             <Num id="cw-amount" label="Gift card amount in dollars" value={p.amount_dollars} disabled={live} onChange={(v) => onChange({ amount_dollars: v })} />
             each
           </div>
-          <p className="text-[12.5px] text-ink-muted">
+          <p className="text-[14px] text-ink-muted">
             A gift card, winner&apos;s choice: local shops or national brands, delivered in the app.
           </p>
         </div>
@@ -1301,7 +1298,7 @@ function RewardChoice({
         <div>
           <label className={label} htmlFor="cw-desc">What they win</label>
           <input id="cw-desc" className={input} disabled={live} placeholder="e.g. a company fleece" value={p.prize_description} onChange={(e) => onChange({ prize_description: e.target.value })} />
-          <p className="mt-1.5 text-[12.5px] text-ink-muted">Winners tap Claim in the app, and you&apos;ll see their names here to hand it out.</p>
+          <p className="mt-1.5 text-[14px] text-ink-muted">Winners tap Claim in the app, and you&apos;ll see their names here to hand it out.</p>
         </div>
       )}
     </div>
@@ -1321,22 +1318,22 @@ function WhichRewardFits({ open }: { open: boolean }) {
   ]
   return (
     <details open={open} className="group rounded-xl border border-line bg-surface-2 px-4 py-3">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[13.5px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[15px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
         Which reward fits?
         <ChevronDown size={16} strokeWidth={2} className="shrink-0 text-ink-muted transition-transform group-open:rotate-180" />
       </summary>
       <div className="mt-3 grid gap-2.5 sm:grid-cols-3">
         {rows.map((r) => (
           <div key={r.title} className="grid gap-1 rounded-lg bg-surface p-3">
-            <div className="flex items-center gap-1.5 text-[13px] font-semibold text-ink">
+            <div className="flex items-center gap-1.5 text-[14px] font-semibold text-ink">
               <r.icon size={14} strokeWidth={1.75} className="text-accent" />
               {r.title}
             </div>
-            <p className="text-[12.5px] leading-[1.5] text-ink-muted">{r.line}</p>
+            <p className="text-[14px] leading-[1.5] text-ink-muted">{r.line}</p>
           </div>
         ))}
       </div>
-      <p className="mt-2.5 text-[12.5px] leading-[1.5] text-ink-muted">No reward: your team still competes on the leaderboard.</p>
+      <p className="mt-2.5 text-[14px] leading-[1.5] text-ink-muted">No reward: your team still competes on the leaderboard.</p>
     </details>
   )
 }
@@ -1349,16 +1346,16 @@ function WhichRewardFits({ open }: { open: boolean }) {
 function FundingLine({ goalCost, drawCost, gap }: { goalCost: number; drawCost: number; gap: FundingGap }) {
   if (gap.shortBy > 0) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#FBF0E1] px-3.5 py-3 text-[13px] leading-[1.5] text-[#7A4A12]">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#FBF0E1] px-3.5 py-3 text-[14px] leading-[1.5] text-[#7A4A12]">
         <span>{shortSentence(gap, dollars)}</span>
-        <Link href="/shift/employers/portal/billing" className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-[12.5px] font-semibold hover:underline">
+        <Link href="/shift/employers/portal/billing" className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-[14px] font-semibold hover:underline">
           Add funds
         </Link>
       </div>
     )
   }
   return (
-    <p className="text-[13px] leading-[1.5] text-ink-muted">
+    <p className="text-[14px] leading-[1.5] text-ink-muted">
       {goalCost > 0 && (
         <>
           This sets aside <strong className="text-ink">{dollars(goalCost)}</strong> from your rewards balance when it goes live. Unused money comes
@@ -1427,7 +1424,7 @@ function VerifiedToggle({
         />
         <span>
           <span className="block text-[14px] font-semibold text-ink">Only people with a work email can win</span>
-          <span className="mt-0.5 block text-[13px] leading-[1.5] text-ink-muted">
+          <span className="mt-0.5 block text-[14px] leading-[1.5] text-ink-muted">
             {domains.length > 0
               ? `They confirm an ${domains.map((d) => `@${d}`).join(' or ')} address in the app. Recommended when you're paying for prizes.`
               : "They confirm a company email address in the app. Recommended when you're paying for prizes."}
@@ -1435,7 +1432,7 @@ function VerifiedToggle({
         </span>
       </label>
       {p.requires_work_email && domains.length === 0 && !live && !canManageAccount && (
-        <p className="mt-3 ml-6 text-[13px] leading-[1.5] text-ink-muted">
+        <p className="mt-3 ml-6 text-[14px] leading-[1.5] text-ink-muted">
           Your company&apos;s email domain isn&apos;t set yet. Ask an admin to add it in Settings, under Email domains.
         </p>
       )}
@@ -1447,7 +1444,7 @@ function VerifiedToggle({
               Add
             </Button>
           </div>
-          {err && <p className="mt-1.5 text-[12.5px] text-ep-danger">{err}</p>}
+          {err && <p className="mt-1.5 text-[14px] text-ep-danger">{err}</p>}
         </div>
       )}
     </div>
@@ -1490,7 +1487,7 @@ function OfficeToggle({
         />
         <span>
           <span className="block text-[14px] font-semibold text-ink">Only trips to or from our office</span>
-          <span className="mt-0.5 block text-[13px] leading-[1.5] text-ink-muted">
+          <span className="mt-0.5 block text-[14px] leading-[1.5] text-ink-muted">
             A trip counts if it starts or ends within about a block of the office. Shows your impact on getting people to work.
           </span>
         </span>
@@ -1498,7 +1495,7 @@ function OfficeToggle({
       {on && (
         <div className="mt-3.5 ml-6 grid gap-2">
           {offices.map((o, i) => (
-            <div key={`${o.address}-${i}`} className="flex items-center justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2.5 text-[13.5px] text-ink">
+            <div key={`${o.address}-${i}`} className="flex items-center justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2.5 text-[15px] text-ink">
               <span className="flex min-w-0 items-center gap-2">
                 <MapPin size={15} className="shrink-0 text-accent" />
                 <span className="truncate">{o.address}</span>
@@ -1511,12 +1508,12 @@ function OfficeToggle({
             </div>
           ))}
           {!locked && remaining.length > 1 && (
-            <button type="button" onClick={() => onChange(true, [...offices, ...remaining])} className="flex items-center gap-1.5 justify-self-start text-[13px] font-semibold text-accent hover:underline">
+            <button type="button" onClick={() => onChange(true, [...offices, ...remaining])} className="flex items-center gap-1.5 justify-self-start text-[14px] font-semibold text-accent hover:underline">
               <Plus size={14} /> Add all {remaining.length} of your saved locations
             </button>
           )}
           {!locked && remaining.map((r) => (
-            <button key={r.address} type="button" onClick={() => onChange(true, [...offices, r])} className="flex items-center gap-1.5 justify-self-start text-[13px] font-semibold text-accent hover:underline">
+            <button key={r.address} type="button" onClick={() => onChange(true, [...offices, r])} className="flex items-center gap-1.5 justify-self-start text-[14px] font-semibold text-accent hover:underline">
               <Plus size={14} /> Use {r.address.split(',')[0]} (saved location)
             </button>
           ))}
@@ -1535,7 +1532,7 @@ function OfficeToggle({
             />
           ) : (
             !locked && (
-              <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1.5 justify-self-start text-[13px] font-semibold text-accent hover:underline">
+              <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1.5 justify-self-start text-[14px] font-semibold text-accent hover:underline">
                 <Plus size={14} /> Add {offices.length === 0 ? 'an office' : 'another office'}
               </button>
             )
@@ -1577,7 +1574,7 @@ function MoreRules({ rules, onChange }: { rules: CountingRules | null; onChange:
                 const modes = on ? eff.modes.filter((x) => x !== m) : [...eff.modes, m]
                 if (modes.length > 0) setRules({ modes })
               }}
-              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium ${
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[14px] font-medium ${
                 on ? 'border-accent bg-accent-soft text-accent-ink' : 'border-line text-ink-muted hover:border-accent'
               }`}
             >
@@ -1588,7 +1585,7 @@ function MoreRules({ rules, onChange }: { rules: CountingRules | null; onChange:
         })}
       </div>
       {eff.modes.includes('carpool') && (
-        <p className="text-[12.5px] text-ink-muted">People mark carpools themselves; the phone can&apos;t tell a carpool from driving alone.</p>
+        <p className="text-[14px] text-ink-muted">People mark carpools themselves; the phone can&apos;t tell a carpool from driving alone.</p>
       )}
       <div className="grid grid-cols-2 gap-3.5">
         <div>
@@ -1614,7 +1611,7 @@ function MoreRules({ rules, onChange }: { rules: CountingRules | null; onChange:
           </select>
         </div>
       </div>
-      <button type="button" className="justify-self-start text-[13px] font-semibold text-accent hover:underline" onClick={() => onChange(office)}>
+      <button type="button" className="justify-self-start text-[14px] font-semibold text-accent hover:underline" onClick={() => onChange(office)}>
         Reset to the usual rules
       </button>
     </div>
@@ -1646,7 +1643,7 @@ function PhonePreview({
   const phone = 'rounded-[26px] bg-[#191A2E] p-4 shadow-md'
   if (kind === 'none' || !p) {
     return (
-      <div className="rounded-xl border border-line bg-surface p-4 text-[13px] leading-[1.55] text-ink">
+      <div className="rounded-xl border border-line bg-surface p-4 text-[14px] leading-[1.55] text-ink">
         <p>This challenge shows on the Challenges list in the app, with its dates and the leaderboard.</p>
       </div>
     )
@@ -1659,21 +1656,21 @@ function PhonePreview({
     const description = p.prize_description.trim() || 'a prize'
     return (
       <div className="grid gap-3">
-        <div className="rounded-xl border border-line bg-surface p-4 text-[13px] leading-[1.55] text-ink">
+        <div className="rounded-xl border border-line bg-surface p-4 text-[14px] leading-[1.55] text-ink">
           Until the draw, the app shows the challenge on its Challenges list with the dates and the leaderboard. People learn
           about the {kind === 'drawing' ? 'drawing' : 'leaderboard prize'} from your announcement.
         </div>
-        <div className="text-[12.5px] font-semibold text-ink-muted">After the draw, winners see</div>
+        <div className="text-[14px] font-semibold text-ink-muted">After the draw, winners see</div>
         {p.funded_from_pool ? (
           <div className={phone}>
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#BAF14D]">Your Rewards</div>
+            <div className="mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#BAF14D]">Your Rewards</div>
             <div className="flex items-center gap-3 rounded-[14px] border border-[rgba(186,241,77,0.35)] bg-[rgba(186,241,77,0.10)] p-3.5">
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#2a2a3e] text-[15px] font-bold text-white">
                 {employer.trim().charAt(0).toUpperCase() || 'S'}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[15px] font-bold text-white">{title}</div>
-                <div className="mt-0.5 truncate text-[12.5px] font-bold text-[#BAF14D]">Pick where to spend it</div>
+                <div className="mt-0.5 truncate text-[14px] font-bold text-[#BAF14D]">Pick where to spend it</div>
               </div>
               <div className="text-[15px] font-extrabold text-[#BAF14D]">{amount}</div>
               <ChevronRight size={20} strokeWidth={1.75} className="shrink-0 text-white/60" />
@@ -1684,9 +1681,9 @@ function PhonePreview({
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 border-l-[3px] border-l-[#BAF14D] bg-[#242538] p-4">
               <PartyPopper size={24} strokeWidth={1.75} className="shrink-0 text-[#BAF14D]" />
               <div className="min-w-0 flex-1">
-                <div className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-white/75">{employer} challenge</div>
+                <div className="text-[13px] font-bold uppercase tracking-[0.06em] text-white/75">{employer} challenge</div>
                 <div className="mt-0.5 text-[15px] font-bold leading-[1.3] text-white">{wonTitle}</div>
-                <div className="mt-1 text-[12.5px] leading-[1.5] text-white/75">
+                <div className="mt-1 text-[14px] leading-[1.5] text-white/75">
                   You won {description}. {employer} hands it out: tap Claim so they know who to give it to.
                 </div>
               </div>
@@ -1709,11 +1706,11 @@ function PhonePreview({
       <div className="flex items-center gap-3 rounded-2xl border border-white/10 border-l-[3px] border-l-[#BAF14D] bg-[#242538] p-4">
         <Gift size={24} strokeWidth={1.75} className="shrink-0 text-[#BAF14D]" />
         <div className="min-w-0 flex-1">
-          <div className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-white/75">{employer} challenge</div>
+          <div className="text-[13px] font-bold uppercase tracking-[0.06em] text-white/75">{employer} challenge</div>
           <div className="mt-0.5 text-[15px] font-bold leading-[1.3] text-white">
             Reach {goal} trips, win {reward}
           </div>
-          <div className="mt-1 text-[12.5px] leading-[1.5] text-white/75">
+          <div className="mt-1 text-[14px] leading-[1.5] text-white/75">
             {notStarted ? `Starts ${startWords}. Trips from then on count.` : `0 of ${goal} trips · ${spots} of ${spots} spots left`}
           </div>
           {!notStarted && (

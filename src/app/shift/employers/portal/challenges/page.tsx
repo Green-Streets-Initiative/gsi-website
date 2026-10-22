@@ -928,7 +928,7 @@ export default function ChallengesPage() {
     <div className="grid grid-cols-1 gap-6">
       <PortalPageHead
         title="Challenges"
-        subtitle="Create friendly competitions to spark participation"
+        subtitle="Plan, launch and run your challenges"
         actions={
           !builderOpen && canManage && (
             <div className="flex flex-wrap gap-2">
@@ -948,7 +948,7 @@ export default function ChallengesPage() {
       {/* Status strip: everything on the page in one glance. A tile filters
           the list; the current tile again shows all (Keith 2026-09-30). */}
       {!builderOpen && (challenges.length > 0 || yearPlan.drafts.length > 0 || builderDrafts.length > 0) && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
           {(
             [
               ['active', 'Active', counts.active, 'success'],
@@ -964,13 +964,13 @@ export default function ChallengesPage() {
                 type="button"
                 onClick={() => setView(on ? 'all' : key)}
                 aria-pressed={on}
-                className={`rounded-[14px] border px-4 py-3 text-left shadow-sm transition-colors ${
+                className={`min-w-0 rounded-[14px] border px-2.5 py-2.5 text-left shadow-sm transition-colors sm:px-4 sm:py-3 ${
                   on ? 'border-accent bg-accent-softer' : 'border-line bg-surface hover:border-ink-faint'
                 }`}
               >
-                <div className="text-[22px] font-bold leading-none text-ink">{n}</div>
-                <div className="mt-1.5 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted">
-                  <span className={`h-[6px] w-[6px] rounded-full ${
+                <div className="text-[20px] font-bold leading-none text-ink sm:text-[22px]">{n}</div>
+                <div className="mt-1.5 flex items-center gap-1.5 truncate text-[13px] font-semibold text-ink-muted sm:text-[14px]">
+                  <span className={`hidden h-[6px] w-[6px] shrink-0 rounded-full sm:inline-block ${
                     tone === 'success' ? 'bg-accent' : tone === 'info' ? 'bg-ep-info' : tone === 'warn' ? 'bg-ep-warning' : 'bg-ink-faint'
                   }`} />
                   {label}
@@ -992,8 +992,7 @@ export default function ChallengesPage() {
             No challenges yet
           </div>
           <p className="mx-auto mb-5 max-w-[40ch] text-[14px] text-ink-muted">
-            Kick off a friendly competition to spark sign-ups and active trips.
-            Set a date range and add optional prizes.
+            A friendly competition gives your team a reason to try a new way in.
           </p>
           {canManage && (
             <div className="flex flex-wrap justify-center gap-2">
@@ -1078,7 +1077,7 @@ export default function ChallengesPage() {
                         {waitingBank ? 'Waiting for bank payment' : failed ? 'Needs attention' : 'Draft'}
                       </Badge>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-ink-muted">
+                    <div className="flex flex-wrap items-center gap-3.5 text-[14px] text-ink-muted">
                       {body.starts_on && body.ends_on && (
                         <span className="flex items-center gap-1.5">
                           <Calendar size={14} strokeWidth={1.75} />
@@ -1091,18 +1090,14 @@ export default function ChallengesPage() {
                       </span>
                     </div>
                     {waitingBank ? (
-                      <p className="mt-2 text-[13px] leading-[1.5] text-ink">
+                      <p className="mt-2 text-[14px] leading-[1.5] text-ink">
                         It launches by itself when the bank payment clears, usually in 3 to 5 business days.
                       </p>
                     ) : failed ? (
-                      <p className="mt-2 text-[13px] font-semibold leading-[1.5] text-ep-danger">{reasonText(pl?.reason)}</p>
-                    ) : (
-                      <p className="mt-2 text-[12.5px] leading-[1.5] text-ink-muted">
-                        Nothing is visible to your team until it launches. Continue to run the pre-flight check and launch it.
-                      </p>
-                    )}
+                      <p className="mt-2 text-[14px] font-semibold leading-[1.5] text-ep-danger">{reasonText(pl?.reason)}</p>
+                    ) : null}
                     {by && (
-                      <p className="mt-1 text-[12.5px] leading-[1.5] text-ink-muted">
+                      <p className="mt-2 text-[14px] leading-[1.5] text-ink-muted">
                         {d.source === 'import'
                           ? 'Moved here from your browser'
                           : d.source === 'assistant'
@@ -1146,7 +1141,7 @@ export default function ChallengesPage() {
                     <strong className="text-[16px]">{d.run.template.title}</strong>
                     <Badge tone="warn" dot={false}>Draft</Badge>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-ink-tertiary">
+                  <div className="flex flex-wrap items-center gap-3.5 text-[14px] text-ink-tertiary">
                     <span className="flex items-center gap-1.5">
                       <Calendar size={14} strokeWidth={1.75} />
                       {runRange(d.run)}
@@ -1158,10 +1153,6 @@ export default function ChallengesPage() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-2 text-[13.5px] leading-[1.5] text-ink">{d.run.template.line}</p>
-                  <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-muted">
-                    Drafted by your year plan. Nothing starts until you launch it, and skipping this one doesn&apos;t change the rest of the year.
-                  </p>
                 </div>
                 {canManage && (
                   <div className="flex gap-2">
@@ -1252,7 +1243,7 @@ export default function ChallengesPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-3.5 text-[13px] text-ink-muted">
+                    <div className="flex flex-wrap items-center gap-3.5 text-[14px] text-ink-muted">
                       <span className="flex items-center gap-1.5">
                         <Calendar size={14} strokeWidth={1.75} />
                         {formatDate(c.starts_at)} to{' '}
@@ -1272,15 +1263,15 @@ export default function ChallengesPage() {
                       )}
                     </div>
                     {byAssistant[c.id] && (
-                      <p className="mt-1.5 text-[12.5px] text-ink-muted">Set up with the assistant by {byAssistant[c.id]}</p>
+                      <p className="mt-1.5 text-[14px] text-ink-muted">Set up with the assistant by {byAssistant[c.id]}</p>
                     )}
                     {c.is_flagship && (
-                      <p className="mt-1.5 text-[12.5px] text-ink-muted">
+                      <p className="mt-1.5 text-[14px] text-ink-muted">
                         A citywide challenge run by Green Streets. Your team takes part automatically; you can&apos;t edit it here.
                       </p>
                     )}
                     {needsFunding && (
-                      <p className="mt-1.5 text-[12.5px] font-semibold leading-[1.5] text-ep-danger">
+                      <p className="mt-1.5 text-[14px] font-semibold leading-[1.5] text-ep-danger">
                         {linkify(shortSentence(gap, dollars, 'on the Billing page'))}
                       </p>
                     )}
@@ -1291,7 +1282,7 @@ export default function ChallengesPage() {
                         href={onThisSite(rulesPageUrl(c.id))}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mr-1 flex items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline"
+                        className="mr-1 flex items-center gap-1.5 text-[14px] font-semibold text-accent hover:underline"
                       >
                         <ExternalLink size={14} strokeWidth={1.75} />
                         Rules page
@@ -1686,7 +1677,7 @@ function PrizeCard({
           </div>
           <div className="min-w-0">
             <div className="text-[14px] font-semibold text-ink">{p.name}</div>
-            <div className="text-[12.5px] leading-[1.5] text-ink-muted">
+            <div className="text-[14px] leading-[1.5] text-ink-muted">
               {p.award_mode === 'drawing' ? 'Random drawing' : 'Top of the leaderboard'}{' '}
               · {p.winner_count} {p.winner_count === 1 ? 'winner' : 'winners'}{' '}
               · {p.funded_from_pool
@@ -1696,13 +1687,13 @@ function PrizeCard({
                 : 'You hand it out'}
             </div>
             {p.draw_status === 'pending' && p.auto_draw && !autoDrawError && (
-              <div className="mt-1 flex items-center gap-1.5 text-[12.5px] text-ink-muted">
+              <div className="mt-1 flex items-center gap-1.5 text-[14px] text-ink-muted">
                 <Clock size={13} strokeWidth={1.75} />
                 Draws itself the day after the challenge ends.
               </div>
             )}
             {autoDrawError && (
-              <div className="mt-1 text-[12.5px] font-semibold leading-[1.5] text-ep-danger">{linkify(autoDrawError)}</div>
+              <div className="mt-1 text-[14px] font-semibold leading-[1.5] text-ep-danger">{linkify(autoDrawError)}</div>
             )}
           </div>
         </div>
@@ -1761,9 +1752,9 @@ function PrizeCard({
       {expanded && winners.length > 0 && (
         <div className="border-t border-line-2 px-4 py-3">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[480px] text-left text-[13px]">
+            <table className="w-full min-w-[480px] text-left text-[14px]">
               <thead>
-                <tr className="text-[12.5px] font-semibold text-ink-muted">
+                <tr className="text-[14px] font-semibold text-ink-muted">
                   <th className="pb-2 font-semibold">Winner</th>
                   <th className="pb-2 text-right font-semibold">{PRIZE_METRIC_LABELS[p.metric]}</th>
                   {p.funded_from_pool && <th className="pb-2 text-right font-semibold">Amount</th>}
@@ -1815,18 +1806,18 @@ function PrizeCard({
             </table>
           </div>
           {p.draw_status === 'drawn' && !p.funded_from_pool && (
-            <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-muted">
+            <p className="mt-3 text-[14px] leading-[1.5] text-ink-muted">
               You hand out this prize yourself. If someone doesn&apos;t claim theirs, mark them as forfeited.
             </p>
           )}
           {p.funded_from_pool && catalogWinners.length > 0 && (
-            <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-muted">
+            <p className="mt-3 text-[14px] leading-[1.5] text-ink-muted">
               Winners pick where to spend their gift card in the app: a local shop or a national brand. A card nobody
               picks within 60 days expires and its value comes back to your rewards balance.
             </p>
           )}
           {legacy && fulfilledCount > 0 && fulfilledCount === winners.length && p.funded_from_pool && (
-            <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-muted">
+            <p className="mt-3 text-[14px] leading-[1.5] text-ink-muted">
               Winners got an email with their gift card link.
             </p>
           )}

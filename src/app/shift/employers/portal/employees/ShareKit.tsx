@@ -345,7 +345,7 @@ export default function ShareKit() {
               </div>
             </div>
 
-            <p className="mb-4 text-[14px] font-semibold uppercase tracking-[0.08em] text-ink-tertiary">
+            <p className="mb-4 text-[13px] font-semibold uppercase tracking-[0.08em] text-ink-tertiary">
               Manual steps (if the link doesn&apos;t work)
             </p>
             <div className="mb-5 flex flex-col items-start gap-3 rounded-[10px] border border-line bg-surface-2 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">

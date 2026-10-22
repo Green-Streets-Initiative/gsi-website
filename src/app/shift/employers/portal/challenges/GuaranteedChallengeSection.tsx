@@ -292,7 +292,7 @@ export default function GuaranteedChallengeSection({
 
   if (loadFailed && !progress) {
     return (
-      <p className="text-[13.5px] text-ink-muted">
+      <p className="text-[15px] text-ink-muted">
         Couldn&apos;t load this challenge&apos;s prize progress. Reload the page to try again.
       </p>
     )
@@ -323,7 +323,7 @@ export default function GuaranteedChallengeSection({
                       {st.label}
                     </Badge>
                   </div>
-                  <div className="text-[12.5px] leading-[1.5] text-ink-muted">
+                  <div className="text-[14px] leading-[1.5] text-ink-muted">
                     First {p.spots} to reach {p.goal} trips ·{' '}
                     {p.funded && p.amount_cents ? `${dollars(p.amount_cents)} gift card each` : p.description}
                     {p.requires_work_email && ' · verified employees only'}
@@ -353,7 +353,7 @@ export default function GuaranteedChallengeSection({
             </div>
 
             {shortBy > 0 && (
-              <div className="border-t border-line-2 px-4 py-3 text-[12.5px] font-semibold leading-[1.5] text-ep-danger">
+              <div className="border-t border-line-2 px-4 py-3 text-[14px] font-semibold leading-[1.5] text-ep-danger">
                 {linkify(
                   `This prize needs ${dollars(liveCost(p))} and your rewards balance has ${dollars(available)} available. Add ${dollars(shortBy)} on the Billing page to take it live.`,
                 )}
@@ -362,7 +362,7 @@ export default function GuaranteedChallengeSection({
 
             {p.published_at && (
               <div className="border-t border-line-2 px-4 py-3.5">
-                <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
+                <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[14px]">
                   <span>
                     <strong className="text-[15px] text-ink">{p.winners}</strong>{' '}
                     <span className="text-ink-muted">of {p.spots} spots taken · {left} left</span>
@@ -375,18 +375,18 @@ export default function GuaranteedChallengeSection({
                   <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
                 </div>
                 {p.funded && (
-                  <div className="mt-2 text-[12.5px] text-ink-muted">
+                  <div className="mt-2 text-[14px] text-ink-muted">
                     {dollars(p.spent_cents)} paid to winners · {dollars(p.held_cents)} still set aside from your rewards balance
                   </div>
                 )}
                 {p.requires_work_email && (
-                  <div className="mt-1 text-[12.5px] text-ink-muted">
-                    {progress.work_emails_verified} of {progress.members} members have verified a work email
+                  <div className="mt-1 text-[14px] text-ink-muted">
+                    Work email verified: {progress.work_emails_verified} of {progress.members}
                   </div>
                 )}
                 {canAddSpots && (
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <label htmlFor={`spots-${p.prize_id}`} className="text-[13px] font-semibold text-ink">
+                    <label htmlFor={`spots-${p.prize_id}`} className="text-[14px] font-semibold text-ink">
                       Add spots
                     </label>
                     <input
@@ -411,10 +411,10 @@ export default function GuaranteedChallengeSection({
                     >
                       {busy === `spots:${p.prize_id}` ? 'Adding...' : 'Add'}
                     </Button>
-                    <span className="text-[12.5px] text-ink-muted">
+                    <span className="text-[14px] text-ink-muted">
                       {p.funded && p.amount_cents
                         ? `${dollars(p.amount_cents)} a spot is set aside from your rewards balance.`
-                        : 'No money is set aside; you hand out the prize.'}
+                        : 'You hand out this prize yourself.'}
                     </span>
                   </div>
                 )}
@@ -424,15 +424,15 @@ export default function GuaranteedChallengeSection({
             {p.winner_list.length > 0 && (
               <div className="border-t border-line-2 px-4 py-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[13px] font-semibold text-ink">Winners</span>
+                  <span className="text-[14px] font-semibold text-ink">Winners</span>
                   <Button variant="ghost" size="sm" icon={Download} onClick={() => exportCsv(challenge.name, p)}>
                     Export CSV
                   </Button>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[520px] text-left text-[13px]">
+                  <table className="w-full min-w-[520px] text-left text-[14px]">
                     <thead>
-                      <tr className="text-[12.5px] font-semibold text-ink-muted">
+                      <tr className="text-[14px] font-semibold text-ink-muted">
                         <th className="pb-2 font-semibold">Name</th>
                         {!p.funded && <th className="pb-2 font-semibold">Email</th>}
                         <th className="pb-2 font-semibold">Reached the goal</th>
@@ -462,7 +462,7 @@ export default function GuaranteedChallengeSection({
                                 {w.status !== 'forfeited' && (
                                   <button
                                     type="button"
-                                    className="whitespace-nowrap text-[12.5px] font-semibold text-accent hover:underline disabled:opacity-50"
+                                    className="whitespace-nowrap text-[14px] font-semibold text-accent hover:underline disabled:opacity-50"
                                     disabled={busy !== null}
                                     title={w.handed_out_at ? 'Undo' : 'Mark as handed out'}
                                     aria-label={w.handed_out_at ? `Mark ${w.name || 'this winner'} as not handed out` : `Mark ${w.name || 'this winner'} as handed out`}
@@ -490,13 +490,13 @@ export default function GuaranteedChallengeSection({
                   </table>
                 </div>
                 {!p.funded && (
-                  <p className="mt-2.5 text-[12.5px] leading-[1.5] text-ink-muted">
+                  <p className="mt-2.5 text-[14px] leading-[1.5] text-ink-muted">
                     Winners share their name and email when they tap Claim in the app. We remind anyone who
                     hasn&apos;t after 3 and 7 days.
                   </p>
                 )}
                 {p.funded && (
-                  <p className="mt-2.5 text-[12.5px] leading-[1.5] text-ink-muted">
+                  <p className="mt-2.5 text-[14px] leading-[1.5] text-ink-muted">
                     Gift cards are paid from your rewards balance as people reach the goal. A card nobody picks
                     within 60 days expires and its value comes back to your rewards balance.
                   </p>

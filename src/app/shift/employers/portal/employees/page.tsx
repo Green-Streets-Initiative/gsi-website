@@ -844,7 +844,7 @@ function EmployeeDrawer({
                           alt="Shift"
                           className="h-[18px] w-auto"
                         />
-                        <span className="text-[14px] font-bold text-[#52B788]">Green Streets</span>
+                        <span className="text-[13px] font-bold text-[#52B788]">Green Streets</span>
                       </div>
                     </div>
                     <div className="bg-white px-4 py-4 text-[14px] leading-relaxed text-[#1a1a2e]">
@@ -857,7 +857,7 @@ function EmployeeDrawer({
 
                       {activeChallenges.length > 0 && (
                         <div className="mb-3 rounded-lg bg-[#E7F0EA] px-3.5 py-3">
-                          <div className="mb-1.5 text-[14px] font-bold text-[#2D6A4F]">
+                          <div className="mb-1.5 text-[13px] font-bold text-[#2D6A4F]">
                             Challenge{activeChallenges.length > 1 ? 's' : ''} under way
                           </div>
                           {activeChallenges.map((c) => (
@@ -867,7 +867,7 @@ function EmployeeDrawer({
                                 <span className="text-[#2D6A4F]"> — {c.prize_description}</span>
                               )}
                               <br />
-                              <span className="text-[14px] text-[#6b7280]">Ends {formatDateShort(c.ends_at)}</span>
+                              <span className="text-[13px] text-[#6b7280]">Ends {formatDateShort(c.ends_at)}</span>
                             </div>
                           ))}
                         </div>
@@ -875,7 +875,7 @@ function EmployeeDrawer({
 
                       {teamSize > 1 && (
                         <div className="mb-3 rounded-lg bg-[#F0F4FF] px-3.5 py-3">
-                          <div className="mb-1 text-[14px] font-bold text-[#3B5998]">Team leaderboard</div>
+                          <div className="mb-1 text-[13px] font-bold text-[#3B5998]">Team leaderboard</div>
                           <p className="text-[14px]">
                             {teamSize} people from {groupName} are on the leaderboard. Every active trip
                             you log moves you up.
@@ -894,7 +894,7 @@ function EmployeeDrawer({
                         Open Shift &rarr;
                       </span>
                     </div>
-                    <div className="border-t border-line bg-[#f9fafb] px-4 py-2.5 text-center text-[14px] text-[#5B6075]">
+                    <div className="border-t border-line bg-[#f9fafb] px-4 py-2.5 text-center text-[13px] text-[#5B6075]">
                       Sent on behalf of {groupName}
                     </div>
                   </div>

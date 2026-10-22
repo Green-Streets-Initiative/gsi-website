@@ -175,7 +175,7 @@ export default function AwardsRecap({ challenge }: { challenge: Challenge }) {
   if (status === 'failed') {
     return (
       <div className="mt-5 border-t border-line-2 pt-5">
-        <p className="text-[13.5px] text-ink-muted">
+        <p className="text-[15px] text-ink-muted">
           The awards recap couldn&apos;t load just now. Reload the page to try again.
         </p>
       </div>
@@ -189,7 +189,7 @@ export default function AwardsRecap({ challenge }: { challenge: Challenge }) {
           <Award size={16} strokeWidth={1.75} className="text-ink-muted" />
           <h4 className="text-[15px] font-bold text-ink">Awards recap</h4>
         </div>
-        <p className="mt-1.5 text-[13.5px] leading-[1.5] text-ink-muted">
+        <p className="mt-1.5 text-[15px] leading-[1.5] text-ink-muted">
           The recap is put together the morning after the challenge ends.
         </p>
       </div>
@@ -209,7 +209,7 @@ export default function AwardsRecap({ challenge }: { challenge: Challenge }) {
             <Award size={16} strokeWidth={1.75} className="text-accent" />
             <h4 className="text-[15px] font-bold text-ink">Awards recap</h4>
           </div>
-          <p className="mt-1 text-[13.5px] leading-[1.5] text-ink-muted">
+          <p className="mt-1 text-[15px] leading-[1.5] text-ink-muted">
             Everyone who took part got one award for what they did most distinctively. This is the
             group&apos;s version to share.
           </p>
@@ -225,7 +225,7 @@ export default function AwardsRecap({ challenge }: { challenge: Challenge }) {
         </blockquote>
       )}
 
-      {totals && <p className="mt-3 text-[13.5px] leading-[1.5] text-ink-muted">{totals}</p>}
+      {totals && <p className="mt-3 text-[15px] leading-[1.5] text-ink-muted">{totals}</p>}
 
       {headlines.length > 0 && (
         <div className="mt-5">
@@ -246,11 +246,11 @@ export default function AwardsRecap({ challenge }: { challenge: Challenge }) {
                 <div className="min-w-0 flex-1">
                   <p className="text-[14px] font-semibold text-ink">{h.name}</p>
                   {h.flagged ? (
-                    <p className="text-[13px] text-ink-muted">
+                    <p className="text-[14px] text-ink-muted">
                       Being checked before it&apos;s announced.
                     </p>
                   ) : (
-                    <p className="truncate text-[13px] text-ink-muted">
+                    <p className="truncate text-[14px] text-ink-muted">
                       {h.name_or_colleague ?? 'A colleague'}
                       {h.value_text ? ` · ${h.value_text}` : ''}
                     </p>
@@ -261,7 +261,7 @@ export default function AwardsRecap({ challenge }: { challenge: Challenge }) {
             ))}
           </ul>
           {!recap.show_names && (
-            <p className="mt-2 text-[12.5px] leading-[1.5] text-ink-tertiary">
+            <p className="mt-2 text-[14px] leading-[1.5] text-ink-tertiary">
               Names are hidden because this group&apos;s leaderboard isn&apos;t public. Each person
               sees their own award in the Shift app.
             </p>
@@ -277,7 +277,7 @@ export default function AwardsRecap({ challenge }: { challenge: Challenge }) {
           <ul className="mt-2 grid gap-1.5">
             {spread.map((s) => (
               <li key={s.key} className="grid grid-cols-[minmax(0,9rem)_1fr_auto] items-center gap-3">
-                <span className="truncate text-[13.5px] text-ink">{s.name}</span>
+                <span className="truncate text-[15px] text-ink">{s.name}</span>
                 <span className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
                   <span
                     className="block h-full rounded-full"
@@ -287,7 +287,7 @@ export default function AwardsRecap({ challenge }: { challenge: Challenge }) {
                     }}
                   />
                 </span>
-                <span className="text-[13px] tabular-nums text-ink-muted">
+                <span className="text-[14px] tabular-nums text-ink-muted">
                   {s.count} {s.count === 1 ? 'person' : 'people'}
                 </span>
               </li>

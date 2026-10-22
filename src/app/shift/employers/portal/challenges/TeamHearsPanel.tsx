@@ -70,12 +70,12 @@ function firstTripLine(modes: string[] | undefined): string {
 function Notification({ title, body }: { title: string; body: string }) {
   return (
     <div className="max-w-[420px] rounded-[14px] border border-line bg-surface px-3.5 py-3 shadow-sm">
-      <div className="mb-1 flex items-center gap-2 text-[11.5px] font-semibold uppercase tracking-[0.04em] text-ink-muted">
-        <span className="grid h-[18px] w-[18px] place-items-center rounded-[5px] bg-accent text-[10px] font-extrabold text-white">S</span>
+      <div className="mb-1 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.04em] text-ink-muted">
+        <span className="grid h-[18px] w-[18px] place-items-center rounded-[5px] bg-accent text-[11px] font-extrabold text-white">S</span>
         Shift
       </div>
-      <div className="text-[13.5px] font-semibold leading-[1.35] text-ink">{title}</div>
-      <div className="mt-0.5 text-[13px] leading-[1.45] text-ink">{body}</div>
+      <div className="text-[15px] font-semibold leading-[1.35] text-ink">{title}</div>
+      <div className="mt-0.5 text-[14px] leading-[1.45] text-ink">{body}</div>
     </div>
   )
 }
@@ -94,11 +94,11 @@ function Moment({
   return (
     <li className="grid gap-2 border-t border-line-2 py-4 first:border-t-0 first:pt-0 sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-5">
       <div>
-        <div className="text-[13.5px] font-semibold text-ink">{label}</div>
-        <div className="text-[13px] leading-[1.45] text-ink-muted">{when}</div>
+        <div className="text-[15px] font-semibold text-ink">{label}</div>
+        <div className="text-[14px] leading-[1.45] text-ink-muted">{when}</div>
       </div>
       <div className="grid gap-2">
-        <p className="text-[13px] leading-[1.5] text-ink-muted">{who}</p>
+        <p className="text-[14px] leading-[1.5] text-ink-muted">{who}</p>
         {children}
       </div>
     </li>
@@ -192,7 +192,7 @@ export default function TeamHearsPanel({
           <BellRing size={17} strokeWidth={1.75} className="mt-0.5 shrink-0 text-accent" />
           <span>
             <span className="block text-[14px] font-semibold text-ink">What your team hears from Shift</span>
-            <span className="block text-[13px] leading-[1.5] text-ink-muted">{summary}</span>
+            <span className="block text-[14px] leading-[1.5] text-ink-muted">{summary}</span>
           </span>
         </span>
         {open ? (
@@ -204,7 +204,7 @@ export default function TeamHearsPanel({
 
       {open && (
         <div className="mt-4 grid gap-5">
-          <p className="text-[13px] leading-[1.55] text-ink">
+          <p className="text-[14px] leading-[1.55] text-ink">
             These go out on their own as a phone notification and a note in the app&apos;s inbox, never by email. Anyone
             who turned off challenge updates or is on vacation mode in Shift doesn&apos;t get them. The examples use
             made-up numbers; each person sees their own.
@@ -281,21 +281,21 @@ export default function TeamHearsPanel({
               <Award size={16} strokeWidth={1.75} className="text-accent" />
               An award for everyone who took part
             </div>
-            <p className="mb-3 text-[13px] leading-[1.55] text-ink">
+            <p className="mb-3 text-[14px] leading-[1.55] text-ink">
               The morning after it ends, each person who logged a trip gets one award in the app for what they did most,
               with a tip for next time. Each award also has a headline: the person who did the most of it. Headlines
               show names only when your leaderboard is public; otherwise they read &quot;A colleague&quot;. Once it
               ends, the recap shows here.
             </p>
             {catalog === null ? (
-              <p className="text-[13px] text-ink-muted">Loading the awards...</p>
+              <p className="text-[14px] text-ink-muted">Loading the awards...</p>
             ) : (
               <ul className="flex flex-wrap gap-1.5">
                 {catalog.map((a) => (
                   <li
                     key={a.key}
                     title={a.measures}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[12.5px] font-semibold text-ink"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[14px] font-semibold text-ink"
                   >
                     <span className="h-2 w-2 rounded-full" style={{ background: a.color }} aria-hidden />
                     {a.name}

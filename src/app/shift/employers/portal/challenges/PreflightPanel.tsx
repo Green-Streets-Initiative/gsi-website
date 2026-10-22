@@ -88,7 +88,7 @@ export default function PreflightPanel({
           <h4 id="preflight-title" className="text-[14px] font-bold text-ink">
             Pre-flight check
           </h4>
-          <span className="text-[13px] text-ink-muted" aria-live="polite">
+          <span className="text-[14px] text-ink-muted" aria-live="polite">
             {checking || !check
               ? 'Checking...'
               : allClear
@@ -102,7 +102,7 @@ export default function PreflightPanel({
           type="button"
           onClick={onRerun}
           disabled={checking}
-          className="flex items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline disabled:opacity-60"
+          className="flex items-center gap-1.5 text-[14px] font-semibold text-accent hover:underline disabled:opacity-60"
         >
           <RefreshCw size={13} strokeWidth={2} aria-hidden />
           Run it again
@@ -119,21 +119,21 @@ export default function PreflightPanel({
               <Mark ok={problems.length === 0} pending={checking || !check} />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                  <span className="text-[13px] font-semibold text-ink-muted">{l.label}</span>
+                  <span className="text-[14px] font-semibold text-ink-muted">{l.label}</span>
                   {step && (
-                    <button type="button" onClick={() => onFix(step)} className="text-[13px] font-semibold text-accent hover:underline">
+                    <button type="button" onClick={() => onFix(step)} className="text-[14px] font-semibold text-accent hover:underline">
                       {problems.length > 0 ? 'Fix' : 'Change'}
                     </button>
                   )}
                 </div>
-                <p className="text-[13.5px] leading-[1.5] text-ink">{l.value}</p>
+                <p className="text-[15px] leading-[1.5] text-ink">{l.value}</p>
                 {problems.map((p) => (
-                  <p key={p.code + (p.prize ?? '')} className="mt-1 text-[13px] font-semibold leading-[1.5] text-ep-danger">
+                  <p key={p.code + (p.prize ?? '')} className="mt-1 text-[14px] font-semibold leading-[1.5] text-ep-danger">
                     {linkify(p.message)}
                   </p>
                 ))}
                 {extra.map((n) => (
-                  <p key={n.code} className="mt-1 flex gap-1.5 text-[13px] leading-[1.5] text-ink-muted">
+                  <p key={n.code} className="mt-1 flex gap-1.5 text-[14px] leading-[1.5] text-ink-muted">
                     <Info size={14} className="mt-[3px] shrink-0" aria-hidden />
                     {n.message}
                   </p>
@@ -147,9 +147,9 @@ export default function PreflightPanel({
           <li className="flex gap-3 px-4 py-3">
             <Mark ok={false} pending={false} />
             <div className="min-w-0 flex-1">
-              <span className="text-[13px] font-semibold text-ink-muted">Who answers questions</span>
+              <span className="text-[14px] font-semibold text-ink-muted">Who answers questions</span>
               {by('contact').map((p) => (
-                <p key={p.code} className="mt-1 text-[13px] font-semibold leading-[1.5] text-ep-danger">{p.message}</p>
+                <p key={p.code} className="mt-1 text-[14px] font-semibold leading-[1.5] text-ep-danger">{p.message}</p>
               ))}
             </div>
           </li>
@@ -159,8 +159,8 @@ export default function PreflightPanel({
           <li className="flex gap-3 px-4 py-3">
             <Mark ok={!short} pending={checking || !check} />
             <div className="min-w-0 flex-1">
-              <span className="text-[13px] font-semibold text-ink-muted">Rewards balance</span>
-              <p className="text-[13.5px] leading-[1.5] text-ink">
+              <span className="text-[14px] font-semibold text-ink-muted">Rewards balance</span>
+              <p className="text-[15px] leading-[1.5] text-ink">
                 {money.set_aside_now_cents > 0 && (
                   <>
                     Sets aside <strong>{dollars(money.set_aside_now_cents)}</strong> when it launches; unused money comes back when it ends.{' '}
@@ -174,7 +174,7 @@ export default function PreflightPanel({
                 You have <strong>{dollars(money.available_cents)}</strong> available.
               </p>
               {short && (
-                <p className="mt-1 text-[13px] font-semibold leading-[1.5] text-ep-danger">
+                <p className="mt-1 text-[14px] font-semibold leading-[1.5] text-ep-danger">
                   Short by {dollars(money.short_by_cents)}. See below to add it.
                 </p>
               )}
@@ -187,7 +187,7 @@ export default function PreflightPanel({
             <Mark ok={false} pending={false} />
             <div className="min-w-0 flex-1">
               {account.map((p) => (
-                <p key={p.code} className="text-[13px] font-semibold leading-[1.5] text-ep-danger">{linkify(p.message)}</p>
+                <p key={p.code} className="text-[14px] font-semibold leading-[1.5] text-ep-danger">{linkify(p.message)}</p>
               ))}
             </div>
           </li>
@@ -252,17 +252,17 @@ export function ShortfallPanel({
         <Wallet size={20} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-[15px] font-bold leading-[1.35]">You&apos;re {dollars(m.short_by_cents)} short to launch this.</p>
-          <p className="mt-1 text-[13.5px] leading-[1.5]">
+          <p className="mt-1 text-[15px] leading-[1.5]">
             It promises up to {dollars(m.needed_cents)} in gift cards ({promise}). Your rewards balance has {dollars(m.available_cents)} available.
           </p>
 
           {editing && (
-            <p className="mt-2 text-[13px] leading-[1.5]">
+            <p className="mt-2 text-[14px] leading-[1.5]">
               {linkify(`Add ${dollars(topup)} on the Billing page, then save your changes.`)}
             </p>
           )}
           {!compact && !editing && canPay && (
-            <p className="mt-2 text-[13px] leading-[1.5]">
+            <p className="mt-2 text-[14px] leading-[1.5]">
               {card ? (
                 <>
                   &ldquo;Charge {dollars(topup)} to {brand} {card.last4} and launch&rdquo; puts it on that card and launches right away. Or{' '}
@@ -281,13 +281,13 @@ export function ShortfallPanel({
             </p>
           )}
           {!compact && !editing && !canPay && (
-            <p className="mt-2 text-[13px] font-semibold leading-[1.5]">
+            <p className="mt-2 text-[14px] font-semibold leading-[1.5]">
               An admin on your account can add the money. Your draft is saved, so they can open it from the Challenges page and launch it.
             </p>
           )}
-          {compact && <p className="mt-2 text-[13px] leading-[1.5]">You can add the money and launch on the Review step.</p>}
+          {compact && <p className="mt-2 text-[14px] leading-[1.5]">You can add the money and launch on the Review step.</p>}
 
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] font-semibold">
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[14px] font-semibold">
             {fewerSpots != null && fewerSpots > 0 && (
               <button type="button" onClick={onFewerSpots} className="underline underline-offset-2 hover:no-underline">
                 Or lower it to {fewerSpots} {fewerSpots === 1 ? 'spot' : 'spots'} to fit your balance

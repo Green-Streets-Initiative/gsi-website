@@ -189,7 +189,7 @@ export default function InvitedCard({
 
   const stat = (label: string, value: number) => (
     <div className="min-w-0">
-      <div className="text-[14px] font-semibold uppercase tracking-[0.04em] text-ink-tertiary">{label}</div>
+      <div className="text-[13px] font-semibold uppercase tracking-[0.04em] text-ink-tertiary">{label}</div>
       <div className="text-[20px] font-bold leading-tight text-ink">{value}</div>
     </div>
   )

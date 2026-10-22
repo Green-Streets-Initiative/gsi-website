@@ -73,7 +73,7 @@ const pillClasses: Record<Pill['tone'], string> = {
 function StatusPill({ pill }: { pill: Pill }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-[10px] py-[4px] text-[12px] font-semibold leading-none ${pillClasses[pill.tone]}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-[10px] py-[4px] text-[14px] font-semibold leading-none ${pillClasses[pill.tone]}`}
     >
       {pill.tone === 'running' && <span className="h-[7px] w-[7px] rounded-full bg-accent" />}
       {pill.tone === 'waiting' && <span className="h-[7px] w-[7px] rounded-full border-[1.5px] border-accent bg-accent-soft" />}
@@ -95,7 +95,7 @@ export default function YearPlanCard({
   upcoming: SeasonalOption[]
   onLaunch: (o: SeasonalOption) => void
 }) {
-  const { enabled, skipped, drafts, busy, error, savePlan } = plan
+  const { enabled, skipped, busy, error, savePlan } = plan
   const [open, setOpen] = useState(false)
   const [detail, setDetail] = useState<string | null>(null)
 
@@ -130,18 +130,11 @@ export default function YearPlanCard({
 
   // The sentence under the switch: what is drafted now, and what drafts next.
   const nextToDraft = states.find(({ s }) => s.kind === 'drafts_on')
-  const waiting = drafts.map((d) => `${d.run.template.title} (${shortDay(d.run.starts_on)})`)
   const status = !enabled
-    ? "About three weeks before each season starts, a draft appears here and in your weekly email. Nothing starts until an admin launches it."
-    : [
-        waiting.length > 0
-          ? `On. ${waiting.join(' and ')} ${waiting.length === 1 ? 'is' : 'are'} drafted below.`
-          : 'On. Nothing to draft yet.',
-        nextToDraft && nextToDraft.s.kind === 'drafts_on'
-          ? `${waiting.length > 0 ? 'Next up' : 'First up'}: ${nextToDraft.o.template.title} drafts on ${shortDay(nextToDraft.s.day)} for a ${shortDay(nextToDraft.o.run!.starts_on)} start.`
-          : 'Every season on the calendar has been drafted or decided.',
-        'Nothing starts until an admin launches it.',
-      ].join(' ')
+    ? 'A draft appears three weeks before each season. You decide whether to launch it.'
+    : nextToDraft && nextToDraft.s.kind === 'drafts_on'
+      ? `On. Next draft: ${nextToDraft.o.template.title}, ${shortDay(nextToDraft.s.day)}.`
+      : 'On. Every season this year is drafted or decided.'
 
   // Turning the plan on for the first time opens the calendar, so the admin
   // sees the year they just agreed to. After that it stays as they left it.
@@ -153,7 +146,7 @@ export default function YearPlanCard({
   return (
     <Card>
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4">
-        <label className={`flex min-w-0 flex-1 items-start gap-2.5 ${canManage ? 'cursor-pointer' : 'cursor-default'}`}>
+        <label className={`flex min-w-0 flex-1 basis-[280px] items-start gap-2.5 ${canManage ? 'cursor-pointer' : 'cursor-default'}`}>
           <input
             id="year-plan-enabled"
             type="checkbox"
@@ -164,14 +157,14 @@ export default function YearPlanCard({
           />
           <span className="min-w-0">
             <span className="block text-[14px] font-semibold text-ink">Draft each season&apos;s challenge for us</span>
-            <span className="mt-0.5 block max-w-[72ch] text-[13px] leading-[1.5] text-ink-muted">{status}</span>
+            <span className="mt-0.5 block max-w-[72ch] text-[14px] leading-[1.5] text-ink-muted">{status}</span>
           </span>
         </label>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          className="flex items-center gap-1 whitespace-nowrap text-[13.5px] font-semibold text-accent hover:underline"
+          className="flex items-center gap-1 whitespace-nowrap text-[15px] font-semibold text-accent hover:underline"
         >
           <CalendarDays size={14} strokeWidth={1.75} />
           {open ? 'Hide the year' : 'See the year'}
@@ -191,7 +184,7 @@ export default function YearPlanCard({
             const canDraftNow = canManage && (s.kind === 'drafts_on' || s.kind === 'left_out' || s.kind === 'skipped' || s.kind === 'started')
             return (
               <div key={run.id} className="border-b border-line-2 last:border-0">
-                <div className="grid items-center gap-x-4 gap-y-1 py-2.5 text-[13.5px] sm:grid-cols-[1fr_auto_auto]">
+                <div className="grid items-center gap-x-4 gap-y-1 py-2.5 text-[15px] sm:grid-cols-[1fr_auto_auto]">
                   <button
                     type="button"
                     onClick={() => setDetail(showing ? null : run.id)}
@@ -206,7 +199,7 @@ export default function YearPlanCard({
                   <span>
                     <StatusPill pill={label} />
                   </span>
-                  <span className="flex items-center gap-3 text-[12.5px] font-semibold">
+                  <span className="flex items-center gap-3 text-[14px] font-semibold">
                     {run.starts_on <= today && onBoard > 0 && (
                       <a href={`/shift/season/${run.id}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
                         Public leaderboard ({onBoard} {onBoard === 1 ? 'workplace' : 'workplaces'})
@@ -230,7 +223,7 @@ export default function YearPlanCard({
                   </span>
                 </div>
                 {showing && (
-                  <div className="mb-3 grid gap-2 rounded-xl bg-surface-2 px-4 py-3.5 text-[13.5px] leading-[1.55] text-ink">
+                  <div className="mb-3 grid gap-2 rounded-xl bg-surface-2 px-4 py-3.5 text-[15px] leading-[1.55] text-ink">
                     <p>{o.template.line}</p>
                     {o.template.pitch && o.template.pitch !== o.template.line && <p className="text-ink-muted">{o.template.pitch}</p>}
                     <dl className="grid gap-1.5 sm:grid-cols-[110px_1fr]">
@@ -280,7 +273,7 @@ export default function YearPlanCard({
         </div>
       )}
 
-      {error && <p className="px-6 pb-4 text-[13px] font-semibold text-ep-danger">{error}</p>}
+      {error && <p className="px-6 pb-4 text-[14px] font-semibold text-ep-danger">{error}</p>}
     </Card>
   )
 }

@@ -159,12 +159,12 @@ export default function TellYourTeam({
   }
 
   const linkClass =
-    'inline-flex items-center gap-1.5 rounded-[10px] border border-line bg-white px-3 py-[7px] text-[13px] font-semibold text-accent-ink hover:border-accent'
+    'inline-flex items-center gap-1.5 rounded-[10px] border border-line bg-white px-3 py-[7px] text-[14px] font-semibold text-accent-ink hover:border-accent'
 
   return (
     <div className="rounded-xl border border-line bg-surface p-[18px]">
       <div className="mb-1 text-[14px] font-semibold text-ink">Tell your team</div>
-      <p className="mb-3.5 text-[12.5px] leading-[1.55] text-ink-muted">
+      <p className="mb-3.5 text-[14px] leading-[1.55] text-ink-muted">
         Ready-to-send text for three moments: the kickoff, a reminder halfway through, and a thank-you when it
         ends. Challenges do best when a leader sends the first note and someone posts the Halfway and Wrap-up
         notes below.
@@ -178,7 +178,7 @@ export default function TellYourTeam({
             role="tab"
             aria-selected={moment === m.key}
             onClick={() => setMoment(m.key)}
-            className={`rounded-[10px] border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+            className={`rounded-[10px] border px-3 py-1.5 text-[14px] font-semibold transition-colors ${
               moment === m.key
                 ? 'border-accent bg-white text-accent-ink'
                 : 'border-line bg-surface text-ink-muted hover:border-line-2'
@@ -188,16 +188,16 @@ export default function TellYourTeam({
           </button>
         ))}
       </div>
-      <p className="mb-3.5 text-[12px] leading-[1.5] text-ink-tertiary">
+      <p className="mb-3.5 text-[14px] leading-[1.5] text-ink-tertiary">
         {MOMENTS.find((m) => m.key === moment)?.hint}
       </p>
 
-      <label htmlFor="tyt-host" className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+      <label htmlFor="tyt-host" className="mb-1.5 block text-[14px] font-semibold text-ink-muted">
         Sent on behalf of
       </label>
       <input
         id="tyt-host"
-        className="mb-3.5 w-full max-w-[360px] rounded-[10px] border border-line bg-surface px-3.5 py-2 text-[13.5px] text-ink outline-none placeholder:text-ink-muted focus:border-accent"
+        className="mb-3.5 w-full max-w-[360px] rounded-[10px] border border-line bg-surface px-3.5 py-2 text-[15px] text-ink outline-none placeholder:text-ink-muted focus:border-accent"
         placeholder={`${group.name} (or a team, like the Green Council)`}
         value={host}
         onChange={(e) => setHost(e.target.value)}
@@ -209,7 +209,7 @@ export default function TellYourTeam({
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
-            className={`rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-[14px] font-semibold transition-colors ${
               tab === t.key ? 'bg-accent-soft text-accent-ink' : 'text-ink-muted hover:bg-surface-2'
             }`}
           >
@@ -219,7 +219,7 @@ export default function TellYourTeam({
       </div>
 
       {tab === 'email' && (
-        <div className="mb-2 flex flex-wrap items-center gap-2 text-[13px]">
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-[14px]">
           <span className="font-semibold text-ink-muted">Subject:</span>
           <span className="text-ink">{a.subject}</span>
           <button
@@ -237,7 +237,7 @@ export default function TellYourTeam({
         readOnly
         value={text[tab]}
         rows={tab === 'short' ? 3 : 12}
-        className="w-full resize-y rounded-[10px] border border-line bg-surface-2 px-3.5 py-3 font-[inherit] text-[13px] leading-[1.55] text-ink outline-none"
+        className="w-full resize-y rounded-[10px] border border-line bg-surface-2 px-3.5 py-3 font-[inherit] text-[14px] leading-[1.55] text-ink outline-none"
       />
 
       <div className="mt-3 flex flex-wrap gap-2">
