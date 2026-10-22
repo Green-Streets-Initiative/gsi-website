@@ -62,7 +62,7 @@ function ToastPill({ item }: { item: ToastItem }) {
   return (
     <div
       role={item.type === 'error' ? 'alert' : 'status'}
-      className={`max-w-[calc(100vw-32px)] rounded-full px-5 py-2.5 text-[13.5px] font-medium text-white shadow-lg transition-all duration-200 ${
+      className={`max-w-[calc(100vw-32px)] rounded-full px-5 py-2.5 text-[14px] font-medium text-white shadow-lg transition-all duration-200 ${
         item.type === 'error' ? 'bg-ep-danger' : item.type === 'success' ? 'bg-accent' : 'bg-ink'
       }`}
       style={{

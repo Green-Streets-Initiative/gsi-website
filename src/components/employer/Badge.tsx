@@ -29,7 +29,7 @@ export default function Badge({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-[10px] py-[4px] text-[12px] font-semibold leading-none ${toneClasses[tone]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-[10px] py-[5px] text-[13px] font-semibold leading-none ${toneClasses[tone]}`}
     >
       {dot && <span className={`h-[6px] w-[6px] rounded-full ${dotColors[tone]}`} />}
       {children}

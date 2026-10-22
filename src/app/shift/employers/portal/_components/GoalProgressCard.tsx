@@ -20,7 +20,6 @@ import {
   type GoalType,
 } from '@/lib/employer/goal-pace'
 import type { DashboardData, EmployerMember, Group } from '../_lib/portal-types'
-import { ACTIVE_TRIP_DEF } from '@/lib/employer/definitions'
 
 const PORTAL = '/shift/employers/portal'
 
@@ -39,7 +38,8 @@ const STEP_ICON: Record<GoalStepKey, LucideIcon> = {
 type Verdict = { label: string; tone: 'success' | 'warn' } | null
 
 /** The nearest number we track for goals we can't measure directly. */
-type Proxy = { figure: string; caption: string } | null
+/** The closest figure to a goal we can't measure directly: a number, what it counts, and its trend. */
+type Proxy = { value: string; label: string; trend?: { text: string; good: boolean } } | null
 
 /**
  * "Your goal" on Home: the goal the employer picked on Setup, how far along
@@ -183,7 +183,7 @@ export default function GoalProgressCard({
           <div>
             <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-2">
               <span className="text-[14px] font-semibold text-ink">{view.progress.left}</span>
-              <span className="text-[13px] font-semibold text-ink-muted">{view.progress.right}</span>
+              <span className="text-[14px] font-semibold text-ink-muted">{view.progress.right}</span>
             </div>
             <ProgressBar pct={view.progress.pct} />
           </div>
@@ -196,13 +196,14 @@ export default function GoalProgressCard({
         {view.type !== 'participation' && view.type !== 'mode_shift' && (
           <div className="rounded-[10px] bg-surface-2 px-4 py-3">
             {view.proxy ? (
-              <>
-                <div className="text-[12.5px] font-semibold text-ink-muted">Closest figure we track</div>
-                <div className="mt-1 text-[15px] font-semibold text-ink">{view.proxy.figure}</div>
-                <p className="mt-1 text-[13px] leading-[1.5] text-ink-muted">{view.proxy.caption}</p>
-              </>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <span className="font-headline text-[28px] font-extrabold leading-none text-ink">{view.proxy.value}</span>
+                <span className="text-[15px] text-ink">{view.proxy.label}</span>
+                {view.proxy.trend && <Badge tone={view.proxy.trend.good ? 'success' : 'warn'}>{view.proxy.trend.text}</Badge>}
+                <span className="text-[14px] text-ink-muted">Last 30 days</span>
+              </div>
             ) : (
-              <p className="text-[13.5px] leading-[1.5] text-ink-muted">
+              <p className="text-[14px] leading-[1.5] text-ink-muted">
                 We can&apos;t measure this one directly yet. These steps are the ones that help most.
               </p>
             )}
@@ -211,17 +212,17 @@ export default function GoalProgressCard({
 
         {view.steps.length > 0 && (
           <div>
-            <div className="mb-2 text-[13px] font-semibold text-ink">
+            <div className="mb-2 text-[14px] font-semibold text-ink">
               {view.verdict?.label === 'Behind' ? 'To catch up' : 'What helps'}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="-mx-6 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-6 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
               {view.steps.map((s) => (
-                <Button key={s.key} variant="secondary" size="sm" icon={STEP_ICON[s.key]} onClick={() => go(s.key, s.path)}>
+                <Button key={s.key} variant="secondary" size="sm" icon={STEP_ICON[s.key]} onClick={() => go(s.key, s.path)} className="shrink-0 whitespace-nowrap">
                   {s.label}
                 </Button>
               ))}
               {onAsk && (
-                <Button variant="secondary" size="sm" icon={MessageSquareText} onClick={onAsk}>
+                <Button variant="secondary" size="sm" icon={MessageSquareText} onClick={onAsk} className="shrink-0 whitespace-nowrap">
                   Ask how to get there
                 </Button>
               )}
@@ -232,7 +233,7 @@ export default function GoalProgressCard({
         {canEdit && (
           <Link
             href={`${PORTAL}/setup`}
-            className="inline-block text-[13px] font-medium text-accent no-underline hover:underline"
+            className="inline-block text-[14px] font-medium text-accent no-underline hover:underline"
           >
             Change the goal on Setup →
           </Link>
@@ -258,35 +259,26 @@ function proxyFigure(
     const share = dashboard.drive_alone_share_pct ?? (drive / trips) * 100
     const now = Math.round(share)
     const prior = dashboard.prior_period
-    let change = ''
+    let trend: { text: string; good: boolean } | undefined
     if (prior && prior.trips > 0 && prior.drive_alone_share_pct != null) {
       const before = Math.round(prior.drive_alone_share_pct)
-      change =
-        before === now ? ` Same as the 30 days before.` : ` ${now < before ? 'Down' : 'Up'} from ${before}% the 30 days before.`
+      // Lower is better here.
+      trend = before === now ? { text: 'Steady', good: true } : { text: `${now < before ? 'Down' : 'Up'} ${Math.abs(now - before)} pts`, good: now < before }
     }
-    return {
-      figure: `${now}% of trips were driving alone`,
-      caption: `Last 30 days, lower is better.${change}`,
-    }
+    return { value: `${now}%`, label: 'of trips were driving alone', trend }
   }
   if (type === 'wellness') {
     if (members.length === 0) return null
     const active = members.filter((m) => m.active_trips_in_period > 0).length
     const pct = Math.round((active / members.length) * 100)
-    return {
-      figure: `${active} of ${members.length} people who joined logged an active trip (${pct}%)`,
-      caption: `Last 30 days. ${ACTIVE_TRIP_DEF}`,
-    }
+    return { value: `${pct}%`, label: `of people who joined were active (${active} of ${members.length})` }
   }
   if (type === 'benefit_uptake') {
     if (!dashboard || trips <= 0) return null
     const transit = dashboard.mode_breakdown
       .filter((m) => m.mode.startsWith('transit'))
       .reduce((sum, m) => sum + m.trip_count, 0)
-    return {
-      figure: `${Math.round((transit / trips) * 100)}% of trips were by bus, train or commuter rail`,
-      caption: 'Last 30 days, across everyone who has joined.',
-    }
+    return { value: `${Math.round((transit / trips) * 100)}%`, label: 'of trips were by bus, train or commuter rail' }
   }
   return null
 }

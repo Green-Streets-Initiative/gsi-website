@@ -82,7 +82,7 @@ export default function SurveyQuestionList({ company }: { company: string }) {
           <h3 className="text-[15px] font-bold">{s.section}</h3>
           <ol className="mt-2 grid gap-2.5">
             {s.items.map((it) => (
-              <li key={it.q} className="text-[13px] leading-[1.5]">
+              <li key={it.q} className="text-[14px] leading-[1.5]">
                 <div className="font-semibold">{it.q}</div>
                 {it.options && <div className="text-ink-soft">{it.options.join(' · ')}</div>}
                 {it.note && <div className="text-ink-soft">{it.note}</div>}

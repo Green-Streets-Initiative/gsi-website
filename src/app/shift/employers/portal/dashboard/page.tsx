@@ -2,10 +2,6 @@
 
 import Link from 'next/link'
 import {
-  Route,
-  TrendingUp,
-  Leaf,
-  BarChart3,
   Copy,
   Link as LinkIcon,
   ChevronRight,
@@ -26,8 +22,9 @@ import LocationBreakdownCard from '../_components/LocationBreakdownCard'
 import GoalProgressCard from '../_components/GoalProgressCard'
 import { assistantAvailable, openAssistant } from '../_components/AssistantPanel'
 import AssistantHome, { homeSuggestions } from './AssistantHome'
+import ProgramHealthCard from './ProgramHealthCard'
 import { Card, CardHead, CardBody } from '@/components/employer/Card'
-import StatTile, { STAT_HINTS, StatHint } from '@/components/employer/StatTile'
+import { STAT_HINTS, StatHint } from '@/components/employer/StatTile'
 import Badge from '@/components/employer/Badge'
 import Button from '@/components/employer/Button'
 import CodeChip from '@/components/employer/CodeChip'
@@ -245,23 +242,37 @@ export default function DashboardPage() {
   const loadedDays = loadedWindowDays(dashboard)
   const dashboard30 = loadedDays === null || Math.abs(loadedDays - 30) < 0.5 ? dashboard : null
 
+  // How the program is doing: three meters, and (unless the hero already
+  // shows them) the last 30 days' outcomes.
+  const health = (
+    <ProgramHealthCard
+      group={group}
+      memberCount={memberCount}
+      members={members}
+      dashboard={dashboard30}
+      showOutcomes={withAssistant || !!next}
+      onAsk={withAssistant ? () => openAssistant('Explain our results for the last 30 days: what stands out, and what should we do about it?') : undefined}
+    />
+  )
+
   const status = group.status
   const statusTone = status === 'active' ? 'success' : status === 'cancelled' ? 'warn' : 'neutral'
   const statusLabel = status === 'active' ? 'Active' : status === 'cancelled' ? 'Cancelled' : status.replace(/_/g, ' ')
 
   return (
     <>
-      <PortalPageHead title="Home" subtitle={`${group.name} on Shift`} />
+      {/* With the assistant, the hero's question is the heading (the top bar says Home). */}
+      {withAssistant ? <h1 className="sr-only">Home</h1> : <PortalPageHead title="Home" subtitle={`${group.name} on Shift`} />}
 
       {dashboardError && (
         <Card pad className="mb-5">
-          <p className="text-[13.5px] text-ep-danger">{dashboardError}</p>
+          <p className="text-[15px] text-ep-danger">{dashboardError}</p>
         </Card>
       )}
 
       <div className="mb-6">
         {suggestions ? (
-          <AssistantHome steps={suggestions.steps} starters={suggestions.starters} />
+          <AssistantHome steps={suggestions.steps} starters={suggestions.starters} health={health} />
         ) : next ? (
           <PortalHeroPanel
             title={`Next step: ${next.label}`}
@@ -269,7 +280,7 @@ export default function DashboardPage() {
               <>
                 <p>{next.desc}</p>
                 {otherWorkplaces > 0 && (
-                  <p className="mt-2 text-[13.5px] text-white/85">
+                  <p className="mt-2 text-[15px] text-white/85">
                     You&apos;re an admin on {otherWorkplaces} other workplace
                     {otherWorkplaces === 1 ? '' : 's'} too. To work on one of those, email info@gogreenstreets.org.
                   </p>
@@ -291,7 +302,7 @@ export default function DashboardPage() {
             title="Last 30 days"
             lede={
               otherWorkplaces > 0 ? (
-                <p className="text-[13.5px] text-white/85">
+                <p className="text-[15px] text-white/85">
                   You&apos;re an admin on {otherWorkplaces} other workplace
                   {otherWorkplaces === 1 ? '' : 's'} too. To work on one of those, email info@gogreenstreets.org.
                 </p>
@@ -314,16 +325,18 @@ export default function DashboardPage() {
           />
         )}
 
+        {!suggestions && <div className="mt-4">{health}</div>}
+
         {/* Quick actions */}
-        <nav aria-label="Quick actions" className="mt-3 flex flex-wrap gap-2">
+        <nav aria-label="Quick actions" className="-mx-4 mt-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
           {quickActions.map((a) => (
-            <Button key={a.label} variant="secondary" icon={a.icon} onClick={() => router.push(a.href)}>
+            <Button key={a.label} variant="secondary" icon={a.icon} onClick={() => router.push(a.href)} className="shrink-0 whitespace-nowrap">
               {a.label}
             </Button>
           ))}
         </nav>
 
-        {updated && <p className="mt-3 text-[12.5px] text-ink-tertiary">Updated {relativeTime(updated, nowMs)}</p>}
+        {updated && <p className="mt-3 text-[14px] text-ink-tertiary">Updated {relativeTime(updated, nowMs)}</p>}
       </div>
 
       {/* The goal from Setup: how far along, on pace or not, and what helps. */}
@@ -342,58 +355,6 @@ export default function DashboardPage() {
       <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
         {/* LEFT COLUMN */}
         <div className="min-w-0 space-y-6">
-          {/* The four numbers, with what each one means. Once setup is done
-              they live in the hero instead, so they appear once. */}
-          {(next || withAssistant) && (
-            <div>
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                <span className="text-[14px] font-semibold text-ink">Last 30 days</span>
-                <span className="flex items-center gap-4">
-                  {withAssistant && (
-                    <button
-                      type="button"
-                      onClick={() => openAssistant('Explain our results for the last 30 days: what stands out, and what should we do about it?')}
-                      className="text-[13px] font-medium text-accent hover:underline"
-                    >
-                      Ask about these numbers
-                    </button>
-                  )}
-                  <Link
-                    href={`${PORTAL}/impact`}
-                    className="text-[13px] font-medium text-accent no-underline hover:underline"
-                  >
-                    Full impact report →
-                  </Link>
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
-                <Card pad>
-                  <StatTile label="Active trips" value={fmt.trips} labelIcon={Route} hint={STAT_HINTS.activeTrips} />
-                </Card>
-                <Card pad>
-                  <StatTile
-                    label="Miles shifted"
-                    value={fmt.miles}
-                    unit={dashboard ? 'mi' : undefined}
-                    labelIcon={TrendingUp}
-                    hint={STAT_HINTS.miles}
-                  />
-                </Card>
-                <Card pad>
-                  <StatTile
-                    label="CO₂e avoided"
-                    value={fmt.co2}
-                    labelIcon={Leaf}
-                    hint={STAT_HINTS.co2}
-                  />
-                </Card>
-                <Card pad>
-                  <StatTile label="Shift Rate" value={fmt.rate} labelIcon={BarChart3} hint={STAT_HINTS.shiftRate} />
-                </Card>
-              </div>
-            </div>
-          )}
-
           {/* Top movers */}
           <Card>
             <CardHead
@@ -421,7 +382,7 @@ export default function DashboardPage() {
                       >
                         <td className="w-1 py-3 pl-5 pr-2 sm:pl-6">
                           <span
-                            className={`inline-flex h-6 w-6 items-center justify-center rounded-[6px] text-[12px] font-bold ${
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-[13px] font-bold ${
                               i === 0 ? 'bg-accent text-white' : 'bg-surface-2 text-ink-muted'
                             }`}
                           >
@@ -432,17 +393,17 @@ export default function DashboardPage() {
                           <div className="flex items-center gap-2.5">
                             <Avatar name={m.display_name || 'User'} />
                             <div className="min-w-0">
-                              <div className="truncate text-[14px] font-semibold text-ink">
+                              <div className="truncate text-[15px] font-semibold text-ink">
                                 {m.display_name || 'Unnamed'}
                               </div>
-                              <div className="text-[12.5px] text-ink-tertiary">
+                              <div className="text-[14px] text-ink-tertiary">
                                 Joined {formatDateShort(m.joined_at)}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="whitespace-nowrap py-3 pr-5 text-right sm:pr-6">
-                          <span className="text-[14px]">
+                          <span className="text-[15px]">
                             <strong className="text-ink">{m.active_trips_in_period}</strong>
                             <span className="text-ink-tertiary"> of {m.trips_in_period} trips</span>
                           </span>
@@ -454,7 +415,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <CardBody className="text-center">
-                <p className="text-[14px] text-ink-muted">
+                <p className="text-[15px] text-ink-muted">
                   {memberCount === 0
                     ? 'No employees have joined yet.'
                     : 'No active trips recorded in the last 30 days.'}
@@ -468,7 +429,7 @@ export default function DashboardPage() {
             )}
           </Card>
 
-          <LocationBreakdownCard groupId={group.id} days={30} />
+          <LocationBreakdownCard groupId={group.id} days={30} hideWhenEmpty />
         </div>
 
         {/* RIGHT COLUMN */}
@@ -476,7 +437,7 @@ export default function DashboardPage() {
           {/* Invite code: only until the first person joins */}
           {memberCount === 0 && (
             <Card pad>
-              <div className="mb-2.5 text-[14px] font-semibold text-ink">Your invite code</div>
+              <div className="mb-2.5 text-[15px] font-semibold text-ink">Your invite code</div>
               <div className="mb-3">
                 <CodeChip code={group.invite_code} />
               </div>
@@ -488,47 +449,45 @@ export default function DashboardPage() {
                   Share link
                 </Button>
               </div>
-              <p className="mt-3 text-[13px] leading-[1.5] text-ink-muted">
-                Employees enter it in the Shift app, or open the link. Posters, a QR code and an email you can forward
-                are on the{' '}
+              <p className="mt-3 text-[14px] leading-[1.5] text-ink-muted">
+                Posters, a QR code and an email:{' '}
                 <Link href={`${PORTAL}/share-kit`} className="font-medium text-accent no-underline hover:underline">
                   Share kit
-                </Link>{' '}
-                page.
+                </Link>
               </p>
             </Card>
           )}
 
-          {/* Subscription */}
-          <Card pad>
+          {/* Subscription (on phones it lives on Billing) */}
+          <Card pad className="hidden md:block">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-[14px] font-semibold text-ink">Subscription</span>
+              <span className="text-[15px] font-semibold text-ink">Subscription</span>
               <Badge tone={statusTone}>{statusLabel}</Badge>
             </div>
             <div className="text-[20px] font-bold tracking-[-0.01em] text-ink">
               {TIER_LABEL[group.tier] ?? group.tier}
             </div>
-            <div className="mb-3.5 text-[13px] text-ink-tertiary">
+            <div className="mb-3.5 text-[14px] text-ink-tertiary">
               {TIER_ANNUAL_PRICE[group.tier] != null
                 ? `$${TIER_ANNUAL_PRICE[group.tier].toLocaleString()} / year`
                 : 'No annual fee'}
             </div>
             {group.access_ends_at && (
-              <div className="text-[13px] text-ink-muted">
+              <div className="text-[14px] text-ink-muted">
                 {status === 'cancelled' ? 'Access through ' : 'Renews '}
                 <span className="font-semibold text-ink">{formatDateUTC(group.access_ends_at)}</span>
               </div>
             )}
             <Link
               href={`${PORTAL}/billing`}
-              className="mt-3.5 block text-[13px] font-medium text-accent no-underline hover:underline"
+              className="mt-3.5 block text-[14px] font-medium text-accent no-underline hover:underline"
             >
               Billing &amp; rewards →
             </Link>
           </Card>
 
-          {/* Recent activity: latest joins + recently started challenges */}
-          <Card>
+          {/* Recent activity: latest joins + recently started challenges (wider screens) */}
+          <Card className="hidden md:block">
             <CardHead title="Recent activity" />
             <CardBody className="space-y-4">
               {recentActivity.length > 0 ? (
@@ -541,16 +500,16 @@ export default function DashboardPage() {
                         <Trophy size={15} strokeWidth={1.75} />
                       )}
                     </div>
-                    <div className="min-w-0 text-[13.5px] leading-snug">
+                    <div className="min-w-0 text-[15px] leading-snug">
                       <strong className="text-ink">{item.title}</strong>{' '}
                       <span className="text-ink-muted">{item.subtitle}</span>
-                      <div className="text-[12px] text-ink-tertiary">{formatDateShort(item.timestamp)}</div>
+                      <div className="text-[14px] text-ink-tertiary">{formatDateShort(item.timestamp)}</div>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="py-2 text-center text-[13px] text-ink-muted">
-                  Joins and challenge starts from the last 30 days will show here.
+                <p className="py-2 text-center text-[14px] text-ink-muted">
+                  New joins and challenges show here.
                 </p>
               )}
             </CardBody>

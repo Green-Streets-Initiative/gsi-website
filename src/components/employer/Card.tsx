@@ -57,7 +57,7 @@ export function CardHead({
     <div className="flex items-start justify-between border-b border-line px-6 py-[18px]">
       <div className="min-w-0">
         <h3 className="text-[17px] font-bold tracking-[-0.01em] text-ink">{title}</h3>
-        {sub && <p className="mt-1 text-[13.5px] leading-[1.5] text-ink-muted">{sub}</p>}
+        {sub && <p className="mt-1 text-[14.5px] leading-[1.5] text-ink-muted">{sub}</p>}
       </div>
       {action && <div className="shrink-0 ml-4">{action}</div>}
     </div>

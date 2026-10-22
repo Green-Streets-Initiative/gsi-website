@@ -86,7 +86,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             )}
             {pending.input && (
               <label className="mt-4 block">
-                <span className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">{pending.input.label}</span>
+                <span className="mb-1.5 block text-[14px] font-semibold text-ink-muted">{pending.input.label}</span>
                 <input
                   ref={inputRef}
                   type={pending.input.type ?? 'text'}

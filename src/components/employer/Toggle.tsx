@@ -23,7 +23,7 @@ export default function Toggle({ on, onChange, title, desc, ariaLabel }: ToggleP
             </div>
           )}
           {desc && (
-            <div id={descId} className="mt-0.5 text-[13px] text-ink-muted">
+            <div id={descId} className="mt-0.5 text-[14px] text-ink-muted">
               {desc}
             </div>
           )}

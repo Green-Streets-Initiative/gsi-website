@@ -91,7 +91,7 @@ export default function LivePagePreview({
         <span className="h-2 w-2 rounded-full bg-ink-icon/60" />
         <span className="h-2 w-2 rounded-full bg-ink-icon/60" />
         <span className="h-2 w-2 rounded-full bg-ink-icon/60" />
-        <span className="ml-2 truncate text-[11px] text-ink-tertiary">{pretty}</span>
+        <span className="ml-2 truncate text-[13px] text-ink-tertiary">{pretty}</span>
       </div>
       <div ref={frameRef} className="relative w-full" style={{ height: height || 200 }}>
         {state === 'failed' ? (
@@ -131,7 +131,7 @@ export default function LivePagePreview({
               aria-label={`Open ${title}`}
               className="absolute inset-0 no-underline"
             >
-              <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-[12px] font-semibold text-white shadow-md">
+              <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-[13px] font-semibold text-white shadow-md">
                 <ExternalLink size={13} strokeWidth={2} />
                 Open page
               </span>

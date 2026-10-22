@@ -97,7 +97,7 @@ export function StatHint({
         <span
           id={panelId}
           role="dialog"
-          className={`absolute top-full z-20 mt-1.5 w-[240px] max-w-[calc(100vw-2rem)] whitespace-normal rounded-[10px] border border-line bg-surface px-3 py-2.5 text-left font-sans text-[13px] font-normal normal-case leading-[1.45] tracking-normal text-ink shadow-lg ${
+          className={`absolute top-full z-20 mt-1.5 w-[240px] max-w-[calc(100vw-2rem)] whitespace-normal rounded-[10px] border border-line bg-surface px-3 py-2.5 text-left font-sans text-[14px] font-normal normal-case leading-[1.45] tracking-normal text-ink shadow-lg ${
             side === 'right' ? 'right-0' : 'left-0'
           }`}
         >
@@ -139,7 +139,7 @@ export default function StatTile({
 
   return (
     <div className={`transition-opacity duration-200 ${dim ? 'opacity-50' : ''}`} aria-busy={dim || undefined}>
-      <div className="mb-1 flex items-center gap-1.5 text-[12.5px] font-medium text-ink-tertiary">
+      <div className="mb-1 flex items-center gap-1.5 text-[14px] font-medium text-ink-tertiary">
         {LabelIcon && <LabelIcon size={13} strokeWidth={1.75} />}
         <span>{label}</span>
         {hint && <StatHint hint={hint} />}
@@ -149,7 +149,7 @@ export default function StatTile({
         {unit && <span className="text-[16px] text-ink-tertiary">{unit}</span>}
       </div>
       {delta && (
-        <div className={`mt-1 flex items-center gap-1 text-[12px] font-medium ${deltaTone}`}>
+        <div className={`mt-1 flex items-center gap-1 text-[14px] font-medium ${deltaTone}`}>
           {up && <TrendingUp size={13} strokeWidth={2} />}
           {delta}
         </div>

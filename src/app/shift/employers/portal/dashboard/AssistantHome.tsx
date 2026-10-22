@@ -9,7 +9,7 @@
 // workplaces that have the assistant; the rest keep the plain Home.
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ArrowUp, BarChart3, Building2, ImageIcon, Route, Target, Trophy, Users } from 'lucide-react'
 import PortalHeroPanel from '../_components/PortalHeroPanel'
 import { openAssistant } from '../_components/AssistantPanel'
@@ -106,7 +106,7 @@ export function homeSuggestions(args: {
   return { steps: out.slice(0, 3), starters }
 }
 
-export default function AssistantHome({ steps, starters }: { steps: Step[]; starters: string[] }) {
+export default function AssistantHome({ steps, starters, health }: { steps: Step[]; starters: string[]; health?: ReactNode }) {
   const router = useRouter()
   const [draft, setDraft] = useState('')
   const ask = () => {
@@ -121,7 +121,7 @@ export default function AssistantHome({ steps, starters }: { steps: Step[]; star
     <div className="ph-no-capture">
       <PortalHeroPanel
         title="What would you like to get done?"
-        lede={<p>Ask in your own words. The assistant sets things up with you and asks before anything your team sees.</p>}
+        lede={<p>Ask in your own words. Nothing changes without your OK.</p>}
         below={
           <div>
             <form
@@ -146,13 +146,14 @@ export default function AssistantHome({ steps, starters }: { steps: Step[]; star
                 <ArrowUp size={18} strokeWidth={2.2} />
               </button>
             </form>
-            <div className="mt-3 flex flex-wrap gap-2">
+            {/* One swipeable row on phones; wrapping on wider screens. */}
+            <div className="-mx-6 mt-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-6 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
               {starters.map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => openAssistant(s)}
-                  className="rounded-full border border-white/40 px-3.5 py-1.5 text-[13.5px] font-medium text-white transition-colors hover:bg-white/10"
+                  className="shrink-0 whitespace-nowrap rounded-full border border-white/40 px-3.5 py-1.5 text-[14px] font-medium text-white transition-colors hover:bg-white/10"
                 >
                   {s}
                 </button>
@@ -162,16 +163,19 @@ export default function AssistantHome({ steps, starters }: { steps: Step[]; star
         }
       />
 
+      {health && <div className="mt-4">{health}</div>}
+
       {steps.length > 0 && (
         <Card className="mt-4">
-          <h2 className="px-5 pb-1 pt-4 text-[14px] font-semibold text-ink">Suggested next steps</h2>
+          <h2 className="px-5 pb-1 pt-4 text-[17px] font-bold tracking-[-0.01em] text-ink">Suggested next steps</h2>
           <ul className="divide-y divide-line-2 px-5">
-            {steps.map((s) => (
-              <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3.5">
+            {steps.map((s, i) => (
+              // Phones show the top two; the third waits for a wider screen.
+              <li key={s.id} className={`flex-wrap items-center gap-x-4 gap-y-2 py-3.5 ${i >= 2 ? 'hidden sm:flex' : 'flex'}`}>
                 <s.icon size={20} strokeWidth={1.75} className="shrink-0 text-accent" aria-hidden />
                 <div className="min-w-0 flex-1 basis-[240px]">
-                  <p className="text-[14.5px] font-semibold text-ink">{s.title}</p>
-                  <p className="text-[13px] text-ink-muted">{s.desc}</p>
+                  <p className="text-[16px] font-semibold text-ink">{s.title}</p>
+                  <p className="text-[15px] text-ink-muted">{s.desc}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1 pl-9 sm:pl-0">
                   <Button variant="secondary" size="sm" onClick={() => openAssistant(s.prompt)}>

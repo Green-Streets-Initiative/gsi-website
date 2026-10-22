@@ -23,9 +23,12 @@ export default function LocationBreakdownCard({
   groupId,
   days,
   rangeLabel,
+  hideWhenEmpty = false,
 }: {
   groupId: string
   days: number
+  /** Home: no card at all until a location has numbers. */
+  hideWhenEmpty?: boolean
   /** How the page names the period ("Q3 2026"); falls back to "Last {days} days". */
   rangeLabel?: string
 }) {
@@ -54,6 +57,8 @@ export default function LocationBreakdownCard({
   }, [groupId, days, multiSite])
 
   if (!multiSite) return null
+  // Home hides the card until a location has numbers; Impact explains why.
+  if (hideWhenEmpty && (!data || data.locations.length === 0)) return null
 
   const min = data?.min_group_size ?? 5
   const rows: Row[] = data
@@ -80,7 +85,7 @@ export default function LocationBreakdownCard({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[360px] text-left text-[14px]">
               <thead>
-                <tr className="border-b border-line text-[12.5px] font-semibold text-ink-tertiary">
+                <tr className="border-b border-line text-[14px] font-semibold text-ink-tertiary">
                   <th className="py-2 pr-3">Location</th>
                   <th className="py-2 pr-3 text-right">People</th>
                   <th className="py-2 pr-3 text-right">Active</th>
@@ -101,7 +106,7 @@ export default function LocationBreakdownCard({
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-muted">
+          <p className="mt-3 text-[14px] leading-[1.5] text-ink-muted">
             People are matched to a location by where their weekday commute trips start or end.
             {data.hidden_small ? ` Locations with fewer than ${min} people aren't shown separately, to protect privacy.` : ''}
           </p>
