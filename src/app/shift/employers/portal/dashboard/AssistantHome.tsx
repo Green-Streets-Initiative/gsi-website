@@ -117,7 +117,8 @@ export default function AssistantHome({ steps, starters }: { steps: Step[]; star
   }
 
   return (
-    <>
+    // ph-no-capture: analytics doesn't record the suggestions' wording.
+    <div className="ph-no-capture">
       <PortalHeroPanel
         title="What would you like to get done?"
         lede={<p>Ask in your own words. The assistant sets things up with you and asks before anything your team sees.</p>}
@@ -185,6 +186,6 @@ export default function AssistantHome({ steps, starters }: { steps: Step[]; star
           </ul>
         </Card>
       )}
-    </>
+    </div>
   )
 }

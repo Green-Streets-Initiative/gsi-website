@@ -48,7 +48,12 @@ type Thread = { id: string; group_id: string; pending: Pending | null }
 
 // ── Auth: signed-in team member of a workplace with the assistant on ──
 
-async function authorize(request: Request, groupId: string | null | undefined) {
+/**
+ * `ownDataOnly`: listing or deleting one's own conversations, which works
+ * even when the assistant is off or not offered (the data note promises
+ * people can delete theirs at any time).
+ */
+async function authorize(request: Request, groupId: string | null | undefined, opts: { ownDataOnly?: boolean } = {}) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return { error: Response.json({ error: 'Sign in again to continue.' }, { status: 401 }) }
   if (!groupId) return { error: Response.json({ error: 'group_id required' }, { status: 400 }) }
@@ -69,8 +74,10 @@ async function authorize(request: Request, groupId: string | null | undefined) {
   const g = group.data as { id: string; name: string; assistant_enabled: boolean; assistant_turned_off_at: string | null; billing_type: string | null } | null
   if (!g) return { error: Response.json({ error: 'Workplace not found.' }, { status: 404 }) }
   // The workplace's own switch (Shift 01372) holds for everyone, GSI staff included.
-  if (g.assistant_turned_off_at) return { error: Response.json({ error: 'An admin turned the assistant off for this workplace. It can be turned back on in Settings.' }, { status: 403 }) }
-  if (!g.assistant_enabled && !isGsi) return { error: Response.json({ error: 'The assistant is not on for this workplace yet.' }, { status: 403 }) }
+  if (!opts.ownDataOnly) {
+    if (g.assistant_turned_off_at) return { error: Response.json({ error: 'An admin turned the assistant off for this workplace. It can be turned back on in Settings.' }, { status: 403 }) }
+    if (!g.assistant_enabled && !isGsi) return { error: Response.json({ error: 'The assistant is not on for this workplace yet.' }, { status: 403 }) }
+  }
   const role: Role = r === 'admin' || r === 'manager' || r === 'viewer' ? r : 'gsi'
   const userClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     global: { headers: { Authorization: `Bearer ${token}` } },
@@ -251,9 +258,10 @@ function resultBlock(id: string, r: ToolResult, extra?: Record<string, unknown>)
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
-  const auth = await authorize(request, url.searchParams.get('group_id'))
+  const listing = url.searchParams.get('list') === '1'
+  const auth = await authorize(request, url.searchParams.get('group_id'), { ownDataOnly: listing })
   if ('error' in auth) return auth.error
-  if (url.searchParams.get('list') === '1') {
+  if (listing) {
     const { data } = await auth.admin
       .from('employer_assistant_threads')
       .select('id, title, updated_at, pending')
@@ -281,18 +289,37 @@ export async function GET(request: Request) {
 
 export async function DELETE(request: Request) {
   const url = new URL(request.url)
-  const auth = await authorize(request, url.searchParams.get('group_id'))
+  const auth = await authorize(request, url.searchParams.get('group_id'), { ownDataOnly: true })
   if ('error' in auth) return auth.error
   const id = url.searchParams.get('thread_id')
-  if (!id) return Response.json({ error: 'thread_id required' }, { status: 400 })
-  const { error } = await auth.admin
-    .from('employer_assistant_threads')
-    .delete()
-    .eq('id', id)
-    .eq('group_id', auth.group.id)
-    .eq('created_by', auth.user.id)
+  const all = url.searchParams.get('all') === '1'
+  if (!id && !all) return Response.json({ error: 'thread_id required' }, { status: 400 })
+  let q = auth.admin.from('employer_assistant_threads').select('id').eq('group_id', auth.group.id).eq('created_by', auth.user.id)
+  if (!all) q = q.eq('id', id!)
+  const { data: rows } = await q
+  const ids = ((rows ?? []) as { id: string }[]).map((r) => r.id)
+  if (ids.length === 0) return Response.json({ ok: true, deleted: 0 })
+
+  // Images attached in these conversations sit in the public logo bucket so
+  // the model can look at them; one that didn't become the logo goes too.
+  const prefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/employer-logos/`
+  const [{ data: msgs }, { data: g }] = await Promise.all([
+    auth.admin.from('employer_assistant_messages').select('content').in('thread_id', ids).eq('role', 'user'),
+    auth.admin.from('groups').select('logo_url').eq('id', auth.group.id).maybeSingle(),
+  ])
+  const logo = (g as { logo_url?: string | null } | null)?.logo_url ?? null
+  const paths = new Set<string>()
+  for (const m of (msgs ?? []) as { content: unknown }[]) {
+    for (const b of Array.isArray(m.content) ? (m.content as Record<string, unknown>[]) : []) {
+      const src = b.type === 'image' ? (b.source as { url?: string } | undefined)?.url : undefined
+      if (src?.startsWith(prefix) && src !== logo && src.slice(prefix.length).startsWith('logos/assistant-')) paths.add(src.slice(prefix.length))
+    }
+  }
+  if (paths.size) await auth.admin.storage.from('employer-logos').remove([...paths])
+
+  const { error } = await auth.admin.from('employer_assistant_threads').delete().in('id', ids)
   if (error) return Response.json({ error: 'Could not delete it.' }, { status: 500 })
-  return Response.json({ ok: true })
+  return Response.json({ ok: true, deleted: ids.length })
 }
 
 // ── POST: say something, or decide on an approval card ──

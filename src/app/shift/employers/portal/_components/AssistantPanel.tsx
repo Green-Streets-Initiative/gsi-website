@@ -452,7 +452,8 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
     <aside
       aria-label="Assistant"
       style={{ ['--assistant-w' as string]: `${effectiveWidth}px` }}
-      className={`fixed inset-0 z-50 flex flex-col bg-surface ${
+      // ph-no-capture: analytics never records what's in the conversation.
+      className={`ph-no-capture fixed inset-0 z-50 flex flex-col bg-surface ${
         wide
           ? 'min-[980px]:left-[256px]'
           : // Phones: full screen. Tablets and narrow laptops: a drawer over the
