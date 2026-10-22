@@ -14,7 +14,7 @@ import type { ConsoleMe } from '@/lib/organizers/types'
  * and we redeem it here, as the employer portal does. The session lives in
  * this browser's storage.
  *
- * Access is organizer_console_me (Shift 01375): admins, invited or verified
+ * Access is organizer_console_me (Shift 01377): admins, invited or verified
  * organizers, and anyone who already organizes or leads a group ride.
  */
 type Phase = 'checking' | 'signed_out' | 'no_access' | 'ready' | 'error'

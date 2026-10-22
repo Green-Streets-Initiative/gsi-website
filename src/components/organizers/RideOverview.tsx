@@ -19,7 +19,7 @@ function ShareCard({ code, fresh }: { code: string; fresh: boolean }) {
   const [copied, setCopied] = useState(false)
   return (
     <Card className={cx(fresh && 'border-(--ev-accent-line) ring-1 ring-(--ev-accent-line-30)')}>
-      <SectionTitle hint="Put it in your Instagram bio, group chat or flyer. Anyone can say they're going, with or without the app.">
+      <SectionTitle hint="Anyone can answer Going there, with or without the app.">
         {fresh ? 'Your ride is set up. Share its page' : 'Share the ride'}
       </SectionTitle>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -87,10 +87,12 @@ export default function RideOverview() {
   const [stopping, setStopping] = useState(false)
   const [showPast, setShowPast] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [posting, setPosting] = useState(!!params.get('post'))
 
   const upcoming = useMemo(() => detail.occurrences.filter((d) => d.date >= today), [detail.occurrences, today])
   const past = useMemo(() => detail.occurrences.filter((d) => d.date < today).reverse(), [detail.occurrences, today])
   const ended = r.status === 'archived'
+  const nextDate = upcoming.find((d) => d.status === 'scheduled') ?? null
   const onBreak = !!r.break_until && r.break_until > today
 
   const closeMsg = useCallback(() => {
@@ -132,18 +134,43 @@ export default function RideOverview() {
 
       {(params.get('created') || detail.updates.length === 0) && !ended && <ShareCard code={r.invite_code} fresh={!!params.get('created')} />}
 
-      {!ended && (
+      {nextDate && !ended && (
         <Card>
-          <SectionTitle hint="One message, and everyone on the ride hears it: in the app, by email for people who answered on the ride page, and on the page itself.">
-            Post an update
-          </SectionTitle>
-          <PostUpdate seriesId={r.id} dates={detail.occurrences} onPosted={() => void reload()} autoFocus={!!params.get('post')} />
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-[15px] font-semibold text-(--ev-ink-75)">Next ride</p>
+              <p className="font-display text-[26px] font-extrabold leading-tight">{dateLabel(nextDate.date)} · {clock(nextDate.start_time)}</p>
+              <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{nextDate.meetup_name ?? r.meetup_name}{nextDate.time_moved || nextDate.place_moved ? ' (changed for this date)' : ''}</p>
+              {nextDate.confirmed && <span className="mt-2 inline-block"><Badge tone="good">It&rsquo;s on</Badge></span>}
+            </div>
+            <dl className="flex gap-6">
+              {([['Going', nextDate.going], ['Maybe', nextDate.maybe], ["Can't go", nextDate.cant]] as const).map(([k, v]) => (
+                <div key={k}>
+                  <dt className="text-[14px] font-semibold text-(--ev-ink-75)">{k}</dt>
+                  <dd className="font-display text-[32px] font-extrabold leading-none">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="primary" onClick={() => setPosting(true)}>Post an update</Button>
+            <Link href={`/organizers/rides/${r.id}/roster?date=${nextDate.id}`} className="inline-flex min-h-[44px] items-center rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+              See who&rsquo;s coming
+            </Link>
+          </div>
+        </Card>
+      )}
+
+      {!ended && (posting || !nextDate) && (
+        <Card id="post-update">
+          <SectionTitle hint="One message to everyone on the ride, by app or email.">Post an update</SectionTitle>
+          <PostUpdate seriesId={r.id} dates={detail.occurrences} onPosted={() => void reload()} autoFocus={posting} />
         </Card>
       )}
 
       <Card>
         <SectionTitle
-          hint={detail.can_manage ? 'Change or cancel a single date here; the rest of the ride stays as it is.' : undefined}
+          hint={detail.can_manage ? 'Change or cancel one date; the rest stays as it is.' : undefined}
           action={detail.can_manage && !ended ? (
             onBreak
               ? <Button size="sm" onClick={() => void doResume()} busy={busy}><PlayCircle className="h-4 w-4" aria-hidden />End the break now</Button>

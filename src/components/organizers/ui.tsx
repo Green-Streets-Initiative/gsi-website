@@ -12,8 +12,8 @@ export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(' ')
 }
 
-export function Card({ children, className, as: As = 'section' }: { children: ReactNode; className?: string; as?: 'section' | 'div' | 'li' | 'article' }) {
-  return <As className={cx('rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5 sm:p-6', className)}>{children}</As>
+export function Card({ children, className, as: As = 'section', id }: { children: ReactNode; className?: string; as?: 'section' | 'div' | 'li' | 'article'; id?: string }) {
+  return <As id={id} className={cx('scroll-mt-[124px] rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5 sm:p-6 lg:scroll-mt-[80px]', className)}>{children}</As>
 }
 
 export function SectionTitle({ children, hint, action }: { children: ReactNode; hint?: ReactNode; action?: ReactNode }) {

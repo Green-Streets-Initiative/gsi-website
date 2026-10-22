@@ -3,11 +3,12 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ImagePlus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ImagePlus, MessageSquareText, Trash2 } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { errorText, saveRide, uploadFlyer } from '@/lib/organizers/api'
 import { DAY_LABELS, PACE_OPTIONS, TAG_OPTIONS, WEEK_OPTIONS } from '@/lib/organizers/ride-words'
 import type { Frequency, Pace, RideRow, RouteDraft } from '@/lib/organizers/types'
+import { openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
 import RouteMap from './RouteMap'
 import RouteSection from './RouteSection'
@@ -117,9 +118,30 @@ function blocking(f: Form): string | null {
 
 const LINK_OK = (v: string, mail = false) => !v.trim() || (mail ? /^(https?:\/\/|mailto:)\S+$/i : /^https?:\/\/\S+$/i).test(v.trim())
 
+const SECTIONS = [
+  ['sec-ride', 'The ride'], ['sec-when', 'When'], ['sec-where', 'Meeting point'], ['sec-route', 'Route'],
+  ['sec-expect', 'What to expect'], ['sec-signup', 'Sign-ups'], ['sec-who', 'Visibility'],
+] as const
+
+/** Jump links: a sticky list beside the form on wide screens, a strip on phones. */
+function SectionNav() {
+  return (
+    <nav aria-label="Ride form sections"
+      className="sticky top-[60px] z-20 -mx-4 mb-4 overflow-x-auto border-b border-(--ev-line) bg-(--ev-bar) px-4 py-2 backdrop-blur lg:top-[84px] lg:mx-0 lg:mb-0 lg:self-start lg:overflow-visible lg:border-0 lg:bg-transparent lg:p-0">
+      <ul className="flex min-w-max gap-1 lg:min-w-0 lg:flex-col">
+        {SECTIONS.map(([id, label]) => (
+          <li key={id}>
+            <a href={`#${id}`} className="block whitespace-nowrap rounded-lg px-3 py-2 text-[14px] font-semibold text-(--ev-ink-80) hover:bg-(--ev-panel) hover:text-(--ev-ink)">{label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
 export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; onSaved?: () => Promise<void> }) {
   const router = useRouter()
-  const { me } = useConsole()
+  const { me, assistant } = useConsole()
   const draftKey = `shift-organizer-draft:${ride?.id ?? 'new'}`
   const initial = useMemo(() => (ride ? fromRow(ride) : blank()), [ride])
   const [f, setF] = useState<Form>(initial)
@@ -233,6 +255,13 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           : 'A ride you set up here shows up in the Shift app too, with a ride page you can share anywhere.'}
       </p>
 
+      {!ride && assistant && (
+        <div className="mt-4 flex flex-col items-start gap-3 rounded-xl border border-(--ev-accent-line-30) bg-white px-4 py-3 sm:flex-row sm:items-center">
+          <p className="flex min-w-0 flex-1 items-start gap-2 text-[15px] text-(--ev-ink-85)"><MessageSquareText className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />Rather talk it through? The assistant asks a few questions and sets it up with you.</p>
+          <Button size="sm" onClick={() => openAssistant('Plan a new ride with me')}>Plan it with the assistant</Button>
+        </div>
+      )}
+
       {restored && (
         <div className="mt-4">
           <Notice tone="info">
@@ -242,18 +271,20 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-5">
-        <Card>
+      <div className="mt-6 lg:grid lg:grid-cols-[176px_minmax(0,1fr)] lg:gap-8">
+      <SectionNav />
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
+        <Card id="sec-ride">
           <SectionTitle>The ride</SectionTitle>
           <div className="grid gap-4">
             <Field label="Name" htmlFor="ride-name" error={tried && !f.name.trim() ? 'Give the ride a name' : null}>
               <Input id="ride-name" value={f.name} maxLength={120} onChange={(e) => set('name', e.target.value)} placeholder="Saturday Coffee Ride" />
             </Field>
-            <Field label="Description" htmlFor="ride-desc" optional hint="What the ride is like, where it goes, what to bring. A first-timer reads this to decide whether to come.">
+            <Field label="Description" htmlFor="ride-desc" optional hint="What it's like, where it goes, what to bring.">
               <Textarea id="ride-desc" value={f.description} maxLength={4000} onChange={(e) => set('description', e.target.value)} rows={5}
                 placeholder="An easy loop along the river with a coffee stop halfway. Bring lights after October." />
             </Field>
-            <Field label="Flyer" optional hint="A square or portrait image works best. It shows on your ride page and in the app.">
+            <Field label="Flyer" optional hint="Shows on your ride page and in the app.">
               {f.flyer_url ? (
                 <div className="flex items-start gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -273,7 +304,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           </div>
         </Card>
 
-        <Card>
+        <Card id="sec-when">
           <SectionTitle>When</SectionTitle>
           <div className="grid gap-4">
             <div className="flex flex-wrap gap-2" role="group" aria-label="Schedule">
@@ -341,7 +372,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           </div>
         </Card>
 
-        <Card>
+        <Card id="sec-where">
           <SectionTitle hint="Where people gather before you roll out.">Meeting point</SectionTitle>
           <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
             <div className="grid content-start gap-4">
@@ -383,8 +414,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           </div>
         </Card>
 
-        <Card>
-          <SectionTitle hint="Optional, and worth it: people decide on distance, hills and how comfortable the streets are.">Route</SectionTitle>
+        <Card id="sec-route">
+          <SectionTitle hint="Optional. People decide on distance, hills and comfort.">Route</SectionTitle>
           <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null}
             onMeetAtStart={(p) => {
               setF((prev) => ({ ...prev, meetup_lat: p.lat, meetup_lng: p.lng, meetup_address: '', meetup_name: prev.meetup_name ? '' : prev.meetup_name }))
@@ -392,17 +423,17 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
               setMeetupFit((k) => k + 1)
             }} />
           <div className="mt-4">
-            <Field label="Link to the route elsewhere" htmlFor="route-link" optional hint="Strava, Komoot, Google Maps. Shown on the ride page as a link."
+            <Field label="Link to the route elsewhere" htmlFor="route-link" optional hint="Strava, Komoot or Google Maps, shown as a link."
               error={!LINK_OK(f.route_google_maps_url) ? 'Links start with https://' : null}>
               <Input id="route-link" value={f.route_google_maps_url} onChange={(e) => set('route_google_maps_url', e.target.value)} placeholder="https://www.strava.com/routes/…" inputMode="url" />
             </Field>
           </div>
         </Card>
 
-        <Card>
+        <Card id="sec-expect">
           <SectionTitle>What to expect</SectionTitle>
           <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
-            <Field label="Pace" hint="The speed the group actually holds, so people can tell whether they'll keep up.">
+            <Field label="Pace" hint="The speed the group really holds.">
               <div className="flex flex-wrap gap-2">
                 <Toggle on={f.pace === ''} onClick={() => set('pace', '')}>Not stated</Toggle>
                 {PACE_OPTIONS.map((p) => <Toggle key={p.key} on={f.pace === p.key} onClick={() => set('pace', p.key)}>{p.label}</Toggle>)}
@@ -425,18 +456,18 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           </div>
         </Card>
 
-        <Card>
+        <Card id="sec-signup">
           <SectionTitle>Sign-ups and contact</SectionTitle>
           <div className="grid gap-4">
-            <Field label="Registration link" htmlFor="reg" optional hint="If people must sign up or sign a waiver somewhere else. Everyone can still say they're going here."
+            <Field label="Registration link" htmlFor="reg" optional hint="Only if people must sign up or sign a waiver elsewhere."
               error={!LINK_OK(f.registration_url) ? 'Links start with https://' : null}>
               <Input id="reg" value={f.registration_url} onChange={(e) => set('registration_url', e.target.value)} placeholder="https://…" inputMode="url" />
             </Field>
-            <Field label="How people reach you" htmlFor="contact" optional hint="A WhatsApp or Discord group, or a mailto: link. Only people on the ride see it."
+            <Field label="How people reach you" htmlFor="contact" optional hint="A WhatsApp or Discord group, or an email link. Only people on the ride see it."
               error={!LINK_OK(f.contact_url, true) ? 'Start with https:// or mailto:' : null}>
               <Input id="contact" value={f.contact_url} onChange={(e) => set('contact_url', e.target.value)} placeholder="https://chat.whatsapp.com/…" inputMode="url" />
             </Field>
-            <Field label="Live location on the day" htmlFor="live" hint="While a date is running, the organizer's phone (with the Shift app) shows where the group is, as one dot. Nothing to tap on the day.">
+            <Field label="Live location on the day" htmlFor="live" hint="On the day, your phone shows where the group is, as one dot.">
               <Select id="live" value={f.live_sharing} onChange={(e) => set('live_sharing', e.target.value as Form['live_sharing'])} className="max-w-[320px]">
                 <option value="off">Off</option>
                 <option value="members">People on this ride</option>
@@ -446,7 +477,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           </div>
         </Card>
 
-        <Card>
+        <Card id="sec-who">
           <SectionTitle>Who it&rsquo;s from, and who can find it</SectionTitle>
           <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
             <Field label="Visibility">
@@ -483,6 +514,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             )}
           </div>
         </Card>
+      </div>
+
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-(--ev-line) bg-(--ev-bar) backdrop-blur">

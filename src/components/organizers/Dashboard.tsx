@@ -121,7 +121,7 @@ function AskBox({ rides, canCreate }: { rides: DashboardRide[]; canCreate: boole
     .sort((a, b) => a.d.date.localeCompare(b.d.date))[0]
   const chips = [
     canCreate ? 'Plan a new ride with me' : null,
-    next ? `Post "It's on" for ${next.r.name} on ${dateLabel(next.d.date)}` : null,
+    next && !next.d.confirmed ? `Post "It's on" for ${next.r.name} on ${dateLabel(next.d.date)}` : null,
     next ? `What's the forecast for ${dateLabel(next.d.date)}?` : null,
     rides.length ? "Who's coming this week?" : null,
   ].filter(Boolean).slice(0, 3) as string[]

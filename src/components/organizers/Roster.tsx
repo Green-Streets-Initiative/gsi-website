@@ -106,7 +106,6 @@ export default function Roster() {
     return g
   }, [rows])
   const came = (rows ?? []).filter((p) => p.attended)
-  const guests = (rows ?? []).filter((p) => p.is_guest).length
 
   if (dates.length === 0) {
     return <Empty title="No dates yet">Dates appear here within a day of saving the ride.</Empty>
@@ -141,7 +140,7 @@ export default function Roster() {
 
       {canReview && requests.length > 0 && (
         <Card>
-          <SectionTitle hint="Shift counts people automatically from their own trips. These people say they came but their trip didn't match.">
+          <SectionTitle hint="They say they came, but no trip of theirs matched the ride.">
             Credit requests
           </SectionTitle>
           {msg && <div className="mb-3"><Notice tone="good" onClose={() => setMsg(null)}>{msg}</Notice></div>}
@@ -174,7 +173,7 @@ export default function Roster() {
       {msg && !(canReview && requests.length > 0) && <Notice tone="good" onClose={() => setMsg(null)}>{msg}</Notice>}
 
       <Card>
-        <SectionTitle hint={`First names and last initials only. Shift messages everyone for you, so you never need their email or number.${guests ? ` ${plural(guests, 'person', 'people')} answered on the ride page without the app.` : ''}`}>
+        <SectionTitle hint="First names only. Shift messages everyone for you.">
           {past ? 'Who was on the list' : "Who's coming"}
         </SectionTitle>
         {err && <Notice tone="off">{err} <button type="button" className="font-semibold underline" onClick={() => void load()}>Try again</button></Notice>}

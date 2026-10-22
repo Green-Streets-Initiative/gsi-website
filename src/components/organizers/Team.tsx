@@ -67,7 +67,7 @@ export default function Team() {
       {msg && <Notice tone={msg.tone} onClose={() => setMsg(null)}>{msg.text}</Notice>}
 
       <Card>
-        <SectionTitle hint="Co-organizers see who's coming and post updates to everyone on the ride, here or in the app. The organizer sets up dates and details.">
+        <SectionTitle hint="Co-organizers see who's coming and post updates.">
           Who runs this ride
         </SectionTitle>
         <ul className="divide-y divide-(--ev-line)">
@@ -104,7 +104,7 @@ export default function Team() {
 
       {manage && r.status !== 'archived' && (
         <Card>
-          <SectionTitle hint="We email them a link. They sign in with that address, here or in the Shift app, and the ride is theirs to help run.">
+          <SectionTitle hint="They get an email and sign in with that address.">
             Invite a co-organizer
           </SectionTitle>
           <form onSubmit={invite} className="flex flex-col gap-2 sm:flex-row sm:items-end">
