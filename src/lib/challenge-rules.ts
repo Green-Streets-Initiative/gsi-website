@@ -69,6 +69,8 @@ export type ChallengeRulesInput = {
   startsAt: string
   endsAt: string
   goal: number
+  /** What the goal measures: 'trips' (default) or 'tried_new' (Shift 01383/01385). */
+  metric?: string | null
   spots: number
   funded: boolean
   amountCents: number | null
@@ -122,7 +124,14 @@ export function midSentence(text: string | null | undefined): string {
 
 export function prizeSentence(i: ChallengeRulesInput): string {
   const trips = `${i.goal} ${i.goal === 1 ? 'trip' : 'trips'}`
-  const who = i.spots === 1 ? `The first person to reach ${trips} gets` : `The first ${i.spots} people to reach ${trips} each get`
+  const who =
+    i.metric === 'tried_new'
+      ? i.spots === 1
+        ? 'The first person to make a trip a new way gets'
+        : `The first ${i.spots} people to make a trip a new way each get`
+      : i.spots === 1
+        ? `The first person to reach ${trips} gets`
+        : `The first ${i.spots} people to reach ${trips} each get`
   if (i.funded && i.amountCents) {
     return `${who} a ${dollars(i.amountCents)} gift card from ${i.employer}.`
   }

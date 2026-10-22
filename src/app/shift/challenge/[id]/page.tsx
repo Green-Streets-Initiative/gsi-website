@@ -95,6 +95,7 @@ export default async function ChallengeRulesPage({ params }: { params: Promise<{
     startsAt: c.starts_at,
     endsAt: c.ends_at,
     goal: p.goal,
+    metric: p.metric ?? null,
     spots: p.spots,
     funded: p.funded,
     amountCents: p.amount_cents,

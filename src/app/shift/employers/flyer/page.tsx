@@ -56,6 +56,7 @@ type PrizeRow = {
   winner_count: number
   display_order: number
   award_mode: string
+  metric?: string | null
   min_threshold: number | null
   funded_from_pool: boolean
   requires_work_email: boolean
@@ -203,7 +204,7 @@ export default async function EmployerFlyerPage({
     const { data: prizeData } = await supabase
       .from('employer_challenge_prizes')
       .select(
-        'id, name, amount_cents, prize_description, winner_count, display_order, award_mode, min_threshold, funded_from_pool, requires_work_email, published_at, cancelled_at',
+        'id, name, amount_cents, prize_description, winner_count, display_order, award_mode, metric, min_threshold, funded_from_pool, requires_work_email, published_at, cancelled_at',
       )
       .eq('competition_id', challenge.id)
       .order('display_order')
@@ -229,6 +230,7 @@ export default async function EmployerFlyerPage({
     startsAt: challenge!.starts_at,
     endsAt: challenge!.ends_at,
     goal: Number(p.min_threshold ?? 0),
+    metric: p.metric ?? null,
     spots: p.winner_count,
     funded: p.funded_from_pool,
     amountCents: p.amount_cents,

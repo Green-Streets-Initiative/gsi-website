@@ -297,6 +297,9 @@ export function prizeSummary(p: PrizeFormState | undefined): string {
   if (!p) return 'No reward: your team still competes on the leaderboard.'
   const n = parseInt(p.winner_count, 10) || 0
   const goal = p.min_threshold || '0'
+  if (p.award_mode === 'guaranteed' && p.metric === 'tried_new') {
+    return `The first ${n} ${n === 1 ? 'person' : 'people'} to make a trip a new way each get ${rewardText(p)}.`
+  }
   if (p.award_mode === 'guaranteed') {
     return `The first ${n} ${n === 1 ? 'person' : 'people'} to reach ${goal} trips each get ${rewardText(p)}.`
   }
@@ -484,8 +487,19 @@ export default function ChallengeWizard({
         ? { ...EMPTY_PRIZE_FORM, name: 'Drawing', award_mode: 'drawing', metric: 'trips', min_threshold: '8', winner_count: '3', funded_from_pool: true }
         : { ...EMPTY_PRIZE_FORM, name: 'Top commuters', award_mode: 'merit', metric: 'trips', min_threshold: '1', winner_count: '3', funded_from_pool: true }
   const addPrize = (k: Exclude<PrizeKind, 'none'>) => setPrizeForms([...prizeForms, blankPrize(k)])
+  // Try something new stays Try something new between a drawing and a
+  // first-N goal (Shift 01385); the leaderboard has no new-ways ranking.
   const setKind = (i: number, k: Exclude<PrizeKind, 'none'>) =>
-    setPrizeForms(prizeForms.map((p, j) => (j === i ? { ...blankPrize(k), id: p.id } : p)))
+    setPrizeForms(
+      prizeForms.map((p, j) => {
+        if (j !== i) return p
+        const next = { ...blankPrize(k), id: p.id }
+        if (p.metric !== 'tried_new' || k === 'top') return next
+        return k === 'goal'
+          ? { ...next, name: 'First to try something new', metric: 'tried_new', min_threshold: '1', winner_count: '25', amount_dollars: '10' }
+          : { ...next, name: 'Try something new', metric: 'tried_new', min_threshold: '1' }
+      }),
+    )
   const headline = prizeForms[0]
   const headlineKind = kindOf(headline)
   const firstGoal = prizeForms.find((p) => p.award_mode === 'guaranteed')
@@ -1239,6 +1253,14 @@ function PrizeSentence({
   onChange: (patch: Partial<PrizeFormState>) => void
 }) {
   const row = 'flex flex-wrap items-center gap-x-2 gap-y-2 text-[15px] leading-[2] text-ink'
+  if (kind === 'goal' && p.metric === 'tried_new') {
+    return (
+      <div className={row}>
+        The first <Num id="cw-spots" label="Number of winners" value={p.winner_count} disabled={live} onChange={(v) => onChange({ winner_count: v })} /> people
+        to make a trip a new way (on foot, by bike, on transit or in a carpool) win.
+      </div>
+    )
+  }
   if (kind === 'goal') {
     return (
       <div className={row}>

@@ -113,6 +113,7 @@ export default function TellYourTeam({
     startsAt: challenge.starts_at,
     endsAt: challenge.ends_at,
     goal: prize.goal,
+    metric: prize.metric ?? null,
     spots: prize.spots,
     funded: prize.funded,
     amountCents: prize.amountCents,

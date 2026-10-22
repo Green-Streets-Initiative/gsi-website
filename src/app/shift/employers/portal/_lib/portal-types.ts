@@ -307,6 +307,8 @@ export type GuaranteedPrizeProgress = {
   spent_cents: number
   counting: number
   within_two: number
+  /** 'tried_new' for Try something new (Shift 01385); trips otherwise. */
+  metric?: string
   winner_list: GuaranteedWinner[]
 }
 

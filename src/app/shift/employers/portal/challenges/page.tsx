@@ -95,7 +95,9 @@ function prizeSummary(prizes: ChallengePrize[]): string {
   const n = p.winner_count
   const head =
     p.award_mode === 'guaranteed'
-      ? `First ${n} to reach ${p.min_threshold ?? 0} ${p.metric === 'trips' ? 'trips' : (PRIZE_METRIC_LABELS[p.metric] ?? p.metric).toLowerCase()}`
+      ? p.metric === 'tried_new'
+        ? `First ${n} to try something new`
+        : `First ${n} to reach ${p.min_threshold ?? 0} ${p.metric === 'trips' ? 'trips' : (PRIZE_METRIC_LABELS[p.metric] ?? p.metric).toLowerCase()}`
       : p.award_mode === 'merit'
         ? `Top ${n}`
         : `${p.metric === 'tried_new' ? 'Try something new' : 'Drawing'} · ${n} ${n === 1 ? 'winner' : 'winners'}`

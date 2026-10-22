@@ -114,7 +114,7 @@ export function formToBody(form: WizardForm, prizeForms: PrizeFormState[], canUs
           id: p.id,
           name: p.name,
           award_mode: p.award_mode,
-          metric: p.award_mode === 'guaranteed' ? 'trips' : p.metric,
+          metric: p.award_mode === 'guaranteed' && p.metric !== 'tried_new' ? 'trips' : p.metric,
           min_threshold: p.min_threshold.trim() ? Number(p.min_threshold) : null,
           winner_count: intOrNull(p.winner_count),
           funded_from_pool: p.funded_from_pool,

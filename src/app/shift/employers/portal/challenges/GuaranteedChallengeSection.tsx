@@ -324,7 +324,7 @@ export default function GuaranteedChallengeSection({
                     </Badge>
                   </div>
                   <div className="text-[14px] leading-[1.5] text-ink-muted">
-                    First {p.spots} to reach {p.goal} trips ·{' '}
+                    {p.metric === 'tried_new' ? `First ${p.spots} to try something new` : `First ${p.spots} to reach ${p.goal} trips`} ·{' '}
                     {p.funded && p.amount_cents ? `${dollars(p.amount_cents)} gift card each` : p.description}
                     {p.requires_work_email && ' · verified employees only'}
                   </div>
@@ -368,7 +368,9 @@ export default function GuaranteedChallengeSection({
                     <span className="text-ink-muted">of {p.spots} spots taken · {left} left</span>
                   </span>
                   <span className="text-ink-muted">
-                    {p.within_two} within 2 trips of the goal · {p.counting} with trips counting so far
+                    {p.metric === 'tried_new'
+                      ? `${p.counting} with trips counting so far`
+                      : `${p.within_two} within 2 trips of the goal · ${p.counting} with trips counting so far`}
                   </span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-surface">
@@ -520,6 +522,7 @@ export default function GuaranteedChallengeSection({
                 prize={{
                   kind: 'goal',
                   goal: kitPrize.goal,
+                  metric: kitPrize.metric,
                   spots: kitPrize.spots,
                   funded: kitPrize.funded,
                   amountCents: kitPrize.amount_cents,

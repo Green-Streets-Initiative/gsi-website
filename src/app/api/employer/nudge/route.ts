@@ -173,7 +173,7 @@ export async function POST(request: Request) {
     // in the same words the app and the rules page use.
     const { data: guaranteed } = await sb
       .from('employer_challenge_prizes')
-      .select('competition_id, min_threshold, winner_count, funded_from_pool, amount_cents, prize_description, requires_work_email')
+      .select('competition_id, min_threshold, metric, winner_count, funded_from_pool, amount_cents, prize_description, requires_work_email')
       .in('competition_id', challengeIds)
       .eq('award_mode', 'guaranteed')
       .not('published_at', 'is', null)
@@ -190,6 +190,7 @@ export async function POST(request: Request) {
             startsAt: c.ends_at,
             endsAt: c.ends_at,
             goal: Number(g.min_threshold),
+            metric: g.metric ?? null,
             spots: g.winner_count,
             funded: g.funded_from_pool,
             amountCents: g.amount_cents,
