@@ -93,7 +93,7 @@ export default async function SurveyReportPage({ searchParams }: { searchParams:
   const nextSteps =
     format === 'massdep' && rate != null
       ? rate >= 75
-        ? `The MassDEP summary is ready to file by December 31 (${massdepBand(rate).form}).`
+        ? `The MassDEP summary is ready to file by December 31. This rate allows ${massdepBand(rate).form}.`
         : rate >= 50
           ? 'At this rate MassDEP allows the SCD 2 form only with one more trip-reduction incentive, otherwise SCD 3. A higher response next year means a shorter form.'
           : 'Below 50% MassDEP will not accept the survey as a census. Plan an earlier reminder and a raffle next year.'

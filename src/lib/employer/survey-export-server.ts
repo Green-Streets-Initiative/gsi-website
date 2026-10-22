@@ -82,7 +82,7 @@ export async function shiftEvidence(groupId: string, g: SurveyGroupRow): Promise
     sb.rpc('get_employer_dashboard_data', { p_group_id: groupId, p_days: 365, p_starts_at: yearStart, p_ends_at: now.toISOString() }),
     sb.rpc('get_employer_dashboard_data', { p_group_id: groupId, p_days: 30, p_starts_at: joined.toISOString(), p_ends_at: first30End.toISOString() }),
     sb.rpc('get_employer_members', { p_group_id: groupId, p_days: 30 }),
-    sb.from('competitions').select('name, starts_at, ends_at').eq('group_id', groupId).gte('ends_at', yearStart).order('starts_at').limit(20),
+    sb.from('competitions').select('name, starts_at, ends_at').eq('group_id', groupId).gte('ends_at', yearStart).lte('starts_at', now.toISOString()).order('starts_at').limit(20),
   ])
   const y = (ytd.data ?? null) as Dash | null
   const f = (first30.data ?? null) as Dash | null
