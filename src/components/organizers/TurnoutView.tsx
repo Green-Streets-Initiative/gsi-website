@@ -100,7 +100,7 @@ export default function TurnoutView() {
             ['First-timers', totals.first_timers],
           ] as const).map(([k, v]) => (
             <div key={k} className="rounded-xl bg-(--ev-panel-faint) px-4 py-3">
-              <dt className="text-[13px] font-semibold text-(--ev-ink-75)">{k}</dt>
+              <dt className="text-[14px] font-semibold text-(--ev-ink-75)">{k}</dt>
               <dd className="mt-1 font-display text-[28px] font-extrabold leading-none">{v}</dd>
             </div>
           ))}
@@ -112,7 +112,7 @@ export default function TurnoutView() {
         <div className="-mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
           <table className="w-full min-w-[640px] text-left text-[14px]">
             <thead>
-              <tr className="border-b border-(--ev-line-mid) text-[13px] text-(--ev-ink-75)">
+              <tr className="border-b border-(--ev-line-mid) text-[14px] text-(--ev-ink-75)">
                 {['Month', 'Dates run', 'Said going', 'Came', 'People', 'First-timers', 'Came back'].map((h, i) => (
                   <th key={h} scope="col" className={i ? 'py-2 pl-3 text-right font-semibold' : 'py-2 font-semibold'}>{h}</th>
                 ))}
@@ -140,7 +140,7 @@ export default function TurnoutView() {
         <div className="-mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
           <table className="w-full min-w-[560px] text-left text-[14px]">
             <thead>
-              <tr className="border-b border-(--ev-line-mid) text-[13px] text-(--ev-ink-75)">
+              <tr className="border-b border-(--ev-line-mid) text-[14px] text-(--ev-ink-75)">
                 {['Date', 'Said going', 'Maybe', 'Came', 'First-timers', 'Came back'].map((h, i) => (
                   <th key={h} scope="col" className={i ? 'py-2 pl-3 text-right font-semibold' : 'py-2 font-semibold'}>{h}</th>
                 ))}

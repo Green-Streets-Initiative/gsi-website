@@ -22,6 +22,7 @@ export function errorText(e: unknown, fallback = 'Something went wrong. Try agai
   if (!msg) return fallback
   if (/JWT|not signed in|401/i.test(msg)) return 'Your sign-in ran out. Sign in again to keep going.'
   if (/Failed to fetch|NetworkError/i.test(msg)) return "Couldn't reach Shift. Check your connection and try again."
+  if (/timed out|TimeoutError|aborted/i.test(msg)) return 'That took too long. Try again in a minute.'
   return msg
 }
 
@@ -38,9 +39,10 @@ export async function accessToken(): Promise<string> {
   return token
 }
 
-async function shiftFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
+async function shiftFunction<T>(name: string, body: Record<string, unknown>, timeoutMs = 30_000): Promise<T> {
   const token = await accessToken()
   const res = await fetch(`${FUNCTIONS}/${name}`, {
+    signal: AbortSignal.timeout(timeoutMs),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: ANON, Authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
@@ -230,7 +232,8 @@ export interface PlannedRoute {
 
 /** Shift's comfort-scored route planner, the same one the app's "Plan route" uses. */
 export const planRoute = (pins: { lat: number; lng: number; label?: string }[], pace: string | null) =>
-  shiftFunction<PlannedRoute>('plan-ride-route', { pins, mode: 'bike', pace: pace ?? undefined })
+  // The planner checks every street between the stops; three legs can take a minute.
+  shiftFunction<PlannedRoute>('plan-ride-route', { pins, mode: 'bike', pace: pace ?? undefined }, 90_000)
 
 export interface ScoredRoute {
   distanceMiles: number
@@ -247,7 +250,7 @@ export interface ScoredRoute {
  * goes to review whichever way it came in.
  */
 export const scoreRoute = (polyline: { lat: number; lng: number }[], pace: string | null) =>
-  shiftFunction<ScoredRoute>('plan-ride-route', { pins: polyline.slice(0, 2), polyline, mode: 'bike', pace: pace ?? undefined })
+  shiftFunction<ScoredRoute>('plan-ride-route', { pins: polyline.slice(0, 2), polyline, mode: 'bike', pace: pace ?? undefined }, 90_000)
 
 export interface ImportedRoute {
   name: string | null

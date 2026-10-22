@@ -21,7 +21,7 @@ interface Props {
   pick: boolean
   onPick?: (p: LatLng) => void
   /** Bumps when the caller wants the view refit to the content. */
-  fitKey?: number
+  fitKey?: number | string
   className?: string
   label?: string
 }
@@ -125,7 +125,7 @@ export default function RouteMap({ line, stops, meetup, pick, onPick, fitKey = 0
       if (!map || !ml) return
       const pts: LatLng[] = [...line, ...stops, ...(meetup ? [meetup] : [])]
       if (pts.length === 0) return
-      if (pts.length === 1) { map.easeTo({ center: [pts[0].lng, pts[0].lat], zoom: 14 }); return }
+      if (pts.length === 1) { map.easeTo({ center: [pts[0].lng, pts[0].lat], zoom: 13.5 }); return }
       const b = new ml.LngLatBounds([pts[0].lng, pts[0].lat], [pts[0].lng, pts[0].lat])
       pts.forEach((p) => b.extend([p.lng, p.lat]))
       map.fitBounds(b, { padding: 48, maxZoom: 15, duration: 400 })

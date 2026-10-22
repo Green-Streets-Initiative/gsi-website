@@ -34,7 +34,9 @@ export default function PostUpdate({ seriesId, dates, onPosted, autoFocus }: {
   const today = todayKey()
   const open = useMemo(() => dates.filter((d) => d.status === 'scheduled' && d.date >= today), [dates, today])
   const [kind, setKind] = useState<Kind>('on')
-  const [dateId, setDateId] = useState<string>(open[0]?.id ?? '')
+  const [picked, setDateId] = useState<string>(open[0]?.id ?? '')
+  // A picked date that has since been cancelled falls back to the next open one.
+  const dateId = picked === '' || open.some((d) => d.id === picked) ? picked : (open[0]?.id ?? '')
   const [note, setNote] = useState('')
   const [reach, setReach] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
@@ -45,8 +47,6 @@ export default function PostUpdate({ seriesId, dates, onPosted, autoFocus }: {
   const needsDate = preset.needsDate
   const occurrenceId = needsDate ? dateId : (dateId || null)
   const missing = (needsDate && !dateId) ? 'Pick a date' : (preset.needsNote && !note.trim()) ? 'Add a short message' : null
-
-  useEffect(() => { if (!dateId && open[0]) setDateId(open[0].id) }, [open, dateId])
 
   // How many it would reach, before anyone presses send.
   useEffect(() => {

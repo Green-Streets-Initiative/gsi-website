@@ -20,7 +20,7 @@ const GROUPS: { key: 'going' | 'maybe' | 'none' | 'not_going'; label: string }[]
 function Person({ p, past }: { p: RosterRow; past: boolean }) {
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-[13px] font-bold text-(--ev-ink-85)" aria-hidden>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-[14px] font-bold text-(--ev-ink-85)" aria-hidden>
         {p.display_name.slice(0, 1).toUpperCase()}
       </span>
       <span className="text-[15px] font-semibold text-(--ev-ink)">{p.display_name}{p.is_you ? ' (you)' : ''}</span>
@@ -99,7 +99,10 @@ export default function Roster() {
 
   const grouped = useMemo(() => {
     const g: Record<string, RosterRow[]> = { going: [], maybe: [], none: [], not_going: [] }
-    for (const p of rows ?? []) g[p.rsvp_status ?? 'none'].push(p)
+    for (const p of rows ?? []) {
+      if (!p.rsvp_status && p.role !== 'rider') continue // the people running it
+      g[p.rsvp_status ?? 'none'].push(p)
+    }
     return g
   }, [rows])
   const came = (rows ?? []).filter((p) => p.attended)
@@ -126,7 +129,7 @@ export default function Roster() {
             <dl className="flex flex-wrap gap-x-6 gap-y-2">
               {(past ? [['Came', came.length]] : [['Going', date.going], ['Maybe', date.maybe], ["Can't go", date.cant]]).map(([k, v]) => (
                 <div key={k as string}>
-                  <dt className="text-[13px] font-semibold text-(--ev-ink-75)">{k}</dt>
+                  <dt className="text-[14px] font-semibold text-(--ev-ink-75)">{k}</dt>
                   <dd className="font-display text-[26px] font-extrabold leading-none text-(--ev-ink)">{v}</dd>
                 </div>
               ))}
@@ -147,7 +150,7 @@ export default function Roster() {
               <li key={q.member_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                 <div>
                   <p className="text-[15px] font-semibold text-(--ev-ink)">{q.display_name}</p>
-                  <p className="text-[13px] text-(--ev-ink-75)">
+                  <p className="text-[14px] text-(--ev-ink-75)">
                     {q.here_at_start ? 'Checked in at the start. ' : ''}
                     {q.rides_attended > 0 ? `Came ${plural(q.rides_attended, 'time')} before.` : 'Would be their first time.'}
                     {q.declined ? ' You declined this.' : ''}
@@ -181,7 +184,7 @@ export default function Roster() {
           <div className="grid gap-6 md:grid-cols-2">
             {GROUPS.map((g) => grouped[g.key].length > 0 && (
               <section key={g.key} className={cx(g.key === 'none' || g.key === 'not_going' ? 'md:col-span-1' : '')}>
-                <h3 className="text-[14px] font-bold uppercase tracking-[0.06em] text-(--ev-ink-75)">{g.label} · {grouped[g.key].length}</h3>
+                <h3 className="text-[15px] font-bold text-(--ev-ink-85)">{g.label} · {grouped[g.key].length}</h3>
                 <ul className="mt-1 divide-y divide-(--ev-line)">
                   {grouped[g.key].map((p) => <Person key={p.member_id} p={p} past={past} />)}
                 </ul>
@@ -190,7 +193,7 @@ export default function Roster() {
           </div>
         )}
         {past && (
-          <p className="mt-5 border-t border-(--ev-line) pt-3 text-[13px] leading-snug text-(--ev-ink-75)">
+          <p className="mt-5 border-t border-(--ev-line) pt-3 text-[14px] leading-snug text-(--ev-ink-75)">
             &ldquo;Came&rdquo; comes from people&rsquo;s own trips in the Shift app, plus the requests you approve. For people who answered on
             the ride page, the list shows who planned to come.
           </p>

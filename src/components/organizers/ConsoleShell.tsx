@@ -58,11 +58,11 @@ function TopBar() {
         )}
         {(phase === 'ready' || phase === 'no_access') && me?.email && (
           <div className="ml-auto flex min-w-0 items-center gap-2">
-            <span className="hidden truncate text-[13px] text-(--ev-ink-75) md:inline">{me.email}</span>
+            <span className="hidden truncate text-[14px] text-(--ev-ink-75) md:inline">{me.email}</span>
             <button
               type="button"
               onClick={() => void signOut()}
-              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold text-(--ev-ink-80) hover:bg-(--ev-panel)"
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[14px] font-semibold text-(--ev-ink-80) hover:bg-(--ev-panel)"
             >
               <LogOut className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">Sign out</span>
@@ -126,7 +126,7 @@ function SignIn() {
   return (
     <div className="mx-auto grid max-w-[980px] gap-8 pt-2 md:grid-cols-[1.1fr_1fr] md:items-center md:pt-10">
       <div>
-        <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-(--ev-accent)">Shift for ride organizers</p>
+        <p className="text-[15px] font-semibold text-(--ev-accent)">Shift for ride organizers</p>
         <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-(--ev-ink)">
           Plan and run your group&rsquo;s rides from your laptop
         </h1>
@@ -156,7 +156,7 @@ function SignIn() {
               <Button onClick={() => void send()} busy={busy}>Send it again</Button>
               <Button variant="ghost" onClick={() => { setSent(null); setErr(null) }}>Use a different email</Button>
             </div>
-            {err && <p role="alert" className="mt-3 text-[13px] font-semibold text-(--ev-danger)">{err}</p>}
+            {err && <p role="alert" className="mt-3 text-[14px] font-semibold text-(--ev-danger)">{err}</p>}
           </div>
         ) : (
           <form onSubmit={send} noValidate>
@@ -178,7 +178,7 @@ function SignIn() {
               </Field>
             </div>
             <Button type="submit" variant="primary" className="mt-4 w-full" busy={busy}>Email me a sign-in link</Button>
-            <p className="mt-4 text-[13px] leading-snug text-(--ev-ink-75)">
+            <p className="mt-4 text-[14px] leading-snug text-(--ev-ink-75)">
               Ride tools are invite-only while we try them with a few groups.
             </p>
           </form>

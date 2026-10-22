@@ -11,6 +11,15 @@ import { Badge, Button, Field, Input, Notice, cx } from './ui'
 
 type Mode = 'draw' | 'rwgps' | 'gpx'
 
+/** "Start to stop 1", "Stop 1 to stop 2", "Stop 3 back to the start". */
+function legLabel(i: number, legs: number, pins: LatLng[]): string {
+  if (legs === 1) return 'Choose a way:'
+  const from = i === 0 ? 'Start' : `Stop ${i}`
+  const last = pins[pins.length - 1]
+  const loop = i === legs - 1 && !!last && Math.abs(last.lat - pins[0].lat) < 1e-5 && Math.abs(last.lng - pins[0].lng) < 1e-5
+  return `${from} ${loop ? 'back to the start' : `to stop ${i + 1}`}:`
+}
+
 const MODES: { key: Mode; label: string }[] = [
   { key: 'draw', label: 'Draw on the map' },
   { key: 'rwgps', label: 'Ride with GPS link' },
@@ -33,6 +42,9 @@ export default function RouteSection({ route, onRoute, meetup, pace }: {
   const [fitKey, setFitKey] = useState(0)
   const [scoring, setScoring] = useState<'idle' | 'busy' | 'failed'>('idle')
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // A new meeting point brings the map to it.
+  const meetKey = meetup ? `${meetup.lat.toFixed(5)},${meetup.lng.toFixed(5)}` : ''
 
   // The planner's pins: the meeting point first, then the stops clicked in.
   const pins = useMemo(() => [...(meetup ? [meetup] : []), ...stops], [meetup, stops])
@@ -179,6 +191,10 @@ export default function RouteSection({ route, onRoute, meetup, pace }: {
         </div>
       )}
 
+      {busy && mode === 'draw' && (
+        <p className="mb-3 text-[14px] text-(--ev-ink-80)" role="status">Checking every street between your stops. This can take up to a minute.</p>
+      )}
+
       {mode === 'rwgps' && (
         <div className="mb-3">
           <Field label="Route link" hint="A public or unlisted route on ridewithgps.com. Private routes: export a GPX file instead." htmlFor="rwgps-link">
@@ -211,7 +227,7 @@ export default function RouteSection({ route, onRoute, meetup, pace }: {
         meetup={meetup}
         pick={pickOnMap}
         onPick={(p) => setStops((s) => [...s, p])}
-        fitKey={fitKey}
+        fitKey={`${fitKey}|${meetKey}`}
         label="Route map. Click to add a stop."
       />
 
@@ -219,10 +235,10 @@ export default function RouteSection({ route, onRoute, meetup, pace }: {
         <div className="mt-3 space-y-2">
           {plan.legs.map((leg, i) => leg.options.length > 1 && (
             <div key={i} className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[13px] font-semibold text-(--ev-ink-80)">{plan.legs.length > 1 ? `Stop ${i + 1} to ${i + 2}:` : 'Options:'}</span>
+              <span className="text-[14px] font-semibold text-(--ev-ink-80)">{legLabel(i, plan.legs.length, pins)}</span>
               {leg.options.map((o, j) => (
                 <button key={j} type="button" aria-pressed={chosen[i] === j} onClick={() => choose(i, j)}
-                  className={cx('rounded-full border px-3 py-1 text-[13px] font-semibold',
+                  className={cx('rounded-full border px-3 py-1 text-[14px] font-semibold',
                     chosen[i] === j ? 'border-(--ev-accent-fill) bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'border-(--ev-line-strong) bg-white text-(--ev-ink-85) hover:bg-(--ev-panel)')}>
                   {o.distanceMiles.toFixed(1)} mi{o.summary ? ` · ${o.summary}` : ''}
                 </button>
@@ -249,11 +265,11 @@ export default function RouteSection({ route, onRoute, meetup, pace }: {
             </div>
           )}
           {concerns > 0 && (
-            <p className="mt-2 text-[13px] text-(--ev-ink-80)">{concerns === 1 ? 'One spot' : `${concerns} spots`} on this route have a crash history or a tricky crossing. People see them on the ride page in the app.</p>
+            <p className="mt-2 text-[14px] text-(--ev-ink-80)">{concerns === 1 ? 'One spot' : `${concerns} spots`} on this route have a crash history or a tricky crossing. People see them on the ride page in the app.</p>
           )}
-          {scoring === 'busy' && <p className="mt-2 text-[13px] text-(--ev-ink-75)" role="status">Checking the streets on this route…</p>}
+          {scoring === 'busy' && <p className="mt-2 text-[14px] text-(--ev-ink-75)" role="status">Checking the streets on this route…</p>}
           {scoring === 'failed' && route.source !== 'drawn' && (
-            <p className="mt-2 text-[13px] text-(--ev-ink-75)">We couldn&rsquo;t score this route&rsquo;s streets just now. You can save it as it is.</p>
+            <p className="mt-2 text-[14px] text-(--ev-ink-75)">We couldn&rsquo;t score this route&rsquo;s streets just now. You can save it as it is.</p>
           )}
         </div>
       )}

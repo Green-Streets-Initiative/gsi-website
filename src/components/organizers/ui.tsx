@@ -48,7 +48,7 @@ export function Button({
       className={cx(
         'inline-flex items-center justify-center gap-1.5 rounded-[10px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-60',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--ev-accent)',
-        size === 'sm' ? 'min-h-[36px] px-3 text-[13px]' : 'min-h-[44px] px-4 text-[15px]',
+        size === 'sm' ? 'min-h-[36px] px-3 text-[14px]' : 'min-h-[44px] px-4 text-[15px]',
         VARIANT[variant],
         className,
       )}
@@ -64,13 +64,14 @@ export function Field({ label, hint, htmlFor, children, error, optional }: {
 }) {
   return (
     <div>
-      <label htmlFor={htmlFor} className="block text-[14px] font-semibold text-(--ev-ink-85)">
-        {label}
-        {optional && <span className="ml-1.5 font-normal text-(--ev-ink-75)">(optional)</span>}
-      </label>
-      {hint && <p className="mt-0.5 text-[13px] leading-snug text-(--ev-ink-75)">{hint}</p>}
+      {(() => {
+        const inner = <>{label}{optional && <span className="ml-1.5 font-normal text-(--ev-ink-75)">(optional)</span>}</>
+        const cls = 'block text-[15px] font-semibold text-(--ev-ink-85)'
+        return htmlFor ? <label htmlFor={htmlFor} className={cls}>{inner}</label> : <p className={cls}>{inner}</p>
+      })()}
+      {hint && <p className="mt-0.5 text-[14px] leading-snug text-(--ev-ink-75)">{hint}</p>}
       <div className="mt-1.5">{children}</div>
-      {error && <p role="alert" className="mt-1 text-[13px] font-semibold text-(--ev-danger)">{error}</p>}
+      {error && <p role="alert" className="mt-1 text-[14px] font-semibold text-(--ev-danger)">{error}</p>}
     </div>
   )
 }
@@ -210,4 +211,24 @@ export async function copyText(text: string): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+/** A confirmation that appears where the eye is, then goes away. */
+export function Toast({ tone = 'good', children, onClose }: { tone?: 'good' | 'off'; children: ReactNode; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, tone === 'off' ? 12_000 : 8_000)
+    return () => clearTimeout(t)
+  }, [onClose, tone])
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[90] flex justify-center px-4">
+      <div role={tone === 'off' ? 'alert' : 'status'}
+        className={cx('pointer-events-auto flex max-w-xl items-start gap-3 rounded-xl px-4 py-3 text-[15px] leading-snug shadow-(--ev-shadow)',
+          tone === 'off' ? 'bg-[#FBE4DF] text-(--ev-danger)' : 'bg-(--ev-toast) text-(--ev-ink-on-toast)')}>
+        <div className="min-w-0 flex-1">{children}</div>
+        <button type="button" onClick={onClose} aria-label="Dismiss" className="-m-1 rounded p-1 opacity-80 hover:opacity-100">
+          <X className="h-4 w-4" aria-hidden />
+        </button>
+      </div>
+    </div>
+  )
 }

@@ -368,7 +368,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
               <Field label="What to call it" htmlFor="meetup-name" hint="The spot people look for when they arrive.">
                 <Input id="meetup-name" value={f.meetup_name} onChange={(e) => set('meetup_name', e.target.value)} placeholder="The bike racks by the Davis T entrance" />
               </Field>
-              {meetup && <p className="text-[13px] text-(--ev-ink-75)">Click the map to move the pin to the exact spot.</p>}
+              {meetup && <p className="text-[14px] text-(--ev-ink-75)">Click the map to move the pin to the exact spot.</p>}
             </div>
             <RouteMap
               line={[]}
@@ -407,7 +407,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
               <input type="checkbox" checked={f.no_drop} onChange={(e) => set('no_drop', e.target.checked)} className="mt-1 h-5 w-5 accent-(--ev-accent-fill)" />
               <span>
                 <span className="block text-[15px] font-semibold text-(--ev-ink)">Nobody gets dropped</span>
-                <span className="block text-[13px] text-(--ev-ink-75)">The group waits or regroups so slower people stay with it.</span>
+                <span className="block text-[14px] text-(--ev-ink-75)">The group waits or regroups so slower people stay with it.</span>
               </span>
             </label>
             <Field label="Tags" optional>
@@ -453,7 +453,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                   <button key={v} type="button" aria-pressed={f.visibility === v} onClick={() => set('visibility', v)}
                     className={cx('rounded-xl border p-3 text-left transition', f.visibility === v ? 'border-(--ev-accent-fill) bg-(--ev-panel) ring-1 ring-(--ev-accent-fill)' : 'border-(--ev-line-strong) bg-white hover:bg-(--ev-panel-faint)')}>
                     <span className="block text-[15px] font-semibold text-(--ev-ink)">{label}</span>
-                    <span className="mt-0.5 block text-[13px] leading-snug text-(--ev-ink-75)">{hint}</span>
+                    <span className="mt-0.5 block text-[14px] leading-snug text-(--ev-ink-75)">{hint}</span>
                   </button>
                 ))}
               </div>

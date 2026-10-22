@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CalendarDays, MapPin, Megaphone, Plus, Users } from 'lucide-react'
 import { ago, clock, scheduleText } from '@/lib/rides/public'
 import { errorText, getRides } from '@/lib/organizers/api'
-import { UPDATE_KIND_LABEL, dateLabel, plural } from '@/lib/organizers/ride-words'
+import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
 import type { DashboardRide, NextDate } from '@/lib/organizers/types'
 import { useConsole } from './ConsoleContext'
 import { Badge, Button, Card, Empty, Notice, Spinner, cx, type Tone } from './ui'
@@ -38,9 +38,9 @@ function DateChip({ d, rideId }: { d: NextDate; rideId: string }) {
       )}
     >
       <span className={cx('text-[14px] font-bold', off ? 'text-(--ev-ink-75) line-through' : 'text-(--ev-ink)')}>{dateLabel(d.date)}</span>
-      <span className="text-[13px] text-(--ev-ink-75)">{off ? 'Cancelled' : clock(d.start_time)}{!off && d.moved ? ' · changed' : ''}</span>
+      <span className="text-[14px] text-(--ev-ink-75)">{off ? 'Cancelled' : clock(d.start_time)}{!off && d.moved ? ' · changed' : ''}</span>
       {!off && (
-        <span className="mt-1 text-[13px] font-semibold text-(--ev-ink-85)">
+        <span className="mt-1 text-[14px] font-semibold text-(--ev-ink-85)">
           {d.going} going{d.maybe > 0 ? ` · ${d.maybe} maybe` : ''}
         </span>
       )}
@@ -50,7 +50,7 @@ function DateChip({ d, rideId }: { d: NextDate; rideId: string }) {
 }
 
 function RideCard({ r }: { r: DashboardRide }) {
-  const canPost = r.status !== 'archived'
+  const canPost = r.status !== 'archived' && (!r.ride_date || r.next_dates.length > 0)
   return (
     <Card as="li" className="list-none">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -139,10 +139,13 @@ export default function Dashboard() {
 
   const groups = useMemo(() => {
     const all = rides ?? []
+    const today = todayKey()
+    // A one-off ride whose day has gone is history, with ended rides.
+    const over = (r: DashboardRide) => r.status === 'archived' || (!!r.ride_date && r.ride_date < today && r.next_dates.length === 0)
     return {
-      mine: all.filter((r) => r.my_role !== 'admin' && r.status !== 'archived'),
-      others: all.filter((r) => r.my_role === 'admin' && r.status !== 'archived'),
-      ended: all.filter((r) => r.status === 'archived'),
+      mine: all.filter((r) => r.my_role !== 'admin' && !over(r)),
+      others: all.filter((r) => r.my_role === 'admin' && !over(r)),
+      ended: all.filter(over),
     }
   }, [rides])
 
@@ -178,10 +181,12 @@ export default function Dashboard() {
 
       {rides && groups.mine.length === 0 && groups.others.length === 0 && (
         <Empty
-          title={me?.can_create ? 'Set up your first ride' : 'No rides yet'}
+          title={groups.ended.length > 0 ? 'Nothing coming up' : me?.can_create ? 'Set up your first ride' : 'No rides yet'}
           action={newRide}
         >
-          {me?.can_create
+          {groups.ended.length > 0 && me?.can_create
+            ? 'Set up the next one: a one-off or a regular ride, with its own page to share.'
+            : me?.can_create
             ? 'A one-off ride or a regular one, with a meeting point and a route. You get a ride page to share, and everyone who answers lands on your list.'
             : 'When an organizer adds you as a co-organizer, their ride shows up here.'}
         </Empty>
@@ -202,7 +207,7 @@ export default function Dashboard() {
       {groups.ended.length > 0 && (
         <section className="mt-10">
           <Button variant="ghost" onClick={() => setShowEnded((v) => !v)} aria-expanded={showEnded}>
-            {showEnded ? 'Hide' : 'Show'} {plural(groups.ended.length, 'ended ride')}
+            {showEnded ? 'Hide' : 'Show'} {plural(groups.ended.length, 'past ride')}
           </Button>
           {showEnded && <ul className="mt-3 space-y-4">{groups.ended.map((r) => <RideCard key={r.id} r={r} />)}</ul>}
         </section>

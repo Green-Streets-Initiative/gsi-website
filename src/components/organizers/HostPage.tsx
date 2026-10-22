@@ -84,7 +84,7 @@ function Editor({ org, onSaved }: { org: OrgClaim; onSaved: () => void }) {
           <input type="checkbox" checked={noDrop} onChange={(e) => touch(setNoDrop)(e.target.checked)} className="mt-1 h-5 w-5 accent-(--ev-accent-fill)" />
           <span>
             <span className="block text-[15px] font-semibold text-(--ev-ink)">Nobody gets dropped, on every ride</span>
-            <span className="block text-[13px] text-(--ev-ink-75)">The group waits or regroups so slower people stay with it.</span>
+            <span className="block text-[14px] text-(--ev-ink-75)">The group waits or regroups so slower people stay with it.</span>
           </span>
         </label>
         <div className="mt-4 flex flex-wrap gap-2">

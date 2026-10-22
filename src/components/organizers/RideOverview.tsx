@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, Copy, PauseCircle, PlayCircle } from 'lucide-react'
 import { ago, clock } from '@/lib/rides/public'
 import { errorText, setDateCanceled } from '@/lib/organizers/api'
@@ -12,7 +12,7 @@ import { CancelDateDialog, ChangeDateDialog } from './DateDialogs'
 import PostUpdate from './PostUpdate'
 import { ridePageUrl, useRide } from './RideFrame'
 import { StopRideDialog, resume } from './StopRide'
-import { Badge, Button, Card, Empty, Notice, SectionTitle, copyText, cx } from './ui'
+import { Badge, Button, Card, Empty, Notice, SectionTitle, Toast, copyText, cx } from './ui'
 
 function ShareCard({ code, fresh }: { code: string; fresh: boolean }) {
   const url = ridePageUrl(code)
@@ -28,7 +28,7 @@ function ShareCard({ code, fresh }: { code: string; fresh: boolean }) {
           {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}{copied ? 'Copied' : 'Copy link'}
         </Button>
       </div>
-      <p className="mt-2 text-[13px] text-(--ev-ink-75)">In the Shift app, people can also join with the code <b className="tracking-wider text-(--ev-ink)">{code}</b>.</p>
+      <p className="mt-2 text-[14px] text-(--ev-ink-75)">In the Shift app, people can also join with the code <b className="tracking-wider text-(--ev-ink)">{code}</b>.</p>
     </Card>
   )
 }
@@ -43,7 +43,7 @@ function DateRow({ d, canManage, rideId, onCancel, onChange, onRestore }: {
     <li className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-(--ev-line) py-3 last:border-0">
       <div className="min-w-[150px]">
         <p className={cx('text-[15px] font-bold', off ? 'text-(--ev-ink-75) line-through' : 'text-(--ev-ink)')}>{dateLabel(d.date)}</p>
-        <p className="text-[13px] text-(--ev-ink-75)">
+        <p className="text-[14px] text-(--ev-ink-75)">
           {clock(d.start_time)}{d.time_moved ? ' (moved)' : ''}
           {d.place_moved && d.meetup_name ? ` · ${d.meetup_name} (moved)` : ''}
         </p>
@@ -62,7 +62,7 @@ function DateRow({ d, canManage, rideId, onCancel, onChange, onRestore }: {
         )}
       </div>
       <div className="flex flex-wrap gap-1.5">
-        <Link href={`/organizers/rides/${rideId}/roster?date=${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] border border-(--ev-line-strong) bg-white px-3 text-[13px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+        <Link href={`/organizers/rides/${rideId}/roster?date=${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] border border-(--ev-line-strong) bg-white px-3 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
           {past ? 'Who came' : "Who's coming"}
         </Link>
         {canManage && !past && !off && <Button size="sm" variant="ghost" onClick={onChange}>Change</Button>}
@@ -93,6 +93,14 @@ export default function RideOverview() {
   const ended = r.status === 'archived'
   const onBreak = !!r.break_until && r.break_until > today
 
+  const closeMsg = useCallback(() => {
+    setMsg(null)
+    if (params.get('saved') || params.get('created')) router.replace(`/organizers/rides/${r.id}`, { scroll: false })
+  }, [params, router, r.id])
+
+  // Arriving from the editor: start at the top.
+  useEffect(() => { if (params.get('saved') || params.get('created')) window.scrollTo(0, 0) }, [params])
+
   const done = (text: string) => {
     setMsg({ tone: 'good', text })
     setCancelling(null)
@@ -117,7 +125,7 @@ export default function RideOverview() {
 
   return (
     <div className="grid gap-5">
-      {msg && <Notice tone={msg.tone} onClose={() => { setMsg(null); if (params.get('saved') || params.get('created')) router.replace(`/organizers/rides/${r.id}`) }}>{msg.text}</Notice>}
+      {msg && <Toast tone={msg.tone} onClose={closeMsg}>{msg.text}</Toast>}
       {r.route_risk === 'high' && r.visibility === 'public' && (
         <Notice tone="warn">Part of this route has a crash history, so GSI reviews it before it goes on the public calendar. Your ride page works now.</Notice>
       )}
@@ -183,11 +191,11 @@ export default function RideOverview() {
                     <p className="text-[15px] font-semibold text-(--ev-ink)">
                       {UPDATE_KIND_LABEL[u.kind] ?? u.title}{d ? ` · ${dateLabel(d.date)}` : ''}
                     </p>
-                    <p className="text-[13px] text-(--ev-ink-75)">{ago(u.created_at)}{u.by ? ` · ${u.by}` : ''}</p>
+                    <p className="text-[14px] text-(--ev-ink-75)">{ago(u.created_at)}{u.by ? ` · ${u.by}` : ''}</p>
                   </div>
                   {u.body && <p className="mt-1 text-[14px] text-(--ev-ink-80)">{u.body}</p>}
                   {u.note && <p className="mt-1.5 border-l-2 border-(--ev-accent-line) pl-3 text-[14px] text-(--ev-ink-85)">{u.note}</p>}
-                  <p className="mt-1.5 text-[13px] text-(--ev-ink-75)">
+                  <p className="mt-1.5 text-[14px] text-(--ev-ink-75)">
                     Sent to {plural(u.recipients, 'person', 'people')}
                     {u.push_sent || u.email_sent ? ` (${[u.push_sent ? `${u.push_sent} app` : '', u.email_sent ? `${u.email_sent} email` : ''].filter(Boolean).join(', ')})` : ''}
                   </p>
