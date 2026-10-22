@@ -155,7 +155,7 @@ export default function NotificationsDropdown({ onClose }: { onClose: () => void
           <button
             type="button"
             onClick={markAllRead}
-            className="text-[12.5px] font-semibold text-accent hover:underline"
+            className="text-[14px] font-semibold text-accent hover:underline"
           >
             Mark all read
           </button>
@@ -169,7 +169,7 @@ export default function NotificationsDropdown({ onClose }: { onClose: () => void
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft">
               <CheckCircle size={20} strokeWidth={1.75} className="text-accent" />
             </div>
-            <span className="text-[13.5px] text-ink-muted">You&apos;re all caught up</span>
+            <span className="text-[15px] text-ink-muted">You&apos;re all caught up</span>
           </div>
         ) : (
           items.map((item) => (
@@ -189,8 +189,8 @@ export default function NotificationsDropdown({ onClose }: { onClose: () => void
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] text-ink">{item.title}</div>
-                <div className="text-[12px] text-ink-tertiary">{relativeTime(item.timestamp)}</div>
+                <div className="text-[15px] text-ink">{item.title}</div>
+                <div className="text-[14px] text-ink-tertiary">{relativeTime(item.timestamp)}</div>
               </div>
               {item.unread && (
                 <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />

@@ -60,7 +60,7 @@ export default function JoinPolicyLine({
 
   return (
     <div
-      className={`inline-flex max-w-full flex-wrap items-center gap-x-2.5 gap-y-1 rounded-full border border-line bg-surface py-[7px] pl-3 pr-3.5 text-[13px] leading-[1.4] text-ink shadow-sm ${className}`}
+      className={`inline-flex max-w-full flex-wrap items-center gap-x-2.5 gap-y-1 rounded-full border border-line bg-surface py-[7px] pl-3 pr-3.5 text-[14px] leading-[1.4] text-ink shadow-sm ${className}`}
     >
       <Settings size={16} strokeWidth={1.75} className="shrink-0 text-accent" aria-hidden />
       <span className="min-w-0">

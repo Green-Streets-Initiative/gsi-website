@@ -163,9 +163,9 @@ export default function ChangeStrip({
       <CardHead title={periods.title} sub="Both periods counted by the same rules" />
       <CardBody flush className={dim ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[13.5px]">
+          <table className="w-full text-left text-[15px]">
             <thead>
-              <tr className="border-b border-line align-bottom text-[12.5px] text-ink-muted">
+              <tr className="border-b border-line align-bottom text-[14px] text-ink-muted">
                 <th className="px-6 py-2.5 font-semibold">Figure</th>
                 <th className="px-3 py-2.5 text-right font-normal">
                   <span className="block font-semibold text-ink-muted">{periods.before.name}</span>

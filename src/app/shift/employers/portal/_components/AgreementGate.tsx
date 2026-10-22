@@ -131,7 +131,7 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
       <Card className="overflow-hidden">
         <div className="border-b border-line px-5 py-5 sm:px-7">
           <h1 className="text-[20px] font-bold text-ink">{AGREEMENT_TITLE}</h1>
-          <p className="mt-1 text-[13px] text-ink-tertiary">
+          <p className="mt-1 text-[14px] text-ink-tertiary">
             Version {AGREEMENT_VERSION} · Please review and accept to activate{' '}
             {group!.name}&apos;s portal.
           </p>
@@ -144,13 +144,13 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
           aria-label="Agreement terms"
           className="max-h-[46vh] overflow-y-auto px-5 py-5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent sm:px-7"
         >
-          <p className="text-[13.5px] leading-relaxed text-ink-muted">
+          <p className="text-[15px] leading-relaxed text-ink-muted">
             {AGREEMENT_PREAMBLE}
           </p>
           {AGREEMENT_SECTIONS.map((s) => (
             <div key={s.heading} className="mt-5">
               <h3 className="text-[14px] font-bold text-ink">{s.heading}</h3>
-              <p className="mt-1 text-[13.5px] leading-relaxed text-ink-muted">
+              <p className="mt-1 text-[15px] leading-relaxed text-ink-muted">
                 {s.body}
               </p>
             </div>
@@ -161,7 +161,7 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
         <div className="border-t border-line bg-surface-2 px-5 py-5 sm:px-7">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label htmlFor={`${fid}-name`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+              <label htmlFor={`${fid}-name`} className="mb-1.5 block text-[14px] font-semibold text-ink-muted">
                 Your full name
               </label>
               <input
@@ -173,7 +173,7 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
               />
             </div>
             <div>
-              <label htmlFor={`${fid}-title`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+              <label htmlFor={`${fid}-title`} className="mb-1.5 block text-[14px] font-semibold text-ink-muted">
                 Your title
               </label>
               <input
@@ -187,7 +187,7 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <label className="mt-4 flex items-start gap-2.5 text-[13.5px] leading-relaxed text-ink">
+          <label className="mt-4 flex items-start gap-2.5 text-[15px] leading-relaxed text-ink">
             <input
               type="checkbox"
               className="mt-1"
@@ -213,11 +213,11 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
               {submitting ? 'Recording…' : 'Accept and continue'}
             </Button>
             {!scrolledToEnd && (
-              <span id={`${fid}-hint`} className="text-[12.5px] text-ink-tertiary">
+              <span id={`${fid}-hint`} className="text-[14px] text-ink-tertiary">
                 Scroll through the agreement to enable Accept
               </span>
             )}
-            {error && <span className="text-[13px] text-ep-danger">{error}</span>}
+            {error && <span className="text-[14px] text-ep-danger">{error}</span>}
           </div>
         </div>
       </Card>

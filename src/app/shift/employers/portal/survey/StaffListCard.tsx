@@ -15,7 +15,7 @@ import { REASONS, type Person, type SurveyStatus } from './survey-types'
 
 const PAGE_SIZE = 50
 
-const field = 'mb-1.5 block text-[12.5px] font-semibold text-ink-muted'
+const field = 'mb-1.5 block text-[14px] font-semibold text-ink-muted'
 const inputBox =
   'w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] leading-[1.5] text-ink outline-none placeholder:text-ink-tertiary focus:border-accent focus:ring-2 focus:ring-accent-soft'
 
@@ -45,7 +45,7 @@ export function TabHead({ title, sub, action }: { title: string; sub?: ReactNode
     <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-6 py-[18px]">
       <div className="min-w-0">
         <h3 className="text-[16px] font-bold tracking-[-0.01em] text-ink">{title}</h3>
-        {sub && <p className="mt-0.5 text-[13px] leading-[1.5] text-ink-muted">{sub}</p>}
+        {sub && <p className="mt-0.5 text-[14px] leading-[1.5] text-ink-muted">{sub}</p>}
       </div>
       {action && <div className="flex shrink-0 flex-wrap gap-2">{action}</div>}
     </div>
@@ -189,7 +189,7 @@ export function PeopleCard({
             placeholder={'Jane Doe <jane@yourcompany.com>\nsam@yourcompany.com, Sam Lee, Finance\nOne person per line.'}
             className={`resize-y ${inputBox}`}
           />
-          <span className="mt-1.5 block text-[12.5px] leading-[1.5] text-ink-muted">
+          <span className="mt-1.5 block text-[14px] leading-[1.5] text-ink-muted">
             The email is what the link goes to. Name, department and site are optional and show in the list here.
           </span>
         </label>
@@ -199,14 +199,14 @@ export function PeopleCard({
             <Upload size={20} strokeWidth={1.75} className="text-ink-muted" aria-hidden />
             {fileName ? (
               <>
-                <span className="break-all text-[13.5px] font-semibold text-ink">{fileName}</span>
+                <span className="break-all text-[15px] font-semibold text-ink">{fileName}</span>
                 <Button variant="ghost" size="sm" icon={X} onClick={() => { setFileText(''); setFileName(null) }}>
                   Remove
                 </Button>
               </>
             ) : (
               <>
-                <span className="text-[13.5px] leading-[1.5] text-ink-muted">An HR export with an email column. Name, department and site or office columns are read too.</span>
+                <span className="text-[15px] leading-[1.5] text-ink-muted">An HR export with an email column. Name, department and site or office columns are read too.</span>
                 <Button variant="secondary" size="sm" icon={Upload} onClick={() => fileRef.current?.click()} className="mt-1">
                   Choose a file
                 </Button>
@@ -228,19 +228,19 @@ export function PeopleCard({
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-line bg-surface-2 px-4 py-3">
         <div className="min-w-0">
-          <div className="text-[13.5px] font-semibold text-ink" aria-live="polite">
+          <div className="text-[15px] font-semibold text-ink" aria-live="polite">
             {parsed.rows.length === 0 && parsed.wrong.length === 0
               ? 'No addresses yet'
               : `${parsed.rows.length} ${parsed.rows.length === 1 ? 'person' : 'people'} found${parsed.wrong.length ? `, ${parsed.wrong.length} ${parsed.wrong.length === 1 ? 'address looks' : 'addresses look'} wrong` : ''}`}
           </div>
           {parsed.rows.length > 0 && (
-            <p className="mt-1 break-words text-[12.5px] leading-[1.5] text-ink-muted">
+            <p className="mt-1 break-words text-[14px] leading-[1.5] text-ink-muted">
               {parsed.rows.slice(0, 4).map((r) => (r.name ? `${r.name} (${r.email})` : r.email)).join(', ')}
               {parsed.rows.length > 4 ? ` and ${parsed.rows.length - 4} more` : ''}
             </p>
           )}
           {parsed.wrong.length > 0 && (
-            <p className="mt-1 break-words text-[12.5px] leading-[1.5] text-ep-danger">
+            <p className="mt-1 break-words text-[14px] leading-[1.5] text-ep-danger">
               Fix these: {parsed.wrong.slice(0, 5).join(', ')}
               {parsed.wrong.length > 5 ? ` and ${parsed.wrong.length - 5} more` : ''}
             </p>
@@ -302,9 +302,9 @@ export function PeopleCard({
                 </Button>
               </div>
             ) : (
-              <p className="mt-3 text-[12.5px] text-ink-tertiary">An admin or manager on your team adds the list.</p>
+              <p className="mt-3 text-[14px] text-ink-tertiary">An admin or manager on your team adds the list.</p>
             )}
-            <p className="mt-4 text-[12.5px] leading-[1.5] text-ink-tertiary">Staff you can&apos;t email can use the open link and QR once the survey is open.</p>
+            <p className="mt-4 text-[14px] leading-[1.5] text-ink-tertiary">Staff you can&apos;t email can use the open link and QR once the survey is open.</p>
             {/* The hidden input lives in the panel; mount it for the upload shortcut. */}
             <input
               ref={fileRef}
@@ -343,7 +343,7 @@ export function PeopleCard({
                 onChange={(e) => { setQ(e.target.value); setVisible(PAGE_SIZE) }}
                 placeholder="Search the list"
                 aria-label="Search the list"
-                className="h-[34px] w-full rounded-[9px] border border-line bg-surface pl-8 pr-3 text-[13px] text-ink outline-none placeholder:text-ink-tertiary focus:border-accent"
+                className="h-[34px] w-full rounded-[9px] border border-line bg-surface pl-8 pr-3 text-[14px] text-ink outline-none placeholder:text-ink-tertiary focus:border-accent"
               />
             </div>
             <Button variant="secondary" size="sm" icon={Download} onClick={downloadList} disabled={filtered.length === 0}>
@@ -354,10 +354,10 @@ export function PeopleCard({
             <table className="w-full min-w-[560px] text-left">
               <thead>
                 <tr className="border-b border-line-2 bg-surface-2">
-                  <th scope="col" className="py-2.5 pl-6 pr-3 text-[12.5px] font-semibold text-ink-tertiary">Person</th>
-                  <th scope="col" className="py-2.5 pr-3 text-[12.5px] font-semibold text-ink-tertiary">Department</th>
-                  <th scope="col" className="py-2.5 pr-3 text-[12.5px] font-semibold text-ink-tertiary">Site</th>
-                  <th scope="col" className="py-2.5 pr-3 text-[12.5px] font-semibold text-ink-tertiary">Status</th>
+                  <th scope="col" className="py-2.5 pl-6 pr-3 text-[14px] font-semibold text-ink-tertiary">Person</th>
+                  <th scope="col" className="py-2.5 pr-3 text-[14px] font-semibold text-ink-tertiary">Department</th>
+                  <th scope="col" className="py-2.5 pr-3 text-[14px] font-semibold text-ink-tertiary">Site</th>
+                  <th scope="col" className="py-2.5 pr-3 text-[14px] font-semibold text-ink-tertiary">Status</th>
                   <th scope="col" className="py-2.5 pr-6"><span className="sr-only">Remove</span></th>
                 </tr>
               </thead>
@@ -373,10 +373,10 @@ export function PeopleCard({
                     <tr key={p.id} className="border-b border-line-2 transition-colors last:border-0 hover:bg-accent-softer">
                       <td className="py-3 pl-6 pr-3">
                         <span className="block text-[14px] font-semibold text-ink">{p.name ?? p.email}</span>
-                        {p.name && <span className="block text-[12px] text-ink-tertiary">{p.email}</span>}
+                        {p.name && <span className="block text-[14px] text-ink-tertiary">{p.email}</span>}
                       </td>
-                      <td className="py-3 pr-3 text-[13px] text-ink-muted">{p.department ?? ''}</td>
-                      <td className="py-3 pr-3 text-[13px] text-ink-muted">{p.location_id ? siteName[p.location_id] ?? '' : ''}</td>
+                      <td className="py-3 pr-3 text-[14px] text-ink-muted">{p.department ?? ''}</td>
+                      <td className="py-3 pr-3 text-[14px] text-ink-muted">{p.location_id ? siteName[p.location_id] ?? '' : ''}</td>
                       <td className="py-3 pr-3">
                         <Badge tone={s.tone} dot>
                           {s.text}
@@ -397,7 +397,7 @@ export function PeopleCard({
           </div>
           {filtered.length > shown.length && (
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line-2 px-6 py-3">
-              <span className="text-[12.5px] text-ink-tertiary">
+              <span className="text-[14px] text-ink-tertiary">
                 Showing {shown.length} of {filtered.length}
               </span>
               <Button variant="secondary" size="sm" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
@@ -405,7 +405,7 @@ export function PeopleCard({
               </Button>
             </div>
           )}
-          {nextLine && <p className="px-6 py-3 text-[13px] text-ink-muted">{nextLine}</p>}
+          {nextLine && <p className="px-6 py-3 text-[14px] text-ink-muted">{nextLine}</p>}
         </>
       )}
     </div>
@@ -443,8 +443,8 @@ function EmailPreview({ surveyId }: { surveyId: string }) {
     }
   }, [surveyId])
 
-  if (failed) return <p className="py-6 text-center text-[13px] text-ink-muted">We couldn&apos;t load the email preview. Refresh the page to try again.</p>
-  if (!mails) return <p className="py-6 text-center text-[13px] text-ink-muted">Loading the email...</p>
+  if (failed) return <p className="py-6 text-center text-[14px] text-ink-muted">We couldn&apos;t load the email preview. Refresh the page to try again.</p>
+  if (!mails) return <p className="py-6 text-center text-[14px] text-ink-muted">Loading the email...</p>
   const html = mails[which].html.replace(/<head([^>]*)>/i, '<head$1><base target="_blank">')
   return (
     <div className="grid gap-3">
@@ -510,7 +510,7 @@ export function SendingCard({ status, action }: { status: SurveyStatus; action?:
       <dl className="grid gap-x-8 gap-y-4 px-6 py-5 sm:grid-cols-2">
         {rows.map((r) => (
           <div key={r.label}>
-            <dt className="text-[12.5px] font-semibold text-ink-muted">{r.label}</dt>
+            <dt className="text-[14px] font-semibold text-ink-muted">{r.label}</dt>
             <dd className="mt-0.5 text-[14px] leading-[1.5] text-ink">{r.value}</dd>
           </div>
         ))}

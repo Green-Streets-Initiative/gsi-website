@@ -14,6 +14,7 @@ import { TIER_LABEL, TIER_ANNUAL_PRICE } from '../_lib/portal-constants'
 import { centsToDollars, formatDateUTC } from '../_lib/portal-utils'
 import PoolStatement from './PoolStatement'
 import WinnersStatement from './WinnersStatement'
+import TabStrip, { tabPanelProps } from '../_components/TabStrip'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const TOP_UP_PRESETS = [100, 250, 500, 1000]
@@ -45,6 +46,7 @@ export default function BillingPage() {
   const [openingPortal, setOpeningPortal] = useState(false)
   const [portalUnavailable, setPortalUnavailable] = useState<'update' | 'cancel' | null>(null)
   const [topUpNotice, setTopUpNotice] = useState<'success' | 'canceled' | null>(null)
+  const [statement, setStatement] = useState<'balance' | 'winners'>('balance')
 
   const canView = isAdmin || isGsiAdmin
 
@@ -196,8 +198,10 @@ export default function BillingPage() {
   const portalLink = 'flex w-full items-center justify-between gap-3 px-6 py-3.5 text-left text-[14px] font-semibold text-ink transition-colors hover:bg-surface-2 disabled:opacity-50'
 
   return (
-    <div className="grid gap-6">
-      <PortalPageHead title="Billing & rewards" subtitle="Your plan, your rewards balance, and where the money went." />
+    // @container: the columns follow the room the page has, which shrinks
+    // when the assistant panel docks beside it.
+    <div className="@container grid gap-6">
+      <PortalPageHead title="Billing & rewards" subtitle="Your plan, your rewards balance, and where the money went" />
 
       {topUpNotice && (
         <div
@@ -219,14 +223,14 @@ export default function BillingPage() {
           <button
             type="button"
             onClick={() => setTopUpNotice(null)}
-            className="text-[13px] font-semibold text-ink-muted hover:text-ink"
+            className="text-[14px] font-semibold text-ink-muted hover:text-ink"
           >
             Dismiss
           </button>
         </div>
       )}
 
-      <div className="grid items-start gap-5 md:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid items-start gap-5 @min-[900px]:grid-cols-[minmax(0,1fr)_360px]">
         {/* Left column. minmax(0,1fr): a wide statement table scrolls inside
             its card instead of stretching the column under the right one. */}
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5">
@@ -234,7 +238,7 @@ export default function BillingPage() {
             <Card>
               <CardHead
                 title="Rewards balance"
-                sub="Money for the gift cards your challenges give out. Nothing is spent until someone wins."
+                sub="Pays for your challenges' gift cards, only when someone wins."
               />
               <CardBody>
                 <div className="mb-5 grid grid-cols-2 gap-3.5 sm:grid-cols-4">
@@ -253,7 +257,7 @@ export default function BillingPage() {
                 </div>
 
                 <div className="rounded-xl border border-line bg-surface-2 p-[18px]">
-                  <label htmlFor="topup-amount" className="mb-2 block text-[12.5px] font-semibold text-ink-muted">
+                  <label htmlFor="topup-amount" className="mb-2 block text-[14px] font-semibold text-ink-muted">
                     Add to your rewards balance
                   </label>
                   <div className="grid gap-2.5 sm:flex sm:flex-wrap sm:items-center">
@@ -278,7 +282,7 @@ export default function BillingPage() {
                         <button
                           key={p}
                           type="button"
-                          className={`flex-1 px-3 py-2 text-[13px] font-semibold transition-colors ${
+                          className={`flex-1 px-3 py-2 text-[14px] font-semibold transition-colors ${
                             topUpAmount === String(p) ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
                           }`}
                           onClick={() => {
@@ -300,11 +304,9 @@ export default function BillingPage() {
                       {openingTopUp ? 'Opening checkout...' : 'Add funds'}
                     </Button>
                   </div>
-                  {topUpError && <p className="mt-2 text-[13px] font-semibold text-ep-danger">{topUpError}</p>}
-                  <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-muted">
-                    You pay by card or bank transfer on Stripe&apos;s secure page. $25 minimum, $10,000 maximum at a time. A prize sets
-                    aside its full cost from this balance when it goes live; money for spots nobody wins comes back
-                    when the challenge ends.
+                  {topUpError && <p className="mt-2 text-[14px] font-semibold text-ep-danger">{topUpError}</p>}
+                  <p className="mt-3 text-[14px] leading-[1.5] text-ink-muted">
+                    Card or bank transfer on Stripe, $25 to $10,000 at a time. Spots nobody wins come back to the balance.
                   </p>
                 </div>
               </CardBody>
@@ -330,24 +332,87 @@ export default function BillingPage() {
             </Card>
           )}
 
+          {hasPrizes && (
+            <TabStrip
+              tabs={[
+                { id: 'balance', label: 'Balance statement' },
+                { id: 'winners', label: 'Winners' },
+              ]}
+              value={statement}
+              onChange={(v) => setStatement(v as 'balance' | 'winners')}
+              label="Statements"
+              prefix="billing"
+            />
+          )}
+          <div {...tabPanelProps('billing', 'balance')} hidden={statement !== 'balance'} className="grid min-w-0 grid-cols-[minmax(0,1fr)] outline-none">
           {hasPrizes && rewardPool && <PoolStatement poolId={rewardPool.id} />}
           {hasPrizes && !rewardPool && (
             <Card>
               <CardHead title="Rewards balance statement" sub="Every top-up, set-aside and payout" />
               <CardBody>
-                <p className="text-[13.5px] text-ink-muted">Your statement starts with your first top-up.</p>
+                <p className="text-[15px] text-ink-muted">Your statement starts with your first top-up.</p>
               </CardBody>
             </Card>
           )}
 
+          </div>
+
           {/* Who received a reward this year, for payroll (taxes: Help, "Taxes on rewards") */}
-          {hasPrizes && <WinnersStatement groupId={group.id} company={group.slug || group.name} />}
+          <div {...tabPanelProps('billing', 'winners')} hidden={statement !== 'winners'} className="grid min-w-0 grid-cols-[minmax(0,1fr)] outline-none">
+            {hasPrizes && <WinnersStatement groupId={group.id} company={group.slug || group.name} />}
+          </div>
+
+        </div>
+
+        {/* Right column */}
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5">
+          <Card pad>
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[14px] font-semibold text-ink-muted">Current plan</span>
+              <Badge tone={group.status === 'active' ? 'success' : cancelled || paused ? 'warn' : 'neutral'}>
+                {group.status === 'active' ? 'Active' : cancelled ? 'Cancelled' : paused ? 'Paused' : 'Inactive'}
+              </Badge>
+            </div>
+            <div className="text-[24px] font-bold tracking-[-0.02em] text-ink">{tierLabel}</div>
+            <div className="mb-4 text-[15px] text-ink-muted">{price ? `$${price.toLocaleString()} a year` : 'No annual fee'}</div>
+            <div className="grid gap-2.5 text-[15px]">
+              {group.access_starts_at && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-ink-muted">Started</span>
+                  <span className="whitespace-nowrap font-semibold text-ink">{formatDateUTC(group.access_starts_at)}</span>
+                </div>
+              )}
+              {group.access_ends_at && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-ink-muted">{cancelled ? 'Access through' : 'Renews'}</span>
+                  <span className="whitespace-nowrap font-semibold text-ink">{formatDateUTC(group.access_ends_at)}</span>
+                </div>
+              )}
+              {daysLeft != null && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-ink-muted">Days left</span>
+                  <span className="font-semibold text-ink">{daysLeft}</span>
+                </div>
+              )}
+            </div>
+            {cancelled && (
+              <p className="mt-4 text-[14px] leading-[1.5] text-ink-muted">
+                Your plan won&apos;t renew. Everyone keeps access through the date above. To keep going, change your plan
+                in Stripe or write to info@gogreenstreets.org.
+              </p>
+            )}
+            {paused && (
+              <p className="mt-4 text-[14px] leading-[1.5] text-ink-muted">
+                Your plan is paused. Write to info@gogreenstreets.org to pick it up again.
+              </p>
+            )}
+          </Card>
 
           {/* Everything Stripe holds for you, in one place */}
           <Card id="manage-in-stripe" className="scroll-mt-24">
             <CardHead
               title="Manage in Stripe"
-              sub="Invoices, receipts, your card on file and your plan live in Stripe, our payment provider. Each link takes you there and brings you back here."
+              sub="Invoices, your card and plan changes open in Stripe."
             />
             <div className="divide-y divide-line-2">
               <button type="button" className={portalLink} onClick={() => openBillingPortal()} disabled={openingPortal}>
@@ -369,7 +434,7 @@ export default function BillingPage() {
                   <ArrowLeftRight size={17} strokeWidth={1.75} className="mt-0.5 text-accent" />
                   <span>
                     Change plan
-                    <span className="mt-0.5 block text-[12.5px] font-normal leading-[1.5] text-ink-muted">
+                    <span className="mt-0.5 block text-[14px] font-normal leading-[1.5] text-ink-muted">
                       Move up or down a plan. Stripe shows the new price before anything changes.
                     </span>
                   </span>
@@ -382,7 +447,7 @@ export default function BillingPage() {
                     <XCircle size={17} strokeWidth={1.75} className="mt-0.5 text-accent" />
                     <span>
                       Cancel plan
-                      <span className="mt-0.5 block text-[12.5px] font-normal leading-[1.5] text-ink-muted">
+                      <span className="mt-0.5 block text-[14px] font-normal leading-[1.5] text-ink-muted">
                         Your team keeps access until the end of the paid period.
                       </span>
                     </span>
@@ -392,7 +457,7 @@ export default function BillingPage() {
               )}
             </div>
             {portalUnavailable && (
-              <div role="status" className="flex items-start gap-3 border-t border-line-2 px-6 py-4 text-[13.5px] leading-[1.55] text-ink">
+              <div role="status" className="flex items-start gap-3 border-t border-line-2 px-6 py-4 text-[15px] leading-[1.55] text-ink">
                 <Info size={17} strokeWidth={1.75} className="mt-0.5 shrink-0 text-ink-muted" />
                 <p>
                   {portalUnavailable === 'update'
@@ -413,65 +478,20 @@ export default function BillingPage() {
               </div>
             )}
             {openingPortal && (
-              <p className="border-t border-line-2 px-6 py-3 text-[13px] text-ink-muted">Opening Stripe...</p>
-            )}
-          </Card>
-        </div>
-
-        {/* Right column */}
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5">
-          <Card pad>
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-[13px] font-semibold text-ink-muted">Current plan</span>
-              <Badge tone={group.status === 'active' ? 'success' : cancelled || paused ? 'warn' : 'neutral'}>
-                {group.status === 'active' ? 'Active' : cancelled ? 'Cancelled' : paused ? 'Paused' : 'Inactive'}
-              </Badge>
-            </div>
-            <div className="text-[24px] font-bold tracking-[-0.02em] text-ink">{tierLabel}</div>
-            <div className="mb-4 text-[13.5px] text-ink-muted">{price ? `$${price.toLocaleString()} a year` : 'No annual fee'}</div>
-            <div className="grid gap-2.5 text-[13.5px]">
-              {group.access_starts_at && (
-                <div className="flex justify-between gap-3">
-                  <span className="text-ink-muted">Started</span>
-                  <span className="whitespace-nowrap font-semibold text-ink">{formatDateUTC(group.access_starts_at)}</span>
-                </div>
-              )}
-              {group.access_ends_at && (
-                <div className="flex justify-between gap-3">
-                  <span className="text-ink-muted">{cancelled ? 'Access through' : 'Renews'}</span>
-                  <span className="whitespace-nowrap font-semibold text-ink">{formatDateUTC(group.access_ends_at)}</span>
-                </div>
-              )}
-              {daysLeft != null && (
-                <div className="flex justify-between gap-3">
-                  <span className="text-ink-muted">Days left</span>
-                  <span className="font-semibold text-ink">{daysLeft}</span>
-                </div>
-              )}
-            </div>
-            {cancelled && (
-              <p className="mt-4 text-[13px] leading-[1.5] text-ink-muted">
-                Your plan won&apos;t renew. Everyone keeps access through the date above. To keep going, change your plan
-                in Stripe or write to info@gogreenstreets.org.
-              </p>
-            )}
-            {paused && (
-              <p className="mt-4 text-[13px] leading-[1.5] text-ink-muted">
-                Your plan is paused. Write to info@gogreenstreets.org to pick it up again.
-              </p>
+              <p className="border-t border-line-2 px-6 py-3 text-[14px] text-ink-muted">Opening Stripe...</p>
             )}
           </Card>
 
           {!hasPrizes && (
             <Card pad style={{ background: 'var(--color-accent-dark)', color: '#fff', border: 'none' }}>
               <strong className="text-[15px]">Want prizes in your challenges?</strong>
-              <p className="mt-1.5 text-[13px] leading-[1.5] text-white">
+              <p className="mt-1.5 text-[14px] leading-[1.5] text-white">
                 The Standard plan adds gift cards winners pick in the app, paid from a rewards balance you top up here. We
                 can move you over any time in the year.
               </p>
               <a
                 href={UPGRADE_MAILTO}
-                className="mt-3.5 inline-flex rounded-[10px] bg-white px-4 py-2 text-[13px] font-semibold text-accent-dark"
+                className="mt-3.5 inline-flex rounded-[10px] bg-white px-4 py-2 text-[14px] font-semibold text-accent-dark"
               >
                 Email Green Streets about upgrading
               </a>

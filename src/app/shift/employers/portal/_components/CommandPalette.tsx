@@ -170,7 +170,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
               aria-label="Search pages, actions and employees"
               className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-tertiary"
             />
-            <kbd className="hidden rounded-[5px] border border-line bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-ink-tertiary sm:block">
+            <kbd className="hidden rounded-[5px] border border-line bg-surface-2 px-1.5 py-0.5 text-[13px] font-medium text-ink-tertiary sm:block">
               ESC
             </kbd>
           </div>
@@ -188,10 +188,10 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
                   <span className="min-w-0 flex-1">
                     Ask the assistant: <span className="font-semibold">&ldquo;{query.trim()}&rdquo;</span>
                   </span>
-                  <kbd className="rounded-[5px] border border-line bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-ink-tertiary">↵</kbd>
+                  <kbd className="rounded-[5px] border border-line bg-surface-2 px-1.5 py-0.5 text-[13px] font-medium text-ink-tertiary">↵</kbd>
                 </button>
               ) : (
-                <div className="px-4 py-8 text-center text-[13.5px] text-ink-muted">
+                <div className="px-4 py-8 text-center text-[15px] text-ink-muted">
                   Nothing matches &ldquo;{query}&rdquo;
                 </div>
               ))}
@@ -201,7 +201,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
               if (rows.length === 0) return null
               return (
                 <div key={g.key}>
-                  <div className="px-4 pb-1 pt-2 text-[12px] font-semibold text-ink-tertiary">{g.heading}</div>
+                  <div className="px-4 pb-1 pt-2 text-[14px] font-semibold text-ink-tertiary">{g.heading}</div>
                   {rows.map((r) => {
                     flatIdx++
                     const idx = flatIdx
@@ -223,7 +223,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
                         ) : null}
                         <div className="min-w-0">
                           <div className="truncate text-[14px] font-medium text-ink">{r.label}</div>
-                          {r.sub && <div className="text-[12px] text-ink-tertiary">{r.sub}</div>}
+                          {r.sub && <div className="text-[14px] text-ink-tertiary">{r.sub}</div>}
                         </div>
                       </button>
                     )

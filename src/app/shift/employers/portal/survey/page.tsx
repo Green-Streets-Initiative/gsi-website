@@ -70,18 +70,18 @@ function LinkTile({ token, title }: { token: string; title: string }) {
   }, [url])
   return (
     <div className="grid gap-3 md:w-[300px]">
-      <div className="text-[13px] font-semibold text-ink">Link for staff without email</div>
+      <div className="text-[14px] font-semibold text-ink">Link for staff without email</div>
       <div className="flex items-start gap-3">
         <div className="flex h-[88px] w-[88px] shrink-0 items-center justify-center rounded-lg ring-1 ring-line">
           {qr ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={qr} alt="QR code for the survey link" className="h-full w-full" />
           ) : (
-            <span className="text-[12px] text-ink-tertiary">...</span>
+            <span className="text-[14px] text-ink-tertiary">...</span>
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[12.5px] leading-[1.45] text-ink-muted">For a break room QR or a shift channel. Answers count in the totals and are not tied to a name.</p>
+          <p className="text-[14px] leading-[1.45] text-ink-muted">For a break room QR or a shift channel. Answers count in the totals and are not tied to a name.</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Button
               variant="secondary"
@@ -116,10 +116,10 @@ function BeforeYouOpenTile({ survey, people, onGo }: { survey: SurveyRow; people
   ]
   return (
     <div className="md:w-[280px]">
-      <div className="text-[13px] font-semibold text-ink">Before you open</div>
+      <div className="text-[14px] font-semibold text-ink">Before you open</div>
       <ul className="mt-2 grid gap-1.5">
         {rows.map((r) => (
-          <li key={r.text} className="flex items-center gap-2 text-[13.5px] text-ink">
+          <li key={r.text} className="flex items-center gap-2 text-[15px] text-ink">
             <span className={`grid h-4 w-4 shrink-0 place-items-center rounded-full ${r.ok ? 'bg-accent text-white' : 'bg-ink/15 text-ink'}`}>
               {r.ok ? <Check size={11} strokeWidth={3} /> : <Minus size={11} strokeWidth={3} />}
             </span>
@@ -142,7 +142,7 @@ function FilingsTile({ survey, status, onGo }: { survey: SurveyRow; status: Surv
   const rate = status && survey.headcount ? (status.responded_total / survey.headcount) * 100 : null
   return (
     <div className="md:w-[300px]">
-      <div className="text-[13px] font-semibold text-ink">Your filings</div>
+      <div className="text-[14px] font-semibold text-ink">Your filings</div>
       <ul className="mt-2 grid gap-2">
         {ruleSetsOf(survey).map((f) => {
           const filing = FILING_BY_ID[f]
@@ -158,8 +158,8 @@ function FilingsTile({ survey, status, onGo }: { survey: SurveyRow; status: Surv
             <li key={f}>
               <button type="button" onClick={onGo} className="flex w-full items-start justify-between gap-3 text-left hover:underline">
                 <span>
-                  <span className="block text-[13.5px] font-semibold text-ink">{filing.title}</span>
-                  <span className="block text-[12px] text-ink-muted">{filing.due}</span>
+                  <span className="block text-[15px] font-semibold text-ink">{filing.title}</span>
+                  <span className="block text-[14px] text-ink-muted">{filing.due}</span>
                 </span>
                 <Badge tone={badge.tone}>{badge.text}</Badge>
               </button>
@@ -339,7 +339,7 @@ export default function SurveyPage() {
             <p className="text-[14px] leading-[1.55] text-ink">
               Part of the Standard plan. Staff get a two-minute survey by personal link or in the Shift app, you watch the response rate against your headcount, and at the end you get the summary MassDEP or Boston asks for, plus your staff commuting emissions.
             </p>
-            <p className="mt-3 text-[13.5px] leading-[1.55] text-ink-muted">
+            <p className="mt-3 text-[15px] leading-[1.55] text-ink-muted">
               To switch it on, email{' '}
               <a href="mailto:info@gogreenstreets.org" className="font-semibold text-accent hover:underline">
                 info@gogreenstreets.org
@@ -449,7 +449,7 @@ export default function SurveyPage() {
                   setAutoTabbed(null)
                   router.replace(`${SURVEY_PATH}?survey=${s.id}`)
                 }}
-                className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors ${on ? 'border-accent bg-accent-softer text-ink' : 'border-line bg-surface text-ink-muted hover:text-ink'}`}
+                className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[14px] font-semibold transition-colors ${on ? 'border-accent bg-accent-softer text-ink' : 'border-line bg-surface text-ink-muted hover:text-ink'}`}
               >
                 {weekLabel(s.week_start).replace(/, \d{4}$/, '')}
                 <Badge tone={STATUS_BADGE[s.status].tone}>{STATUS_BADGE[s.status].text}</Badge>
@@ -465,7 +465,7 @@ export default function SurveyPage() {
             {surveys.length === 0 && (
               <div className="mb-4">
                 <h2 className="text-[17px] font-bold text-ink">Set up your commute survey</h2>
-                <p className="mt-1 text-[13.5px] text-ink-muted">Four short steps. You can change any of it until the survey opens.</p>
+                <p className="mt-1 text-[15px] text-ink-muted">Four short steps. You can change any of it until the survey opens.</p>
               </div>
             )}
             <SurveyWizard

@@ -98,9 +98,9 @@ export default function PortalSectionNav({
       aria-label={label}
       className="sticky top-0 z-20 -mx-2 bg-canvas/95 px-2 py-2 backdrop-blur-sm min-[1200px]:static min-[1200px]:mx-0 min-[1200px]:bg-transparent min-[1200px]:px-0 min-[1200px]:py-0 min-[1200px]:backdrop-blur-none"
     >
-      <p className="mb-1.5 hidden text-[12px] font-semibold text-ink-tertiary min-[1200px]:block">{label}</p>
+      <p className="mb-1.5 hidden text-[14px] font-semibold text-ink-tertiary min-[1200px]:block">{label}</p>
       <ul className="flex flex-wrap items-center gap-2 min-[1200px]:flex-col min-[1200px]:items-stretch min-[1200px]:gap-0.5">
-        <li className="mr-1 text-[12px] font-semibold text-ink-tertiary min-[1200px]:hidden">{label}</li>
+        <li className="mr-1 text-[14px] font-semibold text-ink-tertiary min-[1200px]:hidden">{label}</li>
         {sections.map((s) => {
           const on = current === s.id
           return (
@@ -112,7 +112,7 @@ export default function PortalSectionNav({
                   e.preventDefault()
                   jump(s.id)
                 }}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold no-underline shadow-sm transition-colors min-[1200px]:rounded-none min-[1200px]:border-0 min-[1200px]:border-l-2 min-[1200px]:px-3 min-[1200px]:py-1.5 min-[1200px]:text-[13px] min-[1200px]:shadow-none ${
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[14px] font-semibold no-underline shadow-sm transition-colors min-[1200px]:rounded-none min-[1200px]:border-0 min-[1200px]:border-l-2 min-[1200px]:px-3 min-[1200px]:py-1.5 min-[1200px]:text-[14px] min-[1200px]:shadow-none ${
                   on
                     ? 'border-accent bg-accent-softer text-accent-ink min-[1200px]:border-l-accent min-[1200px]:bg-transparent'
                     : 'border-line bg-surface text-ink hover:border-accent hover:text-accent min-[1200px]:border-l-line min-[1200px]:bg-transparent min-[1200px]:text-ink-muted min-[1200px]:hover:text-ink'

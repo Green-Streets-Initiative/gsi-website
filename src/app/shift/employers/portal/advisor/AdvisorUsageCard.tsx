@@ -213,14 +213,14 @@ export default function AdvisorUsageCard({
         }
       />
       <CardBody>
-        {!usage && !failed && <p className="text-[13.5px] text-ink-muted">Loading...</p>}
+        {!usage && !failed && <p className="text-[15px] text-ink-muted">Loading...</p>}
         {failed && (
-          <p className="text-[13.5px] leading-[1.5] text-ink-muted">
+          <p className="text-[15px] leading-[1.5] text-ink-muted">
             Couldn&apos;t load usage right now. Reload to try again.
           </p>
         )}
         {usage && usage.runs === 0 && weeksTotal === 0 && (
-          <p className="text-[13.5px] leading-[1.55] text-ink">
+          <p className="text-[15px] leading-[1.55] text-ink">
             Nobody has used your Commute Advisor page yet. Share the link from your Share Kit; each use shows
             here within a few minutes.
           </p>
@@ -229,17 +229,17 @@ export default function AdvisorUsageCard({
           <div className="grid gap-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
-                <div className="text-[12px] font-semibold text-ink-muted">Commutes checked</div>
+                <div className="text-[14px] font-semibold text-ink-muted">Commutes checked</div>
                 <div className="mt-0.5 text-[24px] font-bold tracking-[-0.02em] text-ink">{usage.runs}</div>
-                <div className="mt-0.5 text-[12px] leading-snug text-ink-muted">{changeLine(usage.runs, usage.prior_runs)}</div>
+                <div className="mt-0.5 text-[14px] leading-snug text-ink-muted">{changeLine(usage.runs, usage.prior_runs)}</div>
               </div>
               <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
-                <div className="text-[12px] font-semibold text-ink-muted">Recommended most</div>
+                <div className="text-[14px] font-semibold text-ink-muted">Recommended most</div>
                 <div className="mt-0.5 text-[18px] font-bold leading-tight tracking-[-0.01em] text-ink">
                   {topMode ? modeLabel(topMode.mode) : 'Not yet'}
                 </div>
                 {topMode && (
-                  <div className="mt-0.5 text-[12px] leading-snug text-ink-muted">
+                  <div className="mt-0.5 text-[14px] leading-snug text-ink-muted">
                     {topMode.runs} of {usage.runs} {usage.runs === 1 ? 'commute' : 'commutes'}
                   </div>
                 )}
@@ -249,8 +249,8 @@ export default function AdvisorUsageCard({
             {weeks && weeks.length > 0 && (
               <div>
                 <div className="mb-2 flex items-baseline justify-between">
-                  <div className="text-[12px] font-semibold text-ink-muted">By week, last {weeks.length} weeks</div>
-                  <div className="text-[12px] text-ink-muted">{weeksTotal} in all</div>
+                  <div className="text-[14px] font-semibold text-ink-muted">By week, last {weeks.length} weeks</div>
+                  <div className="text-[14px] text-ink-muted">{weeksTotal} in all</div>
                 </div>
                 <div
                   className="grid items-end gap-1.5"
@@ -260,14 +260,14 @@ export default function AdvisorUsageCard({
                 >
                   {weeks.map((w, i) => (
                     <div key={i} className="grid gap-1 text-center">
-                      <div className="text-[11px] font-semibold tabular-nums text-ink">{w.runs}</div>
+                      <div className="text-[13px] font-semibold tabular-nums text-ink">{w.runs}</div>
                       <div className="flex h-12 items-end">
                         <div
                           className={`w-full rounded-t-[4px] ${w.runs > 0 ? 'bg-accent' : 'bg-ink/[0.12]'}`}
                           style={{ height: `${w.runs > 0 ? Math.max(8, Math.round((w.runs / maxWeek) * 100)) : 3}%` }}
                         />
                       </div>
-                      <div className="truncate text-[10.5px] text-ink-tertiary">{w.label}</div>
+                      <div className="truncate text-[13px] text-ink-tertiary">{w.label}</div>
                     </div>
                   ))}
                 </div>
@@ -276,7 +276,7 @@ export default function AdvisorUsageCard({
 
             {usage.by_mode.length > 0 && usage.runs > 0 && (
               <div>
-                <div className="mb-1.5 text-[12px] font-semibold text-ink-muted">What the advisor recommended</div>
+                <div className="mb-1.5 text-[14px] font-semibold text-ink-muted">What the advisor recommended</div>
                 <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-ink/[0.08]" aria-hidden>
                   {usage.by_mode.map((m, i) => (
                     <div
@@ -290,7 +290,7 @@ export default function AdvisorUsageCard({
                     />
                   ))}
                 </div>
-                <ul className="mt-2 grid gap-1 text-[13px]">
+                <ul className="mt-2 grid gap-1 text-[14px]">
                   {usage.by_mode.map((m, i) => (
                     <li key={m.mode} className="flex items-center justify-between gap-3">
                       <span className="flex min-w-0 items-center gap-2 text-ink">
@@ -314,13 +314,13 @@ export default function AdvisorUsageCard({
               <div className="grid grid-cols-2 gap-3">
                 {arriveByChanges !== null && (
                   <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
-                    <div className="text-[12px] font-semibold text-ink-muted">Changed the arrive-by time</div>
+                    <div className="text-[14px] font-semibold text-ink-muted">Changed the arrive-by time</div>
                     <div className="mt-0.5 text-[20px] font-bold tracking-[-0.02em] text-ink">{arriveByChanges}</div>
                   </div>
                 )}
                 {joinClicks !== null && (
                   <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
-                    <div className="text-[12px] font-semibold text-ink-muted">Clicked the join link</div>
+                    <div className="text-[14px] font-semibold text-ink-muted">Clicked the join link</div>
                     <div className="mt-0.5 text-[20px] font-bold tracking-[-0.02em] text-ink">{joinClicks}</div>
                   </div>
                 )}
@@ -329,8 +329,8 @@ export default function AdvisorUsageCard({
 
             {motivationsPicked.length > 0 && usage.runs > 0 && (
               <div>
-                <div className="mb-1.5 text-[12px] font-semibold text-ink-muted">What mattered most to them</div>
-                <ul className="grid gap-1 text-[13px]">
+                <div className="mb-1.5 text-[14px] font-semibold text-ink-muted">What mattered most to them</div>
+                <ul className="grid gap-1 text-[14px]">
                   {motivations.map((m) => (
                     <li key={m.motivation} className="flex items-center justify-between gap-3">
                       <span className="min-w-0 truncate text-ink">{MOTIVATION_LABEL[m.motivation] ?? m.motivation}</span>
@@ -344,7 +344,7 @@ export default function AdvisorUsageCard({
             )}
 
             {savings !== null && (
-              <p className="text-[13px] leading-[1.5] text-ink">
+              <p className="text-[14px] leading-[1.5] text-ink">
                 Estimated annual savings of the recommended modes:{' '}
                 <span className="font-semibold">${savings.toLocaleString('en-US')}</span> a year, across everyone who checked,
                 compared with driving.
@@ -353,8 +353,8 @@ export default function AdvisorUsageCard({
 
             {usage.by_location.length > 0 && (
               <div>
-                <div className="mb-1.5 text-[12px] font-semibold text-ink-muted">By location</div>
-                <ul className="grid gap-1 text-[13px]">
+                <div className="mb-1.5 text-[14px] font-semibold text-ink-muted">By location</div>
+                <ul className="grid gap-1 text-[14px]">
                   {usage.by_location.map((l) => (
                     <li key={l.location_id ?? 'none'} className="flex items-center justify-between gap-3 border-t border-line-2 py-1.5">
                       <span className="min-w-0 truncate text-ink">{locationName(l.location_id)}</span>
@@ -364,7 +364,7 @@ export default function AdvisorUsageCard({
                 </ul>
               </div>
             )}
-            <p className="text-[12px] leading-[1.5] text-ink-muted">
+            <p className="text-[14px] leading-[1.5] text-ink-muted">
               One run is one person getting their options. Nothing about who they are or where they live is kept.
             </p>
           </div>

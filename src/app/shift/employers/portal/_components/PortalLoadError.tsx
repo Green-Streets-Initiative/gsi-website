@@ -27,7 +27,7 @@ export default function PortalLoadError({
             Try again
           </Button>
         </div>
-        <p className="mt-5 text-[13px] text-ink-muted">
+        <p className="mt-5 text-[14px] text-ink-muted">
           Still stuck? Email{' '}
           <a href="mailto:info@gogreenstreets.org" className="font-semibold text-accent hover:underline">
             info@gogreenstreets.org

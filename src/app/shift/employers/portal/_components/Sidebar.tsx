@@ -140,7 +140,7 @@ function SidebarContent() {
             ) : (
               <div className="h-4 w-28 animate-pulse rounded bg-white/[0.14]" />
             )}
-            <div className="mt-0.5 truncate text-[12px] text-white/75">Shift for Employers</div>
+            <div className="mt-0.5 truncate text-[14px] text-white/75">Shift for Employers</div>
           </div>
         </div>
       </div>
@@ -155,7 +155,7 @@ function SidebarContent() {
           >
             <MessageSquareText size={18} strokeWidth={1.75} className="shrink-0" />
             <span className="flex-1 truncate">Ask the assistant</span>
-            <kbd className="rounded border border-white/[0.18] px-1.5 text-[11px] font-medium text-white/75">⌘J</kbd>
+            <kbd className="rounded border border-white/[0.18] px-1.5 text-[13px] font-medium text-white/75">⌘J</kbd>
           </button>
         </div>
       )}
@@ -187,7 +187,7 @@ function SidebarContent() {
               <Icon size={18} strokeWidth={1.75} className="shrink-0" />
               <span className="flex-1 truncate">{item.label}</span>
               {item.showCount && memberCount > 0 && (
-                <span className="rounded-full bg-white/[0.14] px-[7px] py-[1px] text-[11px] font-semibold text-white/80">
+                <span className="rounded-full bg-white/[0.14] px-[7px] py-[1px] text-[13px] font-semibold text-white/80">
                   {memberCount}
                 </span>
               )}
@@ -206,10 +206,10 @@ function SidebarContent() {
             <ChevronMark size={16} />
           </div>
           <div className="min-w-0 leading-tight">
-            <div className="text-[13px] font-extrabold text-white" style={{ fontFamily: "'Bricolage Grotesque', var(--font-display), sans-serif" }}>
+            <div className="text-[14px] font-extrabold text-white" style={{ fontFamily: "'Bricolage Grotesque', var(--font-display), sans-serif" }}>
               Shift
             </div>
-            <div className="text-[11.5px] text-white/75" style={{ fontFamily: "'Trebuchet MS', 'Lucida Grande', Verdana, sans-serif" }}>
+            <div className="text-[13px] text-white/75" style={{ fontFamily: "'Trebuchet MS', 'Lucida Grande', Verdana, sans-serif" }}>
               by Green Streets Initiative
             </div>
           </div>

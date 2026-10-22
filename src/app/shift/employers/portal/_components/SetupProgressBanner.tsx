@@ -33,13 +33,13 @@ export default function SetupProgressBanner() {
       href={next.route ?? '/shift/employers/portal/setup'}
       className="flex items-center justify-between gap-3 border-b border-line bg-accent-softer px-4 py-2 no-underline transition-colors hover:bg-accent-soft sm:px-6"
     >
-      <span className="min-w-0 truncate text-[13px] text-ink">
+      <span className="min-w-0 truncate text-[14px] text-ink">
         <strong className="font-semibold">
           Setup: {done} of {steps.length}
         </strong>
         <span className="text-ink-muted"> · Next: {next.label}</span>
       </span>
-      <span className="flex shrink-0 items-center gap-1 text-[13px] font-semibold text-accent">
+      <span className="flex shrink-0 items-center gap-1 text-[14px] font-semibold text-accent">
         Continue <ArrowRight size={14} strokeWidth={2} />
       </span>
     </Link>

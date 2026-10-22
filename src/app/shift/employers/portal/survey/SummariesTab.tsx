@@ -134,7 +134,7 @@ export default function SummariesTab({ status, sitesCount }: { status: SurveySta
     <div>
       <div className="border-b border-line px-6 py-[18px]">
         <h3 className="text-[16px] font-bold tracking-[-0.01em] text-ink">Get the summary into your filing</h3>
-        <p className="mt-0.5 text-[13px] leading-[1.5] text-ink-muted">Pick a filing to see what to send, whether it is ready, and the numbers behind it.</p>
+        <p className="mt-0.5 text-[14px] leading-[1.5] text-ink-muted">Pick a filing to see what to send, whether it is ready, and the numbers behind it.</p>
       </div>
 
       {responded === 0 ? (
@@ -149,7 +149,7 @@ export default function SummariesTab({ status, sitesCount }: { status: SurveySta
               const alsoStart = i === sets.length && sets.length < order.length
               return (
                 <div key={id}>
-                  {alsoStart && <div className="mb-2 mt-2 text-[12px] font-semibold text-ink-tertiary">Also available</div>}
+                  {alsoStart && <div className="mb-2 mt-2 text-[14px] font-semibold text-ink-tertiary">Also available</div>}
                   <button
                     type="button"
                     role="radio"
@@ -163,7 +163,7 @@ export default function SummariesTab({ status, sitesCount }: { status: SurveySta
                       <span className="text-[14px] font-bold text-ink">{FILING_BY_ID[id].title}</span>
                       <span className="whitespace-nowrap"><Badge tone={r.tone}>{r.text}</Badge></span>
                     </div>
-                    <div className="mt-0.5 text-[12.5px] text-ink-muted">{FILING_BY_ID[id].due}</div>
+                    <div className="mt-0.5 text-[14px] text-ink-muted">{FILING_BY_ID[id].due}</div>
                   </button>
                 </div>
               )
@@ -173,14 +173,14 @@ export default function SummariesTab({ status, sitesCount }: { status: SurveySta
           {/* The chosen filing */}
           <div className="min-w-0">
             <h4 className="text-[17px] font-bold tracking-[-0.01em] text-ink">{f.title}</h4>
-            <p className="mt-1 text-[13.5px] leading-[1.55] text-ink">{f.whatToDo}</p>
+            <p className="mt-1 text-[15px] leading-[1.55] text-ink">{f.whatToDo}</p>
 
             {filing !== 'cambridge' && (
               <div className="mt-4 rounded-[12px] border border-line bg-surface-2 px-4 py-3">
-                <div className="text-[12.5px] font-semibold text-ink-muted">Ready to file?</div>
+                <div className="text-[14px] font-semibold text-ink-muted">Ready to file?</div>
                 <ul className="mt-2 grid gap-1.5">
                   {checks.map((c) => (
-                    <li key={c.text} className="flex items-start gap-2 text-[13.5px] leading-[1.5] text-ink">
+                    <li key={c.text} className="flex items-start gap-2 text-[15px] leading-[1.5] text-ink">
                       <span className={`mt-[3px] grid h-4 w-4 shrink-0 place-items-center rounded-full ${c.ok ? 'bg-accent text-white' : 'bg-ink/15 text-ink'}`}>
                         {c.ok ? <Check size={11} strokeWidth={3} /> : <Minus size={11} strokeWidth={3} />}
                       </span>
@@ -188,7 +188,7 @@ export default function SummariesTab({ status, sitesCount }: { status: SurveySta
                     </li>
                   ))}
                 </ul>
-                {ready.tone === 'success' && <p className="mt-2 text-[12.5px] text-ink-muted">Nothing is sent from here. Print the PDF or copy the text into your report.</p>}
+                {ready.tone === 'success' && <p className="mt-2 text-[14px] text-ink-muted">Nothing is sent from here. Print the PDF or copy the text into your report.</p>}
               </div>
             )}
 
@@ -216,22 +216,22 @@ export default function SummariesTab({ status, sitesCount }: { status: SurveySta
                 {opening === 'leadership' ? 'Opening...' : 'One-page summary for leadership'}
               </Button>
             </div>
-            <p className="mt-1.5 text-[12.5px] text-ink-muted">Opens a print-ready version in a new tab. The link works for one hour.</p>
+            <p className="mt-1.5 text-[14px] text-ink-muted">Opens a print-ready version in a new tab. The link works for one hour.</p>
 
-            {loading && <p className="mt-5 text-[13.5px] text-ink-muted">Adding it up...</p>}
+            {loading && <p className="mt-5 text-[15px] text-ink-muted">Adding it up...</p>}
             {result && !loading && (
               <div className="mt-5 border-t border-line pt-4">
-                <div className="flex items-center gap-2 text-[12.5px] font-semibold text-ink-muted">
+                <div className="flex items-center gap-2 text-[14px] font-semibold text-ink-muted">
                   <FileText size={14} strokeWidth={1.75} />
                   What the PDF contains
                 </div>
                 <div className="mt-3 grid gap-5">
                   {result.doc.sections.map((sec) => (
                     <section key={sec.heading}>
-                      <h5 className="text-[13.5px] font-bold text-ink">{sec.heading}</h5>
-                      {sec.note && <p className="mt-0.5 text-[12.5px] leading-[1.5] text-ink-muted">{sec.note}</p>}
+                      <h5 className="text-[15px] font-bold text-ink">{sec.heading}</h5>
+                      {sec.note && <p className="mt-0.5 text-[14px] leading-[1.5] text-ink-muted">{sec.note}</p>}
                       {sec.rows && sec.rows.length > 0 && (
-                        <table className="mt-2 w-full text-left text-[13.5px]">
+                        <table className="mt-2 w-full text-left text-[15px]">
                           <tbody>
                             {sec.rows.map(([k, v], i) => (
                               <tr key={`${k}-${i}`} className="border-b border-line-2 last:border-b-0">
@@ -243,13 +243,13 @@ export default function SummariesTab({ status, sitesCount }: { status: SurveySta
                         </table>
                       )}
                       {sec.paragraphs?.map((p, i) => (
-                        <p key={i} className="mt-2 text-[13.5px] leading-[1.6] text-ink">
+                        <p key={i} className="mt-2 text-[15px] leading-[1.6] text-ink">
                           {p}
                         </p>
                       ))}
                     </section>
                   ))}
-                  {filing === 'emissions' && <p className="text-[12.5px] leading-[1.5] text-ink-muted">{EPA_FACTOR_LINE}</p>}
+                  {filing === 'emissions' && <p className="text-[14px] leading-[1.5] text-ink-muted">{EPA_FACTOR_LINE}</p>}
                 </div>
               </div>
             )}

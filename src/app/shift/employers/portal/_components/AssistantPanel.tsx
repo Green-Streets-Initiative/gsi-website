@@ -119,7 +119,7 @@ function Rich({ text }: { text: string }) {
 
 function LinkButton({ link, onNavigate }: { link: LinkT; onNavigate: () => void }) {
   const cls =
-    'mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] font-semibold text-accent hover:border-accent'
+    'mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[14px] font-semibold text-accent hover:border-accent'
   if (link.external) {
     return (
       <a href={link.href} target="_blank" rel="noopener noreferrer" className={cls}>
@@ -161,9 +161,9 @@ function RateReply({ rated, onRate }: { rated?: 'up' | 'down'; onRate: (up: bool
           onChange={(e) => setNote(e.target.value)}
           placeholder="What went wrong? (optional)"
           aria-label="What went wrong?"
-          className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] text-ink outline-none placeholder:text-ink-muted focus:border-accent"
+          className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-[14px] text-ink outline-none placeholder:text-ink-muted focus:border-accent"
         />
-        <button type="submit" className="rounded-lg border border-line px-2.5 py-1.5 text-[12.5px] font-medium text-ink hover:bg-surface-2">
+        <button type="submit" className="rounded-lg border border-line px-2.5 py-1.5 text-[14px] font-medium text-ink hover:bg-surface-2">
           Send
         </button>
       </form>
@@ -189,7 +189,7 @@ function RateReply({ rated, onRate }: { rated?: 'up' | 'down'; onRate: (up: bool
       >
         <ThumbsDown size={14} strokeWidth={1.75} />
       </button>
-      {done && <span className="ml-1 text-[12px]">Thanks, that helps us improve it.</span>}
+      {done && <span className="ml-1 text-[14px]">Thanks, that helps us improve it.</span>}
     </div>
   )
 }
@@ -555,9 +555,9 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
         <div>
           <h2 className="text-[15px] font-bold text-ink">Assistant</h2>
           {staffIn ? (
-            <p className="text-[12.5px] font-medium text-[#8A5418]">Green Streets staff in {staffIn}&apos;s account. What you approve changes it.</p>
+            <p className="text-[14px] font-medium text-[#8A5418]">Green Streets staff in {staffIn}&apos;s account. What you approve changes it.</p>
           ) : (
-            <p className="text-[12.5px] text-ink-muted">Sets things up with you. Asks before anything your team sees.</p>
+            <p className="text-[14px] text-ink-muted">Sets things up with you. Asks before anything your team sees.</p>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -603,22 +603,22 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
       {view === 'history' && (
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 [&>*]:mx-auto [&>*]:max-w-[720px]">
           <div>
-            <button type="button" onClick={() => setView('chat')} className="mb-3 flex items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline">
+            <button type="button" onClick={() => setView('chat')} className="mb-3 flex items-center gap-1.5 text-[14px] font-semibold text-accent hover:underline">
               <ArrowLeft size={14} /> Back to the conversation
             </button>
             <h3 className="text-[14px] font-bold text-ink">Your conversations</h3>
-            <p className="mb-3 text-[12.5px] text-ink-muted">Only you can see these. Anything they set up is on its page for your whole team.</p>
+            <p className="mb-3 text-[14px] text-ink-muted">Only you can see these. Anything they set up is on its page for your whole team.</p>
             {threads === null ? (
               <Loader2 size={16} className="animate-spin text-ink-muted" aria-label="Loading" />
             ) : threads.length === 0 ? (
-              <p className="text-[13.5px] text-ink-muted">No conversations yet.</p>
+              <p className="text-[15px] text-ink-muted">No conversations yet.</p>
             ) : (
               <ul className="divide-y divide-line-2 rounded-xl border border-line">
                 {threads.map((t) => (
                   <li key={t.id} className="flex items-center gap-2 px-3 py-2.5">
                     <button type="button" onClick={() => void openThread(t.id)} className="min-w-0 flex-1 text-left">
-                      <span className={`block truncate text-[13.5px] font-semibold ${t.id === threadId ? 'text-accent' : 'text-ink'}`}>{t.title}</span>
-                      <span className="block text-[12px] text-ink-muted">
+                      <span className={`block truncate text-[15px] font-semibold ${t.id === threadId ? 'text-accent' : 'text-ink'}`}>{t.title}</span>
+                      <span className="block text-[14px] text-ink-muted">
                         {new Date(t.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                         {t.waiting ? ' · waiting for your OK' : ''}
                       </span>
@@ -653,7 +653,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                   key={s}
                   type="button"
                   onClick={() => void send({ message: s })}
-                  className="rounded-full border border-line px-3.5 py-1.5 text-left text-[13.5px] font-semibold text-accent hover:border-accent hover:bg-accent-softer"
+                  className="rounded-full border border-line px-3.5 py-1.5 text-left text-[15px] font-semibold text-accent hover:border-accent hover:bg-accent-softer"
                 >
                   {s}
                 </button>
@@ -672,13 +672,13 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
               )
             if (it.kind === 'carried')
               return (
-                <p key={i} className="text-center text-[12.5px] text-ink-muted">
+                <p key={i} className="text-center text-[14px] text-ink-muted">
                   Picked up from an earlier conversation, with a summary of it.
                 </p>
               )
             if (it.kind === 'user_file')
               return (
-                <div key={i} className="ml-8 flex items-center gap-2 self-end rounded-xl border border-line bg-surface px-3 py-2 text-[13.5px] text-ink">
+                <div key={i} className="ml-8 flex items-center gap-2 self-end rounded-xl border border-line bg-surface px-3 py-2 text-[15px] text-ink">
                   <FileSpreadsheet size={16} strokeWidth={1.75} className="shrink-0 text-accent" />
                   <span className="truncate">{it.name}</span>
                   {it.count != null && <span className="shrink-0 text-ink-muted">· {it.count.toLocaleString('en-US')} {it.count === 1 ? 'person' : 'people'}</span>}
@@ -702,7 +702,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
             }
             if (it.kind === 'tool')
               return (
-                <div key={i} className="text-[12.5px] text-ink-muted">
+                <div key={i} className="text-[14px] text-ink-muted">
                   {it.label && (
                     <span className="flex items-center gap-1.5">
                       {it.card?.decision === 'declined' ? (
@@ -729,7 +729,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                       type="button"
                       disabled={busy}
                       onClick={() => void send({ message: o })}
-                      className="rounded-full border border-accent/40 bg-accent-softer px-3.5 py-1.5 text-left text-[13.5px] font-semibold text-accent-ink hover:border-accent disabled:opacity-60"
+                      className="rounded-full border border-accent/40 bg-accent-softer px-3.5 py-1.5 text-left text-[15px] font-semibold text-accent-ink hover:border-accent disabled:opacity-60"
                     >
                       {o}
                     </button>
@@ -744,7 +744,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={it.card.image} alt="The image to use" className="mt-2.5 max-h-28 rounded-lg border border-line bg-white object-contain p-2" />
                   )}
-                  <ul className="mt-2 space-y-1.5 text-[13.5px] leading-[1.5] text-ink">
+                  <ul className="mt-2 space-y-1.5 text-[15px] leading-[1.5] text-ink">
                     {it.card.lines.map((l) => (
                       <li key={l} className="flex gap-2">
                         <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-ink-muted" aria-hidden />
@@ -753,15 +753,15 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                     ))}
                   </ul>
                   {it.card.mapUrl && (
-                    <a href={it.card.mapUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline">
+                    <a href={it.card.mapUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-[14px] font-semibold text-accent hover:underline">
                       <MapPin size={14} /> Check it on the map
                     </a>
                   )}
                   {it.card.staffNote && (
-                    <p className="mt-3 rounded-lg bg-[#FBF0E1] px-3 py-2 text-[13px] font-medium text-[#8A5418]">{it.card.staffNote}</p>
+                    <p className="mt-3 rounded-lg bg-[#FBF0E1] px-3 py-2 text-[14px] font-medium text-[#8A5418]">{it.card.staffNote}</p>
                   )}
                   {it.card.confirmText && (
-                    <label className="mt-3 block text-[13px] text-ink">
+                    <label className="mt-3 block text-[14px] text-ink">
                       To confirm, type <strong>{it.card.confirmText}</strong>.
                       <input
                         value={typed[it.tool_use_id] ?? ''}
@@ -801,7 +801,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                 </div>
               )
             return (
-              <div key={i} role="alert" className="rounded-lg bg-ep-danger/5 px-3 py-2 text-[13px] font-semibold text-ep-danger">
+              <div key={i} role="alert" className="rounded-lg bg-ep-danger/5 px-3 py-2 text-[14px] font-semibold text-ep-danger">
                 {it.text}
               </div>
             )
@@ -813,7 +813,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
       </div>
 
       {long && !fresh && threadId && view === 'chat' && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line bg-surface-2 px-4 py-2.5 text-[13px] text-ink">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line bg-surface-2 px-4 py-2.5 text-[14px] text-ink">
           <span className="min-w-0 flex-1">This conversation is getting long, so answers get slower. A fresh one picks up from a summary.</span>
           <button
             type="button"
@@ -827,7 +827,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
               setLong(false)
               void send({ message: "Let's pick up where we left off.", new_thread: true, thread_id: null, carry_from: from })
             }}
-            className="shrink-0 rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-surface-2"
+            className="shrink-0 rounded-lg border border-line bg-surface px-3 py-1.5 text-[14px] font-medium text-ink hover:bg-surface-2"
           >
             Start fresh
           </button>
@@ -887,7 +887,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
             <ArrowUp size={16} />
           </button>
         </div>
-        <p className="mt-2 text-center text-[13px] leading-[1.45] text-ink-muted">
+        <p className="mt-2 text-center text-[14px] leading-[1.45] text-ink-muted">
           Seen only by you and GSI. AI can make mistakes, so check what matters. Not legal or tax advice.{' '}
           <a href="/shift/employers/assistant-data" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-ink">
             Your data

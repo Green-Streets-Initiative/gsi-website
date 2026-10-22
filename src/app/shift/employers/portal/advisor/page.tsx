@@ -260,7 +260,7 @@ export default function AdvisorPage() {
                   </div>
                 </div>
               )}
-              <div className="mb-1 text-[12px]">
+              <div className="mb-1 text-[14px]">
                 with{' '}
                 <span className="font-bold" style={{ color: '#8FD3AE' }}>
                   Green Streets
@@ -277,10 +277,10 @@ export default function AdvisorPage() {
                   <MapPin size={17} strokeWidth={1.75} />
                 </div>
                 <div>
-                  <div className="text-[13.5px] font-semibold">
+                  <div className="text-[15px] font-semibold">
                     {locations.length > 1 ? 'Choose your location' : 'Your workplace'}
                   </div>
-                  <div className="text-[12.5px] text-ink-tertiary">
+                  <div className="text-[14px] text-ink-tertiary">
                     {locations.length > 1
                       ? locations.map((l) => locationTitle(l)).join(' · ')
                       : form.destination_address || 'Not set yet'}
@@ -301,7 +301,7 @@ export default function AdvisorPage() {
                     </strong>
                   </div>
                   {form.transit_subsidy_label && (
-                    <div className="mt-1 text-[12.5px] text-accent-ink">
+                    <div className="mt-1 text-[14px] text-accent-ink">
                       {form.transit_subsidy_label}
                     </div>
                   )}
@@ -320,7 +320,7 @@ export default function AdvisorPage() {
                         strokeWidth={2.4}
                         className="mt-0.5 shrink-0 text-accent"
                       />
-                      <div className="text-[13px]">
+                      <div className="text-[14px]">
                         <span className="font-semibold">
                           {b.key === 'bikeshare_subsidized'
                             ? bikeShareMembership(form)
@@ -348,13 +348,13 @@ export default function AdvisorPage() {
               )}
 
               {form.other_benefits && (
-                <div className="border-t border-line-2 pt-3 text-[12.5px] text-ink-tertiary">
+                <div className="border-t border-line-2 pt-3 text-[14px] text-ink-tertiary">
                   {form.other_benefits}
                 </div>
               )}
 
               {(form.hr_contact_name || form.hr_contact_email) && (
-                <div className="flex items-center gap-2 border-t border-line-2 pt-3 text-[12.5px] text-ink-tertiary">
+                <div className="flex items-center gap-2 border-t border-line-2 pt-3 text-[14px] text-ink-tertiary">
                   <Mail size={14} strokeWidth={1.75} />
                   Questions? {form.hr_contact_name}
                   {form.hr_contact_email && ` · ${form.hr_contact_email}`}
@@ -368,12 +368,12 @@ export default function AdvisorPage() {
     <div className="grid gap-6">
       <PortalPageHead
         title="Commute Advisor"
-        subtitle="A public page with your logo that shows anyone their walking, biking and transit options to your office, plus the benefits you offer. What you set here is what employees see."
+        subtitle="Your public page of walking, biking and transit options to your office"
       />
 
       {!canEdit && (
         <Card pad>
-          <p className="text-[13.5px] leading-[1.55] text-ink">
+          <p className="text-[15px] leading-[1.55] text-ink">
             You can see this page but not change it. Ask an admin or manager on your team to make changes.
           </p>
         </Card>
@@ -390,10 +390,10 @@ export default function AdvisorPage() {
               <p className="text-[14px] font-semibold leading-[1.45] text-ink">
                 Your page shows the office address.
               </p>
-              <p className="mt-1 text-[13.5px] leading-[1.55] text-ink">
+              <p className="mt-1 text-[15px] leading-[1.55] text-ink">
                 Adding a benefit, even &ldquo;bike parking in the garage,&rdquo; gives employees more to plan around.
               </p>
-              <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-semibold">
+              <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[14px] font-semibold">
                 <a href="#adv-subsidy" className="text-accent hover:underline">Transit subsidy</a>
                 <a href="#adv-perks" className="text-accent hover:underline">Facilities &amp; perks</a>
                 <a href="#adv-contact" className="text-accent hover:underline">HR contact</a>
@@ -424,7 +424,7 @@ export default function AdvisorPage() {
           <div className="grid gap-3">
             <p>Share it in your onboarding kit or HR portal. No app or login needed.</p>
             <div className="flex flex-wrap gap-2">
-              <div className="min-w-0 flex-1 truncate rounded-[10px] bg-white/10 px-3.5 py-2.5 text-[13.5px] text-white ring-1 ring-white/25">
+              <div className="min-w-0 flex-1 truncate rounded-[10px] bg-white/10 px-3.5 py-2.5 text-[15px] text-white ring-1 ring-white/25">
                 {advisorUrl}
               </div>
               <Button variant="secondary" size="sm" icon={Copy} onClick={copyLink}>
@@ -441,19 +441,19 @@ export default function AdvisorPage() {
             </div>
             {siteLinks.length > 0 && (
               <div className="mt-1 grid gap-1.5">
-                <p className="text-[13px] text-white/85">
-                  That link opens on your main location. Each location also has its own link, which opens with that site already picked:
+                <p className="text-[14px] text-white/85">
+                  Or link straight to one location:
                 </p>
                 <ul className="grid gap-1.5">
                   {siteLinks.map((sl) => (
-                    <li key={sl.id} className="flex flex-wrap items-center gap-2 text-[13.5px]">
+                    <li key={sl.id} className="flex flex-wrap items-center gap-2 text-[15px]">
                       <span className="min-w-0 flex-1 truncate">
                         <span className="font-semibold text-white">{sl.title}</span>
                         <span className="text-white/85"> · {sl.url.replace(/^https:\/\/(www\.)?/, '')}</span>
                       </span>
                       <button
                         type="button"
-                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12.5px] font-semibold text-white ring-1 ring-white/35 hover:bg-white/10"
+                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[14px] font-semibold text-white ring-1 ring-white/35 hover:bg-white/10"
                         onClick={() => copySite(sl.id, sl.url)}
                       >
                         <Copy size={12} strokeWidth={2} />
@@ -463,7 +463,7 @@ export default function AdvisorPage() {
                         href={onThisSite(sl.url)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12.5px] font-semibold text-white ring-1 ring-white/35 hover:bg-white/10"
+                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[14px] font-semibold text-white ring-1 ring-white/35 hover:bg-white/10"
                       >
                         <ExternalLink size={12} strokeWidth={2} />
                         Open
@@ -499,7 +499,7 @@ export default function AdvisorPage() {
             <div className="grid gap-4 px-6 py-5">
               <div className="grid grid-cols-[160px_1fr] gap-4">
                 <div>
-                  <label htmlFor={`${fid}-subsidy`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                  <label htmlFor={`${fid}-subsidy`} className="mb-1.5 block text-[14px] font-semibold text-ink-muted">
                     Monthly transit subsidy
                   </label>
                   <div className="flex items-center rounded-[10px] border border-line bg-surface focus-within:border-accent focus-within:ring-2 focus-within:ring-accent-soft">
@@ -520,7 +520,7 @@ export default function AdvisorPage() {
                   </div>
                 </div>
                 <div>
-                  <label htmlFor={`${fid}-subsidy-type`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                  <label htmlFor={`${fid}-subsidy-type`} className="mb-1.5 block text-[14px] font-semibold text-ink-muted">
                     Subsidy type
                   </label>
                   <select
@@ -545,7 +545,7 @@ export default function AdvisorPage() {
               </div>
 
               <div>
-                <label htmlFor={`${fid}-subsidy-label`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                <label htmlFor={`${fid}-subsidy-label`} className="mb-1.5 block text-[14px] font-semibold text-ink-muted">
                   Subsidy display label
                 </label>
                 <input
@@ -557,7 +557,7 @@ export default function AdvisorPage() {
                     update({ transit_subsidy_label: e.target.value })
                   }
                 />
-                <p className="mt-1 text-[12px] text-ink-tertiary">
+                <p className="mt-1 text-[14px] text-ink-tertiary">
                   Shown to employees in plain language.
                 </p>
               </div>
@@ -627,7 +627,7 @@ export default function AdvisorPage() {
                     <div className="text-[14px] font-semibold">
                       Shuttle routes
                     </div>
-                    <div className="text-[12.5px] text-ink-tertiary">
+                    <div className="text-[14px] text-ink-tertiary">
                       {form.shuttle_routes?.length
                         ? `${form.shuttle_routes.length} route${form.shuttle_routes.length === 1 ? '' : 's'}`
                         : 'No routes added yet'}
@@ -720,7 +720,7 @@ export default function AdvisorPage() {
                           })
                         }
                         aria-label={`Remove shuttle ${i + 1}`}
-                        className="shrink-0 text-[12.5px] font-semibold text-ep-danger hover:underline"
+                        className="shrink-0 text-[14px] font-semibold text-ep-danger hover:underline"
                       >
                         Remove
                       </button>
@@ -737,7 +737,7 @@ export default function AdvisorPage() {
             <div className="grid gap-4 px-6 py-5">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor={`${fid}-hr-name`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                  <label htmlFor={`${fid}-hr-name`} className="mb-1.5 block text-[14px] font-semibold text-ink-muted">
                     HR contact name
                   </label>
                   <input
@@ -750,7 +750,7 @@ export default function AdvisorPage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor={`${fid}-hr-email`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                  <label htmlFor={`${fid}-hr-email`} className="mb-1.5 block text-[14px] font-semibold text-ink-muted">
                     HR contact email
                   </label>
                   <div className="flex items-center rounded-[10px] border border-line bg-surface focus-within:border-accent focus-within:ring-2 focus-within:ring-accent-soft">
@@ -769,7 +769,7 @@ export default function AdvisorPage() {
                 </div>
               </div>
               <div>
-                <label htmlFor={`${fid}-other`} className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">
+                <label htmlFor={`${fid}-other`} className="mb-1.5 block text-[14px] font-semibold text-ink-muted">
                   Other benefits{' '}
                   <span className="font-normal text-ink-tertiary">· optional</span>
                 </label>
@@ -791,7 +791,7 @@ export default function AdvisorPage() {
             The real page, scaled down; the hand-built summary is only the
             fallback when the page can't load in the frame. */}
         <div className={`sticky top-[60px] min-[1200px]:top-6 ${SECTION_SCROLL_MT}`} id="adv-preview">
-          <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em] text-ink-tertiary">
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-ink-tertiary">
             <ExternalLink size={13} strokeWidth={1.75} />
             Employee preview
             {dirty && canEdit && (
@@ -810,7 +810,7 @@ export default function AdvisorPage() {
             <label className="mb-2 block">
               <span className="sr-only">Preview location</span>
               <select
-                className="w-full rounded-[10px] border border-line bg-surface px-3 py-2 text-[13px] text-ink outline-none focus:border-accent"
+                className="w-full rounded-[10px] border border-line bg-surface px-3 py-2 text-[14px] text-ink outline-none focus:border-accent"
                 value={previewLocation?.id ?? ''}
                 onChange={(e) => setPreviewLocationId(e.target.value || null)}
               >
@@ -832,7 +832,7 @@ export default function AdvisorPage() {
               fallback={previewSummary}
             />
           )}
-          <p className="mt-2 text-[12.5px] leading-[1.5] text-ink-muted">
+          <p className="mt-2 text-[14px] leading-[1.5] text-ink-muted">
             {showDraftInFrame
               ? 'Shows your unsaved changes. Nothing is published until you save.'
               : "Shows what's saved. Pick \"Unsaved changes\" or use Preview unsaved changes below to see edits first."}
@@ -862,7 +862,7 @@ export default function AdvisorPage() {
         }}
       >
         {dirty && (
-          <span className="mr-auto text-[13px] text-ink-tertiary">
+          <span className="mr-auto text-[14px] text-ink-tertiary">
             Unsaved changes
           </span>
         )}

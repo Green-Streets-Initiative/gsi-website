@@ -107,7 +107,7 @@ export default function AdvisorVisibilityCard({
           />
         </div>
         {!canWrite && (
-          <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-tertiary">
+          <p className="mt-3 text-[14px] leading-[1.5] text-ink-tertiary">
             {canEdit
               ? "Switching this from the portal isn't wired up yet. Green Streets can turn the page on or off for you."
               : 'An admin or manager on your team can ask Green Streets to turn the page on or off.'}

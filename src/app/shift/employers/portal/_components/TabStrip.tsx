@@ -82,7 +82,7 @@ export default function TabStrip<T extends string>({
             tabIndex={on ? 0 : -1}
             onClick={() => onChange(t.id as T)}
             onKeyDown={(e) => onKeyDown(e, i)}
-            className={`-mb-px inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t-[8px] border-b-2 px-3.5 py-2.5 text-[13.5px] font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
+            className={`-mb-px inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t-[8px] border-b-2 px-3.5 py-2.5 text-[15px] font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
               on
                 ? 'border-accent text-ink'
                 : 'border-transparent text-ink-muted hover:border-line hover:text-ink'
@@ -91,7 +91,7 @@ export default function TabStrip<T extends string>({
             {t.label}
             {typeof t.count === 'number' && (
               <span
-                className={`rounded-full px-[7px] py-[1px] text-[11.5px] font-semibold leading-[1.4] ${
+                className={`rounded-full px-[7px] py-[1px] text-[13px] font-semibold leading-[1.4] ${
                   on ? 'bg-accent-soft text-accent-ink' : 'bg-surface-2 text-ink-muted'
                 }`}
               >

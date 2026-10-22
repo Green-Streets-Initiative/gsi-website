@@ -167,9 +167,9 @@ export default function JoinPolicyCard({
                   </span>
                   <span className="min-w-0">
                     <span className="block text-[14px] font-semibold text-ink">{opt.title}</span>
-                    <span className="mt-0.5 block text-[13px] leading-[1.5] text-ink-muted">{opt.desc}</span>
+                    <span className="mt-0.5 block text-[14px] leading-[1.5] text-ink-muted">{opt.desc}</span>
                     {blocked && (
-                      <span className="mt-1 block text-[12.5px] leading-[1.5] text-ink-muted">
+                      <span className="mt-1 block text-[14px] leading-[1.5] text-ink-muted">
                         Needs a company email domain.{' '}
                         <a href="#email-domains" className="font-semibold text-accent hover:underline">
                           Add one above
@@ -183,10 +183,10 @@ export default function JoinPolicyCard({
             })}
           </div>
         </fieldset>
-        {error && <p className="mt-3 text-[13px] text-ep-danger">{error}</p>}
-        <p className="mt-4 border-t border-line-2 pt-3 text-[12.5px] leading-[1.5] text-ink-muted">
+        {error && <p className="mt-3 text-[14px] text-ep-danger">{error}</p>}
+        <p className="mt-4 border-t border-line-2 pt-3 text-[14px] leading-[1.5] text-ink-muted">
           {saving ? 'Saving...' : CURRENT[current]}
-          {current !== 'open' && ' Employees need the current version of the Shift app to see the extra step; an older version shows the code as invalid until they update.'}
+          {current !== 'open' && ' Employees need the latest Shift app for this step.'}
           {!canManage && ' Ask an admin to change this.'}
         </p>
       </CardBody>

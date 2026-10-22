@@ -25,7 +25,7 @@ export default function ResponsesTab({ status, onGoToSending, onGoToPeople }: { 
   const head = (
     <div className="border-b border-line px-6 py-[18px]">
       <h3 className="text-[16px] font-bold tracking-[-0.01em] text-ink">{s.status === 'closed' ? 'Responses' : 'Responses so far'}</h3>
-      <p className="mt-0.5 text-[13px] leading-[1.5] text-ink-muted">
+      <p className="mt-0.5 text-[14px] leading-[1.5] text-ink-muted">
         {headcount ? `Against the ${headcount.toLocaleString()} people you counted under Setup.` : 'Add a headcount under Setup to see a response rate.'}
       </p>
     </div>
@@ -67,8 +67,8 @@ export default function ResponsesTab({ status, onGoToSending, onGoToPeople }: { 
       <div className="grid gap-6 px-6 py-5">
         {isMassdep && (
           <section>
-            <div className="text-[12.5px] font-semibold text-ink-muted">MassDEP response bands</div>
-            <p className="mt-0.5 text-[13.5px] leading-[1.5] text-ink">
+            <div className="text-[14px] font-semibold text-ink-muted">MassDEP response bands</div>
+            <p className="mt-0.5 text-[15px] leading-[1.5] text-ink">
               {ratePct != null && headcount
                 ? `${pct(responded, headcount)} of ${headcount.toLocaleString()} answered. ${massdepBandShort(ratePct)}.`
                 : 'Add a headcount under Setup to see where you stand.'}
@@ -80,7 +80,7 @@ export default function ResponsesTab({ status, onGoToSending, onGoToPeople }: { 
               ))}
             </div>
             {/* Wide: labels sit under their tick. Phone: 75% and 90% are too close, so list them in a row instead. */}
-            <div className="relative mt-1 hidden h-8 text-[12px] leading-[1.3] text-ink-muted sm:block">
+            <div className="relative mt-1 hidden h-8 text-[14px] leading-[1.3] text-ink-muted sm:block">
               {MASSDEP_BANDS.map((b) => (
                 <div key={b.at} className="absolute whitespace-nowrap text-center" style={{ left: `${b.at}%`, transform: b.at >= 90 ? 'translateX(-100%)' : 'translateX(-50%)' }}>
                   <div className="font-semibold text-ink">{b.label}</div>
@@ -88,26 +88,26 @@ export default function ResponsesTab({ status, onGoToSending, onGoToPeople }: { 
                 </div>
               ))}
             </div>
-            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[12px] leading-[1.3] text-ink-muted sm:hidden">
+            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[14px] leading-[1.3] text-ink-muted sm:hidden">
               {MASSDEP_BANDS.map((b) => (
                 <span key={b.at} className="whitespace-nowrap">
                   <span className="font-semibold text-ink">{b.label}</span> {b.form}
                 </span>
               ))}
             </div>
-            <ul className="mt-1.5 flex list-disc flex-col gap-1 pl-4 text-[12.5px] leading-[1.55] text-ink-muted">
+            <ul className="mt-1.5 flex list-disc flex-col gap-1 pl-4 text-[14px] leading-[1.55] text-ink-muted">
               {MASSDEP_GLOSS_LINES.map((line) => (
                 <li key={line}>{line}</li>
               ))}
             </ul>
-            {sets.includes('cambridge') && <p className="mt-1 text-[12.5px] leading-[1.55] text-ink-muted">{CAMBRIDGE_FLOOR_LINE}</p>}
+            {sets.includes('cambridge') && <p className="mt-1 text-[14px] leading-[1.55] text-ink-muted">{CAMBRIDGE_FLOOR_LINE}</p>}
           </section>
         )}
-        {!isMassdep && sets.includes('cambridge') && <p className="text-[13px] leading-[1.55] text-ink-muted">{CAMBRIDGE_FLOOR_LINE}</p>}
+        {!isMassdep && sets.includes('cambridge') && <p className="text-[14px] leading-[1.55] text-ink-muted">{CAMBRIDGE_FLOOR_LINE}</p>}
 
         <section>
-          <div className="text-[12.5px] font-semibold text-ink-muted">Where answers came from</div>
-          <table className="mt-2 w-full text-left text-[13.5px]">
+          <div className="text-[14px] font-semibold text-ink-muted">Where answers came from</div>
+          <table className="mt-2 w-full text-left text-[15px]">
             <tbody>
               {sources.map(([k, v]) => (
                 <tr key={k} className="border-b border-line-2 last:border-b-0">
@@ -123,10 +123,10 @@ export default function ResponsesTab({ status, onGoToSending, onGoToPeople }: { 
           <div className="grid gap-6 md:grid-cols-2">
             {status.by_site.length > 1 && (
               <section>
-                <div className="text-[12.5px] font-semibold text-ink-muted">By site</div>
-                <table className="mt-2 w-full text-left text-[13.5px]">
+                <div className="text-[14px] font-semibold text-ink-muted">By site</div>
+                <table className="mt-2 w-full text-left text-[15px]">
                   <thead>
-                    <tr className="border-b border-line-2 text-[12px] text-ink-tertiary">
+                    <tr className="border-b border-line-2 text-[14px] text-ink-tertiary">
                       <th className="py-1.5 font-semibold">Site</th>
                       <th className="py-1.5 text-right font-semibold">Answered</th>
                       <th className="py-1.5 text-right font-semibold">Rate</th>
@@ -148,10 +148,10 @@ export default function ResponsesTab({ status, onGoToSending, onGoToPeople }: { 
             )}
             {status.by_department.length > 0 && (
               <section>
-                <div className="text-[12.5px] font-semibold text-ink-muted">By department</div>
-                <table className="mt-2 w-full text-left text-[13.5px]">
+                <div className="text-[14px] font-semibold text-ink-muted">By department</div>
+                <table className="mt-2 w-full text-left text-[15px]">
                   <thead>
-                    <tr className="border-b border-line-2 text-[12px] text-ink-tertiary">
+                    <tr className="border-b border-line-2 text-[14px] text-ink-tertiary">
                       <th className="py-1.5 font-semibold">Department</th>
                       <th className="py-1.5 text-right font-semibold">Answered</th>
                       <th className="py-1.5 text-right font-semibold">Rate</th>
@@ -174,7 +174,7 @@ export default function ResponsesTab({ status, onGoToSending, onGoToPeople }: { 
           </div>
         )}
 
-        <p className="text-[13px] text-ink-muted">
+        <p className="text-[14px] text-ink-muted">
           To see who has not answered,{' '}
           <button type="button" onClick={onGoToPeople} className="font-semibold text-accent hover:underline">
             open People

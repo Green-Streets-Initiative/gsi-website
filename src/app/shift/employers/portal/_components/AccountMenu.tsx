@@ -80,7 +80,7 @@ export default function AccountMenu() {
         aria-expanded={open}
         className="flex h-[38px] items-center gap-1.5 rounded-full pl-1 pr-2 text-ink-muted transition-colors hover:bg-surface-2"
       >
-        <span className="grid h-[30px] w-[30px] place-items-center rounded-full bg-accent-soft text-[12px] font-bold text-accent-ink">
+        <span className="grid h-[30px] w-[30px] place-items-center rounded-full bg-accent-soft text-[14px] font-bold text-accent-ink">
           {initials}
         </span>
         <ChevronDown size={14} strokeWidth={2} className="text-ink-tertiary" />
@@ -93,11 +93,11 @@ export default function AccountMenu() {
         >
           <div className="border-b border-line px-4 py-3">
             {name && <div className="truncate text-[14px] font-semibold text-ink">{name}</div>}
-            <div className={`truncate text-[13px] ${name ? 'text-ink-muted' : 'font-semibold text-ink'}`}>
+            <div className={`truncate text-[14px] ${name ? 'text-ink-muted' : 'font-semibold text-ink'}`}>
               {sessionEmail ?? ''}
             </div>
             {(roleWords || isGsiAdmin) && (
-              <div className="mt-1 text-[12.5px] text-ink-muted">
+              <div className="mt-1 text-[14px] text-ink-muted">
                 {isGsiAdmin ? 'Green Streets staff' : roleWords}
               </div>
             )}
@@ -107,7 +107,7 @@ export default function AccountMenu() {
               <Link
                 href="/shift/employers/portal/settings#team"
                 role="menuitem"
-                className="flex items-center gap-2.5 px-4 py-2 text-[13.5px] text-ink no-underline hover:bg-surface-2"
+                className="flex items-center gap-2.5 px-4 py-2 text-[15px] text-ink no-underline hover:bg-surface-2"
               >
                 <ShieldCheck size={16} strokeWidth={1.75} className="text-ink-muted" />
                 Team
@@ -116,7 +116,7 @@ export default function AccountMenu() {
             <Link
               href="/shift/employers/portal/settings"
               role="menuitem"
-              className="flex items-center gap-2.5 px-4 py-2 text-[13.5px] text-ink no-underline hover:bg-surface-2"
+              className="flex items-center gap-2.5 px-4 py-2 text-[15px] text-ink no-underline hover:bg-surface-2"
             >
               <Settings size={16} strokeWidth={1.75} className="text-ink-muted" />
               Settings
@@ -128,7 +128,7 @@ export default function AccountMenu() {
               role="menuitem"
               onClick={handleSignOut}
               disabled={signingOut}
-              className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-[13.5px] text-ink hover:bg-surface-2 disabled:opacity-50"
+              className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-[15px] text-ink hover:bg-surface-2 disabled:opacity-50"
             >
               <LogOut size={16} strokeWidth={1.75} className="text-ink-muted" />
               {signingOut ? 'Signing out…' : 'Sign out'}

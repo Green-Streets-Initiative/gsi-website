@@ -36,14 +36,14 @@ export default function AccessLapsedNotice() {
               ? `mailto:info@gogreenstreets.org?subject=${encodeURIComponent(`Resume our plan — ${group.name}`)}`
               : 'mailto:info@gogreenstreets.org?subject=Renewing%20our%20Shift%20workplace%20access'
           }
-          className="inline-block rounded-[10px] bg-accent px-3.5 py-2 text-[13px] font-semibold text-white no-underline hover:bg-accent-dark"
+          className="inline-block rounded-[10px] bg-accent px-3.5 py-2 text-[14px] font-semibold text-white no-underline hover:bg-accent-dark"
         >
           {paused ? 'Write to us to pick it up again' : 'Talk to us about renewing'}
         </a>
         {(isAdmin || isGsiAdmin) && (
           <Link
             href="/shift/employers/portal/billing"
-            className="inline-block rounded-[10px] border border-line bg-white px-3.5 py-2 text-[13px] font-semibold text-accent-ink no-underline hover:border-accent hover:text-accent"
+            className="inline-block rounded-[10px] border border-line bg-white px-3.5 py-2 text-[14px] font-semibold text-accent-ink no-underline hover:border-accent hover:text-accent"
           >
             See billing &amp; rewards
           </Link>

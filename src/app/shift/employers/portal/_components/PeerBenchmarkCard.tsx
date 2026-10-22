@@ -97,27 +97,27 @@ export default function PeerBenchmarkCard({
       <CardHead title="Compared to other workplaces" sub={`${peerCountLine(benchmark)} · ${rangeLabel}`} />
       <CardBody className={dim ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
         {!benchmark.you_qualify && (
-          <p className="mb-4 text-[13.5px] leading-[1.5] text-ink-muted">{PEER_COPY.notQualified}</p>
+          <p className="mb-4 text-[15px] leading-[1.5] text-ink-muted">{PEER_COPY.notQualified}</p>
         )}
         <div className="grid gap-4">
           {rows.map((r) => (
             <div key={r.label} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-4 gap-y-1">
               <div className="min-w-0">
-                <p className="text-[13.5px] font-semibold text-ink">{r.label}</p>
-                {r.standing && <p className="text-[12.5px] text-ink-tertiary">{r.standing}</p>}
+                <p className="text-[15px] font-semibold text-ink">{r.label}</p>
+                {r.standing && <p className="text-[14px] text-ink-tertiary">{r.standing}</p>}
               </div>
               <div className="text-right">
-                <p className="text-[11.5px] font-semibold text-ink-tertiary">You</p>
+                <p className="text-[13px] font-semibold text-ink-tertiary">You</p>
                 <p className="text-[20px] font-bold tabular-nums leading-none text-ink">{r.yours}</p>
               </div>
               <div className="text-right">
-                <p className="text-[11.5px] font-semibold text-ink-tertiary">Median</p>
+                <p className="text-[13px] font-semibold text-ink-tertiary">Median</p>
                 <p className="text-[20px] font-bold tabular-nums leading-none text-ink-muted">{r.median}</p>
               </div>
             </div>
           ))}
         </div>
-        <p className="mt-4 text-[12.5px] leading-[1.5] text-ink-tertiary">{PEER_COPY.about}</p>
+        <p className="mt-4 text-[14px] leading-[1.5] text-ink-tertiary">{PEER_COPY.about}</p>
       </CardBody>
     </Card>
   )

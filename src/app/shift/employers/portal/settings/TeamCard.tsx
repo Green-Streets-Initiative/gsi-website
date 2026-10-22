@@ -223,27 +223,35 @@ export default function TeamCard() {
           sub={`Who can open this portal · ${admins.length} ${admins.length === 1 ? 'person' : 'people'}`}
         />
         <CardBody>
-          <dl className="mb-4 grid gap-1.5 text-[13.5px] leading-[1.55]">
-            {legendRoles.map((r) => (
-              <div key={r} className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-                <dt className="shrink-0 font-semibold text-ink sm:w-[72px]">{ROLE_LABEL[r]}</dt>
-                <dd className="text-ink-muted">{ROLE_SUMMARY[r]}</dd>
-              </div>
-            ))}
-            {hasOwner && (
-              <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-                <dt className="shrink-0 font-semibold text-ink sm:w-[72px]">Owner</dt>
-                <dd className="text-ink-muted">{OWNER_SUMMARY}</dd>
-              </div>
+          {/* What each role can do, one tap away so the people come first. */}
+          <details className="mb-4">
+            <summary className="cursor-pointer list-none text-[15px] font-semibold text-accent hover:underline [&::-webkit-details-marker]:hidden">
+              What can each role do?
+            </summary>
+            <div className="mt-3">
+            <dl className="mb-4 grid gap-1.5 text-[15px] leading-[1.55]">
+              {legendRoles.map((r) => (
+                <div key={r} className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+                  <dt className="shrink-0 font-semibold text-ink sm:w-[72px]">{ROLE_LABEL[r]}</dt>
+                  <dd className="text-ink-muted">{ROLE_SUMMARY[r]}</dd>
+                </div>
+              ))}
+              {hasOwner && (
+                <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+                  <dt className="shrink-0 font-semibold text-ink sm:w-[72px]">Owner</dt>
+                  <dd className="text-ink-muted">{OWNER_SUMMARY}</dd>
+                </div>
+              )}
+            </dl>
+            {ownerLive && hasOwner && (
+              <p className="mb-4 text-[15px] text-ink-muted">
+                The account owner gets an email whenever someone is added, removed or given a different role.
+              </p>
             )}
-          </dl>
-          {ownerLive && hasOwner && (
-            <p className="mb-4 text-[13.5px] text-ink-muted">
-              The account owner gets an email whenever someone is added, removed or given a different role.
-            </p>
-          )}
+            </div>
+          </details>
           {!canManage && (
-            <p className="mb-4 text-[13.5px] text-ink-muted">Ask an admin to make changes.</p>
+            <p className="mb-4 text-[15px] text-ink-muted">Ask an admin to make changes.</p>
           )}
           <ul className="divide-y divide-line-2">
             {admins.map((a) => {
@@ -272,11 +280,11 @@ export default function TeamCard() {
                         <span className="truncate text-[14px] font-semibold text-ink">{personName(a)}</span>
                         <Badge tone={ROLE_TONE[role]}>{ROLE_LABEL[role]}</Badge>
                         {isOwner && <Badge tone="warn">Owner</Badge>}
-                        {isSelf && <span className="text-[12px] text-ink-muted">(you)</span>}
+                        {isSelf && <span className="text-[14px] text-ink-muted">(you)</span>}
                       </div>
-                      {a.name && <div className="text-[12.5px] text-ink-muted">{a.email}</div>}
+                      {a.name && <div className="text-[14px] text-ink-muted">{a.email}</div>}
                       {canManage && reason && (
-                        <p className="mt-1 text-[12.5px] text-ink-muted">{reason}</p>
+                        <p className="mt-1 text-[14px] text-ink-muted">{reason}</p>
                       )}
                     </div>
                     {canManage && (
@@ -290,7 +298,7 @@ export default function TeamCard() {
                           onChange={(e) => void changeRole(a, e.target.value as PortalRole)}
                           disabled={locked || busyId === a.id}
                           title={reason ?? undefined}
-                          className="rounded-[8px] border border-line bg-surface px-2 py-1.5 text-[13px] text-ink outline-none focus:border-accent disabled:opacity-60"
+                          className="rounded-[8px] border border-line bg-surface px-2 py-1.5 text-[14px] text-ink outline-none focus:border-accent disabled:opacity-60"
                         >
                           {roleOptions.map((r) => (
                             <option key={r} value={r}>
@@ -333,7 +341,7 @@ export default function TeamCard() {
           <CardBody>
             <form onSubmit={inviteMember} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px_auto] sm:items-end">
               <label className="block">
-                <span className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">Email address</span>
+                <span className="mb-1.5 block text-[14px] font-semibold text-ink-muted">Email address</span>
                 <input
                   type="email"
                   value={inviteEmail}
@@ -346,7 +354,7 @@ export default function TeamCard() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-[12.5px] font-semibold text-ink-muted">Role</span>
+                <span className="mb-1.5 block text-[14px] font-semibold text-ink-muted">Role</span>
                 <select
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as PortalRole)}
@@ -371,10 +379,10 @@ export default function TeamCard() {
                 {inviting ? 'Sending...' : 'Send invite'}
               </Button>
             </form>
-            <p className="mt-3 text-[12.5px] leading-[1.55] text-ink-muted">
+            <p className="mt-3 text-[14px] leading-[1.55] text-ink-muted">
               <strong className="font-semibold text-ink">{ROLE_LABEL[inviteRole]}:</strong> {ROLE_SUMMARY[inviteRole]}
             </p>
-            {inviteError && <p className="mt-2 text-[13px] text-ep-danger">{inviteError}</p>}
+            {inviteError && <p className="mt-2 text-[14px] text-ep-danger">{inviteError}</p>}
           </CardBody>
         </Card>
       )}

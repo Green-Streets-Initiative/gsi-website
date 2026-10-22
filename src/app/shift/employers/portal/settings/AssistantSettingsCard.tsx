@@ -118,9 +118,9 @@ export default function AssistantSettingsCard() {
           </p>
         )}
         {!group.assistant_enabled && isGsiAdmin && (
-          <p className="text-[13px] text-ink-muted">GSI staff view: the assistant isn&apos;t offered to this workplace yet, so only GSI staff can use it here.</p>
+          <p className="text-[14px] text-ink-muted">GSI staff view: the assistant isn&apos;t offered to this workplace yet, so only GSI staff can use it here.</p>
         )}
-        <p className="text-[13.5px] text-ink-muted">
+        <p className="text-[15px] text-ink-muted">
           Conversations are private to each person and deleted 12 months after their last message.{' '}
           <a href="/shift/employers/assistant-data" target="_blank" rel="noopener" className="font-medium text-accent hover:underline">
             How the assistant handles your data
@@ -128,7 +128,7 @@ export default function AssistantSettingsCard() {
           , for your IT or security team.
         </p>
         {!!mine && (
-          <p className="text-[13.5px] text-ink-muted">
+          <p className="text-[15px] text-ink-muted">
             You have {mine} {mine === 1 ? 'conversation' : 'conversations'} with the assistant here.{' '}
             <button type="button" onClick={() => void deleteMine()} className="font-medium text-accent hover:underline">
               Delete {mine === 1 ? 'it' : 'them'}

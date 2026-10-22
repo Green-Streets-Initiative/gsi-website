@@ -64,7 +64,7 @@ export default function SetupTab({
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-6 py-[18px]">
         <div className="min-w-0">
           <h3 className="text-[16px] font-bold tracking-[-0.01em] text-ink">How this survey is set up</h3>
-          <p className="mt-0.5 text-[13px] leading-[1.5] text-ink-muted">
+          <p className="mt-0.5 text-[14px] leading-[1.5] text-ink-muted">
             {survey.status === 'closed'
               ? 'This survey is closed, so its setup is fixed.'
               : survey.status === 'open'
@@ -80,13 +80,13 @@ export default function SetupTab({
           ))}
         </dl>
         <div>
-          <div className="mb-2 text-[12.5px] font-semibold text-ink-muted">What staff see</div>
+          <div className="mb-2 text-[14px] font-semibold text-ink-muted">What staff see</div>
           <LivePagePreview
             src={`/survey/${survey.open_token}?preview=1`}
             title="The survey as staff see it"
             pageWidth={390}
             pageHeight={844}
-            fallback={<p className="p-4 text-[13px] text-ink-muted">Preview unavailable. Open the page to see it.</p>}
+            fallback={<p className="p-4 text-[14px] text-ink-muted">Preview unavailable. Open the page to see it.</p>}
           />
         </div>
       </div>

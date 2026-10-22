@@ -104,17 +104,15 @@ export default function EmailDomainsCard({ groupId, canManage }: { groupId: stri
     <Card>
       <CardHead title="Company email domains" sub="How employees prove they work here" />
       <CardBody>
-        <p className="mb-3 text-[13.5px] leading-[1.55] text-ink-muted">
-          Add your company&apos;s email domain so employees can prove they work here when a prize is
-          limited to staff. They confirm an address at one of these domains inside the Shift app. We email
-          them a code; you never see the address unless they win and choose to share it.
+        <p className="mb-3 text-[15px] leading-[1.55] text-ink-muted">
+          Employees confirm an address at one of these in the app. You never see it unless they win and share it.
         </p>
         <div className="mb-3 flex flex-wrap gap-2">
-          {domains.length === 0 && <span className="text-[13px] text-ink-muted">None yet.</span>}
+          {domains.length === 0 && <span className="text-[14px] text-ink-muted">None yet.</span>}
           {domains.map((d) => (
             <span
               key={d}
-              className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1.5 text-[13px] font-semibold text-accent-ink"
+              className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1.5 text-[14px] font-semibold text-accent-ink"
             >
               @{d}
               {canManage && (
@@ -157,9 +155,9 @@ export default function EmailDomainsCard({ groupId, canManage }: { groupId: stri
             </Button>
           </form>
         ) : (
-          <p className="text-[12.5px] text-ink-muted">Ask an admin to change this.</p>
+          <p className="text-[14px] text-ink-muted">Ask an admin to change this.</p>
         )}
-        {error && <p className="mt-2 text-[12.5px] text-ep-danger">{error}</p>}
+        {error && <p className="mt-2 text-[14px] text-ep-danger">{error}</p>}
       </CardBody>
     </Card>
   )

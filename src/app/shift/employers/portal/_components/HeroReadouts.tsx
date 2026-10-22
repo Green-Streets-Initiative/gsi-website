@@ -17,12 +17,12 @@ export default function HeroReadouts({ readouts }: { readouts: HeroReadout[] }) 
     <dl className="grid basis-full grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
       {readouts.map((r, i) => (
         <div key={r.label} className="min-w-0">
-          <dt className="text-[12.5px] font-semibold leading-snug text-white/85">{r.label}</dt>
+          <dt className="text-[14px] font-semibold leading-snug text-white/85">{r.label}</dt>
           <dd className="mt-1 flex items-center gap-1.5 font-headline text-[28px] font-extrabold leading-none text-white">
             <span className="truncate">{r.value}</span>
             <StatHint hint={r.hint} className="shrink-0 text-white/85 hover:text-white" align={i % 2 === 1 ? 'right' : 'left'} />
           </dd>
-          <dd className="mt-1.5 min-h-[18px] text-[13px] leading-[1.4] text-white/85">{r.sub}</dd>
+          <dd className="mt-1.5 min-h-[18px] text-[14px] leading-[1.4] text-white/85">{r.sub}</dd>
         </div>
       ))}
     </dl>

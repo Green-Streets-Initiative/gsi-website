@@ -51,7 +51,7 @@ export default function StepsEquivalentCard({ groupId, days }: { groupId: string
   if (state.status === 'error') {
     return (
       <Card pad>
-        <p className="text-[13.5px] leading-[1.5] text-ink-muted">
+        <p className="text-[15px] leading-[1.5] text-ink-muted">
           The steps figure for walks and bike rides didn&apos;t load. Refresh the page to try again.
         </p>
       </Card>
@@ -72,7 +72,7 @@ export default function StepsEquivalentCard({ groupId, days }: { groupId: string
           <strong className="text-[15px] text-ink">
             About {steps.toLocaleString()} steps from walks and bike rides this period
           </strong>
-          <p className="text-[13.5px] leading-[1.55] text-ink-muted">
+          <p className="text-[15px] leading-[1.55] text-ink-muted">
             {miles.walk_miles.toLocaleString()} walking miles and {miles.bike_miles.toLocaleString()} biking miles. Running a
             step challenge? Share this number with whoever runs it. We count 2,000 steps per walking mile and 800 per bike
             mile, the rate many step challenges use for an easy ride.

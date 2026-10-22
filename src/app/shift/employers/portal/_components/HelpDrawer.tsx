@@ -212,7 +212,7 @@ export default function HelpDrawer({ onClose, topic }: { onClose: () => void; to
         <div className="flex items-center justify-between border-b border-line px-5 py-5 sm:px-6">
           <div>
             <div className="text-[16px] font-bold text-ink">Help</div>
-            <div className="text-[12.5px] text-ink-muted">{PAGE_TITLES[routeKey] ?? 'Home'}</div>
+            <div className="text-[14px] text-ink-muted">{PAGE_TITLES[routeKey] ?? 'Home'}</div>
           </div>
           <button
             ref={closeRef}
@@ -235,14 +235,14 @@ export default function HelpDrawer({ onClose, topic }: { onClose: () => void; to
         {/* Footer */}
         <div className="border-t border-line p-4 sm:p-5">
           <div className="rounded-[12px] bg-accent-softer p-4">
-            <div className="mb-1 text-[13.5px] font-semibold text-ink">Need more help?</div>
-            <p className="mb-3 text-[13px] leading-relaxed text-ink-muted">
+            <div className="mb-1 text-[15px] font-semibold text-ink">Need more help?</div>
+            <p className="mb-3 text-[14px] leading-relaxed text-ink-muted">
               Our team is here to help you get the most out of Shift for Employers.
             </p>
             <div className="flex flex-col gap-2">
               <a
                 href="mailto:info@gogreenstreets.org"
-                className="inline-flex items-center gap-2 text-[13px] font-semibold text-accent hover:underline"
+                className="inline-flex items-center gap-2 text-[14px] font-semibold text-accent hover:underline"
               >
                 <Mail size={14} strokeWidth={1.75} />
                 info@gogreenstreets.org
@@ -250,7 +250,7 @@ export default function HelpDrawer({ onClose, topic }: { onClose: () => void; to
               <a
                 href="/contact"
                 target="_blank"
-                className="inline-flex items-center gap-2 text-[13px] font-semibold text-accent hover:underline"
+                className="inline-flex items-center gap-2 text-[14px] font-semibold text-accent hover:underline"
               >
                 <ExternalLink size={14} strokeWidth={1.75} />
                 Visit our contact page
@@ -274,7 +274,7 @@ function AccordionItem({ title, body, defaultOpen = false }: { title: string; bo
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left"
       >
-        <span className="text-[13.5px] font-semibold text-ink">{title}</span>
+        <span className="text-[15px] font-semibold text-ink">{title}</span>
         <ChevronDown
           size={16}
           strokeWidth={1.75}
@@ -284,7 +284,7 @@ function AccordionItem({ title, body, defaultOpen = false }: { title: string; bo
       {open && (
         <div className="grid gap-2 px-3 pb-3">
           {(Array.isArray(body) ? body : [body]).map((para) => (
-            <p key={para} className="text-[13px] leading-relaxed text-ink-muted">
+            <p key={para} className="text-[14px] leading-relaxed text-ink-muted">
               {para}
             </p>
           ))}

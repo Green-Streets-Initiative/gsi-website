@@ -38,7 +38,7 @@ export default function PortalHeroPanel({
             <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
               {readouts.map((r) => (
                 <div key={r.label}>
-                  <dt className="text-[12.5px] font-semibold text-white/85">{r.label}</dt>
+                  <dt className="text-[14px] font-semibold text-white/85">{r.label}</dt>
                   <dd className="mt-0.5 font-headline text-[22px] font-extrabold leading-none text-white">{r.value}</dd>
                 </div>
               ))}

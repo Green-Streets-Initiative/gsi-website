@@ -122,47 +122,50 @@ export default function PublicListingCard({
             title={`Show ${group.name} on public leaderboards`}
             desc="On the open web and inside the app, next to other workplaces"
           />
-          <p className="mt-3 text-[13px] leading-[1.55] text-ink-muted">
+          <p className="mt-3 text-[14px] leading-[1.55] text-ink-muted">
             {group.public_leaderboard
-              ? `Anyone on the web, and every Shift user, can see ${group.name}'s name, logo, member count, Shift Rate and active trips. In the app, tapping your company also lists employees who keep a public profile, by first name.`
-              : `${group.name} doesn't appear on any public leaderboard, including the workplace board your own employees see in the app. Your challenges and this portal are unaffected; they're always private to your team.`}
+              ? 'Your name, logo, member count, Shift Rate and active trips are public.'
+              : 'Hidden from every public board, including the one your employees see in the app.'}
           </p>
-          {!canManage && <p className="mt-2 text-[12.5px] text-ink-muted">Ask an admin to change this.</p>}
-          {error && <p className="mt-2 text-[12.5px] text-ep-danger">{error}</p>}
+          {!canManage && <p className="mt-2 text-[14px] text-ink-muted">Ask an admin to change this.</p>}
+          {error && <p className="mt-2 text-[14px] text-ep-danger">{error}</p>}
         </div>
 
         {/* What the row would look like, with this month's real numbers */}
         <div className="mt-5 border-t border-line pt-4">
-          <p className="text-[13.5px] font-bold text-ink">How your row would look</p>
-          <p className="mt-0.5 text-[12.5px] leading-[1.5] text-ink-muted">
-            Your last 30 days, between two other workplaces. The real board ranks everyone by Shift Rate or active trips.
+          <p className="text-[15px] font-bold text-ink">How your row would look</p>
+          <p className="mt-0.5 text-[14px] leading-[1.5] text-ink-muted">
+            Your last 30 days, between two other workplaces.
           </p>
           {preview ? (
             <div className="street mt-3 rounded-[10px] border border-line bg-white px-3">
               <GroupStandingsTable standings={preview} showLogo sortBy="shift_rate" rankLabel="—" />
             </div>
           ) : (
-            <p className="mt-3 text-[12.5px] text-ink-tertiary">The preview appears once this month&apos;s numbers have loaded.</p>
+            <p className="mt-3 text-[14px] text-ink-tertiary">The preview appears once this month&apos;s numbers have loaded.</p>
           )}
         </div>
 
-        <div className="mt-5 border-t border-line pt-4">
-          <p className="text-[13.5px] font-bold text-ink">Where this appears</p>
-          <ul className="mt-2 grid list-disc gap-1.5 pl-5 text-[13px] leading-[1.55] text-ink-muted">
+        <details className="group mt-5 border-t border-line pt-4">
+          <summary className="cursor-pointer list-none text-[15px] font-semibold text-accent hover:underline [&::-webkit-details-marker]:hidden">
+            How it works
+          </summary>
+          <p className="mt-3 text-[15px] font-bold text-ink">Where this appears</p>
+          <ul className="mt-2 grid list-disc gap-1.5 pl-5 text-[14px] leading-[1.55] text-ink-muted">
             {SURFACES.map((s) => (
               <li key={s}>{s}</li>
             ))}
           </ul>
-        </div>
 
-        <dl className="mt-5 grid gap-3 border-t border-line pt-4">
+        <dl className="mt-4 grid gap-3">
           {FAQ.map((f) => (
             <div key={f.q}>
-              <dt className="text-[13.5px] font-bold text-ink">{f.q}</dt>
-              <dd className="mt-0.5 text-[13px] leading-[1.55] text-ink-muted">{f.a}</dd>
+              <dt className="text-[15px] font-bold text-ink">{f.q}</dt>
+              <dd className="mt-0.5 text-[14px] leading-[1.55] text-ink-muted">{f.a}</dd>
             </div>
           ))}
         </dl>
+        </details>
       </CardBody>
     </Card>
   )

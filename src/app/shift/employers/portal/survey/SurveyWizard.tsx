@@ -31,7 +31,7 @@ function upcomingMondays(): string[] {
 
 type Dept = { name: string; headcount: string }
 
-const label = 'mb-1.5 block text-[12.5px] font-semibold text-ink-muted'
+const label = 'mb-1.5 block text-[14px] font-semibold text-ink-muted'
 const input =
   'w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] leading-[1.5] text-ink outline-none placeholder:text-ink-tertiary focus:border-accent focus:ring-2 focus:ring-accent-soft'
 const choice = (on: boolean) =>
@@ -43,7 +43,7 @@ function StepTitle({ title, hint }: { title: string; hint?: string }) {
   return (
     <div>
       <h3 className="text-[18px] font-bold tracking-[-0.01em] text-ink">{title}</h3>
-      {hint && <p className="mt-1 text-[13.5px] leading-[1.5] text-ink-muted">{hint}</p>}
+      {hint && <p className="mt-1 text-[15px] leading-[1.5] text-ink-muted">{hint}</p>}
     </div>
   )
 }
@@ -52,11 +52,11 @@ export function ReviewRow({ term, value, onChange }: { term: string; value: stri
   return (
     <div className="flex items-start justify-between gap-4 px-4 py-3.5">
       <div className="min-w-0">
-        <dt className="text-[12.5px] font-semibold text-ink-muted">{term}</dt>
+        <dt className="text-[14px] font-semibold text-ink-muted">{term}</dt>
         <dd className="mt-0.5 text-[14px] leading-[1.5] text-ink">{value}</dd>
       </div>
       {onChange && (
-        <button type="button" onClick={onChange} className="shrink-0 text-[13px] font-semibold text-accent hover:underline">
+        <button type="button" onClick={onChange} className="shrink-0 text-[14px] font-semibold text-accent hover:underline">
           Change
         </button>
       )}
@@ -260,10 +260,10 @@ export default function SurveyWizard({
                   <button
                     type="button"
                     onClick={() => (done ? setStep(s.id) : undefined)}
-                    className={`flex items-center gap-2 text-[13px] font-semibold ${here ? 'text-ink' : done ? 'text-ink-muted hover:text-accent' : 'text-ink-tertiary'}`}
+                    className={`flex items-center gap-2 text-[14px] font-semibold ${here ? 'text-ink' : done ? 'text-ink-muted hover:text-accent' : 'text-ink-tertiary'}`}
                   >
                     <span
-                      className={`grid h-6 w-6 place-items-center rounded-full text-[12px] ${
+                      className={`grid h-6 w-6 place-items-center rounded-full text-[14px] ${
                         here ? 'bg-accent text-white' : done ? 'bg-accent-soft text-accent' : 'bg-surface-2 text-ink-tertiary'
                       }`}
                     >
@@ -303,8 +303,8 @@ export default function SurveyWizard({
                       </span>
                       <span className="min-w-0">
                         <span className="block text-[14px] font-bold text-ink">{f.title}</span>
-                        <span className="block text-[12.5px] font-semibold text-accent-ink">{f.due}</span>
-                        <span className="mt-0.5 block text-[12.5px] leading-[1.45] text-ink-muted">{f.who}</span>
+                        <span className="block text-[14px] font-semibold text-accent-ink">{f.due}</span>
+                        <span className="mt-0.5 block text-[14px] leading-[1.45] text-ink-muted">{f.who}</span>
                       </span>
                     </button>
                   )
@@ -334,7 +334,7 @@ export default function SurveyWizard({
                       className={`text-[14px] ${on ? 'font-bold' : ''} text-ink ${choice(on)} disabled:cursor-not-allowed disabled:opacity-60`}
                     >
                       {weekLabel(m).replace(/, \d{4}$/, '')}
-                      {used && <span className="block text-[12px] font-normal text-ink-muted">Already has a survey</span>}
+                      {used && <span className="block text-[14px] font-normal text-ink-muted">Already has a survey</span>}
                     </button>
                   )
                 })}
@@ -352,7 +352,7 @@ export default function SurveyWizard({
                 <label className="block">
                   <span className={label}>Last day to answer</span>
                   <input type="date" value={closesOn} min={addDays(weekStart, 4)} onChange={(e) => setClosesOn(e.target.value || addDays(weekStart, 9))} className={input} />
-                  <span className="mt-1.5 block text-[12.5px] leading-[1.5] text-ink-muted">
+                  <span className="mt-1.5 block text-[14px] leading-[1.5] text-ink-muted">
                     The Wednesday after works well. People who have not answered get one reminder three days after the first email.
                   </span>
                 </label>
@@ -361,7 +361,7 @@ export default function SurveyWizard({
                   <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`Commute survey, week of ${weekLabel(weekStart).split(' to')[0]}`} className={input} />
                 </label>
               </div>
-              <p className="rounded-lg bg-surface-2 px-3 py-2.5 text-[13.5px] leading-[1.5] text-ink">
+              <p className="rounded-lg bg-surface-2 px-3 py-2.5 text-[15px] leading-[1.5] text-ink">
                 Staff answer about <strong>{weekLabel(weekStart)}</strong> and can answer until {longDate(closesOn)}.
               </p>
             </>
@@ -375,7 +375,7 @@ export default function SurveyWizard({
                   {sites.map((s) => (
                     <label key={s.id} className="flex items-center justify-between gap-4 rounded-[10px] border border-line bg-surface-2 px-4 py-2.5">
                       <span className="min-w-0 truncate text-[14px] font-semibold text-ink">{s.name}</span>
-                      <span className="flex items-center gap-2 text-[13px] text-ink-muted">
+                      <span className="flex items-center gap-2 text-[14px] text-ink-muted">
                         <input
                           type="number"
                           inputMode="numeric"
@@ -390,7 +390,7 @@ export default function SurveyWizard({
                     </label>
                   ))}
                   {sites.length > 1 && (
-                    <div className="flex items-center justify-between px-4 text-[13.5px] text-ink">
+                    <div className="flex items-center justify-between px-4 text-[15px] text-ink">
                       <span className="font-semibold">All sites</span>
                       <span className="font-bold">{total.toLocaleString()} people</span>
                     </div>
@@ -407,7 +407,7 @@ export default function SurveyWizard({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <span className="block text-[14px] font-bold text-ink">Departments or tenants (optional)</span>
-                    <p className="mt-1 text-[13.5px] leading-[1.5] text-ink-muted">
+                    <p className="mt-1 text-[15px] leading-[1.5] text-ink-muted">
                       Each one gets its own response rate, and staff pick theirs on the survey. Give a name and how many people are in it.
                     </p>
                   </div>
@@ -417,7 +417,7 @@ export default function SurveyWizard({
                 </div>
                 {departments.length > 0 && (
                   <div className="mt-3 grid gap-2">
-                    <div className="grid grid-cols-[minmax(0,1fr)_110px_auto] gap-2 px-1 text-[12.5px] font-semibold text-ink-muted">
+                    <div className="grid grid-cols-[minmax(0,1fr)_110px_auto] gap-2 px-1 text-[14px] font-semibold text-ink-muted">
                       <span>Name</span>
                       <span className="text-right">People</span>
                       <span className="w-8" />
@@ -467,22 +467,22 @@ export default function SurveyWizard({
                 ))}
               </dl>
               {!existing && (
-                <p className="rounded-lg bg-surface-2 px-3 py-2.5 text-[13.5px] leading-[1.5] text-ink">
+                <p className="rounded-lg bg-surface-2 px-3 py-2.5 text-[15px] leading-[1.5] text-ink">
                   Creating the survey saves it as a draft. Next you add your staff list, then open the survey when you want the emails to go.
                 </p>
               )}
             </>
           )}
 
-          {error && <p className="text-[13px] text-ep-danger">{error}</p>}
+          {error && <p className="text-[14px] text-ep-danger">{error}</p>}
         </div>
       </div>
 
       {/* What staff see */}
       <aside className="lg:sticky lg:top-4 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-        <div className="mb-2 text-[12.5px] font-semibold text-ink-muted">What staff see</div>
+        <div className="mb-2 text-[14px] font-semibold text-ink-muted">What staff see</div>
         <SurveyPreview survey={previewSurvey} />
-        <p className="mt-2 text-[12.5px] leading-[1.5] text-ink-muted">
+        <p className="mt-2 text-[14px] leading-[1.5] text-ink-muted">
           The survey as it opens from a personal link. Scroll inside it; Send is off here.
         </p>
       </aside>

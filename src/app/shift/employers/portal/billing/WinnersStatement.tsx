@@ -137,7 +137,7 @@ export default function WinnersStatement({ groupId, company }: { groupId: string
   const yearSelect = (
     <select
       aria-label="Statement year"
-      className="rounded-[10px] border border-line bg-surface px-3 py-[7px] text-[13px] font-semibold text-ink outline-none focus:border-accent"
+      className="rounded-[10px] border border-line bg-surface px-3 py-[7px] text-[14px] font-semibold text-ink outline-none focus:border-accent"
       value={year}
       onChange={(e) => setYear(Number(e.target.value))}
     >
@@ -166,20 +166,20 @@ export default function WinnersStatement({ groupId, company }: { groupId: string
         }
       />
       <CardBody>
-        {!statement && !failed && <p className="text-[13.5px] text-ink-muted">Loading the statement...</p>}
+        {!statement && !failed && <p className="text-[15px] text-ink-muted">Loading the statement...</p>}
         {failed && (
-          <p className="text-[13.5px] text-ink-muted">
+          <p className="text-[15px] text-ink-muted">
             Couldn&apos;t load the statement. Reload to try again, or write to info@gogreenstreets.org.
           </p>
         )}
         {statement && rows.length === 0 && (
-          <p className="text-[13.5px] text-ink-muted">No rewards were paid out in {statement.year}.</p>
+          <p className="text-[15px] text-ink-muted">No rewards were paid out in {statement.year}.</p>
         )}
         {statement && rows.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-[13px]">
+            <table className="w-full min-w-[820px] text-left text-[14px]">
               <thead>
-                <tr className="text-[12.5px] font-semibold text-ink-muted">
+                <tr className="text-[14px] font-semibold text-ink-muted">
                   <th className="pb-2 font-semibold">Name</th>
                   <th className="pb-2 font-semibold">Email</th>
                   <th className="pb-2 font-semibold">Challenge</th>
@@ -220,14 +220,14 @@ export default function WinnersStatement({ groupId, company }: { groupId: string
                 </tr>
               </tbody>
             </table>
-            <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-muted">
+            <p className="mt-3 text-[14px] leading-[1.5] text-ink-muted">
               Dates are Eastern time. Forfeited and expired rewards are listed for the record but not counted in the
               total. Values are the face value of the gift card; rewards you hand out yourself show $0 here, so add
               their cash value in payroll.
             </p>
           </div>
         )}
-        <p className="mt-4 border-t border-line-2 pt-3 text-[12.5px] leading-[1.5] text-ink-muted">
+        <p className="mt-4 border-t border-line-2 pt-3 text-[14px] leading-[1.5] text-ink-muted">
           Rewards count as taxable pay for the people who receive them.{' '}
           <button
             type="button"

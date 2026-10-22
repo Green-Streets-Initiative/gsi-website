@@ -102,18 +102,18 @@ export default function PoolStatement({ poolId }: { poolId: string }) {
         }
       />
       <CardBody>
-        {rows === null && <p className="text-[13.5px] text-ink-muted">Loading the statement...</p>}
+        {rows === null && <p className="text-[15px] text-ink-muted">Loading the statement...</p>}
         {failed && (
-          <p className="text-[13.5px] text-ink-muted">Couldn&apos;t load the statement. Reload to try again.</p>
+          <p className="text-[15px] text-ink-muted">Couldn&apos;t load the statement. Reload to try again.</p>
         )}
         {rows !== null && !failed && visible.length === 0 && (
-          <p className="text-[13.5px] text-ink-muted">Nothing yet. Top-ups and prize payouts will show up here.</p>
+          <p className="text-[15px] text-ink-muted">Nothing yet. Top-ups and prize payouts will show up here.</p>
         )}
         {visible.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-left text-[13px]">
+            <table className="w-full min-w-[520px] text-left text-[14px]">
               <thead>
-                <tr className="text-[12.5px] font-semibold text-ink-muted">
+                <tr className="text-[14px] font-semibold text-ink-muted">
                   <th className="pb-2 font-semibold">Date</th>
                   <th className="pb-2 font-semibold">What happened</th>
                   <th className="pb-2 text-right font-semibold">Available after</th>
@@ -126,24 +126,24 @@ export default function PoolStatement({ poolId }: { poolId: string }) {
                     <td className="whitespace-nowrap py-2 text-ink-muted">{formatDateShort(r.created_at)}</td>
                     <td className="py-2 text-ink">
                       {KIND_LABEL[r.kind]}
-                      {r.note && r.kind !== 'topup' && <div className="text-[12px] text-ink-muted">{r.note}</div>}
+                      {r.note && r.kind !== 'topup' && <div className="text-[14px] text-ink-muted">{r.note}</div>}
                     </td>
                     <td className="py-2 text-right">
                       <div className="font-semibold text-ink">{signed(r.balance_change_cents)}</div>
-                      <div className="text-[12px] text-ink-muted">
+                      <div className="text-[14px] text-ink-muted">
                         {centsToDollars(r.balance_after_cents - r.held_after_cents)}
                       </div>
                     </td>
                     <td className="py-2 text-right">
                       <div className="font-semibold text-ink">{signed(r.held_change_cents)}</div>
-                      <div className="text-[12px] text-ink-muted">{centsToDollars(r.held_after_cents)}</div>
+                      <div className="text-[14px] text-ink-muted">{centsToDollars(r.held_after_cents)}</div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
             {visible.length > 50 && (
-              <p className="mt-2 text-[12.5px] text-ink-muted">Showing the latest 50. Export for the full statement.</p>
+              <p className="mt-2 text-[14px] text-ink-muted">Showing the latest 50. Export for the full statement.</p>
             )}
           </div>
         )}

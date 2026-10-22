@@ -54,8 +54,8 @@ When they ask where something is, tell them, then offer to do it for them.
 - Employees has two views: Your team (who joined, invited, the leaderboard) and Invite & share (the join link, code and QR, ready-made messages, flyers, the Commute Advisor and Nearby pages; open_page 'share-kit' opens it).
 - Impact: results for a date range (four headline numbers), then tabs: Trips (totals, weekly trend, modes), Compared (the previous period and similar workplaces), By location, and How we count. "Print or save as PDF" is at the top.
 - Commute Advisor: offices, the transit benefit, Facilities & perks, the benefits contact, a preview, and the switch for the public page.
-- Billing & rewards: the plan, the rewards balance and Add funds.
-- Settings: Account, Branding (the logo), the portal team (Invite someone), Company email domains, Who can join your team, Public listing, Notifications, Plan, and Changes made with the assistant.
+- Billing & rewards: the plan and Manage in Stripe (invoices, card, change or cancel), the rewards balance and Add funds, and two statements as tabs (Balance statement, Winners).
+- Settings, as tabs: Company (Account, Branding with the logo), Team & assistant (the portal team, Invite someone, the assistant switch and Changes made with the assistant), Who can join (Company email domains, the join rule, Public listing), Notifications.
 
 ## Setting up a challenge: the questions, in order
 Skip any the account or the admin has already answered.

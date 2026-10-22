@@ -14,10 +14,10 @@ import { openAssistant } from './AssistantPanel'
 const ROUTE_META: { prefix: string; label: string }[] = [
   { prefix: '/shift/employers/portal/dashboard', label: 'Home' },
   { prefix: '/shift/employers/portal/setup', label: 'Setup' },
-  { prefix: '/shift/employers/portal/share-kit', label: 'Share kit' },
   { prefix: '/shift/employers/portal/employees', label: 'Employees' },
   { prefix: '/shift/employers/portal/challenges', label: 'Challenges' },
   { prefix: '/shift/employers/portal/impact', label: 'Impact' },
+  { prefix: '/shift/employers/portal/survey', label: 'Commute survey' },
   { prefix: '/shift/employers/portal/advisor', label: 'Commute Advisor' },
   { prefix: '/shift/employers/portal/billing', label: 'Billing & rewards' },
   { prefix: '/shift/employers/portal/settings', label: 'Settings' },
@@ -123,7 +123,7 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
           <button
             type="button"
             onClick={() => setActivePanel((p) => (p === 'search' ? null : 'search'))}
-            className="relative hidden h-[38px] w-[220px] items-center gap-2 rounded-full border-0 bg-surface-2 pl-9 pr-12 text-left text-[13px] text-ink-tertiary outline-none transition-shadow hover:ring-1 hover:ring-line focus-visible:ring-2 focus-visible:ring-accent sm:flex lg:w-[280px]"
+            className="relative hidden h-[38px] w-[220px] items-center gap-2 rounded-full border-0 bg-surface-2 pl-9 pr-12 text-left text-[14px] text-ink-tertiary outline-none transition-shadow hover:ring-1 hover:ring-line focus-visible:ring-2 focus-visible:ring-accent sm:flex lg:w-[280px]"
           >
             <Search
               size={16}
@@ -131,7 +131,7 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
             />
             Search…
-            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-[5px] border border-line bg-surface px-1.5 py-0.5 text-[10px] font-medium text-ink-tertiary">
+            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-[5px] border border-line bg-surface px-1.5 py-0.5 text-[13px] font-medium text-ink-tertiary">
               ⌘K
             </kbd>
           </button>

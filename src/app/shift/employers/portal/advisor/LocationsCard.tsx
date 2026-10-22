@@ -114,7 +114,7 @@ export default function LocationsCard({
           <div key={i} className="grid gap-2.5 rounded-[10px] border border-line bg-surface-2 p-3.5">
             <div className="flex flex-wrap items-center gap-2">
               <MapPin size={15} strokeWidth={1.75} className="text-ink-icon" />
-              <span className="text-[12.5px] font-semibold text-ink-muted">
+              <span className="text-[14px] font-semibold text-ink-muted">
                 {i === 0 ? 'Main location · the Commute Advisor opens here' : `Location ${i + 1}`}
               </span>
               <span className="ml-auto flex gap-3">
@@ -122,7 +122,7 @@ export default function LocationsCard({
                   <button
                     type="button"
                     onClick={() => makeMain(i)}
-                    className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-accent hover:underline"
+                    className="inline-flex items-center gap-1 text-[14px] font-semibold text-accent hover:underline"
                   >
                     <ArrowUp size={13} strokeWidth={2} />
                     Make main
@@ -132,7 +132,7 @@ export default function LocationsCard({
                   <button
                     type="button"
                     onClick={() => remove(i)}
-                    className="text-[12.5px] font-semibold text-ep-danger hover:underline"
+                    className="text-[14px] font-semibold text-ep-danger hover:underline"
                   >
                     Remove
                   </button>
@@ -158,7 +158,7 @@ export default function LocationsCard({
             />
             <div className="grid gap-1.5 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-3">
               {ARRIVE_BY_EDITABLE && !readOnly ? (
-                <label htmlFor={`location-arrive-${i}`} className="flex items-center gap-2 text-[12.5px] font-semibold text-ink-muted">
+                <label htmlFor={`location-arrive-${i}`} className="flex items-center gap-2 text-[14px] font-semibold text-ink-muted">
                   <Clock size={14} strokeWidth={1.75} className="text-ink-icon" />
                   Arrive by
                   <input
@@ -171,7 +171,7 @@ export default function LocationsCard({
                   />
                 </label>
               ) : (
-                <span className="flex items-center gap-2 text-[12.5px] font-semibold text-ink-muted">
+                <span className="flex items-center gap-2 text-[14px] font-semibold text-ink-muted">
                   <Clock size={14} strokeWidth={1.75} className="text-ink-icon" />
                   Arrive by
                   <span className="rounded-[10px] border border-line bg-surface-2 px-3 py-2 text-[14px] font-normal text-ink">
@@ -179,7 +179,7 @@ export default function LocationsCard({
                   </span>
                 </span>
               )}
-              <p className="text-[12.5px] leading-[1.5] text-ink-tertiary">
+              <p className="text-[14px] leading-[1.5] text-ink-tertiary">
                 When do people usually need to be in? The advisor plans trips to arrive by this time.
                 {!ARRIVE_BY_EDITABLE && !readOnly && ' Changing it from here is coming; for now, Green Streets can set it for you.'}
               </p>
@@ -187,7 +187,7 @@ export default function LocationsCard({
           </div>
         ))}
 
-        {error && <p className="text-[13px] font-semibold text-ep-danger">{error}</p>}
+        {error && <p className="text-[14px] font-semibold text-ep-danger">{error}</p>}
 
         {!readOnly && <div className="flex flex-wrap items-center gap-2.5">
           <Button
@@ -202,7 +202,7 @@ export default function LocationsCard({
           >
             Add location
           </Button>
-          <span className="ml-auto text-[13px] text-ink-tertiary">
+          <span className="ml-auto text-[14px] text-ink-tertiary">
             {saved ? 'Locations saved' : dirty ? 'Unsaved changes' : ''}
           </span>
           <Button variant="primary" size="sm" icon={Check} onClick={save} disabled={saving || !dirty}>

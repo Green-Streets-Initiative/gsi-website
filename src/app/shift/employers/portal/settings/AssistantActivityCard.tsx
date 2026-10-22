@@ -37,12 +37,12 @@ export default function AssistantActivityCard({ groupId }: { groupId: string }) 
       <CardBody>
         <ul className="divide-y divide-line-2">
           {rows.map((r) => (
-            <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2.5 text-[13.5px]">
+            <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2.5 text-[15px]">
               <span className="text-ink">
                 {r.summary}
                 {!r.ok && <span className="ml-1.5 font-semibold text-ep-danger">(didn&apos;t go through)</span>}
               </span>
-              <span className="text-[12.5px] text-ink-muted">
+              <span className="text-[14px] text-ink-muted">
                 {r.actor_email ?? 'Someone'} ·{' '}
                 {new Date(r.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
               </span>
