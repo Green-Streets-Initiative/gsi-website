@@ -654,7 +654,8 @@ export async function POST(request: Request) {
             ],
             tools: tools as Anthropic.Beta.BetaToolUnion[],
             cache_control: { type: 'ephemeral' },
-            messages: history as Anthropic.Beta.BetaMessageParam[],
+            // Only role and content go to the model (the stored id is ours).
+            messages: history.map(({ role, content }) => ({ role, content })) as Anthropic.Beta.BetaMessageParam[],
           } as Anthropic.Beta.MessageCreateParamsStreaming)
           const visible = choicesFilter((delta) => emit({ type: 'text', delta }))
           s.on('text', (delta) => visible.push(delta))
