@@ -613,6 +613,7 @@ export default function ChallengeWizard({
       startsAt: etStartOfDayIso(form.starts_at),
       endsAt: etEndOfDayIso(form.ends_at),
       goal: parseInt(g.min_threshold, 10) || 0,
+      metric: g.metric,
       spots: parseInt(g.winner_count, 10) || 0,
       funded: g.funded_from_pool,
       amountCents: g.funded_from_pool ? cents(g.amount_dollars) : null,
@@ -1760,10 +1761,14 @@ function PhonePreview({
         <div className="min-w-0 flex-1">
           <div className="text-[13px] font-bold uppercase tracking-[0.06em] text-white/75">{employer} challenge</div>
           <div className="mt-0.5 text-[15px] font-bold leading-[1.3] text-white">
-            Reach {goal} trips, win {reward}
+            {p.metric === 'tried_new' ? `Make a trip a new way, win ${reward}` : `Reach ${goal} trips, win ${reward}`}
           </div>
           <div className="mt-1 text-[14px] leading-[1.5] text-white/75">
-            {notStarted ? `Starts ${startWords}. Trips from then on count.` : `0 of ${goal} trips · ${spots} of ${spots} spots left`}
+            {notStarted
+              ? `Starts ${startWords}. Trips from then on count.`
+              : p.metric === 'tried_new'
+                ? `${spots} of ${spots} spots left`
+                : `0 of ${goal} trips · ${spots} of ${spots} spots left`}
           </div>
           {!notStarted && (
             <div className="mt-2.5 h-1.5 rounded-full bg-white/15">
