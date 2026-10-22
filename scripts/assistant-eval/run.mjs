@@ -269,8 +269,7 @@ async function runScenario(sc) {
   const said = out.transcript.filter((l) => l.startsWith('ASSISTANT:')).join('\n')
   for (const [re, why] of [
     [/\b(?:the way|how) (?:you|they|your team) already\b/i, 'says "the way you already…"'],
-    // "Winter Riders" is the name of a GSI seasonal challenge (a proper name).
-    [/(?<!Winter )\briders?\b/i, 'calls people "riders"'],
+    [/\briders?\b/i, 'calls people "riders"'],
     [/\bsustainab/i, 'says "sustainable"'],
     [/\bditch(?:ing)? (?:the|your) car\b|\bget out of (?:the|your) cars?\b|\binstead of driving\b/i, 'positions against cars'],
   ])

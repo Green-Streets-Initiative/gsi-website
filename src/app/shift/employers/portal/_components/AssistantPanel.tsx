@@ -887,7 +887,12 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
             <ArrowUp size={16} />
           </button>
         </div>
-        <p className="mt-1.5 text-center text-[11.5px] text-ink-muted">Private to you. GSI may review conversations to improve the assistant.</p>
+        <p className="mt-2 text-center text-[13px] leading-[1.45] text-ink-muted">
+          Private to you. AI can make mistakes, so check what matters. Not legal or tax advice.{' '}
+          <a href="/shift/employers/assistant-data" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-ink">
+            Your data
+          </a>
+        </p>
       </form>
     </aside>
   )
