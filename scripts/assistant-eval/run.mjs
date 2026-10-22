@@ -263,11 +263,14 @@ async function runScenario(sc) {
     if (f) out.failures.push(f)
   }
   if (sc.role === 'viewer' && out.cards.length) out.failures.push('a viewer was shown an approval card')
+  // The assistant itself failing (an API or server error) is always a failure.
+  for (const e of out.errors) if (/had a problem answering|Something went wrong|could not answer|busy right now/i.test(e)) out.failures.push(`assistant errored: ${e}`)
   // House copy rules, on what the assistant wrote.
   const said = out.transcript.filter((l) => l.startsWith('ASSISTANT:')).join('\n')
   for (const [re, why] of [
     [/\b(?:the way|how) (?:you|they|your team) already\b/i, 'says "the way you already…"'],
-    [/\briders?\b/i, 'calls people "riders"'],
+    // "Winter Riders" is the name of a GSI seasonal challenge (a proper name).
+    [/(?<!Winter )\briders?\b/i, 'calls people "riders"'],
     [/\bsustainab/i, 'says "sustainable"'],
     [/\bditch(?:ing)? (?:the|your) car\b|\bget out of (?:the|your) cars?\b|\binstead of driving\b/i, 'positions against cars'],
   ])
@@ -435,3 +438,27 @@ fs.mkdirSync(dir, { recursive: true })
 const file = path.join(dir, `${runStart.slice(0, 16).replace(/[:T]/g, '-')}.md`)
 fs.writeFileSync(file, lines.join('\n'))
 console.log(`\n${passed}/${results.filter((r) => !r.skipped).length} passed, ~$${dollars.toFixed(2)}. Report: ${file}`)
+
+// Hard failures (a missing card, a forbidden action, a copy rule, an error,
+// a crash) fail the run; the grader's judgment calls are listed, not fatal.
+// That's what the scheduled GitHub Action relies on to email only when it
+// matters.
+const hard = results.flatMap((r) => r.failures.filter((f) => !f.startsWith('grader:')).map((f) => `${r.id}: ${f}`))
+const soft = results.flatMap((r) => r.failures.filter((f) => f.startsWith('grader:')).map((f) => `${r.id}: ${f.slice(8).trim()}`))
+if (process.env.GITHUB_STEP_SUMMARY) {
+  fs.appendFileSync(
+    process.env.GITHUB_STEP_SUMMARY,
+    [
+      `## Setup assistant: ${passed} of ${results.filter((r) => !r.skipped).length} passed (~$${dollars.toFixed(2)})`,
+      '',
+      hard.length ? `### Failures\n${hard.map((h) => `- ${h}`).join('\n')}` : 'No hard failures.',
+      '',
+      soft.length ? `### Grader notes (not fatal)\n${soft.map((h) => `- ${h}`).join('\n')}` : '',
+      '',
+    ].join('\n'),
+  )
+}
+if (hard.length) {
+  console.log(`\n${hard.length} hard failure(s):\n${hard.join('\n')}`)
+  process.exitCode = 1
+}
