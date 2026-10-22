@@ -61,20 +61,25 @@ async function authorize(request: Request, groupId: string | null | undefined) {
   const [adminRow, gsiRow, group] = await Promise.all([
     admin.from('group_admins').select('role').eq('group_id', groupId).eq('email', user.email).maybeSingle(),
     admin.from('school_roles').select('role').eq('user_id', user.id).eq('role', 'gsi_admin').maybeSingle(),
-    admin.from('groups').select('id, name, assistant_enabled').eq('id', groupId).maybeSingle(),
+    admin.from('groups').select('id, name, assistant_enabled, assistant_turned_off_at, billing_type').eq('id', groupId).maybeSingle(),
   ])
   const r = (adminRow.data as { role?: string } | null)?.role
   const isGsi = !!gsiRow.data
   if (!r && !isGsi) return { error: Response.json({ error: 'You are not on this workplace\'s team.' }, { status: 403 }) }
-  const g = group.data as { id: string; name: string; assistant_enabled: boolean } | null
+  const g = group.data as { id: string; name: string; assistant_enabled: boolean; assistant_turned_off_at: string | null; billing_type: string | null } | null
   if (!g) return { error: Response.json({ error: 'Workplace not found.' }, { status: 404 }) }
+  // The workplace's own switch (Shift 01372) holds for everyone, GSI staff included.
+  if (g.assistant_turned_off_at) return { error: Response.json({ error: 'An admin turned the assistant off for this workplace. It can be turned back on in Settings.' }, { status: 403 }) }
   if (!g.assistant_enabled && !isGsi) return { error: Response.json({ error: 'The assistant is not on for this workplace yet.' }, { status: 403 }) }
   const role: Role = r === 'admin' || r === 'manager' || r === 'viewer' ? r : 'gsi'
   const userClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   })
-  return { token, user, admin, userClient, group: g, role }
+  // GSI staff working in a real customer's account (on its team or not): every
+  // approval card says so, and the panel shows it (Keith 2026-10-22).
+  const staffIn = isGsi && !['internal', 'demo'].includes(g.billing_type ?? '') ? g.name : null
+  return { token, user, admin, userClient, group: g, role, staffIn }
 }
 
 /** The signed-in person's own conversation (Shift 01301: private to them). */
@@ -267,9 +272,9 @@ export async function GET(request: Request) {
     })
   }
   const thread = await loadThread(auth.admin, auth.group.id, auth.user.id, url.searchParams.get('thread_id'))
-  if (!thread) return Response.json({ thread_id: null, items: [], role: auth.role })
+  if (!thread) return Response.json({ thread_id: null, items: [], role: auth.role, staff_in: auth.staffIn })
   const messages = await loadMessages(auth.admin, thread.id)
-  return Response.json({ thread_id: thread.id, items: transcript(messages, thread.pending), role: auth.role })
+  return Response.json({ thread_id: thread.id, items: transcript(messages, thread.pending), role: auth.role, staff_in: auth.staffIn })
 }
 
 // ── DELETE ?group_id=&thread_id=: forget one of your conversations ──
@@ -306,7 +311,7 @@ export async function POST(request: Request) {
   } | null
   const auth = await authorize(request, body?.group_id)
   if ('error' in auth) return auth.error
-  const { admin, userClient, group, role, user, token } = auth
+  const { admin, userClient, group, role, user, token, staffIn } = auth
   const text = (body?.message ?? '').trim().slice(0, 4000)
   // Only our own logo bucket: the model never fetches an arbitrary URL.
   const logoPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/employer-logos/`
@@ -449,7 +454,7 @@ export async function POST(request: Request) {
                   group_id: group.id,
                   actor_email: user.email,
                   action: c.name,
-                  summary: c.card.title.replace(/\?$/, ''),
+                  summary: c.card.title.replace(/\?$/, '') + (staffIn ? ' (by Green Streets staff)' : ''),
                   ok: !r.isError,
                 })
               } else {
@@ -544,7 +549,14 @@ export async function POST(request: Request) {
             if (NEEDS_APPROVAL.has(u.name)) {
               const a = await approvalCard(ctx, u.name, input)
               if ('card' in a) {
-                cards.push({ tool_use_id: u.id, name: u.name, input, card: a.card })
+                cards.push({
+                  tool_use_id: u.id,
+                  name: u.name,
+                  input,
+                  card: staffIn
+                    ? { ...a.card, staffNote: `You're approving this in ${staffIn}'s account as Green Streets staff. It changes their account, and their team sees it in Settings.` }
+                    : a.card,
+                })
               } else {
                 results[u.id] = resultBlock(u.id, a.result)
               }

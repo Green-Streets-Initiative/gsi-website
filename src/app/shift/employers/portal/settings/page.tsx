@@ -21,6 +21,7 @@ import JoinPolicyCard from './JoinPolicyCard'
 import PublicListingCard from './PublicListingCard'
 import TeamCard from './TeamCard'
 import AssistantActivityCard from './AssistantActivityCard'
+import AssistantSettingsCard from './AssistantSettingsCard'
 
 const SECTIONS = [
   { id: 'account', label: 'Account' },
@@ -542,6 +543,7 @@ export default function SettingsPage() {
           {/* Team: who can open this portal */}
           <div id="team" className={`space-y-6 ${SECTION_SCROLL_MT}`}>
             <TeamCard />
+            <AssistantSettingsCard />
             {group && <AssistantActivityCard groupId={group.id} />}
           </div>
 

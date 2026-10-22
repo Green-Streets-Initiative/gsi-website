@@ -51,6 +51,8 @@ export type ApprovalCard = {
   mapUrl?: string
   /** Irreversible: the admin types this (a name) to confirm. */
   confirmText?: string
+  /** Set by the route when GSI staff approve inside a customer's account. */
+  staffNote?: string
   cta: string
   tone: 'primary' | 'danger'
 }

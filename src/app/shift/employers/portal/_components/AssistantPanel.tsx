@@ -23,15 +23,22 @@ export function openAssistant(prompt?: string) {
   window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: { prompt } }))
 }
 
-/** Whether this workplace has the assistant (GSI staff always do). */
-export function assistantAvailable(group: { assistant_enabled?: boolean | null } | null, isGsiAdmin: boolean): boolean {
-  return !!group && (!!group.assistant_enabled || isGsiAdmin)
+/**
+ * Whether this workplace has the assistant: GSI offers it (assistant_enabled;
+ * GSI staff can use it anywhere), unless the workplace's admins turned it off
+ * in Settings, which holds for everyone, GSI staff included.
+ */
+export function assistantAvailable(
+  group: { assistant_enabled?: boolean | null; assistant_turned_off_at?: string | null } | null,
+  isGsiAdmin: boolean,
+): boolean {
+  return !!group && !group.assistant_turned_off_at && (!!group.assistant_enabled || isGsiAdmin)
 }
 
 const STARTERS = ['Help me set up my first challenge', 'What should I do next?', 'How do rewards work?']
 const CHANGES = new Set(['Saving the draft', 'Launching', 'Saving the changes', 'Removing the draft', 'Sending invitations', 'Updating email domains', 'Updating who can join', 'Updating the year plan'])
 
-type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger'; image?: string; mapUrl?: string; confirmText?: string }
+type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger'; image?: string; mapUrl?: string; confirmText?: string; staffNote?: string }
 type ThreadSummary = { id: string; title: string; updated_at: string; waiting: boolean }
 type LinkT = { href: string; label: string; external?: boolean }
 type Item =
@@ -129,6 +136,8 @@ function LinkButton({ link, onNavigate }: { link: LinkT; onNavigate: () => void 
 function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: string; seed: { prompt: string } | null; onSeedUsed: () => void; onClose: () => void }) {
   const [items, setItems] = useState<Item[]>([])
   const [threadId, setThreadId] = useState<string | null>(null)
+  /** A customer's name when GSI staff are using the assistant in its account. */
+  const [staffIn, setStaffIn] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
   const [draft, setDraft] = useState('')
@@ -200,7 +209,8 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
     if (!h) return
     const qs = new URLSearchParams({ group_id: groupId, ...(id ? { thread_id: id } : {}) })
     const res = await fetch(`/api/employer/assistant?${qs}`, { headers: h })
-    const json = (await res.json().catch(() => ({}))) as { thread_id?: string | null; items?: Item[]; error?: string }
+    const json = (await res.json().catch(() => ({}))) as { thread_id?: string | null; items?: Item[]; error?: string; staff_in?: string | null }
+    setStaffIn(json.staff_in ?? null)
     if (!res.ok) {
       setItems([{ kind: 'error', text: json.error ?? 'The assistant could not load.' }])
     } else {
@@ -217,9 +227,18 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
     if (openedWithTask.current) {
       setFresh(true)
       setLoaded(true)
+      // Only to learn whether this is GSI staff in a customer's account.
+      void (async () => {
+        const h = await authHeader()
+        if (!h) return
+        const res = await fetch(`/api/employer/assistant?${new URLSearchParams({ group_id: groupId })}`, { headers: h })
+        const j = (await res.json().catch(() => ({}))) as { staff_in?: string | null }
+        setStaffIn(j.staff_in ?? null)
+      })()
       return
     }
     void load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load])
 
   useEffect(() => {
@@ -454,7 +473,11 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
       <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
         <div>
           <h2 className="text-[15px] font-bold text-ink">Assistant</h2>
-          <p className="text-[12.5px] text-ink-muted">Sets things up with you. Asks before anything your team sees.</p>
+          {staffIn ? (
+            <p className="text-[12.5px] font-medium text-[#8A5418]">Green Streets staff in {staffIn}&apos;s account. What you approve changes it.</p>
+          ) : (
+            <p className="text-[12.5px] text-ink-muted">Sets things up with you. Asks before anything your team sees.</p>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -641,6 +664,9 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                     <a href={it.card.mapUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline">
                       <MapPin size={14} /> Check it on the map
                     </a>
+                  )}
+                  {it.card.staffNote && (
+                    <p className="mt-3 rounded-lg bg-[#FBF0E1] px-3 py-2 text-[13px] font-medium text-[#8A5418]">{it.card.staffNote}</p>
                   )}
                   {it.card.confirmText && (
                     <label className="mt-3 block text-[13px] text-ink">
