@@ -42,6 +42,26 @@ etc.) or it gets bumped.
 Rare: disabled controls, decorative watermarks, truly tertiary metadata in a
 visually busy card. Floor at `text-white/60` even for those. Never go lower.
 
+## Visual first, few words, readable sizes (HARD RULE)
+
+Keith 2026-10-22: "Our platform is for people. People do not read
+excruciating detail in tiny fonts... we keep building screens that just dump
+words on a user." Applies to the employer portal, the admin dashboard and the
+site.
+
+- **Type floor:** body text 15px or more, secondary text 14px or more,
+  nothing under 13px except legal fine print and badges. Passing contrast
+  doesn't make tiny text readable.
+- **Word budget:** a card's description is one short sentence (about 12
+  words). Explanations go behind "How it works", a hint icon or the
+  assistant, not into the card.
+- **Show, don't tell:** numbers, meters, progress bars, chips and icons for
+  anything a person compares or tracks. A status on a continuum (people
+  joined, progress to a goal) is a meter, never a done/not-done checkmark.
+- Run `/polish` on every screen you touch (see below); its "Visual, not
+  text" section is the checklist. Before finishing, grep the diff for
+  `text-\[1[0-3](\.5)?px\]` and justify or fix every hit.
+
 ## Positioning: Shift is about shifting (HARD RULE)
 
 Shift exists to help people SHIFT their trips to walking, biking, transit,
