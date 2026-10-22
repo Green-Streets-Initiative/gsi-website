@@ -17,6 +17,7 @@ import RoamDisruptions from '@/components/roams/RoamDisruptions'
 import RoamSectionNav from '@/components/roams/RoamSectionNav'
 import RoamStopList from '@/components/roams/RoamStopList'
 import RoamGroupEventCard from '@/components/roams/RoamGroupEventCard'
+import RoamLede from '@/components/roams/RoamLede'
 
 export const revalidate = 3600
 
@@ -193,6 +194,11 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
         ? `Starts at ${startLabel}, ends at ${endLabel}`
         : `Starts at ${startLabel}`
     : null
+  const creditLine =
+    roam.credit_role && roam.credit_name ? `${roam.credit_role === 'suggested' ? 'Suggested by' : 'Designed by'} ${roam.credit_name}` : null
+  const directionsUrl = first
+    ? `https://www.google.com/maps/dir/?api=1&destination=${first.lat},${first.lng}&travelmode=${roam.mode === 'bike' ? 'bicycling' : roam.mode === 'walk' ? 'walking' : 'transit'}`
+    : null
   const video = parseVideoEmbed(roam.hero_video_url)
   const verb = roam.mode === 'walk' ? 'Walk' : roam.mode === 'bike' ? 'Ride' : 'Follow'
   const groupWhen = groupEvent ? shortWhen(groupEvent.event_date, groupEvent.event_time) : null
@@ -210,11 +216,11 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
   const hasGettingThere = !!(first || roam.access_note || roam.parking_note || roam.rail_home || nearDocks.length > 0 || roam.surface)
   const sections = [
     hasRoute ? { id: 'route', label: 'Route' } : null,
-    keepGoing.length > 0 ? { id: 'keep-going', label: 'Keep going' } : null,
     hasGettingThere ? { id: 'getting-there', label: 'Get there' } : null,
+    keepGoing.length > 0 ? { id: 'keep-going', label: 'Keep going' } : null,
     // On phones the summary's group ride row links here, so the bar keeps to one line.
     groupEvent ? { id: 'group-ride-section', label: 'Group ride', phoneHidden: keepGoing.length > 0 } : null,
-    { id: 'about', label: 'About' },
+    { id: 'how-it-works', label: 'How it works' },
   ].filter((x): x is { id: string; label: string; phoneHidden?: boolean } => !!x)
 
   // Answer-engine markup. The visible page already states the distance, the time
@@ -319,7 +325,19 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               <h1 className="mt-1.5 font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.04] tracking-[-0.01em] text-navy">
                 {roam.name}
               </h1>
-              {roam.hook && <p className="mt-2.5 max-w-[56ch] text-[1.0625rem] leading-[1.55] text-ink-soft">{roam.hook}</p>}
+              {/* What this roam is, first (Keith 2026-10-22). */}
+              <RoamLede hook={roam.hook} description={roam.description} />
+              {(creditLine || roam.route_url || roam.completion_count >= MIN_COMPLETIONS_TO_SHOW) && (
+                <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.875rem] text-ink-soft">
+                  {creditLine && <span>{creditLine}</span>}
+                  {roam.completion_count >= MIN_COMPLETIONS_TO_SHOW && <span>{roam.completion_count} people have completed it</span>}
+                  {roam.route_url && (
+                    <a href={roam.route_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-forest underline-offset-4 hover:underline">
+                      About this trail <ExternalLink size={12} aria-hidden />
+                    </a>
+                  )}
+                </p>
+              )}
 
               {tiles.length > 0 && (
                 <dl className={`mt-5 grid divide-x divide-navy/[0.08] rounded-[16px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)] ${tiles.length === 3 ? 'grid-cols-3' : tiles.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
@@ -336,7 +354,18 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               )}
               {startLine && (
                 <p className="mt-3 flex items-start gap-2 text-[0.9375rem] leading-snug text-navy">
-                  <Flag size={15} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden /> {startLine}
+                  <Flag size={15} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden />
+                  <span>
+                    {startLine}
+                    {first && (
+                      <>
+                        {' · '}
+                        <a href={directionsUrl!} target="_blank" rel="noopener noreferrer" className="font-semibold text-forest underline-offset-4 hover:underline">
+                          Directions
+                        </a>
+                      </>
+                    )}
+                  </span>
                 </p>
               )}
 
@@ -421,27 +450,6 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
           </section>
         )}
 
-        {/* ── Keep going: where you can ride on from either end (Shift 01289) ── */}
-        {keepGoing.length > 0 && (
-          <section id="keep-going" aria-labelledby="keep-going-h" className="scroll-mt-28 px-6 pt-12 lg:px-8">
-            <div className="mx-auto max-w-[1120px]">
-              <h2 id="keep-going-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">
-                Keep going
-              </h2>
-              <p className="mt-2 max-w-[62ch] text-[1rem] leading-relaxed text-ink-soft">
-                The {roam.name} is one piece of a bigger network. From either end you can keep riding on paths and protected bike lanes. Pick a direction to see it on the map.
-              </p>
-              <RoamKeepGoing
-                roamId={roam.id}
-                roamName={roam.name}
-                route={roam.route_coordinates}
-                rows={keepGoing}
-                closed={disruptions.map((d) => d.closed_geometry).filter((g): g is [number, number][] => !!g && g.length > 1)}
-              />
-            </div>
-          </section>
-        )}
-
         {/* ── Getting there ── */}
         {hasGettingThere && (
           <section id="getting-there" aria-labelledby="getting-there-h" className="scroll-mt-28 px-6 pt-12 lg:px-8">
@@ -449,11 +457,11 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               <h2 id="getting-there-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">
                 Getting there
               </h2>
-              <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+              <div className={`mt-5 grid gap-6 lg:items-start ${roam.rail_home ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]' : ''}`}>
                 <div className="min-w-0">
                   {first && (
                     <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${first.lat},${first.lng}&travelmode=${roam.mode === 'bike' ? 'bicycling' : roam.mode === 'walk' ? 'walking' : 'transit'}`}
+                      href={directionsUrl!}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-navy px-6 text-[0.9375rem] font-semibold text-white transition-colors hover:bg-navy/90 sm:w-auto"
@@ -472,7 +480,8 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
                       ))}
                     </p>
                   )}
-                  <dl className="mt-5 divide-y divide-navy/[0.07] rounded-[16px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)]">
+                  {/* Without a trains-home list beside it, the details spread into two columns. */}
+                  <dl className={`mt-5 overflow-hidden rounded-[16px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)] ${roam.rail_home ? 'divide-y divide-navy/[0.07]' : 'grid gap-px bg-navy/[0.07] lg:grid-cols-2 [&>div]:bg-white'}`}>
                     {roam.access_note && (
                       <div className="px-5 py-4">
                         <dt className="flex items-center gap-2 text-[0.9375rem] font-semibold text-navy"><Navigation size={15} className="text-forest" aria-hidden /> By transit, bike or on foot</dt>
@@ -520,6 +529,27 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
           </section>
         )}
 
+        {/* ── Keep going: where you can ride on from either end (Shift 01289) ── */}
+        {keepGoing.length > 0 && (
+          <section id="keep-going" aria-labelledby="keep-going-h" className="scroll-mt-28 px-6 pt-12 lg:px-8">
+            <div className="mx-auto max-w-[1120px]">
+              <h2 id="keep-going-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">
+                Keep going
+              </h2>
+              <p className="mt-2 max-w-[62ch] text-[1rem] leading-relaxed text-ink-soft">
+                The {roam.name} is one piece of a bigger network. From either end you can keep riding on paths and protected bike lanes. Pick a direction to see it on the map.
+              </p>
+              <RoamKeepGoing
+                roamId={roam.id}
+                roamName={roam.name}
+                route={roam.route_coordinates}
+                rows={keepGoing}
+                closed={disruptions.map((d) => d.closed_geometry).filter((g): g is [number, number][] => !!g && g.length > 1)}
+              />
+            </div>
+          </section>
+        )}
+
         {/* ── Group ride (Shift 01229), 14 days out until it ends ── */}
         {groupEvent && (
           <section id="group-ride-section" className="scroll-mt-28 px-6 pt-12 lg:px-8">
@@ -529,64 +559,42 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
           </section>
         )}
 
-        {/* ── About: the description, who made it, and how a roam works ── */}
-        <section id="about" aria-labelledby="about-h" className="scroll-mt-28 px-6 pb-20 pt-14 lg:px-8 lg:pb-24">
+        {/* ── How it works: the closing step, with the app (the description and
+            credits moved to the top, Keith 2026-10-22) ── */}
+        <section id="how-it-works" aria-labelledby="how-h" className="scroll-mt-28 px-6 pb-20 pt-14 lg:px-8 lg:pb-24">
           <div className="mx-auto max-w-[1120px]">
-            <h2 id="about-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">
-              About this roam
+            <h2 id="how-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">
+              How it works
             </h2>
-            <div className="mt-4 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-12">
-              <div className="min-w-0">
-                {roam.description && <p className="max-w-[64ch] text-[1.0625rem] leading-[1.7] text-ink-soft">{roam.description}</p>}
-                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.9375rem]">
-                  {roam.credit_role && roam.credit_name && (
-                    <span className="text-ink-soft">{roam.credit_role === 'suggested' ? 'Suggested by' : 'Designed by'} {roam.credit_name}</span>
-                  )}
-                  {roam.completion_count >= MIN_COMPLETIONS_TO_SHOW && (
-                    <span className="text-ink-soft">{roam.completion_count} people have completed it</span>
-                  )}
-                  {roam.route_url && (
-                    <a href={roam.route_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-forest underline-offset-4 hover:underline">
-                      About this trail <ExternalLink size={12} aria-hidden />
-                    </a>
-                  )}
-                </div>
-                {roam.collection && (
-                  <p className="mt-3 text-[0.9375rem] text-ink-soft">
-                    <span className="font-semibold text-forest">Part of the {roam.collection.name}.</span> Finish all {roam.collection.item_count} routes to unlock the {roam.collection.badge_name} badge.
+            <p className="mt-2 max-w-[62ch] text-[1rem] leading-relaxed text-ink-soft">
+              A roam is a self-guided route you follow at your own pace in the free Shift app.
+            </p>
+            <ol className="mt-5 grid gap-4 sm:grid-cols-3">
+              {[
+                { icon: Navigation, title: 'Follow the route', body: 'Open this roam in the Shift app and follow it at your own pace.' },
+                { icon: MapPinned, title: 'Check in at each stop', body: `The app checks you in when you arrive. No scanning, no codes.${completionHint ? ` ${completionHint}` : ''}` },
+                {
+                  icon: BadgeCheck,
+                  title: roam.badge_name ? `Unlock the ${roam.badge_name} badge` : 'Unlock a badge',
+                  body: `Finish the roam and ${roam.badge_name ? `the ${roam.badge_name} badge` : 'a badge'} is yours.${roam.collection ? ` Finish all ${roam.collection.item_count} routes in the ${roam.collection.name} for a bonus badge.` : ''}`,
+                },
+              ].map((step, i) => (
+                <li key={step.title} className="rounded-[16px] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)]">
+                  <p className="flex items-center gap-2.5 text-[0.9375rem] font-semibold text-navy">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-forest/[0.1] text-[0.8125rem] font-bold text-forest" aria-hidden>{i + 1}</span>
+                    {step.title}
                   </p>
-                )}
-              </div>
-              <div>
-                <h3 className="text-[1.0625rem] font-semibold text-navy">How it works</h3>
-                <p className="mt-1 text-[0.9375rem] leading-relaxed text-ink-soft">
-                  A roam is a self-guided route you follow at your own pace in the free Shift app.
-                </p>
-                <ol className="mt-4 space-y-4">
-                  {[
-                    { icon: Navigation, title: 'Follow the route', body: 'Open this roam in the Shift app and follow it at your own pace.' },
-                    { icon: MapPinned, title: 'Check in at each stop', body: `The app checks you in when you arrive. No scanning, no codes.${completionHint ? ` ${completionHint}` : ''}` },
-                    {
-                      icon: BadgeCheck,
-                      title: roam.badge_name ? `Unlock the ${roam.badge_name} badge` : 'Unlock a badge',
-                      body: `Finish the roam and ${roam.badge_name ? `the ${roam.badge_name} badge` : 'a badge'} is yours.${roam.collection ? ` Finish all ${roam.collection.item_count} routes in the ${roam.collection.name} for a bonus badge.` : ''}`,
-                    },
-                  ].map((step, i) => (
-                    <li key={step.title} className="flex gap-3.5">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-forest/[0.1] text-[0.8125rem] font-bold text-forest" aria-hidden>{i + 1}</span>
-                      <div>
-                        <p className="flex items-center gap-2 text-[0.9375rem] font-semibold text-navy">
-                          <step.icon size={15} className="text-forest" aria-hidden /> {step.title}
-                        </p>
-                        <p className="mt-0.5 text-[0.9375rem] leading-relaxed text-ink-soft">{step.body}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-                <div className="mt-6">
-                  <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="roam_bottom" tone="light" />
-                </div>
-              </div>
+                  <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-ink-soft">{step.body}</p>
+                </li>
+              ))}
+            </ol>
+            {roam.collection && (
+              <p className="mt-4 text-[0.9375rem] text-ink-soft">
+                <span className="font-semibold text-forest">Part of the {roam.collection.name}.</span> Finish all {roam.collection.item_count} routes to unlock the {roam.collection.badge_name} badge.
+              </p>
+            )}
+            <div className="mt-6">
+              <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="roam_bottom" tone="light" />
             </div>
           </div>
         </section>
