@@ -385,7 +385,12 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
 
         <Card>
           <SectionTitle hint="Optional, and worth it: people decide on distance, hills and how comfortable the streets are.">Route</SectionTitle>
-          <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null} />
+          <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null}
+            onMeetAtStart={(p) => {
+              setF((prev) => ({ ...prev, meetup_lat: p.lat, meetup_lng: p.lng, meetup_address: '', meetup_name: prev.meetup_name ? '' : prev.meetup_name }))
+              setDirty(true)
+              setMeetupFit((k) => k + 1)
+            }} />
           <div className="mt-4">
             <Field label="Link to the route elsewhere" htmlFor="route-link" optional hint="Strava, Komoot, Google Maps. Shown on the ride page as a link."
               error={!LINK_OK(f.route_google_maps_url) ? 'Links start with https://' : null}>

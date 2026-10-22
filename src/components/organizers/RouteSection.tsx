@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Route as RouteIcon, Trash2, Undo2, Upload } from 'lucide-react'
 import { errorText, importRideWithGps, planRoute, scoreRoute, type PlannedRoute } from '@/lib/organizers/api'
 import { COMFORT_LABELS, comfortBreakdown, concernCount, routeFromPlan } from '@/lib/organizers/route-plan'
-import { elevationOf, parseGpx, routeMiles, simplify, toWaypoints } from '@/lib/organizers/route-geo'
+import { elevationOf, haversineM, parseGpx, routeMiles, simplify, toWaypoints } from '@/lib/organizers/route-geo'
 import type { LatLng, RouteDraft } from '@/lib/organizers/types'
 import RouteMap from './RouteMap'
 import { Badge, Button, Field, Input, Notice, cx } from './ui'
@@ -26,11 +26,13 @@ const MODES: { key: Mode; label: string }[] = [
   { key: 'gpx', label: 'GPX file' },
 ]
 
-export default function RouteSection({ route, onRoute, meetup, pace }: {
+export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtStart }: {
   route: RouteDraft | null
   onRoute: (r: RouteDraft | null) => void
   meetup: (LatLng & { label?: string }) | null
   pace: string | null
+  /** Move the meeting point to where an imported route begins. */
+  onMeetAtStart?: (p: LatLng) => void
 }) {
   const [mode, setMode] = useState<Mode>('draw')
   const [stops, setStops] = useState<LatLng[]>([])
@@ -52,6 +54,8 @@ export default function RouteSection({ route, onRoute, meetup, pace }: {
   const miles = route ? routeMiles(route.waypoints) : 0
   const comfort = comfortBreakdown(route?.comfortSegments)
   const concerns = concernCount(route?.flags)
+  // An imported route that begins somewhere else than the meeting point.
+  const startGapMi = route && route.waypoints.length && meetup ? haversineM(meetup, route.waypoints[0]) / 1609.344 : 0
 
   async function findRoutes() {
     if (pins.length < 2) return
@@ -259,6 +263,12 @@ export default function RouteSection({ route, onRoute, meetup, pace }: {
             </p>
             <Button size="sm" variant="ghost" onClick={clearRoute}><Trash2 className="h-4 w-4" aria-hidden />Remove route</Button>
           </div>
+          {startGapMi > 0.3 && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-(--ev-ink-85)">
+              <span>This route starts {startGapMi < 10 ? startGapMi.toFixed(1) : Math.round(startGapMi)} miles from your meeting point.</span>
+              {onMeetAtStart && <Button size="sm" onClick={() => onMeetAtStart(route.waypoints[0])}>Meet where the route starts</Button>}
+            </div>
+          )}
           {comfort.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {comfort.map((c) => <Badge key={c.rating} tone={c.rating === 'shared_road' ? 'warn' : 'good'}>{c.pct}% {COMFORT_LABELS[c.rating] ?? c.rating}</Badge>)}
