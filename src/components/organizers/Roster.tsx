@@ -113,7 +113,7 @@ export default function Roster() {
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       <Card>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <Field label="Date" htmlFor="roster-date">

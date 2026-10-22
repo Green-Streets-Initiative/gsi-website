@@ -33,7 +33,7 @@ function DateChip({ d, rideId }: { d: NextDate; rideId: string }) {
     <Link
       href={`/organizers/rides/${rideId}/roster?date=${d.id}`}
       className={cx(
-        'group flex min-w-[148px] flex-1 flex-col rounded-xl border px-3 py-2.5 transition hover:border-(--ev-line-stronger)',
+        'group flex flex-col rounded-xl border px-3 py-2.5 transition hover:border-(--ev-line-stronger) sm:min-w-[148px] sm:flex-1',
         off ? 'border-dashed border-(--ev-line-strong) bg-(--ev-panel-faint)' : 'border-(--ev-line-mid) bg-white',
       )}
     >
@@ -92,7 +92,7 @@ function RideCard({ r }: { r: DashboardRide }) {
 
       {r.status !== 'archived' && (
         r.next_dates.length > 0 ? (
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             {r.next_dates.map((d) => <DateChip key={d.id} d={d} rideId={r.id} />)}
           </div>
         ) : (

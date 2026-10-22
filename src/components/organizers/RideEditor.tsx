@@ -242,7 +242,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         </div>
       )}
 
-      <div className="mt-6 grid gap-5">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-5">
         <Card>
           <SectionTitle>The ride</SectionTitle>
           <div className="grid gap-4">
@@ -401,7 +401,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
 
         <Card>
           <SectionTitle>What to expect</SectionTitle>
-          <div className="grid gap-5">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
             <Field label="Pace" hint="The speed the group actually holds, so people can tell whether they'll keep up.">
               <div className="flex flex-wrap gap-2">
                 <Toggle on={f.pace === ''} onClick={() => set('pace', '')}>Not stated</Toggle>
@@ -448,7 +448,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
 
         <Card>
           <SectionTitle>Who it&rsquo;s from, and who can find it</SectionTitle>
-          <div className="grid gap-5">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
             <Field label="Visibility">
               <div className="grid gap-2 sm:grid-cols-2">
                 {([

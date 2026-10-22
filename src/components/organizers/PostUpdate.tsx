@@ -88,7 +88,7 @@ export default function PostUpdate({ seriesId, dates, onPosted, autoFocus }: {
         ))}
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,240px)_1fr]">
+      <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-[minmax(0,240px)_minmax(0,1fr)]">
         <Field label={needsDate ? 'Date' : 'About'} htmlFor="upd-date">
           <Select id="upd-date" value={dateId} onChange={(e) => setDateId(e.target.value)}>
             {!needsDate && <option value="">The whole ride</option>}

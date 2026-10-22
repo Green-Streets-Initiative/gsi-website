@@ -52,7 +52,7 @@ function Editor({ org, onSaved }: { org: OrgClaim; onSaved: () => void }) {
   const touch = <T,>(fn: (v: T) => void) => (v: T) => { fn(v); setDirty(true) }
 
   return (
-    <div className="grid gap-5 pb-6">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5 pb-6">
       <Card>
         <SectionTitle hint="Who you are and what your rides are like. People read this before their first ride with you.">About {org.name}</SectionTitle>
         <div className="grid gap-4">

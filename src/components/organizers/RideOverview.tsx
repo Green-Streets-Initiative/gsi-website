@@ -124,7 +124,7 @@ export default function RideOverview() {
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       {msg && <Toast tone={msg.tone} onClose={closeMsg}>{msg.text}</Toast>}
       {r.route_risk === 'high' && r.visibility === 'public' && (
         <Notice tone="warn">Part of this route has a crash history, so GSI reviews it before it goes on the public calendar. Your ride page works now.</Notice>

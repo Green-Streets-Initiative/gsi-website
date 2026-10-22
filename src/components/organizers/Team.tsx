@@ -63,7 +63,7 @@ export default function Team() {
   const riders = members.filter((m) => m.role === 'rider' && m.user_id)
 
   return (
-    <div className="grid gap-5">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       {msg && <Notice tone={msg.tone} onClose={() => setMsg(null)}>{msg.text}</Notice>}
 
       <Card>
