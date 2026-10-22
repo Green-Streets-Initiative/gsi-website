@@ -142,7 +142,7 @@ export default function RoamCard({
             <PhotoCredit
               text={roam.hero_image_attribution}
               url={roam.hero_image_attribution_url}
-              className="absolute bottom-1.5 right-1.5 z-10 max-w-[92%] truncate rounded-full bg-navy/65 px-2 py-0.5 text-[10.5px] leading-tight text-white/90 backdrop-blur-sm"
+              className="absolute bottom-1.5 right-1.5 z-10 max-w-[92%] rounded-[8px] bg-navy/65 px-2 py-0.5 text-[10.5px] leading-tight text-white/90 backdrop-blur-sm"
               linkClassName="underline decoration-white/50 underline-offset-2 hover:decoration-white"
             />
           )}
