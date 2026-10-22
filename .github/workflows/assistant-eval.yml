@@ -1,0 +1,77 @@
+# The employer setup assistant's stress test (scripts/assistant-eval), run
+# against the live site: every Monday, after any push that changes the
+# assistant (once Vercel has deployed it), and by hand. ~$2 a run.
+# A hard failure (missing approval card, forbidden action, copy rule, the
+# assistant erroring) fails the job, so GitHub emails the repo owner; the
+# grader's judgment calls are listed in the job summary only.
+# This repository is public: the full transcripts stay on the runner (no
+# artifact upload); only the pass/fail summary is published.
+name: Setup assistant stress test
+
+on:
+  schedule:
+    - cron: '0 13 * * 1' # Mondays, 9am Eastern
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/lib/employer-assistant/**'
+      - 'src/app/api/employer/assistant/**'
+      - 'scripts/assistant-eval/**'
+
+concurrency:
+  group: assistant-eval
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  statuses: read
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Until the repository's secrets are added, skip quietly (no failure email).
+      - name: Check the secrets are set up
+        id: ready
+        env:
+          KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$KEY" ] && [ -n "$ANTHROPIC" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"
+          else echo "Secrets not set up yet; skipping." >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/checkout@v4
+        if: steps.ready.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.ready.outputs.ok == 'true'
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        if: steps.ready.outputs.ok == 'true'
+      - name: Wait for Vercel to deploy this commit
+        if: steps.ready.outputs.ok == 'true' && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 60); do
+            s=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/statuses" --jq '[.[]|select(.context|test("Vercel"))][0].state' || true)
+            echo "Vercel: ${s:-pending}"
+            [ "$s" = success ] && exit 0
+            [ "$s" = failure ] || [ "$s" = error ] && { echo "Deploy failed; nothing to test."; exit 1; }
+            sleep 15
+          done
+          echo "Deploy did not finish in 15 minutes."; exit 1
+      - name: Credentials for the test logins and the grader
+        if: steps.ready.outputs.ok == 'true'
+        run: |
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+            echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}"
+          } > .env.local
+      - name: Run the suite
+        if: steps.ready.outputs.ok == 'true'
+        run: node scripts/assistant-eval/run.mjs
