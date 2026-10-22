@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CalendarDays, MapPin, Megaphone, Plus, Users } from 'lucide-react'
+import { ArrowUp, CalendarDays, MapPin, Megaphone, MessageSquareText, Plus, Users } from 'lucide-react'
 import { ago, clock, scheduleText } from '@/lib/rides/public'
 import { errorText, getRides } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
 import type { DashboardRide, NextDate } from '@/lib/organizers/types'
+import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
 import { Badge, Button, Card, Empty, Notice, Spinner, cx, type Tone } from './ui'
 
@@ -113,8 +114,50 @@ function RideCard({ r }: { r: DashboardRide }) {
   )
 }
 
+/** The assistant, front and center: say what you need in your own words. */
+function AskBox({ rides, canCreate }: { rides: DashboardRide[]; canCreate: boolean }) {
+  const [text, setText] = useState('')
+  const next = rides.flatMap((r) => r.next_dates.filter((d) => d.status === 'scheduled').map((d) => ({ r, d })))
+    .sort((a, b) => a.d.date.localeCompare(b.d.date))[0]
+  const chips = [
+    canCreate ? 'Plan a new ride with me' : null,
+    next ? `Post "It's on" for ${next.r.name} on ${dateLabel(next.d.date)}` : null,
+    next ? `What's the forecast for ${dateLabel(next.d.date)}?` : null,
+    rides.length ? "Who's coming this week?" : null,
+  ].filter(Boolean).slice(0, 3) as string[]
+  const go = (t: string) => { if (t.trim()) { openAssistant(t.trim()); setText('') } }
+  return (
+    <Card className="mb-6 border-(--ev-accent-line-30) bg-white">
+      <div className="flex items-center gap-2">
+        <MessageSquareText className="h-5 w-5 text-(--ev-accent)" aria-hidden />
+        <h2 className="font-display text-[20px] font-extrabold leading-tight">What do you want to get done?</h2>
+      </div>
+      <p className="mt-1 text-[15px] text-(--ev-ink-80)">Ask in your own words. Nothing people see changes without your OK.</p>
+      <form className="mt-3 flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); go(text) }}>
+        <label htmlFor="ask" className="sr-only">Ask the assistant</label>
+        <input id="ask" value={text} onChange={(e) => setText(e.target.value)} autoComplete="off"
+          placeholder="Plan a Saturday social ride from Davis, move tomorrow to 9:30…"
+          className="min-h-[46px] min-w-0 flex-1 rounded-[10px] border border-(--ev-line-strong) bg-white px-3 text-[15px] text-(--ev-ink) placeholder:text-(--ev-ink-60) focus:border-(--ev-accent) focus:outline-none" />
+        <button type="submit" aria-label="Ask" disabled={!text.trim()} className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-[10px] bg-(--ev-accent-fill) text-(--ev-on-accent-fill) disabled:opacity-40">
+          <ArrowUp className="h-5 w-5" aria-hidden />
+        </button>
+      </form>
+      {chips.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {chips.map((c) => (
+            <button key={c} type="button" onClick={() => go(c)}
+              className="min-h-[38px] rounded-full border border-(--ev-accent-line-40) bg-(--ev-accent-tint-8) px-3.5 text-left text-[14px] font-semibold text-(--ev-accent-90) hover:border-(--ev-accent)">
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
+    </Card>
+  )
+}
+
 export default function Dashboard() {
-  const { me } = useConsole()
+  const { me, assistant } = useConsole()
   const [rides, setRides] = useState<DashboardRide[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [showEnded, setShowEnded] = useState(false)
@@ -134,8 +177,10 @@ export default function Dashboard() {
     getRides()
       .then((list) => { if (live) setRides(list) })
       .catch((e) => { if (live) setErr(errorText(e, "We couldn't load your rides.")) })
-    return () => { live = false }
-  }, [])
+    const changed = () => { void load() }
+    window.addEventListener(ASSISTANT_CHANGED_EVENT, changed)
+    return () => { live = false; window.removeEventListener(ASSISTANT_CHANGED_EVENT, changed) }
+  }, [load])
 
   const groups = useMemo(() => {
     const all = rides ?? []
@@ -164,6 +209,8 @@ export default function Dashboard() {
         </div>
         {newRide}
       </div>
+
+      {assistant && <AskBox rides={groups.mine} canCreate={!!me?.can_create} />}
 
       {claimNote > 0 && (
         <div className="mb-5">

@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, type FormEvent, type ReactNode } from 'react'
-import { LogOut, MailCheck } from 'lucide-react'
+import { useCallback, useState, type FormEvent, type ReactNode } from 'react'
+import { LogOut, MailCheck, MessageSquareText } from 'lucide-react'
 import ShiftWordmark from '@/components/brand/ShiftWordmark'
 import { toneClass } from '@/components/events/EventsTone'
 import { supabase } from '@/lib/supabase'
+import { AssistantDock, openAssistant } from './AssistantPanel'
 import { ConsoleProvider, useConsole } from './ConsoleContext'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from './ui'
 import '@/components/events/events-tone.css'
@@ -14,18 +15,31 @@ import '@/components/events/events-tone.css'
 export default function ConsoleShell({ children }: { children: ReactNode }) {
   return (
     <ConsoleProvider>
-      <div className={cx('min-h-dvh bg-(--ev-bg) text-(--ev-ink)', toneClass('light'))}>
-        <TopBar />
-        <main className="mx-auto w-full max-w-[1120px] px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
-          <Gate>{children}</Gate>
-        </main>
-      </div>
+      <Frame>{children}</Frame>
     </ConsoleProvider>
   )
 }
 
+function Frame({ children }: { children: ReactNode }) {
+  const { phase, assistant } = useConsole()
+  const [docked, setDocked] = useState(false)
+  const onOpenChange = useCallback((o: boolean) => setDocked(o), [])
+  return (
+    <div className={cx('min-h-dvh bg-(--ev-bg) text-(--ev-ink)', toneClass('light'))}>
+      <TopBar />
+      {/* On wide screens the assistant docks at the right and the page makes room. */}
+      <div className={cx(docked && 'xl:pr-[440px]')}>
+        <main className="mx-auto w-full max-w-[1120px] px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
+          <Gate>{children}</Gate>
+        </main>
+      </div>
+      <AssistantDock available={phase === 'ready' && assistant} onOpenChange={onOpenChange} />
+    </div>
+  )
+}
+
 function TopBar() {
-  const { phase, me, signOut } = useConsole()
+  const { phase, me, assistant, signOut } = useConsole()
   const path = usePathname()
   const hostPage = !!me?.orgs?.some((o) => o.claim === 'verified' || o.claim === 'pending')
   const nav = [
@@ -58,6 +72,13 @@ function TopBar() {
         )}
         {(phase === 'ready' || phase === 'no_access') && me?.email && (
           <div className="ml-auto flex min-w-0 items-center gap-2">
+            {phase === 'ready' && assistant && (
+              <button type="button" onClick={() => openAssistant()} title="Ask the assistant (Cmd or Ctrl + J)"
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-(--ev-line-strong) bg-white px-3 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                <MessageSquareText className="h-4 w-4" aria-hidden />
+                <span className="hidden sm:inline">Ask the assistant</span>
+              </button>
+            )}
             <span className="hidden truncate text-[14px] text-(--ev-ink-75) md:inline">{me.email}</span>
             <button
               type="button"
@@ -76,6 +97,8 @@ function TopBar() {
 
 function Gate({ children }: { children: ReactNode }) {
   const { phase, error, retry } = useConsole()
+  // The assistant's data note is for anyone, signed in or not.
+  if (usePathname() === '/organizers/assistant-data') return <>{children}</>
   if (phase === 'checking') return <Spinner label="Opening your rides" />
   if (phase === 'signed_out') return <SignIn />
   if (phase === 'no_access') return <NoAccess />

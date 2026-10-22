@@ -3,10 +3,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { ArrowLeft, ExternalLink, MessageSquareText } from 'lucide-react'
 import { scheduleText } from '@/lib/rides/public'
 import { errorText, getRide } from '@/lib/organizers/api'
 import type { RideDetail } from '@/lib/organizers/types'
+import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
+import { useConsole } from './ConsoleContext'
 import { rideStateBadges } from './Dashboard'
 import { Badge, Button, Card, Spinner, cx } from './ui'
 
@@ -31,6 +33,7 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
   const [detail, setDetail] = useState<RideDetail | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const path = usePathname()
+  const { assistant } = useConsole()
 
   const reload = useCallback(async () => {
     try {
@@ -46,8 +49,10 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
     getRide(id)
       .then((d) => { if (live) setDetail(d) })
       .catch((e) => { if (live) setErr(errorText(e, "We couldn't load this ride.")) })
-    return () => { live = false }
-  }, [id])
+    const changed = () => { void reload() }
+    window.addEventListener(ASSISTANT_CHANGED_EVENT, changed)
+    return () => { live = false; window.removeEventListener(ASSISTANT_CHANGED_EVENT, changed) }
+  }, [id, reload])
 
   if (err && !detail) {
     return (
@@ -91,10 +96,18 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
                 {detail.my_role === 'admin' && detail.organizer_person && <Badge>Organizer: {detail.organizer_person}</Badge>}
               </div>
             </div>
-            <a href={ridePageUrl(r.invite_code)} target="_blank" rel="noopener noreferrer"
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-              Ride page<ExternalLink className="h-4 w-4" aria-hidden />
-            </a>
+            <div className="flex flex-wrap gap-2">
+              {assistant && (
+                <button type="button" onClick={() => openAssistant(`About my ride "${r.name}" (id ${r.id}): what needs doing next?`)}
+                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                  <MessageSquareText className="h-4 w-4" aria-hidden />Ask about this ride
+                </button>
+              )}
+              <a href={ridePageUrl(r.invite_code)} target="_blank" rel="noopener noreferrer"
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                Ride page<ExternalLink className="h-4 w-4" aria-hidden />
+              </a>
+            </div>
           </div>
 
           <nav aria-label="Ride" className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">

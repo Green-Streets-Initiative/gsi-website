@@ -22,6 +22,8 @@ type Phase = 'checking' | 'signed_out' | 'no_access' | 'ready' | 'error'
 interface ConsoleState {
   phase: Phase
   me: ConsoleMe | null
+  /** The ride assistant is on for this person (Shift 01376). */
+  assistant: boolean
   notice: string | null
   error: string | null
   clearNotice: () => void
@@ -41,14 +43,16 @@ export function useConsole(): ConsoleState {
 export function ConsoleProvider({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<Phase>('checking')
   const [me, setMe] = useState<ConsoleMe | null>(null)
+  const [assistant, setAssistant] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
   const ran = useRef(-1)
 
   const loadMe = useCallback(async () => {
-    const m = await getMe()
+    const [m, a] = await Promise.all([getMe(), supabase.rpc('organizer_assistant_available')])
     setMe(m)
+    setAssistant(a.data === true)
     setPhase(!m.signed_in ? 'signed_out' : m.allowed ? 'ready' : 'no_access')
   }, [])
 
@@ -118,7 +122,7 @@ export function ConsoleProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <Ctx.Provider value={{ phase, me, notice, error, clearNotice: () => setNotice(null), refreshMe, retry, signOut }}>
+    <Ctx.Provider value={{ phase, me, assistant, notice, error, clearNotice: () => setNotice(null), refreshMe, retry, signOut }}>
       {children}
     </Ctx.Provider>
   )
