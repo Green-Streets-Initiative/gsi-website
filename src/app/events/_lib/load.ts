@@ -112,6 +112,30 @@ export async function loadEventsListing(): Promise<CommunityEvent[]> {
 }
 
 /**
+ * One host's approved events: upcoming soonest first, or past newest first.
+ * Feeds the host page (/events/organizers/<id>) and its calendar feed.
+ */
+export async function loadOrganizerEvents(
+  organizerId: string,
+  when: 'upcoming' | 'past',
+  limit = 60,
+): Promise<CommunityEvent[]> {
+  const supabase = createServerSupabaseClient()
+  const today = new Date().toISOString().slice(0, 10)
+  let q = supabase
+    .from('event_details')
+    .select(LISTING_SELECT)
+    .eq('organizer_id', organizerId)
+    .eq('content_items.status', 'approved')
+    .eq('content_items.content_type', 'community_event')
+  q = when === 'upcoming'
+    ? q.gte('event_date', today).order('event_date', { ascending: true })
+    : q.lt('event_date', today).order('event_date', { ascending: false })
+  const { data } = await q.limit(limit)
+  return ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent)
+}
+
+/**
  * How many approved events are still ahead of us — the one live number on the
  * /events social card. Never throws: an OG route that 500s renders no card at
  * all, and a card without the count still reads fine.
@@ -140,6 +164,8 @@ export interface LoadedEvent {
   timezone: string | null
   /** Sponsor name → website, for the sponsors we know from the organizer directory. */
   sponsorLinks: Record<string, string>
+  /** The host's registry row (event_organizers.id); links to the host page. */
+  organizerId: string | null
 }
 
 /** "WalkBike Worcester" / "walkbike-worcester" / "WalkBikeWorcester.Org" all collapse to one key. */
@@ -225,7 +251,7 @@ export async function loadEvent(key: string): Promise<LoadedEvent | null> {
     resolveSponsorLinks(supabase, event.sponsors),
   ])
 
-  return { event, nextUp, timezone: (row.timezone as string | null) ?? null, sponsorLinks }
+  return { event, nextUp, timezone: (row.timezone as string | null) ?? null, sponsorLinks, organizerId: (row.organizer_id as string | null) ?? null }
 }
 
 /** Title, description, canonical, and Open Graph for a detail page; the staged copy reuses it. */

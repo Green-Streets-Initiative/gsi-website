@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import posthog from 'posthog-js'
+import FixListingLink from '@/components/hosts/FixListingLink'
 import { gaEvent } from '@/lib/ga'
 import StoreButtons from '@/components/StoreButtons'
 import { withUtm as appUtm } from '@/lib/utm'
@@ -133,9 +134,11 @@ interface EventDetailProps {
   roamLinks?: Array<{ id: string; name: string; reward_note: string | null }>
   /** Invite code of the Shift ride this listing comes from; its page takes RSVPs. */
   rideCode?: string | null
+  /** The host's page on this site, when they run often enough to have one. */
+  hostHref?: string | null
 }
 
-export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
   // The type's color for this surface: the navy-tuned one, or its ink on cream.
@@ -483,6 +486,11 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                                         ) : (
                       <p className="text-[14px] text-(--ev-ink-80)">{event.organizer_name}</p>
                     )}
+                    {hostHref && (
+                      <Link href={hostHref} className="mt-0.5 block text-[14px] font-semibold text-(--ev-accent) hover:underline">
+                        All their rides and walks
+                      </Link>
+                    )}
                   </div>
                 </div>
               )}
@@ -588,6 +596,10 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 />
               </div>
             )}
+
+            <div className="mt-8 border-t border-(--ev-line) pt-5">
+              <FixListingLink event={{ id: event.id, title: event.title }} />
+            </div>
           </div>
         </div>
       </div>

@@ -133,13 +133,11 @@ function icsFold(line: string): string {
   return parts.join('\r\n ')
 }
 
-export function buildIcs(ev: CalendarEvent): string {
+/** One event's VEVENT lines, for a single-event file or a feed. */
+function icsEventLines(ev: CalendarEvent): string[] {
   const s = span(ev)
   const location = calendarLocation(ev.location_name, ev.location_address)
   return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Green Streets Initiative//Events//EN',
     'BEGIN:VEVENT',
     `UID:${ev.id}@gogreenstreets.org`,
     s.allDay ? `DTSTART;VALUE=DATE:${s.start}` : `DTSTART:${s.start}`,
@@ -150,6 +148,37 @@ export function buildIcs(ev: CalendarEvent): string {
     ...(ev.location_lat && ev.location_lng ? [`GEO:${ev.location_lat};${ev.location_lng}`] : []),
     `URL:${calendarLink(ev)}`,
     'END:VEVENT',
+  ]
+}
+
+export function buildIcs(ev: CalendarEvent): string {
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Green Streets Initiative//Events//EN',
+    ...icsEventLines(ev),
+    'END:VCALENDAR',
+  ].map(icsFold).join('\r\n')
+}
+
+/**
+ * A subscribable feed: one calendar holding a host's upcoming events, so a
+ * group's own site, Google Calendar or a phone can follow it and stay
+ * current. Calendar apps re-read it on their own schedule; the refresh hints
+ * ask for twice a day.
+ */
+export function buildIcsFeed(events: CalendarEvent[], name: string): string {
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Green Streets Initiative//Events//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    `X-WR-CALNAME:${icsEscape(name)}`,
+    'X-WR-TIMEZONE:America/New_York',
+    'REFRESH-INTERVAL;VALUE=DURATION:PT12H',
+    'X-PUBLISHED-TTL:PT12H',
+    ...events.flatMap(icsEventLines),
     'END:VCALENDAR',
   ].map(icsFold).join('\r\n')
 }

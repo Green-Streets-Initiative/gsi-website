@@ -4,6 +4,7 @@ import { getQualifyingTowns } from '@/lib/towns/queries'
 import { getActiveRoams } from '@/lib/roams/queries'
 import { SCHOOLS } from '@/lib/semester/schools'
 import { loadEventsListing } from '@/app/events/_lib/load'
+import { listQualifiedHosts, hostPath } from '@/lib/hosts'
 import { SITE_URL } from '@/lib/seo'
 import { eventUrl } from '@/lib/events-url'
 
@@ -172,6 +173,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // DB unreachable — ship the rest.
   }
 
+  // Host pages: groups that run walks and rides often enough to follow
+  // (lib/hosts.ts). People search for a group's name plus "rides".
+  let hostEntries: MetadataRoute.Sitemap = []
+  try {
+    hostEntries = (await listQualifiedHosts()).map((id) => ({
+      url: `${SITE_URL}${hostPath(id)}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    }))
+  } catch {
+    // DB unreachable — ship the rest.
+  }
+
   return [
     ...staticEntries,
     ...townEntries,
@@ -179,5 +194,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...guideEntries,
     ...schoolEntries,
     ...eventEntries,
+    ...hostEntries,
   ]
 }

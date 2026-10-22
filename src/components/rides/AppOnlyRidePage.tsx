@@ -1,5 +1,4 @@
 import StoreBadges from '@/components/StoreBadges'
-import { toneClass } from '@/components/events/EventsTone'
 import type { AppOnlyRide } from '@/lib/rides/public'
 import '@/components/events/events-tone.css'
 
@@ -10,7 +9,7 @@ import '@/components/events/events-tone.css'
 export default function AppOnlyRidePage({ ride }: { ride: AppOnlyRide }) {
   const what = ride.kind === 'walk_bus' ? 'walking school bus' : 'bike bus'
   return (
-    <div className={`min-h-[70vh] bg-(--ev-bg) px-4 py-12 sm:px-8 ${toneClass('light')}`}>
+    <div className="min-h-[70vh] bg-(--ev-bg) px-4 py-12 sm:px-8 events-tone events-tone-light">
       <div className="mx-auto max-w-[560px] rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-6 sm:p-8">
         <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-(--ev-accent)">You&rsquo;re invited</p>
         <h1 className="mt-2 font-display text-[clamp(26px,4vw,36px)] font-extrabold leading-[1.1] text-(--ev-ink)">{ride.name}</h1>
