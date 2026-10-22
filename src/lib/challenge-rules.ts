@@ -155,6 +155,10 @@ function num(n: number): string {
 function entryPhrase(goal: number, metric: string | null | undefined): string {
   if (!(goal > 0)) return 'Everyone who takes part'
   switch (metric) {
+    case 'tried_new':
+      return goal === 1
+        ? "Everyone who makes a trip a new way (a way of getting around they hadn't used in the 60 days before the challenge; driving alone doesn't count)"
+        : `Everyone who tries ${num(goal)} new ways of getting around`
     case 'active_days':
       return goal === 1 ? 'Everyone with at least one active day' : `Everyone with ${num(goal)} or more active days`
     case 'miles':

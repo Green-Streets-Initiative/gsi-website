@@ -17,6 +17,7 @@ export const PRIZE_METRIC_LABELS: Record<string, string> = {
   trips: 'Active trips',
   active_days: 'Active days',
   miles: 'Miles shifted',
+  tried_new: 'Tried something new',
 }
 
 export const PRIZE_METRIC_UNITS: Record<string, string> = {
@@ -24,6 +25,7 @@ export const PRIZE_METRIC_UNITS: Record<string, string> = {
   trips: 'trips',
   active_days: 'days',
   miles: 'mi',
+  tried_new: 'new ways',
 }
 
 export const DEFAULT_METRIC_THRESHOLD: Record<string, string> = {
@@ -31,6 +33,7 @@ export const DEFAULT_METRIC_THRESHOLD: Record<string, string> = {
   trips: '10',
   active_days: '5',
   miles: '10',
+  tried_new: '1',
 }
 
 export const EMPTY_PRIZE_FORM: PrizeFormState = {

@@ -98,7 +98,7 @@ function prizeSummary(prizes: ChallengePrize[]): string {
       ? `First ${n} to reach ${p.min_threshold ?? 0} ${p.metric === 'trips' ? 'trips' : (PRIZE_METRIC_LABELS[p.metric] ?? p.metric).toLowerCase()}`
       : p.award_mode === 'merit'
         ? `Top ${n}`
-        : `Drawing · ${n} ${n === 1 ? 'winner' : 'winners'}`
+        : `${p.metric === 'tried_new' ? 'Try something new' : 'Drawing'} · ${n} ${n === 1 ? 'winner' : 'winners'}`
   const more = prizes.length > 1 ? ` · +${prizes.length - 1} more` : ''
   const state = p.cancelled_at ? ' · cancelled' : ''
   return `${head} · ${reward}${state}${more}`
@@ -1771,7 +1771,9 @@ function PrizeCard({
                       <td className="py-2 text-right text-ink-muted">
                         {p.metric === 'pct_non_car'
                           ? `${Number(w.metric_value).toFixed(1)}%`
-                          : Number(w.metric_value).toFixed(1)}
+                          : p.metric === 'tried_new'
+                            ? String(Math.round(Number(w.metric_value)))
+                            : Number(w.metric_value).toFixed(1)}
                       </td>
                       {p.funded_from_pool && (
                         <td className="py-2 text-right text-ink-muted">

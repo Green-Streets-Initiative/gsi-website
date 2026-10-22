@@ -17,6 +17,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Compass,
   Dices,
   Flag,
   Gift,
@@ -131,6 +132,8 @@ type Template = {
    *  never promises a gift card the plan can't give. */
   freeTitle?: string
   freeLine: string
+  /** Only offered on plans with prizes (a format that is its reward). */
+  prizeOnly?: boolean
   icon: typeof Flag
   build: (ctx: { employer: string; hasDomains: boolean; office: ChallengeOffice | null; canPrize: boolean }) => {
     name: string
@@ -173,6 +176,22 @@ function draftHasContent(d: StoredDraft): boolean {
 }
 
 const TEMPLATES: Template[] = [
+  {
+    // Driver inclusion (Keith 2026-10-22): one trip a new way is enough, so
+    // people who drive most days have as good a chance as anyone (Shift 01383).
+    id: 'tried_new',
+    title: 'Try something new',
+    line: 'Everyone who makes one trip a new way is entered. Three winners get a $25 gift card.',
+    freeLine: '',
+    prizeOnly: true,
+    best: 'Best for reaching people who drive most days: one new trip is enough to win.',
+    icon: Compass,
+    build: () => ({
+      name: `${monthName(nextMonday())}: Try Something New`,
+      rules: null,
+      prizes: [{ ...EMPTY_PRIZE_FORM, name: 'Try something new', award_mode: 'drawing', metric: 'tried_new', min_threshold: '1', winner_count: '3', funded_from_pool: true, amount_dollars: '25' }],
+    }),
+  },
   {
     id: 'goal',
     title: 'First to the goal',
@@ -259,6 +278,7 @@ function rewardText(p: PrizeFormState): string {
 /** The drawing's entry minimum in the measure it is drawn on (the draw compares
  *  prize.metric with min_threshold; templates draw on active days too). */
 function drawEntry(goal: string, metric: string): string {
+  if (metric === 'tried_new') return goal === '1' ? 'Everyone who makes a trip a new way' : `Everyone who tries ${goal} new ways`
   if (metric === 'pct_non_car') return `Everyone with a Shift Rate of ${goal}% or more`
   const unit = metric === 'active_days' ? 'active days' : metric === 'miles' ? 'miles shifted' : 'trips'
   return `Everyone with ${goal} or more ${unit}`
@@ -266,6 +286,7 @@ function drawEntry(goal: string, metric: string): string {
 
 /** Words after the drawing minimum in the editor sentence. */
 function drawUnit(metric: string): string {
+  if (metric === 'tried_new') return 'or more new ways to get around'
   if (metric === 'pct_non_car') return '% Shift Rate or more'
   if (metric === 'active_days') return 'or more active days'
   if (metric === 'miles') return 'or more miles shifted'
@@ -721,8 +742,8 @@ export default function ChallengeWizard({
             <div className="pt-2 text-[14px] font-semibold text-ink-muted">Or pick a prize style</div>
           </div>
         )}
-        <div className="grid gap-3 p-6 md:grid-cols-3">
-          {TEMPLATES.map((t) => (
+        <div className="grid gap-3 p-6 md:grid-cols-2 xl:grid-cols-4">
+          {TEMPLATES.filter((t) => canUsePrizes || !t.prizeOnly).map((t) => (
             <button
               key={t.id}
               type="button"
@@ -1223,6 +1244,15 @@ function PrizeSentence({
       <div className={row}>
         The first <Num id="cw-spots" label="Number of winners" value={p.winner_count} disabled={live} onChange={(v) => onChange({ winner_count: v })} /> people to reach
         <Num id="cw-goal" label="Trips needed to win" value={p.min_threshold} disabled={live} onChange={(v) => onChange({ min_threshold: v })} /> trips win.
+      </div>
+    )
+  }
+  if (kind === 'drawing' && p.metric === 'tried_new') {
+    return (
+      <div className={row}>
+        Everyone who makes a trip a new way (on foot, by bike, on transit or in a carpool, a way they hadn&apos;t used in the 60 days before)
+        is entered. We draw
+        <Num id="cw-winners" label="Number of winners" value={p.winner_count} onChange={(v) => onChange({ winner_count: v })} /> winners at the end.
       </div>
     )
   }

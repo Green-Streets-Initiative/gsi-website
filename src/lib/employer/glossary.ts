@@ -52,6 +52,12 @@ export const GLOSSARY = {
     short: 'The share of recorded trips that were driving alone. Lower is better.',
     detail: how('Drive-alone share'),
   },
+  triedNew: {
+    title: 'Drivers trying something new',
+    short: 'People who mostly drive who made a trip a new way in the last 30 days: on foot, by bike, on transit or in a carpool.',
+    detail:
+      "Mostly drive: half or more of their trips in the 60 days before were driving alone, out of at least five. A new way is one they hadn't used in those 60 days. This is the clearest sign your program is reaching the people who drive.",
+  },
   participation: {
     title: 'Participation',
     short: 'People who joined your team on Shift, as a share of your headcount.',

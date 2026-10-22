@@ -213,7 +213,9 @@ export type RewardPool = {
   active: boolean
 }
 
-export type PrizeMetric = 'pct_non_car' | 'trips' | 'active_days' | 'miles'
+/** tried_new: drawings only (Shift 01383), a trip by a way the person
+ *  hadn't used in the 60 days before the challenge. */
+export type PrizeMetric = 'pct_non_car' | 'trips' | 'active_days' | 'miles' | 'tried_new'
 export type AwardMode = 'merit' | 'drawing' | 'guaranteed'
 
 export type ChallengePrize = {

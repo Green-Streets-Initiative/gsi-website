@@ -84,7 +84,7 @@ const challengeSchema = {
           id: { type: ['string', 'null'], description: 'Only when changing an existing reward on a live challenge.' },
           name: { type: 'string', description: 'Short, e.g. "First to 12 trips", "Monthly drawing", "Top commuters".' },
           award_mode: { type: 'string', enum: ['guaranteed', 'drawing', 'merit'], description: 'guaranteed = first N to reach the goal; drawing = random among those who reach a minimum; merit = top of the leaderboard.' },
-          metric: { type: 'string', enum: ['trips', 'active_days', 'miles', 'pct_non_car'], description: 'Use "trips" unless asked otherwise. guaranteed is always trips.' },
+          metric: { type: 'string', enum: ['trips', 'active_days', 'miles', 'pct_non_car', 'tried_new'], description: 'Use "trips" unless asked otherwise. guaranteed is always trips. tried_new (drawings only, min_threshold 1) = Try something new: everyone who makes a trip a way they hadn\'t used in the 60 days before the challenge is entered.' },
           min_threshold: { type: ['number', 'null'], description: 'The trip goal (guaranteed, drawing). Whole number.' },
           winner_count: { type: 'integer', description: 'Spots or winners, 1 to 1000.' },
           funded_from_pool: { type: 'boolean', description: 'true = gift card paid from the rewards balance; false = the employer hands out its own prize.' },
@@ -321,6 +321,7 @@ function prizeLine(p: Record<string, unknown>): string {
   const reward = p.funded_from_pool && p.amount_cents ? `a ${money(Number(p.amount_cents))} gift card` : own ? own.replace(/^(A|An|The) /, (m) => m.toLowerCase()) : 'a prize you hand out'
   if (p.award_mode === 'guaranteed') return `The first ${n} to log ${goal ?? '?'} trips each win ${reward}`
   if (p.award_mode === 'merit') return `The top ${n} win ${reward}`
+  if (p.metric === 'tried_new') return `${n} ${n === 1 ? 'winner' : 'winners'} drawn from everyone who makes a trip a new way, each wins ${reward}`
   return `${n} ${n === 1 ? 'winner' : 'winners'} drawn from everyone who logs ${goal ?? '?'} trips, each wins ${reward}`
 }
 

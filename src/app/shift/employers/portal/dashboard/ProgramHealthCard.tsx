@@ -8,6 +8,8 @@
 // Impact.
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import Badge from '@/components/employer/Badge'
 import { Card } from '@/components/employer/Card'
 import TermInfo from '../_components/TermInfo'
@@ -104,6 +106,32 @@ export default function ProgramHealthCard({
   members: EmployerMember[]
   dashboard: DashboardData | null
 }) {
+  // Drivers trying something new (Shift 01384): the people-level sign the
+  // program reaches people who drive, which Shift Rate doesn't show.
+  const [tried, setTried] = useState<{ groupId: string; tried_drivers: number; drivers: number } | null>(null)
+  useEffect(() => {
+    let live = true
+    void supabase.rpc('get_employer_tried_new', { p_group_id: group.id, p_days: 30 }).then(({ data }) => {
+      const d = data as { tried_drivers?: number; drivers?: number } | null
+      if (live && d) setTried({ groupId: group.id, tried_drivers: d.tried_drivers ?? 0, drivers: d.drivers ?? 0 })
+    })
+    return () => {
+      live = false
+    }
+  }, [group.id])
+  const triedRow: Row | null =
+    tried && tried.groupId === group.id && tried.drivers > 0
+      ? {
+          label: 'Drivers trying something new',
+          term: 'triedNew',
+          value: tried.tried_drivers.toLocaleString('en-US'),
+          of: `of ${tried.drivers.toLocaleString('en-US')}`,
+          bar: (tried.tried_drivers / tried.drivers) * 100,
+          tone: tried.tried_drivers === 0 ? 'neutral' : tried.tried_drivers * 10 >= tried.drivers ? 'success' : 'info',
+          status: tried.tried_drivers === 0 ? 'Not yet' : tried.tried_drivers * 10 >= tried.drivers ? 'Moving' : 'Started',
+        }
+      : null
+
   const p = participation(group, memberCount)
   const activeCount = members.filter((m) => m.trips_in_period > 0).length
   const a = activity(activeCount, memberCount)
@@ -140,6 +168,7 @@ export default function ProgramHealthCard({
         <MeterRow r={joined} />
         <MeterRow r={active} />
         <MeterRow r={goalRow(group, dashboard)} />
+        {triedRow && <MeterRow r={triedRow} />}
       </div>
       {dashboard && (
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 border-t border-line-2 pt-3 text-[15px] text-ink">

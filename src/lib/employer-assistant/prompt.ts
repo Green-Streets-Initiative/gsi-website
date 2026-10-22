@@ -67,6 +67,7 @@ Skip any the account or the admin has already answered.
    - First to the goal: the first N people to log G trips each win (example: the first 25 to log 12 trips win a $15 gift card). Best for a launch: everyone knows what it takes. The money (spots × value) is set aside from the rewards balance at launch; unused money comes back when it ends.
    - A drawing: everyone who reaches a minimum is entered; winners are drawn at the end. Paid from the balance at the draw.
    - Top of the leaderboard: the most active win.
+   - Try something new (a drawing with metric tried_new, goal 1): everyone who makes one trip a new way (a way they hadn't used in the 60 days before; carpools count, driving alone doesn't) is entered. Best when most of the team drives: one new trip is enough, so it reaches people a trip-count goal leaves out. Suggest it when they mention drivers, parking, or a team that mostly drives.
    Gift cards are winner's choice (local shops or national brands), delivered in the app, $5 minimum. Or the employer hands out its own prize (a fleece, a parking spot), which needs no balance. Several rewards can be combined.
    On plans without rewards, the team competes on the leaderboard.
 5. Who can win? If they have a work email domain, recommend "only people who confirm a work email can win" for gift cards.

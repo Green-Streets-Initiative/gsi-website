@@ -62,6 +62,9 @@ function rewardWords(p: TeamPrize, employer: string): string {
  *  kind keeps the rules generator's own sentence. */
 function ownPrizeSentence(p: TeamPrize, employer: string): string {
   const n = p.spots
+  if (p.kind === 'drawing' && p.metric === 'tried_new') {
+    return `Make one trip a way you haven't lately: on foot, by bike, on transit or in a carpool. Everyone who does is entered in a drawing at the end. ${n} ${n === 1 ? 'winner gets' : 'winners each get'} ${rewardWords(p, employer)}.`
+  }
   if (p.kind === 'drawing') {
     return `Everyone with ${p.goal} or more trips is entered in a drawing at the end. ${n} ${n === 1 ? 'winner gets' : 'winners each get'} ${rewardWords(p, employer)}.`
   }
