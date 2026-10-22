@@ -25,6 +25,8 @@ export interface CommunityEvent {
   sponsors: string[] | null
   event_url: string | null
   registration_url: string | null
+  /** The organizer's published route links (Shift 01394). Loaded on the event page only. */
+  route_links?: import('@/lib/route-links').EventRouteLink[]
   /** "Free. Register once per year." Loaded on the event page, for the calendar entry. */
   registration_notes?: string | null
   image_url: string | null

@@ -6,7 +6,7 @@ import { eventPath } from '@/lib/events-url'
 import {
   MapPin, Calendar, Users,
   ChevronLeft, Bookmark, Share2, Globe, ExternalLink, Ticket,
-  Clock, Mail, ArrowRight,
+  Clock, Mail, ArrowRight, Route,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import posthog from 'posthog-js'
@@ -218,10 +218,10 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
   // A sold-out listing stays up because organizers' pages take a notify-me
   // list and spots reopen; the button says what the click will get.
   const registerLabel = event.tags.includes('sold_out') ? 'Join the waitlist' : 'Register'
-  const trackOutbound = (kind: 'register' | 'info', surface: 'details' | 'phone_bar') => {
+  const trackOutbound = (kind: 'register' | 'info' | 'route', surface: 'details' | 'phone_bar') => {
     const props = eventProps({ kind, surface })
     posthog.capture('event_outbound_click', props)
-    gaEvent(kind === 'register' ? 'event_register_click' : 'event_info_click', props)
+    gaEvent(kind === 'register' ? 'event_register_click' : kind === 'route' ? 'event_route_click' : 'event_info_click', props)
   }
 
   const timeStr = event.event_time ? formatTime(event.event_time) : null
@@ -551,6 +551,20 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   {registerLabel}
                 </a>
               )}
+              {/* The organizer's published route (Shift 01394): a link, the route stays on their service. */}
+              {(event.route_links ?? []).map((r) => (
+                <a
+                  key={r.url}
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-[10px] border border-(--ev-line-strong) px-5 py-2.5 text-[13px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
+                  onClick={() => trackOutbound('route', 'details')}
+                >
+                  <Route size={15} />
+                  {r.label} on {r.provider}
+                </a>
+              ))}
             </div>
 
             {/* App invitation. Event pages are the site's top organic click class

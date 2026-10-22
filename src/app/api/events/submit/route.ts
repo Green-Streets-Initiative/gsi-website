@@ -1,3 +1,4 @@
+import { asRouteLink } from '@/lib/route-links'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { Resend } from 'resend'
 import { eventUrl } from '@/lib/events-url'
@@ -308,6 +309,8 @@ export async function POST(request: Request) {
     no_drop: noDrop,
     event_url: body.eventUrl?.trim() || null,
     registration_url: body.registrationUrl?.trim() || null,
+    // A route link we recognize (RideWithGPS, Strava...); anything else is dropped (Shift 01394).
+    route_links: (() => { const l = asRouteLink(body.routeUrl, 'submitted'); return l ? [l] : null })(),
     distance_text: body.length?.trim() || null,
     tags,
   })

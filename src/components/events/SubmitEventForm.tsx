@@ -27,6 +27,8 @@ interface FormData {
   organizerUrl: string
   eventUrl: string
   registrationUrl: string
+  /** RideWithGPS, Strava, Komoot... (Shift 01394) */
+  routeUrl: string
   contactName: string
   contactEmail: string
   contactPhone: string
@@ -38,7 +40,7 @@ const EMPTY_FORM: FormData = {
   title: '', eventType: '', length: '', description: '',
   date: '', startTime: '', endTime: '',
   venueName: '', city: '', address: '', lat: '', lng: '',
-  pace: '', organizerName: '', organizerUrl: '', eventUrl: '', registrationUrl: '',
+  pace: '', organizerName: '', organizerUrl: '', eventUrl: '', registrationUrl: '', routeUrl: '',
   contactName: '', contactEmail: '', contactPhone: '',
   feedType: 'not_applicable', feedUrl: '',
 }
@@ -550,6 +552,11 @@ export default function SubmitEventForm({ tone = 'dark', hrefBase = '/events' }:
                   <label className={labelClass}>Registration link</label>
                   <input type="url" value={form.registrationUrl} onChange={set('registrationUrl')} className={inputClass('registrationUrl')} placeholder="https://…" />
                 </div>
+              </div>
+              <div>
+                <label className={labelClass}>Route link</label>
+                <input type="url" value={form.routeUrl} onChange={set('routeUrl')} className={inputClass('routeUrl')} placeholder="https://ridewithgps.com/routes/…" />
+                <p className="mt-1 text-[12px] text-(--ev-ink-80)">For a ride or walk with a set route: RideWithGPS, Strava, Komoot or Garmin. We link to it from the event page.</p>
               </div>
               <div className="grid gap-5 sm:grid-cols-3">
                 <div>

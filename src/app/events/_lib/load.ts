@@ -1,3 +1,4 @@
+import { readRouteLinks } from '@/lib/route-links'
 import 'server-only'
 import type { Metadata } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
@@ -50,7 +51,7 @@ const EVENT_FIELDS = `
       )`
 
 const LISTING_SELECT = EVENT_FIELDS
-const DETAIL_SELECT = `timezone,\n      organizer_id,${EVENT_FIELDS}`
+const DETAIL_SELECT = `timezone,\n      organizer_id,\n      route_links,${EVENT_FIELDS}`
 
 type EventRow = Record<string, unknown> & {
   content_items: Record<string, unknown>
@@ -214,6 +215,7 @@ export async function loadEvent(key: string): Promise<LoadedEvent | null> {
   const calledOff = row.schedule_status === 'cancelled' || row.schedule_status === 'postponed'
   if (status !== 'approved' && !calledOff) return null
   const event = toCommunityEvent(row)
+  event.route_links = readRouteLinks(row.route_links)
   const [nextUp, sponsorLinks] = await Promise.all([
     findNextUp(supabase, {
       id: event.id,
