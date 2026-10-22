@@ -888,7 +888,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
           </button>
         </div>
         <p className="mt-2 text-center text-[13px] leading-[1.45] text-ink-muted">
-          Private to you. AI can make mistakes, so check what matters. Not legal or tax advice.{' '}
+          Seen only by you and GSI. AI can make mistakes, so check what matters. Not legal or tax advice.{' '}
           <a href="/shift/employers/assistant-data" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-ink">
             Your data
           </a>
