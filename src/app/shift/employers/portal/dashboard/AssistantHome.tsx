@@ -1,17 +1,15 @@
 'use client'
 
-// Home, led by the assistant (Keith 2026-10-21: "the assistant feels bolted-on
-// versus an integrated and strong user pathway"). The forest panel asks what
-// they want to get done; under it, up to three next steps, each done with the
-// assistant or by hand. Everything here is worked out from what the portal
-// already loaded (setup steps, challenges, who has joined), so Home is
-// instant, costs nothing and works when the assistant can't answer. Only for
-// workplaces that have the assistant; the rest keep the plain Home.
+// Home's first two blocks (Keith 2026-10-22, page charters: Home's one job is
+// "what to do next, and is it working"). The assistant bar asks what they
+// want to get done; Next up lists at most three steps, each done with the
+// assistant or by hand. All worked out from what the portal already loaded
+// (setup steps, challenges, who has joined), so Home is instant, costs
+// nothing and works when the assistant can't answer.
 
 import { useRouter } from 'next/navigation'
-import { useState, type ReactNode } from 'react'
-import { ArrowUp, BarChart3, Building2, ImageIcon, Route, Target, Trophy, Users } from 'lucide-react'
-import PortalHeroPanel from '../_components/PortalHeroPanel'
+import { useState } from 'react'
+import { ArrowUp, BarChart3, Building2, ChevronRight, ImageIcon, MessageSquareText, Route, Target, Trophy, Users } from 'lucide-react'
 import { openAssistant } from '../_components/AssistantPanel'
 import { Card } from '@/components/employer/Card'
 import Button from '@/components/employer/Button'
@@ -26,12 +24,12 @@ type Step = { id: string; icon: typeof Users; title: string; desc: string; promp
 
 /** Setup steps, as tasks the assistant can take on. */
 const SETUP: Record<string, { icon: typeof Users; desc: string }> = {
-  success: { icon: Target, desc: 'What matters most to you, a target and a date. A few questions.' },
-  profile: { icon: Building2, desc: 'A contact name, and a phone number or website.' },
-  logo: { icon: ImageIcon, desc: 'It shows on the join page, the Commute Advisor and the app.' },
-  advisor: { icon: Route, desc: 'Your office and your commute benefits, so employees can plan a new way in.' },
-  employees: { icon: Users, desc: 'Attach your staff list and the assistant sends the invitations.' },
-  challenge: { icon: Trophy, desc: 'A few questions, then a draft you can launch when it looks right.' },
+  success: { icon: Target, desc: 'Your goal, a target and a date.' },
+  profile: { icon: Building2, desc: 'A contact name, and a phone or website.' },
+  logo: { icon: ImageIcon, desc: 'Shows on the join page and in the app.' },
+  advisor: { icon: Route, desc: 'Your office and commute benefits.' },
+  employees: { icon: Users, desc: 'Invite from your staff list.' },
+  challenge: { icon: Trophy, desc: 'A few questions, then a draft to launch.' },
 }
 
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })
@@ -63,7 +61,7 @@ export function homeSuggestions(args: {
       id: 'people',
       icon: Users,
       title: `Get people in before ${fmtDate(soon.starts_at)}`,
-      desc: `${headcount ? `${memberCount} of ${headcount.toLocaleString('en-US')}` : memberCount} ${memberCount === 1 ? 'has' : 'have'} joined. "${soon.name}" starts in ${days} day${days === 1 ? '' : 's'}.`,
+      desc: `${headcount ? `${memberCount} of ${headcount.toLocaleString('en-US')}` : memberCount} joined · challenge starts in ${days} day${days === 1 ? '' : 's'}`,
       prompt: `Help me get my team into Shift before "${soon.name}" starts. I can attach our staff list.`,
       href: `${PORTAL}/employees?invite=1`,
     })
@@ -79,7 +77,7 @@ export function homeSuggestions(args: {
       id: 'recap',
       icon: BarChart3,
       title: `See how "${ended.name}" went`,
-      desc: `It ended ${fmtDate(ended.ends_at)}. Who took part, what they tried, and what to do next.`,
+      desc: `Ended ${fmtDate(ended.ends_at)}. Results and what to try next.`,
       prompt: `How did "${ended.name}" go, and what should we try next?`,
       href: `${PORTAL}/challenges`,
     })
@@ -89,7 +87,7 @@ export function homeSuggestions(args: {
       id: 'next-challenge',
       icon: Trophy,
       title: 'Plan your next challenge',
-      desc: 'A season from the year plan or one of your own. A few questions, then a draft.',
+      desc: 'A season from the year plan, or your own.',
       prompt: 'Help me plan our next challenge.',
       href: `${PORTAL}/challenges?new=1`,
     })
@@ -106,8 +104,8 @@ export function homeSuggestions(args: {
   return { steps: out.slice(0, 3), starters }
 }
 
-export default function AssistantHome({ steps, starters, health }: { steps: Step[]; starters: string[]; health?: ReactNode }) {
-  const router = useRouter()
+/** Ask in your own words; or tap a starter. Opens the assistant on that task. */
+export function AssistantBar({ starters }: { starters: string[] }) {
   const [draft, setDraft] = useState('')
   const ask = () => {
     const text = draft.trim()
@@ -115,81 +113,80 @@ export default function AssistantHome({ steps, starters, health }: { steps: Step
     setDraft('')
     openAssistant(text)
   }
-
   return (
-    // ph-no-capture: analytics doesn't record the suggestions' wording.
-    <div className="ph-no-capture">
-      <PortalHeroPanel
-        title="What would you like to get done?"
-        lede={<p>Ask in your own words. Nothing changes without your OK.</p>}
-        below={
-          <div>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                ask()
-              }}
-              className="flex items-center gap-2 rounded-xl bg-white p-1.5 pl-4 shadow-sm focus-within:ring-2 focus-within:ring-white/60"
-            >
-              <input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                aria-label="Ask the assistant"
-                placeholder="Set up a challenge, invite your team, ask how it's going…"
-                className="min-w-0 flex-1 bg-transparent py-2 text-[15px] text-ink outline-none placeholder:text-ink-muted"
-              />
-              <button
-                type="submit"
-                aria-label="Ask"
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-forest text-white transition-opacity hover:opacity-90"
-              >
-                <ArrowUp size={18} strokeWidth={2.2} />
-              </button>
-            </form>
-            {/* One swipeable row on phones; wrapping on wider screens. */}
-            <div className="-mx-6 mt-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-6 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-              {starters.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => openAssistant(s)}
-                  className="shrink-0 whitespace-nowrap rounded-full border border-white/40 px-3.5 py-1.5 text-[14px] font-medium text-white transition-colors hover:bg-white/10"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        }
-      />
+    // ph-no-capture: analytics doesn't record what's asked.
+    <section className="ph-no-capture rounded-[20px] bg-forest px-4 py-4 sm:px-5" aria-label="Ask the assistant">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          ask()
+        }}
+        className="flex items-center gap-2 rounded-xl bg-white p-1.5 pl-4 focus-within:ring-2 focus-within:ring-white/60"
+      >
+        <MessageSquareText size={18} strokeWidth={1.75} className="shrink-0 text-ink-muted" aria-hidden />
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          aria-label="Ask the assistant"
+          placeholder="What would you like to get done?"
+          className="min-w-0 flex-1 bg-transparent py-2 text-[16px] text-ink outline-none placeholder:text-ink-muted"
+        />
+        <button type="submit" aria-label="Ask" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-forest text-white transition-opacity hover:opacity-90">
+          <ArrowUp size={18} strokeWidth={2.2} />
+        </button>
+      </form>
+      <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
+        {starters.map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => openAssistant(t)}
+            className="shrink-0 whitespace-nowrap rounded-full border border-white/40 px-3.5 py-1.5 text-[14px] font-medium text-white transition-colors hover:bg-white/10"
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
 
-      {health && <div className="mt-4">{health}</div>}
-
-      {steps.length > 0 && (
-        <Card className="mt-4">
-          <h2 className="px-5 pb-1 pt-4 text-[17px] font-bold tracking-[-0.01em] text-ink">Suggested next steps</h2>
-          <ul className="divide-y divide-line-2 px-5">
-            {steps.map((s, i) => (
-              // Phones show the top two; the third waits for a wider screen.
-              <li key={s.id} className={`flex-wrap items-center gap-x-4 gap-y-2 py-3.5 ${i >= 2 ? 'hidden sm:flex' : 'flex'}`}>
-                <s.icon size={20} strokeWidth={1.75} className="shrink-0 text-accent" aria-hidden />
-                <div className="min-w-0 flex-1 basis-[240px]">
-                  <p className="text-[16px] font-semibold text-ink">{s.title}</p>
-                  <p className="text-[15px] text-ink-muted">{s.desc}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1 pl-9 sm:pl-0">
-                  <Button variant="secondary" size="sm" onClick={() => openAssistant(s.prompt)}>
-                    Do it with the assistant
+/** At most three things to do now, each with the assistant (when it's on) or by hand. */
+export function NextUp({ steps, withAssistant }: { steps: Step[]; withAssistant: boolean }) {
+  const router = useRouter()
+  return (
+    <Card className="ph-no-capture">
+      <h2 className="px-5 pb-1 pt-4 text-[17px] font-bold tracking-[-0.01em] text-ink">Next up</h2>
+      {steps.length === 0 ? (
+        <p className="px-5 pb-5 pt-1 text-[15px] text-ink-muted">You&apos;re all caught up.</p>
+      ) : (
+        <ul className="divide-y divide-line-2 px-5 pb-1">
+          {steps.map((s) => (
+            <li key={s.id} className="flex items-center gap-3 py-3.5">
+              <s.icon size={20} strokeWidth={1.75} className="shrink-0 text-accent" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="text-[16px] font-semibold leading-snug text-ink">{s.title}</p>
+                <p className="line-clamp-2 text-[14px] text-ink-muted">{s.desc}</p>
+              </div>
+              {withAssistant ? (
+                <span className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
+                  <Button variant="secondary" size="sm" icon={MessageSquareText} onClick={() => openAssistant(s.prompt)}>
+                    <span className="hidden sm:inline">With the assistant</span>
+                    <span className="sm:hidden">Assistant</span>
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => router.push(s.href)}>
-                    I&apos;ll do it
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
+                  <button type="button" onClick={() => router.push(s.href)} className="px-1 text-[14px] font-medium text-ink-muted hover:text-ink">
+                    Myself
+                  </button>
+                </span>
+              ) : (
+                <Button variant="secondary" size="sm" iconRight={ChevronRight} onClick={() => router.push(s.href)}>
+                  Do it
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
-    </div>
+    </Card>
   )
 }
