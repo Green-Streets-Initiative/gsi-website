@@ -8,7 +8,8 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { Card } from '@/components/employer/Card'
 import Badge from '@/components/employer/Badge'
-import { StatHint, STAT_HINTS } from '@/components/employer/StatTile'
+import TermInfo from '../_components/TermInfo'
+import type { TermKey } from '@/lib/employer/glossary'
 import { activity, participation, READY_PCT, STRONG_PCT, type StageTone } from '../_lib/participation'
 import type { DashboardData, EmployerMember, Group } from '../_lib/portal-types'
 
@@ -30,13 +31,16 @@ function Meter({ pct, tone, marker }: { pct: number; tone: StageTone; marker?: n
   )
 }
 
-function Tile({ label, value, of, meter, status, note }: { label: string; value: string; of?: string; meter: ReactNode; status: ReactNode; note?: string }) {
+function Tile({ label, term, value, of, meter, status, note }: { label: string; term: TermKey; value: string; of?: string; meter: ReactNode; status: ReactNode; note?: string }) {
   return (
     // Phones: a compact row (label and number, status beside); wider: a tile.
     <div className="rounded-xl bg-surface-2/60 px-4 py-3 sm:p-4">
       <div className="flex items-center justify-between gap-3 sm:block">
         <div className="min-w-0">
-          <div className="text-[14px] font-semibold text-ink-muted">{label}</div>
+          <div className="flex items-center gap-1 text-[14px] font-semibold text-ink-muted">
+            {label}
+            <TermInfo term={term} />
+          </div>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="font-headline text-[24px] font-extrabold leading-none text-ink sm:text-[28px]">{value}</span>
             {of && <span className="text-[15px] text-ink-muted">{of}</span>}
@@ -104,6 +108,7 @@ export default function ProgramHealthCard({
       <div className="grid gap-3 sm:grid-cols-3">
         <Tile
           label="Joined"
+          term="joined"
           value={p.joined.toLocaleString('en-US')}
           of={p.headcount ? `of ${p.headcount.toLocaleString('en-US')}` : undefined}
           meter={<Meter pct={joinedBar} tone={p.stage.tone} marker={joinedMarker} />}
@@ -118,6 +123,7 @@ export default function ProgramHealthCard({
         />
         <Tile
           label="Active this month"
+          term="activeThisMonth"
           value={activeCount.toLocaleString('en-US')}
           of={memberCount ? `of ${memberCount.toLocaleString('en-US')} joined` : undefined}
           meter={<Meter pct={a.pct ?? 0} tone={a.stage.tone} />}
@@ -125,6 +131,7 @@ export default function ProgramHealthCard({
         />
         <Tile
           label="Shift Rate"
+          term="shiftRate"
           value={rate != null ? `${rate}%` : '—'}
           meter={<Meter pct={rate ?? 0} tone={rate == null ? 'neutral' : 'success'} />}
           status={
@@ -141,19 +148,21 @@ export default function ProgramHealthCard({
       </div>
 
       {showOutcomes && dashboard && (
-        <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 border-t border-line-2 pt-4 text-[15px] text-ink">
+        <div className="mt-4 flex flex-wrap gap-x-8 gap-y-3 border-t border-line-2 pt-4 text-[15px] text-ink">
           <span className="inline-flex items-center gap-1.5">
             <strong className="text-[18px]">{dashboard.active_trips_this_period.toLocaleString('en-US')}</strong> trips on foot, bike or transit
-            <StatHint hint={STAT_HINTS.activeTrips} />
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <strong className="text-[18px]">{dashboard.miles_shifted.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong> miles
-            <StatHint hint={STAT_HINTS.miles} />
+            <TermInfo term="activeTrips" />
           </span>
           <span className="inline-flex items-center gap-1.5">
             <strong className="text-[18px]">{Math.round(dashboard.co2_avoided_kg_v2 ?? dashboard.co2_avoided_kg).toLocaleString('en-US')} kg</strong> CO₂e avoided
-            <StatHint hint={STAT_HINTS.co2} />
+            <TermInfo term="co2Avoided" />
           </span>
+          {dashboard.emissions_shifted_pct != null && (
+            <span className="inline-flex items-center gap-1.5">
+              <strong className="text-[18px]">{Math.round(dashboard.emissions_shifted_pct)}%</strong> of ground-travel emissions avoided
+              <TermInfo term="emissionsAvoidedPct" />
+            </span>
+          )}
         </div>
       )}
     </Card>

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronDown, ListChecks, HelpCircle, Mail, ChevronRight, MessageSquareText, Plus } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
+import PortalHeroPanel from '../_components/PortalHeroPanel'
 import { usePortal } from '../_lib/portal-context'
 import { assistantAvailable, openAssistant } from '../_components/AssistantPanel'
 import { SETUP_PROMPTS } from '../_lib/assistant-prompts'
@@ -72,14 +73,12 @@ export default function SetupPage() {
 
   return (
     <div className="grid gap-6">
-      <PortalPageHead
-        title="Setup"
-        subtitle={
-          allDone
-            ? `${group.name} is set up on Shift.`
-            : 'Six steps to get your team going.'
-        }
-      />
+      {/* With the assistant leading, its panel is the heading (the top bar says Setup). */}
+      {withAssistant && !allDone ? (
+        <h1 className="sr-only">Setup</h1>
+      ) : (
+        <PortalPageHead title="Setup" subtitle={allDone ? `${group.name} is set up on Shift.` : 'Six steps to get your team going.'} />
+      )}
 
       <div className="grid items-start gap-5 md:grid-cols-[minmax(0,1fr)_300px] lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid min-w-0 gap-3.5">
@@ -91,15 +90,57 @@ export default function SetupPage() {
             />
           ) : (
             <>
-              <Card pad>
-                <div className="mb-2.5 flex items-baseline justify-between gap-3">
-                  <strong className="text-[16px] text-ink">Setup progress</strong>
-                  <span className="text-[15px] font-semibold text-ink">
-                    {doneCount} of {steps.length} <span className="font-normal text-ink-muted">done</span>
-                  </span>
-                </div>
-                <ProgressBar pct={pct} />
-              </Card>
+              {withAssistant ? (
+                // Assistant-led (Keith 2026-10-22: "the setup screen should
+                // probably be more assistant-led"): the assistant takes the
+                // steps one at a time; the list below is for doing it by hand.
+                <PortalHeroPanel
+                  title="Let's finish setting up"
+                  below={
+                    <div>
+                      <div className="mb-2 flex items-baseline justify-between gap-3 text-[15px] text-white">
+                        <span>{next ? <>Next: <strong>{next.label}</strong></> : 'Almost there'}</span>
+                        <span className="whitespace-nowrap font-semibold">
+                          {doneCount} of {steps.length} done
+                        </span>
+                      </div>
+                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/20" aria-hidden>
+                        <div className="h-full rounded-full bg-white" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  }
+                  actions={
+                    <>
+                      <Button
+                        variant="secondary"
+                        icon={MessageSquareText}
+                        onClick={() => openAssistant('Help me finish setting up our account, one step at a time.')}
+                      >
+                        Finish setup with the assistant
+                      </Button>
+                      {next && (
+                        <button
+                          type="button"
+                          onClick={() => setPickedId(next.id)}
+                          className="rounded-[10px] px-3 py-2 text-[15px] font-semibold text-white hover:bg-white/10"
+                        >
+                          I&apos;ll do it myself
+                        </button>
+                      )}
+                    </>
+                  }
+                />
+              ) : (
+                <Card pad>
+                  <div className="mb-2.5 flex items-baseline justify-between gap-3">
+                    <strong className="text-[16px] text-ink">Setup progress</strong>
+                    <span className="text-[15px] font-semibold text-ink">
+                      {doneCount} of {steps.length} <span className="font-normal text-ink-muted">done</span>
+                    </span>
+                  </div>
+                  <ProgressBar pct={pct} />
+                </Card>
+              )}
 
               {steps.map((s) => (
                 <StepRow
@@ -122,7 +163,7 @@ export default function SetupPage() {
 
         {/* Side help */}
         <div className="grid min-w-0 gap-5">
-          {!allDone && (
+          {!allDone && !withAssistant && (
             <Card pad>
               <div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-accent-soft text-accent">
                 <ListChecks size={22} strokeWidth={1.75} />
@@ -132,23 +173,42 @@ export default function SetupPage() {
             </Card>
           )}
 
-          <Card pad>
-            <div className="mb-2.5 flex items-center gap-2.5">
-              <HelpCircle size={18} strokeWidth={1.75} className="text-ink-tertiary" />
-              <strong className="whitespace-nowrap text-[16px] text-ink">Need a hand?</strong>
-            </div>
-            <p className="mb-3 text-[15px] leading-[1.5] text-ink-muted">We usually reply the same day.</p>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Mail}
-              onClick={() => {
-                window.location.href = HELP_MAILTO
-              }}
-            >
-              Email Green Streets
-            </Button>
-          </Card>
+          {withAssistant ? (
+            <Card pad>
+              <div className="mb-2.5 flex items-center gap-2.5">
+                <HelpCircle size={18} strokeWidth={1.75} className="text-ink-tertiary" />
+                <strong className="whitespace-nowrap text-[16px] text-ink">Questions?</strong>
+              </div>
+              <p className="mb-3 text-[15px] leading-[1.5] text-ink-muted">The assistant knows your account and can do the steps with you.</p>
+              <Button variant="secondary" size="sm" icon={MessageSquareText} onClick={() => openAssistant()}>
+                Ask the assistant
+              </Button>
+              <p className="mt-3 text-[14px] text-ink-muted">
+                Or{' '}
+                <a href={HELP_MAILTO} className="font-medium text-accent hover:underline">
+                  email Green Streets
+                </a>
+              </p>
+            </Card>
+          ) : (
+            <Card pad>
+              <div className="mb-2.5 flex items-center gap-2.5">
+                <HelpCircle size={18} strokeWidth={1.75} className="text-ink-tertiary" />
+                <strong className="whitespace-nowrap text-[16px] text-ink">Need a hand?</strong>
+              </div>
+              <p className="mb-3 text-[15px] leading-[1.5] text-ink-muted">We usually reply the same day.</p>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Mail}
+                onClick={() => {
+                  window.location.href = HELP_MAILTO
+                }}
+              >
+                Email Green Streets
+              </Button>
+            </Card>
+          )}
         </div>
       </div>
     </div>
@@ -232,7 +292,7 @@ function StepRow({
               {onAsk && (
                 <p className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[14px] text-ink-muted">
                   Fill it in below, or answer a few questions instead.
-                  <Button variant="secondary" size="sm" icon={MessageSquareText} onClick={onAsk}>
+                  <Button variant="primary" size="sm" icon={MessageSquareText} onClick={onAsk}>
                     Do it with the assistant
                   </Button>
                 </p>
@@ -244,7 +304,7 @@ function StepRow({
               <p className="max-w-[48ch] text-[15px] leading-[1.5] text-ink-muted">{s.desc}</p>
               <span className="flex flex-wrap gap-2">
                 {onAsk && (
-                  <Button variant="secondary" size="sm" icon={MessageSquareText} onClick={onAsk}>
+                  <Button variant="primary" size="sm" icon={MessageSquareText} onClick={onAsk}>
                     Do it with the assistant
                   </Button>
                 )}
