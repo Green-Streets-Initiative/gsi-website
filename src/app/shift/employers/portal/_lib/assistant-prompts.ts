@@ -6,6 +6,6 @@ export const SETUP_PROMPTS: Record<string, string> = {
   profile: 'Help me complete our company profile.',
   logo: "I'd like to add our logo.",
   advisor: 'Can you set up our Commute Advisor?',
-  employees: 'Help me invite our first employees. I can attach our staff list.',
+  employees: 'Help me get more of our team into Shift. I can attach our staff list.',
   challenge: 'Help me set up our first challenge.',
 }

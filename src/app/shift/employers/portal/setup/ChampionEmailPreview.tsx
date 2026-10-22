@@ -52,16 +52,16 @@ export default function ChampionEmailPreview({ groupId, sampleName }: { groupId:
 
   if (failed) {
     return (
-      <p className="text-[13px] leading-[1.55] text-ink-muted">
+      <p className="text-[14px] leading-[1.55] text-ink-muted">
         We couldn&apos;t load the email preview. Refresh the page to try again.
       </p>
     )
   }
-  if (!mail) return <p className="text-[13px] text-ink-muted">Loading the email...</p>
+  if (!mail) return <p className="text-[14px] text-ink-muted">Loading the email...</p>
 
   return (
     <div className="overflow-hidden rounded-[12px] border border-line">
-      <dl className="grid gap-1 border-b border-line bg-surface-2 px-4 py-3 text-[13px]">
+      <dl className="grid gap-1 border-b border-line bg-surface-2 px-4 py-3 text-[14px]">
         <div className="flex gap-2">
           <dt className="w-[60px] shrink-0 text-ink-muted">From</dt>
           <dd className="min-w-0 text-ink">Green Streets Initiative</dd>

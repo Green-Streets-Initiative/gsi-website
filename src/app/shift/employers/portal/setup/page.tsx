@@ -1,14 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronDown, ListChecks, HelpCircle, Mail, ChevronRight, MessageSquareText, Plus } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
 import { usePortal } from '../_lib/portal-context'
 import { assistantAvailable, openAssistant } from '../_components/AssistantPanel'
 import { SETUP_PROMPTS } from '../_lib/assistant-prompts'
+import { participation } from '../_lib/participation'
 import { supabase } from '@/lib/supabase'
-import type { EmployerOnboarding, EmployerChampion, EmployerGoalType } from '../_lib/portal-types'
+import type { EmployerOnboarding, EmployerChampion, EmployerGoalType, Group } from '../_lib/portal-types'
 import { computeSetupSteps, nextSetupStep, type SetupStepDef } from '../_lib/setup-steps'
 import { Card, CardBody } from '@/components/employer/Card'
 import Badge from '@/components/employer/Badge'
@@ -26,7 +27,7 @@ const STEP_BUTTON: Record<string, { todo: string; done: string }> = {
   profile: { todo: 'Fill in your profile', done: 'Edit your profile' },
   logo: { todo: 'Upload a logo', done: 'Change your logo' },
   advisor: { todo: 'Open the Commute Advisor', done: 'Open the Commute Advisor' },
-  employees: { todo: 'Invite employees', done: 'Invite more employees' },
+  employees: { todo: 'Invite people', done: 'Invite more people' },
   challenge: { todo: 'Schedule a challenge', done: 'See your challenges' },
 }
 
@@ -43,6 +44,7 @@ export default function SetupPage() {
   const [pickedId, setPickedId] = useState<string | null | undefined>(undefined)
   const openId = pickedId === undefined ? (next?.id ?? null) : pickedId
 
+  const teamStage = group ? participation(group, memberCount).stage : null
   const doneCount = steps.filter((s) => s.done).length
   const left = steps.length - doneCount
   const pct = Math.round((doneCount / steps.length) * 100)
@@ -75,7 +77,7 @@ export default function SetupPage() {
         subtitle={
           allDone
             ? `${group.name} is set up on Shift.`
-            : 'Six steps, in the order that gets your team the most out of Shift.'
+            : 'Six steps to get your team going.'
         }
       />
 
@@ -89,19 +91,14 @@ export default function SetupPage() {
             />
           ) : (
             <>
-              <Card pad className="flex flex-wrap items-center gap-[18px]">
-                <div className="min-w-[200px] flex-1">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <strong className="whitespace-nowrap text-[15px] text-ink">Setup progress</strong>
-                    <span className="text-[13px] font-semibold text-ink-tertiary">
-                      {doneCount} of {steps.length} done
-                    </span>
-                  </div>
-                  <ProgressBar pct={pct} />
+              <Card pad>
+                <div className="mb-2.5 flex items-baseline justify-between gap-3">
+                  <strong className="text-[16px] text-ink">Setup progress</strong>
+                  <span className="text-[15px] font-semibold text-ink">
+                    {doneCount} of {steps.length} <span className="font-normal text-ink-muted">done</span>
+                  </span>
                 </div>
-                <span className="text-[13px] text-ink-tertiary">
-                  {left} step{left === 1 ? '' : 's'} left
-                </span>
+                <ProgressBar pct={pct} />
               </Card>
 
               {steps.map((s) => (
@@ -115,6 +112,8 @@ export default function SetupPage() {
                   onSaved={() => advanceFrom(s.id)}
                   adminNames={adminNames}
                   onAsk={withAssistant && !s.done && SETUP_PROMPTS[s.id] ? () => openAssistant(SETUP_PROMPTS[s.id]) : undefined}
+                  meter={s.id === 'employees' ? <TeamMeter group={group} joined={memberCount} /> : undefined}
+                  stageBadge={s.id === 'employees' && teamStage ? <Badge tone={teamStage.tone}>{teamStage.label}</Badge> : undefined}
                 />
               ))}
             </>
@@ -129,22 +128,16 @@ export default function SetupPage() {
                 <ListChecks size={22} strokeWidth={1.75} />
               </div>
               <div className="mb-1.5 text-[16px] font-bold text-ink">Why finish setup?</div>
-              <p className="text-[13.5px] leading-[1.5] text-ink-muted">
-                Finishing setup before you invite employees makes the first impression count: everyone lands on a
-                complete page. The last two steps, getting employees in and scheduling a challenge, are what get a team
-                moving.
-              </p>
+              <p className="text-[15px] leading-[1.5] text-ink-muted">People you invite land on a complete page.</p>
             </Card>
           )}
 
           <Card pad>
             <div className="mb-2.5 flex items-center gap-2.5">
               <HelpCircle size={18} strokeWidth={1.75} className="text-ink-tertiary" />
-              <strong className="whitespace-nowrap text-[14px] text-ink">Need a hand?</strong>
+              <strong className="whitespace-nowrap text-[16px] text-ink">Need a hand?</strong>
             </div>
-            <p className="mb-3 text-[13.5px] leading-[1.5] text-ink-muted">
-              Green Streets can help you launch and run your first challenge. Most replies come the same working day.
-            </p>
+            <p className="mb-3 text-[15px] leading-[1.5] text-ink-muted">We usually reply the same day.</p>
             <Button
               variant="secondary"
               size="sm"
@@ -171,6 +164,8 @@ function StepRow({
   onSaved,
   adminNames,
   onAsk,
+  meter,
+  stageBadge,
 }: {
   step: SetupStepDef
   isOpen: boolean
@@ -181,6 +176,10 @@ function StepRow({
   adminNames: string
   /** With the assistant: "Do it with the assistant" beside the step's own button. */
   onAsk?: () => void
+  /** A step on a continuum (people joined) shows where it stands, not just done/to do. */
+  meter?: ReactNode
+  /** Replaces Done / Next / To do for a step on a continuum. */
+  stageBadge?: ReactNode
 }) {
   const panelId = `setup-step-${s.id}`
   const buttonCopy = STEP_BUTTON[s.id]
@@ -205,10 +204,12 @@ function StepRow({
           <span className={`block text-[15px] font-semibold ${s.done ? 'text-ink-muted' : 'text-ink'}`}>
             {s.done ? s.doneLabel : s.label}
           </span>
-          {!isOpen && <span className="mt-0.5 block text-[13px] text-ink-tertiary">{s.desc}</span>}
+          {meter && <span className="mt-2 block">{meter}</span>}
         </span>
         <span className="hidden sm:inline-flex">
-          {s.done ? (
+          {stageBadge ? (
+            stageBadge
+          ) : s.done ? (
             <Badge tone="success">Done</Badge>
           ) : isNext ? (
             <Badge tone="warn">Next</Badge>
@@ -240,7 +241,7 @@ function StepRow({
             </CardBody>
           ) : (
             <CardBody className="flex flex-wrap items-center justify-between gap-3.5">
-              <p className="max-w-[48ch] text-[14px] leading-[1.5] text-ink-muted">{s.desc}</p>
+              <p className="max-w-[48ch] text-[15px] leading-[1.5] text-ink-muted">{s.desc}</p>
               <span className="flex flex-wrap gap-2">
                 {onAsk && (
                   <Button variant="secondary" size="sm" icon={MessageSquareText} onClick={onAsk}>
@@ -322,7 +323,7 @@ function AllSetCard({
 
 const fieldClass =
   'w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent'
-const fieldLabelClass = 'mb-1.5 block text-[12.5px] font-semibold text-ink-muted'
+const fieldLabelClass = 'mb-1.5 block text-[14px] font-semibold text-ink-muted'
 
 function clampInt(raw: string, min: number, max?: number): number | null {
   if (raw === '') return null
@@ -414,7 +415,7 @@ function SuccessPlanForm({ adminNames, onSaved }: { adminNames: string; onSaved:
 
   if (!canEdit) {
     return (
-      <div className="grid gap-2 text-[13.5px] leading-[1.5] text-ink-muted">
+      <div className="grid gap-2 text-[15px] leading-[1.5] text-ink-muted">
         {goalOption && (
           <p className="text-ink">
             {goalOption.label}
@@ -582,12 +583,12 @@ function SuccessPlanForm({ adminNames, onSaved }: { adminNames: string; onSaved:
 
       <div>
         <div className="mb-1.5 flex items-center justify-between gap-3">
-          <span className="text-[12.5px] font-semibold text-ink-muted">
+          <span className="text-[14px] font-semibold text-ink-muted">
             Key dates (ESG reporting, wellness week, Bike Week…)
           </span>
           <button
             type="button"
-            className="text-[12.5px] font-semibold text-accent hover:underline"
+            className="text-[14px] font-semibold text-accent hover:underline"
             onClick={() =>
               setForm({
                 ...form,
@@ -630,7 +631,7 @@ function SuccessPlanForm({ adminNames, onSaved }: { adminNames: string; onSaved:
             />
             <button
               type="button"
-              className="shrink-0 text-[12.5px] font-semibold text-ep-danger hover:underline"
+              className="shrink-0 text-[14px] font-semibold text-ep-danger hover:underline"
               onClick={() =>
                 setForm({
                   ...form,
@@ -646,7 +647,7 @@ function SuccessPlanForm({ adminNames, onSaved }: { adminNames: string; onSaved:
 
       <div>
         <div className="mb-1.5 flex items-center justify-between gap-3">
-          <span className="text-[12.5px] font-semibold text-ink-muted">
+          <span className="text-[14px] font-semibold text-ink-muted">
             Champions: colleagues who&apos;ll help spread the word (aim for about 1 per 50 employees)
           </span>
         </div>
@@ -676,7 +677,7 @@ function SuccessPlanForm({ adminNames, onSaved }: { adminNames: string; onSaved:
             />
             <button
               type="button"
-              className="shrink-0 text-[12.5px] font-semibold text-ep-danger hover:underline"
+              className="shrink-0 text-[14px] font-semibold text-ep-danger hover:underline"
               onClick={() => setForm({ ...form, champions: champions.filter((_, j) => j !== i) })}
             >
               Remove
@@ -685,7 +686,7 @@ function SuccessPlanForm({ adminNames, onSaved }: { adminNames: string; onSaved:
         ))}
         <button
           type="button"
-          className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-accent hover:underline"
+          className="inline-flex items-center gap-1 text-[14px] font-semibold text-accent hover:underline"
           onClick={() => setForm({ ...form, champions: [...champions, { name: '', email: '' }] })}
         >
           <Plus size={13} strokeWidth={2.5} aria-hidden="true" />
@@ -712,8 +713,26 @@ function SuccessPlanForm({ adminNames, onSaved }: { adminNames: string; onSaved:
         <Button variant="primary" size="sm" onClick={save} disabled={saving}>
           {saving ? 'Saving…' : 'Save success plan'}
         </Button>
-        {error && <span className="text-[13px] text-ep-danger">{error}</span>}
+        {error && <span className="text-[14px] text-ep-danger">{error}</span>}
       </div>
     </div>
+  )
+}
+
+/** The "Get your team in" row's meter: who has joined against where a first challenge makes sense. */
+function TeamMeter({ group, joined }: { group: Group; joined: number }) {
+  const p = participation(group, joined)
+  const span = p.readyAt * 3
+  return (
+    <span className="flex max-w-[420px] items-center gap-3">
+      <span className="relative h-2 flex-1 rounded-full bg-surface-2" aria-hidden>
+        <span className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${Math.max(joined > 0 ? 3 : 0, Math.min(100, (joined / span) * 100))}%` }} />
+        <span className="absolute -top-1 h-4 w-0.5 rounded bg-ink" style={{ left: `${(p.readyAt / span) * 100}%` }} />
+      </span>
+      <span className="whitespace-nowrap text-[14px] text-ink-muted">
+        <strong className="text-ink">{joined.toLocaleString('en-US')}</strong>
+        {p.headcount ? ` of ${p.headcount.toLocaleString('en-US')}` : ''} · ready at {p.readyAt.toLocaleString('en-US')}
+      </span>
+    </span>
   )
 }

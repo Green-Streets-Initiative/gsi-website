@@ -122,9 +122,9 @@ export default function ChampionField({
           >
             <span className="min-w-0">
               <span className="block truncate text-[14px] font-semibold text-ink">{s.name ?? s.email}</span>
-              {s.name && s.email && <span className="block truncate text-[12.5px] text-ink-muted">{s.email}</span>}
+              {s.name && s.email && <span className="block truncate text-[14px] text-ink-muted">{s.email}</span>}
             </span>
-            <span className="shrink-0 text-[12px] font-semibold text-ink-muted">
+            <span className="shrink-0 text-[14px] font-semibold text-ink-muted">
               {s.source === 'joined' ? 'On the team' : 'Invited'}
             </span>
           </li>

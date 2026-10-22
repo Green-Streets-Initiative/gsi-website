@@ -1,4 +1,5 @@
 import type { Group, Challenge, EmployerOnboarding } from './portal-types'
+import { participation } from './participation'
 import type { EmployerBenefits } from '@/lib/types/commute'
 
 export interface SetupStepDef {
@@ -43,7 +44,7 @@ export function computeSetupSteps(args: {
       id: 'profile',
       label: 'Complete your company profile',
       doneLabel: 'Company profile complete',
-      desc: 'Company name, a contact name, and a phone or website. (Your office address lives on the Commute Advisor page.)',
+      desc: 'A contact name, and a phone number or website.',
       done: !!(
         group?.name &&
         group?.admin_name &&
@@ -55,7 +56,7 @@ export function computeSetupSteps(args: {
       id: 'logo',
       label: 'Upload your logo',
       doneLabel: 'Logo uploaded',
-      desc: 'Employees see it on the join page, the Commute Advisor and the app.',
+      desc: 'It shows on the join page, the Commute Advisor and the app.',
       done: !!group?.logo_url,
       route: '/shift/employers/portal/settings#branding',
     },
@@ -63,7 +64,7 @@ export function computeSetupSteps(args: {
       id: 'advisor',
       label: 'Set up your Commute Advisor',
       doneLabel: 'Commute Advisor set up',
-      desc: 'Your office address and at least one benefit, so the page has something to say.',
+      desc: 'Your office and one benefit, so employees can plan a new way in.',
       done: !!(
         benefitsForm.destination_address &&
         (benefitsForm.transit_subsidy_monthly ||
@@ -78,18 +79,20 @@ export function computeSetupSteps(args: {
       route: '/shift/employers/portal/advisor',
     },
     {
+      // Not done at the first person (Keith 2026-10-22: "1 of 350" read as
+      // done): done once enough have joined to run a challenge.
       id: 'employees',
-      label: 'Invite your first employees',
-      doneLabel: 'Employees have joined',
-      desc: 'Share the join link, the code or the QR. The first person to join ticks this off.',
-      done: memberCount > 0,
+      label: 'Get your team in',
+      doneLabel: 'Your team is ready for a challenge',
+      desc: 'Invite people until enough have joined to run a challenge.',
+      done: !!group && ['ready', 'strong', 'goal_met'].includes(participation(group, memberCount).stage.key),
       route: '/shift/employers/portal/employees?invite=1',
     },
     {
       id: 'challenge',
       label: 'Schedule your first challenge',
       doneLabel: 'A challenge is scheduled or running',
-      desc: 'A ready-made season or one of your own. It counts once it is on the calendar.',
+      desc: 'A ready-made season or one of your own.',
       // Only this employer's own challenges, and only ones still to come or
       // under way: an ended challenge is history, not setup.
       done: challenges.some((c) => !c.is_flagship && new Date(c.ends_at).getTime() >= now),

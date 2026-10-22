@@ -121,7 +121,7 @@ export default function ChampionWelcome({ champions }: { champions: ChampionRow[
               </li>
             ))}
           </ul>
-          <p className="text-[13px] leading-[1.5] text-ink-muted">
+          <p className="text-[14px] leading-[1.5] text-ink-muted">
             Each person gets it once. Anyone you add later gets it the next time you press the button.
           </p>
         </div>
@@ -194,12 +194,12 @@ export default function ChampionWelcome({ champions }: { champions: ChampionRow[
 
   return (
     <div className="mt-3 grid gap-3 rounded-[12px] border border-line bg-surface-2 px-4 py-3.5">
-      <p className="text-[13.5px] leading-[1.55] text-ink">
+      <p className="text-[15px] leading-[1.55] text-ink">
         Each champion can get one welcome email from us: what a champion does, your invite link, ready-to-post
         messages and the printable flyer. Nothing goes out until you press the button.
       </p>
 
-      <ul className="grid gap-1 text-[13px] leading-[1.5] text-ink-muted">
+      <ul className="grid gap-1 text-[14px] leading-[1.5] text-ink-muted">
         {welcomed.length > 0 && (
           <li>
             <span className="font-semibold text-ink">Welcome sent:</span>{' '}
@@ -234,7 +234,7 @@ export default function ChampionWelcome({ champions }: { champions: ChampionRow[
           {sending ? 'Sending…' : 'Send the welcome email'}
         </Button>
         {toSend.length === 0 && welcomed.length > 0 && (
-          <span className="text-[13px] text-ink-muted">Every champion with an email has it.</span>
+          <span className="text-[14px] text-ink-muted">Every champion with an email has it.</span>
         )}
       </div>
 
@@ -243,7 +243,7 @@ export default function ChampionWelcome({ champions }: { champions: ChampionRow[
           type="button"
           aria-expanded={showEmail}
           onClick={() => setShowEmail(!showEmail)}
-          className="flex items-center gap-2 rounded-[8px] py-1 text-left text-[13.5px] font-semibold text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="flex items-center gap-2 rounded-[8px] py-1 text-left text-[15px] font-semibold text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <Mail size={15} strokeWidth={1.75} className="text-ink-muted" aria-hidden="true" />
           How this looks to them
