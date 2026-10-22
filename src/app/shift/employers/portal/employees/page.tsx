@@ -15,7 +15,7 @@ import {
   ArrowDown,
   Send,
   Check,
-  FileSpreadsheet,
+  MessageSquareText,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useModalFocus } from '@/lib/employer/use-modal-focus'
@@ -353,7 +353,7 @@ export default function EmployeesPage() {
           effectiveCount > 0 ? (
             <>
               {inviteWithAssistant && (
-                <Button variant="secondary" icon={FileSpreadsheet} onClick={inviteWithAssistant}>
+                <Button variant="secondary" icon={MessageSquareText} onClick={inviteWithAssistant}>
                   Invite from a spreadsheet
                 </Button>
               )}
@@ -403,7 +403,7 @@ export default function EmployeesPage() {
               sub="Give us a list and we send the invitations, or share the link, code or a flyer yourself."
               action={
                 inviteWithAssistant ? (
-                  <Button variant="secondary" size="sm" icon={FileSpreadsheet} onClick={inviteWithAssistant}>
+                  <Button variant="secondary" size="sm" icon={MessageSquareText} onClick={inviteWithAssistant}>
                     Invite from a spreadsheet
                   </Button>
                 ) : undefined

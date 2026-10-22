@@ -9,6 +9,7 @@ import { usePortal } from '../_lib/portal-context'
 import { TIER_LABEL, TIER_ANNUAL_PRICE } from '../_lib/portal-constants'
 import { formatDateUTC } from '../_lib/portal-utils'
 import PortalPageHead from '../_components/PortalPageHead'
+import AskAssistantButton from '../_components/AskAssistantButton'
 import TabStrip, { tabPanelProps } from '../_components/TabStrip'
 import { Card, CardHead, CardBody } from '@/components/employer/Card'
 import Badge from '@/components/employer/Badge'
@@ -335,7 +336,11 @@ export default function SettingsPage() {
 
   return (
     <>
-      <PortalPageHead title="Settings" subtitle="Your company, team, who can join, and notifications" />
+      <PortalPageHead
+        title="Settings"
+        subtitle="Your company, team, who can join, and notifications"
+        actions={<AskAssistantButton label="Change a setting with the assistant" prompt="I'd like to change a setting." />}
+      />
 
       <TabStrip tabs={[...VIEWS]} value={view} onChange={(v) => changeView(v as SettingsView)} label="Settings" prefix="settings" />
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Wallet, CreditCard, FileText, ArrowLeftRight, ExternalLink, CheckCircle2, Info, XCircle } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
+import AskAssistantButton from '../_components/AskAssistantButton'
 import { usePortal } from '../_lib/portal-context'
 import { Card, CardBody, CardHead } from '@/components/employer/Card'
 import StatTile from '@/components/employer/StatTile'
@@ -201,7 +202,11 @@ export default function BillingPage() {
     // @container: the columns follow the room the page has, which shrinks
     // when the assistant panel docks beside it.
     <div className="@container grid gap-6">
-      <PortalPageHead title="Billing & rewards" subtitle="Your plan, your rewards balance, and where the money went" />
+      <PortalPageHead
+        title="Billing & rewards"
+        subtitle="Your plan, your rewards balance, and where the money went"
+        actions={<AskAssistantButton label="Ask about billing" prompt="Help me understand our plan and rewards balance." />}
+      />
 
       {topUpNotice && (
         <div

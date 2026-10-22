@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
 import { useEmployerLocations, locationTitle } from '../_lib/use-employer-locations'
 import PortalPageHead from '../_components/PortalPageHead'
+import AskAssistantButton from '../_components/AskAssistantButton'
 import PortalHeroPanel from '../_components/PortalHeroPanel'
 import HeroReadouts, { type HeroReadout } from '../_components/HeroReadouts'
 import TabStrip, { tabPanelProps } from '../_components/TabStrip'
@@ -427,11 +428,14 @@ export default function SurveyPage() {
         title="Commute survey"
         subtitle="The yearly commute survey for MassDEP or Boston, or for your staff commuting emissions."
         actions={
-          canManage && surveys.length > 0 && !creating ? (
-            <Button variant="secondary" size="sm" icon={Plus} onClick={() => setCreating(true)}>
-              New survey
-            </Button>
-          ) : undefined
+          <div className="flex flex-wrap gap-2">
+            <AskAssistantButton label="Ask about the survey" prompt="Where does our commute survey stand, and what should I do next?" />
+            {canManage && surveys.length > 0 && !creating && (
+              <Button variant="secondary" icon={Plus} onClick={() => setCreating(true)}>
+                New survey
+              </Button>
+            )}
+          </div>
         }
       />
 

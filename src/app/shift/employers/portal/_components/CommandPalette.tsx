@@ -12,7 +12,7 @@ import { useModalFocus } from '@/lib/employer/use-modal-focus'
 
 type ResultItem = {
   id: string
-  type: 'page' | 'action' | 'employee'
+  type: 'ask' | 'page' | 'action' | 'employee'
   label: string
   sub?: string
   icon?: LucideIcon
@@ -29,14 +29,12 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const [query, setQuery] = useState('')
-  // Nothing matches: hand the words to the assistant instead.
+  // One box for finding and asking (Keith 2026-10-22: it should be easy just
+  // to ask for something anywhere). Whatever is typed can go to the assistant;
+  // a question goes first, a word or two that names a page goes last.
   const canAsk = assistantAvailable(group, isGsiAdmin)
-  const askAssistant = useCallback(() => {
-    const q = query.trim()
-    if (!q) return
-    onClose()
-    openAssistant(q)
-  }, [query, onClose])
+  const typed = query.trim()
+  const askFirst = /\?$/.test(typed) || typed.split(/\s+/).length >= 3
   const [activeIdx, setActiveIdx] = useState(0)
 
   // Tab stays in the palette and focus returns to the search pill on close.
@@ -90,8 +88,11 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
             }))
         : []
 
-    return [...pages.filter((p) => matches(p.label)), ...actions.filter((a) => matches(a.label)), ...employees]
-  }, [query, members, role, isAdmin, isGsiAdmin, setupIncomplete, signOut])
+    const found = [...pages.filter((p) => matches(p.label)), ...actions.filter((a) => matches(a.label)), ...employees]
+    if (!canAsk || !q) return found
+    const ask: ResultItem = { id: 'ask', type: 'ask', label: query.trim(), icon: MessageSquareText, run: () => openAssistant(query.trim()) }
+    return askFirst ? [ask, ...found] : [...found, ask]
+  }, [query, members, role, isAdmin, isGsiAdmin, setupIncomplete, signOut, canAsk, askFirst])
 
   // Reset the highlight when the list changes (adjusted during render, not in an effect).
   const [seenQuery, setSeenQuery] = useState(query)
@@ -129,20 +130,20 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
       if (e.key === 'Enter' && results[activeIdx]) {
         e.preventDefault()
         choose(results[activeIdx])
-      } else if (e.key === 'Enter' && results.length === 0 && canAsk) {
-        e.preventDefault()
-        askAssistant()
       }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [results, activeIdx, choose, onClose, canAsk, askAssistant])
+  }, [results, activeIdx, choose, onClose])
 
-  const groups: { key: ResultItem['type']; heading: string }[] = [
+  // Rendered in the same order as results, so the arrow keys follow the screen.
+  const listed: { key: ResultItem['type']; heading: string }[] = [
     { key: 'page', heading: 'Pages' },
     { key: 'action', heading: 'Actions' },
     { key: 'employee', heading: 'Employees' },
   ]
+  const askGroup = { key: 'ask' as const, heading: 'Assistant' }
+  const groups = askFirst ? [askGroup, ...listed] : [...listed, askGroup]
 
   let flatIdx = -1
 
@@ -166,7 +167,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search pages, actions, employees…"
+              placeholder={canAsk ? 'Search, or ask the assistant anything…' : 'Search pages, actions, employees…'}
               aria-label="Search pages, actions and employees"
               className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-tertiary"
             />
@@ -177,24 +178,9 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
 
           {/* Results */}
           <div className="max-h-[360px] overflow-y-auto py-2">
-            {results.length === 0 &&
-              (canAsk && query.trim() ? (
-                <button
-                  type="button"
-                  onClick={askAssistant}
-                  className="flex w-full items-center gap-3 bg-accent-softer px-4 py-3 text-left text-[14px] text-ink"
-                >
-                  <MessageSquareText size={16} strokeWidth={1.75} className="shrink-0 text-accent" aria-hidden />
-                  <span className="min-w-0 flex-1">
-                    Ask the assistant: <span className="font-semibold">&ldquo;{query.trim()}&rdquo;</span>
-                  </span>
-                  <kbd className="rounded-[5px] border border-line bg-surface-2 px-1.5 py-0.5 text-[13px] font-medium text-ink-tertiary">↵</kbd>
-                </button>
-              ) : (
-                <div className="px-4 py-8 text-center text-[15px] text-ink-muted">
-                  Nothing matches &ldquo;{query}&rdquo;
-                </div>
-              ))}
+            {results.length === 0 && (
+              <div className="px-4 py-8 text-center text-[15px] text-ink-muted">Nothing matches &ldquo;{query}&rdquo;</div>
+            )}
 
             {groups.map((g) => {
               const rows = results.filter((r) => r.type === g.key)
@@ -219,10 +205,16 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
                         {r.type === 'employee' ? (
                           <Avatar name={r.label} size={26} />
                         ) : Icon ? (
-                          <Icon size={18} strokeWidth={1.75} className="shrink-0 text-ink-muted" />
+                          <Icon size={18} strokeWidth={1.75} className={`shrink-0 ${r.type === 'ask' ? 'text-accent' : 'text-ink-muted'}`} />
                         ) : null}
                         <div className="min-w-0">
-                          <div className="truncate text-[14px] font-medium text-ink">{r.label}</div>
+                          {r.type === 'ask' ? (
+                            <div className="text-[14px] text-ink">
+                              Ask the assistant: <span className="font-semibold">&ldquo;{r.label}&rdquo;</span>
+                            </div>
+                          ) : (
+                            <div className="truncate text-[14px] font-medium text-ink">{r.label}</div>
+                          )}
                           {r.sub && <div className="text-[14px] text-ink-tertiary">{r.sub}</div>}
                         </div>
                       </button>

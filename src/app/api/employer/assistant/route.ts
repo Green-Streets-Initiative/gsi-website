@@ -16,7 +16,7 @@ import { fileText, parseList, saveList, type ParsedList } from '@/lib/employer-a
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { SYSTEM_PROMPT, contextBlock } from '@/lib/employer-assistant/prompt'
+import { SYSTEM_PROMPT, contextBlock, pageLabel } from '@/lib/employer-assistant/prompt'
 import {
   ACTIVITY,
   NEEDS_APPROVAL,
@@ -405,6 +405,8 @@ export async function POST(request: Request) {
     list_file?: { name: string; data: string }
     /** Start fresh, carrying a summary of this (long) conversation. */
     carry_from?: string
+    /** The portal page they have open (path, query and hash), for "this page". */
+    page?: string
     /** Thumbs up / down on one reply (Shift 01373). No model call. */
     rating?: { message_id: number; up: boolean; note?: string }
   } | null
@@ -650,7 +652,7 @@ export async function POST(request: Request) {
             output_config: { effort: 'medium' },
             system: [
               { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
-              { type: 'text', text: contextBlock({ today, workplace: group.name, email: user.email!, role }) },
+              { type: 'text', text: contextBlock({ today, workplace: group.name, email: user.email!, role, page: pageLabel(body?.page) }) },
             ],
             tools: tools as Anthropic.Beta.BetaToolUnion[],
             cache_control: { type: 'ephemeral' },

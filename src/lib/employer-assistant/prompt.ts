@@ -48,6 +48,7 @@ What admins can't do yet, and what they think of Shift, shapes what GSI builds n
 
 ## Where things are in the portal
 When they ask where something is, tell them, then offer to do it for them.
+The context line names the page they have open when they write. "This", "here" and "this page" mean that page: answer about it without asking which one. They can ask you from any page (the search box at the top doubles as an ask box, and each page has an ask button), so a question often comes straight from what they are looking at.
 - The sidebar: Home; Setup (the checklist, until it's done); Employees; Challenges; Impact; Commute survey (when GSI has switched it on); Commute Advisor; Billing & rewards (admins); Settings. "Ask the assistant" (⌘J) is at the top.
 - Challenges: "Create a challenge" opens the builder, in four steps: Basics, Which trips count, Rewards, Review. Prizes are the Rewards step. A scheduled or running challenge has an Edit button, which opens the same steps. Drafts have Continue and Discard; the year plan's suggestions are listed there too.
 - Employees: the Invite button (paste addresses or upload a CSV), who can join, who joined and who was invited, the leaderboard, Export CSV.
@@ -110,8 +111,52 @@ Parking cost is a plain fact some employers list; ask about it neutrally, withou
 - Account owner changes and anything about invoices or the plan itself: email info@gogreenstreets.org, or use ask_gsi.
 - You can't cancel the plan or close the account. If asked, say so plainly: an admin cancels the plan on the Billing page (Cancel plan, which opens Stripe's page); give them open_page to billing. Accounts that are invoiced or complimentary cancel through GSI (offer ask_gsi). If something isn't working for them, you can offer once to help with it, without pressing.`
 
-export function contextBlock(ctx: { today: string; workplace: string; email: string; role: string }): string {
-  return `Today is ${ctx.today} (Eastern time). You are helping ${ctx.email}, a${ctx.role === 'admin' ? 'n' : ''} ${ctx.role} of ${ctx.workplace} in the Shift employer portal.`
+export function contextBlock(ctx: { today: string; workplace: string; email: string; role: string; page?: string | null }): string {
+  const where = ctx.page ? ` They are looking at ${ctx.page}.` : ''
+  return `Today is ${ctx.today} (Eastern time). You are helping ${ctx.email}, a${ctx.role === 'admin' ? 'n' : ''} ${ctx.role} of ${ctx.workplace} in the Shift employer portal.${where}`
+}
+
+const PAGE_NAME: Record<string, string> = {
+  dashboard: 'Home',
+  setup: 'Setup',
+  employees: 'Employees',
+  challenges: 'Challenges',
+  impact: 'Impact',
+  advisor: 'Commute Advisor',
+  survey: 'Commute survey',
+  billing: 'Billing & rewards',
+  settings: 'Settings',
+}
+const TAB_NAME: Record<string, Record<string, string>> = {
+  employees: { share: 'Invite & share' },
+  impact: { trips: 'Trips', compared: 'Compared', locations: 'By location', how: 'How we count' },
+  settings: {
+    company: 'Company', account: 'Company', branding: 'Company',
+    team: 'Team & assistant',
+    joining: 'Who can join', 'email-domains': 'Who can join', 'who-can-join': 'Who can join', 'public-listing': 'Who can join',
+    notifications: 'Notifications',
+  },
+}
+
+/**
+ * The page the person has open, as words for the context line: "the Settings
+ * page (Who can join tab)". Built only from the names above, so nothing the
+ * browser sends reaches the model as text.
+ */
+export function pageLabel(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  let url: URL
+  try {
+    url = new URL(raw, 'https://x.invalid')
+  } catch {
+    return null
+  }
+  const m = url.pathname.match(/^\/shift\/employers\/portal\/([a-z-]+)/)
+  const key = m?.[1]
+  if (!key || !PAGE_NAME[key]) return null
+  const tabKey = url.searchParams.get('view') ?? url.searchParams.get('tab') ?? url.hash.slice(1)
+  const tab = tabKey ? TAB_NAME[key]?.[tabKey] : undefined
+  return `the ${PAGE_NAME[key]} page${tab ? ` (${tab} tab)` : ''}`
 }
 
 export const STARTERS = [

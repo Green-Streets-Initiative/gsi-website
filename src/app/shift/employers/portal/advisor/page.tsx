@@ -17,6 +17,7 @@ import {
   Lightbulb,
 } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
+import AskAssistantButton from '../_components/AskAssistantButton'
 import PortalSectionNav, { PortalSectionedPage, SECTION_SCROLL_MT } from '../_components/PortalSectionNav'
 import PortalHeroPanel from '../_components/PortalHeroPanel'
 import { usePortal } from '../_lib/portal-context'
@@ -369,6 +370,14 @@ export default function AdvisorPage() {
       <PortalPageHead
         title="Commute Advisor"
         subtitle="Your public page of walking, biking and transit options to your office"
+        actions={
+          canEdit ? (
+            <AskAssistantButton
+              label="Fill it in with the assistant"
+              prompt="Help me fill in our Commute Advisor page: our locations, transit subsidy, bike share and perks."
+            />
+          ) : undefined
+        }
       />
 
       {!canEdit && (

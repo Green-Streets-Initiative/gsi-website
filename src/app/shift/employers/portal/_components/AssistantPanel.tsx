@@ -342,7 +342,15 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
         const res = await fetch('/api/employer/assistant', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...h },
-          body: JSON.stringify({ group_id: groupId, thread_id: fresh ? null : threadId, new_thread: fresh, ...payload }),
+          // Where they are, so "this page" and "here" mean something (the server
+          // maps it to a known page name and drops anything else).
+          body: JSON.stringify({
+            group_id: groupId,
+            thread_id: fresh ? null : threadId,
+            new_thread: fresh,
+            page: `${window.location.pathname}${window.location.search}${window.location.hash}`.slice(0, 300),
+            ...payload,
+          }),
         })
         if (!res.ok || !res.body) {
           const j = (await res.json().catch(() => ({}))) as { error?: string; long?: boolean }

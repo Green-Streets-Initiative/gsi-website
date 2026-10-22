@@ -9,7 +9,7 @@ import CommandPalette from './CommandPalette'
 import NotificationsDropdown, { hasUnreadNotifications, prefsForCurrentAdmin } from './NotificationsDropdown'
 import HelpDrawer, { onPortalHelpRequest } from './HelpDrawer'
 import AccountMenu from './AccountMenu'
-import { openAssistant } from './AssistantPanel'
+import { assistantAvailable, openAssistant } from './AssistantPanel'
 
 const ROUTE_META: { prefix: string; label: string }[] = [
   { prefix: '/shift/employers/portal/dashboard', label: 'Home' },
@@ -33,6 +33,7 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
   const pathname = usePathname()
   const title = pageTitleFor(pathname)
   const { group, members, challenges, admins, sessionEmail, isGsiAdmin } = usePortal()
+  const canAsk = !!group && assistantAvailable(group, isGsiAdmin)
 
   const [activePanel, setActivePanel] = useState<Panel>(null)
   const [helpTopic, setHelpTopic] = useState<string | null>(null)
@@ -130,7 +131,7 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
               strokeWidth={1.75}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
             />
-            Search…
+            {canAsk ? 'Search or ask…' : 'Search…'}
             <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-[5px] border border-line bg-surface px-1.5 py-0.5 text-[13px] font-medium text-ink-tertiary">
               ⌘K
             </kbd>
@@ -164,7 +165,7 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
           </div>
 
           {/* The assistant on a phone, where the sidebar is tucked away */}
-          {group && (group.assistant_enabled || isGsiAdmin) && (
+          {canAsk && (
             <button
               type="button"
               onClick={() => openAssistant()}
