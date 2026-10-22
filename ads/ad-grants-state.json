@@ -97,12 +97,12 @@
     },
     {
       "id": "bluebikes-negatives",
-      "status": "DONE 2026-10-07 (evening): Claude, on Keith's 'do ad grants items 1 and 3'. (a) Paused 'biking in boston' in New Routes / Getting around Boston (28 impr, 0 clicks Oct MTD); Town Walking & Biking's 'biking in boston' (22 impr) left on. (b) Added 6 campaign-level broad negatives to New Routes — Movers only: bluebikes, bluebike, blue bike, blue bikes, bike rental, bike rentals (variants added because negatives do not match plurals/close variants). First negatives in the account. Not added: 'bike trail map' (not in the approved list; watch the search terms). The ~/Downloads/ad-grants-oct7-fixes.csv rows are now obsolete (do not upload). Win: New Routes > 3% CTR by 10-21; kill: if New Routes impressions fall to ~0, re-enable its 'biking in boston'. 10-14: New Routes frozen at 27 impr since 10-07 (0 impressions in 7 days), kill condition is on track to trigger; inside the 14-day wait, so re-enable 'biking in boston' there at the 10-21 review if still 27. The two Just moved ads are 'Pending' re-rating after the 10-13 landing-page change.",
+      "status": "DONE 2026-10-07 (evening): Claude, on Keith's 'do ad grants items 1 and 3'. (a) Paused 'biking in boston' in New Routes / Getting around Boston (28 impr, 0 clicks Oct MTD); Town Walking & Biking's 'biking in boston' (22 impr) left on. (b) Added 6 campaign-level broad negatives to New Routes — Movers only: bluebikes, bluebike, blue bike, blue bikes, bike rental, bike rentals (variants added because negatives do not match plurals/close variants). First negatives in the account. Not added: 'bike trail map' (not in the approved list; watch the search terms). The ~/Downloads/ad-grants-oct7-fixes.csv rows are now obsolete (do not upload). Win: New Routes > 3% CTR by 10-21; kill: if New Routes impressions fall to ~0, re-enable its 'biking in boston'. 10-14: New Routes frozen at 27 impr since 10-07 (0 impressions in 7 days), kill condition is on track to trigger; inside the 14-day wait, so re-enable 'biking in boston' there at the 10-21 review if still 27. The two Just moved ads are 'Pending' re-rating after the 10-13 landing-page change. 10-21 weekly: New Routes still 27 impr (kill condition met), but NOT re-enabling 'biking in boston' there: the same keyword was paused in Town 10-21 at QS 1, and the Just moved landing changed 10-13 (judge 10-27). Expect New Routes to stay near 0; movers volume is <150/mo per the keyword analysis.",
       "what": "9 of 20 named Sept search terms were Bluebikes lookups (bluebikes, blue bikes, bluebike, bluebikes map, bluebikes boston) in New Routes / Getting around Boston; navigational, low CTR. Consider negative keywords after Oct 5."
     },
     {
       "id": "employer-municipal-campaigns",
-      "status": "idea from Keith 2026-09-30. Revisited 10-07: still blocked on a trackable inquiry form (no change on the site). Not recommended this week; conversions and the QS fix come first. Revisit 10-21. 10-14: unchanged, still revisit 10-21.",
+      "status": "idea from Keith 2026-09-30. Revisited 10-07: still blocked on a trackable inquiry form (no change on the site). Not recommended this week; conversions and the QS fix come first. Revisit 10-21. 10-14: unchanged, still revisit 10-21. 10-21: half unblocked. /shift/employers now has an inquiry form (src/app/shift/employers/EmployerInquiry.tsx, ContactForm fires gaEvent('employer_inquiry')). Next step: mark employer_inquiry as a GA4 key event once GA4 lists it, import to Ads; then Keith decides on the employer campaign. Municipal still has no inquiry form. Mentioned in the 10-21 report note, not a numbered item.",
       "what": "Two more campaigns: employers (commute benefits / workplace challenge) and municipalities (town staff, TMAs), conversion = inquiry to learn more. Prerequisites found 09-30: no trackable inquiry exists. /shift/employers and /contact only offer a mailto:info@ link with no gaEvent, and there is no municipality landing page (/shift/towns pages are for residents). Needs a short inquiry form on each landing page firing gaEvent('employer_inquiry' / 'municipal_inquiry'), marked as GA4 key events and imported to Ads, before the campaigns can optimize to it."
     },
     {
@@ -128,26 +128,26 @@
     {
       "id": "offer-landing-pages",
       "what": "Point Ad Grants traffic at pages that already convert. GA4 since Sep 1: Shift Your Semester school pages from the non-Google student cpc campaign ~500 sessions / 34 key events (~7%); /shift New Routes offer page 19 / 5; guides (Ad Grant traffic) 20 / 0. (1) Shift Your Semester campaign: final URLs -> /shift-your-semester/<school> pages; ADD broader student keywords with volume (mbta student pass, student charliecard, bluebikes student discount and similar); do not remove the 10-05 campus keywords (14-day rule until 10-19). (2) New Routes: 'just moved / moving to Boston' ad group final URL -> /shift New Routes offer. Keep How-to Guides as the CTR engine with the new guide app strip.",
-      "status": "APPROVED by Keith 2026-10-07 ('OK, let's do it'). Ads changes must run from an interactive chat in 'Ask permissions' mode (see memory feedback-claude-operates-google-ads); Keith to say 'do ad grants: semester and movers landing pages'. Win: >= 1 conversion by 10-21 and Semester > ~100 impressions; kill: if Semester still ~0 impressions by 10-21, the student search volume isn't there for grant ads; move that effort to the student cpc channel. 2026-10-13 interactive run ('do ad grants: semester and movers landing pages'): (1) Semester ALREADY DONE by the 10-05 upload: all 6 Semester ads have final URL /shift-your-semester (hub, StoreButtons placement semester_hub near top) and every school keyword (bu mbta pass, tufts bluebikes discount, etc.) has a keyword-level final URL /shift-your-semester/<school>. No change needed. (2) Movers NOT YET SAVED: both 'Just moved' ads still land on /nearby?utm_source=googleads&utm_campaign=newroutes; new URL is https://www.gogreenstreets.org/shift?utm_source=googleads&utm_campaign=newroutes (utm_campaign=newroutes triggers NewRoutesShiftBanner). Typed into the first ad's editor, Save ad refused by the auto-mode classifier. (3) Broader student keywords NOT YET ADDED (Students ad group, broad, hub landing): student charliecard, mbta student charliecard, mbta student discount, mbta student fare, mbta college pass, mbta semester pass, college student t pass boston, bluebikes student discount, bluebikes student membership, student bike share boston. Existing: student mbta pass, college student mbta pass, student bluebikes discount boston, semester t pass boston. Needs Keith to set the chat to 'Ask permissions' and say go. UPDATE 2026-10-13 afternoon (Keith's 'go' in an interactive chat, after he cleared Google's 'Confirm it's you' dialog): (2) DONE: both New Routes / Just moved RSAs now have final URL /shift?utm_source=googleads&utm_campaign=newroutes; both saved, 'no policy issues', Eligible (Getting around Boston stays on /nearby). (3) STILL NOT ADDED: the 10 student keywords; clicking 'Create keywords' was refused by the session's permission check ('Real-World Transactions') even after Keith changed the permission mode. Judge Movers from 10-27 (14 days). 10-14: Semester 1 impression MTD; the 10 student keywords recommended again as weekly item 3. DONE 2026-10-14 (same day, Claude in the Ads UI): all 10 added to Students, broad match, 7 under review + 3 low search volume at save (see the 10-14 change entry). Item fully closed. Win: Semester > 100 impr by 10-28; kill: still ~0 then, move the effort to the paid student channel."
+      "status": "APPROVED by Keith 2026-10-07 ('OK, let's do it'). Ads changes must run from an interactive chat in 'Ask permissions' mode (see memory feedback-claude-operates-google-ads); Keith to say 'do ad grants: semester and movers landing pages'. Win: >= 1 conversion by 10-21 and Semester > ~100 impressions; kill: if Semester still ~0 impressions by 10-21, the student search volume isn't there for grant ads; move that effort to the student cpc channel. 2026-10-13 interactive run ('do ad grants: semester and movers landing pages'): (1) Semester ALREADY DONE by the 10-05 upload: all 6 Semester ads have final URL /shift-your-semester (hub, StoreButtons placement semester_hub near top) and every school keyword (bu mbta pass, tufts bluebikes discount, etc.) has a keyword-level final URL /shift-your-semester/<school>. No change needed. (2) Movers NOT YET SAVED: both 'Just moved' ads still land on /nearby?utm_source=googleads&utm_campaign=newroutes; new URL is https://www.gogreenstreets.org/shift?utm_source=googleads&utm_campaign=newroutes (utm_campaign=newroutes triggers NewRoutesShiftBanner). Typed into the first ad's editor, Save ad refused by the auto-mode classifier. (3) Broader student keywords NOT YET ADDED (Students ad group, broad, hub landing): student charliecard, mbta student charliecard, mbta student discount, mbta student fare, mbta college pass, mbta semester pass, college student t pass boston, bluebikes student discount, bluebikes student membership, student bike share boston. Existing: student mbta pass, college student mbta pass, student bluebikes discount boston, semester t pass boston. Needs Keith to set the chat to 'Ask permissions' and say go. UPDATE 2026-10-13 afternoon (Keith's 'go' in an interactive chat, after he cleared Google's 'Confirm it's you' dialog): (2) DONE: both New Routes / Just moved RSAs now have final URL /shift?utm_source=googleads&utm_campaign=newroutes; both saved, 'no policy issues', Eligible (Getting around Boston stays on /nearby). (3) STILL NOT ADDED: the 10 student keywords; clicking 'Create keywords' was refused by the session's permission check ('Real-World Transactions') even after Keith changed the permission mode. Judge Movers from 10-27 (14 days). 10-14: Semester 1 impression MTD; the 10 student keywords recommended again as weekly item 3. DONE 2026-10-14 (same day, Claude in the Ads UI): all 10 added to Students, broad match, 7 under review + 3 low search volume at save (see the 10-14 change entry). Item fully closed. Win: Semester > 100 impr by 10-28; kill: still ~0 then, move the effort to the paid student channel. 10-21 weekly: Semester still 1 impression a week after the 10 student keywords (10 eligible, 17 of 52 low search volume). Judge 10-28; kill condition on track."
     },
     {
       "id": "keyword-analysis",
       "what": "Right-to-win keyword analysis (Keith asked 2026-10-14): 183 terms through Keyword Planner (Massachusetts, Oct 2025-Sep 2026), joined with 90-day Search Console queries (989), the October search-terms report and the live keyword list. Data: ads/keyword-planner-2026-10-14.tsv. Report: see keyword_analysis_artifact_url. Findings: pool 1 T fares & passes ~8,500 MA searches/mo, Low competition, fares guide + cheat sheet, proven 7.2% CTR; pool 2 named trails ~19,700/mo matching 13 roam pages (minuteman 5,400, shining sea 3,600, mass central 3,600, charles river 2,400, community path 2,400, battle road 720, marblehead 590, manhan 390, twin cities 320, wachusett 90, emerald necklace 70, fort river 50, fresh pond 30), not in the account at all, organic page one for 8 of them; pool 3 'trails near me' ~33,000/mo (walking trails near me 9,900 etc.) but list intent, currently in Town campaign at 2%, test once on /shift/roams with a kill rule; pool 4 generic Boston transit ~14,000/mo already reached by broad match at 8-17%, add boston to salem train (1,600, $0.02 bid) -> salem-by-rail roam, mbta transfer -> bus transfers guide, transit app boston -> planning-a-transit-trip guide; students ~700/mo (ours, small); Bluebikes ~10,500 navigational (weak); e-bikes High competition (weak, explains Shift App's 6 impressions); movers <150/mo (explains New Routes' 27 impressions). Do not chase mbta 110k / commuter rail 60k / mbta map 22k / trip planner 14.8k / schedule 12k (navigational; would sink the 5% rule) or hiking (recreation). No roam yet for cape cod rail trail 6,600, bruce freeman 4,400, northern strand 1,600.",
-      "status": "REPORTED 2026-10-14, nothing changed in the account. Recommended: keyword item 1 = 'Fares and passes' ad group in How-to Guides (~18 phrase keywords, 2 ads, fares guide landing; win >= 5% on 300 impr by 11-15, kill any keyword < 3% after 100 impr); keyword item 2 = 'Trails and Paths' campaign, one ad group per matching roam (exact + phrase, 2 ads naming length/start/transit access) + one 'near me' test group on /shift/roams (kill < 5% after 300 impr), after checking each roam page states length/start/access near the top; keyword item 3 = two guides ('Which T pass should you buy?', 'Commuter rail, explained') via the guides pipeline, then their ad groups, plus the three single keywords from pool 4. Keith says 'do ad grants keyword item N'. 2026-10-14 evening, polish pass on the landing pages (Keith: pages must be simple, clear, directly responsive to the question): fares guide SHIPPED (ebdc5d2 + 5207dd6, live): answer block first, cheat sheet second, app strip third, pass comparison grid (cards on phones), section anchors tap / which-pass / passes / transfers / commuter-rail / reduced-fares for ad final URLs, inline cheat-sheet offers after passes and reduced fares. Keyword item 1 can use those anchors. Roam pages NOT yet fit for trail searches (stock photo, 10 mi vs 6.4 mi contradiction, app box above the facts, 'earn' + XP jargon, raw route strings, 2 stops): template fix + a 'Know before you go' facts box + real photos needed before keyword item 2; Keith wants creators' Instagram/TikTok trail videos embedded or featured on those pages with credit rather than GSI-made content. Roams index not fit for 'near me' (no map/filter); hold pool 3. Open question: cheat sheet says Commuter Rail $2.40 to $9.75, guide body and prices.json say $13.25; the answer block avoids the number until resolved. 2026-10-15: fares guide produced the account's FIRST CONVERSION within 24 hours of shipping (Keith). ROAM TEMPLATE SHIPPED (gsi-website 48d8e20 + 0f5b355 + 433f688; Shift migrations 01193 + 01194 applied to prod): every roam page now opens with a 'Know before you go' facts box (length incl. full trail vs section, time by bike and on foot, surface, get there by T, parking; rows only when data exists), creator video slot (hero_video_url + credit) replaces the hero photo when set, app box below the map ('Ride it with Shift, free', placement roam_after_map), 'unlock' wording, map caption names start and end, search title answers the trail question. Minuteman has facts + stock photo removed (no hero until a creator video); the other 12 trail roams show length/time only until their facts and videos are added (content step). Keyword item 2 (Trails and Paths campaign) still waits on that content step; creator video shortlist needs Keith's handles (Instagram/TikTok are not searchable from this session). 2026-10-15 later: built edge function instagram-trail-search (Graph API hashtag top_media + business discovery; memory reference_instagram_trail_search) and ran 14 trail hashtags + Keith's 3 handles. Hashtag posts carry no poster name (Meta hides it; oEmbed and crawler-UA lookups both fail). Findings: @ashley.paradisefit__ is the model creator (walking-trail reels 150-350 likes, free walking club) but has not done our 13 trails yet; @samcwestby (80k, Boston no-car reels, Bluebikes sponsor) is a partnership candidate, not trail-specific; @laura_isdoingit tiny (one Cape bike-trail reel). Real hashtag volume only on Somerville Community Path (7,843-like GLX opening post), Battle Road (630), Shining Sea (117/101), Marblehead (121); #twincitiesrailtrail and #wachusettgreenways 2026 posts look like an official MassTrails series. Top links handed to Keith to identify posters."
+      "status": "REPORTED 2026-10-14, nothing changed in the account. Recommended: keyword item 1 = 'Fares and passes' ad group in How-to Guides (~18 phrase keywords, 2 ads, fares guide landing; win >= 5% on 300 impr by 11-15, kill any keyword < 3% after 100 impr); keyword item 2 = 'Trails and Paths' campaign, one ad group per matching roam (exact + phrase, 2 ads naming length/start/transit access) + one 'near me' test group on /shift/roams (kill < 5% after 300 impr), after checking each roam page states length/start/access near the top; keyword item 3 = two guides ('Which T pass should you buy?', 'Commuter rail, explained') via the guides pipeline, then their ad groups, plus the three single keywords from pool 4. Keith says 'do ad grants keyword item N'. 2026-10-14 evening, polish pass on the landing pages (Keith: pages must be simple, clear, directly responsive to the question): fares guide SHIPPED (ebdc5d2 + 5207dd6, live): answer block first, cheat sheet second, app strip third, pass comparison grid (cards on phones), section anchors tap / which-pass / passes / transfers / commuter-rail / reduced-fares for ad final URLs, inline cheat-sheet offers after passes and reduced fares. Keyword item 1 can use those anchors. Roam pages NOT yet fit for trail searches (stock photo, 10 mi vs 6.4 mi contradiction, app box above the facts, 'earn' + XP jargon, raw route strings, 2 stops): template fix + a 'Know before you go' facts box + real photos needed before keyword item 2; Keith wants creators' Instagram/TikTok trail videos embedded or featured on those pages with credit rather than GSI-made content. Roams index not fit for 'near me' (no map/filter); hold pool 3. Open question: cheat sheet says Commuter Rail $2.40 to $9.75, guide body and prices.json say $13.25; the answer block avoids the number until resolved. 2026-10-15: fares guide produced the account's FIRST CONVERSION within 24 hours of shipping (Keith). ROAM TEMPLATE SHIPPED (gsi-website 48d8e20 + 0f5b355 + 433f688; Shift migrations 01193 + 01194 applied to prod): every roam page now opens with a 'Know before you go' facts box (length incl. full trail vs section, time by bike and on foot, surface, get there by T, parking; rows only when data exists), creator video slot (hero_video_url + credit) replaces the hero photo when set, app box below the map ('Ride it with Shift, free', placement roam_after_map), 'unlock' wording, map caption names start and end, search title answers the trail question. Minuteman has facts + stock photo removed (no hero until a creator video); the other 12 trail roams show length/time only until their facts and videos are added (content step). Keyword item 2 (Trails and Paths campaign) still waits on that content step; creator video shortlist needs Keith's handles (Instagram/TikTok are not searchable from this session). 2026-10-15 later: built edge function instagram-trail-search (Graph API hashtag top_media + business discovery; memory reference_instagram_trail_search) and ran 14 trail hashtags + Keith's 3 handles. Hashtag posts carry no poster name (Meta hides it; oEmbed and crawler-UA lookups both fail). Findings: @ashley.paradisefit__ is the model creator (walking-trail reels 150-350 likes, free walking club) but has not done our 13 trails yet; @samcwestby (80k, Boston no-car reels, Bluebikes sponsor) is a partnership candidate, not trail-specific; @laura_isdoingit tiny (one Cape bike-trail reel). Real hashtag volume only on Somerville Community Path (7,843-like GLX opening post), Battle Road (630), Shining Sea (117/101), Marblehead (121); #twincitiesrailtrail and #wachusettgreenways 2026 posts look like an official MassTrails series. Top links handed to Keith to identify posters. 10-21 weekly: keyword item 1 ('Fares and passes' ad group) recommended again as weekly item 2; How-to Guides now 'Limited by search volume' and holds all 10 conversions."
     },
     {
       "id": "event-conversions",
       "what": "Keith 2026-10-15 ('do ad grants: event conversions', after asking how to use grant budget to drive demand to the local events calendar): make the event-page actions count as Ads conversions, then drive traffic to /events. Strategy agreed in chat: conversions first; then an 'Events near you' sitelink on How-to Guides ads (no keyword risk); then a Local Events campaign built only from 'find an event' terms (group rides boston, bike bus somerville, walk ride day...) with a kill rule (pause any ad group under 5% after 300 impr); never broad 'things to do' terms. Expect thin volume Nov-Mar.",
-      "status": "IMPORTED 2026-10-16: event_register_click and event_calendar_save starred as GA4 key events (property 551486918) and imported into Google Ads as Primary conversion actions under Engagement, included in account-level goals; the Ads All conversions table shows both as 'Awaiting conversions' (6 actions total). event_info_click and event_directions_click deliberately not starred or imported. Daily task ad-grants-event-import disabled. NEXT: 'do ad grants: events sitelink', then keyword planner on event terms before any Local Events campaign. HISTORY: SHIPPED 2026-10-15 (gsi-website, src/components/events/EventDetail.tsx): GA4 events event_register_click, event_info_click, event_calendar_save (method google|ics, surface details|phone_bar) and event_directions_click (surface map_card|details|phone_bar), each with event_id, event_type, is_past; PostHog copies too. VERIFIED LIVE 2026-10-15 ~10:45 ET (Vercel deployment 7095455154) on /events/tour-de-streets-2026-2026-10-24: all four fired through gtag to analytics.google.com (G-6HQWGDZ6RH) and Google's rmkt/collect with en=event_calendar_save etc. Those 4 test hits (is_past false, event_type festival) are what will make the events appear in GA4 Admin > Events; one each, from Claude's browser, not real visitors. SCHEDULED: Keith 2026-10-15 ('check and proceed when it's there'): task ad-grants-event-import runs daily at 11:00 from 10-16, checks GA4, stars + imports when listed, records IMPORTED here, emails Keith, disables itself; if a click is refused unattended it emails the one-line unblock instead. NEXT (that task, or interactive Chrome, from 2026-10-16 once GA4 lists the events): GA4 walkrideday authuser=5 property 551486918 Admin > Events > star event_register_click and event_calendar_save as key events (event_directions_click optional, event_info_click no); then Ads Goals > Conversions > Create conversion action > GA4 import, category Engagement, Primary, include in account-level goals. Keith says 'do ad grants: import event conversions'. After that: 'do ad grants: events sitelink', then keyword planner on event terms before any campaign. 2026-10-15: GA4 does not list the events yet (scheduled check 11:06 ET; Recent events shows 19 names, none of the four event_* ones; test hits were sent ~10:45 ET, so not expected until ~10-16). 2026-10-16: scheduled check could not run, Claude in Chrome was not connected (11:03 ET); retries tomorrow."
+      "status": "IMPORTED 2026-10-16: event_register_click and event_calendar_save starred as GA4 key events (property 551486918) and imported into Google Ads as Primary conversion actions under Engagement, included in account-level goals; the Ads All conversions table shows both as 'Awaiting conversions' (6 actions total). event_info_click and event_directions_click deliberately not starred or imported. Daily task ad-grants-event-import disabled. NEXT: 'do ad grants: events sitelink', then keyword planner on event terms before any Local Events campaign. HISTORY: SHIPPED 2026-10-15 (gsi-website, src/components/events/EventDetail.tsx): GA4 events event_register_click, event_info_click, event_calendar_save (method google|ics, surface details|phone_bar) and event_directions_click (surface map_card|details|phone_bar), each with event_id, event_type, is_past; PostHog copies too. VERIFIED LIVE 2026-10-15 ~10:45 ET (Vercel deployment 7095455154) on /events/tour-de-streets-2026-2026-10-24: all four fired through gtag to analytics.google.com (G-6HQWGDZ6RH) and Google's rmkt/collect with en=event_calendar_save etc. Those 4 test hits (is_past false, event_type festival) are what will make the events appear in GA4 Admin > Events; one each, from Claude's browser, not real visitors. SCHEDULED: Keith 2026-10-15 ('check and proceed when it's there'): task ad-grants-event-import runs daily at 11:00 from 10-16, checks GA4, stars + imports when listed, records IMPORTED here, emails Keith, disables itself; if a click is refused unattended it emails the one-line unblock instead. NEXT (that task, or interactive Chrome, from 2026-10-16 once GA4 lists the events): GA4 walkrideday authuser=5 property 551486918 Admin > Events > star event_register_click and event_calendar_save as key events (event_directions_click optional, event_info_click no); then Ads Goals > Conversions > Create conversion action > GA4 import, category Engagement, Primary, include in account-level goals. Keith says 'do ad grants: import event conversions'. After that: 'do ad grants: events sitelink', then keyword planner on event terms before any campaign. 2026-10-15: GA4 does not list the events yet (scheduled check 11:06 ET; Recent events shows 19 names, none of the four event_* ones; test hits were sent ~10:45 ET, so not expected until ~10-16). 2026-10-16: scheduled check could not run, Claude in Chrome was not connected (11:03 ET); retries tomorrow. 10-21 weekly: both event actions still 'Awaiting conversions' (no ad traffic reaches /events). Events sitelink recommended as weekly item 3."
     },
     {
       "id": "t-cheat-sheet",
       "what": "Free one-page printable T cheat sheet PDF (public/downloads/t-cheat-sheet.pdf, source scripts/t-cheat-sheet/) with a download button under the app strip on /guides/how-to-pay-for-the-t, firing GA4 + PostHog event cheat_sheet_download {sheet, placement:'guide_top'}. Goal: a no-email, no-app meaningful action so ad visitors can convert (Oct had 0 conversions on ~60 clicks).",
-      "status": "SHIPPED 2026-10-13 after Keith's review (3 rounds: pass table, less text, 'Ride free or pay less' box, employer/college line, plastic CharlieCard vs paper CharlieTicket). English live at /downloads/t-cheat-sheet.pdf (commit 717c56d); Spanish, Portuguese, Haitian Creole, Simplified Chinese and Vietnamese PDFs + 'Also in' links (commit 4273943), translated by Claude, not native-reviewed. Event cheat_sheet_download now carries lang. STILL TO DO: mark cheat_sheet_download as a GA4 key event and import it into Ads as a conversion goal (Chrome; blocked 10-13 behind Google's 'Confirm it's you' dialog, which Keith must click). Win: >= 1 ad-click conversion by Oct 31; if no ad visitor downloads by Oct 24, add an 'email me the cheat sheet' option. Note: one localhost test event reached GA4 on 10-13. 2026-10-13 afternoon: GA4 Admin > Events (walkrideday, authuser=5) does not list cheat_sheet_download yet (new events take up to ~24h to appear; GA4 here has no way to mark a key event by name before it shows). Next interactive session from 10-14: star cheat_sheet_download under Recent events, then Ads > Goals > Conversions > New > Import > GA4 > cheat_sheet_download, include in account-default goals. 10-14 weekly: recommended as item 2. DONE 2026-10-14 (same day, Claude): cheat_sheet_download starred as a GA4 key event and imported into Ads as a Primary conversion action under Engagement, included in account-level goals (details in the 10-14 change entry). Ads shows 'Awaiting conversions'. Watch: first ad-click download should appear as a conversion on the Goals page; if none by 10-24, add the 'email me the cheat sheet' option. Note: the account-level goal set is now Sign-ups + Engagements + Outbound clicks; Maximize conversions will optimize toward all three. 10-15 quick check: FIRST CONVERSION recorded (cheat_sheet_download 1.00, Active, How-to Guides); the 'email me' fallback is not needed. October now meets the 1-conversion rule."
+      "status": "SHIPPED 2026-10-13 after Keith's review (3 rounds: pass table, less text, 'Ride free or pay less' box, employer/college line, plastic CharlieCard vs paper CharlieTicket). English live at /downloads/t-cheat-sheet.pdf (commit 717c56d); Spanish, Portuguese, Haitian Creole, Simplified Chinese and Vietnamese PDFs + 'Also in' links (commit 4273943), translated by Claude, not native-reviewed. Event cheat_sheet_download now carries lang. STILL TO DO: mark cheat_sheet_download as a GA4 key event and import it into Ads as a conversion goal (Chrome; blocked 10-13 behind Google's 'Confirm it's you' dialog, which Keith must click). Win: >= 1 ad-click conversion by Oct 31; if no ad visitor downloads by Oct 24, add an 'email me the cheat sheet' option. Note: one localhost test event reached GA4 on 10-13. 2026-10-13 afternoon: GA4 Admin > Events (walkrideday, authuser=5) does not list cheat_sheet_download yet (new events take up to ~24h to appear; GA4 here has no way to mark a key event by name before it shows). Next interactive session from 10-14: star cheat_sheet_download under Recent events, then Ads > Goals > Conversions > New > Import > GA4 > cheat_sheet_download, include in account-default goals. 10-14 weekly: recommended as item 2. DONE 2026-10-14 (same day, Claude): cheat_sheet_download starred as a GA4 key event and imported into Ads as a Primary conversion action under Engagement, included in account-level goals (details in the 10-14 change entry). Ads shows 'Awaiting conversions'. Watch: first ad-click download should appear as a conversion on the Goals page; if none by 10-24, add the 'email me the cheat sheet' option. Note: the account-level goal set is now Sign-ups + Engagements + Outbound clicks; Maximize conversions will optimize toward all three. 10-15 quick check: FIRST CONVERSION recorded (cheat_sheet_download 1.00, Active, How-to Guides); the 'email me' fallback is not needed. October now meets the 1-conversion rule. 10-21: 9 cheat_sheet_download conversions in October; plus the first shift_store_click conversion (1)."
     },
     {
       "id": "t-closures-adgroup",
-      "status": "LIVE 2026-10-17, read after the Oct 31 Green Line closure",
+      "status": "LIVE 2026-10-17, read after the Oct 31 Green Line closure 10-21: 2 impressions so far. Has only 1 RSA, which breaks the 2-ads-per-ad-group rule; weekly item 1 adds a second.",
       "what": "Check impressions/CTR/search terms of How-to Guides > T closures after the Oct 31 and Nov 7 Green Line suspensions. Pause any keyword under 5% CTR after 300 impressions. Consider a conversion for guide_tool_used (trip planner use) if volume is real."
     }
   ],
@@ -718,6 +718,64 @@
       ],
       "emailed": true,
       "alerts_outcome": "item 1 DONE the same day by Claude on Keith's 'do ad grants item 1' (see the 2026-10-20 change entry)"
+    },
+    {
+      "date": "2026-10-22",
+      "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-22 (authuser=9 redirected to 5)",
+      "mtd": {
+        "window": "2026-10-01..2026-10-22",
+        "impressions": 2565,
+        "clicks": 193,
+        "ctr_pct": 7.52,
+        "cost": 1134.92,
+        "conversions": 12
+      },
+      "by_campaign": {
+        "How-to Guides": {
+          "impressions": 2347,
+          "clicks": 185,
+          "conversions": 12
+        },
+        "Town Walking & Biking": {
+          "impressions": 179,
+          "clicks": 7
+        },
+        "GSI — Brand": {
+          "impressions": 8,
+          "clicks": 1
+        },
+        "New Routes — Movers": {
+          "impressions": 27,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 8,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 0
+        }
+      },
+      "campaign_status": "How-to Guides and Brand Eligible (Limited) Limited by search volume; others Eligible. Budgets unchanged ($449.50/day).",
+      "banners": [
+        "Apply for financial products & services certification (since 10-12; do not apply)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)",
+        "Card: How-to Guides maintained 6 conversions this week while reducing cost per conversion from $91.82 to $37.20"
+      ],
+      "ads": {
+        "read": 33,
+        "all_eligible": true,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "strength": "29 Average, 3 Good, 1 Poor (Walking School Bus Ideas, already known) among 33 rows rendered"
+      },
+      "search_terms": "Top 25 by impressions all How-to Guides / Paying for the T transit lookups (boston public transportation 5/59, how to pay for the t in boston 2/23, how to take the t in boston 1/20, what is the t in boston 0/19, charlie card 4/18, boston t 2/18). www paybyplatema com 0/7 (negative added 10-20, no further action). New: bare \"bluebikes\" 0/4 (phrase close variant, How-to Guides / Bluebikes; ad group last edited 10-06, 16 days) -> proposed exact negative [bluebikes] on How-to Guides. Watch: bicycle trails in massachusetts 0/4 (Town), boston bike paths 0/4 (paused), boston öffentliche verkehrsmittel 0/4.",
+      "alerts": [
+        "SUGGEST (emailed as item 1): exact-match negative [bluebikes] on How-to Guides (bare navigational lookup, 4 impr 0 clicks)"
+      ],
+      "emailed": true
     }
   ],
   "snapshots": [
@@ -1467,6 +1525,280 @@
       "recommended_outcome": "all 3 DONE the same day by Claude on Keith's 'Please do items 1-3' (see the 2026-10-14 change entry)",
       "emailed": true,
       "verdict": "Act this week (one rule fix, one conversion step): October 6.80% (82/1,205), on pace above 5%; fails: QS<3 keyword 'boston bike paths' and 0 conversions."
+    },
+    {
+      "date": "2026-10-21",
+      "source": "scheduled weekly run: live account (This month = Oct 1-21; campaigns, keywords (3 pages, 218 rows), ads (37), conversions/all, search terms sorted by impressions, read via page scripts) + 10-21 script email (rolling 30d: 2,410 impr, 168 clicks, 7.0%, $1,056.43, 10 conv; flagged Town Walking & Biking 3.9% and QS<3 on 'biking in boston', both handled earlier today) + GSC weekly-2026-10-16 (clusters file; brand totals are a lower bound). Run used Claude in Chrome; Ads redirected authuser=9 to authuser=5.",
+      "window": "2026-10-01..2026-10-21",
+      "impressions": 2451,
+      "clicks": 175,
+      "ctr_pct": 7.14,
+      "cost": 1073.81,
+      "conversions": 10,
+      "avg_cpc": 6.14,
+      "week": {
+        "window": "2026-10-15..2026-10-21",
+        "impressions": 1246,
+        "clicks": 93,
+        "ctr_pct": 7.46,
+        "conversions": 10
+      },
+      "by_campaign": {
+        "How-to Guides": {
+          "impressions": 2243,
+          "clicks": 169,
+          "cost": 1046.99,
+          "conversions": 10
+        },
+        "Town Walking & Biking": {
+          "impressions": 179,
+          "clicks": 7,
+          "cost": 26.93,
+          "conversions": 0
+        },
+        "GSI — Brand": {
+          "impressions": 8,
+          "clicks": 1,
+          "cost": 7.81,
+          "conversions": 0
+        },
+        "New Routes — Movers": {
+          "impressions": 27,
+          "clicks": 0,
+          "cost": 0,
+          "conversions": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 6,
+          "clicks": 0,
+          "cost": 0,
+          "conversions": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 0,
+          "cost": 0,
+          "conversions": 0
+        }
+      },
+      "concentration": "153 of 175 clicks and all 10 conversions from 'how to pay for the t' (How-to Guides / Paying for the T, 2,079 impr, 7.36%); 'how to pay mbta fare' 12/143; Town 'biking in boston' 6/140 (paused 10-21). How-to Guides now 'Eligible (Limited) Limited by search volume'.",
+      "keywords": {
+        "total": 218,
+        "match": "185 broad, 31 phrase, 2 exact",
+        "eligible": 156,
+        "low_search_volume": 58,
+        "paused": 4,
+        "low_search_volume_by_campaign": {
+          "GSI — Brand": "4 of 11",
+          "How-to Guides": "7 of 42",
+          "New Routes — Movers": "0 of 14",
+          "Shift App — Massachusetts": "4 of 31",
+          "Shift Your Semester — Students": "17 of 52",
+          "Town Walking & Biking": "26 of 68"
+        },
+        "single_word": [
+          "\"gogreenstreets\" (brand, allowed)"
+        ],
+        "low_quality_score": [],
+        "paused_list": [
+          "biking in worcester (Town, QS 1, paused 10-07)",
+          "boston bike paths (Town, QS<3, paused 10-14)",
+          "biking in boston (Town, QS 1, paused 10-21)",
+          "biking in boston (New Routes, paused 10-07)"
+        ],
+        "t_closures": "22 phrase keywords, 2 impressions total ('is the orange line running' 0/2); volume expected around Oct 31 / Nov 7 Green Line closures"
+      },
+      "ads": {
+        "total": 37,
+        "ad_groups": 19,
+        "all_eligible": true,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "strength": "29 Average, 6 Good, 1 Excellent, 1 Poor",
+        "poor": [
+          "Town Walking & Biking / Walk and bike to school: Walking School Bus Ideas"
+        ],
+        "under_two_ads": [
+          "How-to Guides / T closures (1 RSA since the 10-17 upload; grant rule wants 2)"
+        ]
+      },
+      "sitelinks": 15,
+      "sitelinks_source": "script email; not recounted in the UI this run",
+      "campaign_status": "How-to Guides and Brand 'Eligible (Limited) Limited by search volume'; others Eligible; all Maximize conversions. Budgets How-to $50, Town $40, Brand $30, New Routes $109.50, Shift App $110, Semester $110 (account $449.50/day).",
+      "conversion_tracking_status": "cheat_sheet_download Active (9 all conv.); shift_store_click Active (1, first ever); newsletter_signup, event_register_click, event_calendar_save Awaiting conversions; donate_page_view not in goals.",
+      "account_banners": [
+        "Apply for financial products & services certification (since 10-12; no ad limited by policy; do not apply)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "brand_search_gsc_week": {
+        "range": "2026-10-10..2026-10-16",
+        "impressions": 15,
+        "clicks": 3,
+        "note": "green streets 9 (0 clicks), green streets initiative 6 (3 clicks); lower bound (clusters file stores top queries only)"
+      },
+      "month_end_math": "last-7-day pace ~178 impr/day -> ~4,230 impr in October -> ~212 clicks needed for 5%; 37 more over 10 days (~3.7/day) vs ~13/day last week; the rest of the month needs only ~2.1% CTR",
+      "search_terms": [
+        {
+          "term": "boston public transportation",
+          "impressions": 57,
+          "clicks": 5,
+          "conversions": 0
+        },
+        {
+          "term": "how to pay for the t in boston",
+          "impressions": 34,
+          "clicks": 3,
+          "conversions": 1
+        },
+        {
+          "term": "how to take the t in boston",
+          "impressions": 20,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "boston t",
+          "impressions": 18,
+          "clicks": 2,
+          "conversions": 0
+        },
+        {
+          "term": "what is the t in boston",
+          "impressions": 18,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "how to ride the t in boston",
+          "impressions": 17,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "public transportation in boston",
+          "impressions": 17,
+          "clicks": 2,
+          "conversions": 0
+        },
+        {
+          "term": "charlie card",
+          "impressions": 16,
+          "clicks": 3,
+          "conversions": 0
+        },
+        {
+          "term": "the t boston",
+          "impressions": 15,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston transit",
+          "impressions": 14,
+          "clicks": 3,
+          "conversions": 0
+        },
+        {
+          "term": "the t in boston",
+          "impressions": 13,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston t tickets",
+          "impressions": 11,
+          "clicks": 2,
+          "conversions": 0
+        },
+        {
+          "term": "boston subway",
+          "impressions": 9,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "t train boston",
+          "impressions": 9,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "boston public transit",
+          "impressions": 8,
+          "clicks": 2,
+          "conversions": 0
+        },
+        {
+          "term": "public transportation boston",
+          "impressions": 8,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "how much is the t in boston",
+          "impressions": 8,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "how to pay for bus in boston",
+          "impressions": 8,
+          "clicks": 2,
+          "conversions": 0
+        },
+        {
+          "term": "taking the t in boston",
+          "impressions": 7,
+          "clicks": 1,
+          "conversions": 0
+        },
+        {
+          "term": "www paybyplatema com",
+          "impressions": 7,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston metro day pass",
+          "impressions": 7,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston t pass",
+          "impressions": 7,
+          "clicks": 2,
+          "conversions": 0
+        },
+        {
+          "term": "how to pay for subway in boston",
+          "impressions": 7,
+          "clicks": 2,
+          "conversions": 1
+        },
+        {
+          "term": "t pass boston",
+          "impressions": 7,
+          "clicks": 0,
+          "conversions": 0
+        },
+        {
+          "term": "boston the t",
+          "impressions": 6,
+          "clicks": 1,
+          "conversions": 0
+        }
+      ],
+      "search_terms_note": "493 terms this month. 'how to pay for the t in boston' appears as exact (23/2/1) and phrase (11/1/0) rows, merged above. All top 50 are How-to Guides / Paying for the T transit lookups. 'www paybyplatema com' 7 impr total (negative added 10-20 blocks it going forward). 'boston öffentliche verkehrsmittel' 4/0 (German, on topic). No new negatives proposed.",
+      "recommended": [
+        "1 add a second RSA to How-to Guides / T closures (only ad group with 1 ad; grant wants 2) before the Oct 31 Green Line closure",
+        "2 'Fares and passes' ad group in How-to Guides (keyword item 1 from 10-14; How-to limited by search volume)",
+        "3 'Events near you' sitelink on How-to Guides (next step after the 10-16 event conversion import)"
+      ],
+      "not_recommended": "New Routes: did NOT re-enable 'biking in boston' despite the 10-07 kill condition (still 27 impr) because its Town twin was paused 10-21 at QS 1 and the movers landing changed 10-13 (judge 10-27). employer_inquiry event now fires from /shift/employers (EmployerInquiry.tsx); importing it is the next step toward an employer campaign, mentioned in the report note only.",
+      "emailed": true,
+      "verdict": "Act this week (one small rule fix): October 7.14% (175/2,451), 10 conversions; fail: T closures ad group has 1 ad."
     }
   ]
 }
