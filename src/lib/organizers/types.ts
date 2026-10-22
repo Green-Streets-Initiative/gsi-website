@@ -2,7 +2,7 @@
  * The web organizer console's view of a Shift group ride.
  *
  * Every shape here comes back from a Shift database function (migration
- * 01375, plus the app's own ride functions), called in the browser with the
+ * 01377, plus the app's own ride functions), called in the browser with the
  * organizer's own sign-in. The console never reads or writes a ride table
  * directly.
  */

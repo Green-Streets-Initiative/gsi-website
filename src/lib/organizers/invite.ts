@@ -3,7 +3,7 @@ import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
- * Inviting a co-organizer: the Shift function invite_ride_leader (01375),
+ * Inviting a co-organizer: the Shift function invite_ride_leader (01377),
  * called as the organizer so its own check decides who may invite, then the
  * email telling them. Shared by the console's Co-organizers tab and the
  * assistant.

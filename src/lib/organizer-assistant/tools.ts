@@ -390,6 +390,11 @@ function inputPayload(i: RideInput): Record<string, unknown> {
 }
 
 function scheduleLine(p: Record<string, unknown>): string {
+  const base = scheduleBase(p)
+  return p.end_time ? `${base}, back by ${clock(String(p.end_time))}` : base
+}
+
+function scheduleBase(p: Record<string, unknown>): string {
   const time = clock(String(p.start_time ?? ''))
   if (p.schedule === 'one_time') return p.ride_date ? `${dateLabel(String(p.ride_date))} at ${time}` : `One date at ${time}`
   const s = scheduleText({
@@ -759,7 +764,8 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
 }
 
 type Sent = { notified?: number; sent?: number; emailed?: number }
-const sentText = (s: Sent | null) => (s && (s.notified ?? 0) > 0 ? { sent_to: s.notified, by_app: s.sent ?? 0, by_email: s.emailed ?? 0 } : { sent_to: 0 })
+// The count the screens show ("sent to N"): everyone it went out to.
+const sentText = (s: Sent | null) => ({ sent_to: s?.notified ?? 0 })
 
 /** Runs exactly what the card showed, as the organizer. */
 export async function runApproved(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
