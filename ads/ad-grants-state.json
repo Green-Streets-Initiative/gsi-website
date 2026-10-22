@@ -67,6 +67,10 @@
     {
       "date": "2026-10-21",
       "what": "Claude, on Keith's 'handle the items from this afternoon's Ad Grants compliance email' (interactive chat, Claude in Chrome, no upload). The 10-21 script email flagged (a) Town Walking & Biking CTR 3.9% (7/180, rolling 30d) and (b) 1 keyword with QS < 3. Both were the same keyword: 'biking in boston' (Town Walking & Biking / Town routes, broad), 'Eligible (Limited) Rarely shown (low Quality Score)', Oct 1-21 140 impr / 6 clicks / 4.29% / $23.72, i.e. ~78% of the campaign's impressions. Paused it via Keywords > tick row > Edit > Pause; row reads 'Paused'. Scrolled all ~226 account keywords afterwards: no enabled keyword shows a low-Quality-Score status (the 3 flagged are all paused: biking in boston, boston bike paths, biking in worcester). The New Routes copy of 'biking in boston' was already paused 10-07. Expect Town Walking & Biking volume to drop to a few impressions a day; account CTR is unaffected or slightly up (Oct MTD 7.0%). Nothing else touched."
+    },
+    {
+      "date": "2026-10-22",
+      "what": "Claude, on Keith's 'Do ad grants item 1' in an interactive chat (Claude in Chrome, no upload). Added campaign-level negative keyword [bluebikes] (exact match) to How-to Guides (24306480410) via Keywords > Negative keywords > + > Add to: Campaign. Exact match blocks only the bare one-word navigational lookup (4 impr, 0 clicks); 'how to use bluebikes' and similar still serve. Verified: list shows 2 rows, [bluebikes] / How-to Guides / Campaign / Exact match and paybyplatema / Broad match. Nothing else touched."
     }
   ],
   "open_items": [
@@ -775,7 +779,8 @@
       "alerts": [
         "SUGGEST (emailed as item 1): exact-match negative [bluebikes] on How-to Guides (bare navigational lookup, 4 impr 0 clicks)"
       ],
-      "emailed": true
+      "emailed": true,
+      "alerts_outcome": "item 1 DONE the same day by Claude on Keith's 'Do ad grants item 1' (see the 2026-10-22 change entry)"
     }
   ],
   "snapshots": [
