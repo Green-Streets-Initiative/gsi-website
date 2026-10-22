@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, Sparkles, HelpCircle, Mail, ChevronRight, MessageSquare, Plus } from 'lucide-react'
+import { Check, ChevronDown, ListChecks, HelpCircle, Mail, ChevronRight, MessageSquareText, Plus } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
 import { usePortal } from '../_lib/portal-context'
 import { assistantAvailable, openAssistant } from '../_components/AssistantPanel'
@@ -126,7 +126,7 @@ export default function SetupPage() {
           {!allDone && (
             <Card pad>
               <div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-accent-soft text-accent">
-                <Sparkles size={22} strokeWidth={1.75} />
+                <ListChecks size={22} strokeWidth={1.75} />
               </div>
               <div className="mb-1.5 text-[16px] font-bold text-ink">Why finish setup?</div>
               <p className="text-[13.5px] leading-[1.5] text-ink-muted">
@@ -231,7 +231,7 @@ function StepRow({
               {onAsk && (
                 <p className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[14px] text-ink-muted">
                   Fill it in below, or answer a few questions instead.
-                  <Button variant="secondary" size="sm" icon={MessageSquare} onClick={onAsk}>
+                  <Button variant="secondary" size="sm" icon={MessageSquareText} onClick={onAsk}>
                     Do it with the assistant
                   </Button>
                 </p>
@@ -243,7 +243,7 @@ function StepRow({
               <p className="max-w-[48ch] text-[14px] leading-[1.5] text-ink-muted">{s.desc}</p>
               <span className="flex flex-wrap gap-2">
                 {onAsk && (
-                  <Button variant="secondary" size="sm" icon={MessageSquare} onClick={onAsk}>
+                  <Button variant="secondary" size="sm" icon={MessageSquareText} onClick={onAsk}>
                     Do it with the assistant
                   </Button>
                 )}

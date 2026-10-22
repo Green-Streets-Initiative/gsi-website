@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
-import { Compass, Megaphone, MessageSquare, Printer, Share2, Trophy, UserPlus, type LucideIcon } from 'lucide-react'
+import { Compass, Megaphone, MessageSquareText, Printer, Share2, Trophy, UserPlus, type LucideIcon } from 'lucide-react'
 import { Card, CardHead, CardBody } from '@/components/employer/Card'
 import ProgressBar from '@/components/employer/ProgressBar'
 import Badge from '@/components/employer/Badge'
@@ -221,7 +221,7 @@ export default function GoalProgressCard({
                 </Button>
               ))}
               {onAsk && (
-                <Button variant="secondary" size="sm" icon={MessageSquare} onClick={onAsk}>
+                <Button variant="secondary" size="sm" icon={MessageSquareText} onClick={onAsk}>
                   Ask how to get there
                 </Button>
               )}

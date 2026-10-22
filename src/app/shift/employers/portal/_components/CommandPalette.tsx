@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { MessageSquare, Search, Trophy, UserPlus, Wallet, Printer, LogOut, ShieldCheck, type LucideIcon } from 'lucide-react'
+import { MessageSquareText, Search, Trophy, UserPlus, Wallet, Printer, LogOut, ShieldCheck, type LucideIcon } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
 import { computeSetupSteps, nextSetupStep } from '../_lib/setup-steps'
 import { visibleNav, isNavItem } from './Sidebar'
@@ -184,7 +184,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
                   onClick={askAssistant}
                   className="flex w-full items-center gap-3 bg-accent-softer px-4 py-3 text-left text-[14px] text-ink"
                 >
-                  <MessageSquare size={16} strokeWidth={1.75} className="shrink-0 text-accent" aria-hidden />
+                  <MessageSquareText size={16} strokeWidth={1.75} className="shrink-0 text-accent" aria-hidden />
                   <span className="min-w-0 flex-1">
                     Ask the assistant: <span className="font-semibold">&ldquo;{query.trim()}&rdquo;</span>
                   </span>

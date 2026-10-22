@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, type ReactNode } from 'react'
-import { FileText, MessageSquare } from 'lucide-react'
+import { FileText, MessageSquareText } from 'lucide-react'
 import { PersonSimpleWalk, Bicycle, Car, Bus, Train, Scooter, UsersThree, Sailboat, MapPin } from '@phosphor-icons/react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
@@ -362,7 +362,7 @@ export default function ImpactPage() {
           assistantAvailable(group, isGsiAdmin) ? (
             <Button
               variant="secondary"
-              icon={MessageSquare}
+              icon={MessageSquareText}
               onClick={() => openAssistant(`Explain our results for ${rangeLabel.toLowerCase()}: what stands out, and what should we do about it?`)}
             >
               Ask about these numbers

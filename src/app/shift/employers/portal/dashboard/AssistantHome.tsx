@@ -10,7 +10,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { ArrowUp, BarChart3, Building2, ImageIcon, Route, Sparkles, Target, Trophy, Users } from 'lucide-react'
+import { ArrowUp, BarChart3, Building2, ImageIcon, Route, Target, Trophy, Users } from 'lucide-react'
 import PortalHeroPanel from '../_components/PortalHeroPanel'
 import { openAssistant } from '../_components/AssistantPanel'
 import { Card } from '@/components/employer/Card'
@@ -163,10 +163,7 @@ export default function AssistantHome({ steps, starters }: { steps: Step[]; star
 
       {steps.length > 0 && (
         <Card className="mt-4">
-          <div className="flex items-center gap-2 px-5 pb-1 pt-4">
-            <Sparkles size={15} className="text-accent" aria-hidden />
-            <h2 className="text-[14px] font-semibold text-ink">Suggested next steps</h2>
-          </div>
+          <h2 className="px-5 pb-1 pt-4 text-[14px] font-semibold text-ink">Suggested next steps</h2>
           <ul className="divide-y divide-line-2 px-5">
             {steps.map((s) => (
               <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3.5">
