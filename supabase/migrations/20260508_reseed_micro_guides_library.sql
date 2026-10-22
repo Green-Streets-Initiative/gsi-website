@@ -1,4 +1,4 @@
--- Seed migration for the micro-guide library (28 guides).
+-- Seed migration for the micro-guide library (29 guides).
 -- Generated from content/micro-guides-library.md by
 -- scripts/build-micro-guides-migration.mjs — do not edit by hand.
 --
@@ -18,7 +18,7 @@ UPDATE content_items SET primary_mode = 'cycling' WHERE primary_mode = 'bike';
 UPDATE content_items SET status = 'archived'
   WHERE id IN ('mg_blue_bikes', 'mg_return_bluebike');
 
--- 3. Upsert the 28-guide library.
+-- 3. Upsert the 29-guide library.
 INSERT INTO content_items (
   id, title, slug, summary, body, body_template, primary_mode, primary_barrier, status,
   content_type, surfaces, topics, related_guides, is_starter,
@@ -2129,6 +2129,78 @@ Before you sign a lease, [put the address into our trip planner](https://www.gog
     false,
     4,
     timezone('America/New_York', '2026-10-17 12:00'::timestamp)
+  ),
+  (
+    'mg_show_someone_the_way',
+    'Showing someone the way',
+    'showing-someone-the-way',
+    'How to make a first trip together go well, whether you''re showing a neighbor the way or you''re the one trying it.',
+    $guidebody$### Plan it together
+
+- Agree on a day, a time and a meeting spot by email.
+- Plan the route in Shift and send it to each other. On a bike, pick the calmest route, not the fastest.
+- Agree on what you'll do if it rains.
+
+### Stay safe
+
+- Meet somewhere public the first time, like a T station entrance or a coffee shop.
+- Tell a friend where you're going. Either of you can end the trip at any time.
+- If something feels off, open Your matches in Shift and tap "Something wrong?". If you're in danger, call 911.
+
+### If you're showing the way
+
+- You only need to know this trip. Go at their pace and point out the tricky crossings.
+- By bike: check both bikes before you start, and ride one behind the other on busy streets.
+- By bus or train: show how to pay with a [CharlieCard](https://www.mbta.com/fares/charliecard) or a phone, and where to wait.
+- Keep it to the trip: don't lend a bike, carry anyone on yours, or offer a ride in your car.
+
+### If you're the one trying it
+
+- Bring a charged phone, a way to pay for transit, and a helmet and lights if you're biking.
+- Ask anything. That's the point of going together.
+- Want more practice? Boston Bikes runs [free learn-to-bike classes for adults](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike).
+
+### After the trip
+
+Shift will ask how it went, and only the Green Streets team sees your answer. Then try the same trip on your own within a week, while the route is fresh.$guidebody$,
+    $guidebody$### Plan it together
+
+- Agree on a day, a time and a meeting spot by email.
+- Plan the route in Shift and send it to each other. On a bike, pick the calmest route, not the fastest.
+- Agree on what you'll do if it rains.
+
+### Stay safe
+
+- Meet somewhere public the first time, like a T station entrance or a coffee shop.
+- Tell a friend where you're going. Either of you can end the trip at any time.
+- If something feels off, open Your matches in Shift and tap "Something wrong?". If you're in danger, call 911.
+
+### If you're showing the way
+
+- You only need to know this trip. Go at their pace and point out the tricky crossings.
+- By bike: check both bikes before you start, and ride one behind the other on busy streets.
+- By bus or train: show how to pay with a [CharlieCard](https://www.mbta.com/fares/charliecard) or a phone, and where to wait.
+- Keep it to the trip: don't lend a bike, carry anyone on yours, or offer a ride in your car.
+
+### If you're the one trying it
+
+- Bring a charged phone, a way to pay for transit, and a helmet and lights if you're biking.
+- Ask anything. That's the point of going together.
+- Want more practice? Boston Bikes runs [free learn-to-bike classes for adults](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike).
+
+### After the trip
+
+Shift will ask how it went, and only the Green Streets team sees your answer. Then try the same trip on your own within a week, while the route is fresh.$guidebody$,
+    'multimodal',
+    'safety',
+    'draft',
+    'micro_guide',
+    ARRAY['guide_library']::text[],
+    ARRAY['getting-started', 'safety', 'planning']::text[],
+    ARRAY['mg_low_stress_routes', 'mg_first_bike_lane', 'mg_pay_for_t']::text[],
+    false,
+    2,
+    timezone('America/New_York', '2026-10-22 12:00'::timestamp)
   )
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,
