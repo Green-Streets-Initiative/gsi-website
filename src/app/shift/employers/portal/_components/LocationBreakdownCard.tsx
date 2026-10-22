@@ -76,9 +76,8 @@ export default function LocationBreakdownCard({
       ) : !data ? (
         <p className="px-6 pb-6 text-[14px] text-ink-tertiary">Loading...</p>
       ) : data.locations.length === 0 ? (
-        <p className="px-6 pb-6 text-[14px] leading-[1.6] text-ink-muted">
-          Numbers by location appear once a location has at least {min} people matched to it. We match people by where their weekday
-          commute trips start or end, and update it every night. Until then your team shows as one group, to protect privacy.
+        <p className="px-6 pb-6 text-[15px] leading-[1.6] text-ink-muted">
+          Each location appears once {min} or more people commute to it, so no one can be singled out.
         </p>
       ) : (
         <div className="px-4 pb-5 sm:px-6">

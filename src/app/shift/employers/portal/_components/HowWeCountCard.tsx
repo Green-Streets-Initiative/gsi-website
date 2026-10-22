@@ -66,12 +66,12 @@ export default function HowWeCountCard({ legacy = false }: { legacy?: boolean })
         <dl className="grid gap-4 sm:grid-cols-2">
           {HOW_WE_COUNT.map((item) => (
             <div key={item.title}>
-              <dt className="text-[13.5px] font-bold text-ink">{item.title}</dt>
-              <dd className="mt-1 text-[13px] leading-[1.55] text-ink-muted">{item.body}</dd>
+              <dt className="text-[15px] font-bold text-ink">{item.title}</dt>
+              <dd className="mt-1 text-[14px] leading-[1.55] text-ink-muted">{item.body}</dd>
             </div>
           ))}
         </dl>
-        <p className="mt-5 border-t border-line pt-4 text-[12.5px] leading-[1.55] text-ink-tertiary">
+        <p className="mt-5 border-t border-line pt-4 text-[14px] leading-[1.55] text-ink-tertiary">
           {legacy ? LEGACY_CO2_LINE : EPA_FACTOR_LINE}
         </p>
       </CardBody>

@@ -4,11 +4,13 @@ import { useState, useEffect, useMemo, type ReactNode } from 'react'
 import { FileText, MessageSquareText } from 'lucide-react'
 import { PersonSimpleWalk, Bicycle, Car, Bus, Train, Scooter, UsersThree, Sailboat, MapPin } from '@phosphor-icons/react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import posthog from 'posthog-js'
 import PortalPageHead from '../_components/PortalPageHead'
 import { assistantAvailable, openAssistant } from '../_components/AssistantPanel'
 import PortalHeroPanel from '../_components/PortalHeroPanel'
 import ChangeStrip from '../_components/ChangeStrip'
+import TabStrip, { tabPanelProps } from '../_components/TabStrip'
 import PeerBenchmarkCard from '../_components/PeerBenchmarkCard'
 import HowWeCountCard from '../_components/HowWeCountCard'
 import { usePortal } from '../_lib/portal-context'
@@ -39,6 +41,17 @@ import ShiftRateChart from '@/components/employer/ShiftRateChart'
 
 const PORTAL = '/shift/employers/portal'
 const RANGE_KEY = 'portal.impact.range'
+
+/** Below the headline numbers, one tab at a time (page charters, Keith
+ *  2026-10-22: the first screen does the job; the rest sits a tab away). */
+const TABS = [
+  { id: 'trips', label: 'Trips' },
+  { id: 'compared', label: 'Compared' },
+  { id: 'locations', label: 'By location' },
+  { id: 'how', label: 'How we count' },
+] as const
+type ImpactTab = (typeof TABS)[number]['id']
+const isTab = (v: string | null): v is ImpactTab => TABS.some((t) => t.id === v)
 
 /** The Phosphor set the Shift app (components/ModeIcon.tsx) and the
  *  website's mode charts use, so a mode looks the same everywhere. */
@@ -80,12 +93,12 @@ function HeroReadouts({ readouts }: { readouts: Readout[] }) {
     <dl className="grid basis-full grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
       {readouts.map((r, i) => (
         <div key={r.label} className="min-w-0">
-          <dt className="text-[12.5px] font-semibold leading-snug text-white/85">{r.label}</dt>
+          <dt className="text-[14px] font-semibold leading-snug text-white/85">{r.label}</dt>
           <dd className="mt-1 flex items-center gap-1.5 font-headline text-[28px] font-extrabold leading-none text-white">
             <span className="truncate">{r.value}</span>
             <StatHint hint={r.hint} className="shrink-0 text-white/85 hover:text-white" align={i % 2 === 1 ? 'right' : 'left'} />
           </dd>
-          <dd className="mt-1.5 min-h-[18px] text-[13px] leading-[1.4] text-white/85">{r.sub}</dd>
+          <dd className="mt-1.5 min-h-[18px] text-[14px] leading-[1.4] text-white/85">{r.sub}</dd>
         </div>
       ))}
     </dl>
@@ -102,6 +115,18 @@ function formatGoalDate(iso: string): string {
 
 export default function ImpactPage() {
   const { group, memberCount, loading, isGsiAdmin } = usePortal()
+  const searchParams = useSearchParams()
+  const [tab, setTab] = useState<ImpactTab>(() => {
+    const t = searchParams.get('tab')
+    return isTab(t) ? t : 'trips'
+  })
+  function changeTab(t: ImpactTab) {
+    setTab(t)
+    const url = new URL(window.location.href)
+    if (t === 'trips') url.searchParams.delete('tab')
+    else url.searchParams.set('tab', t)
+    window.history.replaceState(null, '', url)
+  }
 
   // This page owns its numbers. Home keeps the shared 30-day figures in the
   // context; nothing here writes to them (Keith 2026-09-30).
@@ -246,13 +271,13 @@ export default function ImpactPage() {
     if (!dashboard) return null
     if (dashboard.co2_avoided_kg_v2 != null) {
       return {
-        text: `${formatCo2(dashboard.co2_avoided_kg_v2)} of CO₂e avoided: the emissions of driving alone over the same miles, minus the emissions of the way people actually went.`,
+        text: `${formatCo2(dashboard.co2_avoided_kg_v2)} of CO₂e avoided.`,
         hint: STAT_HINTS.co2Kg,
         legacy: false,
       }
     }
     return {
-      text: `${formatCo2(dashboard.co2_avoided_kg)} of CO₂ avoided: what a gasoline car would have emitted driving the same miles.`,
+      text: `${formatCo2(dashboard.co2_avoided_kg)} of CO₂ avoided.`,
       hint: STAT_HINTS.co2KgLegacy,
       legacy: true,
     }
@@ -359,21 +384,26 @@ export default function ImpactPage() {
         title="Impact"
         subtitle="What your team's trips add up to"
         actions={
-          assistantAvailable(group, isGsiAdmin) ? (
-            <Button
-              variant="secondary"
-              icon={MessageSquareText}
-              onClick={() => openAssistant(`Explain our results for ${rangeLabel.toLowerCase()}: what stands out, and what should we do about it?`)}
-            >
-              Ask about these numbers
+          <div className="flex flex-wrap gap-2">
+            {assistantAvailable(group, isGsiAdmin) && (
+              <Button
+                variant="secondary"
+                icon={MessageSquareText}
+                onClick={() => openAssistant(`Explain our results for ${rangeLabel.toLowerCase()}: what stands out, and what should we do about it?`)}
+              >
+                Ask about these numbers
+              </Button>
+            )}
+            <Button variant="secondary" icon={FileText} onClick={openReport} disabled={!dashboard || openingReport || busy}>
+              {openingReport ? 'Opening…' : 'Print or save as PDF'}
             </Button>
-          ) : undefined
+          </div>
         }
       />
 
       {dashboardError && (
         <Card pad>
-          <p className="text-[13.5px] text-ep-danger">{dashboardError}</p>
+          <p className="text-[15px] text-ep-danger">{dashboardError}</p>
         </Card>
       )}
 
@@ -387,7 +417,7 @@ export default function ImpactPage() {
           />
         </div>
         {busy && (
-          <span role="status" className="text-[13px] text-ink-tertiary">
+          <span role="status" className="text-[14px] text-ink-tertiary">
             Updating…
           </span>
         )}
@@ -413,8 +443,7 @@ export default function ImpactPage() {
             </>
           }
           actions={
-            <>
-              <HeroReadouts
+            <HeroReadouts
                 readouts={[
                   { label: 'Shift Rate', value: shiftRate != null ? `${shiftRate}%` : '—', hint: STAT_HINTS.shiftRate, sub: shiftRateChange },
                   {
@@ -427,32 +456,21 @@ export default function ImpactPage() {
                   { label: 'Emissions shifted', value: emissionsShifted.value, hint: STAT_HINTS.emissionsShifted, sub: emissionsShifted.sub },
                 ]}
               />
-              <div className="mt-2 basis-full">
-                <Button variant="secondary" icon={FileText} onClick={openReport} disabled={!dashboard || openingReport || busy}>
-                  {openingReport ? 'Opening…' : 'Print or save as PDF'}
-                </Button>
-                <p className="mt-2 text-[12.5px] leading-snug text-white/85">
-                  Opens a print-ready version of this page in a new tab.
-                </p>
-              </div>
-            </>
           }
         />
       </div>
 
-      {reportError && <p className="text-[13px] text-ep-danger">{reportError}</p>}
-
-      <ChangeStrip current={dashboard} rangeLabel={rangeLabel} nowMs={win.end.getTime()} dim={busy} />
+      {reportError && <p className="text-[14px] text-ep-danger">{reportError}</p>}
 
       {/* Goal vs actual, from the success plan on Setup */}
       {goalCard ? (
         <Card pad>
           <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
             <strong className="text-[14px] text-ink">{goalCard.title}</strong>
-            <span className="text-[13px] font-semibold text-ink-muted">{goalCard.currentLabel}</span>
+            <span className="text-[14px] font-semibold text-ink-muted">{goalCard.currentLabel}</span>
           </div>
           <ProgressBar pct={goalCard.pct} />
-          <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-tertiary">
+          <p className="mt-1.5 text-[14px] leading-[1.5] text-ink-tertiary">
             {goalCard.reached ? 'Goal reached. ' : ''}
             {goalCard.launch ? `Launch date ${goalCard.launch}. ` : ''}
             <Link href={`${PORTAL}/setup`} className="font-medium text-accent no-underline hover:underline">
@@ -461,7 +479,7 @@ export default function ImpactPage() {
           </p>
         </Card>
       ) : hasGoal ? null : (
-        <p className="text-[13.5px] text-ink-muted">
+        <p className="text-[15px] text-ink-muted">
           <Link href={`${PORTAL}/setup`} className="font-medium text-accent no-underline hover:underline">
             Set a goal on the Setup page
           </Link>{' '}
@@ -469,15 +487,11 @@ export default function ImpactPage() {
         </p>
       )}
 
-      {/* Stat grid */}
-      <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-        <Card pad>
-          <StatTile
-            label="Employees joined"
-            value={String(memberCount)}
-            hint="People who joined your workplace in the Shift app"
-          />
-        </Card>
+      <TabStrip tabs={[...TABS]} value={tab} onChange={(v) => changeTab(v as ImpactTab)} label="Impact details" prefix="impact" />
+
+      <div {...tabPanelProps('impact', 'trips')} hidden={tab !== 'trips'} className="grid gap-6 outline-none">
+      {/* Totals. Joined lives in Participation above. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5">
         <Card pad>
           <StatTile
             label="Active trips"
@@ -495,7 +509,7 @@ export default function ImpactPage() {
             dim={busy}
           />
         </Card>
-        <Card pad>
+        <Card pad className="col-span-2 sm:col-span-1">
           <StatTile
             label="Most popular mode"
             value={topNonCarMode ? prettyMode(topNonCarMode.mode) : '—'}
@@ -510,7 +524,7 @@ export default function ImpactPage() {
         <Card>
           <CardHead
             title="Shift Rate, week by week"
-            sub="Each week's share of trips made without driving alone, over the last 12 weeks"
+            sub="The last 12 weeks"
             action={
               shiftRate != null ? (
                 <Badge tone="success">
@@ -522,11 +536,17 @@ export default function ImpactPage() {
           <CardBody className={busy ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
             {hasTrend && weeks ? (
               <>
-                <ShiftRateChart weeks={weeks} width={540} height={240} color="#2D6A4F" ink="#191A2E" muted="#4A4D68" />
-                <p className="mt-1 text-[12px] text-ink-muted">A dash marks a week with no recorded trips.</p>
+                {/* Drawn narrower on a phone so its labels stay readable when it scales down. */}
+                <div className="sm:hidden">
+                  <ShiftRateChart weeks={weeks} width={340} height={220} color="#2D6A4F" ink="#191A2E" muted="#4A4D68" />
+                </div>
+                <div className="hidden sm:block">
+                  <ShiftRateChart weeks={weeks} width={540} height={240} color="#2D6A4F" ink="#191A2E" muted="#4A4D68" />
+                </div>
+                <p className="mt-1 text-[14px] text-ink-muted">A dash marks a week with no recorded trips.</p>
               </>
             ) : (
-              <div className="flex h-[160px] items-center justify-center text-center text-[13px] text-ink-muted">
+              <div className="flex h-[160px] items-center justify-center text-center text-[14px] text-ink-muted">
                 The trend appears after a few weeks of recorded trips.
               </div>
             )}
@@ -544,11 +564,11 @@ export default function ImpactPage() {
               return (
                 <div key={m.mode}>
                   <div className="mb-1 flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-1.5 text-[13px] font-semibold text-ink">
+                    <span className="flex items-center gap-1.5 text-[14px] font-semibold text-ink">
                       <Icon size={16} weight="bold" className="text-ink-icon" aria-hidden />
                       {m.label}
                     </span>
-                    <span className="text-right text-[12.5px] tabular-nums text-ink-muted">
+                    <span className="text-right text-[14px] tabular-nums text-ink-muted">
                       {m.count} {m.count === 1 ? 'trip' : 'trips'} ({m.pct}%)
                       {hasMiles && m.miles != null && (
                         <>
@@ -563,19 +583,27 @@ export default function ImpactPage() {
               )
             })}
             {modes.length === 0 && (
-              <p className="py-6 text-center text-[13px] text-ink-muted">No trips recorded in this period.</p>
+              <p className="py-6 text-center text-[14px] text-ink-muted">No trips recorded in this period.</p>
             )}
           </CardBody>
         </Card>
       </div>
 
-      <PeerBenchmarkCard benchmark={benchmark} rangeLabel={rangeLabel} dim={busy} />
-
-      <LocationBreakdownCard groupId={group.id} days={win.days} rangeLabel={rangeLabel} />
-
       <StepsEquivalentCard groupId={group.id} days={win.days} />
+      </div>
 
-      <HowWeCountCard legacy={co2Line?.legacy ?? true} />
+      <div {...tabPanelProps('impact', 'compared')} hidden={tab !== 'compared'} className="grid gap-6 outline-none">
+        <ChangeStrip current={dashboard} rangeLabel={rangeLabel} nowMs={win.end.getTime()} dim={busy} />
+        <PeerBenchmarkCard benchmark={benchmark} rangeLabel={rangeLabel} dim={busy} />
+      </div>
+
+      <div {...tabPanelProps('impact', 'locations')} hidden={tab !== 'locations'} className="outline-none">
+        <LocationBreakdownCard groupId={group.id} days={win.days} rangeLabel={rangeLabel} />
+      </div>
+
+      <div {...tabPanelProps('impact', 'how')} hidden={tab !== 'how'} className="outline-none">
+        <HowWeCountCard legacy={co2Line?.legacy ?? true} />
+      </div>
     </div>
   )
 }

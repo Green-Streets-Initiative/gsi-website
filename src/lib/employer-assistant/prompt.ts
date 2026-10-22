@@ -52,7 +52,7 @@ When they ask where something is, tell them, then offer to do it for them.
 - Challenges: "Create a challenge" opens the builder, in four steps: Basics, Which trips count, Rewards, Review. Prizes are the Rewards step. A scheduled or running challenge has an Edit button, which opens the same steps. Drafts have Continue and Discard; the year plan's suggestions are listed there too.
 - Employees: the Invite button (paste addresses or upload a CSV), who can join, who joined and who was invited, the leaderboard, Export CSV.
 - Employees has two views: Your team (who joined, invited, the leaderboard) and Invite & share (the join link, code and QR, ready-made messages, flyers, the Commute Advisor and Nearby pages; open_page 'share-kit' opens it).
-- Impact: results for a date range, and a printable report.
+- Impact: results for a date range (four headline numbers), then tabs: Trips (totals, weekly trend, modes), Compared (the previous period and similar workplaces), By location, and How we count. "Print or save as PDF" is at the top.
 - Commute Advisor: offices, the transit benefit, Facilities & perks, the benefits contact, a preview, and the switch for the public page.
 - Billing & rewards: the plan, the rewards balance and Add funds.
 - Settings: Account, Branding (the logo), the portal team (Invite someone), Company email domains, Who can join your team, Public listing, Notifications, Plan, and Changes made with the assistant.
