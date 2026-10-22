@@ -45,6 +45,7 @@ type Item =
   | { kind: 'user'; text: string }
   | { kind: 'user_image'; url: string }
   | { kind: 'user_file'; name: string; count?: number }
+  | { kind: 'carried' }
   | { kind: 'assistant'; text: string; msgId?: number; rated?: 'up' | 'down' }
   | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: LinkT; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
@@ -198,6 +199,8 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
   const [threadId, setThreadId] = useState<string | null>(null)
   /** A customer's name when GSI staff are using the assistant in its account. */
   const [staffIn, setStaffIn] = useState<string | null>(null)
+  /** The conversation has grown long: offer a fresh one with a summary. */
+  const [long, setLong] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
   const [draft, setDraft] = useState('')
@@ -269,8 +272,9 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
     if (!h) return
     const qs = new URLSearchParams({ group_id: groupId, ...(id ? { thread_id: id } : {}) })
     const res = await fetch(`/api/employer/assistant?${qs}`, { headers: h })
-    const json = (await res.json().catch(() => ({}))) as { thread_id?: string | null; items?: Item[]; error?: string; staff_in?: string | null }
+    const json = (await res.json().catch(() => ({}))) as { thread_id?: string | null; items?: Item[]; error?: string; staff_in?: string | null; long?: boolean }
     setStaffIn(json.staff_in ?? null)
+    setLong(!!json.long)
     if (!res.ok) {
       setItems([{ kind: 'error', text: json.error ?? 'The assistant could not load.' }])
     } else {
@@ -311,6 +315,8 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
       decision?: { tool_use_id: string; approve: boolean; confirm_text?: string }
       attachments?: { url: string; name: string }[]
       list_file?: { name: string; data: string }
+      /** Start fresh carrying a summary of this conversation. */
+      carry_from?: string
       /** Always a new conversation (a task opened from a button). */
       new_thread?: boolean
       thread_id?: null
@@ -339,7 +345,8 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
           body: JSON.stringify({ group_id: groupId, thread_id: fresh ? null : threadId, new_thread: fresh, ...payload }),
         })
         if (!res.ok || !res.body) {
-          const j = (await res.json().catch(() => ({}))) as { error?: string }
+          const j = (await res.json().catch(() => ({}))) as { error?: string; long?: boolean }
+          if (j.long) setLong(true)
           setItems((p) => [...p, { kind: 'error', text: j.error ?? 'The assistant could not answer. Try again.' }])
           return
         }
@@ -377,6 +384,8 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
               setItems((p) => [...p, { kind: 'approval', tool_use_id: String(e.tool_use_id), card: e.card as Card }])
             } else if (e.type === 'error') {
               setItems((p) => [...p, { kind: 'error', text: String(e.message) }])
+            } else if (e.type === 'long') {
+              setLong(true)
             }
           }
         }
@@ -661,6 +670,12 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                   {it.text}
                 </div>
               )
+            if (it.kind === 'carried')
+              return (
+                <p key={i} className="text-center text-[12.5px] text-ink-muted">
+                  Picked up from an earlier conversation, with a summary of it.
+                </p>
+              )
             if (it.kind === 'user_file')
               return (
                 <div key={i} className="ml-8 flex items-center gap-2 self-end rounded-xl border border-line bg-surface px-3 py-2 text-[13.5px] text-ink">
@@ -796,6 +811,28 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
           )}
         </div>
       </div>
+
+      {long && !fresh && threadId && view === 'chat' && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line bg-surface-2 px-4 py-2.5 text-[13px] text-ink">
+          <span className="min-w-0 flex-1">This conversation is getting long, so answers get slower. A fresh one picks up from a summary.</span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              const from = threadId
+              setView('chat')
+              setThreadId(null)
+              setItems([])
+              setFresh(true)
+              setLong(false)
+              void send({ message: "Let's pick up where we left off.", new_thread: true, thread_id: null, carry_from: from })
+            }}
+            className="shrink-0 rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-surface-2"
+          >
+            Start fresh
+          </button>
+        </div>
+      )}
 
       <form
         className={`border-t border-line p-3 [&>*]:mx-auto [&>*]:max-w-[720px] ${view === 'history' ? 'hidden' : ''}`}

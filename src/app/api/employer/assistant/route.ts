@@ -39,6 +39,57 @@ const MAX_STEPS = 14
  *  runaway user or a loop from running costs up). */
 const MONTHLY_CAP = 600
 const DAILY_PERSON_CAP = 150
+// A conversation's size, in input tokens of its latest model call. Past SOFT
+// the panel offers a fresh start with a summary; past HARD it takes no new
+// messages (each reply re-reads everything: slower, pricier, less sharp).
+const SOFT_CONTEXT = 60_000
+const HARD_CONTEXT = 150_000
+const SUMMARY_MODEL = 'claude-haiku-5-5'
+
+/** Input tokens the latest reply in this conversation read. */
+async function contextSize(admin: SupabaseClient, threadId: string): Promise<number> {
+  const { data } = await admin
+    .from('employer_assistant_messages')
+    .select('usage')
+    .eq('thread_id', threadId)
+    .eq('role', 'assistant')
+    .order('id', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const u = ((data as { usage?: Record<string, number> } | null)?.usage ?? {}) as Record<string, number>
+  return (u.input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0)
+}
+
+/** A short summary of a conversation, to carry into a fresh one. */
+async function summarizeThread(admin: SupabaseClient, threadId: string): Promise<string | null> {
+  const msgs = await loadMessages(admin, threadId)
+  const lines: string[] = []
+  for (const m of msgs) {
+    for (const b of Array.isArray(m.content) ? (m.content as Record<string, unknown>[]) : []) {
+      if (b.type !== 'text' || typeof b.text !== 'string' || !b.text.trim()) continue
+      if (m.role === 'user' && (b.text.startsWith('[Attached image') || b.text.startsWith('[Carried over'))) continue
+      lines.push(`${m.role === 'user' ? 'Admin' : 'Assistant'}: ${b.text.replace(/<choices>[\s\S]*?<\/choices>/g, '').trim()}`)
+    }
+  }
+  const transcriptText = lines.join('\n\n').slice(-40_000)
+  if (!transcriptText) return null
+  try {
+    const msg = await new Anthropic().messages.create({
+      model: SUMMARY_MODEL,
+      max_tokens: 2000,
+      messages: [
+        {
+          role: 'user',
+          content: `Summarize this conversation between an employer admin and the Shift portal's setup assistant, so the assistant can pick it up in a fresh conversation. In under 180 words: what they set up or decided (names, dates, amounts, and any draft or challenge names), what is still open, and what they wanted to do next. Facts only, no advice.\n\n<conversation>\n${transcriptText}\n</conversation>`,
+        },
+      ],
+    })
+    return msg.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map((b) => b.text).join('').trim() || null
+  } catch (e) {
+    console.error('[assistant] summary failed', e)
+    return null
+  }
+}
 
 type Role = ToolCtx['role']
 type PendingCard = { tool_use_id: string; name: string; input: Record<string, unknown>; card: ApprovalCard; decided?: boolean }
@@ -171,6 +222,7 @@ type Item =
   | { kind: 'user'; text: string }
   | { kind: 'user_image'; url: string }
   | { kind: 'user_file'; name: string; count: number }
+  | { kind: 'carried' }
   /** msgId: the stored reply, for its thumbs up / down; rated: this person's rating. */
   | { kind: 'assistant'; text: string; msgId?: number; rated?: 'up' | 'down' }
   | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; card?: { title: string; decision: 'approved' | 'declined' } }
@@ -189,6 +241,10 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
       } else if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) {
         // The note that travels with an attachment is for the model only.
         if (m.role === 'user' && b.text.startsWith('[Attached image')) continue
+        if (m.role === 'user' && b.text.startsWith('[Carried over')) {
+          items.push({ kind: 'carried' })
+          continue
+        }
         if (m.role === 'user' && b.text.startsWith('[Attached list')) {
           const f = b.text.match(/^\[Attached list "(.*?)", list_id \S+: (\d+)/)
           if (f) items.push({ kind: 'user_file', name: f[1], count: Number(f[2]) })
@@ -288,7 +344,13 @@ export async function GET(request: Request) {
   const messages = await loadMessages(auth.admin, thread.id)
   const { data: rated } = await auth.admin.from('employer_assistant_ratings').select('message_id, up').eq('thread_id', thread.id).eq('author_email', auth.user.email!)
   const ratings = new Map(((rated ?? []) as { message_id: number; up: boolean }[]).map((r) => [Number(r.message_id), r.up]))
-  return Response.json({ thread_id: thread.id, items: transcript(messages, thread.pending, ratings), role: auth.role, staff_in: auth.staffIn })
+  return Response.json({
+    thread_id: thread.id,
+    items: transcript(messages, thread.pending, ratings),
+    role: auth.role,
+    staff_in: auth.staffIn,
+    long: (await contextSize(auth.admin, thread.id)) > SOFT_CONTEXT,
+  })
 }
 
 // ── DELETE ?group_id=&thread_id=: forget one of your conversations ──
@@ -341,6 +403,8 @@ export async function POST(request: Request) {
     attachments?: { url: string; name?: string }[]
     /** A staff list (spreadsheet or text file), sent with the message, base64. */
     list_file?: { name: string; data: string }
+    /** Start fresh, carrying a summary of this (long) conversation. */
+    carry_from?: string
     /** Thumbs up / down on one reply (Shift 01373). No model call. */
     rating?: { message_id: number; up: boolean; note?: string }
   } | null
@@ -401,6 +465,7 @@ export async function POST(request: Request) {
       { type: 'image', source: { type: 'url', url: a.url } },
       { type: 'text', text: `[Attached image${a.name ? ` "${a.name}"` : ''}: ${a.url}]` },
     ]),
+    ...(carryNote ? [{ type: 'text', text: carryNote }] : []),
     ...(listNote ? [{ type: 'text', text: listNote }] : []),
     ...(text ? [{ type: 'text', text }] : []),
   ]
@@ -439,6 +504,16 @@ export async function POST(request: Request) {
   // Approve clicks that land together can't both run the action.
   const lockUntil = new Date(Date.now() + 3 * 60_000).toISOString()
   let thread = body?.new_thread ? null : await loadThread(admin, group.id, user.id, body?.thread_id)
+  if (thread && !body?.decision && (await contextSize(admin, thread.id)) > HARD_CONTEXT) {
+    return Response.json({ error: 'This conversation has got too long to continue. Start a fresh one; the assistant brings a summary.', long: true }, { status: 409 })
+  }
+  // Carrying a long conversation into a fresh one: a summary goes first.
+  let carryNote: string | null = null
+  if (!thread && body?.carry_from) {
+    const old = await loadThread(admin, group.id, user.id, body.carry_from)
+    const summary = old ? await summarizeThread(admin, old.id) : null
+    if (summary) carryNote = `[Carried over from an earlier conversation. Summary: ${summary}]`
+  }
   if (thread) {
     const { data: claimed } = await admin
       .from('employer_assistant_threads')
@@ -649,6 +724,7 @@ export async function POST(request: Request) {
           // further call only adds "tap an option above").
           if (uses.some((u) => u.name === 'offer_choices')) break
         }
+        if ((await contextSize(admin, threadId)) > SOFT_CONTEXT) emit({ type: 'long' })
         emit({ type: 'done' })
       } catch (e) {
         console.error('[assistant] turn failed', e)
