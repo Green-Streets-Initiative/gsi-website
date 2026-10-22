@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import PhotoCredit from '@/components/PhotoCredit'
 import { MapPin, UsersRound } from 'lucide-react'
 import type { RoamSummary } from '@/lib/roams/queries'
 
@@ -124,23 +125,35 @@ export default function RoamCard({
         'data-group': nextGroupDate ? '1' : '0',
       }
     : {}
+  // The whole card opens the roam (the title link stretches over it); the photo
+  // credit's own links sit above that, as Unsplash's guidelines need.
   return (
-    <Link
-      href={`/shift/roams/${encodeURIComponent(roam.id)}`}
-      className={`${t.card} h-full`}
-      {...data}
-    >
+    <div className={`${t.card} relative h-full`} {...data}>
       {roam.hero_image_url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={roam.hero_image_url}
-          alt={roam.name}
-          loading="lazy"
-          className="h-32 w-full object-cover"
-        />
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={roam.hero_image_url}
+            alt=""
+            loading="lazy"
+            className="h-32 w-full object-cover"
+          />
+          {roam.hero_image_attribution && (
+            <PhotoCredit
+              text={roam.hero_image_attribution}
+              url={roam.hero_image_attribution_url}
+              className="absolute bottom-1.5 right-1.5 z-10 max-w-[92%] truncate rounded-full bg-navy/65 px-2 py-0.5 text-[10.5px] leading-tight text-white/90 backdrop-blur-sm"
+              linkClassName="underline decoration-white/50 underline-offset-2 hover:decoration-white"
+            />
+          )}
+        </div>
       )}
       <div className="p-4">
-        <p className={t.name}>{roam.name}</p>
+        <p className={t.name}>
+          <Link href={`/shift/roams/${encodeURIComponent(roam.id)}`} className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-[14px] focus-visible:after:ring-2 focus-visible:after:ring-forest">
+            {roam.name}
+          </Link>
+        </p>
         <p className={`mt-0.5 ${t.meta}`}>
           {filterable && <span data-roam-distance hidden className={t.start} />}
           {start && <span className={t.start}>{startLine(start)} · </span>}
@@ -162,6 +175,6 @@ export default function RoamCard({
           </p>
         )}
       </div>
-    </Link>
+    </div>
   )
 }

@@ -25,6 +25,9 @@ export interface RoamSummary {
   /** One-line fallback for cards when there's no hook. */
   tagline: string | null
   hero_image_url: string | null
+  /** Photo credit, e.g. "Photo by Jane Doe on Unsplash", and its link (cards show it). */
+  hero_image_attribution?: string | null
+  hero_image_attribution_url?: string | null
   region: string | null
   featured: boolean
   completion_count: number
@@ -164,7 +167,7 @@ export async function getActiveRoams(): Promise<RoamSummary[]> {
   const today = new Date().toISOString().slice(0, 10)
   const { data } = await supabase
     .from('roams')
-    .select('id, name, mode, distance_miles, estimated_minutes, hook, tagline, hero_image_url, region, featured, completion_count, vibe_tags')
+    .select('id, name, mode, distance_miles, estimated_minutes, hook, tagline, hero_image_url, hero_image_attribution, hero_image_attribution_url, region, featured, completion_count, vibe_tags')
     .eq('active', true)
     // Preview roams (preview_user_ids set) are for their testers in the app only (Shift 01214).
     .is('preview_user_ids', null)
@@ -538,6 +541,8 @@ export interface KeepGoingRow {
   steps: KeepGoingStep[]
   linked_roam_id: string | null
   link_label: string | null
+  /** Trail pages only (trail_keep_going): the trail this row leads onto. */
+  linked_trail_id?: string | null
   /** For rows with no roam to ride: directions in Google Maps. */
   action_url: string | null
   action_label: string | null

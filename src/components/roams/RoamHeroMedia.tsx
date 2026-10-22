@@ -1,5 +1,6 @@
 'use client'
 
+import PhotoCredit from '@/components/PhotoCredit'
 import { useEffect, useRef, useState } from 'react'
 import { Play, X } from 'lucide-react'
 import { parseVideoEmbed } from './CreatorVideo'
@@ -75,12 +76,8 @@ export default function RoamHeroMedia({
         )}
         {watch && <div className="absolute bottom-3 left-3">{watch}</div>}
         {photoUrl && photoCredit && (
-          <figcaption className="absolute bottom-2 right-2 max-w-[70%] truncate rounded-full bg-navy/60 px-2.5 py-0.5 text-[10px] text-white/90 backdrop-blur-sm">
-            {photoCreditUrl ? (
-              <a href={photoCreditUrl} target="_blank" rel="noopener noreferrer">{photoCredit}</a>
-            ) : (
-              photoCredit
-            )}
+          <figcaption className="absolute bottom-2 right-2 max-w-[70%] truncate rounded-full bg-navy/65 px-2.5 py-0.5 text-[11px] text-white/90 backdrop-blur-sm">
+            <PhotoCredit text={photoCredit} url={photoCreditUrl} />
           </figcaption>
         )}
       </figure>

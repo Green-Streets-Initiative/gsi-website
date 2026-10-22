@@ -458,7 +458,7 @@ export async function getTownRoams(
   const [roamsRes, cpsRes] = await Promise.all([
     supabase
       .from('roams')
-      .select('id, name, mode, distance_miles, estimated_minutes, hook, tagline, hero_image_url, region, completion_count, vibe_tags')
+      .select('id, name, mode, distance_miles, estimated_minutes, hook, tagline, hero_image_url, hero_image_attribution, hero_image_attribution_url, region, completion_count, vibe_tags')
       .eq('active', true)
       .is('preview_user_ids', null)
       // Hide event-bound roams once their window ends (matches roams/queries.ts).

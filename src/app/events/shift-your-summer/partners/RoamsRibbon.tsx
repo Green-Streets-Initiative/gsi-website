@@ -1,5 +1,6 @@
 'use client'
 
+import PhotoCredit from '@/components/PhotoCredit'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { modeColor } from './lib'
@@ -67,6 +68,9 @@ export function RoamsRibbon({ roams }: { roams: RoamCard[] }) {
                   fill
                   sizes="280px"
                   className="object-cover"
+                  // Unsplash photos must load from Unsplash itself (hotlinked), not
+                  // through our image optimizer (their API guidelines).
+                  unoptimized={/images\.unsplash\.com/.test(roam.heroImageUrl)}
                   priority={idx < 4}
                   loading={idx < 4 ? undefined : 'lazy'}
                 />
@@ -80,20 +84,12 @@ export function RoamsRibbon({ roams }: { roams: RoamCard[] }) {
               )}
               {roam.heroImageAttribution && (
                 <div className="absolute bottom-0 right-0 bg-navy/75 px-2 py-0.5 rounded-tl-md">
-                  {roam.heroImageAttributionUrl ? (
-                    <a
-                      href={roam.heroImageAttributionUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[0.625rem] text-white hover:underline"
-                    >
-                      {roam.heroImageAttribution}
-                    </a>
-                  ) : (
-                    <span className="text-[0.625rem] text-white">
-                      {roam.heroImageAttribution}
-                    </span>
-                  )}
+                  <PhotoCredit
+                    text={roam.heroImageAttribution}
+                    url={roam.heroImageAttributionUrl}
+                    className="text-[0.625rem] text-white"
+                    linkClassName="hover:underline"
+                  />
                 </div>
               )}
             </div>
