@@ -70,7 +70,7 @@ function link(href: string, text: string): string {
 
 export function pickDigestTip(i: TipInputs): DigestTip | null {
   const shown = i.memory?.shown ?? {}
-  const shareKit = `${i.portalUrl}/share-kit`
+  const shareKit = `${i.portalUrl}/employees?view=share`
   const candidates: (() => DigestTip | null)[] = [
     // 0. A drafted year-plan challenge: once per draft.
     () => {
@@ -98,7 +98,7 @@ export function pickDigestTip(i: TipInputs): DigestTip | null {
       })
       return {
         key,
-        html: `Walk/Ride Day is ${escapeHtml(day)}. The walks, bike rides and transit trips your team logs that day are entries in GSI's prize drawing. A good week to pass your join link to anyone who hasn't joined yet: ${link(shareKit, 'open your Share Kit')}.`,
+        html: `Walk/Ride Day is ${escapeHtml(day)}. The walks, bike rides and transit trips your team logs that day are entries in GSI's prize drawing. A good week to pass your join link to anyone who hasn't joined yet: ${link(shareKit, 'open Invite & share')}.`,
       }
     },
     // 1b. An observance two to three weeks out: once per occurrence. Points
@@ -112,7 +112,7 @@ export function pickDigestTip(i: TipInputs): DigestTip | null {
       const when = holiday ? `${longDay(o.on_date)}, which is ${holiday} this year, so the days before it work well` : longDay(o.on_date)
       return {
         key,
-        html: `${escapeHtml(o.name)} is ${escapeHtml(when)}. If you'd like to mark it, there's a ready-to-send note for your team in ${link(shareKit, 'your Share Kit')}, with a link to the day's own site.`,
+        html: `${escapeHtml(o.name)} is ${escapeHtml(when)}. If you'd like to mark it, there's a ready-to-send note for your team in ${link(shareKit, 'Invite & share')}, with a link to the day's own site.`,
       }
     },
     // 2. The branded Nearby page, once, when the office address is saved.
@@ -122,8 +122,8 @@ export function pickDigestTip(i: TipInputs): DigestTip | null {
       return {
         key: 'nearby',
         html: (i.locationCount ?? 0) > 1
-          ? `Each of your ${i.locationCount} locations now has its own Nearby page: a live map of T stops, bus arrivals, Bluebikes docks and bike paths around it, with your logo. Useful for new hires and welcome emails. There's a ready-to-send note for each in ${link(shareKit, 'your Share Kit')}.`
-          : `Your office now has its own Nearby page: a live map of T stops, bus arrivals, Bluebikes docks and bike paths around it, with your logo. Useful for new hires and welcome emails. There's a ready-to-send note in ${link(shareKit, 'your Share Kit')}.`,
+          ? `Each of your ${i.locationCount} locations now has its own Nearby page: a live map of T stops, bus arrivals, Bluebikes docks and bike paths around it, with your logo. Useful for new hires and welcome emails. There's a ready-to-send note for each in ${link(shareKit, 'Invite & share')}.`
+          : `Your office now has its own Nearby page: a live map of T stops, bus arrivals, Bluebikes docks and bike paths around it, with your logo. Useful for new hires and welcome emails. There's a ready-to-send note in ${link(shareKit, 'Invite & share')}.`,
       }
     },
     // 3. The branded Commute Advisor, once.
@@ -131,7 +131,7 @@ export function pickDigestTip(i: TipInputs): DigestTip | null {
       if (shown.advisor || !i.group.slug || i.group.commute_advisor_enabled === false) return null
       return {
         key: 'advisor',
-        html: `Your Commute Advisor page shows anyone their walking, biking and transit options to your office, no app needed. There's a ready-to-send note for staff in ${link(shareKit, 'your Share Kit')}.`,
+        html: `Your Commute Advisor page shows anyone their walking, biking and transit options to your office, no app needed. There's a ready-to-send note for staff in ${link(shareKit, 'Invite & share')}.`,
       }
     },
     // 4. Share Kit, at most every six weeks, and only when the team is
@@ -143,7 +143,7 @@ export function pickDigestTip(i: TipInputs): DigestTip | null {
       if (i.joinsLast28Days > 0) return null
       return {
         key: 'share_kit',
-        html: `New faces around the office this season? ${link(shareKit, 'Your Share Kit')} has a ready-made invite email, a QR poster and a printable flyer.`,
+        html: `New faces around the office this season? ${link(shareKit, 'Invite & share')} has a ready-made invite email, a QR poster and a printable flyer.`,
       }
     },
   ]

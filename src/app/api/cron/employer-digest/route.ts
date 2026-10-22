@@ -396,8 +396,8 @@ function buildLaunchProgressHtml(opts: {
 
   const steps = [
     inviteCode
-      ? `Share your invite code <span style="font-family:monospace;font-weight:700;">${escapeHtml(inviteCode)}</span> — the <a href="${PORTAL_URL}/share-kit" style="color:#2D6A4F;">Share Kit</a> has a QR poster, email templates, and a printable flyer.`
-      : `Open the <a href="${PORTAL_URL}/share-kit" style="color:#2D6A4F;">Share Kit</a> for a QR poster, email templates, and a printable flyer.`,
+      ? `Share your invite code <span style="font-family:monospace;font-weight:700;">${escapeHtml(inviteCode)}</span> — the <a href="${PORTAL_URL}/employees?view=share" style="color:#2D6A4F;">Invite &amp; share</a> page has a QR poster, email templates, and a printable flyer.`
+      : `Open the <a href="${PORTAL_URL}/employees?view=share" style="color:#2D6A4F;">Invite &amp; share</a> page for a QR poster, email templates, and a printable flyer.`,
     `Ask a leader (not HR) to send the announcement email — it's the single biggest driver of sign-ups.`,
     `Line up a launch challenge with weekly prize drawings in <a href="${PORTAL_URL}/challenges" style="color:#2D6A4F;">Challenges</a>.`,
   ]

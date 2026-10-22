@@ -37,6 +37,7 @@ import InvitedCard from './InvitedCard'
 import JoinRequestsCard from './JoinRequestsCard'
 import JoinPolicyLine from '../_components/JoinPolicyLine'
 import TabStrip, { tabPanelProps } from '../_components/TabStrip'
+import ShareKit from './ShareKit'
 
 const EMPLOYEES = '/shift/employers/portal/employees'
 const RANGE_STORAGE_KEY = 'portal.employees.range'
@@ -114,6 +115,19 @@ function isRangeId(v: string | null): v is RangeId {
 export default function EmployeesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  // Your team, or Invite & share (?view=share; the old Share kit forwards there).
+  const [view, setView] = useState<'team' | 'share'>(() => (searchParams.get('view') === 'share' ? 'share' : 'team'))
+  useEffect(() => {
+    setView(searchParams.get('view') === 'share' ? 'share' : 'team')
+  }, [searchParams])
+  function changeView(v: 'team' | 'share') {
+    setView(v)
+    const url = new URL(window.location.href)
+    if (v === 'share') url.searchParams.set('view', 'share')
+    else url.searchParams.delete('view')
+    url.hash = ''
+    history.replaceState(null, '', url.toString())
+  }
   const { group, memberCount, members: contextMembers, loading, canInviteEmployees, canManageAccount, sessionEmail, isGsiAdmin } = usePortal()
   // With the assistant: attach the staff spreadsheet and it sends the invitations.
   const inviteWithAssistant =
@@ -306,7 +320,7 @@ export default function EmployeesPage() {
 
   const SortIcon = sortDir === 'asc' ? ArrowUp : ArrowDown
   const headerButton =
-    'inline-flex items-center gap-1 rounded-[6px] px-1 py-0.5 text-[12.5px] font-semibold text-ink-tertiary hover:text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent'
+    'inline-flex items-center gap-1 rounded-[6px] px-1 py-0.5 text-[14px] font-semibold text-ink-tertiary hover:text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent'
 
   const policy = group.join_policy ?? 'open'
   const rosterTabs = [
@@ -334,7 +348,7 @@ export default function EmployeesPage() {
     <>
       <PortalPageHead
         title="Employees"
-        subtitle="Who has joined and how they're getting around"
+        subtitle="Who's in, and getting more people in"
         actions={
           effectiveCount > 0 ? (
             <>
@@ -351,8 +365,29 @@ export default function EmployeesPage() {
         }
       />
 
-      {/* Who the invite code lets in: a control, under the title (Keith 2026-10-05). */}
+      {/* Two views (Keith 2026-10-22, page charters): the team, and everything
+          for getting people in (the former Share kit). */}
       <div className="-mt-2 mb-6">
+        <TabStrip
+          tabs={[
+            { id: 'team', label: 'Your team' },
+            { id: 'share', label: 'Invite & share' },
+          ]}
+          value={view}
+          onChange={(v) => changeView(v as 'team' | 'share')}
+          label="Employees"
+          prefix="emp-view"
+        />
+      </div>
+
+      {view === 'share' ? (
+        <div {...tabPanelProps('emp-view', 'share')} className="outline-none">
+          <ShareKit />
+        </div>
+      ) : (
+      <div {...tabPanelProps('emp-view', 'team')} className="outline-none">
+      {/* Who the invite code lets in: a control, under the title (Keith 2026-10-05). */}
+      <div className="mb-6">
         <JoinPolicyLine policy={policy} canManage={canManageAccount} groupId={group.id} />
       </div>
 
@@ -384,7 +419,7 @@ export default function EmployeesPage() {
         <div className="grid gap-6 sm:grid-cols-2">
           <Card pad>
             <StatTile label="Joined" value={String(effectiveCount)} labelIcon={Users} />
-            <p className="mt-1 text-[12.5px] text-ink-tertiary">People on the team in Shift</p>
+            <p className="mt-1 text-[14px] text-ink-tertiary">People on the team in Shift</p>
           </Card>
           <Card pad>
             <StatTile
@@ -392,7 +427,7 @@ export default function EmployeesPage() {
               value={`${activeCount} of ${effectiveCount}`}
               labelIcon={TrendingUp}
             />
-            <p className="mt-1 text-[12.5px] text-ink-tertiary">Logged a trip in {rangePhrase}</p>
+            <p className="mt-1 text-[14px] text-ink-tertiary">Logged a trip in {rangePhrase}</p>
           </Card>
         </div>
 
@@ -412,7 +447,7 @@ export default function EmployeesPage() {
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-6 py-[18px]">
             <div className="min-w-0">
               <h3 className="text-[16px] font-bold tracking-[-0.01em] text-ink">Employee leaderboard</h3>
-              <p className="mt-0.5 text-[13px] text-ink-tertiary">
+              <p className="mt-0.5 text-[14px] text-ink-tertiary">
                 Only portal admins and viewers see this list. Employees never see each other&apos;s numbers here.
               </p>
             </div>
@@ -427,7 +462,7 @@ export default function EmployeesPage() {
                 Export CSV
               </Button>
               {filtered.length === 0 && !loadingRows && (
-                <span className="text-[12px] text-ink-tertiary">Nothing to export yet</span>
+                <span className="text-[14px] text-ink-tertiary">Nothing to export yet</span>
               )}
             </div>
           </div>
@@ -457,7 +492,7 @@ export default function EmployeesPage() {
                   setQ(e.target.value)
                   setVisible(PAGE_SIZE)
                 }}
-                className="h-[34px] w-full rounded-[10px] border border-line bg-surface pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-tertiary outline-none transition-shadow focus:border-accent focus:ring-2 focus:ring-accent-soft"
+                className="h-[34px] w-full rounded-[10px] border border-line bg-surface pl-9 pr-3 text-[14px] text-ink placeholder:text-ink-tertiary outline-none transition-shadow focus:border-accent focus:ring-2 focus:ring-accent-soft"
               />
             </div>
           </div>
@@ -471,7 +506,7 @@ export default function EmployeesPage() {
                 <table className="w-full min-w-[520px] text-left">
                   <thead>
                     <tr className="border-b border-line-2 bg-surface-2">
-                      <th scope="col" className="w-1 py-2.5 pl-6 pr-2 text-[12.5px] font-semibold text-ink-tertiary">
+                      <th scope="col" className="w-1 py-2.5 pl-6 pr-2 text-[14px] font-semibold text-ink-tertiary">
                         #
                       </th>
                       <th scope="col" className="py-2.5" aria-sort={sortKey === 'name' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
@@ -504,7 +539,7 @@ export default function EmployeesPage() {
                         >
                           <td className="py-3 pl-6 pr-2">
                             <span
-                              className={`inline-flex h-6 w-6 items-center justify-center rounded-[6px] text-[12px] font-bold ${
+                              className={`inline-flex h-6 w-6 items-center justify-center rounded-[6px] text-[14px] font-bold ${
                                 rank <= 3 ? 'bg-accent text-white' : 'bg-surface-2 text-ink-muted'
                               }`}
                             >
@@ -522,13 +557,13 @@ export default function EmployeesPage() {
                               <Avatar name={m.display_name || 'User'} />
                               <span>
                                 <span className="block text-[14px] font-semibold text-ink">{m.display_name || 'Unnamed'}</span>
-                                <span className="block text-[12px] text-ink-tertiary">
+                                <span className="block text-[14px] text-ink-tertiary">
                                   {m.active_trips_in_period} active · {m.trips_in_period} trips
                                 </span>
                               </span>
                             </button>
                           </td>
-                          <td className="py-3 text-[13px] text-ink-tertiary">{formatDateShort(m.joined_at)}</td>
+                          <td className="py-3 text-[14px] text-ink-tertiary">{formatDateShort(m.joined_at)}</td>
                           <td className="py-3 pr-6 text-right">
                             <strong className="text-[15px] text-ink">{metric.fmt(m)}</strong>
                             {metric.unit && <span className="text-ink-tertiary"> {metric.unit}</span>}
@@ -541,7 +576,7 @@ export default function EmployeesPage() {
               </div>
               {filtered.length > shown.length && (
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line-2 px-6 py-3">
-                  <span className="text-[12.5px] text-ink-tertiary">
+                  <span className="text-[14px] text-ink-tertiary">
                     Showing {shown.length} of {filtered.length}
                   </span>
                   <Button variant="secondary" size="sm" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
@@ -584,6 +619,9 @@ export default function EmployeesPage() {
             />
           </div>
         </Card>
+      </div>
+      )}
+
       </div>
       )}
 
@@ -712,7 +750,7 @@ function EmployeeDrawer({
               <div id="employee-drawer-title" className="truncate text-[16px] font-bold text-ink">
                 {member.display_name || 'Unnamed'}
               </div>
-              <div className="text-[12.5px] text-ink-tertiary">Joined {formatDateShort(member.joined_at)}</div>
+              <div className="text-[14px] text-ink-tertiary">Joined {formatDateShort(member.joined_at)}</div>
             </div>
           </div>
           <button
@@ -728,7 +766,7 @@ function EmployeeDrawer({
 
         {/* Body */}
         <div className="space-y-5 px-6 py-5">
-          <p className="text-[12.5px] text-ink-tertiary">Numbers below are for {rangePhrase}.</p>
+          <p className="text-[14px] text-ink-tertiary">Numbers below are for {rangePhrase}.</p>
 
           <div className="grid grid-cols-2 gap-3">
             <Card pad>
@@ -741,38 +779,38 @@ function EmployeeDrawer({
 
           <div>
             <div className="mb-1 flex items-baseline justify-between gap-3">
-              <span className="text-[12.5px] font-semibold text-ink-muted">Shift Rate</span>
+              <span className="text-[14px] font-semibold text-ink-muted">Shift Rate</span>
               <span className="text-[14px] font-bold text-ink">{rate}%</span>
             </div>
             <ProgressBar pct={rate} />
-            <p className="mt-1.5 text-[12px] text-ink-tertiary">
+            <p className="mt-1.5 text-[14px] text-ink-tertiary">
               The share of this person&apos;s trips that weren&apos;t driving alone.
             </p>
           </div>
 
           <Card pad className="bg-surface-2 shadow-none">
-            <div className="flex items-center justify-between gap-3 text-[13.5px]">
+            <div className="flex items-center justify-between gap-3 text-[15px]">
               <span className="text-ink-muted">Status</span>
               <Badge tone={activeThisPeriod ? 'success' : 'neutral'}>
                 {activeThisPeriod ? 'Active this period' : 'No trips this period'}
               </Badge>
             </div>
             {lastNudged && (
-              <div className="mt-2.5 flex items-center justify-between gap-3 text-[13.5px]">
+              <div className="mt-2.5 flex items-center justify-between gap-3 text-[15px]">
                 <span className="text-ink-muted">Last nudged</span>
                 <span className="font-semibold text-ink">{formatDateShort(lastNudged)}</span>
               </div>
             )}
           </Card>
 
-          <p className="text-[12.5px] leading-relaxed text-ink-tertiary">
+          <p className="text-[14px] leading-relaxed text-ink-tertiary">
             Trip details are added up to protect employee privacy. Each person controls what they
             share inside the Shift app.
           </p>
 
           {/* Nudge: only for people with nothing logged in the period */}
           {activeThisPeriod ? (
-            <p className="text-[12.5px] text-ink-tertiary">
+            <p className="text-[14px] text-ink-tertiary">
               {member.display_name || 'This employee'} has been active in {rangePhrase}, so there&apos;s no
               reminder to send.
             </p>
@@ -786,7 +824,7 @@ function EmployeeDrawer({
               >
                 <div className="flex items-center gap-2.5">
                   <Mail size={16} strokeWidth={1.75} className="text-ink-muted" />
-                  <span className="text-[13.5px] font-semibold text-ink">Send a nudge</span>
+                  <span className="text-[15px] font-semibold text-ink">Send a nudge</span>
                 </div>
                 {showPreview ? (
                   <ChevronUp size={16} className="text-ink-icon" />
@@ -806,10 +844,10 @@ function EmployeeDrawer({
                           alt="Shift"
                           className="h-[18px] w-auto"
                         />
-                        <span className="text-[11px] font-bold text-[#52B788]">Green Streets</span>
+                        <span className="text-[14px] font-bold text-[#52B788]">Green Streets</span>
                       </div>
                     </div>
-                    <div className="bg-white px-4 py-4 text-[12.5px] leading-relaxed text-[#1a1a2e]">
+                    <div className="bg-white px-4 py-4 text-[14px] leading-relaxed text-[#1a1a2e]">
                       <p className="mb-2.5">{greeting}</p>
                       <p className="mb-2.5">
                         Just checking in. Your team at <strong>{groupName}</strong> is logging trips with
@@ -819,7 +857,7 @@ function EmployeeDrawer({
 
                       {activeChallenges.length > 0 && (
                         <div className="mb-3 rounded-lg bg-[#E7F0EA] px-3.5 py-3">
-                          <div className="mb-1.5 text-[11px] font-bold text-[#2D6A4F]">
+                          <div className="mb-1.5 text-[14px] font-bold text-[#2D6A4F]">
                             Challenge{activeChallenges.length > 1 ? 's' : ''} under way
                           </div>
                           {activeChallenges.map((c) => (
@@ -829,7 +867,7 @@ function EmployeeDrawer({
                                 <span className="text-[#2D6A4F]"> — {c.prize_description}</span>
                               )}
                               <br />
-                              <span className="text-[10.5px] text-[#6b7280]">Ends {formatDateShort(c.ends_at)}</span>
+                              <span className="text-[14px] text-[#6b7280]">Ends {formatDateShort(c.ends_at)}</span>
                             </div>
                           ))}
                         </div>
@@ -837,8 +875,8 @@ function EmployeeDrawer({
 
                       {teamSize > 1 && (
                         <div className="mb-3 rounded-lg bg-[#F0F4FF] px-3.5 py-3">
-                          <div className="mb-1 text-[11px] font-bold text-[#3B5998]">Team leaderboard</div>
-                          <p className="text-[12px]">
+                          <div className="mb-1 text-[14px] font-bold text-[#3B5998]">Team leaderboard</div>
+                          <p className="text-[14px]">
                             {teamSize} people from {groupName} are on the leaderboard. Every active trip
                             you log moves you up.
                           </p>
@@ -852,33 +890,33 @@ function EmployeeDrawer({
                       <p className="mb-3">
                         Your trips help {groupName} see its impact and unlock rewards for the whole team.
                       </p>
-                      <span className="inline-block rounded-lg bg-[#2D6A4F] px-4 py-2 text-[12px] font-semibold text-white">
+                      <span className="inline-block rounded-lg bg-[#2D6A4F] px-4 py-2 text-[14px] font-semibold text-white">
                         Open Shift &rarr;
                       </span>
                     </div>
-                    <div className="border-t border-line bg-[#f9fafb] px-4 py-2.5 text-center text-[10px] text-[#5B6075]">
+                    <div className="border-t border-line bg-[#f9fafb] px-4 py-2.5 text-center text-[14px] text-[#5B6075]">
                       Sent on behalf of {groupName}
                     </div>
                   </div>
 
-                  <p className="text-[11.5px] leading-relaxed text-ink-tertiary">
+                  <p className="text-[14px] leading-relaxed text-ink-tertiary">
                     Subject: A quick hello from your team at {groupName}
                   </p>
 
                   {sent ? (
                     <div className="flex items-center gap-2 rounded-xl bg-accent-softer px-4 py-3">
                       <Check size={16} className="text-accent" />
-                      <span className="text-[13px] font-medium text-accent">Nudge sent</span>
+                      <span className="text-[14px] font-medium text-accent">Nudge sent</span>
                     </div>
                   ) : canNudge ? (
                     <>
                       <Button variant="primary" icon={Send} onClick={sendNudge} disabled={sending}>
                         {sending ? 'Sending...' : 'Send this email'}
                       </Button>
-                      {sendError && <p className="text-[12.5px] text-ep-danger">{sendError}</p>}
+                      {sendError && <p className="text-[14px] text-ep-danger">{sendError}</p>}
                     </>
                   ) : (
-                    <p className="text-[12.5px] text-ink-tertiary">Only portal admins can send nudges.</p>
+                    <p className="text-[14px] text-ink-tertiary">Only portal admins can send nudges.</p>
                   )}
                 </div>
               )}

@@ -189,7 +189,7 @@ export default function InvitedCard({
 
   const stat = (label: string, value: number) => (
     <div className="min-w-0">
-      <div className="text-[12px] font-semibold uppercase tracking-[0.04em] text-ink-tertiary">{label}</div>
+      <div className="text-[14px] font-semibold uppercase tracking-[0.04em] text-ink-tertiary">{label}</div>
       <div className="text-[20px] font-bold leading-tight text-ink">{value}</div>
     </div>
   )
@@ -207,10 +207,10 @@ export default function InvitedCard({
             Invite employees
           </Button>
         ) : (
-          <p className="text-[12.5px] text-ink-tertiary">Only portal admins can send invitations.</p>
+          <p className="text-[14px] text-ink-tertiary">Only portal admins can send invitations.</p>
         )}
       </div>
-      <p className="mt-2 text-center text-[12.5px] leading-[1.55] text-ink-tertiary">{INVITE_NOTE}</p>
+      <p className="mt-2 text-center text-[14px] leading-[1.55] text-ink-tertiary">{INVITE_NOTE}</p>
     </CardBody>
   ) : (
     <>
@@ -239,7 +239,7 @@ export default function InvitedCard({
               setQ(e.target.value)
               setVisible(PAGE_SIZE)
             }}
-            className="h-[34px] w-full rounded-[10px] border border-line bg-surface pl-9 pr-3 text-[13px] text-ink placeholder:text-ink-tertiary outline-none transition-shadow focus:border-accent focus:ring-2 focus:ring-accent-soft"
+            className="h-[34px] w-full rounded-[10px] border border-line bg-surface pl-9 pr-3 text-[14px] text-ink placeholder:text-ink-tertiary outline-none transition-shadow focus:border-accent focus:ring-2 focus:ring-accent-soft"
           />
         </div>
         <Button variant="secondary" size="sm" icon={Download} onClick={exportCsv} disabled={filtered.length === 0}>
@@ -261,7 +261,7 @@ export default function InvitedCard({
                     <div className="truncate text-[14px] font-semibold text-ink">{r.email}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       <Badge tone={s.tone}>{s.text}</Badge>
-                      <span className="text-[12px] text-ink-tertiary">Added {formatDate(r.created_at)}</span>
+                      <span className="text-[14px] text-ink-tertiary">Added {formatDate(r.created_at)}</span>
                     </div>
                   </div>
                   {canManage && (
@@ -282,7 +282,7 @@ export default function InvitedCard({
           </ul>
           {filtered.length > shown.length && (
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line-2 px-6 py-3">
-              <span className="text-[12.5px] text-ink-tertiary">
+              <span className="text-[14px] text-ink-tertiary">
                 Showing {shown.length} of {filtered.length}
               </span>
               <Button variant="secondary" size="sm" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
@@ -293,7 +293,7 @@ export default function InvitedCard({
         </>
       )}
       <div className="border-t border-line-2 px-6 py-3">
-        <p className="text-[12.5px] leading-[1.55] text-ink-muted">{INVITE_NOTE}</p>
+        <p className="text-[14px] leading-[1.55] text-ink-muted">{INVITE_NOTE}</p>
       </div>
     </>
   )
@@ -301,7 +301,7 @@ export default function InvitedCard({
   if (embedded) {
     return (
       <div>
-        <p className="px-6 pt-4 text-[13.5px] leading-[1.5] text-ink-muted">
+        <p className="px-6 pt-4 text-[15px] leading-[1.5] text-ink-muted">
           People you asked us to invite, and where each one stands.
         </p>
         {body}

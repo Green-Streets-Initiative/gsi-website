@@ -422,7 +422,7 @@ export const GOAL_STEPS: Record<GoalStepKey, GoalStep> = {
   champions: { key: 'champions', label: 'Ask your champions to share', path: '/setup' },
   challenge: { key: 'challenge', label: 'Start a challenge', path: '/challenges?new=1' },
   flyer: { key: 'flyer', label: 'Print the flyer', path: 'flyer' },
-  blurb: { key: 'blurb', label: 'Share the team blurb', path: '/share-kit' },
+  blurb: { key: 'blurb', label: 'Share the team blurb', path: '/employees?view=share' },
   advisor: { key: 'advisor', label: 'Show your commute benefits', path: '/advisor' },
 }
 

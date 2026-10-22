@@ -25,7 +25,7 @@ export const INVITE_NOTE =
 /** The address invitations are sent from (the RESEND_FROM_EMAIL secret). */
 const INVITE_FROM_ADDRESS = 'keith@gogreenstreets.org'
 
-const SHARE_KIT = '/shift/employers/portal/share-kit'
+const SHARE_KIT = '/shift/employers/portal/employees?view=share'
 
 const EMAIL_RE = /^[^\s@<>()[\],;:"']+@[^\s@<>()[\],;:"']+\.[a-z]{2,}$/i
 
@@ -306,7 +306,7 @@ export function InvitePanel({
           parsed.wrong.length > 0 ? ` · ${parsed.wrong.length} look${parsed.wrong.length === 1 ? 's' : ''} wrong` : ''
         }`
 
-  const field = 'block text-[13px] font-semibold text-ink'
+  const field = 'block text-[14px] font-semibold text-ink'
   const inputBox =
     'w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[14px] leading-[1.5] text-ink outline-none placeholder:text-ink-tertiary focus:border-accent focus:ring-2 focus:ring-accent-soft'
 
@@ -319,7 +319,7 @@ export function InvitePanel({
         <JoinPolicyLine policy={joinPolicy} canManage={canManageAccount} groupId={groupId} />
 
         {!canSend && (
-          <p className="mt-4 text-[13.5px] leading-[1.5] text-ink-muted">
+          <p className="mt-4 text-[15px] leading-[1.5] text-ink-muted">
             Only portal admins and managers can send invitations. You can still share the link, code or flyer.
           </p>
         )}
@@ -335,7 +335,7 @@ export function InvitePanel({
               placeholder={'sam@yourcompany.com, priya@yourcompany.com\nOne per line works too.'}
               className={`mt-1.5 resize-y ${inputBox} disabled:opacity-60`}
             />
-            <span className="mt-1.5 block text-[12.5px] leading-[1.5] text-ink-muted">
+            <span className="mt-1.5 block text-[14px] leading-[1.5] text-ink-muted">
               Commas, spaces, new lines or semicolons all work. Names next to addresses are dropped.
             </span>
           </label>
@@ -346,8 +346,8 @@ export function InvitePanel({
               <Upload size={20} strokeWidth={1.75} className="text-ink-muted" aria-hidden />
               {fileName ? (
                 <>
-                  <span className="break-all text-[13.5px] font-semibold text-ink">{fileName}</span>
-                  <span className="text-[12.5px] text-ink-muted">{plural(fileEmails.length, 'address', 'addresses')}</span>
+                  <span className="break-all text-[15px] font-semibold text-ink">{fileName}</span>
+                  <span className="text-[14px] text-ink-muted">{plural(fileEmails.length, 'address', 'addresses')}</span>
                   <div className="mt-1 flex flex-wrap justify-center gap-2">
                     <Button variant="secondary" size="sm" onClick={() => fileRef.current?.click()} disabled={!canSend}>
                       Choose another file
@@ -367,7 +367,7 @@ export function InvitePanel({
                 </>
               ) : (
                 <>
-                  <span className="text-[13.5px] leading-[1.5] text-ink-muted">
+                  <span className="text-[15px] leading-[1.5] text-ink-muted">
                     An export from your HR system or a spreadsheet. One email per row; other columns are ignored.
                   </span>
                   <Button
@@ -394,39 +394,39 @@ export function InvitePanel({
                 }}
               />
             </div>
-            {fileError && <p className="mt-2 text-[12.5px] text-ep-danger">{fileError}</p>}
+            {fileError && <p className="mt-2 text-[14px] text-ep-danger">{fileError}</p>}
           </div>
         </div>
 
         <div className="mt-4 rounded-[12px] border border-line bg-surface-2 px-4 py-3">
-          <div className="text-[13.5px] font-semibold text-ink" aria-live="polite">
+          <div className="text-[15px] font-semibold text-ink" aria-live="polite">
             {countLine}
           </div>
           {preview.length > 0 && (
-            <p className="mt-1 break-words text-[12.5px] leading-[1.5] text-ink-muted">
+            <p className="mt-1 break-words text-[14px] leading-[1.5] text-ink-muted">
               {preview.join(', ')}
               {count > preview.length ? ` and ${count - preview.length} more` : ''}
             </p>
           )}
           {parsed.wrong.length > 0 && (
-            <p className="mt-1.5 break-words text-[12.5px] leading-[1.5] text-ep-danger">
+            <p className="mt-1.5 break-words text-[14px] leading-[1.5] text-ep-danger">
               Not sent, fix these: {parsed.wrong.slice(0, 5).join(', ')}
               {parsed.wrong.length > 5 ? ` and ${parsed.wrong.length - 5} more` : ''}
             </p>
           )}
           {overCap && (
-            <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-muted">
+            <p className="mt-1.5 text-[14px] leading-[1.5] text-ink-muted">
               That is more than {INVITE_BATCH_CAP} addresses. We will send the first {INVITE_BATCH_CAP} now; paste the
               rest after these go out.
             </p>
           )}
         </div>
 
-        <p className="mt-4 flex gap-2 text-[12.5px] leading-[1.55] text-ink-muted">
+        <p className="mt-4 flex gap-2 text-[14px] leading-[1.55] text-ink-muted">
           <Mail size={15} strokeWidth={1.75} className="mt-[2px] shrink-0 text-ink-icon" />
           <span>{INVITE_NOTE}</span>
         </p>
-        <p className="mt-2 pl-[23px] text-[12.5px] leading-[1.55] text-ink-muted">
+        <p className="mt-2 pl-[23px] text-[14px] leading-[1.55] text-ink-muted">
           It comes from &ldquo;{groupName} via Shift&rdquo; ({INVITE_FROM_ADDRESS}), and replies come to you. If your
           company holds email from outside senders, ask IT to allow that address.
         </p>
@@ -439,7 +439,7 @@ export function InvitePanel({
             onClick={() => setShowEmail(!showEmail)}
             className="flex w-full items-center justify-between rounded-[10px] px-4 py-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
           >
-            <span className="flex items-center gap-2 text-[13.5px] font-semibold text-ink">
+            <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">
               <Mail size={15} strokeWidth={1.75} className="text-ink-muted" />
               How this looks to them
             </span>
@@ -452,7 +452,7 @@ export function InvitePanel({
           {showEmail && (
             <div className="grid gap-3 border-t border-line px-4 py-4">
               <InviteEmailPreview groupId={groupId} />
-              <p className="text-[12.5px] leading-[1.55] text-ink-muted">
+              <p className="text-[14px] leading-[1.55] text-ink-muted">
                 One reminder follows a week later for anyone who hasn&apos;t joined, then we leave them alone. Someone
                 who opts out shows on the Invited list as &quot;Opted out&quot; and never gets the reminder.
               </p>
@@ -460,7 +460,7 @@ export function InvitePanel({
           )}
         </div>
 
-        {error && <p className="mt-3 text-[13px] text-ep-danger">{error}</p>}
+        {error && <p className="mt-3 text-[14px] text-ep-danger">{error}</p>}
 
         <div className="mt-5 flex flex-wrap justify-end gap-2">
           {cancel}
@@ -481,7 +481,7 @@ export function InvitePanel({
 
       {/* Share a link, code or flyer */}
       <div {...tabPanelProps(prefix, 'share')} hidden={tab !== 'share'} className="pt-4 outline-none">
-        <p className="text-[13.5px] leading-[1.5] text-ink-muted">
+        <p className="text-[15px] leading-[1.5] text-ink-muted">
           Whichever one an employee uses, they land in {groupName}&apos;s group with trip tracking on.
         </p>
         <div className="mt-4 grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
@@ -494,7 +494,7 @@ export function InvitePanel({
                 value={joinUrl}
                 aria-label="Join link"
                 onFocus={(e) => e.currentTarget.select()}
-                className="min-w-0 flex-1 rounded-[10px] border border-line bg-surface-2 px-3 py-2 text-[13px] text-ink outline-none focus:border-accent/40"
+                className="min-w-0 flex-1 rounded-[10px] border border-line bg-surface-2 px-3 py-2 text-[14px] text-ink outline-none focus:border-accent/40"
               />
               <Button variant="primary" size="sm" icon={LinkIcon} onClick={() => void shareLink()}>
                 {copiedField === 'link' ? 'Copied!' : 'Share'}
@@ -508,7 +508,7 @@ export function InvitePanel({
                 {copiedField === 'code' ? 'Copied!' : 'Copy'}
               </Button>
             </div>
-            <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-muted">
+            <p className="mt-1.5 text-[14px] leading-[1.5] text-ink-muted">
               Employees type it in the Shift app: Community, then Join a workplace.
             </p>
           </div>
@@ -518,14 +518,14 @@ export function InvitePanel({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={qrDataUrl} alt="QR code for the join link" className="h-full w-full" />
               ) : (
-                <span className="text-[13px] text-ink-tertiary">Generating...</span>
+                <span className="text-[14px] text-ink-tertiary">Generating...</span>
               )}
             </div>
             <button
               type="button"
               onClick={downloadQr}
               disabled={!qrDataUrl}
-              className="mt-2 flex items-center gap-1 text-[12.5px] font-semibold text-accent hover:underline disabled:opacity-60"
+              className="mt-2 flex items-center gap-1 text-[14px] font-semibold text-accent hover:underline disabled:opacity-60"
             >
               <Download size={13} strokeWidth={2} />
               Download QR
@@ -536,13 +536,13 @@ export function InvitePanel({
         <div className="mt-5 flex flex-col gap-3 rounded-[12px] border border-line bg-surface-2 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="text-[14px] font-semibold text-ink">Messages, flyers and more</div>
-            <p className="mt-0.5 text-[13px] leading-[1.5] text-ink-muted">
-              A ready-to-send note for Slack or email, printable flyers and your office pages are in the Share kit.
+            <p className="mt-0.5 text-[14px] leading-[1.5] text-ink-muted">
+              A ready-to-send note, printable flyers and your office pages: Invite & share.
             </p>
           </div>
           <Link href={SHARE_KIT} className="contents">
             <Button variant="secondary" size="sm" iconRight={ExternalLink}>
-              Open the Share kit
+              Open Invite & share
             </Button>
           </Link>
         </div>
@@ -586,7 +586,7 @@ export default function InviteDialog({
             <h2 id="invite-title" className="text-[17px] font-bold text-ink">
               Invite employees
             </h2>
-            <p className="mt-1 text-[13.5px] leading-[1.5] text-ink-muted">
+            <p className="mt-1 text-[15px] leading-[1.5] text-ink-muted">
               Give us a list and we send the invitations, or share the link, code or a flyer yourself.
             </p>
           </div>

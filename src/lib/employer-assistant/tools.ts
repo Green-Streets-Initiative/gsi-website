@@ -254,7 +254,7 @@ const BASE_TOOLS: Anthropic.Tool[] = [
           type: 'string',
           enum: ['dashboard', 'setup', 'employees', 'share-kit', 'challenges', 'impact', 'survey', 'advisor', 'billing', 'settings'],
         },
-        label: { type: 'string', description: 'Button text, e.g. "Open the Share Kit".' },
+        label: { type: 'string', description: 'Button text, e.g. "Open Invite & share".' },
       },
       required: ['page', 'label'],
     },
@@ -593,7 +593,8 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       case 'open_page':
         return {
           content: { shown: true },
-          link: { href: `/shift/employers/portal/${String(input.page ?? 'dashboard')}`, label: String(input.label ?? 'Open') },
+          // 'share-kit' is Employees > Invite & share since 2026-10-22.
+          link: { href: input.page === 'share-kit' ? '/shift/employers/portal/employees?view=share' : `/shift/employers/portal/${String(input.page ?? 'dashboard')}`, label: String(input.label ?? 'Open') },
         }
       case 'offer_choices':
         return {

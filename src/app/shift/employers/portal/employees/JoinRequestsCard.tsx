@@ -140,7 +140,7 @@ export default function JoinRequestsCard({
                 <Avatar name={r.name || 'User'} />
                 <div className="min-w-0">
                   <div className="truncate text-[14px] font-semibold text-ink">{r.name || 'Unnamed'}</div>
-                  <div className="truncate text-[12.5px] text-ink-tertiary">
+                  <div className="truncate text-[14px] text-ink-tertiary">
                     {r.email ? `${r.email} · ` : 'No work email on file · '}
                     Asked {formatDate(r.requested_at)}
                   </div>
@@ -168,7 +168,7 @@ export default function JoinRequestsCard({
                   </Button>
                 </div>
               ) : (
-                <span className="text-[12.5px] text-ink-tertiary">An admin can approve this</span>
+                <span className="text-[14px] text-ink-tertiary">An admin can approve this</span>
               )}
             </li>
           ))}
@@ -178,7 +178,7 @@ export default function JoinRequestsCard({
   if (embedded) {
     return (
       <div>
-        <p className="px-6 pt-4 text-[13.5px] leading-[1.5] text-ink-muted">{sub}</p>
+        <p className="px-6 pt-4 text-[15px] leading-[1.5] text-ink-muted">{sub}</p>
         {body}
       </div>
     )
