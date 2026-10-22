@@ -295,13 +295,13 @@ export default async function WalkRideDayRulesPage() {
                 <Ul>
                   <li>
                     A trip taken on foot, by bicycle, by e-scooter, by bus, by subway or light
-                    rail, by commuter rail, or by ferry.
+                    rail, by commuter rail, by ferry, or in a carpool (two or more people in the car).
                   </li>
                   <li>
                     The trip must be recorded and location-verified by the Shift app. Trips that
                     are manually entered, or that the app cannot verify, do not count as entries.
                   </li>
-                  <li>Trips taken by car, including as a passenger, do not count as entries.</li>
+                  <li>A car trip with only the driver aboard does not count as an entry.</li>
                 </Ul>
               </SubSection>
 
