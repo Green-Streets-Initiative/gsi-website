@@ -102,9 +102,9 @@ async function loadThread(admin: SupabaseClient, groupId: string, userId: string
   return (data as Thread | null) ?? null
 }
 
-async function loadMessages(admin: SupabaseClient, threadId: string): Promise<{ role: 'user' | 'assistant'; content: unknown }[]> {
-  const { data } = await admin.from('employer_assistant_messages').select('role, content').eq('thread_id', threadId).order('id')
-  return (data ?? []) as { role: 'user' | 'assistant'; content: unknown }[]
+async function loadMessages(admin: SupabaseClient, threadId: string): Promise<{ id: number; role: 'user' | 'assistant'; content: unknown }[]> {
+  const { data } = await admin.from('employer_assistant_messages').select('id, role, content').eq('thread_id', threadId).order('id')
+  return (data ?? []) as { id: number; role: 'user' | 'assistant'; content: unknown }[]
 }
 
 // ── Answers to tap: the reply ends with <choices>one per line</choices> ──
@@ -171,12 +171,13 @@ type Item =
   | { kind: 'user'; text: string }
   | { kind: 'user_image'; url: string }
   | { kind: 'user_file'; name: string; count: number }
-  | { kind: 'assistant'; text: string }
+  /** msgId: the stored reply, for its thumbs up / down; rated: this person's rating. */
+  | { kind: 'assistant'; text: string; msgId?: number; rated?: 'up' | 'down' }
   | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
   | { kind: 'approval'; tool_use_id: string; card: ApprovalCard }
 
-function transcript(messages: { role: string; content: unknown }[], pending: Pending | null): Item[] {
+function transcript(messages: { id?: number; role: string; content: unknown }[], pending: Pending | null, ratings: Map<number, boolean> = new Map()): Item[] {
   const items: Item[] = []
   const byId = new Map<string, Extract<Item, { kind: 'tool' }>>()
   for (const m of messages) {
@@ -197,7 +198,10 @@ function transcript(messages: { role: string; content: unknown }[], pending: Pen
           items.push({ kind: 'user', text: b.text })
         } else {
           const sp = splitChoices(b.text)
-          if (sp.text) items.push({ kind: 'assistant', text: sp.text })
+          if (sp.text) {
+            const r = m.id != null ? ratings.get(m.id) : undefined
+            items.push({ kind: 'assistant', text: sp.text, msgId: m.id, ...(r == null ? {} : { rated: r ? 'up' : 'down' }) })
+          }
           if (sp.options.length) items.push({ kind: 'choices', options: sp.options })
         }
       } else if (b.type === 'tool_use') {
@@ -282,7 +286,9 @@ export async function GET(request: Request) {
   const thread = await loadThread(auth.admin, auth.group.id, auth.user.id, url.searchParams.get('thread_id'))
   if (!thread) return Response.json({ thread_id: null, items: [], role: auth.role, staff_in: auth.staffIn })
   const messages = await loadMessages(auth.admin, thread.id)
-  return Response.json({ thread_id: thread.id, items: transcript(messages, thread.pending), role: auth.role, staff_in: auth.staffIn })
+  const { data: rated } = await auth.admin.from('employer_assistant_ratings').select('message_id, up').eq('thread_id', thread.id).eq('author_email', auth.user.email!)
+  const ratings = new Map(((rated ?? []) as { message_id: number; up: boolean }[]).map((r) => [Number(r.message_id), r.up]))
+  return Response.json({ thread_id: thread.id, items: transcript(messages, thread.pending, ratings), role: auth.role, staff_in: auth.staffIn })
 }
 
 // ── DELETE ?group_id=&thread_id=: forget one of your conversations ──
@@ -335,10 +341,44 @@ export async function POST(request: Request) {
     attachments?: { url: string; name?: string }[]
     /** A staff list (spreadsheet or text file), sent with the message, base64. */
     list_file?: { name: string; data: string }
+    /** Thumbs up / down on one reply (Shift 01373). No model call. */
+    rating?: { message_id: number; up: boolean; note?: string }
   } | null
   const auth = await authorize(request, body?.group_id)
   if ('error' in auth) return auth.error
   const { admin, userClient, group, role, user, token, staffIn } = auth
+
+  // A thumbs up or down on one of this person's replies: stored, and a thumbs
+  // down tells GSI. Nothing else happens (no model call, no lock).
+  if (body?.rating) {
+    const id = Number(body.rating.message_id)
+    const { data: msg } = await admin
+      .from('employer_assistant_messages')
+      .select('id, thread_id, employer_assistant_threads!inner(group_id, created_by)')
+      .eq('id', id)
+      .eq('role', 'assistant')
+      .eq('employer_assistant_threads.group_id', group.id)
+      .eq('employer_assistant_threads.created_by', user.id)
+      .maybeSingle()
+    if (!msg) return Response.json({ error: 'That reply is not in your conversation.' }, { status: 404 })
+    const note = String(body.rating.note ?? '').trim().slice(0, 1500) || null
+    const up = !!body.rating.up
+    const { error } = await admin
+      .from('employer_assistant_ratings')
+      .upsert({ thread_id: (msg as { thread_id: string }).thread_id, message_id: id, group_id: group.id, author_email: user.email!, up, note }, { onConflict: 'message_id,author_email' })
+    if (error) return Response.json({ error: "That didn't save." }, { status: 500 })
+    if (!up) {
+      await admin.from('admin_notifications').insert({
+        level: 'info',
+        source: 'employer_assistant',
+        title: `Thumbs down on the assistant from ${group.name}`,
+        body: [note && `"${note}"`, `${user.email} (${role}). Conversation ${(msg as { thread_id: string }).thread_id}, reply ${id}.`].filter(Boolean).join('\n'),
+        context: { kind: 'assistant_rating', group_id: group.id, thread_id: (msg as { thread_id: string }).thread_id, message_id: id },
+      })
+    }
+    return Response.json({ ok: true })
+  }
+
   const text = (body?.message ?? '').trim().slice(0, 4000)
   // Only our own logo bucket: the model never fetches an arbitrary URL.
   const logoPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/employer-logos/`

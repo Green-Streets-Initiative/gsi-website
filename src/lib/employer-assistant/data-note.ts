@@ -40,7 +40,7 @@ export const DATA_NOTE_SECTIONS: { heading: string; body: string[] }[] = [
   {
     heading: 'What Green Streets keeps',
     body: [
-      'Conversations are private to the person who had them: other people on your portal team cannot read them. Green Streets staff may review conversations to improve the assistant. Each person can delete their own conversations at any time, from History in the assistant or from Settings, including while the assistant is turned off. Conversations are deleted automatically 12 months after their last message. An attached staff list is deleted with its conversation.',
+      'Conversations are private to the person who had them: other people on your portal team cannot read them. Green Streets staff may review conversations to improve the assistant. Each person can delete their own conversations at any time, from History in the assistant or from Settings, including while the assistant is turned off. Conversations are deleted automatically 12 months after their last message. An attached staff list, and any thumbs up or down someone gave a reply, are deleted with its conversation.',
       'Every change someone approves is listed for your whole portal team in Settings ("Changes made with the assistant"), with who approved it and when.',
       'When someone asks for something Shift does not do yet, or shares feedback, the assistant passes a short note to Green Streets (what was asked, in a sentence, and their words). A question someone chooses to send to Green Streets goes by email, and the answer comes back to them. Green Streets keeps these notes and questions, apart from the conversation, to answer them and to decide what to build next.',
     ],

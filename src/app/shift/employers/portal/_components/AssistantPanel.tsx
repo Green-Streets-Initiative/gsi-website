@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ArrowUp, Check, ExternalLink, FileSpreadsheet, History, Loader2, Maximize2, MapPin, MessageSquarePlus, Minimize2, Paperclip, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowUp, Check, ExternalLink, FileSpreadsheet, History, Loader2, Maximize2, MapPin, MessageSquarePlus, Minimize2, Paperclip, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react'
 import { useConfirm } from '@/components/employer/ConfirmDialog'
 import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
@@ -45,7 +45,7 @@ type Item =
   | { kind: 'user'; text: string }
   | { kind: 'user_image'; url: string }
   | { kind: 'user_file'; name: string; count?: number }
-  | { kind: 'assistant'; text: string }
+  | { kind: 'assistant'; text: string; msgId?: number; rated?: 'up' | 'down' }
   | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: LinkT; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
   | { kind: 'approval'; tool_use_id: string; card: Card }
@@ -130,6 +130,66 @@ function LinkButton({ link, onNavigate }: { link: LinkT; onNavigate: () => void 
     <Link href={link.href} className={cls} onClick={onNavigate}>
       {link.label}
     </Link>
+  )
+}
+
+/**
+ * Thumbs up / down under a finished reply (Shift 01373). A thumbs down asks,
+ * optionally, what went wrong; GSI hears about it either way.
+ */
+function RateReply({ rated, onRate }: { rated?: 'up' | 'down'; onRate: (up: boolean, note?: string) => Promise<boolean> }) {
+  const [asking, setAsking] = useState(false)
+  const [note, setNote] = useState('')
+  const [done, setDone] = useState<'up' | 'down' | undefined>(rated)
+  const rate = async (up: boolean, withNote?: string) => {
+    if (await onRate(up, withNote)) setDone(up ? 'up' : 'down')
+  }
+  if (asking) {
+    return (
+      <form
+        className="mt-2 flex items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          setAsking(false)
+          void rate(false, note)
+        }}
+      >
+        <input
+          autoFocus
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="What went wrong? (optional)"
+          aria-label="What went wrong?"
+          className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] text-ink outline-none placeholder:text-ink-muted focus:border-accent"
+        />
+        <button type="submit" className="rounded-lg border border-line px-2.5 py-1.5 text-[12.5px] font-medium text-ink hover:bg-surface-2">
+          Send
+        </button>
+      </form>
+    )
+  }
+  return (
+    <div className="mt-1.5 flex items-center gap-1 text-ink-muted">
+      <button
+        type="button"
+        aria-label="Good answer"
+        aria-pressed={done === 'up'}
+        onClick={() => void rate(true)}
+        className={`grid h-7 w-7 place-items-center rounded-md hover:bg-surface-2 ${done === 'up' ? 'text-accent' : ''}`}
+      >
+        <ThumbsUp size={14} strokeWidth={1.75} />
+      </button>
+      <button
+        type="button"
+        aria-label="Not a good answer"
+        aria-pressed={done === 'down'}
+        onClick={() => setAsking(true)}
+        className={`grid h-7 w-7 place-items-center rounded-md hover:bg-surface-2 ${done === 'down' ? 'text-ep-danger' : ''}`}
+      >
+        <ThumbsDown size={14} strokeWidth={1.75} />
+      </button>
+      {done && <span className="ml-1 text-[12px]">Thanks, that helps us improve it.</span>}
+    </div>
   )
 }
 
@@ -345,6 +405,17 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
     void send({ message: seed.prompt, thread_id: null, new_thread: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, seed, busy])
+
+  const rateReply = async (messageId: number, up: boolean, note?: string): Promise<boolean> => {
+    const h = await authHeader()
+    if (!h) return false
+    const res = await fetch('/api/employer/assistant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...h },
+      body: JSON.stringify({ group_id: groupId, rating: { message_id: messageId, up, note } }),
+    })
+    return res.ok
+  }
 
   const openHistory = async () => {
     setView('history')
@@ -603,12 +674,17 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
                 // eslint-disable-next-line @next/next/no-img-element
                 <img key={i} src={it.url} alt="Attached image" className="ml-8 max-h-32 self-end rounded-xl border border-line bg-white object-contain p-1.5" />
               )
-            if (it.kind === 'assistant')
+            if (it.kind === 'assistant') {
+              // Ratings go under the last reply of a turn, once it's stored.
+              const next = items.slice(i + 1).find((x) => x.kind !== 'tool')
+              const endOfTurn = !next || next.kind !== 'assistant'
               return (
                 <div key={i} className="mr-4 text-[14px] leading-[1.55] text-ink">
                   <Rich text={it.text} />
+                  {it.msgId != null && endOfTurn && !busy && <RateReply key={it.msgId} rated={it.rated} onRate={(up, note) => rateReply(it.msgId!, up, note)} />}
                 </div>
               )
+            }
             if (it.kind === 'tool')
               return (
                 <div key={i} className="text-[12.5px] text-ink-muted">
