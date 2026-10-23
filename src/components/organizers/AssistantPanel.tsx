@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ArrowUp, Check, ExternalLink, History, Loader2, MapPin, MessageSquarePlus, Paperclip, Route as RouteIcon, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { startersFor } from '@/lib/organizer-assistant/starters'
 import { elevationOf, parseGpx, simplify, toWaypoints } from '@/lib/organizers/route-geo'
 import { cx } from './ui'
 
@@ -23,7 +24,6 @@ export function openAssistant(prompt?: string) {
   window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: { prompt } }))
 }
 
-const STARTERS = ['Plan a new ride with me', 'Design a route for my ride', "What's coming up this week?", 'Post an update for my next ride']
 const CHANGE_LABELS = new Set(['Creating the ride', 'Saving the changes', 'Posting the update', 'Cancelling the date', 'Changing the date', 'Updating the ride', 'Starting it again', 'Sending the invite', 'Settling the request'])
 
 type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger'; mapUrl?: string; confirmText?: string; staffNote?: string }
@@ -39,6 +39,30 @@ type Item =
   | { kind: 'choices'; options: string[] }
   | { kind: 'approval'; tool_use_id: string; card: Card }
   | { kind: 'error'; text: string }
+
+/** An image small enough for the model: GIFs and small files pass as they are;
+ *  anything over 1.5 MB or 2000 px on a side becomes a JPEG at that size. */
+async function shrinkImage(file: File): Promise<File> {
+  if (file.type === 'image/gif' || file.size <= 1.5 * 1024 * 1024) {
+    const bmp = await createImageBitmap(file)
+    const fits = Math.max(bmp.width, bmp.height) <= 2000
+    bmp.close()
+    if (fits) return file
+  }
+  const bmp = await createImageBitmap(file)
+  const scale = Math.min(1, 2000 / Math.max(bmp.width, bmp.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(bmp.width * scale)
+  canvas.height = Math.round(bmp.height * scale)
+  const ctx = canvas.getContext('2d')!
+  ctx.fillStyle = '#fff' // transparent PNGs get a white background, not black
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height)
+  bmp.close()
+  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.85))
+  if (!blob) throw new Error('shrink failed')
+  return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' })
+}
 
 /** Where an attached GPX route waits for the editor (?import=<id>): this browser only. */
 export const ROUTE_IMPORT_KEY = (id: string) => `shift-route-import:${id}`
@@ -212,7 +236,7 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
       const res = await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...h },
-        body: JSON.stringify({ thread_id: fresh ? null : threadId, new_thread: fresh, ...payload }),
+        body: JSON.stringify({ thread_id: fresh ? null : threadId, new_thread: fresh, page: window.location.pathname + window.location.search, ...payload }),
       })
       if (!res.ok || !res.body) {
         const j = (await res.json().catch(() => ({}))) as { error?: string; long?: boolean }
@@ -319,7 +343,8 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
   // editor, and the assistant gets a summary of how it rides.
   const fileInput = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
-  const attach = async (file: File) => {
+  const attach = async (input: File) => {
+    let file: File = input
     const note = draft.trim() || undefined
     const fail = (text: string) => setItems((p) => [...p, { kind: 'error', text }])
     if (/\.gpx$/i.test(file.name) || file.type === 'application/gpx+xml') {
@@ -336,9 +361,15 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
       }
       return
     }
-    const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' } as Record<string, string>)[file.type]
-    if (!ext) return fail('Attach an image (JPG, PNG, WebP or GIF) or a GPX route file.')
-    if (file.size > 10 * 1024 * 1024) return fail('That image is over 10 MB. Try a smaller one.')
+    if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) return fail('Attach an image (JPG, PNG, WebP or GIF) or a GPX route file.')
+    // The image is re-sent to the model with every later turn, and the model
+    // refuses images over about 5 MB: a big phone photo would break the whole
+    // conversation. So shrink it here: at most 2000 px on a side, as JPEG.
+    const img = await shrinkImage(file).catch(() => null)
+    if (!img) return fail("That image couldn't be read. Try a JPG or PNG.")
+    if (img.size > 4 * 1024 * 1024) return fail('That image is too big even after shrinking. Try a smaller one.')
+    file = img
+    const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' } as Record<string, string>)[file.type] ?? 'jpg'
     const { data } = await supabase.auth.getSession()
     const uid = data.session?.user.id
     if (!uid) return fail('Sign in again to continue.')
@@ -422,7 +453,7 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
               Nothing people can see changes until you approve it.
             </p>
             <div className="mt-4 flex flex-col items-start gap-2">
-              {STARTERS.map((s) => (
+              {startersFor(typeof window === 'undefined' ? '' : window.location.pathname).map((s) => (
                 <button key={s} type="button" onClick={() => void send({ message: s })}
                   className="min-h-[38px] rounded-full border border-(--ev-accent-line-40) bg-(--ev-accent-tint-8) px-3.5 text-left text-[14px] font-semibold text-(--ev-accent-90) hover:border-(--ev-accent)">
                   {s}

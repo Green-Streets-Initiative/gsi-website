@@ -99,7 +99,7 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
             </div>
             <div className="flex flex-wrap gap-2">
               {assistant && (
-                <button type="button" onClick={() => openAssistant(`About my ride "${r.name}" (id ${r.id}): what needs doing next?`)}
+                <button type="button" onClick={() => openAssistant('What needs doing next on this ride?')}
                   className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
                   <MessageSquareText className="h-4 w-4" aria-hidden />Ask about this ride
                 </button>

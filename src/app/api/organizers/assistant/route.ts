@@ -17,7 +17,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { SYSTEM_PROMPT, contextBlock } from '@/lib/organizer-assistant/prompt'
+import { SYSTEM_PROMPT, contextBlock, organizerPage } from '@/lib/organizer-assistant/prompt'
 import { ACTIVITY, NEEDS_APPROVAL, TOOLS, approvalCard, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult } from '@/lib/organizer-assistant/tools'
 import { summarizeRoute } from '@/lib/organizer-assistant/route-designer'
 
@@ -179,7 +179,7 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
       if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) {
         if (m.role === 'user' && b.text.startsWith('[Carried over')) { items.push({ kind: 'carried' }); continue }
         // Notes that travel with an attachment are for the model; the panel shows the attachment.
-        if (m.role === 'user' && b.text.startsWith('[Attached image')) continue
+        if (m.role === 'user' && (b.text.startsWith('[Attached image') || b.text.startsWith('[Page:'))) continue
         if (m.role === 'user' && b.text.startsWith('[Attached route')) { items.push({ kind: 'user_file', name: b.text.match(/"([^"]*)"/)?.[1] ?? 'Route' }); continue }
         if (m.role === 'user') { items.push({ kind: 'user', text: b.text }); continue }
         const sp = splitChoices(b.text)
@@ -273,6 +273,7 @@ export async function POST(request: Request) {
     carry_from?: string
     rating?: { message_id: number; up: boolean; note?: string }
     attachments?: { url: string; name?: string }[]
+    page?: string
     route_file?: { import_id: string; name?: string; waypoints: { lat: number; lng: number }[]; elevation?: { ascent_ft: number } | null }
   } | null
   const auth = await authorize(request)
@@ -323,6 +324,21 @@ export async function POST(request: Request) {
   }
   if (!text && !body?.decision && attachments.length === 0 && !routeNote) return Response.json({ error: 'Say something first.' }, { status: 400 })
 
+  // Where they are, as a hidden note in their message (not the system block,
+  // so moving between pages keeps the prompt cache). A ride's name comes from
+  // the database as this person, which also checks the ride is theirs.
+  let pageNote: string | null = null
+  const page = organizerPage(body?.page)
+  if (page) {
+    let ride = ''
+    if (page.seriesId) {
+      const { data } = await userClient.rpc('organizer_ride_detail', { p_series_id: page.seriesId })
+      const r = (data as { ride?: { name?: string; id?: string } } | null)?.ride
+      ride = r?.name ? ` of the ride "${r.name.replace(/"/g, "'").slice(0, 120)}" (series_id ${page.seriesId})` : ''
+    }
+    pageNote = `[Page: ${page.label}${ride}]`
+  }
+
   // Caps: this person per rolling day, everyone per month.
   const monthStart = new Date()
   monthStart.setUTCDate(1)
@@ -368,6 +384,7 @@ export async function POST(request: Request) {
       { type: 'text', text: `[Attached image${a.name ? ` "${String(a.name).replace(/"/g, "'").slice(0, 120)}"` : ''}: ${a.url}]` },
     ]),
     ...(routeNote ? [{ type: 'text', text: routeNote }] : []),
+    ...(pageNote && (text || attachments.length || routeNote) ? [{ type: 'text', text: pageNote }] : []),
     ...(carryNote ? [{ type: 'text', text: carryNote }] : []),
     ...(text ? [{ type: 'text', text }] : []),
   ]

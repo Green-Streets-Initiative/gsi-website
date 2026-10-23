@@ -145,11 +145,11 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'open_page',
-    description: 'A button to a screen of the organizer tools, for things done there: drawing or importing a route, adding a flyer, the full edit form, the turnout download, the host page.',
+    description: 'A button to a screen of the organizer tools, for things done there: the route, adding a flyer, the full edit form, Promote (captions per channel, short links that count visits, the flyer QR code, event calendars), the turnout download, the host page.',
     input_schema: {
       type: 'object',
       properties: {
-        page: { type: 'string', enum: ['rides', 'new_ride', 'ride', 'edit', 'roster', 'turnout', 'team', 'host'] },
+        page: { type: 'string', enum: ['rides', 'new_ride', 'ride', 'edit', 'roster', 'promote', 'turnout', 'team', 'host'] },
         series_id: nullable('string'),
         occurrence_id: nullable('string'),
         import_id: nullable('string', 'With edit or new_ride: a GPX route the organizer attached (the import id in its [Attached route] note), to load into the route section.'),
@@ -581,7 +581,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const href = ({
           rides: '/organizers', new_ride: `/organizers/rides/new${importQ}`, host: '/organizers/host',
           ride: base, edit: `${base}/edit${importQ}`, roster: `${base}/roster${input.occurrence_id ? `?date=${input.occurrence_id}` : ''}`,
-          turnout: `${base}/turnout`, team: `${base}/team`,
+          turnout: `${base}/turnout`, team: `${base}/team`, promote: `${base}/promote`,
         } as Record<string, string>)[String(input.page)] ?? '/organizers'
         return ok({ shown: true }, { href, label: String(input.label || 'Open') })
       }
