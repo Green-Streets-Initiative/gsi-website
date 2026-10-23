@@ -37,6 +37,8 @@ export interface CalmSegment {
   distance_mi: number
   startIdx?: number
   endIdx?: number
+  /** Datasets that decided this segment's rating (massdot, mapc, osm, none); newer planner answers only. */
+  sources?: string[]
 }
 
 export interface CalmOption {
@@ -333,6 +335,8 @@ export interface ComfortPiece {
   label: string
   /** Measured along the polyline, so the chips add up to the route. */
   distanceMi: number
+  /** The datasets behind this stretch's rating, for "Report a problem with this route". */
+  sources: string[]
 }
 
 /** "Webster Ave", else "Path" on a path or protected lane, else "Side streets". */
@@ -388,7 +392,7 @@ export function comfortPieces(option: CalmOption): ComfortPiece[] {
   }
   if (segs.length === 0) {
     const rating = option.comfort_rating && option.comfort_rating !== 'mixed' ? option.comfort_rating : 'shared_road'
-    return [{ coords: toCoords(w), rating, index: -1, label: stretchLabel(option.summary, rating), distanceMi: length(w) }]
+    return [{ coords: toCoords(w), rating, index: -1, label: stretchLabel(option.summary, rating), distanceMi: length(w), sources: [] }]
   }
 
   const runs: { pts: { lat: number; lng: number }[]; seg: CalmSegment }[] = []
@@ -427,9 +431,10 @@ export function comfortPieces(option: CalmOption): ComfortPiece[] {
       const joined = [...last.coords, ...toCoords(run.pts.slice(1))]
       last.coords = joined
       last.distanceMi += length(run.pts)
+      for (const src of run.seg.sources ?? []) if (!last.sources.includes(src)) last.sources.push(src)
       continue
     }
-    out.push({ coords: toCoords(run.pts), rating: run.seg.rating, index: out.length, label, distanceMi: length(run.pts) })
+    out.push({ coords: toCoords(run.pts), rating: run.seg.rating, index: out.length, label, distanceMi: length(run.pts), sources: [...new Set(run.seg.sources ?? [])] })
   }
   return out
 }
