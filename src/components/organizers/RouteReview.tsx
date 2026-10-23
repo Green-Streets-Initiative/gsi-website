@@ -5,7 +5,7 @@ import { AlertTriangle, Camera } from 'lucide-react'
 import { PanelPhoto } from '@/components/nearby/DetailPanel'
 import {
   COMFORT_LABELS, comfortPieces, comfortableShare, concernAdvice, concernTitle, formatStretchMiles, legPhotoSpec,
-  relevantConcerns, safetyVerdict, type CalmFlag, type CalmOption, type ComfortPiece,
+  newLaneNotes, relevantConcerns, safetyVerdict, type CalmFlag, type CalmOption, type ComfortPiece,
 } from '@/components/commute/calm-route'
 import { PACE_MID_MPH, PACE_OPTIONS } from '@/lib/organizers/ride-words'
 import { routeMiles } from '@/lib/organizers/route-geo'
@@ -180,6 +180,15 @@ export default function RouteReview({ route, reading, pace, focus, onFocus }: {
       )}
 
       {pieces.length > 0 && <p className="text-[15px] font-semibold text-(--ev-ink)">{verdict.text}</p>}
+      {newLaneNotes(option.flags).length > 0 && (
+        <ul className="grid gap-1">
+          {newLaneNotes(option.flags).map((n) => (
+            <li key={n} className="flex items-center gap-2 text-[15px] font-semibold text-(--ev-ink)">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: MAP_COMFORT_COLORS.protected }} aria-hidden />{n}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {(pieces.length > 0 || concerns.length > 0) && (
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">

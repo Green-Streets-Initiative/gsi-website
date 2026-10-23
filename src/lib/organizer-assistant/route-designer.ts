@@ -1,5 +1,5 @@
 import 'server-only'
-import { comfortableShare, concernTitle, relevantConcerns, type CalmFlag } from '@/components/commute/calm-route'
+import { comfortableShare, concernTitle, newLaneNotes, relevantConcerns, type CalmFlag } from '@/components/commute/calm-route'
 import { PACE_MID_MPH } from '@/lib/organizers/ride-words'
 import { comfortBreakdown, routeFromPlan } from '@/lib/organizers/route-plan'
 import { routeMiles } from '@/lib/organizers/route-geo'
@@ -476,6 +476,7 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
       stops_in_order: pins.slice(1, -1).map((p) => p.kind === 'turnaround' ? 'turnaround point (added for distance)' : p.name ?? 'a stop')
         .filter((n, i, a) => i === 0 || n !== a[i - 1]),
       spots_to_take_carefully: spots,
+      new_lanes_ridden: newLaneNotes(route.flags as CalmFlag[]),
       stations,
     },
     plan: {
