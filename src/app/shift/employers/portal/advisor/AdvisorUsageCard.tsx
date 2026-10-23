@@ -7,6 +7,7 @@ import { Card, CardBody, CardHead } from '@/components/employer/Card'
 import Button from '@/components/employer/Button'
 import { locationTitle } from '../_lib/use-employer-locations'
 import type { AdvisorUsage, AdvisorUsageRow } from '../_lib/portal-types'
+import { downloadCsv } from '@/lib/csv'
 
 const MODE_LABEL: Record<string, string> = {
   walk: 'Walking',
@@ -95,11 +96,6 @@ async function loadWeeks(groupId: string, usage: AdvisorUsage): Promise<WeekBar[
   return bars
 }
 
-function csvCell(v: string | number | null | undefined): string {
-  const s = v == null ? '' : String(v)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-}
-
 /**
  * How employees use the Commute Advisor page (Keith 2026-09-30, v2 2026-10-05):
  * runs in the last 30 days with the change against the 30 days before, runs
@@ -173,30 +169,17 @@ export default function AdvisorUsageCard({
   const maxWeek = weeks ? Math.max(1, ...weeks.map((w) => w.runs)) : 1
   const weeksTotal = weeks ? weeks.reduce((n, w) => n + w.runs, 0) : 0
 
-  function downloadCsv() {
+  function downloadRuns() {
     const header = ['date', 'recommended_mode', 'arrive_by', 'what_mattered_most', 'distance_band', 'location']
-    const lines = [header.join(',')]
-    for (const r of rows) {
-      lines.push(
-        [
-          csvCell(r.created_at ? r.created_at.slice(0, 10) : ''),
-          csvCell(modeLabel(r.mode)),
-          csvCell(r.arrive_by ?? ''),
-          csvCell(r.motivation ? (MOTIVATION_LABEL[r.motivation] ?? r.motivation) : ''),
-          csvCell(r.distance_category ? (DISTANCE_LABEL[r.distance_category] ?? r.distance_category) : ''),
-          csvCell(locationName(r.location_id ?? null)),
-        ].join(','),
-      )
-    }
-    const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${fileLabel}-runs-${new Date().toISOString().slice(0, 10)}.csv`
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
+    const lines = rows.map((r) => [
+      r.created_at ? r.created_at.slice(0, 10) : '',
+      modeLabel(r.mode),
+      r.arrive_by ?? '',
+      r.motivation ? (MOTIVATION_LABEL[r.motivation] ?? r.motivation) : '',
+      r.distance_category ? (DISTANCE_LABEL[r.distance_category] ?? r.distance_category) : '',
+      locationName(r.location_id ?? null),
+    ])
+    downloadCsv(`${fileLabel}-runs-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...lines])
   }
 
   return (
@@ -206,7 +189,7 @@ export default function AdvisorUsageCard({
         sub="Last 30 days on your Commute Advisor page"
         action={
           rows.length > 0 ? (
-            <Button variant="ghost" size="sm" icon={Download} onClick={downloadCsv}>
+            <Button variant="ghost" size="sm" icon={Download} onClick={downloadRuns}>
               Download CSV
             </Button>
           ) : undefined

@@ -7,23 +7,7 @@ import { dateLabel, monthLabel, plural } from '@/lib/organizers/ride-words'
 import type { Turnout } from '@/lib/organizers/types'
 import { useRide } from './RideFrame'
 import { Button, Card, Empty, Notice, SectionTitle, Spinner } from './ui'
-
-function csvCell(v: string | number): string {
-  const s = String(v)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-}
-
-function download(name: string, rows: (string | number)[][]) {
-  const blob = new Blob([rows.map((r) => r.map(csvCell).join(',')).join('\n') + '\n'], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = name
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
+import { downloadCsv } from '@/lib/csv'
 
 function slug(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'ride'
@@ -85,8 +69,8 @@ export default function TurnoutView() {
           hint="From people's own trips in the Shift app, plus requests you approve."
           action={
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => download(`${file}-turnout-by-month.csv`, monthRows())}><Download className="h-4 w-4" aria-hidden />Monthly CSV</Button>
-              <Button size="sm" onClick={() => download(`${file}-turnout-by-date.csv`, dateRows())}><Download className="h-4 w-4" aria-hidden />Every date CSV</Button>
+              <Button size="sm" onClick={() => downloadCsv(`${file}-turnout-by-month.csv`, monthRows())}><Download className="h-4 w-4" aria-hidden />Monthly CSV</Button>
+              <Button size="sm" onClick={() => downloadCsv(`${file}-turnout-by-date.csv`, dateRows())}><Download className="h-4 w-4" aria-hidden />Every date CSV</Button>
             </div>
           }
         >

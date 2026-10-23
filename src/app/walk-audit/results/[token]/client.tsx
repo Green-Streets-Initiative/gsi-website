@@ -5,6 +5,7 @@ import { CopySimple, DownloadSimple, Flag, ThumbsUp, Warning } from '@phosphor-i
 import { moduleById } from '@/components/walk-audit/moduleModel'
 import VolunteerRouteMap from '@/components/volunteer-route/VolunteerRouteMap'
 import PhotoLightbox from '@/components/walk-audit/PhotoLightbox'
+import { downloadCsv } from '@/lib/csv'
 
 interface BlockDef {
   i: number
@@ -102,11 +103,6 @@ function walkerPhrase(count: number): string {
   if (count === 1) return 'the walker'
   if (count === 2) return 'both walkers'
   return `all ${count} walkers`
-}
-
-function csvEscape(v: unknown): string {
-  const s = v == null ? '' : Array.isArray(v) ? v.join('; ') : typeof v === 'object' ? JSON.stringify(v) : String(v)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
 export default function WalkAuditResultsClient({ data }: { data: ResultsData }) {
@@ -232,20 +228,14 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
     [observations, audit.hazard_context],
   )
 
-  function downloadCsv() {
+  function downloadObservations() {
     const header = ['when', 'who', 'good_or_problem', 'what_kind', 'how_bad_1to5', 'note', 'photo', 'lat', 'lng']
     const rows = observations.map((o) => [
       o.created_at, o.observer_name ?? '', o.valence,
       o.category ? (CATEGORY_LABELS[o.category] ?? o.category) : '',
       o.severity ?? '', o.note ?? '', o.photo?.url ?? '', o.lat, o.lng,
     ])
-    const csv = [header, ...rows].map((r) => r.map(csvEscape).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `walk-audit-${audit.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv`
-    a.click()
-    URL.revokeObjectURL(a.href)
+    downloadCsv(`walk-audit-${audit.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv`, [header, ...rows])
   }
 
   async function copyParticipantLink() {
@@ -354,7 +344,7 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
             </button>
             {observations.length > 0 && (
               <button
-                onClick={downloadCsv}
+                onClick={downloadObservations}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-[#2966E5] px-3 py-2 text-xs font-semibold text-white hover:bg-[#2966E5]/90"
               >
                 <DownloadSimple size={14} weight="bold" /> Download the data (CSV)
@@ -478,13 +468,7 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
                   s.observer_name ?? '',
                   ...answerKeys.map((k) => s.answers?.[k]),
                 ])
-                const csv = [header, ...rows].map((r) => r.map(csvEscape).join(',')).join('\n')
-                const blob = new Blob([csv], { type: 'text/csv' })
-                const a = document.createElement('a')
-                a.href = URL.createObjectURL(blob)
-                a.download = `walk-audit-forms-${audit.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv`
-                a.click()
-                URL.revokeObjectURL(a.href)
+                downloadCsv(`walk-audit-forms-${audit.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv`, [header, ...rows])
               }}
               className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-[#191A2E] hover:border-[#2966E5]"
             >

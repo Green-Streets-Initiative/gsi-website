@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Card, CardBody, CardHead } from '@/components/employer/Card'
 import Button from '@/components/employer/Button'
 import { centsToDollars, formatDateShort } from '../_lib/portal-utils'
+import { downloadCsv } from '@/lib/csv'
 
 type LedgerRow = {
   id: string
@@ -76,14 +77,7 @@ export default function PoolStatement({ poolId }: { poolId: string }) {
       (r.held_after_cents / 100).toFixed(2),
       r.note ?? '',
     ])
-    const csv = [header, ...lines]
-      .map((l) => l.map((v) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)).join(','))
-      .join('\n')
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
-    a.download = 'rewards-balance-statement.csv'
-    a.click()
-    URL.revokeObjectURL(a.href)
+    downloadCsv('rewards-balance-statement.csv', [header, ...lines])
   }
 
   const visible = (rows ?? []).filter((r) => !(r.kind === 'opening' && r.balance_change_cents === 0))

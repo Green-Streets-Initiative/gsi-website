@@ -11,6 +11,7 @@ import { useToast } from '@/components/employer/Toast'
 import { useConfirm } from '@/components/employer/ConfirmDialog'
 import { formatDate, formatDateShort } from '../_lib/portal-utils'
 import { INVITE_NOTE } from './InviteDialog'
+import { downloadCsv } from '@/lib/csv'
 
 export type InvitationStatus = 'pending' | 'sent' | 'reminded' | 'joined' | 'unsubscribed' | 'bounced'
 
@@ -42,10 +43,6 @@ function statusWords(row: Invitation): { text: string; tone: 'success' | 'warn' 
     default:
       return { text: 'Going out within the hour', tone: 'neutral' }
   }
-}
-
-function csvCell(v: string | number | null): string {
-  return `"${String(v ?? '').replace(/"/g, '""')}"`
 }
 
 /**
@@ -176,14 +173,7 @@ export default function InvitedCard({
       r.reminded_at ? r.reminded_at.split('T')[0] : '',
       r.joined_at ? r.joined_at.split('T')[0] : '',
     ])
-    const csv = [header, ...lines].map((l) => l.map(csvCell).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${groupName.replace(/\s+/g, '-').toLowerCase() || 'team'}-invitations.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadCsv(`${groupName.replace(/\s+/g, '-').toLowerCase() || 'team'}-invitations.csv`, [header, ...lines])
     posthog.capture('portal_invitations_exported', { employer_group_id: groupId, count: filtered.length })
   }
 

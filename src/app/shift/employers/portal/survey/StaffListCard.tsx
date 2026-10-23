@@ -12,6 +12,7 @@ import { useConfirm } from '@/components/employer/ConfirmDialog'
 import { longDate, weekLabel } from '@/lib/employer/survey-instrument'
 import { parseStaff } from './staff-csv'
 import { REASONS, type Person, type SurveyStatus } from './survey-types'
+import { downloadCsv } from '@/lib/csv'
 
 const PAGE_SIZE = 50
 
@@ -33,10 +34,6 @@ function statusWords(p: Person): { text: string; tone: 'success' | 'warn' | 'inf
     default:
       return { text: 'Not sent yet', tone: 'neutral' }
   }
-}
-
-function csvCell(v: string | null | undefined): string {
-  return `"${String(v ?? '').replace(/"/g, '""')}"`
 }
 
 /** The in-tab header every survey tab uses: 16px title, 13px sub, action on the right. */
@@ -157,13 +154,7 @@ export function PeopleCard({
   function downloadList() {
     const header = ['Name', 'Email', 'Department', 'Site', 'Answered', 'Status']
     const lines = filtered.map((p) => [p.name, p.email, p.department, p.location_id ? siteName[p.location_id] : '', p.responded ? 'Yes' : 'No', statusWords(p).text])
-    const csv = [header, ...lines].map((l) => l.map(csvCell).join(',')).join('\n')
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'commute-survey-people.csv'
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadCsv('commute-survey-people.csv', [header, ...lines])
   }
 
   const canAdd = canManage && survey.status !== 'closed'

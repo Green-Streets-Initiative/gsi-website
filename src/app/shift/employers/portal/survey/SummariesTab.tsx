@@ -13,6 +13,7 @@ import type { RuleSet } from '@/lib/employer/survey-instrument'
 import { EPA_FACTOR_LINE } from '../_components/HowWeCountCard'
 import { FILINGS, FILING_BY_ID } from './survey-copy'
 import { ruleSetsOf, type SurveyStatus } from './survey-types'
+import { downloadCsv } from '@/lib/csv'
 
 type Readiness = { tone: 'success' | 'warn' | 'info' | 'neutral'; text: string }
 
@@ -99,12 +100,7 @@ export default function SummariesTab({ status, sitesCount }: { status: SurveySta
 
   function download() {
     if (!result) return
-    const url = URL.createObjectURL(new Blob([result.csv], { type: 'text/csv' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `commute-survey-${result.format}-${s.week_start}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadCsv(`commute-survey-${result.format}-${s.week_start}.csv`, result.csv)
   }
 
   const checks: { ok: boolean; text: string }[] = [

@@ -43,6 +43,7 @@ import {
   type RuleSet,
   type SurveyAnswers,
 } from './survey-instrument.ts'
+import { csvCell } from '../csv.ts'
 
 export type ExportResponse = {
   answers: SurveyAnswers
@@ -643,10 +644,6 @@ export function exportFor(ruleSet: RuleSet, survey: ExportSurvey, rows: ExportRe
     default:
       return emissionsExport(survey, rows, evidence)
   }
-}
-
-function csvCell(v: string | number): string {
-  return `"${String(v).replace(/"/g, '""')}"`
 }
 
 /** One CSV: section, label, value; paragraphs as a row each. */

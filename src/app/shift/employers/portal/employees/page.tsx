@@ -38,6 +38,7 @@ import JoinRequestsCard from './JoinRequestsCard'
 import JoinPolicyLine from '../_components/JoinPolicyLine'
 import TabStrip, { tabPanelProps } from '../_components/TabStrip'
 import ShareKit from './ShareKit'
+import { downloadCsv } from '@/lib/csv'
 
 const EMPLOYEES = '/shift/employers/portal/employees'
 const RANGE_STORAGE_KEY = 'portal.employees.range'
@@ -281,10 +282,6 @@ export default function EmployeesPage() {
   const activeCount = members.filter((m) => m.active_trips_in_period > 0).length
   const rangePhrase = RANGE_PHRASE[range]
 
-  function csvCell(v: string | number): string {
-    return `"${String(v).replace(/"/g, '""')}"`
-  }
-
   function exportCsv() {
     if (filtered.length === 0) return
     const header = [
@@ -307,15 +304,8 @@ export default function EmployeesPage() {
       m.miles_in_period.toFixed(1),
       m.co2_avoided_in_period.toFixed(1),
     ])
-    const csv = [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
     const company = (group!.name || 'employees').replace(/\s+/g, '-').toLowerCase()
-    a.download = `${company}-employees-${RANGE_SLUG[range]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadCsv(`${company}-employees-${RANGE_SLUG[range]}.csv`, [header, ...rows])
   }
 
   const SortIcon = sortDir === 'asc' ? ArrowUp : ArrowDown

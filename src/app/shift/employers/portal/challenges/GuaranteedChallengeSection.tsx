@@ -19,6 +19,7 @@ import type {
 } from '../_lib/portal-types'
 import TellYourTeam from './TellYourTeam'
 import { availableCents } from './funding'
+import { downloadCsv } from '@/lib/csv'
 
 type RpcResult = { ok: boolean; reason?: string; needed_cents?: number; available_cents?: number; winners?: number }
 
@@ -126,11 +127,6 @@ function winnerStatus(p: GuaranteedPrizeProgress, w: GuaranteedWinner): { label:
   return { label: 'Not claimed yet', tone: 'warn' }
 }
 
-function csvCell(v: string | null | undefined): string {
-  const s = v ?? ''
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-}
-
 function exportCsv(challengeName: string, p: GuaranteedPrizeProgress) {
   const header = ['Name', 'Email (shared when claimed)', 'Reached the goal', 'Status', 'Claimed', 'Handed out', 'Received (confirmed by winner)', 'Gift card value']
   const rows = p.winner_list.map((w) => [
@@ -143,13 +139,7 @@ function exportCsv(challengeName: string, p: GuaranteedPrizeProgress) {
     w.received_at ? formatDateShort(w.received_at) : '',
     p.funded && p.amount_cents ? dollars(p.amount_cents) : '',
   ])
-  const csv = [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `${challengeName} - ${p.name} - winners.csv`.replace(/[\\/:*?"<>|]/g, '-')
-  a.click()
-  URL.revokeObjectURL(a.href)
+  downloadCsv(`${challengeName} - ${p.name} - winners.csv`, [header, ...rows])
 }
 
 /**

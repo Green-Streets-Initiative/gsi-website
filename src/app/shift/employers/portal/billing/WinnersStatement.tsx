@@ -7,6 +7,7 @@ import { Card, CardBody, CardHead } from '@/components/employer/Card'
 import Button from '@/components/employer/Button'
 import { HELP_TOPIC_TAXES, openPortalHelp } from '../_components/HelpDrawer'
 import { centsToDollars, formatDateShort } from '../_lib/portal-utils'
+import { downloadCsv } from '@/lib/csv'
 
 export const WINNERS_STATEMENT_ID = 'winners-statement'
 
@@ -46,10 +47,6 @@ const STATUS_LABEL: Record<StatementRow['status'], string> = {
 }
 
 const NOT_PAID: StatementRow['status'][] = ['forfeited', 'expired']
-
-function csvCell(v: string): string {
-  return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v
-}
 
 function fileSlug(name: string): string {
   return (
@@ -126,12 +123,7 @@ export default function WinnersStatement({ groupId, company }: { groupId: string
       '',
       '',
     ]
-    const csv = [header, ...lines, totals].map((l) => l.map(csvCell).join(',')).join('\n')
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
-    a.download = `${fileSlug(company)}-rewards-statement-${statement.year}.csv`
-    a.click()
-    URL.revokeObjectURL(a.href)
+    downloadCsv(`${fileSlug(company)}-rewards-statement-${statement.year}.csv`, [header, ...lines, totals])
   }
 
   const yearSelect = (
