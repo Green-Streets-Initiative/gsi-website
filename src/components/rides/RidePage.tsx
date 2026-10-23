@@ -2,8 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import posthog from 'posthog-js'
-import { Calendar, Check, Clock, ExternalLink, MapPin, Radio, Share2, Users } from 'lucide-react'
+import { Bike, Calendar, Check, Clock, Download, ExternalLink, MapPin, Radio, Route as RouteIcon, Share2, Users } from 'lucide-react'
 import EventMap from '@/components/events/EventMap'
+import RouteMap from '@/components/organizers/RouteMap'
+import { buildIcs, gcalUrl as eventGcalUrl } from '@/lib/event-calendar'
+import { TAG_OPTIONS } from '@/lib/organizers/ride-words'
+import { routeMiles } from '@/lib/organizers/route-geo'
 import StoreBadges from '@/components/StoreBadges'
 import { EventsToneProvider, toneClass } from '@/components/events/EventsTone'
 import {
@@ -60,27 +64,35 @@ function directionsUrl(d: Pick<RideDate, 'meetup_lat' | 'meetup_lng'>): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${d.meetup_lat},${d.meetup_lng}`
 }
 
-function gcalUrl(ride: PublicRide, d: RideDate): string {
-  const ymd = d.date.replace(/-/g, '')
-  const hhmm = (t: string) => t.slice(0, 5).replace(':', '') + '00'
-  let dates = `${ymd}/${ymd}`
-  if (d.start_time) {
-    const [h, m] = d.start_time.split(':').map(Number)
-    const end = d.end_time ?? `${String(Math.min(h + 2, 23)).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-    dates = `${ymd}T${hhmm(d.start_time)}/${ymd}T${hhmm(end)}`
-  }
-  const p = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: ride.name,
-    dates,
-    ctz: 'America/New_York',
-    details: typeof window !== 'undefined' ? window.location.href : '',
-    location: d.meetup_address || d.meetup_name || '',
-  })
-  return `https://calendar.google.com/calendar/render?${p.toString()}`
+/** One date as the events calendar's entry, so "save to calendar" carries the
+ *  same details the events pages do (lib/event-calendar.ts: the place with
+ *  ", MA" when needed, the description, sign-up link, host, a link back). */
+function calendarEvent(ride: PublicRide, d: RideDate) {
+  return {
+    id: `${ride.code}-${d.date}`, slug: null, title: ride.name, body: ride.description,
+    event_date: d.date, event_time: d.start_time, event_end_time: d.end_time,
+    location_name: d.meetup_name, location_address: d.meetup_address, location_lat: d.meetup_lat, location_lng: d.meetup_lng,
+    organizer_name: ride.organizer_name, organizer_url: ride.organizer_url,
+    event_url: pageUrl(ride), registration_url: ride.registration_url, tags: ride.tags ?? [],
+  } as unknown as Parameters<typeof buildIcs>[0]
 }
 
-export default function RidePage({ ride }: { ride: PublicRide }) {
+/** The ride's own link, without the ?via= a promo link arrived with. */
+function pageUrl(ride: PublicRide): string {
+  return `https://www.gogreenstreets.org/rides/${ride.code}`
+}
+
+function downloadIcs(ride: PublicRide, d: RideDate) {
+  const blob = new Blob([buildIcs(calendarEvent(ride, d))], { type: 'text/calendar;charset=utf-8' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `${ride.name.replace(/[^\w-]+/g, '-').slice(0, 40)}-${d.date}.ics`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+}
+
+export default function RidePage({ ride, hostHref }: { ride: PublicRide; hostHref?: string | null }) {
   const open = ride.occurrences.filter((d) => d.status === 'scheduled')
   const [selectedId, setSelectedId] = useState<string | null>(open[0]?.id ?? ride.occurrences[0]?.id ?? null)
   const selected = ride.occurrences.find((d) => d.id === selectedId) ?? null
@@ -105,15 +117,20 @@ export default function RidePage({ ride }: { ride: PublicRide }) {
   useEffect(() => { setDone(null); setError(null); setChoice(null) }, [selectedId])
 
   const share = async () => {
-    const url = window.location.href
+    // The ride's own link: a promo link's ?via= stays with the first visitor.
+    const url = pageUrl(ride)
     posthog.capture('ride_page_share', { code: ride.code })
     if (navigator.share) {
       try { await navigator.share({ title: ride.name, url }) } catch { /* cancelled */ }
       return
     }
-    await navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2400)
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2400)
+    } catch {
+      window.prompt('Copy the ride link:', url)
+    }
   }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -171,8 +188,21 @@ export default function RidePage({ ride }: { ride: PublicRide }) {
     : next
       ? `Next: ${dateLong(next.date)}${next.start_time ? ` · ${clock(next.start_time)}` : ''}`
       : scheduleText(ride)
-  const facts = [ride.pace ? PACE_LABEL[ride.pace] : null, ride.no_drop ? 'No-drop' : null].filter(Boolean) as string[]
-  const place = selected ?? ride.occurrences[0] ?? null
+  const route = (ride.route_waypoints ?? []).filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng))
+  const miles = route.length >= 2 ? routeMiles(route) : null
+  const tagLabels = (ride.tags ?? []).map((t) => TAG_OPTIONS.find((o) => o.key === t)?.label).filter(Boolean) as string[]
+  const facts = [
+    ride.pace ? PACE_LABEL[ride.pace] : null,
+    miles ? `${miles < 10 ? miles.toFixed(1) : Math.round(miles)} mi` : null,
+    ride.no_drop ? 'No-drop' : null,
+    ...tagLabels,
+  ].filter(Boolean) as string[]
+  // Where to meet: the chosen date's spot, else the ride's own (a ride between
+  // seasons still shows its route and meeting point).
+  const place: Pick<RideDate, 'meetup_lat' | 'meetup_lng' | 'meetup_name' | 'meetup_address'> | null =
+    selected ?? ride.occurrences[0] ?? (ride.meetup_lat != null && ride.meetup_lng != null
+      ? { meetup_lat: ride.meetup_lat, meetup_lng: ride.meetup_lng, meetup_name: ride.meetup_name, meetup_address: ride.meetup_address }
+      : null)
   const hasMap = place?.meetup_lat != null && place?.meetup_lng != null
 
   return (
@@ -289,9 +319,14 @@ export default function RidePage({ ride }: { ride: PublicRide }) {
                               )}
                               <div className="mt-3 flex flex-wrap gap-2">
                                 {done.status !== 'not_going' && (
-                                  <a href={gcalUrl(ride, selected)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[13px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                                    <Calendar size={14} /> Add to calendar
-                                  </a>
+                                  <>
+                                    <a href={eventGcalUrl(calendarEvent(ride, selected))} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                                      <Calendar size={14} /> Google Calendar
+                                    </a>
+                                    <button type="button" onClick={() => downloadIcs(ride, selected)} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                                      <Download size={14} /> Apple or Outlook
+                                    </button>
+                                  </>
                                 )}
                                 <button onClick={() => setDone(null)} className="rounded-[10px] px-3 py-2 text-[13px] font-semibold text-(--ev-accent) hover:underline">
                                   Change answer
@@ -401,19 +436,38 @@ export default function RidePage({ ride }: { ride: PublicRide }) {
 
             {hasMap && place && (
               <div className="overflow-hidden rounded-2xl border border-(--ev-line) bg-(--ev-card)">
-                <div className="h-56">
-                  <EventMap lat={place.meetup_lat!} lng={place.meetup_lng!} label={place.meetup_name ?? undefined} />
+                <div className={route.length >= 2 ? 'h-72' : 'h-56'}>
+                  {route.length >= 2 ? (
+                    <RouteMap line={route} stops={[]} meetup={{ lat: place.meetup_lat!, lng: place.meetup_lng! }} pick={false}
+                      className="h-full w-full" label={`Route map for ${ride.name}`} />
+                  ) : (
+                    <EventMap lat={place.meetup_lat!} lng={place.meetup_lng!} label={place.meetup_name ?? undefined} />
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 p-4">
                   <div>
-                    <p className="text-[14px] font-semibold text-(--ev-ink)">Meet at {place.meetup_name || 'the start'}</p>
+                    <p className="text-[15px] font-semibold text-(--ev-ink)">Meet at {place.meetup_name || 'the start'}</p>
                     {place.meetup_address && <p className="mt-0.5 text-[13px] text-(--ev-ink-75)">{place.meetup_address}</p>}
                   </div>
-                  <a href={directionsUrl(place)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[13px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                    <MapPin size={14} /> Directions
-                  </a>
+                  <div className="flex flex-wrap gap-2">
+                    {/* Nearby plans the trip there by bike, the T or Bluebikes, from where they are. */}
+                    <a href={`/nearby?to=${place.meetup_lat},${place.meetup_lng}&toName=${encodeURIComponent(place.meetup_name || ride.name)}&toMode=bike`}
+                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                      <Bike size={14} /> Get there by bike or T
+                    </a>
+                    <a href={directionsUrl(place)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                      <MapPin size={14} /> Directions
+                    </a>
+                  </div>
                 </div>
               </div>
+            )}
+
+            {ride.route_google_maps_url && /^https?:\/\//.test(ride.route_google_maps_url) && (
+              <a href={ride.route_google_maps_url} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-(--ev-accent) hover:underline">
+                <RouteIcon size={15} /> The full route, turn by turn <ExternalLink size={13} />
+              </a>
             )}
 
             {(ride.organizer_name || ride.registration_url) && (
@@ -427,6 +481,12 @@ export default function RidePage({ ride }: { ride: PublicRide }) {
                       </a>
                     ) : (
                       <span className="font-semibold text-(--ev-ink)">{ride.organizer_name}</span>
+                    )}
+                    {hostHref && (
+                      <>
+                        {' · '}
+                        <a href={hostHref} className="font-semibold text-(--ev-accent) hover:underline">More rides from them</a>
+                      </>
                     )}
                   </p>
                 )}

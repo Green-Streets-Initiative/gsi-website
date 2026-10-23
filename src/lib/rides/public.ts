@@ -65,6 +65,8 @@ export interface PublicRide {
   meetup_lat: number | null
   meetup_lng: number | null
   route_google_maps_url: string | null
+  /** The organizer's route, [{lat,lng}], or empty. */
+  route_waypoints: { lat: number; lng: number }[] | null
   pace: 'kids' | 'relaxed' | 'moderate' | 'brisk' | 'fast' | null
   no_drop: boolean | null
   tags: string[] | null

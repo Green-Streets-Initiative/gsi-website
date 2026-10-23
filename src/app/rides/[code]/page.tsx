@@ -6,6 +6,7 @@ import RidePage from '@/components/rides/RidePage'
 import AppOnlyRidePage from '@/components/rides/AppOnlyRidePage'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { looksLikeRideCode, scheduleText, type RideLookup } from '@/lib/rides/public'
+import { hostPath, hostQualifies } from '@/lib/hosts'
 
 /**
  * A Shift group ride's public page: the link organizers put in their
@@ -52,11 +53,20 @@ export default async function Page({ params }: { params: Promise<{ code: string 
   const ride = await loadRide(code)
   if (!ride) notFound()
 
+  // The host's public page (events/organizers/<id>), when the group runs often
+  // enough to have one: "More rides from them".
+  let hostHref: string | null = null
+  if (ride.web) {
+    const { data } = await createServerSupabaseClient().from('ride_series').select('event_organizer_id').eq('id', ride.id).maybeSingle()
+    const orgId = (data as { event_organizer_id: string | null } | null)?.event_organizer_id
+    if (orgId && (await hostQualifies(orgId).catch(() => false))) hostHref = hostPath(orgId)
+  }
+
   return (
     <>
       <Nav variant="light" />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
-        {ride.web ? <RidePage ride={ride} /> : <AppOnlyRidePage ride={ride} />}
+        {ride.web ? <RidePage ride={ride} hostHref={hostHref} /> : <AppOnlyRidePage ride={ride} />}
       </main>
       <Footer variant="light" />
     </>
