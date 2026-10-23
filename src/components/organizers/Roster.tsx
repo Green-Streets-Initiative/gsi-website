@@ -193,8 +193,7 @@ export default function Roster() {
         )}
         {past && (
           <p className="mt-5 border-t border-(--ev-line) pt-3 text-[14px] leading-snug text-(--ev-ink-75)">
-            &ldquo;Came&rdquo; comes from people&rsquo;s own trips in the Shift app, plus the requests you approve. For people who answered on
-            the ride page, the list shows who planned to come.
+            &ldquo;Came&rdquo; comes from people&rsquo;s trips in the Shift app and the requests you approve.
           </p>
         )}
       </Card>

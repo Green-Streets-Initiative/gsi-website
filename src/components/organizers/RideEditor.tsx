@@ -111,8 +111,8 @@ function blocking(f: Form): string | null {
   if (f.schedule === 'recurring' && f.frequency !== 'daily' && f.days.length === 0) return 'Pick at least one day'
   if (!f.start_time) return 'Pick a start time'
   if (f.meetup_lat == null || f.meetup_lng == null) return 'Pick a meeting point'
-  if (f.end_time && f.end_time <= f.start_time) return 'The end time is before the start'
-  if (f.schedule === 'recurring' && f.season_start && f.season_end && f.season_end < f.season_start) return 'The season ends before it starts'
+  if (f.end_time && f.end_time <= f.start_time) return 'Set "Back by" to after the start time'
+  if (f.schedule === 'recurring' && f.season_start && f.season_end && f.season_end < f.season_start) return 'Set the season end after its start'
   return null
 }
 

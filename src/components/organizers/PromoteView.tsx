@@ -287,6 +287,7 @@ export default function PromoteView() {
                 ? <>Your flyer shows on the ride page. <Link href={`/organizers/rides/${r.id}/edit`} className="font-semibold text-(--ev-ink) underline">Change it</Link></>
                 : <>Made your own? <Link href={`/organizers/rides/${r.id}/edit`} className="font-semibold text-(--ev-ink) underline">Add it to the ride page</Link></>}
             </p>
+            <p className="text-[14px] text-(--ev-ink-75)">In the Shift app, people join with the code <b className="tracking-wider text-(--ev-ink)">{code}</b>.</p>
           </div>
         </div>
       </Card>

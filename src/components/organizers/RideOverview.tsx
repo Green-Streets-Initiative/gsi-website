@@ -14,7 +14,7 @@ import { ridePageUrl, useRide } from './RideFrame'
 import { StopRideDialog, resume } from './StopRide'
 import { Badge, Button, Card, Empty, Notice, SectionTitle, Toast, copyText, cx } from './ui'
 
-function ShareCard({ code, fresh }: { code: string; fresh: boolean }) {
+function ShareCard({ code, fresh, rideId }: { code: string; fresh: boolean; rideId: string }) {
   const url = ridePageUrl(code)
   const [copied, setCopied] = useState(false)
   return (
@@ -28,7 +28,9 @@ function ShareCard({ code, fresh }: { code: string; fresh: boolean }) {
           {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}{copied ? 'Copied' : 'Copy link'}
         </Button>
       </div>
-      <p className="mt-2 text-[14px] text-(--ev-ink-75)">In the Shift app, people can also join with the code <b className="tracking-wider text-(--ev-ink)">{code}</b>.</p>
+      <p className="mt-3 text-[14px] text-(--ev-ink-75)">
+        Captions, a flyer QR and calendar listings are ready in <Link href={`/organizers/rides/${rideId}/promote`} className="font-semibold text-(--ev-ink) underline">Promote</Link>.
+      </p>
     </Card>
   )
 }
@@ -62,9 +64,11 @@ function DateRow({ d, canManage, rideId, onCancel, onChange, onRestore }: {
         )}
       </div>
       <div className="flex flex-wrap gap-1.5">
-        <Link href={`/organizers/rides/${rideId}/roster?date=${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] border border-(--ev-line-strong) bg-white px-3 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-          {past ? 'Who came' : "Who's coming"}
-        </Link>
+        {!off && (
+          <Link href={`/organizers/rides/${rideId}/roster?date=${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-3 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
+            {past ? 'Who came' : "Who's coming"}
+          </Link>
+        )}
         {canManage && !past && !off && <Button size="sm" variant="ghost" onClick={onChange}>Change</Button>}
         {canManage && !past && !off && <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>}
         {canManage && !past && off && !d.canceled_by_stop && <Button size="sm" variant="ghost" onClick={onRestore}>Bring back</Button>}
@@ -128,11 +132,11 @@ export default function RideOverview() {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       {msg && <Toast tone={msg.tone} onClose={closeMsg}>{msg.text}</Toast>}
-      {r.route_risk === 'high' && r.visibility === 'public' && (
+      {r.route_risk === 'high' && r.visibility === 'public' && r.calendar_status === 'pending' && (
         <Notice tone="warn">Part of this route has a crash history, so GSI reviews it before it goes on the public calendar. Your ride page works now.</Notice>
       )}
 
-      {(params.get('created') || detail.updates.length === 0) && !ended && <ShareCard code={r.invite_code} fresh={!!params.get('created')} />}
+      {(params.get('created') || detail.updates.length === 0) && !ended && <ShareCard code={r.invite_code} fresh={!!params.get('created')} rideId={r.id} />}
 
       {nextDate && !ended && (
         <Card>
@@ -197,7 +201,7 @@ export default function RideOverview() {
         {past.length > 0 && (
           <div className="mt-3">
             <Button size="sm" variant="ghost" onClick={() => setShowPast((v) => !v)} aria-expanded={showPast}>
-              {showPast ? 'Hide' : 'Show'} the last {plural(past.length, 'date')}
+              {showPast ? 'Hide' : 'Show'} {past.length === 1 ? 'the last date' : `the last ${past.length} dates`}
             </Button>
             {showPast && <ul className="mt-2">{past.map((d) => <DateRow key={d.id} d={d} canManage={false} rideId={r.id} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} />)}</ul>}
           </div>
@@ -233,7 +237,6 @@ export default function RideOverview() {
         )}
       </Card>
 
-      {!params.get('created') && detail.updates.length > 0 && !ended && <ShareCard code={r.invite_code} fresh={false} />}
 
       {cancelling && <CancelDateDialog key={cancelling.id} date={cancelling} onClose={() => setCancelling(null)} onDone={done} />}
       {changing && <ChangeDateDialog key={changing.id} date={changing} ride={r} onClose={() => setChanging(null)} onDone={done} />}
