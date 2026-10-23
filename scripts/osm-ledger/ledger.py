@@ -31,6 +31,7 @@ import os
 import re
 import sys
 import time
+import urllib.parse
 import urllib.request
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -94,10 +95,54 @@ RANK = {"path": 3, "protected": 3, "painted": 1, "construction": 0, "proposed": 
 
 # ── Reading the extract ─────────────────────────────────────────────────
 
+def car_free_type(tags):
+    """The trip classifier's car-free paths (Shift poll-car-free-facilities,
+    same three rules): cycleways, and paths designated for bikes that cars
+    can't use."""
+    hw = tags.get("highway")
+    if hw == "cycleway" and tags.get("area") != "yes":
+        return "cycleway"
+    if hw == "path" and tags.get("bicycle") == "designated" and (
+            tags.get("motor_vehicle") == "no" or (tags.get("access") == "no" and tags.get("foot") == "yes")):
+        return "path"
+    return None
+
+
+# The trip classifier's area (the old refresh's Overpass bbox): Massachusetts
+# plus the edges of its neighbours, where people cross the line on a trail.
+CAR_FREE_BBOX = (41.15, -73.60, 42.90, -69.80)
+
+
+def in_car_free_bbox(coords):
+    s, w, n, e = CAR_FREE_BBOX
+    return any(s <= c[1] <= n and w <= c[0] <= e for c in coords)
+
+
+class CarFreeOnly(osmium.SimpleHandler):
+    """A neighbouring state's extract, read for car-free paths only."""
+
+    def __init__(self):
+        super().__init__()
+        self.car_free = {}
+
+    def way(self, w):
+        tags = {t.k: t.v for t in w.tags}
+        cf = car_free_type(tags)
+        if not cf:
+            return
+        try:
+            coords = [[round(n.lon, 6), round(n.lat, 6)] for n in w.nodes]
+        except osmium.InvalidLocationError:
+            return
+        if len(coords) >= 2 and in_car_free_bbox(coords):
+            self.car_free[w.id] = {"osm_way_id": w.id, "name": tags.get("name"), "facility_type": cf, "coords": coords}
+
+
 class BikeWays(osmium.SimpleHandler):
     def __init__(self):
         super().__init__()
         self.ways = {}
+        self.car_free = {}
 
     def way(self, w):
         tags = {t.k: t.v for t in w.tags}
@@ -110,6 +155,9 @@ class BikeWays(osmium.SimpleHandler):
             return
         if len(coords) < 2:
             return
+        cf = car_free_type(tags)
+        if cf and in_car_free_bbox(coords):
+            self.car_free[w.id] = {"osm_way_id": w.id, "name": tags.get("name"), "facility_type": cf, "coords": coords}
         kept = {k: v for k, v in tags.items() if KEEP_TAGS.match(k)}
         self.ways[w.id] = {
             "way_id": w.id, "version": w.version, "osm_ts": w.timestamp.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -366,11 +414,54 @@ class Db:
                 return rows
             start += 1000
 
+    def count(self, table, query):
+        h = {"apikey": self.key, "Authorization": f"Bearer {self.key}", "Prefer": "count=exact", "Range": "0-0"}
+        r = urllib.request.urlopen(urllib.request.Request(f"{self.url}/rest/v1/{table}?select=*&{query}", headers=h), timeout=60)
+        return int(r.headers.get("Content-Range", "*/0").split("/")[-1])
+
     def write(self, method, table, rows, query="", prefer="return=minimal", chunk=500):
         if self.dry or not rows:
             return
         for i in range(0, len(rows), chunk):
             self.req(method, f"/rest/v1/{table}{query}", rows[i:i + chunk], {"Prefer": prefer})
+
+
+# ── Car-free paths for the trip classifier ──────────────────────────────
+
+def sync_car_free(db, car_free, started):
+    """Keep car_free_facility_shapes (Shift 00439/01420) current from today's
+    extract, so it no longer depends on Overpass answering a statewide query
+    (it didn't, on 2026-10-01). Same rows and markers as the old refresh:
+    last_seen_at this run, gone_at for ways no longer car-free. The old
+    refresh stays scheduled as a backup and skips while this keeps the data
+    fresh; its heartbeat is recorded here, so its staleness alarm still means
+    "the car-free paths stopped refreshing"."""
+    count = db.count("car_free_facility_shapes", "gone_at=is.null")
+    if count and abs(len(car_free) - count) / count > 0.05:
+        note = f"car-free ways {count}→{len(car_free)}"
+        alert(db, "Car-free paths: today's extract moved the count by more than 5%, not applied", note)
+        print("car-free sync skipped:", note)
+        return
+    seen = started.isoformat()
+    rows = []
+    for cf in car_free.values():
+        ys = [c[1] for c in cf["coords"]]
+        xs = [c[0] for c in cf["coords"]]
+        rows.append({
+            "osm_way_id": cf["osm_way_id"], "name": cf["name"], "facility_type": cf["facility_type"],
+            "shape": [[c[1], c[0]] for c in cf["coords"]],  # this table stores [lat, lng]
+            "bbox_min_lat": min(ys), "bbox_max_lat": max(ys), "bbox_min_lng": min(xs), "bbox_max_lng": max(xs),
+            "updated_at": seen, "last_seen_at": seen, "gone_at": None,
+        })
+    db.write("POST", "car_free_facility_shapes", rows, "?on_conflict=osm_way_id", "return=minimal,resolution=merge-duplicates")
+    if not db.dry:
+        db.req("PATCH", f"/rest/v1/car_free_facility_shapes?gone_at=is.null&last_seen_at=lt.{urllib.parse.quote(seen)}",
+               {"gone_at": datetime.now(timezone.utc).isoformat()}, {"Prefer": "return=minimal"})
+        db.req("POST", "/rest/v1/rpc/record_cron_heartbeat", {
+            "p_function_name": "poll-car-free-facilities", "p_started_at": seen,
+            "p_finished_at": datetime.now(timezone.utc).isoformat(), "p_status": "success",
+            "p_sent": len(rows), "p_errors": 0, "p_message": f"refreshed from the OSM ledger: {len(rows)} car-free ways"})
+    print(f"car-free sync: {len(rows)} ways (table had {count})")
 
 
 # ── The run ─────────────────────────────────────────────────────────────
@@ -392,9 +483,22 @@ def main():
 
     h = BikeWays()
     h.apply_file(pbf, locations=True, idx="flex_mem")
+    # Neighbouring states, for the car-free paths near the line only:
+    # --car-free-extra=nh.osm.pbf,ri.osm.pbf,...
+    extra = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--car-free-extra=")), "")
+    for f in [x for x in extra.split(",") if x]:
+        if not os.path.exists(f) or os.path.getsize(f) < 1_000_000:
+            # A failed download: the car-free count then drops more than 5%
+            # and the sync is skipped with an alert, so nothing is lost.
+            print(f"{f}: missing, skipped")
+            continue
+        c = CarFreeOnly()
+        c.apply_file(f, locations=True, idx="flex_mem")
+        h.car_free.update(c.car_free)
+        print(f"{os.path.basename(f)}: {len(c.car_free)} car-free ways in the area")
     new = {k: with_bbox(w) for k, w in h.ways.items()}
     new_miles = miles_by_class(new.values())
-    print(f"extract: {len(new)} bike ways, miles {new_miles}")
+    print(f"extract: {len(new)} bike ways, miles {new_miles}; {len(h.car_free)} car-free ways")
 
     if dry and not db.key:
         print("dry run without a database: classification only")
@@ -424,6 +528,7 @@ def main():
         db.write("POST", "osm_bike_ways", rows, "?on_conflict=way_id", "return=minimal,resolution=merge-duplicates")
         heartbeat(db, started, "ok", 0, f"baseline: {len(new)} ways")
         print(f"baseline written: {len(rows)} ways")
+        sync_car_free(db, h.car_free, started)
         return
 
     # Sanity: a bad extract or a filter bug shows up as a big swing.
@@ -521,6 +626,7 @@ def main():
         if not db.dry:
             db.req("PATCH", f"/rest/v1/osm_bike_events?id=eq.{u.pop('id')}", u, {"Prefer": "return=minimal"})
     heartbeat(db, started, "ok", len(events), f"+{len(appeared)} ~{len(changed)} -{len(gone)} ways; {len(events)} events")
+    sync_car_free(db, h.car_free, started)
 
 
 def heartbeat(db, started, status, sent, message):

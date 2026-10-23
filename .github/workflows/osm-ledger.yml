@@ -26,7 +26,7 @@ concurrency:
 jobs:
   ledger:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -41,9 +41,17 @@ jobs:
           [ -n "$ts" ] || { echo "No Geofabrik state"; exit 1; }
           echo "ts=$ts" >> "$GITHUB_OUTPUT"
           curl -sfL --retry 3 -o ma.osm.pbf "$base/massachusetts-latest.osm.pbf"
-          ls -la ma.osm.pbf
+          # Neighbours, read only for the car-free paths near the state line
+          # (the trip classifier's area reaches into each of them).
+          for s in new-hampshire rhode-island connecticut new-york vermont; do
+            curl -sfL --retry 3 -o "$s.osm.pbf" "$base/$s-latest.osm.pbf" &
+          done
+          wait
+          ls -la *.osm.pbf
       - name: Compare with the ledger
         env:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python scripts/osm-ledger/ledger.py ma.osm.pbf "${{ steps.extract.outputs.ts }}"
+        run: |
+          python scripts/osm-ledger/ledger.py ma.osm.pbf "${{ steps.extract.outputs.ts }}" \
+            --car-free-extra=new-hampshire.osm.pbf,rhode-island.osm.pbf,connecticut.osm.pbf,new-york.osm.pbf,vermont.osm.pbf
