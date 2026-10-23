@@ -23,7 +23,10 @@ export default function StaticMapSvg({
   maxHalf,
   className,
   title,
+  fitPoints,
 }: {
+  /** Extra points the frame must include (a route's line), drawn as nothing. */
+  fitPoints?: { lat: number; lng: number }[]
   center: { lat: number; lng: number }
   lines: PrintLine[]
   markers: PrintMarker[]
@@ -37,7 +40,7 @@ export default function StaticMapSvg({
   title: string
 }) {
   let bounds: LatLngBounds = { minLat: center.lat, maxLat: center.lat, minLng: center.lng, maxLng: center.lng }
-  for (const m of markers) {
+  for (const m of [...markers, ...(fitPoints ?? [])]) {
     bounds = {
       minLat: Math.min(bounds.minLat, m.lat),
       maxLat: Math.max(bounds.maxLat, m.lat),

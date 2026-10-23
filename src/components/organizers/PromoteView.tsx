@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import QRCode from 'qrcode'
-import { Check, Clock, Copy, Download, ExternalLink, ImageIcon, Minus } from 'lucide-react'
+import { Check, Clock, Copy, Download, ExternalLink, ImageIcon, Minus, Printer } from 'lucide-react'
 import { getPromoStats } from '@/lib/organizers/api'
 import { PACE_OPTIONS, todayKey } from '@/lib/organizers/ride-words'
 import type { PromoStats } from '@/lib/organizers/types'
@@ -280,8 +280,12 @@ export default function PromoteView() {
             <Button size="sm" variant="primary" disabled={!qr} onClick={() => qr && saveFile(`${fileSlug(r.name)}-qr.png`, qr)}>
               <Download className="h-4 w-4" aria-hidden />Download QR code
             </Button>
+            <a href={`/rides/${code}/flyer`} target="_blank" rel="noopener noreferrer"
+              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+              <Printer className="h-4 w-4" aria-hidden />No flyer yet? Print one
+            </a>
             <Button size="sm" busy={making} onClick={() => void makePlainPost()}>
-              <ImageIcon className="h-4 w-4" aria-hidden />No flyer yet? Get a plain one
+              <ImageIcon className="h-4 w-4" aria-hidden />A plain post for social
             </Button>
             <p className="text-[14px] text-(--ev-ink-75)">
               {r.flyer_url
