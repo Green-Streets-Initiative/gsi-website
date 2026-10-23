@@ -123,15 +123,37 @@ const SECTIONS = [
   ['sec-expect', 'What to expect'], ['sec-signup', 'Sign-ups'], ['sec-who', 'Visibility'],
 ] as const
 
-/** Jump links: a sticky list beside the form on wide screens, a strip on phones. */
+/** Jump links: a sticky list beside the form on wide screens; on phones a
+ *  sticky picker that names the section you're in, so no section hides off
+ *  the edge of a sideways-scrolling strip. */
 function SectionNav() {
+  const [current, setCurrent] = useState<string>(SECTIONS[0][0])
+  useEffect(() => {
+    const els = SECTIONS.map(([id]) => document.getElementById(id)).filter((e): e is HTMLElement => !!e)
+    const io = new IntersectionObserver((entries) => {
+      const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
+      if (top) setCurrent(top.target.id)
+    }, { rootMargin: '-120px 0px -60% 0px' })
+    els.forEach((e) => io.observe(e))
+    return () => io.disconnect()
+  }, [])
   return (
     <nav aria-label="Ride form sections"
-      className="sticky top-[60px] z-20 -mx-4 mb-4 overflow-x-auto border-b border-(--ev-line) bg-(--ev-bar) px-4 py-2 backdrop-blur lg:top-[84px] lg:mx-0 lg:mb-0 lg:self-start lg:overflow-visible lg:border-0 lg:bg-transparent lg:p-0">
-      <ul className="flex min-w-max gap-1 lg:min-w-0 lg:flex-col">
+      className="sticky top-[60px] z-20 -mx-4 mb-4 border-b border-(--ev-line) bg-(--ev-bar) px-4 py-2 backdrop-blur lg:top-[84px] lg:mx-0 lg:mb-0 lg:self-start lg:border-0 lg:bg-transparent lg:p-0">
+      <label className="flex items-center gap-2 lg:hidden">
+        <span className="text-[14px] font-semibold text-(--ev-ink-75)">Section</span>
+        <select value={current}
+          onChange={(e) => { setCurrent(e.target.value); document.getElementById(e.target.value)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
+          className="min-h-[40px] flex-1 rounded-[10px] border border-(--ev-line-strong) bg-white px-3 text-[15px] font-semibold text-(--ev-ink)">
+          {SECTIONS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+        </select>
+      </label>
+      <ul className="hidden gap-1 lg:flex lg:flex-col">
         {SECTIONS.map(([id, label]) => (
           <li key={id}>
-            <a href={`#${id}`} className="block whitespace-nowrap rounded-lg px-3 py-2 text-[14px] font-semibold text-(--ev-ink-80) hover:bg-(--ev-panel) hover:text-(--ev-ink)">{label}</a>
+            <a href={`#${id}`} aria-current={current === id ? 'location' : undefined}
+              className={cx('block whitespace-nowrap rounded-lg px-3 py-2 text-[14px] font-semibold hover:bg-(--ev-panel) hover:text-(--ev-ink)',
+                current === id ? 'bg-(--ev-panel) text-(--ev-ink)' : 'text-(--ev-ink-80)')}>{label}</a>
           </li>
         ))}
       </ul>
