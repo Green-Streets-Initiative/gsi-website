@@ -72,6 +72,7 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
   const tabs = [
     { href: base, label: 'Dates & updates' },
     { href: `${base}/roster`, label: "Who's coming" },
+    { href: `${base}/promote`, label: 'Promote' },
     { href: `${base}/turnout`, label: 'Turnout' },
     { href: `${base}/team`, label: 'Co-organizers' },
     ...(detail.can_edit ? [{ href: `${base}/edit`, label: 'Edit ride' }] : []),

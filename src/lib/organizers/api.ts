@@ -10,7 +10,7 @@
  */
 import { supabase } from '@/lib/supabase'
 import type {
-  ConsoleMe, CreditRequest, DashboardRide, RideDetail, RosterRow, Turnout,
+  ConsoleMe, CreditRequest, DashboardRide, PromoStats, RideDetail, RosterRow, Turnout,
 } from './types'
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -79,6 +79,7 @@ export const getMembers = async (seriesId: string) =>
 export const getCreditRequests = async (occurrenceId: string) =>
   (await rpc<CreditRequest[] | null>('get_ride_credit_requests', { p_occurrence_id: occurrenceId })) ?? []
 export const getTurnout = (seriesId: string) => rpc<Turnout>('organizer_ride_turnout', { p_series_id: seriesId })
+export const getPromoStats = (seriesId: string) => rpc<PromoStats>('organizer_ride_promo', { p_series_id: seriesId })
 export const getStopPreview = (seriesId: string, until: string | null) =>
   rpc<{ notify: number; notify_guests: number; upcoming: number; past: number; can_delete: boolean }>(
     'get_ride_stop_preview', { p_series_id: seriesId, p_until: until },

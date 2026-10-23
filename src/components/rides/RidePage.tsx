@@ -137,6 +137,8 @@ export default function RidePage({ ride }: { ride: PublicRide }) {
           last_name,
           email,
           website: String(form.get('website') ?? ''),
+          // The Promote tab's short link they came in on, if any.
+          via: new URLSearchParams(window.location.search).get('via') ?? undefined,
         }),
       })
       const data = await res.json().catch(() => ({}))

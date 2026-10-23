@@ -270,3 +270,15 @@ export interface RouteDraft {
   source: 'drawn' | 'ridewithgps' | 'gpx' | 'saved' | null
   sourceName?: string | null
 }
+
+/** organizer_ride_promo (Shift 01415): what each Promote link brought in. */
+export interface PromoStats {
+  channels: {
+    channel: import('@/lib/rides/promo').PromoChannel
+    visits: number
+    visits_week: number
+    people: number
+    people_week: number
+  }[]
+  direct_people: number
+}
