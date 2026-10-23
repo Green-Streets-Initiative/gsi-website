@@ -28,6 +28,9 @@ export const PACE_OPTIONS: { key: Pace; label: string; mph: string; hint: string
   { key: 'kids', label: 'Kids & families', mph: '5–8 mph', hint: 'Small legs set the pace' },
 ]
 
+/** Riding speed used for time estimates, the middle of each band (app: PACE_BANDS.mid). */
+export const PACE_MID_MPH: Record<string, number> = { kids: 6, relaxed: 10, moderate: 13.5, brisk: 16.5, fast: 19 }
+
 export const DAY_LABELS: { key: number; short: string; long: string }[] = [
   { key: 1, short: 'Mon', long: 'Monday' },
   { key: 2, short: 'Tue', long: 'Tuesday' },

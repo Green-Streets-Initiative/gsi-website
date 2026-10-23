@@ -221,7 +221,7 @@ export interface PlannedLegOption {
   summary: string
   waypoints: { lat: number; lng: number }[]
   flags?: unknown[]
-  comfort_segments?: { label: string; rating: string; distance_mi: number }[]
+  comfort_segments?: import('./types').ComfortSegment[]
   comfort_rating?: string
   comfort_summary?: string
   elevation?: import('./types').RouteElevation | null
@@ -232,9 +232,18 @@ export interface PlannedRoute {
 }
 
 /** Shift's comfort-scored route planner, the same one the app's "Plan route" uses. */
-export const planRoute = (pins: { lat: number; lng: number; label?: string }[], pace: string | null) =>
-  // The planner checks every street between the stops; three legs can take a minute.
-  shiftFunction<PlannedRoute>('plan-ride-route', { pins, mode: 'bike', pace: pace ?? undefined }, 90_000)
+export async function planRoute(pins: { lat: number; lng: number; label?: string }[], pace: string | null): Promise<PlannedRoute> {
+  // The planner checks every street between two stops, one leg after
+  // another; a three-stop loop took 109 s in one call (2026-10-23). Asking
+  // for each leg on its own runs them side by side, and each leg caches
+  // separately, so moving one stop re-plans only the legs it touches.
+  const pairs = pins.slice(1).map((to, i) => [pins[i], to])
+  const legs = await Promise.all(pairs.map(async (pair) => {
+    const p = await shiftFunction<PlannedRoute>('plan-ride-route', { pins: pair, mode: 'bike', pace: pace ?? undefined }, 90_000)
+    return p.legs?.[0] ?? { options: [] }
+  }))
+  return { legs }
+}
 
 export interface ScoredRoute {
   distanceMiles: number

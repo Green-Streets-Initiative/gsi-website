@@ -1,13 +1,15 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import { Route as RouteIcon, Trash2, Undo2, Upload } from 'lucide-react'
+import { Route as RouteIcon, Trash2, Undo2, Upload, X } from 'lucide-react'
+import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { errorText, importRideWithGps, planRoute, scoreRoute, type PlannedRoute } from '@/lib/organizers/api'
-import { COMFORT_LABELS, comfortBreakdown, concernCount, routeFromPlan } from '@/lib/organizers/route-plan'
-import { elevationOf, haversineM, parseGpx, routeMiles, simplify, toWaypoints } from '@/lib/organizers/route-geo'
+import { comfortBreakdown, routeFromPlan } from '@/lib/organizers/route-plan'
+import { elevationOf, haversineM, parseGpx, simplify, toWaypoints } from '@/lib/organizers/route-geo'
 import type { LatLng, RouteDraft } from '@/lib/organizers/types'
-import RouteMap from './RouteMap'
-import { Badge, Button, Field, Input, Notice, cx } from './ui'
+import RouteMap, { type MapFocus } from './RouteMap'
+import RouteReview, { readRoute } from './RouteReview'
+import { Button, Field, Input, Notice, cx } from './ui'
 
 type Mode = 'draw' | 'rwgps' | 'gpx'
 
@@ -21,7 +23,7 @@ function legLabel(i: number, legs: number, pins: LatLng[]): string {
 }
 
 const MODES: { key: Mode; label: string }[] = [
-  { key: 'draw', label: 'Draw on the map' },
+  { key: 'draw', label: 'Plan with stops' },
   { key: 'rwgps', label: 'Ride with GPS link' },
   { key: 'gpx', label: 'GPX file' },
 ]
@@ -35,7 +37,9 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
   onMeetAtStart?: (p: LatLng) => void
 }) {
   const [mode, setMode] = useState<Mode>('draw')
-  const [stops, setStops] = useState<LatLng[]>([])
+  const [stops, setStops] = useState<(LatLng & { label?: string })[]>([])
+  const [stopQuery, setStopQuery] = useState('')
+  const [focus, setFocus] = useState<MapFocus>(null)
   const [plan, setPlan] = useState<PlannedRoute | null>(null)
   const [chosen, setChosen] = useState<number[]>([])
   const [busy, setBusy] = useState(false)
@@ -51,9 +55,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
   // The planner's pins: the meeting point first, then the stops clicked in.
   const pins = useMemo(() => [...(meetup ? [meetup] : []), ...stops], [meetup, stops])
 
-  const miles = route ? routeMiles(route.waypoints) : 0
-  const comfort = comfortBreakdown(route?.comfortSegments)
-  const concerns = concernCount(route?.flags)
+  const reading = useMemo(() => readRoute(route), [route])
   // An imported route that begins somewhere else than the meeting point.
   const startGapMi = route && route.waypoints.length && meetup ? haversineM(meetup, route.waypoints[0]) / 1609.344 : 0
 
@@ -67,6 +69,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
       const pick = p.legs.map(() => 0)
       setPlan(p)
       setChosen(pick)
+      setFocus(null)
       onRoute(routeFromPlan(p, pick, pins))
       setFitKey((k) => k + 1)
     } catch (e) {
@@ -80,6 +83,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
     if (!plan) return
     const next = chosen.map((c, i) => (i === leg ? opt : c))
     setChosen(next)
+    setFocus(null)
     onRoute(routeFromPlan(plan, next, pins))
   }
 
@@ -144,6 +148,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
     onRoute(null)
     setPlan(null)
     setStops([])
+    setFocus(null)
   }
 
   const pickOnMap = mode === 'draw' && !!meetup
@@ -170,33 +175,62 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
       </div>
 
       {mode === 'draw' && (
-        <div className="mb-3 space-y-2">
+        <div className="mb-3 space-y-3">
           {!meetup ? (
             <Notice tone="info">Set the meeting point above first. The route starts there.</Notice>
           ) : (
-            <p className="text-[14px] leading-snug text-(--ev-ink-80)">
-              Click the map to add stops in order; the route starts at your meeting point. Shift finds the most comfortable
-              streets between them, the same planner as the app.
-            </p>
-          )}
-          {meetup && (
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => setStops((s) => [...s, { lat: meetup.lat, lng: meetup.lng }])} disabled={stops.length === 0}>
-                Finish back at the start
-              </Button>
-              <Button size="sm" onClick={() => setStops((s) => s.slice(0, -1))} disabled={stops.length === 0}>
-                <Undo2 className="h-4 w-4" aria-hidden />Undo last stop
-              </Button>
-              <Button size="sm" variant="primary" onClick={() => void findRoutes()} disabled={pins.length < 2} busy={busy}>
-                <RouteIcon className="h-4 w-4" aria-hidden />{route?.source === 'drawn' ? 'Find the route again' : 'Find the route'}
-              </Button>
-            </div>
+            <>
+              <p className="text-[14px] leading-snug text-(--ev-ink-80)">
+                Add the places you want to pass, in order: a café, a park, a new bike lane. Search by name or click the map.
+                The planner picks the calmest streets between them.
+              </p>
+              <AddressAutocomplete
+                value={stopQuery}
+                onChange={setStopQuery}
+                onPlaceSelected={(p) => {
+                  setStops((s) => [...s, { lat: p.lat, lng: p.lng, label: p.address.split(',')[0] }])
+                  setStopQuery('')
+                }}
+                label="Add a stop"
+                hideLabel
+                includeAreas
+                placeholder="Add a stop: Diesel Cafe, Mystic River path…"
+              />
+              {stops.length > 0 && (
+                <ol className="flex flex-wrap gap-1.5" aria-label="Stops in order">
+                  {stops.map((st, i) => {
+                    const home = i === stops.length - 1 && Math.abs(st.lat - meetup.lat) < 1e-5 && Math.abs(st.lng - meetup.lng) < 1e-5
+                    return (
+                      <li key={i} className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-(--ev-line-strong) bg-white pl-1.5 pr-1 text-[14px] font-semibold text-(--ev-ink)">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2966E5] text-[12px] text-white">{i + 1}</span>
+                        {home ? 'Back to the start' : st.label || `Stop ${i + 1}`}
+                        <button type="button" aria-label={`Remove stop ${i + 1}`} onClick={() => setStops((s) => s.filter((_, j) => j !== i))}
+                          className="flex h-7 w-7 items-center justify-center rounded-full text-(--ev-ink-75) hover:bg-(--ev-panel)">
+                          <X className="h-4 w-4" aria-hidden />
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ol>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => setStops((s) => [...s, { lat: meetup.lat, lng: meetup.lng }])} disabled={stops.length === 0}>
+                  Finish back at the start
+                </Button>
+                <Button size="sm" onClick={() => setStops((s) => s.slice(0, -1))} disabled={stops.length === 0}>
+                  <Undo2 className="h-4 w-4" aria-hidden />Undo last stop
+                </Button>
+                <Button size="sm" variant="primary" onClick={() => void findRoutes()} disabled={pins.length < 2} busy={busy}>
+                  <RouteIcon className="h-4 w-4" aria-hidden />{route?.source === 'drawn' ? 'Find the route again' : 'Find the route'}
+                </Button>
+              </div>
+            </>
           )}
         </div>
       )}
 
       {busy && mode === 'draw' && (
-        <p className="mb-3 text-[14px] text-(--ev-ink-80)" role="status">Checking every street between your stops. This can take up to a minute.</p>
+        <p className="mb-3 text-[14px] text-(--ev-ink-80)" role="status">Checking every street between your stops. This takes up to half a minute.</p>
       )}
 
       {mode === 'rwgps' && (
@@ -227,12 +261,17 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
 
       <RouteMap
         line={drawnLine}
+        pieces={reading?.mapPieces}
+        spots={reading?.mapSpots}
+        focus={focus}
+        onPieceClick={(index) => setFocus({ kind: 'piece', index })}
+        onSpotClick={(n) => setFocus({ kind: 'spot', n })}
         stops={mode === 'draw' ? stops : []}
         meetup={meetup}
         pick={pickOnMap}
         onPick={(p) => setStops((s) => [...s, p])}
-        fitKey={`${fitKey}|${meetKey}`}
-        label="Route map. Click to add a stop."
+        fitKey={`${fitKey}|${meetKey}|${stops.length}|${route?.source === 'saved' ? route.waypoints.length : ''}`}
+        label={pickOnMap ? 'Route map. Click to add a stop.' : 'Route map'}
       />
 
       {plan && plan.legs.length > 0 && plan.legs.some((l) => l.options.length > 1) && (
@@ -253,13 +292,11 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
       )}
 
       {route && route.waypoints.length >= 2 && (
-        <div className="mt-4 rounded-xl border border-(--ev-line-mid) bg-(--ev-panel-faint) px-4 py-3">
+        <div className="mt-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[15px] font-semibold text-(--ev-ink)">
-              {miles.toFixed(1)} miles
-              {route.elevation ? ` · ${route.elevation.ascent_ft.toLocaleString()} ft of climbing` : ''}
-              {route.source === 'ridewithgps' && <span className="font-normal text-(--ev-ink-75)"> · from Ride with GPS{route.sourceName ? `: ${route.sourceName}` : ''}</span>}
-              {route.source === 'gpx' && <span className="font-normal text-(--ev-ink-75)"> · from {route.sourceName ?? 'a GPX file'}</span>}
+            <p className="text-[14px] text-(--ev-ink-75)">
+              {route.source === 'ridewithgps' && <>From Ride with GPS{route.sourceName ? `: ${route.sourceName}` : ''}</>}
+              {route.source === 'gpx' && <>From {route.sourceName ?? 'a GPX file'}</>}
             </p>
             <Button size="sm" variant="ghost" onClick={clearRoute}><Trash2 className="h-4 w-4" aria-hidden />Remove route</Button>
           </div>
@@ -269,18 +306,11 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
               {onMeetAtStart && <Button size="sm" onClick={() => onMeetAtStart(route.waypoints[0])}>Meet where the route starts</Button>}
             </div>
           )}
-          {comfort.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {comfort.map((c) => <Badge key={c.rating} tone={c.rating === 'shared_road' ? 'warn' : 'good'}>{c.pct}% {COMFORT_LABELS[c.rating] ?? c.rating}</Badge>)}
-            </div>
-          )}
-          {concerns > 0 && (
-            <p className="mt-2 text-[14px] text-(--ev-ink-80)">{concerns === 1 ? 'One spot' : `${concerns} spots`} on this route have a crash history or a tricky crossing. People see them on the ride page in the app.</p>
-          )}
           {scoring === 'busy' && <p className="mt-2 text-[14px] text-(--ev-ink-75)" role="status">Checking the streets on this route…</p>}
           {scoring === 'failed' && route.source !== 'drawn' && (
             <p className="mt-2 text-[14px] text-(--ev-ink-75)">We couldn&rsquo;t score this route&rsquo;s streets just now. You can save it as it is.</p>
           )}
+          {reading && <RouteReview route={route} reading={reading} pace={pace} focus={focus} onFocus={setFocus} />}
         </div>
       )}
     </div>

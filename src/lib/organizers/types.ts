@@ -247,6 +247,9 @@ export interface ComfortSegment {
   label: string
   rating: string
   distance_mi: number
+  /** Where the stretch runs in the route's waypoints, when the planner says. */
+  startIdx?: number
+  endIdx?: number
 }
 
 export interface RouteElevation {
