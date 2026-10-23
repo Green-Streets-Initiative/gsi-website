@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, Copy, PauseCircle, PlayCircle } from 'lucide-react'
+import { Check, Copy, PauseCircle, PlayCircle, Route as RouteIcon } from 'lucide-react'
 import { ago, clock } from '@/lib/rides/public'
 import { errorText, setDateCanceled } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
@@ -35,8 +35,20 @@ function ShareCard({ code, fresh, rideId }: { code: string; fresh: boolean; ride
   )
 }
 
-function DateRow({ d, canManage, rideId, onCancel, onChange, onRestore }: {
-  d: DetailDate; canManage: boolean; rideId: string
+/** What this date rides: its own route (Shift 01432), the usual one, or none. */
+function RouteChip({ d, usualMiles, hasUsual }: { d: DetailDate; usualMiles: number | null; hasUsual: boolean }) {
+  const miles = d.own_route ? d.route?.route_miles ?? null : usualMiles
+  const text = d.own_route ? 'Its own route' : hasUsual ? 'Usual route' : 'No route yet'
+  return (
+    <span className={cx('inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[13px] font-semibold',
+      d.own_route ? 'border-(--ev-accent-line) bg-(--ev-panel) text-(--ev-ink)' : 'border-(--ev-line-mid) text-(--ev-ink-75)')}>
+      <RouteIcon className="h-3.5 w-3.5" aria-hidden />{text}{miles != null && miles > 0 ? ` · ${miles.toFixed(1)} mi` : ''}
+    </span>
+  )
+}
+
+function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel, onChange, onRestore }: {
+  d: DetailDate; canManage: boolean; canEdit: boolean; rideId: string; usualMiles: number | null; hasUsual: boolean
   onCancel: () => void; onChange: () => void; onRestore: () => void
 }) {
   const off = d.status === 'canceled'
@@ -45,6 +57,7 @@ function DateRow({ d, canManage, rideId, onCancel, onChange, onRestore }: {
     <li className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-(--ev-line) py-3 last:border-0">
       <div className="min-w-[150px]">
         <p className={cx('text-[15px] font-bold', off ? 'text-(--ev-ink-75) line-through' : 'text-(--ev-ink)')}>{dateLabel(d.date)}</p>
+        {d.title && <p className="text-[15px] font-semibold text-(--ev-ink-85)">{d.title}</p>}
         <p className="text-[14px] text-(--ev-ink-75)">
           {clock(d.start_time)}{d.time_moved ? ' (moved)' : ''}
           {d.place_moved && d.meetup_name ? ` · ${d.meetup_name} (moved)` : ''}
@@ -58,6 +71,7 @@ function DateRow({ d, canManage, rideId, onCancel, onChange, onRestore }: {
               {!past && d.maybe > 0 ? ` · ${d.maybe} maybe` : ''}
               {!past && d.cant > 0 ? ` · ${d.cant} can't` : ''}
             </span>
+            {d.own_route && <RouteChip d={d} usualMiles={usualMiles} hasUsual={hasUsual} />}
             {!past && d.confirmed && <Badge tone="good">It&rsquo;s on</Badge>}
             {d.requests > 0 && <Badge tone="warn">{plural(d.requests, 'request')}</Badge>}
           </>
@@ -67,6 +81,11 @@ function DateRow({ d, canManage, rideId, onCancel, onChange, onRestore }: {
         {!off && (
           <Link href={`/organizers/rides/${rideId}/roster?date=${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-3 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
             {past ? 'Who came' : "Who's coming"}
+          </Link>
+        )}
+        {canEdit && !past && !off && (
+          <Link href={`/organizers/rides/${rideId}/dates/${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-3 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
+            Plan
           </Link>
         )}
         {canManage && !past && !off && <Button size="sm" variant="ghost" onClick={onChange}>Change</Button>}
@@ -84,7 +103,10 @@ export default function RideOverview() {
   const r = detail.ride
   const today = todayKey()
   const [msg, setMsg] = useState<{ tone: 'good' | 'off'; text: string } | null>(
-    params.get('saved') ? { tone: 'good', text: 'Saved. The ride page and the app show your changes.' } : null,
+    params.get('saved') === 'held'
+      ? { tone: 'good', text: 'Saved. Part of that route has a crash history, so GSI reviews it before the ride is back on the public calendar.' }
+      : params.get('saved') === 'date' ? { tone: 'good', text: 'Saved. The ride page shows that date\u2019s plan.' }
+      : params.get('saved') ? { tone: 'good', text: 'Saved. The ride page and the app show your changes.' } : null,
   )
   const [cancelling, setCancelling] = useState<DetailDate | null>(null)
   const [changing, setChanging] = useState<DetailDate | null>(null)
@@ -98,6 +120,7 @@ export default function RideOverview() {
   const ended = r.status === 'archived'
   const nextDate = upcoming.find((d) => d.status === 'scheduled') ?? null
   const onBreak = !!r.break_until && r.break_until > today
+  const hasUsual = (r.route_waypoints?.length ?? 0) >= 2 || !!r.route_google_maps_url
 
   const closeMsg = useCallback(() => {
     setMsg(null)
@@ -165,7 +188,9 @@ export default function RideOverview() {
             <div>
               <p className="text-[15px] font-semibold text-(--ev-ink-75)">Next ride</p>
               <p className="font-display text-[26px] font-extrabold leading-tight">{dateLabel(nextDate.date)} · {clock(nextDate.start_time)}</p>
+              {nextDate.title && <p className="mt-0.5 text-[17px] font-bold text-(--ev-ink)">{nextDate.title}</p>}
               <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{nextDate.meetup_name ?? r.meetup_name}{nextDate.time_moved || nextDate.place_moved ? ' (changed for this date)' : ''}</p>
+              <span className="mt-2 inline-block"><RouteChip d={nextDate} usualMiles={r.route_miles} hasUsual={hasUsual} /></span>
               {nextForecast && <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">Forecast: {nextForecast}</p>}
               {nextDate.confirmed && <span className="mt-2 inline-block"><Badge tone="good">It&rsquo;s on</Badge></span>}
             </div>
@@ -179,6 +204,11 @@ export default function RideOverview() {
             </dl>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
+            {detail.can_edit && (
+              <Link href={`/organizers/rides/${r.id}/dates/${nextDate.id}`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                <RouteIcon className="h-4 w-4" aria-hidden />Plan this ride
+              </Link>
+            )}
             <Button variant="primary" onClick={() => setPosting(true)}>Post an update</Button>
             <Link href={`/organizers/rides/${r.id}/roster?date=${nextDate.id}`} className="inline-flex min-h-[44px] items-center rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
               See who&rsquo;s coming
@@ -202,7 +232,7 @@ export default function RideOverview() {
 
       <Card>
         <SectionTitle
-          hint={detail.can_manage ? 'Change or cancel one date; the rest stays as it is.' : undefined}
+          hint={detail.can_manage ? 'Plan, change or cancel one date; the rest stays as it is.' : undefined}
           action={detail.can_manage && !ended ? (
             onBreak
               ? <Button size="sm" onClick={() => void doResume()} busy={busy}><PlayCircle className="h-4 w-4" aria-hidden />End the break now</Button>
@@ -223,7 +253,7 @@ export default function RideOverview() {
         ) : (
           <ul>
             {later.map((d) => (
-              <DateRow key={d.id} d={d} canManage={detail.can_manage} rideId={r.id}
+              <DateRow key={d.id} d={d} canManage={detail.can_manage} canEdit={detail.can_edit} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual}
                 onCancel={() => setCancelling(d)} onChange={() => setChanging(d)} onRestore={() => void restore(d)} />
             ))}
           </ul>
@@ -233,7 +263,7 @@ export default function RideOverview() {
             <Button size="sm" variant="ghost" onClick={() => setShowPast((v) => !v)} aria-expanded={showPast}>
               {showPast ? 'Hide' : 'Show'} {past.length === 1 ? 'the last date' : `the last ${past.length} dates`}
             </Button>
-            {showPast && <ul className="mt-2">{past.map((d) => <DateRow key={d.id} d={d} canManage={false} rideId={r.id} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} />)}</ul>}
+            {showPast && <ul className="mt-2">{past.map((d) => <DateRow key={d.id} d={d} canManage={false} canEdit={false} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} />)}</ul>}
           </div>
         )}
       </Card>

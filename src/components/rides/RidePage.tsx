@@ -70,7 +70,7 @@ function directionsUrl(d: Pick<RideDate, 'meetup_lat' | 'meetup_lng'>): string {
  *  ", MA" when needed, the description, sign-up link, host, a link back). */
 function calendarEvent(ride: PublicRide, d: RideDate) {
   return {
-    id: `${ride.code}-${d.date}`, slug: null, title: ride.name, body: ride.description,
+    id: `${ride.code}-${d.date}`, slug: null, title: d.title || ride.name, body: d.description || ride.description,
     event_date: d.date, event_time: d.start_time, event_end_time: d.end_time,
     location_name: d.meetup_name, location_address: d.meetup_address, location_lat: d.meetup_lat, location_lng: d.meetup_lng,
     organizer_name: ride.organizer_name, organizer_url: ride.organizer_url,
@@ -93,11 +93,16 @@ function downloadIcs(ride: PublicRide, d: RideDate) {
   a.remove()
 }
 
-export default function RidePage({ ride, host = null, ascentFt = null }: { ride: PublicRide; host?: RideHost | null; ascentFt?: number | null }) {
+export default function RidePage({ ride, host = null, ascentFt = null, initialDate = null }: {
+  ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
+  /** A date the visitor came for (?date=YYYY-MM-DD from a calendar listing). */
+  initialDate?: string | null
+}) {
   const hostHref = host?.href ?? null
   const hostName = host?.name ?? ride.organizer_name
   const open = ride.occurrences.filter((d) => d.status === 'scheduled')
-  const [selectedId, setSelectedId] = useState<string | null>(open[0]?.id ?? ride.occurrences[0]?.id ?? null)
+  const [selectedId, setSelectedId] = useState<string | null>(
+    ride.occurrences.find((d) => d.date === initialDate)?.id ?? open[0]?.id ?? ride.occurrences[0]?.id ?? null)
   const selected = ride.occurrences.find((d) => d.id === selectedId) ?? null
   const [counts, setCounts] = useState<Record<string, { going: number; maybe: number }>>(() =>
     Object.fromEntries(ride.occurrences.map((d) => [d.id, { going: d.going, maybe: d.maybe }])),
@@ -205,8 +210,16 @@ export default function RidePage({ ride, host = null, ascentFt = null }: { ride:
     : next
       ? `Next: ${dateLong(next.date)}${next.start_time ? ` · ${clock(next.start_time)}` : ''}`
       : scheduleText(ride)
-  const route = (ride.route_waypoints ?? []).filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng))
+  // Most groups ride somewhere new each time (Shift 01432): the chosen date's
+  // own route, name, description and flyer, else the ride's.
+  const own = selected?.own_route && selected.route ? selected.route : null
+  const route = ((own ? own.route_waypoints : ride.route_waypoints) ?? []).filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng))
   const miles = route.length >= 2 ? routeMiles(route) : null
+  const climb = own ? (typeof own.route_elevation?.ascent_ft === 'number' ? Math.round(own.route_elevation.ascent_ft) : null) : ascentFt
+  const routeLink = own ? own.route_google_maps_url : ride.route_google_maps_url
+  const dateTitle = selected?.title ?? null
+  const about = selected?.description || ride.description
+  const flyer = selected?.flyer_url || ride.flyer_url
   // Where to meet: the chosen date's spot, else the ride's own (a ride between
   // seasons still shows its route and meeting point).
   const place: Pick<RideDate, 'meetup_lat' | 'meetup_lng' | 'meetup_name' | 'meetup_address'> | null =
@@ -238,7 +251,12 @@ export default function RidePage({ ride, host = null, ascentFt = null }: { ride:
           {headerSchedule}
           {ride.meetup_name ? ` · ${ride.meetup_name}` : ''}
         </p>
-        <RideFacts ride={ride} miles={miles} ascentFt={ascentFt} />
+        {/* The chosen date's own name (Shift 01432), up top for someone who
+            came from that date's listing. */}
+        {dateTitle && selected && (
+          <p className="mt-2 text-[17px] font-bold text-(--ev-accent)">{dateLong(selected.date)}: {dateTitle}</p>
+        )}
+        <RideFacts ride={ride} miles={miles} ascentFt={climb} />
 
         {(ended || paused) && (
           <div className={`mt-6 rounded-2xl px-5 py-4 ${ended ? TONE_STYLE.off : TONE_STYLE.warn}`}>
@@ -446,10 +464,10 @@ export default function RidePage({ ride, host = null, ascentFt = null }: { ride:
 
           {/* ---- About, meeting point, organizer ---- */}
           <section className="space-y-6 lg:col-start-1" aria-label="About this ride">
-            {ride.description && (
+            {about && (
               <div>
                 <h2 className="font-display text-[22px] font-extrabold text-(--ev-ink)">About this ride</h2>
-                <p className="mt-2 whitespace-pre-line text-[15px] leading-relaxed text-(--ev-ink-80)">{ride.description}</p>
+                <p className="mt-2 whitespace-pre-line text-[15px] leading-relaxed text-(--ev-ink-80)">{about}</p>
               </div>
             )}
 
@@ -482,8 +500,8 @@ export default function RidePage({ ride, host = null, ascentFt = null }: { ride:
               </div>
             )}
 
-            {ride.route_google_maps_url && /^https?:\/\//.test(ride.route_google_maps_url) && (
-              <a href={ride.route_google_maps_url} target="_blank" rel="noopener noreferrer"
+            {routeLink && /^https?:\/\//.test(routeLink) && (
+              <a href={routeLink} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-(--ev-accent) hover:underline">
                 <RouteIcon size={15} /> The full route, turn by turn <ExternalLink size={13} />
               </a>
@@ -514,8 +532,8 @@ export default function RidePage({ ride, host = null, ascentFt = null }: { ride:
               </div>
             )}
 
-            {ride.flyer_url && (
-              <img src={ride.flyer_url} alt={`${ride.name} flyer`} className="max-h-[320px] w-full max-w-[420px] rounded-2xl border border-(--ev-line) object-cover" />
+            {flyer && (
+              <img src={flyer} alt={`${dateTitle ?? ride.name} flyer`} className="max-h-[320px] w-full max-w-[420px] rounded-2xl border border-(--ev-line) object-cover" />
             )}
 
             <div className="rounded-2xl bg-(--ev-panel) p-5">

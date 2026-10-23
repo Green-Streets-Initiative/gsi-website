@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ImagePlus, MessageSquareText, Trash2 } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { errorText, saveRide, uploadFlyer } from '@/lib/organizers/api'
+import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
 import { DAY_LABELS, PACE_OPTIONS, TAG_OPTIONS, WEEK_OPTIONS } from '@/lib/organizers/ride-words'
 import type { Frequency, Pace, RideRow, RouteDraft } from '@/lib/organizers/types'
 import { ROUTE_IMPORT_KEY, openAssistant } from './AssistantPanel'
@@ -69,11 +70,7 @@ function fromRow(r: RideRow): Form {
     start_time: hhmm(r.start_time), end_time: hhmm(r.end_time),
     meetup_name: r.meetup_name ?? '', meetup_address: r.meetup_address ?? '',
     meetup_lat: r.meetup_lat, meetup_lng: r.meetup_lng,
-    route: r.route_waypoints?.length >= 2 ? {
-      waypoints: r.route_waypoints, pins: r.route_pins ?? [], flags: r.route_flags ?? [],
-      comfortSegments: r.comfort_segments, comfortRating: r.comfort_rating, comfortSummary: r.comfort_summary,
-      elevation: r.route_elevation, source: 'saved',
-    } : null,
+    route: draftOf(r),
     route_google_maps_url: r.route_google_maps_url ?? '',
     pace: r.pace ?? '', no_drop: !!r.no_drop, tags: r.tags ?? [],
     registration_url: r.registration_url ?? '', contact_url: r.contact_url ?? '',
@@ -85,7 +82,6 @@ function fromRow(r: RideRow): Form {
 }
 
 function toPayload(f: Form): Record<string, unknown> {
-  const r = f.route
   return {
     name: f.name, description: f.description, flyer_url: f.flyer_url,
     schedule: f.schedule, ride_date: f.ride_date || null, frequency: f.frequency,
@@ -93,10 +89,7 @@ function toPayload(f: Form): Record<string, unknown> {
     season_start: f.season_start || null, season_end: f.season_end || null,
     start_time: f.start_time, end_time: f.end_time || null,
     meetup_name: f.meetup_name, meetup_address: f.meetup_address, meetup_lat: f.meetup_lat, meetup_lng: f.meetup_lng,
-    route_waypoints: r?.waypoints ?? [], route_pins: r?.pins ?? [], route_flags: r?.flags ?? [],
-    comfort_segments: r?.comfortSegments ?? null, comfort_rating: r?.comfortRating ?? null,
-    comfort_summary: r?.comfortSummary ?? null, route_elevation: r?.elevation ?? null,
-    route_google_maps_url: f.route_google_maps_url,
+    ...routePayload(f.route, f.route_google_maps_url),
     pace: f.pace || null, no_drop: f.no_drop, tags: f.tags,
     registration_url: f.registration_url, contact_url: f.contact_url, live_sharing: f.live_sharing,
     visibility: f.visibility, event_organizer_id: f.event_organizer_id || null,
@@ -223,9 +216,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
     const raw = new URLSearchParams(window.location.search).get('plan')
     if (!raw) return
     try {
-      const b64 = raw.replace(/-/g, '+').replace(/_/g, '/')
-      const j = JSON.parse(decodeURIComponent(escape(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4))))) as { p: [number, number, string][]; c: number[]; pace: string | null }
-      if (!Array.isArray(j.p) || j.p.length < 2) return
+      const j = decodePlan(raw)
+      if (!j) return
       const [lat, lng, label] = j.p[0]
       setF((prev) => {
         const moved = prev.meetup_lat == null || Math.abs(prev.meetup_lat - lat) > 0.0005 || Math.abs((prev.meetup_lng ?? 0) - lng) > 0.0005

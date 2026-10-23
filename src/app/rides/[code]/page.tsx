@@ -26,30 +26,39 @@ async function loadRide(code: string): Promise<RideLookup | null> {
   return (data as RideLookup | null) ?? null
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
+type Search = Promise<{ date?: string | string[] }>
+const dateParam = (v: string | string[] | undefined) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null)
+
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Search }): Promise<Metadata> {
   const { code } = await params
   const ride = await loadRide(code)
   if (!ride) return { title: 'Ride not found', robots: { index: false } }
   if (!ride.web) return { title: ride.name, robots: { index: false } }
+  // A link to one date (from its calendar listing) previews that date's own name and description.
+  const want = dateParam((await searchParams).date)
+  const day = want ? ride.occurrences.find((d) => d.date === want) : undefined
   const where = ride.meetup_name ? ` from ${ride.meetup_name}` : ''
-  const description = ride.description?.slice(0, 160) || `${scheduleText(ride)}${where}. RSVP here, no app needed.`
+  const description = (day?.description || ride.description)?.slice(0, 160) || `${scheduleText(ride)}${where}. RSVP here, no app needed.`
+  const title = day?.title ? `${day.title} · ${ride.name}` : ride.name
+  const flyer = day?.flyer_url || ride.flyer_url
   return {
-    title: ride.name,
+    title,
     description,
     // Invite-only rides are shared by link; only public rides belong in search.
     robots: ride.visibility === 'public' && ride.status === 'active' ? undefined : { index: false, follow: false },
     alternates: { canonical: `/rides/${ride.code}` },
     openGraph: {
-      title: ride.name,
+      title,
       description,
       url: `/rides/${ride.code}`,
-      ...(ride.flyer_url ? { images: [{ url: ride.flyer_url }] } : {}),
+      ...(flyer ? { images: [{ url: flyer }] } : {}),
     },
   }
 }
 
-export default async function Page({ params }: { params: Promise<{ code: string }> }) {
+export default async function Page({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Search }) {
   const { code } = await params
+  const initialDate = dateParam((await searchParams).date)
   const ride = await loadRide(code)
   if (!ride) notFound()
 
@@ -60,7 +69,7 @@ export default async function Page({ params }: { params: Promise<{ code: string 
     <>
       <Nav variant="light" />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
-        {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} ascentFt={extras?.ascentFt ?? null} /> : <AppOnlyRidePage ride={ride} />}
+        {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} ascentFt={extras?.ascentFt ?? null} initialDate={initialDate} /> : <AppOnlyRidePage ride={ride} />}
       </main>
       <Footer variant="light" />
     </>

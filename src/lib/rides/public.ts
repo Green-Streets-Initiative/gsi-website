@@ -28,6 +28,18 @@ export interface RideDate {
   going: number
   maybe: number
   live: boolean
+  /** This date's own details (Shift 01432); null means the ride's own. */
+  title?: string | null
+  description?: string | null
+  flyer_url?: string | null
+  own_route?: boolean
+  /** The date's route when it rides its own; otherwise the ride's route. */
+  route?: {
+    route_waypoints: { lat: number; lng: number }[] | null
+    route_google_maps_url: string | null
+    route_miles: number | null
+    route_elevation: { ascent_ft?: number } | null
+  } | null
 }
 
 export interface RideUpdate {

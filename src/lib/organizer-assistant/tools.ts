@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { clock, scheduleText } from '@/lib/rides/public'
 import { inviteCoOrganizer } from '@/lib/organizers/invite'
 import { PACE_OPTIONS, TAG_OPTIONS, UPDATE_KIND_LABEL, dateLabel, todayKey } from '@/lib/organizers/ride-words'
-import type { DashboardRide, RideDetail, RideRow, RosterRow, Turnout } from '@/lib/organizers/types'
+import type { DashboardRide, DetailDate, RideDetail, RideRow, RosterRow, Turnout } from '@/lib/organizers/types'
 import { designRoute, encodePlan, summarizeRoute } from './route-designer'
 import { fetchRideWithGps } from '@/lib/organizers/rwgps'
 import { forecastLine, rideForecast } from '@/lib/rides/forecast'
@@ -146,14 +146,14 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'open_page',
-    description: 'A button to a screen of the organizer tools, for things done there: the route, adding a flyer, the full edit form, Promote (captions per channel, short links that count visits, the flyer QR code, event calendars), the turnout download, the host page.',
+    description: 'A button to a screen of the organizer tools, for things done there: the route, adding a flyer, the full edit form, one date\'s plan page (plan_date, with occurrence_id: its own name, description, flyer and route), Promote (captions per channel, short links that count visits, the flyer QR code, event calendars), the turnout download, the host page.',
     input_schema: {
       type: 'object',
       properties: {
-        page: { type: 'string', enum: ['rides', 'new_ride', 'ride', 'edit', 'roster', 'promote', 'turnout', 'team', 'host'] },
+        page: { type: 'string', enum: ['rides', 'new_ride', 'ride', 'edit', 'plan_date', 'roster', 'promote', 'turnout', 'team', 'host'] },
         series_id: nullable('string'),
         occurrence_id: nullable('string'),
-        import_id: nullable('string', 'With edit or new_ride: a GPX route the organizer attached (the import id in its [Attached route] note), to load into the route section.'),
+        import_id: nullable('string', 'With edit, plan_date or new_ride: a GPX route the organizer attached (the import id in its [Attached route] note), to load into the route section.'),
         label: { type: 'string', description: 'The button text, a few words with a verb ("Draw the route").' },
       },
       required: ['page', 'label'],
@@ -179,6 +179,7 @@ export const TOOLS: Anthropic.Tool[] = [
       type: 'object',
       properties: {
         series_id: nullable('string', "A ride's id: starts at its meeting point, at its pace, and the button opens that ride's editor. Leave empty for a ride not set up yet."),
+        occurrence_id: nullable('string', "With series_id: one date of that ride. Most groups ride somewhere new each time, so this opens that date's plan page and the route is saved for that date only. It starts at that date's meeting point."),
         start: { ...placeSchema, description: 'Where it starts, from find_place, when there is no series_id or they want a different start.' },
         loop: { type: 'boolean', description: 'Back to the start (the usual group ride). Default true.' },
         end: { ...placeSchema, description: 'For an A-to-B ride only.' },
@@ -199,6 +200,7 @@ export const TOOLS: Anthropic.Tool[] = [
       properties: {
         url: { type: 'string', description: 'The ridewithgps.com/routes/… (or /trips/…) link, as pasted.' },
         series_id: nullable('string', 'The ride it is for, if known: the button opens that ride\'s editor. Empty: a new ride.'),
+        occurrence_id: nullable('string', "With series_id: one date of that ride. Most groups ride somewhere new each time, so this opens that date's plan page and the route is saved for that date only."),
       },
       required: ['url'],
     },
@@ -211,7 +213,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'update_ride',
-    description: "Change a ride's details (name, description, schedule, time, meeting point, pace, no-drop, tags, visibility, links). Send only what changes. Card first. Use change_date for a single date.",
+    description: "Change a ride's details (name, description, schedule, time, meeting point, pace, no-drop, tags, visibility, links). Send only what changes. Card first. For a single date use change_date (time, meeting point) or plan_date (its name, description, route).",
     input_schema: { type: 'object', properties: { series_id: uuid, changes: { type: 'object', properties: rideFields } }, required: ['series_id', 'changes'] },
   },
   {
@@ -239,6 +241,20 @@ export const TOOLS: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: { series_id: uuid, occurrence_id: uuid, start_time: nullable('string', 'HH:MM, 24-hour.'), meetup: { ...placeSchema } },
+      required: ['series_id', 'occurrence_id'],
+    },
+  },
+  {
+    name: 'plan_date',
+    description: "Give one date its own name and description, since most groups ride somewhere new each time (\"Fall colors to Concord\"). Send only what changes; null puts that part back to the ride's usual. usual_route true makes the date ride the ride's usual route again. A date's own route is drawn with plan_route or check_route_link (with occurrence_id). Card first. Nobody is notified; post_update tells people.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        series_id: uuid, occurrence_id: uuid,
+        title: nullable('string', 'Up to 120 characters.'),
+        description: nullable('string', 'Up to 4,000 characters, in the organizer\'s words.'),
+        usual_route: { type: 'boolean' },
+      },
       required: ['series_id', 'occurrence_id'],
     },
   },
@@ -278,7 +294,7 @@ export const TOOLS: Anthropic.Tool[] = [
 ]
 
 export const NEEDS_APPROVAL = new Set([
-  'create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit',
+  'create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit',
 ])
 
 /** What the panel shows while a tool runs. */
@@ -298,6 +314,7 @@ export const ACTIVITY: Record<string, string> = {
   post_update: 'Posting the update',
   cancel_date: 'Cancelling the date',
   change_date: 'Changing the date',
+  plan_date: 'Saving the date',
   stop_ride: 'Updating the ride',
   resume_ride: 'Starting it again',
   invite_co_organizer: 'Sending the invite',
@@ -305,7 +322,7 @@ export const ACTIVITY: Record<string, string> = {
 }
 
 /** Labels whose completion means a screen should reload. */
-export const CHANGES = new Set(['create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit'].map((n) => ACTIVITY[n]))
+export const CHANGES = new Set(['create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit'].map((n) => ACTIVITY[n]))
 
 // ── Shapes for the model: small, and never more than the screens show ──
 
@@ -333,6 +350,16 @@ function trimDashboard(r: DashboardRide) {
       status: d.status, confirmed: d.confirmed, changed: d.moved, going: d.going, maybe: d.maybe,
     })),
     latest_update: r.latest_update ? { kind: r.latest_update.kind, note: r.latest_update.note, at: r.latest_update.created_at, sent_to: r.latest_update.recipients } : null,
+  }
+}
+
+/** A date's own name, description and route (Shift 01432); absent = the ride's own. */
+function dateOwn(o: DetailDate) {
+  const mi = o.route?.route_miles
+  return {
+    name: o.title ?? undefined,
+    description: o.description ? o.description.slice(0, 300) : undefined,
+    route: o.own_route ? `its own${mi ? ` (${Math.round(mi * 10) / 10} mi)` : ''}` : 'the usual',
   }
 }
 
@@ -379,9 +406,10 @@ function trimDetail(d: RideDetail) {
     upcoming_dates: upcoming.map((o) => ({
       occurrence_id: o.id, date: o.date, day: dateLabel(o.date), start: clock(o.start_time), status: o.status,
       confirmed: o.confirmed, meeting_point: o.place_moved ? o.meetup_name : undefined, time_changed: o.time_moved || undefined,
+      ...dateOwn(o),
       going: o.going, maybe: o.maybe, cant: o.cant,
     })),
-    recent_dates: past.map((o) => ({ occurrence_id: o.id, date: o.date, status: o.status, came: o.attended, said_going: o.going, credit_requests: o.requests })),
+    recent_dates: past.map((o) => ({ occurrence_id: o.id, date: o.date, name: o.title ?? undefined, status: o.status, came: o.attended, said_going: o.going, credit_requests: o.requests })),
     recent_updates: d.updates.slice(0, 5).map((u) => ({ kind: u.kind, about: u.occurrence_id, note: u.note, at: u.created_at, sent_to: u.recipients })),
   }
 }
@@ -536,8 +564,15 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         }
         let start = asPlace(input.start)
         let pace = typeof input.pace === 'string' ? input.pace : null
+        let occ: string | null = null
         if (sid) {
           const d = await rpc<RideDetail>(ctx, 'organizer_ride_detail', { p_series_id: sid })
+          if (input.occurrence_id) {
+            const o = findDate(d, input.occurrence_id)
+            if (o.date < todayKey()) return fail('That date has passed.')
+            occ = o.id
+            if (!start && o.meetup_lat != null && o.meetup_lng != null) start = { lat: o.meetup_lat, lng: o.meetup_lng, name: o.meetup_name ?? undefined }
+          }
           if (!start && d.ride.meetup_lat != null && d.ride.meetup_lng != null) start = { lat: d.ride.meetup_lat, lng: d.ride.meetup_lng, name: d.ride.meetup_name ?? undefined }
           pace = pace ?? d.ride.pace
         }
@@ -557,7 +592,8 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         })
         if (!res.ok || !res.plan) return ok({ planned: false, notes: res.notes })
         const q = encodePlan(res.plan)
-        const href = sid ? `/organizers/rides/${sid}/edit?plan=${q}#sec-route` : `/organizers/rides/new?plan=${q}`
+        const href = sid && occ ? `/organizers/rides/${sid}/dates/${occ}?plan=${q}`
+          : sid ? `/organizers/rides/${sid}/edit?plan=${q}#sec-route` : `/organizers/rides/new?plan=${q}`
         return ok({
           planned: true, ...res.summary, goals: res.goals, notes: res.notes,
           button: 'Shown under your reply: opens the route street by street, with Street View, in the editor. It is saved only when they press Save there.',
@@ -568,11 +604,16 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (!r.ok) return fail(r.error)
         const sid = typeof input.series_id === 'string' && /^[0-9a-f-]{36}$/i.test(input.series_id) ? input.series_id : null
         let pace: string | null = null
-        if (sid) pace = (await rpc<RideDetail>(ctx, 'organizer_ride_detail', { p_series_id: sid })).ride.pace
+        let occ: string | null = null
+        if (sid) {
+          const d = await rpc<RideDetail>(ctx, 'organizer_ride_detail', { p_series_id: sid })
+          pace = d.ride.pace
+          if (input.occurrence_id) occ = findDate(d, input.occurrence_id).id
+        }
         const summary = await summarizeRoute(ctx.token, r.waypoints, pace, r.elevation)
         const q = `?rwgps=${encodeURIComponent(String(input.url).trim())}#sec-route`
         return ok({ name: r.name, ...summary, button: 'Shown under your reply: opens the route street by street, with Street View, in the editor. It is saved only when they press Save there.' },
-          { href: sid ? `/organizers/rides/${sid}/edit${q}` : `/organizers/rides/new${q}`, label: 'See the route street by street' })
+          { href: sid && occ ? `/organizers/rides/${sid}/dates/${occ}${q}` : sid ? `/organizers/rides/${sid}/edit${q}` : `/organizers/rides/new${q}`, label: 'See the route street by street' })
       }
       case 'open_page': {
         const s = typeof input.series_id === 'string' && /^[0-9a-f-]{36}$/i.test(input.series_id) ? input.series_id : null
@@ -581,7 +622,9 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const importQ = importId ? `?import=${importId}#sec-route` : ''
         const href = ({
           rides: '/organizers', new_ride: `/organizers/rides/new${importQ}`, host: '/organizers/host',
-          ride: base, edit: `${base}/edit${importQ}`, roster: `${base}/roster${input.occurrence_id ? `?date=${input.occurrence_id}` : ''}`,
+          ride: base, edit: `${base}/edit${importQ}`,
+          plan_date: s && typeof input.occurrence_id === 'string' && /^[0-9a-f-]{36}$/i.test(input.occurrence_id) ? `${base}/dates/${input.occurrence_id}${importQ}` : base,
+          roster: `${base}/roster${input.occurrence_id ? `?date=${input.occurrence_id}` : ''}`,
           turnout: `${base}/turnout`, team: `${base}/team`, promote: `${base}/promote`,
         } as Record<string, string>)[String(input.page)] ?? '/organizers'
         return ok({ shown: true }, { href, label: String(input.label || 'Open') })
@@ -794,6 +837,32 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
           input: { occurrence_id: o.id, start_time: time, place },
         }
       }
+      case 'plan_date': {
+        const d = await loadDetail(ctx, input.series_id)
+        if (!d.can_edit) return { result: fail("Only the ride's organizer can plan its dates.") }
+        const o = findDate(d, input.occurrence_id)
+        if (o.date < todayKey()) return { result: fail('That date has passed.') }
+        const details: Record<string, unknown> = {}
+        const text = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null)
+        if (input.title !== undefined) details.title = text(input.title)
+        if (input.description !== undefined) details.description = text(input.description)
+        if (input.usual_route === true && o.own_route) details.route = null
+        if (Object.keys(details).length === 0) return { result: fail('Say the new name or description, or usual_route.') }
+        const short = (t: string) => (t.length > 160 ? `${t.slice(0, 157)}…` : t)
+        return {
+          card: {
+            title: `Plan ${dateLabel(o.date)}?`,
+            lines: [
+              'title' in details ? (details.title ? `Name: “${details.title}”` : `Name: back to “${d.ride.name}”`) : null,
+              'description' in details ? (details.description ? `About: “${short(String(details.description))}”` : 'About: back to the ride\'s usual description') : null,
+              'route' in details ? 'Rides the usual route' : null,
+              'Just this date. It shows on the ride page and the calendar; nobody is notified.',
+            ].filter(Boolean) as string[],
+            cta: 'Save this date', tone: 'primary',
+          },
+          input: { occurrence_id: o.id, details },
+        }
+      }
       case 'stop_ride': {
         const d = await loadDetail(ctx, input.series_id)
         if (!d.can_manage) return { result: fail("Only the ride's organizer can pause or end it.") }
@@ -904,6 +973,10 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
         if (!r?.changed) return ok({ changed: false })
         const s = await shiftFn<Sent>(ctx, 'notify-ride-canceled', { occurrence_id: input.occurrence_id, change: true }).catch(() => null)
         return ok({ changed: true, ...sentText(s) })
+      }
+      case 'plan_date': {
+        const r = await rpc<{ calendar_held?: boolean }>(ctx, 'save_ride_date_details', { p_occurrence_id: input.occurrence_id, p_details: input.details })
+        return ok({ saved: true, calendar_held: !!r?.calendar_held })
       }
       case 'stop_ride': {
         await rpc(ctx, 'stop_ride_series', { p_series_id: input.series_id, p_mode: input.mode, p_until: input.mode === 'break' ? input.until : null, p_note: input.note || null })

@@ -172,6 +172,28 @@ export async function changeDate(occurrenceId: string, args: {
   return { changed: true, sent }
 }
 
+/**
+ * Save one date's own title, description, flyer and route (Shift 01432).
+ * Keys left out stay as they are; null puts that part back to the ride's own.
+ */
+export async function saveDateDetails(occurrenceId: string, details: {
+  title?: string | null
+  description?: string | null
+  flyer_url?: string | null
+  route?: Record<string, unknown> | null
+}): Promise<{ calendar_held: boolean }> {
+  const data = await rpc<{ calendar_held?: boolean; own_route?: boolean }>('save_ride_date_details', {
+    p_occurrence_id: occurrenceId,
+    p_details: details,
+  })
+  track('organizer_date_planned', {
+    occurrence_id: occurrenceId,
+    title: details.title !== undefined, description: details.description !== undefined,
+    flyer: details.flyer_url !== undefined, route: details.route !== undefined, own_route: !!data?.own_route,
+  })
+  return { calendar_held: !!data?.calendar_held }
+}
+
 /** End the ride or take a break, then tell everyone, as the app's stop screen does. */
 export async function stopRide(seriesId: string, mode: 'end' | 'break', until: string | null, note: string, notify: boolean) {
   await rpc('stop_ride_series', { p_series_id: seriesId, p_mode: mode, p_until: mode === 'break' ? until : null, p_note: note.trim() || null })

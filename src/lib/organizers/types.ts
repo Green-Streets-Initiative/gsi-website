@@ -147,6 +147,28 @@ export interface DetailDate {
   cant: number
   attended: number
   requests: number
+  /** This date's own details (Shift 01432); null means the ride's own. */
+  title: string | null
+  description: string | null
+  flyer_url: string | null
+  own_route: boolean
+  /** The date's route when it has one; otherwise it rides the ride's route. */
+  route: DateRoute | null
+}
+
+/** One date's own route (Shift 01432), the same fields the ride carries. */
+export interface DateRoute {
+  route_waypoints: LatLng[]
+  route_google_maps_url: string | null
+  route_pins: (LatLng & { label?: string })[] | null
+  route_flags: unknown[] | null
+  route_miles: number | null
+  route_elevation: RouteElevation | null
+  comfort_segments: ComfortSegment[] | null
+  comfort_rating: string | null
+  comfort_summary: string | null
+  route_risk: 'high' | null
+  route_risk_reasons: string[] | null
 }
 
 export interface DetailUpdate {

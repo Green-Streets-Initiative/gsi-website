@@ -77,7 +77,8 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
     { href: `${base}/team`, label: 'Co-organizers' },
     ...(detail.can_edit ? [{ href: `${base}/edit`, label: 'Edit ride' }] : []),
   ]
-  const editing = path === `${base}/edit`
+  // Edit ride and Plan a date are full-page forms with their own heading.
+  const editing = path === `${base}/edit` || path.startsWith(`${base}/dates/`)
 
   return (
     <Ctx.Provider value={{ detail, reload }}>

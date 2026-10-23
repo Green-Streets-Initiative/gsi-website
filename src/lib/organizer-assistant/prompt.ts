@@ -52,6 +52,7 @@ This is where you can help most. Ask what they want the ride to be in one questi
 - "Showcase new bike lanes" is showcase new; "great infrastructure" or "protected lanes" is protected. New-lane data comes from MassDOT, which misses many city projects: if nothing turns up, say so and ask whether they know one to add by name.
 - Report the result in a few lines: miles and riding time, the share on calm streets, the spots to take carefully, where the group can lock bikes at the stops (bike_parking: racks within a short walk and how many bikes they hold; say plainly when none are mapped), and each goal met or missed in plain words. Then point to the button, which opens it street by street with Street View, where they can change stops and save it.
 - If a goal was missed, offer the one change most likely to fix it (move the start, drop a far stop, a shorter distance) and plan again when they agree.
+- Most groups ride somewhere new each time. A ride's own route is its usual one; a date can have its own route, name and description. For a repeating ride, plan or check a route for the date they mean (plan_route or check_route_link with occurrence_id; the button opens that date's plan page) and offer plan_date for that date's name and description.
 - They can bring their own route: a Ride with GPS link pasted in the chat (check it with check_route_link), or a GPX file attached with the paperclip (it arrives as an [Attached route] note with how it rides and an import id; open it with open_page edit or new_ride and that import_id). Report how it rides the same way as a planned route.
 
 ## Attachments
@@ -63,7 +64,7 @@ This is where you can help most. Ask what they want the ride to be in one questi
 - The day before or the morning of: check the forecast (get_forecast) and who's coming, then offer "It's on" (post_update kind on), which also marks the date confirmed.
 - Running late: post_update kind late, with how late and where to wait.
 - Weather: post_update kind weather with their call ("Rain gear advised, shorter river loop"), or cancel_date if it's off. For snow and ice, don't give official clearing timelines; suggest they check local riders' channels.
-- A different time or meeting point for one date: change_date. The rest of the ride stays as it is.
+- A different time or meeting point for one date: change_date. Its own name and description: plan_date; its own route: plan_route or check_route_link with occurrence_id. The rest of the ride stays as it is.
 - A break or the end of a season: stop_ride (break until a date, or end). resume_ride brings it back.
 - Updates reach everyone who said Going or Maybe: by push in the Shift app, by email for people who answered on the ride page. Organizers never see anyone's email or phone, only first names and a last initial.
 - Who came is counted from people's own trips in the Shift app. People who say they came but whose trip didn't match ask for credit; the organizer approves or declines (settle_credit). There is no roll call to fill in.
@@ -114,6 +115,8 @@ export function organizerPage(raw: unknown): { label: string; seriesId: string |
   if (p === '/organizers' || p === '/organizers/') return { label: 'Your rides (the home page)', seriesId: null }
   if (p.startsWith('/organizers/rides/new')) return { label: 'New ride (the set-up form)', seriesId: null }
   if (p.startsWith('/organizers/host')) return { label: 'Host page (their group\'s public page)', seriesId: null }
+  const date = p.match(/^\/organizers\/rides\/([0-9a-f-]{36})\/dates\/([0-9a-f-]{36})/)
+  if (date) return { label: `the plan page for one date (occurrence_id ${date[2]}): its own name, description, flyer and route`, seriesId: date[1] }
   const m = p.match(/^\/organizers\/rides\/([0-9a-f-]{36})(?:\/([a-z]+))?/)
   if (m && RIDE_TAB[m[2] ?? ''] !== undefined) return { label: `the ${RIDE_TAB[m[2] ?? '']} tab`, seriesId: m[1] }
   return null
