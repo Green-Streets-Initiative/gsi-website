@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Route as RouteIcon, Trash2, Undo2, Upload, X } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { errorText, importRideWithGps, planRoute, scoreRoute, type PlannedRoute } from '@/lib/organizers/api'
@@ -28,8 +28,10 @@ const MODES: { key: Mode; label: string }[] = [
   { key: 'gpx', label: 'GPX file' },
 ]
 
-export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtStart }: {
+export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtStart, initialPlan }: {
   route: RouteDraft | null
+  /** Stops and per-leg choices from the assistant's plan_route, planned on arrival. */
+  initialPlan?: { stops: (LatLng & { label?: string })[]; chosen: number[] } | null
   onRoute: (r: RouteDraft | null) => void
   meetup: (LatLng & { label?: string }) | null
   pace: string | null
@@ -48,6 +50,18 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
   const [fitKey, setFitKey] = useState(0)
   const [scoring, setScoring] = useState<'idle' | 'busy' | 'failed'>('idle')
   const fileRef = useRef<HTMLInputElement>(null)
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  // The assistant's plan: its stops, re-planned with the options it picked.
+  const tookPlan = useRef(false)
+  useEffect(() => {
+    if (!initialPlan || !meetup || tookPlan.current) return
+    tookPlan.current = true
+    setMode('draw')
+    setStops(initialPlan.stops)
+    void findRoutes({ pins: [meetup, ...initialPlan.stops], chosen: initialPlan.chosen })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPlan, meetup])
 
   // A new meeting point brings the map to it.
   const meetKey = meetup ? `${meetup.lat.toFixed(5)},${meetup.lng.toFixed(5)}` : ''
@@ -59,19 +73,21 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
   // An imported route that begins somewhere else than the meeting point.
   const startGapMi = route && route.waypoints.length && meetup ? haversineM(meetup, route.waypoints[0]) / 1609.344 : 0
 
-  async function findRoutes() {
-    if (pins.length < 2) return
+  async function findRoutes(over?: { pins: (LatLng & { label?: string })[]; chosen: number[] }) {
+    const use = over?.pins ?? pins
+    if (use.length < 2) return
     setBusy(true)
     setErr(null)
     try {
-      const p = await planRoute(pins, pace)
+      const p = await planRoute(use, pace)
       if (!p.legs?.length || p.legs.some((l) => !l.options?.length)) throw new Error("We couldn't find a route between those points. Try moving a stop onto a street.")
-      const pick = p.legs.map(() => 0)
+      const pick = p.legs.map((l, i) => Math.min(over?.chosen[i] ?? 0, l.options.length - 1))
       setPlan(p)
       setChosen(pick)
       setFocus(null)
-      onRoute(routeFromPlan(p, pick, pins))
+      onRoute(routeFromPlan(p, pick, use))
       setFitKey((k) => k + 1)
+      if (over) setTimeout(() => boxRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
     } catch (e) {
       setErr(errorText(e, "The route planner didn't answer. Try again in a minute."))
     } finally {
@@ -155,7 +171,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
   const drawnLine = route?.waypoints ?? []
 
   return (
-    <div>
+    <div ref={boxRef} className="scroll-mt-24">
       <div role="tablist" aria-label="How to add the route" className="mb-4 flex flex-wrap gap-1.5">
         {MODES.map((m) => (
           <button

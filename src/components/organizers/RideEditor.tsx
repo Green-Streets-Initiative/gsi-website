@@ -169,6 +169,36 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
     } catch { /* storage unavailable */ }
   }, [draftKey])
 
+  // A route the assistant planned arrives as ?plan= (its stops in order, the
+  // option picked for each leg and the pace): the route section re-plans it
+  // (legs are cached, so it's quick) and opens on its street-by-street review.
+  const [planned, setPlanned] = useState<{ stops: { lat: number; lng: number; label?: string }[]; chosen: number[] } | null>(null)
+  const [plannedMoved, setPlannedMoved] = useState(false)
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('plan')
+    if (!raw) return
+    try {
+      const b64 = raw.replace(/-/g, '+').replace(/_/g, '/')
+      const j = JSON.parse(decodeURIComponent(escape(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4))))) as { p: [number, number, string][]; c: number[]; pace: string | null }
+      if (!Array.isArray(j.p) || j.p.length < 2) return
+      const [lat, lng, label] = j.p[0]
+      setF((prev) => {
+        const moved = prev.meetup_lat == null || Math.abs(prev.meetup_lat - lat) > 0.0005 || Math.abs((prev.meetup_lng ?? 0) - lng) > 0.0005
+        if (moved && prev.meetup_lat != null) setPlannedMoved(true)
+        return {
+          ...prev,
+          ...(moved ? { meetup_lat: lat, meetup_lng: lng, meetup_name: label || prev.meetup_name, meetup_address: moved ? '' : prev.meetup_address } : {}),
+          pace: prev.pace || (j.pace as Pace | null) || prev.pace,
+        }
+      })
+      setPlanned({ stops: j.p.slice(1).map(([la, ln, lb]) => ({ lat: la, lng: ln, ...(lb ? { label: lb } : {}) })), chosen: Array.isArray(j.c) ? j.c : [] })
+      setDirty(true)
+      const url = new URL(window.location.href)
+      url.searchParams.delete('plan')
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+    } catch { /* a link that doesn't decode is ignored */ }
+  }, [])
+
   useEffect(() => {
     if (!dirty) return
     const t = setTimeout(() => {
@@ -416,7 +446,10 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
 
         <Card id="sec-route">
           <SectionTitle hint="Optional. With a route, people see how far, how hilly and how comfortable the ride is before they come.">Route</SectionTitle>
-          <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null}
+          {plannedMoved && (
+            <div className="mb-3"><Notice tone="info">The assistant&rsquo;s route starts somewhere else, so the meeting point moved there. Change it above if that&rsquo;s not right.</Notice></div>
+          )}
+          <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null} initialPlan={planned}
             onMeetAtStart={(p) => {
               setF((prev) => ({ ...prev, meetup_lat: p.lat, meetup_lng: p.lng, meetup_address: '', meetup_name: prev.meetup_name ? '' : prev.meetup_name }))
               setDirty(true)

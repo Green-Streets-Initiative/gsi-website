@@ -22,7 +22,7 @@ export function openAssistant(prompt?: string) {
   window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: { prompt } }))
 }
 
-const STARTERS = ['Plan a new ride with me', "What's coming up this week?", 'Post an update for my next ride']
+const STARTERS = ['Plan a new ride with me', 'Design a route for my ride', "What's coming up this week?", 'Post an update for my next ride']
 const CHANGE_LABELS = new Set(['Creating the ride', 'Saving the changes', 'Posting the update', 'Cancelling the date', 'Changing the date', 'Updating the ride', 'Starting it again', 'Sending the invite', 'Settling the request'])
 
 type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger'; mapUrl?: string; confirmText?: string; staffNote?: string }
