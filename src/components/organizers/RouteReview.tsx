@@ -9,6 +9,7 @@ import {
 } from '@/components/commute/calm-route'
 import { PACE_MID_MPH, PACE_OPTIONS } from '@/lib/organizers/ride-words'
 import { routeMiles } from '@/lib/organizers/route-geo'
+import { assessRouteRisk } from '@/lib/organizers/route-risk'
 import type { RouteDraft } from '@/lib/organizers/types'
 import type { MapFocus, MapPiece, MapSpot } from './RouteMap'
 import { cx } from './ui'
@@ -180,6 +181,11 @@ export default function RouteReview({ route, reading, pace, focus, onFocus }: {
       )}
 
       {pieces.length > 0 && <p className="text-[15px] font-semibold text-(--ev-ink)">{verdict.text}</p>}
+      {assessRouteRisk(route.comfortSegments, route.flags as { type?: string; description?: string }[]).level === 'high' && (
+        <p className="rounded-xl bg-[#FFF4D6] px-4 py-3 text-[15px] text-[#6B4200]">
+          Most of this route is on streets shared with cars, with a crash history or fast traffic. If the ride is public, GSI checks it before it goes on the events calendar; the ride page works right away.
+        </p>
+      )}
       {newLaneNotes(option.flags).length > 0 && (
         <ul className="grid gap-1">
           {newLaneNotes(option.flags).map((n) => (
@@ -243,9 +249,11 @@ export default function RouteReview({ route, reading, pace, focus, onFocus }: {
           </div>
 
           <figure className="order-1 min-w-0 lg:sticky lg:top-20 lg:order-2 lg:self-start">
-            <div className="overflow-hidden rounded-xl border border-(--ev-line) bg-(--ev-panel-faint)">
+            {/* The photo box keeps its size while Street View loads or has nothing here. */}
+            <div className="relative min-h-[150px] overflow-hidden rounded-xl border border-(--ev-line) bg-(--ev-panel-faint) [&_img]:mt-0">
+              <Camera className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-(--ev-ink-60)" aria-hidden />
               {photo ? (
-                <PanelPhoto key={`${photo.lat},${photo.lng}`} spec={{ kind: 'sv', ...photo }} alt={caption} />
+                <div className="relative"><PanelPhoto key={`${photo.lat},${photo.lng}`} spec={{ kind: 'sv', ...photo }} alt={caption} /></div>
               ) : (
                 <div className="flex aspect-[16/9] items-center justify-center text-(--ev-ink-75)"><Camera className="h-6 w-6" aria-hidden /></div>
               )}

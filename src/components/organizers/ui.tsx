@@ -7,6 +7,7 @@
  */
 import { useEffect, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import { Loader2, X } from 'lucide-react'
+import { useModalFocus } from '@/lib/a11y/use-modal-focus'
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(' ')
@@ -162,21 +163,19 @@ export function Dialog({ open, onClose, title, children, footer, wide }: {
   open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; wide?: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  // The site's shared focus trap: focus moves in, Tab stays inside, Escape
+  // closes the top dialog only, and focus returns to what opened it.
+  useModalFocus(ref, {
+    open,
+    onClose,
+    initialFocus: () => ref.current?.querySelector<HTMLElement>('input, textarea, select, button:not([data-close])'),
+  })
   useEffect(() => {
     if (!open) return
-    const prev = document.activeElement as HTMLElement | null
-    const first = ref.current?.querySelector<HTMLElement>('input, textarea, select, button:not([data-close])')
-    first?.focus()
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
     const overflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = overflow
-      prev?.focus?.()
-    }
-  }, [open, onClose])
+    return () => { document.body.style.overflow = overflow }
+  }, [open])
   if (!open) return null
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-(--ev-scrim) sm:items-center sm:p-6" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>

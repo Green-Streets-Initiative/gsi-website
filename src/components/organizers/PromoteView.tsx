@@ -297,9 +297,9 @@ export default function PromoteView() {
         <SectionTitle hint="Each place gets its own link, so Results can show which posts bring people.">
           <StepTitle n={2}>Social posts</StepTitle>
         </SectionTitle>
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Where you're posting">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Where you're posting">
           {POSTS.map((c) => (
-            <Toggle key={c.key} on={post === c.key} onClick={() => setPost(c.key)} role="tab" aria-selected={post === c.key}>
+            <Toggle key={c.key} on={post === c.key} onClick={() => setPost(c.key)}>
               {c.label}
             </Toggle>
           ))}

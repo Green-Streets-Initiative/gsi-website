@@ -37,6 +37,24 @@ export function comfortBreakdown(segments: ComfortSegment[] | null | undefined):
     .sort((a, b) => b.pct - a.pct)
 }
 
+/**
+ * A route's one-word comfort, by the app's rule (Shift plan-route.tsx, from
+ * lib/comfort.ts comfortBreakdown, which keeps COMFORT_ORDER and never sorts
+ * by size): the most comfortable tier present, when it covers 80% or more,
+ * else "mixed". A route drawn on the web and in the app saves the same word.
+ */
+export function comfortRatingOf(segments: ComfortSegment[] | null | undefined): string | null {
+  const buckets = comfortBreakdown(segments)
+  if (!buckets.length) return null
+  const first = [...buckets].sort((a, b) => order(a.rating) - order(b.rating))[0]
+  return first.pct >= 80 ? first.rating : 'mixed'
+}
+
+function order(rating: string): number {
+  const i = (COMFORT_ORDER as readonly string[]).indexOf(rating)
+  return i < 0 ? COMFORT_ORDER.length : i
+}
+
 function combineElevation(legs: (RouteElevation | null | undefined)[], legMiles: number[]): RouteElevation | null {
   if (!legs.some(Boolean)) return null
   let ascent = 0, descent = 0, maxGrade = 0
@@ -78,8 +96,7 @@ export function routeFromPlan(plan: PlannedRoute, chosen: number[], pins: (LatLn
         : seg)
     }
   }
-  const top = comfortBreakdown(segments)[0]
-  const comfortRating = !top ? null : top.pct >= 80 ? top.rating : 'mixed'
+  const comfortRating = comfortRatingOf(segments)
   const comfortSummary = segments.length
     ? segments.filter((s) => s.distance_mi > 0).map((s) => `${s.label} (${s.distance_mi} mi)`).join(', ')
     : null

@@ -124,20 +124,28 @@ export function dateLong(d: string): string {
   return noon(d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })
 }
 
-/** Mirrors the app's rideScheduleParts: "Every Sat · 10 AM". */
+/**
+ * Mirrors the app's rideScheduleParts (Shift lib/format.ts) in its rules: a
+ * one-time ride names its date first; daily is every day; any other repeat
+ * names its days, or says none are set; "Weekdays" only for an every-week
+ * Mon–Fri ride (never "Every other Weekdays"). Words stay the site's own:
+ * "Every Sat · 10 AM", "1st Sat of the month · 10 AM".
+ */
 export function scheduleText(r: Pick<PublicRide, 'ride_date' | 'frequency' | 'days' | 'week_of_month' | 'start_time'>): string {
   const time = clock(r.start_time)
+  const at = (s: string) => (time ? `${s} · ${time}` : s)
+  if (r.ride_date) return at(dateLong(r.ride_date))
+  if (r.frequency === 'daily') return at('Every day')
   const days = (r.days ?? []).filter((d) => d >= 1 && d <= 7)
-  if (r.frequency === 'daily') return `Every day · ${time}`
-  if (days.length === 0) return r.ride_date ? `${dateLong(r.ride_date)} · ${time}` : time
-  const weekdays = days.length === 5 && [1, 2, 3, 4, 5].every((d) => days.includes(d))
-  const dayStr = weekdays ? 'Weekdays' : days.map((d) => DAY_SHORT[d]).join(', ')
-  if (r.frequency === 'biweekly') return `Every other ${dayStr} · ${time}`
+  if (days.length === 0) return at('No days set')
+  const dayStr = days.map((d) => DAY_SHORT[d]).join(', ')
+  if (r.frequency === 'biweekly') return at(`Every other ${dayStr}`)
   if (r.frequency === 'monthly') {
     const ord = r.week_of_month === -1 ? 'Last' : ['', '1st', '2nd', '3rd', '4th', '5th'][r.week_of_month ?? 0] ?? ''
-    return `${ord} ${dayStr} of the month · ${time}`.trim()
+    return at(`${ord} ${dayStr} of the month`.trim())
   }
-  return weekdays ? `Weekdays · ${time}` : `Every ${dayStr} · ${time}`
+  if (days.length === 5 && [1, 2, 3, 4, 5].every((d) => days.includes(d))) return at('Weekdays')
+  return at(`Every ${dayStr}`)
 }
 
 export const PACE_LABEL: Record<NonNullable<PublicRide['pace']>, string> = {

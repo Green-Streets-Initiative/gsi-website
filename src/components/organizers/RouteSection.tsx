@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Route as RouteIcon, Trash2, Undo2, Upload, X } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { errorText, importRideWithGps, planRoute, scoreRoute, type PlannedRoute } from '@/lib/organizers/api'
-import { comfortBreakdown, routeFromPlan } from '@/lib/organizers/route-plan'
+import { comfortRatingOf, routeFromPlan } from '@/lib/organizers/route-plan'
 import { elevationOf, haversineM, parseGpx, simplify, toWaypoints } from '@/lib/organizers/route-geo'
 import type { LatLng, RouteDraft } from '@/lib/organizers/types'
 import RouteMap, { type MapFocus } from './RouteMap'
@@ -134,12 +134,11 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
     try {
       const s = await scoreRoute(draft.waypoints, pace)
       const segs = s.comfort_segments?.length ? s.comfort_segments : null
-      const top = comfortBreakdown(segs)[0]
       onRoute({
         ...draft,
         flags: s.flags ?? [],
         comfortSegments: segs,
-        comfortRating: s.comfort_rating ?? (!top ? null : top.pct >= 80 ? top.rating : 'mixed'),
+        comfortRating: s.comfort_rating ?? comfortRatingOf(segs),
         comfortSummary: s.comfort_summary ?? null,
         elevation: draft.elevation ?? s.elevation ?? null,
       })

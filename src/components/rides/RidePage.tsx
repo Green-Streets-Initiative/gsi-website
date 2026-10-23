@@ -248,23 +248,23 @@ export default function RidePage({ ride, hostHref }: { ride: PublicRide; hostHre
               ) : (
                 <>
                   <p className="text-[13px] font-semibold text-(--ev-ink-75)">Pick a date</p>
-                  <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Ride dates">
+                  <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label="Ride dates">
                     {ride.occurrences.map((d) => {
                       const active = d.id === selectedId
                       const answered = me.answers[d.id]
                       return (
                         <button
                           key={d.id}
-                          role="tab"
-                          aria-selected={active}
+                          type="button"
+                          aria-pressed={active}
                           onClick={() => setSelectedId(d.id)}
                           className={`flex min-w-[76px] shrink-0 flex-col items-center rounded-xl border px-3 py-2 transition-colors ${
                             active ? 'border-(--ev-ink) bg-(--ev-ink) text-white' : 'border-(--ev-line-mid) text-(--ev-ink) hover:border-(--ev-line-stronger)'
                           } ${d.status === 'canceled' ? 'opacity-70' : ''}`}
                         >
-                          <span className={`text-[12px] font-semibold ${active ? 'text-white/85' : 'text-(--ev-ink-75)'}`}>{dayShort(d.date)}</span>
+                          <span className={`text-[13px] font-semibold ${active ? 'text-white/85' : 'text-(--ev-ink-75)'}`}>{dayShort(d.date)}</span>
                           <span className="text-[15px] font-bold">{dateShort(d.date)}</span>
-                          <span className={`mt-0.5 text-[11px] ${active ? 'text-white/85' : 'text-(--ev-ink-75)'}`}>
+                          <span className={`mt-0.5 text-[13px] ${active ? 'text-white/85' : 'text-(--ev-ink-75)'}`}>
                             {d.status === 'canceled' ? 'Off' : answered === 'going' ? "You're in" : answered === 'maybe' ? 'Maybe' : (counts[d.id]?.going ?? 0) > 0 ? `${counts[d.id].going} going` : clock(d.start_time) || 'Open'}
                           </span>
                         </button>
@@ -415,7 +415,7 @@ export default function RidePage({ ride, hostHref }: { ride: PublicRide; hostHre
                   <li key={u.id} className="rounded-2xl border border-(--ev-line) bg-(--ev-card) px-4 py-3">
                     <div className="flex items-baseline justify-between gap-3">
                       <p className="text-[15px] font-semibold text-(--ev-ink)">{u.title}</p>
-                      <time dateTime={u.created_at} className="shrink-0 text-[12px] text-(--ev-ink-75)">{ago(u.created_at)}</time>
+                      <time dateTime={u.created_at} className="shrink-0 text-[13px] text-(--ev-ink-75)">{ago(u.created_at)}</time>
                     </div>
                     {u.body && <p className="mt-0.5 text-[14px] text-(--ev-ink-80)">{u.body}</p>}
                     {u.note && <p className="mt-1.5 border-l-2 border-(--ev-accent-line) pl-3 text-[14px] text-(--ev-ink-80)">&ldquo;{u.note}&rdquo;</p>}
