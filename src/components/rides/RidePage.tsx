@@ -6,13 +6,14 @@ import { Bike, Calendar, Check, Clock, CloudSun, Download, ExternalLink, MapPin,
 import EventMap from '@/components/events/EventMap'
 import RouteMap from '@/components/organizers/RouteMap'
 import { buildIcs, gcalUrl as eventGcalUrl } from '@/lib/event-calendar'
-import { TAG_OPTIONS } from '@/lib/organizers/ride-words'
 import { routeMiles } from '@/lib/organizers/route-geo'
 import StoreBadges from '@/components/StoreBadges'
+import OrganizerChannels from '@/components/rides/OrganizerChannels'
+import RideFacts from '@/components/rides/RideFacts'
+import type { RideHost } from '@/lib/rides/host'
 import { EventsToneProvider, toneClass } from '@/components/events/EventsTone'
 import {
   FUNCTIONS_BASE,
-  PACE_LABEL,
   ago,
   clock,
   dateLong,
@@ -92,7 +93,9 @@ function downloadIcs(ride: PublicRide, d: RideDate) {
   a.remove()
 }
 
-export default function RidePage({ ride, hostHref }: { ride: PublicRide; hostHref?: string | null }) {
+export default function RidePage({ ride, host = null, ascentFt = null }: { ride: PublicRide; host?: RideHost | null; ascentFt?: number | null }) {
+  const hostHref = host?.href ?? null
+  const hostName = host?.name ?? ride.organizer_name
   const open = ride.occurrences.filter((d) => d.status === 'scheduled')
   const [selectedId, setSelectedId] = useState<string | null>(open[0]?.id ?? ride.occurrences[0]?.id ?? null)
   const selected = ride.occurrences.find((d) => d.id === selectedId) ?? null
@@ -204,13 +207,6 @@ export default function RidePage({ ride, hostHref }: { ride: PublicRide; hostHre
       : scheduleText(ride)
   const route = (ride.route_waypoints ?? []).filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng))
   const miles = route.length >= 2 ? routeMiles(route) : null
-  const tagLabels = (ride.tags ?? []).map((t) => TAG_OPTIONS.find((o) => o.key === t)?.label).filter(Boolean) as string[]
-  const facts = [
-    ride.pace ? PACE_LABEL[ride.pace] : null,
-    miles ? `${miles < 10 ? miles.toFixed(1) : Math.round(miles)} mi` : null,
-    ride.no_drop ? 'No-drop' : null,
-    ...tagLabels,
-  ].filter(Boolean) as string[]
   // Where to meet: the chosen date's spot, else the ride's own (a ride between
   // seasons still shows its route and meeting point).
   const place: Pick<RideDate, 'meetup_lat' | 'meetup_lng' | 'meetup_name' | 'meetup_address'> | null =
@@ -224,9 +220,17 @@ export default function RidePage({ ride, hostHref }: { ride: PublicRide; hostHre
     <div className={`min-h-screen bg-(--ev-bg) px-4 pb-24 pt-6 sm:px-8 sm:pt-10 ${toneClass('light')}`}>
       <div className="mx-auto max-w-[1040px]">
         {/* ---- Header ---- */}
-        <p className="text-[14px] font-semibold text-(--ev-accent)">
-          Group ride{ride.organizer_name ? <span className="font-medium text-(--ev-ink-75)"> hosted by {ride.organizer_name}</span> : null}
-        </p>
+        {host?.logo_url ? (
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={host.logo_url} alt={host.name} className="h-16 w-auto max-w-[200px] rounded-lg object-contain" />
+            <p className="text-[15px] font-medium text-(--ev-ink-75)">Group ride hosted by <span className="font-semibold text-(--ev-ink)">{host.name}</span></p>
+          </div>
+        ) : (
+          <p className="text-[14px] font-semibold text-(--ev-accent)">
+            Group ride{hostName ? <span className="font-medium text-(--ev-ink-75)"> hosted by {hostName}</span> : null}
+          </p>
+        )}
         <h1 className="mt-2 font-display text-[clamp(30px,4vw,44px)] font-extrabold leading-[1.08] tracking-tight text-(--ev-ink)">
           {ride.name}
         </h1>
@@ -234,15 +238,7 @@ export default function RidePage({ ride, hostHref }: { ride: PublicRide; hostHre
           {headerSchedule}
           {ride.meetup_name ? ` · ${ride.meetup_name}` : ''}
         </p>
-        {facts.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {facts.map((f) => (
-              <span key={f} className="rounded-full bg-(--ev-accent-tint-15) px-3 py-1 text-[12px] font-semibold text-(--ev-accent)" title={f === 'No-drop' ? 'The group waits for everyone.' : undefined}>
-                {f}
-              </span>
-            ))}
-          </div>
-        )}
+        <RideFacts ride={ride} miles={miles} ascentFt={ascentFt} />
 
         {(ended || paused) && (
           <div className={`mt-6 rounded-2xl px-5 py-4 ${ended ? TONE_STYLE.off : TONE_STYLE.warn}`}>
@@ -253,7 +249,7 @@ export default function RidePage({ ride, hostHref }: { ride: PublicRide; hostHre
           </div>
         )}
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
           {/* ---- RSVP card (first on phones, right column on desktop) ---- */}
           <aside className="lg:col-start-2 lg:row-span-3 lg:row-start-1">
             <div className="rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5 shadow-(--ev-shadow) lg:sticky lg:top-24">
@@ -440,6 +436,12 @@ export default function RidePage({ ride, hostHref }: { ride: PublicRide; hostHre
                 ))}
               </ol>
             )}
+            {hostName && (host ? Object.keys(host.social_links).length > 0 || host.url : ride.organizer_url) && (
+              <div className="mt-4 rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
+                <p className="text-[15px] font-bold text-(--ev-ink)">Follow {hostName} for news between rides</p>
+                <OrganizerChannels className="mt-3" links={host?.social_links ?? {}} website={host ? host.url : ride.organizer_url} />
+              </div>
+            )}
           </section>
 
           {/* ---- About, meeting point, organizer ---- */}
@@ -487,18 +489,11 @@ export default function RidePage({ ride, hostHref }: { ride: PublicRide; hostHre
               </a>
             )}
 
-            {(ride.organizer_name || ride.registration_url) && (
+            {(hostName || ride.registration_url) && (
               <div className="space-y-2 text-[14px] text-(--ev-ink-80)">
-                {ride.organizer_name && (
+                {hostName && (
                   <p>
-                    Hosted by{' '}
-                    {ride.organizer_url ? (
-                      <a href={ride.organizer_url} target="_blank" rel="noopener noreferrer" className="font-semibold text-(--ev-accent) hover:underline">
-                        {ride.organizer_name} <ExternalLink size={12} className="inline" />
-                      </a>
-                    ) : (
-                      <span className="font-semibold text-(--ev-ink)">{ride.organizer_name}</span>
-                    )}
+                    Hosted by <span className="font-semibold text-(--ev-ink)">{hostName}</span>
                     {hostHref && (
                       <>
                         {' · '}

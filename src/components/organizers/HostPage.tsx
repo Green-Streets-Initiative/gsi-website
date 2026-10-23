@@ -1,21 +1,32 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ExternalLink } from 'lucide-react'
-import { errorText, saveHostPage } from '@/lib/organizers/api'
+import { ExternalLink, ImagePlus, Trash2 } from 'lucide-react'
+import { errorText, saveHostPage, uploadLogo } from '@/lib/organizers/api'
 import { TAG_OPTIONS } from '@/lib/organizers/ride-words'
 import type { OrgClaim } from '@/lib/organizers/types'
 import { useConsole } from './ConsoleContext'
-import { Button, Card, Empty, Field, Input, Notice, SectionTitle, Select, Textarea, Toggle } from './ui'
+import { Button, Card, Empty, Field, Input, Notice, SectionTitle, Select, Textarea, Toggle, cx } from './ui'
 
+// The channels a ride page shows as "Follow" buttons (OrganizerChannels),
+// the ones that bring the next ride to someone's phone first. The rest
+// open under "More links".
 const LINKS: { key: string; label: string; placeholder: string }[] = [
-  { key: 'instagram', label: 'Instagram', placeholder: 'https://www.instagram.com/yourgroup' },
-  { key: 'facebook', label: 'Facebook', placeholder: 'https://www.facebook.com/yourgroup' },
-  { key: 'strava', label: 'Strava club', placeholder: 'https://www.strava.com/clubs/…' },
-  { key: 'discord', label: 'Discord', placeholder: 'https://discord.gg/…' },
   { key: 'whatsapp', label: 'WhatsApp community', placeholder: 'https://chat.whatsapp.com/…' },
-  { key: 'meetup', label: 'Meetup', placeholder: 'https://www.meetup.com/…' },
+  { key: 'partiful', label: 'Partiful', placeholder: 'https://partiful.com/…' },
+  { key: 'instagram', label: 'Instagram', placeholder: 'https://www.instagram.com/yourgroup' },
+  { key: 'strava', label: 'Strava club', placeholder: 'https://www.strava.com/clubs/…' },
+  { key: 'facebook', label: 'Facebook', placeholder: 'https://www.facebook.com/yourgroup' },
+  { key: 'discord', label: 'Discord', placeholder: 'https://discord.gg/…' },
 ]
+const MORE_LINKS: { key: string; label: string; placeholder: string }[] = [
+  { key: 'meetup', label: 'Meetup', placeholder: 'https://www.meetup.com/…' },
+  { key: 'bluesky', label: 'Bluesky', placeholder: 'https://bsky.app/profile/…' },
+  { key: 'tiktok', label: 'TikTok', placeholder: 'https://www.tiktok.com/@…' },
+  { key: 'youtube', label: 'YouTube', placeholder: 'https://www.youtube.com/@…' },
+  { key: 'linktree', label: 'Linktree', placeholder: 'https://linktr.ee/…' },
+]
+const ALL_LINKS = [...LINKS, ...MORE_LINKS]
 
 const isLink = (v: string) => !v.trim() || /^https?:\/\/\S+$/i.test(v.trim())
 
@@ -25,10 +36,19 @@ function Editor({ org, onSaved }: { org: OrgClaim; onSaved: () => void }) {
   const [links, setLinks] = useState<Record<string, string>>(org.social_links ?? {})
   const [tags, setTags] = useState<string[]>(org.ride_tags ?? [])
   const [noDrop, setNoDrop] = useState(org.rides_no_drop)
+  const [logo, setLogo] = useState<string | null>(org.logo_url)
+  const [logoBusy, setLogoBusy] = useState(false)
+  const [more, setMore] = useState(() => MORE_LINKS.some((l) => (org.social_links ?? {})[l.key]))
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ tone: 'good' | 'off'; text: string } | null>(null)
   const [dirty, setDirty] = useState(false)
-  const bad = !isLink(url) || LINKS.some((l) => !isLink(links[l.key] ?? ''))
+  const bad = !isLink(url) || ALL_LINKS.some((l) => !isLink(links[l.key] ?? ''))
+
+  async function onLogo(file: File) {
+    setLogoBusy(true)
+    setMsg(null)
+    try { setLogo(await uploadLogo(file)); setDirty(true) } catch (e) { setMsg({ tone: 'off', text: errorText(e) }) } finally { setLogoBusy(false) }
+  }
 
   async function save() {
     if (bad) { setMsg({ tone: 'off', text: 'Links start with https://' }); return }
@@ -37,8 +57,8 @@ function Editor({ org, onSaved }: { org: OrgClaim; onSaved: () => void }) {
     try {
       await saveHostPage(org.id, {
         description, url,
-        social_links: Object.fromEntries(LINKS.map((l) => [l.key, (links[l.key] ?? '').trim()])),
-        ride_tags: tags, rides_no_drop: noDrop,
+        social_links: Object.fromEntries(ALL_LINKS.map((l) => [l.key, (links[l.key] ?? '').trim()])),
+        ride_tags: tags, rides_no_drop: noDrop, logo_url: logo ?? '',
       })
       setDirty(false)
       setMsg({ tone: 'good', text: 'Saved. Your group shows this way on Shift and the events calendar.' })
@@ -57,6 +77,26 @@ function Editor({ org, onSaved }: { org: OrgClaim; onSaved: () => void }) {
       <Card>
         <SectionTitle hint="Who you are and what your rides are like. People read this before their first ride with you.">About {org.name}</SectionTitle>
         <div className="grid gap-4">
+          <Field label="Logo" optional hint="Your ride pages, flyers and share cards use it and its colors. A PNG with a clear background looks best.">
+            {logo ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="flex h-24 w-48 items-center justify-center rounded-lg border border-(--ev-line-mid) bg-white p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={logo} alt={`${org.name} logo`} className="max-h-full max-w-full object-contain" />
+                </span>
+                <label htmlFor="org-logo" className={cx('inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)', logoBusy && 'pointer-events-none opacity-60')}>
+                  <ImagePlus className="h-4 w-4" aria-hidden />{logoBusy ? 'Uploading…' : 'Replace'}
+                </label>
+                <Button size="sm" variant="ghost" onClick={() => { setLogo(null); setDirty(true) }}><Trash2 className="h-4 w-4" aria-hidden />Remove</Button>
+              </div>
+            ) : (
+              <label htmlFor="org-logo" className={cx('inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)', logoBusy && 'pointer-events-none opacity-60')}>
+                <ImagePlus className="h-4 w-4" aria-hidden />{logoBusy ? 'Uploading…' : 'Add your logo'}
+              </label>
+            )}
+            <input id="org-logo" type="file" accept="image/png,image/jpeg,image/webp" className="sr-only"
+              onChange={(e) => { const file = e.target.files?.[0]; if (file) void onLogo(file); e.target.value = '' }} />
+          </Field>
           <Field label="Description" htmlFor="org-desc" hint={`${1500 - description.length} characters left`}>
             <Textarea id="org-desc" rows={6} maxLength={1500} value={description} onChange={(e) => touch(setDescription)(e.target.value)}
               placeholder="We're a volunteer crew in Somerville running easy social rides every weekend, with a coffee stop and nobody left behind." />
@@ -68,15 +108,20 @@ function Editor({ org, onSaved }: { org: OrgClaim; onSaved: () => void }) {
       </Card>
 
       <Card>
-        <SectionTitle hint="Where people can follow along between rides.">Links</SectionTitle>
+        <SectionTitle hint="Your ride pages show these as Follow buttons, so people hear about the next ride from you.">Links</SectionTitle>
         <div className="grid gap-4 sm:grid-cols-2">
-          {LINKS.map((l) => (
+          {(more ? ALL_LINKS : LINKS).map((l) => (
             <Field key={l.key} label={l.label} htmlFor={`link-${l.key}`} optional error={!isLink(links[l.key] ?? '') ? 'Links start with https://' : null}>
               <Input id={`link-${l.key}`} value={links[l.key] ?? ''} inputMode="url" placeholder={l.placeholder}
                 onChange={(e) => { setLinks((p) => ({ ...p, [l.key]: e.target.value })); setDirty(true) }} />
             </Field>
           ))}
         </div>
+        {!more && (
+          <button type="button" onClick={() => setMore(true)} className="mt-3 min-h-[44px] text-[15px] font-semibold text-(--ev-accent) hover:underline">
+            More links: Meetup, Bluesky, TikTok, YouTube, Linktree
+          </button>
+        )}
       </Card>
 
       <Card>

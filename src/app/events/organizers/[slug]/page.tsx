@@ -1,13 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ExternalLink } from 'lucide-react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import HostFollowCard from '@/components/hosts/HostFollowCard'
 import FixListingLink from '@/components/hosts/FixListingLink'
 import '@/components/events/events-tone.css'
-import { loadHostPage, hostPath, SOCIAL_LABEL } from '@/lib/hosts'
+import OrganizerChannels from '@/components/rides/OrganizerChannels'
+import { loadHostPage, hostPath } from '@/lib/hosts'
 import { eventPath } from '@/lib/events-url'
 import { formatTime, getTagMeta, getTypeMeta, parseEventDate } from '@/lib/events'
 import { SITE_URL } from '@/lib/seo'
@@ -101,6 +101,10 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           <div className="mx-auto max-w-[1040px]">
             <Link href="/events" className="text-[14px] font-semibold text-(--ev-accent) hover:underline">All events</Link>
 
+            {host.logo_url && /^https:\/\//.test(host.logo_url) && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={host.logo_url} alt="" className="mt-4 h-20 w-auto max-w-[240px] rounded-lg object-contain" />
+            )}
             <h1 className="mt-3 font-display text-[clamp(30px,4vw,44px)] font-extrabold leading-[1.08] tracking-tight text-(--ev-ink)">
               {host.name}
             </h1>
@@ -112,23 +116,15 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
             </p>
             {host.description && <p className="mt-3 max-w-[720px] text-[15px] leading-relaxed text-(--ev-ink-80)">{host.description}</p>}
 
-            {(chips.length > 0 || host.url || socials.length > 0) && (
+            {chips.length > 0 && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 {chips.map((c) => (
-                  <span key={c} className="rounded-full bg-(--ev-accent-tint-15) px-3 py-1 text-[13px] font-semibold text-(--ev-accent)">{c}</span>
-                ))}
-                {host.url && (
-                  <a href={host.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-(--ev-line-strong) px-3 py-1 text-[13px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                    Website <ExternalLink size={12} />
-                  </a>
-                )}
-                {socials.map(([k, u]) => (
-                  <a key={k} href={u} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-(--ev-line-strong) px-3 py-1 text-[13px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                    {SOCIAL_LABEL[k] ?? k} <ExternalLink size={12} />
-                  </a>
+                  <span key={c} className="rounded-full bg-(--ev-accent-tint-15) px-3 py-1 text-[14px] font-semibold text-(--ev-accent)">{c}</span>
                 ))}
               </div>
             )}
+            {/* The same channel buttons as their rides' pages. */}
+            <OrganizerChannels links={host.social_links ?? {}} website={host.url} className="mt-4" />
 
             <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
 

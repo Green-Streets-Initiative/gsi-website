@@ -24,7 +24,14 @@ export default function StaticMapSvg({
   className,
   title,
   fitPoints,
+  quiet = false,
+  homeColor = '#2D6A4F',
 }: {
+  /** Streets in near-gray, so the lines' own color is the only strong one
+   *  (a ride flyer in the organizer's colors, like its share card). */
+  quiet?: boolean
+  /** The home dot's color; the campus green unless a page brings its own. */
+  homeColor?: string
   /** Extra points the frame must include (a route's line), drawn as nothing. */
   fitPoints?: { lat: number; lng: number }[]
   center: { lat: number; lng: number }
@@ -82,7 +89,10 @@ export default function StaticMapSvg({
       })
       .join(' ')
 
-  const homePx = toPixel(vp, center.lat, center.lng)
+  const home = markers.find(m => m.kind === 'home')
+  // The home dot sits on its own marker when one is given (a ride's meeting
+  // point, off-center on its route), else on the center (a campus).
+  const homePx = toPixel(vp, home?.lat ?? center.lat, home?.lng ?? center.lng)
 
   // Dots stay geographically true; LABELS step downward until they clear
   // every previously placed label. The campus label is reserved first.
@@ -105,8 +115,6 @@ export default function StaticMapSvg({
     return py - y
   }
 
-  const home = markers.find(m => m.kind === 'home')
-
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
@@ -119,9 +127,16 @@ export default function StaticMapSvg({
       style={{ background: '#EDECE6' }}
     >
       <title>{title}</title>
-      {tiles.map(t => (
-        <image key={t.key} href={t.url} x={t.x} y={t.y} width={TILE} height={TILE} />
-      ))}
+      {quiet && (
+        <filter id="quiet-tiles">
+          <feColorMatrix type="saturate" values="0.12" />
+        </filter>
+      )}
+      <g filter={quiet ? 'url(#quiet-tiles)' : undefined}>
+        {tiles.map(t => (
+          <image key={t.key} href={t.url} x={t.x} y={t.y} width={TILE} height={TILE} />
+        ))}
+      </g>
 
       {/* White casings first so every corridor reads on the light basemap */}
       {lines.map((l, i) => (
@@ -168,10 +183,10 @@ export default function StaticMapSvg({
         )
       })}
 
-      {/* The campus itself, on top of everything */}
-      <g transform={`translate(${homePx.x.toFixed(1)} ${homePx.y.toFixed(1)})`}>
-        <circle r={HOME_R + 5} fill="#2D6A4F" fillOpacity={0.18} />
-        <circle r={HOME_R} fill="#2D6A4F" stroke="#ffffff" strokeWidth={3} />
+      {/* The campus (or meeting point) itself, on top of everything */}
+      {home && <g transform={`translate(${homePx.x.toFixed(1)} ${homePx.y.toFixed(1)})`}>
+        <circle r={HOME_R + 5} fill={homeColor} fillOpacity={0.18} />
+        <circle r={HOME_R} fill={homeColor} stroke="#ffffff" strokeWidth={3} />
         {home?.label && (
           <text
             x={0}
@@ -179,7 +194,7 @@ export default function StaticMapSvg({
             textAnchor="middle"
             fontSize={LABEL_FONT + 1}
             fontWeight={700}
-            fill="#1B4332"
+            fill={homeColor === '#2D6A4F' ? '#1B4332' : '#191A2E'}
             stroke="#ffffff"
             strokeWidth={3.5}
             strokeLinejoin="round"
@@ -188,7 +203,7 @@ export default function StaticMapSvg({
             {home.label}
           </text>
         )}
-      </g>
+      </g>}
     </svg>
   )
 }

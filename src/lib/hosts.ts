@@ -129,17 +129,4 @@ export async function listQualifiedHosts(): Promise<string[]> {
 }
 
 /** Social networks we label by name; anything else shows as its host name. */
-export const SOCIAL_LABEL: Record<string, string> = {
-  instagram: 'Instagram',
-  facebook: 'Facebook',
-  strava: 'Strava',
-  whatsapp: 'WhatsApp',
-  partiful: 'Partiful',
-  discord: 'Discord',
-  meetup: 'Meetup',
-  twitter: 'X',
-  x: 'X',
-  bluesky: 'Bluesky',
-  youtube: 'YouTube',
-  linktree: 'Linktree',
-}
+export { SOCIAL_LABEL } from '@/lib/social-links'

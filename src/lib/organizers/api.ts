@@ -216,19 +216,35 @@ export async function saveHostPage(organizerId: string, profile: Record<string, 
   return r
 }
 
-/** Upload a flyer to the same bucket and path the app uses. */
-export async function uploadFlyer(file: File): Promise<string> {
+async function uploadImage(file: File, name: string, maxMb: number, types: RegExp, typesText: string): Promise<string> {
   const { data: s } = await supabase.auth.getSession()
   const uid = s.session?.user.id
   if (!uid) throw new Error('Not signed in')
-  if (file.size > 10 * 1024 * 1024) throw new Error('That image is over 10 MB. Try a smaller one.')
-  if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) throw new Error('Use a JPG, PNG, WebP or GIF image.')
+  if (file.size > maxMb * 1024 * 1024) throw new Error(`That image is over ${maxMb} MB. Try a smaller one.`)
+  if (!types.test(file.type)) throw new Error(typesText)
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
-  const path = `${uid}/${Date.now()}.${ext}`
+  const path = `${uid}/${name}${Date.now()}.${ext}`
   const { error } = await supabase.storage.from('ride-flyers').upload(path, file, { contentType: file.type, upsert: true })
   if (error) throw new Error(error.message)
-  track('organizer_flyer_uploaded')
   return supabase.storage.from('ride-flyers').getPublicUrl(path).data.publicUrl
+}
+
+/** Upload a flyer to the same bucket and path the app uses. */
+export async function uploadFlyer(file: File): Promise<string> {
+  const url = await uploadImage(file, '', 10, /^image\/(jpeg|png|webp|gif)$/, 'Use a JPG, PNG, WebP or GIF image.')
+  track('organizer_flyer_uploaded')
+  return url
+}
+
+/**
+ * Upload a group's logo, beside its organizers' flyers (the profile save
+ * accepts only images from this bucket; Shift 01431). Each upload gets a
+ * new name, so pages that read colors from the logo see the new one.
+ */
+export async function uploadLogo(file: File): Promise<string> {
+  const url = await uploadImage(file, 'logo-', 5, /^image\/(jpeg|png|webp)$/, 'Use a PNG, JPG or WebP image.')
+  track('organizer_logo_uploaded')
+  return url
 }
 
 // ── Routes ─────────────────────────────────────────────────────────────

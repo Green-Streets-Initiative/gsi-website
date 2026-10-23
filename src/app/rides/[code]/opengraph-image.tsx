@@ -1,35 +1,40 @@
 /**
- * Social card for a ride page: what shows when the ride link is pasted into
- * a group chat or a post. Rides with a flyer use the flyer (page metadata
- * names it); this card is for the rest. Cream system and layout from the
- * events page's card (app/events/[id]/opengraph-image.tsx), so a shared ride
- * reads like a shared event, with the route's shape where the event card
- * puts its photo.
+ * A ride's share card: what shows when its link is pasted into a group chat
+ * or a post. Rides with their own flyer use the flyer (page metadata names
+ * it); this card is for the rest, and it wears the organizer's brand, not
+ * GSI's (Keith 2026-10-23: an organizer would never post a card in someone
+ * else's colors). Their logo and colors (lib/organizers/brand.ts, read from
+ * the logo) on one side, the route on real streets in their color on the
+ * other, the way Strava shares a club ride. No logo: the organizer's name
+ * set as type on white. No route: the logo takes the map's place.
  *
  * Nothing here may throw: an image route that fails shows no card at all.
  */
 import { ImageResponse } from 'next/og'
-import { bricolageFonts } from '@/lib/og-fonts'
-import { CREAM, NAVY, FOREST, INK_SOFT } from '@/lib/semester/og-card'
+import { neutralFonts } from '@/lib/og-fonts'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { organizerBrand } from '@/lib/organizers/brand'
+import { PACE_OPTIONS } from '@/lib/organizers/ride-words'
 import { routeMiles } from '@/lib/organizers/route-geo'
-import { PACE_LABEL, looksLikeRideCode, nextWhen, type RideLookup } from '@/lib/rides/public'
+import { rideExtras } from '@/lib/rides/host'
+import { looksLikeRideCode, nextWhen, type RideLookup } from '@/lib/rides/public'
+import { routeMapImage } from '@/lib/server/route-map-image'
 
 export const runtime = 'nodejs'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 export const revalidate = 3600
-export const alt = 'A group ride on Shift by Green Streets Initiative'
+export const alt = 'A group ride: when, where and the route'
 
-const ROUTE_BOX = 420
-const ROUTE_BLUE = '#2966E5'
+const MAP_W = 620
+const PLAIN = { bg: '#FFFFFF', ink: '#191A2E', accent: '#2966E5' }
 
-function titleFontSize(title: string, narrow: boolean): number {
-  const n = title.length * (narrow ? 1.5 : 1)
-  if (n <= 28) return 82
-  if (n <= 48) return 68
-  if (n <= 72) return 56
-  return 46
+function titleSize(title: string, wide: boolean): number {
+  const n = title.length / (wide ? 1.6 : 1)
+  if (n <= 22) return 66
+  if (n <= 40) return 56
+  if (n <= 64) return 46
+  return 40
 }
 
 function trim(text: string, max: number): string {
@@ -39,76 +44,74 @@ function trim(text: string, max: number): string {
   return `${(space > max * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`
 }
 
-/** The route as an SVG path inside a square box, north up, with a margin. */
-function routePath(route: { lat: number; lng: number }[], box: number): { d: string; start: [number, number] } {
-  const k = Math.cos((route.reduce((s, p) => s + p.lat, 0) / route.length) * Math.PI / 180)
-  const xs = route.map((p) => p.lng * k)
-  const ys = route.map((p) => -p.lat)
-  const minX = Math.min(...xs), minY = Math.min(...ys)
-  const span = Math.max(Math.max(...xs) - minX, Math.max(...ys) - minY) || 1
-  const pad = 36
-  const scale = (box - pad * 2) / span
-  const offX = (box - (Math.max(...xs) - minX) * scale) / 2
-  const offY = (box - (Math.max(...ys) - minY) * scale) / 2
-  const pts = xs.map((x, i) => [offX + (x - minX) * scale, offY + (ys[i] - minY) * scale] as [number, number])
-  return { d: pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' '), start: pts[0] }
-}
-
-function Wordmark() {
-  return (
-    <span style={{ display: 'flex', alignItems: 'center', fontSize: 28, fontWeight: 700 }}>
-      <span style={{ color: FOREST }}>Green Streets</span>
-      <span style={{ color: NAVY, marginLeft: 9 }}>Initiative</span>
-    </span>
-  )
-}
-
 export default async function OGImage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
-  const fonts = await bricolageFonts()
+  const fonts = await neutralFonts()
   let ride: RideLookup | null = null
   try {
     if (looksLikeRideCode(code)) ride = (await createServerSupabaseClient().rpc('get_ride_public', { p_code: code })).data as RideLookup | null
   } catch {
     ride = null
   }
-
   const web = ride && ride.web ? ride : null
-  const when = web ? nextWhen(web) : ''
+  const extras = web ? await rideExtras(web.id).catch(() => null) : null
+  const host = extras?.host ?? null
+  const brand = await organizerBrand(host?.logo_url)
+  const colors = brand ?? PLAIN
   const route = (web?.route_waypoints ?? []).filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng))
+  const map = route.length >= 2 ? await routeMapImage({ points: route, width: MAP_W, height: size.height, color: colors.accent }) : null
+
+  const hostName = host?.name ?? web?.organizer_name ?? null
+  const title = trim((ride?.name ?? 'A group ride').trim(), 90)
+  const when = web ? nextWhen(web) : ''
   const miles = route.length >= 2 ? routeMiles(route) : null
-  const drawn = route.length >= 2 ? routePath(route, ROUTE_BOX) : null
-  const eyebrow = ['Group ride', miles ? `${miles < 10 ? miles.toFixed(1) : Math.round(miles)} mi` : null, web?.pace ? PACE_LABEL[web.pace].split(' · ')[0] : null]
-    .filter(Boolean).join(' · ')
-  const title = trim((ride?.name ?? 'A group ride').trim(), 100)
-  const lineMax = drawn ? 36 : 60
+  const pace = PACE_OPTIONS.find((p) => p.key === web?.pace)
+  const stats = [
+    miles ? { label: 'Distance', value: `${miles < 10 ? miles.toFixed(1) : Math.round(miles)} mi` } : null,
+    pace ? { label: 'Pace', value: pace.label } : null,
+    web?.no_drop ? { label: 'Group', value: 'No-drop' } : null,
+  ].filter(Boolean) as { label: string; value: string }[]
+  const wide = !map
+  const logoBox = wide ? { w: 380, h: 300 } : { w: 360, h: 150 }
+  const logoScale = brand ? Math.min(logoBox.w / brand.logoWidth, logoBox.h / brand.logoHeight, 1) : 0
+
+  const logo = brand ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={brand.logo} width={Math.round(brand.logoWidth * logoScale)} height={Math.round(brand.logoHeight * logoScale)} alt="" />
+  ) : hostName ? (
+    <span style={{ color: colors.ink, fontSize: 30, fontWeight: 800 }}>{trim(hostName, 34)}</span>
+  ) : null
 
   return new ImageResponse(
     (
-      <div style={{ width: '100%', height: '100%', backgroundColor: CREAM, display: 'flex', padding: '60px 72px', fontFamily: 'Bricolage Grotesque' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingRight: drawn ? 48 : 0 }}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', backgroundColor: colors.bg, fontFamily: 'Inter' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '52px 56px' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ color: FOREST, fontSize: 24, fontWeight: 700, letterSpacing: 4, textTransform: 'uppercase' }}>{eyebrow}</span>
-            <span style={{ color: NAVY, fontSize: titleFontSize(title, !!drawn), fontWeight: 800, lineHeight: 1.04, marginTop: 20 }}>{title}</span>
-            {when && <span style={{ color: NAVY, fontSize: 34, fontWeight: 700, marginTop: 24 }}>{trim(when, lineMax)}</span>}
-            {web?.meetup_name && <span style={{ color: INK_SOFT, fontSize: 30, marginTop: when ? 8 : 24 }}>{trim(`Meet at ${web.meetup_name}`, lineMax)}</span>}
+            {!wide && logo && <div style={{ display: 'flex', marginBottom: 30 }}>{logo}</div>}
+            <span style={{ color: colors.ink, fontSize: titleSize(title, wide), fontWeight: 800, lineHeight: 1.06, letterSpacing: -1 }}>{title}</span>
+            {when && <span style={{ color: colors.ink, fontSize: 30, fontWeight: 700, marginTop: 22 }}>{trim(when, wide ? 48 : 34)}</span>}
+            {web?.meetup_name && <span style={{ color: colors.ink, fontSize: 28, fontWeight: 500, marginTop: when ? 6 : 22 }}>{trim(`Meet at ${web.meetup_name}`, wide ? 48 : 34)}</span>}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ color: NAVY, fontSize: 28, fontWeight: 700 }}>RSVP here, no app needed</span>
-            {!drawn && <Wordmark />}
-          </div>
-        </div>
-        {drawn && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', width: ROUTE_BOX, height: ROUTE_BOX, borderRadius: 28, backgroundColor: '#FFFFFF', border: `2px solid ${NAVY}1F` }}>
-              <svg width={ROUTE_BOX} height={ROUTE_BOX} viewBox={`0 0 ${ROUTE_BOX} ${ROUTE_BOX}`}>
-                <path d={drawn.d} fill="none" stroke={ROUTE_BLUE} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx={drawn.start[0]} cy={drawn.start[1]} r={13} fill={FOREST} stroke="#FFFFFF" strokeWidth={5} />
-              </svg>
+          {stats.length > 0 && (
+            <div style={{ display: 'flex' }}>
+              {stats.map((s, i) => (
+                <div key={s.label} style={{ display: 'flex', flexDirection: 'column', paddingLeft: i ? 26 : 0, marginLeft: i ? 26 : 0, borderLeft: i ? `2px solid ${colors.ink}33` : 'none' }}>
+                  <span style={{ color: colors.ink, fontSize: 20, fontWeight: 500 }}>{s.label}</span>
+                  <span style={{ color: colors.ink, fontSize: 32, fontWeight: 800 }}>{s.value}</span>
+                </div>
+              ))}
             </div>
-            <Wordmark />
+          )}
+        </div>
+        {map ? (
+          <div style={{ display: 'flex', position: 'relative', width: MAP_W, height: size.height }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={map.src} width={MAP_W} height={size.height} alt="" />
+            <span style={{ position: 'absolute', right: 10, bottom: 8, fontSize: 13, color: '#4A4D68', backgroundColor: 'rgba(255,255,255,0.8)', padding: '2px 6px', borderRadius: 4 }}>{map.credit}</span>
           </div>
-        )}
+        ) : logo ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 460, paddingRight: 56 }}>{logo}</div>
+        ) : null}
       </div>
     ),
     { ...size, fonts },
