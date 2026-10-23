@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { escapeHtml } from '@/lib/html'
 
 let maplibrePromise: Promise<typeof import('maplibre-gl')> | null = null
 function loadMaplibre() {
@@ -111,7 +112,7 @@ export default function RoamMap({ routeCoordinates, checkpoints }: Props) {
           .setLngLat([c.lng, c.lat])
           .setPopup(
             new maplibregl.Popup({ offset: 18, closeButton: false }).setHTML(
-              `<div style="font-size:13px;font-weight:600;color:#191A2E;padding:2px 4px">${c.label}</div>`,
+              `<div style="font-size:13px;font-weight:600;color:#191A2E;padding:2px 4px">${escapeHtml(c.label)}</div>`,
             ),
           )
           .addTo(map)
@@ -124,7 +125,7 @@ export default function RoamMap({ routeCoordinates, checkpoints }: Props) {
           .setLngLat([c.lng, c.lat])
           .setPopup(
             new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(
-              `<div style="font-size:13px;font-weight:600;color:#191A2E;padding:2px 4px">${c.label} <span style="font-weight:500;color:#8a6d1f">· bonus stop</span></div>`,
+              `<div style="font-size:13px;font-weight:600;color:#191A2E;padding:2px 4px">${escapeHtml(c.label)} <span style="font-weight:500;color:#8a6d1f">· bonus stop</span></div>`,
             ),
           )
           .addTo(map)

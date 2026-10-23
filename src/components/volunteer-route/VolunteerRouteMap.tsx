@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
 import type { ProblemPin } from './formModel'
+import { escapeHtml } from '@/lib/html'
 
 interface Props {
   /** GeoJSON-order [lng, lat] coordinates for the route line */
@@ -119,7 +120,7 @@ export default function VolunteerRouteMap({
           .setLngLat(p.coord)
           .setPopup(
             new maplibregl.Popup({ offset: 18, closeButton: false }).setHTML(
-              `<div style="font-size:13px;font-weight:600;color:#191A2E;padding:2px 4px">${p.popup}</div>`,
+              `<div style="font-size:13px;font-weight:600;color:#191A2E;padding:2px 4px">${escapeHtml(p.popup)}</div>`,
             ),
           )
           .addTo(map)
@@ -157,7 +158,7 @@ export default function VolunteerRouteMap({
       if (pin.note) {
         marker.setPopup(
           new maplibregl.Popup({ offset: 16, closeButton: false }).setHTML(
-            `<div style="font-size:12px;color:#191A2E;padding:2px 4px;max-width:180px">${pin.note.replace(/</g, '&lt;')}</div>`,
+            `<div style="font-size:12px;color:#191A2E;padding:2px 4px;max-width:180px">${escapeHtml(pin.note)}</div>`,
           ),
         )
       }

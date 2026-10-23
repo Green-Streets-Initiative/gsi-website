@@ -3,6 +3,7 @@
 import { useRef, useEffect } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { PIN, useEventsTone } from './EventsTone'
+import { escapeHtml } from '@/lib/html'
 
 let maplibrePromise: Promise<typeof import('maplibre-gl')> | null = null
 function loadMaplibre() {
@@ -57,7 +58,7 @@ export default function EventMap({ lat, lng, label }: Props) {
 
       if (label) {
         marker.setPopup(new maplibregl.Popup({ offset: 28, closeButton: false })
-          .setHTML(`<div style="font-size:13px;font-weight:600;color:#191A2E;padding:2px 4px">${label}</div>`))
+          .setHTML(`<div style="font-size:13px;font-weight:600;color:#191A2E;padding:2px 4px">${escapeHtml(label)}</div>`))
       }
     }
 
