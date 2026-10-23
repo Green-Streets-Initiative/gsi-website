@@ -18,6 +18,7 @@ export default function Team() {
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ tone: 'good' | 'off'; text: string } | null>(null)
   const [members, setMembers] = useState<Member[]>([])
+  const [allRiders, setAllRiders] = useState(false)
 
   useEffect(() => {
     if (!canRename) return
@@ -124,7 +125,7 @@ export default function Team() {
         <Card>
           <SectionTitle hint="People already on the ride with the Shift app.">Make someone on the ride a co-organizer</SectionTitle>
           <ul className="divide-y divide-(--ev-line)">
-            {riders.map((m) => (
+            {(allRiders ? riders : riders.slice(0, 6)).map((m) => (
               <li key={m.member_id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
                 <span className="text-[15px] text-(--ev-ink)">{m.display_name}</span>
                 <Button size="sm" busy={busy === m.member_id}
@@ -134,6 +135,11 @@ export default function Team() {
               </li>
             ))}
           </ul>
+          {riders.length > 6 && (
+            <Button size="sm" variant="ghost" className="mt-2" onClick={() => setAllRiders((v) => !v)}>
+              {allRiders ? 'Show fewer' : `Show all ${riders.length}`}
+            </Button>
+          )}
         </Card>
       )}
     </div>

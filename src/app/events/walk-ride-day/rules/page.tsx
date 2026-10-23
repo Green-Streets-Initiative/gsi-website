@@ -206,7 +206,7 @@ export default async function WalkRideDayRulesPage() {
             <Section id="promotion" title="1. Promotion Name and Sponsor">
               <Ul>
                 <li><strong>Promotion:</strong> {competition?.name ?? 'Walk/Ride Day'} Gift Card Drawing</li>
-                <li><strong>Sponsor:</strong> Green Streets Initiative, Inc., a 501(c)(3) nonprofit, Cambridge, MA (&ldquo;GSI&rdquo;)</li>
+                <li><strong>Sponsor:</strong> Green Streets Initiative, Inc., a 501(c)(3) nonprofit, Somerville, MA (&ldquo;GSI&rdquo;)</li>
                 <li>
                   Administered through the Shift mobile app, available on the{' '}
                   <a href="https://apps.apple.com/us/app/shift-by-gsi/id6761119037" className="font-semibold text-forest underline-offset-4 hover:underline">App Store</a>{' '}
@@ -572,7 +572,7 @@ export default async function WalkRideDayRulesPage() {
                 .
               </P>
               <P>
-                Green Streets Initiative, Inc. &middot; Cambridge, Massachusetts
+                Green Streets Initiative, Inc. &middot; Somerville, Massachusetts
               </P>
             </Section>
 

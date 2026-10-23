@@ -1,0 +1,57 @@
+# The OpenStreetMap bike-way ledger (scripts/osm-ledger/ledger.py; Shift
+# migration 01422). Once a day, after Geofabrik rebuilds its Massachusetts
+# extract (~20:30 UTC data, published overnight), compare the state's bike
+# ways with yesterday's and record what changed. Runs here, not on Vercel or
+# Supabase: the extract is ~300 MB and needs a few minutes of CPU. No
+# Overpass calls.
+#
+# Watch it the way any scheduled job is watched: the osm-ledger heartbeat
+# (record_cron_heartbeat) and osm_snapshots, not this workflow's green tick.
+# This repo is public, so nothing here may print a secret.
+
+name: OSM bike-way ledger
+
+on:
+  schedule:
+    - cron: '30 9 * * *' # daily, 5:30am Eastern
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osm-ledger
+  cancel-in-progress: false
+
+jobs:
+  ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet "osmium>=3.7,<5"
+      - name: Download the Massachusetts extract
+        id: extract
+        run: |
+          base=https://download.geofabrik.de/north-america/us
+          ts=$(curl -sfL "$base/massachusetts-updates/state.txt" | sed -n 's/^timestamp=//p' | tr -d '\\')
+          [ -n "$ts" ] || { echo "No Geofabrik state"; exit 1; }
+          echo "ts=$ts" >> "$GITHUB_OUTPUT"
+          curl -sfL --retry 3 -o ma.osm.pbf "$base/massachusetts-latest.osm.pbf"
+          # Neighbours, read only for the car-free paths near the state line
+          # (the trip classifier's area reaches into each of them).
+          for s in new-hampshire rhode-island connecticut new-york vermont; do
+            curl -sfL --retry 3 -o "$s.osm.pbf" "$base/$s-latest.osm.pbf" &
+          done
+          wait
+          ls -la *.osm.pbf
+      - name: Compare with the ledger
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python scripts/osm-ledger/ledger.py ma.osm.pbf "${{ steps.extract.outputs.ts }}" \
+            --car-free-extra=new-hampshire.osm.pbf,rhode-island.osm.pbf,connecticut.osm.pbf,new-york.osm.pbf,vermont.osm.pbf

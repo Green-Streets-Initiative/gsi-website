@@ -14,8 +14,20 @@ import type { LatLng } from '@/lib/organizers/types'
 const STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json'
 const BOSTON: [number, number] = [-71.0942, 42.3601]
 
+/** One coloured stretch of the route (calm-route comfortPieces). */
+export interface MapPiece { coords: [number, number][]; color: string; index: number }
+/** A spot to take carefully, numbered as in the list beside the map. */
+export interface MapSpot extends LatLng { n: number }
+export type MapFocus = { kind: 'piece'; index: number } | { kind: 'spot'; n: number } | null
+
 interface Props {
   line: LatLng[]
+  /** When given, the route is drawn in these coloured stretches instead of one blue line. */
+  pieces?: MapPiece[]
+  spots?: MapSpot[]
+  focus?: MapFocus
+  onPieceClick?: (index: number) => void
+  onSpotClick?: (n: number) => void
   stops: (LatLng & { label?: string })[]
   meetup: LatLng | null
   pick: boolean
@@ -24,6 +36,19 @@ interface Props {
   fitKey?: number | string
   className?: string
   label?: string
+}
+
+function spotEl(n: number, on: boolean): HTMLElement {
+  const el = document.createElement('button')
+  el.type = 'button'
+  el.setAttribute('aria-label', `Spot ${n} to take carefully`)
+  el.textContent = '!'
+  Object.assign(el.style, {
+    width: on ? '28px' : '22px', height: on ? '28px' : '22px', borderRadius: '999px', background: '#E8833A', color: '#fff',
+    font: `800 ${on ? 15 : 13}px/1 system-ui, sans-serif`, border: '2px solid #fff', cursor: 'pointer',
+    boxShadow: on ? '0 0 0 4px rgba(232,131,58,.35)' : '0 1px 4px rgba(0,0,0,.3)', padding: '0',
+  })
+  return el
 }
 
 function pinEl(kind: 'meetup' | 'stop', n?: number): HTMLElement {
@@ -43,15 +68,21 @@ function pinEl(kind: 'meetup' | 'stop', n?: number): HTMLElement {
   return el
 }
 
-export default function RouteMap({ line, stops, meetup, pick, onPick, fitKey = 0, className, label = 'Route map' }: Props) {
+export default function RouteMap({
+  line, pieces, spots, focus = null, onPieceClick, onSpotClick, stops, meetup, pick, onPick, fitKey = 0, className, label = 'Route map',
+}: Props) {
   const box = useRef<HTMLDivElement>(null)
   const mapRef = useRef<import('maplibre-gl').Map | null>(null)
   const libRef = useRef<typeof import('maplibre-gl') | null>(null)
   const markers = useRef<import('maplibre-gl').Marker[]>([])
   const pickRef = useRef(pick)
   const onPickRef = useRef(onPick)
+  const onPieceRef = useRef(onPieceClick)
+  const onSpotRef = useRef(onSpotClick)
   pickRef.current = pick
   onPickRef.current = onPick
+  onPieceRef.current = onPieceClick
+  onSpotRef.current = onSpotClick
 
   // Create the map once.
   useEffect(() => {
@@ -72,7 +103,15 @@ export default function RouteMap({ line, stops, meetup, pick, onPick, fitKey = 0
       map.on('load', () => {
         map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
         map.addLayer({ id: 'route-casing', type: 'line', source: 'route', paint: { 'line-color': '#2966E5', 'line-width': 9, 'line-opacity': 0.22 }, layout: { 'line-join': 'round', 'line-cap': 'round' } })
-        map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#2966E5', 'line-width': 4 }, layout: { 'line-join': 'round', 'line-cap': 'round' } })
+        map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': ['coalesce', ['get', 'color'], '#2966E5'], 'line-width': 5 }, layout: { 'line-join': 'round', 'line-cap': 'round' } })
+        // The stretch being looked at: a dark outline under its colour.
+        map.addLayer({ id: 'route-focus', type: 'line', source: 'route', filter: ['==', ['get', 'index'], -999], paint: { 'line-color': '#191A2E', 'line-width': 11 }, layout: { 'line-join': 'round', 'line-cap': 'round' } }, 'route-line')
+        map.on('click', 'route-line', (e) => {
+          const i = e.features?.[0]?.properties?.index
+          if (!pickRef.current && typeof i === 'number' && onPieceRef.current) onPieceRef.current(i)
+        })
+        map.on('mouseenter', 'route-line', () => { if (!pickRef.current && onPieceRef.current) map.getCanvas().style.cursor = 'pointer' })
+        map.on('mouseleave', 'route-line', () => { if (!pickRef.current) map.getCanvas().style.cursor = '' })
         mapRef.current = map
         map.fire('organizer:ready')
       })
@@ -97,10 +136,13 @@ export default function RouteMap({ line, stops, meetup, pick, onPick, fitKey = 0
       const src = map.getSource('route') as import('maplibre-gl').GeoJSONSource | undefined
       src?.setData({
         type: 'FeatureCollection',
-        features: line.length >= 2
-          ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: line.map((p) => [p.lng, p.lat]) } }]
-          : [],
+        features: pieces?.length
+          ? pieces.filter((p) => p.coords.length >= 2).map((p) => ({ type: 'Feature' as const, properties: { color: p.color, index: p.index }, geometry: { type: 'LineString' as const, coordinates: p.coords } }))
+          : line.length >= 2
+            ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: line.map((p) => [p.lng, p.lat]) } }]
+            : [],
       })
+      map.setFilter('route-focus', ['==', ['get', 'index'], focus?.kind === 'piece' ? focus.index : -999])
       markers.current.forEach((m) => m.remove())
       markers.current = []
       stops.forEach((s, i) => {
@@ -109,13 +151,37 @@ export default function RouteMap({ line, stops, meetup, pick, onPick, fitKey = 0
       if (meetup) {
         markers.current.push(new ml.Marker({ element: pinEl('meetup'), anchor: 'bottom' }).setLngLat([meetup.lng, meetup.lat]).addTo(map))
       }
+      for (const sp of spots ?? []) {
+        const el = spotEl(sp.n, focus?.kind === 'spot' && focus.n === sp.n)
+        el.addEventListener('click', (ev) => { ev.stopPropagation(); onSpotRef.current?.(sp.n) })
+        markers.current.push(new ml.Marker({ element: el }).setLngLat([sp.lng, sp.lat]).addTo(map))
+      }
     }
     if (mapRef.current) draw()
     else {
       const t = setInterval(() => { if (mapRef.current) { clearInterval(t); draw() } }, 120)
       return () => clearInterval(t)
     }
-  }, [line, stops, meetup])
+  }, [line, pieces, spots, focus, stops, meetup])
+
+  // Bring the stretch or spot being looked at into view.
+  useEffect(() => {
+    const map = mapRef.current
+    const ml = libRef.current
+    if (!map || !ml || !focus) return
+    if (focus.kind === 'spot') {
+      const sp = spots?.find((x) => x.n === focus.n)
+      if (sp) map.easeTo({ center: [sp.lng, sp.lat], zoom: Math.max(map.getZoom(), 15), duration: 400 })
+      return
+    }
+    const piece = pieces?.find((p) => p.index === focus.index)
+    if (!piece || piece.coords.length === 0) return
+    const b = new ml.LngLatBounds(piece.coords[0], piece.coords[0])
+    piece.coords.forEach((c) => b.extend(c))
+    const view = map.getBounds()
+    if (!view.contains(b.getSouthWest()) || !view.contains(b.getNorthEast())) map.fitBounds(b, { padding: 60, maxZoom: 16, duration: 400 })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus])
 
   // Fit to the content on request.
   useEffect(() => {

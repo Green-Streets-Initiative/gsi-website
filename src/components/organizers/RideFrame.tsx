@@ -72,6 +72,7 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
   const tabs = [
     { href: base, label: 'Dates & updates' },
     { href: `${base}/roster`, label: "Who's coming" },
+    { href: `${base}/promote`, label: 'Promote' },
     { href: `${base}/turnout`, label: 'Turnout' },
     { href: `${base}/team`, label: 'Co-organizers' },
     ...(detail.can_edit ? [{ href: `${base}/edit`, label: 'Edit ride' }] : []),
@@ -110,15 +111,19 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
             </div>
           </div>
 
-          <nav aria-label="Ride" className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-            <ul className="flex min-w-max gap-1 border-b border-(--ev-line-mid)">
+          {/* Phones get every tab as a wrapping pill, so none hides off-screen. */}
+          <nav aria-label="Ride" className="mt-5">
+            <ul className="flex flex-wrap gap-1.5 sm:flex-nowrap sm:gap-1 sm:border-b sm:border-(--ev-line-mid)">
               {tabs.map((t) => {
                 const active = t.href === base ? path === base : path.startsWith(t.href)
                 return (
                   <li key={t.href}>
                     <Link href={t.href} aria-current={active ? 'page' : undefined}
-                      className={cx('-mb-px inline-block border-b-2 px-3 py-2.5 text-[14px] font-semibold',
-                        active ? 'border-(--ev-accent-fill) text-(--ev-ink)' : 'border-transparent text-(--ev-ink-75) hover:text-(--ev-ink)')}>
+                      className={cx('inline-flex min-h-[40px] items-center rounded-full border px-3.5 text-[14px] font-semibold',
+                        'sm:-mb-px sm:min-h-0 sm:rounded-none sm:border-0 sm:border-b-2 sm:bg-transparent sm:px-3 sm:py-2.5',
+                        active
+                          ? 'border-(--ev-accent-fill) bg-(--ev-accent-fill) text-(--ev-on-accent-fill) sm:text-(--ev-ink)'
+                          : 'border-(--ev-line-strong) bg-white text-(--ev-ink-85) hover:text-(--ev-ink) sm:border-transparent sm:text-(--ev-ink-75)')}>
                       {t.label}
                     </Link>
                   </li>

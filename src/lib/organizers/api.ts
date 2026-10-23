@@ -10,7 +10,7 @@
  */
 import { supabase } from '@/lib/supabase'
 import type {
-  ConsoleMe, CreditRequest, DashboardRide, RideDetail, RosterRow, Turnout,
+  ConsoleMe, CreditRequest, DashboardRide, PromoStats, RideDetail, RosterRow, Turnout,
 } from './types'
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -79,6 +79,7 @@ export const getMembers = async (seriesId: string) =>
 export const getCreditRequests = async (occurrenceId: string) =>
   (await rpc<CreditRequest[] | null>('get_ride_credit_requests', { p_occurrence_id: occurrenceId })) ?? []
 export const getTurnout = (seriesId: string) => rpc<Turnout>('organizer_ride_turnout', { p_series_id: seriesId })
+export const getPromoStats = (seriesId: string) => rpc<PromoStats>('organizer_ride_promo', { p_series_id: seriesId })
 export const getStopPreview = (seriesId: string, until: string | null) =>
   rpc<{ notify: number; notify_guests: number; upcoming: number; past: number; can_delete: boolean }>(
     'get_ride_stop_preview', { p_series_id: seriesId, p_until: until },
@@ -220,7 +221,7 @@ export interface PlannedLegOption {
   summary: string
   waypoints: { lat: number; lng: number }[]
   flags?: unknown[]
-  comfort_segments?: { label: string; rating: string; distance_mi: number }[]
+  comfort_segments?: import('./types').ComfortSegment[]
   comfort_rating?: string
   comfort_summary?: string
   elevation?: import('./types').RouteElevation | null
@@ -231,9 +232,18 @@ export interface PlannedRoute {
 }
 
 /** Shift's comfort-scored route planner, the same one the app's "Plan route" uses. */
-export const planRoute = (pins: { lat: number; lng: number; label?: string }[], pace: string | null) =>
-  // The planner checks every street between the stops; three legs can take a minute.
-  shiftFunction<PlannedRoute>('plan-ride-route', { pins, mode: 'bike', pace: pace ?? undefined }, 90_000)
+export async function planRoute(pins: { lat: number; lng: number; label?: string }[], pace: string | null): Promise<PlannedRoute> {
+  // The planner checks every street between two stops, one leg after
+  // another; a three-stop loop took 109 s in one call (2026-10-23). Asking
+  // for each leg on its own runs them side by side, and each leg caches
+  // separately, so moving one stop re-plans only the legs it touches.
+  const pairs = pins.slice(1).map((to, i) => [pins[i], to])
+  const legs = await Promise.all(pairs.map(async (pair) => {
+    const p = await shiftFunction<PlannedRoute>('plan-ride-route', { pins: pair, mode: 'bike', pace: pace ?? undefined }, 90_000)
+    return p.legs?.[0] ?? { options: [] }
+  }))
+  return { legs }
+}
 
 export interface ScoredRoute {
   distanceMiles: number

@@ -5,7 +5,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { ArrowSquareOut } from '@phosphor-icons/react'
 import { PanelPhoto } from '@/components/nearby/DetailPanel'
 import { SHUTTLE_COLOR } from '@/lib/nearby/shuttle-agencies'
-import { COMFORT_COLORS, COMFORT_LABELS, comfortGroup, comfortPieces, concernAdvice, concernTitle, formatStretchMiles, legPhotoSpec, type CalmRoute } from './calm-route'
+import { COMFORT_COLORS, COMFORT_LABELS, comfortGroup, comfortPieces, concernAdvice, concernTitle, formatStretchMiles, legPhotoSpec, newLaneNotes, type CalmRoute } from './calm-route'
 import {
   bikeParkingPhrase,
   headwayPhrase,
@@ -295,6 +295,9 @@ export function BikeDrawer({
             {calm.verdict.text}
             {concern ? ` ${concernTitle(concern)}${concernAdvice(concern) ? `: ${concernAdvice(concern)}` : '.'}` : ''}
           </P>
+          {newLaneNotes(calm.calm.flags).map((n) => (
+            <P key={n}><b>{n}.</b></P>
+          ))}
           {stretches.length > 0 && (
             <div className="flex flex-wrap gap-1.5" role="group" aria-label="The route, stretch by stretch">
               {stretches.map((s) => (

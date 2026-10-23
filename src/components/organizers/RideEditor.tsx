@@ -111,8 +111,8 @@ function blocking(f: Form): string | null {
   if (f.schedule === 'recurring' && f.frequency !== 'daily' && f.days.length === 0) return 'Pick at least one day'
   if (!f.start_time) return 'Pick a start time'
   if (f.meetup_lat == null || f.meetup_lng == null) return 'Pick a meeting point'
-  if (f.end_time && f.end_time <= f.start_time) return 'The end time is before the start'
-  if (f.schedule === 'recurring' && f.season_start && f.season_end && f.season_end < f.season_start) return 'The season ends before it starts'
+  if (f.end_time && f.end_time <= f.start_time) return 'Set "Back by" to after the start time'
+  if (f.schedule === 'recurring' && f.season_start && f.season_end && f.season_end < f.season_start) return 'Set the season end after its start'
   return null
 }
 
@@ -168,6 +168,36 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       setRestored(true)
     } catch { /* storage unavailable */ }
   }, [draftKey])
+
+  // A route the assistant planned arrives as ?plan= (its stops in order, the
+  // option picked for each leg and the pace): the route section re-plans it
+  // (legs are cached, so it's quick) and opens on its street-by-street review.
+  const [planned, setPlanned] = useState<{ stops: { lat: number; lng: number; label?: string }[]; chosen: number[] } | null>(null)
+  const [plannedMoved, setPlannedMoved] = useState(false)
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('plan')
+    if (!raw) return
+    try {
+      const b64 = raw.replace(/-/g, '+').replace(/_/g, '/')
+      const j = JSON.parse(decodeURIComponent(escape(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4))))) as { p: [number, number, string][]; c: number[]; pace: string | null }
+      if (!Array.isArray(j.p) || j.p.length < 2) return
+      const [lat, lng, label] = j.p[0]
+      setF((prev) => {
+        const moved = prev.meetup_lat == null || Math.abs(prev.meetup_lat - lat) > 0.0005 || Math.abs((prev.meetup_lng ?? 0) - lng) > 0.0005
+        if (moved && prev.meetup_lat != null) setPlannedMoved(true)
+        return {
+          ...prev,
+          ...(moved ? { meetup_lat: lat, meetup_lng: lng, meetup_name: label || prev.meetup_name, meetup_address: moved ? '' : prev.meetup_address } : {}),
+          pace: prev.pace || (j.pace as Pace | null) || prev.pace,
+        }
+      })
+      setPlanned({ stops: j.p.slice(1).map(([la, ln, lb]) => ({ lat: la, lng: ln, ...(lb ? { label: lb } : {}) })), chosen: Array.isArray(j.c) ? j.c : [] })
+      setDirty(true)
+      const url = new URL(window.location.href)
+      url.searchParams.delete('plan')
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+    } catch { /* a link that doesn't decode is ignored */ }
+  }, [])
 
   useEffect(() => {
     if (!dirty) return
@@ -415,8 +445,11 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         </Card>
 
         <Card id="sec-route">
-          <SectionTitle hint="Optional. People decide on distance, hills and comfort.">Route</SectionTitle>
-          <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null}
+          <SectionTitle hint="Optional. With a route, people see how far, how hilly and how comfortable the ride is before they come.">Route</SectionTitle>
+          {plannedMoved && (
+            <div className="mb-3"><Notice tone="info">The assistant&rsquo;s route starts somewhere else, so the meeting point moved there. Change it above if that&rsquo;s not right.</Notice></div>
+          )}
+          <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null} initialPlan={planned}
             onMeetAtStart={(p) => {
               setF((prev) => ({ ...prev, meetup_lat: p.lat, meetup_lng: p.lng, meetup_address: '', meetup_name: prev.meetup_name ? '' : prev.meetup_name }))
               setDirty(true)
@@ -433,10 +466,15 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         <Card id="sec-expect">
           <SectionTitle>What to expect</SectionTitle>
           <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
-            <Field label="Pace" hint="The speed the group really holds.">
+            <Field label="Pace" hint="The average speed the group holds while riding.">
               <div className="flex flex-wrap gap-2">
                 <Toggle on={f.pace === ''} onClick={() => set('pace', '')}>Not stated</Toggle>
-                {PACE_OPTIONS.map((p) => <Toggle key={p.key} on={f.pace === p.key} onClick={() => set('pace', p.key)}>{p.label}</Toggle>)}
+                {PACE_OPTIONS.map((p) => (
+                  <Toggle key={p.key} on={f.pace === p.key} onClick={() => set('pace', p.key)} className="py-1.5">
+                    <span className="block leading-tight">{p.label}</span>
+                    <span className="block text-[13px] font-medium leading-tight opacity-80">{p.mph}</span>
+                  </Toggle>
+                ))}
               </div>
             </Field>
             <label className="flex cursor-pointer items-start gap-3">
@@ -459,7 +497,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         <Card id="sec-signup">
           <SectionTitle>Sign-ups and contact</SectionTitle>
           <div className="grid gap-4">
-            <Field label="Registration link" htmlFor="reg" optional hint="Only if people must sign up or sign a waiver elsewhere."
+            <Field label="Sign-up or waiver link" htmlFor="reg" optional hint="Do people also need to sign up or sign a waiver on your own site? Paste that page. For a regular ride, use one page that covers every date."
               error={!LINK_OK(f.registration_url) ? 'Links start with https://' : null}>
               <Input id="reg" value={f.registration_url} onChange={(e) => set('registration_url', e.target.value)} placeholder="https://…" inputMode="url" />
             </Field>

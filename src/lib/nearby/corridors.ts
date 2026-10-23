@@ -130,7 +130,14 @@ export interface BikeCorridor {
   accessDistanceMeters: number
   accessPoint: { lat: number; lng: number }
   geojson: GeoJSON.FeatureCollection
+  /** A real stretch of it opened in the last two years (MassDOT Open_Date):
+   *  the latest month, "YYYY-MM", and how many miles of it are that new.
+   *  Absent otherwise. Shown as "New · opened Aug 2026". */
+  newlyOpened?: { month: string; miles: number }
 }
+
+/** How far back "new" reaches for a bike facility. */
+export const NEW_FACILITY_MONTHS = 24
 
 export type Corridor = TransitCorridor | BikeCorridor
 
@@ -333,7 +340,7 @@ export async function fetchCorridorMeta(corridor: TransitCorridor): Promise<Corr
 interface LaneFeatureLike {
   type: 'Feature'
   geometry: { type: 'LineString'; coordinates: [number, number][] }
-  properties: { quality: string; name: string | null; source: string; corridorId?: string; oneway?: boolean }
+  properties: { quality: string; name: string | null; source: string; corridorId?: string; oneway?: boolean; opened?: string }
 }
 
 function featureLengthMeters(f: LaneFeatureLike): number {
@@ -559,6 +566,26 @@ export function buildBikeCorridors(
       })
     }
 
+    // Newly opened: MassDOT's month for separated or path pieces, counted
+    // only when the new part is a real stretch (a fifth of a mile, or a
+    // quarter of the corridor), so one short rebuilt block doesn't make a
+    // whole old street "new".
+    const cutoff = new Date()
+    cutoff.setMonth(cutoff.getMonth() - NEW_FACILITY_MONTHS)
+    const cutoffMonth = cutoff.toISOString().slice(0, 7)
+    let newMonth = ''
+    let newM = 0
+    for (const f of cluster) {
+      const o = f.properties.opened
+      if (!o || o < cutoffMonth || f.properties.quality === 'painted') continue
+      newM += featureLengthMeters(f)
+      if (o > newMonth) newMonth = o
+    }
+    const newMiles = newM / 1609.34
+    const newlyOpened = newMonth && (newMiles >= 0.2 || newMiles >= lengthMiles * 0.25)
+      ? { month: newMonth, miles: Math.round(newMiles * 10) / 10 }
+      : undefined
+
     const corridorId = `bike:${key.replace(/[^a-z0-9]+/g, '-')}`
     // Color must be stamped here — the map's corridor layer reads
     // properties.color, and a missing value renders invisibly on dark.
@@ -590,6 +617,7 @@ export function buildBikeCorridors(
         accessDistanceMeters: Math.round(nearestM),
         accessPoint: nearestPt,
         geojson: { type: 'FeatureCollection', features: features as unknown as GeoJSON.Feature[] },
+        ...(newlyOpened ? { newlyOpened } : {}),
       },
       source: cluster,
       // Nearness-aware ranking, comfort-weighted: a reachable connector beats

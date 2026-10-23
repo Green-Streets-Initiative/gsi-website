@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Download } from 'lucide-react'
 import { errorText, getTurnout } from '@/lib/organizers/api'
-import { dateLabel, monthLabel } from '@/lib/organizers/ride-words'
+import { dateLabel, monthLabel, plural } from '@/lib/organizers/ride-words'
 import type { Turnout } from '@/lib/organizers/types'
 import { useRide } from './RideFrame'
 import { Button, Card, Empty, Notice, SectionTitle, Spinner } from './ui'
@@ -154,7 +154,7 @@ export default function TurnoutView() {
                   </th>
                   <td className="py-2.5 pl-3 text-right tabular-nums">{d.going}</td>
                   <td className="py-2.5 pl-3 text-right tabular-nums">{d.maybe}</td>
-                  <td className="py-2.5 pl-3 text-right tabular-nums font-semibold">{d.attended}{d.kids ? <span className="font-normal text-(--ev-ink-75)"> +{d.kids} kids</span> : ''}</td>
+                  <td className="py-2.5 pl-3 text-right tabular-nums font-semibold">{d.attended}{d.kids ? <span className="font-normal text-(--ev-ink-75)"> +{plural(d.kids, 'kid')}</span> : ''}</td>
                   <td className="py-2.5 pl-3 text-right tabular-nums">{d.first_timers}</td>
                   <td className="py-2.5 pl-3 text-right tabular-nums">{d.came_back}</td>
                 </tr>

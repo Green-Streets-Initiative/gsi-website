@@ -247,6 +247,9 @@ export interface ComfortSegment {
   label: string
   rating: string
   distance_mi: number
+  /** Where the stretch runs in the route's waypoints, when the planner says. */
+  startIdx?: number
+  endIdx?: number
 }
 
 export interface RouteElevation {
@@ -269,4 +272,16 @@ export interface RouteDraft {
   /** Where it came from, for the editor's own label. Not saved. */
   source: 'drawn' | 'ridewithgps' | 'gpx' | 'saved' | null
   sourceName?: string | null
+}
+
+/** organizer_ride_promo (Shift 01415): what each Promote link brought in. */
+export interface PromoStats {
+  channels: {
+    channel: import('@/lib/rides/promo').PromoChannel
+    visits: number
+    visits_week: number
+    people: number
+    people_week: number
+  }[]
+  direct_people: number
 }

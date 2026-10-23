@@ -67,9 +67,16 @@ export function routeFromPlan(plan: PlannedRoute, chosen: number[], pins: (LatLn
   for (const o of opts) {
     if (!o) continue
     if (o.flags?.length) flags.push(...o.flags)
+    // Each leg's stretches index into that leg's own line; joined legs share
+    // an end point, so later legs shift by what came before, less one.
+    const offset = waypoints.length > 0 ? waypoints.length - 1 : 0
     if (waypoints.length > 0 && o.waypoints.length > 0) waypoints.push(...o.waypoints.slice(1))
     else waypoints.push(...o.waypoints)
-    if (o.comfort_segments) segments.push(...o.comfort_segments)
+    for (const seg of o.comfort_segments ?? []) {
+      segments.push(seg.startIdx != null && seg.endIdx != null
+        ? { ...seg, startIdx: seg.startIdx + offset, endIdx: seg.endIdx + offset }
+        : seg)
+    }
   }
   const top = comfortBreakdown(segments)[0]
   const comfortRating = !top ? null : top.pct >= 80 ? top.rating : 'mixed'

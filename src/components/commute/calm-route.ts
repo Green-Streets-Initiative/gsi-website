@@ -54,6 +54,13 @@ export interface CalmOption {
   comfort_summary: string
 }
 
+/** Lanes the route rides that MassDOT says opened in the last two years
+ *  (plan-ride-route's new_facility notes): "New protected bike lane on
+ *  Cummins Hwy (opened Aug 2026)". */
+export function newLaneNotes(flags: CalmFlag[] | null | undefined): string[] {
+  return (flags ?? []).filter((f) => f.type === 'positive' && f.kind === 'new_facility').map((f) => f.description)
+}
+
 export interface SafetyVerdict {
   tone: 'none' | 'ok' | 'shared'
   text: string

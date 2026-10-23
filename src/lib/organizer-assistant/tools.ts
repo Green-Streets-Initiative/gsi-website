@@ -5,6 +5,7 @@ import { clock, scheduleText } from '@/lib/rides/public'
 import { inviteCoOrganizer } from '@/lib/organizers/invite'
 import { PACE_OPTIONS, TAG_OPTIONS, UPDATE_KIND_LABEL, dateLabel, todayKey } from '@/lib/organizers/ride-words'
 import type { DashboardRide, RideDetail, RideRow, RosterRow, Turnout } from '@/lib/organizers/types'
+import { designRoute, encodePlan } from './route-designer'
 
 // The organizer assistant's tools (Keith 2026-10-22). Same shape as the
 // employer assistant's: reads run straight away as the organizer; anything
@@ -96,7 +97,7 @@ const rideFields = {
   start_time: { type: 'string', description: 'HH:MM, 24-hour.' },
   end_time: nullable('string', 'HH:MM, optional: when people are back.'),
   meetup: placeSchema,
-  pace: nullable('string', 'relaxed, moderate, brisk, fast or kids.'),
+  pace: nullable('string', 'relaxed (8–12 mph), moderate (12–15), brisk (15–18), fast (18+) or kids (5–8).'),
   no_drop: nullable('boolean', 'The group waits or regroups so nobody is left behind.'),
   tags: { type: 'array', items: { type: 'string', enum: TAG_OPTIONS.map((t) => t.key) } },
   visibility: { type: 'string', enum: ['public', 'invite'] },
@@ -165,6 +166,24 @@ export const TOOLS: Anthropic.Tool[] = [
         their_words: nullable('string'),
       },
       required: ['kind', 'summary'],
+    },
+  },
+  {
+    name: 'plan_route',
+    description: "Design a ride route from goals and have Shift's route planner build it: a loop or A to B, a target distance, places to pass (by name, or a kind like \"a coffee shop\"), bike lanes to show off (the longest protected lanes and paths nearby, or lanes opened in the last two years), and staying near Bluebikes docks and T stations. Returns the distance, riding time, share on calm streets, the spots to take carefully, how each goal came out, and a button that opens the route street by street with Street View in the editor, where they save it. Nothing is saved by this tool. Takes up to a minute.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        series_id: nullable('string', "A ride's id: starts at its meeting point, at its pace, and the button opens that ride's editor. Leave empty for a ride not set up yet."),
+        start: { ...placeSchema, description: 'Where it starts, from find_place, when there is no series_id or they want a different start.' },
+        loop: { type: 'boolean', description: 'Back to the start (the usual group ride). Default true.' },
+        end: { ...placeSchema, description: 'For an A-to-B ride only.' },
+        target_miles: nullable('number', 'About how long, in miles.'),
+        pace: nullable('string', 'relaxed (8–12 mph), moderate (12–15), brisk (15–18), fast (18+) or kids (5–8). A speed they give maps to the band it falls in.'),
+        places: { type: 'array', items: { type: 'string' }, description: 'Places to pass, in their words: "Bow Market", "a coffee shop near the halfway point", "Mystic River Reservation". At most six.' },
+        showcase: { type: ['string', 'null'], enum: ['protected', 'new', null], description: 'protected: ride the best protected lanes and car-free paths nearby. new: ride lanes MassDOT lists as opened in the last two years.' },
+        near_station_miles: nullable('number', 'Check that the start, and as much of the route as possible, is within this many miles of a Bluebikes dock or T station.'),
+      },
     },
   },
   // ── Approval needed ──
@@ -254,6 +273,7 @@ export const ACTIVITY: Record<string, string> = {
   get_turnout: 'Adding up turnout',
   get_forecast: 'Checking the forecast',
   find_place: 'Looking up the place',
+  plan_route: 'Planning the route (up to a minute)',
   note_feedback: 'Passing it to the GSI team',
   create_ride: 'Creating the ride',
   update_ride: 'Saving the changes',
@@ -490,6 +510,38 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       }
       case 'find_place':
         return ok(await findPlace(String(input.query ?? '')))
+      case 'plan_route': {
+        const sid = typeof input.series_id === 'string' && /^[0-9a-f-]{36}$/i.test(input.series_id) ? input.series_id : null
+        const asPlace = (v: unknown) => {
+          const p = v as { lat?: unknown; lng?: unknown; name?: unknown } | null
+          return p && typeof p.lat === 'number' && typeof p.lng === 'number' ? { lat: p.lat, lng: p.lng, name: typeof p.name === 'string' ? p.name : undefined } : null
+        }
+        let start = asPlace(input.start)
+        let pace = typeof input.pace === 'string' ? input.pace : null
+        if (sid) {
+          const d = await rpc<RideDetail>(ctx, 'organizer_ride_detail', { p_series_id: sid })
+          if (!start && d.ride.meetup_lat != null && d.ride.meetup_lng != null) start = { lat: d.ride.meetup_lat, lng: d.ride.meetup_lng, name: d.ride.meetup_name ?? undefined }
+          pace = pace ?? d.ride.pace
+        }
+        if (!start) return fail('Where does it start? Find the meeting point with find_place, or give the ride.')
+        const res = await designRoute(ctx.token, {
+          start,
+          loop: input.loop !== false,
+          end: asPlace(input.end),
+          target_miles: typeof input.target_miles === 'number' ? input.target_miles : null,
+          pace,
+          places: Array.isArray(input.places) ? input.places.filter((x): x is string => typeof x === 'string') : [],
+          showcase: input.showcase === 'protected' || input.showcase === 'new' ? input.showcase : null,
+          near_station_miles: typeof input.near_station_miles === 'number' ? input.near_station_miles : null,
+        })
+        if (!res.ok || !res.plan) return ok({ planned: false, notes: res.notes })
+        const q = encodePlan(res.plan)
+        const href = sid ? `/organizers/rides/${sid}/edit?plan=${q}#sec-route` : `/organizers/rides/new?plan=${q}`
+        return ok({
+          planned: true, ...res.summary, goals: res.goals, notes: res.notes,
+          button: 'Shown under your reply: opens the route street by street, with Street View, in the editor. It is saved only when they press Save there.',
+        }, { href, label: 'See the route street by street' })
+      }
       case 'open_page': {
         const s = typeof input.series_id === 'string' && /^[0-9a-f-]{36}$/i.test(input.series_id) ? input.series_id : null
         const base = s ? `/organizers/rides/${s}` : '/organizers'
