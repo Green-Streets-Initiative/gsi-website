@@ -18,7 +18,7 @@ import { boardingByDirection, boardingIsShared, type TransitCorridor, type BikeC
 import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
 import { ShuttleOperatorLines } from './ShuttleOperator'
-import { useNearbyT } from './NearbyI18n'
+import { useNearbyLocale, useNearbyT } from './NearbyI18n'
 import { bikeshareLogoUrl, borrowLogoUrl } from '@/lib/nearby/provider-logos'
 import {
   type Selection, type StationGroup, routeEndpoints, isShuttleStation,
@@ -206,6 +206,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
   onSelectCorridor: (id: string) => void
 }) {
   const tr = useNearbyT()
+  const locale = useNearbyLocale()
   if (selection.type === 'station') {
     const st = stationByKey.get(selection.key)
     if (!st) return null
@@ -297,6 +298,14 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
           <div className="mt-0.5 text-[0.78rem] text-(--nb-ink-80)">
             {tr('detail.bike_length', { miles: c.lengthMiles, minutes: bikeTimeMinutes(c.accessDistanceMeters) })}
           </div>
+          {c.newlyOpened && (
+            <div className="mt-1 text-[0.8rem] font-semibold text-(--nb-accent)">
+              {tr('detail.newly_opened', {
+                miles: c.newlyOpened.miles,
+                month: new Date(`${c.newlyOpened.month}-15T12:00:00Z`).toLocaleDateString(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }),
+              })}
+            </div>
+          )}
           {SOURCE_LABEL[c.source] && (
             <div className="mt-1 text-[0.72rem] text-(--nb-ink-70)">{tr('detail.data_source', { source: SOURCE_LABEL[c.source] })}</div>
           )}

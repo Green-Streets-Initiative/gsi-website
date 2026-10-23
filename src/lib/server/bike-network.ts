@@ -65,6 +65,8 @@ export interface LaneFeature {
     /** Name borrowed from an overlapping named feature of another source —
      *  the UI hedges attribution when set. */
     nameInferred?: boolean
+    /** MassDOT only: the month the facility opened (BikeInventory Open_Date), "YYYY-MM". */
+    opened?: string
   }
 }
 
@@ -190,7 +192,7 @@ async function fetchMassDot(lat: number, lng: number, radiusMiles: number): Prom
       geometry: `${b.minLng},${b.minLat},${b.maxLng},${b.maxLat}`,
       geometryType: 'esriGeometryEnvelope',
       spatialRel: 'esriSpatialRelIntersects',
-      outFields: 'Fac_Type,Local_Name',
+      outFields: 'Fac_Type,Local_Name,Open_Date',
       returnGeometry: 'true',
       f: 'json',
       inSR: '4326',
@@ -211,12 +213,14 @@ async function fetchMassDot(lat: number, lng: number, radiusMiles: number): Prom
         : null
       if (!quality) continue
       const name = cleanName(f.attributes?.Local_Name)
+      const openMs = f.attributes?.Open_Date
+      const opened = typeof openMs === 'number' && openMs > 0 ? new Date(openMs).toISOString().slice(0, 7) : undefined
       for (const path of f.geometry?.paths ?? []) {
         if (!Array.isArray(path) || path.length < 2) continue
         out.push({
           type: 'Feature',
           geometry: { type: 'LineString', coordinates: path as [number, number][] },
-          properties: { quality: dePath(quality, name), name, source: 'massdot' },
+          properties: { quality: dePath(quality, name), name, source: 'massdot', ...(opened ? { opened } : {}) },
         })
       }
     }
@@ -462,7 +466,7 @@ export async function getBikeNetwork(lat: number, lng: number, radiusMiles: numb
   return data
 }
 
-const durableBikeNetwork = unstable_cache(computeBikeNetwork, ['nearby-bike-network-v1'], {
+const durableBikeNetwork = unstable_cache(computeBikeNetwork, ['nearby-bike-network-v2'], {
   revalidate: 60 * 60,
 })
 

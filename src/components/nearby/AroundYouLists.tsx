@@ -20,6 +20,7 @@ import { dockStatsText } from './markers'
 import { PanelPhoto } from './DetailPanel'
 import type { SectionStatus } from './types'
 import { SkeletonRows, ErrorCard, CollapsibleSection } from './SectionShell'
+import { useNearbyLocale } from './NearbyI18n'
 import { useNearbyT } from './NearbyI18n'
 import { PRICES, usd } from '@/lib/facts/prices'
 import { useNearbyPromos } from './NearbyPromos'
@@ -451,6 +452,9 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
   onToggleSection: (key: string) => void
 }) {
   const tr = useNearbyT()
+  const locale = useNearbyLocale()
+  // "2026-08" → "Aug 2026" in the reader's language.
+  const monthLabel = (ym: string) => new Date(`${ym}-15T12:00:00Z`).toLocaleDateString(locale, { month: 'short', year: 'numeric', timeZone: 'UTC' })
   if (bikeCorridors.length === 0) return null
 
   // Two shelves teach the taxonomy: car-free paths, then the on-street
@@ -476,10 +480,14 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
           title={shelf.label}
           count={shelf.items.length}
           swatch={<span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: shelf.color }} />}
-          teaser={tr('lists.section_nearest', {
-            name: nearest.name,
-            detail: tr('lists.section_miles_away', { miles: (nearest.accessDistanceMeters / 1609.34).toFixed(1) }),
-          })}
+          teaser={(() => {
+            // A newly opened lane is the scent most worth showing.
+            const fresh = shelf.items.find((c) => c.newlyOpened)
+            const away = (c: BikeCorridor) => tr('lists.section_miles_away', { miles: (c.accessDistanceMeters / 1609.34).toFixed(1) })
+            return fresh
+              ? `${fresh.name} · ${tr('lists.newly_opened', { month: monthLabel(fresh.newlyOpened!.month) })} · ${away(fresh)}`
+              : tr('lists.section_nearest', { name: nearest.name, detail: away(nearest) })
+          })()}
           open={isSectionOpen(shelf.key)}
           onToggle={() => onToggleSection(shelf.key)}
         >
@@ -500,6 +508,11 @@ export function BikeRouteList({ bikeCorridors, popularStreetKeys, highlightedCor
               >
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="text-[0.9rem] font-semibold text-(--nb-ink)">{c.name}</span>
+                  {c.newlyOpened && (
+                    <span className="rounded-full bg-(--nb-accent-tint) px-2 py-0.5 text-[0.68rem] font-semibold text-(--nb-accent)">
+                      {tr('lists.newly_opened', { month: monthLabel(c.newlyOpened.month) })}
+                    </span>
+                  )}
                   {popularStreetKeys.has(canonicalStreetKey(c.name)) && (
                     <span className="rounded-full bg-(--nb-accent-tint) px-2 py-0.5 text-[0.68rem] font-semibold text-(--nb-accent)">
                       {tr('lists.popular_with_riders')}

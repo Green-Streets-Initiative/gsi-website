@@ -19,6 +19,7 @@ interface WireCorridor {
   lengthMiles: number
   accessDistanceMeters: number
   accessPoint: { lat: number; lng: number }
+  newlyOpened?: BikeCorridor['newlyOpened']
   featureIndices: number[]
 }
 
@@ -44,6 +45,8 @@ function wireCorridors(
     lengthMiles: c.lengthMiles,
     accessDistanceMeters: c.accessDistanceMeters,
     accessPoint: c.accessPoint,
+    // Optional and additive: older app builds ignore it.
+    ...(c.newlyOpened ? { newlyOpened: c.newlyOpened } : {}),
     featureIndices: c.geojson.features
       .map(f => geomIndex.get(f.geometry))
       .filter((n): n is number => n !== undefined),
