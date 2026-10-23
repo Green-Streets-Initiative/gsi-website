@@ -1,6 +1,6 @@
 import type { CommunityEvent } from './events'
 import { eventUrl } from '@/lib/events-url'
-import { parseEventDate, formatTime } from './events'
+import { parseEventDate, formatTime, eventImages } from './events'
 
 /**
  * Search-facing metadata for /events/[id]: page title, meta description, and
@@ -229,9 +229,10 @@ export function buildEventJsonLd(
   if (event.event_end_time) {
     json.endDate = isoDateTime(event.event_date, event.event_end_time, timeZone)
   }
-  if (event.image_url) {
-    json.image = event.image_url
-  }
+  // Flyer front first, then the extra pages or map; schema.org takes a list.
+  const images = eventImages(event)
+  if (images.length === 1) json.image = images[0]
+  else if (images.length > 1) json.image = images
   if (event.organizer_name) {
     json.organizer = {
       '@type': 'Organization',

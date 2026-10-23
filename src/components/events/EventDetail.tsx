@@ -20,7 +20,9 @@ import {
   getTypeMeta, getTagMeta, formatTime, dateLong, isDeadline, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
   eventRideStyle, isNoDrop, isRideEvent, PACE_BAND_LABEL, RIDE_STYLE_LABEL, RIDE_STYLE_BLURB,
+  eventImages,
 } from '@/lib/events'
+import EventImageCarousel from './EventImageCarousel'
 import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
 import { EventsToneProvider, toneClass, useEventsTone, type EventsTone } from './EventsTone'
 import './events-tone.css'
@@ -157,7 +159,8 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
   // no map, no directions.
   const deadline = isDeadline(event.event_type)
   const hasMap = !!(event.location_lat && event.location_lng) && !deadline
-  const hasLeftColumn = !!(event.image_url || hasMap)
+  const images = eventImages(event)
+  const hasLeftColumn = !!(images.length > 0 || hasMap)
 
   const [saved, setSaved] = useState(false)
   const [calMenuOpen, setCalMenuOpen] = useState(false)
@@ -248,15 +251,11 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
           {/* ---- LEFT COLUMN ---- */}
           {hasLeftColumn && (
             <div>
-              {event.image_url && (
-                <div className="mb-6 overflow-hidden rounded-2xl border border-(--ev-line)">
-                  <img src={event.image_url} alt={event.title} className="w-full object-contain" />
-                </div>
-              )}
+              <EventImageCarousel images={images} title={event.title} />
 
               {hasMap && (
                 <div className="overflow-hidden rounded-2xl border border-(--ev-line) bg-(--ev-card)">
-                  <div className={event.image_url ? 'h-48' : 'h-72'}>
+                  <div className={images.length > 0 ? 'h-48' : 'h-72'}>
                     <EventMap lat={event.location_lat!} lng={event.location_lng!} label={event.location_name} />
                   </div>
                   <div className="p-4">

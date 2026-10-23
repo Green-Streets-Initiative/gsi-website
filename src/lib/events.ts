@@ -30,7 +30,7 @@ export interface CommunityEvent {
   /** "Free. Register once per year." Loaded on the event page, for the calendar entry. */
   registration_notes?: string | null
   image_url: string | null
-  /** Extra flyer pages or an event map, shown after image_url in order (Shift 01243). Loaded on the event page only. */
+  /** Extra flyer pages or an event map, shown after image_url in order (Shift 01250). Loaded on the event page only. */
   extra_image_urls?: string[]
   source_id: string | null
   tags: string[]
