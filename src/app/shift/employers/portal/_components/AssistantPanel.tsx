@@ -13,6 +13,7 @@ import { ArrowLeft, ArrowUp, Check, ExternalLink, FileSpreadsheet, History, Load
 import { useConfirm } from '@/components/employer/ConfirmDialog'
 import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
+import posthog from 'posthog-js'
 
 const OPEN_EVENT = 'portal:open-assistant'
 /** Fired after the assistant changes something, so pages can reload. */
@@ -55,11 +56,18 @@ type Item =
 export function AssistantDock() {
   const { group, isGsiAdmin } = usePortal()
   const [open, setOpen] = useState(false)
+  // How it was opened (a button, a task from a page, the keyboard), for the opened event.
+  const how = useRef<'button' | 'task' | 'shortcut'>('button')
+  useEffect(() => {
+    if (!open) return
+    try { posthog.capture('portal_assistant_opened', { how: how.current }) } catch { /* analytics never blocks */ }
+  }, [open])
   const [seed, setSeed] = useState<{ prompt: string } | null>(null)
   useEffect(() => {
     const h = (e: Event) => {
-      setOpen(true)
       const prompt = (e as CustomEvent<{ prompt?: string }>).detail?.prompt
+      how.current = prompt ? 'task' : 'button'
+      setOpen(true)
       // A fresh object each time, so asking for the same task twice still runs.
       setSeed(prompt ? { prompt } : null)
     }
@@ -67,6 +75,7 @@ export function AssistantDock() {
     const k = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'j') {
         e.preventDefault()
+        how.current = 'shortcut'
         setOpen((o) => !o)
       }
     }
@@ -328,6 +337,8 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
         return
       }
       setBusy(true)
+      // What kind of turn, and what came with it; never the words.
+      try { posthog.capture('portal_assistant_sent', { kind: payload.decision ? (payload.decision.approve ? 'approved' : 'declined') : 'message', images: payload.attachments?.length ?? 0, file: !!payload.list_file }) } catch { /* analytics never blocks */ }
       setItems((p) => {
         // Answered cards and choices leave the list; the reload restores the record.
         const kept = p.filter((i) => i.kind !== 'choices' && (i.kind !== 'approval' || (payload.decision && i.tool_use_id !== payload.decision.tool_use_id)))

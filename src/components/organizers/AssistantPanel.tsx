@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase'
 import { startersFor } from '@/lib/organizer-assistant/starters'
 import { elevationOf, parseGpx, simplify, toWaypoints } from '@/lib/organizers/route-geo'
 import { cx } from './ui'
+import { track } from '@/lib/organizers/track'
 
 const OPEN_EVENT = 'organizers:open-assistant'
 /** Fired after the assistant changes something, so screens can reload. */
@@ -70,16 +71,23 @@ export const ROUTE_IMPORT_KEY = (id: string) => `shift-route-import:${id}`
 /** Listens for openAssistant() and ⌘J; renders the panel while open. */
 export function AssistantDock({ available, onOpenChange }: { available: boolean; onOpenChange: (open: boolean) => void }) {
   const [open, setOpen] = useState(false)
+  // How it was opened (a button, a task from a page, the keyboard), for the opened event.
+  const how = useRef<'button' | 'task' | 'shortcut'>('button')
+  useEffect(() => {
+    if (open) track('organizer_assistant_opened', { how: how.current })
+  }, [open])
   const [seed, setSeed] = useState<{ prompt: string } | null>(null)
   useEffect(() => {
     const h = (e: Event) => {
-      setOpen(true)
       const prompt = (e as CustomEvent<{ prompt?: string }>).detail?.prompt
+      how.current = prompt ? 'task' : 'button'
+      setOpen(true)
       setSeed(prompt ? { prompt } : null)
     }
     const k = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'j') {
         e.preventDefault()
+        how.current = 'shortcut'
         setOpen((o) => !o)
       }
     }
@@ -221,6 +229,8 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
       return
     }
     setBusy(true)
+    // What kind of turn, and what came with it; never the words.
+    track('organizer_assistant_sent', { kind: payload.decision ? (payload.decision.approve ? 'approved' : 'declined') : 'message', images: payload.attachments?.length ?? 0, file: !!payload.route_file })
     setItems((p) => {
       const kept = p.filter((i) => i.kind !== 'choices' && (i.kind !== 'approval' || (payload.decision && i.tool_use_id !== payload.decision.tool_use_id)))
       const shown: Item[] = [

@@ -10,6 +10,7 @@ import type { LatLng, RouteDraft } from '@/lib/organizers/types'
 import RouteMap, { type MapFocus } from './RouteMap'
 import RouteReview, { readRoute } from './RouteReview'
 import { Button, Field, Input, Notice, cx } from './ui'
+import { track } from '@/lib/organizers/track'
 
 type Mode = 'draw' | 'rwgps' | 'gpx'
 
@@ -143,6 +144,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
 
   /** An imported line gets the planner's comfort score and safety check too. */
   async function takeImported(draft: RouteDraft) {
+    track('organizer_route_imported', { source: draft.source, points: draft.waypoints.length })
     onRoute(draft)
     setPlan(null)
     setFitKey((k) => k + 1)

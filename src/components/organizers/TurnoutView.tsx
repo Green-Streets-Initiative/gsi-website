@@ -8,6 +8,7 @@ import type { Turnout } from '@/lib/organizers/types'
 import { useRide } from './RideFrame'
 import { Button, Card, Empty, Notice, SectionTitle, Spinner } from './ui'
 import { downloadCsv } from '@/lib/csv'
+import { track } from '@/lib/organizers/track'
 
 function slug(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'ride'
@@ -69,8 +70,8 @@ export default function TurnoutView() {
           hint="From people's own trips in the Shift app, plus requests you approve."
           action={
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => downloadCsv(`${file}-turnout-by-month.csv`, monthRows())}><Download className="h-4 w-4" aria-hidden />Monthly CSV</Button>
-              <Button size="sm" onClick={() => downloadCsv(`${file}-turnout-by-date.csv`, dateRows())}><Download className="h-4 w-4" aria-hidden />Every date CSV</Button>
+              <Button size="sm" onClick={() => { downloadCsv(`${file}-turnout-by-month.csv`, monthRows()); track('organizer_turnout_exported', { ride_id: r.id, by: 'month' }) }}><Download className="h-4 w-4" aria-hidden />Monthly CSV</Button>
+              <Button size="sm" onClick={() => { downloadCsv(`${file}-turnout-by-date.csv`, dateRows()); track('organizer_turnout_exported', { ride_id: r.id, by: 'date' }) }}><Download className="h-4 w-4" aria-hidden />Every date CSV</Button>
             </div>
           }
         >

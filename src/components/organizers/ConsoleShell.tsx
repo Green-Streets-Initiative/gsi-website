@@ -9,12 +9,15 @@ import { toneClass } from '@/components/events/EventsTone'
 import { supabase } from '@/lib/supabase'
 import { AssistantDock, openAssistant } from './AssistantPanel'
 import { ConsoleProvider, useConsole } from './ConsoleContext'
+import ConsoleTracking from './ConsoleTracking'
+import { track } from '@/lib/organizers/track'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from './ui'
 import '@/components/events/events-tone.css'
 
 export default function ConsoleShell({ children }: { children: ReactNode }) {
   return (
     <ConsoleProvider>
+      <ConsoleTracking />
       <Frame>{children}</Frame>
     </ConsoleProvider>
   )
@@ -144,6 +147,7 @@ function SignIn() {
       return
     }
     setSent(addr)
+    track('organizer_signin_link_sent')
   }
 
   return (

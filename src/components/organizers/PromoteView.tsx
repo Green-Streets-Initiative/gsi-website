@@ -11,6 +11,7 @@ import { clock, dateLong, dateShort, dayShort, scheduleText } from '@/lib/rides/
 import { PROMO_CHANNELS, PROMO_LABEL, promoLink, type PromoChannel } from '@/lib/rides/promo'
 import { useRide } from './RideFrame'
 import { Button, Card, Notice, SectionTitle, Spinner, Toggle, cx } from './ui'
+import { track } from '@/lib/organizers/track'
 
 type Post = Exclude<PromoChannel, 'qr' | 'cal'>
 const POSTS = PROMO_CHANNELS.filter((c): c is { key: Post; label: string } => c.key !== 'qr' && c.key !== 'cal')
@@ -33,10 +34,11 @@ const CALENDARS: { key: string; name: string; how: string; url: string }[] = [
   { key: 'patch', name: 'Patch', how: 'Free on up to three town calendars.', url: 'https://patch.com/' },
 ]
 
-function useCopy(): [string | null, (key: string, text: string) => void] {
+function useCopy(onCopied?: (key: string) => void): [string | null, (key: string, text: string) => void] {
   const [copied, setCopied] = useState<string | null>(null)
   const copy = (key: string, text: string) => {
     void navigator.clipboard.writeText(text).then(() => {
+      onCopied?.(key)
       setCopied(key)
       setTimeout(() => setCopied((k) => (k === key ? null : k)), 1800)
     })
@@ -106,7 +108,8 @@ export default function PromoteView() {
   const { detail } = useRide()
   const r = detail.ride
   const code = r.invite_code
-  const [copied, copy] = useCopy()
+  // "cap-ig", "link-wa", "cal": which words or link went out, never the text.
+  const [copied, copy] = useCopy((what) => track('organizer_promo_copied', { ride_id: r.id, what }))
   const [post, setPost] = useState<Post>('ig')
   const [edits, setEdits] = useState<Partial<Record<Post, string>>>({})
   const [qr, setQr] = useState<string | null>(null)
@@ -228,6 +231,7 @@ export default function PromoteView() {
       ctx.font = "500 30px 'DM Sans', sans-serif"
       ctx.fillText(`gogreenstreets.org/r/${code}/qr`, P, H - P - 30)
       saveFile(`${fileSlug(r.name)}-post.png`, canvas.toDataURL('image/png'))
+      track('organizer_plain_post_made', { ride_id: r.id })
     } finally {
       setMaking(false)
     }
@@ -277,10 +281,10 @@ export default function PromoteView() {
             {qr ? <img src={qr} alt={`QR code for ${r.name}`} className="h-full w-full" /> : null}
           </div>
           <div className="flex flex-col items-start gap-2">
-            <Button size="sm" variant="primary" disabled={!qr} onClick={() => qr && saveFile(`${fileSlug(r.name)}-qr.png`, qr)}>
+            <Button size="sm" variant="primary" disabled={!qr} onClick={() => { if (!qr) return; saveFile(`${fileSlug(r.name)}-qr.png`, qr); track('organizer_qr_downloaded', { ride_id: r.id }) }}>
               <Download className="h-4 w-4" aria-hidden />Download QR code
             </Button>
-            <a href={`/rides/${code}/flyer`} target="_blank" rel="noopener noreferrer"
+            <a href={`/rides/${code}/flyer`} target="_blank" rel="noopener noreferrer" onClick={() => track('organizer_flyer_opened', { ride_id: r.id })}
               className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
               <Printer className="h-4 w-4" aria-hidden />No flyer yet? Print one
             </a>

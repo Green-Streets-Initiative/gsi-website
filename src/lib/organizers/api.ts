@@ -9,6 +9,7 @@
  * generating a ride's dates, and emailing a co-organizer invite.
  */
 import { supabase } from '@/lib/supabase'
+import { track } from './track'
 import type {
   ConsoleMe, CreditRequest, DashboardRide, PromoStats, RideDetail, RosterRow, Turnout,
 } from './types'
@@ -102,6 +103,7 @@ export async function saveRide(seriesId: string | null, ride: Record<string, unk
   // Dates now rather than at the nightly run, as the app does. A failure here
   // is not a failed save: the nightly run catches up.
   await generateDates(result.id).catch(() => {})
+  track(seriesId ? 'organizer_ride_saved' : 'organizer_ride_created', { ride_id: result.id, fields: Object.keys(ride).length })
   return result
 }
 
@@ -120,24 +122,28 @@ export interface SendResult {
 }
 
 /** Post on / late / weather / note. `dryRun` returns who it would reach. */
-export const postUpdate = (args: {
+export async function postUpdate(args: {
   seriesId: string
   occurrenceId: string | null
   kind: 'on' | 'late' | 'weather' | 'note'
   note: string
   dryRun?: boolean
-}) =>
-  shiftFunction<SendResult>('ride-update', {
+}): Promise<SendResult> {
+  const r = await shiftFunction<SendResult>('ride-update', {
     series_id: args.seriesId,
     occurrence_id: args.occurrenceId ?? undefined,
     kind: args.kind,
     note: args.note.trim() || undefined,
     dry_run: args.dryRun || undefined,
   })
+  if (!args.dryRun) track('organizer_update_posted', { ride_id: args.seriesId, kind: args.kind, has_note: !!args.note.trim(), notified: r.notified, emailed: r.emailed })
+  return r
+}
 
 /** Cancel or bring back one date; a cancel tells everyone on it. */
 export async function setDateCanceled(occurrenceId: string, canceled: boolean): Promise<SendResult | null> {
   await rpc('set_ride_occurrence_canceled', { p_occurrence_id: occurrenceId, p_canceled: canceled })
+  track(canceled ? 'organizer_date_canceled' : 'organizer_date_restored', { occurrence_id: occurrenceId })
   if (!canceled) return null
   return shiftFunction<SendResult>('notify-ride-canceled', { occurrence_id: occurrenceId }).catch(() => null)
 }
@@ -160,6 +166,7 @@ export async function changeDate(occurrenceId: string, args: {
     p_reset_meetup: !!args.resetMeetup,
   })
   if (!data?.changed) return { changed: false, sent: null }
+  track('organizer_date_changed', { occurrence_id: occurrenceId, time: args.startTime !== undefined || !!args.resetTime, meetup: args.meetup !== undefined || !!args.resetMeetup })
   const sent = await shiftFunction<SendResult>('notify-ride-canceled', { occurrence_id: occurrenceId, change: true })
     .catch(() => null)
   return { changed: true, sent }
@@ -168,6 +175,7 @@ export async function changeDate(occurrenceId: string, args: {
 /** End the ride or take a break, then tell everyone, as the app's stop screen does. */
 export async function stopRide(seriesId: string, mode: 'end' | 'break', until: string | null, note: string, notify: boolean) {
   await rpc('stop_ride_series', { p_series_id: seriesId, p_mode: mode, p_until: mode === 'break' ? until : null, p_note: note.trim() || null })
+  track('organizer_ride_stopped', { ride_id: seriesId, mode, notify })
   if (!notify) return null
   return shiftFunction<SendResult>('notify-ride-canceled', { series_id: seriesId, stop: mode === 'end' ? 'ended' : 'break' })
     .catch(() => null)
@@ -175,19 +183,26 @@ export async function stopRide(seriesId: string, mode: 'end' | 'break', until: s
 
 export async function resumeRide(seriesId: string) {
   const r = await rpc<{ reinstated: number }>('resume_ride_series', { p_series_id: seriesId })
+  track('organizer_ride_resumed', { ride_id: seriesId, reinstated: r?.reinstated ?? null })
   await generateDates(seriesId).catch(() => {})
   return r
 }
 
-export const settleCredit = (occurrenceId: string, memberId: string, approve: boolean) =>
-  rpc<{ ok: boolean; state: string; remaining: number }>('settle_ride_credit_request', {
+export async function settleCredit(occurrenceId: string, memberId: string, approve: boolean) {
+  const r = await rpc<{ ok: boolean; state: string; remaining: number }>('settle_ride_credit_request', {
     p_occurrence_id: occurrenceId, p_member_id: memberId, p_approve: approve,
   })
+  track('organizer_credit_settled', { occurrence_id: occurrenceId, approve })
+  return r
+}
 
-export const inviteLeader = (seriesId: string, email: string) =>
-  siteApi<{ status: 'invited' | 'made_leader' | 'already_leader' | 'already_organizer'; emailed?: boolean }>(
+export async function inviteLeader(seriesId: string, email: string) {
+  const r = await siteApi<{ status: 'invited' | 'made_leader' | 'already_leader' | 'already_organizer'; emailed?: boolean }>(
     '/api/organizers/invite-leader', { series_id: seriesId, email },
   )
+  track('organizer_leader_invited', { ride_id: seriesId, status: r.status })
+  return r
+}
 
 export const revokeLeaderInvite = (inviteId: string) =>
   rpc<void>('revoke_ride_leader_invite', { p_invite_id: inviteId })
@@ -195,8 +210,11 @@ export const revokeLeaderInvite = (inviteId: string) =>
 export const setMemberRole = (seriesId: string, userId: string, role: 'leader' | 'rider') =>
   rpc<{ ok: boolean }>('set_ride_member_role', { p_series_id: seriesId, p_user_id: userId, p_role: role })
 
-export const saveHostPage = (organizerId: string, profile: Record<string, unknown>) =>
-  rpc<Record<string, unknown>>('update_event_organizer_profile', { p_organizer_id: organizerId, p_profile: profile })
+export async function saveHostPage(organizerId: string, profile: Record<string, unknown>) {
+  const r = await rpc<Record<string, unknown>>('update_event_organizer_profile', { p_organizer_id: organizerId, p_profile: profile })
+  track('organizer_host_page_saved', { organizer_id: organizerId })
+  return r
+}
 
 /** Upload a flyer to the same bucket and path the app uses. */
 export async function uploadFlyer(file: File): Promise<string> {
@@ -209,6 +227,7 @@ export async function uploadFlyer(file: File): Promise<string> {
   const path = `${uid}/${Date.now()}.${ext}`
   const { error } = await supabase.storage.from('ride-flyers').upload(path, file, { contentType: file.type, upsert: true })
   if (error) throw new Error(error.message)
+  track('organizer_flyer_uploaded')
   return supabase.storage.from('ride-flyers').getPublicUrl(path).data.publicUrl
 }
 
@@ -242,6 +261,7 @@ export async function planRoute(pins: { lat: number; lng: number; label?: string
     const p = await shiftFunction<PlannedRoute>('plan-ride-route', { pins: pair, mode: 'bike', pace: pace ?? undefined }, 90_000)
     return p.legs?.[0] ?? { options: [] }
   }))
+  track('organizer_route_planned', { stops: pins.length, found: legs.every((l) => l.options.length > 0) })
   return { legs }
 }
 
