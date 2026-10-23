@@ -183,7 +183,7 @@ export const TOOLS: Anthropic.Tool[] = [
         places: { type: 'array', items: { type: 'string' }, description: 'Places to pass, in their words: "Bow Market", "a coffee shop near the halfway point", "Mystic River Reservation". At most six.' },
         showcase: { type: ['string', 'null'], enum: ['protected', 'new', null], description: 'protected: ride the best protected lanes and car-free paths nearby. new: ride lanes MassDOT lists as opened in the last two years.' },
         near_station_miles: nullable('number', 'Check that the start, and as much of the route as possible, is within this many miles of a Bluebikes dock or T station.'),
-        prefer: { type: 'array', items: { type: 'string', enum: ['shift_shops', 'bicycle_benefits', 'bike_friendly_business'] }, description: 'Kinds of business to favor for a stop given as a kind ("a coffee shop"). shift_shops: shops in the Shift rewards catalog, where Shift members spend the rewards they win. bicycle_benefits: Bicycle Benefits members, which give a perk to people with the program\'s helmet sticker. bike_friendly_business: businesses the League of American Bicyclists certifies as Bicycle Friendly. Use what the organizer asks for.' },
+        prefer: { type: 'array', items: { type: 'string', enum: ['bicycle_benefits', 'bike_friendly_business'] }, description: 'Bike-friendly businesses to favor for a stop given as a kind ("a coffee shop"). bicycle_benefits: Bicycle Benefits members, which give a perk to people with the program\'s helmet sticker. bike_friendly_business: businesses the League of American Bicyclists certifies as Bicycle Friendly. Use what the organizer asks for.' },
       },
     },
   },
@@ -535,7 +535,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           showcase: input.showcase === 'protected' || input.showcase === 'new' ? input.showcase : null,
           near_station_miles: typeof input.near_station_miles === 'number' ? input.near_station_miles : null,
           prefer: Array.isArray(input.prefer)
-            ? input.prefer.filter((x): x is 'shift_shops' | 'bicycle_benefits' | 'bike_friendly_business' => x === 'shift_shops' || x === 'bicycle_benefits' || x === 'bike_friendly_business')
+            ? input.prefer.filter((x): x is 'bicycle_benefits' | 'bike_friendly_business' => x === 'bicycle_benefits' || x === 'bike_friendly_business')
             : [],
         })
         if (!res.ok || !res.plan) return ok({ planned: false, notes: res.notes })
