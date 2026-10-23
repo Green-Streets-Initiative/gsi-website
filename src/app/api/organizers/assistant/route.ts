@@ -2,7 +2,8 @@
 // assistant's design (src/app/api/employer/assistant/route.ts).
 //
 // GET  ?thread_id=      the conversation so far (latest if no id); ?list=1 lists them
-// POST { thread_id?, message?, decision?: { tool_use_id, approve, confirm_text? }, new_thread?, carry_from?, rating? }
+// POST { thread_id?, message?, decision?: { tool_use_id, approve, confirm_text? }, new_thread?, carry_from?, rating?,
+//        attachments?: [{ url, name }] (images in ride-flyers/<uid>/), route_file?: { import_id, name, waypoints, elevation } }
 //      streams newline-delimited JSON events while the assistant works:
 //      {type:'thread', id} {type:'text', delta} {type:'tool', id, label}
 //      {type:'tool_done', id, ok, link?} {type:'choices', options}
@@ -18,6 +19,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { SYSTEM_PROMPT, contextBlock } from '@/lib/organizer-assistant/prompt'
 import { ACTIVITY, NEEDS_APPROVAL, TOOLS, approvalCard, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult } from '@/lib/organizer-assistant/tools'
+import { summarizeRoute } from '@/lib/organizer-assistant/route-designer'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -155,6 +157,8 @@ function choicesFilter(send: (delta: string) => void) {
 
 type Item =
   | { kind: 'user'; text: string }
+  | { kind: 'user_image'; url: string }
+  | { kind: 'user_file'; name: string }
   | { kind: 'carried' }
   | { kind: 'assistant'; text: string; msgId?: number; rated?: 'up' | 'down' }
   | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; card?: { title: string; decision: 'approved' | 'declined' } }
@@ -167,8 +171,16 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
   for (const m of messages) {
     const blocks = (Array.isArray(m.content) ? m.content : [{ type: 'text', text: String(m.content) }]) as Record<string, unknown>[]
     for (const b of blocks) {
+      if (b.type === 'image' && m.role === 'user') {
+        const src = b.source as { url?: string } | undefined
+        if (src?.url) items.push({ kind: 'user_image', url: src.url })
+        continue
+      }
       if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) {
         if (m.role === 'user' && b.text.startsWith('[Carried over')) { items.push({ kind: 'carried' }); continue }
+        // Notes that travel with an attachment are for the model; the panel shows the attachment.
+        if (m.role === 'user' && b.text.startsWith('[Attached image')) continue
+        if (m.role === 'user' && b.text.startsWith('[Attached route')) { items.push({ kind: 'user_file', name: b.text.match(/"([^"]*)"/)?.[1] ?? 'Route' }); continue }
         if (m.role === 'user') { items.push({ kind: 'user', text: b.text }); continue }
         const sp = splitChoices(b.text)
         if (sp.text) {
@@ -260,6 +272,8 @@ export async function POST(request: Request) {
     new_thread?: boolean
     carry_from?: string
     rating?: { message_id: number; up: boolean; note?: string }
+    attachments?: { url: string; name?: string }[]
+    route_file?: { import_id: string; name?: string; waypoints: { lat: number; lng: number }[]; elevation?: { ascent_ft: number } | null }
   } | null
   const auth = await authorize(request)
   if ('error' in auth) return auth.error
@@ -288,7 +302,26 @@ export async function POST(request: Request) {
   }
 
   const text = (body?.message ?? '').trim().slice(0, 4000)
-  if (!text && !body?.decision) return Response.json({ error: 'Say something first.' }, { status: 400 })
+  // Images: only this organizer's uploads, so the model never fetches an arbitrary URL.
+  const imagePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ride-flyers/${user.id}/`
+  const attachments = (body?.attachments ?? []).filter((a) => typeof a?.url === 'string' && a.url.startsWith(imagePrefix)).slice(0, 3)
+  // A GPX route read in the browser: scored here, before anything is stored,
+  // so a bad file is turned away with a reason. The browser keeps the line
+  // under its import id for the editor to load.
+  let routeNote: string | null = null
+  const rf = body?.route_file
+  if (rf && !body?.decision) {
+    const pts = Array.isArray(rf.waypoints) ? rf.waypoints.filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng)).slice(0, 2000) : []
+    if (!/^[a-z0-9]{6,24}$/.test(String(rf.import_id ?? '')) || pts.length < 2) return Response.json({ error: "That route file couldn't be read." }, { status: 400 })
+    try {
+      const summary = await summarizeRoute(token, pts, null, rf.elevation ?? null)
+      const name = String(rf.name ?? 'Route').replace(/"/g, "'").slice(0, 120)
+      routeNote = `[Attached route "${name}" (import_id ${rf.import_id}). How it rides: ${JSON.stringify(summary)}. To open it street by street in the editor, use open_page edit (or new_ride) with this import_id; it is saved only when they press Save there.]`
+    } catch {
+      return Response.json({ error: "The route planner couldn't check that route just now. Try again in a minute." }, { status: 502 })
+    }
+  }
+  if (!text && !body?.decision && attachments.length === 0 && !routeNote) return Response.json({ error: 'Say something first.' }, { status: 400 })
 
   // Caps: this person per rolling day, everyone per month.
   const monthStart = new Date()
@@ -324,12 +357,17 @@ export async function POST(request: Request) {
     thread = claimed as Thread
   } else {
     const { data, error } = await admin.from('ride_assistant_threads')
-      .insert({ user_id: user.id, title: text.slice(0, 80) || 'Rides', busy_until: lockUntil }).select('id, pending').single()
+      .insert({ user_id: user.id, title: text.slice(0, 80) || (rf ? String(rf.name ?? 'Route') : attachments.length ? 'Image' : 'Rides'), busy_until: lockUntil }).select('id, pending').single()
     if (error || !data) return Response.json({ error: 'Could not start a conversation.' }, { status: 500 })
     thread = data as Thread
   }
   const threadId = thread.id
   const userBlocks = (): unknown[] => [
+    ...attachments.flatMap((a) => [
+      { type: 'image', source: { type: 'url', url: a.url } },
+      { type: 'text', text: `[Attached image${a.name ? ` "${String(a.name).replace(/"/g, "'").slice(0, 120)}"` : ''}: ${a.url}]` },
+    ]),
+    ...(routeNote ? [{ type: 'text', text: routeNote }] : []),
     ...(carryNote ? [{ type: 'text', text: carryNote }] : []),
     ...(text ? [{ type: 'text', text }] : []),
   ]
@@ -392,7 +430,7 @@ export async function POST(request: Request) {
           await setPending(null)
           pending = null
         } else {
-          if (!text) { emit({ type: 'done' }); return }
+          if (!text && attachments.length === 0 && !routeNote) { emit({ type: 'done' }); return }
           await append('user', userBlocks())
         }
 

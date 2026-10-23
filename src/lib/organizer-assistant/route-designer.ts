@@ -678,3 +678,42 @@ export function encodePlan(plan: NonNullable<DesignResult['plan']>): string {
   return Buffer.from(JSON.stringify({ p: plan.pins.map((p) => [p.lat, p.lng, p.label ?? '']), c: plan.chosen, pace: plan.pace })).toString('base64url')
 }
 
+
+/**
+ * How an existing route rides (a GPX file or a Ride with GPS link the
+ * organizer brought): the planner scores the line as given (plan-ride-route
+ * polyline mode), and this reads it back the way designRoute reports.
+ */
+export async function summarizeRoute(
+  token: string,
+  waypoints: LatLng[],
+  pace: string | null,
+  elevation: { ascent_ft: number } | null,
+): Promise<Record<string, unknown>> {
+  const res = await fetch(`${FUNCTIONS}/plan-ride-route`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ pins: waypoints.slice(0, 2), polyline: waypoints, mode: 'bike', pace: pace && PACE_MID_MPH[pace] ? pace : undefined }),
+    signal: AbortSignal.timeout(110_000),
+  })
+  const s = (await res.json().catch(() => ({}))) as {
+    comfort_segments?: { label: string; rating: string; distance_mi: number }[]
+    flags?: CalmFlag[]
+    elevation?: { ascent_ft: number } | null
+    error?: string
+  }
+  if (!res.ok) throw new Error(s.error ?? `The route planner answered ${res.status}`)
+  const total = routeMiles(waypoints)
+  const segs = s.comfort_segments ?? []
+  const climb = elevation?.ascent_ft ?? s.elevation?.ascent_ft ?? null
+  return {
+    miles: r1(total),
+    riding_minutes: pace && PACE_MID_MPH[pace] ? Math.round((total / PACE_MID_MPH[pace]) * 60) : null,
+    climbing_ft: climb != null ? Math.round(climb) : null,
+    calm_streets_pct: Math.round(comfortableShare(segs) * 100),
+    protected_or_path_pct: comfortBreakdown(segs).filter((c) => c.rating === 'protected' || c.rating === 'path').reduce((a, c) => a + c.pct, 0),
+    by_comfort: comfortBreakdown(segs).map((c) => `${c.pct}% ${c.rating.replace('_', ' ')}`),
+    spots_to_take_carefully: relevantConcerns(s.flags ?? []).filter((f) => f.type === 'concern').map(concernTitle),
+    new_lanes_ridden: newLaneNotes(s.flags ?? []),
+  }
+}

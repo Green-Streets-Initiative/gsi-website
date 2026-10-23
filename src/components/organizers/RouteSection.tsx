@@ -28,10 +28,12 @@ const MODES: { key: Mode; label: string }[] = [
   { key: 'gpx', label: 'GPX file' },
 ]
 
-export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtStart, initialPlan }: {
+export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtStart, initialPlan, initialImport }: {
   route: RouteDraft | null
   /** Stops and per-leg choices from the assistant's plan_route, planned on arrival. */
   initialPlan?: { stops: (LatLng & { label?: string })[]; chosen: number[] } | null
+  /** A route brought to the assistant: a GPX file's line, or a Ride with GPS link. */
+  initialImport?: { kind: 'gpx'; route: { name: string | null; waypoints: LatLng[]; elevation: RouteDraft['elevation'] } } | { kind: 'rwgps'; url: string } | null
   onRoute: (r: RouteDraft | null) => void
   meetup: (LatLng & { label?: string }) | null
   pace: string | null
@@ -51,6 +53,26 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
   const [scoring, setScoring] = useState<'idle' | 'busy' | 'failed'>('idle')
   const fileRef = useRef<HTMLInputElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
+
+  // A route brought to the assistant, loaded and scored on arrival.
+  const tookImport = useRef(false)
+  useEffect(() => {
+    if (!initialImport || tookImport.current) return
+    tookImport.current = true
+    if (initialImport.kind === 'gpx') {
+      setMode('gpx')
+      void takeImported({
+        waypoints: initialImport.route.waypoints, pins: [], flags: [], comfortSegments: null, comfortRating: null, comfortSummary: null,
+        elevation: initialImport.route.elevation ?? null, source: 'gpx', sourceName: initialImport.route.name ?? 'a GPX file',
+      })
+    } else {
+      setMode('rwgps')
+      setLink(initialImport.url)
+      void importLink(initialImport.url)
+    }
+    setTimeout(() => boxRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialImport])
 
   // The assistant's plan: its stops, re-planned with the options it picked.
   const tookPlan = useRef(false)
@@ -127,11 +149,11 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
     }
   }
 
-  async function importLink() {
+  async function importLink(url?: string) {
     setBusy(true)
     setErr(null)
     try {
-      const r = await importRideWithGps(link.trim())
+      const r = await importRideWithGps((url ?? link).trim())
       void takeImported({
         waypoints: r.waypoints, pins: [], flags: [], comfortSegments: null, comfortRating: null, comfortSummary: null,
         elevation: r.elevation, source: 'ridewithgps', sourceName: r.name,

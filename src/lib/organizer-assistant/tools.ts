@@ -5,7 +5,8 @@ import { clock, scheduleText } from '@/lib/rides/public'
 import { inviteCoOrganizer } from '@/lib/organizers/invite'
 import { PACE_OPTIONS, TAG_OPTIONS, UPDATE_KIND_LABEL, dateLabel, todayKey } from '@/lib/organizers/ride-words'
 import type { DashboardRide, RideDetail, RideRow, RosterRow, Turnout } from '@/lib/organizers/types'
-import { designRoute, encodePlan } from './route-designer'
+import { designRoute, encodePlan, summarizeRoute } from './route-designer'
+import { fetchRideWithGps } from '@/lib/organizers/rwgps'
 
 // The organizer assistant's tools (Keith 2026-10-22). Same shape as the
 // employer assistant's: reads run straight away as the organizer; anything
@@ -103,6 +104,7 @@ const rideFields = {
   visibility: { type: 'string', enum: ['public', 'invite'] },
   registration_url: nullable('string', 'Only if people must sign up or sign a waiver elsewhere.'),
   contact_url: nullable('string', 'A WhatsApp or Discord group, or a mailto: link.'),
+  flyer_url: nullable('string', "An image the organizer attached in this conversation (its URL from the [Attached image] note), to show as the ride's flyer. Only when they say to use it."),
 } as const
 
 export const TOOLS: Anthropic.Tool[] = [
@@ -150,6 +152,7 @@ export const TOOLS: Anthropic.Tool[] = [
         page: { type: 'string', enum: ['rides', 'new_ride', 'ride', 'edit', 'roster', 'turnout', 'team', 'host'] },
         series_id: nullable('string'),
         occurrence_id: nullable('string'),
+        import_id: nullable('string', 'With edit or new_ride: a GPX route the organizer attached (the import id in its [Attached route] note), to load into the route section.'),
         label: { type: 'string', description: 'The button text, a few words with a verb ("Draw the route").' },
       },
       required: ['page', 'label'],
@@ -185,6 +188,18 @@ export const TOOLS: Anthropic.Tool[] = [
         near_station_miles: nullable('number', 'Check that the start, and as much of the route as possible, is within this many miles of a Bluebikes dock or T station.'),
         prefer: { type: 'array', items: { type: 'string', enum: ['bicycle_benefits', 'bike_friendly_business'] }, description: 'Bike-friendly businesses to favor for a stop given as a kind ("a coffee shop"). bicycle_benefits: Bicycle Benefits members, which give a perk to people with the program\'s helmet sticker. bike_friendly_business: businesses the League of American Bicyclists certifies as Bicycle Friendly. Use what the organizer asks for.' },
       },
+    },
+  },
+  {
+    name: 'check_route_link',
+    description: 'Read a Ride with GPS route link the organizer pasted and check how it rides: distance, climbing, share on calm streets, spots to take carefully, new lanes on it. Returns a button that opens it in the route editor street by street, with Street View, where they save it to a ride.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'The ridewithgps.com/routes/… (or /trips/…) link, as pasted.' },
+        series_id: nullable('string', 'The ride it is for, if known: the button opens that ride\'s editor. Empty: a new ride.'),
+      },
+      required: ['url'],
     },
   },
   // ── Approval needed ──
@@ -275,6 +290,7 @@ export const ACTIVITY: Record<string, string> = {
   get_forecast: 'Checking the forecast',
   find_place: 'Looking up the place',
   plan_route: 'Planning the route (up to a minute)',
+  check_route_link: 'Checking the route',
   note_feedback: 'Passing it to the GSI team',
   create_ride: 'Creating the ride',
   update_ride: 'Saving the changes',
@@ -392,14 +408,14 @@ type RideInput = Partial<{
   frequency: string; days: number[]; week_of_month: number | null; season_start: string | null; season_end: string | null
   start_time: string; end_time: string | null; meetup: { name: string; address?: string; lat: number; lng: number }
   pace: string | null; no_drop: boolean | null; tags: string[]; visibility: 'public' | 'invite'
-  registration_url: string | null; contact_url: string | null
+  registration_url: string | null; contact_url: string | null; flyer_url: string | null
 }>
 
 /** The model's ride fields in the save function's shape. */
 function inputPayload(i: RideInput): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   const copy = ['name', 'description', 'schedule', 'ride_date', 'frequency', 'days', 'week_of_month', 'season_start', 'season_end',
-    'start_time', 'end_time', 'pace', 'no_drop', 'tags', 'visibility', 'registration_url', 'contact_url'] as const
+    'start_time', 'end_time', 'pace', 'no_drop', 'tags', 'visibility', 'registration_url', 'contact_url', 'flyer_url'] as const
   for (const k of copy) if (i[k] !== undefined) out[k] = i[k]
   if (i.meetup) {
     out.meetup_name = i.meetup.name
@@ -546,12 +562,25 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           button: 'Shown under your reply: opens the route street by street, with Street View, in the editor. It is saved only when they press Save there.',
         }, { href, label: 'See the route street by street' })
       }
+      case 'check_route_link': {
+        const r = await fetchRideWithGps(String(input.url ?? ''))
+        if (!r.ok) return fail(r.error)
+        const sid = typeof input.series_id === 'string' && /^[0-9a-f-]{36}$/i.test(input.series_id) ? input.series_id : null
+        let pace: string | null = null
+        if (sid) pace = (await rpc<RideDetail>(ctx, 'organizer_ride_detail', { p_series_id: sid })).ride.pace
+        const summary = await summarizeRoute(ctx.token, r.waypoints, pace, r.elevation)
+        const q = `?rwgps=${encodeURIComponent(String(input.url).trim())}#sec-route`
+        return ok({ name: r.name, ...summary, button: 'Shown under your reply: opens the route street by street, with Street View, in the editor. It is saved only when they press Save there.' },
+          { href: sid ? `/organizers/rides/${sid}/edit${q}` : `/organizers/rides/new${q}`, label: 'See the route street by street' })
+      }
       case 'open_page': {
         const s = typeof input.series_id === 'string' && /^[0-9a-f-]{36}$/i.test(input.series_id) ? input.series_id : null
         const base = s ? `/organizers/rides/${s}` : '/organizers'
+        const importId = typeof input.import_id === 'string' && /^[a-z0-9]{6,24}$/.test(input.import_id) ? input.import_id : null
+        const importQ = importId ? `?import=${importId}#sec-route` : ''
         const href = ({
-          rides: '/organizers', new_ride: '/organizers/rides/new', host: '/organizers/host',
-          ride: base, edit: `${base}/edit`, roster: `${base}/roster${input.occurrence_id ? `?date=${input.occurrence_id}` : ''}`,
+          rides: '/organizers', new_ride: `/organizers/rides/new${importQ}`, host: '/organizers/host',
+          ride: base, edit: `${base}/edit${importQ}`, roster: `${base}/roster${input.occurrence_id ? `?date=${input.occurrence_id}` : ''}`,
           turnout: `${base}/turnout`, team: `${base}/team`,
         } as Record<string, string>)[String(input.page)] ?? '/organizers'
         return ok({ shown: true }, { href, label: String(input.label || 'Open') })
@@ -631,6 +660,12 @@ async function forecast(lat: number | null, lng: number | null, date: string, st
 
 // ── Cards: written by the server from the inputs, never the model's words ──
 
+/** A flyer the assistant may set: an image this organizer uploaded in the chat. */
+function ownFlyer(ctx: ToolCtx, url: unknown): boolean {
+  const prefix = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/storage/v1/object/public/ride-flyers/${ctx.userId}/`
+  return typeof url === 'string' && url.startsWith(prefix)
+}
+
 export async function approvalCard(ctx: ToolCtx, name: string, input: Record<string, unknown>):
   Promise<{ card: ApprovalCard; input: Record<string, unknown> } | { result: ToolResult }> {
   try {
@@ -639,6 +674,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         const me = await rpc<{ can_create?: boolean }>(ctx, 'organizer_console_me')
         if (!me.can_create) return { result: fail('This person can post updates on rides they help run, but setting up new rides is for invited organizers.') }
         const p = inputPayload((input.ride ?? {}) as RideInput)
+        if (p.flyer_url != null && !ownFlyer(ctx, p.flyer_url)) return { result: fail('A flyer has to be an image attached in this conversation.') }
         const missing = missingForRide(p)
         if (missing) return { result: fail(`Still needed before it can be created: ${missing}. Ask for it.`) }
         const lines = [
@@ -655,6 +691,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         if (!d.can_edit) return { result: fail("Only the ride's organizer can change its details.") }
         const before = rowPayload(d.ride)
         const change = inputPayload((input.changes ?? {}) as RideInput)
+        if (change.flyer_url != null && !ownFlyer(ctx, change.flyer_url)) return { result: fail('A flyer has to be an image attached in this conversation.') }
         if (change.schedule === 'one_time' && !change.ride_date && !before.ride_date) return { result: fail('A one-time ride needs its date.') }
         const after = { ...before, ...change }
         const missing = missingForRide(after)
@@ -670,6 +707,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         if ('tags' in change) lines.push(`Tags: ${((after.tags as string[]) ?? []).map((t) => TAG_OPTIONS.find((o) => o.key === t)?.label ?? t).join(', ') || 'none'}`)
         if ('registration_url' in change) lines.push(after.registration_url ? `Registration link: ${after.registration_url}` : 'No registration link')
         if ('contact_url' in change) lines.push(after.contact_url ? `Contact link: ${after.contact_url}` : 'No contact link')
+        if ('flyer_url' in change) lines.push(after.flyer_url ? 'Flyer: the image you attached, on the ride page and in the app' : 'No flyer')
         if (!lines.length) return { result: fail('Nothing would change.') }
         lines.push('Shows on the ride page and in the app right away. Cancelled dates stay cancelled.')
         return {

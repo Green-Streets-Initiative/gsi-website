@@ -9,8 +9,9 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowUp, Check, ExternalLink, History, Loader2, MapPin, MessageSquarePlus, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowUp, Check, ExternalLink, History, Loader2, MapPin, MessageSquarePlus, Paperclip, Route as RouteIcon, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { elevationOf, parseGpx, simplify, toWaypoints } from '@/lib/organizers/route-geo'
 import { cx } from './ui'
 
 const OPEN_EVENT = 'organizers:open-assistant'
@@ -30,12 +31,17 @@ type LinkT = { href: string; label: string; external?: boolean }
 type ThreadSummary = { id: string; title: string; updated_at: string; waiting: boolean }
 type Item =
   | { kind: 'user'; text: string }
+  | { kind: 'user_image'; url: string }
+  | { kind: 'user_file'; name: string }
   | { kind: 'carried' }
   | { kind: 'assistant'; text: string; msgId?: number; rated?: 'up' | 'down' }
   | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: LinkT; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
   | { kind: 'approval'; tool_use_id: string; card: Card }
   | { kind: 'error'; text: string }
+
+/** Where an attached GPX route waits for the editor (?import=<id>): this browser only. */
+export const ROUTE_IMPORT_KEY = (id: string) => `shift-route-import:${id}`
 
 /** Listens for openAssistant() and ⌘J; renders the panel while open. */
 export function AssistantDock({ available, onOpenChange }: { available: boolean; onOpenChange: (open: boolean) => void }) {
@@ -177,6 +183,8 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
 
   const send = useCallback(async (payload: {
     message?: string
+    attachments?: { url: string; name: string }[]
+    route_file?: { import_id: string; name: string; waypoints: { lat: number; lng: number }[]; elevation: { ascent_ft: number } | null }
     decision?: { tool_use_id: string; approve: boolean; confirm_text?: string }
     carry_from?: string
     new_thread?: boolean
@@ -191,7 +199,12 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
     setBusy(true)
     setItems((p) => {
       const kept = p.filter((i) => i.kind !== 'choices' && (i.kind !== 'approval' || (payload.decision && i.tool_use_id !== payload.decision.tool_use_id)))
-      return payload.message ? [...kept, { kind: 'user', text: payload.message }] : kept
+      const shown: Item[] = [
+        ...(payload.attachments ?? []).map((a) => ({ kind: 'user_image' as const, url: a.url })),
+        ...(payload.route_file ? [{ kind: 'user_file' as const, name: payload.route_file.name }] : []),
+        ...(payload.message ? [{ kind: 'user' as const, text: payload.message }] : []),
+      ]
+      return [...kept, ...shown]
     })
     let changed = false
     let current = threadId
@@ -300,6 +313,45 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
     void send({ message: t })
   }
 
+  // Attachments, like the employer assistant's: an image (a flyer, a
+  // screenshot of an event or a route) goes to the ride-flyers bucket and the
+  // assistant sees it; a GPX route is read here, kept in this browser for the
+  // editor, and the assistant gets a summary of how it rides.
+  const fileInput = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const attach = async (file: File) => {
+    const note = draft.trim() || undefined
+    const fail = (text: string) => setItems((p) => [...p, { kind: 'error', text }])
+    if (/\.gpx$/i.test(file.name) || file.type === 'application/gpx+xml') {
+      if (file.size > 15 * 1024 * 1024) return fail('That file is over 15 MB. Export the route without extra data and try again.')
+      try {
+        const { name, points } = parseGpx(await file.text())
+        const route = { name: name ?? file.name.replace(/\.gpx$/i, ''), waypoints: toWaypoints(simplify(points, 1500)), elevation: elevationOf(points) }
+        const id = Math.random().toString(36).slice(2, 12)
+        try { localStorage.setItem(ROUTE_IMPORT_KEY(id), JSON.stringify(route)) } catch { /* private mode: the summary still works */ }
+        setDraft('')
+        void send({ route_file: { import_id: id, ...route, elevation: route.elevation ? { ascent_ft: route.elevation.ascent_ft } : null }, message: note })
+      } catch (e) {
+        fail(e instanceof Error ? e.message : "That file isn't a GPX route we can read.")
+      }
+      return
+    }
+    const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' } as Record<string, string>)[file.type]
+    if (!ext) return fail('Attach an image (JPG, PNG, WebP or GIF) or a GPX route file.')
+    if (file.size > 10 * 1024 * 1024) return fail('That image is over 10 MB. Try a smaller one.')
+    const { data } = await supabase.auth.getSession()
+    const uid = data.session?.user.id
+    if (!uid) return fail('Sign in again to continue.')
+    setUploading(true)
+    const path = `${uid}/assistant/${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('ride-flyers').upload(path, file, { contentType: file.type })
+    setUploading(false)
+    if (error) return fail("That image didn't upload. Try again.")
+    const url = supabase.storage.from('ride-flyers').getPublicUrl(path).data.publicUrl
+    setDraft('')
+    void send({ attachments: [{ url, name: file.name }], message: note })
+  }
+
   const empty = loaded && items.length === 0
   const narrow = () => typeof window !== 'undefined' && window.innerWidth < 1280
 
@@ -383,6 +435,16 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
         <div className="flex flex-col gap-3">
           {items.map((it, i) => {
             if (it.kind === 'user') return <div key={i} className="ml-8 self-end whitespace-pre-wrap rounded-2xl rounded-br-md bg-(--ev-accent-fill) px-3.5 py-2 text-[15px] leading-[1.5] text-(--ev-on-accent-fill)">{it.text}</div>
+            if (it.kind === 'user_image') return (
+              <a key={i} href={it.url} target="_blank" rel="noopener noreferrer" className="ml-8 self-end">
+                <img src={it.url} alt="Attached image" className="max-h-48 max-w-[220px] rounded-xl border border-(--ev-line) object-cover" />
+              </a>
+            )
+            if (it.kind === 'user_file') return (
+              <div key={i} className="ml-8 inline-flex items-center gap-1.5 self-end rounded-xl border border-(--ev-line-strong) bg-white px-3 py-2 text-[14px] font-semibold text-(--ev-ink)">
+                <RouteIcon size={15} aria-hidden />{it.name}
+              </div>
+            )
             if (it.kind === 'carried') return <p key={i} className="text-center text-[14px] text-(--ev-ink-75)">Picked up from an earlier conversation, with a summary of it.</p>
             if (it.kind === 'assistant') {
               const next = items.slice(i + 1).find((x) => x.kind !== 'tool')
@@ -485,9 +547,21 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
 
       <form className={cx('border-t border-(--ev-line) p-3', view === 'history' && 'hidden')} onSubmit={(e) => { e.preventDefault(); submit() }}>
         <div className="flex items-end gap-2 rounded-xl border border-(--ev-line-strong) bg-white px-3 py-2 focus-within:border-(--ev-accent)">
+          <input ref={fileInput} type="file" className="sr-only" tabIndex={-1} aria-hidden
+            accept="image/png,image/jpeg,image/webp,image/gif,.gpx,application/gpx+xml"
+            onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void attach(f) }} />
+          <button type="button" disabled={busy || uploading} onClick={() => fileInput.current?.click()}
+            aria-label="Attach an image or a GPX route" title="Attach an image or a GPX route"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-(--ev-ink-75) hover:bg-(--ev-panel) hover:text-(--ev-ink) disabled:opacity-40">
+            {uploading ? <Loader2 size={17} className="animate-spin" /> : <Paperclip size={17} />}
+          </button>
           <textarea ref={input} rows={2} value={draft} onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
-            placeholder="Ask or answer here" aria-label="Message the assistant"
+            onPaste={(e) => {
+              const f = Array.from(e.clipboardData.files).find((x) => x.type.startsWith('image/'))
+              if (f) { e.preventDefault(); void attach(f) }
+            }}
+            placeholder="Ask, or attach a screenshot or GPX route" aria-label="Message the assistant"
             className="min-h-[48px] flex-1 resize-none bg-transparent text-[15px] leading-[1.45] text-(--ev-ink) outline-none placeholder:text-(--ev-ink-60)" />
           <button type="submit" disabled={busy || !draft.trim()} aria-label="Send"
             className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-(--ev-accent-fill) text-(--ev-on-accent-fill) disabled:opacity-40">

@@ -8,7 +8,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { errorText, saveRide, uploadFlyer } from '@/lib/organizers/api'
 import { DAY_LABELS, PACE_OPTIONS, TAG_OPTIONS, WEEK_OPTIONS } from '@/lib/organizers/ride-words'
 import type { Frequency, Pace, RideRow, RouteDraft } from '@/lib/organizers/types'
-import { openAssistant } from './AssistantPanel'
+import { ROUTE_IMPORT_KEY, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
 import RouteMap from './RouteMap'
 import RouteSection from './RouteSection'
@@ -174,6 +174,29 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   // (legs are cached, so it's quick) and opens on its street-by-street review.
   const [planned, setPlanned] = useState<{ stops: { lat: number; lng: number; label?: string }[]; chosen: number[] } | null>(null)
   const [plannedMoved, setPlannedMoved] = useState(false)
+  // A route the organizer brought to the assistant: a GPX file it kept in
+  // this browser (?import=<id>), or a Ride with GPS link (?rwgps=<url>).
+  const [imported, setImported] = useState<{ kind: 'gpx'; route: { name: string | null; waypoints: { lat: number; lng: number }[]; elevation: RouteDraft['elevation'] } } | { kind: 'rwgps'; url: string } | null>(null)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get('import')
+    const rw = params.get('rwgps')
+    if (id && /^[a-z0-9]{6,24}$/.test(id)) {
+      try {
+        const raw = localStorage.getItem(ROUTE_IMPORT_KEY(id))
+        if (raw) setImported({ kind: 'gpx', route: JSON.parse(raw) })
+      } catch { /* storage unavailable: nothing to load */ }
+    } else if (rw && /^https:\/\/(www\.)?ridewithgps\.com\//.test(rw)) {
+      setImported({ kind: 'rwgps', url: rw })
+    }
+    if (id || rw) {
+      setDirty(true)
+      const url = new URL(window.location.href)
+      url.searchParams.delete('import')
+      url.searchParams.delete('rwgps')
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+    }
+  }, [])
   useEffect(() => {
     const raw = new URLSearchParams(window.location.search).get('plan')
     if (!raw) return
@@ -449,7 +472,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           {plannedMoved && (
             <div className="mb-3"><Notice tone="info">The assistant&rsquo;s route starts somewhere else, so the meeting point moved there. Change it above if that&rsquo;s not right.</Notice></div>
           )}
-          <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null} initialPlan={planned}
+          <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null} initialPlan={planned} initialImport={imported}
             onMeetAtStart={(p) => {
               setF((prev) => ({ ...prev, meetup_lat: p.lat, meetup_lng: p.lng, meetup_address: '', meetup_name: prev.meetup_name ? '' : prev.meetup_name }))
               setDirty(true)
