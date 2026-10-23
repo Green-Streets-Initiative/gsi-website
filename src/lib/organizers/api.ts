@@ -238,7 +238,7 @@ export async function uploadFlyer(file: File): Promise<string> {
 
 /**
  * Upload a group's logo, beside its organizers' flyers (the profile save
- * accepts only images from this bucket; Shift 01431). Each upload gets a
+ * accepts only images from this bucket; Shift 01433). Each upload gets a
  * new name, so pages that read colors from the logo see the new one.
  */
 export async function uploadLogo(file: File): Promise<string> {
