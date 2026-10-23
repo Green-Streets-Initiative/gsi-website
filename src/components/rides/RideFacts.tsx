@@ -61,7 +61,10 @@ export function rideFacts(ride: PublicRide, miles: number | null, ascentFt: numb
 
   const policies = [
     ride.no_drop === true ? { Icon: HandHeart, title: 'No-drop', line: 'Nobody gets dropped' } : ride.no_drop === false ? { Icon: UsersThree, title: 'Drop ride', line: 'The group may split up' } : null,
-    tags.includes('beginner_friendly') ? { Icon: Plant, title: 'Beginner friendly', line: 'Good for a first group ride' } : null,
+    // A ride the level calls Rec isn't beginner friendly whatever its tag
+    // says (a "beginner road ride" is beginner at the sport): the same guard
+    // the calendar sync applies (Shift sync-community-events, Keith 2026-09-14).
+    tags.includes('beginner_friendly') && level !== 'rec' ? { Icon: Plant, title: 'Beginner friendly', line: 'Good for a first group ride' } : null,
     tags.includes('family_friendly') ? { Icon: Baby, title: 'Family friendly', line: 'Kids are welcome' } : null,
     tags.includes('free') ? { Icon: Gift, title: 'Free', line: 'No cost to ride' } : tags.includes('paid') ? { Icon: CurrencyDollar, title: 'Paid', line: 'The organizer charges a fee' } : null,
     tags.includes('registration_required') ? { Icon: ClipboardText, title: 'Sign-up required', line: 'Register with the organizer' } : null,
