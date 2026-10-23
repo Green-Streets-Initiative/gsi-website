@@ -781,6 +781,63 @@
       ],
       "emailed": true,
       "alerts_outcome": "item 1 DONE the same day by Claude on Keith's 'Do ad grants item 1' (see the 2026-10-22 change entry)"
+    },
+    {
+      "date": "2026-10-23",
+      "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-23 (authuser=9 redirected to 5)",
+      "mtd": {
+        "window": "2026-10-01..2026-10-23",
+        "impressions": 2643,
+        "clicks": 200,
+        "ctr_pct": 7.57,
+        "cost": 1150.8,
+        "conversions": 13
+      },
+      "by_campaign": {
+        "How-to Guides": {
+          "impressions": 2428,
+          "clicks": 192,
+          "conversions": 13
+        },
+        "Town Walking & Biking": {
+          "impressions": 182,
+          "clicks": 7
+        },
+        "GSI — Brand": {
+          "impressions": 8,
+          "clicks": 1
+        },
+        "New Routes — Movers": {
+          "impressions": 27,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 8,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 0
+        }
+      },
+      "campaign_status": "How-to Guides and Brand Eligible (Limited) Limited by search volume; others Eligible. Budgets unchanged ($449.50/day).",
+      "banners": [
+        "Apply for financial products & services certification (since 10-12; do not apply)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)",
+        "Card: How-to Guides generated 7 conversions this week, +16.67% vs last week"
+      ],
+      "ads": {
+        "total": 37,
+        "all_eligible": true,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "strength": "29 Average, 6 Good, 1 Excellent, 1 Poor (Walking School Bus Ideas, already known)"
+      },
+      "search_terms": "Named rows 118 clicks / 1,321 impr, 9 conv. Top 25 by impressions all How-to Guides / Paying for the T transit lookups (boston public transportation 5/64, how to pay for the t in boston 2/24, how to take the t in boston 1/21, boston t 2/20, what is the t in boston 0/20, charlie card 4/19). Non-T terms at 2+ impr unchanged from 10-22 (bluebikes 0/4 now has exact negative 10-22; boston bike paths 0/4 paused keyword; bicycle trails in massachusetts 0/4). Watch only, not proposed: 'the ride' 0/3 (likely MBTA paratransit lookup) and 'how to get to foxboro stadium from boston' 0/4 (trip planning, arguably on-topic); too small, and How-to Guides took a negative 1 day ago.",
+      "month_end_math": "pace ~115 impr/day -> ~3,560 impr in October -> ~178 clicks needed for 5%; already at 200, so October's 5% is effectively secured",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
