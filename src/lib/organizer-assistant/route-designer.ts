@@ -1,4 +1,5 @@
 import 'server-only'
+import { unstable_cache } from 'next/cache'
 import { comfortableShare, concernTitle, newLaneNotes, relevantConcerns, type CalmFlag } from '@/components/commute/calm-route'
 import { PACE_MID_MPH } from '@/lib/organizers/ride-words'
 import { comfortBreakdown, routeFromPlan } from '@/lib/organizers/route-plan'
@@ -89,24 +90,43 @@ const pathMiles = (pts: LatLng[]) => pts.slice(1).reduce((a, p, i) => a + miles(
 
 // ── Places ──────────────────────────────────────────────────────────────
 
-/** Up to five matches for a place, best first (Google's order). */
+/**
+ * Up to five matches for a place, best first (Google's order). Kept a day per
+ * query and area (the start rounded to ~110 m), since a conversation asks the
+ * same things again as the organizer adjusts a route. A failed search throws
+ * inside the cache, so it is never kept.
+ */
+const placeSearch = unstable_cache(
+  async (query: string, lat3: number, lng3: number, radiusM: number): Promise<Pt[]> => {
+    const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY
+    if (!key) return []
+    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'places.displayName,places.location,places.businessStatus' },
+      body: JSON.stringify({
+        textQuery: query,
+        maxResultCount: 5,
+        locationBias: { circle: { center: { latitude: lat3, longitude: lng3 }, radius: radiusM } },
+      }),
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!res.ok) throw new Error(`places ${res.status}`)
+    const json = await res.json() as { places?: { displayName?: { text?: string }; location?: { latitude: number; longitude: number }; businessStatus?: string }[] }
+    return (json.places ?? [])
+      .filter((p) => p.location && p.businessStatus !== 'CLOSED_PERMANENTLY')
+      .map((p) => ({ lat: p.location!.latitude, lng: p.location!.longitude, name: p.displayName?.text ?? query }))
+  },
+  ['designer-places-v1'],
+  { revalidate: 24 * 60 * 60 },
+)
+
+const round3 = (n: number) => Math.round(n * 1000) / 1000
+
 async function findNearMany(query: string, near: LatLng, radiusMi: number): Promise<Pt[]> {
-  const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY
-  if (!key || !query.trim()) return []
-  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'places.displayName,places.location,places.businessStatus' },
-    body: JSON.stringify({
-      textQuery: query.slice(0, 200),
-      maxResultCount: 5,
-      locationBias: { circle: { center: { latitude: near.lat, longitude: near.lng }, radius: Math.min(50000, Math.max(800, radiusMi * MI)) } },
-    }),
-    signal: AbortSignal.timeout(10_000),
-  }).catch(() => null)
-  const json = (await res?.json().catch(() => ({}))) as { places?: { displayName?: { text?: string }; location?: { latitude: number; longitude: number }; businessStatus?: string }[] }
-  return (json?.places ?? [])
-    .filter((p) => p.location && p.businessStatus !== 'CLOSED_PERMANENTLY')
-    .map((p) => ({ lat: p.location!.latitude, lng: p.location!.longitude, name: p.displayName?.text ?? query }))
+  const q = query.trim().slice(0, 200)
+  if (!q) return []
+  const radiusM = Math.round(Math.min(50000, Math.max(800, radiusMi * MI)) / 100) * 100
+  return placeSearch(q, round3(near.lat), round3(near.lng), radiusM).catch(() => [])
 }
 
 // ── Bike-friendly businesses ────────────────────────────────────────────
@@ -192,22 +212,7 @@ async function findStopWithParking(query: string, near: LatLng, radiusMi: number
 }
 
 async function findNear(query: string, near: LatLng, radiusMi: number): Promise<Pt | null> {
-  const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY
-  if (!key || !query.trim()) return null
-  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'places.displayName,places.location,places.businessStatus' },
-    body: JSON.stringify({
-      textQuery: query.slice(0, 200),
-      maxResultCount: 5,
-      locationBias: { circle: { center: { latitude: near.lat, longitude: near.lng }, radius: Math.min(50000, Math.max(800, radiusMi * MI)) } },
-    }),
-    signal: AbortSignal.timeout(10_000),
-  }).catch(() => null)
-  const json = (await res?.json().catch(() => ({}))) as { places?: { displayName?: { text?: string }; location?: { latitude: number; longitude: number }; businessStatus?: string }[] }
-  const hit = (json?.places ?? []).find((p) => p.location && p.businessStatus !== 'CLOSED_PERMANENTLY')
-  if (!hit?.location) return null
-  return { lat: hit.location.latitude, lng: hit.location.longitude, name: hit.displayName?.text ?? query }
+  return (await findNearMany(query, near, radiusMi))[0] ?? null
 }
 
 // ── Bike lanes worth riding ─────────────────────────────────────────────
@@ -234,8 +239,23 @@ async function bestLanes(start: LatLng, radiusMi: number): Promise<Lane[]> {
   return [...byName.values()].filter((l) => l.lengthMi >= 0.3).sort((a, b) => b.lengthMi - a.lengthMi)
 }
 
-/** Lanes MassDOT records as opened in the last two years, near the start. */
+/**
+ * Lanes MassDOT records as opened in the last two years, near the start.
+ * The site's bike network carries the same opening dates but reaches 3 mi;
+ * a ride's area can be wider, so this asks MassDOT, and keeps the answer a
+ * day per area (MassDOT adds lanes a few times a year).
+ */
 async function newLanes(start: LatLng, radiusMi: number): Promise<Lane[]> {
+  return newLanesCached(round3(start.lat), round3(start.lng), Math.round(radiusMi * 2) / 2).catch(() => [])
+}
+
+const newLanesCached = unstable_cache(
+  (lat: number, lng: number, radiusMi: number) => fetchNewLanes({ lat, lng }, radiusMi),
+  ['designer-new-lanes-v1'],
+  { revalidate: 24 * 60 * 60 },
+)
+
+async function fetchNewLanes(start: LatLng, radiusMi: number): Promise<Lane[]> {
   const since = new Date()
   since.setFullYear(since.getFullYear() - 2)
   const dLat = radiusMi / 69
@@ -251,10 +271,14 @@ async function newLanes(start: LatLng, radiusMi: number): Promise<Lane[]> {
     returnGeometry: 'true',
     f: 'json',
   })
-  const json = await fetch(`${MASSDOT_URL}?${params}`, { signal: AbortSignal.timeout(12_000) }).then((r) => r.json()).catch(() => null) as
-    { features?: { attributes: { Fac_Type: number; Local_Name?: string; St_Name?: string; Open_Date?: number }; geometry?: { paths?: [number, number][][] } }[] } | null
+  const res = await fetch(`${MASSDOT_URL}?${params}`, { signal: AbortSignal.timeout(12_000) })
+  // Thrown, not returned empty, so a failed answer is never kept.
+  if (!res.ok) throw new Error(`massdot ${res.status}`)
+  const json = await res.json() as
+    { error?: unknown; features?: { attributes: { Fac_Type: number; Local_Name?: string; St_Name?: string; Open_Date?: number }; geometry?: { paths?: [number, number][][] } }[] }
+  if (json.error) throw new Error('massdot error')
   const byName = new Map<string, Lane & { pieces: [number, number][][] }>()
-  for (const f of json?.features ?? []) {
+  for (const f of json.features ?? []) {
     const raw = (f.attributes.Local_Name || f.attributes.St_Name || '').trim()
     if (!raw) continue
     const name = raw.replace(/\b[A-Z]{3,}\b/g, (w) => w[0] + w.slice(1).toLowerCase())
@@ -384,15 +408,28 @@ async function planLegs(token: string, pins: LatLng[], pace: string | null): Pro
 
 // ── Stations ────────────────────────────────────────────────────────────
 
+/** Rail and ferry stations near a point, kept a day per area (stations rarely move). */
 async function railStops(near: LatLng, radiusMi: number): Promise<Pt[]> {
+  return railStopsCached(round3(near.lat), round3(near.lng), Math.round(radiusMi * 2) / 2).catch(() => [])
+}
+
+const railStopsCached = unstable_cache(
+  (lat: number, lng: number, radiusMi: number) => fetchRailStops({ lat, lng }, radiusMi),
+  ['designer-rail-stops-v1'],
+  { revalidate: 24 * 60 * 60 },
+)
+
+async function fetchRailStops(near: LatLng, radiusMi: number): Promise<Pt[]> {
   const params = new URLSearchParams({
     'filter[latitude]': String(near.lat), 'filter[longitude]': String(near.lng),
     'filter[radius]': String(radiusMi / 69), 'filter[route_type]': '0,1,2,4',
   })
   if (process.env.MBTA_API_KEY) params.set('api_key', process.env.MBTA_API_KEY)
-  const json = await fetch(`https://api-v3.mbta.com/stops?${params}`, { signal: AbortSignal.timeout(8000) }).then((r) => r.json()).catch(() => null) as
-    { data?: { attributes: { name: string; latitude: number; longitude: number; location_type: number } }[] } | null
-  return (json?.data ?? []).filter((s) => s.attributes.location_type === 1 || s.attributes.location_type === 0)
+  const res = await fetch(`https://api-v3.mbta.com/stops?${params}`, { signal: AbortSignal.timeout(8000) })
+  if (!res.ok) throw new Error(`mbta ${res.status}`)
+  const json = await res.json() as
+    { data?: { attributes: { name: string; latitude: number; longitude: number; location_type: number } }[] }
+  return (json.data ?? []).filter((s) => s.attributes.location_type === 1 || s.attributes.location_type === 0)
     .map((s) => ({ lat: s.attributes.latitude, lng: s.attributes.longitude, name: s.attributes.name }))
 }
 

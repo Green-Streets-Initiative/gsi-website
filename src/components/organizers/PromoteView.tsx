@@ -10,7 +10,7 @@ import type { PromoStats } from '@/lib/organizers/types'
 import { clock, dateLong, dateShort, dayShort, scheduleText } from '@/lib/rides/public'
 import { PROMO_CHANNELS, PROMO_LABEL, promoLink, type PromoChannel } from '@/lib/rides/promo'
 import { useRide } from './RideFrame'
-import { Button, Card, Notice, SectionTitle, Spinner, Toggle, cx } from './ui'
+import { Button, Card, Notice, SectionTitle, Spinner, Toggle, copyText, cx } from './ui'
 import { track } from '@/lib/organizers/track'
 
 type Post = Exclude<PromoChannel, 'qr' | 'cal'>
@@ -36,11 +36,16 @@ const CALENDARS: { key: string; name: string; how: string; url: string }[] = [
 
 function useCopy(onCopied?: (key: string) => void): [string | null, (key: string, text: string) => void] {
   const [copied, setCopied] = useState<string | null>(null)
+  // `copied` is the key that just copied, or "!key" when the browser refused
+  // (some block the clipboard), so the button can say so.
+  const show = (state: string) => {
+    setCopied(state)
+    setTimeout(() => setCopied((k) => (k === state ? null : k)), 1800)
+  }
   const copy = (key: string, text: string) => {
-    void navigator.clipboard.writeText(text).then(() => {
-      onCopied?.(key)
-      setCopied(key)
-      setTimeout(() => setCopied((k) => (k === key ? null : k)), 1800)
+    void copyText(text).then((ok) => {
+      if (ok) onCopied?.(key)
+      show(ok ? key : `!${key}`)
     })
   }
   return [copied, copy]
@@ -50,10 +55,11 @@ function CopyButton({ id, text, copied, copy, label = 'Copy', primary }: {
   id: string; text: string; copied: string | null; copy: (k: string, t: string) => void; label?: string; primary?: boolean
 }) {
   const done = copied === id
+  const refused = copied === `!${id}`
   return (
     <Button size="sm" variant={primary ? 'primary' : 'secondary'} onClick={() => copy(id, text)} aria-live="polite">
       {done ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
-      {done ? 'Copied' : label}
+      {done ? 'Copied' : refused ? "Couldn't copy" : label}
     </Button>
   )
 }
