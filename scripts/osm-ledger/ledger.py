@@ -385,6 +385,8 @@ def miles_by_class(ways):
 def main():
     pbf, data_ts = sys.argv[1], sys.argv[2]
     dry = "--dry-run" in sys.argv
+    if "--compare-anyway" in sys.argv:  # testing: compare even when the extract isn't newer
+        data_ts = "9999-01-01T00:00:00Z" if dry else data_ts
     started = datetime.now(timezone.utc)
     db = Db(os.environ.get("SUPABASE_URL", ""), os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""), dry)
 
@@ -396,6 +398,13 @@ def main():
 
     if dry and not db.key:
         print("dry run without a database: classification only")
+        return
+
+    # Geofabrik sometimes skips a day: the same extract twice is nothing new.
+    last = db.req("GET", "/rest/v1/osm_snapshots?select=data_ts&status=in.(baseline,applied)&order=data_ts.desc&limit=1")
+    if last and datetime.fromisoformat(last[0]["data_ts"].replace("Z", "+00:00")) >= datetime.fromisoformat(data_ts.replace("Z", "+00:00")):
+        print(f"no new data: the extract is still {data_ts}")
+        heartbeat(db, started, "ok", 0, f"no new data ({data_ts})")
         return
 
     old_rows = db.select_all("osm_bike_ways", "select=way_id,version,facility_class,name,tags_hash,geom,length_m&gone_snapshot=is.null&order=way_id")
