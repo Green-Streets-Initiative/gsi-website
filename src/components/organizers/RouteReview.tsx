@@ -1,8 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import posthog from 'posthog-js'
 import { AlertTriangle, Camera } from 'lucide-react'
 import { PanelPhoto } from '@/components/nearby/DetailPanel'
+import { ReportRouteLink, type RouteIssueStretch } from '@/components/commute/ReportRouteSheet'
 import {
   COMFORT_LABELS, comfortPieces, comfortableShare, concernAdvice, concernTitle, formatStretchMiles, legPhotoSpec,
   newLaneNotes, relevantConcerns, safetyVerdict, type CalmFlag, type CalmOption, type ComfortPiece,
@@ -147,6 +149,27 @@ export default function RouteReview({ route, reading, pace, focus, onFocus }: {
 
   const list = allStretches ? rows : rows.slice(0, 10)
 
+  // The report sheet's subject: the picked street, as its row reads; else the whole route.
+  const row = piece ? rows.find((r) => r.index === piece.index) ?? null : null
+  const mid = piece ? legPhotoSpec(option, piece.index) : null
+  const shownAs = row ? (COMFORT_LABELS[row.rating] ?? row.rating).toLowerCase() : ''
+  const reportStretch: RouteIssueStretch | null = row ? {
+    index: row.index,
+    label: tidyName(row.label),
+    miles: row.miles,
+    lat: mid?.lat ?? null,
+    lng: mid?.lng ?? null,
+    rating: row.rating,
+    phrase: `${tidyName(row.label)}, ${formatStretchMiles(row.miles)}, shown as ${shownAs}`,
+    color: MAP_COMFORT_COLORS[row.rating] ?? MAP_COMFORT_COLORS.shared_road,
+    dashed: false,
+    detail: `${formatStretchMiles(row.miles)} · shown as ${shownAs}`,
+  } : null
+  const reportSources = useMemo(() => [...new Set(pieces.flatMap((p) => p.sources))], [pieces])
+  const track = useCallback((event: string, props?: Record<string, unknown>) => {
+    try { posthog.capture(event, { surface_area: 'organizer_console', ...props }) } catch { /* analytics never blocks */ }
+  }, [])
+
   return (
     <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4">
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -246,6 +269,16 @@ export default function RouteReview({ route, reading, pace, focus, onFocus }: {
                 )}
               </section>
             )}
+            <div className="px-2.5">
+              <ReportRouteLink
+                key={`report-${reportStretch?.index ?? 'all'}`}
+                surface="app_plan_route"
+                stretch={reportStretch}
+                sources={reportSources}
+                routePoints={route.waypoints}
+                track={track}
+              />
+            </div>
           </div>
 
           <figure className="order-1 min-w-0 lg:sticky lg:top-20 lg:order-2 lg:self-start">

@@ -12,11 +12,15 @@ import { X } from '@phosphor-icons/react'
  * address. Design: Shift docs/handoffs/report-route-problem-handoff.md.
  *
  * Phase 1 is the Commute Advisor; Nearby reuses this with its own surfaces.
+ * The organizer console's route review reports as app_plan_route, the app's
+ * group-ride planner: the same planner on the web (the server stamps web
+ * reports with a web-… app_version, so the two stay apart).
  */
 
 export type RouteIssueSurface =
   | 'advisor_bike' | 'advisor_transit' | 'advisor_drive' | 'advisor_walk'
   | 'advisor_bike_transit' | 'advisor_park_ride'
+  | 'app_plan_route'
 
 type Kind = 'comfort_wrong' | 'lane_changed' | 'closed' | 'unsafe_spot' | 'wrong_name' | 'bad_route' | 'other'
 
@@ -38,6 +42,7 @@ const KINDS_FOR: Record<RouteIssueSurface, Kind[]> = {
   advisor_transit: ['closed', 'unsafe_spot', 'wrong_name', 'bad_route', 'other'],
   advisor_park_ride: ['closed', 'unsafe_spot', 'wrong_name', 'bad_route', 'other'],
   advisor_drive: ['closed', 'unsafe_spot', 'wrong_name', 'bad_route', 'other'],
+  app_plan_route: ['comfort_wrong', 'lane_changed', 'closed', 'unsafe_spot', 'wrong_name', 'bad_route', 'other'],
 }
 
 const NOTE_MAX = 280
@@ -50,6 +55,7 @@ const NOTE_EXAMPLE: Record<RouteIssueSurface, string> = {
   advisor_transit: 'For example: the stop moved across the street.',
   advisor_park_ride: 'For example: the lot fills up by 7:30 AM.',
   advisor_drive: 'For example: this road is closed until spring.',
+  app_plan_route: 'For example: the path is closed for repairs until May.',
 }
 
 export interface RouteIssueStretch {
