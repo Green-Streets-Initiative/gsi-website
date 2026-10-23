@@ -7,7 +7,7 @@ import PrintButton from '@/app/events/shift-your-summer/flyer/PrintButton'
 import StaticMapSvg from '@/components/nearby/StaticMapSvg'
 import { TAG_OPTIONS } from '@/lib/organizers/ride-words'
 import { routeMiles } from '@/lib/organizers/route-geo'
-import { PACE_LABEL, clock, dateLong, looksLikeRideCode, scheduleText, type RideLookup } from '@/lib/rides/public'
+import { PACE_LABEL, looksLikeRideCode, nextWhen, type RideLookup } from '@/lib/rides/public'
 import { promoLink } from '@/lib/rides/promo'
 
 /**
@@ -28,9 +28,7 @@ export default async function RideFlyerPage({ params }: { params: Promise<{ code
   const ride = data as RideLookup | null
   if (!ride || !ride.web) notFound()
 
-  const next = ride.occurrences.find((d) => d.status === 'scheduled') ?? null
-  const repeats = (ride.days ?? []).length > 0 || ride.frequency === 'daily'
-  const when = repeats ? scheduleText(ride) : next ? `${dateLong(next.date)}${next.start_time ? ` · ${clock(next.start_time)}` : ''}` : scheduleText(ride)
+  const when = nextWhen(ride)
   const route = (ride.route_waypoints ?? []).filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng))
   const miles = route.length >= 2 ? routeMiles(route) : null
   const facts = [
@@ -71,7 +69,7 @@ export default async function RideFlyerPage({ params }: { params: Promise<{ code
           <div className="px-10 pb-8 pt-10">
             {ride.organizer_name && <p className="mb-2 text-[15px] font-bold uppercase tracking-[0.18em] text-[#2D6A4F]">{ride.organizer_name}</p>}
             <h1 className="font-display text-[46px] font-extrabold leading-[1.04] tracking-tight">{ride.name}</h1>
-            <p className="mt-4 text-[24px] font-bold">{when}</p>
+            {when && <p className="mt-4 text-[24px] font-bold">{when}</p>}
             {ride.meetup_name && (
               <p className="mt-1 text-[19px]">
                 Meet at <strong>{ride.meetup_name}</strong>{ride.meetup_address ? `, ${ride.meetup_address.replace(/,?\s*USA$/, '')}` : ''}

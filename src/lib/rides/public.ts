@@ -148,6 +148,20 @@ export function scheduleText(r: Pick<PublicRide, 'ride_date' | 'frequency' | 'da
   return at(`Every ${dayStr}`)
 }
 
+/**
+ * "When" for a flyer or a share card: a repeating ride names its pattern, a
+ * one-time ride its next open date. Empty once no open date is left, so an
+ * ended ride never advertises a date that has passed.
+ */
+export function nextWhen(r: PublicRide): string {
+  const next = r.occurrences.find((d) => d.status === 'scheduled')
+  if (!next) return ''
+  const repeats = !r.ride_date && ((r.days ?? []).length > 0 || r.frequency === 'daily')
+  if (repeats) return scheduleText(r)
+  const time = clock(next.start_time ?? r.start_time)
+  return `${dateLong(next.date)}${time ? ` · ${time}` : ''}`
+}
+
 export const PACE_LABEL: Record<NonNullable<PublicRide['pace']>, string> = {
   kids: "Kids' pace · 5–8 mph",
   relaxed: 'Relaxed pace · 8–12 mph',
