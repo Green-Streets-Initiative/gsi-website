@@ -7,6 +7,8 @@ import type { PlannedLegOption, PlannedRoute } from '@/lib/organizers/api'
 import type { LatLng } from '@/lib/organizers/types'
 import { getBikeNetwork, haversineMeters } from '@/lib/server/bike-network'
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { bikeFriendlyPlaces, type BikeFriendlyPlace } from '@/lib/server/bike-friendly'
 
 /**
  * The organizer assistant's route designer (Keith 2026-10-23): from goals in
@@ -37,6 +39,9 @@ type Kind = 'start' | 'place' | 'showcase' | 'turnaround' | 'end'
 type Stop = Pt & { kind: Kind; note?: string }
 
 export interface DesignInput {
+  /** Kinds of stop to favor: Shift shops (the rewards catalog), Bicycle
+   *  Benefits members, League-certified Bicycle Friendly Businesses. */
+  prefer?: ('shift_shops' | 'bicycle_benefits' | 'bike_friendly_business')[]
   start: Pt
   loop: boolean
   end?: Pt | null
@@ -81,6 +86,144 @@ const offset = (from: LatLng, deg: number, mi: number): LatLng => {
 const pathMiles = (pts: LatLng[]) => pts.slice(1).reduce((a, p, i) => a + miles(pts[i], p), 0)
 
 // ── Places ──────────────────────────────────────────────────────────────
+
+/** Up to five matches for a place, best first (Google's order). */
+async function findNearMany(query: string, near: LatLng, radiusMi: number): Promise<Pt[]> {
+  const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY
+  if (!key || !query.trim()) return []
+  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'places.displayName,places.location,places.businessStatus' },
+    body: JSON.stringify({
+      textQuery: query.slice(0, 200),
+      maxResultCount: 5,
+      locationBias: { circle: { center: { latitude: near.lat, longitude: near.lng }, radius: Math.min(50000, Math.max(800, radiusMi * MI)) } },
+    }),
+    signal: AbortSignal.timeout(10_000),
+  }).catch(() => null)
+  const json = (await res?.json().catch(() => ({}))) as { places?: { displayName?: { text?: string }; location?: { latitude: number; longitude: number }; businessStatus?: string }[] }
+  return (json?.places ?? [])
+    .filter((p) => p.location && p.businessStatus !== 'CLOSED_PERMANENTLY')
+    .map((p) => ({ lat: p.location!.latitude, lng: p.location!.longitude, name: p.displayName?.text ?? query }))
+}
+
+// ── Shift shops (the rewards catalog) ───────────────────────────────────
+
+/** "a coffee shop" → the catalog's category, so a Shift shop can be the stop. */
+const KIND_TO_CATALOG: [RegExp, string][] = [
+  [/coffee|caf[eé]|bakery|donut|bagel|espresso|tea\b|pastr/i, 'bakery_cafe'],
+  [/brew|beer|bar\b|pub|restaurant|lunch|dinner|taco|pizza|food/i, 'restaurant_bar'],
+  [/bike shop|bicycle shop|repair/i, 'bike_shop'],
+  [/book|record/i, 'books_records'],
+  [/market|grocer/i, 'grocer_market'],
+]
+
+/** A kind of stop ("a coffee shop") against an outside list's category or a name. */
+function listMatchesKind(kind: string, p: BikeFriendlyPlace): boolean {
+  const text = `${p.category ?? ''} ${p.name}`
+  const group = KIND_TO_CATALOG.find(([re]) => re.test(kind))?.[1]
+  if (group === 'bakery_cafe') return /caf|coffee|bakery|bakeries|espresso|donut|bagel|tea/i.test(text)
+  if (group === 'restaurant_bar') return /food|restaurant|bar|brew|pub|taco|pizza/i.test(text)
+  if (group === 'bike_shop') return /bicycle|bike|cycle/i.test(text)
+  if (group === 'grocer_market') return /grocery|market/i.test(text)
+  if (group === 'books_records') return /book|record/i.test(text)
+  return false
+}
+
+interface ShiftShop extends Pt { category: string; racks: number | null }
+
+/** Active catalog shops with a location near a point. */
+async function shiftShopsNear(near: LatLng, radiusMi: number, category?: string): Promise<ShiftShop[]> {
+  const dLat = radiusMi / 69
+  const dLng = radiusMi / (69 * Math.cos((near.lat * Math.PI) / 180))
+  const { data, error } = await createServerSupabaseClient()
+    .from('catalog_merchant_locations')
+    .select('latitude, longitude, bike_racks_within_150m, is_active, catalog_merchants!inner(name, category_group, is_active)')
+    .eq('catalog_merchants.is_active', true)
+    .gte('latitude', near.lat - dLat).lte('latitude', near.lat + dLat)
+    .gte('longitude', near.lng - dLng).lte('longitude', near.lng + dLng)
+    .limit(300)
+  if (error || !data) return []
+  type Row = { latitude: number; longitude: number; bike_racks_within_150m: number | null; is_active: boolean | null; catalog_merchants: { name: string; category_group: string } | { name: string; category_group: string }[] }
+  return (data as unknown as Row[])
+    .filter((r) => r.is_active !== false && r.latitude != null)
+    .map((r) => {
+      const m = Array.isArray(r.catalog_merchants) ? r.catalog_merchants[0] : r.catalog_merchants
+      return { lat: r.latitude, lng: r.longitude, name: m.name, category: m.category_group, racks: r.bike_racks_within_150m }
+    })
+    .filter((x) => !category || x.category === category)
+}
+
+/** A Shift shop for a kind of stop: the one with the most bike racks nearby,
+ *  closest first among equals, within `withinMi` of the point. */
+async function shiftShopFor(kind: string, near: LatLng, withinMi: number): Promise<Pt | null> {
+  const category = KIND_TO_CATALOG.find(([re]) => re.test(kind))?.[1]
+  if (!category) return null
+  const shops = (await shiftShopsNear(near, withinMi, category)).filter((x) => miles(near, x) <= withinMi)
+  shops.sort((a, b) => (b.racks ?? 0) - (a.racks ?? 0) || miles(near, a) - miles(near, b))
+  return shops[0] ? { lat: shops[0].lat, lng: shops[0].lng, name: shops[0].name } : null
+}
+
+interface BikeParkingPoint { lat: number; lng: number; capacity: number | null; covered: boolean; access: string | null }
+
+/**
+ * Bike parking within `radiusM` of each point, from our daily copy of
+ * OpenStreetMap (Shift 01425, filled by the OSM ledger job). Private racks
+ * are left out. null when the table can't be read.
+ */
+async function bikeParkingNear(points: LatLng[], radiusM: number): Promise<BikeParkingPoint[] | null> {
+  if (points.length === 0) return []
+  const db = createServerSupabaseClient()
+  const dLat = radiusM / 111_000
+  const results = await Promise.all(points.map(async (p) => {
+    const dLng = radiusM / (111_000 * Math.cos((p.lat * Math.PI) / 180))
+    const { data, error } = await db.from('bike_parking')
+      .select('lat, lng, capacity, covered, access')
+      .is('gone_at', null)
+      .gte('lat', p.lat - dLat).lte('lat', p.lat + dLat)
+      .gte('lng', p.lng - dLng).lte('lng', p.lng + dLng)
+      .limit(200)
+    if (error) throw error
+    return (data ?? []) as BikeParkingPoint[]
+  })).catch(() => null)
+  if (!results) return null
+  const seen = new Set<string>()
+  return results.flat().filter((s) => {
+    const k = `${s.lat},${s.lng}`
+    if (seen.has(k) || s.access === 'private' || s.access === 'no') return false
+    seen.add(k)
+    return true
+  })
+}
+
+/** Bike parking for a group: a rack with unknown capacity counts as room for two. */
+const parkingRoom = (spots: BikeParkingPoint[]) => spots.reduce((a, s) => a + (s.capacity ?? 2), 0)
+
+/**
+ * For a kind of place ("a coffee shop"): of the nearby matches, the one with
+ * the most bike parking within 60 m, so a group has somewhere to lock up.
+ * Falls back to Google's first match when nothing is mapped or the lookup fails.
+ */
+async function findStopWithParking(query: string, near: LatLng, radiusMi: number, preferShift = false, preferred: BikeFriendlyPlace[] = []): Promise<Pt | null> {
+  if (preferShift) {
+    const shop = await shiftShopFor(query, near, Math.min(radiusMi, 1))
+    if (shop) return shop
+    const listed = preferred.filter((x) => listMatchesKind(query, x) && miles(near, x) <= Math.min(radiusMi, 1))
+      .sort((a, b) => miles(near, a) - miles(near, b))[0]
+    if (listed) return { lat: listed.lat, lng: listed.lng, name: listed.name }
+  }
+  const options = await findNearMany(query, near, radiusMi)
+  if (options.length <= 1) return options[0] ?? null
+  const spots = await bikeParkingNear(options, 60)
+  if (!spots || spots.length === 0) return options[0]
+  let best = options[0]
+  let bestRoom = -1
+  for (const o of options) {
+    const room = parkingRoom(spots.filter((s) => miles(o, s) * MI <= 60))
+    if (room > bestRoom) { best = o; bestRoom = room }
+  }
+  return best
+}
 
 async function findNear(query: string, near: LatLng, radiusMi: number): Promise<Pt | null> {
   const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY
@@ -307,6 +450,9 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
   const target = input.target_miles && input.target_miles > 0 ? Math.min(60, input.target_miles) : null
   const reach = target ? Math.max(1, Math.min(8, target / 2.5)) : 3
   const end: LatLng = input.loop || !input.end ? start : input.end
+  const preferShift = (input.prefer ?? []).some((x) => x === 'shift_shops' || x === 'bicycle_benefits' || x === 'bike_friendly_business')
+  const listed = await bikeFriendlyPlaces()
+  const preferredListed = listed.filter((x) => (input.prefer ?? []).includes(x.source) && (x.source !== 'bike_friendly_business' || x.current))
 
   // 1. Named places and lanes, side by side. A kind of place ("a coffee
   //    shop") waits for the loop's far point, where a mid-ride stop belongs.
@@ -314,7 +460,7 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
   const isKind = (q: string) => /^(a|an|any|some)\s/i.test(q.trim())
   const kinds = asked.filter(isKind)
   const [found, lanes] = await Promise.all([
-    Promise.all(asked.filter((q) => !isKind(q) || !(target && input.loop)).map(async (q) => ({ q, p: await findNear(q, start, reach) }))),
+    Promise.all(asked.filter((q) => !isKind(q) || !(target && input.loop)).map(async (q) => ({ q, p: await (isKind(q) ? findStopWithParking(q, start, reach, preferShift, preferredListed) : findNear(q, start, reach)) }))),
     input.showcase === 'new' ? newLanes(start, reach) : input.showcase === 'protected' || target ? bestLanes(start, reach) : Promise.resolve([] as Lane[]),
   ])
   const groups: Stop[][] = []
@@ -357,18 +503,51 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
 
   // A kind of place asked for on a padded loop becomes the turnaround itself.
   let farStop: Stop | null = null
+  // A kind of stop on a padded loop ("a coffee shop") becomes the far point,
+  // chosen after a first plan has shown how much longer the streets run than
+  // straight lines, so the café lands where the target distance does.
+  let farKind: string | null = null
   if (turnaround && target && input.loop && kinds.length) {
-    const far = offset(start, turnaround.bearing, turnaround.radius)
-    const p = await findNear(kinds[0], far, 0.8)
-    if (p && miles(p, far) < 1.2) farStop = { ...p, kind: 'place' }
-    else notes.push(`Couldn't find "${kinds[0]}" near the far end of the loop.`)
+    farKind = kinds[0]
     for (const q of kinds.slice(1)) notes.push(`Only one "${q.replace(/^(a|an|any|some)\s+/i, '')}"-type stop is placed for now; name others to add them.`)
   } else if (kinds.length && target && input.loop) {
     for (const q of kinds) {
-      const p = await findNear(q, start, reach)
+      const p = await findStopWithParking(q, start, reach, preferShift, preferredListed)
       if (p) groups.push([{ ...p, kind: 'place' }])
       else notes.push(`Couldn't find "${q}" near the start.`)
     }
+  }
+
+  /** The far stop: from three directions around the far point, the candidate
+   *  that best keeps the loop's reach and heading; a Shift shop wins when it
+   *  fits nearly as well, if they asked for one. */
+  const pickFarStop = async (kind: string, b: number, want: number, factor: number): Promise<Stop | null> => {
+    const pool: (Pt & { shift: boolean })[] = []
+    await Promise.all([0, -35, 35].map(async (turn) => {
+      const far = offset(start, (b + turn + 360) % 360, want)
+      const [google, shift] = await Promise.all([
+        findNearMany(kind, far, 1.2),
+        preferShift ? shiftShopFor(kind, far, 1.2) : Promise.resolve(null),
+      ])
+      pool.push(...google.map((g) => ({ ...g, shift: false })))
+      if (shift) pool.push({ ...shift, shift: true })
+      // Preferred outside lists count as "preferred" like a Shift shop.
+      for (const x of preferredListed) {
+        if (listMatchesKind(kind, x) && miles(far, x) <= 1.2) pool.push({ lat: x.lat, lng: x.lng, name: x.name, shift: true })
+      }
+    }))
+    const angle = (p: LatLng) => { const d = Math.abs(bearing(start, p) - b) % 360; return Math.min(d, 360 - d) }
+    // Predicted loop length through each candidate, with the streets' measured
+    // stretch factor: the café that lands the target best wins.
+    const predicted = (p: LatLng) => pathMiles([start, ...orderLoop(start, [...groups, [{ ...p, kind: 'place' }]]), end]) * factor
+    // Beside a protected lane or path, the ride there and back stays calm.
+    const onCalm = (p: LatLng) => lanes.some((l) => l.coords.some(([lng, lat]) => miles(p, { lat, lng }) < 0.15))
+    const fit = (p: Pt & { shift: boolean }) =>
+      Math.abs(predicted(p) - target!) / target! + angle(p) / 240 - (p.shift ? 0.1 : 0) - (onCalm(p) ? 0.15 : 0)
+    const ok = pool.filter((p) => Math.abs(predicted(p) - target!) <= target! * 0.3 && angle(p) <= 75).sort((x, y) => fit(x) - fit(y))
+    // Asked-for businesses win whenever one fits the loop at all.
+    const best = ok.find((p) => p.shift) ?? ok[0]
+    return best ? { lat: best.lat, lng: best.lng, name: best.name, kind: 'place' } : null
   }
 
   const buildPinsAt = (radius: number | null): Stop[] => {
@@ -394,29 +573,32 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
   const pick = () => plan.legs.map(() => 0)
   let route = routeFromPlan(plan, pick(), pins)
   let total = routeMiles(route.waypoints)
-  // One correction for a padded loop that misses by more than a fifth: learn
-  // how much longer the streets ran than straight lines between the stops,
-  // then place the turnaround (or look for the café) where that says the
-  // target lands. Without the turnaround if even the shortest one is too long.
-  if (target && turnaround && Math.abs(total - target) / target > 0.2) {
+  // One correction for a padded loop: learn how much longer the streets ran
+  // than straight lines between the stops, then place the turnaround (or the
+  // café standing in for it) where that says the target lands. Without the
+  // turnaround if even the shortest one is too long.
+  for (let pass = 0; pass < 3 && target && turnaround && (pass === 0 && farKind ? true : Math.abs(total - target) / target > 0.2); pass++) {
     const factor = total / Math.max(0.5, pathMiles(pins))
+    const chosen = farStop
+    farStop = null // lengths are compared with a plain turnaround in the café's place
     const lengthAt = (r: number | null) => pathMiles(buildPinsAt(r)) * factor
+    if (chosen && turnaround) turnaround = { bearing: bearing(start, chosen), radius: miles(start, chosen) }
     let radius: number | null
     if (lengthAt(0.2) > target) {
       radius = null
       notes.push(`The stops and lanes asked for make about ${Math.round(lengthAt(null))} miles on their own, so there's no extra loop to shorten.`)
-    }
-    else {
+    } else {
       let lo = 0.2, hi = Math.max(0.3, target / 2)
       for (let k = 0; k < 18; k++) { const m = (lo + hi) / 2; if (lengthAt(m) < target) lo = m; else hi = m }
       radius = lo
     }
-    if (farStop && radius != null) {
-      const far = offset(start, turnaround.bearing, radius)
-      const p = await findNear(kinds[0], far, 0.8)
-      farStop = p && miles(p, far) < 1.2 ? { ...p, kind: 'place' } : null
-    } else if (farStop) farStop = null
-    turnaround = radius != null ? { ...turnaround, radius } : null
+    if (farKind && radius != null) {
+      farStop = null
+      farStop = await pickFarStop(farKind, turnaround.bearing, radius, factor)
+      if (farStop) turnaround = { bearing: bearing(start, farStop), radius: miles(start, farStop) }
+      else notes.push(`Couldn't find "${farKind}" near the far end of the loop.`)
+    }
+    turnaround = radius != null ? { ...turnaround, radius: farStop ? turnaround.radius : radius } : null
     pins = buildPins(radius)
     plan = await planLegs(token, pins, pace)
     route = routeFromPlan(plan, pick(), pins)
@@ -461,6 +643,45 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
     goals.push({ goal: `Start within ${within} mi of Bluebikes or the T`, met: startOk, detail: startOk ? 'Yes' : `Nearest: ${[startDock && `${startDock.name} ${r1(startDock.miles)} mi`, startRail && `${startRail.name} ${r1(startRail.miles)} mi`].filter(Boolean).join('; ')}` })
   }
 
+  // Where the group can lock up: the start and each place stop.
+  const parkingAt = [{ ...start, label: start.name ?? 'the start' },
+    ...pins.slice(1, -1).filter((p) => p.kind === 'place').map((p) => ({ lat: p.lat, lng: p.lng, label: p.name ?? 'a stop' }))]
+  const parked = await bikeParkingNear(parkingAt, 120)
+  const bikeParking = parked === null
+    ? 'Bike parking is unavailable right now.'
+    : parkingAt.map((at) => {
+      const near = parked.filter((sp) => miles(at, sp) * MI <= 120)
+      if (near.length === 0) return { at: at.label, racks: 0, note: 'No bike parking mapped within 120 m.' }
+      const known = near.filter((sp) => sp.capacity != null)
+      return {
+        at: at.label,
+        racks: near.length,
+        bikes: known.length === near.length ? parkingRoom(near) : known.length ? `at least ${parkingRoom(known)}` : 'not mapped',
+        covered: near.some((sp) => sp.covered),
+        nearest_m: Math.round(Math.min(...near.map((sp) => miles(at, sp) * MI))),
+      }
+    })
+
+  // What each stop is part of: a Shift shop (members spend their rewards
+  // there), a Bicycle Benefits member (a perk with the helmet sticker), a
+  // League-certified Bicycle Friendly Business. Matched by place and name.
+  const placeStops = pins.slice(1, -1).filter((p) => p.kind === 'place')
+  const shopsNearRoute = placeStops.length ? await shiftShopsNear(placeStops[0], 8) : []
+  const sameName = (a?: string | null, b?: string | null) => {
+    const k = (x?: string | null) => (x ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8)
+    return k(a).length >= 4 && k(a) === k(b)
+  }
+  const stopPrograms = placeStops.map((p) => {
+    const programs: string[] = []
+    if (shopsNearRoute.some((x) => miles(p, x) * MI < 80 && sameName(x.name, p.name))) programs.push('Shift shop (rewards catalog)')
+    for (const x of listed) {
+      if (miles(p, x) * MI > 80 || !sameName(x.name, p.name)) continue
+      if (x.source === 'bicycle_benefits') programs.push(`Bicycle Benefits member${x.perk ? `: ${x.perk} with the helmet sticker` : ''}`)
+      else programs.push(`${x.level ?? ''} Bicycle Friendly Business (League of American Bicyclists, ${x.round ?? 'year unknown'}${x.current ? '' : ', award may have lapsed'})`.trim())
+    }
+    return { stop: p.name, programs }
+  }).filter((x) => x.programs.length)
+
   const rideMin = pace ? Math.round((total / PACE_MID_MPH[pace]) * 60) : null
   return {
     ok: true,
@@ -477,6 +698,8 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
         .filter((n, i, a) => i === 0 || n !== a[i - 1]),
       spots_to_take_carefully: spots,
       new_lanes_ridden: newLaneNotes(route.flags as CalmFlag[]),
+      bike_parking: bikeParking,
+      stop_programs: stopPrograms,
       stations,
     },
     plan: {
@@ -494,3 +717,4 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
 export function encodePlan(plan: NonNullable<DesignResult['plan']>): string {
   return Buffer.from(JSON.stringify({ p: plan.pins.map((p) => [p.lat, p.lng, p.label ?? '']), c: plan.chosen, pace: plan.pace })).toString('base64url')
 }
+

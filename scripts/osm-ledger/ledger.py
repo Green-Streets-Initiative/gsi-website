@@ -426,6 +426,54 @@ class Db:
             self.req(method, f"/rest/v1/{table}{query}", rows[i:i + chunk], {"Prefer": prefer})
 
 
+# ── Bike parking ─────────────────────────────────────────────────────────
+
+def read_bike_parking(pbf, clip=None):
+    """Every amenity=bicycle_parking: racks as points, shelters and cages as
+    areas (stored at their center). A filtered pass: seconds, not minutes."""
+    out = {}
+    fp = osmium.FileProcessor(pbf).with_locations().with_filter(osmium.filter.TagFilter(("amenity", "bicycle_parking")))
+    for o in fp:
+        if o.is_node():
+            if not o.location.valid():
+                continue
+            lat, lng, kind = o.location.lat, o.location.lon, "node"
+        elif o.is_way():
+            pts = [(nd.lon, nd.lat) for nd in o.nodes if nd.location.valid()]
+            if not pts:
+                continue
+            lng, lat, kind = sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts), "way"
+        else:
+            continue
+        if clip and not in_car_free_bbox([[lng, lat]]):
+            continue
+        t = {tag.k: tag.v for tag in o.tags}
+        cap = t.get("capacity", "")
+        out[(kind, o.id)] = {
+            "osm_type": kind, "osm_id": o.id, "lat": round(lat, 6), "lng": round(lng, 6),
+            "capacity": int(cap) if cap.isdigit() and 0 < int(cap) < 2000 else None,
+            "covered": t.get("covered") == "yes" or t.get("bicycle_parking") in ("shed", "building"),
+            "kind": t.get("bicycle_parking"), "access": t.get("access"), "name": t.get("name"),
+        }
+    return out
+
+
+def sync_bike_parking(db, parking, started):
+    count = db.count("bike_parking", "gone_at=is.null")
+    if count and abs(len(parking) - count) / count > 0.05:
+        note = f"bike parking {count}→{len(parking)}"
+        alert(db, "Bike parking: today's extract moved the count by more than 5%, not applied", note)
+        print("bike parking sync skipped:", note)
+        return
+    seen = started.isoformat()
+    rows = [{**p, "last_seen_at": seen, "gone_at": None} for p in parking.values()]
+    db.write("POST", "bike_parking", rows, "?on_conflict=osm_type,osm_id", "return=minimal,resolution=merge-duplicates", chunk=1000)
+    if not db.dry:
+        db.req("PATCH", f"/rest/v1/bike_parking?gone_at=is.null&last_seen_at=lt.{urllib.parse.quote(seen)}",
+               {"gone_at": datetime.now(timezone.utc).isoformat()}, {"Prefer": "return=minimal"})
+    print(f"bike parking sync: {len(rows)} spots (table had {count})")
+
+
 # ── Car-free paths for the trip classifier ──────────────────────────────
 
 def sync_car_free(db, car_free, started):
@@ -485,6 +533,7 @@ def main():
     h.apply_file(pbf, locations=True, idx="flex_mem")
     # Neighbouring states, for the car-free paths near the line only:
     # --car-free-extra=nh.osm.pbf,ri.osm.pbf,...
+    parking = read_bike_parking(pbf)
     extra = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--car-free-extra=")), "")
     for f in [x for x in extra.split(",") if x]:
         if not os.path.exists(f) or os.path.getsize(f) < 1_000_000:
@@ -495,7 +544,11 @@ def main():
         c = CarFreeOnly()
         c.apply_file(f, locations=True, idx="flex_mem")
         h.car_free.update(c.car_free)
+        parking.update(read_bike_parking(f, clip=True))
         print(f"{os.path.basename(f)}: {len(c.car_free)} car-free ways in the area")
+    if "--parking-only" in sys.argv:  # one-off: fill bike_parking without a ledger comparison
+        sync_bike_parking(db, parking, started)
+        return
     new = {k: with_bbox(w) for k, w in h.ways.items()}
     new_miles = miles_by_class(new.values())
     print(f"extract: {len(new)} bike ways, miles {new_miles}; {len(h.car_free)} car-free ways")
@@ -529,6 +582,7 @@ def main():
         heartbeat(db, started, "ok", 0, f"baseline: {len(new)} ways")
         print(f"baseline written: {len(rows)} ways")
         sync_car_free(db, h.car_free, started)
+        sync_bike_parking(db, parking, started)
         return
 
     # Sanity: a bad extract or a filter bug shows up as a big swing.
@@ -627,6 +681,7 @@ def main():
             db.req("PATCH", f"/rest/v1/osm_bike_events?id=eq.{u.pop('id')}", u, {"Prefer": "return=minimal"})
     heartbeat(db, started, "ok", len(events), f"+{len(appeared)} ~{len(changed)} -{len(gone)} ways; {len(events)} events")
     sync_car_free(db, h.car_free, started)
+    sync_bike_parking(db, parking, started)
 
 
 def heartbeat(db, started, status, sent, message):
