@@ -92,6 +92,22 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
   const pins = useMemo(() => [...(meetup ? [meetup] : []), ...stops], [meetup, stops])
 
   const reading = useMemo(() => readRoute(route), [route])
+
+  // Bike lanes around the meeting point (Nearby's feed), so organizers can
+  // see the lanes they want to use while they plan.
+  const [lanes, setLanes] = useState<GeoJSON.FeatureCollection | null>(null)
+  const [showLanes, setShowLanes] = useState(true)
+  const laneKey = meetup ? `${meetup.lat.toFixed(2)},${meetup.lng.toFixed(2)}` : ''
+  useEffect(() => {
+    if (!laneKey) return
+    let live = true
+    const [lat, lng] = laneKey.split(',')
+    fetch(`/api/bike-network?lat=${lat}&lng=${lng}&radius=2.5`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { geojson?: GeoJSON.FeatureCollection } | null) => { if (live && d?.geojson) setLanes(d.geojson) })
+      .catch(() => {})
+    return () => { live = false }
+  }, [laneKey])
   // An imported route that begins somewhere else than the meeting point.
   const startGapMi = route && route.waypoints.length && meetup ? haversineM(meetup, route.waypoints[0]) / 1609.344 : 0
 
@@ -296,8 +312,18 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
 
       {err && <div className="mb-3"><Notice tone="off">{err}</Notice></div>}
 
+      <label className="mb-2 flex items-center gap-2 text-[14px] font-semibold text-(--ev-ink-85)">
+        <input type="checkbox" checked={showLanes} onChange={(e) => setShowLanes(e.target.checked)} className="h-4 w-4 accent-(--ev-accent-fill)" />
+        Show bike lanes and paths
+        <span className="flex items-center gap-1 font-normal text-(--ev-ink-75)" aria-hidden>
+          <span className="ml-1 inline-block h-1 w-4 rounded bg-[#2E8B57] opacity-70" /> path
+          <span className="ml-1 inline-block h-1 w-4 rounded bg-[#0E9F8E] opacity-70" /> protected
+          <span className="ml-1 inline-block h-0 w-4 border-t-2 border-dashed border-[#2966E5] opacity-70" /> painted
+        </span>
+      </label>
       <RouteMap
         line={drawnLine}
+        lanes={showLanes ? lanes : null}
         pieces={reading?.mapPieces}
         spots={reading?.mapSpots}
         focus={focus}

@@ -22,6 +22,8 @@ export type MapFocus = { kind: 'piece'; index: number } | { kind: 'spot'; n: num
 
 interface Props {
   line: LatLng[]
+  /** The bike network nearby (/api/bike-network, Nearby's feed), drawn faintly under the route. */
+  lanes?: GeoJSON.FeatureCollection | null
   /** When given, the route is drawn in these coloured stretches instead of one blue line. */
   pieces?: MapPiece[]
   spots?: MapSpot[]
@@ -69,7 +71,7 @@ function pinEl(kind: 'meetup' | 'stop', n?: number): HTMLElement {
 }
 
 export default function RouteMap({
-  line, pieces, spots, focus = null, onPieceClick, onSpotClick, stops, meetup, pick, onPick, fitKey = 0, className, label = 'Route map',
+  line, lanes = null, pieces, spots, focus = null, onPieceClick, onSpotClick, stops, meetup, pick, onPick, fitKey = 0, className, label = 'Route map',
 }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const mapRef = useRef<import('maplibre-gl').Map | null>(null)
@@ -101,6 +103,16 @@ export default function RouteMap({
       })
       map.addControl(new ml.NavigationControl({ showCompass: false }), 'top-right')
       map.on('load', () => {
+        // Bike lanes first, so they sit under the route: paths green, protected
+        // lanes teal, painted lanes dashed blue, all faint (Nearby's colors,
+        // darkened for this light map).
+        map.addSource('lanes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+        map.addLayer({ id: 'lanes-painted', type: 'line', source: 'lanes', filter: ['==', ['get', 'quality'], 'painted'],
+          paint: { 'line-color': '#2966E5', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 15, 2.5], 'line-opacity': 0.45, 'line-dasharray': [2, 2] },
+          layout: { 'line-cap': 'round', 'line-join': 'round' } })
+        map.addLayer({ id: 'lanes-separated', type: 'line', source: 'lanes', filter: ['!=', ['get', 'quality'], 'painted'],
+          paint: { 'line-color': ['match', ['get', 'quality'], 'path', '#2E8B57', '#0E9F8E'], 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.5, 15, 3.5], 'line-opacity': 0.5 },
+          layout: { 'line-cap': 'round', 'line-join': 'round' } })
         map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
         map.addLayer({ id: 'route-casing', type: 'line', source: 'route', paint: { 'line-color': '#2966E5', 'line-width': 9, 'line-opacity': 0.22 }, layout: { 'line-join': 'round', 'line-cap': 'round' } })
         map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': ['coalesce', ['get', 'color'], '#2966E5'], 'line-width': 5 }, layout: { 'line-join': 'round', 'line-cap': 'round' } })
@@ -163,6 +175,19 @@ export default function RouteMap({
       return () => clearInterval(t)
     }
   }, [line, pieces, spots, focus, stops, meetup])
+
+  // The bike-lane layer.
+  useEffect(() => {
+    const set = () => {
+      const src = mapRef.current?.getSource('lanes') as import('maplibre-gl').GeoJSONSource | undefined
+      src?.setData(lanes ?? { type: 'FeatureCollection', features: [] })
+    }
+    if (mapRef.current) set()
+    else {
+      const t = setInterval(() => { if (mapRef.current) { clearInterval(t); set() } }, 120)
+      return () => clearInterval(t)
+    }
+  }, [lanes])
 
   // Bring the stretch or spot being looked at into view.
   useEffect(() => {
