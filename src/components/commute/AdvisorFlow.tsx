@@ -19,7 +19,8 @@ import { useIsWide } from '@/components/commute/useIsWide'
 import LoadingMessages from '@/components/commute/LoadingMessages'
 import CommutePlanPrint from '@/components/commute/CommutePlanPrint'
 import TagAlong from '@/components/commute/TagAlong'
-import { fetchCalmRoute, type CalmRoute } from '@/components/commute/calm-route'
+import { COMFORT_COLORS, COMFORT_LABELS, comfortPieces, fetchCalmRoute, formatStretchMiles, legPhotoSpec, type CalmRoute } from '@/components/commute/calm-route'
+import { ReportRouteLink, type RouteIssueStretch, type RouteIssueSurface } from '@/components/commute/ReportRouteSheet'
 import { contentModeFor, contentModeWord, guidesByStage } from '@/components/commute/guide-topics'
 import { eventKindLine, eventModeForRow, eventWhenLine, eventWhereLine, walkRideDayWhen } from '@/components/commute/event-card'
 import {
@@ -666,6 +667,65 @@ export default function AdvisorFlow({
       if (!cm || !plan.guides) return {}
       return { stageGuides: guidesByStage(plan.guides, cm), guidesMore: { href: `/guides?mode=${cm}`, label: `All guides for ${contentModeWord(cm)}` } }
     }
+    // "Report a problem with this route" under each way in we route (product
+    // item 15). The bike row names the stretch the reader picked. Not on a
+    // portal preview of unsaved benefits, and not on the shuttles, whose
+    // problems are times, not streets.
+    const reportFor = (mode: string, station: string | null, transitLabel: string | null): ReactNode => {
+      if (isDraft) return null
+      const surface: RouteIssueSurface | null =
+        mode === 'bike' || mode === 'ebike' ? 'advisor_bike'
+        : mode === 'transit' ? 'advisor_transit'
+        : mode === 'drive' ? 'advisor_drive'
+        : mode === 'walk' ? 'advisor_walk'
+        : mode === 'park_ride' ? 'advisor_park_ride'
+        : mode === 'bike_ride' ? 'advisor_bike_transit'
+        : null
+      if (!surface) return null
+      let stretch: RouteIssueStretch | null = null
+      let sources: string[] = []
+      if (surface === 'advisor_bike' && calm) {
+        const pieces = comfortPieces(calm.calm)
+        const index = highlightedLeg?.startsWith('bike:') ? Number(highlightedLeg.slice(5)) : null
+        const piece = index != null ? pieces.find((p) => p.index === index) : undefined
+        if (piece) {
+          const mid = legPhotoSpec(calm.calm, piece.index)
+          // The first and last stretches start or end at home or work: their
+          // point goes in rounded to about 100 m, so a report never pins an address.
+          const atEnd = piece.index === 0 || piece.index === pieces.length - 1
+          const round = (v: number | undefined) => (v == null ? null : Number(v.toFixed(atEnd ? 3 : 5)))
+          const shown = (COMFORT_LABELS[piece.rating] ?? piece.rating).toLowerCase()
+          stretch = {
+            index: piece.index,
+            label: piece.label,
+            miles: piece.distanceMi,
+            lat: round(mid?.lat),
+            lng: round(mid?.lng),
+            rating: piece.rating,
+            phrase: `${piece.label}, ${formatStretchMiles(piece.distanceMi)}, shown as ${shown}`,
+            color: COMFORT_COLORS[piece.rating] ?? COMFORT_COLORS.shared_road,
+            dashed: piece.rating === 'bike_lane',
+            detail: `${formatStretchMiles(piece.distanceMi)} · shown as ${shown}`,
+          }
+          sources = piece.sources
+        } else {
+          sources = [...new Set(pieces.flatMap((p) => p.sources))]
+        }
+      }
+      const routeLabel = surface === 'advisor_transit' ? transitLabel : station ? `via ${station}` : null
+      return (
+        <ReportRouteLink
+          key={`report-${surface}-${stretch?.index ?? 'all'}`}
+          surface={surface}
+          stretch={stretch}
+          routeLabel={routeLabel}
+          sources={sources}
+          routePoints={surface === 'advisor_bike' && calm ? calm.calm.waypoints : null}
+          employerSlug={variant === 'employer' ? group?.slug ?? null : null}
+          track={track}
+        />
+      )
+    }
     const officeLabel = office4Links.label
     const out: PlanGridRow[] = []
     for (const mode of order) {
@@ -701,6 +761,7 @@ export default function AdvisorFlow({
       ) : (
         <WalkDrawer plan={plan} benefits={benefits} directionsHref={href} onDirections={onDirections} />
       )
+      const report = reportFor(mode, m.combo?.station.name ?? null, first && last ? `${first.departure_stop_name} to ${last.arrival_stop_name}` : null)
       const w = weatherAt(m.leave_by)
       out.push({
         key: mode,
@@ -718,7 +779,7 @@ export default function AdvisorFlow({
         weather: chipFor(w, mode),
         stages: stagesFor(mode, plan, benefits, { calm, bikeParking, lineName, combo: m.combo ?? null, weather: w }),
         ...stageGuidesFor(mode),
-        drawer,
+        drawer: report ? <>{drawer}{report}</> : drawer,
       })
     }
     // Shuttles: the employer's own, then the public operators with a stop at the office.
@@ -758,7 +819,7 @@ export default function AdvisorFlow({
     }
     return out
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, home, office, office4Links, order, calm, calmLoading, legsLive, comboLegsLive, bikeParking, benefits, companyName, highlightedLeg, commuteMode, employerShuttles, shuttleLines, weatherAt])
+  }, [plan, home, office, office4Links, order, calm, calmLoading, legsLive, comboLegsLive, bikeParking, benefits, companyName, highlightedLeg, commuteMode, employerShuttles, shuttleLines, weatherAt, isDraft, variant, group?.slug])
 
   /* ── The picked way in: the open row, else our pick ── */
   const pickedKey = expanded ?? plan?.recommended_mode ?? null
