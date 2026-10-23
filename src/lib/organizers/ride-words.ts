@@ -19,12 +19,13 @@ export const TAG_OPTIONS: { key: string; label: string }[] = [
   { key: 'advocacy', label: 'Advocacy' },
 ]
 
-export const PACE_OPTIONS: { key: Pace; label: string; hint: string }[] = [
-  { key: 'relaxed', label: 'Relaxed', hint: 'Chatty, plenty of stops' },
-  { key: 'moderate', label: 'Moderate', hint: 'Steady, a few stops' },
-  { key: 'brisk', label: 'Brisk', hint: 'A good workout' },
-  { key: 'fast', label: 'Fast', hint: 'For people who train' },
-  { key: 'kids', label: 'Kids & families', hint: 'Small legs set the pace' },
+/** Same bands and speeds as the app (lib/ride-pace.ts) and the events calendar. */
+export const PACE_OPTIONS: { key: Pace; label: string; mph: string; hint: string }[] = [
+  { key: 'relaxed', label: 'Relaxed', mph: '8–12 mph', hint: 'Chatty, plenty of stops' },
+  { key: 'moderate', label: 'Moderate', mph: '12–15 mph', hint: 'Steady, a few stops' },
+  { key: 'brisk', label: 'Brisk', mph: '15–18 mph', hint: 'A good workout' },
+  { key: 'fast', label: 'Fast', mph: '18+ mph', hint: 'For people who train' },
+  { key: 'kids', label: 'Kids & families', mph: '5–8 mph', hint: 'Small legs set the pace' },
 ]
 
 export const DAY_LABELS: { key: number; short: string; long: string }[] = [

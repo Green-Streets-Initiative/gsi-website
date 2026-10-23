@@ -96,7 +96,7 @@ const rideFields = {
   start_time: { type: 'string', description: 'HH:MM, 24-hour.' },
   end_time: nullable('string', 'HH:MM, optional: when people are back.'),
   meetup: placeSchema,
-  pace: nullable('string', 'relaxed, moderate, brisk, fast or kids.'),
+  pace: nullable('string', 'relaxed (8–12 mph), moderate (12–15), brisk (15–18), fast (18+) or kids (5–8).'),
   no_drop: nullable('boolean', 'The group waits or regroups so nobody is left behind.'),
   tags: { type: 'array', items: { type: 'string', enum: TAG_OPTIONS.map((t) => t.key) } },
   visibility: { type: 'string', enum: ['public', 'invite'] },

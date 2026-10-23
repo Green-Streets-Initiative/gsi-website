@@ -415,7 +415,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         </Card>
 
         <Card id="sec-route">
-          <SectionTitle hint="Optional. People decide on distance, hills and comfort.">Route</SectionTitle>
+          <SectionTitle hint="Optional. With a route, people see how far, how hilly and how comfortable the ride is before they come.">Route</SectionTitle>
           <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null}
             onMeetAtStart={(p) => {
               setF((prev) => ({ ...prev, meetup_lat: p.lat, meetup_lng: p.lng, meetup_address: '', meetup_name: prev.meetup_name ? '' : prev.meetup_name }))
@@ -433,10 +433,15 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         <Card id="sec-expect">
           <SectionTitle>What to expect</SectionTitle>
           <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
-            <Field label="Pace" hint="The speed the group really holds.">
+            <Field label="Pace" hint="The average speed the group holds while riding.">
               <div className="flex flex-wrap gap-2">
                 <Toggle on={f.pace === ''} onClick={() => set('pace', '')}>Not stated</Toggle>
-                {PACE_OPTIONS.map((p) => <Toggle key={p.key} on={f.pace === p.key} onClick={() => set('pace', p.key)}>{p.label}</Toggle>)}
+                {PACE_OPTIONS.map((p) => (
+                  <Toggle key={p.key} on={f.pace === p.key} onClick={() => set('pace', p.key)} className="py-1.5">
+                    <span className="block leading-tight">{p.label}</span>
+                    <span className="block text-[13px] font-medium leading-tight opacity-80">{p.mph}</span>
+                  </Toggle>
+                ))}
               </div>
             </Field>
             <label className="flex cursor-pointer items-start gap-3">
@@ -459,7 +464,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         <Card id="sec-signup">
           <SectionTitle>Sign-ups and contact</SectionTitle>
           <div className="grid gap-4">
-            <Field label="Registration link" htmlFor="reg" optional hint="Only if people must sign up or sign a waiver elsewhere."
+            <Field label="Sign-up or waiver link" htmlFor="reg" optional hint="Do people also need to sign up or sign a waiver on your own site? Paste that page. For a regular ride, use one page that covers every date."
               error={!LINK_OK(f.registration_url) ? 'Links start with https://' : null}>
               <Input id="reg" value={f.registration_url} onChange={(e) => set('registration_url', e.target.value)} placeholder="https://…" inputMode="url" />
             </Field>

@@ -139,11 +139,11 @@ export function scheduleText(r: Pick<PublicRide, 'ride_date' | 'frequency' | 'da
 }
 
 export const PACE_LABEL: Record<NonNullable<PublicRide['pace']>, string> = {
-  kids: "Kids' pace",
-  relaxed: 'Relaxed pace',
-  moderate: 'Moderate pace',
-  brisk: 'Brisk pace',
-  fast: 'Fast pace',
+  kids: "Kids' pace · 5–8 mph",
+  relaxed: 'Relaxed pace · 8–12 mph',
+  moderate: 'Moderate pace · 12–15 mph',
+  brisk: 'Brisk pace · 15–18 mph',
+  fast: 'Fast pace · 18+ mph',
 }
 
 /** "Updated 2 hours ago", in plain words. */

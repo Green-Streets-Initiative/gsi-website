@@ -129,6 +129,10 @@ export default function RideOverview() {
     try { done(await resume(r.id)) } catch (e) { setMsg({ tone: 'off', text: errorText(e) }) } finally { setBusy(false) }
   }
 
+  // The next date has its own card above; the list holds the rest.
+  const heroShown = !!nextDate && !ended
+  const later = heroShown ? upcoming.filter((d) => d.id !== nextDate!.id) : upcoming
+
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       {msg && <Toast tone={msg.tone} onClose={closeMsg}>{msg.text}</Toast>}
@@ -161,6 +165,12 @@ export default function RideOverview() {
             <Link href={`/organizers/rides/${r.id}/roster?date=${nextDate.id}`} className="inline-flex min-h-[44px] items-center rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
               See who&rsquo;s coming
             </Link>
+            {detail.can_manage && (
+              <>
+                <Button variant="ghost" onClick={() => setChanging(nextDate)}>Change</Button>
+                <Button variant="ghost" onClick={() => setCancelling(nextDate)}>Cancel this date</Button>
+              </>
+            )}
           </div>
         </Card>
       )}
@@ -183,16 +193,18 @@ export default function RideOverview() {
             <Button size="sm" onClick={() => void doResume()} busy={busy}><PlayCircle className="h-4 w-4" aria-hidden />Start it again</Button>
           ) : undefined}
         >
-          Dates
+          {heroShown ? 'Later dates' : 'Dates'}
         </SectionTitle>
         {onBreak && <div className="mb-3"><Notice tone="warn">On a break until {dateLabel(r.break_until!)}.{r.stopped_note ? ` “${r.stopped_note}”` : ''}</Notice></div>}
-        {upcoming.length === 0 ? (
+        {heroShown && later.length === 0 ? (
+          <p className="text-[15px] text-(--ev-ink-85)">No later dates yet.</p>
+        ) : later.length === 0 ? (
           <Empty title={ended ? 'This ride has ended' : 'No upcoming dates'}>
             {ended ? 'Its history and turnout are still here.' : r.ride_date ? 'This one-off ride has happened. Set up a new ride for the next one.' : "Dates appear here within a day of saving. If it's been longer, check the season dates in Edit ride."}
           </Empty>
         ) : (
           <ul>
-            {upcoming.map((d) => (
+            {later.map((d) => (
               <DateRow key={d.id} d={d} canManage={detail.can_manage} rideId={r.id}
                 onCancel={() => setCancelling(d)} onChange={() => setChanging(d)} onRestore={() => void restore(d)} />
             ))}

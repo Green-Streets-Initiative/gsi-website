@@ -5,9 +5,9 @@ import Link from 'next/link'
 import QRCode from 'qrcode'
 import { Check, Clock, Copy, Download, ExternalLink, ImageIcon, Minus } from 'lucide-react'
 import { getPromoStats } from '@/lib/organizers/api'
-import { todayKey } from '@/lib/organizers/ride-words'
+import { PACE_OPTIONS, todayKey } from '@/lib/organizers/ride-words'
 import type { PromoStats } from '@/lib/organizers/types'
-import { PACE_LABEL, clock, dateLong, dateShort, dayShort, scheduleText } from '@/lib/rides/public'
+import { clock, dateLong, dateShort, dayShort, scheduleText } from '@/lib/rides/public'
 import { PROMO_CHANNELS, PROMO_LABEL, promoLink, type PromoChannel } from '@/lib/rides/promo'
 import { useRide } from './RideFrame'
 import { Button, Card, Notice, SectionTitle, Spinner, Toggle, cx } from './ui'
@@ -155,7 +155,8 @@ export default function PromoteView() {
     const nextLine = next ? `${dayShort(next.date)} ${dateShort(next.date)}, ${clock(next.start_time)}` : null
     const place = next?.meetup_name || r.meetup_name || next?.meetup_address || r.meetup_address || null
     const about = (r.description ?? '').trim().split(/(?<=[.!?])\s+/)[0]?.slice(0, 220) || ''
-    const extras = [r.pace ? PACE_LABEL[r.pace] : null, r.route_miles ? `about ${miles(r.route_miles)}` : null].filter(Boolean).join(', ')
+    const pace = PACE_OPTIONS.find((o) => o.key === r.pace)
+    const extras = [pace ? `${pace.key === 'kids' ? "kids' pace" : `${pace.label.toLowerCase()} pace`} (${pace.mph})` : null, r.route_miles ? `about ${miles(r.route_miles)}` : null].filter(Boolean).join(', ')
     const welcome = r.no_drop || r.tags.includes('beginner_friendly')
       ? 'New to group rides? This is a good first one: nobody gets left behind.'
       : 'New faces always welcome.'

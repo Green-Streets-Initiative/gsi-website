@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { ExternalLink } from 'lucide-react'
 import { errorText, saveHostPage } from '@/lib/organizers/api'
 import { TAG_OPTIONS } from '@/lib/organizers/ride-words'
 import type { OrgClaim } from '@/lib/organizers/types'
@@ -110,9 +111,28 @@ export default function HostPage() {
   const orgId = picked || verified[0]?.id || ''
   const org = verified.find((o) => o.id === orgId) ?? null
 
+  // The public page exists once a group runs often enough (lib/hosts.ts);
+  // link to it only when it's there.
+  const publicPath = org ? `/events/organizers/${encodeURIComponent(org.id)}` : null
+  const [live, setLive] = useState(false)
+  useEffect(() => {
+    let on = true
+    setLive(false)
+    if (publicPath) fetch(publicPath, { method: 'HEAD' }).then((r) => { if (on) setLive(r.ok) }).catch(() => {})
+    return () => { on = false }
+  }, [publicPath])
+
   return (
     <div>
-      <h1 className="font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">Host page</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h1 className="font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">Host page</h1>
+        {live && publicPath && (
+          <a href={publicPath} target="_blank" rel="noopener noreferrer"
+            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+            See it live<ExternalLink className="h-4 w-4" aria-hidden />
+          </a>
+        )}
+      </div>
       <p className="mt-1 max-w-2xl text-[15px] leading-snug text-(--ev-ink-80)">
         How your group appears with its rides on Shift and the Green Streets events calendar.
       </p>
