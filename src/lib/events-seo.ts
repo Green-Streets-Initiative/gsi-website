@@ -215,8 +215,9 @@ export function buildEventJsonLd(
           : 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: place,
-    ...(event.schedule_status === 'moved' && event.previous_event_date
-      ? { previousStartDate: isoDateTime(event.previous_event_date, event.previous_event_time ?? event.event_time, timeZone) }
+    // A move can be time-only (same day, new start), so the old date falls back to the event's own.
+    ...(event.schedule_status === 'moved' && (event.previous_event_date || event.previous_event_time)
+      ? { previousStartDate: isoDateTime(event.previous_event_date ?? event.event_date, event.previous_event_time ?? event.event_time, timeZone) }
       : {}),
     url: eventUrl(event),
     description: plainDescription(
