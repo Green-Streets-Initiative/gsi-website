@@ -129,6 +129,23 @@ export default function RideOverview() {
     try { done(await resume(r.id)) } catch (e) { setMsg({ tone: 'off', text: errorText(e) }) } finally { setBusy(false) }
   }
 
+  // The weather for the next date, by the same rule as the evening check-in
+  // push (lib/rides/forecast.ts), once it's within the weather service's week.
+  const [nextForecast, setNextForecast] = useState<string | null>(null)
+  useEffect(() => {
+    setNextForecast(null)
+    const d = nextDate
+    const lat = d?.meetup_lat ?? r.meetup_lat
+    const lng = d?.meetup_lng ?? r.meetup_lng
+    if (!d || lat == null || lng == null) return
+    const days = (new Date(`${d.date}T12:00:00Z`).getTime() - Date.now()) / 864e5
+    if (days < -1 || days > 6.5) return
+    let live = true
+    const q = new URLSearchParams({ lat: String(lat), lng: String(lng), date: d.date, start: d.start_time })
+    fetch(`/api/rides/forecast?${q}`).then((res) => res.json()).then((j: { line?: string | null }) => { if (live && j.line) setNextForecast(j.line) }).catch(() => {})
+    return () => { live = false }
+  }, [nextDate?.id, nextDate?.date, nextDate?.start_time, r.meetup_lat, r.meetup_lng]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // The next date has its own card above; the list holds the rest.
   const heroShown = !!nextDate && !ended
   const later = heroShown ? upcoming.filter((d) => d.id !== nextDate!.id) : upcoming
@@ -149,6 +166,7 @@ export default function RideOverview() {
               <p className="text-[15px] font-semibold text-(--ev-ink-75)">Next ride</p>
               <p className="font-display text-[26px] font-extrabold leading-tight">{dateLabel(nextDate.date)} · {clock(nextDate.start_time)}</p>
               <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{nextDate.meetup_name ?? r.meetup_name}{nextDate.time_moved || nextDate.place_moved ? ' (changed for this date)' : ''}</p>
+              {nextForecast && <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">Forecast: {nextForecast}</p>}
               {nextDate.confirmed && <span className="mt-2 inline-block"><Badge tone="good">It&rsquo;s on</Badge></span>}
             </div>
             <dl className="flex gap-6">

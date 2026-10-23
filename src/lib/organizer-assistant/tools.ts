@@ -7,6 +7,7 @@ import { PACE_OPTIONS, TAG_OPTIONS, UPDATE_KIND_LABEL, dateLabel, todayKey } fro
 import type { DashboardRide, RideDetail, RideRow, RosterRow, Turnout } from '@/lib/organizers/types'
 import { designRoute, encodePlan, summarizeRoute } from './route-designer'
 import { fetchRideWithGps } from '@/lib/organizers/rwgps'
+import { forecastLine, rideForecast } from '@/lib/rides/forecast'
 
 // The organizer assistant's tools (Keith 2026-10-22). Same shape as the
 // employer assistant's: reads run straight away as the organizer; anything
@@ -648,9 +649,17 @@ async function forecast(lat: number | null, lng: number | null, date: string, st
     return d === date && h >= startHour - 1 && h <= startHour + 3
   })
   if (!hours.length) return { available: false, note: 'No forecast for that time yet.' }
+  // The one rule for "wet", shared with the ride pages and the app's evening
+  // check-in push (lib/rides/forecast.ts, from Shift _shared/ride-weather.ts).
+  const periods = (fc?.properties?.periods ?? []).map((p) => ({
+    startTime: p.startTime, shortForecast: p.shortForecast, pop: p.probabilityOfPrecipitation?.value ?? 0, tempF: p.temperature,
+  }))
+  const verdict = rideForecast(periods, date, startHour)
   return {
     available: true,
     source: 'National Weather Service',
+    summary: verdict ? forecastLine(verdict) : null,
+    wet: verdict?.wet ?? false,
     hours: hours.map((p) => ({
       time: new Date(p.startTime).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric' }),
       temp_f: p.temperature, sky: p.shortForecast, wind: p.windSpeed, chance_of_rain_pct: p.probabilityOfPrecipitation?.value ?? null,

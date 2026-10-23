@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import posthog from 'posthog-js'
-import { Bike, Calendar, Check, Clock, Download, ExternalLink, MapPin, Radio, Route as RouteIcon, Share2, Users } from 'lucide-react'
+import { Bike, Calendar, Check, Clock, CloudSun, Download, ExternalLink, MapPin, Radio, Route as RouteIcon, Share2, Users } from 'lucide-react'
 import EventMap from '@/components/events/EventMap'
 import RouteMap from '@/components/organizers/RouteMap'
 import { buildIcs, gcalUrl as eventGcalUrl } from '@/lib/event-calendar'
@@ -108,6 +108,20 @@ export default function RidePage({ ride, hostHref }: { ride: PublicRide; hostHre
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<{ status: RsvpStatus; first: string } | null>(null)
   const [copied, setCopied] = useState(false)
+
+  // The forecast for the chosen date, once it's within the weather service's week.
+  const [forecast, setForecast] = useState<{ id: string; line: string } | null>(null)
+  useEffect(() => {
+    if (!selected || selected.status !== 'scheduled' || selected.meetup_lat == null || selected.meetup_lng == null || !selected.start_time) return
+    const days = (new Date(`${selected.date}T12:00:00Z`).getTime() - Date.now()) / 864e5
+    if (days < -1 || days > 6.5) return
+    let live = true
+    const q = new URLSearchParams({ lat: String(selected.meetup_lat), lng: String(selected.meetup_lng), date: selected.date, start: selected.start_time })
+    fetch(`/api/rides/forecast?${q}`).then((r) => r.json()).then((d: { line?: string | null }) => {
+      if (live && d.line) setForecast({ id: selected.id, line: d.line })
+    }).catch(() => {})
+    return () => { live = false }
+  }, [selected])
 
   const myAnswer = selected ? me.answers[selected.id] : undefined
   const ended = ride.status === 'archived'
@@ -296,6 +310,9 @@ export default function RidePage({ ride, hostHref }: { ride: PublicRide; hostHre
                         )}
                         {(selected.meetup_name || selected.meetup_address) && (
                           <p className="flex gap-2"><MapPin size={16} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{selected.meetup_name || selected.meetup_address}</p>
+                        )}
+                        {forecast?.id === selected.id && (
+                          <p className="flex gap-2"><CloudSun size={16} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{forecast.line}</p>
                         )}
                         <p className="flex gap-2">
                           <Users size={16} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />
