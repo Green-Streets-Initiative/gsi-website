@@ -328,6 +328,16 @@ export async function POST(request: Request) {
         await admin.from('member_assistant_threads').update({ updated_at: new Date().toISOString() }).eq('id', threadId)
       }
       const setPending = async (p: Pending | null) => { await admin.from('member_assistant_threads').update({ pending: p }).eq('id', threadId) }
+      // One button per screen in a turn: a save that links to the plan and an
+      // open_screen to the same plan would otherwise show two.
+      const shown = new Set<string>()
+      const once = (r: ToolResult): ToolResult => {
+        if (!r.link) return r
+        const key = JSON.stringify([r.link.screen, r.link.params ?? null])
+        if (shown.has(key)) return { ...r, link: undefined }
+        shown.add(key)
+        return r
+      }
       const userBlocks = (): unknown[] => [
         ...(carryNote ? [{ type: 'text', text: carryNote }] : []),
         ...(text ? [{ type: 'text', text }] : []),
@@ -351,7 +361,7 @@ export async function POST(request: Request) {
               let r: ToolResult
               if (body.decision.approve) {
                 emit({ type: 'tool', id: c.tool_use_id, label: ACTIVITY[c.name] ?? c.name })
-                r = await runApproved(ctx, c.name, c.input)
+                r = once(await runApproved(ctx, c.name, c.input))
                 emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: r.link })
               } else {
                 r = { content: { declined: true, note: 'They chose not to do this. Ask what they would like instead.' } }
@@ -432,7 +442,7 @@ export async function POST(request: Request) {
               return
             }
             if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: ACTIVITY[u.name] })
-            const r = await runTool(ctx, u.name, input)
+            const r = once(await runTool(ctx, u.name, input))
             emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link })
             results[u.id] = resultBlock(u.id, r)
           }))

@@ -258,7 +258,7 @@ export async function runRidePlanTool(ctx: Ctx, name: string, input: Record<stri
       spots_in_order: shown.map((s) => ({ what: SPOT_WORDS[s.kind] ?? s.kind, streets: s.streets.join(' & ') || null, guide_note: s.note ?? null })),
       after_the_ride: p?.status === 'ridden' ? { helped: p.helped, still_hard: p.unsure, riding_alone_on: p.solo_day } : null,
       meeting_spot_coords: p?.meet_lat != null ? { lat: p.meet_lat, lng: p.meet_lng } : null,
-    }, planLink(matchId, 'Open the ride plan'))
+    })
   }
 
   if (name === 'design_ride_plan_route') {
@@ -298,7 +298,7 @@ export async function runRidePlanTool(ctx: Ctx, name: string, input: Record<stri
       ...(complete ? {} : { spots_note: 'The map data was busy, so some spots may be missing.' }),
       recipe: encode({ pins, chosen, goal }),
       can_save: v.role === 'guide' && v.plan?.status === 'learner_shared',
-    }, planLink(matchId, 'Open the ride plan'))
+    })
   }
 
   return fail(`Unknown tool ${name}`)
