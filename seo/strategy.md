@@ -41,6 +41,15 @@ employers, schools, and local businesses.
 Full cluster definitions, queries, and page targets live in
 `keyword-portfolio.json`.
 
+**Canonical personas (2026-10-24).** These audiences are defined once, with
+jobs to be done, in Shift `docs/programs/personas.md`
+(/Users/keithanderson/Documents/GreenStreetsInitiative/Shift). Its "Search
+clusters and personas" table maps every cluster in `keyword-portfolio.json`
+to persona ids; tag new clusters, questions and drafts with those ids. A
+weekly personas routine reads this folder's Search Console files after this
+review runs, so a new cluster or question kind should get its persona row
+proposed in the report.
+
 ## Messaging guardrails (HARD — every drafted word obeys these)
 
 These come straight from org policy and are non-negotiable:

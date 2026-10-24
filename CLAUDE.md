@@ -82,6 +82,15 @@ Keith has corrected this for months; it keeps reappearing in website copy.
 Before finishing any copy touch, grep the diff for `already` and read each
 hit in context.
 
+## Who we build for
+
+Personas and their jobs to be done live in the Shift repo at
+`docs/programs/personas.md` (~/Documents/GreenStreetsInitiative/Shift), the one
+canonical list for every page, guide, campaign, portal and assistant. Name the
+persona ids a piece of work serves (`event-goer`, `employer-buyer`) and
+propose changes to that file rather than defining audiences here. A weekly
+routine refreshes its numbers.
+
 ## Code style
 
 - Next.js 15 App Router, TypeScript, Tailwind.
